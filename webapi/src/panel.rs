@@ -16,7 +16,7 @@ use wfsim_engine::model::{ModDef, ModEffect, StackPolicy};
 use wfsim_engine::model::pct as fpct;
 use crate::buffs::{arcane_choices, arcane_fx_for, buffs_json, enumerate_buffs, evo_buffs};
 use crate::fight::chosen_evolutions;
-use crate::registry::{attack_desc, base_for, default_weapon_id, form_unlock_evo, mod_not_here, weapon, wspec};
+use crate::registry::{WeaponInfo, attack_desc, base_for, default_weapon_id, form_unlock_evo, mod_not_here, weapon, wspec};
 use crate::request::{err_json, get_str, prettify};
 use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
 use crate::tenno::{floor_json, tenno_from, wielder_from};
@@ -134,17 +134,178 @@ pub fn panel_json(v: &Value) -> Value {
         ));
     }
 
+    let (src, mut conditionals) = mod_sources(v, info, &refs, &forms_list, policy, &panel_tenno);
+    let (evo_src, evo_flat) = evolution_sources(info, &evo_refs, &panel_tenno);
+    let inputs = SectionInputs { v, info, refs: &refs, policy, src, evo_src, evo_flat };
+
+    // ONE PLAYER, BOTH ANSWERS. These rows resolved against
+    // the NEUTRAL Tenno while the sim resolved against the fight's, so every
+    // player-gated grant in the roster was paid by the sim and absent from the
+    // panel: Haven Foray's "+50 with Overshields", Guardian's Might's +74, the
+    // channeled-ability family, every "With Sprint Speed 1.2 or Higher". The
+    // buff-card half of this endpoint was fixed then and the STATS half was
+    // not, which is why it stayed invisible — the numbers it hid were on
+    // exactly the cards nobody had a control for yet.
+    //
+    // Found by the loadout knob: Lone Gun's "+14 Base Magazine
+    // Capacity" moved the sim's magazine to 20 and the Magazine row still read
+    // 6.
+    let forms: Vec<Value> = forms_list
+        .iter()
+        .map(|(label, meta, b)| {
+            form_section(label, meta, b, &resolve_for(b, &refs, policy, &panel_tenno), &inputs)
+        })
+        .collect();
+
+    // Configurable buffs of this build (weapon-scoped) for the Sim panel —
+    // mods + arcane + the weapon passive, plus evolution-granted buffs
+    // (Fevered Frenzy's permanent stacks).
+    let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
+    // A real build: every mod on it is on it, so every lock is real.
+    let mut buffs = enumerate_buffs(&refs, &refs, &arcane_fx, info, &tenno_from(v, info));
+    for b in evo_buffs(&evos) {
+        if !buffs.iter().any(|x| x.id == b.id) {
+            buffs.push(b);
+        }
+    }
+
+    // A SET WHOSE MEMBERS ARE NOT ALL WEAPON MODS HAS A LOWER CEILING HERE than
+    // it does in game, and the player has to be told the number rather than
+    // reading 20% and assuming it is the cap.
+    //
+    // "Set Mods … offer increasing bonuses when one or more mods in a set are
+    // equipped on the player's Warframe AND weapons … Only the number of
+    // equipped mods within the set dictates the Set Bonus strength" (wiki,
+    // Set_Mods). The Vigilante set is six, and two of them — Vigor and Pursuit
+    // — go on the FRAME, which this engine has no loadout for. So a weapon
+    // build tops out at 4 x 5% = 20% against the game's 30%.
+    //
+    // DERIVED, not written down: `members` is the set's real size and the
+    // weapon-side count is however many of our mods name it, so a set we later
+    // complete stops printing this on its own.
+    {
+        use std::collections::BTreeSet;
+        let mut said: BTreeSet<&str> = BTreeSet::new();
+        for m in &refs {
+            let Some(set_id) = m.set else { continue };
+            if !said.insert(set_id) {
+                continue;
+            }
+            let Some(def) = wfsim_engine::data::mod_sets::set_def(set_id) else { continue };
+            let ours = wfsim_engine::data::mod_sets::members_carried(set_id);
+            if ours >= def.members {
+                continue;
+            }
+            conditionals.push(json!({
+                "mod": def.name,
+                "desc": format!("set bonus: {:.0}% per equipped member", def.per_mod * 100.0),
+                "active": true,
+                "why": format!(
+                    "{} of the set's {} members are weapon mods — the rest go on the WARFRAME,                      which this sim has no loadout for. So a build here tops out at {:.0}%,                      against {:.0}% in game.",
+                    ours, def.members, f64::from(ours) * def.per_mod * 100.0,
+                    f64::from(def.members) * def.per_mod * 100.0),
+            }));
+        }
+    }
+
+    // A FORM THAT CANNOT ZOOM CANNOT BE AIMING, and a mod that pays nothing has
+    // to say so on the page rather than just resolving to zero. The engine
+    // already answers the aim question FALSE for such a form; this is the half
+    // the player can see.
+    //
+    // Named per FORM, because that is the granularity of the fact: the Vasto
+    // aims and its Incarnon form does not, so "your Galvanized Crosshairs does
+    // nothing" would be wrong and "it does nothing in Incarnon Form" is right.
+    for (form_name, _label, fb) in &forms_list {
+        if !fb.cannot_zoom {
+            continue;
+        }
+        for m in &refs {
+            let aim_gated = m.effects.iter().any(|e| {
+                matches!(e, wfsim_engine::model::ModEffect::WhileTenno(
+                    wfsim_engine::model::TennoCondition::Aiming, _))
+            });
+            if aim_gated {
+                conditionals.push(json!({
+                    "mod": m.name,
+                    "desc": "pays only while aiming",
+                    "active": false,
+                    "why": format!(
+                        "{form_name} cannot aim down sights (the card's own words are \"cannot Zoom\"), so an on-aim bonus never applies in it"),
+                }));
+            }
+        }
+    }
+
+    json!({
+        "ok": true,
+        "weapon": info.name,
+        "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
+        "forms": forms,
+        "conditionals": conditionals,
+        // WHO IS HOLDING THE GUN, as numbers rather than as an assumption. Several perks and mods read the player and the
+        // panel showed none of it: "0 = no frame" is what the FIELDS say, and a
+        // reader had no way to see what the fight actually resolved to once a
+        // frame, an aura or an archon shard had moved it.
+        //
+        // Reported by the SERVER because it is the server that built it —
+        // `tenno_from` applies the frame, then the typed overrides, then what
+        // the squad brings, and a page re-deriving that would be a second
+        // implementation of the one thing every gated perk is asked about.
+        "tenno": {
+            "health": panel_tenno.health,
+            "shield": panel_tenno.shield,
+            "armor": panel_tenno.armor,
+            "energy": panel_tenno.energy,
+            "sprint": panel_tenno.sprint,
+        },
+        // …AND THE WIELDER BEFORE THE FIGHT'S OVERRIDES, which is what a ticked
+        // override starts from and what an unticked one falls back to.
+        "wielder": floor_json(&wielder_from(v, info)),
+        "buffs": buffs_json(&buffs),
+    })
+}
+
+/// One mod's share of a bucket: (key, mod name, contribution fraction, note).
+type ModSource = (&'static str, String, f64, Option<String>);
+/// A share that is not a mod's: (key, source name, PRE-FORMATTED value, note).
+type OtherSource = (&'static str, String, String, Option<String>);
+
+/// WHAT EVERY FORM'S SECTION READS beside its own base and panel: the request,
+/// the weapon, its mods and policy, and who contributed what.
+struct SectionInputs<'a> {
+    v: &'a Value,
+    info: &'a WeaponInfo,
+    refs: &'a [&'a ModDef],
+    policy: StackPolicy,
+    src: Vec<ModSource>,
+    evo_src: Vec<OtherSource>,
+    /// The flat base additions the evolutions make — base damage, crit chance,
+    /// status chance, magazine — which a row subtracts to show the raw base.
+    evo_flat: (f64, f64, f64, f64),
+}
+
+/// Every equipped mod's share of each bucket, and the lines that never merge
+/// into one.
+fn mod_sources(
+    v: &Value,
+    info: &WeaponInfo,
+    refs: &[&ModDef],
+    forms_list: &[(&'static str, String, WeaponBase)],
+    policy: StackPolicy,
+    panel_tenno: &wfsim_engine::data::tenno::Tenno,
+) -> (Vec<ModSource>, Vec<Value>) {
     // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
     // key -> [(mod name, contribution fraction, note)]
     let mut src: Vec<(&'static str, String, f64, Option<String>)> = Vec::new();
     let mut conditionals: Vec<Value> = Vec::new(); // lines that never merge into a bucket
-    for m in &refs {
+    for m in refs {
         let name = m.name.to_string();
         // A SET THAT ENHANCES ITS OWN MEMBERS SAYS SO ON THE CARD. What the mod
         // is worth depends on what is beside it, which is exactly what this
         // list is for — and the row is drawn dim when the set is short, so a
         // reader can see the 25% they are one card away from.
-        let self_scale = wfsim_engine::data::mod_sets::self_scale_for(m, &refs);
+        let self_scale = wfsim_engine::data::mod_sets::self_scale_for(m, refs);
         if let Some(set) = m.set.and_then(wfsim_engine::data::mod_sets::set_def) {
             if set.kind == wfsim_engine::data::mod_sets::SetBonusKind::SelfScaling {
                 let have = refs.iter().filter(|x| x.set == Some(set.id)).count();
@@ -648,14 +809,14 @@ pub fn panel_json(v: &Value) -> Value {
                 // to state what the player is worth to it. Without it the panel
                 // would show a base-damage figure with no card explaining it.
                 TennoScaled { stat, above, unit, per_unit, cap, .. } => {
-                    let have = (stat.of(&panel_tenno) - above).max(0.0);
+                    let have = (stat.of(panel_tenno) - above).max(0.0);
                     let steps = (have / unit.max(1e-9)).floor();
                     let paid = (steps * per_unit).min(cap);
                     conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": paid > 0.0,
                         "why": format!(
                             "this Warframe has {:.0} {} — {:.0} whole steps of {:.0}, so it pays {:.0}%{}",
-                            stat.of(&panel_tenno), stat.name(), steps, unit, paid * 100.0,
+                            stat.of(panel_tenno), stat.name(), steps, unit, paid * 100.0,
                             if paid >= cap { " (capped)" } else { "" })}));
                 }
             }
@@ -698,6 +859,16 @@ pub fn panel_json(v: &Value) -> Value {
             }));
         }
     }
+    (src, conditionals)
+}
+
+/// The shares that are not a mod's: the chosen evolutions, then the fight's
+/// own bonuses.
+fn evolution_sources(
+    info: &WeaponInfo,
+    evo_refs: &[&str],
+    panel_tenno: &wfsim_engine::data::tenno::Tenno,
+) -> (Vec<OtherSource>, (f64, f64, f64, f64)) {
     // Non-mod sources: the CHOSEN evolutions (data-driven). Flat base
     // damage and flat base crit chance alter the WEAPON BASE before mods —
     // the stat rows show the raw base and attribute the delta here; the
@@ -774,7 +945,7 @@ pub fn panel_json(v: &Value) -> Value {
             // added to `evo_flat_mag`, which the base column subtracts: this
             // add is not in `base.magazine_size` at all (the resolver folds it
             // onto a clone), so subtracting it would print a base of −8.
-            let v = def.gated_flat_magazine(&panel_tenno);
+            let v = def.gated_flat_magazine(panel_tenno);
             if v > 0.0 {
                 evo_src.push((
                     "magazine",
@@ -838,967 +1009,846 @@ pub fn panel_json(v: &Value) -> Value {
             }
         }
     }
+    (evo_src, (evo_flat_bd, evo_flat_cc, evo_flat_sc, evo_flat_mag))
+}
 
-    // One stats section per form; the closure names its params `base` /
-    // `panel` so every row reads the ACTIVE form's numbers.
-    let section = |label: &'static str,
-                   meta: &str,
-                   base: &WeaponBase,
-                   panel: &ResolvedPanel|
-     -> Value {
-        let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
-            let evo = evo_src
-                .iter()
-                .filter(move |(k, _, _, _)| *k == key && tag.is_none())
-                .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
-            evo.chain(
-                src.iter()
-                    .filter(|(k, _, _, note)| {
-                        *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
-                    })
-                    .map(|(_, name, v, note)| {
-                        // `fraction` is the RAW fraction beside the formatted text,
-                        // so the panel can show the arithmetic — `40 × (1 +
-                        // 1.65 + 0.60)` — instead of only its answer. Everything
-                        // in one bracket is one multiplicative bucket, and that
-                        // shape teaches the bucket better than any sentence.
-                        //
-                        // Evolution sources carry no `fraction` on purpose: several
-                        // are FLAT additions rather than percentages, so an
-                        // expression built from them would assert arithmetic
-                        // that is not what the engine did. The page draws the
-                        // line only when every term in the row is a fraction.
-                        json!({ "mod": name, "value": fpct(*v), "fraction": v,
-                            "note": if tag.is_some() { Value::Null } else { json!(note) } })
-                    }),
-            )
-            .collect()
-        };
-        // ---- stat rows: base -> final, with the merged bonus and its sources ----
-        let num = |x: f64| -> String {
-            if x >= 100.0 {
-                format!("{x:.0}")
-            } else {
-                format!("{x:.1}")
-            }
-        };
-        let pc = |x: f64| format!("{:.1}%", x * 100.0);
-        let mut stats = Vec::new();
-        // Every base stat is ALWAYS listed (the panel must state the whole
-        // base panel, not just what changed) — the UI drops the arrow when
-        // base == final.
-        // A LOCKED row says so. Base == final and an empty source list is what
-        // a stat nothing touched looks like too, and the difference matters: one
-        // is a build that bought nothing, the other is a build whose mods are
-        // being ignored on purpose ("Fire Rate cannot be modified"). Named after
-        // the mod that did it, because that is the thing to take off.
-        let lock_by = |key: &str| -> Option<String> {
-            panel.locked.contains(&key).then(|| {
-                refs.iter()
-                    .find(|m| m.disables.contains(&key))
-                    .map_or_else(String::new, |m| m.name.to_string())
-            })
-        };
-        let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
-            let mut srcs = sources(key, None);
-            let mut j = json!({ "key": key, "label": label, "base": base_s, "final": final_s });
-            if let Some(by) = lock_by(key) {
-                // ...AND WHAT THE LOCK IS THROWING AWAY. The row kept listing
-                // every bonus feeding a stat it had already zeroed, so a build
-                // with Critical Deceleration under a Cannonade read "3.3/s ·
-                // locked · −20% Critical Deceleration" — a pinned number and a
-                // contribution to it, on the same row, with nothing saying
-                // which one won. The number was always
-                // right; the row argued with itself about it. Marking them is
-                // better than dropping them: "this mod does nothing here" is
-                // exactly what the reader came for, and a missing line says it
-                // to nobody.
-                for s in srcs.iter_mut() {
-                    s["ignored"] = json!(true);
-                }
-                j["locked_by"] = json!(by);
-            }
-            j["sources"] = json!(srcs);
-            stats.push(j);
-        };
-        // Base columns show the RAW weapon base (pre-evolution): the evolution
-        // flat deltas are attributed as named source rows, not hidden in "base".
-        let raw_bd = base.base_vector.total() - evo_flat_bd;
-        let raw_cc = base.base_crit_chance - evo_flat_cc;
-        let raw_sc = base.base_status_chance - evo_flat_sc;
-        let raw_mag = base.magazine_size - evo_flat_mag;
-        row(
-            "base_damage",
-            "Base Damage",
-            num(raw_bd),
-            num(panel.modified_base),
-        );
-        row(
-            "multishot",
-            "Multishot",
-            format!("×{}", num(base.base_multishot)),
-            format!("×{}", num(panel.multishot)),
-        );
-        row(
-            "crit_chance",
-            "Crit Chance",
-            pc(raw_cc),
-            pc(panel.crit_chance),
-        );
-        row(
-            "crit_damage",
-            "Crit Damage",
-            format!("×{}", num(base.base_crit_damage)),
-            format!("×{}", num(panel.crit_damage)),
-        );
-        row(
-            "status_chance",
-            "Status Chance",
-            pc(raw_sc),
-            pc(panel.status_chance),
-        );
-        // Identical formatting on both sides — the UI drops the arrow only
-        // when the strings match ("×1" vs "×1.0" must not differ).
-        row(
-            "status_damage",
-            "Status Damage",
-            format!("×{}", num(1.0)),
-            format!("×{}", num(panel.status_damage_multiplier)),
-        );
-        row(
-            "status_duration",
-            "Status Duration",
-            format!("×{}", num(1.0)),
-            format!("×{}", num(panel.status_duration_multiplier)),
-        );
-        row(
-            "fire_rate",
-            "Fire Rate",
-            format!("{}/s", num(base.base_fire_rate)),
-            format!("{}/s", num(panel.fire_rate)),
-        );
-        // Incarnon form: the magazine is a charge-backed resource (Max Charges,
-        // inert to magazine mods) and there is no reload — instead two transition
-        // times, each scaled by the reload formula base/(1 + reload bonus).
-        if let Some(inc) = base.gauge_form {
-            let rl = panel.reload_bonus;
-            stats.push(json!({ "key": "magazine", "label": "Max Charges",
-            "base": num(inc.max_charges), "final": num(inc.max_charges),
-            "sources": json!([]) }));
-            // HOW THE GAUGE FILLS, which the panel never said. The engine has
-            // always read it — `charge_on` is weapon data and the shot loop
-            // counts headshots or pellets accordingly — but a player could not
-            // SEE it, and the two rules do not merely differ in speed: at a 0%
-            // headshot rate a weakpoint-charged weapon never transforms at all
-            // (measured: Burston Prime 0 transforms, Torid 4, same fight).
-            // That is the largest thing an Incarnon weapon can do, decided by a
-            // field with no row.
-            let (what, why) = match inc.charge_on {
-                wfsim_engine::model::ChargeOn::WeakpointHits => (
-                    "weakpoint hits",
-                    "weakpoint hits only — at a 0% headshot rate this weapon never reaches its Incarnon form. A radial or field instance can never contribute: it has no hit location",
-                ),
-                wfsim_engine::model::ChargeOn::DirectHits => (
-                    "direct hits",
-                    "ANY direct hit, so the form does not depend on the headshot rate (wiki Incarnon: \"Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead charged through direct hits\"). A lingering field is not a direct hit and does not charge it",
-                ),
-                wfsim_engine::model::ChargeOn::Kills => (
-                    "kills",
-                    "KILLS, not hits — so this form is worth what the fight lets you earn, and against a single target that does not die it never arrives at all. A radial, a field tick or a status proc all count: the kill is what is asked for, not the instance that landed it. Kills made with the earned form itself do not pay for the next one",
-                ),
-            };
-            stats.push(json!({ "key": "gauge", "label": "Gauge Fills On",
-            "base": "—",
-            // A COUNT, so no decimal: "5 direct hits", not "5.0".
-            "final": format!("{:.0} {what}", inc.charges_to_fill),
-            "note": why,
-            "sources": sources("incarnon_charge_rate", None) }));
-            stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
-            "base": format!("{}s", num(inc.transmute_in)),
-            "final": format!("{}s", num(inc.transmute_in / (1.0 + rl))),
-            "sources": sources("reload", None) }));
-            stats.push(json!({ "key": "transmute_out", "label": "Transmute Out",
-            "base": format!("{}s", num(inc.transmute_out)),
-            "final": format!("{}s", num(inc.transmute_out / (1.0 + rl))),
-            "sources": sources("reload", None) }));
-        } else {
-            row(
-                "magazine",
-                "Magazine",
-                num(raw_mag),
-                num(panel.magazine_size),
-            );
-            row(
-                "reload",
-                "Reload",
-                format!("{}s", num(base.base_reload)),
-                format!("{}s", num(panel.reload_seconds)),
-            );
-        }
-        // THE CONE, and what an accuracy mod does to it.
-        //
-        // It was on no card at all, which made Heavy Caliber's downside
-        // invisible on every weapon in the roster: a reader saw `+165% base
-        // damage` and nothing about the cost. The cost is real on a Braton and
-        // exactly ZERO on a launcher, and the difference decides whether that
-        // mod belongs in the build — so a panel that shows neither is hiding
-        // the more interesting half.
-        //
-        // ACCURACY IS NOT THE STAT. The weapon-level `accuracy` field is
-        // derived and fuzzy — the wiki prints it as a CATEGORY — and this
-        // engine does not read it; the aim model reads the CONE in degrees. An
-        // accuracy mod DIVIDES that cone, which is why a weapon whose cone is
-        // already zero pays nothing: `0 / 1.55` is still 0.
-        if let (Some(sb), Some(sr)) = (base.spread, panel.spread) {
-            let deg = |x: f64| format!("{}°", display_number(x));
-            let pinpoint = sr.min_deg <= 0.0 && sr.max_deg <= 0.0;
-            let cone = |a: f64, b: f64| {
-                if (a - b).abs() < 1e-9 { deg(a) } else { format!("{}–{}", deg(a), deg(b)) }
-            };
-            stats.push(json!({
-                "key": "spread",
-                "label": "Cone",
-                "base": cone(sb.min_deg, sb.max_deg),
-                "final": cone(sr.min_deg, sr.max_deg),
-                // THE NOTE IS THE POINT on a pinpoint weapon: it says the
-                // accuracy penalty in the build above cost nothing, which is
-                // not something a `0° -> 0°` row says by itself.
-                "note": if pinpoint {
-                    "this weapon fires exactly where the reticle is, so an accuracy                      penalty has no cone to widen and costs nothing here"
-                } else {
-                    "the first shot's cone and where sustained fire takes it — an                      accuracy mod divides both"
-                }.to_string(),
-                "sources": sources("accuracy", None),
-            }));
-        }
-        // BOWS state their cadence, because the Fire Rate row above is NOT it:
-        // wiki Fire Rate gives bows a formula of their own — "Effective Fire
-        // Rate = 1 / (Modded Charge Time + Modded Reload Time)" — which has no
-        // fire-rate term at all. So the panel prints the draw (the half a
-        // fire-rate mod actually shortens, at double value on a bow) and the
-        // rate that formula yields, or a build reads 1.6/s where it fires 1.0.
-        //
-        // A tapped shot has NO draw: its row would be a constant 0.00s, so it
-        // is left out and only the effective rate is stated.
-        //
-        // INSERTED beside the Fire Rate row it belongs next to rather than
-        // pushed here: `row` holds the `stats` borrow until its last call.
-        if let (Some(b), Some(f)) = (base.charge_seconds, panel.charge_seconds) {
-            let at = stats
-                .iter()
-                .position(|s| s["key"] == "fire_rate")
-                .map_or(stats.len(), |i| i + 1);
-            let mut rows = Vec::new();
-            if b > 0.0 {
-                // Two decimals: a doubled bow bonus lands on values like
-                // 0.31 s that `num`'s one decimal would round away.
-                rows.push(json!({ "key": "charge_time", "label": "Charge Time",
-                    "base": format!("{b:.2}s"), "final": format!("{f:.2}s"),
-                    "sources": sources("fire_rate", None) }));
-            }
-            let eff = |charge: f64, reload: f64| format!("{:.2}/s", 1.0 / (charge + reload));
-            rows.push(json!({ "key": "effective_fire_rate", "label": "Effective Fire Rate",
-                "base": eff(b, base.base_reload), "final": eff(f, panel.reload_seconds),
-                "note": "a bow's real cadence: 1 / (charge + reload), with no fire-rate term \
-                         (wiki Fire Rate)".to_string(),
-                "sources": json!([]) }));
-            for (i, r) in rows.into_iter().enumerate() {
-                stats.insert(at + i, r);
-            }
-        }
-        // A continuous beam's impact SPHERE. Firestorm enlarges it, and without
-        // this row the mod reads as equipped-but-doing-nothing on this form.
-        // The note carries the honest part: the sphere adds no damage to a
-        // target the beam already struck, so it is worth nothing single-target
-        // and a great deal in a crowd, where every enemy it catches starts its
-        // own chain.
-        if let (Some(bb), Some(bp)) = (base.beam, panel.beam) {
-            stats.push(json!({ "key": "radius", "label": "Beam Radius",
-                "base": format!("{} m", num(bb.damage_radius_m)),
-                "final": format!("{} m", num(bp.damage_radius_m)),
-                "note": format!(
-                    "no single-target damage (a struck target is hit once); in a crowd every enemy it catches starts its own chain ({} hops, {} m, x{} per hop)",
-                    bp.chain_hops, num(bp.chain_range_m), num(bp.chain_damage_per_hop)),
-                "sources": sources("radius", None) }));
-        }
-        // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
-        // Secondary Shiver) combine differently per weapon class, and their base
-        // EXCLUDES evolution flat damage — this note states what the model
-        // actually computes on THIS weapon, and is shared by every GunCO row.
-        // WHICH PARTS take it. "Direct hits only" is the rule the mod cards
-        // state and it is what every unlisted weapon does — but an AoE part
-        // carries its own eligibility and a few entries have it (MECHANICS
-        // §6), so the note has to be built from the weapon rather than
-        // asserted. It was a hardcoded "direct hits only", which the Burston
-        // Incarnon makes false: its explosion takes CO.
-        let radial_co = base.radial.as_ref().is_some_and(|r| r.takes_condition_overload);
-        let field_co = base.lingering.as_ref().is_some_and(|f| f.takes_condition_overload);
-        // A FIXED FORMAT, NOT A SENTENCE. The rule is
-        // three slots — BEHAVIOUR, the BASE the term reads, and which PARTS
-        // take it — so a reader can compare two weapons by looking at the same
-        // position twice instead of parsing two paragraphs. Anything genuinely
-        // odd goes in the note BESIDE it rather than swelling the line.
-        let parts = {
-            let mut v = vec!["direct"];
-            if radial_co {
-                v.push("radial");
-            }
-            if field_co {
-                v.push("field");
-            }
-            v.join(" + ")
-        };
-        let behavior = match panel.co_behavior {
-            wfsim_engine::model::CoBehavior::AdditiveWithBaseDamage => "additive",
-            wfsim_engine::model::CoBehavior::Independent => "multiplying",
-            wfsim_engine::model::CoBehavior::Inert => "inert",
-        };
-        let excluded = (panel.co_base_fraction() - 1.0).abs() > 1e-9;
-        // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%. A slot that is blank when nothing is odd cannot
-        // be told apart from a slot nobody filled in, and "100%" is the claim
-        // being made — that this weapon reads its WHOLE base — which is worth
-        // as much scrutiny as a 52%. ORIGINAL of EVOLVED: `raw_bd` is the
-        // pre-evolution base and the fraction is original/evolved, so the
-        // denominator is what the panel prints as this attack's base damage.
-        let co_rule = if behavior == "inert" {
-            "inert · base = n/a · parts = none".to_string()
-        } else {
-            format!(
-                "{behavior} · base = {:.0}% ({:.0} of {:.0}) · parts = {parts}",
-                panel.co_base_fraction() * 100.0,
-                raw_bd,
-                base.base_vector.total()
-            )
-        };
-
-        // THE NOTE IS FOR WHAT THE THREE SLOTS CANNOT SAY, and is absent on an
-        // ordinary weapon — which is most of them. Three things earn one.
-        let mut notes: Vec<String> = Vec::new();
-        if behavior == "inert" {
-            notes.push("this weapon takes no Condition Overload at all — the catalog lists it as \"Does not apply\"".into());
-        }
-        if excluded {
-            notes.push("an evolution raised this attack's base without raising what CO reads, so the term is computed on the ORIGINAL base (docs/CATALOGS.md)".into());
-        }
-        if radial_co || field_co {
-            notes.push("an AoE part taking CO is a per-entry exception the catalog lists; every unlisted weapon is direct hits only".into());
-        }
-        if behavior == "multiplying" {
-            notes.push("multiplying stands OUTSIDE the base-damage bracket, so Serration does not dilute it; additive joins that bracket and is diluted".into());
-        }
-
-        // ALWAYS SHOWN, even with no source equipped.
-        //
-        // A row that appears only once a GunCO card is on the build hides the
-        // one thing a reader can check — WHICH RULE this weapon is computed
-        // under — until they have already committed to the mod. The rules are
-        // per weapon and transcribed by hand from a catalog, so a wrong one can
-        // stand for months. Putting the adopted rule on every weapon's panel is
-        // what lets that be caught by
-        // someone who owns the gun rather than by someone re-reading the yaml.
-        //
-        // It is a STATEMENT OF METHOD, not an admission — `unmodeled:` and the
-        // disclosure banner are for what the sim cannot do; this is what it
-        // does, said out loud so it can be argued with.
-        let has_source = panel.co_per_type > 0.0;
-        stats.push(json!({ "key": "co", "label": "Condition Overload",
-            "base": "—",
-            "final": if has_source {
-                format!("{} per status type on target", fpct(panel.co_per_type))
-            } else {
-                "no source equipped".to_string()
-            },
-            "rule": co_rule,
-            "note": if notes.is_empty() { Value::Null } else { json!(notes.join(" · ")) },
-            "sources": sources("co", None) }));
-
-        // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
-        // source, so its row carries the SAME per-weapon caveat as the CO row.
-        let tenno = tenno_from(v, info);
-        // Cascadia Accuracy's weak-point crit joins Acuity's in the sim
-        // (`ap.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative`), so the row
-        // below has to add it or it would state less than the sim applies.
-        let mut arcane_wp_cc = 0.0;
-        for (pool, aid, want_rank) in arcane_choices(v, info) {
-            if let Some(def) = wfsim_engine::data::arcanes::for_slot(&pool, &aid) {
-                let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
-                let fx = def.fx(rank, policy, base.traits, &tenno);
-                arcane_wp_cc += fx.weakpoint_crit_chance_relative;
-                if fx.per_cold_base_damage > 0.0 {
-                    stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
-                    "base": "—",
-                    "final": format!("{} damage per Cold status on target (cap {})",
-                        fpct(fx.per_cold_base_damage), fx.cold_cap),
-                    // The SAME per-weapon rule, because Shiver is a GunCO
-                    // source: it reads the same base and joins the same
-                    // bracket, so it states the same three slots.
-                    "rule": co_rule.clone(),
-                    "note": "GunCO family — the weapon's Condition Overload rule applies to this too",
-                    "sources": [json!({ "mod": format!("{} (arcane, rank {rank})", def.name),
-                        "value": fpct(fx.per_cold_base_damage), "note": "per Cold stack; Frozen counts as the full 10" })] }));
-                }
-            }
-        }
-
-        // WEAK-POINT bonuses (Acuity, Cascadia Accuracy). They had NO rows at
-        // all: the damage half was invisible and the crit half was folded into
-        // the flat Crit Chance row, so a mod worth +350% on heads read as
-        // either nothing or as an unconditional 126%. Both halves are
-        // conditional on where the bullet lands, and the number a reader can
-        // act on is the one that holds THERE — stated next to the plain one,
-        // never in place of it.
-        let wp_cc_total = panel.weakpoint_crit_chance_relative + arcane_wp_cc;
-        if wp_cc_total > 0.0 {
-            stats.push(json!({ "key": "weakpoint_cc", "label": "Weak Point Crit Chance",
-            "base": pc(panel.crit_chance),
-            "final": format!("{} on a weak point", pc(panel.crit_chance + panel.base_crit_chance * wp_cc_total)),
-            "note": format!(
-                "{} relative to the {} base, additive with Point Strike — on WEAK-POINT hits only. \
-                 Everywhere else the crit chance above stands, and the radial explosion never gets \
-                 it at all (an explosion has no hit location)",
-                fpct(wp_cc_total), pc(panel.base_crit_chance)),
-            "sources": sources("crit_chance", None) }));
-        }
-        if panel.weakpoint_damage > 0.0 {
-            stats.push(json!({ "key": "weakpoint_damage", "label": "Weak Point Damage",
-            "base": "—",
-            // Two decimals, not the panel's usual one: the wiki's worked
-            // example is "3 + 3.5 x 1.5 = 8.25x" and a row printing 8.2 no
-            // longer matches the source it cites.
-            "final": format!("+{:.2} to the weak-point multiplier", 1.5 * panel.weakpoint_damage),
-            "note": format!(
-                "the listed {} is ADDED to the enemy's own weak-point multiplier at 1.5x on a true \
-                 weak point (wiki: a 3x head becomes 3 + {:.2} = {:.2}x), and headshot-multiplier \
-                 bonuses multiply the sum. Weak-point hits only",
-                fpct(panel.weakpoint_damage), 1.5 * panel.weakpoint_damage,
-                3.0 + 1.5 * panel.weakpoint_damage),
-            "sources": Vec::<Value>::new() }));
-        }
-
-        // Elements: one row per contributed element (position/order matters for
-        // combining — the damage section shows the combined result).
-        let mut elem_rows = Vec::new();
-        let mut seen_elems: Vec<String> = Vec::new();
-        for (k, _, _, note) in &src {
-            if *k == "elements" {
-                if let Some(t) = note {
-                    if !seen_elems.contains(t) {
-                        seen_elems.push(t.clone());
-                    }
-                }
-            }
-        }
-        for t in &seen_elems {
-            let total: f64 = src
-                .iter()
-                .filter(|(k, _, _, n)| *k == "elements" && n.as_deref() == Some(t))
-                .map(|(_, _, v, _)| v)
-                .sum();
-            elem_rows.push(json!({ "key": "elements", "label": t, "base": "—",
-            "final": format!("{} of modified base", fpct(total)),
-            "sources": sources("elements", Some(t)) }));
-        }
-
-        // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
-        // real in practice; base is unmodified (0%), final = Σ.
-        let mut indirect_rows = Vec::new();
-        // Not every indirect stat is a fraction — punch through and beam range
-        // are METRES, a double-jump refresh is a COUNT, an explosion-on-kill is
-        // flat DAMAGE. `IndirectStat::format` owns that, so this table and the
-        // effect line on the card cannot drift apart.
-        for (stat, total) in &panel.indirect {
-            // PUNCH THROUGH IS REPORTED RESOLVED, below — this bucket is the
-            // raw sum of what the mods GRANT, and since 2026-08-17 that is not
-            // what the weapon HAS: an AoE attack takes none of it (*"Projectile
-            // AoE weapons cannot have their Punch Through stat modified"*), so
-            // a Primed Shred on a Torid would have posted +2.2 m against an
-            // engine that spends 0.
-            if *stat == wfsim_engine::model::IndirectStat::PunchThrough {
-                continue;
-            }
-            indirect_rows.push(
-                json!({ "key": "indirect", "label": stat.label(), "base": "—",
-            "final": stat.format(*total), "sources": sources("indirect", Some(stat.label())) }),
-            );
-        }
-        // …AND HERE IT IS, as the number the simulation actually spends: the
-        // weapon's own depth plus every grant the attack is allowed to take.
-        //
-        // The row is drawn whenever there is anything to say — a weapon that
-        // brings its own (which the mod bucket never knew about, so no row was
-        // drawn at all) or a mod that tried. The SOURCES stay the mods', which
-        // is what makes a zeroed total legible rather than mysterious: the
-        // grants are listed and the final says 0 m.
-        {
-            let stat = wfsim_engine::model::IndirectStat::PunchThrough;
-            let granted: f64 = panel
-                .indirect
-                .iter()
-                .filter(|(s, _)| *s == stat)
-                .map(|(_, v)| *v)
-                .sum();
-            if panel.punch_through_m > 0.0 || granted > 0.0 {
-                indirect_rows.push(json!({
-                    "key": "indirect", "label": stat.label(), "base": "—",
-                    "final": stat.format(panel.punch_through_m),
-                    "sources": sources("indirect", Some(stat.label())),
-                }));
-            }
-        }
-
-        // A weapon is the GUN plus the PROJECTILE(s) it launches: the gun carries cadence and capacity, each projectile
-        // carries its own damage, crit, status — and, when it is a radial,
-        // its blast geometry. Split the flat row list along that line
-        // instead of stating a single "base attack" that belongs to neither.
-        const ON_PROJECTILE: &[&str] = &[
-            "base_damage",
-            "crit_chance",
-            "crit_damage",
-            "status_chance",
-            "status_damage",
-            "status_duration",
-            "co",
-            "shiver",
-            // Weak-point bonuses belong to the PROJECTILE that lands on the
-            // weak point, and to that one only: the explosion has no hit
-            // location, so leaving them among the weapon-wide rows would read
-            // as a claim over both parts.
-            "weakpoint_cc",
-            "weakpoint_damage",
-        ];
-        let key_of = |r: &Value| r["key"].as_str().unwrap_or("").to_string();
-        let (direct_rows, weapon_rows): (Vec<Value>, Vec<Value>) = stats
-            .into_iter()
-            .partition(|r| ON_PROJECTILE.contains(&key_of(r).as_str()));
-
-        // A damage vector as displayed rows: type, amount, share of the total.
-        let vector_rows = |v: &wfsim_engine::rules::damage::DamageVector| {
-            let total = v.total();
-            v.iter_nonzero()
-                .map(|(t, amt)| {
-                    json!({ "type": format!("{t:?}"), "amount": num(amt),
-                    "share": format!("{:.0}%", amt / total * 100.0) })
+/// One stats section per form; its params are `base` / `panel` so every row
+/// reads the ACTIVE form's numbers.
+fn form_section(
+    label: &'static str,
+    meta: &str,
+    base: &WeaponBase,
+    panel: &ResolvedPanel,
+    inputs: &SectionInputs,
+) -> Value {
+    let (v, info, refs, policy) = (inputs.v, inputs.info, inputs.refs, inputs.policy);
+    let (src, evo_src) = (&inputs.src, &inputs.evo_src);
+    let (evo_flat_bd, evo_flat_cc, evo_flat_sc, evo_flat_mag) = inputs.evo_flat;
+    let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
+        let evo = evo_src
+            .iter()
+            .filter(move |(k, _, _, _)| *k == key && tag.is_none())
+            .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
+        evo.chain(
+            src.iter()
+                .filter(|(k, _, _, note)| {
+                    *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
                 })
-                .collect::<Vec<Value>>()
-        };
-
-        let mut parts = vec![json!({
-            "id": "direct",
-            "label": "Direct hit",
-            "meta": "on contact",
-            "stats": direct_rows,
-            "damage": vector_rows(&panel.damage),
-            "damage_total": num(panel.damage.total()),
-        })];
-
-        // The radial explosion is a SECOND projectile-borne damage instance
-        // with its own crit and status (MECHANICS §7) — the panel states it
-        // in full rather than leaving the reader to assume it copies the
-        // direct hit. Status damage/duration are weapon-wide multipliers, so
-        // they repeat: they describe the procs THIS instance applies.
-        if let (Some(rb), Some(rr)) = (base.radial.as_ref(), panel.radial.as_ref()) {
-            let rsrc = |key: &'static str| sources(key, None);
-            // Geometry reads as a distance, not a stat: 2 m, not 2.0.
-            let dist = display_number;
-            let mut rows = vec![
-                json!({ "key": "base_damage", "label": "Base Damage",
-                    "base": num(rb.base_vector.total()), "final": num(rr.modified_base),
-                    "sources": rsrc("base_damage") }),
-                json!({ "key": "crit_chance", "label": "Crit Chance",
-                    "base": pc(rb.base_crit_chance - evo_flat_cc),
-                    "final": pc(rr.crit_chance),
-                    "sources": rsrc("crit_chance") }),
-                json!({ "key": "crit_damage", "label": "Crit Damage",
-                    "base": format!("×{}", num(rb.base_crit_damage)),
-                    "final": format!("×{}", num(rr.crit_damage)),
-                    "sources": rsrc("crit_damage") }),
-                json!({ "key": "status_chance", "label": "Status Chance",
-                    "base": pc(rb.base_status_chance - evo_flat_sc),
-                    "final": pc(rr.status_chance),
-                    "sources": rsrc("status_chance") }),
-                json!({ "key": "status_damage", "label": "Status Damage",
-                    "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_damage_multiplier)),
-                    "sources": rsrc("status_damage") }),
-                json!({ "key": "status_duration", "label": "Status Duration",
-                    "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_duration_multiplier)),
-                    "sources": rsrc("status_duration") }),
-                json!({ "key": "radius", "label": "Blast Radius",
-                    "base": format!("{} m", dist(rb.radius_m)),
-                    "final": format!("{} m", dist(rr.radius_m)),
-                    "sources": rsrc("radius") }),
-            ];
-            // Falloff: full damage inside `start`, then linear down to
-            // (1 − reduction) at the rim. Stated as what the rim actually
-            // takes, which is the number a reader can act on.
-            rows.push(json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
-                "final": format!("{}% at {} m", dist((1.0 - rr.falloff_reduction) * 100.0),
-                    dist(rr.radius_m)),
-                "note": if rr.falloff_start_m > 0.0 {
-                    format!("full damage within {} m, then linear", dist(rr.falloff_start_m))
-                } else {
-                    "linear from the epicentre; a directly-hit enemy takes 100%".to_string()
-                },
-                "sources": json!([]) }));
-            // CONDITION OVERLOAD, stated on the explosion ITSELF — because the
-            // answer is normally "no" and this reader is looking at one of the
-            // entries where it is "yes". The direct hit's row cannot carry it:
-            // it names one bonus, and the two parts do not get the same one.
-            // Shown only when a CO source is equipped, like the direct row.
-            // UNCONDITIONAL, like the direct hit's: this part's rule is a fact
-            // about the weapon, not about what is currently equipped.
-                // THE SAME THREE SLOTS as the direct hit's, so a reader
-                // comparing the two parts of one weapon compares positions
-                // rather than paragraphs. This part has
-                // its own base and its own eligibility, so both are printed
-                // here rather than inherited from the row above.
-                let (value, rule, note) = if rr.takes_condition_overload {
-                    let orig = rb.base_vector.total() * rr.co_base_fraction();
-                    let cut = (rr.co_base_fraction() - 1.0).abs() > 1e-9;
-                    (
-                        format!("{} per status type on target", fpct(panel.co_per_type)),
-                        format!(
-                            "{behavior} · base = {:.0}% ({} of {}) · this part = takes CO",
-                            rr.co_base_fraction() * 100.0,
-                            num(orig),
-                            num(rb.base_vector.total())
-                        ),
-                        if cut {
-                            "THE EXCEPTION: CO normally reaches direct hits only, and this                              explosion is declared to take it — on the enemy the bullet directly                              hit, which a single target always is. An evolution raises the                              explosion's damage without raising the base CO reads, which is where                              the reduced percentage comes from"
-                                .to_string()
-                        } else {
-                            "THE EXCEPTION: CO normally reaches direct hits only, and this                              explosion is declared to take it — on the enemy the bullet directly                              hit, which a single target always is"
-                                .to_string()
-                        },
-                    )
-                } else {
-                    (
-                        "excluded".to_string(),
-                        format!("{behavior} · base = n/a · this part = excluded"),
-                        "the rule: Condition Overload reaches DIRECT hits only, so this                          explosion takes none of it. Weapon-wide damage buckets still reach it —                          CO is the one thing an AoE part loses"
-                            .to_string(),
-                    )
-                };
-                rows.push(json!({ "key": "co", "label": "Condition Overload",
-                    "base": "—", "final": value, "rule": rule, "note": note,
-                    "sources": if rr.takes_condition_overload { sources("co", None) } else { vec![] } }));
-            parts.push(json!({
-                "id": "radial",
-                "label": "Radial explosion",
-                "meta": format!("{} m radius", dist(rr.radius_m)),
-                "stats": rows,
-                "damage": vector_rows(&rr.damage),
-                "damage_total": num(rr.damage.total()),
-            }));
+                .map(|(_, name, v, note)| {
+                    // `fraction` is the RAW fraction beside the formatted text,
+                    // so the panel can show the arithmetic — `40 × (1 +
+                    // 1.65 + 0.60)` — instead of only its answer. Everything
+                    // in one bracket is one multiplicative bucket, and that
+                    // shape teaches the bucket better than any sentence.
+                    //
+                    // Evolution sources carry no `fraction` on purpose: several
+                    // are FLAT additions rather than percentages, so an
+                    // expression built from them would assert arithmetic
+                    // that is not what the engine did. The page draws the
+                    // line only when every term in the row is a fraction.
+                    json!({ "mod": name, "value": fpct(*v), "fraction": v,
+                        "note": if tag.is_some() { Value::Null } else { json!(note) } })
+                }),
+        )
+        .collect()
+    };
+    // ---- stat rows: base -> final, with the merged bonus and its sources ----
+    let num = |x: f64| -> String {
+        if x >= 100.0 {
+            format!("{x:.0}")
+        } else {
+            format!("{x:.1}")
         }
-
-        // THE BOMBLETS THE EXPLOSION THREW — two more parts, and they are on
-        // the card for the reason every part is: the damage number above the
-        // card counts them, so a reader who cannot see them is reading a total
-        // that does not add up. Each states its COUNT in the meta line, because
-        // "18 Radiation" and "5 × 18 Radiation" are different weapons.
-        if let (Some(cb), Some(cr)) = (base.cluster.as_ref(), panel.cluster.as_ref()) {
-            let n = display_number(cr.count);
-            let part_rows = |b: &wfsim_engine::model::RadialBase,
-                             r: &wfsim_engine::build::loadout::ResolvedRadial| {
-                vec![
-                    json!({ "key": "base_damage", "label": "Base Damage",
-                        "base": num(b.base_vector.total()), "final": num(r.modified_base),
-                        "sources": sources("base_damage", None) }),
-                    json!({ "key": "crit_chance", "label": "Crit Chance",
-                        "base": pc(b.base_crit_chance), "final": pc(r.crit_chance),
-                        "sources": sources("crit_chance", None) }),
-                    json!({ "key": "crit_damage", "label": "Crit Damage",
-                        "base": format!("×{}", num(b.base_crit_damage)),
-                        "final": format!("×{}", num(r.crit_damage)),
-                        "sources": sources("crit_damage", None) }),
-                    json!({ "key": "status_chance", "label": "Status Chance",
-                        "base": pc(b.base_status_chance), "final": pc(r.status_chance),
-                        "sources": sources("status_chance", None) }),
-                ]
-            };
-            parts.push(json!({
-                "id": "cluster_contact",
-                "label": "Bomblet contact",
-                "meta": format!("×{n}, on contact"),
-                "stats": part_rows(&cb.contact, &cr.contact),
-                "damage": vector_rows(&cr.contact.damage),
-                "damage_total": num(cr.contact.damage.total()),
-            }));
-            parts.push(json!({
-                "id": "cluster_blast",
-                "label": "Bomblet explosion",
-                "meta": format!("×{n}, {} m radius", display_number(cr.blast.radius_m)),
-                "stats": part_rows(&cb.blast, &cr.blast),
-                "damage": vector_rows(&cr.blast.damage),
-                "damage_total": num(cr.blast.damage.total()),
-            }));
-        }
-
-        // The lingering FIELD is a THIRD kind of part (MECHANICS §7): it does
-        // not land once, it ticks. So it states its own clock — rate, lifetime
-        // and the resulting total — on top of the same per-instance stats,
-        // because "40 damage" means nothing here without "×10 ticks".
-        // FROM THE PANEL, not from the weapon. A field a MOD granted — Nightwatch
-        // Napalm's fire — has no `base.lingering` at all, so reading the weapon
-        // here drew nothing: the part was resolved, simulated, and appeared on
-        // no card, which on an Ogris is most of the build's damage. `ResolvedPanel::lingering_base` is whichever one the
-        // field actually resolved from.
-        if let (Some(fb), Some(fr)) = (panel.lingering_base.as_ref(), panel.lingering.as_ref()) {
-            let fsrc = |key: &'static str| sources(key, None);
-            let dist = display_number;
-            // ✅ measured (MEASUREMENTS M13): the first tick lands WITH the
-            // impact, so the count is the plain product — ten for a 10 s cloud.
-            let ticks = (fr.duration_seconds * fr.tick_rate).round();
-            // Renewed Horror: the shot after an empty reload gets a longer
-            // cloud. 1.0 = the evolution is not equipped, and the rows stay
-            // silent about it rather than stating a boost of ×1.
-            let boost = panel.field_duration_on_empty_reload;
-            let boosted = (boost > 1.0).then_some((fr.duration_seconds * boost, ticks * boost));
-            let mut rows = vec![
-                json!({ "key": "base_damage", "label": "Damage per Tick",
-                    "base": num(fb.base_vector.total()), "final": num(fr.modified_base),
-                    "sources": fsrc("base_damage") }),
-                json!({ "key": "crit_chance", "label": "Crit Chance",
-                    "base": pc(fb.base_crit_chance - evo_flat_cc),
-                    "final": pc(fr.crit_chance),
-                    "sources": fsrc("crit_chance") }),
-                json!({ "key": "crit_damage", "label": "Crit Damage",
-                    "base": format!("×{}", num(fb.base_crit_damage)),
-                    "final": format!("×{}", num(fr.crit_damage)),
-                    "sources": fsrc("crit_damage") }),
-                json!({ "key": "status_chance", "label": "Status Chance",
-                    "base": pc(fb.base_status_chance - evo_flat_sc),
-                    "final": pc(fr.status_chance),
-                    "sources": fsrc("status_chance") }),
-                json!({ "key": "status_damage", "label": "Status Damage",
-                    "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_damage_multiplier)),
-                    "sources": fsrc("status_damage") }),
-                json!({ "key": "status_duration", "label": "Status Duration",
-                    "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_duration_multiplier)),
-                    "sources": fsrc("status_duration") }),
-                // The clock. Neither is mod-scaled: fire-rate mods change shots
-                // per second, not the cloud's own tick rate, and the cloud is
-                // not a status effect so status duration does not reach it.
-                json!({ "key": "tick_rate", "label": "Tick Rate", "base": "—",
-                    "final": format!("{}/s", dist(fr.tick_rate)), "sources": json!([]) }),
-                json!({ "key": "field_duration", "label": "Field Duration",
-                    "base": "—", "final": format!("{} s", dist(fr.duration_seconds)),
-                    "note": match boosted {
-                        // The doubled cloud is one shot in `magazine`, so state
-                        // both numbers rather than an average nobody can check
-                        // against a damage number in game.
-                        Some((d, n)) => format!(
-                            "{} ticks per field, the first landing with the impact; \
-                             the shot after an empty reload gets {} s = {} ticks",
-                            dist(ticks), dist(d), dist(n)),
-                        None => format!("{} ticks per field, the first landing with the impact",
-                            dist(ticks)),
-                    },
-                    "sources": json!([]) }),
-                json!({ "key": "field_total", "label": "Total per Field",
-                    "base": num(fb.base_vector.total() * ticks),
-                    "final": num(fr.modified_base * ticks),
-                    "note": "one grenade, before crit and Condition Overload".to_string(),
-                    "sources": json!([]) }),
-                json!({ "key": "radius", "label": "Field Radius",
-                    "base": format!("{} m", dist(fb.radius_m)),
-                    "final": format!("{} m", dist(fr.radius_m)),
-                    "sources": fsrc("radius") }),
-                json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
-                    "final": format!("{}% at {} m",
-                        dist((1.0 - fr.falloff_reduction) * 100.0), dist(fr.radius_m)),
-                    "note": "the grenade sticks, so the target stands at the epicentre"
-                        .to_string(),
-                    "sources": json!([]) }),
-                // Worth up to ~5x here, so it is stated on the panel rather
-                // than buried in the yaml.
-                json!({ "key": "field_stacking", "label": "Overlapping Fields",
-                    "base": "—",
-                    "final": match fr.stacking {
-                        wfsim_engine::model::FieldStacking::Stack => "stack",
-                        wfsim_engine::model::FieldStacking::Refresh => "refresh",
-                    },
-                    "note": "measured (MEASUREMENTS M13)".to_string(),
-                    "sources": json!([]) }),
-            ];
-                        // THE FIELD'S OWN CO ROW, on the same three slots as the direct
-            // hit's and the explosion's — added 2026-08-16, because the part
-            // had none at all and "no row" reads as "nobody thought about it"
-            // rather than as an answer. A field keeps the DIRECT hit's base
-            // fraction: the catalog puts the Torid's cloud on the same base as
-            // its main fire (`field_tick` passes `ap.co_base_fraction()`).
-            rows.push(json!({ "key": "co", "label": "Condition Overload",
-                "base": "—",
-                "final": if fb.takes_condition_overload {
-                    format!("{} per status type on target", fpct(panel.co_per_type))
-                } else {
-                    "excluded".to_string()
-                },
-                "rule": if fb.takes_condition_overload {
-                    format!(
-                        "{behavior} · base = {:.0}% ({:.0} of {:.0}) · this part = takes CO",
-                        panel.co_base_fraction() * 100.0,
-                        raw_bd,
-                        base.base_vector.total()
-                    )
-                } else {
-                    format!("{behavior} · base = n/a · this part = excluded")
-                },
-                "note": if fb.takes_condition_overload {
-                    "THE EXCEPTION: CO normally reaches direct hits only, and this field is                      declared to take it. It keeps the DIRECT hit's base — the catalog puts the                      cloud on the same base and the same behaviour as the main fire"
-                } else {
-                    "the rule: Condition Overload reaches DIRECT hits only, so this field takes                      none of it. Weapon-wide damage buckets still reach it"
-                },
-                "sources": if fb.takes_condition_overload { sources("co", None) } else { vec![] } }));
-parts.push(json!({
-                "id": "field",
-                "label": "Lingering field",
-                "meta": format!("{} m, {} s", dist(fr.radius_m), dist(fr.duration_seconds)),
-                "stats": rows,
-                "damage": vector_rows(&fr.damage),
-                "damage_total": num(fr.damage.total()),
-            }));
-        }
-
-        json!({
-            "label": label,
-            "meta": meta,
-            "stats": weapon_rows,
-            "elements": elem_rows,
-            "indirect": indirect_rows,
-            "parts": parts,
+    };
+    let pc = |x: f64| format!("{:.1}%", x * 100.0);
+    let mut stats = Vec::new();
+    // Every base stat is ALWAYS listed (the panel must state the whole
+    // base panel, not just what changed) — the UI drops the arrow when
+    // base == final.
+    // A LOCKED row says so. Base == final and an empty source list is what
+    // a stat nothing touched looks like too, and the difference matters: one
+    // is a build that bought nothing, the other is a build whose mods are
+    // being ignored on purpose ("Fire Rate cannot be modified"). Named after
+    // the mod that did it, because that is the thing to take off.
+    let lock_by = |key: &str| -> Option<String> {
+        panel.locked.contains(&key).then(|| {
+            refs.iter()
+                .find(|m| m.disables.contains(&key))
+                .map_or_else(String::new, |m| m.name.to_string())
         })
     };
-
-    // ONE PLAYER, BOTH ANSWERS. These rows resolved against
-    // the NEUTRAL Tenno while the sim resolved against the fight's, so every
-    // player-gated grant in the roster was paid by the sim and absent from the
-    // panel: Haven Foray's "+50 with Overshields", Guardian's Might's +74, the
-    // channeled-ability family, every "With Sprint Speed 1.2 or Higher". The
-    // buff-card half of this endpoint was fixed then and the STATS half was
-    // not, which is why it stayed invisible — the numbers it hid were on
-    // exactly the cards nobody had a control for yet.
+    let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
+        let mut srcs = sources(key, None);
+        let mut j = json!({ "key": key, "label": label, "base": base_s, "final": final_s });
+        if let Some(by) = lock_by(key) {
+            // ...AND WHAT THE LOCK IS THROWING AWAY. The row kept listing
+            // every bonus feeding a stat it had already zeroed, so a build
+            // with Critical Deceleration under a Cannonade read "3.3/s ·
+            // locked · −20% Critical Deceleration" — a pinned number and a
+            // contribution to it, on the same row, with nothing saying
+            // which one won. The number was always
+            // right; the row argued with itself about it. Marking them is
+            // better than dropping them: "this mod does nothing here" is
+            // exactly what the reader came for, and a missing line says it
+            // to nobody.
+            for s in srcs.iter_mut() {
+                s["ignored"] = json!(true);
+            }
+            j["locked_by"] = json!(by);
+        }
+        j["sources"] = json!(srcs);
+        stats.push(j);
+    };
+    // Base columns show the RAW weapon base (pre-evolution): the evolution
+    // flat deltas are attributed as named source rows, not hidden in "base".
+    let raw_bd = base.base_vector.total() - evo_flat_bd;
+    let raw_cc = base.base_crit_chance - evo_flat_cc;
+    let raw_sc = base.base_status_chance - evo_flat_sc;
+    let raw_mag = base.magazine_size - evo_flat_mag;
+    row(
+        "base_damage",
+        "Base Damage",
+        num(raw_bd),
+        num(panel.modified_base),
+    );
+    row(
+        "multishot",
+        "Multishot",
+        format!("×{}", num(base.base_multishot)),
+        format!("×{}", num(panel.multishot)),
+    );
+    row(
+        "crit_chance",
+        "Crit Chance",
+        pc(raw_cc),
+        pc(panel.crit_chance),
+    );
+    row(
+        "crit_damage",
+        "Crit Damage",
+        format!("×{}", num(base.base_crit_damage)),
+        format!("×{}", num(panel.crit_damage)),
+    );
+    row(
+        "status_chance",
+        "Status Chance",
+        pc(raw_sc),
+        pc(panel.status_chance),
+    );
+    // Identical formatting on both sides — the UI drops the arrow only
+    // when the strings match ("×1" vs "×1.0" must not differ).
+    row(
+        "status_damage",
+        "Status Damage",
+        format!("×{}", num(1.0)),
+        format!("×{}", num(panel.status_damage_multiplier)),
+    );
+    row(
+        "status_duration",
+        "Status Duration",
+        format!("×{}", num(1.0)),
+        format!("×{}", num(panel.status_duration_multiplier)),
+    );
+    row(
+        "fire_rate",
+        "Fire Rate",
+        format!("{}/s", num(base.base_fire_rate)),
+        format!("{}/s", num(panel.fire_rate)),
+    );
+    // Incarnon form: the magazine is a charge-backed resource (Max Charges,
+    // inert to magazine mods) and there is no reload — instead two transition
+    // times, each scaled by the reload formula base/(1 + reload bonus).
+    if let Some(inc) = base.gauge_form {
+        let rl = panel.reload_bonus;
+        stats.push(json!({ "key": "magazine", "label": "Max Charges",
+        "base": num(inc.max_charges), "final": num(inc.max_charges),
+        "sources": json!([]) }));
+        // HOW THE GAUGE FILLS, which the panel never said. The engine has
+        // always read it — `charge_on` is weapon data and the shot loop
+        // counts headshots or pellets accordingly — but a player could not
+        // SEE it, and the two rules do not merely differ in speed: at a 0%
+        // headshot rate a weakpoint-charged weapon never transforms at all
+        // (measured: Burston Prime 0 transforms, Torid 4, same fight).
+        // That is the largest thing an Incarnon weapon can do, decided by a
+        // field with no row.
+        let (what, why) = match inc.charge_on {
+            wfsim_engine::model::ChargeOn::WeakpointHits => (
+                "weakpoint hits",
+                "weakpoint hits only — at a 0% headshot rate this weapon never reaches its Incarnon form. A radial or field instance can never contribute: it has no hit location",
+            ),
+            wfsim_engine::model::ChargeOn::DirectHits => (
+                "direct hits",
+                "ANY direct hit, so the form does not depend on the headshot rate (wiki Incarnon: \"Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead charged through direct hits\"). A lingering field is not a direct hit and does not charge it",
+            ),
+            wfsim_engine::model::ChargeOn::Kills => (
+                "kills",
+                "KILLS, not hits — so this form is worth what the fight lets you earn, and against a single target that does not die it never arrives at all. A radial, a field tick or a status proc all count: the kill is what is asked for, not the instance that landed it. Kills made with the earned form itself do not pay for the next one",
+            ),
+        };
+        stats.push(json!({ "key": "gauge", "label": "Gauge Fills On",
+        "base": "—",
+        // A COUNT, so no decimal: "5 direct hits", not "5.0".
+        "final": format!("{:.0} {what}", inc.charges_to_fill),
+        "note": why,
+        "sources": sources("incarnon_charge_rate", None) }));
+        stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
+        "base": format!("{}s", num(inc.transmute_in)),
+        "final": format!("{}s", num(inc.transmute_in / (1.0 + rl))),
+        "sources": sources("reload", None) }));
+        stats.push(json!({ "key": "transmute_out", "label": "Transmute Out",
+        "base": format!("{}s", num(inc.transmute_out)),
+        "final": format!("{}s", num(inc.transmute_out / (1.0 + rl))),
+        "sources": sources("reload", None) }));
+    } else {
+        row(
+            "magazine",
+            "Magazine",
+            num(raw_mag),
+            num(panel.magazine_size),
+        );
+        row(
+            "reload",
+            "Reload",
+            format!("{}s", num(base.base_reload)),
+            format!("{}s", num(panel.reload_seconds)),
+        );
+    }
+    // THE CONE, and what an accuracy mod does to it.
     //
-    // Found by the loadout knob: Lone Gun's "+14 Base Magazine
-    // Capacity" moved the sim's magazine to 20 and the Magazine row still read
-    // 6.
-    let forms: Vec<Value> = forms_list
-        .iter()
-        .map(|(label, meta, b)| {
-            section(label, meta, b, &resolve_for(b, &refs, policy, &panel_tenno))
-        })
-        .collect();
+    // It was on no card at all, which made Heavy Caliber's downside
+    // invisible on every weapon in the roster: a reader saw `+165% base
+    // damage` and nothing about the cost. The cost is real on a Braton and
+    // exactly ZERO on a launcher, and the difference decides whether that
+    // mod belongs in the build — so a panel that shows neither is hiding
+    // the more interesting half.
+    //
+    // ACCURACY IS NOT THE STAT. The weapon-level `accuracy` field is
+    // derived and fuzzy — the wiki prints it as a CATEGORY — and this
+    // engine does not read it; the aim model reads the CONE in degrees. An
+    // accuracy mod DIVIDES that cone, which is why a weapon whose cone is
+    // already zero pays nothing: `0 / 1.55` is still 0.
+    if let (Some(sb), Some(sr)) = (base.spread, panel.spread) {
+        let deg = |x: f64| format!("{}°", display_number(x));
+        let pinpoint = sr.min_deg <= 0.0 && sr.max_deg <= 0.0;
+        let cone = |a: f64, b: f64| {
+            if (a - b).abs() < 1e-9 { deg(a) } else { format!("{}–{}", deg(a), deg(b)) }
+        };
+        stats.push(json!({
+            "key": "spread",
+            "label": "Cone",
+            "base": cone(sb.min_deg, sb.max_deg),
+            "final": cone(sr.min_deg, sr.max_deg),
+            // THE NOTE IS THE POINT on a pinpoint weapon: it says the
+            // accuracy penalty in the build above cost nothing, which is
+            // not something a `0° -> 0°` row says by itself.
+            "note": if pinpoint {
+                "this weapon fires exactly where the reticle is, so an accuracy                      penalty has no cone to widen and costs nothing here"
+            } else {
+                "the first shot's cone and where sustained fire takes it — an                      accuracy mod divides both"
+            }.to_string(),
+            "sources": sources("accuracy", None),
+        }));
+    }
+    // BOWS state their cadence, because the Fire Rate row above is NOT it:
+    // wiki Fire Rate gives bows a formula of their own — "Effective Fire
+    // Rate = 1 / (Modded Charge Time + Modded Reload Time)" — which has no
+    // fire-rate term at all. So the panel prints the draw (the half a
+    // fire-rate mod actually shortens, at double value on a bow) and the
+    // rate that formula yields, or a build reads 1.6/s where it fires 1.0.
+    //
+    // A tapped shot has NO draw: its row would be a constant 0.00s, so it
+    // is left out and only the effective rate is stated.
+    //
+    // INSERTED beside the Fire Rate row it belongs next to rather than
+    // pushed here: `row` holds the `stats` borrow until its last call.
+    if let (Some(b), Some(f)) = (base.charge_seconds, panel.charge_seconds) {
+        let at = stats
+            .iter()
+            .position(|s| s["key"] == "fire_rate")
+            .map_or(stats.len(), |i| i + 1);
+        let mut rows = Vec::new();
+        if b > 0.0 {
+            // Two decimals: a doubled bow bonus lands on values like
+            // 0.31 s that `num`'s one decimal would round away.
+            rows.push(json!({ "key": "charge_time", "label": "Charge Time",
+                "base": format!("{b:.2}s"), "final": format!("{f:.2}s"),
+                "sources": sources("fire_rate", None) }));
+        }
+        let eff = |charge: f64, reload: f64| format!("{:.2}/s", 1.0 / (charge + reload));
+        rows.push(json!({ "key": "effective_fire_rate", "label": "Effective Fire Rate",
+            "base": eff(b, base.base_reload), "final": eff(f, panel.reload_seconds),
+            "note": "a bow's real cadence: 1 / (charge + reload), with no fire-rate term \
+                     (wiki Fire Rate)".to_string(),
+            "sources": json!([]) }));
+        for (i, r) in rows.into_iter().enumerate() {
+            stats.insert(at + i, r);
+        }
+    }
+    // A continuous beam's impact SPHERE. Firestorm enlarges it, and without
+    // this row the mod reads as equipped-but-doing-nothing on this form.
+    // The note carries the honest part: the sphere adds no damage to a
+    // target the beam already struck, so it is worth nothing single-target
+    // and a great deal in a crowd, where every enemy it catches starts its
+    // own chain.
+    if let (Some(bb), Some(bp)) = (base.beam, panel.beam) {
+        stats.push(json!({ "key": "radius", "label": "Beam Radius",
+            "base": format!("{} m", num(bb.damage_radius_m)),
+            "final": format!("{} m", num(bp.damage_radius_m)),
+            "note": format!(
+                "no single-target damage (a struck target is hit once); in a crowd every enemy it catches starts its own chain ({} hops, {} m, x{} per hop)",
+                bp.chain_hops, num(bp.chain_range_m), num(bp.chain_damage_per_hop)),
+            "sources": sources("radius", None) }));
+    }
+    // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
+    // Secondary Shiver) combine differently per weapon class, and their base
+    // EXCLUDES evolution flat damage — this note states what the model
+    // actually computes on THIS weapon, and is shared by every GunCO row.
+    // WHICH PARTS take it. "Direct hits only" is the rule the mod cards
+    // state and it is what every unlisted weapon does — but an AoE part
+    // carries its own eligibility and a few entries have it (MECHANICS
+    // §6), so the note has to be built from the weapon rather than
+    // asserted. It was a hardcoded "direct hits only", which the Burston
+    // Incarnon makes false: its explosion takes CO.
+    let radial_co = base.radial.as_ref().is_some_and(|r| r.takes_condition_overload);
+    let field_co = base.lingering.as_ref().is_some_and(|f| f.takes_condition_overload);
+    // A FIXED FORMAT, NOT A SENTENCE. The rule is
+    // three slots — BEHAVIOUR, the BASE the term reads, and which PARTS
+    // take it — so a reader can compare two weapons by looking at the same
+    // position twice instead of parsing two paragraphs. Anything genuinely
+    // odd goes in the note BESIDE it rather than swelling the line.
+    let parts = {
+        let mut v = vec!["direct"];
+        if radial_co {
+            v.push("radial");
+        }
+        if field_co {
+            v.push("field");
+        }
+        v.join(" + ")
+    };
+    let behavior = match panel.co_behavior {
+        wfsim_engine::model::CoBehavior::AdditiveWithBaseDamage => "additive",
+        wfsim_engine::model::CoBehavior::Independent => "multiplying",
+        wfsim_engine::model::CoBehavior::Inert => "inert",
+    };
+    let excluded = (panel.co_base_fraction() - 1.0).abs() > 1e-9;
+    // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%. A slot that is blank when nothing is odd cannot
+    // be told apart from a slot nobody filled in, and "100%" is the claim
+    // being made — that this weapon reads its WHOLE base — which is worth
+    // as much scrutiny as a 52%. ORIGINAL of EVOLVED: `raw_bd` is the
+    // pre-evolution base and the fraction is original/evolved, so the
+    // denominator is what the panel prints as this attack's base damage.
+    let co_rule = if behavior == "inert" {
+        "inert · base = n/a · parts = none".to_string()
+    } else {
+        format!(
+            "{behavior} · base = {:.0}% ({:.0} of {:.0}) · parts = {parts}",
+            panel.co_base_fraction() * 100.0,
+            raw_bd,
+            base.base_vector.total()
+        )
+    };
 
-    // Configurable buffs of this build (weapon-scoped) for the Sim panel —
-    // mods + arcane + the weapon passive, plus evolution-granted buffs
-    // (Fevered Frenzy's permanent stacks).
-    let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
-    // A real build: every mod on it is on it, so every lock is real.
-    let mut buffs = enumerate_buffs(&refs, &refs, &arcane_fx, info, &tenno_from(v, info));
-    for b in evo_buffs(&evos) {
-        if !buffs.iter().any(|x| x.id == b.id) {
-            buffs.push(b);
+    // THE NOTE IS FOR WHAT THE THREE SLOTS CANNOT SAY, and is absent on an
+    // ordinary weapon — which is most of them. Three things earn one.
+    let mut notes: Vec<String> = Vec::new();
+    if behavior == "inert" {
+        notes.push("this weapon takes no Condition Overload at all — the catalog lists it as \"Does not apply\"".into());
+    }
+    if excluded {
+        notes.push("an evolution raised this attack's base without raising what CO reads, so the term is computed on the ORIGINAL base (docs/CATALOGS.md)".into());
+    }
+    if radial_co || field_co {
+        notes.push("an AoE part taking CO is a per-entry exception the catalog lists; every unlisted weapon is direct hits only".into());
+    }
+    if behavior == "multiplying" {
+        notes.push("multiplying stands OUTSIDE the base-damage bracket, so Serration does not dilute it; additive joins that bracket and is diluted".into());
+    }
+
+    // ALWAYS SHOWN, even with no source equipped.
+    //
+    // A row that appears only once a GunCO card is on the build hides the
+    // one thing a reader can check — WHICH RULE this weapon is computed
+    // under — until they have already committed to the mod. The rules are
+    // per weapon and transcribed by hand from a catalog, so a wrong one can
+    // stand for months. Putting the adopted rule on every weapon's panel is
+    // what lets that be caught by
+    // someone who owns the gun rather than by someone re-reading the yaml.
+    //
+    // It is a STATEMENT OF METHOD, not an admission — `unmodeled:` and the
+    // disclosure banner are for what the sim cannot do; this is what it
+    // does, said out loud so it can be argued with.
+    let has_source = panel.co_per_type > 0.0;
+    stats.push(json!({ "key": "co", "label": "Condition Overload",
+        "base": "—",
+        "final": if has_source {
+            format!("{} per status type on target", fpct(panel.co_per_type))
+        } else {
+            "no source equipped".to_string()
+        },
+        "rule": co_rule,
+        "note": if notes.is_empty() { Value::Null } else { json!(notes.join(" · ")) },
+        "sources": sources("co", None) }));
+
+    // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
+    // source, so its row carries the SAME per-weapon caveat as the CO row.
+    let tenno = tenno_from(v, info);
+    // Cascadia Accuracy's weak-point crit joins Acuity's in the sim
+    // (`ap.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative`), so the row
+    // below has to add it or it would state less than the sim applies.
+    let mut arcane_wp_cc = 0.0;
+    for (pool, aid, want_rank) in arcane_choices(v, info) {
+        if let Some(def) = wfsim_engine::data::arcanes::for_slot(&pool, &aid) {
+            let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
+            let fx = def.fx(rank, policy, base.traits, &tenno);
+            arcane_wp_cc += fx.weakpoint_crit_chance_relative;
+            if fx.per_cold_base_damage > 0.0 {
+                stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
+                "base": "—",
+                "final": format!("{} damage per Cold status on target (cap {})",
+                    fpct(fx.per_cold_base_damage), fx.cold_cap),
+                // The SAME per-weapon rule, because Shiver is a GunCO
+                // source: it reads the same base and joins the same
+                // bracket, so it states the same three slots.
+                "rule": co_rule.clone(),
+                "note": "GunCO family — the weapon's Condition Overload rule applies to this too",
+                "sources": [json!({ "mod": format!("{} (arcane, rank {rank})", def.name),
+                    "value": fpct(fx.per_cold_base_damage), "note": "per Cold stack; Frozen counts as the full 10" })] }));
+            }
         }
     }
 
-    // A SET WHOSE MEMBERS ARE NOT ALL WEAPON MODS HAS A LOWER CEILING HERE than
-    // it does in game, and the player has to be told the number rather than
-    // reading 20% and assuming it is the cap.
+    // WEAK-POINT bonuses (Acuity, Cascadia Accuracy). They had NO rows at
+    // all: the damage half was invisible and the crit half was folded into
+    // the flat Crit Chance row, so a mod worth +350% on heads read as
+    // either nothing or as an unconditional 126%. Both halves are
+    // conditional on where the bullet lands, and the number a reader can
+    // act on is the one that holds THERE — stated next to the plain one,
+    // never in place of it.
+    let wp_cc_total = panel.weakpoint_crit_chance_relative + arcane_wp_cc;
+    if wp_cc_total > 0.0 {
+        stats.push(json!({ "key": "weakpoint_cc", "label": "Weak Point Crit Chance",
+        "base": pc(panel.crit_chance),
+        "final": format!("{} on a weak point", pc(panel.crit_chance + panel.base_crit_chance * wp_cc_total)),
+        "note": format!(
+            "{} relative to the {} base, additive with Point Strike — on WEAK-POINT hits only. \
+             Everywhere else the crit chance above stands, and the radial explosion never gets \
+             it at all (an explosion has no hit location)",
+            fpct(wp_cc_total), pc(panel.base_crit_chance)),
+        "sources": sources("crit_chance", None) }));
+    }
+    if panel.weakpoint_damage > 0.0 {
+        stats.push(json!({ "key": "weakpoint_damage", "label": "Weak Point Damage",
+        "base": "—",
+        // Two decimals, not the panel's usual one: the wiki's worked
+        // example is "3 + 3.5 x 1.5 = 8.25x" and a row printing 8.2 no
+        // longer matches the source it cites.
+        "final": format!("+{:.2} to the weak-point multiplier", 1.5 * panel.weakpoint_damage),
+        "note": format!(
+            "the listed {} is ADDED to the enemy's own weak-point multiplier at 1.5x on a true \
+             weak point (wiki: a 3x head becomes 3 + {:.2} = {:.2}x), and headshot-multiplier \
+             bonuses multiply the sum. Weak-point hits only",
+            fpct(panel.weakpoint_damage), 1.5 * panel.weakpoint_damage,
+            3.0 + 1.5 * panel.weakpoint_damage),
+        "sources": Vec::<Value>::new() }));
+    }
+
+    // Elements: one row per contributed element (position/order matters for
+    // combining — the damage section shows the combined result).
+    let mut elem_rows = Vec::new();
+    let mut seen_elems: Vec<String> = Vec::new();
+    for (k, _, _, note) in src {
+        if *k == "elements" {
+            if let Some(t) = note {
+                if !seen_elems.contains(t) {
+                    seen_elems.push(t.clone());
+                }
+            }
+        }
+    }
+    for t in &seen_elems {
+        let total: f64 = src
+            .iter()
+            .filter(|(k, _, _, n)| *k == "elements" && n.as_deref() == Some(t))
+            .map(|(_, _, v, _)| v)
+            .sum();
+        elem_rows.push(json!({ "key": "elements", "label": t, "base": "—",
+        "final": format!("{} of modified base", fpct(total)),
+        "sources": sources("elements", Some(t)) }));
+    }
+
+    // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
+    // real in practice; base is unmodified (0%), final = Σ.
+    let mut indirect_rows = Vec::new();
+    // Not every indirect stat is a fraction — punch through and beam range
+    // are METRES, a double-jump refresh is a COUNT, an explosion-on-kill is
+    // flat DAMAGE. `IndirectStat::format` owns that, so this table and the
+    // effect line on the card cannot drift apart.
+    for (stat, total) in &panel.indirect {
+        // PUNCH THROUGH IS REPORTED RESOLVED, below — this bucket is the
+        // raw sum of what the mods GRANT, and since 2026-08-17 that is not
+        // what the weapon HAS: an AoE attack takes none of it (*"Projectile
+        // AoE weapons cannot have their Punch Through stat modified"*), so
+        // a Primed Shred on a Torid would have posted +2.2 m against an
+        // engine that spends 0.
+        if *stat == wfsim_engine::model::IndirectStat::PunchThrough {
+            continue;
+        }
+        indirect_rows.push(
+            json!({ "key": "indirect", "label": stat.label(), "base": "—",
+        "final": stat.format(*total), "sources": sources("indirect", Some(stat.label())) }),
+        );
+    }
+    // …AND HERE IT IS, as the number the simulation actually spends: the
+    // weapon's own depth plus every grant the attack is allowed to take.
     //
-    // "Set Mods … offer increasing bonuses when one or more mods in a set are
-    // equipped on the player's Warframe AND weapons … Only the number of
-    // equipped mods within the set dictates the Set Bonus strength" (wiki,
-    // Set_Mods). The Vigilante set is six, and two of them — Vigor and Pursuit
-    // — go on the FRAME, which this engine has no loadout for. So a weapon
-    // build tops out at 4 x 5% = 20% against the game's 30%.
-    //
-    // DERIVED, not written down: `members` is the set's real size and the
-    // weapon-side count is however many of our mods name it, so a set we later
-    // complete stops printing this on its own.
+    // The row is drawn whenever there is anything to say — a weapon that
+    // brings its own (which the mod bucket never knew about, so no row was
+    // drawn at all) or a mod that tried. The SOURCES stay the mods', which
+    // is what makes a zeroed total legible rather than mysterious: the
+    // grants are listed and the final says 0 m.
     {
-        use std::collections::BTreeSet;
-        let mut said: BTreeSet<&str> = BTreeSet::new();
-        for m in &refs {
-            let Some(set_id) = m.set else { continue };
-            if !said.insert(set_id) {
-                continue;
-            }
-            let Some(def) = wfsim_engine::data::mod_sets::set_def(set_id) else { continue };
-            let ours = wfsim_engine::data::mod_sets::members_carried(set_id);
-            if ours >= def.members {
-                continue;
-            }
-            conditionals.push(json!({
-                "mod": def.name,
-                "desc": format!("set bonus: {:.0}% per equipped member", def.per_mod * 100.0),
-                "active": true,
-                "why": format!(
-                    "{} of the set's {} members are weapon mods — the rest go on the WARFRAME,                      which this sim has no loadout for. So a build here tops out at {:.0}%,                      against {:.0}% in game.",
-                    ours, def.members, f64::from(ours) * def.per_mod * 100.0,
-                    f64::from(def.members) * def.per_mod * 100.0),
+        let stat = wfsim_engine::model::IndirectStat::PunchThrough;
+        let granted: f64 = panel
+            .indirect
+            .iter()
+            .filter(|(s, _)| *s == stat)
+            .map(|(_, v)| *v)
+            .sum();
+        if panel.punch_through_m > 0.0 || granted > 0.0 {
+            indirect_rows.push(json!({
+                "key": "indirect", "label": stat.label(), "base": "—",
+                "final": stat.format(panel.punch_through_m),
+                "sources": sources("indirect", Some(stat.label())),
             }));
         }
     }
 
-    // A FORM THAT CANNOT ZOOM CANNOT BE AIMING, and a mod that pays nothing has
-    // to say so on the page rather than just resolving to zero. The engine
-    // already answers the aim question FALSE for such a form; this is the half
-    // the player can see.
-    //
-    // Named per FORM, because that is the granularity of the fact: the Vasto
-    // aims and its Incarnon form does not, so "your Galvanized Crosshairs does
-    // nothing" would be wrong and "it does nothing in Incarnon Form" is right.
-    for (form_name, _label, fb) in &forms_list {
-        if !fb.cannot_zoom {
-            continue;
-        }
-        for m in &refs {
-            let aim_gated = m.effects.iter().any(|e| {
-                matches!(e, wfsim_engine::model::ModEffect::WhileTenno(
-                    wfsim_engine::model::TennoCondition::Aiming, _))
-            });
-            if aim_gated {
-                conditionals.push(json!({
-                    "mod": m.name,
-                    "desc": "pays only while aiming",
-                    "active": false,
-                    "why": format!(
-                        "{form_name} cannot aim down sights (the card's own words are \"cannot Zoom\"), so an on-aim bonus never applies in it"),
-                }));
-            }
-        }
+    // A weapon is the GUN plus the PROJECTILE(s) it launches: the gun carries cadence and capacity, each projectile
+    // carries its own damage, crit, status — and, when it is a radial,
+    // its blast geometry. Split the flat row list along that line
+    // instead of stating a single "base attack" that belongs to neither.
+    const ON_PROJECTILE: &[&str] = &[
+        "base_damage",
+        "crit_chance",
+        "crit_damage",
+        "status_chance",
+        "status_damage",
+        "status_duration",
+        "co",
+        "shiver",
+        // Weak-point bonuses belong to the PROJECTILE that lands on the
+        // weak point, and to that one only: the explosion has no hit
+        // location, so leaving them among the weapon-wide rows would read
+        // as a claim over both parts.
+        "weakpoint_cc",
+        "weakpoint_damage",
+    ];
+    let key_of = |r: &Value| r["key"].as_str().unwrap_or("").to_string();
+    let (direct_rows, weapon_rows): (Vec<Value>, Vec<Value>) = stats
+        .into_iter()
+        .partition(|r| ON_PROJECTILE.contains(&key_of(r).as_str()));
+
+    // A damage vector as displayed rows: type, amount, share of the total.
+    let vector_rows = |v: &wfsim_engine::rules::damage::DamageVector| {
+        let total = v.total();
+        v.iter_nonzero()
+            .map(|(t, amt)| {
+                json!({ "type": format!("{t:?}"), "amount": num(amt),
+                "share": format!("{:.0}%", amt / total * 100.0) })
+            })
+            .collect::<Vec<Value>>()
+    };
+
+    let mut parts = vec![json!({
+        "id": "direct",
+        "label": "Direct hit",
+        "meta": "on contact",
+        "stats": direct_rows,
+        "damage": vector_rows(&panel.damage),
+        "damage_total": num(panel.damage.total()),
+    })];
+
+    // The radial explosion is a SECOND projectile-borne damage instance
+    // with its own crit and status (MECHANICS §7) — the panel states it
+    // in full rather than leaving the reader to assume it copies the
+    // direct hit. Status damage/duration are weapon-wide multipliers, so
+    // they repeat: they describe the procs THIS instance applies.
+    if let (Some(rb), Some(rr)) = (base.radial.as_ref(), panel.radial.as_ref()) {
+        let rsrc = |key: &'static str| sources(key, None);
+        // Geometry reads as a distance, not a stat: 2 m, not 2.0.
+        let dist = display_number;
+        let mut rows = vec![
+            json!({ "key": "base_damage", "label": "Base Damage",
+                "base": num(rb.base_vector.total()), "final": num(rr.modified_base),
+                "sources": rsrc("base_damage") }),
+            json!({ "key": "crit_chance", "label": "Crit Chance",
+                "base": pc(rb.base_crit_chance - evo_flat_cc),
+                "final": pc(rr.crit_chance),
+                "sources": rsrc("crit_chance") }),
+            json!({ "key": "crit_damage", "label": "Crit Damage",
+                "base": format!("×{}", num(rb.base_crit_damage)),
+                "final": format!("×{}", num(rr.crit_damage)),
+                "sources": rsrc("crit_damage") }),
+            json!({ "key": "status_chance", "label": "Status Chance",
+                "base": pc(rb.base_status_chance - evo_flat_sc),
+                "final": pc(rr.status_chance),
+                "sources": rsrc("status_chance") }),
+            json!({ "key": "status_damage", "label": "Status Damage",
+                "base": format!("×{}", num(1.0)),
+                "final": format!("×{}", num(panel.status_damage_multiplier)),
+                "sources": rsrc("status_damage") }),
+            json!({ "key": "status_duration", "label": "Status Duration",
+                "base": format!("×{}", num(1.0)),
+                "final": format!("×{}", num(panel.status_duration_multiplier)),
+                "sources": rsrc("status_duration") }),
+            json!({ "key": "radius", "label": "Blast Radius",
+                "base": format!("{} m", dist(rb.radius_m)),
+                "final": format!("{} m", dist(rr.radius_m)),
+                "sources": rsrc("radius") }),
+        ];
+        // Falloff: full damage inside `start`, then linear down to
+        // (1 − reduction) at the rim. Stated as what the rim actually
+        // takes, which is the number a reader can act on.
+        rows.push(json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
+            "final": format!("{}% at {} m", dist((1.0 - rr.falloff_reduction) * 100.0),
+                dist(rr.radius_m)),
+            "note": if rr.falloff_start_m > 0.0 {
+                format!("full damage within {} m, then linear", dist(rr.falloff_start_m))
+            } else {
+                "linear from the epicentre; a directly-hit enemy takes 100%".to_string()
+            },
+            "sources": json!([]) }));
+        // CONDITION OVERLOAD, stated on the explosion ITSELF — because the
+        // answer is normally "no" and this reader is looking at one of the
+        // entries where it is "yes". The direct hit's row cannot carry it:
+        // it names one bonus, and the two parts do not get the same one.
+        // Shown only when a CO source is equipped, like the direct row.
+        // UNCONDITIONAL, like the direct hit's: this part's rule is a fact
+        // about the weapon, not about what is currently equipped.
+            // THE SAME THREE SLOTS as the direct hit's, so a reader
+            // comparing the two parts of one weapon compares positions
+            // rather than paragraphs. This part has
+            // its own base and its own eligibility, so both are printed
+            // here rather than inherited from the row above.
+            let (value, rule, note) = if rr.takes_condition_overload {
+                let orig = rb.base_vector.total() * rr.co_base_fraction();
+                let cut = (rr.co_base_fraction() - 1.0).abs() > 1e-9;
+                (
+                    format!("{} per status type on target", fpct(panel.co_per_type)),
+                    format!(
+                        "{behavior} · base = {:.0}% ({} of {}) · this part = takes CO",
+                        rr.co_base_fraction() * 100.0,
+                        num(orig),
+                        num(rb.base_vector.total())
+                    ),
+                    if cut {
+                        "THE EXCEPTION: CO normally reaches direct hits only, and this                              explosion is declared to take it — on the enemy the bullet directly                              hit, which a single target always is. An evolution raises the                              explosion's damage without raising the base CO reads, which is where                              the reduced percentage comes from"
+                            .to_string()
+                    } else {
+                        "THE EXCEPTION: CO normally reaches direct hits only, and this                              explosion is declared to take it — on the enemy the bullet directly                              hit, which a single target always is"
+                            .to_string()
+                    },
+                )
+            } else {
+                (
+                    "excluded".to_string(),
+                    format!("{behavior} · base = n/a · this part = excluded"),
+                    "the rule: Condition Overload reaches DIRECT hits only, so this                          explosion takes none of it. Weapon-wide damage buckets still reach it —                          CO is the one thing an AoE part loses"
+                        .to_string(),
+                )
+            };
+            rows.push(json!({ "key": "co", "label": "Condition Overload",
+                "base": "—", "final": value, "rule": rule, "note": note,
+                "sources": if rr.takes_condition_overload { sources("co", None) } else { vec![] } }));
+        parts.push(json!({
+            "id": "radial",
+            "label": "Radial explosion",
+            "meta": format!("{} m radius", dist(rr.radius_m)),
+            "stats": rows,
+            "damage": vector_rows(&rr.damage),
+            "damage_total": num(rr.damage.total()),
+        }));
+    }
+
+    // THE BOMBLETS THE EXPLOSION THREW — two more parts, and they are on
+    // the card for the reason every part is: the damage number above the
+    // card counts them, so a reader who cannot see them is reading a total
+    // that does not add up. Each states its COUNT in the meta line, because
+    // "18 Radiation" and "5 × 18 Radiation" are different weapons.
+    if let (Some(cb), Some(cr)) = (base.cluster.as_ref(), panel.cluster.as_ref()) {
+        let n = display_number(cr.count);
+        let part_rows = |b: &wfsim_engine::model::RadialBase,
+                         r: &wfsim_engine::build::loadout::ResolvedRadial| {
+            vec![
+                json!({ "key": "base_damage", "label": "Base Damage",
+                    "base": num(b.base_vector.total()), "final": num(r.modified_base),
+                    "sources": sources("base_damage", None) }),
+                json!({ "key": "crit_chance", "label": "Crit Chance",
+                    "base": pc(b.base_crit_chance), "final": pc(r.crit_chance),
+                    "sources": sources("crit_chance", None) }),
+                json!({ "key": "crit_damage", "label": "Crit Damage",
+                    "base": format!("×{}", num(b.base_crit_damage)),
+                    "final": format!("×{}", num(r.crit_damage)),
+                    "sources": sources("crit_damage", None) }),
+                json!({ "key": "status_chance", "label": "Status Chance",
+                    "base": pc(b.base_status_chance), "final": pc(r.status_chance),
+                    "sources": sources("status_chance", None) }),
+            ]
+        };
+        parts.push(json!({
+            "id": "cluster_contact",
+            "label": "Bomblet contact",
+            "meta": format!("×{n}, on contact"),
+            "stats": part_rows(&cb.contact, &cr.contact),
+            "damage": vector_rows(&cr.contact.damage),
+            "damage_total": num(cr.contact.damage.total()),
+        }));
+        parts.push(json!({
+            "id": "cluster_blast",
+            "label": "Bomblet explosion",
+            "meta": format!("×{n}, {} m radius", display_number(cr.blast.radius_m)),
+            "stats": part_rows(&cb.blast, &cr.blast),
+            "damage": vector_rows(&cr.blast.damage),
+            "damage_total": num(cr.blast.damage.total()),
+        }));
+    }
+
+    // The lingering FIELD is a THIRD kind of part (MECHANICS §7): it does
+    // not land once, it ticks. So it states its own clock — rate, lifetime
+    // and the resulting total — on top of the same per-instance stats,
+    // because "40 damage" means nothing here without "×10 ticks".
+    // FROM THE PANEL, not from the weapon. A field a MOD granted — Nightwatch
+    // Napalm's fire — has no `base.lingering` at all, so reading the weapon
+    // here drew nothing: the part was resolved, simulated, and appeared on
+    // no card, which on an Ogris is most of the build's damage. `ResolvedPanel::lingering_base` is whichever one the
+    // field actually resolved from.
+    if let (Some(fb), Some(fr)) = (panel.lingering_base.as_ref(), panel.lingering.as_ref()) {
+        let fsrc = |key: &'static str| sources(key, None);
+        let dist = display_number;
+        // ✅ measured (MEASUREMENTS M13): the first tick lands WITH the
+        // impact, so the count is the plain product — ten for a 10 s cloud.
+        let ticks = (fr.duration_seconds * fr.tick_rate).round();
+        // Renewed Horror: the shot after an empty reload gets a longer
+        // cloud. 1.0 = the evolution is not equipped, and the rows stay
+        // silent about it rather than stating a boost of ×1.
+        let boost = panel.field_duration_on_empty_reload;
+        let boosted = (boost > 1.0).then_some((fr.duration_seconds * boost, ticks * boost));
+        let mut rows = vec![
+            json!({ "key": "base_damage", "label": "Damage per Tick",
+                "base": num(fb.base_vector.total()), "final": num(fr.modified_base),
+                "sources": fsrc("base_damage") }),
+            json!({ "key": "crit_chance", "label": "Crit Chance",
+                "base": pc(fb.base_crit_chance - evo_flat_cc),
+                "final": pc(fr.crit_chance),
+                "sources": fsrc("crit_chance") }),
+            json!({ "key": "crit_damage", "label": "Crit Damage",
+                "base": format!("×{}", num(fb.base_crit_damage)),
+                "final": format!("×{}", num(fr.crit_damage)),
+                "sources": fsrc("crit_damage") }),
+            json!({ "key": "status_chance", "label": "Status Chance",
+                "base": pc(fb.base_status_chance - evo_flat_sc),
+                "final": pc(fr.status_chance),
+                "sources": fsrc("status_chance") }),
+            json!({ "key": "status_damage", "label": "Status Damage",
+                "base": format!("×{}", num(1.0)),
+                "final": format!("×{}", num(panel.status_damage_multiplier)),
+                "sources": fsrc("status_damage") }),
+            json!({ "key": "status_duration", "label": "Status Duration",
+                "base": format!("×{}", num(1.0)),
+                "final": format!("×{}", num(panel.status_duration_multiplier)),
+                "sources": fsrc("status_duration") }),
+            // The clock. Neither is mod-scaled: fire-rate mods change shots
+            // per second, not the cloud's own tick rate, and the cloud is
+            // not a status effect so status duration does not reach it.
+            json!({ "key": "tick_rate", "label": "Tick Rate", "base": "—",
+                "final": format!("{}/s", dist(fr.tick_rate)), "sources": json!([]) }),
+            json!({ "key": "field_duration", "label": "Field Duration",
+                "base": "—", "final": format!("{} s", dist(fr.duration_seconds)),
+                "note": match boosted {
+                    // The doubled cloud is one shot in `magazine`, so state
+                    // both numbers rather than an average nobody can check
+                    // against a damage number in game.
+                    Some((d, n)) => format!(
+                        "{} ticks per field, the first landing with the impact; \
+                         the shot after an empty reload gets {} s = {} ticks",
+                        dist(ticks), dist(d), dist(n)),
+                    None => format!("{} ticks per field, the first landing with the impact",
+                        dist(ticks)),
+                },
+                "sources": json!([]) }),
+            json!({ "key": "field_total", "label": "Total per Field",
+                "base": num(fb.base_vector.total() * ticks),
+                "final": num(fr.modified_base * ticks),
+                "note": "one grenade, before crit and Condition Overload".to_string(),
+                "sources": json!([]) }),
+            json!({ "key": "radius", "label": "Field Radius",
+                "base": format!("{} m", dist(fb.radius_m)),
+                "final": format!("{} m", dist(fr.radius_m)),
+                "sources": fsrc("radius") }),
+            json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
+                "final": format!("{}% at {} m",
+                    dist((1.0 - fr.falloff_reduction) * 100.0), dist(fr.radius_m)),
+                "note": "the grenade sticks, so the target stands at the epicentre"
+                    .to_string(),
+                "sources": json!([]) }),
+            // Worth up to ~5x here, so it is stated on the panel rather
+            // than buried in the yaml.
+            json!({ "key": "field_stacking", "label": "Overlapping Fields",
+                "base": "—",
+                "final": match fr.stacking {
+                    wfsim_engine::model::FieldStacking::Stack => "stack",
+                    wfsim_engine::model::FieldStacking::Refresh => "refresh",
+                },
+                "note": "measured (MEASUREMENTS M13)".to_string(),
+                "sources": json!([]) }),
+        ];
+                    // THE FIELD'S OWN CO ROW, on the same three slots as the direct
+        // hit's and the explosion's — added 2026-08-16, because the part
+        // had none at all and "no row" reads as "nobody thought about it"
+        // rather than as an answer. A field keeps the DIRECT hit's base
+        // fraction: the catalog puts the Torid's cloud on the same base as
+        // its main fire (`field_tick` passes `ap.co_base_fraction()`).
+        rows.push(json!({ "key": "co", "label": "Condition Overload",
+            "base": "—",
+            "final": if fb.takes_condition_overload {
+                format!("{} per status type on target", fpct(panel.co_per_type))
+            } else {
+                "excluded".to_string()
+            },
+            "rule": if fb.takes_condition_overload {
+                format!(
+                    "{behavior} · base = {:.0}% ({:.0} of {:.0}) · this part = takes CO",
+                    panel.co_base_fraction() * 100.0,
+                    raw_bd,
+                    base.base_vector.total()
+                )
+            } else {
+                format!("{behavior} · base = n/a · this part = excluded")
+            },
+            "note": if fb.takes_condition_overload {
+                "THE EXCEPTION: CO normally reaches direct hits only, and this field is                      declared to take it. It keeps the DIRECT hit's base — the catalog puts the                      cloud on the same base and the same behaviour as the main fire"
+            } else {
+                "the rule: Condition Overload reaches DIRECT hits only, so this field takes                      none of it. Weapon-wide damage buckets still reach it"
+            },
+            "sources": if fb.takes_condition_overload { sources("co", None) } else { vec![] } }));
+parts.push(json!({
+            "id": "field",
+            "label": "Lingering field",
+            "meta": format!("{} m, {} s", dist(fr.radius_m), dist(fr.duration_seconds)),
+            "stats": rows,
+            "damage": vector_rows(&fr.damage),
+            "damage_total": num(fr.damage.total()),
+        }));
     }
 
     json!({
-        "ok": true,
-        "weapon": info.name,
-        "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
-        "forms": forms,
-        "conditionals": conditionals,
-        // WHO IS HOLDING THE GUN, as numbers rather than as an assumption. Several perks and mods read the player and the
-        // panel showed none of it: "0 = no frame" is what the FIELDS say, and a
-        // reader had no way to see what the fight actually resolved to once a
-        // frame, an aura or an archon shard had moved it.
-        //
-        // Reported by the SERVER because it is the server that built it —
-        // `tenno_from` applies the frame, then the typed overrides, then what
-        // the squad brings, and a page re-deriving that would be a second
-        // implementation of the one thing every gated perk is asked about.
-        "tenno": {
-            "health": panel_tenno.health,
-            "shield": panel_tenno.shield,
-            "armor": panel_tenno.armor,
-            "energy": panel_tenno.energy,
-            "sprint": panel_tenno.sprint,
-        },
-        // …AND THE WIELDER BEFORE THE FIGHT'S OVERRIDES, which is what a ticked
-        // override starts from and what an unticked one falls back to.
-        "wielder": floor_json(&wielder_from(v, info)),
-        "buffs": buffs_json(&buffs),
+        "label": label,
+        "meta": meta,
+        "stats": weapon_rows,
+        "elements": elem_rows,
+        "indirect": indirect_rows,
+        "parts": parts,
     })
 }
 

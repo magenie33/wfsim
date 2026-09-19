@@ -496,107 +496,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // the request may still switch it off (or configure it via buff_cfg).
     // The cycle reads it too, or its knob is dead.
     let frenzy_single = frenzy_single && has_frenzy;
-    // HOW THE WEAPON IS PLAYED, from the BUILD side of the request.
-    //
-    // `mode` is the vocabulary now — `base`, `cycle`, `alternate` — and it is a
-    // property of the entrant, so it arrives with the mods rather than with the
-    // fight. `WeaponPlayMode::form` is the one place it becomes a form, which
-    // is what lets "played without ever transmuting" be asked for at all.
-    //
-    // `form` is still READ when no mode is named, because share links and
-    // scenario presets written before this carry it. A stale `form` is not
-    // migrated, it is simply obeyed one last time.
-    let modes = wfsim_engine::data::weapons::play_modes(&info.id);
-    let asked = v.get("mode").and_then(Value::as_str);
-    let form = match asked {
-        Some(want) => modes
-            .iter()
-            .find(|m| m.id == want)
-            .map(|m| m.form())
-            .unwrap_or("default"),
-        None => get_str(v, "form", "default"),
-    };
-    // The mode NAME, kept beside the form it resolved to. A request naming a
-    // mode this weapon does not have gets the weapon's own first one, which is
-    // the same fallback the form takes.
-    let mode_id = asked
-        .filter(|want| modes.iter().any(|m| m.id == *want))
-        .map(String::from)
-        .or_else(|| {
-            // No mode named: say which one the FORM means, so a share link
-            // written before the vocabulary existed still reports honestly.
-            modes
-                .iter()
-                .find(|m| m.form() == form)
-                .or(modes.first())
-                .map(|m| m.id.to_string())
-        })
-        .unwrap_or_else(|| "base".to_string());
-    let evos = match chosen_evolutions(v, info) {
-        Ok(e) => e,
-        Err(e) => return Err(err_json(e)),
-    };
-    // ASKING FOR A FORM IMPLIES THE EVOLUTION THAT IS THAT FORM.
-    //
-    // Falling back to "base" when the tier-1 unlock is not among the chosen
-    // evolutions makes the form control lie: with no evolutions picked — the
-    // state the page STARTS in — all three options produce the base form's
-    // number and nothing says why.
-    //
-    // Implying it is the honest model, not a shortcut. Tier 1 is
-    // `selection: fixed` on every Incarnon ladder: it is not a choice, it is
-    // what installing the Genesis grants. And it carries no stat of its own —
-    // `UnlocksForm` applies nothing, because the form it unlocks is a separate
-    // weapon entry with its own numbers. So the form and the evolution were two
-    // controls for ONE fact, and this is which of them decides.
-    let unlock = form_unlock_evo(info);
-    let mut evos = evos;
-    if form != "base" {
-        if let Some(u) = unlock {
-            if !evos.iter().any(|e| e == u) {
-                evos.push(u.to_string());
-            }
-        }
-    }
-    // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
-    // A cycle is a MODE over two forms, not a form, and it exists only where a
-    // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
-    // a default that falls through to the cycle for every weapon simulates a
-    // weapon with no Incarnon form — a sentinel weapon, a bow — transforming on
-    // a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of animation), and the
-    // dead time comes straight off its DPS.
-    let registered = wfsim_engine::data::weapons::forms_of(&info.id);
-    // `default` = however THIS weapon is played: the cycle where there is one
-    // to run, its own default form where there is not. A weapon that
-    // transforms is played transforming.
-    let form = if form == "default" && info.has_cycle { "gauge_cycle" } else { form };
-    // Otherwise the cycle is asked for BY NAME, never as "any form string this
-    // weapon does not register" — that makes it the destination of every typo,
-    // so a stale preset naming another weapon's form transforms instead of
-    // falling back to a real form.
-    // BOTH SPELLINGS. `incarnon_cycle` was the token until 2026-08-15 and was
-    // never persisted anywhere, so this is belt-and-braces rather than a
-    // migration — but a request is a request and refusing one costs a fight.
-    // THE HALF THE CYCLE RETURNS TO, off the mode that asked for it — and a
-    // request naming no mode gets the default form, which is what
-    // `form: gauge_cycle` has always meant.
-    let cycle_from = ((form == "gauge_cycle" || form == "incarnon_cycle")
-        && info.has_cycle
-        && incarnon_id(info).is_some())
-    .then(|| {
-        modes
-            .iter()
-            .find(|m| Some(m.id) == asked && m.other_id.is_some())
-            .map_or(info.id.as_str(), |m| m.weapon_id)
-    });
-    // The single form to fire: the requested kind if this weapon registers it,
-    // else its default (which is what an unknown or stale preset value gets).
-    let single_form = registered
-        .iter()
-        .find(|f| f.kind.id() == form)
-        .or_else(|| registered.iter().find(|f| f.is_default))
-        .map(|f| f.weapon_id)
-        .unwrap_or(&info.id);
+    let PlayedMode { mode_id, evos, cycle_from, single_form } = played_mode(v, info)?;
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
@@ -675,57 +575,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let pickup_range_m = get_f64(v, "pickup_range_m", f64::INFINITY).max(0.0);
     let landscape = get_bool(v, "landscape", false);
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
-    // WHERE THE TWO OF THEM STAND, in metres — the fight's 2D layer. Two
-    // POINTS, which is what the engine takes and what a dragged scene produces;
-    // `distance` is still accepted and read as "the target, that far up the y
-    // axis", so a scenario or a link written before the scene existed opens as
-    // the same fight.
-    //
-    // THE FLOOR IS CONTACT, not zero (`space::CONTACT_RANGE_M`): two bodies of
-    // 0.2 m cannot stand closer than 0.4 m apart, and a zero would put them in
-    // the same place. Anything nearer is pushed out along the line between
-    // them, which is what a drag does on screen and what a stale `distance: 0`
-    // resolves to.
-    //
-    // Capped at 300 m rather than at nothing: past the longest falloff window
-    // and the widest cone in the roster every extra metre is the same answer,
-    // and a fight at 10 km is a typo rather than a scenario.
-    let point = |k: &str, dflt: wfsim_engine::rules::space::Vec2| match v.get(k).and_then(|p| p.as_array()) {
-        Some(a) if a.len() == 2 => wfsim_engine::rules::space::Vec2::new(
-            a[0].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
-            a[1].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
-        ),
-        _ => dflt,
-    };
-    let player_at = point("player_at", wfsim_engine::rules::space::Vec2::ORIGIN);
-    let target_at = point(
-        "target_at",
-        wfsim_engine::rules::space::Vec2::new(
-            0.0,
-            // A GAP, so the two CENTRES stand one contact further apart —
-            // the legacy field and the arena agree on what a distance means.
-            get_f64(v, "distance", 0.0).clamp(0.0, 300.0) + wfsim_engine::rules::space::CONTACT_RANGE_M,
-        ),
-    );
-    // …and the bodies are pushed apart if the request put them through each
-    // other. Along the line between them, so a drag that overshoots slides
-    // rather than snapping to an axis; straight up the y axis when they are on
-    // the same spot and there is no line to speak of.
-    let target_at = {
-        let d = player_at.distance(target_at);
-        let floor = wfsim_engine::rules::space::CONTACT_RANGE_M;
-        if d >= floor {
-            target_at
-        } else if d <= 0.0 {
-            wfsim_engine::rules::space::Vec2::new(player_at.x, player_at.y + floor)
-        } else {
-            let k = floor / d;
-            wfsim_engine::rules::space::Vec2::new(
-                player_at.x + (target_at.x - player_at.x) * k,
-                player_at.y + (target_at.y - player_at.y) * k,
-            )
-        }
-    };
+    let (player_at, target_at) = positions(v);
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
@@ -739,29 +589,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // downstream — not the sim, not the optimizer, not the replay — can end up
     // adding two Roars together.
     let strength = get_f64(v, "ability_strength", 1.0).clamp(0.0, 10.0);
-    let picks: Vec<wfsim_engine::data::abilities::AbilityPick<'_>> = v
-        .get("abilities")
-        .and_then(Value::as_array)
-        .map(|seq| {
-            seq.iter()
-                .filter_map(|e| {
-                    let id = e.get("id").and_then(Value::as_str)?;
-                    Some(wfsim_engine::data::abilities::AbilityPick {
-                        id,
-                        duration_seconds: e
-                            .get("secs")
-                            .and_then(Value::as_f64)
-                            .filter(|s| *s > 0.0),
-                        // WHICH ELEMENT, where the ability offers a choice
-                        // (Resupply's gear wheel). Absent everywhere else, and
-                        // absent on a pick stored before the picker existed —
-                        // the definition's own first choice stands in.
-                        element: e.get("element").and_then(Value::as_str),
-                    })
-                })
-                .collect()
-        })
-        .unwrap_or_default();
+    let picks = ability_picks(v);
     // …and the WEAPON'S CLASS, because one member is worth double on a class:
     // Resupply is 20/30/40/50% on Sniper Rifles. `resolve` is the one function
     // handed both the ability and the weapon, so nothing downstream has to know
@@ -815,103 +643,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // one target, one place it lives.)
     let body_parts = build_body_parts(spec, headshot_pct);
 
-    // ---- THE FORMATION: every OTHER body on the floor.
-    //
-    // Each entry is wholly its own: its own unit, its own
-    // level, its own Eximus answer, its own place. Nothing about one reaches
-    // another — which is why this loop is the same six lines the single target
-    // above runs, repeated, rather than a variation on it.
-    //
-    // Anything a body omits it takes from the AIMED one, so a formation of
-    // nine identical enemies is nine positions and nothing else.
-    let mut formation: Vec<wfsim_engine::formation::FoeSpec> = Vec::new();
-    if let Some(list) = v.get("formation").and_then(Value::as_array) {
-        // FIFTY, and it is DECLARED IN THE ENGINE (`formation::MAX_BODIES`),
-        // because that is who pays for it: every body is a full target with its
-        // own pools, procs and DoTs, a chain resolves against all of them on
-        // every shot, and `RunResult::damage_by_body` is sized off the same
-        // number. Two copies of a cap is one cap and one bug.
-        use wfsim_engine::formation::MAX_BODIES;
-        if list.len() > MAX_BODIES {
-            return Err(err_json(format!(
-                "{} enemies, and a formation holds at most {MAX_BODIES}",
-                list.len()
-            )));
-        }
-        for (i, e) in list.iter().enumerate() {
-            // AN EMPTY STRING IS NOT AN ID. The page stores a body's unit as
-            // `""` for "same as the target", which is the common case and what
-            // every body a formation is built from carries — so reading it as a
-            // name looked the id up, failed, and refused the whole fight with
-            // `unknown enemy: ` and nothing after the colon.
-            //
-            // The same applies to a LEVEL of null and an EXIMUS of null: absent
-            // and blank are one state here, and it means "the aimed body's".
-            let id = e
-                .get("enemy")
-                .and_then(Value::as_str)
-                .filter(|s| !s.is_empty())
-                .unwrap_or(enemy_id);
-            let Some(es) = specs.iter().find(|s| s.id == id) else {
-                return Err(err_json(format!("unknown enemy: {id}")));
-            };
-            let lv = e
-                .get("level")
-                .and_then(Value::as_f64)
-                .filter(|v| *v >= 1.0)
-                .map_or(level, |v| v as u32);
-            let ex = e
-                .get("eximus")
-                .and_then(Value::as_bool)
-                .unwrap_or(es.can_be_eximus);
-            let tp = match es.target_params(lv, steel_path, ex, TargetMode::InstantRespawn) {
-                Ok(t) => t,
-                Err(err) => return Err(err_json(format!("enemy {}: {err}", i + 1))),
-            };
-            let at = e
-                .get("at")
-                .and_then(Value::as_array)
-                .filter(|a| a.len() == 2)
-                .map(|a| {
-                    wfsim_engine::rules::space::Vec2::new(
-                        a[0].as_f64().unwrap_or(0.0),
-                        a[1].as_f64().unwrap_or(0.0),
-                    )
-                });
-            let Some(at) = at else {
-                return Err(err_json(format!("enemy {} has no position", i + 1)));
-            };
-            formation.push(wfsim_engine::formation::FoeSpec {
-                // WHO THIS ONE IS. The page may name it; a blank or absent one
-                // is filled in BY POSITION, which is what every scenario
-                // written before ids existed means and what keeps them all
-                // readable. `+ 2` because the AIMED body is `e1`.
-                id: e
-                    .get("id")
-                    .and_then(Value::as_str)
-                    .filter(|s| !s.is_empty())
-                    .map_or_else(|| format!("e{}", i + 2), str::to_string),
-                params: tp,
-                // ITS OWN HITBOXES, off its own unit — a formation of two
-                // different units has two different head multipliers, and the
-                // headshot share is the FIGHT's either way.
-                body_parts: build_body_parts(es, headshot_pct),
-                at,
-            });
-        }
-    }
+    let formation = formation_from(v, &specs, enemy_id, level, steel_path, headshot_pct)?;
 
-    // ---- WHICH BODY THE BEAM IS ON.
-    //
-    // AIM IS A DIRECTION: the request names a PLACE, and
-    // whatever the line from the muzzle runs through is what gets hit —
-    // `space::first_hit`. Aiming at the floor two metres short of a body still
-    // hits it, because the body's circle is still on the line.
-    //
-    // RESOLVED HERE, ONCE, and that is exact rather than a shortcut: bodies do
-    // not move, so the first one on the line is the first one on the line for
-    // the whole engagement. The sim keeps its aimed body as a distinguished
-    // one and never has to re-decide.
     let aim_at = v
         .get("aim_at")
         .and_then(Value::as_array)
@@ -922,67 +655,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 a[1].as_f64().unwrap_or(0.0),
             )
         });
-    let (target, body_parts, target_at, others, aimed_id) = if let Some(aim) = aim_at {
-        // WHICHEVER BODY THE LINE CROSSES FIRST — and a shot that crosses
-        // NOBODY is a legal shot: *"the engine mechanically
-        // fires toward the aim point; if it hits, it hits, and if it does not,
-        // it is zero"*. Refusing it was wrong twice over — a miss is an answer,
-        // and aiming BESIDE a crowd so the splash catches more of it is a real
-        // tactic rather than a mistake.
-        //
-        // The arena still names a target, because a fight has one and every
-        // report reads its pools; what changes is that the weapon is not
-        // pointed at it. `FightParams::off_axis_deg` is how far off the line it
-        // sits, the spread cone is measured from the LINE, and a body far
-        // enough off it is simply never hit.
-        let mut all: Vec<wfsim_engine::formation::FoeSpec> =
-            vec![wfsim_engine::formation::FoeSpec {
-                // THE AIMED BODY IS `e1`, always. It is not in the `formation`
-                // list — it is the fight's own target — so it takes the first
-                // name rather than one out of that list's numbering.
-                id: v
-                    .get("target_id")
-                    .and_then(Value::as_str)
-                    .filter(|s| !s.is_empty())
-                    .map_or_else(|| "e1".to_string(), str::to_string),
-                params: target,
-                body_parts,
-                at: target_at,
-            }];
-        all.extend(formation);
-        let muzzle = wfsim_engine::rules::space::muzzle(player_at, aim);
-        let dir = wfsim_engine::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
-        let bodies: Vec<_> = all.iter().map(|f| f.at).collect();
-        // NOBODY ON THE LINE keeps the NEAREST body as the arena's target. It
-        // is not being shot at — the geometry says so and the numbers follow —
-        // but it is the body whose pools the run reports, and the one a chain
-        // or a splash is most likely to reach.
-        let aimed = wfsim_engine::rules::space::first_hit(muzzle, dir, &bodies)
-            .map(|(i, _)| i)
-            .or_else(|| {
-                (0..bodies.len()).min_by(|&a, &b| {
-                    bodies[a]
-                        .distance(aim)
-                        .partial_cmp(&bodies[b].distance(aim))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                        .then(a.cmp(&b))
-                })
-            })
-            .unwrap_or(0);
-        let aimed = all.remove(aimed);
-        (aimed.params, aimed.body_parts, aimed.at, all, aimed.id)
-    } else {
-        // NO AIM POINT is the fight this engine has always run: the beam is on
-        // the target, wherever it stands.
-        // NO AIM POINT, so the aimed body is the fight's own target and it keeps
-        // the first name — the formation is numbered from `e2`.
-        let id = v
-            .get("target_id")
-            .and_then(Value::as_str)
-            .filter(|s| !s.is_empty())
-            .map_or_else(|| "e1".to_string(), str::to_string);
-        (target, body_parts, target_at, formation, id)
-    };
+    let (target, body_parts, target_at, others, aimed_id) =
+        aimed_body(v, aim_at, player_at, target, body_parts, target_at, formation);
     // ---- the ARENA: both actors, and how long they are at it. Assembled
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
@@ -1074,6 +748,388 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         frenzy_locks,
         cycle_frenzy_lock,
     })
+}
+
+/// A mode as [`played_mode`] resolves it: its name, the evolutions it installs,
+/// the half a cycle returns to, and the single form to fire.
+struct PlayedMode {
+    mode_id: String,
+    evos: Vec<String>,
+    cycle_from: Option<&'static str>,
+    single_form: &'static str,
+}
+
+/// HOW THE WEAPON IS PLAYED, from the BUILD side of the request.
+///
+/// `mode` is the vocabulary now — `base`, `cycle`, `alternate` — and it is a
+/// property of the entrant, so it arrives with the mods rather than with the
+/// fight. `WeaponPlayMode::form` is the one place it becomes a form, which
+/// is what lets "played without ever transmuting" be asked for at all.
+///
+/// `form` is still READ when no mode is named, because share links and
+/// scenario presets written before this carry it. A stale `form` is not
+/// migrated, it is simply obeyed one last time.
+fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value> {
+    let modes = wfsim_engine::data::weapons::play_modes(&info.id);
+    let asked = v.get("mode").and_then(Value::as_str);
+    let form = match asked {
+        Some(want) => modes
+            .iter()
+            .find(|m| m.id == want)
+            .map(|m| m.form())
+            .unwrap_or("default"),
+        None => get_str(v, "form", "default"),
+    };
+    // The mode NAME, kept beside the form it resolved to. A request naming a
+    // mode this weapon does not have gets the weapon's own first one, which is
+    // the same fallback the form takes.
+    let mode_id = asked
+        .filter(|want| modes.iter().any(|m| m.id == *want))
+        .map(String::from)
+        .or_else(|| {
+            // No mode named: say which one the FORM means, so a share link
+            // written before the vocabulary existed still reports honestly.
+            modes
+                .iter()
+                .find(|m| m.form() == form)
+                .or(modes.first())
+                .map(|m| m.id.to_string())
+        })
+        .unwrap_or_else(|| "base".to_string());
+    let evos = match chosen_evolutions(v, info) {
+        Ok(e) => e,
+        Err(e) => return Err(err_json(e)),
+    };
+    // ASKING FOR A FORM IMPLIES THE EVOLUTION THAT IS THAT FORM.
+    //
+    // Falling back to "base" when the tier-1 unlock is not among the chosen
+    // evolutions makes the form control lie: with no evolutions picked — the
+    // state the page STARTS in — all three options produce the base form's
+    // number and nothing says why.
+    //
+    // Implying it is the honest model, not a shortcut. Tier 1 is
+    // `selection: fixed` on every Incarnon ladder: it is not a choice, it is
+    // what installing the Genesis grants. And it carries no stat of its own —
+    // `UnlocksForm` applies nothing, because the form it unlocks is a separate
+    // weapon entry with its own numbers. So the form and the evolution were two
+    // controls for ONE fact, and this is which of them decides.
+    let unlock = form_unlock_evo(info);
+    let mut evos = evos;
+    if form != "base" {
+        if let Some(u) = unlock {
+            if !evos.iter().any(|e| e == u) {
+                evos.push(u.to_string());
+            }
+        }
+    }
+    // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
+    // A cycle is a MODE over two forms, not a form, and it exists only where a
+    // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
+    // a default that falls through to the cycle for every weapon simulates a
+    // weapon with no Incarnon form — a sentinel weapon, a bow — transforming on
+    // a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of animation), and the
+    // dead time comes straight off its DPS.
+    let registered = wfsim_engine::data::weapons::forms_of(&info.id);
+    // `default` = however THIS weapon is played: the cycle where there is one
+    // to run, its own default form where there is not. A weapon that
+    // transforms is played transforming.
+    let form = if form == "default" && info.has_cycle { "gauge_cycle" } else { form };
+    // Otherwise the cycle is asked for BY NAME, never as "any form string this
+    // weapon does not register" — that makes it the destination of every typo,
+    // so a stale preset naming another weapon's form transforms instead of
+    // falling back to a real form.
+    // BOTH SPELLINGS. `incarnon_cycle` was the token until 2026-08-15 and was
+    // never persisted anywhere, so this is belt-and-braces rather than a
+    // migration — but a request is a request and refusing one costs a fight.
+    // THE HALF THE CYCLE RETURNS TO, off the mode that asked for it — and a
+    // request naming no mode gets the default form, which is what
+    // `form: gauge_cycle` has always meant.
+    let cycle_from = ((form == "gauge_cycle" || form == "incarnon_cycle")
+        && info.has_cycle
+        && incarnon_id(info).is_some())
+    .then(|| {
+        modes
+            .iter()
+            .find(|m| Some(m.id) == asked && m.other_id.is_some())
+            .map_or(info.id.as_str(), |m| m.weapon_id)
+    });
+    // The single form to fire: the requested kind if this weapon registers it,
+    // else its default (which is what an unknown or stale preset value gets).
+    let single_form = registered
+        .iter()
+        .find(|f| f.kind.id() == form)
+        .or_else(|| registered.iter().find(|f| f.is_default))
+        .map(|f| f.weapon_id)
+        .unwrap_or(&info.id);
+    Ok(PlayedMode { mode_id, evos, cycle_from, single_form })
+}
+
+/// WHERE THE TWO OF THEM STAND, in metres — the fight's 2D layer. Two
+/// POINTS, which is what the engine takes and what a dragged scene produces;
+/// `distance` is still accepted and read as "the target, that far up the y
+/// axis", so a scenario or a link written before the scene existed opens as
+/// the same fight.
+///
+/// THE FLOOR IS CONTACT, not zero (`space::CONTACT_RANGE_M`): two bodies of
+/// 0.2 m cannot stand closer than 0.4 m apart, and a zero would put them in
+/// the same place. Anything nearer is pushed out along the line between
+/// them, which is what a drag does on screen and what a stale `distance: 0`
+/// resolves to.
+///
+/// Capped at 300 m rather than at nothing: past the longest falloff window
+/// and the widest cone in the roster every extra metre is the same answer,
+/// and a fight at 10 km is a typo rather than a scenario.
+fn positions(v: &Value) -> (wfsim_engine::rules::space::Vec2, wfsim_engine::rules::space::Vec2) {
+    let point = |k: &str, dflt: wfsim_engine::rules::space::Vec2| match v.get(k).and_then(|p| p.as_array()) {
+        Some(a) if a.len() == 2 => wfsim_engine::rules::space::Vec2::new(
+            a[0].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
+            a[1].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
+        ),
+        _ => dflt,
+    };
+    let player_at = point("player_at", wfsim_engine::rules::space::Vec2::ORIGIN);
+    let target_at = point(
+        "target_at",
+        wfsim_engine::rules::space::Vec2::new(
+            0.0,
+            // A GAP, so the two CENTRES stand one contact further apart —
+            // the legacy field and the arena agree on what a distance means.
+            get_f64(v, "distance", 0.0).clamp(0.0, 300.0) + wfsim_engine::rules::space::CONTACT_RANGE_M,
+        ),
+    );
+    // …and the bodies are pushed apart if the request put them through each
+    // other. Along the line between them, so a drag that overshoots slides
+    // rather than snapping to an axis; straight up the y axis when they are on
+    // the same spot and there is no line to speak of.
+    let target_at = {
+        let d = player_at.distance(target_at);
+        let floor = wfsim_engine::rules::space::CONTACT_RANGE_M;
+        if d >= floor {
+            target_at
+        } else if d <= 0.0 {
+            wfsim_engine::rules::space::Vec2::new(player_at.x, player_at.y + floor)
+        } else {
+            let k = floor / d;
+            wfsim_engine::rules::space::Vec2::new(
+                player_at.x + (target_at.x - player_at.x) * k,
+                player_at.y + (target_at.y - player_at.y) * k,
+            )
+        }
+    };
+    (player_at, target_at)
+}
+
+/// The abilities the player ticked, each with its own seconds (`None` for the
+/// whole fight) and, where the ability offers one, its element.
+fn ability_picks(v: &Value) -> Vec<wfsim_engine::data::abilities::AbilityPick<'_>> {
+    v
+        .get("abilities")
+        .and_then(Value::as_array)
+        .map(|seq| {
+            seq.iter()
+                .filter_map(|e| {
+                    let id = e.get("id").and_then(Value::as_str)?;
+                    Some(wfsim_engine::data::abilities::AbilityPick {
+                        id,
+                        duration_seconds: e
+                            .get("secs")
+                            .and_then(Value::as_f64)
+                            .filter(|s| *s > 0.0),
+                        // WHICH ELEMENT, where the ability offers a choice
+                        // (Resupply's gear wheel). Absent everywhere else, and
+                        // absent on a pick stored before the picker existed —
+                        // the definition's own first choice stands in.
+                        element: e.get("element").and_then(Value::as_str),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// THE FORMATION: every OTHER body on the floor.
+///
+/// Each entry is wholly its own: its own unit, its own
+/// level, its own Eximus answer, its own place. Nothing about one reaches
+/// another — which is why this loop is the same six lines the single target
+/// above runs, repeated, rather than a variation on it.
+///
+/// Anything a body omits it takes from the AIMED one, so a formation of
+/// nine identical enemies is nine positions and nothing else.
+fn formation_from(
+    v: &Value,
+    specs: &[EnemySpec],
+    enemy_id: &str,
+    level: u32,
+    steel_path: bool,
+    headshot_pct: f64,
+) -> Result<Vec<wfsim_engine::formation::FoeSpec>, Value> {
+    let mut formation: Vec<wfsim_engine::formation::FoeSpec> = Vec::new();
+    if let Some(list) = v.get("formation").and_then(Value::as_array) {
+        // FIFTY, and it is DECLARED IN THE ENGINE (`formation::MAX_BODIES`),
+        // because that is who pays for it: every body is a full target with its
+        // own pools, procs and DoTs, a chain resolves against all of them on
+        // every shot, and `RunResult::damage_by_body` is sized off the same
+        // number. Two copies of a cap is one cap and one bug.
+        use wfsim_engine::formation::MAX_BODIES;
+        if list.len() > MAX_BODIES {
+            return Err(err_json(format!(
+                "{} enemies, and a formation holds at most {MAX_BODIES}",
+                list.len()
+            )));
+        }
+        for (i, e) in list.iter().enumerate() {
+            // AN EMPTY STRING IS NOT AN ID. The page stores a body's unit as
+            // `""` for "same as the target", which is the common case and what
+            // every body a formation is built from carries — so reading it as a
+            // name looked the id up, failed, and refused the whole fight with
+            // `unknown enemy: ` and nothing after the colon.
+            //
+            // The same applies to a LEVEL of null and an EXIMUS of null: absent
+            // and blank are one state here, and it means "the aimed body's".
+            let id = e
+                .get("enemy")
+                .and_then(Value::as_str)
+                .filter(|s| !s.is_empty())
+                .unwrap_or(enemy_id);
+            let Some(es) = specs.iter().find(|s| s.id == id) else {
+                return Err(err_json(format!("unknown enemy: {id}")));
+            };
+            let lv = e
+                .get("level")
+                .and_then(Value::as_f64)
+                .filter(|v| *v >= 1.0)
+                .map_or(level, |v| v as u32);
+            let ex = e
+                .get("eximus")
+                .and_then(Value::as_bool)
+                .unwrap_or(es.can_be_eximus);
+            let tp = match es.target_params(lv, steel_path, ex, TargetMode::InstantRespawn) {
+                Ok(t) => t,
+                Err(err) => return Err(err_json(format!("enemy {}: {err}", i + 1))),
+            };
+            let at = e
+                .get("at")
+                .and_then(Value::as_array)
+                .filter(|a| a.len() == 2)
+                .map(|a| {
+                    wfsim_engine::rules::space::Vec2::new(
+                        a[0].as_f64().unwrap_or(0.0),
+                        a[1].as_f64().unwrap_or(0.0),
+                    )
+                });
+            let Some(at) = at else {
+                return Err(err_json(format!("enemy {} has no position", i + 1)));
+            };
+            formation.push(wfsim_engine::formation::FoeSpec {
+                // WHO THIS ONE IS. The page may name it; a blank or absent one
+                // is filled in BY POSITION, which is what every scenario
+                // written before ids existed means and what keeps them all
+                // readable. `+ 2` because the AIMED body is `e1`.
+                id: e
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .filter(|s| !s.is_empty())
+                    .map_or_else(|| format!("e{}", i + 2), str::to_string),
+                params: tp,
+                // ITS OWN HITBOXES, off its own unit — a formation of two
+                // different units has two different head multipliers, and the
+                // headshot share is the FIGHT's either way.
+                body_parts: build_body_parts(es, headshot_pct),
+                at,
+            });
+        }
+    }
+    Ok(formation)
+}
+
+/// WHICH BODY THE BEAM IS ON.
+///
+/// AIM IS A DIRECTION: the request names a PLACE, and
+/// whatever the line from the muzzle runs through is what gets hit —
+/// `space::first_hit`. Aiming at the floor two metres short of a body still
+/// hits it, because the body's circle is still on the line.
+///
+/// RESOLVED HERE, ONCE, and that is exact rather than a shortcut: bodies do
+/// not move, so the first one on the line is the first one on the line for
+/// the whole engagement. The sim keeps its aimed body as a distinguished
+/// one and never has to re-decide.
+fn aimed_body(
+    v: &Value,
+    aim_at: Option<wfsim_engine::rules::space::Vec2>,
+    player_at: wfsim_engine::rules::space::Vec2,
+    target: wfsim_engine::target::TargetParams,
+    body_parts: Vec<BodyPart>,
+    target_at: wfsim_engine::rules::space::Vec2,
+    formation: Vec<wfsim_engine::formation::FoeSpec>,
+) -> (
+    wfsim_engine::target::TargetParams,
+    Vec<BodyPart>,
+    wfsim_engine::rules::space::Vec2,
+    Vec<wfsim_engine::formation::FoeSpec>,
+    String,
+) {
+    if let Some(aim) = aim_at {
+        // WHICHEVER BODY THE LINE CROSSES FIRST — and a shot that crosses
+        // NOBODY is a legal shot: *"the engine mechanically
+        // fires toward the aim point; if it hits, it hits, and if it does not,
+        // it is zero"*. Refusing it was wrong twice over — a miss is an answer,
+        // and aiming BESIDE a crowd so the splash catches more of it is a real
+        // tactic rather than a mistake.
+        //
+        // The arena still names a target, because a fight has one and every
+        // report reads its pools; what changes is that the weapon is not
+        // pointed at it. `FightParams::off_axis_deg` is how far off the line it
+        // sits, the spread cone is measured from the LINE, and a body far
+        // enough off it is simply never hit.
+        let mut all: Vec<wfsim_engine::formation::FoeSpec> =
+            vec![wfsim_engine::formation::FoeSpec {
+                // THE AIMED BODY IS `e1`, always. It is not in the `formation`
+                // list — it is the fight's own target — so it takes the first
+                // name rather than one out of that list's numbering.
+                id: v
+                    .get("target_id")
+                    .and_then(Value::as_str)
+                    .filter(|s| !s.is_empty())
+                    .map_or_else(|| "e1".to_string(), str::to_string),
+                params: target,
+                body_parts,
+                at: target_at,
+            }];
+        all.extend(formation);
+        let muzzle = wfsim_engine::rules::space::muzzle(player_at, aim);
+        let dir = wfsim_engine::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
+        let bodies: Vec<_> = all.iter().map(|f| f.at).collect();
+        // NOBODY ON THE LINE keeps the NEAREST body as the arena's target. It
+        // is not being shot at — the geometry says so and the numbers follow —
+        // but it is the body whose pools the run reports, and the one a chain
+        // or a splash is most likely to reach.
+        let aimed = wfsim_engine::rules::space::first_hit(muzzle, dir, &bodies)
+            .map(|(i, _)| i)
+            .or_else(|| {
+                (0..bodies.len()).min_by(|&a, &b| {
+                    bodies[a]
+                        .distance(aim)
+                        .partial_cmp(&bodies[b].distance(aim))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                        .then(a.cmp(&b))
+                })
+            })
+            .unwrap_or(0);
+        let aimed = all.remove(aimed);
+        (aimed.params, aimed.body_parts, aimed.at, all, aimed.id)
+    } else {
+        // NO AIM POINT is the fight this engine has always run: the beam is on
+        // the target, wherever it stands.
+        // NO AIM POINT, so the aimed body is the fight's own target and it keeps
+        // the first name — the formation is numbered from `e2`.
+        let id = v
+            .get("target_id")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .map_or_else(|| "e1".to_string(), str::to_string);
+        (target, body_parts, target_at, formation, id)
+    }
 }
 
 /// **A GUARANTEED STATUS IS WHAT OVERWHELMING ATTRITION ASKS NOT TO HAPPEN.**
