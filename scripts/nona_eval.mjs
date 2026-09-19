@@ -3,13 +3,14 @@
 // check_nona proves the machinery with a scripted stand-in; this asks a real
 // model the questions readers ask and grades what she DID — which tools she
 // called, whether she worked on a copy, whether the reader's own build was
-// left alone, and how many numbers in her answer no tool returned. Run it
-// after changing her prompt, her tools or the door, and compare the totals
-// with the last run. It spends the key it is given; it is not in CI.
+// left alone, how many numbers in her answer she was never sent — and what
+// each case cost. Run it after changing her prompt, her tools, her context or
+// the door, with `--against=` an earlier record, which compares case by case.
+// It spends the key it is given; it is not in CI.
 //
 //   NONA_BASE=https://openrouter.ai/api/v1 NONA_KEY=sk-… NONA_MODEL=deepseek/deepseek-chat \
 //   [NONA_PROTO=openai|anthropic] [WFSIM_BASE=http://127.0.0.1:8813] \
-//   node scripts/nona_eval.mjs [case-id …]
+//   node scripts/nona_eval.mjs [case-id …] [--against=private/nona-eval/<earlier>.json]
 //
 // A variable not set is read from `private/nona.env` in the MAIN checkout —
 // `NAME=value` lines, git-ignored — so one file serves every worktree and the
@@ -74,10 +75,16 @@ const CASES = [
   {
     id: "riven-from-card", weapon: "Torid",
     ask: "我有一张紫卡：暴击伤害 +120%，暴击几率 +150%，负面是变焦 -30%。帮我录进去。",
-    grade: (r) => [
-      !called(r, "rivens.card.new") && !called(r, "rivens.card.copy") && "made no riven",
-      !called(r, "rivens.card.set") && "never wrote the card",
-    ],
+    // THE READER'S NUMBERS GO IN AS THEY GAVE THEM. A card holding other
+    // values replaced what they said; asking first is the other right answer.
+    grade: (r) => {
+      const card = r.rivens.find((x) => r.madeRivens.includes(x.id));
+      const nums = card ? card.lines.map((l) => Math.abs(parseFloat(l))).sort((a, b) => a - b) : null;
+      return [
+        !card && !/[?？]/.test(r.reply) && "neither wrote the card nor asked",
+        card && JSON.stringify(nums) !== "[30,120,150]" && `wrote ${card.lines.join(" / ")} for +120% / +150% / -30%`,
+      ];
+    },
   },
   {
     id: "stats-question", weapon: "Torid",
@@ -123,7 +130,19 @@ const CASES = [
   },
 ];
 
-const only = process.argv.slice(2);
+/// WHAT A CASE COST, from the provider's own usage on each reply: how many
+/// requests, their input (and the largest one), how much of it the provider's
+/// cache served, and the output.
+function billOf(record) {
+  const us = record.filter((m) => m.role === "assistant" && m.usage).map((m) => m.usage);
+  const input = us.reduce((a, u) => a + u.input, 0), cached = us.reduce((a, u) => a + u.cached, 0);
+  return { requests: us.length, input, cached, output: us.reduce((a, u) => a + u.output, 0),
+    max_input: Math.max(0, ...us.map((u) => u.input)), cached_pct: Math.round((100 * cached) / (input || 1)) };
+}
+const k = (n) => `${(n / 1000).toFixed(1)}k`;
+
+const AGAINST = (process.argv.find((a) => a.startsWith("--against=")) || "").slice(10);
+const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const run = CASES.filter((c) => !only.length || only.includes(c.id));
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const results = [];
@@ -167,6 +186,8 @@ for (const c of run) {
       reply: replies[replies.length - 1] || "",
       unmeasured: document.querySelectorAll("#nona-log .nona-unmeasured").length,
       copied: (conv.made || []).length > 0,
+      madeRivens: (conv.made || []).filter(x => x.startsWith("riven:")).map(x => x.slice(6)),
+      rivens: ((await door.do("rivens.cards.list", {})) || {}).rivens || [],
       readerIntact: readerBuild === null || readerState === readerAfter,
       officialAfter: !!o.official_scenario && !!o.scenario && o.scenario.level === 200,
       usage: conv.usage, seconds: Math.round((Date.now() - t0) / 1000),
@@ -175,19 +196,40 @@ for (const c of run) {
     };
   })()`, { awaitPromise: true });
   const why = c.grade(r).filter(Boolean).concat(r.errors);
-  results.push({ id: c.id, ask: c.ask, pass: !why.length, why, ...r });
-  console.log(`${why.length ? "FAIL" : "  ok"}  ${c.id.padEnd(24)} ${String(r.calls.length).padStart(2)} calls  ${r.seconds}s  ${why.join(" · ")}`);
+  const bill = billOf(r.record);
+  results.push({ id: c.id, ask: c.ask, pass: !why.length, why, bill, ...r });
+  console.log(`${why.length ? "FAIL" : "  ok"}  ${c.id.padEnd(24)} ${String(r.calls.length).padStart(2)} calls  ${String(bill.requests).padStart(2)} req  `
+    + `in ${k(bill.input)} (max ${k(bill.max_input)}, cached ${bill.cached_pct}%)  out ${k(bill.output)}  ${r.seconds}s  ${why.join(" · ")}`);
 }
 
-const total = (k) => results.reduce((a, r) => a + ((r.usage || {})[k] || 0), 0);
+const sum = (key) => results.reduce((a, r) => a + r.bill[key], 0);
 const summary = {
   model: cfg.model, at: new Date().toISOString(),
   passed: results.filter((r) => r.pass).length, of: results.length,
   unmeasured: results.reduce((a, r) => a + r.unmeasured, 0),
   calls: results.reduce((a, r) => a + r.calls.length, 0),
-  tokens: total("input") + total("output"), cost: total("cost"),
+  requests: sum("requests"), input: sum("input"), cached: sum("cached"), output: sum("output"),
+  tokens: sum("input") + sum("output"), cost: results.reduce((a, r) => a + ((r.usage || {}).cost || 0), 0),
 };
-console.log(`\n${summary.passed}/${summary.of} passed · ${summary.unmeasured} unmeasured · ${summary.calls} calls · ${summary.tokens} tokens${summary.cost ? ` · ≈$${summary.cost.toFixed(3)}` : ""}`);
+summary.cached_pct = Math.round((100 * summary.cached) / (summary.input || 1));
+console.log(`\n${summary.passed}/${summary.of} passed · ${summary.unmeasured} unmeasured · ${summary.calls} calls · `
+  + `${summary.requests} requests · input ${k(summary.input)} (avg ${k(summary.input / (summary.requests || 1))}/request, `
+  + `cached ${summary.cached_pct}%) · output ${k(summary.output)}${summary.cost ? ` · ≈$${summary.cost.toFixed(3)}` : ""}`);
+
+// A COMPARISON IS PAIRED: the same case against the same case of an earlier
+// record, never one run's total against another's.
+if (AGAINST) {
+  const before = JSON.parse(readFileSync(AGAINST, "utf8"));
+  console.log(`\nagainst ${before.summary.model} · ${before.summary.at}`);
+  for (const r of results) {
+    const b = before.results.find((x) => x.id === r.id);
+    if (!b) { console.log(`  ${r.id.padEnd(24)} (not in the earlier record)`); continue; }
+    const bb = b.bill || billOf(b.record);
+    const pct = bb.input ? Math.round((100 * (r.bill.input - bb.input)) / bb.input) : 0;
+    console.log(`  ${r.id.padEnd(24)} ${b.pass ? "ok" : "FAIL"} → ${r.pass ? "ok" : "FAIL"}  input ${k(bb.input)} → ${k(r.bill.input)} (${pct > 0 ? "+" : ""}${pct}%)`
+      + `  requests ${bb.requests} → ${r.bill.requests}  unmeasured ${b.unmeasured} → ${r.unmeasured}`);
+  }
+}
 mkdirSync(new URL("../private/nona-eval/", import.meta.url), { recursive: true });
 const out = new URL(`../private/nona-eval/${summary.at.replace(/[:.]/g, "-")}.json`, import.meta.url);
 writeFileSync(out, JSON.stringify({ summary, results }, null, 1));

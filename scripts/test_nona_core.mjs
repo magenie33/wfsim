@@ -139,8 +139,18 @@ const wrap = (s) => `[${s}]`;
 check("only the unmeasured number is marked",
   markNumbers("1,234.5 DPS at 35% crit, 999.9 per hit, 240 per tick, 12.0k total, slot 3", [1234.5, 0.35, 12003], wrap)
   === "1,234.5 DPS at 35% crit, [999.9] per hit, [240] per tick, 12.0k total, slot 3");
-check("the numbers a reply is checked against are the tool results before it",
-  same(numbersIn([{ role: "tool", result: "a 12.5 b" }, { role: "tool", result: "7" }], 1), [12.5]));
+check("the numbers a reply is checked against are the ones sent before it",
+  same(numbersIn({ messages: [{ role: "tool", result: "a 12.5 b" }, { role: "tool", result: "7" }] }, 1), [12.5]));
+const seenBy = (record, text) => markNumbers(text, numbersIn(record), wrap);
+check("the page and the reader's own words count as sent; a result set aside does not",
+  seenBy({ messages: [{ role: "user", text: "my riven: +120.5% crit", page: '{"level":9999}' },
+    { role: "tool", result: "3456.7", masked: true }] }, "level 9999, 120.5% crit, 3456.7 damage")
+  === "level 9999, 120.5% crit, [3456.7] damage");
+check("the summary counts from where it stands",
+  seenBy({ summary: { upto: 1, text: "DPS 1234.5 on build 1" }, messages: [{ role: "user", text: "a" }, { role: "user", text: "b" }] },
+    "still 1234.5") === "still 1234.5");
+check("a sign is not a difference: -34.7 was sent, 34.7% is measured",
+  seenBy({ messages: [{ role: "tool", result: '"-34.7% Zoom"' }] }, "zoom -34.7%") === "zoom -34.7%");
 
 // ---- the protocols ----------------------------------------------------------------
 

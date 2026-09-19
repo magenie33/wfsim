@@ -49,10 +49,9 @@ export function mountPanel(door, agent) {
   /// ONE RECORD MESSAGE, DRAWN. `index` is where it sits in the record: a reply
   /// is checked against the numbers the tools returned before it.
   function draw(m, index) {
-    const msgs = agent.conv.messages;
     if (m.role === "user") line("user", m.text);
     else if (m.role === "assistant") {
-      if (m.text) line("assistant", "").innerHTML = markup(m.text, numbersIn(msgs, index));
+      if (m.text) line("assistant", "").innerHTML = markup(m.text, numbersIn(agent.conv, index));
       if (m.usage) line("usage", usageLine(m.usage));
     } else if (m.role === "tool") {
       const el = calling || line("tool", m.line || toolId(m.name));
