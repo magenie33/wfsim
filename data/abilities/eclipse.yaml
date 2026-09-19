@@ -12,7 +12,7 @@
 # M79): a 30% Eclipse over one CO stack reads 1644 where multiplying the
 # finished bracket reads 1808. The reading cannot tell that apart from Eclipse
 # joining the bracket, so the engine keeps the page's word and takes the CO
-# share out of the multiplier (`dummy::eclipse_at`).
+# share out of the multiplier (`fight::eclipse_at`).
 #
 # AND IT DOES NOT DOUBLE-DIP: "The buff affects both initial and status effect
 # damage. Unlike faction damage, which double dips for status effects, the one

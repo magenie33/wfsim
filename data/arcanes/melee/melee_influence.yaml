@@ -11,7 +11,7 @@ effects:
   # status opens a clock, and while that clock runs every elemental status this
   # weapon applies lands on everything within the radius too, each of them
   # taking *"damage equal to that element's damage from the original attack"*.
-  # `dummy::spread_from_influence` is the second half; see docs/EXTRA_HIT.md for
+  # `fight::spread_from_influence` is the second half; see docs/EXTRA_HIT.md for
   # why it is one of those and where its faction rungs come from.
   #
   # THE CHANCE IS FLAT AT EVERY RANK — 20% on all six rows of the wiki's own

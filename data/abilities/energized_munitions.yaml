@@ -50,4 +50,4 @@ source:
   url: https://wiki.warframe.com/w/Energized_Munitions
   # The 75% and the 3/3.5/4/5 s ladder are the page's own infobox rows; the
   # multiplicative stacking rule is its Notes ("Stacks multiplicatively with
-  # other sources of Ammo Efficiency"), implemented in `dummy::ammo_efficiency`.
+  # other sources of Ammo Efficiency"), implemented in `fight::ammo_efficiency`.

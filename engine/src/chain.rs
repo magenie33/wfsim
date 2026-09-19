@@ -87,7 +87,7 @@ pub struct Instance {
     pub status_part_factor: f64,
     /// WHAT AN ELECTRICITY OR GAS TICK THIS INSTANCE LEAVES IS WORTH where it
     /// struck — the headshot-damage brackets on a head, 1.0 elsewhere. See
-    /// `dummy::Dot::landing`.
+    /// `fight::Dot::landing`.
     pub status_landing: f64,
 }
 

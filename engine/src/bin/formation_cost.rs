@@ -18,7 +18,7 @@
 //! damage sphere, so every spread mechanism the engine has is live at once and
 //! the number is an upper bound rather than a typical one.
 use std::time::Instant;
-use wfsim_engine::dummy::{run_once, DummyParams};
+use wfsim_engine::fight::{run_once, FightParams};
 use wfsim_engine::rng::Rng;
 use wfsim_engine::space::Vec2;
 
@@ -62,7 +62,7 @@ fn main() {
         .find(|e| e.id == "corrupted_heavy_gunner")
         .expect("the roster has one");
     let foe = unit
-        .target_params(60, false, false, wfsim_engine::dummy::TargetMode::InstantRespawn)
+        .target_params(60, false, false, wfsim_engine::fight::TargetMode::InstantRespawn)
         .expect("an ordinary unit is legal");
 
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
@@ -118,7 +118,7 @@ fn main() {
         }
         let f = wfsim_engine::formation::Formation::grid(
             foe.clone(),
-            DummyParams::humanoid_parts(),
+            FightParams::humanoid_parts(),
             n,
             n,
             spacing,
@@ -136,7 +136,7 @@ fn main() {
             .filter(|(i, _)| *i != f.aimed)
             .map(|(_, x)| x.clone())
             .collect();
-        let p = DummyParams::from_panel(&panel, &arena, &fx);
+        let p = FightParams::from_panel(&panel, &arena, &fx);
 
         let t0 = Instant::now();
         let mut touched = 0usize;

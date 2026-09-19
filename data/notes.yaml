@@ -451,7 +451,7 @@ notes:
     structured source for what a mod REFUSES to be equipped on.
   decay_read_mods_data: |
     `decay` is NOT read by mods_data. The engine hardcodes the matching model
-    per effect kind — `LiveStacks` (dummy.rs): on timeout lose ONE stack and
+    per effect kind — `LiveStacks` (engine/src/fight/stacks.rs): on timeout lose ONE stack and
     reset the timer. This line is the written record, not the source.
   declared_no_co_catalog: |
     NOT DECLARED: no CO catalog row for this weapon, so the radial

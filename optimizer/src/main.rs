@@ -10,7 +10,7 @@
 //! Usage: wfsim-optimizer [require=mod_id]... [forbid=mod_id]...
 
 use std::time::Instant;
-use wfsim_engine::dummy::{LockMode, TargetMode};
+use wfsim_engine::fight::{LockMode, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::WeaponBase;
 use wfsim_optimizer::*;
@@ -123,7 +123,7 @@ fn main() {
         incarnon_cycle: true,
         frenzy_lock: LockMode::Permanent,
         // CLI: no per-buff configured policy (the emergent default).
-        buff_cfg: wfsim_engine::dummy::BuffConfig::new(),
+        buff_cfg: wfsim_engine::fight::BuffConfig::new(),
         denied_buff_triggers: Vec::new(),
     };
     println!(

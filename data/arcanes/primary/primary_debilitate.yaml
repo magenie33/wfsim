@@ -78,7 +78,7 @@ effects:
   # NOTHING HERE IS WAITING ON A MEASUREMENT. The ^3 is the wiki's own stated
   # value, not a guess to confirm, and the sim MEASURES its own exponent: with
   # the arcane the only difference between two runs, the damage it adds scales
-  # by exactly f^3 across a faction change (`dummy::
+  # by exactly f^3 across a faction change (`fight::
   # a_debilitate_split_lands_at_the_third_faction_layer`). Set the depth to 2
   # and that test reads 2.399 against f^2 = 2.4025 and fails, which is how it is
   # known to have teeth.

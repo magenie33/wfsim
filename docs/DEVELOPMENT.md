@@ -286,7 +286,7 @@ Two things follow, and both have been mistaken for something else:
 ### What a gain propagates to
 
 ONE COPY, so an improvement reaches every module: `monte_carlo` (the fight),
-`DummyParams::*_from_panel[s]` (its parameters), `loadout::resolve_for` (mods to
+`FightParams::*_from_panel[s]` (its parameters), `loadout::resolve_for` (mods to
 a panel), `webapi::parse_fight` (json to a fight — five call sites, including
 `optimize_json`), `builds::BUILD_AXES` (what a build is).
 

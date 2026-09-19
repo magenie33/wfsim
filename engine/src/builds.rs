@@ -1363,9 +1363,9 @@ mod riven_perfection_tests {
         let panel = crate::loadout::resolve_for(
             &base, &[&riven], crate::loadout::StackPolicy::Emergent, tenno);
         let arena = crate::arena::Arena::training(12.0);
-        let dp = crate::dummy::DummyParams::from_panel(
+        let dp = crate::fight::FightParams::from_panel(
             &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
-        crate::dummy::monte_carlo(&dp, 120, 7).mean_damage
+        crate::fight::monte_carlo(&dp, 120, 7).mean_damage
     }
 
     #[test]

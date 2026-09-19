@@ -79,7 +79,7 @@ pub fn simulate_progress(body: &str, on_progress: &js_sys::Function) -> String {
 /// `from` is the index of the first run, `count` how many. Every run's dice are
 /// a pure function of `(seed, index)`, so the shards of a range merge into
 /// exactly what one call over the whole range produces — asserted twice, on the
-/// summary (`dummy::tests::eight_shards_are_one_run`) and on the whole response
+/// summary (`fight::tests::formation_and_spread::eight_shards_are_one_run`) and on the whole response
 /// (`a_fleet_of_shards_reports_what_one_worker_reports`).
 ///
 /// Returns the shard, which carries SUMS rather than runs: about 24 KB at a

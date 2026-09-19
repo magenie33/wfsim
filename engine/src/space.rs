@@ -16,7 +16,7 @@
 //!
 //! Metres, and the plane is the GROUND — `y` is the second horizontal axis, not
 //! height. The arena has no vertical dimension and nothing here pretends
-//! otherwise; a hitbox's height lives in [`crate::dummy::BodyPart`], which is a
+//! otherwise; a hitbox's height lives in [`crate::fight::BodyPart`], which is a
 //! question about where on a body a pellet landed rather than where the body is.
 
 /// A point on the arena floor, in metres.

@@ -63,5 +63,5 @@ explosion (140 → 146). All of this was already the engine's rule.
 completion (point 3); `DebuffState::flensed`, counted once per bullet per body
 and never pruned (point 4). Point 5 was already `BuffDecay::PerStackExpiry`.
 
-Pinned by the `m102_*` tests in `engine/src/dummy.rs`
+Pinned by the `m102_*` tests in `engine/src/fight/tests/m102_latron_prime.rs`
 (`m102_latron_prime_tests`).

@@ -35,6 +35,6 @@ Already the engine's rule, so nothing moved:
   `faction_damage_override: zariman`, so the body reads the Zariman column's
   Void ×1.5 and no faction mod applies.
 
-The Overguard half is asserted in `dummy.rs` (Void ×1.5 on Overguard whatever
+The Overguard half is asserted in `engine/src/fight/` (Void ×1.5 on Overguard whatever
 the unit's faction). The body half and the no-stacking half have no test of
 their own; this entry is their source.

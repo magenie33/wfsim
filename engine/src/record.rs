@@ -519,7 +519,7 @@ pub struct Damage {
     /// attack this is, and the two are asked of the same pellet.
     pub radial: bool,
     /// Which pool it came out of, and what colour it read as.
-    pub pool: crate::dummy::Pool,
+    pub pool: crate::fight::Pool,
     pub dtype: DamageType,
     /// WHAT KIND OF NUMBER THE GAME DRAWS THIS AS — a crit, a headcrit, a
     /// status tick, a blast's radial. It is what decides the number's colour
@@ -529,7 +529,7 @@ pub struct Damage {
     /// blast on the body that carried the stack and the radial it throws at
     /// everything else are the same [`Origin`], the same pool and the same
     /// type, and the game draws them differently.
-    pub kind: crate::dummy::PopKind,
+    pub kind: crate::fight::PopKind,
     /// The body part it landed on, where the instance had one. A status tick
     /// and an explosion do not, and saying so is not the same as leaving it
     /// blank — see MEASUREMENTS M54 for the rule about which DoTs inherit a
@@ -557,7 +557,7 @@ pub struct Damage {
     pub effective: f64,
     pub before: TargetAt,
     /// Live stacks on the target, positionally matching
-    /// [`crate::dummy::DEBUFF_ROSTER`] — the target's own half of "why is this
+    /// [`crate::fight::DEBUFF_ROSTER`] — the target's own half of "why is this
     /// number this size".
     pub debuffs: Vec<(u16, f64)>,
     /// LIVE BUFF STACKS on the shooter, positionally matching the roster in
@@ -688,7 +688,7 @@ pub struct Record {
     shot: Option<u32>,
     /// WHAT THE BUFF STACKS ON EACH ROW ARE CALLED, in the order they are held.
     /// The same vocabulary the buff cards use, because they come from one place
-    /// (`DummyParams::buff_roster`).
+    /// (`FightParams::buff_roster`).
     buffs: Vec<String>,
     /// WHAT THE SHOOTER HAS UP, as `(stacks, expires at)`.
     ///

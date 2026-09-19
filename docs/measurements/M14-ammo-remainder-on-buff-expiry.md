@@ -76,7 +76,7 @@ ceilings it to 5 — the same rounding that made the main result readable.
 This **subsumes the overdraw case rather than competing with it**: a shot cannot
 overdraw by a whole round, so after running dry `current` is in (−1, 0] and the
 draw is a full `capacity` — which is exactly how −0.75 comes back at 4.25. One
-rule, `engine::dummy::reload_draw`, and the earlier `+= capacity` was the
+rule, `engine::fight::reload_draw`, and the earlier `+= capacity` was the
 special case of it that happened to be right.
 
 **And it is GLOBAL** (user, 2026-07-30): the auto-reload an Incarnon

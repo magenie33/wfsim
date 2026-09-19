@@ -17,7 +17,7 @@ noise: silent               # the throw is SILENT where the primary fire is ALAR
 # every time — "Throwing the spear consumes 1 ammo, then reloads the weapon" is
 # unconditional, not a magazine running dry. So this entry's
 # magazine is 1 and the 0.6 s lands after every throw, which is the same shape a
-# bow's nock has here (`cernos_prime.yaml`; dummy.rs: "the cycle is charge +
+# bow's nock has here (`cernos_prime.yaml`; engine/src/fight/: "the cycle is charge +
 # reload however the two are ordered"). The 40 rounds belong to the PRIMARY FIRE
 # entry, which is the attack that spends them.
 #

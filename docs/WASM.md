@@ -54,7 +54,7 @@ Loaders to convert (each is a `read_dir` + `read_to_string` pair):
 - `engine/src/enemy_data.rs:152,230,249` (`data/enemies/*.yaml`, incl.
   `custom/`; note `EnemySpec::load(path)` single-file API also used by the
   CLI — keep it, backed by the embedded set + a native fs fallback)
-- `engine/src/dummy.rs:3010` (a test path — tests may keep fs)
+- `engine/src/fight/tests/` (test paths — tests may keep fs)
 
 Approach: `include_dir` crate, or a zero-dep `build.rs` that generates
 `embedded_data.rs` with `include_str!` entries (repo prefers few deps).

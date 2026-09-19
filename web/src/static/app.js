@@ -17840,7 +17840,7 @@ const REPLAY_SPEEDS = [1, 2, 5, 20];
 // An UNCAPPED buff has no maximum to draw against, so the curve scales to the
 // highest it actually reached and the readout says so.
 // NO CEILING IS EITHER SPELLING: the buff roster has always said it with a
-// max of 0 (`DummyParams::buff_roster`: "0 means no ceiling, which the api
+// max of 0 (`FightParams::buff_roster`: "0 means no ceiling, which the api
 // and the UI both read as such") and the debuff roster now says it the same
 // way. Reading only the flag printed a bare "0" for every uncapped BUFF and
 // scaled its chart to 1 — an uncapped row drawn as though it were full from

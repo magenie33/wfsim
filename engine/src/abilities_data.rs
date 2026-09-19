@@ -17,7 +17,7 @@
 //!   percentage of ModifiedBase as its element and DOES NOT COMBINE — it lands
 //!   on the finished vector, after the elemental hierarchy has run.
 //! - [`AbilityEffect::ExtraHit`] (Xata's Whisper) fires a SECOND damage
-//!   instance worth a percentage of the first (`dummy::fire_extra_hit`).
+//!   instance worth a percentage of the first (`fight::fire_extra_hit`).
 //!
 //! THE FIRST THREE ARE MULTIPLIERS AND THE FOURTH IS AN INSTANCE, which a
 //! fifth effect kind has to land on one side of.
@@ -58,7 +58,7 @@ pub enum AbilityEffect {
     AddElement(DamageType, f64, bool),
     /// An EXTRA HIT: a whole second damage instance, entirely of this element,
     /// worth this fraction of the instance that triggered it. Not a multiplier
-    /// on anything — `dummy::fire_extra_hits`, MECHANICS §7 §"Extra Hit", and
+    /// on anything — `fight::fire_extra_hits`, MECHANICS §7 §"Extra Hit", and
     /// docs/EXTRA_HIT.md for the law its members share.
     ///
     /// THREE THINGS DIFFER BETWEEN MEMBERS and nothing else does, which is what
@@ -87,7 +87,7 @@ pub enum AbilityEffect {
     /// It MULTIPLIES with the other sources rather than adding: "Stacks
     /// multiplicatively with other sources of Ammo Efficiency" (wiki). What
     /// multiplies is the COST, so two sources compose as `1 - (1-a)(1-b)` —
-    /// see `dummy::ammo_efficiency`, the one place that combines them.
+    /// see `fight::ammo_efficiency`, the one place that combines them.
     AmmoEfficiency(f64),
 }
 
@@ -579,7 +579,7 @@ pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
 /// are `1 - 0.25 x 0.25` = 93.75% and never 150%.
 ///
 /// The other sources (the buff bar, the arcanes) add among themselves and this
-/// composes with their total — `dummy::ammo_efficiency` is where that happens,
+/// composes with their total — `fight::ammo_efficiency` is where that happens,
 /// because it is the one function that has all of them.
 pub fn ammo_efficiency_at(list: &[ActiveAbility], t: f64) -> f64 {
     let cost: f64 = list

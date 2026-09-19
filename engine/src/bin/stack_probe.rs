@@ -9,7 +9,7 @@
 //!   cargo run --release --bin stack_probe
 use wfsim_engine::arcanes_data::ArcaneFx;
 use wfsim_engine::arena::Arena;
-use wfsim_engine::dummy::{replay, DummyParams, TargetMode, DEBUFF_ROSTER};
+use wfsim_engine::fight::{replay, FightParams, TargetMode, DEBUFF_ROSTER};
 use wfsim_engine::enemy_data;
 use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
 use wfsim_engine::space::Vec2;
@@ -72,7 +72,7 @@ fn main() {
             .copied()
             .collect();
         let panel = resolve(&base, &refs, StackPolicy::Emergent);
-        let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+        let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let rep = replay(&p, 0x5eed, 600);
         println!("\n=== {weapon} ({} mods on, missing {:?}) ===", refs.len(), missing);
         let mut any = false;

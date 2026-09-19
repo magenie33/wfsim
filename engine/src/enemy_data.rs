@@ -14,7 +14,7 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
-use crate::dummy::{Attenuation, BodyPart, StackCaps, TargetMode, TargetParams};
+use crate::fight::{Attenuation, BodyPart, StackCaps, TargetMode, TargetParams};
 use crate::scaling;
 
 /// Which faction's scaling curves an enemy uses (wiki `Enemy_Level_Scaling`).
@@ -284,7 +284,7 @@ pub struct EnemySpec {
     #[serde(default)]
     pub attenuation: Option<AttenuationSpec>,
     /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET — see
-    /// [`crate::dummy::TargetParams::faction_bracket_multiplier`]. Absent = 1.0,
+    /// [`crate::fight::TargetParams::faction_bracket_multiplier`]. Absent = 1.0,
     /// which is every unit but the one it was measured on. It is written as the
     /// per-HIT figure and the engine raises it per derivation step, so a file
     /// states 0.8 and never 0.64: a file that stated the squared number would be

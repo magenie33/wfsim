@@ -16,8 +16,8 @@
 //! engine the CLI and optimizer use — this crate only shapes JSON.
 
 use serde_json::{json, Value};
-use wfsim_engine::dummy::{
-    BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode,
+use wfsim_engine::fight::{
+    BodyPart, BuffLock, FightParams, LockMode, LockedBuff, TargetMode,
 };
 use wfsim_engine::enemy_data::EnemySpec;
 // NO `resolve` HERE, and that is the point: it is the neutral-Tenno wrapper, and
@@ -32,7 +32,7 @@ use wfsim_optimizer::{
     enumerate_candidates_observed, run_funnel, schedule_to, Candidate, Constraints, FunnelState,
     Job, Scenario,
 };
-use wfsim_engine::dummy::Summary;
+use wfsim_engine::fight::Summary;
 
 // ---- Enemy library (the engine's embedded data/enemies/**) -------------
 // Single source of truth: the same data/ files the CLI and optimizer read,
@@ -733,8 +733,8 @@ fn r3(v: f64) -> f64 {
 /// A rostered buff whose ceiling is a NUMBER, as the chart reads it: what one
 /// stack is worth, where it stops, and the unit both are in. `null` for the
 /// ordinary kind, where the stack count is the published fact and the chart is
-/// a chart of stacks — see [`wfsim_engine::dummy::StackValue`].
-fn value_json(v: Option<wfsim_engine::dummy::StackValue>) -> Value {
+/// a chart of stacks — see [`wfsim_engine::fight::StackValue`].
+fn value_json(v: Option<wfsim_engine::fight::StackValue>) -> Value {
     match v {
         Some(v) => json!({ "per": v.per_stack, "max": v.max, "unit": v.unit }),
         None => Value::Null,
@@ -6198,7 +6198,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     );
     // THE PICKUPS. On by default because that is what the game does; the reach
     // is infinite by default because this arena's Tenno does not walk, so a
-    // finite one is a wall rather than a walk (`DummyParams::pickup_range_m`).
+    // finite one is a wall rather than a walk (`FightParams::pickup_range_m`).
     let ammo_drops = get_bool(v, "ammo_drops", true);
     let pickup_range_m = get_f64(v, "pickup_range_m", f64::INFINITY).max(0.0);
     let landscape = get_bool(v, "landscape", false);
@@ -6460,7 +6460,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         //
         // The arena still names a target, because a fight has one and every
         // report reads its pools; what changes is that the weapon is not
-        // pointed at it. `DummyParams::off_axis_deg` is how far off the line it
+        // pointed at it. `FightParams::off_axis_deg` is how far off the line it
         // sits, the spread cone is measured from the LINE, and a body far
         // enough off it is simply never hit.
         let mut all: Vec<wfsim_engine::formation::FoeSpec> =
@@ -6713,7 +6713,7 @@ pub fn simulate_json_reporting(v: &Value, on_run: &mut impl FnMut(u32, u32)) -> 
 /// `from` is the index of the first run and `count` how many. Every run's dice
 /// are a pure function of `(seed, index)`, so the shards of a range merge into
 /// exactly what one call over the whole range produces
-/// (`dummy::tests::eight_shards_are_one_run`).
+/// (`fight::tests::formation_and_spread::eight_shards_are_one_run`).
 ///
 /// Returns the shard itself as JSON — small, because it carries sums rather
 /// than runs — for `simulate_merged_json` to add up.
@@ -6732,9 +6732,9 @@ pub fn simulate_shard_json(
 /// computed HERE, so there is one implementation of the arithmetic rather than
 /// a Rust one and a JavaScript one that drift.
 pub fn simulate_merged_json(v: &Value, shards: &[Value]) -> Value {
-    let mut merged = wfsim_engine::dummy::Shard::default();
+    let mut merged = wfsim_engine::fight::Shard::default();
     for s in shards {
-        match serde_json::from_value::<wfsim_engine::dummy::Shard>(s.clone()) {
+        match serde_json::from_value::<wfsim_engine::fight::Shard>(s.clone()) {
             Ok(part) => merged.merge(&part),
             Err(e) => return err_json(format!("shard: {e}")),
         }
@@ -6751,7 +6751,7 @@ enum Work {
     /// report.
     Shard(u32, u32),
     /// Already run by a fleet; this call only finishes it.
-    Merged(Box<wfsim_engine::dummy::Shard>),
+    Merged(Box<wfsim_engine::fight::Shard>),
 }
 
 /// THE PANEL AND THE ENGINE PARAMS a parsed fight resolves to.
@@ -6773,7 +6773,7 @@ pub(crate) struct AmmoEconomy {
 }
 
 impl AmmoEconomy {
-    fn apply(self, p: &mut DummyParams) {
+    fn apply(self, p: &mut FightParams) {
         p.ammo_drops = self.drops;
         p.pickup_range_m = self.pickup_range_m;
         p.landscape = self.landscape;
@@ -6796,9 +6796,9 @@ fn sim_params(
     infinite_ammo: bool,
     ammo: AmmoEconomy,
     frenzy_single: bool,
-    cycle_frenzy_lock: wfsim_engine::dummy::LockMode,
+    cycle_frenzy_lock: wfsim_engine::fight::LockMode,
     frenzy_locks: &[BuffLock],
-) -> (ResolvedPanel, DummyParams) {
+) -> (ResolvedPanel, FightParams) {
     let arcane_fx = {
         let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, evo_refs);
         arcane_fx_for(v, info, &ab, policy)
@@ -6814,12 +6814,12 @@ fn sim_params(
         // the other form: a Tome shoots its primary fire the whole engagement
         // and THROWS the other form's orb, which is an entity rather than a
         // state you enter. So the params stay the base form's and the orb rides
-        // along — see `DummyParams::tome_cycle_from_panels`.
+        // along — see `FightParams::tome_cycle_from_panels`.
         //
         // Told apart by the METER rather than by the weapon, so the second Tome
         // costs nothing here.
         if incarnon_panel.meter.is_some() {
-            let mut params = DummyParams::tome_cycle_from_panels(
+            let mut params = FightParams::tome_cycle_from_panels(
                 &base_panel,
                 &incarnon_panel,
                 arena,
@@ -6835,7 +6835,7 @@ fn sim_params(
             // is a real part of the engagement and the panel is its own.
             return (base_panel, params);
         }
-        let params = DummyParams::incarnon_cycle_from_panels(
+        let params = FightParams::incarnon_cycle_from_panels(
             &incarnon_panel,
             &base_panel,
             frenzy_single,
@@ -6857,7 +6857,7 @@ fn sim_params(
         //
         // The tiers are found by what they SAY (`states_incarnon_window`) and
         // not by id, so the next Genesis needs no edit here.
-        let mut d = DummyParams::for_panel(&panel, arena, &arcane_fx, || {
+        let mut d = FightParams::for_panel(&panel, arena, &arcane_fx, || {
             let unarmed: Vec<&str> = evo_refs
                 .iter()
                 .copied()
@@ -6946,7 +6946,7 @@ pub fn log_json(v: &Value) -> Value {
     // several reads cover a stream no single one can hold, and the whole fight
     // is then a matter of asking again.
     let skip = get_f64(v, "skip", 0.0).max(0.0) as usize;
-    let rec = wfsim_engine::dummy::record(&params, state, from, to, limit, skip);
+    let rec = wfsim_engine::fight::record(&params, state, from, to, limit, skip);
 
     // ONE BODY'S VIEW IS A FILTER, never a different query: a weapon event
     // belongs to nobody, so it belongs in every body's timeline.
@@ -6984,7 +6984,7 @@ pub fn log_json(v: &Value) -> Value {
         "factors": wfsim_engine::record::Factor::ALL
             .iter().map(|f| f.name()).collect::<Vec<_>>(),
         "buffs": rec.buffs(),
-        "debuffs": wfsim_engine::dummy::DEBUFF_ROSTER
+        "debuffs": wfsim_engine::fight::DEBUFF_ROSTER
             .iter().map(|(id, _)| *id).collect::<Vec<_>>(),
         "events": events,
     })
@@ -7420,7 +7420,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     if let Work::Shard(from, count) = work {
         let mut tick = |done: u32| on_run(done, count);
         let s =
-            wfsim_engine::dummy::shard(&params, from, count, seed, want_series, &mut tick);
+            wfsim_engine::fight::shard(&params, from, count, seed, want_series, &mut tick);
         return serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}")));
     }
     let (s, series) = match work {
@@ -7432,10 +7432,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         _ => {
             let mut tick = |done: u32| on_run(done, runs);
             if want_series {
-                wfsim_engine::dummy::monte_carlo_series_reporting(&params, runs, seed, &mut tick)
+                wfsim_engine::fight::monte_carlo_series_reporting(&params, runs, seed, &mut tick)
             } else {
                 (
-                    wfsim_engine::dummy::monte_carlo_reporting(&params, runs, seed, &mut tick),
+                    wfsim_engine::fight::monte_carlo_reporting(&params, runs, seed, &mut tick),
                     Default::default(),
                 )
             }
@@ -7568,12 +7568,12 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         });
         let state = pinned.unwrap_or(m.rng_state);
         let rep = if want.is_empty() {
-            wfsim_engine::dummy::replay(&params, state, wfsim_engine::dummy::REPLAY_FRAMES)
+            wfsim_engine::fight::replay(&params, state, wfsim_engine::fight::REPLAY_FRAMES)
         } else {
-            wfsim_engine::dummy::replay_following(
+            wfsim_engine::fight::replay_following(
                 &params,
                 state,
-                wfsim_engine::dummy::REPLAY_FRAMES,
+                wfsim_engine::fight::REPLAY_FRAMES,
                 &want,
             )
         };
@@ -7581,15 +7581,15 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // A frame is not a separate format: `kpi` mirrors the KPI row and
         // `sources` mirrors `damage_sources` key for key, so the client draws
         // an instant of the fight with the same code that draws the end of it.
-        let pel = |f: &wfsim_engine::dummy::Frame| f.pellets.max(1) as f64;
-        let series = |g: fn(&wfsim_engine::dummy::Frame) -> f64| {
+        let pel = |f: &wfsim_engine::fight::Frame| f.pellets.max(1) as f64;
+        let series = |g: fn(&wfsim_engine::fight::Frame) -> f64| {
             rep.frames.iter().map(&g).map(r1).collect::<Vec<_>>()
         };
         // Every (source, type) pair that carries damage BY THE END — the set
         // only ever grows, so the last frame names all of them and an earlier
         // frame simply reads zero there.
         let last = rep.frames.last().cloned().unwrap_or_default();
-        let pick = |f: &wfsim_engine::dummy::Frame, k: &str| -> (f64, [f64; wfsim_engine::damage::DamageType::ALL.len()]) {
+        let pick = |f: &wfsim_engine::fight::Frame, k: &str| -> (f64, [f64; wfsim_engine::damage::DamageType::ALL.len()]) {
             match k {
                 "direct" => (f.sources.direct, f.sources.direct_by_type),
                 "radial" => (f.sources.radial, f.sources.radial_by_type),
@@ -7639,7 +7639,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // Ids are the buff cards' own — the client joins on them for names.
             // (id, stack ceiling, how the stacks read as a NUMBER where the
             // ceiling is one). `value` is null on every ordinary buff, which is
-            // most of them — see `dummy::StackValue`. It is a key on BOTH
+            // most of them — see `fight::StackValue`. It is a key on BOTH
             // rosters rather than on this one, because the debuff table is
             // drawn by the same component and `check_debuff_coverage` asserts
             // the two shapes match.
@@ -7678,7 +7678,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // the engine rather than a property of the build — a debuff is the
             // target's, and a status the run never applied draws a flat zero,
             // which is the answer to "was Corrosive ever up".
-            "debuffs": wfsim_engine::dummy::DEBUFF_ROSTER
+            "debuffs": wfsim_engine::fight::DEBUFF_ROSTER
                 .iter()
                 // ZERO IS "NO CEILING", which is the convention `buff_roster`
                 // already uses in as many words — so the two rosters stay the
@@ -7705,7 +7705,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             "tracked": rep.tracked,
             "dstacks": (0..rep.tracked.len())
                 .map(|b| {
-                    (0..wfsim_engine::dummy::DEBUFF_ROSTER.len())
+                    (0..wfsim_engine::fight::DEBUFF_ROSTER.len())
                         .map(|i| {
                             rep.frames
                                 .iter()
@@ -7736,7 +7736,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // fight from this state and gets the same numbers bit for bit, which is
         // what makes the log the report's OWN fight rather than a similar one.
         // Two halves because a JSON number in JavaScript is a double and a
-        // 64-bit state comes back ROUNDED — the same lesson `dummy::RunKey`
+        // 64-bit state comes back ROUNDED — the same lesson `fight::RunKey`
         // records, learnt the same way.
         "run": [(m.rng_state >> 32) as u32, (m.rng_state & 0xffff_ffff) as u32],
         // THE BENCHMARK FIGHT'S OWN FIGURES, under the same field names as the
@@ -11546,7 +11546,7 @@ mod scope_lock_tests {
 
 /// EVERY BUFF CARD MUST HAVE A SIM ARM, AND EVERY SIM BUFF MUST HAVE A CARD.
 ///
-/// `enumerate_buffs` (what is drawn) and `DummyParams::buff_roster` (what the
+/// `enumerate_buffs` (what is drawn) and `FightParams::buff_roster` (what the
 /// fight runs) are two independent enumerations over the same data — one
 /// matches `ModEffect` arms, the other reads resolved fields — so nothing but
 /// a check makes them the same list. Both failure directions are silent on
@@ -11559,7 +11559,7 @@ mod scope_lock_tests {
 #[cfg(test)]
 mod card_and_sim_agree {
     use super::*;
-    use wfsim_engine::dummy::DummyParams;
+    use wfsim_engine::fight::FightParams;
     use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
 
     /// Buffs the params do not own. `frenzy` is a weapon passive the api
@@ -11575,7 +11575,7 @@ mod card_and_sim_agree {
         // rostered only at AssumedMax would be a card for a number the sim
         // never earns.
         let p = resolve(&base, refs, StackPolicy::Emergent);
-        let params = DummyParams::from_panel(
+        let params = FightParams::from_panel(
             &p,
             &wfsim_engine::arena::Arena::training(30.0),
             &wfsim_engine::arcanes_data::ArcaneFx::none(),
@@ -11644,7 +11644,7 @@ mod card_and_sim_agree {
                     .map(|b| b.id)
                     .filter(|id| id.starts_with("arcane:"))
                     .collect();
-                let params = DummyParams::from_panel(
+                let params = FightParams::from_panel(
                     &resolve(&base, &[], StackPolicy::Emergent),
                     &wfsim_engine::arena::Arena::training(30.0),
                     &fx,

@@ -930,7 +930,7 @@ bracket. They meet in one place and it is not the one you would guess:
 - `loadout::resolve_for` computes `panel.compression` — how many metres THIS
   build gives up (modded radius × the row × 0.8), and whether the row `adds`.
   Aim-gated: the card says "on aim", so a Tenno who is not aiming gets `None`.
-- `DummyParams::from_panel(panel, arena, arcane)` spends the arcane against
+- `FightParams::from_panel(panel, arena, arcane)` spends the arcane against
   those metres. It takes the arcane as an ARGUMENT rather than having it
   assigned afterwards, which is what makes the three sites agree — and it is one
   layer below `resolve_for` on purpose: **the optimizer resolves a panel once

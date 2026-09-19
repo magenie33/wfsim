@@ -216,7 +216,7 @@ enum EvoEffect {
     /// It cannot be a [`GatedGrant`] like the rest: those are opened by the
     /// TENNO's state and `resolve` never sees the arena, while this asks where
     /// the two of them are standing. So it rides the panel and is settled in
-    /// `DummyParams::from_panel`, which is the one place the build and the
+    /// `FightParams::from_panel`, which is the one place the build and the
     /// fight are both in scope — the same seam Primary Compression already
     /// uses (the panel brings the metres, the arena brings the answer).
     MultishotBeyondRange { value: f64, metres: f64 },

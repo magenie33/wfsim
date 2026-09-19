@@ -1833,7 +1833,7 @@ struct Partial {
 /// that cannot finish inside one run of the board still finishes, across as
 /// many as it takes. Every run's dice are a pure function of `(seed, index)`,
 /// so the pieces merge into exactly what one call over the range produces
-/// (`wfsim_webapi::simulate_shard_json`, `dummy::tests::eight_shards_are_one_run`).
+/// (`wfsim_webapi::simulate_shard_json`, `fight::tests::formation_and_spread::eight_shards_are_one_run`).
 ///
 /// THE FIRST CHUNK IS ONE RUN, and the rest are sized from what it cost. A
 /// fixed chunk is wrong in both directions here: the rows this exists for are
@@ -1847,11 +1847,11 @@ fn run_budgeted(
     want: u32,
     deadline: Option<std::time::Instant>,
 ) -> Option<Value> {
-    let mut acc = wfsim_engine::dummy::Shard::default();
+    let mut acc = wfsim_engine::fight::Shard::default();
     let mut done = 0u32;
     if let Some((who, at, shard)) = part.cursor.take() {
         if who == label {
-            if let Ok(s) = serde_json::from_value::<wfsim_engine::dummy::Shard>(shard.clone()) {
+            if let Ok(s) = serde_json::from_value::<wfsim_engine::fight::Shard>(shard.clone()) {
                 acc = s;
                 done = at;
             }
@@ -1863,7 +1863,7 @@ fn run_budgeted(
     }
     while done < want {
         let piece = wfsim_webapi::simulate_shard_json(req, done, CHUNK_RUNS, &mut |_, _| {});
-        let Ok(s) = serde_json::from_value::<wfsim_engine::dummy::Shard>(piece) else {
+        let Ok(s) = serde_json::from_value::<wfsim_engine::fight::Shard>(piece) else {
             // A shard that will not parse is not a slow row, it is a broken
             // one; the caller's `ok` check answers it the way it always did.
             return Some(wfsim_engine_webapi_simulate(req));
@@ -2071,7 +2071,7 @@ mod tests {
     /// `(seed, index)`, so this is an identity and not a tolerance. A crowd,
     /// because the per-body means are part of what has to survive the merge and
     /// a single target cannot test them — the same reason
-    /// `dummy::tests::eight_shards_are_one_run` uses one.
+    /// `fight::tests::formation_and_spread::eight_shards_are_one_run` uses one.
     ///
     /// THE PAUSES ARE FORCED, with a deadline already in the past: every call
     /// banks after its first chunk and hands back, so 40 runs are taken in

@@ -24,7 +24,7 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 
 /// The player's stat block plus what the player is doing — the fight's second
-/// actor, and the counterpart of [`crate::dummy::TargetParams`].
+/// actor, and the counterpart of [`crate::fight::TargetParams`].
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Tenno {
     pub id: String,

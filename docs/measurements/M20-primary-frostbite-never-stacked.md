@@ -4,7 +4,7 @@
 
 Found while checking a community claim ("Torid with Deadhead/Merciless crushes
 Bulwark/Frostbite"). `ArcTrigger::ColdStatus` was declared and matched in the
-data loader, but no `bump_trigger` call in `dummy.rs` ever fired it — Toxin,
+data loader, but no `bump_trigger` call in `engine/src/fight/` ever fired it — Toxin,
 Electricity and Heat were wired, Cold was missed. Arcane stacking buffs seed at
 `max_stacks`, so Frostbite spent one 12 s window at 40 stacks and then sat at
 zero for the rest of every run. It listed, it described itself correctly, and

@@ -20,7 +20,7 @@ effects:
   # AND IT PAYS. `abilities_data::at_strength` is linear, so Ability Strength is
   # a straight multiplier on what Roar, Eclipse or Nourish is worth — a mod on
   # the BUILD raising a knob on the FIGHT, which meet in
-  # `DummyParams::from_panel` and nowhere else. Worth nothing with no Warframe
+  # `FightParams::from_panel` and nowhere else. Worth nothing with no Warframe
   # buff ticked, which is most fights and every board row.
   - kind: ability_stat
     stat: strength

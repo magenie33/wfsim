@@ -27,3 +27,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 # Maintained fork of the unmaintained serde_yaml (decision in devlog 2026-07-24).
 serde_norway = "0.9"
+
+# ONE CODEGEN UNIT. The fight is a directory of modules, and with the default
+# sixteen units its hot loop cannot inline across them: `one_fight` measured
+# +14% per shot for the same source split into files, and ±noise with this.
+[profile.release]
+codegen-units = 1

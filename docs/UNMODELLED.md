@@ -126,7 +126,7 @@ rewritten as real effects the same day:
 
 | clause | was | is |
 | --- | --- | --- |
-| Lone Enforcer (Vectis, Vectis Prime) — *"+25% Multishot if no enemies are within 5m"* | `no_distance` | `multishot_beyond_range`, settled against the arena in `DummyParams::from_panel` |
+| Lone Enforcer (Vectis, Vectis Prime) — *"+25% Multishot if no enemies are within 5m"* | `no_distance` | `multishot_beyond_range`, settled against the arena in `FightParams::from_panel` |
 | Hunter's Mantra (Boltor, Boltor Prime, Telos Boltor) — *"With Channeled Ability active: +40% Accuracy"* | `no_distance` | `GatedGrant::Accuracy` — a narrower cone, so more pellets land |
 
 Both are worth exactly zero at point blank, which is why no board row moved.

@@ -82,7 +82,7 @@ pub const ALL: &[(&str, &str)] = &[
 ];
 
 /// The buffs whose trigger is baked into their IDENTITY: a named field on
-/// `DummyParams`, or a card id `evolutions_data::stacking_card_id` derives FROM
+/// `FightParams`, or a card id `evolutions_data::stacking_card_id` derives FROM
 /// a trigger the card itself does not carry.
 ///
 /// CONDITION OVERLOAD IS NOT HERE, because its id is not one mechanic: it is

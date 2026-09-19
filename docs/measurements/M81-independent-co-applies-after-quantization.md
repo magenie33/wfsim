@@ -56,7 +56,7 @@ entry adds is that the licence stops at the bucket.
 0–0 rows, which isolate everything except the CO: charged **2015.0000** and
 Incarnon **12661.6** against measured 2015 and 12662, with every component
 landing on 1.60 / 17.60 / 28.16 / 81.60 and 70.40 / 81.60 units. The engine
-quantizes once in `dummy.rs` and spends CO as a later layer, which is this
+quantizes once in `engine/src/fight/` and spends CO as a later layer, which is this
 entry's order.
 
 ### Not settled by this

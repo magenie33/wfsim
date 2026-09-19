@@ -437,7 +437,7 @@ fn neighbourhood(space: &SubsetSpace, from: &[usize]) -> Vec<Vec<usize>> {
 type Evaluated = (
     usize,
     usize,
-    Vec<(std::sync::Arc<Candidate>, usize, wfsim_engine::dummy::Summary)>,
+    Vec<(std::sync::Arc<Candidate>, usize, wfsim_engine::fight::Summary)>,
 );
 
 /// Expand and screen a whole batch. The batch is fixed before any of it runs,

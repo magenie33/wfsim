@@ -13,7 +13,7 @@ name: Magistar
 #
 # THE CADENCE IS THE CHARGE, THE SWING AND THE WAIT: 0.4 s and 0.8 s at 1.0x,
 # then however long the counter is worth waiting for —
-# `dummy::heavy_cycle_seconds`, the same decision the heavy slam makes.
+# `fight::heavy_cycle_seconds`, the same decision the heavy slam makes.
 inherits: magistar
 form: heavy
 transform_group: magistar

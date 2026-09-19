@@ -280,7 +280,7 @@ pub struct ArcaneFx {
     ///
     /// THREE NUMBERS AND NOT ONE, because the card is two mechanics: a ROLL
     /// that opens a clock, and a RADIUS that the clock makes matter. See
-    /// `dummy::spread_from_influence`.
+    /// `fight::spread_from_influence`.
     pub influence_chance: f64,
     pub influence_radius_m: f64,
     pub influence_seconds: f64,

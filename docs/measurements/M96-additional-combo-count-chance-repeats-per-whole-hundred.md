@@ -50,6 +50,6 @@ Past 200% is not measured; the engine carries the same rule.
 
 ### Where it is read
 
-`dummy::swing_combo_gain`, once per landed hit;
+`fight::swing_combo_gain`, once per landed hit;
 `a_hit_earns_its_base_points_through_the_gain_gate_and_the_extra_chance` holds
 every row above as the totals it can and cannot reach.

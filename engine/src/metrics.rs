@@ -15,7 +15,7 @@
 
 use serde::Serialize;
 
-use crate::dummy::RunResult;
+use crate::fight::RunResult;
 
 /// WHAT ONE RUN SCORES under a metric, so the benchmark fight is picked in the
 /// units the scenario is judged in. A metric that named none would pick its

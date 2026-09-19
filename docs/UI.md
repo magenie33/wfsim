@@ -67,8 +67,8 @@ drift DPS shows over the same pair (18,653 vs 20,551).
 |---|---|
 | the fight, both actors | `arena::Arena` (a `Tenno`, a target with its hitboxes, a duration) |
 | the player | `tenno_data::Tenno` — stats, and a `state` every conditional mod is asked about |
-| target that never wastes DPS | `dummy::TargetMode::InstantRespawn` |
-| aim quality / headshot feel | `dummy::BodyPart::aim_weight` |
+| target that never wastes DPS | `fight::TargetMode::InstantRespawn` |
+| aim quality / headshot feel | `fight::BodyPart::aim_weight` |
 | plane, positions, ranges | **nothing yet** — see below |
 
 **The Arena VIEW has no engine behind it.** There was an `engine::world`
@@ -133,7 +133,7 @@ curve at once.
 
 It is the same fight the block's own number came from, not a fresh run and not
 an average. `Rng` is SplitMix64 with a single `u64` of state, so a run records
-what it started from (`RunResult::rng_state`) and `dummy::replay` re-runs that
+what it started from (`RunResult::rng_state`) and `fight::replay` re-runs that
 one bit-for-bit. Cost: ONE extra engagement, and only when asked — the
 marginal-gain scan calls the same endpoint once per candidate and shows no
 replay, so `replay: true` is opt-in and only the Simulator's Run sends it.

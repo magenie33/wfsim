@@ -30,8 +30,8 @@ pub mod space;
 pub mod truth;
 
 use wfsim_engine::damage::DamageType;
-use wfsim_engine::dummy::{
-    monte_carlo, BuffConfig, BuffLock, DummyParams, LockMode, Summary,
+use wfsim_engine::fight::{
+    monte_carlo, BuffConfig, BuffLock, FightParams, LockMode, Summary,
 };
 use wfsim_engine::arena::Arena;
 use wfsim_engine::tenno_data::Tenno;
@@ -705,7 +705,7 @@ pub fn evaluate(
     // enumerated without a second form is fired in the one form it has.
     let mut params = match (s.incarnon_cycle, c.base_panel.as_ref()) {
         (true, Some(base)) => {
-            let mut p = DummyParams::incarnon_cycle_from_panels(
+            let mut p = FightParams::incarnon_cycle_from_panels(
                 &c.panel,
                 base,
                 s.frenzy,
@@ -719,7 +719,7 @@ pub fn evaluate(
             p
         }
         _ => {
-            let mut d = DummyParams::from_panel(&c.panel, &s.arena, arcane);
+            let mut d = FightParams::from_panel(&c.panel, &s.arena, arcane);
             // The scenario's ammo rule, exactly as `simulate_json` applies it.
             d.infinite_reserve = c.panel.reserve_is_infinite(s.infinite_ammo);
             // Frenzy is the WEAPON's passive: it rides whichever form is
@@ -1470,7 +1470,7 @@ mod tests {
 
     #[test]
     fn a_resumed_funnel_lands_on_the_same_leaderboard() {
-        use wfsim_engine::dummy::BodyPart;
+        use wfsim_engine::fight::BodyPart;
         let pool = pool();
         let base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &[]);
         let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");

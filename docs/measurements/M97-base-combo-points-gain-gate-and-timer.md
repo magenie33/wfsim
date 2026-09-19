@@ -57,7 +57,7 @@ data, not a measurement of the game's code.
 ### Where it is read
 
 `ComboHit::combo_points_base` on every row (`combo_points` on an ordinary stance,
-1 on the `valkyr_talons*` entries, 0 on a spending row), `dummy::swing_combo_gain`
-and `dummy::refreshes_combo_timer`, and `ModEffect::ComboGainChance` for the
+1 on the `valkyr_talons*` entries, 0 on a spending row), `fight::swing_combo_gain`
+and `fight::refreshes_combo_timer`, and `ModEffect::ComboGainChance` for the
 riven's line. `a_hit_earns_its_base_points_through_the_gain_gate_and_the_extra_chance`
 and `a_hit_that_earned_nothing_does_not_refresh_the_combo_timer` hold them.

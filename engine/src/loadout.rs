@@ -1501,7 +1501,7 @@ pub struct StackSpec {
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
     /// WHICH SWITCH GRANTS THESE STACKS (`buff_events::ALL`), `None` when
-    /// nothing does — the answer `DummyParams::deny_buff_triggers` reads and
+    /// nothing does — the answer `FightParams::deny_buff_triggers` reads and
     /// the same one the card is greyed by, so the page and the run cannot
     /// disagree. It travels on the spec because the data states it and the
     /// engine has no business classifying it a second time: melee's Condition
@@ -1862,7 +1862,7 @@ pub enum GatedGrant {
 /// It is NOT A FORM in this repo's sense and does not become one — no weapon
 /// entry is unlocked and no animation changes. It is the same weapon resolved
 /// twice, and this is the rule for which of the two you are in
-/// (`dummy::Arms::HeavyAtCombo`, `dummy::Ends::After`).
+/// (`fight::Arms::HeavyAtCombo`, `fight::Ends::After`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MeleeIncarnon {
     /// The combo MULTIPLIER a heavy attack must go down at — 6x on the
@@ -2010,7 +2010,7 @@ pub struct WeaponBase {
     pub kill_streak_summon: Option<crate::weapons_data::KillStreakSummonSpec>,
     /// Where this weapon's beam ramp starts (0.20 unless it says otherwise).
     pub beam_ramp_floor: f64,
-    /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
+    /// Does this weapon apply MICROWAVE? See `fight::DebuffState::microwave`.
     pub applies_microwave: bool,
     /// See `weapons_data::WeaponSpec::independent_procs`. No mod adds or
     /// removes one — it is what the weapon DOES, not what the build asks for.
@@ -2365,7 +2365,7 @@ pub struct WeaponBase {
     pub field_duration_on_empty_reload: f64,
     /// Lone Enforcer: `(fraction of base multishot, metres)`, paid only when
     /// the target is standing further away than that. Settled against the arena
-    /// in `DummyParams::from_panel` — see [`EvoEffect::MultishotBeyondRange`].
+    /// in `FightParams::from_panel` — see [`EvoEffect::MultishotBeyondRange`].
     pub multishot_beyond_range: Option<(f64, f64)>,
     /// Continuous-beam geometry, when this form is one.
     pub beam: Option<BeamGeometry>,
@@ -3598,7 +3598,7 @@ pub struct ResolvedPanel {
     pub field_duration_on_empty_reload: f64,
     /// Lone Enforcer, carried rather than folded: `(fraction of base multishot,
     /// metres)`. `resolve` cannot settle it because it never sees the arena —
-    /// `DummyParams::from_panel` does, and that is where it is paid.
+    /// `FightParams::from_panel` does, and that is where it is paid.
     pub multishot_beyond_range: Option<(f64, f64)>,
     /// Final Fusillade's flat multishot add on the magazine's last round
     /// (0.0 = none). NOT folded into `multishot`: it is conditional on the
@@ -3751,7 +3751,7 @@ pub struct ResolvedPanel {
     pub lingering_base: Option<LingeringBase>,
     pub battery: Option<crate::weapons_data::Battery>,
     /// ROUNDS A SECOND under Pax Charge — carried from the weapon so
-    /// `DummyParams::from_panel` can build the battery, which is where the
+    /// `FightParams::from_panel` can build the battery, which is where the
     /// ARCANE is finally in hand. The rate is the only part of that mechanic
     /// the weapon owns.
     pub recharge_per_second: Option<f64>,
@@ -3793,7 +3793,7 @@ pub struct ResolvedPanel {
     pub kill_streak_summon: Option<crate::weapons_data::KillStreakSummonSpec>,
     /// See `weapons_data::WeaponSpec::beam_ramp_floor`. No mod moves it.
     pub beam_ramp_floor: f64,
-    /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
+    /// Does this weapon apply MICROWAVE? See `fight::DebuffState::microwave`.
     pub applies_microwave: bool,
     /// See `weapons_data::WeaponSpec::independent_procs`.
     pub independent_procs: &'static [&'static str],
@@ -3872,7 +3872,7 @@ pub struct ResolvedPanel {
     ///
     /// The arcane's own two ramps are NOT spent here. They are per METRE and
     /// this is the metres, so the multiplication happens where a build meets an
-    /// arcane — `DummyParams::from_panel` — and that is one place rather than
+    /// arcane — `FightParams::from_panel` — and that is one place rather than
     /// three. It cannot be this one: the optimizer resolves a panel ONCE and
     /// pairs it with every arcane in the search, so a panel that had already
     /// spent an arcane would have to be re-resolved per job.
@@ -4118,7 +4118,7 @@ pub struct ProcConv {
 /// slamming from a height of at least 15 meters"* (wiki, Melee).
 ///
 /// A SLAM MODE'S LOOP IS `climb -> slam -> recover`, and the climb is the
-/// player's own time — the same freedom [`crate::dummy::heavy_cycle_seconds`]
+/// player's own time — the same freedom [`crate::fight::heavy_cycle_seconds`]
 /// spends on the combo counter — so it reaches the 15 m that sentence names.
 /// The climb itself is not charged, which is the model's declared gap.
 ///
@@ -6201,10 +6201,10 @@ mod tests {
             let mut arena = crate::arena::Arena::training(5.0);
             arena.target_at =
                 crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
-            let p = crate::dummy::DummyParams::from_panel(
+            let p = crate::fight::FightParams::from_panel(
                 &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
             );
-            crate::dummy::monte_carlo(&p, 3, 11).mean_damage
+            crate::fight::monte_carlo(&p, 3, 11).mean_damage
         };
         assert!(at(&[], 5.0) > 0.0, "inside its own reach it fires normally");
         assert_eq!(at(&[], 27.0), 0.0, "past the wall a beam deals nothing at all");
@@ -6235,10 +6235,10 @@ mod tests {
             let mut arena = crate::arena::Arena::training(5.0);
             arena.target_at =
                 crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
-            let p = crate::dummy::DummyParams::from_panel(
+            let p = crate::fight::FightParams::from_panel(
                 &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
             );
-            crate::dummy::monte_carlo(&p, 3, 11).mean_damage
+            crate::fight::monte_carlo(&p, 3, 11).mean_damage
         };
         // 18 m: past the bare beam's 15, inside the perked 22. The perk is the
         // only difference between the two runs, so it is the only thing that
@@ -6323,9 +6323,9 @@ mod tests {
             // ONE STANDING ENEMY, which is the fight the measurement was taken
             // in and the only one where the trade is pure loss.
             let arena = crate::arena::Arena::training(12.0);
-            let dp = crate::dummy::DummyParams::from_panel(
+            let dp = crate::fight::FightParams::from_panel(
                 p, &arena, &crate::arcanes_data::ArcaneFx::none());
-            crate::dummy::monte_carlo(&dp, 40, 11).mean_damage
+            crate::fight::monte_carlo(&dp, 40, 11).mean_damage
         };
         let (a, b) = (blast(&bare), blast(&with));
         assert!(
@@ -6395,12 +6395,12 @@ mod tests {
                 .iter()
                 .map(|y| crate::formation::FoeSpec {
                     id: String::new(),
-                    params: crate::dummy::TargetParams::training_dummy(),
-                    body_parts: crate::dummy::DummyParams::humanoid_parts(),
+                    params: crate::fight::TargetParams::training_dummy(),
+                    body_parts: crate::fight::FightParams::humanoid_parts(),
                     at: crate::space::Vec2::new(0.0, *y),
                 })
                 .collect();
-            let dp = crate::dummy::DummyParams::from_panel(
+            let dp = crate::fight::FightParams::from_panel(
                 p, &arena, &crate::arcanes_data::ArcaneFx::none());
             (dp.punch_through_m, dp.struck_bodies().len())
         };
@@ -6420,14 +6420,14 @@ mod tests {
                 .iter()
                 .map(|y| crate::formation::FoeSpec {
                     id: String::new(),
-                    params: crate::dummy::TargetParams::training_dummy(),
-                    body_parts: crate::dummy::DummyParams::humanoid_parts(),
+                    params: crate::fight::TargetParams::training_dummy(),
+                    body_parts: crate::fight::FightParams::humanoid_parts(),
                     at: crate::space::Vec2::new(0.0, *y),
                 })
                 .collect();
-            let dp = crate::dummy::DummyParams::from_panel(
+            let dp = crate::fight::FightParams::from_panel(
                 p, &arena, &crate::arcanes_data::ArcaneFx::none());
-            let r = crate::dummy::run_once(&dp, &mut crate::rng::Rng::new(0x5EED));
+            let r = crate::fight::run_once(&dp, &mut crate::rng::Rng::new(0x5EED));
             r.spread.by_body().0.iter().filter(|d| **d > 0.0).count()
         };
         assert_eq!(took(&bare), 1, "no mod: only the aimed body is paid");
@@ -8039,9 +8039,9 @@ mod tests {
         let panel = resolve(&base, &[], StackPolicy::AssumedMax);
         let dps = |secs: f64| {
             let arena = crate::arena::Arena::training(secs);
-            let p = crate::dummy::DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            let p = crate::fight::FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
             let mut rng = crate::rng::Rng::new(7);
-            crate::dummy::run_once(&p, &mut rng).total_damage() / secs
+            crate::fight::run_once(&p, &mut rng).total_damage() / secs
         };
         let (d30, d300, d600) = (dps(30.0), dps(300.0), dps(600.0));
         // PAST THE FIRST MAGAZINE the rate is flat: every magazine after it

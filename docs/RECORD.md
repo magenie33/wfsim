@@ -49,7 +49,7 @@ fires.
 ## Damage comes through one door, and the compiler holds it
 
 **DAMAGE COMES THROUGH ONE DOOR, AND THE COMPILER HOLDS IT.**
-`engine::dummy::ledger` owns the run's totals and the DPS curve in types whose
+`engine::fight::ledger` owns the run's totals and the DPS curve in types whose
 fields are PRIVATE TO IT, so the only thing in this crate that can move them
 is `ledger::settle` — which books the number and writes the row that explains
 it in the same call. A damage site that moves every curve on the page and

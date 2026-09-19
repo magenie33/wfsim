@@ -232,7 +232,7 @@ It is also a second weapon and a second perk: the original deduction came off
 the Felarx's **Devastating** Attrition, this is the Phenmor's **Devouring**
 Attrition, so the behaviour belongs to the SPLIT and not to one card. Nothing
 changed — the engine passes a literal tier `0` at
-`dummy.rs` `attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng)`, and
+`engine/src/fight/` `attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng)`, and
 claim 3 of `the_debilitate_dot_carries_two_attrition_layers` already asserted a
 fight that crits every shot still takes ×21. This upgrades that claim from a
 reading of "on a hit that is not critical" to a run.

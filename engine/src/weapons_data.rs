@@ -1139,7 +1139,7 @@ pub struct ComboHit {
     ///
     /// THE MODULE HAS FIVE TYPES AND THIS MODELS TWO OF THEM. `"360"` is here;
     /// `"Sweep"`, `"Thrust"` and the empty string all become the forward
-    /// 90-degree arc (`dummy::MELEE_ARC_DEG`), which is wide for a thrust and
+    /// 90-degree arc (`fight::MELEE_ARC_DEG`), which is wide for a thrust and
     /// narrow for a sweep; `"Ranged"` and `"Slam"` are different mechanics and
     /// have their own fields. Declared on every melee entry.
     #[serde(default)]
@@ -1831,7 +1831,7 @@ pub struct WeaponSpec {
     #[serde(default)]
     pub valence: Option<ValenceSpec>,
     /// Does this weapon apply MICROWAVE — the Nukor family's own invisible
-    /// status? See `dummy::DebuffState::microwave`. Two weapons in the game
+    /// status? See `fight::DebuffState::microwave`. Two weapons in the game
     /// have it and the wiki names both.
     #[serde(default)]
     pub applies_microwave: bool,
@@ -3415,7 +3415,7 @@ fn independent_procs_for(s: &WeaponSpec) -> &'static [&'static str] {
             "lifted" => "lifted",
             "knockdown" => "knockdown",
             other => panic!(
-                "{}: unknown independent proc `{other}` — the engine implements `lifted` and `knockdown`;                  add the effect to dummy::DebuffState before declaring it",
+                "{}: unknown independent proc `{other}` — the engine implements `lifted` and `knockdown`;                  add the effect to fight::DebuffState before declaring it",
                 s.id
             ),
         })
@@ -3970,7 +3970,7 @@ pub fn base_panel_assembled(
         // The DEFAULT lives with the ramp it belongs to, so "most weapons"
         // is stated once rather than copied into a second file that is free
         // to drift from it.
-        beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::dummy::BEAM_RAMP_FLOOR),
+        beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::fight::BEAM_RAMP_FLOOR),
         applies_microwave: s.applies_microwave,
         battery: s.battery,
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
@@ -5075,7 +5075,7 @@ mod tests {
     /// under AssumedMax — so the panel showed +220% and the sim showed none.
     #[test]
     fn a_reload_from_empty_buff_is_worth_nothing_until_the_first_reload() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
@@ -5087,7 +5087,7 @@ mod tests {
         let run = |with: bool, secs: f64| {
             let refs: Vec<&crate::loadout::ModDef> = if with { vec![de] } else { Vec::new() };
             let panel = resolve(&base, &refs, StackPolicy::Emergent);
-            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(secs), &crate::arcanes_data::ArcaneFx::none());
+            let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(secs), &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
             p.infinite_reserve = true;
             let s = monte_carlo(&p, 1, 7);
@@ -5115,10 +5115,10 @@ mod tests {
 
     /// AMMO EFFICIENCY REACHES A WEAPON BUILT FROM ITS PANEL.
     ///
-    /// `DummyParams::from_panel` hardcoded `ammo_efficiency_applies: false`,
+    /// `FightParams::from_panel` hardcoded `ammo_efficiency_applies: false`,
     /// so every weapon the API simulates had ammo efficiency switched off
     /// entirely — Primary Crux's +60% did nothing at all. Nothing caught it
-    /// because every test of the mechanic builds `DummyParams` by hand, where
+    /// because every test of the mechanic builds `FightParams` by hand, where
     /// the field defaults to `true`; this one goes through the panel, which is
     /// the path a request takes.
     ///
@@ -5128,13 +5128,13 @@ mod tests {
     /// Torid's Incarnon form.
     #[test]
     fn ammo_efficiency_survives_the_trip_through_the_panel() {
-        use crate::dummy::DummyParams;
+        use crate::fight::FightParams;
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
 
         let of = |id: &str| {
             let base = WeaponBase::from_data(id, true, &[]);
             let panel = resolve(&base, &[], StackPolicy::Emergent);
-            DummyParams::from_panel(&panel, &crate::arena::Arena::training(60.0), &crate::arcanes_data::ArcaneFx::none())
+            FightParams::from_panel(&panel, &crate::arena::Arena::training(60.0), &crate::arcanes_data::ArcaneFx::none())
             .ammo_efficiency_applies
         };
         assert!(of("larkspur_prime"), "an ordinary weapon spends real ammo");
@@ -5160,7 +5160,7 @@ mod tests {
     /// and spends 0.5 per tick, so the tick count is double.
     #[test]
     fn total_ammo_is_the_magazine_plus_the_reserve() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
@@ -5172,7 +5172,7 @@ mod tests {
         let rounds = |ids: &[&str]| {
             let refs: Vec<&crate::loadout::ModDef> = ids.iter().map(|i| by(i)).collect();
             let panel = resolve(&base, &refs, StackPolicy::Emergent);
-            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(3600.0), &crate::arcanes_data::ArcaneFx::none());
+            let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(3600.0), &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
             (panel.magazine_size, panel.ammo_reserve, monte_carlo(&p, 1, 11).mean_shots * 0.5)
         };
@@ -5269,7 +5269,7 @@ mod tests {
     /// been running dry in half the time the wiki gives it.
     #[test]
     fn the_larkspur_runs_out_where_a_primary_would_not() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
@@ -5278,7 +5278,7 @@ mod tests {
         assert!(base.no_resupply, "a ground Arch-Gun cannot be resupplied");
 
         let panel = resolve(&base, &[], StackPolicy::Emergent);
-        let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(120.0), &crate::arcanes_data::ArcaneFx::none());
+        let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(120.0), &crate::arcanes_data::ArcaneFx::none());
         p.arcane = crate::arcanes_data::ArcaneFx::none();
         let s = monte_carlo(&p, 1, 3);
         assert!(
@@ -5300,7 +5300,7 @@ mod tests {
         // exist and the sim does not model them.
         let torid = WeaponBase::from_data("torid", true, &[]);
         let tp = resolve(&torid, &[], StackPolicy::Emergent);
-        let mut q = DummyParams::from_panel(&tp, &crate::arena::Arena::training(120.0), &crate::arcanes_data::ArcaneFx::none());
+        let mut q = FightParams::from_panel(&tp, &crate::arena::Arena::training(120.0), &crate::arcanes_data::ArcaneFx::none());
         q.arcane = crate::arcanes_data::ArcaneFx::none();
         assert!(monte_carlo(&q, 1, 3).mean_shots > 60.0, "a Primary is resupplied");
     }
@@ -5391,7 +5391,7 @@ mod tests {
     /// of the roster (the Infinite-ammo setting has to be adjustable).
     #[test]
     fn an_incarnon_cycle_runs_dry_like_anything_else() {
-        use crate::dummy::{monte_carlo, DummyParams, LockMode};
+        use crate::fight::{monte_carlo, FightParams, LockMode};
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
         // 600 s, not 300: the fixture has to actually EXHAUST the reserve to
         // say anything, and after the transform stopped skipping the completing
@@ -5403,7 +5403,7 @@ mod tests {
         let inc = panel("boar_prime_incarnon");
         let base = panel("boar_prime");
         let mk = |infinite| {
-            let mut p = DummyParams::incarnon_cycle_from_panels(
+            let mut p = FightParams::incarnon_cycle_from_panels(
                 &inc, &base, false, LockMode::Initial(0), &arena, &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
             p.infinite_reserve = infinite;
@@ -5610,7 +5610,7 @@ mod tests {
 
     /// A WEAPON'S FORCED PROCS REACH THE SIM.
     ///
-    /// `DummyParams::forced_procs` has existed since the Astilla was written up
+    /// `FightParams::forced_procs` has existed since the Astilla was written up
     /// in MECHANICS §6, and the panel filled it with an empty vector — so the
     /// field was real, the sim read it, and no weapon could ever put anything
     /// in it. Phantasma Prime's charged form is the first that needs to:
@@ -6088,10 +6088,10 @@ mod laetum_tests {
 
     #[test]
     fn the_sim_actually_applies_the_radial() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
         let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
-        let parts = vec![crate::dummy::BodyPart {
+        let parts = vec![crate::fight::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6099,7 +6099,7 @@ mod laetum_tests {
             crit_bonus: false,
         }];
         let params =
-            DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts, ..crate::arena::Arena::training(10.0) }, &crate::arcanes_data::ArcaneFx::none());
+            FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts, ..crate::arena::Arena::training(10.0) }, &crate::arcanes_data::ArcaneFx::none());
         assert!(params.radial.is_some(), "params carry the radial");
         let s = monte_carlo(&params, 30, 7);
         assert!(
@@ -6122,19 +6122,19 @@ mod laetum_tests {
     /// explosion, a body-only engagement must settle at radial ~ 3x direct.
     #[test]
     fn direct_then_radial_lands_at_the_declared_ratio() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
         let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
         let specs = crate::enemy_data::all();
         let spec = specs.iter().find(|e| e.id == "thrax_centurion").unwrap();
         let target = spec
-            .target_params(1, false, false, crate::dummy::TargetMode::InstantRespawn)
+            .target_params(1, false, false, crate::fight::TargetMode::InstantRespawn)
             .unwrap();
-        let parts = vec![crate::dummy::BodyPart {
+        let parts = vec![crate::fight::BodyPart {
             name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
             is_head: false, crit_bonus: false,
         }];
-        let params = DummyParams::from_panel(&p, &crate::arena::Arena { target, body_parts: parts, ..crate::arena::Arena::training(30.0) }, &crate::arcanes_data::ArcaneFx::none());
+        let params = FightParams::from_panel(&p, &crate::arena::Arena { target, body_parts: parts, ..crate::arena::Arena::training(30.0) }, &crate::arcanes_data::ArcaneFx::none());
         let s = monte_carlo(&params, 40, 3);
         let d = s.source_damage.direct;
         let r = s.source_damage.radial;
@@ -6177,8 +6177,8 @@ mod laetum_tests {
     /// and a timeout drops ONE stack rather than the whole buff.
     #[test]
     fn overwhelming_attrition_earns_and_pays_out() {
-        use crate::dummy::{monte_carlo, DummyParams};
-        let parts = vec![crate::dummy::BodyPart {
+        use crate::fight::{monte_carlo, FightParams};
+        let parts = vec![crate::fight::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6189,7 +6189,7 @@ mod laetum_tests {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
             let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
             let params =
-                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
+                FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
             (!params.stacking_buffs.is_empty(), monte_carlo(&params, 40, 11).mean_effective_damage)
         };
         let (has_none, without) = run(&[]);
@@ -6207,9 +6207,9 @@ mod laetum_tests {
     /// back real time.
     #[test]
     fn lethal_rearmament_shortens_the_cycle_not_just_reloads() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         // 100% headshots so the trigger fires on every landed pellet.
-        let parts = vec![crate::dummy::BodyPart {
+        let parts = vec![crate::fight::BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
             multiplier: 3.0,
@@ -6220,7 +6220,7 @@ mod laetum_tests {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
             let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
             let params =
-                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(60.0) }, &crate::arcanes_data::ArcaneFx::none());
+                FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(60.0) }, &crate::arcanes_data::ArcaneFx::none());
             let m = monte_carlo(&params, 24, 7);
             (!params.stacking_buffs.is_empty(), m.mean_effective_damage)
         };
@@ -6240,9 +6240,9 @@ mod laetum_tests {
     /// that more cycles fit — the gauge requirement staying put.
     #[test]
     fn a_reload_buff_shortens_the_transmutes_but_never_the_gauge() {
-        use crate::dummy::{run_once, DummyParams};
+        use crate::fight::{run_once, FightParams};
         use crate::rng::Rng;
-        let parts = vec![crate::dummy::BodyPart {
+        let parts = vec![crate::fight::BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
             multiplier: 3.0,
@@ -6255,11 +6255,11 @@ mod laetum_tests {
             let pol = crate::loadout::StackPolicy::Emergent;
             let pi = crate::loadout::resolve(&inc, &[], pol);
             let pb = crate::loadout::resolve(&base, &[], pol);
-            let mut d = DummyParams::incarnon_cycle_from_panels(
+            let mut d = FightParams::incarnon_cycle_from_panels(
                 &pi,
                 &pb,
                 false,
-                crate::dummy::LockMode::Initial(0),
+                crate::fight::LockMode::Initial(0),
                 &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(300.0) },
                 &crate::arcanes_data::ArcaneFx::none(),
             );
@@ -6278,9 +6278,9 @@ mod laetum_tests {
             }
             d
         };
-        let cycle_charges = |d: &DummyParams| {
+        let cycle_charges = |d: &FightParams| {
             match d.cycle.as_ref().expect("the incarnon cycle").arms {
-                crate::dummy::Arms::Gauge { charges_to_fill, .. } => charges_to_fill,
+                crate::fight::Arms::Gauge { charges_to_fill, .. } => charges_to_fill,
                 other => panic!("a gun Incarnon fills a gauge, not {other:?}"),
             }
         };
@@ -6313,8 +6313,8 @@ mod laetum_tests {
     /// value as the base-damage bucket grows, a multiplicative one does not.
     #[test]
     fn overwhelming_attrition_is_diluted_by_base_damage_mods() {
-        use crate::dummy::{monte_carlo, DummyParams};
-        let parts = vec![crate::dummy::BodyPart {
+        use crate::fight::{monte_carlo, FightParams};
+        let parts = vec![crate::fight::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6329,7 +6329,7 @@ mod laetum_tests {
                 let b = WeaponBase::from_data("laetum_incarnon", true, e);
                 let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
                 let params =
-                    DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
+                    FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
                 monte_carlo(&params, 60, 5).mean_effective_damage
             };
             run(evos) / run(&[])
@@ -6382,7 +6382,7 @@ mod laetum_tests {
     /// own multiplicative bracket — multiplies the already-CO-boosted value.
     #[test]
     fn condition_overload_is_adding_direct_only_and_devouring_stacks_on_top() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
         assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
         // 160/160 and 100/100 in the catalog: the whole base feeds the bonus.
@@ -6391,7 +6391,7 @@ mod laetum_tests {
         let pool = crate::mods_data::pistol_pool();
         let co: Vec<&crate::loadout::ModDef> =
             pool.iter().filter(|m| m.id == "galvanized_shot").collect();
-        let parts = vec![crate::dummy::BodyPart {
+        let parts = vec![crate::fight::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6402,7 +6402,7 @@ mod laetum_tests {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
             let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
             let params =
-                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
+                FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
             let s = monte_carlo(&params, 60, 17).source_damage;
             (s.direct, s.radial)
         };
@@ -6631,10 +6631,10 @@ mod burston_incarnon_radial_tests {
     /// while the direct hit fires once per pellet.
     #[test]
     fn multishot_multiplies_the_direct_hit_and_not_the_explosion() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("burston_prime_incarnon", true, &[]);
         let body = || {
-            vec![crate::dummy::BodyPart {
+            vec![crate::fight::BodyPart {
                 name: "body".into(),
                 aim_weight: 1.0,
                 multiplier: 1.0,
@@ -6645,7 +6645,7 @@ mod burston_incarnon_radial_tests {
         let pool = crate::mods_data::pool_for_weapon("burston_prime_incarnon");
         let sim = |mods: &[&crate::loadout::ModDef]| {
             let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
-            let params = DummyParams::from_panel(
+            let params = FightParams::from_panel(
                 &p,
                 &crate::arena::Arena {
                     body_parts: body(),
@@ -6678,7 +6678,7 @@ mod burston_incarnon_radial_tests {
 /// HOW AN INCARNON GAUGE FILLS, on the real weapons rather than on a fixture.
 ///
 /// `charge_on` is weapon data and `dummy` already tells the two rules apart —
-/// but the only test of it built its own `DummyParams` by hand, so it proved
+/// but the only test of it built its own `FightParams` by hand, so it proved
 /// the shot loop honours the flag and never asked whether any weapon in the
 /// roster carries the right one. The difference is not a matter of speed: at a
 /// 0% headshot rate a weakpoint-charged weapon never transforms at all, which
@@ -6686,7 +6686,7 @@ mod burston_incarnon_radial_tests {
 #[cfg(test)]
 mod incarnon_gauge_tests {
     use super::*;
-    use crate::dummy::{monte_carlo, DummyParams};
+    use crate::fight::{monte_carlo, FightParams};
 
     /// Transformations in a fixed engagement at a given headshot rate.
     fn transforms(weapon: &str, evo: &str, headshot_pct: f64) -> u32 {
@@ -6701,11 +6701,11 @@ mod incarnon_gauge_tests {
         // The head takes every shot or none of them, which is what makes this
         // a test of the CHARGE RULE rather than of the aim model.
         let parts = vec![
-            crate::dummy::BodyPart {
+            crate::fight::BodyPart {
                 name: "head".into(), aim_weight: headshot_pct / 100.0,
                 multiplier: 3.0, is_head: true, crit_bonus: true,
             },
-            crate::dummy::BodyPart {
+            crate::fight::BodyPart {
                 name: "body".into(), aim_weight: 1.0 - headshot_pct / 100.0,
                 multiplier: 1.0, is_head: false, crit_bonus: false,
             },
@@ -6713,8 +6713,8 @@ mod incarnon_gauge_tests {
         let arena = crate::arena::Arena { body_parts: parts, ..crate::arena::Arena::training(120.0) };
         // Frenzy off and earned-from-zero: neither weapon here has the passive,
         // and pinning it keeps this a test of the GAUGE.
-        let params = DummyParams::incarnon_cycle_from_panels(
-            &p1, &p0, false, crate::dummy::LockMode::Initial(0), &arena,
+        let params = FightParams::incarnon_cycle_from_panels(
+            &p1, &p0, false, crate::fight::LockMode::Initial(0), &arena,
             &crate::arcanes_data::ArcaneFx::none(),
         );
         monte_carlo(&params, 5, 3).mean_transforms.round() as u32
@@ -7288,7 +7288,7 @@ mod play_mode_tests {
     /// obvious one on a weapon where it is not.
     #[test]
     fn a_thrown_speargun_paces_on_wind_up_plus_reload() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         const DURATION: f64 = 180.0;
         // Both entries: the Prime is not a different mechanic.
         for id in ["scourge_thrown", "scourge_prime_thrown"] {
@@ -7300,7 +7300,7 @@ mod play_mode_tests {
             let run = |mods: &[&crate::loadout::ModDef]| {
                 let b = crate::loadout::WeaponBase::from_data(id, true, &[]);
                 let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::Emergent);
-                let params = DummyParams::from_panel(
+                let params = FightParams::from_panel(
                     &p,
                     &crate::arena::Arena::training(DURATION),
                     &crate::arcanes_data::ArcaneFx::none(),
@@ -7355,12 +7355,12 @@ mod play_mode_tests {
     /// field, and the gap must be exactly one status type's share.
     #[test]
     fn a_thrown_speargun_plants_a_bullet_attractor_that_counts() {
-        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::fight::{monte_carlo, FightParams};
         for id in ["scourge_thrown", "scourge_prime_thrown"] {
             let b = crate::loadout::WeaponBase::from_data(id, true, &[]);
             assert_eq!(b.attractor_seconds, Some(4.7), "{id}: the wiki's 4.7 s");
             let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
-            let mut params = DummyParams::from_panel(
+            let mut params = FightParams::from_panel(
                 &p,
                 &crate::arena::Arena::training(60.0),
                 &crate::arcanes_data::ArcaneFx::none(),
@@ -7371,7 +7371,7 @@ mod play_mode_tests {
             params.co_per_type = 0.8;
             params.co_behavior = crate::loadout::CoBehavior::Independent;
             let with = monte_carlo(&params, 24, 7).mean_effective_damage;
-            let without = DummyParams { attractor_seconds: None, ..params.clone() };
+            let without = FightParams { attractor_seconds: None, ..params.clone() };
             let without = monte_carlo(&without, 24, 7).mean_effective_damage;
             assert!(
                 with > without * 1.02,
@@ -8335,9 +8335,9 @@ mod modular_tests {
                 let a = Assembly { chamber: c.chamber.clone(), grip: g.id.clone(), loader: "bellows".into() };
                 let base = crate::loadout::WeaponBase::from_data_assembled(&s.id, false, &[], Some(&a));
                 let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
-                let p = crate::dummy::DummyParams::from_panel(
+                let p = crate::fight::FightParams::from_panel(
                     &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
-                let r = crate::dummy::monte_carlo(&p, 2, 3);
+                let r = crate::fight::monte_carlo(&p, 2, 3);
                 assert!(r.mean_damage > 0.0, "{} on {}: fires nothing", s.id, g.id);
                 ran += 1;
             }
@@ -8424,9 +8424,9 @@ mod modular_tests {
         // THE FIGHT. Same weapon, same everything, with and without the arcane.
         let arena = crate::arena::Arena::training(12.0);
         let panel = crate::loadout::resolve_for(&base, &[], StackPolicy::Emergent, tenno);
-        let plain = crate::dummy::DummyParams::from_panel(
+        let plain = crate::fight::FightParams::from_panel(
             &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
-        let charged = crate::dummy::DummyParams::from_panel(&panel, &arena, &fx);
+        let charged = crate::fight::FightParams::from_panel(&panel, &arena, &fx);
         assert!(plain.battery.is_none(), "an ordinary Kitgun has no battery");
         let b = charged.battery.expect("pax charge installs one");
         assert_eq!(b.regen_per_second, 50.0);

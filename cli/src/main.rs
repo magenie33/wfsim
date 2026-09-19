@@ -8,8 +8,8 @@
 use std::path::Path;
 use wfsim_engine::arcanes_data::ArcaneFx;
 use wfsim_engine::damage::{DamageType, DamageVector};
-use wfsim_engine::dummy::{
-    monte_carlo, BuffLock, DummyParams, LockedBuff, TargetMode, TargetParams,
+use wfsim_engine::fight::{
+    monte_carlo, BuffLock, FightParams, LockedBuff, TargetMode, TargetParams,
 };
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::CoBehavior;
@@ -21,8 +21,8 @@ use wfsim_engine::scaling;
 // (Commodore's Fortune + Evolved Autoloader + Fevered Frenzy) + Secondary
 // Enervate, humanoid dummy, 10 s.
 
-fn dual_toxocyst_baseline() -> DummyParams {
-    DummyParams {
+fn dual_toxocyst_baseline() -> FightParams {
+    FightParams {
         sample_by: wfsim_engine::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
@@ -209,7 +209,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
             enervate_rank: Some(5),
             ..ArcaneFx::none()
         },
-        body_parts: DummyParams::humanoid_parts(),
+        body_parts: FightParams::humanoid_parts(),
         target: TargetParams::training_dummy(),
         duration_seconds: 10.0,
         // ONE BODY — a fixture, not a formation.
@@ -224,8 +224,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
 /// Base form as played: Fevered Frenzy's +50 base scales the vector
 /// pro-rata (75 → 125), Commodore's Fortune sets base crit to 25%; Frenzy
 /// locked, Fevered pre-stacked to 20 (+100% multishot).
-fn dual_toxocyst_base_params() -> DummyParams {
-    DummyParams {
+fn dual_toxocyst_base_params() -> FightParams {
+    FightParams {
         damage: DamageVector::new()
             .with(DamageType::Impact, 7.5)
             .with(DamageType::Puncture, 60.0)
@@ -240,8 +240,8 @@ fn dual_toxocyst_base_params() -> DummyParams {
 }
 
 /// Incarnon Form (pseudo-reload model, gauge locked full).
-fn dual_toxocyst_incarnon_params() -> DummyParams {
-    DummyParams {
+fn dual_toxocyst_incarnon_params() -> FightParams {
+    FightParams {
         damage: DamageVector::new()
             .with(DamageType::Impact, 25.0)
             .with(DamageType::Puncture, 62.5)
@@ -393,7 +393,7 @@ fn main() {
     // weapon,): Thrax Centurion @9999 STEEL PATH, instant
     // respawn, Secondary Enervate equipped (always on in this sim).
     // 9.67M health behind 15.5M neutral Overguard.
-    let inc2 = DummyParams {
+    let inc2 = FightParams {
         target: thrax
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid thrax target"),

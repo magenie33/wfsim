@@ -15,7 +15,7 @@
 //!   cargo run --release --bin chain_punch
 use wfsim_engine::arena::Arena;
 use wfsim_engine::arcanes_data::ArcaneFx;
-use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode};
+use wfsim_engine::fight::{monte_carlo, FightParams, TargetMode};
 use wfsim_engine::enemy_data;
 use wfsim_engine::formation::FoeSpec;
 use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
@@ -73,7 +73,7 @@ fn run(weapon: &str, mods: &[&str], bodies: usize, spacing: f64) -> (f64, f64, u
     }
     let panel = resolve(&base, &refs, StackPolicy::Emergent);
     let a = arena(bodies, spacing);
-    let p = DummyParams::from_panel(&panel, &a, &ArcaneFx::none());
+    let p = FightParams::from_panel(&panel, &a, &ArcaneFx::none());
     let punch = p.punch_through_m;
     let s = monte_carlo(&p, RUNS, SEED);
     let touched = s.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count();

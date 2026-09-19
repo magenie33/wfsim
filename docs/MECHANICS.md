@@ -139,7 +139,7 @@ Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
   mod-bucket cleanup: the mod bucket, the conditional stacks, an evolution's
   permanent bonus, an arcane's live stacks and the weapon's own Frenzy passive
   all go. `resolve` handles what it can see and states the lock on
-  `ResolvedPanel::locked`; the sim reads it back through `DummyParams::locks()`
+  `ResolvedPanel::locked`; the sim reads it back through `FightParams::locks()`
   for the live sources it owns. See MEASUREMENTS M30.
 - **Conditional buffs** (`ModEffect::CondBuff`): triggered-buff mods whose
   trigger isn't event-modeled (on_ability_cast / on_reload / on_hit / …)
@@ -1783,7 +1783,7 @@ and the optimizer agree without either of them knowing what a sniper is. It is
 also the one mechanic where not aiming changes what a weapon HAS rather than
 what it hits.
 
-**In an Incarnon cycle** the counter is the base form's. `DummyParams` for a
+**In an Incarnon cycle** the counter is the base form's. `FightParams` for a
 cycle is built from the INCARNON panel with the base form hung off
 `cycle.base_form`, so the loop reads the SPEC from whichever form declares one
 (the count survives the transform) and reads whether a hit counts and pays off
@@ -1852,14 +1852,14 @@ writes a 2: it multiplies the finished instance and applies
 card states outright** — 同理，弱点倍率也会被计算两次. A 3× headshot is 3× on the
 hit and 3× again on the extra hit off it, so an extra-hit ability is worth
 strictly more to a headshot build than any multiplier that merely scales the
-hit. `dummy::fire_extra_hits` takes that as `part_again` from the caller,
+hit. `fight::fire_extra_hits` takes that as `part_again` from the caller,
 because only the caller knows whether its instance struck a body part at all.
 
 **The percentage's bracket is the BASE ATTACK's, not the triggering
 instance's.** `Unmodded Impact Distribution` is the phrase that says so, and the
 CN card works it out for the Heliocor: a slam whose own damage is 100% Impact
 still scales its extra hit by `1 + 0.6 + 1.2×0.85 + 1.2×0.1`, the IPS shares of
-the ORDINARY attack. `DummyParams::extra_hit_bracket` is that number, and each
+the ORDINARY attack. `FightParams::extra_hit_bracket` is that number, and each
 call site passes the ratio between it and its own instance's bracket — exactly
 1 on a direct hit, and the whole correction on an explosion or a detonation.
 
@@ -2614,7 +2614,7 @@ positive remainder fires).
 **Stacking is ADDITIVE, with one named exception.** *"Sources of ammo efficiency
 stack additively with each other except for Energized Munitions, which stacks
 multiplicatively."* The engine sums its sources (Frenzy, Akimbo Slip Shot,
-Primary Crux) in `engine::dummy::ammo_efficiency` — correct for everything
+Primary Crux) in `engine::fight::ammo_efficiency` — correct for everything
 modelled, since Energized Munitions is a Warframe ability and out of scope. **If
 it is ever added it must multiply, not join the sum.**
 
@@ -2634,7 +2634,7 @@ rounds only, so a reload adds `floor(capacity − current)` and a magazine sitti
 on a fraction keeps it: on a 5-round magazine 1.5 → **4.5**, 3.25 → **4.25**,
 and 4.25 → **refused**, because the draw would be zero (in game that reads as an
 already-full magazine, the HUD having ceilinged it to 5). One function,
-`engine::dummy::reload_draw`, and it is the **global** rule — the auto-reload an
+`engine::fight::reload_draw`, and it is the **global** rule — the auto-reload an
 Incarnon transform performs runs on it too, not a separate fill-to-full.
 
 **An overdraw's DEBT survives the reload** — ✅ measured (M14). When the
@@ -2652,7 +2652,7 @@ debt and hand back a free fraction of a round. All of it is a no-op without an
 efficiency source, since a 1.0 cost lands the magazine exactly on 0.
 
 **Reloading is gated on "can I fire", not on "is the magazine empty"**
-(`engine::dummy::can_fire`). Two rules meet there and each rules out the naive
+(`engine::fight::can_fire`). Two rules meet there and each rules out the naive
 test in one direction: the magazine gate is *anything left* rather than *enough
 to pay* (M14 — a 0.25 remainder fires a full-cost shot), and a shot that costs
 **nothing** needs no round at all. The Dual Toxocyst hits the

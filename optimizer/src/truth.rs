@@ -17,7 +17,7 @@
 //!    [`Truth::agrees_with`] re-measures under a different seed and reports
 //!    the overlap.
 
-use wfsim_engine::dummy::Summary;
+use wfsim_engine::fight::Summary;
 
 use crate::{evaluate_batch, Candidate, Job, Scenario};
 

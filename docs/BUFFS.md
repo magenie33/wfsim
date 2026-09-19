@@ -365,7 +365,7 @@ on a kill and cleared by a MAGAZINE EVENT: "Tendrils disappear upon reloading
 or emptying the magazine." There is no duration to overwrite, so the card's two
 knobs land where the same sentences point:
 
-- **stacks** → `DummyParams::tendrils_initial`, the count the run opens with,
+- **stacks** → `FightParams::tendrils_initial`, the count the run opens with,
   spent by the same event that clears an earned one;
 - **no timeout** → `tendrils_held`, i.e. that event no longer clears them.
   Same statement as everywhere else — *nothing takes it away* — pointed at the
@@ -386,9 +386,9 @@ would be free to disagree with the passive that produces it.
 
 ### A buff card is THREE lists, and they have to agree
 
-- `DummyParams::buff_roster` — what exists in the run;
+- `FightParams::buff_roster` — what exists in the run;
 - `enumerate_buffs` / `evo_buffs` (webapi) — what is drawn as a card;
-- `DummyParams::apply_buff_config` — what the run actually OBEYS.
+- `FightParams::apply_buff_config` — what the run actually OBEYS.
 
 Deadly Efficiency was in the first two and missing from the third, so its card
 was drawn, set, and dropped — for as long as it had existed. Nothing in the UI
@@ -432,7 +432,7 @@ Chamber: 514.0 kpm open, 287.1 with `kill` off, 403.1 with `headshot_kill` off,
 224.6 with the whole killing group off.
 
 **NOTHING IS CLASSIFIED BY HAND** except the buffs whose trigger is baked into
-their IDENTITY — a named field on `DummyParams`, or a card id the engine derives
+their IDENTITY — a named field on `FightParams`, or a card id the engine derives
 FROM a trigger the card does not carry — which is what `of_builtin` holds.
 `trigger_id` is exhaustive with no `_` arm, so a trigger added to `BuffTrigger`
 cannot compile until it is named and listed.
@@ -467,7 +467,7 @@ lets `data/benchmarks/*.yaml` state it once and rank the whole submission
 library under a new ruler on the day it lands (`docs/BOARD.md`). A per-buff map
 could not: a ruler cannot name buff ids for weapons it has never seen.
 
-**A DENIED BUFF IS REMOVED, NOT ZEROED.** `DummyParams::deny_buff_triggers` sets
+**A DENIED BUFF IS REMOVED, NOT ZEROED.** `FightParams::deny_buff_triggers` sets
 each `Option` to `None` — the same argument `NO_TIMEOUT` makes one section up:
 a flag saying "ignore this one" has to be honoured at every read site, and this
 file records what happened the last time one was missed at three of them.
@@ -503,7 +503,7 @@ that can be spent. It lives in a PERK rather than in `arcane.buffs`, which is
 why it had no card at all until 2026-08-03: the arcane whose entire point is a
 stack count was the one you could not set. `BuffMeta.uncapped` says there is no
 maximum, the card shows `/ ∞` and its input takes no `max`, and
-`DummyParams::enervate_stacks` carries the configured pile into the run. In the whole data set today, exactly one buff
+`FightParams::enervate_stacks` carries the configured pile into the run. In the whole data set today, exactly one buff
 qualifies: **Fevered Frenzy** (the Dual Toxocyst evolution).
 
 The modelled fight is therefore: *you have been at it a while, but you have not
@@ -622,8 +622,8 @@ as duplication to be collapsed:
 
 | where | question |
 | --- | --- |
-| `DummyParams::buff_roster` | does this build have it, and how big does it get? |
-| `DummyParams::apply_buff_config` | what does the card's setting do to it? |
+| `FightParams::buff_roster` | does this build have it, and how big does it get? |
+| `FightParams::apply_buff_config` | what does the card's setting do to it? |
 | `sample_stacks` | what is its live count at this instant? |
 
 Plus `enumerate_buffs` in `webapi`, which asks what card to draw for it.

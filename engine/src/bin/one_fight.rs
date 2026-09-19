@@ -33,7 +33,7 @@ use std::time::Instant;
 
 use wfsim_engine::arcanes_data::ArcaneFx;
 use wfsim_engine::arena::Arena;
-use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode};
+use wfsim_engine::fight::{monte_carlo, FightParams, TargetMode};
 use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
 
 /// The default build: eight mods a real rifle build carries, so the fight
@@ -164,7 +164,7 @@ fn crowd(mut arena: Arena, bodies: usize, spacing: f64) -> Arena {
         .map(|(i, p)| wfsim_engine::formation::FoeSpec {
             id: format!("e{}", i + 2),
             params: arena.target.clone(),
-            body_parts: wfsim_engine::dummy::DummyParams::humanoid_parts(),
+            body_parts: wfsim_engine::fight::FightParams::humanoid_parts(),
             at: *p,
         })
         .collect();
@@ -264,7 +264,7 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
     // `arcanes=`, so the two halves of this tool measured different builds and
     // printed them as one — the mistake `arena_for` already carries a paragraph
     // about, arrived at through a second door.
-    let params = DummyParams::from_panel(&panel, &arena, &arcanes_for(weapon, c.arcanes));
+    let params = FightParams::from_panel(&panel, &arena, &arcanes_for(weapon, c.arcanes));
 
     // Warm: the first call pays for whatever the allocator and the branch
     // predictors have not seen, which is not what a search pays per candidate.
@@ -338,12 +338,12 @@ fn ablate(weapon: &str, c: &Cfg) {
     // profile of the cheap 0.7%.
     let arena = crowd(Arena::training(c.duration), c.bodies, c.spacing);
     let fx = arcanes_for(weapon, c.arcanes);
-    let full = DummyParams::from_panel(&panel, &arena, &fx);
+    let full = FightParams::from_panel(&panel, &arena, &fx);
 
     // …and a fixed length is necessary, not sufficient: the SHOT COUNT has to
     // come out identical too, or the variant changed the fight rather than
     // removing work from it.
-    let time = |p: &DummyParams| -> (f64, f64) {
+    let time = |p: &FightParams| -> (f64, f64) {
         monte_carlo(p, 20.min(c.runs), c.seed);
         let (mut best, mut shots) = (f64::INFINITY, 0.0);
         for _ in 0..c.repeats.max(1) {
@@ -382,11 +382,11 @@ fn ablate(weapon: &str, c: &Cfg) {
     // THE CROWD ITSELF, which no other axis touches. The shot count is the
     // weapon's and does not know how many bodies stand there, so this removes
     // work without changing the fight — the two refusals below still check it.
-    let alone = DummyParams::from_panel(&panel, &Arena::training(c.duration), &fx);
+    let alone = FightParams::from_panel(&panel, &Arena::training(c.duration), &fx);
     // …AND THE ARCANE, when the shape wears one. Debilitate splits a combined
     // element's proc into a component once a target is at ten stacks, so on a
     // crowd it is a multiplier on the proc count rather than a flat cost.
-    let no_arcane = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+    let no_arcane = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
 
     println!(
         "{weapon} · {:.0} s · {} runs · {} bod{} · fixed-length fight — where the time goes",

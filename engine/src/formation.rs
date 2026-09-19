@@ -50,7 +50,7 @@ pub struct FoeSpec {
     /// 2026-08-17, which is enough for the ENGINE — it reads bodies by index
     /// and always will — and not enough for anything that has to talk ABOUT
     /// one. Every debuff, every pool and every DoT is already this body's own
-    /// (`dummy::SpreadFoe`); what was missing was a way to say WHOSE, so a
+    /// (`fight::SpreadFoe`); what was missing was a way to say WHOSE, so a
     /// damage figure, a canvas label and a replay could name the same enemy.
     ///
     /// STABLE ACROSS EDITS: it travels in the scenario, so deleting the body in
@@ -58,9 +58,9 @@ pub struct FoeSpec {
     /// position at parse time, which is what every scenario written before this
     /// existed means and what keeps them all readable.
     pub id: String,
-    pub params: crate::dummy::TargetParams,
+    pub params: crate::fight::TargetParams,
     /// Where a pellet can land on it and what each spot multiplies.
-    pub body_parts: Vec<crate::dummy::BodyPart>,
+    pub body_parts: Vec<crate::fight::BodyPart>,
     pub at: Vec2,
 }
 
@@ -76,7 +76,7 @@ pub struct Formation {
 impl Formation {
     /// The single-target arena, which is what this engine has always run.
     /// `Formation::one(..).len() == 1` and the aim policy can never fire.
-    pub fn one(params: crate::dummy::TargetParams, body_parts: Vec<crate::dummy::BodyPart>, at: Vec2) -> Self {
+    pub fn one(params: crate::fight::TargetParams, body_parts: Vec<crate::fight::BodyPart>, at: Vec2) -> Self {
         Self { foes: vec![FoeSpec { id: "e1".into(), params, body_parts, at }], aimed: 0 }
     }
 
@@ -161,8 +161,8 @@ impl Formation {
     }
 
     pub fn grid(
-        params: crate::dummy::TargetParams,
-        body_parts: Vec<crate::dummy::BodyPart>,
+        params: crate::fight::TargetParams,
+        body_parts: Vec<crate::fight::BodyPart>,
         cols: usize,
         rows: usize,
         spacing: f64,
@@ -192,10 +192,10 @@ impl Formation {
 mod tests {
     use super::*;
 
-    fn spec() -> (crate::dummy::TargetParams, Vec<crate::dummy::BodyPart>) {
+    fn spec() -> (crate::fight::TargetParams, Vec<crate::fight::BodyPart>) {
         (
-            crate::dummy::TargetParams::training_dummy(),
-            crate::dummy::DummyParams::humanoid_parts(),
+            crate::fight::TargetParams::training_dummy(),
+            crate::fight::FightParams::humanoid_parts(),
         )
     }
 

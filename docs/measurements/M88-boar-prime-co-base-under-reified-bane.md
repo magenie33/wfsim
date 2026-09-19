@@ -44,4 +44,4 @@ display's rounding. Quantization is neutral on both attacks: the pellet's
    be 103.5.
 
 Pinned by `boar_prime_co_reads_its_own_base_under_reified_bane_in_both_forms`
-in `engine/src/dummy.rs`.
+in `engine/src/fight/tests/chill_and_co_base.rs`.

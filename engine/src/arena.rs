@@ -7,7 +7,7 @@
 //! states both halves once: somebody is holding the weapon, somebody is being
 //! shot at, for this long.
 //!
-//! It is the SETUP, not the resolution. [`crate::dummy::DummyParams`] is what
+//! It is the SETUP, not the resolution. [`crate::fight::FightParams`] is what
 //! you get when a build is resolved against an arena — flat, because the hot
 //! loop reads it every tick. The arena is what a caller ASSEMBLES: the web api
 //! builds one from the scenario JSON, the optimizer's `Scenario` embeds one so
@@ -15,7 +15,7 @@
 //! same value to the same constructor. Two modules reading one scenario into
 //! two lookalike shapes is how they drift a field at a time.
 
-use crate::dummy::{BodyPart, TargetParams};
+use crate::fight::{BodyPart, TargetParams};
 use crate::space::Vec2;
 use crate::tenno_data::Tenno;
 
@@ -108,7 +108,7 @@ pub struct Arena {
     /// Carried beside the resolved list because a MOD can raise Ability
     /// Strength — the Invocations do, +1% to +4% a stack — and a mod belongs to
     /// the BUILD while an ability belongs to the FIGHT. The two meet in
-    /// `DummyParams::from_panel`, which is the one place that holds both, so
+    /// `FightParams::from_panel`, which is the one place that holds both, so
     /// the picks have to survive that far to be resolved again there.
     ///
     /// `abilities` above is what a fight with no such card runs, which is every
@@ -153,7 +153,7 @@ impl Arena {
             // SOLO, like every fight that does not say otherwise.
             squad_size: 1,
             target: TargetParams::training_dummy(),
-            body_parts: crate::dummy::DummyParams::humanoid_parts(),
+            body_parts: crate::fight::FightParams::humanoid_parts(),
             // CONTACT — as close as two bodies can stand (`space`), which is
             // what point blank means once they have a size at all. The fixture
             // measures weapon numbers, and any more range than this would put a

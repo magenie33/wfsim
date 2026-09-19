@@ -20,7 +20,7 @@ release → RELOAD.*)
 **What it settles.** The reload is unconditional, not a magazine running dry, so
 the cycle is `wind-up + reload` = 1.0 + 0.6 = **1.6 s** and the throw rate is
 0.625/s, not 1/s. That is a `magazine: 1` weapon — the same shape a bow's nock
-already has here (`cernos_prime.yaml`, and dummy.rs' "the cycle is charge +
+already has here (`cernos_prime.yaml`, and engine/src/fight/'s "the cycle is charge +
 reload however the two are ordered"), so the fix was the magazine and nothing
 else. The wind-up being `1 / fire_rate` also makes the second clause fall out for
 free: a fire-rate bonus shortens the wind-up and cannot touch the reload.

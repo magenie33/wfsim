@@ -38,7 +38,7 @@ pub mod benchmarks_data;
 pub mod boards_data;
 pub mod builds;
 pub mod scenario;
-pub mod dummy;
+pub mod fight;
 pub mod elements;
 pub mod enemy_data;
 pub mod evolutions_data;

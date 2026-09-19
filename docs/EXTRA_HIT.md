@@ -118,7 +118,7 @@ they needed exactly three fields and no new mechanism:
   never learns what a sniper is.
 
 The three unimplemented ability sources are `kind: extra_hit` entries in
-`data/abilities/` and nothing else — the machinery is `dummy::fire_extra_hits`,
+`data/abilities/` and nothing else — the machinery is `fight::fire_extra_hits`,
 and it reads the list rather than any weapon or ability name.
 
 ## …and the one that is not a percentage
@@ -184,7 +184,7 @@ for Debilitate. That belongs where it is.
 
 ## How the multipliers stack, factor by factor
 
-`engine::dummy::extra_hit` takes the triggering instance's finished
+`engine::fight::extra_hit` takes the triggering instance's finished
 `trigger_raw` and MULTIPLIES rather than rebuilding anything, which is why the
 wiki's one-line formula
 

@@ -370,12 +370,12 @@ The module's whole vocabulary, for whoever transcribes the next stance:
 | the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact and Slash bonuses, 360deg flag, forced procs and trailing slam | `weapons_data::ComboHit` |
 | combo points an ORDINARY slam grants per body (Shockwave Synergy) | `EvoEffect::ComboCountOnSlamHit`, gated off a swing that spends the counter |
 | a STANCE as a mod that supplies those scripts | `loadout::ModDef::stance`, `resolve` |
-| the combo counter, its ladder and its refilling floor | `dummy::melee_combo_multiplier`, `melee_combo_points` |
+| the combo counter, its ladder and its refilling floor | `fight::melee_combo_multiplier`, `melee_combo_points` |
 | Blood Rush / Weeping Wounds | one `(combo - 1)` term in each of two existing brackets |
 | Follow Through, `FT^(n-1)` over the bodies a swing reached | `spread_from_follow_through`, `Origin::FollowThrough` |
 | a slam's epicentre at the wielder's own feet | `BlastKind::Slam` |
 | the heavy wind-up as its own clock | `ComboHit::windup_seconds`, `ModEffect::HeavyWindUpSpeed` |
-| Knockdown as a real status | `dummy::DebuffState::knockdown` |
+| Knockdown as a real status | `fight::DebuffState::knockdown` |
 | melee has no ammo, aims at nothing, puts nothing on a head | `scenario::Capability` |
 | eleven mod effect kinds | crit/status per combo, combo duration as seconds and as a multiplier, initial combo, heavy efficiency, heavy damage, slam damage, melee reach in metres, combo count chance, wind-up speed, crit chance on a slide |
 | six evolution effect kinds | relative base damage, initial combo, melee reach, follow through, slam radius, wind-up speed, proc conversion |
@@ -435,7 +435,7 @@ triggers are a Warframe's shields breaking, a roll, a finisher and a knockdown:
   *cannot be refreshed while it runs*; inside it, every spreadable elemental
   status the swing applies lands again on everything within 20 m of the body it
   struck, each of them dealt that element's own damage from the hit.
-  `dummy::spread_from_influence` is the mechanic and docs/EXTRA_HIT.md is where
+  `fight::spread_from_influence` is the mechanic and docs/EXTRA_HIT.md is where
   its two odd clauses are argued — its Condition Overload is the STRUCK body's,
   and its status burns off the swing's base rather than its own.
 
@@ -544,7 +544,7 @@ applies to.
    share it evenly and an entry's rows land together. It moves a status tick's
    start by fractions of a second and moves no total.
 5. **`Sweep` and `Thrust` are one shape here** — a 90-degree arc in front,
-   `dummy::MELEE_ARC_DEG`. A sweep is wider than that and a thrust is
+   `fight::MELEE_ARC_DEG`. A sweep is wider than that and a thrust is
    narrower, the real answer is per attack INPUT, and nothing published gives
    any of them an angle.
 6. **Forma on the stance SLOT.** The grant itself is modelled — a stance is an
@@ -627,7 +627,7 @@ billed, and `transforms` counts none of it.
 exactly one concept for "the numbers change part-way through the fight" — two
 resolved panels and a rule for which one you are in — and the melee one is the
 same weapon resolved twice, once with the tier that states the window and once
-without (`DummyParams::for_panel`, which is where the DECISION lives so no
+without (`FightParams::for_panel`, which is where the DECISION lives so no
 surface can skip it). Only two things differ, and both are data:
 
 | | arms | ends |

@@ -61,7 +61,7 @@ armour multiplier and nothing that shrinks a shield POOL mid-fight.
 ### Vome and Ris, and the seam they cross
 
 A mod belongs to the BUILD and an ability to the FIGHT, and these two are a mod
-that raises the fight's own knob. They meet in `DummyParams::from_panel`, which
+that raises the fight's own knob. They meet in `FightParams::from_panel`, which
 is the one place that holds both — so the Arena now carries the unresolved
 PICKS and the strength they were resolved at, and `from_panel` resolves them
 again when a card asks.

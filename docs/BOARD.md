@@ -1207,7 +1207,7 @@ approximate: `near` is sorted by (distance, index), which is exactly the scan's
 for instance over every seed of a grid, at three spacings, for both chain
 shapes.
 
-It is built PER RUN rather than held on `DummyParams`, and that is deliberate: it
+It is built PER RUN rather than held on `FightParams`, and that is deliberate: it
 was a field for an hour and a test caught the trap at once — widen
 `beam.damage_radius_m` after the params are built and the cached layout is
 silently stale, which is the two-declarations bug wearing a cache.
@@ -1817,8 +1817,8 @@ so the next reading does not have to re-derive the refusal.
 units to weapon classes so a melee change retires melee rows: a hash of what a
 row READ says the bytes moved, which is a different question from whether a
 number did. And the refactor it needs is real — every melee commit touches
-`engine/src/dummy.rs`, 32,146 lines of the engine's 78,003, which holds the gun
-logic too, so a file-level attribution buys nothing until melee is moved out of
+`engine/src/fight/run.rs`, whose one loop swings the blade and fires the gun
+alike, so a file-level attribution buys nothing until the swing is moved out of
 it.
 
 **A message queue.** The pipeline wears every sign of one — durable work,

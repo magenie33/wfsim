@@ -144,7 +144,7 @@ gone stale:
    its own vector total (`weapons_data.rs`, `co_base: v.total()`), and only an
    evolution's flat damage can part the two. The missing piece is the yaml
    field, nothing else: `RadialBase` already carries its own `co_base` and
-   `dummy.rs` already computes the explosion's term off `r.co_base_fraction`,
+   `engine/src/fight/` already computes the explosion's term off `r.co_base_fraction`,
    beside the direct hit's and against the same counters.
 2. **"`co_base_fraction` is one number per ENTRY" is no longer true of a
    radial**, and it is written in `opticor.yaml`, `opticor_vandal.yaml` and

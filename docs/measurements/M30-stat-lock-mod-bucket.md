@@ -34,7 +34,7 @@ Cannonade exists for.
 
 The fix states the rule once and in two halves, because the panel is not the
 last word on either stat. `resolve` shadows the out-of-bucket layers it can see
-and publishes `ResolvedPanel::locked`; `DummyParams::locks()` is the sim's one
+and publishes `ResolvedPanel::locked`; `FightParams::locks()` is the sim's one
 reader for the live ones. A locked row on the panel now says `locked_by` — base
 == final with no sources is also what a build that bought nothing looks like,
 and the difference is worth a line. Buff CARDS for a locked stat are gone too:

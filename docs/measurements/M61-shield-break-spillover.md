@@ -61,7 +61,7 @@ Every one of the four headshot lines shows the shield's `120` beside a health
 number of 620 to 9,920 — one trigger pull, two pop-ups, and the target has 90
 health. It dies to that shot.
 
-`dummy::TargetState::apply` does neither half:
+`fight::TargetState::apply` does neither half:
 
 ```rust
 if self.shield > 0.0 {
@@ -174,7 +174,7 @@ first one.
 **ANSWERED: neither.** The readings were taken through the unit's HELMET — see
 the section above. The engine's `Head: 3.0x` is right and nothing in the head
 path needed to move. The BODY rule is
-implemented (`ENEMY_SHIELD_GATE_LEAK`, `dummy::TargetState::apply`) and
+implemented (`ENEMY_SHIELD_GATE_LEAK`, `fight::TargetState::apply`) and
 reproduces all eight of its numbers; the head path still charges the shield once
 rather than twice, and is therefore known to be off by one shield pool on a
 weakpoint hit against a shielded target.
