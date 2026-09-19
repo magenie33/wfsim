@@ -186,3 +186,48 @@ pub(super) fn refreshes_combo_timer(landed: f64, earns: bool, gained: f64) -> bo
 pub(super) fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
     multiplier.ceil().max(1.0) * instances
 }
+
+/// THE MELEE COMBO COUNTER AND TENNOKAI — what one fight carries from swing to
+/// swing. A gun never reads it.
+pub(super) struct MeleeState {
+    /// POINTS, not tiers. *"Stance attacks add combo points, scaling with the
+    /// attack's stance damage multiplier (100% stance damage multiplier = 1
+    /// point)"*, and the tier is `1 + floor(points / 20)` capped at 12 — see
+    /// `melee_combo_multiplier`.
+    /// ONE COUNTER, TWO READERS THAT WANT OPPOSITE THINGS. A heavy swing SPENDS
+    /// it as a damage multiplier; Blood Rush and Weeping Wounds read it as a
+    /// bracket term and never touch it. That is the whole reason the seven melee
+    /// forms are seven builds.
+    pub(super) combo_points: f64,
+    /// THE KILL COUNT AT THE LAST SWING, so the kills since are what Rage is paid.
+    pub(super) rage_kill_mark: u32,
+    /// WHEN THE COUNTER DIES with nothing added to it. Refreshed by any landed
+    /// swing; five seconds on almost every weapon.
+    pub(super) combo_expiry: f64,
+    /// WHEN THE COUNTER WAS LAST EMPTIED BY A HEAVY ATTACK, which is what the
+    /// initial-combo floor regenerates from.
+    /// THE FIGHT OPENS WITH THE FLOOR FULL: *"Initial Combo grants a minimum
+    /// value of combo points when IDLE or after a combo reset. Heavy attacks
+    /// spend initial combo, which regenerates at a rate of 40 combo points per
+    /// second"* (wiki, Melee Combo). The 40 a second is what a heavy attack owes
+    /// back, not what a player walks in owing — so a build carrying +30 opens
+    /// its first heavy at 2x rather than reaching it 0.75 s in.
+    pub(super) combo_spent_t: f64,
+    /// WHICH SWING OF THE SCRIPT IS NEXT. A gun leaves the script empty and
+    /// never reads this.
+    pub(super) swing_idx: usize,
+    /// A window a landed hit opens, in which a HEAVY attack costs no combo. The
+    /// owner settled what to do with it in one clause — use it the moment it
+    /// fires — so the loop takes the very next swing rather than inventing a
+    /// policy.
+    /// TWO NUMBERS AND NOTHING ELSE: when the window closes, and how many hits
+    /// have landed since the last one opened (Discipline's Merit replaces the
+    /// roll with "every 4 hits", which is the one card that makes the count
+    /// load-bearing).
+    pub(super) tennokai_until: f64,
+    /// WAS THIS WINDOW OPENED BY A TENNOKAI KILL? Truth's Flame pays its damage
+    /// only in one that was: *"the damage bonus is only active following the
+    /// first kill"*, so the swing that earns the chain does not carry it.
+    pub(super) tennokai_chained: bool,
+    pub(super) tennokai_hits: u32,
+}

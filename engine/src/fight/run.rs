@@ -189,7 +189,7 @@ pub fn run_once_traced(
                 },
             );
             // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `rules::chain::acquired`, the
-            // same rule the Ocucor's tendrils are picked by.
+            // same rule the Ocucor's tendril.count are picked by.
             Some(layout.acquiring(
                 &bodies,
                 params.player_at,
@@ -322,26 +322,18 @@ pub fn run_once_traced(
     let mut rounds_this_mag: u32 = 0;
     // Kills already paid to on-kill stacking buffs. See `BuffTrigger::Kill`.
     let mut kill_buff_mark: u32 = 0;
-    // DOUBLE TAP: consecutive hits, and when they lapse. Reset by the clock
-    // here and never by a miss — this arena has one target that every pellet
-    // reaches, which is the card's other reset ("if the next shot does not hit
-    // an enemy") and it cannot fire.
-    let mut dt_hits: u32 = 0;
-    let mut dt_expiry = f64::NEG_INFINITY;
-    // …AND THE OTHER FORM'S PILE, FROZEN. Each form of a transmuting weapon
-    // keeps its own Double Tap, snapshotted at the instant a transform
-    // COMPLETES and handed back, clock and all, when that form next completes
-    // its way in (MEASUREMENTS M102): a pile at +300% with 0.5 s left comes
-    // back at +300% with 0.5 s left, and a form never yet fired starts from
-    // nothing. `(hits, seconds left)`.
-    let mut dt_other: (u32, f64) = (0, 0.0);
+    let mut double_tap = DoubleTap {
+        hits: 0,
+        expiry: f64::NEG_INFINITY,
+        other: (0, 0.0),
+    };
     macro_rules! swap_dt_pile {
         ($t:expr) => {{
             let now: f64 = $t;
-            let held = (dt_hits, (dt_expiry - now).max(0.0));
-            dt_hits = dt_other.0;
-            dt_expiry = if dt_other.1 > 0.0 { now + dt_other.1 } else { f64::NEG_INFINITY };
-            dt_other = held;
+            let held = (double_tap.hits, (double_tap.expiry - now).max(0.0));
+            double_tap.hits = double_tap.other.0;
+            double_tap.expiry = if double_tap.other.1 > 0.0 { now + double_tap.other.1 } else { f64::NEG_INFINITY };
+            double_tap.other = held;
         }};
     }
     macro_rules! bump_buffs {
@@ -624,21 +616,10 @@ pub fn run_once_traced(
         _ => params,
     };
 
-    // THE RECHARGE METER, in seconds toward `seconds_to_fill`. It opens FULL,
-    // and that is the one place a Tome parts company with the rule next door.
-    //
-    // An INCARNON gauge opens empty because a full one is a consumable the
-    // fight has not earned (docs/BUFFS.md) — and it matters most where the
-    // gauge cannot be refilled, so a free opening magazine was pure gift. A
-    // METER is a CLOCK: it fills at one second a second whether or not anyone
-    // is shooting, so it was filling while you ran to the room, and a player
-    // walks into an engagement with it full. Opening it empty would not be
-    // conservative, it would be wrong — and it would cost the first 45 seconds
-    // of every 180-second benchmark to model a state a player is rarely in.
-    let mut meter_seconds = field_ap.meter.map_or(0.0, |m| m.seconds_to_fill);
-    // …and how far the clock has already been credited, so the seconds are
-    // counted once however many times the loop looks at it.
-    let mut meter_clocked = 0.0f64;
+    let mut meter = Meter {
+        seconds: field_ap.meter.map_or(0.0, |m| m.seconds_to_fill),
+        clocked: 0.0f64,
+    };
     // KILLS JAHU CANTICLE HAS ALREADY STRIPPED FOR, read as a delta off the
     // run's own counter for the same reason the meter's pickups are: there are
     // nine places a body can die and a tenth would silently stop paying.
@@ -815,58 +796,36 @@ pub fn run_once_traced(
             }
         };
     }
-    // THE OCUCOR'S TENDRILS, tracked as two watermarks rather than as a
-    // counter incremented at every kill.
-    //
-    // DERIVED, and deliberately: `r.kills` is already maintained by SIX
-    // different sites (beam kills, status-proc kills, field-tick kills, the
-    // cycle's own…), and a seventh will exist one day. Hooking each of them is
-    // how one gets missed; reading the total they all feed cannot miss any.
-    // Same for the clear, which keys off `r.reloads` — every reload path in
-    // this loop increments it, including the cycle's.
-    //
-    // It also happens to be exactly right about WHICH kills count. The wiki
-    // excludes one case — "Direct kills with tendrils will not generate an
-    // additional tendril" — and a tendril deals no damage in a single-target
-    // arena (its damage on the beam's own target is cosmetic), so a tendril
-    // kills nothing here and `r.kills` is precisely the qualifying set.
-    let mut tendril_kill_mark = 0u32;
-    // WHAT THE KILLS LEFT STANDING, one expiry apiece. It exists to be
-    // COUNTED: nothing reads it back into the fight.
-    let mut ghosts: Vec<f64> = Vec::new();
-    let mut ghost_mark = 0u32;
+    let mut ghost_pile = Ghosts {
+        standing: Vec::new(),
+        kill_mark: 0u32,
+    };
     // Which kills the magazine refill has already paid out — see the spend
     // below for why this cannot be the same watermark.
     let mut refill_kill_mark = 0u32;
-    // A SYNDICATE RADIAL's gauge, in affinity, and the same derived-from-kills
-    // trick the tendrils use: `r.kills` is maintained at six sites already.
-    let mut syndicate_kill_mark = 0u32;
     // ...and the FORM gauge fed by kills rather than by hits (ChargeOn::Kills),
     // which needs its own because it advances in both forms while the others
     // only pay out in one.
     let mut gauge_kill_mark = 0u32;
-    let mut syndicate_points = 0.0f64;
-    // When the weapon may convert affinity again. During the cooldown it
-    // converts NOTHING — "the weapon will not convert any affinity into
-    // points, and all collected points are reset to zero" — so this gates the
-    // accumulation, not just the firing.
-    let mut syndicate_ready_at = 0.0f64;
-    let mut tendril_reload_mark = 0u32;
-    // HATA-SATYA: the pellet count at the last clear, plus the card's opening
-    // pile. TWO marks — the hits, and the REFILL COUNTER that ends them.
-    let mut cc_hit_mark = 0u32;
-    let mut cc_hit_refill_mark = 0u32;
-    let mut cc_hit_seed = params
-        .crit_chance_per_hit
-        .map_or(0, |c| params.crit_chance_per_hit_initial_stacks.min(c.max_stacks()));
-    let mut crit_chance_hit_stacks = cc_hit_seed;
-    // THE SHOT COMBO COUNTER: the count as of the last landing hit, and when
-    // that was. `combo_at` turns the pair into the count at any later moment.
-    // The seed is in hand at t = 0, so the clock starts there rather than at
-    // minus infinity — otherwise the card's count would decay away before the
-    // first shot.
-    let mut combo_count = params.combo_initial;
-    let mut combo_last_hit = 0.0f64;
+    let mut syndicate = Syndicate {
+        kill_mark: 0u32,
+        points: 0.0f64,
+        ready_at: 0.0f64,
+    };
+    let mut crit_per_hit = CritPerHit {
+        hit_mark: 0u32,
+        refill_mark: 0u32,
+        seed: params
+            .crit_chance_per_hit
+            .map_or(0, |c| params.crit_chance_per_hit_initial_stacks.min(c.max_stacks())),
+        stacks: params
+            .crit_chance_per_hit
+            .map_or(0, |c| params.crit_chance_per_hit_initial_stacks.min(c.max_stacks())),
+    };
+    let mut sniper_combo = SniperComboCount {
+        count: params.combo_initial,
+        last_hit: 0.0f64,
+    };
     // THE COUNTER IS THE WEAPON'S, NOT THE FORM'S. Its spec — the minimum and
     // the decay period — comes from whichever form declares one, so a cycle
     // that spends half the engagement in a form with no combo does not lose
@@ -878,68 +837,34 @@ pub fn run_once_traced(
     let combo_spec = params
         .sniper_combo
         .or_else(|| params.cycle.as_ref().and_then(|c| c.base_form.sniper_combo));
-    // The card's opening count, which the fight then treats exactly like an
-    // earned one: it is spent by the magazine event that clears the rest.
-    let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
-    let mut tendrils = tendril_seed;
-    // HELD-TRIGGER SPOOL — shots since the trigger was last released, and the
-    // moment the next one was due. See `data::weapons::SustainedFireRate`.
-    let mut spool_shots = 0.0f64;
-    let mut spool_due = f64::NEG_INFINITY;
-    // ---- THE MELEE COMBO COUNTER ----------------------------------------
-    //
-    // POINTS, not tiers. *"Stance attacks add combo points, scaling with the
-    // attack's stance damage multiplier (100% stance damage multiplier = 1
-    // point)"*, and the tier is `1 + floor(points / 20)` capped at 12 — see
-    // `melee_combo_multiplier`.
-    //
-    // ONE COUNTER, TWO READERS THAT WANT OPPOSITE THINGS. A heavy swing SPENDS
-    // it as a damage multiplier; Blood Rush and Weeping Wounds read it as a
-    // bracket term and never touch it. That is the whole reason the seven melee
-    // forms are seven builds.
-    let mut combo_points = 0.0f64;
-    // THE KILL COUNT AT THE LAST SWING, so the kills since are what Rage is paid.
-    let mut rage_kill_mark = r.kills;
-    // WHEN THE COUNTER DIES with nothing added to it. Refreshed by any landed
-    // swing; five seconds on almost every weapon.
-    let mut combo_expiry = f64::NEG_INFINITY;
-    // WHEN THE COUNTER WAS LAST EMPTIED BY A HEAVY ATTACK, which is what the
-    // initial-combo floor regenerates from.
-    //
-    // THE FIGHT OPENS WITH THE FLOOR FULL: *"Initial Combo grants a minimum
-    // value of combo points when IDLE or after a combo reset. Heavy attacks
-    // spend initial combo, which regenerates at a rate of 40 combo points per
-    // second"* (wiki, Melee Combo). The 40 a second is what a heavy attack owes
-    // back, not what a player walks in owing — so a build carrying +30 opens
-    // its first heavy at 2x rather than reaching it 0.75 s in.
-    let mut combo_spent_t = f64::NEG_INFINITY;
-    // WHICH SWING OF THE SCRIPT IS NEXT. A gun leaves the script empty and
-    // never reads this.
-    let mut swing_idx = 0usize;
-    // ---- TENNOKAI --------------------------------------------------------
-    //
-    // A window a landed hit opens, in which a HEAVY attack costs no combo. The
-    // owner settled what to do with it in one clause — use it the moment it
-    // fires — so the loop takes the very next swing rather than inventing a
-    // policy.
-    //
-    // TWO NUMBERS AND NOTHING ELSE: when the window closes, and how many hits
-    // have landed since the last one opened (Discipline's Merit replaces the
-    // roll with "every 4 hits", which is the one card that makes the count
-    // load-bearing).
-    let mut tennokai_until = f64::NEG_INFINITY;
-    // WAS THIS WINDOW OPENED BY A TENNOKAI KILL? Truth's Flame pays its damage
-    // only in one that was: *"the damage bonus is only active following the
-    // first kill"*, so the swing that earns the chain does not carry it.
-    let mut tennokai_chained = false;
-    let mut tennokai_hits = 0u32;
+    let mut tendril = Tendrils {
+        kill_mark: 0u32,
+        reload_mark: 0u32,
+        seed: params.tendrils_initial.min(params.tendril_max),
+        count: params.tendrils_initial.min(params.tendril_max),
+    };
+    let mut spool = Spool {
+        shots: 0.0f64,
+        due: f64::NEG_INFINITY,
+    };
+    // ---- THE MELEE COMBO COUNTER AND TENNOKAI -- see `MeleeState` ----------
+    let mut melee = MeleeState {
+        combo_points: 0.0f64,
+        rage_kill_mark: r.kills,
+        combo_expiry: f64::NEG_INFINITY,
+        combo_spent_t: f64::NEG_INFINITY,
+        swing_idx: 0usize,
+        tennokai_until: f64::NEG_INFINITY,
+        tennokai_chained: false,
+        tennokai_hits: 0u32,
+    };
     // MELEE INFLUENCE'S WINDOW. One number, and the clause that makes it one:
     // *"Cannot refresh while active"* — so a roll that lands while it is open
     // buys nothing at all, and the arcane's real uptime is a fraction of the
     // fight rather than the 18 s its card names.
     // OPEN IF THE READER SAID SO, otherwise shut until a roll opens it.
     let mut influence_until = params.influence_open.unwrap_or(f64::NEG_INFINITY);
-    // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
+    // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool.due`. That one
     // is when the next shot was DUE, so the interval is already inside it and
     // the difference is zero on every ordinary pull — right for a spool, which
     // asks "did anything intervene", and useless for a battery, which asks how
@@ -957,9 +882,9 @@ pub fn run_once_traced(
                     let stacks = sample_stacks(
                         params, &rep.buffs, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                         &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds, base_damage_reload_expiry_seconds,
-                        base_damage_eximus_expiry_seconds, streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
-                        combo_at(combo_spec, params.combo_held, combo_count,
-                            combo_last_hit, next_frame),
+                        base_damage_eximus_expiry_seconds, streak_expiry, tendril.count, crit_per_hit.stacks, &bar,
+                        combo_at(combo_spec, params.combo_held, sniper_combo.count,
+                            sniper_combo.last_hit, next_frame),
                         incarnon_until,
                 influence_until,
                     );
@@ -1028,7 +953,7 @@ pub fn run_once_traced(
         // A BATTERY REFILLS WHILE NOBODY IS SHOOTING, counted BEFORE anything
         // asks whether this shot can be fired — otherwise an empty magazine
         // goes straight to the reload branch and the mechanic never gets a
-        // turn. The gap is the one a spool reads: `t - spool_due` is what the
+        // turn. The gap is the one a spool reads: `t - spool.due` is what the
         // weapon spent not firing (`data::weapons::Battery`).
         //
         // THE EMPTY CASE IS NOT HERE — that is the ordinary reload, whose
@@ -1084,7 +1009,7 @@ pub fn run_once_traced(
         // A KILL IS A KILL WHEREVER IT CAME FROM, so on-kill stacks are read
         // off the counter rather than bumped at each of the six places one can
         // happen — a direct hit, a DoT tick, a field tick and three more. The
-        // same mark-and-diff Sentient Surge's refill and the tendrils use, two
+        // same mark-and-diff Sentient Surge's refill and the tendril.count use, two
         // blocks down, and for the same reason: a list of call sites is a list
         // to forget one from.
         if r.kills != kill_buff_mark {
@@ -1150,11 +1075,11 @@ pub fn run_once_traced(
             // which is what "no timeout" means for a buff whose end is an
             // event rather than a clock. The seed dies with the earned ones:
             // it is the same buff.
-            if r.reloads != tendril_reload_mark && !params.tendrils_held {
-                tendril_reload_mark = r.reloads;
+            if r.reloads != tendril.reload_mark && !params.tendrils_held {
+                tendril.reload_mark = r.reloads;
                 // The mark tracks the SAME quantity the count reads.
-                tendril_kill_mark = r.kills - r.kills_by_tendril;
-                tendril_seed = 0;
+                tendril.kill_mark = r.kills - r.kills_by_tendril;
+                tendril.seed = 0;
             }
             // SENTIENT SURGE's refill, spent before the reload check below so
             // that a kill can genuinely save a reload — which is the whole
@@ -1172,10 +1097,10 @@ pub fn run_once_traced(
             // effectively infinite one.
             //
             // And a REFILL IS NOT A RELOAD: it never touches `r.reloads`, so
-            // the tendrils live through it. That is the whole reason this mod
+            // the tendril.count live through it. That is the whole reason this mod
             // pairs with this passive — the wiki says it from the other side,
             // "Magazine refill effects such as ... kills with Sentient Surge
-            // ... will PREVENT the tendrils from disappearing."
+            // ... will PREVENT the tendril.count from disappearing."
             if params.magazine_refill_on_kill > 0.0 && r.kills > refill_kill_mark {
                 let earned = f64::from(r.kills - refill_kill_mark)
                     * params.magazine_refill_on_kill
@@ -1194,7 +1119,7 @@ pub fn run_once_traced(
             // every OTHER kill — the beam's, and any status kill including one
             // a tendril's own proc caused.
             let spawning = r.kills - r.kills_by_tendril;
-            tendrils = (tendril_seed + (spawning - tendril_kill_mark)).min(params.tendril_max);
+            tendril.count = (tendril.seed + (spawning - tendril.kill_mark)).min(params.tendril_max);
         }
 
         // …AND THE SAME MARK-AND-DIFF FOR WHAT IS STANDING. The kills were
@@ -1205,12 +1130,12 @@ pub fn run_once_traced(
             .spawn_on_kill
             .or_else(|| params.cycle.as_ref().and_then(|c| c.base_form.spawn_on_kill));
         if let Some(g) = spawner {
-            ghosts.retain(|e| *e > t);
-            for _ in 0..(r.ghost_kills - ghost_mark) {
-                ghosts.push(t + g.seconds);
+            ghost_pile.standing.retain(|e| *e > t);
+            for _ in 0..(r.ghost_kills - ghost_pile.kill_mark) {
+                ghost_pile.standing.push(t + g.seconds);
             }
-            ghost_mark = r.ghost_kills;
-            r.ghosts_peak = r.ghosts_peak.max(ghosts.len() as u32);
+            ghost_pile.kill_mark = r.ghost_kills;
+            r.ghosts_peak = r.ghosts_peak.max(ghost_pile.standing.len() as u32);
         }
 
         // HATA-SATYA's pile, the same mark-and-diff one block up with the
@@ -1241,10 +1166,10 @@ pub fn run_once_traced(
             // loop goes through `magazine_refilled!`.
             //
             // The seed dies with the earned stacks: it is the same buff.
-            if mag_refills != cc_hit_refill_mark && !params.crit_chance_per_hit_held {
-                cc_hit_refill_mark = mag_refills;
-                cc_hit_mark = r.pellets;
-                cc_hit_seed = 0;
+            if mag_refills != crit_per_hit.refill_mark && !params.crit_chance_per_hit_held {
+                crit_per_hit.refill_mark = mag_refills;
+                crit_per_hit.hit_mark = r.pellets;
+                crit_per_hit.seed = 0;
             }
             // THE COUNTER IS NOT CAPPED — the BONUS is.
             // The pile takes every hit that lands, and 500% is what it is worth
@@ -1253,16 +1178,16 @@ pub fn run_once_traced(
             // both ordinary states of the same fight. Clamping the count would
             // be modelling a mechanic DE did not write, and the row is drawn as
             // the value anyway, so its ceiling is never on screen.
-            crit_chance_hit_stacks = cc_hit_seed + (r.pellets - cc_hit_mark);
+            crit_per_hit.stacks = crit_per_hit.seed + (r.pellets - crit_per_hit.hit_mark);
         }
 
         // THE SYNDICATE GAUGE. Affinity the WEAPON earned, which is half of
         // each kill's — "Kill with weapons: Half Affinity goes to the Warframe
         // and half to the killing weapon" (wiki Affinity).
         if let Some(sy) = params.syndicate_radial {
-            let fresh = r.kills - syndicate_kill_mark;
-            syndicate_kill_mark = r.kills;
-            if fresh > 0 && t >= syndicate_ready_at {
+            let fresh = r.kills - syndicate.kill_mark;
+            syndicate.kill_mark = r.kills;
+            if fresh > 0 && t >= syndicate.ready_at {
                 // Per kill: base affinity x the level multiplier, FLOORED to a
                 // whole number ("the base affinity multiplied by the Affinity
                 // Multiplier value is also rounded down"), then halved.
@@ -1270,13 +1195,13 @@ pub fn run_once_traced(
                     * scaling::affinity_multiplier(params.target.level, params.target.eximus))
                 .floor()
                     * WEAPON_AFFINITY_SHARE;
-                syndicate_points += f64::from(fresh) * per_kill;
+                syndicate.points += f64::from(fresh) * per_kill;
             }
-            if syndicate_points >= sy.affinity_to_fill && t >= syndicate_ready_at {
+            if syndicate.points >= sy.affinity_to_fill && t >= syndicate.ready_at {
                 // Fires, then BOTH rules: points to zero and no conversion at
                 // all until the cooldown is out.
-                syndicate_points = 0.0;
-                syndicate_ready_at = t + sy.cooldown_seconds;
+                syndicate.points = 0.0;
+                syndicate.ready_at = t + sy.cooldown_seconds;
                 fire_syndicate_radial(
                     &sy,
                     &mut r,
@@ -1513,7 +1438,7 @@ pub fn run_once_traced(
         //
         // A gun's script is empty and every line below is a no-op for it: the
         // swing is `None`, the multiplier is 1.0, and the counter never moves.
-        let swing = ap.combo_script.get(swing_idx % ap.combo_script.len().max(1)).cloned();
+        let swing = ap.combo_script.get(melee.swing_idx % ap.combo_script.len().max(1)).cloned();
         // THE COUNTER, BEFORE THIS SWING. A heavy attack reads it and then
         // empties it, so the multiplier it pays is the one that was standing
         // when the trigger went down — the same rule the game states by
@@ -1522,12 +1447,12 @@ pub fn run_once_traced(
         // prevents increasing the combo counter"* — so the counter is cleared
         // HERE, upstream of the one place it is read, rather than by each of
         // the four swings that earn into it remembering to ask.
-        if t > combo_expiry || ap.combo_frozen {
+        if t > melee.combo_expiry || ap.combo_frozen {
             // *"Melee Combo resets after this time"*. Power Spike's partial
             // decay is a WARFRAME passive and is not modelled — declared,
             // because a build running it keeps far more of the counter than
             // this does and is therefore UNDER-reported here.
-            combo_points = 0.0;
+            melee.combo_points = 0.0;
         }
         // …AND THE FLOOR IS LIVE. Galvanized Reflex earns +20 initial combo per
         // melee kill to four stacks, so the number the counter returns to moves
@@ -1536,7 +1461,7 @@ pub fn run_once_traced(
         // went unpaid.
         let initial_now =
             ap.initial_combo + buff_total!(ap, crate::model::BuffGrant::InitialCombo, t);
-        let combo_now = melee_combo_points(combo_points, initial_now, t - combo_spent_t);
+        let combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
         let combo_mult = melee_combo_multiplier(combo_now);
         // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
         // takes the combo multiplier on top of it.
@@ -1558,17 +1483,17 @@ pub fn run_once_traced(
         // an already-heavy form the other half pays: the swing costs no combo,
         // so the counter it read is there for the next one. ONE WINDOW, ONE
         // SWING either way — the flash goes out with it.
-        let tennokai = ap.tennokai.enabled && t < tennokai_until;
+        let tennokai = ap.tennokai.enabled && t < melee.tennokai_until;
         let tennokai_heavy = tennokai && !ap.spends_combo && ap.heavy.is_some();
         // …AND WHETHER THE ONE BEING SPENT WAS CHAINED, kept because spending
         // it clears the flag and the damage is decided after.
-        let tennokai_was_chained = tennokai && tennokai_chained;
+        let tennokai_was_chained = tennokai && melee.tennokai_chained;
         // WHAT THE COUNT WAS BEFORE IT, so "did this swing kill" is a
         // subtraction rather than a flag every path would have to set.
         let tennokai_kill_mark = r.kills;
         if tennokai {
-            tennokai_until = f64::NEG_INFINITY;
-            tennokai_chained = false;
+            melee.tennokai_until = f64::NEG_INFINITY;
+            melee.tennokai_chained = false;
         }
         // SEISMIC WAVE IS A MULTIPLIER OF ITS OWN: *"Slam damage bonus is
         // multiplicative to base damage (e.g. Pressure Point)"* (wiki). Killing
@@ -1849,14 +1774,14 @@ pub fn run_once_traced(
             // SENTIENT SURGE: "Additive to other crit chance and status chance
             // mods", so it belongs in the RELATIVE bucket beside Pistol
             // Gambit's — multiplying the unmodded base, not the modded one.
-            + params.crit_chance_per_tendril * f64::from(tendrils)
+            + params.crit_chance_per_tendril * f64::from(tendril.count)
             // HATA-SATYA: "additive with similar mods. For example, a max rank,
             // max bonus Hata-Satya and Point Strike will have a 30% × (1 + 500%
             // + 150%) critical chance" — the wiki does the bracket for us, and
             // it is the same one Point Strike is in.
             + params
                 .crit_chance_per_hit
-                .map_or(0.0, |c| c.bonus(crit_chance_hit_stacks))
+                .map_or(0.0, |c| c.bonus(crit_per_hit.stacks))
             // BLOOD RUSH. `Crit Chance = Weapon Crit Chance x [1 + Mod Crit
             // Bonus + Blood Rush Bonus x (Combo Multi - 1)] + Static Crit
             // Bonus` (wiki, verbatim) — so it belongs in this bracket beside
@@ -1893,7 +1818,7 @@ pub fn run_once_traced(
             (w.crit_multiplier * n, w.status_chance * n)
         });
         let sc_arc_shot = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
-            + params.sc_per_tendril * f64::from(tendrils)
+            + params.sc_per_tendril * f64::from(tendril.count)
             // WEEPING WOUNDS, the same sentence on the status side: `Status
             // Chance = Weapon Status Chance x [1 + Mod Status Bonus + Weeping
             // Wounds Bonus x (Combo Multi - 1)]`. It rides `sc_arc_shot`
@@ -2040,16 +1965,16 @@ pub fn run_once_traced(
         let cc_mult = if first_round { 1.0 + ap.first_round_damage } else { 1.0 };
         let dt_mult = match ap.consecutive_hit_damage {
             Some((per_stack, max_stacks, duration)) => {
-                if t >= dt_expiry {
-                    dt_hits = 0;
+                if t >= double_tap.expiry {
+                    double_tap.hits = 0;
                 }
                 // AN EXPLODING PROJECTILE IS TWO HITS where the weapon says so
                 // — its collision and its explosion, +40% a projectile at rank
                 // 3 (M102). Only the aimed landing counts; a bounce adds none.
                 let per_projectile = if ap.consecutive_hit_radial_only && ap.radial.is_some() { 2 } else { 1 };
-                let hits = dt_hits + rolled * per_projectile;
-                dt_hits = hits;
-                dt_expiry = t + duration;
+                let hits = double_tap.hits + rolled * per_projectile;
+                double_tap.hits = hits;
+                double_tap.expiry = t + duration;
                 1.0 + per_stack * f64::from(hits.saturating_sub(1).min(max_stacks))
             }
             None => 1.0,
@@ -2146,8 +2071,8 @@ pub fn run_once_traced(
                 params, &rec_roster, t, &mut arc, &mut gal, &mut buff_stacks,
                 &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds,
                 base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
-                streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
-                combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
+                streak_expiry, tendril.count, crit_per_hit.stacks, &bar,
+                combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t),
                 incarnon_until,
                 influence_until,
             );
@@ -2386,8 +2311,8 @@ pub fn run_once_traced(
         // read, and the meter is coarse enough not to care: it is 45 seconds
         // long and the fastest thing that fills it is worth one.
         if let Some(m) = ap.meter {
-            meter_seconds += t - meter_clocked;
-            meter_clocked = t;
+            meter.seconds += t - meter.clocked;
+            meter.clocked = t;
             // …AND WHAT THE BODIES DROPPED. *"Picking up secondary or universal
             // ammo reduces recharge time by 10 seconds"*.
             //
@@ -2399,12 +2324,12 @@ pub fn run_once_traced(
             // INFINITE AMMO DOES NOT REMOVE THE PICKUP. The house rule is about
             // the reserve, and a real fight is under its cap almost all of the
             // time — the pack is still on the floor either way.
-            meter_seconds += f64::from(dropped_secondary) * m.seconds_per_ammo_pickup;
+            meter.seconds += f64::from(dropped_secondary) * m.seconds_per_ammo_pickup;
             // A FULL METER IS ONE THROW. It is not a magazine — the page says
             // "requires a fully filled meter in order to fire", so what is
             // spent is the whole thing and what is bought is a single orb.
-            if meter_seconds >= m.seconds_to_fill {
-                meter_seconds -= m.seconds_to_fill;
+            if meter.seconds >= m.seconds_to_fill {
+                meter.seconds -= m.seconds_to_fill;
                 if let Some(o) = ap.orb {
                     throw_orb(o, params, t, &mut orbs);
                     // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
@@ -3114,8 +3039,8 @@ pub fn run_once_traced(
                         params, &rec_roster, t, &mut arc, &mut gal, &mut buff_stacks,
                         &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds,
                         base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
-                        streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
-                        combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
+                        streak_expiry, tendril.count, crit_per_hit.stacks, &bar,
+                        combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t),
                         incarnon_until,
                 influence_until,
                     );
@@ -3429,7 +3354,7 @@ pub fn run_once_traced(
                 // do not affect the Shot Combo Counter"* — which is counted
                 // below.
                 let combo_now =
-                    combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t);
+                    combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t);
                 let combo_mult = ap.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
                 // DAMAGE FALLOFF over the distance this instance travelled.
                 //
@@ -3886,8 +3811,8 @@ pub fn run_once_traced(
                     // NEXT instance sees it, which is the order the previous
                     // paragraph reads it in.
                     if ap.sniper_combo.is_some() {
-                        combo_count = combo_now + 1;
-                        combo_last_hit = t;
+                        sniper_combo.count = combo_now + 1;
+                        sniper_combo.last_hit = t;
                     }
                     r.sources.direct += effective;
                     add_by_type(&mut r.sources.direct_by_type, &qvec, effective, &col);
@@ -4010,7 +3935,7 @@ pub fn run_once_traced(
                     // count an additional hit"*, which is why it is inside
                     // `direct` rather than beside it.
                     if let Some(m) = ap.meter {
-                        meter_seconds += m.seconds_per_hit;
+                        meter.seconds += m.seconds_per_hit;
                     }
                     r.pellets += 1;
                     // A PELLET THAT WENT THROUGH: `struck` is who is on the
@@ -4569,7 +4494,7 @@ pub fn run_once_traced(
                 &mut others,
                 params,
                 ap,
-                tendrils,
+                tendril.count,
                 s.raw_per_bucket,
                 s.shares,
                 s.crit_multiplier,
@@ -4682,7 +4607,7 @@ pub fn run_once_traced(
         // Nothing happens on a weapon with no combo, and nothing happens at
         // point blank — `landed_this_shot` cannot be false there.
         if ap.sniper_combo.is_some() && !landed_this_shot {
-            combo_count = 0;
+            sniper_combo.count = 0;
         }
 
         // THE SPEAR PLANTS ITS FIELD, and the shot that planted it does not
@@ -4959,9 +4884,9 @@ pub fn run_once_traced(
             // is paid at this swing rather than at the death.
             if let Some(g) = arc.rage.as_mut() {
                 let s = g.spec();
-                g.build(t, landed * s.per_hit + f64::from(r.kills - rage_kill_mark) * s.per_kill);
+                g.build(t, landed * s.per_hit + f64::from(r.kills - melee.rage_kill_mark) * s.per_kill);
             }
-            rage_kill_mark = r.kills;
+            melee.rage_kill_mark = r.kills;
             // …AND A LANDED HIT MAY OPEN THE TENNOKAI WINDOW.
             //
             // *"Triggering Tennokai requires directly striking an enemy ...
@@ -4979,9 +4904,9 @@ pub fn run_once_traced(
             // with no hit in between, which is the only way in this mechanic to
             // swing it twice in a row.
             if tennokai && ap.tennokai.chain_seconds > 0.0 && r.kills > tennokai_kill_mark {
-                tennokai_until = t + ap.tennokai.chain_seconds;
-                tennokai_chained = true;
-                tennokai_hits = 0;
+                melee.tennokai_until = t + ap.tennokai.chain_seconds;
+                melee.tennokai_chained = true;
+                melee.tennokai_hits = 0;
             }
             // …AND THE CURSE, which is the whole cost of the card: a Tennokai
             // attack that FAILS to kill empties the counter. Status immunity
@@ -4989,16 +4914,16 @@ pub fn run_once_traced(
             // unconditional here, and the Heat is COUNTED rather than applied
             // because nothing in this arena damages the Tenno.
             if tennokai && ap.tennokai.curse_resets_combo && r.kills == tennokai_kill_mark {
-                combo_points = 0.0;
+                melee.combo_points = 0.0;
                 r.self_damage.add(
                     DamageType::Heat,
                     ap.tennokai.curse_heat_per_second * ap.tennokai.curse_seconds,
                 );
             }
-            if ap.tennokai.enabled && landed > 0.0 && t >= tennokai_until {
-                tennokai_hits += 1;
+            if ap.tennokai.enabled && landed > 0.0 && t >= melee.tennokai_until {
+                melee.tennokai_hits += 1;
                 let opens = if ap.tennokai.every_n_hits > 0 {
-                    tennokai_hits.is_multiple_of(ap.tennokai.every_n_hits)
+                    melee.tennokai_hits.is_multiple_of(ap.tennokai.every_n_hits)
                 } else {
                     // 15% BASE, and the cards add to it.
                     d.spine.chance(TENNOKAI_BASE_CHANCE + ap.tennokai.chance)
@@ -5009,8 +4934,8 @@ pub fn run_once_traced(
                     } else {
                         TENNOKAI_WINDOW_SECONDS
                     };
-                    tennokai_until = t + w;
-                    tennokai_hits = 0;
+                    melee.tennokai_until = t + w;
+                    melee.tennokai_hits = 0;
                 }
             }
             // A HEAVY ATTACK EARNS NOTHING. *"connecting with a heavy attack
@@ -5042,10 +4967,10 @@ pub fn run_once_traced(
                         &mut |p| d.spine.chance(p),
                     );
                 }
-                combo_points += gained;
+                melee.combo_points += gained;
             }
             if refreshes_combo_timer(landed, earns, gained) {
-                combo_expiry = t + ap.combo_duration_seconds;
+                melee.combo_expiry = t + ap.combo_duration_seconds;
             }
             // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the
             // share NOT spent — *"40% heavy attack efficiency will change the
@@ -5069,8 +4994,8 @@ pub fn run_once_traced(
                 // Spending only the EARNED half left a heavy mode at zero after
                 // every swing — it earns none — so efficiency bought nothing at
                 // all in the one family of modes whose cards sell it.
-                combo_points = combo_now * ap.heavy_attack_efficiency;
-                combo_spent_t = t;
+                melee.combo_points = combo_now * ap.heavy_attack_efficiency;
+                melee.combo_spent_t = t;
             }
             // …AND A HEAVY SWING IS WHAT ARMS A MELEE INCARNON.
             //
@@ -5149,10 +5074,10 @@ pub fn run_once_traced(
                             })
                             .count() as u32;
                     if reached > 0 {
-                        combo_points += ap.combo_count_on_slam_hit
+                        melee.combo_points += ap.combo_count_on_slam_hit
                             * f64::from(reached)
                             * (1.0 + ap.combo_count_chance);
-                        combo_expiry = t + ap.combo_duration_seconds;
+                        melee.combo_expiry = t + ap.combo_duration_seconds;
                     }
                 }
             }
@@ -5188,16 +5113,16 @@ pub fn run_once_traced(
         // iteration, so a check at the top of the loop would never have seen
         // it (the test caught this: 66 shots against the 80 a released trigger
         // owes).
-        if t > spool_due + 1e-9 {
-            spool_shots = 0.0;
+        if t > spool.due + 1e-9 {
+            spool.shots = 0.0;
         }
         last_shot_t = t;
         // …and then the SPOOL, which is a fraction of whatever that rate came
         // to: a fire-rate mod raises the ceiling and the floor together, so the
         // Phenmor's Incarnon form still spends most of its 408-round magazine
         // at 60% of whatever it was built to.
-        let rate = rate * spool_factor(ap.sustained_fire_rate, spool_shots);
-        spool_shots += 1.0;
+        let rate = rate * spool_factor(ap.sustained_fire_rate, spool.shots);
+        spool.shots += 1.0;
         // On a CHARGE weapon the pull costs a draw, not a rate: divide the
         // modded charge time by whatever the live buffs did to the rate
         // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
@@ -5267,11 +5192,11 @@ pub fn run_once_traced(
                 // finisher only when the window does not. With Discipline's
                 // Merit — every four hits — it would reach it never, which is
                 // the sharpest case and the reason this could not be left to a
-                // default: `swing_idx += 1` was the whole difference.
+                // default: `melee.swing_idx += 1` was the whole difference.
                 if tennokai {
-                    swing_idx = 0;
+                    melee.swing_idx = 0;
                 } else {
-                    swing_idx += 1;
+                    melee.swing_idx += 1;
                 }
                 let cycle = (w + d / rate.max(1e-9)).max(1e-6);
                 // …AND A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING,
@@ -5281,7 +5206,7 @@ pub fn run_once_traced(
                 // heavy slam make the same decision and the next weapon needs
                 // no field.
                 if ap.spends_combo {
-                    heavy_cycle_seconds(cycle, combo_points, initial_now)
+                    heavy_cycle_seconds(cycle, melee.combo_points, initial_now)
                 } else {
                     cycle
                 }
@@ -5297,7 +5222,7 @@ pub fn run_once_traced(
                 _ => 1.0 / rate,
             },
         };
-        spool_due = t;
+        spool.due = t;
     }
 
     // THE METER'S LAST FILLS, after the trigger stops. A weapon that is out of
@@ -5305,13 +5230,13 @@ pub fn run_once_traced(
     // gets — so the clock is run out to the end and every throw it buys is
     // thrown, before the orbs are drained below.
     if let (Some(m), Some(o)) = (field_ap.meter, field_ap.orb) {
-        meter_seconds += params.duration_seconds - meter_clocked;
-        while meter_seconds >= m.seconds_to_fill {
-            meter_seconds -= m.seconds_to_fill;
+        meter.seconds += params.duration_seconds - meter.clocked;
+        while meter.seconds >= m.seconds_to_fill {
+            meter.seconds -= m.seconds_to_fill;
             // AT THE INSTANT IT FILLED, not at the end: the orb has a six
             // second fuse and the difference is whether its strikes land inside
             // the engagement at all.
-            let at = params.duration_seconds - meter_seconds;
+            let at = params.duration_seconds - meter.seconds;
             // WHAT IS ALREADY IN THE AIR GETS TO LIVE UNTIL IT IS REPLACED.
             // Only one orb exists at a time, so throwing them all and walking
             // the list afterwards would leave the LAST one and silently drop
