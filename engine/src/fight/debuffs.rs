@@ -519,7 +519,7 @@ impl DebuffState {
     /// be restored afterwards, and a field that must be restored is a field
     /// somebody eventually forgets. It also forces a new death site to say
     /// whose death it is, which is the only reason this stays a funnel.
-    pub(super) fn on_death(&mut self, acid: Option<crate::loadout::AcidShells>, victim: &TargetParams) {
+    pub(super) fn on_death(&mut self, acid: Option<crate::model::AcidShells>, victim: &TargetParams) {
         let out = std::mem::take(&mut self.area_out);
         let mut hits = std::mem::take(&mut self.area_hit);
         // ACID SHELLS: "enemies killed by the Sobek explode, dealing a flat

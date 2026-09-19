@@ -19,16 +19,16 @@ fn a_fire_rate_buff_converts_against_each_forms_own_base() {
         "furis_extended_volley",
         "furis_headcracker",
     ];
-    let inc = crate::loadout::WeaponBase::from_data("furis_incarnon", true, &evos);
-    let base = crate::loadout::WeaponBase::from_data("furis", true, &evos);
-    let pol = crate::loadout::StackPolicy::Emergent;
+    let inc = crate::model::WeaponBase::from_data("furis_incarnon", true, &evos);
+    let base = crate::model::WeaponBase::from_data("furis", true, &evos);
+    let pol = crate::model::StackPolicy::Emergent;
     let pi = crate::loadout::resolve(&inc, &[], pol);
     let pb = crate::loadout::resolve(&base, &[], pol);
 
     let rate_of = |p: &crate::loadout::ResolvedPanel| {
         p.stacking_buffs
             .iter()
-            .find(|b| b.grant == crate::loadout::BuffGrant::FireRate)
+            .find(|b| b.grant == crate::model::BuffGrant::FireRate)
             .map(|b| b.per_stack)
             .expect("Headcracker resolves a fire-rate buff on both forms")
     };

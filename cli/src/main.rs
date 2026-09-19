@@ -8,11 +8,11 @@
 use std::path::Path;
 use wfsim_engine::arcanes_data::ArcaneFx;
 use wfsim_engine::damage::{DamageType, DamageVector};
-use wfsim_engine::fight::{
-    monte_carlo, BuffLock, FightParams, LockedBuff, TargetMode, TargetParams,
-};
+use wfsim_engine::fight::{monte_carlo, BuffLock, FightParams, LockedBuff};
+use wfsim_engine::target::TargetMode;
+use wfsim_engine::target::{BodyPart, TargetParams};
 use wfsim_engine::enemy_data::EnemySpec;
-use wfsim_engine::loadout::CoBehavior;
+use wfsim_engine::model::CoBehavior;
 use wfsim_engine::scaling;
 
 // ---- Demo-build fixtures (harness-local) --------------------------------
@@ -30,7 +30,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         follow_through: None,
         slam: None,
         heavy: None,
-        tennokai: wfsim_engine::loadout::Tennokai::default(),
+        tennokai: wfsim_engine::model::Tennokai::default(),
         spends_combo: false,
         combo_duration_seconds: 0.0,
         combo_frozen: false,
@@ -87,7 +87,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         player_at: wfsim_engine::space::Vec2::ORIGIN,
         target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
         // Not a charge weapon: inert without charge_seconds.
-        charge_cadence: wfsim_engine::weapons_data::ChargeCadence::DrawThenRate,
+        charge_cadence: wfsim_engine::model::ChargeCadence::DrawThenRate,
         sustained_fire_rate: None,
         battery: None,
         rs_on_reload: 0.0,
@@ -179,7 +179,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         base_damage_bonus: 0.0,
         co_per_type: 0.0,
         co_behavior: CoBehavior::AdditiveWithBaseDamage,
-        co_base: wfsim_engine::loadout::CoBase::whole(),
+        co_base: wfsim_engine::model::CoBase::whole(),
         unswung_fraction: 0.0,
         co_stack: None,
         multishot_stack: None,
@@ -209,7 +209,7 @@ fn dual_toxocyst_baseline() -> FightParams {
             enervate_rank: Some(5),
             ..ArcaneFx::none()
         },
-        body_parts: FightParams::humanoid_parts(),
+        body_parts: BodyPart::humanoid(),
         target: TargetParams::training_dummy(),
         duration_seconds: 10.0,
         // ONE BODY — a fixture, not a formation.

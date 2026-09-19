@@ -339,7 +339,7 @@ pub(super) fn spread_hit(
         arc_ratio,
         half_hp,
         ap.co_base,
-        crate::loadout::CoStage::Direct,
+        crate::model::CoStage::Direct,
     );
     // THE PART FACTOR IS A SEPARATE MULTIPLIER FROM THE SHARE, and the two are
     // not interchangeable: `share` scales the hit AND the modded base its DoTs
@@ -1236,7 +1236,7 @@ pub(super) fn spread_from_seeds(
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
-    beam: crate::loadout::BeamGeometry,
+    beam: crate::model::BeamGeometry,
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,

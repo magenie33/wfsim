@@ -16,17 +16,17 @@
 //! engine the CLI and optimizer use — this crate only shapes JSON.
 
 use serde_json::{json, Value};
-use wfsim_engine::fight::{
-    BodyPart, BuffLock, FightParams, LockMode, LockedBuff, TargetMode,
-};
+use wfsim_engine::fight::{BuffLock, FightParams, LockMode, LockedBuff};
+use wfsim_engine::target::{BodyPart, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 // NO `resolve` HERE, and that is the point: it is the neutral-Tenno wrapper, and
 // the panel above was its last caller in this crate. Every endpoint now resolves
 // for the FIGHT's player, which is what "one player, both answers" means when it
 // is true rather than intended.
-use wfsim_engine::loadout::{
-    pct as fpct, resolve_for, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
-};
+use wfsim_engine::loadout::{resolve_for, ResolvedPanel};
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::{ModDef, ModEffect, StackPolicy};
+use wfsim_engine::model::pct as fpct;
 use wfsim_engine::mods::{PlannedMod, Polarity};
 use wfsim_optimizer::{
     enumerate_candidates_observed, run_funnel, schedule_to, Candidate, Constraints, FunnelState,
@@ -928,12 +928,12 @@ fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
 /// other slot, a loader that does not exist — which would otherwise compose to
 /// nothing and panic the panel, and which arrives from a stale share link
 /// rather than from an omission.
-pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::kitguns_data::Assembly> {
+pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::weapons_data::kitguns::Assembly> {
     let spec = wfsim_engine::weapons_data::spec(id)?;
     let record = spec.kitgun.as_deref()?;
-    let fallback = wfsim_engine::kitguns_data::default_assembly(record);
+    let fallback = wfsim_engine::weapons_data::kitguns::default_assembly(record);
     let Some(a) = v.get("assembly") else { return fallback };
-    let mut asked = wfsim_engine::kitguns_data::Assembly {
+    let mut asked = wfsim_engine::weapons_data::kitguns::Assembly {
         // THE CHAMBER IS THE WEAPON'S, never the request's. A request that could
         // name one would be naming a different weapon than the id it sent.
         chamber: fallback.as_ref().map(|f| f.chamber.clone()).unwrap_or_default(),
@@ -946,13 +946,13 @@ pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::kitguns_d
     // alone — and the difference is visible, since a discarded loader moves the
     // magazine, the reload and all three of crit, crit damage and status.
     let f = fallback?;
-    if !wfsim_engine::kitguns_data::grips()
+    if !wfsim_engine::weapons_data::kitguns::grips()
         .iter()
         .any(|g| g.id == asked.grip && Some(g.slot.as_str()) == kitgun_slot(spec))
     {
         asked.grip = f.grip.clone();
     }
-    if !wfsim_engine::kitguns_data::loaders().iter().any(|l| l.id == asked.loader) {
+    if !wfsim_engine::weapons_data::kitguns::loaders().iter().any(|l| l.id == asked.loader) {
         asked.loader = f.loader.clone();
     }
     // …and if the pair still does not compose, the whole default, because a
@@ -973,7 +973,7 @@ pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::kitguns_d
 /// there has to be something to draw; this is answering whether a BUILD is one
 /// the board can take, and quietly swapping a part would accept a record that
 /// scores as something else.
-pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::kitguns_data::Assembly> {
+pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::weapons_data::kitguns::Assembly> {
     let grip = get_str(v, "grip", "");
     let loader = get_str(v, "loader", "");
     if grip.is_empty() && loader.is_empty() {
@@ -985,10 +985,10 @@ pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::kitguns_data:
     // every legal pair reads as "these do not make a Tombfinger".
     let chamber = wfsim_engine::weapons_data::spec(get_str(v, "weapon", ""))
         .and_then(|s| s.kitgun.clone())
-        .and_then(|r| wfsim_engine::kitguns_data::default_assembly(&r))
+        .and_then(|r| wfsim_engine::weapons_data::kitguns::default_assembly(&r))
         .map(|d| d.chamber)
         .unwrap_or_default();
-    Some(wfsim_engine::kitguns_data::Assembly {
+    Some(wfsim_engine::weapons_data::kitguns::Assembly {
         chamber,
         grip: grip.to_string(),
         loader: loader.to_string(),
@@ -998,7 +998,7 @@ pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::kitguns_data:
 /// Which slot a modular entry's grips must belong to.
 fn kitgun_slot(spec: &wfsim_engine::weapons_data::WeaponSpec) -> Option<&str> {
     let record = spec.kitgun.as_deref()?;
-    wfsim_engine::kitguns_data::chambers()
+    wfsim_engine::weapons_data::kitguns::chambers()
         .iter()
         .find(|c| c.id == record)
         .map(|c| c.slot.as_str())
@@ -1279,7 +1279,7 @@ pub fn i18n_json() -> Value {
 ///
 /// `Value::Null` for every weapon that is not one.
 fn assembly_meta(id: &str) -> Value {
-    use wfsim_engine::kitguns_data as kg;
+    use wfsim_engine::weapons_data::kitguns as kg;
     let Some(record) = wfsim_engine::weapons_data::spec(id).and_then(|s| s.kitgun.as_deref())
     else {
         return Value::Null;
@@ -1805,7 +1805,7 @@ pub fn meta_json() -> Value {
                         // from the weapon's reach.
                         "slam": s.and_then(|s| s.attack.radial.as_ref())
                             .is_some_and(|r| r.blast_kind
-                                == wfsim_engine::weapons_data::BlastKind::Slam),
+                                == wfsim_engine::model::BlastKind::Slam),
                         // THE DENOMINATOR IS THE WEAPON'S BASE, not this
                         // form's. A heavy slam states a ZERO direct vector —
                         // all of it is in `radial:` — so dividing by the form's
@@ -2634,7 +2634,7 @@ pub fn build_keys_json(v: &Value) -> Value {
 /// THE SLAM IS COUNTED AND TAKES NO TIME, which is how the wiki's own module
 /// states it — a combo's `Duration` is its direct swings', and the slam three of
 /// Crushing Ruin's four end on rides the swing it is listed with.
-fn combo_summary(script: &[wfsim_engine::weapons_data::ComboHit]) -> Value {
+fn combo_summary(script: &[wfsim_engine::model::ComboHit]) -> Value {
     let swings = script.iter().filter(|h| h.slam_multiplier.is_none()).count();
     let total: f64 = script
         .iter()
@@ -2665,7 +2665,7 @@ fn combo_summary(script: &[wfsim_engine::weapons_data::ComboHit]) -> Value {
     })
 }
 
-fn seconds_of(script: &[wfsim_engine::weapons_data::ComboHit]) -> f64 {
+fn seconds_of(script: &[wfsim_engine::model::ComboHit]) -> f64 {
     script.iter().map(|h| h.windup_seconds + h.delay_seconds).sum()
 }
 
@@ -3187,8 +3187,8 @@ fn card_trigger(
     })
 }
 
-fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
-    use wfsim_engine::arcanes_data::ArcGrant::*;
+fn grant_label(g: wfsim_engine::model::ArcGrant) -> &'static str {
+    use wfsim_engine::model::ArcGrant::*;
     match g {
         BaseDamage => "Base Damage",
         Multishot => "Multishot",
@@ -3260,7 +3260,7 @@ fn enumerate_buffs(
     // read off the entry rather than written here.
     if let Some(s) = wfsim_engine::weapons_data::spec(&info.id).and_then(|w| w.kill_streak_summon) {
         push(BuffMeta {
-            id: wfsim_engine::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
+            id: wfsim_engine::model::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
             name: "Kill Streak".into(),
             grants: format!(
                 "{} kills within {:.0} s of each other summon the second gun",
@@ -3275,7 +3275,7 @@ fn enumerate_buffs(
             trigger: None,
         });
         push(BuffMeta {
-            id: wfsim_engine::weapons_data::KillStreakSummonSpec::BUFF_ID.into(),
+            id: wfsim_engine::model::KillStreakSummonSpec::BUFF_ID.into(),
             name: format!("Second {}", info.name),
             grants: format!(
                 "Magazine ×{}, Fire Rate ×{}, for {:.0} s",
@@ -4004,13 +4004,13 @@ pub fn panel_json(v: &Value) -> Value {
                     "desc": format!(
                         "{} set — every member is worth {} more once all {} are equipped",
                         set.name,
-                        wfsim_engine::loadout::pct(set.per_mod),
+                        wfsim_engine::model::pct(set.per_mod),
                         set.members,
                     ),
                     "active": self_scale > 1.0,
                     "why": if self_scale > 1.0 {
                         format!("all {} equipped, so this card's own numbers are {} higher",
-                            set.members, wfsim_engine::loadout::pct(set.per_mod))
+                            set.members, wfsim_engine::model::pct(set.per_mod))
                     } else {
                         format!("{have} of {} equipped, so this card is worth its face", set.members)
                     },
@@ -4180,11 +4180,11 @@ pub fn panel_json(v: &Value) -> Value {
                         "why": format!(
                             "earned in the fight and lost {} — the card beside the build sets how many stacks it opens with",
                             match b.decay {
-                                wfsim_engine::loadout::BuffDecay::AllAtOnce =>
+                                wfsim_engine::model::BuffDecay::AllAtOnce =>
                                     format!("WHOLE, {}s after the last one", b.duration),
-                                wfsim_engine::loadout::BuffDecay::PerStackExpiry =>
+                                wfsim_engine::model::BuffDecay::PerStackExpiry =>
                                     format!("one at a time, each {}s after it was earned", b.duration),
-                                wfsim_engine::loadout::BuffDecay::LoseOneAndReset =>
+                                wfsim_engine::model::BuffDecay::LoseOneAndReset =>
                                     format!("one at a time, {}s after the last one", b.duration),
                             }),
                     }));
@@ -4330,7 +4330,7 @@ pub fn panel_json(v: &Value) -> Value {
                 StatusDuration(x) => push("status_duration", x, None),
                 // Conditional buff, assumed active at max in this static panel.
                 CondBuff(b, x) => {
-                    use wfsim_engine::loadout::CondBucket as B;
+                    use wfsim_engine::model::CondBucket as B;
                     let key = match b {
                         B::BaseDamage => "base_damage",
                         B::Multishot => "multishot",
@@ -4407,7 +4407,7 @@ pub fn panel_json(v: &Value) -> Value {
                     _ => push(
                         "crit_chance",
                         c.max_bonus,
-                        Some(format!("{} hits assumed (the {} cap)", c.max_stacks(), wfsim_engine::loadout::pct(c.max_bonus))),
+                        Some(format!("{} hits assumed (the {} cap)", c.max_stacks(), wfsim_engine::model::pct(c.max_bonus))),
                     ),
                 },
                 OnReloadFireRate { bonus, .. } => match policy {
@@ -4474,12 +4474,12 @@ pub fn panel_json(v: &Value) -> Value {
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": format!(
                         "the combo counter is live, so this is worth nothing at 1x and {} at the 12x cap —                          and it is additive with Point Strike inside the same bracket",
-                        wfsim_engine::loadout::pct(v * 11.0))})),
+                        wfsim_engine::model::pct(v * 11.0))})),
                 StatusChancePerCombo(v) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": format!(
                         "the combo counter is live, so this is worth nothing at 1x and {} at the 12x cap",
-                        wfsim_engine::loadout::pct(v * 11.0))})),
+                        wfsim_engine::model::pct(v * 11.0))})),
                 MeleeComboDuration(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it buys TIME on the counter rather than a stat — what it is worth depends on                             how often this build lands a hit"})),
@@ -4537,7 +4537,7 @@ pub fn panel_json(v: &Value) -> Value {
                 continue;
             }
             let what = match b.grant {
-                wfsim_engine::arcanes_data::ArcGrant::Multishot => "Multishot",
+                wfsim_engine::model::ArcGrant::Multishot => "Multishot",
                 _ => "Base Damage",
             };
             conditionals.push(json!({
@@ -4845,15 +4845,15 @@ pub fn panel_json(v: &Value) -> Value {
             // That is the largest thing an Incarnon weapon can do, decided by a
             // field with no row.
             let (what, why) = match inc.charge_on {
-                wfsim_engine::loadout::ChargeOn::WeakpointHits => (
+                wfsim_engine::model::ChargeOn::WeakpointHits => (
                     "weakpoint hits",
                     "weakpoint hits only — at a 0% headshot rate this weapon never reaches its Incarnon form. A radial or field instance can never contribute: it has no hit location",
                 ),
-                wfsim_engine::loadout::ChargeOn::DirectHits => (
+                wfsim_engine::model::ChargeOn::DirectHits => (
                     "direct hits",
                     "ANY direct hit, so the form does not depend on the headshot rate (wiki Incarnon: \"Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead charged through direct hits\"). A lingering field is not a direct hit and does not charge it",
                 ),
-                wfsim_engine::loadout::ChargeOn::Kills => (
+                wfsim_engine::model::ChargeOn::Kills => (
                     "kills",
                     "KILLS, not hits — so this form is worth what the fight lets you earn, and against a single target that does not die it never arrives at all. A radial, a field tick or a status proc all count: the kill is what is asked for, not the instance that landed it. Kills made with the earned form itself do not pay for the next one",
                 ),
@@ -5000,9 +5000,9 @@ pub fn panel_json(v: &Value) -> Value {
             v.join(" + ")
         };
         let behavior = match panel.co_behavior {
-            wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage => "additive",
-            wfsim_engine::loadout::CoBehavior::Independent => "multiplying",
-            wfsim_engine::loadout::CoBehavior::Inert => "inert",
+            wfsim_engine::model::CoBehavior::AdditiveWithBaseDamage => "additive",
+            wfsim_engine::model::CoBehavior::Independent => "multiplying",
+            wfsim_engine::model::CoBehavior::Inert => "inert",
         };
         let excluded = (panel.co_base_fraction() - 1.0).abs() > 1e-9;
         // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%. A slot that is blank when nothing is odd cannot
@@ -5164,7 +5164,7 @@ pub fn panel_json(v: &Value) -> Value {
             // AoE weapons cannot have their Punch Through stat modified"*), so
             // a Primed Shred on a Torid would have posted +2.2 m against an
             // engine that spends 0.
-            if *stat == wfsim_engine::loadout::IndirectStat::PunchThrough {
+            if *stat == wfsim_engine::model::IndirectStat::PunchThrough {
                 continue;
             }
             indirect_rows.push(
@@ -5181,7 +5181,7 @@ pub fn panel_json(v: &Value) -> Value {
         // is what makes a zeroed total legible rather than mysterious: the
         // grants are listed and the final says 0 m.
         {
-            let stat = wfsim_engine::loadout::IndirectStat::PunchThrough;
+            let stat = wfsim_engine::model::IndirectStat::PunchThrough;
             let granted: f64 = panel
                 .indirect
                 .iter()
@@ -5351,7 +5351,7 @@ pub fn panel_json(v: &Value) -> Value {
         // "18 Radiation" and "5 × 18 Radiation" are different weapons.
         if let (Some(cb), Some(cr)) = (base.cluster.as_ref(), panel.cluster.as_ref()) {
             let n = display_number(cr.count);
-            let part_rows = |b: &wfsim_engine::loadout::RadialBase,
+            let part_rows = |b: &wfsim_engine::model::RadialBase,
                              r: &wfsim_engine::loadout::ResolvedRadial| {
                 vec![
                     json!({ "key": "base_damage", "label": "Base Damage",
@@ -5470,8 +5470,8 @@ pub fn panel_json(v: &Value) -> Value {
                 json!({ "key": "field_stacking", "label": "Overlapping Fields",
                     "base": "—",
                     "final": match fr.stacking {
-                        wfsim_engine::loadout::FieldStacking::Stack => "stack",
-                        wfsim_engine::loadout::FieldStacking::Refresh => "refresh",
+                        wfsim_engine::model::FieldStacking::Stack => "stack",
+                        wfsim_engine::model::FieldStacking::Refresh => "refresh",
                     },
                     "note": "measured (MEASUREMENTS M13)".to_string(),
                     "sources": json!([]) }),
@@ -5609,8 +5609,8 @@ parts.push(json!({
         }
         for m in &refs {
             let aim_gated = m.effects.iter().any(|e| {
-                matches!(e, wfsim_engine::loadout::ModEffect::WhileTenno(
-                    wfsim_engine::loadout::TennoCondition::Aiming, _))
+                matches!(e, wfsim_engine::model::ModEffect::WhileTenno(
+                    wfsim_engine::model::TennoCondition::Aiming, _))
             });
             if aim_gated {
                 conditionals.push(json!({
@@ -11560,7 +11560,9 @@ mod scope_lock_tests {
 mod card_and_sim_agree {
     use super::*;
     use wfsim_engine::fight::FightParams;
-    use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
+    use wfsim_engine::loadout::resolve;
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::StackPolicy;
 
     /// Buffs the params do not own. `frenzy` is a weapon passive the api
     /// applies (`frenzy_apply`) rather than a field of the build; `arcane:*`
@@ -11790,7 +11792,7 @@ mod one_picture_one_weapon {
     fn subject(id: &str) -> &str {
         let Some(s) = wfsim_engine::weapons_data::spec(id) else { return id };
         match s.kitgun.as_deref().and_then(|k| {
-            wfsim_engine::kitguns_data::chambers().iter().find(|c| c.id == k)
+            wfsim_engine::weapons_data::kitguns::chambers().iter().find(|c| c.id == k)
         }) {
             Some(c) => c.chamber.as_str(),
             None => s.group(),

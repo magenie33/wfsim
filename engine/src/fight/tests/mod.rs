@@ -94,7 +94,7 @@ impl Default for FightParams {
             status_duration_multiplier: 1.0,
             fire_rate: 1.0,
             charge_seconds: None,
-            charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
+            charge_cadence: crate::model::ChargeCadence::DrawThenRate,
             sustained_fire_rate: None,
             battery: None,
             rs_on_reload: 0.0,
@@ -125,8 +125,8 @@ impl Default for FightParams {
             locked_stats: Vec::new(),
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
-            co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
-            co_base: crate::loadout::CoBase::whole(),
+            co_behavior: crate::model::CoBehavior::AdditiveWithBaseDamage,
+            co_base: crate::model::CoBase::whole(),
             unswung_fraction: 0.0,
             co_stack: None,
             multishot_stack: None,
@@ -163,7 +163,7 @@ impl Default for FightParams {
             follow_through: None,
             slam: None,
             heavy: None,
-            tennokai: crate::loadout::Tennokai::default(),
+            tennokai: crate::model::Tennokai::default(),
             spends_combo: false,
             combo_duration_seconds: 0.0,
             combo_frozen: false,
@@ -186,7 +186,7 @@ impl Default for FightParams {
             kill_streak_summon: None,
             kill_streak_summon_opens_active: false,
             kill_streak_opens_at: 0,
-            beam_ramp_floor: BEAM_RAMP_FLOOR,
+            beam_ramp_floor: crate::model::BEAM_RAMP_FLOOR,
             applies_microwave: false,
             independent_procs: &[],
             syndicate_radial: None,
@@ -211,7 +211,7 @@ impl Default for FightParams {
                 enervate_rank: Some(5),
                 ..ArcaneFx::none()
             },
-            body_parts: Self::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             target: TargetParams::training_dummy(),
             tenno: crate::tenno_data::default_tenno().clone(),
             duration_seconds: 10.0,
@@ -266,7 +266,7 @@ pub(super) fn no_status() -> FightParams {
 /// A secondary arcane at max rank under the Emergent policy (crit-base
 /// 0 — none of these tests use the assumed-max relative crit paths).
 fn arc(id: &str) -> ArcaneFx {
-    crate::arcanes_data::secondary(id).unwrap().fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno())
+    crate::arcanes_data::secondary(id).unwrap().fx(5, crate::model::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno())
 }
 
 /// The same arcane with its stacks ALREADY EARNED.
@@ -314,9 +314,9 @@ fn flat_base() -> FightParams {
 ///
 /// `n` is the number of OTHER bodies, packed around the aimed one.
 fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
-    let base = crate::loadout::WeaponBase::from_data("latron_prime_incarnon", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("latron_prime_incarnon", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(10.0);
     // A SQUARE around the aimed body at 0.6 m, which is just over a body's
     // width — the packing a reflected projectile can actually travel in.
@@ -341,7 +341,7 @@ fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
         .map(|p| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: p,
         })
         .collect();
@@ -395,7 +395,7 @@ pub(super) fn mono_body(multiplier: f64) -> Vec<BodyPart> {
 /// for 10 s, its own 15% / 2.0x crit and 25% status, and the Torid's
 /// anomalous CO eligibility. `stacking` picks the branch (MEASUREMENTS M13
 /// measured `stack`; `refresh` is the other weapon-data option).
-fn cloud(stacking: crate::loadout::FieldStacking) -> crate::loadout::ResolvedLingering {
+fn cloud(stacking: crate::model::FieldStacking) -> crate::loadout::ResolvedLingering {
     let mut damage = DamageVector::default();
     damage.set(DamageType::Toxin, 40.0);
     crate::loadout::ResolvedLingering {
@@ -472,7 +472,7 @@ fn orb_part(damage: f64) -> crate::loadout::ResolvedLingering {
         radius_m: f64::INFINITY,
         falloff_start_m: f64::INFINITY,
         falloff_reduction: 0.0,
-        stacking: crate::loadout::FieldStacking::Stack,
+        stacking: crate::model::FieldStacking::Stack,
         takes_condition_overload: false,
     }
 }
@@ -552,7 +552,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
         eximus: false,
         can_be_eximus: false,
         status_immunities: Vec::new(),
-        faction: crate::loadout::Faction::Unknown,
+        faction: crate::model::Faction::Unknown,
         type_mods: crate::factions_data::Columns::NEUTRAL,
         faction_bracket_multiplier: 1.0,
         mode,
@@ -582,7 +582,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::loadout::ResolvedRa
     let mut damage = DamageVector::default();
     damage.set(DamageType::Heat, 300.0);
     crate::loadout::ResolvedRadial {
-        blast_kind: crate::weapons_data::BlastKind::Contact,
+        blast_kind: crate::model::BlastKind::Contact,
         damage,
         modified_base: 300.0,
         crit_chance,
@@ -597,7 +597,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::loadout::ResolvedRa
         forced_procs: Default::default(),
         takes_condition_overload: false,
         takes_multishot: true,
-        co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial),
+        co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
     }
 }
 
@@ -618,7 +618,8 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::loadout::ResolvedRa
 /// ONE PARAMS CARRYING EVERY CONFIGURABLE BUFF AT ONCE — shared by the two
 /// ratchets below: is every card READ, and can every card be DENIED.
 fn every_buff_params() -> FightParams {
-    use crate::loadout::{StackSpec, TimedBuff};
+    use crate::model::TimedBuff;
+use crate::model::StackSpec;
     let stack = |per_stack: f64, earned_on: &'static str| StackSpec {
         per_stack,
         max_stacks: 3,
@@ -635,33 +636,33 @@ fn every_buff_params() -> FightParams {
         co_stack: Some(stack(0.2, "kill")),
         multishot_stack: Some(stack(0.3, "kill")),
         crit_chance_stack: Some(stack(0.1, "headshot_kill")),
-        stacking_buffs: vec![crate::loadout::StackingBuff {
+        stacking_buffs: vec![crate::model::StackingBuff {
             id: "on_plain_hit_damage",
-            trigger: crate::loadout::BuffTrigger::PlainHit,
-            grant: crate::loadout::BuffGrant::BaseDamage,
+            trigger: crate::model::BuffTrigger::PlainHit,
+            grant: crate::model::BuffGrant::BaseDamage,
             chance: 1.0,
-            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
             per_stack: 4.0,
             max_stacks: 3,
             duration: 10.0,
             initial_stacks: 0,
             stacks_per_trigger: 1,
             per_shell: false,
-            cleared_by: crate::loadout::ClearedBy::Nothing,
+            cleared_by: crate::model::ClearedBy::Nothing,
             card_opens_full: false,
-        }, crate::loadout::StackingBuff {
+        }, crate::model::StackingBuff {
             id: "on_headshot_reload_speed",
-            trigger: crate::loadout::BuffTrigger::Headshot,
-            grant: crate::loadout::BuffGrant::ReloadSpeed,
+            trigger: crate::model::BuffTrigger::Headshot,
+            grant: crate::model::BuffGrant::ReloadSpeed,
             chance: 1.0,
-            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
             per_stack: 0.1,
             max_stacks: 3,
             duration: 6.0,
             initial_stacks: 0,
             stacks_per_trigger: 1,
             per_shell: false,
-            cleared_by: crate::loadout::ClearedBy::Nothing,
+            cleared_by: crate::model::ClearedBy::Nothing,
             card_opens_full: false,
         }],
         crit_chance_on_headshot: Some(timed(0.5)),
@@ -672,7 +673,7 @@ fn every_buff_params() -> FightParams {
         // them: the tendril card exists only where a mod reads the count.
         tendril_max: 4,
         crit_chance_per_tendril: 0.1,
-        kill_streak_summon: Some(crate::weapons_data::KillStreakSummonSpec {
+        kill_streak_summon: Some(crate::model::KillStreakSummonSpec {
             kills: 3,
             kill_window_seconds: 2.0,
             duration_seconds: 6.0,
@@ -741,7 +742,7 @@ fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> FightPara
     let target = unit
         .target_params(210, true, false, TargetMode::InfiniteHealth)
         .expect("a level 210 Steel Path unit is legal");
-    let mut parts = FightParams::humanoid_parts();
+    let mut parts = BodyPart::humanoid();
     for p in &mut parts {
         p.aim_weight = if p.is_head == head { 1.0 } else { 0.0 };
     }
@@ -751,7 +752,7 @@ fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> FightPara
             crate::formation::FoeSpec {
                 id: String::new(),
                 params: target.clone(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(2.0 * a.cos(), 2.0 * a.sin()),
             }
         })

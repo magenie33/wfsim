@@ -35,7 +35,9 @@ use wfsim_engine::fight::{
 };
 use wfsim_engine::arena::Arena;
 use wfsim_engine::tenno_data::Tenno;
-use wfsim_engine::loadout::{resolve_for, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
+use wfsim_engine::loadout::{resolve_for, ResolvedPanel};
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::{ModDef, StackPolicy};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
 /// The searchable mod pool of one CLASS at MAX RANK (drain = base +
@@ -1470,9 +1472,9 @@ mod tests {
 
     #[test]
     fn a_resumed_funnel_lands_on_the_same_leaderboard() {
-        use wfsim_engine::fight::BodyPart;
+        use wfsim_engine::target::BodyPart;
         let pool = pool();
-        let base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &[]);
+        let base = wfsim_engine::model::WeaponBase::from_data("dual_toxocyst", true, &[]);
         let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");
         let (cands, _stats, _c) = enumerate_candidates_observed(
             &pool, &base, None, 0, 8, 8, 60, &innate,

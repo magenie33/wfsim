@@ -1,48 +1,11 @@
 use super::*;
+use crate::target::Pool;
 
 /// Which pool a damage instance just emptied.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum BrokenPool {
     Overguard,
     Shield,
-}
-
-/// WHICH POOL a portion of a damage instance landed in.
-///
-/// The game pops ONE NUMBER PER POOL, which is why this is carried rather than
-/// summed away: Toxin bypasses a shield while its siblings do not, so a single
-/// pellet on a shielded Corpus unit shows two numbers side by side. An engine
-/// that reports their sum cannot be checked against a recording.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Default,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-#[serde(rename_all = "snake_case")]
-pub enum Pool {
-    Overguard,
-    Shield,
-    /// THE DEFAULT, because it is the pool every fight ends in and the only one
-    /// a target is guaranteed to have.
-    #[default]
-    Health,
-}
-
-impl Pool {
-    pub fn name(self) -> &'static str {
-        match self {
-            Pool::Overguard => "overguard",
-            Pool::Shield => "shield",
-            Pool::Health => "health",
-        }
-    }
 }
 
 /// ONE POOL'S SHARE of a damage instance, with every factor between the raw

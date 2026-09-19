@@ -15,7 +15,7 @@ use crate::damage::DamageVector;
 #[test]
 fn the_magistars_measured_flat_base_damage_ladder() {
     let evos = ["magistar_evo1_incarnon_form", "magistar_edge_of_justice"];
-    let base = crate::loadout::WeaponBase::from_data("magistar", true, &evos);
+    let base = crate::model::WeaponBase::from_data("magistar", true, &evos);
     assert!((base.base_vector.total() - 310.0).abs() < 1e-9, "the fixture moved");
     assert!((base.unswung_base - 100.0).abs() < 1e-9, "the perk is the flat add");
     let f = base.unswung_fraction();
@@ -37,7 +37,7 @@ fn the_magistars_measured_flat_base_damage_ladder() {
     // measured **2902** against Deimos' x1.5 Blast column: 2902 / 1.5 is
     // 1934.7 and the formula says 1934.5. The explosion has carried the add
     // as an absolute since M69, so this half asserts the base it lands on.
-    let slam = crate::loadout::WeaponBase::from_data("magistar_heavy_slam", true, &evos);
+    let slam = crate::model::WeaponBase::from_data("magistar_heavy_slam", true, &evos);
     let r = slam.radial.as_ref().expect("the heavy slam explodes");
     assert!((r.base_vector.total() - 730.0).abs() < 1e-9,
         "the explosion's base is {}", r.base_vector.total());
@@ -120,7 +120,7 @@ fn microwave_is_one_more_status_type_and_nothing_else() {
         p.dot_modified_base = Some(100.0);
         p.status_chance = 1.0;
         p.co_per_type = 0.5;
-        p.co_base = crate::loadout::CoBase::whole();
+        p.co_base = crate::model::CoBase::whole();
         p.magazine_size = 1e9;
         p.duration_seconds = 20.0;
         run_once(&p, &mut crate::rng::Rng::new(17))
@@ -712,7 +712,7 @@ fn the_void_proc_pays_condition_overload_and_no_damage() {
         p.status_chance = if on { 4.0 } else { 0.0 };
         p.base_status_chance = p.status_chance;
         p.co_per_type = 0.8;
-        p.co_behavior = crate::loadout::CoBehavior::Independent;
+        p.co_behavior = crate::model::CoBehavior::Independent;
         // Pure Impact: its own proc is a Stagger, which pays no damage
         // either, so any movement in the hit is the CO counter and not a
         // second damage source.

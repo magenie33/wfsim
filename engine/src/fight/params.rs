@@ -1,4 +1,5 @@
 use super::*;
+use crate::target::BodyPart;
 
 /// WHAT ARMS THE SECOND SET OF NUMBERS — the one thing a gun's Incarnon and a
 /// melee's genuinely disagree about, said as data instead of as two mechanisms.
@@ -13,7 +14,7 @@ pub enum Arms {
     /// A GAUGE, filled by hits of one kind (Zariman: weak-point; Torid: any
     /// direct hit). The gun Incarnon's.
     Gauge {
-        charge_on: crate::loadout::ChargeOn,
+        charge_on: crate::model::ChargeOn,
         /// Hits of `charge_on` to fill it (Dual Toxocyst 9, Torid 5).
         charges_to_fill: u32,
     },
@@ -79,59 +80,6 @@ pub struct IncarnonCycle {
     pub starts_primed: bool,
 }
 
-/// What happens when the target's health reaches zero.
-///
-/// These are simulator conveniences for calibration (the real Simulacrum has
-/// neither an enemy-invincibility nor an instant-respawn toggle):
-/// - `InfiniteHealth`: pools never deplete — measure steady per-shot damage
-///   against a fixed defensive state.
-/// - `InstantRespawn`: the target dies and instantly respawns in place at full
-///   pools; overkill damage is lost. **Decision: no on-death
-///   transformation is modeled** (e.g. Thrax spectral forms are skipped — the
-///   respawned target is always the physical form).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TargetMode {
-    InfiniteHealth,
-    InstantRespawn,
-}
-
-/// Damage attenuation (wiki U40 STRUCTURE: the enemy caps the damage it
-/// can take per INSTANCE and per SECOND, both proportional to Max
-/// Health, measured per player). The exact constants are UNPUBLISHED —
-/// these fractions are recorded estimates pending in-game calibration
-/// (the data file marks them as such).
-#[derive(Debug, Clone, Copy)]
-pub struct Attenuation {
-    /// Max effective damage per damage instance / max health.
-    pub instance_fraction: f64,
-    /// Max effective damage per second / max health.
-    pub dps_fraction: f64,
-}
-
-/// Per-unit status stack caps (Acolytes: any status 4, Impact 3).
-#[derive(Debug, Clone, Copy)]
-pub struct StackCaps {
-    pub general: usize,
-    pub impact: usize,
-}
-
-/// One aimable location on the target (wiki `Enemy_Body_Parts`).
-#[derive(Debug, Clone)]
-pub struct BodyPart {
-    pub name: String,
-    /// Relative probability of a shot landing here (weights are normalized).
-    pub aim_weight: f64,
-    /// Location damage multiplier.
-    pub multiplier: f64,
-    /// True head: fires on-headshot effects (`Hit::headshot`). Other weak
-    /// spots never trigger headshot conditions.
-    pub is_head: bool,
-    /// Eligible for the critical-location bonus (the `2*cd` fold-in). False
-    /// for e.g. MOA fanny packs and helmeted Corpus heads; locations at 1x
-    /// never get the bonus regardless of this flag.
-    pub crit_bonus: bool,
-}
-
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
@@ -194,24 +142,24 @@ pub struct FightParams {
     /// and the cycle is `charge + reload` however the two are ordered.
     pub charge_seconds: Option<f64>,
     /// Which charge formula paces the shot — see `ChargeCadence`.
-    pub charge_cadence: crate::weapons_data::ChargeCadence,
+    pub charge_cadence: crate::model::ChargeCadence,
     /// A RATE THAT FALLS WHILE THE TRIGGER IS HELD — see
-    /// [`crate::weapons_data::SustainedFireRate`]. It scales the CADENCE and
+    /// [`crate::model::SustainedFireRate`]. It scales the CADENCE and
     /// nothing else: `fire_rate` stays the listed stat, which is what
     /// Hemorrhage's below-2.5 gate reads and what the panel prints, exactly as
     /// on a charge weapon.
-    pub sustained_fire_rate: Option<crate::weapons_data::SustainedFireRate>,
-    /// A MAGAZINE THAT REFILLS ITSELF — see [`crate::weapons_data::Battery`].
+    pub sustained_fire_rate: Option<crate::model::SustainedFireRate>,
+    /// A MAGAZINE THAT REFILLS ITSELF — see [`crate::model::Battery`].
     /// The EMPTY case is already `reload_seconds` (delay + a full refill); what
     /// this adds is the BETWEEN-SHOTS one, which is where the mechanic stops
     /// being a differently-spelled reload.
-    pub battery: Option<crate::weapons_data::Battery>,
+    pub battery: Option<crate::model::Battery>,
     /// SECONDARY IRRADIATE'S ECHO, TIMES THIS — a MEASURED coefficient with no
     /// explanation behind it. 1.0 for every entry in the roster but one; see
     /// [`crate::weapons_data::WeaponSpec::echo_multiplier`].
     pub echo_multiplier: f64,
-    /// A BURST trigger's modded shape — see [`crate::weapons_data::BurstSpec`].
-    pub burst: Option<crate::weapons_data::BurstSpec>,
+    /// A BURST trigger's modded shape — see [`crate::model::BurstSpec`].
+    pub burst: Option<crate::model::BurstSpec>,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
     /// form). Wired: fire-rate x2.5 on true headshots (3 s, refreshable).
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
@@ -254,11 +202,11 @@ pub struct FightParams {
     /// measured from the EPICENTRE, which — for a projectile that hit the
     /// target — is on the target, so the radial keeps taking full damage and
     /// its `unmodeled:` line still says so.
-    pub falloff: Option<crate::loadout::Falloff>,
+    pub falloff: Option<crate::model::Falloff>,
     /// THE CONE this attack fires into, accuracy mods applied — what decides
     /// whether a pellet lands on the target or beside it. `None` = this entry's
     /// spread is not transcribed, so nothing of it may miss.
-    pub spread: Option<crate::loadout::Spread>,
+    pub spread: Option<crate::model::Spread>,
     /// The LINGERING FIELD every landed projectile leaves (Torid's Toxin
     /// cloud). A third kind of attack part: it persists and TICKS instead of
     /// landing once, and each tick is a full damage instance — own crit roll,
@@ -300,10 +248,10 @@ pub struct FightParams {
     /// stack drops and the timer resets. The buff multiplies subsequent
     /// instances, the radial part included.
     /// Every stacking buff this build grants, keyed by its own id — see
-    /// [`crate::loadout::StackingBuff`]. The roster, the config reader and the
+    /// [`crate::model::StackingBuff`]. The roster, the config reader and the
     /// sampler all walk THIS, which is what stops a buff from existing in one
     /// of them and not the others.
-    pub stacking_buffs: Vec<crate::loadout::StackingBuff>,
+    pub stacking_buffs: Vec<crate::model::StackingBuff>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -359,12 +307,12 @@ pub struct FightParams {
     pub co_per_type: f64,
     /// PER-WEAPON CO class: additive with base damage,
     /// an independent multiplier, or inert on this weapon.
-    pub co_behavior: crate::loadout::CoBehavior,
+    pub co_behavior: crate::model::CoBehavior,
     /// CO base effectiveness (wiki: the CO bonus excludes evolution flat
     /// damage — DT with Fevered = 75/125 = 0.6), paired with the base it is a
-    /// share of — see [`crate::loadout::CoBase`].
-    pub co_base: crate::loadout::CoBase,
-    /// See [`crate::loadout::WeaponBase::unswung_fraction`] — the share of the
+    /// share of — see [`crate::model::CoBase`].
+    pub co_base: crate::model::CoBase,
+    /// See [`crate::model::WeaponBase::unswung_fraction`] — the share of the
     /// vector a stance's, a slam's or a heavy's own multiplier leaves alone.
     pub unswung_fraction: f64,
     /// The evolution's PERMANENT stacked multishot (Fevered Frenzy): its
@@ -377,14 +325,14 @@ pub struct FightParams {
     /// already carries it, and `apply_buff_config` scales it back out.
     pub evo_base_damage: Option<crate::loadout::EvoBdBuff>,
     /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
-    pub co_stack: Option<crate::loadout::StackSpec>,
+    pub co_stack: Option<crate::model::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
-    pub multishot_stack: Option<crate::loadout::StackSpec>,
+    pub multishot_stack: Option<crate::model::StackSpec>,
     /// Crosshairs on-headshot buff: absolute crit chance as a timed buff.
-    pub crit_chance_on_headshot: Option<crate::loadout::TimedBuff>,
+    pub crit_chance_on_headshot: Option<crate::model::TimedBuff>,
     /// Crosshairs on-headshot-kill stacks: absolute cc per stack,
     /// per-stack expiry (FIFO), NOT the lose-one-reset decay.
-    pub crit_chance_stack: Option<crate::loadout::StackSpec>,
+    pub crit_chance_stack: Option<crate::model::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_multiplier: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
@@ -439,9 +387,9 @@ pub struct FightParams {
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     /// See [`crate::weapons_data::AttackSpec::consecutive_hit_radial_only`].
     pub consecutive_hit_radial_only: bool,
-    /// SYNTH CHARGE — see [`crate::loadout::ModEffect::LastRoundDamage`].
+    /// SYNTH CHARGE — see [`crate::model::ModEffect::LastRoundDamage`].
     pub last_round_damage: f64,
-    /// THE CHAMBERS — see [`crate::loadout::ModEffect::FirstRoundDamage`].
+    /// THE CHAMBERS — see [`crate::model::ModEffect::FirstRoundDamage`].
     pub first_round_damage: f64,
     pub round_restore_on_status: Option<(DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL reloads instantly. Rolled off the kill
@@ -453,39 +401,39 @@ pub struct FightParams {
     pub magazine_growth_on_empty_reload: Option<(f64, u32)>,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
-    pub crit_damage_on_kill: Option<crate::loadout::TimedBuff>,
+    pub crit_damage_on_kill: Option<crate::model::TimedBuff>,
     /// Pressurized Magazine (Emergent): ABSOLUTE fire-rate add as a timed buff
     /// (starts inactive), granted on every reload.
-    pub fire_rate_on_reload: Option<crate::loadout::TimedBuff>,
+    pub fire_rate_on_reload: Option<crate::model::TimedBuff>,
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES, not when the magazine empties.
-    pub base_damage_on_reload: Option<crate::loadout::TimedBuff>,
+    pub base_damage_on_reload: Option<crate::model::TimedBuff>,
     /// EXIMUS ADVANTAGE: a RELATIVE base-damage bonus whose window is opened
     /// by a weak-point hit on an EXIMUS and refreshed by the next one. The
     /// target-side half of the trigger is read HERE rather than at `resolve`,
     /// because the panel has no target to ask — see
-    /// [`crate::loadout::ModEffect::OnEximusWeakpointDamage`].
-    pub base_damage_on_eximus_weakpoint: Option<crate::loadout::TimedBuff>,
+    /// [`crate::model::ModEffect::OnEximusWeakpointDamage`].
+    pub base_damage_on_eximus_weakpoint: Option<crate::model::TimedBuff>,
     /// ACID SHELLS: the corpse explosion every kill by this weapon sets off —
-    /// see [`crate::loadout::AcidShells`]. It rides on the params rather than
+    /// see [`crate::model::AcidShells`]. It rides on the params rather than
     /// on the target, because it is a fact about the BUILD that a death reads.
-    pub acid_shells: Option<crate::loadout::AcidShells>,
+    pub acid_shells: Option<crate::model::AcidShells>,
     /// HATA-SATYA: relative crit chance per HIT, and the CEILING ON WHAT THE
     /// PILE IS WORTH rather than on how deep it gets — see
-    /// [`crate::loadout::CritPerHit`]. The pile has no clock — a RELOAD is what
+    /// [`crate::model::CritPerHit`]. The pile has no clock — a RELOAD is what
     /// takes it — so it is a rate and a cap here rather than a `TimedBuff`, the
     /// same shape `crit_chance_per_tendril` carries one field down.
-    pub crit_chance_per_hit: Option<crate::loadout::CritPerHit>,
+    pub crit_chance_per_hit: Option<crate::model::CritPerHit>,
     // ---- MELEE: the combo counter and what reads it ----------------------
     //
     // ONE COUNTER, THREE READERS, and they want opposite things from it. A
     // HEAVY form spends it as a damage multiplier; Blood Rush and Weeping
     // Wounds read it as a bracket term and never spend it. That is why the
     // seven melee forms are seven builds rather than seven animations.
-    /// The swings this form loops — see [`crate::weapons_data::ComboHit`].
+    /// The swings this form loops — see [`crate::model::ComboHit`].
     /// Empty on every gun, and its emptiness is what keeps this loop unchanged
     /// for them.
-    pub combo_script: Vec<crate::weapons_data::ComboHit>,
+    pub combo_script: Vec<crate::model::ComboHit>,
     /// `FT^(n-1)`, the share a swing has left for the n-th body it reaches.
     /// `None` on anything that is not a melee swing.
     pub follow_through: Option<f64>,
@@ -494,10 +442,10 @@ pub struct FightParams {
     pub slam: Option<crate::loadout::ResolvedRadial>,
     /// THE CLASS'S HEAVY ATTACK, on every melee form — what a TENNOKAI swing
     /// fires when the window is open on a light combo.
-    pub heavy: Option<crate::weapons_data::HeavyAttack>,
+    pub heavy: Option<crate::model::HeavyAttack>,
     /// TENNOKAI, resolved. `enabled` false on every build carrying none of its
     /// seven cards, which is the game's own answer.
-    pub tennokai: crate::loadout::Tennokai,
+    pub tennokai: crate::model::Tennokai,
     /// Does a swing SPEND the combo counter? True on the two heavy forms.
     pub spends_combo: bool,
     /// SECONDS THE COUNTER SURVIVES with nothing added to it. 5.0 on almost
@@ -575,20 +523,20 @@ pub struct FightParams {
     /// a transmute animation to pick up. A reload from empty is simply faster.
     pub rs_on_reload: f64,
     /// JAHU CANTICLE — see
-    /// [`crate::loadout::ModEffect::StripOnKillInRange`]. `(fraction,
+    /// [`crate::model::ModEffect::StripOnKillInRange`]. `(fraction,
     /// radius_m)`; every kill takes that share off the armour of every body
     /// inside the radius OF THE PLAYER.
     pub strip_on_kill_in_range: Option<(f64, f64)>,
     /// FLENSING SPIKES: armour removed per live Puncture status (0.0 = none).
     /// A third strip source beside Corrosive and Heat, multiplying with them.
     pub armor_strip_per_puncture: f64,
-    /// EXECUTIONER'S FORTUNE — see [`crate::loadout::InstantReload`]. Rolled by
+    /// EXECUTIONER'S FORTUNE — see [`crate::model::InstantReload`]. Rolled by
     /// the PELLET that headshots, because only there is it known whether the
     /// hit landed in a head and whether it killed.
-    pub instant_reload: Option<crate::loadout::InstantReload>,
-    /// LINGERING JUDGEMENT — see [`crate::loadout::HeadshotStreak`]. Counted
+    pub instant_reload: Option<crate::model::InstantReload>,
+    /// LINGERING JUDGEMENT — see [`crate::model::HeadshotStreak`]. Counted
     /// per PELLET that lands in a head, like every other on-hit trigger here.
-    pub headshot_streak: Option<crate::loadout::HeadshotStreak>,
+    pub headshot_streak: Option<crate::model::HeadshotStreak>,
     /// SPITEFUL DEFILEMENT: `(threshold, bonus)` — see
     /// [`crate::loadout::ResolvedPanel::crit_damage_below_status_count`].
     pub crit_damage_below_status_count: Option<(u32, f64)>,
@@ -611,7 +559,7 @@ pub struct FightParams {
     pub multishot_adds_damage: bool,
     /// THE SHOT COMBO COUNTER, or `None` — which is what a sniper fired from
     /// the hip already resolved to, so nothing here asks about aiming.
-    pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
+    pub sniper_combo: Option<crate::model::SniperCombo>,
     /// The counter the run OPENS with. Seeded like every other stack count,
     /// and it matters more than most: the counter costs LANDING HITS and a
     /// sniper fires slowly, so a fight short enough to be worth measuring can
@@ -661,13 +609,13 @@ pub struct FightParams {
     /// the NEXT landing pellet's crit chance to `crit_chance`, exactly — the
     /// modded value and every crit bonus are ignored, because the card says
     /// "Set Critical Chance ignores all other modifiers".
-    pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
+    pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
     /// See `loadout::WeaponBase::weakpoint_stacks` — the Knell's Death Knell.
-    pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
+    pub weakpoint_stacks: Option<crate::model::WeakpointStacksSpec>,
     /// See `loadout::WeaponBase::spawn_on_kill` — the Ballistica's ghosts.
-    pub spawn_on_kill: Option<crate::weapons_data::SpawnOnKillSpec>,
-    /// Pyrana Prime's second gun — see [`crate::weapons_data::KillStreakSummonSpec`].
-    pub kill_streak_summon: Option<crate::weapons_data::KillStreakSummonSpec>,
+    pub spawn_on_kill: Option<crate::model::SpawnOnKillSpec>,
+    /// Pyrana Prime's second gun — see [`crate::model::KillStreakSummonSpec`].
+    pub kill_streak_summon: Option<crate::model::KillStreakSummonSpec>,
     /// ...and its card: whether it is already up when the fight opens.
     pub kill_streak_summon_opens_active: bool,
     /// ...and the streak's card: the kills already banked when it opens.
@@ -728,11 +676,11 @@ pub struct FightParams {
     /// The beam's own geometry, when this attack is one: the damage radius that
     /// SEEDS the chains and the chain's three constants. `None` for everything
     /// that is not a chaining beam, which is the whole roster but one form.
-    pub beam: Option<crate::loadout::BeamGeometry>,
+    pub beam: Option<crate::model::BeamGeometry>,
     /// A PROJECTILE THAT BOUNCES — the Latron family's Incarnon form. Every
     /// bounce is this attack's collision and this attack's explosion arriving
     /// again, at a body it has not hit yet.
-    pub ricochet: Option<crate::loadout::Ricochet>,
+    pub ricochet: Option<crate::model::Ricochet>,
     /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`] — this
     /// attack is not pointed at anything, so where each of its instances lands
     /// is a flat chance of its own rather than the scenario's `headshot_pct`.

@@ -119,7 +119,8 @@ fn weakened_never_crits_an_explosion() {
 /// worth more than one stack.
 #[test]
 fn a_locked_buff_still_earns_stacks() {
-    use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger};
+    use crate::arcanes_data::{ArcBuffSpec, ArcTrigger};
+use crate::model::ArcGrant;
     let mk = |initial: u32| {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Impact, 100.0);
@@ -136,7 +137,7 @@ fn a_locked_buff_still_earns_stacks() {
                     per_stack: 1.0,          // +100% of base per stack
                     max_stacks: 3,
                     // LOCKED — which, since 2026-08-04, IS a duration.
-                    duration: crate::loadout::NO_TIMEOUT,
+                    duration: crate::model::NO_TIMEOUT,
                     all_drop: false,
                     one_per_instance: false,
                     initial_stacks: initial,
@@ -171,7 +172,8 @@ fn a_locked_buff_still_earns_stacks() {
 /// display trick over a split model.
 #[test]
 fn one_config_reaches_every_grant_of_its_arcane() {
-    use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger};
+    use crate::arcanes_data::{ArcBuffSpec, ArcTrigger};
+use crate::model::ArcGrant;
     let spec = |grant: ArcGrant| ArcBuffSpec {
         owner: "primary_frostbite".into(),
         grant,
@@ -197,7 +199,7 @@ fn one_config_reaches_every_grant_of_its_arcane() {
         assert_eq!(b.initial_stacks, 7, "{:?} kept its own count", b.grant);
         assert_eq!(
             b.duration,
-            crate::loadout::NO_TIMEOUT,
+            crate::model::NO_TIMEOUT,
             "{:?} took the config's lock",
             b.grant
         );
@@ -351,7 +353,7 @@ fn a_body_followed_on_asking_gets_the_series_it_would_have_had() {
         .map(|i| crate::formation::FoeSpec {
             id: format!("e{}", i + 1),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(x, y + f64::from(i) * 0.6),
         })
         .collect();
@@ -382,7 +384,7 @@ fn asking_never_drops_the_aimed_body_or_repeats_one() {
         .map(|i| crate::formation::FoeSpec {
             id: format!("e{}", i + 1),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(f64::from(i) * 0.6, p.target_at.y),
         })
         .collect();
@@ -775,11 +777,11 @@ fn a_debilitate_split_burns_off_modified_base_not_the_hit() {
 fn compression_pays_into_the_bracket_its_row_names() {
     let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
         .unwrap()
-        .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
+        .fx(5, crate::model::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
     let arena = crate::arena::Arena::training(30.0);
-    let gain = |weapon: &str, mods: &[&crate::loadout::ModDef]| {
-        let base = crate::loadout::WeaponBase::from_data(weapon, true, &[]);
-        let panel = crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent);
+    let gain = |weapon: &str, mods: &[&crate::model::ModDef]| {
+        let base = crate::model::WeaponBase::from_data(weapon, true, &[]);
+        let panel = crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
         let with = monte_carlo(
             &FightParams::from_panel(&panel, &arena, &fx), 8, 0xC0FFEE,
         ).mean_damage;
@@ -790,20 +792,20 @@ fn compression_pays_into_the_bracket_its_row_names() {
     };
     let pool = crate::mods_data::class_pool("rifle");
     let serration = pool.iter().find(|m| m.id == "serration").expect("serration");
-    let mods: Vec<&crate::loadout::ModDef> = vec![serration];
+    let mods: Vec<&crate::model::ModDef> = vec![serration];
 
     // The bracket each row names, before any fight runs.
-    let shedu = crate::loadout::WeaponBase::from_data("shedu", true, &[]);
+    let shedu = crate::model::WeaponBase::from_data("shedu", true, &[]);
     let p = FightParams::from_panel(
-        &crate::loadout::resolve(&shedu, &[], crate::loadout::StackPolicy::Emergent), &arena, &fx,
+        &crate::loadout::resolve(&shedu, &[], crate::model::StackPolicy::Emergent), &arena, &fx,
     );
     // 1 + 6.6 x 0.8 — spelled out, because clippy reads the literal 6.28
     // as an approximation of TAU and it is nothing of the sort.
     assert!((p.compression_multiplier - (1.0 + 6.6 * 0.8)).abs() < 1e-9, "6.6 m -> +528%");
     assert_eq!(p.compression_base_damage, 0.0);
-    let braton = crate::loadout::WeaponBase::from_data("braton_incarnon", true, &[]);
+    let braton = crate::model::WeaponBase::from_data("braton_incarnon", true, &[]);
     let p = FightParams::from_panel(
-        &crate::loadout::resolve(&braton, &[], crate::loadout::StackPolicy::Emergent), &arena, &fx,
+        &crate::loadout::resolve(&braton, &[], crate::model::StackPolicy::Emergent), &arena, &fx,
     );
     assert!((p.compression_base_damage - 2.4).abs() < 1e-9, "3.0 m x 0.8 = +240%");
     assert_eq!(p.compression_multiplier, 1.0);
@@ -835,7 +837,7 @@ fn compression_pays_into_the_bracket_its_row_names() {
 /// in range, and the PEAK is what a 7 s life is visible in.
 #[test]
 fn a_kill_leaves_a_ghost_standing_where_the_weapon_says_so() {
-    let spec = crate::weapons_data::SpawnOnKillSpec { seconds: 7.0, range_m: 50.0 };
+    let spec = crate::model::SpawnOnKillSpec { seconds: 7.0, range_m: 50.0 };
     let build = |declared: bool, metres_away: f64| FightParams {
         player_at: crate::space::Vec2::new(0.0, 0.0),
         target_at: crate::space::Vec2::new(0.0, metres_away),
@@ -878,7 +880,7 @@ fn a_kill_leaves_a_ghost_standing_where_the_weapon_says_so() {
 /// is the undeclared one to the kill.
 #[test]
 fn a_kill_streak_summons_a_second_gun_and_only_a_streak_does() {
-    let spec = |fire_rate_multiplier: f64| crate::weapons_data::KillStreakSummonSpec {
+    let spec = |fire_rate_multiplier: f64| crate::model::KillStreakSummonSpec {
         kills: 3,
         kill_window_seconds: 2.0,
         duration_seconds: 6.0,
@@ -917,7 +919,7 @@ fn a_kill_streak_summons_a_second_gun_and_only_a_streak_does() {
 
 #[test]
 fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
-    let spec = crate::weapons_data::WeakpointStacksSpec {
+    let spec = crate::model::WeakpointStacksSpec {
         max_stacks: 3,
         duration_seconds: 2.0,
         crit_multiplier: 0.5,
@@ -970,7 +972,7 @@ fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
 
 #[test]
 fn gotva_super_crit_arms_on_status_and_only_on_status() {
-    let sc = crate::weapons_data::SuperCritSpec { chance: 0.15, crit_chance: 3.0 };
+    let sc = crate::model::SuperCritSpec { chance: 0.15, crit_chance: 3.0 };
     let build = |status: f64, passive: bool| FightParams {
         // TOXIN, not Gotva Prime's own Puncture: a Puncture proc applies
         // Weakened, which grants crit chance of its own — the control would

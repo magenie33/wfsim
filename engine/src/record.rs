@@ -519,7 +519,7 @@ pub struct Damage {
     /// attack this is, and the two are asked of the same pellet.
     pub radial: bool,
     /// Which pool it came out of, and what colour it read as.
-    pub pool: crate::fight::Pool,
+    pub pool: crate::target::Pool,
     pub dtype: DamageType,
     /// WHAT KIND OF NUMBER THE GAME DRAWS THIS AS — a crit, a headcrit, a
     /// status tick, a blast's radial. It is what decides the number's colour
@@ -529,7 +529,7 @@ pub struct Damage {
     /// blast on the body that carried the stack and the radial it throws at
     /// everything else are the same [`Origin`], the same pool and the same
     /// type, and the game draws them differently.
-    pub kind: crate::fight::PopKind,
+    pub kind: crate::record::PopKind,
     /// The body part it landed on, where the instance had one. A status tick
     /// and an explosion do not, and saying so is not the same as leaving it
     /// blank — see MEASUREMENTS M54 for the rule about which DoTs inherit a
@@ -885,4 +885,35 @@ impl Record {
         });
         Some(id)
     }
+}
+
+/// WHAT KIND OF NUMBER THIS IS, so a reader can tell a crit from a tick at a
+/// glance — the same distinction the game draws with colour and size.
+///
+/// It is not the damage TYPE (that travels beside it): a Heat DoT tick and a
+/// Heat direct hit are the same type and different numbers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PopKind {
+    /// A hit that landed on the body.
+    Direct,
+    /// …and was a critical.
+    Crit,
+    /// …on a weak point.
+    Head,
+    /// …both, which is the game's own "headcrit" and its own number.
+    HeadCrit,
+    /// A status settling: a Slash bleed, a Toxin/Electricity/Gas/Heat tick.
+    Status,
+    /// A Blast stack's single-target detonation, on the body that carried it.
+    Blast,
+    /// The 5 m radial a detonation throws at everything around it.
+    BlastArea,
+    /// A lingering field's tick (the Torid's cloud) — weapon damage on its own
+    /// clock, which is neither a hit nor a status.
+    Field,
+    /// An EXTRA HIT (docs/EXTRA_HIT.md) — a second instance beside a hit.
+    Extra,
+    /// An arcane's own instance, and a syndicate proc's.
+    Arcane,
 }

@@ -11,10 +11,14 @@ use std::sync::{Mutex, OnceLock};
 use serde::Deserialize;
 
 use crate::damage::{DamageType, DamageVector};
-use crate::loadout::{
-    ChargeOn, CoBehavior, FieldStacking, GaugeForm, LingeringBase, RadialBase, WeaponBase,
-};
+use crate::model::WeaponBase;
+use crate::model::{ChargeOn, FieldStacking, GaugeForm, LingeringBase, RadialBase};
+use crate::model::CoBehavior;
 use crate::mods::Polarity;
+use crate::model::{Battery, BurstSpec, ChargeCadence, CompressionSpec, FalloffSpec, FormKind, HeavyAttack, KillStreakSummonSpec, MeterSpec, OrbSpec, SniperCombo, SpawnOnKillSpec, SpreadSpec, SuperCritSpec, SustainedFireRate, WeakpointStacksSpec};
+
+pub mod kitguns;
+use crate::model::{BlastKind, ComboHit};
 
 /// What one deployment changes about a weapon. Every field is optional: a
 /// column states only where it differs from the entry's own.
@@ -696,182 +700,6 @@ pub struct AttackSpec {
     pub beam: Option<BeamSpec>,
 }
 
-/// Direct-hit damage falloff: full damage inside `start_m`, decreasing
-/// linearly until `reduction` of it is GONE at `end_m`, and flat beyond.
-///
-/// `reduction` is DE's own field, `Module:Weapons/data`'s `Reduction`, and it
-/// is the fraction REMOVED — the same reading as [`RadialSpec::falloff_reduction`].
-/// Hek's is 0.8 and its page says *"from 100% to 20% from 10m to 20m"* — read
-/// as the share kept, it would keep 80% where the game keeps 20%.
-/// `loadout::Falloff::keep` is its complement.
-#[derive(Debug, Clone, Deserialize)]
-pub struct FalloffSpec {
-    /// Metres out to which damage is full.
-    pub start_m: f64,
-    /// Metres past which damage stops dropping.
-    pub end_m: f64,
-    /// Fraction of damage REMOVED at `end_m` and beyond.
-    pub reduction: f64,
-}
-
-/// THE CONE AN ATTACK FIRES INTO — degrees from the reticle, per ATTACK.
-///
-/// **THE PRIMARY VALUE, and `accuracy` is the derived one.** The Arsenal's
-/// Accuracy is `100 / average spread in degrees`; the thing the game has is
-/// this cone — *"spread is internally represented as an angle in degrees from
-/// the reticle"*, with a minimum (**Deviation With Aim**) and a maximum (**Max
-/// Deviation**) per weapon (wiki `Accuracy` §Spread).
-///
-/// Deriving the cone back out of the scalar loses the min/max and the FORM:
-/// `Module:Weapons/data` carries these per ATTACK, so the Torid's grenade is
-/// `0 / 0` while its Incarnon beam is `1.0 / 1.5`. Transcribed by
-/// `scripts/intake_spread.py`, which refuses any attack it cannot identify by
-/// an exact multi-field match.
-///
-/// **WHAT IS NOT MODELLED IS THE BLOOM.** The min is the FIRST SHOT and the
-/// max is where sustained fire takes it — *"the faster a weapon fires, the
-/// larger the size of the 'cone'"* — and the ramp is published nowhere. A
-/// pellet draws uniformly across the window instead, which has the published
-/// average (`(min + max) / 2`) and invents no rate.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct SpreadSpec {
-    /// Deviation With Aim — the first shot's cone.
-    pub min_deg: f64,
-    /// Max Deviation — where sustained fire takes it.
-    pub max_deg: f64,
-}
-
-/// A TOME'S RECHARGE METER — a clock you spend, and the third way this roster
-/// gates a form.
-///
-/// The other two are a MAGAZINE and an INCARNON GAUGE. This is neither:
-/// *"Requires a fully filled meter beneath the reticle in order to fire. The
-/// meter takes 45 seconds to completely recharge. Hitting enemies with the
-/// primary fire reduces recharge time by 1 second per hit"* (wiki `Grimoire`).
-///
-/// SO IT IS A COUNTDOWN, modelled as a gauge filling at one unit a second
-/// because a gauge is what the engine speaks; the FIELD NAMES stay in the
-/// page's own units. ITS OWN TYPE, DELIBERATELY — it could be bent onto
-/// [`GaugeSpec`], and the mechanics differ in every particular: weak-point hits
-/// against seconds, a magazine against a single throw, emptied by firing
-/// against by one shot.
-///
-/// WHAT THE HITS ARE: *"Multishot will count as an additional hit"* and
-/// *"Radial damage does not count an additional hit"*, so it is one second per
-/// landing PELLET and the explosion adds nothing — both distinctions the engine
-/// already makes, which is why neither needs a field.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct MeterSpec {
-    /// How long it takes to refill with nothing else happening.
-    pub seconds_to_fill: f64,
-    /// What one landing pellet of the OTHER form takes off it.
-    pub seconds_per_hit: f64,
-    /// What one ammo pickup takes off it. *"Picking up secondary or universal
-    /// ammo"* — a PRIMARY pickup does nothing, which is why the drop model
-    /// behind it has to know which kind fell (`ammo::SECONDARY_PICKUP_ON_KILL`).
-    pub seconds_per_ammo_pickup: f64,
-}
-
-/// A DEPLOYED ORB — an entity with a POSITION, a clock and a reach, none of
-/// which this engine had before it.
-///
-/// IT IS NOT A FIELD: a [`LingeringSpec`] is an AREA and everyone in it burns,
-/// while an orb strikes exactly ONE body inside its reach — *"Orb will shock 1
-/// enemy within 6 meters of it every 1 second"* (wiki `Grimoire`) — and MOVES
-/// between them. Not a projectile either: it lives out a fuse striking as it
-/// drifts, so its attack settles no collision and no explosion at the impact.
-///
-/// WHAT THE ORB DEALS IS THE ATTACK'S OWN — its strike is the attack's
-/// `damage`, crit, status and forced procs, its detonation the attack's
-/// `radial` moved to where the orb was. This block is GEOMETRY AND CLOCK.
-///
-/// THE STRIKE CLOCK RUNS FROM THE THROW rather than from a contact, which
-/// reproduces the measured count: six ticks over a six second fuse, a tick with
-/// nobody in reach spent on nobody. A throw taking 2.5 s lands four strikes and
-/// one at contact always six — `ceil(6 - flight)` out of the geometry (M63).
-// All f64, so it travels BY VALUE rather than as a leaked reference: the sim
-// carries one per orb in the air and a Copy is cheaper than a pointer chase.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct OrbSpec {
-    /// How long the orb lives before it detonates — *"explodes after 6
-    /// seconds"*.
-    pub fuse_seconds: f64,
-    /// Seconds between strikes. *"Tick rate is not affected by Fire Rate"*
-    /// (wiki), which this engine gets right by construction: the orb's clock is
-    /// its own and no mod bucket reaches it.
-    pub strike_interval_seconds: f64,
-    /// How far a strike reaches from the orb. Fulmination (Primed) enlarges it
-    /// — the owner confirms the reach and the detonation radius both take the
-    /// blast-radius bucket.
-    pub strike_radius_m: f64,
-    /// How fast it leaves the muzzle, and what it slows to once it has touched
-    /// a body — 6 m/s then 2 m/s.
-    ///
-    /// The launch speed is HERE rather than read off the attack's
-    /// `projectile_speed_mps`, which this engine has never modelled: that field
-    /// is transcribed on every projectile weapon in the roster and read by
-    /// nothing, because a shot in this arena arrives the instant it is fired.
-    /// An orb is the first thing whose flight actually costs something, so it
-    /// states the number it flies at rather than quietly giving a meaning to a
-    /// field 224 other entries assume has none.
-    pub speed_mps: f64,
-    pub speed_after_contact_mps: f64,
-    /// BODIES ONE STRIKE REACHES PER POINT OF MULTISHOT — the struck one
-    /// included. The whole count is `floor(this x multishot)`.
-    ///
-    /// ✅ MEASURED, by counting Invocation stacks: those
-    /// four mods gain a stack per hit, so a strike's body count is readable off
-    /// the buff rather than guessed at. Six points, and the formula reproduces
-    /// every one:
-    ///
-    /// ```text
-    ///   multishot   1.0   1.6   2.1   2.7   3.6   3.9
-    ///   measured      3     4     6     8    10    11
-    ///   3 x ms      3.0   4.8   6.3   8.1  10.8  11.7   -> floor
-    /// ```
-    ///
-    /// A FLOOR, not a coin. The count was `multishot + 2` for an afternoon,
-    /// read off *"chains to an additional 2 enemies"* plus *"Number of chains
-    /// is affected by Multishot"* with the remainder rolled — and the wiki's
-    /// two sentences are consistent with both readings at x1.0, which is
-    /// exactly where they agree and nowhere else: at x2.1 the sum gives 5 and
-    /// the product gives 6. The measurement separates them.
-    pub chain_bodies_per_multishot: f64,
-    /// How far a chain hop may reach, body to body — and it is the one
-    /// distance on this attack that a RANGE MOD does not move.
-    ///
-    /// The orb's reach and its detonation radius both take the blast-radius
-    /// bucket; the jump between two bodies stays at what the page gives it. So the two sixes below are the same number by
-    /// coincidence rather than by construction, and only one of them grows.
-    pub chain_range_m: f64,
-    /// THE THROW ANIMATION, in seconds, before the orb leaves — a wind-up like
-    /// any thrown weapon's.
-    ///
-    /// BOTH HALVES ARE SHORTENED BY FIRE RATE, which is why they are here and
-    /// not a constant: a fire-rate mod speeds the throw up exactly as it speeds
-    /// a trigger pull up.
-    pub throw_seconds: f64,
-    /// …and the RECOVERY after it, before the weapon can do anything else
-    /// (0.85 s). Together they are the second a throw costs, which on
-    /// this weapon is also its listed fire rate of 1 — the animation IS the
-    /// cadence.
-    ///
-    /// It is what a CYCLE pays: the primary fire stops for this long every time
-    /// an orb goes out, and that is the only price the cycle has beyond the
-    /// meter itself.
-    pub recovery_seconds: f64,
-    /// What a hop deals relative to the hop before it.
-    ///
-    /// 1.0 — UNDILUTED — for the Grimoire, which chains the way a beam chain with
-    /// no falloff does. It is also what the page supports on
-    /// its own (it names a count and no reduction). Per entry rather than a
-    /// constant, because a chain's falloff is per weapon everywhere else in
-    /// this roster — the Atomos compounds at 0.75 and the Kuva Nukor does not
-    /// compound at all.
-    #[serde(default = "one")]
-    pub chain_damage_per_hop: f64,
-}
-
 /// A lingering damage FIELD — MECHANICS §7 "Lingering damage FIELDS". Unlike
 /// the radial this is not one instance at impact: it persists and TICKS.
 #[derive(Debug, Clone, Deserialize)]
@@ -1045,199 +873,6 @@ pub struct ChainSpec {
     /// (MEASUREMENTS M15). A data switch so it costs one line to flip.
     #[serde(default)]
     pub nodes_have_radius: bool,
-}
-
-/// WHERE AN EXPLOSION GOES OFF, which is the difference between a weapon that
-/// may be given punch through and one that may not.
-///
-/// The owner named the problem: a Burston Prime Incarnon carries a
-/// blast on the card and *"actually punches through"* in game, its round going
-/// off BEHIND the enemy it passed — and its blast takes no multishot either, so
-/// he called it a FAKE AoE and asked for it to be a type rather than a pile of
-/// exceptions. This is that type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum BlastKind {
-    /// Detonates on the first thing it touches — a grenade, a rocket, a
-    /// speargun's spear. This is a TRUE area-of-effect attack, so the punch
-    /// through page's class rule applies to it and no mod may give it any.
-    #[default]
-    Contact,
-    /// Bores through bodies while its punch-through budget lasts and detonates
-    /// where the FLIGHT ends — so it is not an area-of-effect projectile in the
-    /// sense that rule means, and punch-through mods work on it normally.
-    ///
-    /// TWO CONSEQUENCES, and the second is the surprising one. Punch through
-    /// buys more DIRECT hits, as on any other weapon; and it moves the
-    /// explosion DOWN THE LINE — onto whichever body the round cannot get out
-    /// of, which in a crowd is deeper and better and against a lone enemy is
-    /// past it and worse. `space::dissipation_point` is the geometry.
-    Terminal,
-    /// A GROUND SLAM: the sphere is centred on the WIELDER'S OWN FEET, not on
-    /// anything the attack touched.
-    ///
-    /// Its own kind rather than a flag because it answers the same question the
-    /// other two do — where is the epicentre — and answering it with a third
-    /// variant is what keeps `detonation` a total function of the kind. Nothing
-    /// is aimed at, nothing flies, and nothing has to be hit for it to go off,
-    /// which is also why a slam is the one melee mode that works at any range.
-    Slam,
-}
-
-/// THE CLASS'S HEAVY ATTACK, as the wiki's per-weapon-type table states it.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct HeavyAttack {
-    /// The class multiplier — 6.0 for a Hammer, 5.0 for a Sword.
-    pub multiplier: f64,
-    /// The charge before it, in seconds at 1.0x wind-up speed. Attack speed
-    /// does not shorten it (wiki, Melee).
-    pub windup_seconds: f64,
-}
-
-/// ONE SWING OF A STANCE COMBO.
-///
-/// A stance publishes a SEQUENCE — Crushing Ruin's neutral combo is
-/// `400% -> 200% -> 300% -> 500% -> 100%` — and every gun in this roster fires
-/// one identical shot on a loop, so this is the first attack in the file whose
-/// damage and cadence both move from swing to swing.
-///
-/// TWO NUMBERS THE WIKI PUBLISHES, AND A THIRD IT IMPLIES. It gives the
-/// per-swing multiplier and a per-combo "average damage per second", so the
-/// combo's own DURATION is `sum(multipliers) / average` — 1500% at 466.7%/s is
-/// 3.214 s for Raging Whirlwind. That is derived rather than guessed, which is
-/// the only reason this can be transcribed at all: nothing published states a
-/// swing's animation length directly.
-#[derive(Debug, Clone, Deserialize)]
-pub struct ComboHit {
-    /// The stance damage multiplier, as a FRACTION (400% -> 4.0).
-    ///
-    /// DAMAGE ONLY. What the swing earns the counter is `combo_points`, a
-    /// separate number the game sets per attack.
-    pub multiplier: f64,
-    /// Seconds from this swing to the next, at 1.0x attack speed.
-    ///
-    /// The ANIMATION, and attack speed shortens it. It does NOT include the
-    /// wind-up below, which is a separate clock scaled by a separate bucket.
-    pub delay_seconds: f64,
-    /// THE CHARGE BEFORE A HEAVY SWING, in seconds at 1.0x wind-up speed.
-    ///
-    /// A SEPARATE CLOCK, because DE says so: *"Increasing melee attack speed
-    /// does not reduce the wind-up time; rather, it reduces the interval
-    /// between heavy attacks"* (wiki, Melee). Four cards move it and none of
-    /// them moves attack speed — Killing Blow, Amalgam Organ Shatter, and two
-    /// of the Magistar's own evolutions — so a model with one delay could not
-    /// pay any of them without also shortening every light swing.
-    ///
-    /// Zero on every light swing and on every gun.
-    #[serde(default)]
-    pub windup_seconds: f64,
-    /// Does it reach every body in range rather than the one in front?
-    ///
-    /// `Types = { "360" }` in the wiki's own `Module:Stances/data`. It is a
-    /// SPATIAL fact and the only thing that makes a combo mode worth anything
-    /// in a crowd, since Follow Through walks a line and this does not.
-    ///
-    /// THE MODULE HAS FIVE TYPES AND THIS MODELS TWO OF THEM. `"360"` is here;
-    /// `"Sweep"`, `"Thrust"` and the empty string all become the forward
-    /// 90-degree arc (`fight::MELEE_ARC_DEG`), which is wide for a thrust and
-    /// narrow for a sweep; `"Ranged"` and `"Slam"` are different mechanics and
-    /// have their own fields. Declared on every melee entry.
-    #[serde(default)]
-    pub all_around: bool,
-    /// HOW MANY TIMES THIS SWING LANDS.
-    ///
-    /// `Hits = { 1, 2 }` in the module: Crushing Ruin's forward combo lands its
-    /// second 100% TWICE, and Shattered Village lands two 50% spins per attack.
-    /// Each is a separate instance — its own crit roll, its own status roll,
-    /// its own combo point — which is why this is a count rather than a
-    /// multiplier on the damage.
-    #[serde(default = "one_hit")]
-    pub hits: u32,
-    /// A BONUS TO THE IMPACT COMPONENT of this swing alone.
-    ///
-    /// `ImpactMultiplier = { 1.5 }` in the module — Crushing Ruin marks three
-    /// of its swings — and it is a different thing from a forced Knockback
-    /// proc, which several of the same swings ALSO carry. On a Magistar (168 of
-    /// 210 Impact) a 1.5 takes the swing to 1.4x overall.
-    ///
-    /// IMPACT NEVER COMBINES, so scaling the finished vector's Impact component
-    /// is exact rather than an approximation: no elemental hierarchy can have
-    /// consumed it on the way.
-    #[serde(default = "one")]
-    pub impact_multiplier: f64,
-    /// A BONUS TO THE SLASH COMPONENT of this swing alone.
-    ///
-    /// `SlashMultiplier = { 1.25 }` in the module — Sovereign Outcast marks one
-    /// swing of Villain Rule — and it is the same mechanism as the Impact bonus
-    /// above on the other physical type. Exact for the same reason: Slash never
-    /// combines into an element either, so nothing can have consumed it on the
-    /// way.
-    #[serde(default = "one")]
-    pub slash_multiplier: f64,
-    /// …AND THE SLAM SOME COMBOS END ON, as a multiple of the weapon's own.
-    ///
-    /// `Types = { "", "Slam" }` with `Dmg = { 500, 100 }`: the last attack of
-    /// three of Crushing Ruin's four combos is a swing AND a slam, and the slam
-    /// is the only thing a combo mode has that reaches past the weapon's reach.
-    /// `None` on an ordinary swing.
-    #[serde(default)]
-    pub slam_multiplier: Option<f64>,
-    /// WHAT THIS SWING APPLIES WHATEVER THE ROLL SAYS.
-    ///
-    /// ONE LIST FOR TWO MECHANISMS, because the stance table is one column:
-    /// Crushing Ruin marks its first swing forced Impact and its last forced
-    /// Knockdown, and a reader transcribing the table should not have to know
-    /// that one of those is a DAMAGE TYPE competing for the proc roll and the
-    /// other is an INDEPENDENT proc that never does. The split is made where
-    /// the swing lands (`ComboHit::split_forced`), which is the one place that
-    /// has both machines in front of it.
-    #[serde(default)]
-    pub forced_procs: Vec<String>,
-    /// HOW MANY OF `hits` CARRY `forced_procs`, when not all of them do.
-    /// `Procs = { "Slash", "", "Slash", "", "Stagger" }` on Hysteria's heavy is
-    /// two of five; the row lands at one moment, so which two is no question.
-    #[serde(default)]
-    pub forced_hits: Option<u32>,
-    /// COMBO POINTS ONE INSTANCE OF THIS SWING EARNS — its own number, set beside
-    /// its damage and REQUIRED, because the game sets it per attack: Hysteria's
-    /// follow no rule of the multiplier (MEASUREMENTS M95). An unmeasured row is
-    /// filled from the wiki's rule (see notes: combo_points_from_multiplier).
-    pub combo_points: f64,
-    /// HOW MANY OF THOSE POINTS ARE BASE POINTS — the unit every combo chance
-    /// acts on (MEASUREMENTS M97). An ordinary weapon's stance: all of them. An
-    /// Exalted stance: one per hit, the rest riding along. Zero on a row of a
-    /// form that spends the counter, which earns nothing.
-    pub combo_points_base: f64,
-}
-
-fn one_hit() -> u32 {
-    1
-}
-
-impl ComboHit {
-    /// The two kinds of forced proc this swing carries, told apart by name.
-    ///
-    /// A name the engine does not know is a LOUD failure rather than a silent
-    /// drop: a stance table transcribed with a typo would otherwise ship a
-    /// swing that forces nothing and reads as merely weak.
-    pub fn split_forced(&self) -> (Vec<crate::damage::DamageType>, Vec<&'static str>) {
-        let mut types = Vec::new();
-        let mut independent = Vec::new();
-        for p in &self.forced_procs {
-            if let Some(ty) = crate::damage::DamageType::from_name(p) {
-                types.push(ty);
-            } else {
-                match p.as_str() {
-                    "lifted" => independent.push("lifted"),
-                    "knockdown" => independent.push("knockdown"),
-                    other => panic!(
-                        "combo swing forces `{other}`, which is neither a damage type nor an                          independent proc the engine implements (`lifted`, `knockdown`)"
-                    ),
-                }
-            }
-        }
-        (types, independent)
-    }
 }
 
 /// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
@@ -1426,21 +1061,6 @@ fn weakpoint_hits() -> String {
     "weakpoint_hits".to_string()
 }
 
-/// Which of the wiki's two charge-weapon cadence formulas applies.
-///
-/// - `DrawOnly` — bows: "Effective Fire Rate = 1 / Modded Charge Time".
-/// - `DrawThenRate` — everything else: "1 / (Modded Charge Time + 1 / Modded
-///   Fire Rate)". The listed rate is the cadence AFTER the charge, not the
-///   whole cycle, so the two add.
-///
-/// Fire-rate bonuses shorten the charge in both ("Charge Time = Base Charge
-/// Time / (1 + Mod Bonus)").
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChargeCadence {
-    DrawOnly,
-    DrawThenRate,
-}
-
 /// The locked-gauge magazine/reload reduction of an Incarnon form.
 #[derive(Debug, Clone, Deserialize)]
 pub struct PseudoReloadSpec {
@@ -1499,196 +1119,6 @@ pub struct InjectedElementSpec {
     #[serde(rename = "type")]
     pub element: String,
     pub amount: f64,
-}
-
-/// The CLOSED vocabulary of attack FORMS. Weapons are operated differently one
-/// from the next, but the handful of MODES they are operated in is shared —
-/// so a form is a kind from this list, and every weapon entry REGISTERS which
-/// one it is (`form:` in its yaml). Nothing may name a form the engine does
-/// not know: an unknown string is a hard error, not a silent fallback.
-///
-/// Adding a kind is one arm here plus one in [`FormKind::parse`] — the whole
-/// extension point — and a kind is added when an entry registers it, never in
-/// advance: a kind nothing registers is a kind nothing tests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FormKind {
-    /// The ordinary attack — what almost every weapon has, and by definition
-    /// the UNCHARGED one. Verglas Prime has only this; the Torid, Laetum and
-    /// Dual Toxocyst carry it as the form their Incarnon transforms out of.
-    Base,
-    /// A charge-trigger weapon's fully drawn shot (Cernos Prime). Its own kind
-    /// because the draw REPLACES the fire-rate cadence and, on a bow, the
-    /// damage is the uncharged base times the charge multiplier.
-    Charged,
-    /// The gauge-backed transformed form (Incarnon Genesis).
-    Incarnon,
-    /// A SECOND TRIGGER, chosen freely and costing no meter — the Scourge pair
-    /// throws the weapon itself, and its numbers, its element split and its
-    /// explosion are all its own.
-    ///
-    /// Its own kind rather than [`FormKind::Charged`]: a thrown spear is not a
-    /// drawn bow, the id is what a saved preset and a share link carry, and a
-    /// wrong word there is wrong forever.
-    AltFire,
-    /// …AND THE THIRD ONE, for a weapon that CYCLES more than two triggers.
-    ///
-    /// A form is identified by its KIND — `forms_of` keys on it and `/api/meta`
-    /// looks a form up by `kind.id()` — so a group cannot hold two `AltFire`
-    /// entries: the second would be unreachable. The Kuva Hind has three
-    /// togglable modes ("5-round burst, semi-auto, and full-auto", cycled with
-    /// Alternate Fire), which is one more than the vocabulary had.
-    ///
-    /// NAMED FOR THE TRIGGER, because on this weapon the trigger IS the whole
-    /// difference — three blocks that share every weapon-level stat and differ
-    /// in cadence, crit and damage. The alternative was `alt_fire_2`, which
-    /// says nothing and would be in every saved preset and share link forever
-    /// (the reason `AltFire` itself exists rather than borrowing `Charged`).
-    ///
-    /// So the Hind reads base / semi_auto / auto: `Base` is the arsenal's
-    /// burst, and these two are the other pulls.
-    SemiAuto,
-    /// See [`FormKind::SemiAuto`] — the fully automatic member of the same set.
-    Auto,
-    // ---- MELEE. Seven ways to swing one weapon, and each of them is a
-    // BUILD --------------------------------------------
-    //
-    // A melee player picks one loop and runs it for the whole fight, which is
-    // the definition of a MODE in this file — so these are forms for exactly
-    // the reason a Kuva Hind's three triggers are, and they reach the board as
-    // seven independent rows for exactly the reason its three do.
-    //
-    // THE FIRST FOUR ARE THE STANCE'S GROUND COMBOS, named for their INPUT
-    // rather than for the combo. A stance names them itself — Crushing Ruin
-    // calls the neutral one "Raging Whirlwind" — so a name here would be one
-    // stance's name baked into a durable id that every saved preset and share
-    // link carries. The input is what does not change.
-    /// Stationary combo (melee alone). The arsenal's own, so it is the
-    /// weapon's default form and its mode is `base`.
-    Neutral,
-    /// Forward + melee.
-    Forward,
-    /// Block + melee.
-    Block,
-    /// Block + forward + melee.
-    BlockForward,
-    /// Nothing but heavy attacks. Its own mode because it is its own build:
-    /// the combo counter is SPENT rather than accumulated, so Blood Rush and
-    /// Weeping Wounds are worth nothing in it and initial combo is worth
-    /// everything.
-    Heavy,
-    /// Nothing but slide attacks.
-    Slide,
-    /// Nothing but heavy slams — the one melee mode that needs no stance at
-    /// all, because a slam is the same attack whatever is in the slot.
-    HeavySlam,
-}
-
-impl FormKind {
-    /// The stable id — the wire value in an API request and in a saved preset,
-    /// so these strings are durable names, not labels.
-    pub fn id(self) -> &'static str {
-        match self {
-            FormKind::Base => "base",
-            FormKind::Charged => "charged",
-            FormKind::Incarnon => "incarnon",
-            FormKind::AltFire => "alt_fire",
-            FormKind::SemiAuto => "semi_auto",
-            FormKind::Auto => "auto",
-            FormKind::Neutral => "neutral",
-            FormKind::Forward => "forward",
-            FormKind::Block => "block",
-            FormKind::BlockForward => "block_forward",
-            FormKind::Heavy => "heavy",
-            FormKind::Slide => "slide",
-            FormKind::HeavySlam => "heavy_slam",
-        }
-    }
-
-    /// English display name (the i18n overlay translates from this).
-    pub fn label(self) -> &'static str {
-        match self {
-            FormKind::Base => "Base Form",
-            FormKind::Charged => "Charged Shot",
-            FormKind::Incarnon => "Incarnon Form",
-            FormKind::AltFire => "Alternate Fire",
-            FormKind::SemiAuto => "Semi-Auto",
-            FormKind::Auto => "Full-Auto",
-            // THE LABEL IS THE FALLBACK, not the name a reader sees. A stance
-            // names its own combos and `/api/meta` fills that in; this is what
-            // is drawn when no stance is equipped, where the input IS the only
-            // true thing to say.
-            FormKind::Neutral => "Neutral Combo",
-            FormKind::Forward => "Forward Combo",
-            FormKind::Block => "Block Combo",
-            FormKind::BlockForward => "Block Forward Combo",
-            FormKind::Heavy => "Heavy Attack",
-            FormKind::Slide => "Slide Attack",
-            FormKind::HeavySlam => "Heavy Slam",
-        }
-    }
-
-    /// Does this form exist only because an ADAPTER was installed?
-    ///
-    /// A property of the KIND, and only the Incarnon form has it: the form is
-    /// not in the arsenal until a Genesis is fitted and a tier-1 evolution
-    /// chosen, which is why a riven pool skips it and why the form list hides
-    /// it until the unlock is in the build.
-    ///
-    /// IT IS NOT THE GAUGE QUESTION. Those were one method until the Mausolon
-    /// arrived: its alt-fire is bought with five kills and
-    /// is a gauge-fed form of an ordinary Arch-Gun, with no adapter anywhere.
-    /// "Does entering this cost a meter" is [`WeaponSpec::has_gauge`], which
-    /// reads what the weapon DECLARES instead of inferring it from a name.
-    pub fn is_adapter_form(self) -> bool {
-        matches!(self, FormKind::Incarnon)
-    }
-
-    /// Is this one of the seven ways to swing a melee weapon?
-    ///
-    /// Asked where a mode id is chosen and where a stance's own combo name is
-    /// filled in. It is a property of the KIND rather than of the weapon's
-    /// slot because that is what the two call sites have in hand.
-    pub fn is_melee(self) -> bool {
-        matches!(
-            self,
-            FormKind::Neutral
-                | FormKind::Forward
-                | FormKind::Block
-                | FormKind::BlockForward
-                | FormKind::Heavy
-                | FormKind::Slide
-                | FormKind::HeavySlam
-        )
-    }
-
-    /// Does this form SPEND the combo counter to swing?
-    ///
-    /// The two heavy kinds do, and it is what makes them different builds
-    /// rather than different animations: a heavy loop reads the combo counter
-    /// as a multiplier and empties it, so Blood Rush — which reads the same
-    /// counter as a crit bracket — is worth nothing there.
-    pub fn is_heavy(self) -> bool {
-        matches!(self, FormKind::Heavy | FormKind::HeavySlam)
-    }
-
-    pub fn parse(s: &str) -> FormKind {
-        match s {
-            "base" => FormKind::Base,
-            "charged" => FormKind::Charged,
-            "incarnon" => FormKind::Incarnon,
-            "alt_fire" => FormKind::AltFire,
-            "semi_auto" => FormKind::SemiAuto,
-            "auto" => FormKind::Auto,
-            "neutral" => FormKind::Neutral,
-            "forward" => FormKind::Forward,
-            "block" => FormKind::Block,
-            "block_forward" => FormKind::BlockForward,
-            "heavy" => FormKind::Heavy,
-            "slide" => FormKind::Slide,
-            "heavy_slam" => FormKind::HeavySlam,
-            other => panic!("unknown form kind in weapon data: {other}"),
-        }
-    }
 }
 
 /// One registered form of a weapon: which yaml ENTRY provides it, what kind it
@@ -2730,50 +2160,6 @@ pub fn polarity(name: &str) -> Polarity {
     }
 }
 
-/// "Status Effects have a X% chance to set the next hit's Critical Chance to
-/// Y" — Gotva Prime's passive (wiki, Characteristics).
-///
-/// A SET and not a bonus: "Set Critical Chance ignores all other modifiers,
-/// whether from mods or Warframe abilities". The tier UPGRADE still applies
-/// afterwards, which is how Vigilante can carry it to a Tier-4 hit — so the
-/// lock binds the chance, not the ceiling.
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct SpawnOnKillSpec {
-    /// How long one of them stands, seconds.
-    pub seconds: f64,
-    /// How far from the wielder a kill still leaves one, metres.
-    pub range_m: f64,
-}
-
-/// WEAK-POINT STACKS — the Knell family's "Death Knell".
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct WeakpointStacksSpec {
-    pub max_stacks: u32,
-    /// ONE CLOCK, from the last weak-point hit: when it falls due one stack is
-    /// lost and it restarts for the rest — the Galvanized family's decay.
-    pub duration_seconds: f64,
-    /// Per stack, added to the FINISHED multiplier — the page writes the
-    /// bracket itself: `2 x (1 + Crit Damage Mods) + 0.5 x Number of Stacks`.
-    #[serde(default)]
-    pub crit_multiplier: f64,
-    /// Per stack, added to the FINISHED status chance.
-    #[serde(default)]
-    pub status_chance: f64,
-    /// While ANY stack is up. 1.0 is the round being free.
-    #[serde(default)]
-    pub ammo_efficiency: f64,
-}
-
-/// A status-triggered crit-chance lock — Gotva Prime's.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct SuperCritSpec {
-    /// Per pellet that applied at least one status. Several statuses on one
-    /// hit do not raise it (wiki).
-    pub chance: f64,
-    /// The chance the next landing pellet uses, verbatim. 3.0 = 300%.
-    pub crit_chance: f64,
-}
-
 /// WHAT THIS WEAPON DOES THAT ITS STATS DO NOT SAY — its passives, as
 /// sentences GENERATED from the data that implements them.
 ///
@@ -2984,155 +2370,6 @@ fn pretty_id(id: &str) -> String {
         .join(" ")
 }
 
-/// A BURST trigger: one pull fires `count` rounds `delay_seconds` apart, and
-/// the weapon's listed `fire_rate` is BURSTS per second, not rounds.
-///
-/// VERBATIM (wiki Fire Rate): *"Effective Fire Rate = Burst Count / [1/Fire
-/// Rate + [(Burst Count−1)⋅Burst Delay]]"*, *"Fire Rate bonuses affect both the
-/// speed of the burst as well as the time between bursts"*, and *"Burst Delay
-/// is not affected by net negative Fire Rate bonuses."* The second makes this
-/// cheap — a bonus scales BOTH terms, so a positive-bonus build is an auto
-/// weapon at the effective rate — and the third is where burst stops being a
-/// relabelling (`loadout::resolve`).
-///
-/// PRIMARY COMPRESSION's per-weapon row — see docs/CATALOGS.md §2.
-///
-/// The arcane trades explosion RADIUS for damage, so its worth is a property
-/// of the WEAPON and the wiki publishes one row per weapon ATTACK, two of whose
-/// columns cannot be derived from anything else the weapon knows:
-///
-/// > Weapon | Effectiveness | Base Radius | Max Damage Bonus @ Base Radius |
-/// > Stacking Behavior | Notes
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct CompressionSpec {
-    /// The row's **Compression Effectiveness**, and the page's legend says what
-    /// that means: *"how much bigger/smaller the radius Compression considers
-    /// compared to how much it should be considering. 100% means 'intended'."*
-    ///
-    /// So it is a factor on the RADIUS READ, not a discount on the damage —
-    /// the arithmetic lands in the same place, but the Vectis pair's 0.04 is
-    /// the arcane reading a 0.1 m embed radial instead of the headshot
-    /// explosion, and the Trumna alt-fire's 1.27 is a radius counted twice.
-    pub effectiveness: f64,
-    /// The row's **Stacking Behavior with Damage Bonuses**: `multiplies` (the
-    /// common case) or `adds` (Ambassador, Battacor, Ferrox, Opticor, Trumna,
-    /// and every Braton and Burston Incarnon). A bracket, not a number.
-    pub stacking: String,
-    /// The row's **Radius Calculation**, which is a COLUMN and not a note —
-    /// it decides WHICH radius the arcane reads on a weapon with more than one
-    /// AoE-bearing firing mode. The legend's three, plus one the table uses:
-    ///
-    /// - `snapshot` — *"uses the ads state when fired, not when AoE occurs"*;
-    ///   the ordinary value.
-    /// - `stolen` — *"uses another firing mode's radius"* (Mausolon).
-    /// - `doesnt_work` — the arcane does not apply to this AoE.
-    /// - `constant_check` — the Battacor, and the legend does not list it.
-    #[serde(default = "snapshot")]
-    pub radius_calculation: String,
-    /// The row's **Base Radius**, when it is a radius this weapon's data does
-    /// NOT carry. Left out, the arcane reads the attack's own MODDED radius —
-    /// which is what makes the table's Primed Firestorm column exactly 1.44x
-    /// its base column on every row that takes the mod.
-    ///
-    /// The Vectis pair are the roster's only override, and they are why this
-    /// field exists rather than a second multiplication: their row reads
-    /// **0.1 m** where the Incarnon's own explosion is 6.7 m, and 4% of 6.7 is
-    /// not 0.1. `effectiveness` is the row's own account of how far off that
-    /// is ("worse than expected"); it does not reconstruct the number, so when
-    /// this is set it is the whole answer and effectiveness is not applied
-    /// again.
-    pub reads_radius_m: Option<f64>,
-}
-
-fn snapshot() -> String {
-    "snapshot".to_string()
-}
-
-/// A MAGAZINE THAT REFILLS ITSELF, on a clock rather than on a reload.
-///
-/// The Shedu's battery, and the roster's first: *"ammo regenerates over time.
-/// Has a 1 second delay before ammo begins to regenerate; if there are still
-/// rounds left, the delay is 0.4 seconds instead. Ammo regenerates at 28 rounds
-/// per second"* (wiki Shedu).
-///
-/// The listed "Reload Time" is therefore not a reload — it is
-/// `delay + magazine/rate`, and both published numbers fall out of it: 1.25 s
-/// is the wiki's empty battery, 0.65 s WFCD's partial one.
-///
-/// WHAT IT CHANGES that a plain reload does not: the battery refills BETWEEN
-/// SHOTS, for the part of the gap exceeding the delay, so it breaks even at
-///
-///   `1 / fire_rate  >=  delay_partial + ammo_cost / regen_per_second`
-///
-/// — on the Shedu **2.295 rounds a second**, 8.2% below its listed 2.50. Below
-/// that the battery NEVER EMPTIES, so a nine percent fire-rate penalty removes
-/// the reload entirely and Vile Precision alone crosses it.
-#[derive(Debug, Clone, Copy, serde::Deserialize)]
-pub struct Battery {
-    /// Rounds a second, once the delay has passed (28).
-    pub regen_per_second: f64,
-    /// The wait before regeneration starts with the battery EMPTY (1.0 s).
-    /// `reload_seconds` already carries `this + magazine/rate`, so this field
-    /// is what the between-shots case needs rather than a second copy of it.
-    pub delay_empty_seconds: f64,
-    /// …and with rounds still in it (0.4 s).
-    pub delay_partial_seconds: f64,
-}
-
-/// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
-/// the start once firing pauses.
-///
-/// Both directions, one field — six in the roster and five go UP:
-///
-/// | weapon | start | span | full/floor at |
-/// | --- | --- | --- | --- |
-/// | Phenmor (Incarnon) | 100% | 51 | 60% |
-/// | Gorgon | 20% | 7.5 | shot 9 |
-/// | Gorgon Wraith | 20% | 5 | shot 6 |
-/// | Prisma Gorgon | 20% | 6 | shot 7 |
-/// | Soma | 25% | 5 | shot 6 |
-/// | Soma Prime | 25% | 2.5 | shot 4 |
-///
-/// Each page states its spool TWICE — a percentage per shot and a count of
-/// shots to optimal — reconciling exactly on all five risers, which is what
-/// `over_shots` is derived from and why it is not always an integer (the
-/// Gorgon's 10.667% IS 0.8/7.5). The climb is LINEAR. Not `beam_ramp_floor`, a
-/// continuous weapon's DAMAGE ramp in seconds; the Phantasma has both.
-#[derive(Debug, Clone, Copy, serde::Deserialize)]
-pub struct SustainedFireRate {
-    /// Where the rate STARTS, as a fraction of the listed one, on the first
-    /// shot after a pause (1.00 on the Phenmor, 0.20 on a Gorgon).
-    pub start: f64,
-    /// Where it SETTLES (0.60 on the Phenmor, 1.00 on everything that spools
-    /// up). `end < start` is a spool-down; `end > start` a spool-up.
-    pub end: f64,
-    /// The span, in held shots. Shot `n` (0-based, counting from the pause)
-    /// sits at `start + (end − start)·min(n, over_shots)/over_shots`, so a
-    /// riser is at full from shot `ceil(over_shots) + 1` — which is the number
-    /// each page prints.
-    pub over_shots: f64,
-}
-
-/// WHAT IS NOT MODELLED, stated because it is a real difference: the sim
-/// spaces rounds EVENLY at the effective rate instead of clumping them into
-/// bursts. Nothing the single-target arena reads can tell the difference —
-/// total rounds, ammo, status rolls and reload cadence are all identical over
-/// any whole number of bursts — but a buff whose window is shorter than one
-/// burst cycle (0.28 s on a Burston Prime) would see a different pattern, and
-/// so would a per-burst TRIGGER. The Burston has exactly one of those, Reaver's
-/// Rapture ("On Full Burst Hit: +20% Damage"), and it is the reason `count`
-/// is carried rather than folded away into an effective rate: whoever models
-/// that perk needs "every `count`-th round completes a burst", which this
-/// field is, and which an effective rate would have thrown away.
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct BurstSpec {
-    /// Rounds per pull. Each is a full instance — its own multishot, crit and
-    /// status rolls — so this is NOT multishot.
-    pub count: u32,
-    /// Seconds between rounds WITHIN a burst (the module's `BurstDelay`).
-    pub delay_seconds: f64,
-}
-
 /// THE OCUCOR'S TENDRILS: a kill spawns an energy tendril, up to `max`, and
 /// any magazine event clears them all.
 ///
@@ -3168,81 +2405,6 @@ fn tendril_range_default() -> f64 {
 }
 fn tendril_cone_default() -> f64 {
     40.0
-}
-
-/// A KILL STREAK SUMMONS A SECOND GUN — Pyrana Prime: "3 kills each within 2
-/// seconds of the previous kill summons a second Pyrana Prime for 6 seconds,
-/// doubling its magazine size and increasing its fire rate by 1.4x" (wiki).
-/// Kills while it is up do not refresh it; it arrives with a modded magazine's
-/// worth of rounds, and "when the ethereal Pyrana disappears, the magazine is
-/// reduced to the modded magazine size".
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct KillStreakSummonSpec {
-    pub kills: u32,
-    pub kill_window_seconds: f64,
-    pub duration_seconds: f64,
-    pub magazine_multiplier: f64,
-    pub fire_rate_multiplier: f64,
-}
-
-impl KillStreakSummonSpec {
-    /// Its card, its replay row and its entry on the buff bar.
-    pub const BUFF_ID: &'static str = "kill_streak_summon";
-    /// The streak that buys it: a stack per kill on one clock of
-    /// `kill_window_seconds`, which the next kill restarts.
-    pub const STREAK_BUFF_ID: &'static str = "kill_streak";
-}
-
-/// THE SHOT COMBO COUNTER — a sniper rifle's own damage multiplier, and the one
-/// mechanic in the game that is a WEAPON's and not a build's.
-///
-/// VERBATIM (wiki `Sniper Rifle` §Shot Combo Counter): *"Each Sniper Rifle
-/// requires a minimum number of shots, referred to as Minimum Combo, before the
-/// Shot Combo Counter activates, starting with a damage bonus of 1.5x. Another
-/// 0.5x damage is added to the counter each time the Shot Combo Counter reaches
-/// a number of hits three times the amount needed for the previous damage bonus
-/// milestone"* — so the thresholds are `min * 3^k` and the multiplier
-/// `1.5 + 0.5k`, which [`SniperCombo::multiplier`] walks rather than computing
-/// through a logarithm: `log3` of an exact power of three is not exactly an
-/// integer in binary.
-///
-/// *"The Shot Combo Counter will be reduced by 1 after a short period of time
-/// that no successful hits have been made, or if the player misses a shot. All
-/// sniper rifles have a 2 second combo duration, with the exception of the
-/// Lanka, which has a 6 second combo duration."* It DECAYS one at a time; it
-/// does not reset, which is why a sniper that keeps firing never loses it and
-/// one interrupted for a second still has most of it.
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct SniperCombo {
-    /// "Minimum Combo": landing hits before the counter pays anything at all.
-    /// 1 on the Vectis, 5 on the Vectis Prime — the wiki's own table.
-    pub min: u32,
-    /// Seconds without a landing hit before the counter drops by ONE.
-    #[serde(default = "combo_seconds_default")]
-    pub seconds: f64,
-}
-
-fn combo_seconds_default() -> f64 {
-    // "All sniper rifles have a 2 second combo duration, with the exception of
-    // the Lanka" — so 2 is the rule and the Lanka states its own.
-    2.0
-}
-
-impl SniperCombo {
-    /// The damage multiplier at `hits`. 1.0 below Minimum Combo — the counter
-    /// exists there and pays nothing.
-    pub fn multiplier(self, hits: u32) -> f64 {
-        if self.min == 0 || hits < self.min {
-            return 1.0;
-        }
-        let mut threshold = u64::from(self.min);
-        let mut mult = 1.5;
-        while u64::from(hits) >= threshold * 3 {
-            threshold *= 3;
-            mult += 0.5;
-        }
-        mult
-    }
 }
 
 /// THE SCOPE, as the only part of zoom that is a damage number.
@@ -3509,7 +2671,7 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
 /// no numbers, and inventing some would be worse than saying so.
 pub fn spec_assembled<'a>(
     s: &'a WeaponSpec,
-    a: Option<&crate::kitguns_data::Assembly>,
+    a: Option<&crate::weapons_data::kitguns::Assembly>,
 ) -> Option<std::borrow::Cow<'a, WeaponSpec>> {
     let Some(chamber_id) = s.kitgun.as_deref() else {
         return Some(std::borrow::Cow::Borrowed(s));
@@ -3526,11 +2688,11 @@ pub fn spec_assembled<'a>(
     let a = match a {
         Some(a) => a,
         None => {
-            owned = crate::kitguns_data::default_assembly(chamber_id)?;
+            owned = crate::weapons_data::kitguns::default_assembly(chamber_id)?;
             &owned
         }
     };
-    let built = crate::kitguns_data::assemble(a)?;
+    let built = crate::weapons_data::kitguns::assemble(a)?;
     // THE ASSEMBLY MUST BE THIS ENTRY'S. The grip picks the slot and the slot
     // picks the chamber record, so a secondary grip on the primary entry
     // composes a real weapon that is the WRONG one — which is exactly the kind
@@ -3619,7 +2781,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 pub fn base_panel_assembled(
     id: &str,
     frenzy_active: bool,
-    assembly: Option<&crate::kitguns_data::Assembly>,
+    assembly: Option<&crate::weapons_data::kitguns::Assembly>,
 ) -> WeaponBase {
     let raw = spec(id).unwrap_or_else(|| panic!("unknown weapon id: {id}"));
     let composed = spec_assembled(raw, assembly).unwrap_or_else(|| {
@@ -3780,7 +2942,7 @@ pub fn base_panel_assembled(
             takes_condition_overload: false,
             takes_multishot: false,
         });
-        crate::loadout::ClusterBase {
+        crate::model::ClusterBase {
             count: c.count,
             contact,
             // MULTISHOT DOES NOT RAISE THE COUNT, and two pages say so in
@@ -3970,7 +3132,7 @@ pub fn base_panel_assembled(
         // The DEFAULT lives with the ramp it belongs to, so "most weapons"
         // is stated once rather than copied into a second file that is free
         // to drift from it.
-        beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::fight::BEAM_RAMP_FLOOR),
+        beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::model::BEAM_RAMP_FLOOR),
         applies_microwave: s.applies_microwave,
         battery: s.battery,
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
@@ -4055,7 +3217,7 @@ pub fn base_panel_assembled(
         combo_duration_seconds: s.combo_duration_seconds,
         orb: s.attack.orb,
         meter: s.attack.meter,
-        ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {
+        ricochet: s.attack.ricochet.as_ref().map(|r| crate::model::Ricochet {
             bounces: r.bounces,
             headshot_chance: r.headshot_chance,
             // NO RANGE IS NOT ZERO RANGE — it is the page stating no limit but
@@ -4063,7 +3225,7 @@ pub fn base_panel_assembled(
             // hit yet, however far".
             range_m: r.range_m.unwrap_or(f64::INFINITY),
         }),
-        beam: s.attack.beam.as_ref().map(|b| crate::loadout::BeamGeometry {
+        beam: s.attack.beam.as_ref().map(|b| crate::model::BeamGeometry {
             range_m: b.range_m,
             damage_radius_m: b.damage_radius_m,
             radius_takes_multishot: b.radius_takes_multishot,
@@ -4221,9 +3383,9 @@ mod pellet_element_tests {
     /// element and the fight picks by pellet index.
     #[test]
     fn each_projectile_resolves_its_own_element() {
-        let base = crate::loadout::WeaponBase::from_data("arbucep", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-        let p = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("arbucep", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let p = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         assert_eq!(p.pellet_damage.len(), 6, "six missiles, six vectors");
 
         use crate::damage::DamageType::*;
@@ -4296,7 +3458,7 @@ mod deployment_tests {
     /// its ground damage.
     #[test]
     fn a_deployment_moves_the_damage_and_the_sustain() {
-        let ground = |id: &str| crate::loadout::WeaponBase::from_data(id, false, &[]);
+        let ground = |id: &str| crate::model::WeaponBase::from_data(id, false, &[]);
         let space = |id: &str| {
             let mut b = ground(id);
             apply_deployment(&mut b, id, "archwing");
@@ -4321,7 +3483,7 @@ mod deployment_tests {
         let (gc, sc) = (ground("larkspur_prime_charged"), space("larkspur_prime_charged"));
         assert_eq!(gc.base_vector.total(), 840.0);
         assert_eq!(sc.base_vector.total(), 420.0);
-        let rad = |b: &crate::loadout::WeaponBase| b.radial.as_ref().expect("it explodes").base_vector.total();
+        let rad = |b: &crate::model::WeaponBase| b.radial.as_ref().expect("it explodes").base_vector.total();
         assert_eq!(rad(&gc), 1600.0);
         assert_eq!(rad(&sc), 800.0);
 
@@ -4642,7 +3804,6 @@ mod tests {
         assert_eq!(of("crushing_ruin"), 4, "Madurai on a Vazarin slot is 80%, rounded down");
     }
 
-
     #[test]
     fn every_entry_has_had_its_range_page_opened() {
         let raw = crate::data::file("surveys/weapon_range.yaml")
@@ -4692,7 +3853,7 @@ mod tests {
         }
 
         // Neither is published: 152 + 3, and the uncharged 40 doubled.
-        let b = crate::loadout::WeaponBase::from_data(
+        let b = crate::model::WeaponBase::from_data(
             "ballistica_prime", false, &["ballistica_prime_headcracker"],
         );
         assert!((b.base_vector.total() - modded / 3.2).abs() < 0.5,
@@ -4700,7 +3861,7 @@ mod tests {
         assert!((b.co_base - co_base).abs() < 0.5,
             "the CO base is {}, solved {co_base}", b.co_base);
         // The ramp's OTHER end is not doubled — the x2 is the charge's.
-        let n = crate::loadout::WeaponBase::from_data(
+        let n = crate::model::WeaponBase::from_data(
             "ballistica_prime_uncharged", false, &["ballistica_prime_headcracker"],
         );
         assert!((n.base_vector.total() - 43.0).abs() < 1e-9);
@@ -5076,7 +4237,9 @@ mod tests {
     #[test]
     fn a_reload_from_empty_buff_is_worth_nothing_until_the_first_reload() {
         use crate::fight::{monte_carlo, FightParams};
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
         let mods = crate::mods_data::pool_for_weapon("larkspur_prime");
@@ -5085,7 +4248,7 @@ mod tests {
         // 200 beam ticks at 12/s is 16.7 s of firing before the magazine is
         // empty (100 rounds at 0.5 each), so 10 s cannot have reloaded.
         let run = |with: bool, secs: f64| {
-            let refs: Vec<&crate::loadout::ModDef> = if with { vec![de] } else { Vec::new() };
+            let refs: Vec<&crate::model::ModDef> = if with { vec![de] } else { Vec::new() };
             let panel = resolve(&base, &refs, StackPolicy::Emergent);
             let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(secs), &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
@@ -5129,7 +4292,9 @@ mod tests {
     #[test]
     fn ammo_efficiency_survives_the_trip_through_the_panel() {
         use crate::fight::FightParams;
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
 
         let of = |id: &str| {
             let base = WeaponBase::from_data(id, true, &[]);
@@ -5161,7 +4326,9 @@ mod tests {
     #[test]
     fn total_ammo_is_the_magazine_plus_the_reserve() {
         use crate::fight::{monte_carlo, FightParams};
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
         let pool = crate::mods_data::pool_for_weapon("larkspur_prime");
@@ -5170,7 +4337,7 @@ mod tests {
         // An hour is far more than any of these can sustain, so what stops the
         // run is always the ammo.
         let rounds = |ids: &[&str]| {
-            let refs: Vec<&crate::loadout::ModDef> = ids.iter().map(|i| by(i)).collect();
+            let refs: Vec<&crate::model::ModDef> = ids.iter().map(|i| by(i)).collect();
             let panel = resolve(&base, &refs, StackPolicy::Emergent);
             let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(3600.0), &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
@@ -5211,12 +4378,14 @@ mod tests {
     /// "Effective Fire Rate = 1 / (Modded Charge Time + 1/Modded Fire Rate)".
     #[test]
     fn an_archgun_charge_answers_to_charge_rate_and_its_interval_to_fire_rate() {
-        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::{ModEffect, StackPolicy};
         let base = WeaponBase::from_data("larkspur_prime_charged", true, &[]);
         assert!(!base.fire_rate_shortens_draw, "an arch-gun keeps them apart");
 
         let with = |e: Vec<ModEffect>| {
-            let m = crate::loadout::ModDef {
+            let m = crate::model::ModDef {
             stance: None,
                 exclusive_to: &[],
                 unmodeled: false,
@@ -5226,7 +4395,7 @@ mod tests {
                 base_drain: 0,
                 max_rank: 0,
                 polarity: crate::mods::Polarity::Madurai,
-                rarity: crate::loadout::Rarity::Common,
+                rarity: crate::model::Rarity::Common,
                 exilus: false,
                 family: None,
                 requires_weapon: None,
@@ -5270,7 +4439,9 @@ mod tests {
     #[test]
     fn the_larkspur_runs_out_where_a_primary_would_not() {
         use crate::fight::{monte_carlo, FightParams};
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
         assert!((base.ammo_reserve - 400.0).abs() < 1e-9, "the Atmosphere column");
@@ -5312,7 +4483,7 @@ mod tests {
     /// `no_resupply` is the Arch-Gun's own problem.
     #[test]
     fn a_reserve_and_a_resupply_are_two_different_facts() {
-        use crate::loadout::WeaponBase;
+        use crate::model::WeaponBase;
         // A Primary HAS a reserve — 60 rounds, the wiki's Ammo Max — and can
         // also refill it. So the setting is the player's to make.
         let torid = WeaponBase::from_data("torid", true, &[]);
@@ -5344,7 +4515,9 @@ mod tests {
     /// does.
     #[test]
     fn the_infinite_ammo_setting_cannot_resupply_an_arch_gun() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         use crate::scenario::{self, AxisValue};
         let ammo = scenario::axis("infinite_ammo").unwrap();
         let run = |id: &str, ticked: bool| {
@@ -5384,7 +4557,6 @@ mod tests {
         assert!(panel.reserve_is_infinite(ruled));
     }
 
-
     /// THE CYCLE DRAWS FROM THE SAME RESERVE. Both forms are one weapon with
     /// one supply, but every draw inside the cycle was free until 2026-08-04 —
     /// so a finite reserve was ignored on every Incarnon weapon, which is most
@@ -5392,7 +4564,9 @@ mod tests {
     #[test]
     fn an_incarnon_cycle_runs_dry_like_anything_else() {
         use crate::fight::{monte_carlo, FightParams, LockMode};
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         // 600 s, not 300: the fixture has to actually EXHAUST the reserve to
         // say anything, and after the transform stopped skipping the completing
         // shot's interval a 300 s cycle no longer burned the Boar
@@ -5429,7 +4603,7 @@ mod tests {
     /// number cross-checked wiki data module == WFCD.
     #[test]
     fn torid_loads_both_forms_with_its_field_and_direct_hit_gauge() {
-        use crate::loadout::{ChargeOn, FieldStacking};
+        use crate::model::{ChargeOn, FieldStacking};
         let b = base_panel("torid", false);
         assert!((b.base_vector.get(DamageType::Toxin) - 100.0).abs() < 1e-9);
         assert!((b.base_crit_chance - 0.15).abs() < 1e-9);
@@ -5624,7 +4798,7 @@ mod tests {
         let base = WeaponBase::from_data("phantasma_prime_charged", false, &[]);
         assert_eq!(base.forced_procs, vec![crate::damage::DamageType::Impact]);
 
-        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+        let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
         assert_eq!(
             panel.forced_procs,
             vec![crate::damage::DamageType::Impact],
@@ -5668,7 +4842,7 @@ mod tests {
 
             // …and it survives the mod layer, which is where the attack's own
             // list was silently dropped before anything filled it.
-            let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+            let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
             let rr = panel.radial.as_ref().expect("resolved");
             let n = rr.forced_procs.fill(&mut buf);
             assert_eq!(&buf[..n], &[DamageType::Impact], "{id}: still Impact after resolution");
@@ -5762,7 +4936,9 @@ mod tests {
     /// and on a bow it is shortened by DOUBLE the printed bonus.
     #[test]
     fn fire_rate_mods_halve_a_bow_charge_at_double_value() {
-        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::{ModEffect, StackPolicy};
         let base = WeaponBase::from_data("cernos_prime", false, &[]);
         let bare = resolve(&base, &[], StackPolicy::AssumedMax);
         assert_eq!(bare.charge_seconds, Some(0.5));
@@ -5792,13 +4968,15 @@ mod tests {
     /// panel states the radius rather than a DPS delta.
     #[test]
     fn blast_range_mods_enlarge_the_beam_sphere() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         let base = WeaponBase::from_data("torid_incarnon", false, &[]);
         let bare = resolve(&base, &[], StackPolicy::AssumedMax);
         assert!((bare.beam.expect("beam").damage_radius_m - 2.3).abs() < 1e-9);
 
         let pool = crate::mods_data::class_pool("rifle");
-        let pf: Vec<&crate::loadout::ModDef> =
+        let pf: Vec<&crate::model::ModDef> =
             pool.iter().filter(|m| m.id == "primed_firestorm").collect();
         let modded = resolve(&base, &pf, StackPolicy::AssumedMax);
         // +44% Blast Range at max rank.
@@ -5817,7 +4995,7 @@ mod tests {
     /// rather than on the weapon or on the Adding behaviour class.
     #[test]
     fn an_evolutions_flat_damage_stays_out_of_the_co_term_by_default() {
-        use crate::loadout::WeaponBase;
+        use crate::model::WeaponBase;
         // THE TORID IS WHERE THIS TEST TURNED AROUND. It asserted 1.0 on both
         // tier-2 perks, on the reading that the weapon's catalog rows say
         // "100 | 100%" — until the owner measured the Incarnon form and every
@@ -6090,8 +5268,8 @@ mod laetum_tests {
     fn the_sim_actually_applies_the_radial() {
         use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
-        let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
-        let parts = vec![crate::fight::BodyPart {
+        let p = crate::loadout::resolve(&b, &[], crate::model::StackPolicy::AssumedMax);
+        let parts = vec![crate::target::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6124,13 +5302,13 @@ mod laetum_tests {
     fn direct_then_radial_lands_at_the_declared_ratio() {
         use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
-        let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+        let p = crate::loadout::resolve(&b, &[], crate::model::StackPolicy::AssumedMax);
         let specs = crate::enemy_data::all();
         let spec = specs.iter().find(|e| e.id == "thrax_centurion").unwrap();
         let target = spec
-            .target_params(1, false, false, crate::fight::TargetMode::InstantRespawn)
+            .target_params(1, false, false, crate::target::TargetMode::InstantRespawn)
             .unwrap();
-        let parts = vec![crate::fight::BodyPart {
+        let parts = vec![crate::target::BodyPart {
             name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
             is_head: false, crit_bonus: false,
         }];
@@ -6178,7 +5356,7 @@ mod laetum_tests {
     #[test]
     fn overwhelming_attrition_earns_and_pays_out() {
         use crate::fight::{monte_carlo, FightParams};
-        let parts = vec![crate::fight::BodyPart {
+        let parts = vec![crate::target::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6187,7 +5365,7 @@ mod laetum_tests {
         }];
         let run = |evos: &[&str]| {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
-            let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+            let p = crate::loadout::resolve(&b, &[], crate::model::StackPolicy::AssumedMax);
             let params =
                 FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
             (!params.stacking_buffs.is_empty(), monte_carlo(&params, 40, 11).mean_effective_damage)
@@ -6209,7 +5387,7 @@ mod laetum_tests {
     fn lethal_rearmament_shortens_the_cycle_not_just_reloads() {
         use crate::fight::{monte_carlo, FightParams};
         // 100% headshots so the trigger fires on every landed pellet.
-        let parts = vec![crate::fight::BodyPart {
+        let parts = vec![crate::target::BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
             multiplier: 3.0,
@@ -6218,7 +5396,7 @@ mod laetum_tests {
         }];
         let run = |evos: &[&str]| {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
-            let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
+            let p = crate::loadout::resolve(&b, &[], crate::model::StackPolicy::Emergent);
             let params =
                 FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(60.0) }, &crate::arcanes_data::ArcaneFx::none());
             let m = monte_carlo(&params, 24, 7);
@@ -6242,7 +5420,7 @@ mod laetum_tests {
     fn a_reload_buff_shortens_the_transmutes_but_never_the_gauge() {
         use crate::fight::{run_once, FightParams};
         use crate::rng::Rng;
-        let parts = vec![crate::fight::BodyPart {
+        let parts = vec![crate::target::BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
             multiplier: 3.0,
@@ -6252,7 +5430,7 @@ mod laetum_tests {
         let params = |evos: &[&str], pin: bool| {
             let inc = WeaponBase::from_data("laetum_incarnon", true, evos);
             let base = WeaponBase::from_data("laetum", true, evos);
-            let pol = crate::loadout::StackPolicy::Emergent;
+            let pol = crate::model::StackPolicy::Emergent;
             let pi = crate::loadout::resolve(&inc, &[], pol);
             let pb = crate::loadout::resolve(&base, &[], pol);
             let mut d = FightParams::incarnon_cycle_from_panels(
@@ -6264,14 +5442,14 @@ mod laetum_tests {
                 &crate::arcanes_data::ArcaneFx::none(),
             );
             for b in d.stacking_buffs.iter_mut() {
-                if b.grant != crate::loadout::BuffGrant::ReloadSpeed {
+                if b.grant != crate::model::BuffGrant::ReloadSpeed {
                     continue;
                 }
                 if pin {
                     // Full AND never expiring — the two knobs are separate,
                     // and this test wants both held for the whole run.
                     b.initial_stacks = b.max_stacks;
-                    b.duration = crate::loadout::NO_TIMEOUT;
+                    b.duration = crate::model::NO_TIMEOUT;
                 } else {
                     b.initial_stacks = 0;
                 }
@@ -6314,7 +5492,7 @@ mod laetum_tests {
     #[test]
     fn overwhelming_attrition_is_diluted_by_base_damage_mods() {
         use crate::fight::{monte_carlo, FightParams};
-        let parts = vec![crate::fight::BodyPart {
+        let parts = vec![crate::target::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
@@ -6322,12 +5500,12 @@ mod laetum_tests {
             crit_bonus: false,
         }];
         let pool = crate::mods_data::pistol_pool();
-        let hornet: Vec<&crate::loadout::ModDef> =
+        let hornet: Vec<&crate::model::ModDef> =
             pool.iter().filter(|m| m.id == "hornet_strike").collect();
-        let gain = |evos: &[&str], mods: &[&crate::loadout::ModDef]| {
+        let gain = |evos: &[&str], mods: &[&crate::model::ModDef]| {
             let run = |e: &[&str]| {
                 let b = WeaponBase::from_data("laetum_incarnon", true, e);
-                let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
+                let p = crate::loadout::resolve(&b, mods, crate::model::StackPolicy::AssumedMax);
                 let params =
                     FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
                 monte_carlo(&params, 60, 5).mean_effective_damage
@@ -6357,11 +5535,11 @@ mod laetum_tests {
     #[test]
     fn rapid_wrath_is_additive_with_fire_rate_mods() {
         let pool = crate::mods_data::pistol_pool();
-        let gunslinger: Vec<&crate::loadout::ModDef> =
+        let gunslinger: Vec<&crate::model::ModDef> =
             pool.iter().filter(|m| m.id == "gunslinger").collect();
-        let fr = |evos: &[&str], mods: &[&crate::loadout::ModDef]| {
+        let fr = |evos: &[&str], mods: &[&crate::model::ModDef]| {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
-            crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax).fire_rate
+            crate::loadout::resolve(&b, mods, crate::model::StackPolicy::AssumedMax).fire_rate
         };
         let base = fr(&[], &[]);
         assert!((base - 6.67).abs() < 1e-9, "base fire rate {base}");
@@ -6384,23 +5562,23 @@ mod laetum_tests {
     fn condition_overload_is_adding_direct_only_and_devouring_stacks_on_top() {
         use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
-        assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
+        assert_eq!(b.co_behavior, crate::model::CoBehavior::AdditiveWithBaseDamage);
         // 160/160 and 100/100 in the catalog: the whole base feeds the bonus.
         assert!((b.co_base_fraction() - 1.0).abs() < 1e-9);
 
         let pool = crate::mods_data::pistol_pool();
-        let co: Vec<&crate::loadout::ModDef> =
+        let co: Vec<&crate::model::ModDef> =
             pool.iter().filter(|m| m.id == "galvanized_shot").collect();
-        let parts = vec![crate::fight::BodyPart {
+        let parts = vec![crate::target::BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
             crit_bonus: false,
         }];
-        let sources = |evos: &[&str], mods: &[&crate::loadout::ModDef]| {
+        let sources = |evos: &[&str], mods: &[&crate::model::ModDef]| {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
-            let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
+            let p = crate::loadout::resolve(&b, mods, crate::model::StackPolicy::AssumedMax);
             let params =
                 FightParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
             let s = monte_carlo(&params, 60, 17).source_damage;
@@ -6419,7 +5597,7 @@ mod laetum_tests {
     #[test]
     fn resolving_keeps_the_radial() {
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
-        let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+        let p = crate::loadout::resolve(&b, &[], crate::model::StackPolicy::AssumedMax);
         let r = p.radial.expect("resolved panel keeps the radial");
         assert!((r.damage.total() - 300.0).abs() < 1e-9, "got {}", r.damage.total());
     }
@@ -6634,7 +5812,7 @@ mod burston_incarnon_radial_tests {
         use crate::fight::{monte_carlo, FightParams};
         let b = WeaponBase::from_data("burston_prime_incarnon", true, &[]);
         let body = || {
-            vec![crate::fight::BodyPart {
+            vec![crate::target::BodyPart {
                 name: "body".into(),
                 aim_weight: 1.0,
                 multiplier: 1.0,
@@ -6643,8 +5821,8 @@ mod burston_incarnon_radial_tests {
             }]
         };
         let pool = crate::mods_data::pool_for_weapon("burston_prime_incarnon");
-        let sim = |mods: &[&crate::loadout::ModDef]| {
-            let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
+        let sim = |mods: &[&crate::model::ModDef]| {
+            let p = crate::loadout::resolve(&b, mods, crate::model::StackPolicy::AssumedMax);
             let params = FightParams::from_panel(
                 &p,
                 &crate::arena::Arena {
@@ -6695,17 +5873,17 @@ mod incarnon_gauge_tests {
             .and_then(|s| s.transforms_to.clone())
             .expect("a cycling weapon names its second form");
         let inc = WeaponBase::from_data(&form, true, &[evo]);
-        let policy = crate::loadout::StackPolicy::Emergent;
+        let policy = crate::model::StackPolicy::Emergent;
         let p0 = crate::loadout::resolve(&base, &[], policy);
         let p1 = crate::loadout::resolve(&inc, &[], policy);
         // The head takes every shot or none of them, which is what makes this
         // a test of the CHARGE RULE rather than of the aim model.
         let parts = vec![
-            crate::fight::BodyPart {
+            crate::target::BodyPart {
                 name: "head".into(), aim_weight: headshot_pct / 100.0,
                 multiplier: 3.0, is_head: true, crit_bonus: true,
             },
-            crate::fight::BodyPart {
+            crate::target::BodyPart {
                 name: "body".into(), aim_weight: 1.0 - headshot_pct / 100.0,
                 multiplier: 1.0, is_head: false, crit_bonus: false,
             },
@@ -7034,9 +6212,9 @@ mod play_mode_tests {
             .into_iter()
             .find(|m| m.id == "primed_firestorm")
             .expect("primed firestorm");
-        let radius = |id: &str, mods: &[&crate::loadout::ModDef]| {
-            let base = crate::loadout::WeaponBase::from_data(id, true, &[]);
-            crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent)
+        let radius = |id: &str, mods: &[&crate::model::ModDef]| {
+            let base = crate::model::WeaponBase::from_data(id, true, &[]);
+            crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent)
                 .radial
                 .map(|r| r.radius_m)
         };
@@ -7245,11 +6423,11 @@ mod play_mode_tests {
         // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
             .expect("the arcane is in the primary pool")
-            .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
+            .fx(5, crate::model::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
         assert_eq!(fx.compression_damage_per_m, 1.0, "+100% per metre at max rank");
         for (id, expected) in table {
-            let base = crate::loadout::WeaponBase::from_data(id, true, &[]);
-            let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+            let base = crate::model::WeaponBase::from_data(id, true, &[]);
+            let p = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
             let bonus = p.compression.map_or(0.0, |c| c.radius_lost_m) * fx.compression_damage_per_m;
             assert!(
                 (bonus - expected).abs() < 5e-3,
@@ -7297,9 +6475,9 @@ mod play_mode_tests {
                 Some(1.0),
                 "{id}: one throw is one magazine — the 40 rounds are the primary fire's"
             );
-            let run = |mods: &[&crate::loadout::ModDef]| {
-                let b = crate::loadout::WeaponBase::from_data(id, true, &[]);
-                let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::Emergent);
+            let run = |mods: &[&crate::model::ModDef]| {
+                let b = crate::model::WeaponBase::from_data(id, true, &[]);
+                let p = crate::loadout::resolve(&b, mods, crate::model::StackPolicy::Emergent);
                 let params = FightParams::from_panel(
                     &p,
                     &crate::arena::Arena::training(DURATION),
@@ -7357,9 +6535,9 @@ mod play_mode_tests {
     fn a_thrown_speargun_plants_a_bullet_attractor_that_counts() {
         use crate::fight::{monte_carlo, FightParams};
         for id in ["scourge_thrown", "scourge_prime_thrown"] {
-            let b = crate::loadout::WeaponBase::from_data(id, true, &[]);
+            let b = crate::model::WeaponBase::from_data(id, true, &[]);
             assert_eq!(b.attractor_seconds, Some(4.7), "{id}: the wiki's 4.7 s");
-            let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
+            let p = crate::loadout::resolve(&b, &[], crate::model::StackPolicy::Emergent);
             let mut params = FightParams::from_panel(
                 &p,
                 &crate::arena::Arena::training(60.0),
@@ -7369,7 +6547,7 @@ mod play_mode_tests {
             // The whole claim, stated as damage: a Condition Overload build
             // that counts the field beats the same build that cannot see it.
             params.co_per_type = 0.8;
-            params.co_behavior = crate::loadout::CoBehavior::Independent;
+            params.co_behavior = crate::model::CoBehavior::Independent;
             let with = monte_carlo(&params, 24, 7).mean_effective_damage;
             let without = FightParams { attractor_seconds: None, ..params.clone() };
             let without = monte_carlo(&without, 24, 7).mean_effective_damage;
@@ -7393,12 +6571,12 @@ mod play_mode_tests {
     /// AIMING IS THE WHOLE CONDITION — *"On aim: x0.2 explosion radius"*.
     #[test]
     fn compression_is_worth_nothing_to_a_player_who_is_not_aiming() {
-        let base = crate::loadout::WeaponBase::from_data("shedu", true, &[]);
+        let base = crate::model::WeaponBase::from_data("shedu", true, &[]);
         let mut hipfire = crate::tenno_data::default_tenno().clone();
         hipfire.state.aiming = false;
-        let aimed = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let aimed = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let hip = crate::loadout::resolve_for(
-            &base, &[], crate::loadout::StackPolicy::Emergent, &hipfire,
+            &base, &[], crate::model::StackPolicy::Emergent, &hipfire,
         );
         assert!(aimed.compression.is_some_and(|c| c.radius_lost_m > 5.27));
         assert!(hip.compression.is_none(), "no aim, no trade, no bonus");
@@ -7517,7 +6695,7 @@ mod play_mode_tests {
     /// asserted rather than declared.
     #[test]
     fn the_torid_carries_both_of_its_co_catalog_rows() {
-        use crate::loadout::CoBehavior;
+        use crate::model::CoBehavior;
         let base = spec("torid").expect("torid");
         let inc = spec("torid_incarnon").expect("torid_incarnon");
 
@@ -7542,9 +6720,9 @@ mod play_mode_tests {
         // claim rather than the spelling.
         let resolved = |id: &str| {
             crate::loadout::resolve(
-                &crate::loadout::WeaponBase::from_data(id, true, &[]),
+                &crate::model::WeaponBase::from_data(id, true, &[]),
                 &[],
-                crate::loadout::StackPolicy::Emergent,
+                crate::model::StackPolicy::Emergent,
             )
             .co_behavior
         };
@@ -7647,7 +6825,7 @@ mod play_mode_tests {
 mod valence_tests {
     use super::*;
     use crate::damage::DamageType;
-    use crate::loadout::WeaponBase;
+    use crate::model::WeaponBase;
 
     /// THE VALENCE BONUS IS BASE DAMAGE, and the arithmetic is the wiki's own
     /// sentence: *"ranging from 25-60% of the weapon's base damage … This
@@ -7738,7 +6916,7 @@ mod valence_tests {
         let pool = crate::mods_data::pool_for_weapon("kuva_nukor");
         let by = |id: &str| pool.iter().find(|m| m.id == id).expect(id);
         let mods = [by("hornet_strike"), by("galvanized_shot")];
-        let r = crate::loadout::resolve(&base, &mods, crate::loadout::StackPolicy::Emergent);
+        let r = crate::loadout::resolve(&base, &mods, crate::model::StackPolicy::Emergent);
         let stack = r.co_stack.expect("Galvanized Shot grants CO stacks");
 
         // MICROWAVE IS THE THIRD, and it is the weapon's own: this vector is
@@ -7828,7 +7006,7 @@ mod condition_overload_catalog_tests {
             ("zylok_prime_incarnon", 500.0),
         ];
         for (id, want) in rows {
-            let b = crate::loadout::WeaponBase::from_data(id, false, &[]);
+            let b = crate::model::WeaponBase::from_data(id, false, &[]);
             let got = b.base_vector.total() * b.base_multishot.max(1.0);
             assert!(
                 (got - want).abs() < 0.51,
@@ -7850,7 +7028,7 @@ mod condition_overload_catalog_tests {
             ("akarius_prime", 509.0),
         ];
         for (id, want) in rows {
-            let b = crate::loadout::WeaponBase::from_data(id, false, &[]);
+            let b = crate::model::WeaponBase::from_data(id, false, &[]);
             let r = b.radial.as_ref().unwrap_or_else(|| panic!("{id} has no radial"));
             assert!((r.base_vector.total() - want).abs() < 0.51,
                 "{id}: the catalog's explosion is {want}, ours is {}", r.base_vector.total());
@@ -7912,7 +7090,7 @@ mod condition_overload_catalog_tests {
             ("zylok_prime_incarnon", "zylok_prime_precisions_payoff", 500.0, 530.0),
         ];
         for (entry, perk, unmodded, evolved) in rows {
-            let b = crate::loadout::WeaponBase::from_data(entry, false, &[perk]);
+            let b = crate::model::WeaponBase::from_data(entry, false, &[perk]);
             let want = unmodded / evolved;
             assert!((b.co_base_fraction() - want).abs() < 1e-6,
                 "{entry} + {perk}: the catalog says CO computes on {unmodded} of {evolved}                  ({:.1}%), our co_base_fraction is {:.4}", want * 100.0, b.co_base_fraction());
@@ -7945,11 +7123,11 @@ mod condition_overload_catalog_tests {
             ("lato_vandal_incarnon", "lato_vandal_reified_bane"),
             ("vasto_incarnon", "vasto_deathtrap_trigger"),
         ] {
-            let b = crate::loadout::WeaponBase::from_data(entry, false, &[perk]);
-            let bare = crate::loadout::WeaponBase::from_data(entry, false, &[]);
+            let b = crate::model::WeaponBase::from_data(entry, false, &[perk]);
+            let bare = crate::model::WeaponBase::from_data(entry, false, &[]);
             let f = bare.base_vector.total() / b.base_vector.total();
             assert!(f < 0.999, "{entry} + {perk} raises no base damage");
-            assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
+            assert_eq!(b.co_behavior, crate::model::CoBehavior::AdditiveWithBaseDamage);
             assert!((b.co_base_fraction() - f).abs() < 1e-9,
                 "{entry} + {perk}: an Adding entry computes CO on the UNEVOLVED base \
                  by default — expected {f:.4}, got {:.4}", b.co_base_fraction());
@@ -7979,8 +7157,8 @@ mod condition_overload_catalog_tests {
     fn no_evolution_dilutes_a_multiplying_co_base() {
         let mut checked = 0;
         for spec in crate::weapons_data::all() {
-            let bare = crate::loadout::WeaponBase::from_data(&spec.id, false, &[]);
-            if bare.co_behavior != crate::loadout::CoBehavior::Independent {
+            let bare = crate::model::WeaponBase::from_data(&spec.id, false, &[]);
+            if bare.co_behavior != crate::model::CoBehavior::Independent {
                 continue;
             }
             // The GROUP owns the evolutions, not the form.
@@ -7993,7 +7171,7 @@ mod condition_overload_catalog_tests {
                 continue;
             }
             checked += 1;
-            let loaded = crate::loadout::WeaponBase::from_data(&spec.id, false, &ids);
+            let loaded = crate::model::WeaponBase::from_data(&spec.id, false, &ids);
             assert!(
                 loaded.base_vector.total() >= bare.base_vector.total(),
                 "{}: the ladder lowered the panel", spec.id
@@ -8036,9 +7214,9 @@ mod echo_tests {
         assert_eq!(m("laetum"), 1.0, "the base form measures the ordinary 1.8x");
         // …AND IT REACHES THE FIGHT. A number in a yaml that no panel carries
         // is a number nothing computes.
-        let base = crate::loadout::WeaponBase::from_data("laetum_incarnon", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("laetum_incarnon", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         assert_eq!(panel.echo_multiplier, 2.0);
     }
 
@@ -8086,7 +7264,7 @@ mod url_tests {
         }
         let chamber = |w: &super::WeaponSpec| {
             let r = w.kitgun.as_deref()?;
-            crate::kitguns_data::chamber(r).map(|c| c.chamber.as_str())
+            crate::weapons_data::kitguns::chamber(r).map(|c| c.chamber.as_str())
         };
         let clashes: Vec<String> = by_slug
             .iter()
@@ -8124,16 +7302,16 @@ mod modular_tests {
     /// parts' own values.
     #[test]
     fn an_assembly_composes_all_the_way_into_a_panel() {
-        use crate::kitguns_data::Assembly;
+        use crate::weapons_data::kitguns::Assembly;
         // NAMING NO ASSEMBLY IS THE DEFAULT ONE, never the chamber's preview —
         // so no path can produce a preview-based panel by forgetting to pass
         // parts. Asserted against the default composed by hand, because the
         // whole point is that the two agree without the caller knowing.
-        let unnamed = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
-        let dflt = crate::kitguns_data::default_assembly("tombfinger_secondary").unwrap();
+        let unnamed = crate::model::WeaponBase::from_data("tombfinger_secondary", false, &[]);
+        let dflt = crate::weapons_data::kitguns::default_assembly("tombfinger_secondary").unwrap();
         assert_eq!(dflt.grip, "ulnaris", "the grip nearest the `base` preview");
         assert_eq!(dflt.loader, "bellows", "the first loader that changes nothing");
-        let named = crate::loadout::WeaponBase::from_data_assembled(
+        let named = crate::model::WeaponBase::from_data_assembled(
             "tombfinger_secondary",
             false,
             &[],
@@ -8153,7 +7331,7 @@ mod modular_tests {
             grip: "haymaker".into(),
             loader: "thunderdrum".into(),
         };
-        let built = crate::loadout::WeaponBase::from_data_assembled(
+        let built = crate::model::WeaponBase::from_data_assembled(
             "tombfinger_secondary",
             false,
             &[],
@@ -8218,7 +7396,7 @@ mod modular_tests {
     fn every_modular_entry_matches_its_chamber() {
         for s in super::all() {
             let Some(k) = s.kitgun.as_deref() else { continue };
-            let c = crate::kitguns_data::chambers()
+            let c = crate::weapons_data::kitguns::chambers()
                 .iter()
                 .find(|c| c.id == k)
                 .unwrap_or_else(|| panic!("{}: no chamber record {k}", s.id));
@@ -8326,15 +7504,15 @@ mod modular_tests {
     /// is exactly the panel nobody built until a player picked it.
     #[test]
     fn every_grip_of_every_modular_entry_builds_and_fires() {
-        use crate::kitguns_data::Assembly;
+        use crate::weapons_data::kitguns::Assembly;
         let arena = crate::arena::Arena::training(3.0);
         let mut ran = 0;
         for s in super::all().iter().filter(|s| s.kitgun.is_some()) {
-            let c = crate::kitguns_data::chamber(s.kitgun.as_deref().unwrap()).unwrap();
-            for g in crate::kitguns_data::grips().iter().filter(|g| g.slot == c.slot) {
+            let c = crate::weapons_data::kitguns::chamber(s.kitgun.as_deref().unwrap()).unwrap();
+            for g in crate::weapons_data::kitguns::grips().iter().filter(|g| g.slot == c.slot) {
                 let a = Assembly { chamber: c.chamber.clone(), grip: g.id.clone(), loader: "bellows".into() };
-                let base = crate::loadout::WeaponBase::from_data_assembled(&s.id, false, &[], Some(&a));
-                let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+                let base = crate::model::WeaponBase::from_data_assembled(&s.id, false, &[], Some(&a));
+                let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
                 let p = crate::fight::FightParams::from_panel(
                     &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
                 let r = crate::fight::monte_carlo(&p, 2, 3);
@@ -8349,7 +7527,7 @@ mod modular_tests {
     /// on Haymaker is 22 m and on Gibber 41 m, whatever the entry's preview says.
     #[test]
     fn a_beam_kitguns_reach_is_its_grips() {
-        use crate::kitguns_data::Assembly;
+        use crate::weapons_data::kitguns::Assembly;
         let reach = |grip: &str| {
             let a = Assembly { chamber: "gaze".into(), grip: grip.into(), loader: "bellows".into() };
             let s = spec_assembled(spec("gaze_secondary").unwrap(), Some(&a)).expect("composes");
@@ -8371,8 +7549,8 @@ mod modular_tests {
     /// that reaches a card and not the loop is exactly what this is for.
     #[test]
     fn pax_charge_turns_the_magazine_into_a_battery() {
-        use crate::loadout::StackPolicy;
-        let base = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
+        use crate::model::StackPolicy;
+        let base = crate::model::WeaponBase::from_data("tombfinger_secondary", false, &[]);
         assert_eq!(base.recharge_per_second, Some(50.0), "the chamber states its rate");
 
         // ITS OWN SEAT, and NOT the weapon's. *"These can be installed

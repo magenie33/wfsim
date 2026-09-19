@@ -85,7 +85,7 @@ fn condition_overload_is_diluted_by_base_damage_mods() {
 
 #[test]
 fn condition_overload_behavior_classes_differ_per_weapon() {
-    use crate::loadout::CoBehavior;
+    use crate::model::CoBehavior;
     // Same +100% base damage, one active type. Independent ignores
     // the dilution: 75 × (1 + 9 × 2) = 1425. Inert: 75 × 10 = 750.
     let p = |b| FightParams {
@@ -262,7 +262,7 @@ fn incarnon_cycle_alternates_forms_deterministically() {
             // These fixtures test the EARNED cycle, which is the standard one.
             starts_primed: false,
             base_form: Box::new(base_form),
-            arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+            arms: Arms::Gauge { charge_on: crate::model::ChargeOn::WeakpointHits, charges_to_fill: 2 },
             ends: Ends::ChargeMagazine,
             transmute_out_seconds: 0.5,
             transmute_seconds: 1.0,
@@ -327,12 +327,12 @@ fn the_gauge_charges_off_whatever_the_weapon_data_says() {
         }),
         ..no_status()
     };
-    let wp = monte_carlo(&mk(crate::loadout::ChargeOn::WeakpointHits), 5, 9);
+    let wp = monte_carlo(&mk(crate::model::ChargeOn::WeakpointHits), 5, 9);
     assert_eq!(
         wp.mean_transforms, 0.0,
         "no weak-point hits = the gauge never fills again"
     );
-    let direct = monte_carlo(&mk(crate::loadout::ChargeOn::DirectHits), 5, 9);
+    let direct = monte_carlo(&mk(crate::model::ChargeOn::DirectHits), 5, 9);
     assert!(
         direct.mean_transforms > 0.0,
         "plain direct hits must fill a direct-hit gauge (transforms {})",
@@ -379,7 +379,7 @@ fn a_cycle_that_never_transforms_is_its_base_form() {
         cycle: Some(IncarnonCycle {
             starts_primed: false,
             base_form: Box::new(base_form.clone()),
-            arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+            arms: Arms::Gauge { charge_on: crate::model::ChargeOn::WeakpointHits, charges_to_fill: 2 },
             ends: Ends::ChargeMagazine,
             transmute_out_seconds: 0.5,
             transmute_seconds: 1.0,
@@ -454,7 +454,7 @@ fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
     // pellet; +1.0 pellet per stack, cap 2, long duration. Shot k
     // fires (1 + stacks) pellets and the FIRST pellet's kill bumps
     // the stack: pellets per shot 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27.
-    let spec = crate::loadout::StackSpec {
+    let spec = crate::model::StackSpec {
         per_stack: 1.0,
         max_stacks: 2,
         duration: 100.0,
@@ -479,7 +479,7 @@ fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
     // Initial-full (the user's default): every shot fires 3 pellets
     // from t = 0 (kills keep the stacks refreshed) -> 30 pellets.
     let full = FightParams {
-        multishot_stack: Some(crate::loadout::StackSpec {
+        multishot_stack: Some(crate::model::StackSpec {
             initial_stacks: 2,
             ..spec
         }),
@@ -499,7 +499,7 @@ fn co_base_fraction_scales_the_co_bonus() {
     // 75 × (1 + 9 × (1 + 0.6)) = 75 × 15.4 = 1155.
     let p = FightParams {
         co_per_type: 1.0,
-        co_base: crate::loadout::CoBase::new(0.6, 1.0, crate::loadout::CoStage::Direct),
+        co_base: crate::model::CoBase::new(0.6, 1.0, crate::model::CoStage::Direct),
         ..bare(DamageType::Impact)
     };
     let s = monte_carlo(&p, 20, 5);
@@ -677,7 +677,7 @@ fn shiver_is_scaled_by_the_gunco_base_fraction() {
     let p = FightParams {
         arcane: arc("secondary_shiver"),
         forced_procs: vec![DamageType::Cold],
-        co_base: crate::loadout::CoBase::new(0.5, 1.0, crate::loadout::CoStage::Direct),
+        co_base: crate::model::CoBase::new(0.5, 1.0, crate::model::CoStage::Direct),
         ..flat_base()
     };
     let s = monte_carlo(&p, 20, 5);
@@ -803,7 +803,7 @@ fn surge_assumed_max_is_a_final_multiplier() {
     // AssumedMax: the ×8 cap on every shot — 10 × 75 × 8 = 6000.
     let fx = crate::arcanes_data::secondary("secondary_surge")
         .unwrap()
-        .fx(5, crate::loadout::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno());
+        .fx(5, crate::model::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno());
     let p = FightParams {
         arcane: fx,
         ..flat_base()
@@ -1066,7 +1066,7 @@ fn sharpened_bullets_cd_buff_refreshes_on_kills() {
         ..no_status()
     };
     let with = FightParams {
-        crit_damage_on_kill: Some(crate::loadout::TimedBuff {
+        crit_damage_on_kill: Some(crate::model::TimedBuff {
             value: 1.0,
             duration: 9.0,
             initial_active: false,
@@ -1093,7 +1093,7 @@ fn pressurized_magazine_fire_rate_buff_follows_reloads() {
         ..flat_base()
     };
     let with = FightParams {
-        fire_rate_on_reload: Some(crate::loadout::TimedBuff {
+        fire_rate_on_reload: Some(crate::model::TimedBuff {
             value: 1.0,
             duration: 9.0,
             initial_active: false,
@@ -1291,7 +1291,7 @@ fn crosshairs_buff_is_refreshed_by_headshot_hits() {
         // scales each part's own base). A base of 1.0 makes 0.12 land as
         // +12% absolute, leaving the arithmetic above unchanged.
         unmodded_crit_chance: 1.0,
-        crit_chance_on_headshot: Some(crate::loadout::TimedBuff {
+        crit_chance_on_headshot: Some(crate::model::TimedBuff {
             value: 0.12,
             duration: 12.0,
             initial_active: true,
@@ -1325,12 +1325,12 @@ fn crosshairs_cc_buffs_start_full_and_expire_without_headshots() {
     let p = FightParams {
         base_crit_chance: 0.1,
         unmodded_crit_chance: 1.0, // relative buff values — see above
-        crit_chance_on_headshot: Some(crate::loadout::TimedBuff {
+        crit_chance_on_headshot: Some(crate::model::TimedBuff {
             value: 0.12,
             duration: 12.0,
             initial_active: true,
         }),
-        crit_chance_stack: Some(crate::loadout::StackSpec {
+        crit_chance_stack: Some(crate::model::StackSpec {
             per_stack: 0.04,
             max_stacks: 5,
             duration: 12.0,

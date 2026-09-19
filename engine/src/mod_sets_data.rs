@@ -94,7 +94,7 @@ fn all() -> &'static [ModSetDef] {
 ///
 /// COMPLETION IS THE CONDITION, and it is what makes this set's shape different
 /// from every other one here: *"when both are equipped together"*.
-pub fn self_scale_for(m: &crate::loadout::ModDef, equipped: &[&crate::loadout::ModDef]) -> f64 {
+pub fn self_scale_for(m: &crate::model::ModDef, equipped: &[&crate::model::ModDef]) -> f64 {
     let Some(set) = m.set.and_then(set_def) else { return 1.0 };
     if set.kind != SetBonusKind::SelfScaling {
         return 1.0;

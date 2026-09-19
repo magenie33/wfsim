@@ -15,10 +15,13 @@
 //!   cargo run --release --bin chain_punch
 use wfsim_engine::arena::Arena;
 use wfsim_engine::arcanes_data::ArcaneFx;
-use wfsim_engine::fight::{monte_carlo, FightParams, TargetMode};
+use wfsim_engine::fight::{monte_carlo, FightParams};
+use wfsim_engine::target::TargetMode;
 use wfsim_engine::enemy_data;
 use wfsim_engine::formation::FoeSpec;
-use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
+use wfsim_engine::loadout::resolve;
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::StackPolicy;
 use wfsim_engine::space::Vec2;
 
 const RUNS: u32 = 200;

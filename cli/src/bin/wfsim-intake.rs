@@ -342,7 +342,7 @@ fn intake(
 
         let weapon = id(&rec, "weapon");
         let riven = riven_of(&rec);
-        let assembly = wfsim_engine::kitguns_data::assembly_of(
+        let assembly = wfsim_engine::weapons_data::kitguns::assembly_of(
             &weapon,
             &id(&rec, "grip"),
             &id(&rec, "loader"),

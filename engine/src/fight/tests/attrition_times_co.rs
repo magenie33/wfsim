@@ -19,11 +19,11 @@ use super::*;
 /// the larger of the two.
 #[test]
 fn devastating_attrition_multiplies_with_gun_condition_overload() {
-    let base = crate::loadout::WeaponBase::from_data("felarx", true, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+    let base = crate::model::WeaponBase::from_data("felarx", true, &[]);
+    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
     assert_eq!(
         panel.co_behavior,
-        crate::loadout::CoBehavior::Independent,
+        crate::model::CoBehavior::Independent,
         "the Felarx is on the catalog's Multiplying row, both modes"
     );
     let arena = crate::arena::Arena::training(30.0);

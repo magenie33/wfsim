@@ -85,7 +85,7 @@ fn a_target_that_cannot_freeze_just_never_trips_the_trigger() {
 /// carries it to wherever the +42 landed.
 #[test]
 fn the_burston_primes_co_reads_only_its_unevolved_base() {
-    let base = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data(
         "burston_prime_incarnon",
         false,
         &["burston_prime_forceful_finality"],
@@ -119,7 +119,7 @@ fn the_burston_primes_co_reads_only_its_unevolved_base() {
     // expression collapses to `crit x (evolved + rate x original)`, which
     // is the mechanic said plainly: the perk's +42 is added AFTER CO and
     // never multiplied by it.
-    let bf = crate::loadout::WeaponBase::from_data(
+    let bf = crate::model::WeaponBase::from_data(
         "burston_prime",
         false,
         &["burston_prime_forceful_finality"],
@@ -136,7 +136,7 @@ fn the_burston_primes_co_reads_only_its_unevolved_base() {
 
     // THE TWIN AT THE SAME TIER carries the same flag: it adds the same
     // +42, so a build taking it computes CO on the same base.
-    let twin = crate::loadout::WeaponBase::from_data(
+    let twin = crate::model::WeaponBase::from_data(
         "burston_prime_incarnon",
         false,
         &["burston_prime_fortress_salvo"],
@@ -162,7 +162,7 @@ fn the_burston_primes_co_reads_only_its_unevolved_base() {
 /// restores it.
 #[test]
 fn the_dual_toxocysts_co_reads_a_flat_seventy_five_under_either_evolution() {
-    let with = |evo: &str| crate::loadout::WeaponBase::from_data("dual_toxocyst", false, &[evo]);
+    let with = |evo: &str| crate::model::WeaponBase::from_data("dual_toxocyst", false, &[evo]);
 
     // 75 of the 125 panel, and 75 of the 135 one — a FLAT 75 either way,
     // which is the whole finding.
@@ -226,7 +226,7 @@ fn boar_prime_co_reads_its_own_base_under_reified_bane_in_both_forms() {
         ("boar_prime", 40.0, 2.0, 3.0, 266.0),
         ("boar_prime_incarnon", 30.0, 2.0, 1.0, 167.0),
     ] {
-        let b = crate::loadout::WeaponBase::from_data(id, false, &["boar_prime_reified_bane"]);
+        let b = crate::model::WeaponBase::from_data(id, false, &["boar_prime_reified_bane"]);
         let panel = b.base_vector.total();
         // THE +14, not the card's +10 — the gated half as the damage reads it.
         assert!((panel - (own_base + 24.0)).abs() < 1e-9, "{id}: panel {panel}");
@@ -255,7 +255,7 @@ fn boar_prime_co_reads_its_own_base_under_reified_bane_in_both_forms() {
 /// the default is now 0 for 2 on the weapons anyone has checked.
 #[test]
 fn the_torid_incarnons_co_reads_half_its_evolved_base() {
-    let inc = crate::loadout::WeaponBase::from_data(
+    let inc = crate::model::WeaponBase::from_data(
         "torid_incarnon",
         false,
         &["torid_final_fusillade"],
@@ -285,7 +285,7 @@ fn the_torid_incarnons_co_reads_half_its_evolved_base() {
 
     // THE TIER-MATE, measured on its own numbers — flagged by inference
     // from this one first and confirmed within the hour.
-    let mate = crate::loadout::WeaponBase::from_data(
+    let mate = crate::model::WeaponBase::from_data(
         "torid_incarnon",
         false,
         &["torid_plentiful_mayhem"],
@@ -317,13 +317,13 @@ fn the_torid_incarnons_co_reads_half_its_evolved_base() {
     // reads its FULL evolved 151 — the cheapest open experiment there was
     // (393 if fed against 311 if not, 26% apart), run measured within
     // the day and answering FED. Its own readings are the test below.
-    let base = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data(
         "torid",
         false,
         &["torid_final_fusillade"],
     );
     assert!((base.base_vector.total() - 151.0).abs() < 1e-9);
-    assert_eq!(base.co_behavior, crate::loadout::CoBehavior::Independent);
+    assert_eq!(base.co_behavior, crate::model::CoBehavior::Independent);
     assert!(
         (base.co_base_fraction() - 1.0).abs() < 1e-9,
         "the Multiplying half reads its full evolved base (M51), got {}",
@@ -363,10 +363,10 @@ fn the_torid_base_forms_multiplying_co_reads_its_full_evolved_base() {
             [(1.0, 359.0, 502.0), (2.0, 359.0, 646.0)],
         ),
     ] {
-        let b = crate::loadout::WeaponBase::from_data("torid", false, &[perk]);
+        let b = crate::model::WeaponBase::from_data("torid", false, &[perk]);
         assert!((b.base_vector.total() - evolved).abs() < 1e-9,
             "{perk}: panel {} against a measured {evolved}", b.base_vector.total());
-        assert_eq!(b.co_behavior, crate::loadout::CoBehavior::Independent);
+        assert_eq!(b.co_behavior, crate::model::CoBehavior::Independent);
         assert!((b.co_base_fraction() - 1.0).abs() < 1e-9);
 
         // Solved the way M50 taught: a RATIO to the bare hit, which cancels
@@ -414,21 +414,21 @@ fn the_torid_base_forms_multiplying_co_reads_its_full_evolved_base() {
 /// they take may not diverge.
 #[test]
 fn a_respawned_body_in_the_formation_starts_with_no_statuses() {
-    let base = crate::loadout::WeaponBase::from_data("soma_prime", true, &[]);
+    let base = crate::model::WeaponBase::from_data("soma_prime", true, &[]);
     let pool = crate::mods_data::pool_for_weapon("soma_prime");
-    let refs: Vec<&crate::loadout::ModDef> = ["malignant_force", "primed_cryo_rounds"]
+    let refs: Vec<&crate::model::ModDef> = ["malignant_force", "primed_cryo_rounds"]
         .iter()
         .filter_map(|id| pool.iter().find(|m| m.id == *id))
         .collect();
     assert_eq!(refs.len(), 2, "Viral needs both halves");
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let frail = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
     let mut arena = crate::arena::Arena::training(30.0);
     arena.target_at = crate::space::Vec2::new(0.0, 1.0);
     arena.others = vec![crate::formation::FoeSpec {
         id: "e2".into(),
         params: frail.clone(),
-        body_parts: FightParams::humanoid_parts(),
+        body_parts: BodyPart::humanoid(),
         at: crate::space::Vec2::new(0.0, 2.0),
     }];
     let mut p = FightParams::from_panel(

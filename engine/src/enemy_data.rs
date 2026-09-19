@@ -14,8 +14,8 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
-use crate::fight::{Attenuation, BodyPart, StackCaps, TargetMode, TargetParams};
 use crate::scaling;
+use crate::model::SpectralForm;
 
 /// Which faction's scaling curves an enemy uses (wiki `Enemy_Level_Scaling`).
 /// This is about *stat scaling*, not faction damage bonuses — Thrax units are
@@ -103,21 +103,6 @@ pub struct BodyPartSpec {
     pub is_head: bool,
     #[serde(default)]
     pub crit_bonus: bool,
-}
-
-/// A THRAX'S SPECTRAL FORM — the body that stands up where the physical one
-/// fell. *"Destroying the physical form reverts it into a spectral form with
-/// 40% of the physical form's health. Void damage deals 10x damage to the
-/// spectral form"*, and Void damage is the OPERATOR's: no weapon in this
-/// roster can touch it, which is why a fight with it on has a ceiling of zero
-/// kills for every gun.
-#[derive(Debug, Clone, Copy, Deserialize)]
-pub struct SpectralForm {
-    /// Its health, as a share of the physical form's.
-    pub health_share: f64,
-    /// Seconds between the physical form falling and the spectre standing up.
-    /// ASSUMED — nothing publishes it.
-    pub delay_seconds: f64,
 }
 
 /// The serde default for a multiplier a file leaves out: change nothing.
@@ -284,7 +269,7 @@ pub struct EnemySpec {
     #[serde(default)]
     pub attenuation: Option<AttenuationSpec>,
     /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET — see
-    /// [`crate::fight::TargetParams::faction_bracket_multiplier`]. Absent = 1.0,
+    /// [`crate::target::TargetParams::faction_bracket_multiplier`]. Absent = 1.0,
     /// which is every unit but the one it was measured on. It is written as the
     /// per-HIT figure and the engine raises it per derivation step, so a file
     /// states 0.8 and never 0.64: a file that stated the squared number would be
@@ -344,128 +329,6 @@ impl EnemySpec {
         1.0 + self.squad_health_bonus[i]
     }
 
-    /// Build the simulation target. Fails on combinations that do not exist
-    /// in-game (e.g. `eximus` for a unit with no Eximus variant).
-    pub fn target_params(
-        &self,
-        level: u32,
-        steel_path: bool,
-        eximus: bool,
-        mode: TargetMode,
-    ) -> Result<TargetParams, String> {
-        if eximus && !self.can_be_eximus {
-            return Err(format!(
-                "{} cannot be an Eximus: no such unit exists in-game \
-                 (wiki Eximus/Compatibilities)",
-                self.name
-            ));
-        }
-        // The damage table's fifteen columns are the whole system; a faction it
-        // does not name takes every type as written, so this cannot fail.
-        // A CUSTOM ENEMY MAY BRING ITS OWN COLUMN, and then it is the answer —
-        // see `damage_modifiers`. The Overguard pool keeps the table's own
-        // column either way: Overguard is a layer over the enemy rather than
-        // part of it, and a player inventing a target does not get to invent
-        // that.
-        let type_mods = if self.damage_modifiers.is_some() {
-            crate::factions_data::Columns {
-                faction: crate::factions_data::Column::from_multipliers(&self.inline_column()?),
-                overguard: crate::factions_data::overguard_column(),
-            }
-        } else {
-            crate::factions_data::columns_for(self.damage_column_key())
-        };
-        Ok(TargetParams {
-            name: self.name.clone(),
-            base_level: self.stats.base_level,
-            level,
-            base_health: self.stats.health,
-            base_armor: self.stats.armor,
-            base_overguard: self.stats.overguard,
-            base_affinity: self.stats.affinity,
-            base_shield: self.stats.shield,
-            health_curve: self.scaling_faction.health_curve(),
-            shield_curve: self.scaling_faction.shield_curve(),
-            attenuation: self.attenuation.map(|a| Attenuation {
-                instance_fraction: a.max_instance_fraction_of_health,
-                dps_fraction: a.max_dps_fraction_of_health,
-            }),
-            faction_bracket_multiplier: self.faction_bracket_multiplier,
-            stack_caps: self.status_stack_caps.map(|c| StackCaps {
-                general: c.general,
-                impact: c.impact,
-            }),
-            cannot_be_frozen: self.cannot_be_frozen,
-            // OFF UNLESS THE FIGHT ASKS. `spectral_form` is what the second
-            // half of this unit's death WOULD be; a fight that has never heard
-            // of the switch cannot get it, which is why this is `None` here and
-            // filled by the caller rather than read off the spec.
-            spectral: None,
-            steel_path,
-            eximus,
-            can_be_eximus: self.can_be_eximus,
-            type_mods,
-            status_immunities: self
-                .status_immunities
-                .iter()
-                .map(|k| {
-                    crate::damage::DamageType::from_name(k)
-                        .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))
-                })
-                .collect::<Result<Vec<_>, _>>()?,
-            faction: self
-                .combat_faction
-                .as_deref()
-                .map(crate::loadout::Faction::from_name)
-                .unwrap_or(crate::loadout::Faction::Unknown),
-            mode,
-        })
-    }
-
-    /// This enemy's inline column, resolved against the damage-type names.
-    ///
-    /// A NAME IT DOES NOT KNOW IS AN ERROR rather than a silently ignored
-    /// entry: the whole point of the field is to state something unusual, and
-    /// "heatt: 0" that quietly does nothing is a target the reader believes is
-    /// immune and is not.
-    fn inline_column(&self) -> Result<Vec<(crate::damage::DamageType, f64)>, String> {
-        let m = match &self.damage_modifiers {
-            Some(m) => m,
-            None => return Ok(Vec::new()),
-        };
-        m.iter()
-            .map(|(k, v)| {
-                let t = crate::damage::DamageType::from_name(k)
-                    .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))?;
-                if !(0.0..=100.0).contains(v) {
-                    return Err(format!("{}: {k} x{v} is not a damage multiplier", self.name));
-                }
-                Ok((t, *v))
-            })
-            .collect()
-    }
-
-    /// Body parts with explicit aim weights, matched by part name. Every
-    /// weight must name an existing part (typos are errors, not 0% aim).
-    pub fn aim_parts(&self, weights: &[(&str, f64)]) -> Result<Vec<BodyPart>, String> {
-        weights
-            .iter()
-            .map(|(name, w)| {
-                let p = self
-                    .body_parts
-                    .iter()
-                    .find(|p| p.name == *name)
-                    .ok_or_else(|| format!("{} has no body part named '{name}'", self.name))?;
-                Ok(BodyPart {
-                    name: p.name.clone(),
-                    aim_weight: *w,
-                    multiplier: p.multiplier,
-                    is_head: p.is_head,
-                    crit_bonus: p.crit_bonus,
-                })
-            })
-            .collect()
-    }
 }
 
 /// The full embedded enemy library — every `data/enemies/**.yaml` including
@@ -481,6 +344,7 @@ pub fn all() -> Vec<EnemySpec> {
 
 #[cfg(test)]
 mod tests {
+    use crate::target::TargetMode;
     /// THE NULLIFY GATE ITSELF, kept under test while no unit turns it on.
     ///
     /// A flag nothing sets is a flag that rots. This asserts the two halves
@@ -695,7 +559,6 @@ body_parts: [{ name: body, multiplier: 1.0 }]
             .is_err());
     }
 
-
     fn data_enemies() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../data/enemies")
     }
@@ -726,7 +589,7 @@ body_parts: [{ name: body, multiplier: 1.0 }]
         let t = spec
             .target_params(100, false, false, TargetMode::InstantRespawn)
             .unwrap();
-        assert_eq!(t.faction, crate::loadout::Faction::Unknown, "no Bane applies");
+        assert_eq!(t.faction, crate::model::Faction::Unknown, "no Bane applies");
         assert_eq!(t.type_mods.faction.get(crate::damage::DamageType::Void), 1.5);
         // …and nothing else: the override selects ONE column, it does not add
         // the Zariman column on top of a faction one.
@@ -804,7 +667,7 @@ body_parts: [{ name: body, multiplier: 1.0 }]
         let t = spec
             .target_params(100, false, true, TargetMode::InstantRespawn)
             .unwrap();
-        assert_eq!(t.faction, crate::loadout::Faction::Corrupted);
+        assert_eq!(t.faction, crate::model::Faction::Corrupted);
     }
 
     #[test]

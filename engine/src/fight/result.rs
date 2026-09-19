@@ -331,3 +331,13 @@ pub struct RunResult {
     /// Whose damage it was — same door, same reason.
     pub spread: ledger::Spread,
 }
+
+/// The one number of a run a metric reads — here because `RunResult` is.
+impl RunStat {
+    pub fn of(self, r: &RunResult) -> f64 {
+        match self {
+            RunStat::KillProgress => r.kill_progress,
+            RunStat::EffectiveDamage => r.effective_damage(),
+        }
+    }
+}

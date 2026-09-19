@@ -118,8 +118,8 @@ impl FightParams {
         // PYRANA PRIME'S SECOND GUN and the streak that buys it. The streak
         // never shows its last kill: that one turns into the gun.
         if let Some(s) = self.kill_streak_summon {
-            push!(crate::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID, s.kills.saturating_sub(1));
-            push!(crate::weapons_data::KillStreakSummonSpec::BUFF_ID, 1);
+            push!(crate::model::KillStreakSummonSpec::STREAK_BUFF_ID, s.kills.saturating_sub(1));
+            push!(crate::model::KillStreakSummonSpec::BUFF_ID, 1);
         }
         // EVERY stacking buff, by construction. A new one appears on the
         // replay the moment the data declares it — there is no arm to add.
@@ -173,7 +173,7 @@ impl FightParams {
 
     /// Apply a per-buff configured policy onto the live specs: the card's
     /// stack count becomes the seed, and a LOCKED card OVERWRITES the buff's
-    /// duration with [`crate::loadout::NO_TIMEOUT`].
+    /// duration with [`crate::model::NO_TIMEOUT`].
     ///
     /// This function is the whole implementation of locking. Nothing downstream knows the concept: every clock in the
     /// sim is `expiry = now + duration`, so an infinite duration is a buff
@@ -186,18 +186,18 @@ impl FightParams {
         /// The buff's own duration, or none at all when the card is locked.
         fn clock(duration: f64, locked: bool) -> f64 {
             if locked {
-                crate::loadout::NO_TIMEOUT
+                crate::model::NO_TIMEOUT
             } else {
                 duration
             }
         }
-        fn set_stack(s: &mut crate::loadout::StackSpec, cfg: &BuffConfig, id: &str) {
+        fn set_stack(s: &mut crate::model::StackSpec, cfg: &BuffConfig, id: &str) {
             if let Some(&(stacks, locked)) = cfg.get(id) {
                 s.initial_stacks = stacks.min(s.max_stacks);
                 s.duration = clock(s.duration, locked);
             }
         }
-        fn set_timed(b: &mut crate::loadout::TimedBuff, cfg: &BuffConfig, id: &str) {
+        fn set_timed(b: &mut crate::model::TimedBuff, cfg: &BuffConfig, id: &str) {
             if let Some(&(stacks, locked)) = cfg.get(id) {
                 b.initial_active = stacks > 0;
                 b.duration = clock(b.duration, locked);
@@ -285,7 +285,7 @@ impl FightParams {
             self.tendrils_held = locked;
         }
         if let Some(s) = self.kill_streak_summon.as_mut() {
-            use crate::weapons_data::KillStreakSummonSpec as K;
+            use crate::model::KillStreakSummonSpec as K;
             if let Some(&(stacks, locked)) = cfg.get(K::BUFF_ID) {
                 self.kill_streak_summon_opens_active = stacks > 0;
                 s.duration_seconds = clock(s.duration_seconds, locked);
@@ -422,7 +422,7 @@ impl FightParams {
             self.tendrils_initial = 0;
         }
         if self.kill_streak_summon.is_some()
-            && by_id(crate::weapons_data::KillStreakSummonSpec::BUFF_ID)
+            && by_id(crate::model::KillStreakSummonSpec::BUFF_ID)
         {
             self.kill_streak_summon = None;
             self.kill_streak_summon_opens_active = false;
@@ -471,27 +471,6 @@ impl FightParams {
         if let Some(cy) = self.cycle.as_mut() {
             cy.base_form.deny_buff_triggers(denied);
         }
-    }
-
-    /// A generic humanoid: body 1x, head 3x (headshot-triggering, crit-bonus
-    /// eligible), aimed at 50/50.
-    pub fn humanoid_parts() -> Vec<BodyPart> {
-        vec![
-            BodyPart {
-                name: "body".into(),
-                aim_weight: 0.5,
-                multiplier: 1.0,
-                is_head: false,
-                crit_bonus: false,
-            },
-            BodyPart {
-                name: "head".into(),
-                aim_weight: 0.5,
-                multiplier: 3.0, // humanoid head (wiki: Enemy_Body_Parts)
-                is_head: true,
-                crit_bonus: true,
-            },
-        ]
     }
 
     /// Dual Toxocyst base form damage vector — TEST FIXTURE (the engine
@@ -974,7 +953,7 @@ impl FightParams {
                 radius_m: f64::INFINITY,
                 falloff_start_m: f64::INFINITY,
                 falloff_reduction: 0.0,
-                stacking: crate::loadout::FieldStacking::Stack,
+                stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: false,
             }),
             orb_blast: panel.orb.and(panel.radial).map(|r| crate::loadout::ResolvedLingering {
@@ -993,7 +972,7 @@ impl FightParams {
                 radius_m: r.radius_m,
                 falloff_start_m: r.falloff_start_m,
                 falloff_reduction: r.falloff_reduction,
-                stacking: crate::loadout::FieldStacking::Stack,
+                stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: r.takes_condition_overload,
             }),
             lingering: panel.lingering,
@@ -1043,7 +1022,7 @@ impl FightParams {
                 (_, true, Some(rate)) if rate > 0.0 => {
                     let delay =
                         reload_span(panel.reload_seconds, panel.reload_bonus, arc_reload_bonus);
-                    Some(crate::weapons_data::Battery {
+                    Some(crate::model::Battery {
                         regen_per_second: rate,
                         delay_empty_seconds: delay,
                         delay_partial_seconds: delay,
@@ -1270,7 +1249,7 @@ impl FightParams {
     pub fn melee_incarnon_from_panels(
         armed: &crate::loadout::ResolvedPanel,
         unarmed: &crate::loadout::ResolvedPanel,
-        window: crate::loadout::MeleeIncarnon,
+        window: crate::model::MeleeIncarnon,
         arena: &crate::arena::Arena,
         arcane: &ArcaneFx,
     ) -> Self {

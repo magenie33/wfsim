@@ -301,7 +301,7 @@ mod tests {
 
     /// A mod by id across EVERY class pool (a weapon's pool is a union, and
     /// so is the set of mods an overlay may name).
-    fn known_mod(id: &str) -> Option<crate::loadout::ModDef> {
+    fn known_mod(id: &str) -> Option<crate::model::ModDef> {
         crate::mods_data::classes()
             .into_iter()
             .find_map(|c| crate::mods_data::class_pool(c).into_iter().find(|m| m.id == id))
@@ -516,7 +516,7 @@ mod tests {
     /// fails here until it is added to both, which is the point.
     #[test]
     fn every_indirect_stat_label_is_translated() {
-        use crate::loadout::IndirectStat as I;
+        use crate::model::IndirectStat as I;
         const ALL: [I; 20] = [
             I::Recoil, I::Noise, I::AmmoMax, I::ProjectileSpeed, I::HolsteredReload,
             I::DodgeSpeed, I::AcrobaticSpeed, I::Accuracy, I::PunchThrough, I::Zoom,

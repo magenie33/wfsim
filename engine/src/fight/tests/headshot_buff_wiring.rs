@@ -13,12 +13,12 @@
 use super::*;
 
 fn roster_of(evo: &str) -> Vec<String> {
-    let base = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data(
         "furis_incarnon",
         true,
         &["furis_evo1_incarnon_form", evo],
     );
-    let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+    let p = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let params = FightParams::from_panel(&p, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
     params.buff_roster().into_iter().map(|b| b.id).collect()
 }
@@ -48,20 +48,20 @@ fn and_only_when_the_perk_is_taken() {
 fn every_evolution_buff_card_is_backed_by_the_sim() {
     for e in crate::evolutions_data::pool() {
         for card in e.buff_cards() {
-            let base = crate::loadout::WeaponBase::from_data(
+            let base = crate::model::WeaponBase::from_data(
                 &e.weapon,
                 true,
                 &[e.id.as_str()],
             );
-            let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+            let p = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
             let arena = crate::arena::Arena::training(30.0);
             // `for_panel`, NOT `from_panel` — the same decision every real
             // surface makes. A melee Incarnon's card is backed by a fight
             // built from two panels, and asking the one-panel constructor
             // here would fail a card that works.
             let params = FightParams::for_panel(&p, &arena, &ArcaneFx::none(), || {
-                let b = crate::loadout::WeaponBase::from_data(&e.weapon, true, &[]);
-                crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent)
+                let b = crate::model::WeaponBase::from_data(&e.weapon, true, &[]);
+                crate::loadout::resolve(&b, &[], crate::model::StackPolicy::Emergent)
             });
             let listed = params.buff_roster().into_iter().any(|b| b.id == card.id);
             assert!(

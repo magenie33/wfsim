@@ -58,9 +58,9 @@ pub struct FoeSpec {
     /// position at parse time, which is what every scenario written before this
     /// existed means and what keeps them all readable.
     pub id: String,
-    pub params: crate::fight::TargetParams,
+    pub params: crate::target::TargetParams,
     /// Where a pellet can land on it and what each spot multiplies.
-    pub body_parts: Vec<crate::fight::BodyPart>,
+    pub body_parts: Vec<crate::target::BodyPart>,
     pub at: Vec2,
 }
 
@@ -76,7 +76,7 @@ pub struct Formation {
 impl Formation {
     /// The single-target arena, which is what this engine has always run.
     /// `Formation::one(..).len() == 1` and the aim policy can never fire.
-    pub fn one(params: crate::fight::TargetParams, body_parts: Vec<crate::fight::BodyPart>, at: Vec2) -> Self {
+    pub fn one(params: crate::target::TargetParams, body_parts: Vec<crate::target::BodyPart>, at: Vec2) -> Self {
         Self { foes: vec![FoeSpec { id: "e1".into(), params, body_parts, at }], aimed: 0 }
     }
 
@@ -161,8 +161,8 @@ impl Formation {
     }
 
     pub fn grid(
-        params: crate::fight::TargetParams,
-        body_parts: Vec<crate::fight::BodyPart>,
+        params: crate::target::TargetParams,
+        body_parts: Vec<crate::target::BodyPart>,
         cols: usize,
         rows: usize,
         spacing: f64,
@@ -192,10 +192,10 @@ impl Formation {
 mod tests {
     use super::*;
 
-    fn spec() -> (crate::fight::TargetParams, Vec<crate::fight::BodyPart>) {
+    fn spec() -> (crate::target::TargetParams, Vec<crate::target::BodyPart>) {
         (
-            crate::fight::TargetParams::training_dummy(),
-            crate::fight::FightParams::humanoid_parts(),
+            crate::target::TargetParams::training_dummy(),
+            crate::target::BodyPart::humanoid(),
         )
     }
 

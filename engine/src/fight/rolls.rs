@@ -147,7 +147,7 @@ pub(super) fn reload_draw(capacity: f64, current: f64) -> f64 {
 /// efficiency at all, which is why `applies` short-circuits to zero.
 /// Death Knell's ammo half: the efficiency it grants while ANY stack is up.
 pub(super) fn weakpoint_ammo(
-    spec: Option<crate::weapons_data::WeakpointStacksSpec>,
+    spec: Option<crate::model::WeakpointStacksSpec>,
     pile: &mut LiveStacks,
     t: f64,
 ) -> f64 {

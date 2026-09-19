@@ -86,8 +86,8 @@ pub(super) fn sample_stacks(
             // fight is the only thing that knows how many are up.
             "tendrils" => (cap(tendrils), never),
             // Both halves of Pyrana Prime's passive live on the bar.
-            id @ (crate::weapons_data::KillStreakSummonSpec::BUFF_ID
-            | crate::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID) => bar
+            id @ (crate::model::KillStreakSummonSpec::BUFF_ID
+            | crate::model::KillStreakSummonSpec::STREAK_BUFF_ID) => bar
                 .get(id)
                 .map_or((0, unknown), |x| (cap(x.stacks), x.expiry_seconds.unwrap_or(never))),
             // ...and the same for the combo, which is why the frame series is

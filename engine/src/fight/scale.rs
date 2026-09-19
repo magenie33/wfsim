@@ -102,12 +102,12 @@ pub(super) fn gunco_bucket(
     // lives on `ap`; an explosion carries its own, because an evolution can
     // raise what the explosion deals without raising what CO reads — and the
     // pair is what keeps one stage's absolute off another stage's denominator.
-    co_base: crate::loadout::CoBase,
+    co_base: crate::model::CoBase,
     // WHICH PART IS BEING RESOLVED. Checked against the tag the base carries,
     // so a new stage cannot inherit another's denominator by being written next
     // to it: the assertion fires until the author either builds that stage its
     // own pair or says `borrowed_for` and means it.
-    stage: crate::loadout::CoStage,
+    stage: crate::model::CoStage,
 ) -> Gunco {
     debug_assert_eq!(
         co_base.stage(),
@@ -150,16 +150,16 @@ pub(super) fn gunco_bucket(
     match ap.co_behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
-        crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
+        crate::model::CoBehavior::AdditiveWithBaseDamage => {
             let numerator = 1.0 + base_damage + arcane_base_damage + gunco_total + half_hp;
             terms(numerator / (1.0 + base_damage), numerator)
         }
-        crate::loadout::CoBehavior::Independent => {
+        crate::model::CoBehavior::Independent => {
             let numerator = 1.0 + gunco_total + half_hp;
             terms(arc_ratio * numerator, numerator)
         }
         // No CO bracket to join, so the ordinary one: the base-damage bucket.
-        crate::loadout::CoBehavior::Inert => terms(
+        crate::model::CoBehavior::Inert => terms(
             arc_ratio * (1.0 + base_damage + half_hp) / (1.0 + base_damage),
             0.0,
         ),

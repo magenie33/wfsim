@@ -17,13 +17,13 @@ use super::*;
 fn a_flat_base_damage_buff_keeps_its_worth_when_a_damage_mod_goes_in() {
     let arena = crate::arena::Arena::training(120.0);
     let dmg = |evo: &[&str], mods: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
+        let base = crate::model::WeaponBase::from_data("paris_prime", true, evo);
         let pool = crate::mods_data::pool_for_weapon("paris_prime");
-        let multishot: Vec<&crate::loadout::ModDef> = mods
+        let multishot: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
             .collect();
-        let panel = crate::loadout::resolve(&base, &multishot, crate::loadout::StackPolicy::Emergent);
+        let panel = crate::loadout::resolve(&base, &multishot, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let s = monte_carlo(&p, 8, 0x5017);
         s.mean_damage / s.mean_pellets.max(1e-9)
@@ -59,13 +59,13 @@ fn blazing_barrel_lands_in_the_bracket_its_card_names() {
     // are cleared by the reload, so a 2-round shotgun would spend the run
     // climbing.
     let pellets = |evo: &[&str], mods: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("strun_prime", true, evo);
+        let base = crate::model::WeaponBase::from_data("strun_prime", true, evo);
         let pool = crate::mods_data::pool_for_weapon("strun_prime");
-        let multishot: Vec<&crate::loadout::ModDef> = mods
+        let multishot: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
             .collect();
-        let panel = crate::loadout::resolve(&base, &multishot, crate::loadout::StackPolicy::Emergent);
+        let panel = crate::loadout::resolve(&base, &multishot, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let s = monte_carlo(&p, 12, 0xB1A2);
         s.mean_pellets / s.mean_shots
@@ -106,27 +106,27 @@ fn blazing_barrel_lands_in_the_bracket_its_card_names() {
 /// declared, not emergent.
 #[test]
 fn blazing_barrel_is_cleared_by_a_reload_and_not_by_a_refill() {
-    let base = crate::loadout::WeaponBase::from_data("strun_prime", true, &["strun_prime_blazing_barrel"]);
+    let base = crate::model::WeaponBase::from_data("strun_prime", true, &["strun_prime_blazing_barrel"]);
     let b = base
         .stacking_buffs
         .iter()
         .find(|b| b.id == "on_firing_multishot")
         .expect("the perk pushes its buff");
-    assert_eq!(b.cleared_by, crate::loadout::ClearedBy::Reload);
-    assert_eq!(b.trigger, crate::loadout::BuffTrigger::Firing);
-    assert_eq!(b.grant, crate::loadout::BuffGrant::BaseMultishot);
+    assert_eq!(b.cleared_by, crate::model::ClearedBy::Reload);
+    assert_eq!(b.trigger, crate::model::BuffTrigger::Firing);
+    assert_eq!(b.grant, crate::model::BuffGrant::BaseMultishot);
     // No clock: the card states none and the reset is what ends it.
     assert!(b.duration.is_infinite(), "no timer — the reload is the end");
     assert_eq!(b.max_stacks, 5);
 
     // …and the Sybaris's same-named perk is the OTHER bracket.
-    let syb = crate::loadout::WeaponBase::from_data("sybaris_prime", true, &["sybaris_prime_blazing_barrel"]);
+    let syb = crate::model::WeaponBase::from_data("sybaris_prime", true, &["sybaris_prime_blazing_barrel"]);
     let s = syb
         .stacking_buffs
         .iter()
         .find(|b| b.id == "on_firing_multishot")
         .expect("the Sybaris carries it too");
-    assert_eq!(s.grant, crate::loadout::BuffGrant::MultishotPercent);
+    assert_eq!(s.grant, crate::model::BuffGrant::MultishotPercent);
     assert_eq!(s.max_stacks, 10);
 }
 
@@ -146,8 +146,8 @@ fn blazing_barrel_is_cleared_by_a_reload_and_not_by_a_refill() {
 fn the_latrons_puncture_perks_read_the_status_they_name() {
     let arena = crate::arena::Arena::training(30.0);
     let run = |evo: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("latron_prime", true, evo);
-        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("latron_prime", true, evo);
+        let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         // ARMOUR, and a target that survives long enough to carry five
         // Puncture stacks. The training dummy has none of either.
@@ -181,8 +181,8 @@ fn the_latrons_puncture_perks_read_the_status_they_name() {
     // …and it is the ARMOUR it removed, not damage it added: against a
     // target with none, the perk is worth nothing at all.
     let bare = |evo: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("latron_prime", true, evo);
-        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("latron_prime", true, evo);
+        let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         p.target.base_armor = 0.0;
         p.target.base_health = 2_000_000.0;
@@ -283,14 +283,14 @@ fn half_of_a_weapons_bounces_find_a_head() {
 /// says the gate is on the right half.
 #[test]
 fn swift_punishment_wants_1_1_however_the_card_reads() {
-    let base = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data(
         "latron_prime", true, &["latron_prime_swift_punishment"],
     );
-    let bare = crate::loadout::WeaponBase::from_data("latron_prime", true, &[]);
+    let bare = crate::model::WeaponBase::from_data("latron_prime", true, &[]);
     let at = |sprint: f64| {
         let mut t = crate::tenno_data::default_tenno().clone();
         t.sprint = sprint;
-        crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, &t)
+        crate::loadout::resolve_for(&base, &[], crate::model::StackPolicy::Emergent, &t)
     };
     assert_eq!(at(0.9).co_per_type, 0.0, "0.9 reaches neither reading");
     assert_eq!(at(1.05).co_per_type, 0.0, "just under the real threshold");
@@ -299,7 +299,7 @@ fn swift_punishment_wants_1_1_however_the_card_reads() {
     assert!((at(1.1).co_per_type - 0.30).abs() < 1e-9, "the threshold itself");
     assert!((at(1.2).co_per_type - 0.30).abs() < 1e-9, "and above it");
     // …and the flat half is the perk's either way.
-    let plain = crate::loadout::resolve(&bare, &[], crate::loadout::StackPolicy::Emergent);
+    let plain = crate::loadout::resolve(&bare, &[], crate::model::StackPolicy::Emergent);
     assert!(at(0.9).modified_base > plain.modified_base, "the +6 pays regardless");
     assert!((at(0.9).modified_base - at(1.2).modified_base).abs() < 1e-9);
 }
@@ -322,7 +322,7 @@ fn swift_punishment_wants_1_1_however_the_card_reads() {
 /// "the sprint bonus opened the gate" from "any mod did".
 #[test]
 fn amalgam_serration_opens_the_sprint_gate_for_the_slowest_frame() {
-    let base = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data(
         "latron_prime", true, &["latron_prime_swift_punishment"],
     );
     let pool = crate::mods_data::class_pool("rifle");
@@ -334,12 +334,12 @@ fn amalgam_serration_opens_the_sprint_gate_for_the_slowest_frame() {
     // rather than on the mod's name.
     assert!(
         amalgam.effects.iter().any(|e| matches!(
-            e, crate::loadout::ModEffect::Indirect(crate::loadout::IndirectStat::SprintSpeed, _))),
+            e, crate::model::ModEffect::Indirect(crate::model::IndirectStat::SprintSpeed, _))),
         "{:?}", amalgam.effects);
-    let with = |m: &crate::loadout::ModDef| {
+    let with = |m: &crate::model::ModDef| {
         let t = crate::tenno_data::default_tenno().clone();   // sprint 0.9
         assert_eq!(t.sprint, 0.9, "the neutral wielder is the slowest frame");
-        crate::loadout::resolve_for(&base, &[m], crate::loadout::StackPolicy::Emergent, &t)
+        crate::loadout::resolve_for(&base, &[m], crate::model::StackPolicy::Emergent, &t)
     };
     assert!((with(amalgam).co_per_type - 0.30).abs() < 1e-9,
         "0.9 x 1.25 = 1.125 clears 1.1: {}", with(amalgam).co_per_type);
@@ -390,7 +390,7 @@ fn an_empty_magazine_arms_ready_retaliation_before_any_reload() {
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
                 base_form: Box::new(base_form),
-                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::DirectHits, charges_to_fill: 2 },
+                arms: Arms::Gauge { charge_on: crate::model::ChargeOn::DirectHits, charges_to_fill: 2 },
                 ends: Ends::ChargeMagazine,
                 // LONG animations, so the difference between running them at
                 // one speed and at double shows up in whole transforms
@@ -458,7 +458,7 @@ fn a_battery_refills_between_shots_and_a_slow_enough_one_never_reloads() {
         reload_seconds: 1.25, // = 1.0 s delay + 7/28 s refill
         duration_seconds: 60.0,
         body_parts: mono_body(1.0),
-        battery: Some(crate::weapons_data::Battery {
+        battery: Some(crate::model::Battery {
             regen_per_second: 28.0,
             delay_empty_seconds: 1.0,
             delay_partial_seconds: 0.4,
@@ -521,7 +521,7 @@ fn a_spool_that_climbs_costs_the_first_shots_of_every_magazine() {
     assert_eq!(run_once(&gorgon, &mut Rng::new(1)).shots, 125, "the listed rate, flat");
 
     let spooled = FightParams {
-        sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
+        sustained_fire_rate: Some(crate::model::SustainedFireRate {
             start: 0.20,
             end: 1.00,
             over_shots: 7.5,
@@ -548,7 +548,7 @@ fn a_spool_that_climbs_costs_the_first_shots_of_every_magazine() {
 fn a_fire_rate_bonus_scales_the_spooled_rate_too() {
     let spooled = FightParams {
         fire_rate: 13.33,
-        sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
+        sustained_fire_rate: Some(crate::model::SustainedFireRate {
             start: 1.00,
             end: 0.60,
             over_shots: 51.0,
@@ -577,7 +577,7 @@ fn a_charge_weapon_paces_on_the_draw_not_the_fire_rate() {
     let bow = FightParams {
         fire_rate: 1.0,
         charge_seconds: Some(0.5),
-        charge_cadence: crate::weapons_data::ChargeCadence::DrawOnly,
+        charge_cadence: crate::model::ChargeCadence::DrawOnly,
         magazine_size: 1.0,
         reload_seconds: 0.65,
         duration_seconds: 10.0,
@@ -635,9 +635,9 @@ fn faction_mult_scales_direct_damage_linearly() {
 
 #[test]
 fn faction_bonus_applies_only_vs_matching_target_faction() {
-    use crate::loadout::{
-        resolve, Faction, ModDef, ModEffect, Rarity, StackPolicy, WeaponBase,
-    };
+    use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::{Faction, ModDef, ModEffect, Rarity, StackPolicy};
     use crate::mods::Polarity;
     let expel = ModDef {
         stance: None,
@@ -916,7 +916,7 @@ fn plentiful_mayhem_pays_only_the_multishot_generated_projectiles() {
 fn plentiful_mayhem_follows_the_generated_grenade_into_its_cloud() {
     let p = |bonus: f64| FightParams {
         damage: DamageVector::default(), // inert impact: the fields alone
-        lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
+        lingering: Some(cloud(crate::model::FieldStacking::Stack)),
         multishot: 2.0,
         multishot_ammo_bonus: bonus,
         crit_multiplier: 1.0,
@@ -1070,7 +1070,7 @@ fn a_locked_stat_ignores_the_live_sources_too() {
     tenno.state.energy_pct = 1.0;
     let over = crate::arcanes_data::for_slot("primary", "primary_overcharge")
         .expect("primary_overcharge");
-    let fx = over.fx(5, crate::loadout::StackPolicy::Emergent, &[], &tenno);
+    let fx = over.fx(5, crate::model::StackPolicy::Emergent, &[], &tenno);
     assert!(!fx.buffs.is_empty(), "a 1,000-energy frame arms it");
     let multishot = |locked: bool| {
         let p = FightParams {
@@ -1315,10 +1315,10 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
         forced_procs: vec![DamageType::Impact],
         lingering: Some(crate::loadout::ResolvedLingering {
             takes_condition_overload: takes,
-            ..cloud(crate::loadout::FieldStacking::Stack)
+            ..cloud(crate::model::FieldStacking::Stack)
         }),
         co_per_type: 1.0,
-        co_behavior: crate::loadout::CoBehavior::Independent,
+        co_behavior: crate::model::CoBehavior::Independent,
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),
@@ -1357,7 +1357,7 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
 #[test]
 fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
     let radial = |takes: bool| crate::loadout::ResolvedRadial {
-        blast_kind: crate::weapons_data::BlastKind::Contact,
+        blast_kind: crate::model::BlastKind::Contact,
         damage: {
             let mut d = DamageVector::default();
             d.set(DamageType::Radiation, 100.0);
@@ -1376,7 +1376,7 @@ fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
         forced_procs: Default::default(),
         takes_condition_overload: takes,
         takes_multishot: true,
-        co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial),
+        co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
     };
     // Zero-damage direct hit that still forces an Impact proc, so the only
     // damage reported is the explosion's and the target carries one status
@@ -1386,7 +1386,7 @@ fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
         forced_procs: vec![DamageType::Impact],
         radial: Some(radial(takes)),
         co_per_type: 1.0,
-        co_behavior: crate::loadout::CoBehavior::Independent,
+        co_behavior: crate::model::CoBehavior::Independent,
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),

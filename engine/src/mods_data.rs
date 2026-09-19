@@ -21,7 +21,7 @@ use serde::Deserialize;
 use serde_norway::Value;
 
 use crate::damage::DamageType;
-use crate::loadout::{CondBucket, Faction, IndirectStat, ModDef, ModEffect, Rarity};
+use crate::model::{CondBucket, Faction, IndirectStat, ModDef, ModEffect, Rarity};
 use crate::mods::Polarity;
 
 #[derive(Debug, Deserialize)]
@@ -69,9 +69,9 @@ struct ModFile {
     #[serde(default)]
     disables: Vec<String>,
     /// A STANCE'S COMBO SCRIPTS, one per form it supplies — see
-    /// [`crate::loadout::ModDef::stance`]. Absent on every other mod.
+    /// [`crate::model::ModDef::stance`]. Absent on every other mod.
     #[serde(default)]
-    combos: Option<std::collections::BTreeMap<String, Vec<crate::weapons_data::ComboHit>>>,
+    combos: Option<std::collections::BTreeMap<String, Vec<crate::model::ComboHit>>>,
     effects: Vec<Value>,
 }
 
@@ -177,20 +177,20 @@ fn indirect_grant(grants: &str) -> Option<IndirectStat> {
 ///
 /// An unrecognised string gates nothing, which the mod-condition test catches
 /// as "the card states a condition, the model has none".
-fn tenno_condition(cond: Option<&str>) -> Option<crate::loadout::TennoCondition> {
+fn tenno_condition(cond: Option<&str>) -> Option<crate::model::TennoCondition> {
     match cond? {
-        "while_aiming" => Some(crate::loadout::TennoCondition::Aiming),
-        "while_invisible" => Some(crate::loadout::TennoCondition::Invisible),
-        "while_airborne" => Some(crate::loadout::TennoCondition::Airborne),
+        "while_aiming" => Some(crate::model::TennoCondition::Aiming),
+        "while_invisible" => Some(crate::model::TennoCondition::Invisible),
+        "while_airborne" => Some(crate::model::TennoCondition::Airborne),
         _ => None,
     }
 }
 
 /// A buff's `trigger:` naming an EVENT the sim already fires. One line per
 /// trigger, and adding one here is the whole cost of a mod that stacks on it —
-/// see [`crate::loadout::ModEffect::GrantsStackingBuff`].
-fn buff_trigger(name: &str) -> Option<crate::loadout::BuffTrigger> {
-    use crate::loadout::BuffTrigger as T;
+/// see [`crate::model::ModEffect::GrantsStackingBuff`].
+fn buff_trigger(name: &str) -> Option<crate::model::BuffTrigger> {
+    use crate::model::BuffTrigger as T;
     Some(match name {
         "on_hit" => T::Hit,
         "on_plain_hit" => T::PlainHit,
@@ -207,9 +207,9 @@ fn buff_trigger(name: &str) -> Option<crate::loadout::BuffTrigger> {
 }
 
 /// A buff's `grants:` naming a BRACKET. The multishot spellings are three
-/// because the brackets are three — see [`crate::loadout::BuffGrant`].
-fn buff_grant(name: &str) -> Option<crate::loadout::BuffGrant> {
-    use crate::loadout::BuffGrant as G;
+/// because the brackets are three — see [`crate::model::BuffGrant`].
+fn buff_grant(name: &str) -> Option<crate::model::BuffGrant> {
+    use crate::model::BuffGrant as G;
     Some(match name {
         "multishot" => G::MultishotPercent,
         "flat_multishot" => G::Multishot,
@@ -228,8 +228,8 @@ fn buff_grant(name: &str) -> Option<crate::loadout::BuffGrant> {
     })
 }
 
-fn buff_decay(name: Option<&str>) -> crate::loadout::BuffDecay {
-    use crate::loadout::BuffDecay as D;
+fn buff_decay(name: Option<&str>) -> crate::model::BuffDecay {
+    use crate::model::BuffDecay as D;
     match name {
         Some("all_at_once") => D::AllAtOnce,
         Some("per_stack_expiry") => D::PerStackExpiry,
@@ -266,16 +266,16 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // rule that quietly does not apply.
         "tenno_scaled" => {
             let stat = match v.get("stat").and_then(Value::as_str)? {
-                "armor" => crate::arcanes_data::TennoStat::Armor,
-                "max_energy" => crate::arcanes_data::TennoStat::MaxEnergy,
-                "health" => crate::arcanes_data::TennoStat::Health,
+                "armor" => crate::model::TennoStat::Armor,
+                "max_energy" => crate::model::TennoStat::MaxEnergy,
+                "health" => crate::model::TennoStat::Health,
                 _ => return None,
             };
             let grant = match v.get("grants").and_then(Value::as_str)? {
-                "base_damage" => crate::arcanes_data::ArcGrant::BaseDamage,
-                "status_chance" => crate::arcanes_data::ArcGrant::StatusChance,
-                "multishot" => crate::arcanes_data::ArcGrant::Multishot,
-                "crit_damage" => crate::arcanes_data::ArcGrant::CritDamage,
+                "base_damage" => crate::model::ArcGrant::BaseDamage,
+                "status_chance" => crate::model::ArcGrant::StatusChance,
+                "multishot" => crate::model::ArcGrant::Multishot,
+                "crit_damage" => crate::model::ArcGrant::CritDamage,
                 _ => return None,
             };
             ModEffect::TennoScaled {
@@ -344,7 +344,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         "condition_overload" => ModEffect::ConditionOverload {
             per_stack: max("rankMax"),
             max_stacks: 1,
-            duration: crate::loadout::NO_TIMEOUT,
+            duration: crate::model::NO_TIMEOUT,
             // NOTHING TO EARN, so it opens full and no switch can deny it.
             // Routing it through the Galvanized family's earned-on-a-kill path
             // made it pay zero in all seven melee modes.
@@ -389,7 +389,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // ceiling DE published and one we computed from it: a stack count would
         // have to be re-derived at every rank, and at rank 0 it is 2,500 rather
         // than the 417 the card's own rate suggests.
-        "crit_chance_per_hit" => ModEffect::CritChancePerHit(crate::loadout::CritPerHit {
+        "crit_chance_per_hit" => ModEffect::CritChancePerHit(crate::model::CritPerHit {
             per_stack: max("rankMax"),
             max_bonus: f(v, "max_bonus").unwrap_or(0.0),
         }),
@@ -411,7 +411,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // The buff's ID is the MOD's, leaked once. It is the key the card, the
         // replay curve, the stack config and the sampler all share, so deriving
         // it is what stops those four from drifting.
-        "stacking_buff" => ModEffect::GrantsStackingBuff(crate::loadout::StackingBuff {
+        "stacking_buff" => ModEffect::GrantsStackingBuff(crate::model::StackingBuff {
             id: Box::leak(id.to_string().into_boxed_str()),
             trigger: buff_trigger(v.get("trigger").and_then(Value::as_str)?)?,
             grant: buff_grant(v.get("grants").and_then(Value::as_str)?)?,
@@ -423,7 +423,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             initial_stacks: 0,
             stacks_per_trigger: 1,
             per_shell: false,
-            cleared_by: crate::loadout::ClearedBy::Nothing,
+            cleared_by: crate::model::ClearedBy::Nothing,
             // Read here as well, so a MOD that states it needs no second edit
             // — no mod does today; the two that claim it are evolutions.
             card_opens_full: v
@@ -448,10 +448,10 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // same way so the builder offers them and states why.
         "ability_stat" => ModEffect::AbilityStat(
             match v.get("stat").and_then(Value::as_str)? {
-                "strength" => crate::loadout::AbilityStat::Strength,
-                "duration" => crate::loadout::AbilityStat::Duration,
-                "efficiency" => crate::loadout::AbilityStat::Efficiency,
-                "energy_regen" => crate::loadout::AbilityStat::EnergyRegen,
+                "strength" => crate::model::AbilityStat::Strength,
+                "duration" => crate::model::AbilityStat::Duration,
+                "efficiency" => crate::model::AbilityStat::Efficiency,
+                "energy_regen" => crate::model::AbilityStat::EnergyRegen,
                 _ => return None,
             },
             max("rankMax"),
@@ -652,7 +652,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             for (k, val) in v.get("damage")?.as_mapping()? {
                 vector.add(crate::weapons_data::damage_type(k.as_str()?), val.as_f64()?);
             }
-            let field = Box::leak(Box::new(crate::loadout::LingeringBase {
+            let field = Box::leak(Box::new(crate::model::LingeringBase {
                 base_vector: vector,
                 base_crit_chance: n(v, "crit_chance").unwrap_or(0.0),
                 base_crit_damage: n(v, "crit_multiplier").unwrap_or(1.0),
@@ -671,8 +671,8 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 falloff_start_m: n(v, "falloff_start_m").unwrap_or(0.0),
                 falloff_reduction: n(v, "falloff_reduction").unwrap_or(0.0),
                 stacking: match v.get("stacking").and_then(Value::as_str) {
-                    Some("refresh") => crate::loadout::FieldStacking::Refresh,
-                    _ => crate::loadout::FieldStacking::Stack,
+                    Some("refresh") => crate::model::FieldStacking::Refresh,
+                    _ => crate::model::FieldStacking::Stack,
                 },
                 takes_condition_overload: v
                     .get("takes_condition_overload")
@@ -697,13 +697,13 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // ACID SHELLS: the corpse explosion. Three numbers off one ladder,
         // read together because none of them means anything alone.
         "acid_shells_flat_damage" => {
-            ModEffect::AcidShells(crate::loadout::AcidShellsPart::FlatDamage(max("rankMax")))
+            ModEffect::AcidShells(crate::model::AcidShellsPart::FlatDamage(max("rankMax")))
         }
         "acid_shells_health_fraction" => {
-            ModEffect::AcidShells(crate::loadout::AcidShellsPart::HealthFraction(max("rankMax")))
+            ModEffect::AcidShells(crate::model::AcidShellsPart::HealthFraction(max("rankMax")))
         }
         "acid_shells_radius_m" => {
-            ModEffect::AcidShells(crate::loadout::AcidShellsPart::RadiusM(max("rankMax")))
+            ModEffect::AcidShells(crate::model::AcidShellsPart::RadiusM(max("rankMax")))
         }
         // HARKONAR SCOPE: seconds onto the sniper combo's decay window.
         "combo_duration_bonus" => ModEffect::ComboDuration(n(v, "duration_seconds")?),
@@ -814,15 +814,15 @@ fn to_moddef_at(mut mf: ModFile, rank: Option<u32>) -> ModDef {
     // A STANCE'S COMBO SCRIPTS, keyed by form. Leaked because a `ModDef` is
     // `'static` for the life of the process, the same way every other string on
     // it is — the pool is built once at load.
-    let stance: Option<crate::loadout::StanceCombos> = mf.combos.as_ref().map(|m| {
-            let v: Vec<(&'static str, &'static [crate::weapons_data::ComboHit])> = m
+    let stance: Option<crate::model::StanceCombos> = mf.combos.as_ref().map(|m| {
+            let v: Vec<(&'static str, &'static [crate::model::ComboHit])> = m
                 .iter()
                 .map(|(form, hits)| {
                     // A FORM NAME THE ENGINE DOES NOT KNOW IS A LOUD FAILURE:
                     // a stance whose combo lands under a misspelt key would
                     // read as a stance that simply has no such combo.
-                    let form: &'static str = crate::weapons_data::FormKind::parse(form).id();
-                    let hits: &'static [crate::weapons_data::ComboHit] =
+                    let form: &'static str = crate::model::FormKind::parse(form).id();
+                    let hits: &'static [crate::model::ComboHit] =
                         Box::leak(hits.clone().into_boxed_slice());
                     (form, hits)
                 })
@@ -1128,7 +1128,7 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
     let only_ammo_max = |m: &ModDef| {
         !m.effects.is_empty()
             && m.effects.iter().all(|e| {
-                matches!(e, ModEffect::Indirect(crate::loadout::IndirectStat::AmmoMax, _))
+                matches!(e, ModEffect::Indirect(crate::model::IndirectStat::AmmoMax, _))
             })
     };
     // THE POOL IS THE WEAPON'S, whatever entry was named — `weapon_of`. A form
@@ -1208,7 +1208,7 @@ impl ModDescInfo {
         let r = rank.min(self.max_rank) as f64;
         let m = self.max_rank.max(1) as f64;
         let vals: Vec<f64> = self.xvals.iter().map(|(a, b)| a + (b - a) * r / m).collect();
-        crate::loadout::fill_x(&self.description, &vals)
+        crate::model::fill_x(&self.description, &vals)
     }
 }
 
@@ -1334,12 +1334,12 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
             // about the effect its LINE names, and only falls back to position
             // when the line names nothing.
             let lines: Vec<String> = desc.lines().map(str::to_lowercase).collect();
-            let x_line = crate::loadout::x_lines(&desc);
+            let x_line = crate::model::x_lines(&desc);
             let mut xvals: Vec<(f64, f64)> = Vec::new();
             let mut ei: Option<usize> = None; // the effect the sentence is on
             let mut used: Vec<usize> = Vec::new();
-            for (xi, kind) in crate::loadout::x_kinds(&desc).into_iter().enumerate() {
-                use crate::loadout::XKind;
+            for (xi, kind) in crate::model::x_kinds(&desc).into_iter().enumerate() {
+                use crate::model::XKind;
                 // Seek forward to an effect that can answer this placeholder;
                 // a `Value` always moves on, the others stay put once the
                 // sentence has an effect to describe.
@@ -1408,7 +1408,7 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
 
 #[cfg(test)]
 mod tome_tests {
-    use crate::loadout::{AbilityStat, ModEffect};
+    use crate::model::{AbilityStat, ModEffect};
 
     fn effects(id: &str) -> Vec<ModEffect> {
         crate::mods_data::pool_for_build("grimoire_active", &[])
@@ -1452,8 +1452,8 @@ mod tome_tests {
         let lohk = effects("lohk_canticle");
         assert!(
             lohk.iter().any(|e| matches!(e, ModEffect::GrantsStackingBuff(b)
-                if b.grant == crate::loadout::BuffGrant::FireRate
-                    && b.trigger == crate::loadout::BuffTrigger::Kill
+                if b.grant == crate::model::BuffGrant::FireRate
+                    && b.trigger == crate::model::BuffTrigger::Kill
                     && (b.per_stack - 0.3).abs() < 1e-9
                     && (b.duration - 15.0).abs() < 1e-9)),
             "Lohk: +30% fire rate on kill for 15 s, got {lohk:?}"
@@ -1648,7 +1648,9 @@ mod tests {
     /// on a build carrying a negative, not less.
     #[test]
     fn a_cannonade_locks_fire_rate_both_ways() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         let base = WeaponBase::from_data("torid", false, &[]);
         let pool = pool_for_weapon("torid");
         let pick = |id: &str| {
@@ -1838,7 +1840,9 @@ mod tests {
     /// can wear one, is covered without a line here.
     #[test]
     fn a_locking_mod_pins_its_stat_in_every_form_that_can_wear_it() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         let read = |p: &crate::loadout::ResolvedPanel, key: &str| match key {
             "fire_rate" => p.fire_rate,
             "multishot" => p.multishot,
@@ -2110,12 +2114,12 @@ mod tests {
         // asserting the bare variant would pass on a build where the gate had
         // been silently dropped, which is the bug this wrapper exists to stop.
         assert!(by("galvanized_crosshairs").effects.iter().any(|e| matches!(e,
-            ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)
+            ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, inner)
                 if matches!(**inner, ModEffect::OnHeadshotKillCritChance { max_stacks: 5, .. }))));
-        assert!(by("galvanized_crosshairs").effects.iter().all(|e| matches!(e, ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, _))),
+        assert!(by("galvanized_crosshairs").effects.iter().all(|e| matches!(e, ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, _))),
             "every Galvanized Crosshairs effect is while-aiming");
         // ... and a mod with no condition is NOT wrapped.
-        assert!(by("galvanized_diffusion").effects.iter().all(|e| !matches!(e, ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, _))));
+        assert!(by("galvanized_diffusion").effects.iter().all(|e| !matches!(e, ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, _))));
         // Faction-damage mod loads with the right faction + bonus (Expel Orokin
         // → Corrupted; +30% at max rank).
         assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
@@ -2128,11 +2132,11 @@ mod tests {
                 if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_multiplier - 2.0).abs() < 1e-9)));
         // Both of these are while-aiming too, so they arrive wrapped.
         assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e,
-            ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)
+            ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, inner)
                 if matches!(**inner, ModEffect::OnKillCritDamage { bonus, duration }
                     if (bonus - 0.75).abs() < 1e-9 && (duration - 9.0).abs() < 1e-9))));
         assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e,
-            ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)
+            ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, inner)
                 if matches!(**inner, ModEffect::OnReloadFireRate { bonus, .. }
                     if (bonus - 0.90).abs() < 1e-9))));
     }
@@ -2201,7 +2205,7 @@ Refresh Double Jump up to 6x while Airborne."
                 for r in 0..=info.max_rank {
                     let d = info.at(r);
                     assert_eq!(
-                        crate::loadout::count_x(&d),
+                        crate::model::count_x(&d),
                         0,
                         "{} rank {r}: unfilled X in {d:?}",
                         m.id
@@ -2650,7 +2654,7 @@ mod weapon_exclusive_survey {
             .effects
             .iter()
             .filter_map(|e| match *e {
-                crate::loadout::ModEffect::Multishot(v) => Some(v),
+                crate::model::ModEffect::Multishot(v) => Some(v),
                 _ => None,
             })
             .sum();
@@ -2678,12 +2682,12 @@ mod weapon_exclusive_survey {
             .iter()
             .find(|m| m.id == "dreadful_killshot")
             .expect("the Basmu can equip its own augment");
-        let terms: Vec<crate::loadout::TennoScaledTerm> = def
+        let terms: Vec<crate::model::TennoScaledTerm> = def
             .effects
             .iter()
             .filter_map(|e| match *e {
-                crate::loadout::ModEffect::TennoScaled { stat, above, unit, per_unit, cap, grant } => {
-                    Some(crate::loadout::TennoScaledTerm { stat, above, unit, per_unit, cap, grant })
+                crate::model::ModEffect::TennoScaled { stat, above, unit, per_unit, cap, grant } => {
+                    Some(crate::model::TennoScaledTerm { stat, above, unit, per_unit, cap, grant })
                 }
                 _ => None,
             })
@@ -2692,8 +2696,8 @@ mod weapon_exclusive_survey {
         // bonuses are additive", so they are separate grants with identical
         // parameters rather than one effect granting a pair.
         assert_eq!(terms.len(), 2, "{:?}", def.effects);
-        assert!(terms.iter().any(|t| t.grant == crate::arcanes_data::ArcGrant::BaseDamage));
-        assert!(terms.iter().any(|t| t.grant == crate::arcanes_data::ArcGrant::StatusChance));
+        assert!(terms.iter().any(|t| t.grant == crate::model::ArcGrant::BaseDamage));
+        assert!(terms.iter().any(|t| t.grant == crate::model::ArcGrant::StatusChance));
 
         let at = |health: f64| {
             let mut t = crate::tenno_data::default_tenno().clone();
@@ -2836,7 +2840,9 @@ mod synth_charge_tests {
     /// times.
     #[test]
     fn synth_charge_is_the_last_round_only_and_only_where_it_can_be() {
-        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::{ModEffect, StackPolicy};
         let pool = crate::mods_data::class_pool("pistol");
         let sc = pool.iter().find(|m| m.id == "synth_charge").expect("synth charge");
         assert!(
@@ -2882,7 +2888,9 @@ mod chamber_tests {
     /// that happening again.
     #[test]
     fn the_chambers_sum_into_one_first_round_bracket_and_are_not_a_family() {
-        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::{ModEffect, StackPolicy};
         let pool = crate::mods_data::class_pool("sniper");
         let pick = |id: &str| {
             pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}")).clone()
@@ -3098,7 +3106,10 @@ mod split_flights_tests {
     /// whole spec and `resolve` hands it to the panel beside the weapon's own.
     #[test]
     fn split_flights_reaches_the_panel_as_a_live_stacking_buff() {
-        use crate::loadout::{resolve, BuffDecay, BuffGrant, BuffTrigger, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::{BuffDecay, BuffGrant, BuffTrigger};
+use crate::model::StackPolicy;
         let pool = crate::mods_data::class_pool("bow");
         let sf = pool.iter().find(|m| m.id == "split_flights").expect("split flights");
 
@@ -3192,7 +3203,7 @@ mod stance_tests {
             ("gemini_cross", "block_forward", 2.30, 565.2),
         ];
         // Both classes in the roster, so a stance is found wherever it lives.
-        let pool: Vec<crate::loadout::ModDef> = crate::mods_data::pool_for_weapon("magistar")
+        let pool: Vec<crate::model::ModDef> = crate::mods_data::pool_for_weapon("magistar")
             .into_iter()
             .chain(crate::mods_data::pool_for_weapon("praedos"))
             .collect();

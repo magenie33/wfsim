@@ -12,8 +12,10 @@
 //! losing builds — which is the failure mode that has no other symptom.
 
 use wfsim_engine::arena::Arena;
-use wfsim_engine::fight::{BodyPart, BuffConfig, LockMode, TargetMode};
-use wfsim_engine::loadout::{ModDef, StackPolicy, WeaponBase};
+use wfsim_engine::fight::{BuffConfig, LockMode};
+use wfsim_engine::target::{BodyPart, TargetMode};
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::{ModDef, StackPolicy};
 use wfsim_optimizer::search::{search, SearchConfig, SearchStats};
 use wfsim_optimizer::space::SubsetSpace;
 use wfsim_optimizer::truth::{judge, Truth, Verdict};

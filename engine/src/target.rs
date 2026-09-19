@@ -1,4 +1,14 @@
-use super::*;
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! THE TARGET — who is being shot, as the fight sees them: pools scaled to a
+//! level, the faction and its vulnerability columns, the body parts a shot can
+//! land on, and how the fight treats a death.
+//!
+//! A catalog entry (`enemy_data`) becomes one of these; the fight, the arena
+//! and the formation all hold one. It is the input, never the fight's state —
+//! what a body has LEFT mid-fight is `fight::TargetState`.
+
+use crate::damage::{DamageType, DamageVector};
+use crate::scaling;
 
 /// The simulated target: base stats + level, scaled via [`scaling`].
 ///
@@ -33,7 +43,7 @@ pub struct TargetParams {
     /// THE SECOND HALF OF A THRAX'S DEATH, when the FIGHT asked for it —
     /// `enemy_data::SpectralForm`. `None` is a unit that dies once, which is
     /// every other enemy and every fight that leaves the box unticked.
-    pub spectral: Option<crate::enemy_data::SpectralForm>,
+    pub spectral: Option<crate::model::SpectralForm>,
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
     /// shift is a mission-spawn effect — pick `level` accordingly.
     pub steel_path: bool,
@@ -51,7 +61,7 @@ pub struct TargetParams {
     /// Combat faction — the match key for faction-damage mods (Bane/Expel).
     /// `Unknown` (the default for hand-made targets) means no faction mod
     /// applies. Set from the enemy YAML `combat_faction:` field.
-    pub faction: crate::loadout::Faction,
+    pub faction: crate::model::Faction,
     /// The post-U36 damage-type vulnerability columns (System B): this unit's
     /// own, keyed by `FactionDamageOverride ?? Faction`, plus the Overguard
     /// pool's. A per-COMPONENT multiplier, independent of `faction` above —
@@ -180,13 +190,13 @@ impl TypeShares {
     /// Does this instance have a shape at all? A shapeless one (nothing but
     /// zeros) is treated as one untyped, neutral lump rather than as damage
     /// that vanishes — the shares are bookkeeping, never a gate on damage.
-    pub(super) fn shaped(&self) -> bool {
+    pub(crate) fn shaped(&self) -> bool {
         self.0.iter().sum::<f64>() > 0.0
     }
 
     /// The whole instance's multiplier under a column. Each component takes
     /// its own factor, so with shares summing to 1 this is the weighted mean.
-    pub(super) fn whole(&self, col: &crate::factions_data::Column) -> f64 {
+    pub(crate) fn whole(&self, col: &crate::factions_data::Column) -> f64 {
         if !self.shaped() {
             return 1.0;
         }
@@ -198,7 +208,7 @@ impl TypeShares {
 
     /// The part that does NOT bypass shields, already column-scaled — a
     /// PORTION of the instance, not a multiplier on it.
-    pub(super) fn non_toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
+    pub(crate) fn non_toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
         if !self.shaped() {
             return 1.0;
         }
@@ -206,7 +216,7 @@ impl TypeShares {
     }
 
     /// The Toxin part, already column-scaled. Goes straight to health.
-    pub(super) fn toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
+    pub(crate) fn toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
         self.toxin() * col.get(DamageType::Toxin)
     }
 
@@ -214,7 +224,7 @@ impl TypeShares {
     /// half of a split instance reads as. Same contract as [`Self::dominant`]
     /// and, like it, display only. Falls back to the whole instance's dominant
     /// where there is no non-Toxin share to speak of.
-    pub(super) fn dominant_non_toxin(&self) -> DamageType {
+    pub(crate) fn dominant_non_toxin(&self) -> DamageType {
         let mut best: Option<usize> = None;
         for i in 0..self.0.len() {
             if DamageType::ALL[i] == DamageType::Toxin {
@@ -253,7 +263,7 @@ impl TargetParams {
             eximus: false,
             can_be_eximus: false,
             status_immunities: Vec::new(),
-            faction: crate::loadout::Faction::Unknown,
+            faction: crate::model::Faction::Unknown,
             // A training dummy has no faction and takes damage as written.
             type_mods: crate::factions_data::Columns::NEUTRAL,
             faction_bracket_multiplier: 1.0,
@@ -274,7 +284,7 @@ impl TargetParams {
 
     /// Effective base health: Eximus units replace theirs with the boosted
     /// level-dependent value before the faction curve applies.
-    pub(super) fn effective_base_health(&self) -> f64 {
+    pub(crate) fn effective_base_health(&self) -> f64 {
         if self.eximus {
             scaling::eximus_base_health(self.base_health, self.level, self.base_armor > 0.0)
         } else {
@@ -334,5 +344,247 @@ impl TargetParams {
             self.base_overguard
         };
         scaling::overguard_at(base, self.level)
+    }
+}
+
+/// What happens when the target's health reaches zero.
+///
+/// These are simulator conveniences for calibration (the real Simulacrum has
+/// neither an enemy-invincibility nor an instant-respawn toggle):
+/// - `InfiniteHealth`: pools never deplete — measure steady per-shot damage
+///   against a fixed defensive state.
+/// - `InstantRespawn`: the target dies and instantly respawns in place at full
+///   pools; overkill damage is lost. **Decision: no on-death
+///   transformation is modeled** (e.g. Thrax spectral forms are skipped — the
+///   respawned target is always the physical form).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TargetMode {
+    InfiniteHealth,
+    InstantRespawn,
+}
+
+/// Damage attenuation (wiki U40 STRUCTURE: the enemy caps the damage it
+/// can take per INSTANCE and per SECOND, both proportional to Max
+/// Health, measured per player). The exact constants are UNPUBLISHED —
+/// these fractions are recorded estimates pending in-game calibration
+/// (the data file marks them as such).
+#[derive(Debug, Clone, Copy)]
+pub struct Attenuation {
+    /// Max effective damage per damage instance / max health.
+    pub instance_fraction: f64,
+    /// Max effective damage per second / max health.
+    pub dps_fraction: f64,
+}
+
+/// Per-unit status stack caps (Acolytes: any status 4, Impact 3).
+#[derive(Debug, Clone, Copy)]
+pub struct StackCaps {
+    pub general: usize,
+    pub impact: usize,
+}
+
+/// One aimable location on the target (wiki `Enemy_Body_Parts`).
+#[derive(Debug, Clone)]
+pub struct BodyPart {
+    pub name: String,
+    /// Relative probability of a shot landing here (weights are normalized).
+    pub aim_weight: f64,
+    /// Location damage multiplier.
+    pub multiplier: f64,
+    /// True head: fires on-headshot effects (`Hit::headshot`). Other weak
+    /// spots never trigger headshot conditions.
+    pub is_head: bool,
+    /// Eligible for the critical-location bonus (the `2*cd` fold-in). False
+    /// for e.g. MOA fanny packs and helmeted Corpus heads; locations at 1x
+    /// never get the bonus regardless of this flag.
+    pub crit_bonus: bool,
+}
+
+/// WHICH POOL a portion of a damage instance landed in.
+///
+/// The game pops ONE NUMBER PER POOL, which is why this is carried rather than
+/// summed away: Toxin bypasses a shield while its siblings do not, so a single
+/// pellet on a shielded Corpus unit shows two numbers side by side. An engine
+/// that reports their sum cannot be checked against a recording.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum Pool {
+    Overguard,
+    Shield,
+    /// THE DEFAULT, because it is the pool every fight ends in and the only one
+    /// a target is guaranteed to have.
+    #[default]
+    Health,
+}
+
+impl Pool {
+    pub fn name(self) -> &'static str {
+        match self {
+            Pool::Overguard => "overguard",
+            Pool::Shield => "shield",
+            Pool::Health => "health",
+        }
+    }
+}
+
+impl BodyPart {
+    /// A generic humanoid: body 1x, head 3x (headshot-triggering, crit-bonus
+    /// eligible), aimed at 50/50.
+    pub fn humanoid() -> Vec<BodyPart> {
+        vec![
+            BodyPart {
+                name: "body".into(),
+                aim_weight: 0.5,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            },
+            BodyPart {
+                name: "head".into(),
+                aim_weight: 0.5,
+                multiplier: 3.0, // humanoid head (wiki: Enemy_Body_Parts)
+                is_head: true,
+                crit_bonus: true,
+            },
+        ]
+    }
+}
+
+/// A CATALOG ENTRY BECOMES A TARGET here, not in the catalog: the enemy file
+/// says what a unit is, and only the layer that holds `TargetParams` says what
+/// the fight makes of it.
+impl crate::enemy_data::EnemySpec {
+    /// Build the simulation target. Fails on combinations that do not exist
+    /// in-game (e.g. `eximus` for a unit with no Eximus variant).
+    pub fn target_params(
+        &self,
+        level: u32,
+        steel_path: bool,
+        eximus: bool,
+        mode: TargetMode,
+    ) -> Result<TargetParams, String> {
+        if eximus && !self.can_be_eximus {
+            return Err(format!(
+                "{} cannot be an Eximus: no such unit exists in-game \
+                 (wiki Eximus/Compatibilities)",
+                self.name
+            ));
+        }
+        // The damage table's fifteen columns are the whole system; a faction it
+        // does not name takes every type as written, so this cannot fail.
+        // A CUSTOM ENEMY MAY BRING ITS OWN COLUMN, and then it is the answer —
+        // see `damage_modifiers`. The Overguard pool keeps the table's own
+        // column either way: Overguard is a layer over the enemy rather than
+        // part of it, and a player inventing a target does not get to invent
+        // that.
+        let type_mods = if self.damage_modifiers.is_some() {
+            crate::factions_data::Columns {
+                faction: crate::factions_data::Column::from_multipliers(&self.inline_column()?),
+                overguard: crate::factions_data::overguard_column(),
+            }
+        } else {
+            crate::factions_data::columns_for(self.damage_column_key())
+        };
+        Ok(TargetParams {
+            name: self.name.clone(),
+            base_level: self.stats.base_level,
+            level,
+            base_health: self.stats.health,
+            base_armor: self.stats.armor,
+            base_overguard: self.stats.overguard,
+            base_affinity: self.stats.affinity,
+            base_shield: self.stats.shield,
+            health_curve: self.scaling_faction.health_curve(),
+            shield_curve: self.scaling_faction.shield_curve(),
+            attenuation: self.attenuation.map(|a| Attenuation {
+                instance_fraction: a.max_instance_fraction_of_health,
+                dps_fraction: a.max_dps_fraction_of_health,
+            }),
+            faction_bracket_multiplier: self.faction_bracket_multiplier,
+            stack_caps: self.status_stack_caps.map(|c| StackCaps {
+                general: c.general,
+                impact: c.impact,
+            }),
+            cannot_be_frozen: self.cannot_be_frozen,
+            // OFF UNLESS THE FIGHT ASKS. `spectral_form` is what the second
+            // half of this unit's death WOULD be; a fight that has never heard
+            // of the switch cannot get it, which is why this is `None` here and
+            // filled by the caller rather than read off the spec.
+            spectral: None,
+            steel_path,
+            eximus,
+            can_be_eximus: self.can_be_eximus,
+            type_mods,
+            status_immunities: self
+                .status_immunities
+                .iter()
+                .map(|k| {
+                    crate::damage::DamageType::from_name(k)
+                        .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+            faction: self
+                .combat_faction
+                .as_deref()
+                .map(crate::model::Faction::from_name)
+                .unwrap_or(crate::model::Faction::Unknown),
+            mode,
+        })
+    }
+
+    /// This enemy's inline column, resolved against the damage-type names.
+    ///
+    /// A NAME IT DOES NOT KNOW IS AN ERROR rather than a silently ignored
+    /// entry: the whole point of the field is to state something unusual, and
+    /// "heatt: 0" that quietly does nothing is a target the reader believes is
+    /// immune and is not.
+    fn inline_column(&self) -> Result<Vec<(crate::damage::DamageType, f64)>, String> {
+        let m = match &self.damage_modifiers {
+            Some(m) => m,
+            None => return Ok(Vec::new()),
+        };
+        m.iter()
+            .map(|(k, v)| {
+                let t = crate::damage::DamageType::from_name(k)
+                    .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))?;
+                if !(0.0..=100.0).contains(v) {
+                    return Err(format!("{}: {k} x{v} is not a damage multiplier", self.name));
+                }
+                Ok((t, *v))
+            })
+            .collect()
+    }
+
+    /// Body parts with explicit aim weights, matched by part name. Every
+    /// weight must name an existing part (typos are errors, not 0% aim).
+    pub fn aim_parts(&self, weights: &[(&str, f64)]) -> Result<Vec<BodyPart>, String> {
+        weights
+            .iter()
+            .map(|(name, w)| {
+                let p = self
+                    .body_parts
+                    .iter()
+                    .find(|p| p.name == *name)
+                    .ok_or_else(|| format!("{} has no body part named '{name}'", self.name))?;
+                Ok(BodyPart {
+                    name: p.name.clone(),
+                    aim_weight: *w,
+                    multiplier: p.multiplier,
+                    is_head: p.is_head,
+                    crit_bonus: p.crit_bonus,
+                })
+            })
+            .collect()
     }
 }

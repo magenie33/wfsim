@@ -9,7 +9,7 @@
 //! vocabulary this replaced collapsed exactly those.
 
 use crate::arcanes_data::ArcTrigger;
-use crate::loadout::BuffTrigger;
+use crate::model::BuffTrigger;
 
 /// The wire id of a data-declared trigger — what a scenario, a share link and a
 /// benchmark carry.

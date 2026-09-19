@@ -705,13 +705,13 @@ notes:
     mods even when equipped on Primary Kitguns" (Riven Mods).
   kitgun_entry_is_default_assembly: |
     A KITGUN HAS NO PUBLISHED STAT LINE, so the numbers in this entry are its
-    DEFAULT ASSEMBLY's (`kitguns_data::default_assembly`: the grip nearest the
+    DEFAULT ASSEMBLY's (`weapons_data::kitguns::default_assembly`: the grip nearest the
     chamber's own `base` preview, and the first loader that changes nothing) —
     what a request naming no parts is fought with. A build that names parts gets
     its own from `weapons_data::spec_assembled`, composed over these.
   kitgun_has_no_published: |
     A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
-    and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
+    and `engine::weapons_data::kitguns` composes them. This file is the CHAMBER's half —
     everything a grip and a loader do not touch, plus the two tables that are
     published PER GRIP because DE publishes them that way rather than as a
     formula.

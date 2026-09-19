@@ -15,7 +15,8 @@
 //! same value to the same constructor. Two modules reading one scenario into
 //! two lookalike shapes is how they drift a field at a time.
 
-use crate::fight::{BodyPart, TargetParams};
+use crate::target::BodyPart;
+use crate::target::TargetParams;
 use crate::space::Vec2;
 use crate::tenno_data::Tenno;
 
@@ -153,7 +154,7 @@ impl Arena {
             // SOLO, like every fight that does not say otherwise.
             squad_size: 1,
             target: TargetParams::training_dummy(),
-            body_parts: crate::fight::FightParams::humanoid_parts(),
+            body_parts: crate::target::BodyPart::humanoid(),
             // CONTACT — as close as two bodies can stand (`space`), which is
             // what point blank means once they have a size at all. The fixture
             // measures weapon numbers, and any more range than this would put a

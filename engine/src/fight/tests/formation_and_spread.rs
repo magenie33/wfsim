@@ -17,15 +17,15 @@ use super::*;
 /// comparable only in a crowd.
 #[test]
 fn the_damage_meter_accounts_for_the_whole_formation() {
-    let base = crate::loadout::WeaponBase::from_data("akarius", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("akarius", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(3.0);
     arena.target_at = crate::space::Vec2::new(0.0, 5.4);
     let at = |x: f64, y: f64| crate::formation::FoeSpec {
         id: String::new(),
         params: TargetParams::training_dummy(),
-        body_parts: FightParams::humanoid_parts(),
+        body_parts: BodyPart::humanoid(),
         at: crate::space::Vec2::new(x, y),
     };
     arena.others = vec![at(2.0, 5.2), at(-2.0, 5.2), at(0.0, 7.2)];
@@ -65,9 +65,9 @@ fn the_damage_meter_accounts_for_the_whole_formation() {
 #[test]
 fn a_weapon_deals_nothing_past_its_range() {
     let at = |weapon: &str, gap: f64| {
-        let base = crate::loadout::WeaponBase::from_data(weapon, false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         // `gap` is surface to surface — what the shot flies and what the
         // arena shows, so "20 m" means the number the reader is looking at.
@@ -119,15 +119,15 @@ fn a_shot_that_went_wide_does_not_blast_the_bystanders() {
     let bystander = crate::space::Vec2::new(0.0, 12.0);
     // The Akarius is a rocket pistol: a real radial, 7.2 m, with spread.
     let bystander_damage = |aim_x: f64| {
-        let base = crate::loadout::WeaponBase::from_data("akarius", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("akarius", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         arena.target_at = target_at;
         arena.others = vec![crate::formation::FoeSpec {
             id: "e2".into(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: bystander,
         }];
         arena.aim_at = Some(crate::space::Vec2::new(aim_x, 10.0));
@@ -149,13 +149,13 @@ fn a_shot_that_went_wide_does_not_blast_the_bystanders() {
 #[test]
 fn a_formation_takes_the_damage_a_chain_spreads_into_it() {
     let build = |others: Vec<crate::formation::FoeSpec>| {
-        let base = crate::loadout::WeaponBase::from_data(
+        let base = crate::model::WeaponBase::from_data(
             "torid_incarnon",
             false,
             &["torid_evo1_incarnon_form"],
         );
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         arena.others = others;
         FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none())
@@ -170,7 +170,7 @@ fn a_formation_takes_the_damage_a_chain_spreads_into_it() {
     // every golden value uses and only the neighbours are new.
     let grid = crate::formation::Formation::grid(
         TargetParams::training_dummy(),
-        FightParams::humanoid_parts(),
+        BodyPart::humanoid(),
         3,
         3,
         3.0,
@@ -227,10 +227,10 @@ fn a_formation_takes_the_damage_a_chain_spreads_into_it() {
 #[test]
 fn a_lingering_cloud_burns_everyone_standing_in_it() {
     let build = |others: Vec<crate::formation::FoeSpec>, radius_mult: f64| {
-        let base = crate::loadout::WeaponBase::from_data("torid", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("torid", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let mut panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         // FIRESTORM, applied by hand so the test states the mechanic rather
         // than depending on a mod id: the cloud's radius is what the mod
         // scales, and `resolve` already multiplies it by `1 + br`.
@@ -253,7 +253,7 @@ fn a_lingering_cloud_burns_everyone_standing_in_it() {
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(i as f64 * 1.5, alone.target_at.y),
         })
         .collect();
@@ -284,10 +284,10 @@ fn a_lingering_cloud_burns_everyone_standing_in_it() {
 #[test]
 fn ocucor_tendrils_pay_only_once_there_is_a_second_body() {
     let build = |others: Vec<crate::formation::FoeSpec>, tendrils: u32| {
-        let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("ocucor", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         arena.others = others;
         let mut p =
@@ -313,7 +313,7 @@ fn ocucor_tendrils_pay_only_once_there_is_a_second_body() {
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
         })
         .collect();
@@ -363,7 +363,7 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
     // status chance to get there inside the engagement — so the build that
     // is supposed to trigger it is a real one rather than a flag.
     let build = |others: Vec<crate::formation::FoeSpec>, with: bool, rad: bool| {
-        let base = crate::loadout::WeaponBase::from_data("dual_toxocyst", false, &[]);
+        let base = crate::model::WeaponBase::from_data("dual_toxocyst", false, &[]);
         // TEN STACKS IS THE CAP, so the build has to actually get there and
         // stay there: the two elements that make Radiation, the multishot
         // and fire rate that pay for the ROLLS, and the status chance that
@@ -373,7 +373,7 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
             "barrel_diffusion", "gunslinger", "stunning_speed", "sure_shot",
         ];
         let pool = crate::mods_data::pistol_pool();
-        let mods: Vec<crate::loadout::ModDef> = if rad {
+        let mods: Vec<crate::model::ModDef> = if rad {
             want
                 .iter()
                 .filter_map(|m| pool.iter().find(|d| d.id == *m).cloned())
@@ -384,13 +384,13 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
         if rad {
             assert_eq!(mods.len(), want.len(), "the Radiation build is complete");
         }
-        let refs: Vec<&crate::loadout::ModDef> = mods.iter().collect();
+        let refs: Vec<&crate::model::ModDef> = mods.iter().collect();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let fx = if with {
             crate::arcanes_data::secondary("secondary_irradiate")
                 .expect("the arcane is in the roster")
-                .fx(5, crate::loadout::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno())
+                .fx(5, crate::model::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno())
         } else {
             crate::arcanes_data::ArcaneFx::none()
         };
@@ -412,7 +412,7 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(i as f64 * 0.9, 0.4),
         })
         .collect();
@@ -449,9 +449,9 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
 /// nothing to bite on.
 #[test]
 fn a_tendrils_own_kill_spawns_no_tendril() {
-    let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("ocucor", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(20.0);
     // FRAIL bodies inside the tendrils' reach, so the tendrils really do
     // the killing rather than the beam. A REAL unit at level 1, because
@@ -471,7 +471,7 @@ fn a_tendrils_own_kill_spawns_no_tendril() {
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
             params: frail.clone(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
         })
         .collect();
@@ -526,9 +526,9 @@ fn the_benchmark_fight_is_the_upper_middle_run_by_the_metric() {
 /// benchmark fight and the integer counts, use `assert_eq!`.
 #[test]
 fn eight_shards_are_one_run() {
-    let base = crate::loadout::WeaponBase::from_data("torid", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("torid", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let specs = crate::enemy_data::all();
     let unit = specs.iter().find(|e| e.id == "corrupted_heavy_gunner").unwrap();
     let mut arena = crate::arena::Arena::training(20.0);
@@ -541,7 +541,7 @@ fn eight_shards_are_one_run() {
         .map(|i| crate::formation::FoeSpec {
             id: format!("e{}", i + 1),
             params: arena.target.clone(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(f64::from(i) * 0.7, 1.2),
         })
         .collect();
@@ -643,9 +643,9 @@ fn eight_shards_are_one_run() {
 /// zero. That is why the gap was invisible with one target.
 #[test]
 fn an_explosions_falloff_is_read_from_its_epicentre() {
-    let base = crate::loadout::WeaponBase::from_data("phantasma_prime_charged", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("phantasma_prime_charged", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     assert!(
         panel.radial.as_ref().is_some_and(|r| r.falloff_reduction > 0.0),
         "the fixture must be a weapon whose explosion falls off"
@@ -659,7 +659,7 @@ fn an_explosions_falloff_is_read_from_its_epicentre() {
         .map(|d| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(0.0, arena.target_at.y + d),
         })
         .collect();
@@ -684,10 +684,10 @@ fn an_explosions_falloff_is_read_from_its_epicentre() {
 #[test]
 fn a_simultaneous_blast_detonation_reaches_five_metres() {
     let build = |forced: Vec<DamageType>| {
-        let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("braton_prime", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(12.0);
         // ONE INSIDE the 5 m and one OUTSIDE, on the same line, so the
         // radius is what is being tested and not the geometry.
@@ -696,7 +696,7 @@ fn a_simultaneous_blast_detonation_reaches_five_metres() {
             .map(|x| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(x, arena.target_at.y),
             })
             .collect();
@@ -784,9 +784,9 @@ fn a_full_blast_pile_pays_the_host_as_ten_numbers_and_the_arcane_as_one() {
 #[test]
 fn a_blast_is_one_hit_per_moment_however_many_stacks_share_it() {
     let build = |forced: Vec<DamageType>, rate: f64| {
-        let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("braton_prime", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let arena = crate::arena::Arena::training(10.0);
         let mut p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
         p.status_chance = 1.0;
@@ -873,10 +873,10 @@ fn a_gas_or_electric_proc_reaches_the_bodies_standing_around_it() {
         // only thing that can reach a neighbour is the proc under test.
         // The Torid was the first fixture and its lingering cloud reached
         // them by itself, which the Toxin control caught.
-        let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("braton_prime", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(12.0);
         arena.others = [
             crate::space::Vec2::new(2.0, arena.target_at.y),
@@ -888,7 +888,7 @@ fn a_gas_or_electric_proc_reaches_the_bodies_standing_around_it() {
         .map(|at| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at,
         })
         .collect();
@@ -942,19 +942,19 @@ fn auras_and_shards_reach_the_damage() {
     use crate::auras_data::AuraPick;
     use crate::shards_data::ShardPick;
     let build = |tenno: crate::tenno_data::Tenno| {
-        let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+        let base = crate::model::WeaponBase::from_data("braton_prime", false, &[]);
         // CORROSIVE, AND ENOUGH STATUS TO STACK IT. A ceiling cannot be
         // measured by a build that never reaches the old one: the first
         // version of this test ran an unmodded rifle, which procs no
         // Corrosive at all, and both sides came back 16,296.
         let pool = crate::mods_data::pool_for_weapon("braton_prime");
-        let refs: Vec<&crate::loadout::ModDef> = ["infected_clip", "stormbringer",
+        let refs: Vec<&crate::model::ModDef> = ["infected_clip", "stormbringer",
             "rifle_aptitude", "high_voltage", "malignant_force"]
             .iter()
             .filter_map(|id| pool.iter().find(|m| m.id == *id))
             .collect();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(20.0);
         // AN ARMOURED TARGET, because every effect here is about armour.
         arena.target.base_armor = 500.0;
@@ -1014,16 +1014,16 @@ fn auras_and_shards_reach_the_damage() {
 #[test]
 fn a_punched_body_inherits_the_headshot_and_a_bounce_does_not() {
     let build = |head: bool| {
-        let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("braton_prime", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         arena.others = (1..=3)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(
                     0.0,
                     crate::space::CONTACT_RANGE_M * (1.0 + i as f64),
@@ -1077,10 +1077,10 @@ fn a_punched_body_inherits_the_headshot_and_a_bounce_does_not() {
 #[test]
 fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
     let build = |n: usize, pt: f64| {
-        let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("braton_prime", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         // A COLUMN BEHIND THE TARGET, each one contact-spaced from the last
         // — `Arena::training` puts the aimed body on the y axis, so these
@@ -1089,7 +1089,7 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(
                     0.0,
                     crate::space::CONTACT_RANGE_M * (1.0 + i as f64),
@@ -1116,7 +1116,7 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
     side.others = vec![crate::formation::FoeSpec {
         id: String::new(),
         params: TargetParams::training_dummy(),
-        body_parts: FightParams::humanoid_parts(),
+        body_parts: BodyPart::humanoid(),
         at: crate::space::Vec2::new(6.0, 4.0),
     }];
     assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).spread.touched(), 1);
@@ -1137,16 +1137,16 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
 #[test]
 fn ardent_trigger_buys_draw_speed_and_only_against_a_column() {
     let shots = |evo: &[&str], behind: usize| {
-        let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("paris_prime", true, evo);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         arena.others = (1..=behind)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(
                     0.0,
                     crate::space::CONTACT_RANGE_M * (1.0 + i as f64),
@@ -1192,14 +1192,14 @@ fn ardent_trigger_buys_draw_speed_and_only_against_a_column() {
 #[test]
 fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
     let touched = |mods: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+        let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
         let pool = crate::mods_data::pool_for_weapon("phantasma_prime");
-        let refs: Vec<&crate::loadout::ModDef> = mods
+        let refs: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
             .collect();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         // THE RULER'S OWN COLUMN — a body every 3 m, out to 36 m, which is
         // half again the weapon's 25 m reach.
@@ -1207,7 +1207,7 @@ fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(0.0, 3.0 * f64::from(i)),
             })
             .collect();
@@ -1244,14 +1244,14 @@ fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
 /// one tick writes agree, and a sum cannot be asked that.
 #[test]
 fn one_round_pops_the_same_kind_of_number_on_every_body_it_crosses() {
-    let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
+    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(6.0);
     arena.others = (1..=4)
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(0.0, 3.0 * f64::from(i)),
         })
         .collect();
@@ -1305,19 +1305,19 @@ fn one_round_pops_the_same_kind_of_number_on_every_body_it_crosses() {
 #[test]
 fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
     let burn = |element: &str| {
-        let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+        let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
         let pool = crate::mods_data::pool_for_weapon("phantasma_prime");
-        let refs: Vec<&crate::loadout::ModDef> = [element]
+        let refs: Vec<&crate::model::ModDef> = [element]
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
             .collect();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         arena.others = vec![crate::formation::FoeSpec {
             id: String::new(),
             params: TargetParams::training_dummy(),
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at: crate::space::Vec2::new(0.0, crate::space::CONTACT_RANGE_M * 2.0),
         }];
         let mut p =
@@ -1364,20 +1364,20 @@ fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
 /// nothing else: same target, no armour, neither of them dies.
 #[test]
 fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
-    let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+    let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
     let pool = crate::mods_data::pool_for_weapon("phantasma_prime");
     // MULTISHOT AND SOMETHING THAT BURNS: the weapon's own Radiation leaves
     // no DoT, so the merge has nothing to be read off without a Toxin card.
-    let refs: Vec<&crate::loadout::ModDef> = ["hells_chamber", "toxic_barrage"]
+    let refs: Vec<&crate::model::ModDef> = ["hells_chamber", "toxic_barrage"]
         .iter()
         .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
         .collect();
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(10.0);
     arena.others = vec![crate::formation::FoeSpec {
         id: String::new(),
         params: TargetParams::training_dummy(),
-        body_parts: FightParams::humanoid_parts(),
+        body_parts: BodyPart::humanoid(),
         at: crate::space::Vec2::new(0.0, crate::space::CONTACT_RANGE_M * 2.0),
     }];
     let p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
@@ -1404,13 +1404,13 @@ fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
     // The MOD POOL is the parent weapon's — an Incarnon form is a form of a
     // gun, not a gun of its own (AGENTS.md: "a form inherits its weapon").
     let panel = |w: &str, pool_of: &str, mods: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data(w, false, &[]);
+        let base = crate::model::WeaponBase::from_data(w, false, &[]);
         let pool = crate::mods_data::pool_for_weapon(pool_of);
-        let refs: Vec<&crate::loadout::ModDef> = mods
+        let refs: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
             .collect();
-        crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent)
+        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
     };
     // A RIFLE TAKES IT: Primed Shred is +2.2 m at max rank.
     let bare = panel("braton_prime", "braton_prime", &[]);
@@ -1446,10 +1446,10 @@ fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
 #[test]
 fn the_ocucor_reaches_exactly_five_bodies() {
     let build = |n: usize, tendrils: u32| {
-        let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let base = crate::model::WeaponBase::from_data("ocucor", false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
         // A LINE ACROSS THE FRONT, all inside the tendrils' 20 m and their
         // 40 degree cone off the reticle.
@@ -1457,7 +1457,7 @@ fn the_ocucor_reaches_exactly_five_bodies() {
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
-                body_parts: FightParams::humanoid_parts(),
+                body_parts: BodyPart::humanoid(),
                 at: crate::space::Vec2::new(i as f64 * 0.7, 4.0),
             })
             .collect();

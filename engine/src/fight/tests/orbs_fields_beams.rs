@@ -8,7 +8,7 @@ use super::*;
 fn one_grenade_leaves_ten_ticks_starting_with_the_impact() {
     let p = FightParams {
         damage: DamageVector::default(), // inert impact: the field alone
-        lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
+        lingering: Some(cloud(crate::model::FieldStacking::Stack)),
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
         magazine_size: 1.0,
@@ -353,7 +353,7 @@ fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
         crate::formation::FoeSpec {
             id: "e2".into(),
             params,
-            body_parts: FightParams::humanoid_parts(),
+            body_parts: BodyPart::humanoid(),
             at,
         }
     };
@@ -437,19 +437,19 @@ fn a_weapon_with_no_magazine_never_reloads_so_no_reload_buff_fires() {
                 infinite_reserve: true,
                 fire_rate: 1.0,
                 duration_seconds: 60.0,
-                stacking_buffs: vec![crate::loadout::StackingBuff {
+                stacking_buffs: vec![crate::model::StackingBuff {
                     id: "on_reload_fire_rate",
-                    trigger: crate::loadout::BuffTrigger::ReloadComplete,
-                    grant: crate::loadout::BuffGrant::FireRate,
+                    trigger: crate::model::BuffTrigger::ReloadComplete,
+                    grant: crate::model::BuffGrant::FireRate,
                     per_stack: 1.0,
                     max_stacks: 1,
                     duration: 60.0,
                     chance: 1.0,
-                    decay: crate::loadout::BuffDecay::PerStackExpiry,
+                    decay: crate::model::BuffDecay::PerStackExpiry,
                     initial_stacks: 0,
                     stacks_per_trigger: 1,
                     per_shell: false,
-                    cleared_by: crate::loadout::ClearedBy::Nothing,
+                    cleared_by: crate::model::ClearedBy::Nothing,
                     card_opens_full: false,
                 }],
                 crit_multiplier: 1.0,
@@ -697,7 +697,7 @@ fn overlapping_fields_stack_or_refresh_per_the_weapon_data() {
         duration_seconds: 20.0,
         ..no_status()
     };
-    let st = monte_carlo(&mk(crate::loadout::FieldStacking::Stack), 4, 3);
+    let st = monte_carlo(&mk(crate::model::FieldStacking::Stack), 4, 3);
     assert!((st.mean_shots - 3.0).abs() < 1e-9, "shots {}", st.mean_shots);
     // Three independent 10-tick streams, all finishing before t=20.
     assert!(
@@ -711,7 +711,7 @@ fn overlapping_fields_stack_or_refresh_per_the_weapon_data() {
         "dmg {}",
         st.mean_damage
     );
-    let rf = monte_carlo(&mk(crate::loadout::FieldStacking::Refresh), 4, 3);
+    let rf = monte_carlo(&mk(crate::model::FieldStacking::Refresh), 4, 3);
     // One field, re-armed at t=1 and t=2 — each re-arm ticks immediately, so
     // 3 shot-time ticks plus the surviving field's own 9 = 12.
     assert!(
@@ -730,7 +730,7 @@ fn overlapping_fields_stack_or_refresh_per_the_weapon_data() {
 fn renewed_horror_doubles_only_the_post_reload_field() {
     let p = |boost: f64| FightParams {
         damage: DamageVector::default(),
-        lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
+        lingering: Some(cloud(crate::model::FieldStacking::Stack)),
         field_duration_on_empty_reload: boost,
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
@@ -775,7 +775,7 @@ fn renewed_horror_doubles_only_the_post_reload_field() {
 #[test]
 fn field_ticks_roll_their_own_crit_and_report_as_field_damage() {
     let mk = |cc: f64| {
-        let mut f = cloud(crate::loadout::FieldStacking::Stack);
+        let mut f = cloud(crate::model::FieldStacking::Stack);
         f.crit_chance = cc;
         FightParams {
             damage: DamageVector::default(),
@@ -809,7 +809,7 @@ fn field_ticks_roll_their_own_crit_and_report_as_field_damage() {
 /// then feed Condition Overload like any other.
 #[test]
 fn field_ticks_proc_status_once_each() {
-    let mut f = cloud(crate::loadout::FieldStacking::Stack);
+    let mut f = cloud(crate::model::FieldStacking::Stack);
     f.status_chance = 1.0;
     let p = FightParams {
         damage: DamageVector::default(),
@@ -976,7 +976,7 @@ fn a_beams_dot_scales_with_multishot_squared() {
 fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
     let mut ramp = BeamRamp::default();
     let frame_seconds = 0.1; // 10 ticks/s
-    let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * frame_seconds, frame_seconds, BEAM_RAMP_FLOOR)).collect();
+    let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR)).collect();
     assert!((mults[0] - 0.20).abs() < 1e-9, "first tick {}", mults[0]);
     // Each held tick adds 0.1/0.6 of the way from 20% to 100%.
     assert!((mults[1] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
@@ -989,16 +989,16 @@ fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
     // 1.9 s gap is 1.8 s idle, 1.0 s of it past the delay = half the ramp.
     let mut r2 = BeamRamp::default();
     for i in 0..8 {
-        r2.tick(i as f64 * frame_seconds, frame_seconds, BEAM_RAMP_FLOOR);
+        r2.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR);
     }
-    let after = r2.tick(0.7 + 1.9, frame_seconds, BEAM_RAMP_FLOOR);
+    let after = r2.tick(0.7 + 1.9, frame_seconds, crate::model::BEAM_RAMP_FLOOR);
     assert!((after - (0.2 + 0.8 * 0.5)).abs() < 1e-9, "after a gap {after}");
     // And a long enough gap returns it all the way to the floor.
     let mut r3 = BeamRamp::default();
     for i in 0..8 {
-        r3.tick(i as f64 * frame_seconds, frame_seconds, BEAM_RAMP_FLOOR);
+        r3.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR);
     }
-    assert!((r3.tick(0.7 + 3.0, frame_seconds, BEAM_RAMP_FLOOR) - 0.20).abs() < 1e-9);
+    assert!((r3.tick(0.7 + 3.0, frame_seconds, crate::model::BEAM_RAMP_FLOOR) - 0.20).abs() < 1e-9);
 }
 
 #[test]

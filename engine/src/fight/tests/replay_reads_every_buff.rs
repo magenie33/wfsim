@@ -15,7 +15,8 @@ use super::*;
 
 #[test]
 fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
-    use crate::loadout::{StackSpec, StackingBuff, TimedBuff};
+    use crate::model::{StackingBuff, TimedBuff};
+use crate::model::StackSpec;
     let stack = |per_stack: f64, earned_on: &'static str| StackSpec {
         per_stack,
         max_stacks: 3,
@@ -29,14 +30,14 @@ fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
         trigger,
         grant,
         chance: 1.0,
-        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+        decay: crate::model::BuffDecay::LoseOneAndReset,
         per_stack: 0.1,
         max_stacks: 3,
         duration: 10.0,
         initial_stacks: 0,
         stacks_per_trigger: 1,
         per_shell: false,
-        cleared_by: crate::loadout::ClearedBy::Nothing,
+        cleared_by: crate::model::ClearedBy::Nothing,
         card_opens_full: false,
     };
     let mut params = FightParams {
@@ -44,10 +45,10 @@ fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
         multishot_stack: Some(stack(0.3, "kill")),
         crit_chance_stack: Some(stack(0.1, "headshot_kill")),
         stacking_buffs: vec![
-            buff("on_plain_hit_damage", crate::loadout::BuffGrant::BaseDamage,
-                 crate::loadout::BuffTrigger::PlainHit),
-            buff("on_headshot_reload_speed", crate::loadout::BuffGrant::ReloadSpeed,
-                 crate::loadout::BuffTrigger::Headshot),
+            buff("on_plain_hit_damage", crate::model::BuffGrant::BaseDamage,
+                 crate::model::BuffTrigger::PlainHit),
+            buff("on_headshot_reload_speed", crate::model::BuffGrant::ReloadSpeed,
+                 crate::model::BuffTrigger::Headshot),
         ],
         crit_chance_on_headshot: Some(timed(0.5)),
         crit_damage_on_kill: Some(timed(0.6)),

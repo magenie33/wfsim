@@ -10,13 +10,13 @@ use super::*;
 #[test]
 fn the_viral_average_is_weighted_by_the_health_damage_it_multiplied() {
     let soma = |mods: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("soma_prime", true, &[]);
+        let base = crate::model::WeaponBase::from_data("soma_prime", true, &[]);
         let pool = crate::mods_data::pool_for_weapon("soma_prime");
-        let refs: Vec<&crate::loadout::ModDef> =
+        let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
         assert_eq!(refs.len(), mods.len(), "every named mod is in this weapon's pool");
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         monte_carlo(
             &FightParams::from_panel(
                 &panel,
@@ -75,12 +75,12 @@ fn the_viral_average_is_weighted_by_the_health_damage_it_multiplied() {
 }
 
 fn arbucep(mods: &[&str]) -> FightParams {
-    let base = crate::loadout::WeaponBase::from_data("arbucep", false, &[]);
+    let base = crate::model::WeaponBase::from_data("arbucep", false, &[]);
     let pool = crate::mods_data::pool_for_weapon("arbucep");
-    let refs: Vec<&crate::loadout::ModDef> =
+    let refs: Vec<&crate::model::ModDef> =
         mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
     assert_eq!(refs.len(), mods.len(), "every named mod is in this weapon's pool");
-    let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     FightParams::from_panel(
         &panel,
         &crate::arena::Arena::training(30.0),

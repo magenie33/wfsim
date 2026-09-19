@@ -1055,11 +1055,11 @@ fn main() {
         let asm = {
             let g = s.get("grip").and_then(Value::as_str).unwrap_or("");
             let l = s.get("loader").and_then(Value::as_str).unwrap_or("");
-            (!(g.is_empty() && l.is_empty())).then(|| wfsim_engine::kitguns_data::Assembly {
+            (!(g.is_empty() && l.is_empty())).then(|| wfsim_engine::weapons_data::kitguns::Assembly {
                 // The chamber's WEAPON id, which is what `Assembly` holds.
                 chamber: wfsim_engine::weapons_data::spec(&weapon)
                     .and_then(|sp| sp.kitgun.clone())
-                    .and_then(|r| wfsim_engine::kitguns_data::default_assembly(&r))
+                    .and_then(|r| wfsim_engine::weapons_data::kitguns::default_assembly(&r))
                     .map(|d| d.chamber)
                     .unwrap_or_default(),
                 grip: g.to_string(),
@@ -2461,10 +2461,10 @@ mod page_row_tests {
                 let assembly = (!grip.is_empty()).then(|| {
                     let chamber = wfsim_engine::weapons_data::spec(&weapon)
                         .and_then(|s| s.kitgun.clone())
-                        .and_then(|k| wfsim_engine::kitguns_data::default_assembly(&k))
+                        .and_then(|k| wfsim_engine::weapons_data::kitguns::default_assembly(&k))
                         .map(|d| d.chamber)
                         .unwrap_or_default();
-                    wfsim_engine::kitguns_data::Assembly {
+                    wfsim_engine::weapons_data::kitguns::Assembly {
                         chamber,
                         grip: grip.to_string(),
                         loader: r

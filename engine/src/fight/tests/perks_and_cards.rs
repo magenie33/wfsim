@@ -72,7 +72,9 @@ fn reified_banes_empty_reload_damage_is_a_buff_that_starts_on() {
     // because the modelled fight always reloads from empty, and it never
     // times out. What makes it a buff rather than a decoration is that
     // turning it off has to MOVE the damage.
-    use crate::loadout::{resolve, StackPolicy, WeaponBase};
+    use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
     let with = WeaponBase::from_data(
         "boar_prime", true, &["boar_prime_evo1_incarnon_form", "boar_prime_reified_bane"],
     );
@@ -111,7 +113,9 @@ fn evo_multishot_config_rescales_the_permanent_stacks() {
     // Fevered Frenzy: base 1 pellet × (+100% at 20 stacks) is baked into
     // the resolved multishot; the per-buff config rescales it statically
     // (no in-sim trigger, no decay). Lock is meaningless and ignored.
-    use crate::loadout::{resolve, StackPolicy, WeaponBase};
+    use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
     let base = WeaponBase::from_data(
         "dual_toxocyst_incarnon",
         true,
@@ -168,7 +172,7 @@ fn a_general_charge_weapon_pays_the_draw_and_the_rate() {
         ..no_status()
     };
     let general = FightParams {
-        charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
+        charge_cadence: crate::model::ChargeCadence::DrawThenRate,
         ..base.clone()
     };
     // 0.5 + 1/2.0 = 1.0 s: shots at 0, 1, 2 … 9 — ten inside 10 s.
@@ -177,7 +181,7 @@ fn a_general_charge_weapon_pays_the_draw_and_the_rate() {
     // The bow reading of the SAME two numbers is the draw alone, 0.5 s —
     // twice as many shots. One weapon's formula is not the other's.
     let bow = FightParams {
-        charge_cadence: crate::weapons_data::ChargeCadence::DrawOnly,
+        charge_cadence: crate::model::ChargeCadence::DrawOnly,
         ..base
     };
     assert_eq!(run_once(&bow, &mut Rng::new(1)).shots, 20);
@@ -197,7 +201,7 @@ fn a_general_charge_weapon_pays_the_draw_and_the_rate() {
 fn a_burst_weapon_fires_its_whole_burst_inside_the_listed_interval() {
     let burston = FightParams {
         fire_rate: 5.0,
-        burst: Some(crate::weapons_data::BurstSpec { count: 3, delay_seconds: 0.04 }),
+        burst: Some(crate::model::BurstSpec { count: 3, delay_seconds: 0.04 }),
         magazine_size: 100_000.0, // no reload inside the window
         duration_seconds: 10.0,
         body_parts: mono_body(1.0),
@@ -216,7 +220,7 @@ fn a_burst_weapon_fires_its_whole_burst_inside_the_listed_interval() {
     // A one-round "burst" IS an ordinary weapon — no delay is ever paid,
     // so the two readings must agree exactly.
     let single = FightParams {
-        burst: Some(crate::weapons_data::BurstSpec { count: 1, delay_seconds: 0.04 }),
+        burst: Some(crate::model::BurstSpec { count: 1, delay_seconds: 0.04 }),
         ..burston.clone()
     };
     assert_eq!(run_once(&single, &mut Rng::new(1)).shots, 51);
@@ -245,7 +249,7 @@ fn a_held_trigger_spools_down_and_costs_most_of_the_magazine() {
     assert_eq!(run_once(&phenmor, &mut Rng::new(1)).shots, 134, "the listed rate, flat");
 
     let spooled = FightParams {
-        sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
+        sustained_fire_rate: Some(crate::model::SustainedFireRate {
             start: 1.00,
             end: 0.60,
             over_shots: 51.0,
@@ -290,7 +294,7 @@ fn executioners_fortune_needs_the_kill_when_the_card_says_so() {
         // and what makes the perk's own rate the only variable here.
         body_parts: all_head(),
         instant_reload: (chance > 0.0)
-            .then_some(crate::loadout::InstantReload { chance, needs_kill }),
+            .then_some(crate::model::InstantReload { chance, needs_kill }),
         ..no_status()
     };
     // A target that cannot die — `InfiniteHealth` says so outright, which
@@ -327,7 +331,7 @@ fn executioners_fortune_needs_the_kill_when_the_card_says_so() {
 ///   multiplicative  2 x 1.3 x 1.5       = 3.90   ->  x1.5000
 #[test]
 fn lingering_judgement_adds_to_deadheads_bracket_instead_of_multiplying_it() {
-    let streak = crate::loadout::HeadshotStreak {
+    let streak = crate::model::HeadshotStreak {
         hits: 2,
         within: 2.0,
         value: 0.50,
@@ -383,7 +387,7 @@ fn lingering_judgement_adds_to_deadheads_bracket_instead_of_multiplying_it() {
 /// …and the streak has to be EARNED: two headshots inside two seconds.
 #[test]
 fn lingering_judgement_needs_two_headshots_inside_the_window() {
-    let streak = crate::loadout::HeadshotStreak {
+    let streak = crate::model::HeadshotStreak {
         hits: 2,
         within: 2.0,
         value: 0.50,
@@ -489,7 +493,7 @@ fn executioners_fortune_does_not_touch_an_incarnon_charge_pool() {
         ammo_efficiency_applies: false, // charge-backed
         target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         instant_reload: (chance > 0.0)
-            .then_some(crate::loadout::InstantReload { chance, needs_kill: false }),
+            .then_some(crate::model::InstantReload { chance, needs_kill: false }),
         ..no_status()
     };
     assert_eq!(
@@ -532,7 +536,7 @@ fn a_killing_headshot_fills_the_magazine() {
     };
     let without = run_once(&p, &mut Rng::new(11)).shots;
     let with = FightParams {
-        instant_reload: Some(crate::loadout::InstantReload { chance: 1.0, needs_kill: true }),
+        instant_reload: Some(crate::model::InstantReload { chance: 1.0, needs_kill: true }),
         ..p.clone()
     };
     let armed = run_once(&with, &mut Rng::new(11)).shots;
@@ -602,19 +606,19 @@ fn ready_retaliation_speeds_up_the_reload_that_arms_it() {
 /// all four together and could be right for the wrong reason.
 #[test]
 fn reavers_rapture_counts_bursts_and_resets_on_the_refill() {
-    let buff = crate::loadout::StackingBuff {
+    let buff = crate::model::StackingBuff {
         id: "full_burst_damage",
-        trigger: crate::loadout::BuffTrigger::FullBurst,
-        grant: crate::loadout::BuffGrant::BaseDamage,
-        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+        trigger: crate::model::BuffTrigger::FullBurst,
+        grant: crate::model::BuffGrant::BaseDamage,
+        decay: crate::model::BuffDecay::LoseOneAndReset,
         per_stack: 0.20,
         max_stacks: 5,
-        duration: crate::loadout::NO_TIMEOUT,
+        duration: crate::model::NO_TIMEOUT,
         chance: 1.0,
         initial_stacks: 0,
         stacks_per_trigger: 1,
         per_shell: false,
-        cleared_by: crate::loadout::ClearedBy::MagazineRefilled,
+        cleared_by: crate::model::ClearedBy::MagazineRefilled,
         card_opens_full: false,
     };
     // 21 rounds = seven whole bursts; the cap is five, so a magazine that
@@ -624,7 +628,7 @@ fn reavers_rapture_counts_bursts_and_resets_on_the_refill() {
         fire_rate: 10.0,
         magazine_size: 21.0,
         reload_seconds: 2.0,
-        burst: Some(crate::weapons_data::BurstSpec { count: 3, delay_seconds: 0.0 }),
+        burst: Some(crate::model::BurstSpec { count: 3, delay_seconds: 0.0 }),
         stacking_buffs: vec![buff],
         duration_seconds: 10.0,
         ..no_status()
@@ -683,23 +687,23 @@ fn reavers_rapture_counts_bursts_and_resets_on_the_refill() {
 #[test]
 fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
     let buffs = |weapon: &str, evo: &str| {
-        let base = crate::loadout::WeaponBase::from_data(weapon, false, &[evo]);
-        crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent)
+        let base = crate::model::WeaponBase::from_data(weapon, false, &[evo]);
+        crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent)
             .stacking_buffs
     };
 
     // ---- the Soma: a FLAT base add, on the reload-from-empty trigger ----
     let sb = buffs("soma", "soma_fresh_havoc");
     assert_eq!(sb.len(), 1, "one buff on the card: {sb:?}");
-    assert_eq!(sb[0].trigger, crate::loadout::BuffTrigger::ReloadFromEmpty);
-    assert_eq!(sb[0].grant, crate::loadout::BuffGrant::FlatBaseDamage);
+    assert_eq!(sb[0].trigger, crate::model::BuffTrigger::ReloadFromEmpty);
+    assert_eq!(sb[0].grant, crate::model::BuffGrant::FlatBaseDamage);
     assert_eq!(sb[0].max_stacks, 2);
-    assert_eq!(sb[0].cleared_by, crate::loadout::ClearedBy::Nothing,
+    assert_eq!(sb[0].cleared_by, crate::model::ClearedBy::Nothing,
         "the card says it lasts the mission");
-    assert_eq!(sb[0].duration, crate::loadout::NO_TIMEOUT, "and has no clock");
+    assert_eq!(sb[0].duration, crate::model::NO_TIMEOUT, "and has no clock");
     // +6 on a weapon whose unmodded base is `total`, expressed as the share
     // of the base-damage bucket worth the same — unmodded, that is 6/total.
-    let soma_base = crate::loadout::WeaponBase::from_data("soma", false, &[]);
+    let soma_base = crate::model::WeaponBase::from_data("soma", false, &[]);
     let want = 6.0 / soma_base.base_vector.total();
     assert!((sb[0].per_stack - want).abs() < 1e-9,
         "a flat +6 is {want} of an unmodded {} base, got {}",
@@ -726,19 +730,19 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
 
     // ---- the Zylok: a BASE crit-damage add, and the mods multiply it ----
     let zb = buffs("zylok", "zylok_maulers_magazine");
-    let z = zb.iter().find(|b| b.grant == crate::loadout::BuffGrant::BaseCritDamage)
+    let z = zb.iter().find(|b| b.grant == crate::model::BuffGrant::BaseCritDamage)
         .expect("the crit-damage half of the card");
-    assert_eq!(z.trigger, crate::loadout::BuffTrigger::ReloadFromEmpty);
+    assert_eq!(z.trigger, crate::model::BuffTrigger::ReloadFromEmpty);
     assert_eq!(z.max_stacks, 2);
     assert!((z.per_stack - 1.0).abs() < 1e-9, "unmodded, +1x stays +1x: {}", z.per_stack);
     // …and WITH a crit-damage mod it is worth more, which is what "Base"
     // buys. Unmodded and modded are the same number for any other reading.
     let vs = crate::mods_data::class_pool("pistol").into_iter()
         .find(|m| m.id == "primed_target_cracker").expect("primed_target_cracker");
-    let base = crate::loadout::WeaponBase::from_data("zylok", false, &["zylok_maulers_magazine"]);
-    let modded = crate::loadout::resolve(&base, &[&vs], crate::loadout::StackPolicy::Emergent);
+    let base = crate::model::WeaponBase::from_data("zylok", false, &["zylok_maulers_magazine"]);
+    let modded = crate::loadout::resolve(&base, &[&vs], crate::model::StackPolicy::Emergent);
     let zm = modded.stacking_buffs.iter()
-        .find(|b| b.grant == crate::loadout::BuffGrant::BaseCritDamage).expect("still there");
+        .find(|b| b.grant == crate::model::BuffGrant::BaseCritDamage).expect("still there");
     let cd_mod = modded.crit_damage / base.base_crit_damage;
     assert!((zm.per_stack - cd_mod).abs() < 1e-6,
         "+1x BASE through a x{cd_mod} crit-damage bucket is worth that much: {}", zm.per_stack);
@@ -767,14 +771,14 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
             magazine_size: 20.0, // the CHARGE pool, spent and not reloaded
             ammo_efficiency_applies: false,
             infinite_reserve: true,
-            stacking_buffs: vec![crate::loadout::StackingBuff {
+            stacking_buffs: vec![crate::model::StackingBuff {
                 id: "on_empty_reload_damage", ..sb[0]
             }],
             duration_seconds: 8.0,
             cycle: Some(IncarnonCycle {
                 starts_primed: true,
                 base_form: Box::new(base_form),
-                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 1_000_000 },
+                arms: Arms::Gauge { charge_on: crate::model::ChargeOn::WeakpointHits, charges_to_fill: 1_000_000 },
                 ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
@@ -799,7 +803,7 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
         fire_rate: 10.0,
         magazine_size: 5.0,
         reload_seconds: 0.5,
-        stacking_buffs: vec![crate::loadout::StackingBuff {
+        stacking_buffs: vec![crate::model::StackingBuff {
             id: "on_empty_reload_damage", ..sb[0]
         }],
         duration_seconds: 10.0,
@@ -818,7 +822,7 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
     // ---- and the crit half REACHES THE DAMAGE, not just the panel ----
     // A crit-damage grant is invisible unless the weapon crits, so the
     // fixture crits every shot and the buff is the only difference.
-    let crit_p = |b: Vec<crate::loadout::StackingBuff>| FightParams {
+    let crit_p = |b: Vec<crate::model::StackingBuff>| FightParams {
         base_crit_chance: 1.0,
         unmodded_crit_chance: 1.0,
         crit_multiplier: 2.0,
@@ -830,7 +834,7 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
         duration_seconds: 10.0,
         ..no_status()
     };
-    let z_buff = crate::loadout::StackingBuff { id: "on_empty_reload_crit_damage", ..*z };
+    let z_buff = crate::model::StackingBuff { id: "on_empty_reload_crit_damage", ..*z };
     let with = monte_carlo(&crit_p(vec![z_buff]), 1, 3).mean_damage;
     let without = monte_carlo(&crit_p(vec![]), 1, 3).mean_damage;
     assert!(with > without * 1.10,
@@ -855,19 +859,19 @@ fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
         name: "head".into(), aim_weight: 1.0, multiplier: 1.0,
         is_head: true, crit_bonus: false,
     }];
-    let buff = |id: &'static str, trigger| crate::loadout::StackingBuff {
+    let buff = |id: &'static str, trigger| crate::model::StackingBuff {
         id,
         trigger,
-        grant: crate::loadout::BuffGrant::BaseDamage,
-        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+        grant: crate::model::BuffGrant::BaseDamage,
+        decay: crate::model::BuffDecay::LoseOneAndReset,
         per_stack: 0.10,
         max_stacks: 9,
-        duration: crate::loadout::NO_TIMEOUT,
+        duration: crate::model::NO_TIMEOUT,
         chance: 1.0,
         initial_stacks: 0,
         stacks_per_trigger: 1,
         per_shell: false,
-        cleared_by: crate::loadout::ClearedBy::Nothing,
+        cleared_by: crate::model::ClearedBy::Nothing,
         card_opens_full: false,
     };
     let base_form = FightParams {
@@ -883,13 +887,13 @@ fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
         fire_rate: 10.0,
         reload_seconds: 0.5,
         stacking_buffs: vec![
-            buff("on_empty_reload_damage", crate::loadout::BuffTrigger::ReloadFromEmpty),
-            buff("on_reload_damage", crate::loadout::BuffTrigger::ReloadComplete),
+            buff("on_empty_reload_damage", crate::model::BuffTrigger::ReloadFromEmpty),
+            buff("on_reload_damage", crate::model::BuffTrigger::ReloadComplete),
         ],
         cycle: Some(IncarnonCycle {
             starts_primed: false,
             base_form: Box::new(base_form),
-            arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+            arms: Arms::Gauge { charge_on: crate::model::ChargeOn::WeakpointHits, charges_to_fill: 2 },
             ends: Ends::ChargeMagazine,
             transmute_out_seconds: 0.5,
             transmute_seconds: 1.0,
@@ -927,9 +931,9 @@ fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
 #[test]
 fn kings_gambit_kills_body_crits_and_pays_the_weak_point_additively() {
     let perk = ["sicarus_prime_evo1_incarnon_form", "sicarus_prime_kings_gambit"];
-    let panel = |evo: &[&str], mods: &[&crate::loadout::ModDef]| {
-        let base = crate::loadout::WeaponBase::from_data("sicarus_prime", false, evo);
-        crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::AssumedMax)
+    let panel = |evo: &[&str], mods: &[&crate::model::ModDef]| {
+        let base = crate::model::WeaponBase::from_data("sicarus_prime", false, evo);
+        crate::loadout::resolve(&base, mods, crate::model::StackPolicy::AssumedMax)
     };
     let pool = crate::mods_data::class_pool("pistol");
     let pg = pool.iter().find(|m| m.id == "primed_pistol_gambit").expect("primed_pistol_gambit");
@@ -959,8 +963,8 @@ fn kings_gambit_kills_body_crits_and_pays_the_weak_point_additively() {
     // …AND IN THE FIGHT. Two targets, one all head and one all body, so the
     // crit rate is a direct reading of the two branches rather than a blend.
     let run = |evo: &[&str], head: bool| {
-        let base = crate::loadout::WeaponBase::from_data("sicarus_prime", false, evo);
-        let panel = crate::loadout::resolve(&base, &[pg], crate::loadout::StackPolicy::AssumedMax);
+        let base = crate::model::WeaponBase::from_data("sicarus_prime", false, evo);
+        let panel = crate::loadout::resolve(&base, &[pg], crate::model::StackPolicy::AssumedMax);
         let mut p = FightParams::from_panel(
             &panel, &crate::arena::Arena::training(20.0), &ArcaneFx::none());
         p.body_parts = vec![BodyPart {
@@ -1075,11 +1079,11 @@ fn galvanic_reload_restores_once_per_shot_not_once_per_pellet() {
 /// blow, and the stacks must still climb.
 #[test]
 fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
-    let buff = crate::loadout::StackingBuff {
+    let buff = crate::model::StackingBuff {
         id: "on_kill_damage",
-        trigger: crate::loadout::BuffTrigger::Kill,
-        grant: crate::loadout::BuffGrant::BaseDamage,
-        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+        trigger: crate::model::BuffTrigger::Kill,
+        grant: crate::model::BuffGrant::BaseDamage,
+        decay: crate::model::BuffDecay::LoseOneAndReset,
         per_stack: 0.10,
         max_stacks: 4,
         duration: 5.0,
@@ -1087,7 +1091,7 @@ fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
         initial_stacks: 0,
         stacks_per_trigger: 1,
         per_shell: false,
-        cleared_by: crate::loadout::ClearedBy::Nothing,
+        cleared_by: crate::model::ClearedBy::Nothing,
         card_opens_full: false,
     };
     // A target that dies to every shot and comes straight back, so kills
@@ -1212,7 +1216,7 @@ fn exact_penance_reloads_on_a_kill_the_gun_did_not_land() {
 /// cloud tick's.
 #[test]
 fn a_gas_cloud_kill_earns_the_on_kill_stacks() {
-    let spec = crate::loadout::StackSpec {
+    let spec = crate::model::StackSpec {
         per_stack: 0.1,
         max_stacks: 5,
         duration: 4.0,
@@ -1268,7 +1272,7 @@ fn a_spectral_thrax_cannot_be_finished_by_a_weapon() {
         body_parts: mono_body(1.0),
         target: TargetParams {
             base_health: 10.0,
-            spectral: spectral.then_some(crate::enemy_data::SpectralForm {
+            spectral: spectral.then_some(crate::model::SpectralForm {
                 health_share: 0.40,
                 delay_seconds: 2.0,
             }),
@@ -1447,19 +1451,19 @@ fn resonant_restore_grows_the_magazine_to_its_cap_and_stops() {
 /// that already has a headshot bonus.
 #[test]
 fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
-    let buff = crate::loadout::StackingBuff {
+    let buff = crate::model::StackingBuff {
         id: "on_weakpoint_streak_headshot_damage",
-        trigger: crate::loadout::BuffTrigger::ConsecutiveHeadshot,
-        grant: crate::loadout::BuffGrant::HeadshotDamage,
-        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+        trigger: crate::model::BuffTrigger::ConsecutiveHeadshot,
+        grant: crate::model::BuffGrant::HeadshotDamage,
+        decay: crate::model::BuffDecay::LoseOneAndReset,
         per_stack: 0.30,
         max_stacks: 4,
-        duration: crate::loadout::NO_TIMEOUT,
+        duration: crate::model::NO_TIMEOUT,
         chance: 1.0,
         initial_stacks: 0,
         stacks_per_trigger: 1,
         per_shell: false,
-        cleared_by: crate::loadout::ClearedBy::Nothing,
+        cleared_by: crate::model::ClearedBy::Nothing,
         card_opens_full: false,
     };
     // Every shot on the head: the streak is never broken, so it climbs and
@@ -1545,8 +1549,8 @@ fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
 #[test]
 fn a_derived_stat_reads_the_crit_chance_the_shot_has() {
     let evos = ["sicarus_prime_evo1_incarnon_form", "sicarus_prime_wisemans_regard"];
-    let base = crate::loadout::WeaponBase::from_data("sicarus_prime", false, &evos);
-    let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+    let base = crate::model::WeaponBase::from_data("sicarus_prime", false, &evos);
+    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
     // THE PANEL IS UNCHANGED by making the sim live — a static view still
     // answers with the crit chance it can see.
     assert!((panel.status_chance - 0.275).abs() < 1e-9, "{}", panel.status_chance);
@@ -1603,7 +1607,7 @@ fn double_tap_pays_the_cards_own_worked_example() {
         .into_iter().find(|m| m.id == "double_tap").expect("double_tap in the rifle pool");
     assert_eq!(frame_seconds.effects.len(), 1, "one effect on the card: {:?}", frame_seconds.effects);
     let (per, cap, dur) = match frame_seconds.effects[0] {
-        crate::loadout::ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } =>
+        crate::model::ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } =>
             (per_stack, max_stacks, duration),
         ref other => panic!("wrong kind: {other:?}"),
     };
@@ -1661,8 +1665,8 @@ fn double_tap_pays_the_cards_own_worked_example() {
 fn vicious_promise_reads_health_and_shield_and_ignores_overguard() {
     let arena = crate::arena::Arena::training(60.0);
     let panel = |evo: &[&str]| {
-        let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
-        crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent)
+        let base = crate::model::WeaponBase::from_data("paris_prime", true, evo);
+        crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent)
     };
     let perk = ["paris_prime_vicious_promise"];
 
@@ -1721,32 +1725,32 @@ fn vicious_promise_reads_health_and_shield_and_ignores_overguard() {
 fn the_half_health_bonus_lands_in_the_weapons_own_co_bracket() {
     // 200% below half health on both Kunai forms; base form Adding,
     // Incarnon form Multiplying (CATALOGS.md).
-    let base = crate::loadout::WeaponBase::from_data("kunai", true, &["kunai_swift_conclusion"]);
-    let inc = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data("kunai", true, &["kunai_swift_conclusion"]);
+    let inc = crate::model::WeaponBase::from_data(
         "kunai_incarnon", true, &["kunai_swift_conclusion"]);
-    assert_eq!(base.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
-    assert_eq!(inc.co_behavior, crate::loadout::CoBehavior::Independent);
+    assert_eq!(base.co_behavior, crate::model::CoBehavior::AdditiveWithBaseDamage);
+    assert_eq!(inc.co_behavior, crate::model::CoBehavior::Independent);
     assert!(base.base_damage_below_half_health > 1.0 && inc.base_damage_below_half_health > 1.0);
 
     // A target that is ALWAYS below half health, so the term is always on,
     // and a mod bucket big enough to tell the two brackets apart.
     let arena = crate::arena::Arena::training(60.0);
     let dmg = |weapon: &str, evo: &[&str], mods: &[&str]| {
-        let b = crate::loadout::WeaponBase::from_data(weapon, true, evo);
+        let b = crate::model::WeaponBase::from_data(weapon, true, evo);
         // THE POOL IS THE BASE WEAPON'S. An Incarnon FORM entry has none
         // of its own — a mod is equipped on the weapon, not on the form.
         let pool = crate::mods_data::pool_for_weapon("kunai");
-        let multishot: Vec<&crate::loadout::ModDef> = mods
+        let multishot: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
             .collect();
-        let panel = crate::loadout::resolve(&b, &multishot, crate::loadout::StackPolicy::Emergent);
+        let panel = crate::loadout::resolve(&b, &multishot, crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         // A POOL THE RUN CHEWS THROUGH SLOWLY. The condition is a live one
         // — health below half — so the fixture has to actually get there:
         // spawning at full and dying instantly would leave it never true,
         // and an unkillable target would leave it never true either.
-        p.target.mode = crate::fight::TargetMode::InstantRespawn;
+        p.target.mode = crate::target::TargetMode::InstantRespawn;
         p.target.base_health = 40_000.0;
         p.target.base_armor = 0.0;
         p.target.base_shield = 0.0;
@@ -1794,9 +1798,9 @@ fn the_half_health_bonus_lands_in_the_weapons_own_co_bracket() {
 /// half-the-fight condition.
 #[test]
 fn a_below_half_health_bonus_excludes_the_flat_damage_its_own_card_grants() {
-    let bare = crate::loadout::WeaponBase::from_data("sicarus", true, &[]);
+    let bare = crate::model::WeaponBase::from_data("sicarus", true, &[]);
     let base_total = bare.base_vector.total();
-    let with = crate::loadout::WeaponBase::from_data("sicarus", true, &["sicarus_feigned_retreat"]);
+    let with = crate::model::WeaponBase::from_data("sicarus", true, &["sicarus_feigned_retreat"]);
 
     // The card's own flat half, read from the same file the rate came from.
     let own_flat = crate::evolutions_data::get("sicarus_feigned_retreat")
@@ -1839,8 +1843,8 @@ fn a_gated_perk_pays_only_the_frames_that_open_it() {
     assert!(slow.sprint < 1.2 && slow.armor <= 450.0 && slow.energy <= 700.0);
 
     let panel = |weapon: &str, evo: &[&str], tenno: &crate::tenno_data::Tenno| {
-        let base = crate::loadout::WeaponBase::from_data(weapon, true, evo);
-        crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, tenno)
+        let base = crate::model::WeaponBase::from_data(weapon, true, evo);
+        crate::loadout::resolve_for(&base, &[], crate::model::StackPolicy::Emergent, tenno)
     };
 
     // MULTISHOT, on armor.
@@ -1873,7 +1877,7 @@ fn a_gated_perk_pays_only_the_frames_that_open_it() {
         panel("bronco", &["bronco_speeding_bullet"], t)
             .indirect
             .iter()
-            .find(|(s, _)| *s == crate::loadout::IndirectStat::ProjectileSpeed)
+            .find(|(s, _)| *s == crate::model::IndirectStat::ProjectileSpeed)
             .map_or(0.0, |(_, v)| *v)
     };
     assert!((ps(&slow) - 0.0).abs() < 1e-9, "at 0.9 sprint it is worth nothing");
@@ -1901,8 +1905,8 @@ fn a_sprint_gated_fire_rate_pays_only_the_frames_that_reach_it() {
     fast.sprint = 1.25; // Loki Prime
 
     let rate = |evo: &[&str], tenno: &crate::tenno_data::Tenno| {
-        let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
-        crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, tenno)
+        let base = crate::model::WeaponBase::from_data("paris_prime", true, evo);
+        crate::loadout::resolve_for(&base, &[], crate::model::StackPolicy::Emergent, tenno)
             .fire_rate
     };
     let perk = ["paris_prime_deadly_pace"];
@@ -1936,8 +1940,8 @@ fn a_sprint_gated_fire_rate_pays_only_the_frames_that_reach_it() {
 fn a_consecutive_weakpoint_buff_is_undone_by_a_body_shot() {
     let arena = crate::arena::Arena::training(120.0);
     let dmg = |evo: &[&str], head_share: f64| {
-        let base = crate::loadout::WeaponBase::from_data("sybaris_prime", true, evo);
-        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let base = crate::model::WeaponBase::from_data("sybaris_prime", true, evo);
+        let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         // ONE head and one body, both at 1x, so the only thing the aim
         // changes is which trigger fires — not how hard the hit lands.
@@ -1960,7 +1964,7 @@ fn a_consecutive_weakpoint_buff_is_undone_by_a_body_shot() {
     // because the same card also grants a static +15 base damage. So the
     // floor is exactly that clause and not one point more, which is the
     // assertion that a trigger firing on the wrong event fails.
-    let unmodded = crate::loadout::WeaponBase::from_data("sybaris_prime", true, &[])
+    let unmodded = crate::model::WeaponBase::from_data("sybaris_prime", true, &[])
         .base_vector
         .total();
     let static_only = (unmodded + 15.0) / unmodded;

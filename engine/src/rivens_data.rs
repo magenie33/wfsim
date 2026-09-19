@@ -26,7 +26,7 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 
 use crate::damage::DamageType;
-use crate::loadout::{Faction, IndirectStat, ModDef, ModEffect, Rarity};
+use crate::model::{Faction, IndirectStat, ModDef, ModEffect, Rarity};
 use crate::mods::Polarity;
 
 /// The random band every stat rolls within, independently (wiki).
@@ -599,7 +599,7 @@ impl RivenSpec {
     /// The wiki says "usually", and "Exceptions exist on a case by case
     /// basis" — so this is the general rule and a named exception would have
     /// to be data on the weapon, not a hole in this check.
-    pub fn illegal_on(&self, base: &crate::loadout::WeaponBase) -> Vec<String> {
+    pub fn illegal_on(&self, base: &crate::model::WeaponBase) -> Vec<String> {
         let mut out = self.illegal();
         let total = base.base_vector.total();
         let p = pool(&self.class);
@@ -1585,7 +1585,7 @@ fn an_element_is_never_a_malus() {
     /// A physical stat needs the weapon to actually deal that type.
     #[test]
     fn a_physical_stat_needs_more_than_25_percent_of_that_type() {
-        use crate::loadout::WeaponBase;
+        use crate::model::WeaponBase;
         // The Torid is pure Toxin: no physical riven stat exists on it.
         let torid = WeaponBase::from_data("torid", true, &[]);
         for id in ["impact", "puncture", "slash"] {
@@ -1663,7 +1663,9 @@ fn an_element_is_never_a_malus() {
     /// every riven comparison downstream would be wrong in the same direction.
     #[test]
     fn a_rivens_damage_joins_serrations_bucket_and_does_not_multiply_it() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         let base = WeaponBase::from_data("torid", true, &[]);
         let serration = crate::mods_data::class_pool("rifle")
             .into_iter()

@@ -1,15 +1,3 @@
-/// A continuous weapon's damage RAMP — wiki Continuous_Weapon, verbatim:
-/// "Initial damage starts at a lower percentage, and ramps up to 100% of its
-/// damage over 0.6 seconds of hitting a target. 0.8 seconds after the weapon
-/// stops hitting a target, the damage decays back to its initial point over 2
-/// seconds. For most weapons, this lower percentage is 20%."
-///
-/// The floor is PER WEAPON — the same page lists exceptions (Convectrix 60/80%,
-/// Phage 70%, Embolist 30%), and the roster now has one: Phantasma Prime ramps
-/// "from 15% to 100%", not from 20%. So this constant is the DEFAULT the
-/// sentence gives ("for most weapons"), and a weapon that disagrees says so in
-/// its own file (`beam_ramp_floor`).
-pub(crate) const BEAM_RAMP_FLOOR: f64 = 0.20;
 
 /// The HELD-TRIGGER SPOOL after `shots` consecutive pulls — a fraction of the
 /// live fire rate, 1.0 where the weapon has none.
@@ -22,7 +10,7 @@ pub(crate) const BEAM_RAMP_FLOOR: f64 = 0.20;
 /// climbs in SECONDS and holds, this moves in SHOTS and is a cadence — which is
 /// why a fire-rate mod does not buy its way out of it (the mod raises both ends
 /// together).
-pub(super) fn spool_factor(spec: Option<crate::weapons_data::SustainedFireRate>, shots: f64) -> f64 {
+pub(super) fn spool_factor(spec: Option<crate::model::SustainedFireRate>, shots: f64) -> f64 {
     match spec {
         Some(s) if s.over_shots > 0.0 => {
             s.start + (s.end - s.start) * (shots / s.over_shots).min(1.0)

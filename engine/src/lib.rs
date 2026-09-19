@@ -18,6 +18,7 @@
 //! buff bar. See `docs/BUFFS.md`.
 
 pub mod naming;
+pub mod model;
 pub mod abilities_data;
 pub mod ammo;
 pub mod arcanes_data;
@@ -44,7 +45,6 @@ pub mod enemy_data;
 pub mod evolutions_data;
 pub mod factions_data;
 pub mod i18n_data;
-pub mod kitguns_data;
 pub mod loadout;
 pub mod mercy;
 pub mod metrics;
@@ -62,6 +62,7 @@ pub mod scaling;
 pub mod sim;
 pub mod space;
 pub mod status;
+pub mod target;
 pub mod syndicates_data;
 pub mod tenno_data;
 pub mod warframes_data;

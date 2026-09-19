@@ -17,7 +17,7 @@ impl ArcState {
     /// Apply pending decay per the spec's family and return live stacks.
     ///
     /// A LOCKED buff needs no branch here: its duration is
-    /// [`crate::loadout::NO_TIMEOUT`], so every expiry it computes is infinite
+    /// [`crate::model::NO_TIMEOUT`], so every expiry it computes is infinite
     /// and neither family below can ever fall due.
     pub(super) fn current(&mut self, spec: &ArcBuffSpec, now: f64) -> u32 {
         if spec.all_drop {

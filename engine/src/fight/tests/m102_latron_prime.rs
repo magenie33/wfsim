@@ -19,10 +19,10 @@ fn with_double_tap(id: &str) -> crate::loadout::ResolvedPanel {
     // NO RIDDLED TARGET here: its multishot rolls extra pellets, and every
     // pellet is hits of its own, which would blur the count read below.
     let evos = ["latron_prime_evo1_incarnon_form"];
-    let base = crate::loadout::WeaponBase::from_data(id, false, &evos);
+    let base = crate::model::WeaponBase::from_data(id, false, &evos);
     let pool = crate::mods_data::pool_for_weapon("latron_prime");
     let dt = pool.iter().find(|m| m.id == "double_tap").expect("double_tap on the Latron Prime");
-    crate::loadout::resolve(&base, &[dt], crate::loadout::StackPolicy::Emergent)
+    crate::loadout::resolve(&base, &[dt], crate::model::StackPolicy::Emergent)
 }
 
 fn head_only() -> Vec<BodyPart> {
@@ -43,7 +43,7 @@ fn head_only() -> Vec<BodyPart> {
 #[test]
 fn m102_galvanized_and_the_plus_six_on_both_forms() {
     let evo = ["latron_prime_riddled_target"];
-    let b = crate::loadout::WeaponBase::from_data("latron_prime", false, &evo);
+    let b = crate::model::WeaponBase::from_data("latron_prime", false, &evo);
     let (panel, f) = (b.base_vector.total(), b.co_base_fraction());
     assert!((panel - 96.0).abs() < 1e-9, "panel {panel}");
     assert!((panel * f - 90.0).abs() < 1e-9, "CO reads {}", panel * f);
@@ -58,8 +58,8 @@ fn m102_galvanized_and_the_plus_six_on_both_forms() {
         assert!((hit * 5.0 - measured).abs() < 0.5);
     }
 
-    let i = crate::loadout::WeaponBase::from_data("latron_prime_incarnon", false, &evo);
-    assert_eq!(i.co_behavior, crate::loadout::CoBehavior::Independent);
+    let i = crate::model::WeaponBase::from_data("latron_prime_incarnon", false, &evo);
+    assert_eq!(i.co_behavior, crate::model::CoBehavior::Independent);
     let direct = i.base_vector.total();
     assert!((direct - 56.0).abs() < 1e-9, "collision {direct}");
     for (stacks, types, measured) in [(0.0, 0.0, 148.0), (1.0, 3.0, 326.0), (2.0, 3.0, 505.0)] {

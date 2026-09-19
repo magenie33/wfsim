@@ -284,7 +284,7 @@ mod tests {
                 // reading `key` alone would report the three it does not use.
                 "techrot_babau" | "legacyte" => {
                     let tp = e
-                        .target_params(1, false, false, crate::fight::TargetMode::InstantRespawn)
+                        .target_params(1, false, false, crate::target::TargetMode::InstantRespawn)
                         .expect("it builds a target");
                     let mut got = tp.type_mods.faction.listed();
                     got.sort_by_key(|(t, _)| format!("{t:?}"));

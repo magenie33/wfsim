@@ -43,7 +43,7 @@ impl LiveStacks {
     }
 
     /// Seed from a configured buff card: its stacks, on its own clock. A
-    /// LOCKED card arrives here as [`crate::loadout::NO_TIMEOUT`], so nothing
+    /// LOCKED card arrives here as [`crate::model::NO_TIMEOUT`], so nothing
     /// on this path has to know what locking is.
     /// WHEN THE NEXT STACK FALLS DUE, or `None` where nothing is up.
     ///
@@ -73,7 +73,7 @@ impl LiveStacks {
         }
     }
 
-    /// Seed a pile that expires WHOLE — [`crate::loadout::BuffDecay::AllAtOnce`].
+    /// Seed a pile that expires WHOLE — [`crate::model::BuffDecay::AllAtOnce`].
     pub(super) fn seed_all_at_once(initial: u32, max: u32, duration: f64) -> Self {
         LiveStacks { all_at_once: true, ..LiveStacks::seed(initial, max, duration) }
     }
@@ -109,7 +109,7 @@ impl LiveStacks {
         self.expiry = now + duration;
     }
 
-    pub(super) fn on_kill(&mut self, now: f64, spec: &crate::loadout::StackSpec) {
+    pub(super) fn on_kill(&mut self, now: f64, spec: &crate::model::StackSpec) {
         self.bump(now, spec.duration, spec.max_stacks);
     }
 }

@@ -12,7 +12,7 @@ use super::*;
 /// ever decays through time. It is recorded on the weapon's card as the one
 /// way this runs generous.
 pub(super) fn combo_at(
-    spec: Option<crate::weapons_data::SniperCombo>,
+    spec: Option<crate::model::SniperCombo>,
     held: bool,
     count: u32,
     last_hit: f64,
@@ -34,9 +34,9 @@ pub(super) fn combo_at(
 
 /// A stacking spec's decay period, or 0 when the spec is absent.
 /// PYRANA PRIME'S STREAK, as the bar holds it: `stacks` kills on one clock.
-pub(super) fn kill_streak(s: crate::weapons_data::KillStreakSummonSpec, stacks: u32, t: f64) -> crate::buffs::Buff {
+pub(super) fn kill_streak(s: crate::model::KillStreakSummonSpec, stacks: u32, t: f64) -> crate::buffs::Buff {
     crate::buffs::Buff {
-        id: crate::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
+        id: crate::model::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
         scope: crate::buffs::BuffScope::Weapon,
         stacks,
         expiry_seconds: Some(t + s.kill_window_seconds),
@@ -46,9 +46,9 @@ pub(super) fn kill_streak(s: crate::weapons_data::KillStreakSummonSpec, stacks: 
 
 /// PYRANA PRIME'S SECOND GUN, as the bar holds it: the fire-rate half is a
 /// bar multiplier like Frenzy's, and the magazine half reads whether it is up.
-pub(super) fn summoned_gun(s: crate::weapons_data::KillStreakSummonSpec, t: f64) -> crate::buffs::Buff {
+pub(super) fn summoned_gun(s: crate::model::KillStreakSummonSpec, t: f64) -> crate::buffs::Buff {
     crate::buffs::Buff {
-        id: crate::weapons_data::KillStreakSummonSpec::BUFF_ID.into(),
+        id: crate::model::KillStreakSummonSpec::BUFF_ID.into(),
         scope: crate::buffs::BuffScope::Weapon,
         stacks: 1,
         expiry_seconds: Some(t + s.duration_seconds),
@@ -59,7 +59,7 @@ pub(super) fn summoned_gun(s: crate::weapons_data::KillStreakSummonSpec, t: f64)
     }
 }
 
-pub(super) fn dur(spec: &Option<crate::loadout::StackSpec>) -> f64 {
+pub(super) fn dur(spec: &Option<crate::model::StackSpec>) -> f64 {
     spec.as_ref().map_or(0.0, |s| s.duration)
 }
 
@@ -264,13 +264,13 @@ pub fn run_once_traced(
         .stacking_buffs
         .iter()
         .map(|b| match b.decay {
-            crate::loadout::BuffDecay::PerStackExpiry => {
+            crate::model::BuffDecay::PerStackExpiry => {
                 LiveStacks::seed_per_stack(b.initial_stacks, b.max_stacks, b.duration)
             }
-            crate::loadout::BuffDecay::LoseOneAndReset => {
+            crate::model::BuffDecay::LoseOneAndReset => {
                 LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
             }
-            crate::loadout::BuffDecay::AllAtOnce => {
+            crate::model::BuffDecay::AllAtOnce => {
                 LiveStacks::seed_all_at_once(b.initial_stacks, b.max_stacks, b.duration)
             }
         })
@@ -374,7 +374,7 @@ pub fn run_once_traced(
         ($n:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 if b.per_shell
-                    && b.trigger == crate::loadout::BuffTrigger::ReloadComplete
+                    && b.trigger == crate::model::BuffTrigger::ReloadComplete
                     && (b.chance >= 1.0 || $rng.chance(b.chance))
                 {
                     for _ in 0..$n {
@@ -416,8 +416,8 @@ pub fn run_once_traced(
             }
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 let cleared = match b.cleared_by {
-                    crate::loadout::ClearedBy::MagazineRefilled => true,
-                    crate::loadout::ClearedBy::Reload => $reload,
+                    crate::model::ClearedBy::MagazineRefilled => true,
+                    crate::model::ClearedBy::Reload => $reload,
                     _ => false,
                 };
                 if cleared {
@@ -461,7 +461,7 @@ pub fn run_once_traced(
     }
     macro_rules! bump_reload_only {
         ($t:expr, $rng:expr) => {
-            bump_on_trigger!(crate::loadout::BuffTrigger::ReloadComplete, $t, $rng);
+            bump_on_trigger!(crate::model::BuffTrigger::ReloadComplete, $t, $rng);
         };
     }
     // …and the FROM-EMPTY half, which is deliberately NOT folded into the macro
@@ -472,7 +472,7 @@ pub fn run_once_traced(
     // transform, where it reads the magazine it actually refilled.
     macro_rules! bump_reload_from_empty {
         ($t:expr, $rng:expr) => {
-            bump_on_trigger!(crate::loadout::BuffTrigger::ReloadFromEmpty, $t, $rng);
+            bump_on_trigger!(crate::model::BuffTrigger::ReloadFromEmpty, $t, $rng);
             // RESONANT RESTORE rides the same event, because it is the same
             // event: "On Reload From Empty: Increase Base Magazine Capacity by
             // +15. Stacks up to 3x". It is not a `StackingGrant` because what
@@ -511,7 +511,7 @@ pub fn run_once_traced(
     macro_rules! bump_status_buffs {
         ($debuffs:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if let crate::loadout::BuffTrigger::HitEnemyWithStatus(s) = b.trigger {
+                if let crate::model::BuffTrigger::HitEnemyWithStatus(s) = b.trigger {
                     if has_status($debuffs, s) && (b.chance >= 1.0 || $rng.chance(b.chance)) {
                         buff_stacks[i].bump($t, b.duration, b.max_stacks);
                     }
@@ -1091,7 +1091,7 @@ pub fn run_once_traced(
             let fresh = r.kills - kill_buff_mark;
             kill_buff_mark = r.kills;
             for _ in 0..fresh {
-                bump_on_trigger!(crate::loadout::BuffTrigger::Kill, t, d.extra);
+                bump_on_trigger!(crate::model::BuffTrigger::Kill, t, d.extra);
                 // EXACT PENANCE, on the same counter and for the same reason:
                 // "Kills from status effects can also trigger the effect", and
                 // a DoT kill happens nowhere near the direct-hit site that
@@ -1106,7 +1106,7 @@ pub fn run_once_traced(
                 // lapse drops the whole streak. A kill while the second gun is
                 // up starts nothing — "will not refresh the duration".
                 if let Some(s) = params.kill_streak_summon {
-                    use crate::weapons_data::KillStreakSummonSpec as K;
+                    use crate::model::KillStreakSummonSpec as K;
                     if bar.get(K::BUFF_ID).is_none() {
                         let streak = bar.get(K::STREAK_BUFF_ID).map_or(0, |b| b.stacks) + 1;
                         if streak >= s.kills {
@@ -1124,7 +1124,7 @@ pub fn run_once_traced(
         // ethereal Pyrana disappears, the magazine is reduced to the modded
         // magazine size" (wiki).
         if let Some(s) = params.kill_streak_summon {
-            let want = if bar.get(crate::weapons_data::KillStreakSummonSpec::BUFF_ID).is_some() {
+            let want = if bar.get(crate::model::KillStreakSummonSpec::BUFF_ID).is_some() {
                 s.magazine_multiplier
             } else {
                 1.0
@@ -1380,7 +1380,7 @@ pub fn run_once_traced(
                 // takes the pile whichever branch notices it, and a CYCLE
                 // reloads the base form here.
                 for (i, b) in params.stacking_buffs.iter().enumerate() {
-                    if b.cleared_by == crate::loadout::ClearedBy::EmptyMagazine {
+                    if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
                         buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                     }
                 }
@@ -1434,7 +1434,7 @@ pub fn run_once_traced(
             // 99-stack cap belongs to a player who tops up a magazine that
             // never empties, which is not what this loop does.
             for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if b.cleared_by == crate::loadout::ClearedBy::EmptyMagazine {
+                if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
                     buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                 }
             }
@@ -1535,7 +1535,7 @@ pub fn run_once_traced(
         // it was a static build-time value and the card's whole second half
         // went unpaid.
         let initial_now =
-            ap.initial_combo + buff_total!(ap, crate::loadout::BuffGrant::InitialCombo, t);
+            ap.initial_combo + buff_total!(ap, crate::model::BuffGrant::InitialCombo, t);
         let combo_now = melee_combo_points(combo_points, initial_now, t - combo_spent_t);
         let combo_mult = melee_combo_multiplier(combo_now);
         // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
@@ -1580,7 +1580,7 @@ pub fn run_once_traced(
         let is_slam = ap
             .radial
             .as_ref()
-            .is_some_and(|r| r.blast_kind == crate::weapons_data::BlastKind::Slam);
+            .is_some_and(|r| r.blast_kind == crate::model::BlastKind::Slam);
         let mode_damage = 1.0 + if is_slam { ap.slam_damage } else { 0.0 };
         // …AND WHAT THE SWING IS WORTH.
         //
@@ -1619,7 +1619,7 @@ pub fn run_once_traced(
         // front. Empty for a gun, which never asks.
         let melee_struck = match &swing {
             Some(h) if ap.follow_through.is_some() => params
-                .melee_struck(h.all_around, buff_total!(ap, crate::loadout::BuffGrant::MeleeRange, t)),
+                .melee_struck(h.all_around, buff_total!(ap, crate::model::BuffGrant::MeleeRange, t)),
             _ => Vec::new(),
         };
         // WHAT THIS SWING FORCES, split into the two machines that carry it —
@@ -1869,7 +1869,7 @@ pub fn run_once_traced(
             + ap.crit_chance_per_combo * (combo_mult - 1.0)
             // …AND EVERY STACKING GRANT OF IT, the bracket Prolific
             // Perforation's card puts itself in by naming Pistol Gambit.
-            + buff_total!(ap, crate::loadout::BuffGrant::CritChance, t);
+            + buff_total!(ap, crate::model::BuffGrant::CritChance, t);
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -1906,7 +1906,7 @@ pub fn run_once_traced(
             + if debuffs.lifted.is_some_and(|e| e > t) { ap.status_chance_on_lifted } else { 0.0 }
             // …AND AN ON-KILL STATUS BUFF (Galvanized Elementalist), which is
             // relative like every other card in this bracket.
-            + buff_total!(ap, crate::loadout::BuffGrant::StatusChance, t);
+            + buff_total!(ap, crate::model::BuffGrant::StatusChance, t);
         // HIGH GROUND, LIVE: "+25% of CURRENT Status Chance". The panel folded
         // in what it could see; this takes that back and pays what the shot
         // actually has, which is the panel's status plus whatever the arcanes
@@ -1998,7 +1998,7 @@ pub fn run_once_traced(
             }
             // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
             // sits here rather than in the bucket above.
-            + buff_total!(ap, crate::loadout::BuffGrant::Multishot, t)
+            + buff_total!(ap, crate::model::BuffGrant::Multishot, t)
             // BLAZING BARREL, both of its shapes, and they are two brackets.
             //
             // "+0.05 BASE Multishot" is added before mods and is therefore
@@ -2012,9 +2012,9 @@ pub fn run_once_traced(
             + if ms_locked {
                 0.0
             } else {
-                buff_total!(ap, crate::loadout::BuffGrant::BaseMultishot, t)
+                buff_total!(ap, crate::model::BuffGrant::BaseMultishot, t)
                     * (ap.multishot / ap.base_multishot.max(1e-9))
-                    + buff_total!(ap, crate::loadout::BuffGrant::MultishotPercent, t)
+                    + buff_total!(ap, crate::model::BuffGrant::MultishotPercent, t)
                         * ap.base_multishot
             };
         let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;
@@ -2158,7 +2158,7 @@ pub fn run_once_traced(
         // the pellet loop — one shot is one stack however many pellets it threw
         // — and after `ms_eff` was rolled, so the shot that earns the stack does
         // not carry it.
-        bump_buffs!(crate::loadout::BuffTrigger::Firing, t, d.spine);
+        bump_buffs!(crate::model::BuffTrigger::Firing, t, d.spine);
         // READY RETALIATION IS ARMED THE MOMENT THE MAGAZINE RUNS OUT, which is
         // HERE — the shot that spends the last round — and not at the reload
         // that follows. The two are the same instant for a reload and are not
@@ -2259,7 +2259,7 @@ pub fn run_once_traced(
             let streak = match params.headshot_streak {
                 Some(s) if t < streak_expiry => s.value,
                 _ => 0.0,
-            } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
+            } + buff_total!(ap, crate::model::BuffGrant::HeadshotDamage, t);
             if ap.headshot_bonus_multiplicative {
                 (params.arcane.headshot_multiplier_bonus + streak, ap.headshot_damage_bonus)
             } else {
@@ -2277,8 +2277,8 @@ pub fn run_once_traced(
             base_damage_add_mods: bd_reload_add
                 + bd_eximus_add
                 + ap.compression_base_damage
-                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
-                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t),
+                + buff_total!(ap, crate::model::BuffGrant::BaseDamage, t)
+                + buff_total!(ap, crate::model::BuffGrant::FlatBaseDamage, t),
             // The same ladder the pellet loop builds below, on the aimed body's
             // own head — see the field's note on why it is computed twice
             // rather than shared.
@@ -2513,7 +2513,7 @@ pub fn run_once_traced(
             // every stage takes as-is.
             let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
                 + arc.cd_bonus(ap, t)
-                + buff_total!(ap, crate::loadout::BuffGrant::CritDamage, t)
+                + buff_total!(ap, crate::model::BuffGrant::CritDamage, t)
                 // DREAMER'S WRATH: `+32% critical damage for Tennokai attacks`
                 // — on the one swing the window bought and no other.
                 + if tennokai { ap.tennokai.crit_damage } else { 0.0 }
@@ -2568,7 +2568,7 @@ pub fn run_once_traced(
                 // Mauler's Magazine, earned inside the fight — a BASE grant,
                 // already multiplied by the crit-damage mods at `resolve`, the
                 // same conversion `FlatBaseDamage` takes one bracket over.
-                + buff_total!(ap, crate::loadout::BuffGrant::BaseCritDamage, t)
+                + buff_total!(ap, crate::model::BuffGrant::BaseCritDamage, t)
                 // …and the other half of the same condition, decided by the
                 // same shot: an absolute add, already multiplied by the
                 // crit-damage mods at `resolve`.
@@ -2591,12 +2591,12 @@ pub fn run_once_traced(
                 // base-damage buff joins, so Serration dilutes it exactly as
                 // the wiki's "additive with damage bonuses" says it should.
                 + ap.compression_base_damage
-                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
+                + buff_total!(ap, crate::model::BuffGrant::BaseDamage, t)
                 // Striking Succession, already converted by `resolve` into the
                 // share of this bucket its flat number is worth — so it lands
                 // here and NOT diluted, which is the whole point of the
                 // conversion.
-                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t)
+                + buff_total!(ap, crate::model::BuffGrant::FlatBaseDamage, t)
                 // …AND KILLING BLOW, which is a term in this bucket and not a
                 // multiplier — see `heavy_attack_base_damage`.
                 + heavy_attack_base_damage(ap)
@@ -2640,7 +2640,7 @@ pub fn run_once_traced(
                 params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio,
                 half_hp,
                 co_base,
-                crate::loadout::CoStage::Direct,
+                crate::model::CoStage::Direct,
             );
             // The explosion's own, and only when it differs — an evolution
             // that raises the radial's damage without raising its CO base
@@ -2655,7 +2655,7 @@ pub fn run_once_traced(
                 // DIRECT-hit bonus, like the CO it rides beside.
                 Some(r) if r.takes_condition_overload => gunco_bucket(
                     params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
-                    r.co_base, crate::loadout::CoStage::Radial,
+                    r.co_base, crate::model::CoStage::Radial,
                 ),
                 _ => Gunco { bucket: arc_ratio, ..Default::default() },
             };
@@ -2736,7 +2736,7 @@ pub fn run_once_traced(
             let streak_bonus = match params.headshot_streak {
                 Some(s) if t < streak_expiry => s.value,
                 _ => 0.0,
-            } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
+            } + buff_total!(ap, crate::model::BuffGrant::HeadshotDamage, t);
             // WHAT A HEAD WOULD BE WORTH, computed whether or not THIS pellet
             // found one: a RICOCHET rolls its own head, on another body, later
             // in the same shot, and it is worth exactly what a head is worth
@@ -2977,12 +2977,12 @@ pub fn run_once_traced(
             // does. It is checked FIRST because it does not care whether the
             // pellet landed.
             let det = if ap.radial.as_ref().map(|r| r.blast_kind)
-                == Some(crate::weapons_data::BlastKind::Slam)
+                == Some(crate::model::BlastKind::Slam)
             {
                 crate::space::Detonation { at: params.player_at, height_m: det.height_m }
             } else if pellet_lands
                 && ap.radial.as_ref().map(|r| r.blast_kind)
-                    == Some(crate::weapons_data::BlastKind::Terminal)
+                    == Some(crate::model::BlastKind::Terminal)
             {
                 let aim = params.aim_point();
                 let mut bodies = Vec::with_capacity(params.others.len() + 1);
@@ -3992,8 +3992,8 @@ pub fn run_once_traced(
                             damage_multiplier: pm_mult,
                         };
                         match fp.stacking {
-                            crate::loadout::FieldStacking::Stack => fields.push(fresh),
-                            crate::loadout::FieldStacking::Refresh => {
+                            crate::model::FieldStacking::Stack => fields.push(fresh),
+                            crate::model::FieldStacking::Refresh => {
                                 fields.clear();
                                 fields.push(fresh);
                             }
@@ -4016,7 +4016,7 @@ pub fn run_once_traced(
                     // A PELLET THAT WENT THROUGH: `struck` is who is on the
                     // line, so a second body means this bolt left the first.
                     if struck.len() > 1 {
-                        bump_buffs!(crate::loadout::BuffTrigger::PunchThrough, t, d.extra);
+                        bump_buffs!(crate::model::BuffTrigger::PunchThrough, t, d.extra);
                     }
                     r.crits += (tier >= 1) as u32;
                     r.big_crits += (tier >= 2) as u32;
@@ -4047,7 +4047,7 @@ pub fn run_once_traced(
                         // a LOCKED buff earns it too, it just never loses it.
                         // EVERY buff that triggers on a headshot, including
                         // its own chance roll. One line for the family.
-                        bump_buffs!(crate::loadout::BuffTrigger::Headshot, t, d.extra);
+                        bump_buffs!(crate::model::BuffTrigger::Headshot, t, d.extra);
                         // DEATH KNELL, per PELLET: "individual Multishot bullets
                         // can proc Death Knell" (wiki).
                         if let Some(w) = params.weakpoint_stacks {
@@ -4060,14 +4060,14 @@ pub fn run_once_traced(
                         // base-damage stacks follow. A killing headshot still
                         // counts: this runs before the kill path's `continue`.
                         arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
-                        bump_buffs!(crate::loadout::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
+                        bump_buffs!(crate::model::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
                     } else {
                         // …AND A BODY HIT TAKES THE PILE. The only trigger in
                         // this sim that the next shot can undo, and the reason
                         // it is not `Headshot` with a clock: what ends it is
                         // what you hit, not how long you waited.
                         for (i, b) in params.stacking_buffs.iter().enumerate() {
-                            if b.trigger == crate::loadout::BuffTrigger::ConsecutiveHeadshot {
+                            if b.trigger == crate::model::BuffTrigger::ConsecutiveHeadshot {
                                 buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                             }
                         }
@@ -4365,9 +4365,9 @@ pub fn run_once_traced(
             // simply does not read what the instance did. Per instance for the
             // same measured reason (M11): a direct hit and its explosion are
             // two.
-            bump_buffs!(crate::loadout::BuffTrigger::Hit, t, d.extra);
+            bump_buffs!(crate::model::BuffTrigger::Hit, t, d.extra);
             if tier == 0 && procs.is_empty() {
-                bump_buffs!(crate::loadout::BuffTrigger::PlainHit, t, d.extra);
+                bump_buffs!(crate::model::BuffTrigger::PlainHit, t, d.extra);
             }
             // STORMBURST: the condition is on the TARGET, read here where the
             // debuffs are in hand. Bumped AFTER this pull's multishot was
@@ -4396,7 +4396,7 @@ pub fn run_once_traced(
             // are a different sentence that no card in the roster has written
             // yet.
             for _ in 0..procs.len() {
-                bump_buffs!(crate::loadout::BuffTrigger::StatusApplied, t, d.extra);
+                bump_buffs!(crate::model::BuffTrigger::StatusApplied, t, d.extra);
             }
             // INDEPENDENT PROCS land on the HIT, not on the roll — that is what
             // "independent from damage" means, and it is why this is here
@@ -4718,7 +4718,7 @@ pub fn run_once_traced(
         // completes its own burst — which is what the trigger means there.
         let burst_len = ap.burst.map_or(1, |b| b.count.max(1));
         if rounds_this_mag.is_multiple_of(burst_len) {
-            bump_buffs!(crate::loadout::BuffTrigger::FullBurst, t, rng);
+            bump_buffs!(crate::model::BuffTrigger::FullBurst, t, rng);
         }
 
         // EXECUTIONER'S FORTUNE, SPENT. The roll is per pellet, the effect is
@@ -4847,9 +4847,9 @@ pub fn run_once_traced(
                 // first two, so neither can charge those — but it CAN kill,
                 // which is the whole difference the third one makes.
                 charges += match charge_on {
-                    crate::loadout::ChargeOn::WeakpointHits => r.headshots - headshots_before,
-                    crate::loadout::ChargeOn::DirectHits => r.pellets - pellets_before,
-                    crate::loadout::ChargeOn::Kills => fresh_kills,
+                    crate::model::ChargeOn::WeakpointHits => r.headshots - headshots_before,
+                    crate::model::ChargeOn::DirectHits => r.pellets - pellets_before,
+                    crate::model::ChargeOn::Kills => fresh_kills,
                 };
                 // A FULL GAUGE ARMS THE TRANSFORM; the cadence below still
                 // runs. A `continue` here would skip the completing shot's OWN
@@ -4894,7 +4894,7 @@ pub fn run_once_traced(
                     magazine_refilled!();
                     if transformed_from_empty {
                         bump_on_trigger!(
-                            crate::loadout::BuffTrigger::ReloadFromEmpty, t, d.spine);
+                            crate::model::BuffTrigger::ReloadFromEmpty, t, d.spine);
                     }
                     r.transforms += 1;
                     in_base_form = false;
@@ -5120,7 +5120,7 @@ pub fn run_once_traced(
                 let slam_rad = match (h.slam_multiplier, ap.slam) {
                     (Some(_), Some(s)) => Some(s),
                     _ => ap.radial.filter(|r| {
-                        r.blast_kind == crate::weapons_data::BlastKind::Slam
+                        r.blast_kind == crate::model::BlastKind::Slam
                     }),
                 };
                 if let Some(rad) = slam_rad {
@@ -5171,7 +5171,7 @@ pub fn run_once_traced(
         // already the absolute rate that fraction is worth, so adding it here,
         // inside the bracket rather than outside it, is what keeps it additive
         // with mods instead of multiplicative with them.
-        fr_add += buff_total!(ap, crate::loadout::BuffGrant::FireRate, t);
+        fr_add += buff_total!(ap, crate::model::BuffGrant::FireRate, t);
         let rate = if params.locks("fire_rate") {
             ap.fire_rate
         } else {
@@ -5207,11 +5207,11 @@ pub fn run_once_traced(
                 let draw = c * ap.fire_rate / rate.max(1e-9);
                 match ap.charge_cadence {
                     // A bow's draw IS the cycle (wiki's bow formula).
-                    crate::weapons_data::ChargeCadence::DrawOnly => draw,
+                    crate::model::ChargeCadence::DrawOnly => draw,
                     // Everything else pays the draw AND the listed rate's
                     // interval: "1 / (Modded Charge Time + 1 / Modded Fire
                     // Rate)". The rate is what happens after the charge.
-                    crate::weapons_data::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
+                    crate::model::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
                 }
             }
             // A BURST pull fires `count` rounds and then waits; the listed

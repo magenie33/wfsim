@@ -13,7 +13,8 @@
 
 use std::collections::BTreeSet;
 
-use wfsim_engine::loadout::{ModDef, StackPolicy, WeaponBase};
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::{ModDef, StackPolicy};
 use wfsim_engine::mods::{plan_forma, PlannedMod};
 use wfsim_optimizer::space::SubsetSpace;
 use wfsim_optimizer::{enumerate_candidates_observed, Constraints};

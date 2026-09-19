@@ -1,10 +1,10 @@
 use super::*;
 
 fn vectis_prime(duration: f64) -> FightParams {
-    let base = crate::loadout::WeaponBase::from_data("vectis_prime", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+    let base = crate::model::WeaponBase::from_data("vectis_prime", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
     let panel =
-        crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     FightParams::from_panel(
         &panel,
         &crate::arena::Arena::training(duration),
@@ -64,10 +64,10 @@ fn the_combo_multiplies_the_fight() {
 /// works everywhere except there works nowhere that matters.
 #[test]
 fn a_cycle_pays_the_base_forms_combo() {
-    let base = crate::loadout::WeaponBase::from_data("vectis_prime", false, &[]);
-    let inc = crate::loadout::WeaponBase::from_data("vectis_prime_incarnon", false, &[]);
-    let refs: Vec<&crate::loadout::ModDef> = Vec::new();
-    let pol = crate::loadout::StackPolicy::Emergent;
+    let base = crate::model::WeaponBase::from_data("vectis_prime", false, &[]);
+    let inc = crate::model::WeaponBase::from_data("vectis_prime_incarnon", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let pol = crate::model::StackPolicy::Emergent;
     let arena = crate::arena::Arena::training(60.0);
     let cycle = |initial: u32, held: bool| {
         let mut p = FightParams::incarnon_cycle_from_panels(
@@ -104,7 +104,7 @@ fn a_cycle_pays_the_base_forms_combo() {
 /// keeps thirty fewer.
 #[test]
 fn the_counter_decays_one_at_a_time() {
-    let c = crate::weapons_data::SniperCombo { min: 5, seconds: 2.0 };
+    let c = crate::model::SniperCombo { min: 5, seconds: 2.0 };
     assert_eq!(combo_at(Some(c), false, 100, 0.0, 1.9), 100);
     assert_eq!(combo_at(Some(c), false, 100, 0.0, 2.0), 99);
     assert_eq!(combo_at(Some(c), false, 100, 0.0, 60.0), 70);

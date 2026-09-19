@@ -46,7 +46,7 @@ fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
         base_crit_chance: 0.0,
         unmodded_crit_chance: 0.0, // …and NONE in the Incarnon form
         crit_multiplier: 2.0,
-        crit_chance_per_hit: Some(crate::loadout::CritPerHit {
+        crit_chance_per_hit: Some(crate::model::CritPerHit {
             per_stack: 0.02,
             max_bonus: 5.0,
         }),
@@ -64,7 +64,7 @@ fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
             base_form: Box::new(base_form.clone()),
             // …and never earn it back
             arms: Arms::Gauge {
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                charge_on: crate::model::ChargeOn::WeakpointHits,
                 charges_to_fill: 1_000_000,
             },
             ends: Ends::ChargeMagazine,
@@ -108,7 +108,7 @@ fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
 fn hata_satyas_pile_stops_at_its_published_ceiling() {
     // THE CARD'S OWN NUMBERS, because this is arithmetic about them: 1.2%
     // a hit under a 500% ceiling.
-    let card = crate::loadout::CritPerHit { per_stack: 0.012, max_bonus: 5.0 };
+    let card = crate::model::CritPerHit { per_stack: 0.012, max_bonus: 5.0 };
     assert_eq!(card.max_stacks(), 417, "the ceiling is reached, not fitted under");
     assert!((card.bonus(416) - 4.992).abs() < 1e-12, "the 416th is still under it");
     assert!((card.bonus(417) - 5.0).abs() < 1e-12, "and the 417th reads the ceiling");
@@ -116,7 +116,7 @@ fn hata_satyas_pile_stops_at_its_published_ceiling() {
     assert!((card.bonus(10_000) - 5.0).abs() < 1e-12);
     // AT RANK 0 THE SAME CEILING IS 2,500 HITS AWAY, which is the half a
     // stack count written into the yaml could never have expressed.
-    let rank0 = crate::loadout::CritPerHit { per_stack: 0.002, max_bonus: 5.0 };
+    let rank0 = crate::model::CritPerHit { per_stack: 0.002, max_bonus: 5.0 };
     assert_eq!(rank0.max_stacks(), 2_500);
 
     // …and it BINDS in a fight. Same fixture, two ceilings.
@@ -127,7 +127,7 @@ fn hata_satyas_pile_stops_at_its_published_ceiling() {
         // 1% a hit, so the ceiling is reached in `max_bonus x 100` hits —
         // and a crit rate is clamped at 1.0, so a ceiling has to bite BELOW
         // that to be visible at all.
-        crit_chance_per_hit: Some(crate::loadout::CritPerHit {
+        crit_chance_per_hit: Some(crate::model::CritPerHit {
             per_stack: 0.01,
             max_bonus,
         }),
@@ -163,7 +163,7 @@ fn hata_satyas_pile_stops_at_its_published_ceiling() {
 fn eximus_advantage_needs_an_eximus_and_a_weak_point() {
     let build = |eximus: bool, head_weight: f64| {
         let mut p = FightParams {
-            base_damage_on_eximus_weakpoint: Some(crate::loadout::TimedBuff {
+            base_damage_on_eximus_weakpoint: Some(crate::model::TimedBuff {
                 value: 6.0,
                 duration: 10.0,
                 initial_active: false,
@@ -581,12 +581,13 @@ fn the_explosion_rolls_its_own_crit_and_never_counts_as_a_pellet_crit() {
 /// with deliberately different bases can catch that half.
 #[test]
 fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
-    use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger};
+    use crate::arcanes_data::{ArcBuffSpec, ArcTrigger};
+use crate::model::ArcGrant;
     let radial = |crit_damage: f64| {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Heat, 300.0);
         crate::loadout::ResolvedRadial {
-            blast_kind: crate::weapons_data::BlastKind::Contact,
+            blast_kind: crate::model::BlastKind::Contact,
             damage,
             modified_base: 300.0,
             crit_chance: 1.0, // always crits: no crit-roll noise
@@ -601,7 +602,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
             forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
-            co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial), // the default: an explosion gets no CO
+            co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial), // the default: an explosion gets no CO
         }
     };
     // +50% x 2 pinned stacks = +100% of the part's base crit damage.
@@ -612,7 +613,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
             trigger: ArcTrigger::ToxinStatus,
             per_stack: 0.5,
             max_stacks: 2,
-            duration: crate::loadout::NO_TIMEOUT,
+            duration: crate::model::NO_TIMEOUT,
             all_drop: true,
             one_per_instance: false,
             initial_stacks: 2,
@@ -655,7 +656,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
 fn the_explosion_arms_an_on_hit_buff_of_its_own() {
     let mk = |with_radial: bool| {
         let radial = with_radial.then(|| crate::loadout::ResolvedRadial {
-            blast_kind: crate::weapons_data::BlastKind::Contact,
+            blast_kind: crate::model::BlastKind::Contact,
             damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE
             modified_base: 0.0,
             crit_chance: 0.0,
@@ -670,16 +671,16 @@ fn the_explosion_arms_an_on_hit_buff_of_its_own() {
             forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
-            co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial), // the default: an explosion gets no CO
+            co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial), // the default: an explosion gets no CO
         });
         let p = FightParams {
             radial,
-            stacking_buffs: vec![crate::loadout::StackingBuff {
+            stacking_buffs: vec![crate::model::StackingBuff {
             id: "on_plain_hit_damage",
-            trigger: crate::loadout::BuffTrigger::PlainHit,
-            grant: crate::loadout::BuffGrant::BaseDamage,
+            trigger: crate::model::BuffTrigger::PlainHit,
+            grant: crate::model::BuffGrant::BaseDamage,
             chance: 1.0,
-            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
                 per_stack: 4.0,
                 max_stacks: 3,
                 duration: 10.0,
@@ -687,7 +688,7 @@ fn the_explosion_arms_an_on_hit_buff_of_its_own() {
                 initial_stacks: 0,
                 stacks_per_trigger: 1,
                 per_shell: false,
-                cleared_by: crate::loadout::ClearedBy::Nothing,
+                cleared_by: crate::model::ClearedBy::Nothing,
                 card_opens_full: false,
             }],
             // Never crits, never procs: every instance is "plain", so
@@ -819,7 +820,7 @@ fn every_buff_the_roster_offers_can_be_denied() {
 /// mechanics, and the answer comes off the spec rather than off the id.
 #[test]
 fn a_kill_denied_takes_the_galvanized_co_and_leaves_melees() {
-    let spec = |earned_on| crate::loadout::StackSpec {
+    let spec = |earned_on| crate::model::StackSpec {
         per_stack: 0.4,
         max_stacks: 3,
         duration: 14.0,
@@ -861,20 +862,20 @@ fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
     // label, and indistinguishable from the buff not working at all.
     let mk = |initial: u32, locked: bool, fire_rate: f64, secs: f64| {
         let mut p = FightParams {
-            stacking_buffs: vec![crate::loadout::StackingBuff {
+            stacking_buffs: vec![crate::model::StackingBuff {
             id: "on_plain_hit_damage",
-            trigger: crate::loadout::BuffTrigger::PlainHit,
-            grant: crate::loadout::BuffGrant::BaseDamage,
+            trigger: crate::model::BuffTrigger::PlainHit,
+            grant: crate::model::BuffGrant::BaseDamage,
             chance: 1.0,
-            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
                 per_stack: 4.0,
                 max_stacks: 3,
                 // Locking IS this: the card's duration, overwritten.
-                duration: if locked { crate::loadout::NO_TIMEOUT } else { 10.0 },
+                duration: if locked { crate::model::NO_TIMEOUT } else { 10.0 },
                 initial_stacks: initial,
                 stacks_per_trigger: 1,
                 per_shell: false,
-                cleared_by: crate::loadout::ClearedBy::Nothing,
+                cleared_by: crate::model::ClearedBy::Nothing,
                 card_opens_full: false,
             }],
             fire_rate,

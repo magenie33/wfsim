@@ -62,13 +62,13 @@ fn main() {
         .find(|e| e.id == "corrupted_heavy_gunner")
         .expect("the roster has one");
     let foe = unit
-        .target_params(60, false, false, wfsim_engine::fight::TargetMode::InstantRespawn)
+        .target_params(60, false, false, wfsim_engine::target::TargetMode::InstantRespawn)
         .expect("an ordinary unit is legal");
 
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
-    let base = wfsim_engine::loadout::WeaponBase::from_data(&weapon, false, &evo_refs);
+    let base = wfsim_engine::model::WeaponBase::from_data(&weapon, false, &evo_refs);
     let pool = wfsim_engine::mods_data::pool_for_weapon(&weapon);
-    let refs: Vec<&wfsim_engine::loadout::ModDef> = mod_ids
+    let refs: Vec<&wfsim_engine::model::ModDef> = mod_ids
         .iter()
         .map(|id| {
             pool.iter()
@@ -77,7 +77,7 @@ fn main() {
         })
         .collect();
     let panel =
-        wfsim_engine::loadout::resolve(&base, &refs, wfsim_engine::loadout::StackPolicy::Emergent);
+        wfsim_engine::loadout::resolve(&base, &refs, wfsim_engine::model::StackPolicy::Emergent);
     let fx = match &arcane {
         Some(id) => {
             let def = wfsim_engine::arcanes_data::slots()
@@ -86,7 +86,7 @@ fn main() {
                 .unwrap_or_else(|| panic!("no arcane {id}"));
             def.fx(
                 def.max_rank,
-                wfsim_engine::loadout::StackPolicy::Emergent,
+                wfsim_engine::model::StackPolicy::Emergent,
                 base.traits,
                 wfsim_engine::tenno_data::default_tenno(),
             )
@@ -118,7 +118,7 @@ fn main() {
         }
         let f = wfsim_engine::formation::Formation::grid(
             foe.clone(),
-            FightParams::humanoid_parts(),
+            wfsim_engine::target::BodyPart::humanoid(),
             n,
             n,
             spacing,

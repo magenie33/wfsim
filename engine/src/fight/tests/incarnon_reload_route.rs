@@ -33,7 +33,7 @@ fn cycle_with(per_shell_perk: bool, base_mag: f64) -> FightParams {
         cycle: Some(IncarnonCycle {
             starts_primed: false,
             base_form: Box::new(base_form),
-            arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+            arms: Arms::Gauge { charge_on: crate::model::ChargeOn::WeakpointHits, charges_to_fill: 2 },
             ends: Ends::ChargeMagazine,
             transmute_out_seconds: 0.5,
             transmute_seconds: 1.0,
@@ -45,19 +45,19 @@ fn cycle_with(per_shell_perk: bool, base_mag: f64) -> FightParams {
         // Mounting Momentum's shape: one stack per SHELL loaded, +50% fire
         // rate each, cleared by an empty magazine. Big per-stack so the
         // effect is a shot count rather than a rounding.
-        p.stacking_buffs = vec![crate::loadout::StackingBuff {
+        p.stacking_buffs = vec![crate::model::StackingBuff {
             id: "per_shell_fire_rate",
-            trigger: crate::loadout::BuffTrigger::ReloadComplete,
-            grant: crate::loadout::BuffGrant::FireRate,
+            trigger: crate::model::BuffTrigger::ReloadComplete,
+            grant: crate::model::BuffGrant::FireRate,
             per_stack: 0.5,
             max_stacks: 99,
-            duration: crate::loadout::NO_TIMEOUT,
+            duration: crate::model::NO_TIMEOUT,
             chance: 1.0,
-            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
             initial_stacks: 0,
             stacks_per_trigger: base_mag as u32,
             per_shell: true,
-            cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
+            cleared_by: crate::model::ClearedBy::EmptyMagazine,
             card_opens_full: false,
         }];
     }
@@ -112,7 +112,7 @@ fn the_gauge_overshoots_and_transforms_at_the_end_of_the_shot() {
         cycle: Some(IncarnonCycle {
             starts_primed: false,
             base_form: Box::new(base_form),
-            arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 30 },
+            arms: Arms::Gauge { charge_on: crate::model::ChargeOn::WeakpointHits, charges_to_fill: 30 },
             ends: Ends::ChargeMagazine,
             transmute_out_seconds: 0.0,
             transmute_seconds: 0.0,
@@ -131,7 +131,7 @@ fn the_gauge_overshoots_and_transforms_at_the_end_of_the_shot() {
             duration_seconds: secs,
             cycle: Some(IncarnonCycle {
                 arms: Arms::Gauge {
-                    charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                    charge_on: crate::model::ChargeOn::WeakpointHits,
                     charges_to_fill: gauge,
                 },
                 ..p.cycle.clone().unwrap()
@@ -201,13 +201,13 @@ fn transmuting_on_a_full_magazine_grants_no_stacks() {
 /// route needs to tell them apart.
 #[test]
 fn the_panel_remembers_that_the_perk_counts_shells() {
-    let base = crate::loadout::WeaponBase::from_data(
+    let base = crate::model::WeaponBase::from_data(
         "felarx",
         true,
         &["felarx_evo1_incarnon_form", "felarx_mounting_momentum"],
     );
     let panel =
-        crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mm = panel
         .stacking_buffs
         .iter()

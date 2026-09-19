@@ -9,7 +9,8 @@
 //! nothing no matter how carefully it is measured.
 //!
 //!   cargo run --release --bin co_candidates
-use wfsim_engine::loadout::{CoBehavior, WeaponBase};
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::CoBehavior;
 
 fn main() {
     // A REALISTIC MEASURING BUILD: Galvanized Shot / Aptitude at 3 stacks

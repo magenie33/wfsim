@@ -18,8 +18,8 @@ use super::*;
 /// while every tick grew.
 #[test]
 fn the_debilitate_dot_carries_two_attrition_layers() {
-    let base = crate::loadout::WeaponBase::from_data("felarx", true, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+    let base = crate::model::WeaponBase::from_data("felarx", true, &[]);
+    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
     let arena = crate::arena::Arena::training(30.0);
     // AVERAGED OVER 200 RUNS. Turning the perk on consumes an extra RNG
     // draw per instance, so the two fights diverge shot for shot and a
@@ -147,8 +147,8 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
 /// still wants crits.
 #[test]
 fn a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier() {
-    let base = crate::loadout::WeaponBase::from_data("felarx", true, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+    let base = crate::model::WeaponBase::from_data("felarx", true, &[]);
+    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
     let arena = crate::arena::Arena::training(30.0);
     let dots = |attrition: bool, cc: f64, cd: f64| {
         (0..200u64)

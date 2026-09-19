@@ -171,7 +171,7 @@ pub struct ValidBuild {
     /// builds with two answers, so an identity that could not tell them apart
     /// would file the second under the first's number — the same failure the
     /// valence and the exilus slot each had before they were part of it.
-    pub assembly: Option<crate::kitguns_data::Assembly>,
+    pub assembly: Option<crate::weapons_data::kitguns::Assembly>,
     /// Forma the cheapest legal polarity layout needs. Not a legality term —
     /// two builds that are the same FIGHT can cost different amounts to reach,
     /// and the board should show the cheaper one.
@@ -476,7 +476,7 @@ pub fn element_orders(weapon: &str, mods: &[String], evolutions: &[String]) -> V
     let pool = crate::mods_data::pool_naming(weapon, mods);
     let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
     let evo_refs: Vec<&str> = evolutions.iter().map(String::as_str).collect();
-    let base = crate::loadout::WeaponBase::from_data(weapon, true, &evo_refs);
+    let base = crate::model::WeaponBase::from_data(weapon, true, &evo_refs);
 
     // Distinct MOD elements in first-appearance order. Same-element mods pool
     // (`ElementalInput::push` merges them), so they are one entry and move
@@ -512,8 +512,8 @@ pub fn element_orders(weapon: &str, mods: &[String], evolutions: &[String]) -> V
                 .filter(|m| def(m).is_none_or(|d| d.primary_element().is_none()))
                 .cloned(),
         );
-        let refs: Vec<&crate::loadout::ModDef> = laid.iter().filter_map(&def).collect();
-        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::AssumedMax);
+        let refs: Vec<&crate::model::ModDef> = laid.iter().filter_map(&def).collect();
+        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::AssumedMax);
         let key: Vec<(crate::damage::DamageType, i64)> = panel
             .damage
             .iter_nonzero()
@@ -577,7 +577,7 @@ fn normalize_with(
     // away. Its legality is a question about the SHAPE and is asked in
     // `check_riven_shape`, where the answer can say why.
     if riven.is_some() {
-        pool.push(crate::loadout::ModDef { id: RIVEN_SLOT, ..pool[0].clone() });
+        pool.push(crate::model::ModDef { id: RIVEN_SLOT, ..pool[0].clone() });
     }
     // CANONICALISED, not sorted and not left raw — see `canonical_mods`. A
     // plain sort scored a pairing nobody submitted; raw order made two spellings
@@ -663,7 +663,7 @@ pub fn validate_for_board_with(
     valence: &str,
     riven: Option<&crate::rivens_data::RivenShape>,
     exilus: Option<&str>,
-    assembly: Option<&crate::kitguns_data::Assembly>,
+    assembly: Option<&crate::weapons_data::kitguns::Assembly>,
 ) -> Result<ValidBuild, String> {
     // AN EXALTED WEAPON IS NOT RANKED. Its damage is an ability's, taken at 100%
     // strength, and no ruler states the Warframe behind it — so a row could not
@@ -797,7 +797,7 @@ pub fn validate_with(
     // THE PARTS, on a weapon that takes them. Its own argument for the same
     // reason: the parts are not mods, nothing in `mods` could stand for them,
     // and a build scored with a different grip is a different weapon.
-    assembly: Option<&crate::kitguns_data::Assembly>,
+    assembly: Option<&crate::weapons_data::kitguns::Assembly>,
 ) -> Result<ValidBuild, String> {
     let spec = crate::weapons_data::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
@@ -1064,7 +1064,7 @@ pub fn validate_with(
         }
         // NAMED NOTHING? THE WEAPON'S OWN DEFAULT, which is what an arsenal
         // slot holds before anyone touches it — a Kitgun is never unassembled.
-        (Some(record), None) => crate::kitguns_data::default_assembly(record),
+        (Some(record), None) => crate::weapons_data::kitguns::default_assembly(record),
         (Some(_), Some(a)) => {
             if crate::weapons_data::spec_assembled(spec, Some(a)).is_none() {
                 return Err(format!(
@@ -1358,10 +1358,10 @@ mod riven_perfection_tests {
             crate::weapons_data::spec(weapon).and_then(|s| s.disposition).unwrap_or(1.0);
         let riven = spec.to_mod_def(
             Box::leak(format!("riven:{weapon}").into_boxed_str()), disposition);
-        let base = crate::loadout::WeaponBase::from_data(weapon, true, evos);
+        let base = crate::model::WeaponBase::from_data(weapon, true, evos);
         let tenno = crate::tenno_data::default_tenno();
         let panel = crate::loadout::resolve_for(
-            &base, &[&riven], crate::loadout::StackPolicy::Emergent, tenno);
+            &base, &[&riven], crate::model::StackPolicy::Emergent, tenno);
         let arena = crate::arena::Arena::training(12.0);
         let dp = crate::fight::FightParams::from_panel(
             &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
@@ -1583,7 +1583,7 @@ mod tests {
         // What a given order actually RESOLVES to — the judge.
         let resolved = |order: &[String]| {
             let pool = crate::mods_data::pool_for_weapon("torid");
-            let mods: Vec<&crate::loadout::ModDef> = order
+            let mods: Vec<&crate::model::ModDef> = order
                 .iter()
                 .map(|id| {
                     if id == RIVEN_SLOT {
@@ -1593,9 +1593,9 @@ mod tests {
                     }
                 })
                 .collect();
-            let base = crate::loadout::WeaponBase::from_data("torid", true, &[]);
+            let base = crate::model::WeaponBase::from_data("torid", true, &[]);
             let panel = crate::loadout::resolve_for(
-                &base, &mods, crate::loadout::StackPolicy::Emergent,
+                &base, &mods, crate::model::StackPolicy::Emergent,
                 crate::tenno_data::default_tenno());
             format!("{:?}", panel.damage)
         };
@@ -1919,15 +1919,15 @@ mod tests {
             return; // no modular weapon in the roster: nothing to key apart
         };
         let record = w.kitgun.clone().unwrap();
-        let default = crate::kitguns_data::default_assembly(&record).expect("a default");
+        let default = crate::weapons_data::kitguns::default_assembly(&record).expect("a default");
         // ANOTHER LEGAL GRIP for this slot, whichever it is.
-        let other = crate::kitguns_data::grips()
+        let other = crate::weapons_data::kitguns::grips()
             .iter()
             .find(|g| {
                 g.id != default.grip
                     && crate::weapons_data::spec_assembled(
                         w,
-                        Some(&crate::kitguns_data::Assembly {
+                        Some(&crate::weapons_data::kitguns::Assembly {
                             chamber: record.clone(),
                             grip: g.id.clone(),
                             loader: default.loader.clone(),
@@ -1946,7 +1946,7 @@ mod tests {
                 "",
                 None,
                 None,
-                Some(&crate::kitguns_data::Assembly {
+                Some(&crate::weapons_data::kitguns::Assembly {
                     chamber: record.clone(),
                     grip: grip.to_string(),
                     loader: default.loader.clone(),
@@ -1990,7 +1990,7 @@ mod tests {
             "",
             None,
             None,
-            Some(&crate::kitguns_data::Assembly {
+            Some(&crate::weapons_data::kitguns::Assembly {
                 chamber: w.kitgun.clone().unwrap(),
                 grip: "not_a_grip".into(),
                 loader: "not_a_loader".into(),
@@ -2007,7 +2007,7 @@ mod tests {
             "",
             None,
             None,
-            Some(&crate::kitguns_data::Assembly {
+            Some(&crate::weapons_data::kitguns::Assembly {
                 chamber: String::new(),
                 grip: "gaze".into(),
                 loader: "ramble".into(),
@@ -2150,14 +2150,14 @@ mod tests {
     /// wrong and nothing but a damage comparison says so.
     #[test]
     fn canonicalising_never_changes_the_damage() {
-        let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
+        let base = crate::model::WeaponBase::from_data("ocucor", false, &[]);
         let pool = crate::mods_data::pool_for_weapon("ocucor");
         let resolve_in_order = |ids: &[String]| {
-            let refs: Vec<&crate::loadout::ModDef> = ids
+            let refs: Vec<&crate::model::ModDef> = ids
                 .iter()
                 .filter_map(|id| pool.iter().find(|m| m.id == id.as_str()))
                 .collect();
-            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::BaseOnly).damage
+            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::BaseOnly).damage
         };
         for spelling in [
             // The build that broke: two Heat mods pooling behind a Cold/Toxin
@@ -2530,13 +2530,13 @@ mod element_order_tests {
     #[test]
     fn one_elemental_mod_makes_two_combinations_on_a_two_element_weapon() {
         let types = |mods: &[&str]| {
-            let base = crate::loadout::WeaponBase::from_data("shedu", true, &[]);
+            let base = crate::model::WeaponBase::from_data("shedu", true, &[]);
             let pool = crate::mods_data::pool_for_weapon("shedu");
-            let picked: Vec<&crate::loadout::ModDef> = mods
+            let picked: Vec<&crate::model::ModDef> = mods
                 .iter()
                 .map(|id| pool.iter().find(|m| m.id == *id).expect("mod"))
                 .collect();
-            let p = crate::loadout::resolve(&base, &picked, crate::loadout::StackPolicy::Emergent);
+            let p = crate::loadout::resolve(&base, &picked, crate::model::StackPolicy::Emergent);
             let live = |v: &crate::damage::DamageVector| {
                 let mut out: Vec<DamageType> = DamageType::ALL
                     .iter()

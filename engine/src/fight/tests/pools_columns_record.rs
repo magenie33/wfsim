@@ -393,7 +393,7 @@ fn the_record_adds_up_to_the_damage_total() {
     // a bracket.
     p.base_damage_bonus = 1.65;
     p.co_per_type = 0.8;
-    p.co_behavior = crate::loadout::CoBehavior::AdditiveWithBaseDamage;
+    p.co_behavior = crate::model::CoBehavior::AdditiveWithBaseDamage;
 
     let s = monte_carlo(&p, 8, 5);
     let state = s.median_run.rng_state;

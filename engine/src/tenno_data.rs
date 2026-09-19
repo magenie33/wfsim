@@ -22,9 +22,10 @@
 use std::sync::OnceLock;
 
 use serde::Deserialize;
+use crate::model::{TennoCondition, TennoGate, TennoScaledTerm, TennoStat};
 
 /// The player's stat block plus what the player is doing — the fight's second
-/// actor, and the counterpart of [`crate::fight::TargetParams`].
+/// actor, and the counterpart of [`crate::target::TargetParams`].
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Tenno {
     pub id: String,
@@ -481,6 +482,70 @@ impl Tenno {
     }
 }
 
+// ---- WHAT A CARD ASKS OF THE PLAYER ----------------------------------------
+//
+// The vocabulary (`crate::model`) states a condition; the Tenno answers it, so
+// the answers live beside the Tenno and the vocabulary names no player.
+
+impl TennoGate {
+    /// Does this player satisfy it?
+    pub fn open(self, tenno: &Tenno) -> bool {
+        match self {
+            TennoGate::SprintAtLeast(x) => tenno.sprint >= x,
+            TennoGate::ArmorOver(x) => tenno.armor > x,
+            TennoGate::EnergyMaxOver(x) => tenno.energy > x,
+            TennoGate::EnergyMaxAtLeast(x) => tenno.energy >= x,
+            TennoGate::HasOvershields => tenno.state.overshields,
+            TennoGate::ChannelingAbility => tenno.state.channeling,
+            TennoGate::MeleeEquipped => tenno.state.melee_equipped,
+            TennoGate::SoloWeapon => tenno.state.solo_weapon,
+        }
+    }
+}
+
+impl TennoStat {
+    pub fn of(self, t: &Tenno) -> f64 {
+        match self {
+            TennoStat::Armor => t.armor,
+            TennoStat::MaxEnergy => t.energy,
+            TennoStat::Health => t.health,
+            TennoStat::Shields => t.shield,
+        }
+    }
+}
+
+impl TennoCondition {
+    /// Is this condition true of `t`?
+    pub fn holds(self, t: &Tenno) -> bool {
+        match self {
+            TennoCondition::Aiming => t.state.aiming,
+            TennoCondition::Invisible => t.state.invisible,
+            TennoCondition::Airborne => t.state.airborne,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            TennoCondition::Aiming => "while aiming",
+            TennoCondition::Invisible => "while Invisible",
+            TennoCondition::Airborne => "while Airborne",
+        }
+    }
+}
+
+impl TennoScaledTerm {
+    /// What this player is worth to it.
+    ///
+    /// WHOLE STEPS ONLY, which is the card's own arithmetic rather than a
+    /// convenience: *"Buff is rounded down to the nearest multiple of 20%"*
+    /// (wiki, Dreadful Killshot). 149 health is one step of 75, not 1.99.
+    pub fn value(&self, tenno: &Tenno) -> f64 {
+        let have = (self.stat.of(tenno) - self.above).max(0.0);
+        let steps = (have / self.unit.max(1e-9)).floor();
+        (steps * self.per_unit).min(self.cap)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -617,8 +682,8 @@ mod tests {
     fn an_amp_pays_the_weapons_its_own_page_names_and_no_others() {
         use crate::auras_data::AuraPick;
         let mut t = crate::tenno_data::default_tenno().clone();
-        let bonus = |t: &crate::tenno_data::Tenno, id: &str| {
-            let b = crate::loadout::WeaponBase::from_data(id, false, &[]);
+        let bonus = |t: &Tenno, id: &str| {
+            let b = crate::model::WeaponBase::from_data(id, false, &[]);
             t.aura_damage_bonus(b.class, b.mod_pools)
         };
         // A NEUTRAL PLAYER BRINGS NOTHING. The negative control first, because

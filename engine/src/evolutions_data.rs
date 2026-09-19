@@ -15,7 +15,7 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 use serde_norway::Value;
 
-use crate::loadout::WeaponBase;
+use crate::model::WeaponBase;
 
 #[derive(Debug, Deserialize)]
 struct EvoFile {
@@ -196,7 +196,7 @@ enum EvoEffect {
     /// beside the mods'. Mods were given this treatment
     /// on 2026-08-01; evolutions were still dropping the number on the
     /// floor.
-    Indirect(crate::loadout::IndirectStat, f64),
+    Indirect(crate::model::IndirectStat, f64),
     /// Sets the ammo RESERVE outright (Mercenary Chamber: "Increase Base Ammo
     /// Capacity to 195") — a set, not an add, so it cannot ride the additive
     /// indirect bucket.
@@ -329,8 +329,8 @@ enum EvoEffect {
     /// One variant for all of them: the gate and the bracket are both data, so
     /// the next perk that asks about the player is a yaml block.
     GatedByTenno {
-        gate: crate::loadout::TennoGate,
-        grant: crate::loadout::GatedGrant,
+        gate: crate::model::TennoGate,
+        grant: crate::model::GatedGrant,
         value: f64,
     },
     /// Vicious Promise: crit chance and crit multiplier while the target has
@@ -427,8 +427,8 @@ enum EvoEffect {
         chance: f64,
         /// HEADCRACKER IS FIFO, and it is data rather than a constant because
         /// this is the second perk to want it and neither shape is the rule.
-        /// See [`crate::loadout::BuffDecay`].
-        decay: crate::loadout::BuffDecay,
+        /// See [`crate::model::BuffDecay`].
+        decay: crate::model::BuffDecay,
     },
     /// Stormburst: "On hitting an enemy affected by Electricity: +0.4
     /// Multishot for 2s. Stacks up to 3x."
@@ -442,25 +442,25 @@ enum EvoEffect {
     /// A STACKING BUFF, stated entirely in data: what triggers it, what it
     /// grants, how much, how many, how long, and what takes it.
     ///
-    /// The vocabulary the sim runs on — [`crate::loadout::BuffTrigger`],
-    /// [`crate::loadout::BuffGrant`], [`crate::loadout::ClearedBy`],
-    /// [`crate::loadout::BuffDecay`] — is expressive enough on its own; what
+    /// The vocabulary the sim runs on — [`crate::model::BuffTrigger`],
+    /// [`crate::model::BuffGrant`], [`crate::model::ClearedBy`],
+    /// [`crate::model::BuffDecay`] — is expressive enough on its own; what
     /// was missing was a way for a yaml to NAME a combination of it, so a perk
     /// whose trigger and grant both exist is a yaml block and no Rust at all.
     /// The older single-purpose variants are kept where they carry reasoning a
     /// generic one cannot (Ready Retaliation's arming, Reaver's Rapture's burst
     /// arithmetic).
     StackingGrant {
-        trigger: crate::loadout::BuffTrigger,
-        grant: crate::loadout::BuffGrant,
+        trigger: crate::model::BuffTrigger,
+        grant: crate::model::BuffGrant,
         per_stack: f64,
         max_stacks: u32,
         duration: f64,
         chance: f64,
-        decay: crate::loadout::BuffDecay,
-        cleared_by: crate::loadout::ClearedBy,
+        decay: crate::model::BuffDecay,
+        cleared_by: crate::model::ClearedBy,
         /// The card's own claim that a mission never takes it — see
-        /// [`crate::loadout::StackingBuff::card_opens_full`].
+        /// [`crate::model::StackingBuff::card_opens_full`].
         card_opens_full: bool,
     },
     StackingMultishotOnFiring {
@@ -586,7 +586,7 @@ pub struct EvolutionDef {
     pub co_base_excludes_this_evolution: Option<bool>,
     /// The FORM a declaration was measured on, when it covers only one — see
     /// the loader field of the same name.
-    pub co_base_excludes_only_form: Option<crate::weapons_data::FormKind>,
+    pub co_base_excludes_only_form: Option<crate::model::FormKind>,
     /// Everything this evolution grants applies to the BASE form only — see
     /// the loader field of the same name.
     pub base_form_only: bool,
@@ -707,7 +707,7 @@ impl EvolutionDef {
         self.active_effects()
             .filter_map(|e| match e {
                 EvoEffect::GatedByTenno { gate, grant, value }
-                    if *grant == crate::loadout::GatedGrant::FlatBaseMagazine
+                    if *grant == crate::model::GatedGrant::FlatBaseMagazine
                         && gate.open(tenno) =>
                 {
                     Some(*value)
@@ -1049,10 +1049,10 @@ impl EvolutionDef {
     /// `co_base_fraction:`. `Inert` gets the Adding answer and never reads it.
     pub fn excludes_co_base(
         &self,
-        form: crate::weapons_data::FormKind,
-        behavior: crate::loadout::CoBehavior,
+        form: crate::model::FormKind,
+        behavior: crate::model::CoBehavior,
     ) -> bool {
-        if behavior == crate::loadout::CoBehavior::Independent {
+        if behavior == crate::model::CoBehavior::Independent {
             return false;
         }
         match self.co_base_excludes_this_evolution {
@@ -1170,7 +1170,7 @@ impl EvolutionDef {
                 EvoEffect::Indirect(stat, v) => {
                     // Percent for the fractional stats, a bare number for the
                     // ones measured in their own unit (punch through: metres).
-                    if matches!(stat, crate::loadout::IndirectStat::PunchThrough) {
+                    if matches!(stat, crate::model::IndirectStat::PunchThrough) {
                         format!("{:+.1} m {}", v, stat.label())
                     } else {
                         format!("{:+.0}% {}", v * 100.0, stat.label())
@@ -1262,7 +1262,7 @@ impl EvolutionDef {
                 // bug: a unit chosen by the SIZE of the number rather than by
                 // the bracket it lands in.
                 EvoEffect::GatedByTenno { gate, grant, value } => {
-                    use crate::loadout::GatedGrant as G;
+                    use crate::model::GatedGrant as G;
                     let what = match grant {
                         G::FlatBaseDamage => {
                             format!("+{value:.0} base damage (pro-rata, before mods)")
@@ -1422,8 +1422,8 @@ impl EvolutionDef {
 /// fuzzy match: an unknown name falls through to `Inert(...)` and the pinned
 /// inert test then fails, which is how a typo announces itself instead of
 /// silently contributing nothing.
-fn indirect_stat(name: &str) -> Option<crate::loadout::IndirectStat> {
-    use crate::loadout::IndirectStat as I;
+fn indirect_stat(name: &str) -> Option<crate::model::IndirectStat> {
+    use crate::model::IndirectStat as I;
     Some(match name {
         "recoil" => I::Recoil,
         "accuracy" => I::Accuracy,
@@ -1534,7 +1534,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             match tenno_condition(v) {
                 Some(gate) => EvoEffect::GatedByTenno {
                     gate,
-                    grant: crate::loadout::GatedGrant::PunchThrough,
+                    grant: crate::model::GatedGrant::PunchThrough,
                     value: f(v, "value").unwrap_or(0.0),
                 },
                 None => EvoEffect::Inert(
@@ -1543,19 +1543,19 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             }
         }
         "punch_through_bonus" => {
-            EvoEffect::Indirect(crate::loadout::IndirectStat::PunchThrough, f(v, "value").unwrap_or(0.0))
+            EvoEffect::Indirect(crate::model::IndirectStat::PunchThrough, f(v, "value").unwrap_or(0.0))
         }
         "accuracy_bonus" => {
-            EvoEffect::Indirect(crate::loadout::IndirectStat::Accuracy, f(v, "value").unwrap_or(0.0))
+            EvoEffect::Indirect(crate::model::IndirectStat::Accuracy, f(v, "value").unwrap_or(0.0))
         }
         // NEGATIVE means less recoil, the same convention the MODS carry
         // (Primed Stabilizer ramps -0.15 -> -0.9). A positive value here would
         // read as more recoil, which no evolution grants.
         "recoil_reduction" => {
-            EvoEffect::Indirect(crate::loadout::IndirectStat::Recoil, f(v, "value").unwrap_or(0.0))
+            EvoEffect::Indirect(crate::model::IndirectStat::Recoil, f(v, "value").unwrap_or(0.0))
         }
         "holstered_magazine_regen" => EvoEffect::Indirect(
-            crate::loadout::IndirectStat::HolsteredReload,
+            crate::model::IndirectStat::HolsteredReload,
             f(v, "value").unwrap_or(0.0),
         ),
         "multishot_beyond_range" => EvoEffect::MultishotBeyondRange {
@@ -1621,7 +1621,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             let grant = buff_grant(key.as_str().unwrap()).unwrap();
             let duration = f(v, "duration_seconds")
                 .or_else(|| f(v, "duration"))
-                .unwrap_or(crate::loadout::NO_TIMEOUT);
+                .unwrap_or(crate::model::NO_TIMEOUT);
             EvoEffect::StackingGrant {
                 trigger,
                 grant,
@@ -1636,15 +1636,15 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 // The Galvanized family unless the card says otherwise: one
                 // stack drops on timeout and the timer restarts.
                 decay: match v.get("decay").and_then(Value::as_str) {
-                    Some("per_stack_expiry") => crate::loadout::BuffDecay::PerStackExpiry,
-                    Some("all_at_once") => crate::loadout::BuffDecay::AllAtOnce,
-                    _ => crate::loadout::BuffDecay::LoseOneAndReset,
+                    Some("per_stack_expiry") => crate::model::BuffDecay::PerStackExpiry,
+                    Some("all_at_once") => crate::model::BuffDecay::AllAtOnce,
+                    _ => crate::model::BuffDecay::LoseOneAndReset,
                 },
                 cleared_by: match v.get("cleared_by").and_then(Value::as_str) {
-                    Some("reload") => crate::loadout::ClearedBy::Reload,
-                    Some("magazine_refilled") => crate::loadout::ClearedBy::MagazineRefilled,
-                    Some("empty_magazine") => crate::loadout::ClearedBy::EmptyMagazine,
-                    _ => crate::loadout::ClearedBy::Nothing,
+                    Some("reload") => crate::model::ClearedBy::Reload,
+                    Some("magazine_refilled") => crate::model::ClearedBy::MagazineRefilled,
+                    Some("empty_magazine") => crate::model::ClearedBy::EmptyMagazine,
+                    _ => crate::model::ClearedBy::Nothing,
                 },
                 // TRANSCRIBED FROM THE CARD, and false is not "it decays" — it
                 // is "the card does not say". Two of the twenty buffs that
@@ -1738,14 +1738,14 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 return Some(EvoEffect::Inert("gated_by_tenno with an unreadable `condition:`".into()));
             };
             let grant = match v.get("grant").and_then(Value::as_str) {
-                Some("condition_overload") => crate::loadout::GatedGrant::ConditionOverload,
-                Some("fire_rate") => crate::loadout::GatedGrant::FireRate,
-                Some("multishot") => crate::loadout::GatedGrant::Multishot,
-                Some("base_crit_damage") => crate::loadout::GatedGrant::BaseCritDamage,
-                Some("projectile_speed") => crate::loadout::GatedGrant::ProjectileSpeed,
-                Some("accuracy_bonus") => crate::loadout::GatedGrant::Accuracy,
-                Some("flat_base_damage") => crate::loadout::GatedGrant::FlatBaseDamage,
-                Some("flat_base_magazine") => crate::loadout::GatedGrant::FlatBaseMagazine,
+                Some("condition_overload") => crate::model::GatedGrant::ConditionOverload,
+                Some("fire_rate") => crate::model::GatedGrant::FireRate,
+                Some("multishot") => crate::model::GatedGrant::Multishot,
+                Some("base_crit_damage") => crate::model::GatedGrant::BaseCritDamage,
+                Some("projectile_speed") => crate::model::GatedGrant::ProjectileSpeed,
+                Some("accuracy_bonus") => crate::model::GatedGrant::Accuracy,
+                Some("flat_base_damage") => crate::model::GatedGrant::FlatBaseDamage,
+                Some("flat_base_magazine") => crate::model::GatedGrant::FlatBaseMagazine,
                 other => {
                     return Some(EvoEffect::Inert(format!(
                         "gated_by_tenno grants {}, which is not a bracket this engine has",
@@ -1882,8 +1882,8 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             // The Galvanized family unless the card says otherwise — the same
             // default and the same word every other stacking buff here uses.
             decay: match v.get("decay").and_then(Value::as_str) {
-                Some("per_stack_expiry") => crate::loadout::BuffDecay::PerStackExpiry,
-                _ => crate::loadout::BuffDecay::LoseOneAndReset,
+                Some("per_stack_expiry") => crate::model::BuffDecay::PerStackExpiry,
+                _ => crate::model::BuffDecay::LoseOneAndReset,
             },
         },
         "crit_multiplier_below_crit_chance" => EvoEffect::CritMultiplierBelowCritChance {
@@ -1956,7 +1956,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         // (it is the same Genesis ladder), so it is skipped HERE, on the form
         // it does not reach, rather than refused at selection. On the base
         // form's panel it applies in full.
-        .filter(|e| !(e.base_form_only && base.form == crate::weapons_data::FormKind::Incarnon))
+        .filter(|e| !(e.base_form_only && base.form == crate::model::FormKind::Incarnon))
     {
         for eff in &e.effects {
             match eff {
@@ -2042,7 +2042,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::ComboCountOnSlamHit(v) => base.evo_combo_count_on_slam_hit += v,
                 EvoEffect::MeleeRange(v) => base.evo_melee_range_m += v,
                 EvoEffect::IncarnonWindow { arm_at_combo, seconds } => {
-                    let w = base.melee_incarnon.get_or_insert(crate::loadout::MeleeIncarnon {
+                    let w = base.melee_incarnon.get_or_insert(crate::model::MeleeIncarnon {
                         arm_at_combo: f64::INFINITY,
                         seconds: 0.0,
                     });
@@ -2063,15 +2063,15 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.evo_proc_conversion = Some((*from, *to, *chance));
                 }
                 EvoEffect::StackingFireRatePerShellReloaded { per_stack, max_stacks } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "per_shell_fire_rate",
-                        trigger: crate::loadout::BuffTrigger::ReloadComplete,
-                        grant: crate::loadout::BuffGrant::FireRate,
+                        trigger: crate::model::BuffTrigger::ReloadComplete,
+                        grant: crate::model::BuffGrant::FireRate,
                         // NOTHING TAKES THEM but holstering, and a holster is
                         // not something this arena does — so no clock, and the
                         // decay mode never runs.
-                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
-                        duration: crate::loadout::NO_TIMEOUT,
+                        decay: crate::model::BuffDecay::LoseOneAndReset,
+                        duration: crate::model::NO_TIMEOUT,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         chance: 1.0,
@@ -2083,7 +2083,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // to know which buffs are counting them.
                         stacks_per_trigger: 0,
                         per_shell: true,
-                        cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
+                        cleared_by: crate::model::ClearedBy::EmptyMagazine,
                         card_opens_full: false,
                     });
                 }
@@ -2152,21 +2152,21 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.armor_strip_per_puncture = *v;
                 }
                 EvoEffect::BaseDamagePerFullBurst { per_stack, max_stacks } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "full_burst_damage",
-                        trigger: crate::loadout::BuffTrigger::FullBurst,
-                        grant: crate::loadout::BuffGrant::BaseDamage,
-                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+                        trigger: crate::model::BuffTrigger::FullBurst,
+                        grant: crate::model::BuffGrant::BaseDamage,
+                        decay: crate::model::BuffDecay::LoseOneAndReset,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         // NO CLOCK. "Resets on Reload" is not a duration, and a
                         // timeout would quietly drop stacks a player still has.
-                        duration: crate::loadout::NO_TIMEOUT,
+                        duration: crate::model::NO_TIMEOUT,
                         chance: 1.0,
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
                         per_shell: false,
-                        cleared_by: crate::loadout::ClearedBy::MagazineRefilled,
+                        cleared_by: crate::model::ClearedBy::MagazineRefilled,
                         card_opens_full: false,
                     });
                 }
@@ -2192,9 +2192,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // condition is answered in `resolve_for`, which has the Tenno.
                 EvoEffect::ConditionOverload { per_type, min_sprint } => {
                     if *min_sprint > 0.0 {
-                        base.gated.push(crate::loadout::GatedTerm {
-                            gate: crate::loadout::TennoGate::SprintAtLeast(*min_sprint),
-                            grant: crate::loadout::GatedGrant::ConditionOverload,
+                        base.gated.push(crate::model::GatedTerm {
+                            gate: crate::model::TennoGate::SprintAtLeast(*min_sprint),
+                            grant: crate::model::GatedGrant::ConditionOverload,
                             value: *per_type,
                             into_co: 0.0,
                         });
@@ -2214,9 +2214,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // so a flat add that decided this there would answer
                 // differently from the unconditional half of the same card.
                 EvoEffect::GatedByTenno { gate, grant, value } => {
-                    let feeds = *grant == crate::loadout::GatedGrant::FlatBaseDamage
+                    let feeds = *grant == crate::model::GatedGrant::FlatBaseDamage
                         && !e.excludes_co_base(base.form, base.co_behavior);
-                    base.gated.push(crate::loadout::GatedTerm {
+                    base.gated.push(crate::model::GatedTerm {
                         gate: *gate,
                         grant: *grant,
                         value: *value,
@@ -2254,17 +2254,17 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FireRateBonus { value, min_sprint, needs_melee_equipped } => {
                     let gate = if *min_sprint > 0.0 {
-                        Some(crate::loadout::TennoGate::SprintAtLeast(*min_sprint))
+                        Some(crate::model::TennoGate::SprintAtLeast(*min_sprint))
                     } else if *needs_melee_equipped {
-                        Some(crate::loadout::TennoGate::MeleeEquipped)
+                        Some(crate::model::TennoGate::MeleeEquipped)
                     } else {
                         None
                     };
                     match gate {
                         Some(g) => {
-                            base.gated.push(crate::loadout::GatedTerm {
+                            base.gated.push(crate::model::GatedTerm {
                                 gate: g,
-                                grant: crate::loadout::GatedGrant::FireRate,
+                                grant: crate::model::GatedGrant::FireRate,
                                 value: *value,
                                 into_co: 0.0,
                             });
@@ -2275,10 +2275,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
                 EvoEffect::InstantReloadOnHeadshot { chance, needs_kill } => {
                     base.instant_reload_on_headshot =
-                        Some(crate::loadout::InstantReload { chance: *chance, needs_kill: *needs_kill });
+                        Some(crate::model::InstantReload { chance: *chance, needs_kill: *needs_kill });
                 }
                 EvoEffect::HeadshotDamageOnStreak { hits, within, value, duration } => {
-                    base.headshot_streak = Some(crate::loadout::HeadshotStreak {
+                    base.headshot_streak = Some(crate::model::HeadshotStreak {
                         hits: *hits,
                         within: *within,
                         value: *value,
@@ -2302,7 +2302,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     trigger, grant, per_stack, max_stacks, duration, chance, decay, cleared_by,
                     card_opens_full,
                 } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: stacking_card_id(*trigger, *grant),
                         trigger: *trigger,
                         grant: *grant,
@@ -2319,40 +2319,40 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     });
                 }
                 EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base: is_base } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "on_firing_multishot",
-                        trigger: crate::loadout::BuffTrigger::Firing,
+                        trigger: crate::model::BuffTrigger::Firing,
                         grant: if *is_base {
-                            crate::loadout::BuffGrant::BaseMultishot
+                            crate::model::BuffGrant::BaseMultishot
                         } else {
-                            crate::loadout::BuffGrant::MultishotPercent
+                            crate::model::BuffGrant::MultishotPercent
                         },
                         // NO CLOCK, so the decay never runs; the reload is what
                         // ends it. Both wiki pages say so in the same words —
                         // "There is no timer" (Sybaris), "resets entirely upon
                         // reloading" (Strun).
-                        decay: crate::loadout::BuffDecay::PerStackExpiry,
+                        decay: crate::model::BuffDecay::PerStackExpiry,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
-                        duration: crate::loadout::NO_TIMEOUT,
+                        duration: crate::model::NO_TIMEOUT,
                         chance: 1.0,
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
                         per_shell: false,
-                        cleared_by: crate::loadout::ClearedBy::Reload,
+                        cleared_by: crate::model::ClearedBy::Reload,
                         card_opens_full: false,
                     });
                 }
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "on_status_multishot",
-                        trigger: crate::loadout::BuffTrigger::HitEnemyWithStatus(*status),
-                        grant: crate::loadout::BuffGrant::Multishot,
+                        trigger: crate::model::BuffTrigger::HitEnemyWithStatus(*status),
+                        grant: crate::model::BuffGrant::Multishot,
                         // FIFO, each stack on its own clock — owner
                         // observed in game, Stormburst and Riddled Target
                         // (M102) alike. Harsher than the Galvanized family:
                         // holding 3 needs 3 hits per window, not one.
-                        decay: crate::loadout::BuffDecay::PerStackExpiry,
+                        decay: crate::model::BuffDecay::PerStackExpiry,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
@@ -2360,16 +2360,16 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
                         per_shell: false,
-                        cleared_by: crate::loadout::ClearedBy::Nothing,
+                        cleared_by: crate::model::ClearedBy::Nothing,
                         card_opens_full: false,
                     });
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance, decay } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "on_headshot_fire_rate",
                         decay: *decay,
-                        trigger: crate::loadout::BuffTrigger::Headshot,
-                        grant: crate::loadout::BuffGrant::FireRate,
+                        trigger: crate::model::BuffTrigger::Headshot,
+                        grant: crate::model::BuffGrant::FireRate,
                         // A FRACTION here; `resolve` turns it into an absolute
                         // rate against the base, which is the bucket it joins.
                         per_stack: *per_stack,
@@ -2380,7 +2380,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
                         per_shell: false,
-                        cleared_by: crate::loadout::ClearedBy::Nothing,
+                        cleared_by: crate::model::ClearedBy::Nothing,
                         card_opens_full: false,
                     });
                 }
@@ -2400,12 +2400,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     max_stacks,
                     duration,
                 } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "on_plain_hit_damage",
                         // The Galvanized family, as each perk's own wiki text says.
-                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
-                        trigger: crate::loadout::BuffTrigger::PlainHit,
-                        grant: crate::loadout::BuffGrant::BaseDamage,
+                        decay: crate::model::BuffDecay::LoseOneAndReset,
+                        trigger: crate::model::BuffTrigger::PlainHit,
+                        grant: crate::model::BuffGrant::BaseDamage,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
@@ -2416,7 +2416,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
                         per_shell: false,
-                        cleared_by: crate::loadout::ClearedBy::Nothing,
+                        cleared_by: crate::model::ClearedBy::Nothing,
                         card_opens_full: false,
                     });
                 }
@@ -2425,12 +2425,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     max_stacks,
                     duration,
                 } => {
-                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                    base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "on_headshot_reload_speed",
                         // The Galvanized family, as each perk's own wiki text says.
-                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
-                        trigger: crate::loadout::BuffTrigger::Headshot,
-                        grant: crate::loadout::BuffGrant::ReloadSpeed,
+                        decay: crate::model::BuffDecay::LoseOneAndReset,
+                        trigger: crate::model::BuffTrigger::Headshot,
+                        grant: crate::model::BuffGrant::ReloadSpeed,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
@@ -2439,7 +2439,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
                         per_shell: false,
-                        cleared_by: crate::loadout::ClearedBy::Nothing,
+                        cleared_by: crate::model::ClearedBy::Nothing,
                         card_opens_full: false,
                     });
                 }
@@ -2481,8 +2481,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
 /// The yaml's word for a trigger. `None` = not one this engine runs, which is
 /// what makes the general `stacking_buff` arm fall through to the inert one
 /// instead of inventing a mechanic.
-fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
-    use crate::loadout::BuffTrigger as T;
+fn buff_trigger(s: &str) -> Option<crate::model::BuffTrigger> {
+    use crate::model::BuffTrigger as T;
     Some(match s {
         "firing" => T::Firing,
         "headshot" => T::Headshot,
@@ -2500,8 +2500,8 @@ fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
 
 /// The yaml's word for a grant — the KEY of the `per_stack:` map, so the payload
 /// names its own bracket and a perk cannot land in the wrong one by omission.
-fn buff_grant(s: &str) -> Option<crate::loadout::BuffGrant> {
-    use crate::loadout::BuffGrant as G;
+fn buff_grant(s: &str) -> Option<crate::model::BuffGrant> {
+    use crate::model::BuffGrant as G;
     Some(match s {
         "base_damage_bonus" => G::BaseDamage,
         "base_damage" => G::FlatBaseDamage,
@@ -2521,11 +2521,11 @@ fn buff_grant(s: &str) -> Option<crate::loadout::BuffGrant> {
 /// yaml. It is a durable name — the roster, the saved config and the sampler all
 /// key on it — so it is a finite reviewable table and not a formatted string.
 fn stacking_card_id(
-    trigger: crate::loadout::BuffTrigger,
-    grant: crate::loadout::BuffGrant,
+    trigger: crate::model::BuffTrigger,
+    grant: crate::model::BuffGrant,
 ) -> &'static str {
-    use crate::loadout::BuffGrant as G;
-    use crate::loadout::BuffTrigger as T;
+    use crate::model::BuffGrant as G;
+    use crate::model::BuffTrigger as T;
     match (trigger, grant) {
         (T::Firing, G::FireRate) => "on_firing_fire_rate",
         (T::Firing, G::BaseDamage) => "on_firing_damage",
@@ -2556,7 +2556,7 @@ fn stacking_card_id(
 /// speed. Kept for the two kinds that spell their gate this way.
 fn sprint_condition(v: &Value) -> f64 {
     match tenno_condition(v) {
-        Some(crate::loadout::TennoGate::SprintAtLeast(x)) => x,
+        Some(crate::model::TennoGate::SprintAtLeast(x)) => x,
         _ => 0.0,
     }
 }
@@ -2565,8 +2565,8 @@ fn sprint_condition(v: &Value) -> f64 {
 /// the player. Unknown wording returns `None`, which the caller turns into an
 /// inert effect rather than a silently ungated grant: a condition nobody reads
 /// is a perk that pays on every build including the ones that cannot have it.
-fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
-    use crate::loadout::TennoGate as G;
+fn tenno_condition(v: &Value) -> Option<crate::model::TennoGate> {
+    use crate::model::TennoGate as G;
     let c = v.get("condition").and_then(Value::as_str)?;
     let num = |s: &str| s.trim().parse::<f64>().ok();
     if let Some(x) = c.strip_prefix("sprint_speed >= ").and_then(num) {
@@ -2699,8 +2699,8 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 co_base_excludes_this_evolution: ef.co_base_excludes_this_evolution,
                 co_base_excludes_only_form: ef.co_base_excludes_only_form.as_deref().map(|s| {
                     match s {
-                        "base" => crate::weapons_data::FormKind::Base,
-                        "incarnon" => crate::weapons_data::FormKind::Incarnon,
+                        "base" => crate::model::FormKind::Base,
+                        "incarnon" => crate::model::FormKind::Incarnon,
                         other => panic!("co_base_excludes_only_form: unknown form {other:?}"),
                     }
                 }),
@@ -2859,8 +2859,8 @@ mod tests {
                 continue;
             }
             checked += 1;
-            let bare = crate::loadout::WeaponBase::from_data(&spec.id, true, &[]);
-            let loaded = crate::loadout::WeaponBase::from_data(&spec.id, true, &ids);
+            let bare = crate::model::WeaponBase::from_data(&spec.id, true, &[]);
+            let loaded = crate::model::WeaponBase::from_data(&spec.id, true, &ids);
             assert_eq!(
                 loaded.magazine_size, bare.magazine_size,
                 "{}: an evolution resized the charge pool ({} -> {})",
@@ -2911,7 +2911,7 @@ mod tests {
                 _ => None,
             })
             .expect("the +33% loads as a gated CO source");
-        assert_eq!(gate.1, crate::loadout::GatedGrant::ConditionOverload);
+        assert_eq!(gate.1, crate::model::GatedGrant::ConditionOverload);
         assert!((gate.2 - 0.33).abs() < 1e-9, "{:?}", gate.2);
         // THE THRESHOLD IS >=, and asserted at the boundary rather than in the
         // middle: 200 is the number the card names, so a frame AT 200 pays. A
@@ -2935,7 +2935,7 @@ mod tests {
 
     #[test]
     fn broken_evolutions_apply_nothing() {
-        use crate::loadout::WeaponBase;
+        use crate::model::WeaponBase;
         let with = WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let mut probe = with.clone();
         apply(&mut probe, &[get("dual_toxocyst_ready_retaliation").unwrap()]);
@@ -2956,7 +2956,8 @@ mod tests {
     /// looked at.
     #[test]
     fn a_broken_evolution_changes_nothing_whatever_it_grants() {
-        use crate::loadout::{IndirectStat, WeaponBase};
+        use crate::model::WeaponBase;
+use crate::model::IndirectStat;
         let everything = |broken: bool| EvolutionDef {
             misprints: Vec::new(),
             id: "synthetic".into(),
@@ -3014,7 +3015,7 @@ mod tests {
     /// pins that the charge-backed form comes out with nothing.
     #[test]
     fn final_fusillades_last_round_multishot_skips_the_incarnon_form() {
-use crate::loadout::WeaponBase;
+use crate::model::WeaponBase;
         let evos = ["torid_final_fusillade"];
         let base = WeaponBase::from_data("torid", false, &evos);
         let inc = WeaponBase::from_data("torid_incarnon", false, &evos);
@@ -3040,7 +3041,7 @@ use crate::loadout::WeaponBase;
     /// charge pool — an ungated `+=` quietly made it 179 rounds.
     #[test]
     fn extended_volley_leaves_the_charge_pool_alone() {
-use crate::loadout::WeaponBase;
+use crate::model::WeaponBase;
         let evos = ["torid_extended_volley"];
         let base = WeaponBase::from_data("torid", false, &evos);
         let inc = WeaponBase::from_data("torid_incarnon", false, &evos);
@@ -3153,9 +3154,10 @@ use crate::loadout::WeaponBase;
     /// would land.
     #[test]
     fn an_evolutions_handling_stats_reach_the_panel() {
-        use crate::loadout::{resolve, IndirectStat, StackPolicy};
+        use crate::loadout::resolve;
+use crate::model::{IndirectStat, StackPolicy};
         let of = |weapon: &str, evo: &str| -> Vec<(IndirectStat, f64)> {
-            let base = crate::loadout::WeaponBase::from_data(weapon, true, &[evo]);
+            let base = crate::model::WeaponBase::from_data(weapon, true, &[evo]);
             resolve(&base, &[], StackPolicy::Emergent).indirect
         };
         let find = |v: &[(IndirectStat, f64)], want: IndirectStat| {
@@ -3184,7 +3186,7 @@ use crate::loadout::WeaponBase;
         assert_eq!(find(&swift, IndirectStat::ProjectileSpeed), Some(0.50), "{swift:?}");
 
         // Mercenary Chamber SETS the reserve rather than adding to a bucket.
-        let base = crate::loadout::WeaponBase::from_data(
+        let base = crate::model::WeaponBase::from_data(
             "boar_prime", true, &["boar_prime_mercenary_chamber"],
         );
         assert_eq!(base.ammo_reserve, 195.0);
@@ -3198,14 +3200,16 @@ use crate::loadout::WeaponBase;
 #[cfg(test)]
 mod furis_tier4_tests {
     use super::*;
-    use crate::loadout::{resolve, StackPolicy, WeaponBase};
+    use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
 
     fn cd_with(mods: &[&str], evos: &[&str]) -> f64 {
         let owned: Vec<String> = evos.iter().map(|s| (*s).to_string()).collect();
         let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
         let base = WeaponBase::from_data("furis_incarnon", true, &refs);
         let pool = crate::mods_data::pool_for_weapon("furis_incarnon");
-        let picked: Vec<&crate::loadout::ModDef> = mods
+        let picked: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|id| pool.iter().find(|m| m.id == *id).unwrap_or_else(|| panic!("{id}")))
             .collect();
@@ -3278,8 +3282,8 @@ mod furis_co_split_tests {
         get(id)
             .unwrap_or_else(|| panic!("{id}"))
             .excludes_co_base(
-                crate::weapons_data::FormKind::Incarnon,
-                crate::loadout::CoBehavior::AdditiveWithBaseDamage,
+                crate::model::FormKind::Incarnon,
+                crate::model::CoBehavior::AdditiveWithBaseDamage,
             )
     }
 
@@ -3405,18 +3409,18 @@ mod furis_co_split_tests {
             ("zylok", "zylok_incarnon", "zylok_extended_volley", 12.0),
             ("onos", "onos_incarnon", "onos_extended_volley", 10.0),
         ] {
-            let b_off = crate::loadout::WeaponBase::from_data(base_id, true, &[]);
-            let b_on = crate::loadout::WeaponBase::from_data(base_id, true, &[perk]);
-            assert_eq!(b_off.form, crate::weapons_data::FormKind::Base);
+            let b_off = crate::model::WeaponBase::from_data(base_id, true, &[]);
+            let b_on = crate::model::WeaponBase::from_data(base_id, true, &[perk]);
+            assert_eq!(b_off.form, crate::model::FormKind::Base);
             assert!(
                 (b_on.magazine_size - b_off.magazine_size - added).abs() < 1e-9,
                 "{base_id}: the base form takes the whole perk, {} -> {} (+{added} expected)",
                 b_off.magazine_size, b_on.magazine_size
             );
 
-            let f_off = crate::loadout::WeaponBase::from_data(form_id, true, &[]);
-            let f_on = crate::loadout::WeaponBase::from_data(form_id, true, &[perk]);
-            assert_eq!(f_off.form, crate::weapons_data::FormKind::Incarnon);
+            let f_off = crate::model::WeaponBase::from_data(form_id, true, &[]);
+            let f_on = crate::model::WeaponBase::from_data(form_id, true, &[perk]);
+            assert_eq!(f_off.form, crate::model::FormKind::Incarnon);
             assert!(
                 (f_on.magazine_size - f_off.magazine_size).abs() < 1e-9,
                 "{form_id}: the Incarnon form takes NONE of it, {} -> {}",
@@ -3479,7 +3483,7 @@ mod headcracker_decay_tests {
                 continue;
             }
             seen += 1;
-            let base = crate::loadout::WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()]);
+            let base = crate::model::WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()]);
             let b = base
                 .stacking_buffs
                 .iter()
@@ -3487,7 +3491,7 @@ mod headcracker_decay_tests {
                 .unwrap_or_else(|| panic!("{}: no fire-rate buff", e.id));
             assert_eq!(
                 b.decay,
-                crate::loadout::BuffDecay::PerStackExpiry,
+                crate::model::BuffDecay::PerStackExpiry,
                 "{}: each of its {} stacks runs its own clock",
                 e.id,
                 b.max_stacks
@@ -3559,7 +3563,9 @@ mod after_mods_layer_tests {
     /// the gap is the whole reason the layer matters.
     #[test]
     fn the_two_layers_are_not_worth_the_same() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         let after = ["felarx_brutal_edge".to_string()];
         let a: Vec<&str> = after.iter().map(|s| s.as_str()).collect();
         // A crit mod, so the base layer has something to be multiplied by.
@@ -3593,12 +3599,12 @@ mod after_mods_layer_tests {
         for e in pool() {
             let grants_cd = e.effects.iter().any(|f| {
                 matches!(f, EvoEffect::StackingGrant { grant, .. }
-                    if *grant == crate::loadout::BuffGrant::BaseCritDamage)
+                    if *grant == crate::model::BuffGrant::BaseCritDamage)
             });
             if !grants_cd {
                 continue;
             }
-            let base = crate::loadout::WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()]);
+            let base = crate::model::WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()]);
             if base.radial.is_some() {
                 offenders.push(format!("{} ({}): radial", e.id, e.weapon));
             }
@@ -3634,7 +3640,9 @@ mod after_mods_layer_tests {
     /// on.
     #[test]
     fn a_gated_perk_asks_the_frame_holding_the_gun() {
-        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        use crate::loadout::resolve;
+use crate::model::WeaponBase;
+use crate::model::StackPolicy;
         let pt = |armor: f64| {
             let mut t = crate::tenno_data::default_tenno().clone();
             t.armor = armor;

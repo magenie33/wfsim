@@ -73,7 +73,7 @@ pub(super) fn live_reload_speed(
             .stacking_buffs
             .iter()
             .enumerate()
-            .filter(|(_, b)| b.grant == crate::loadout::BuffGrant::ReloadSpeed)
+            .filter(|(_, b)| b.grant == crate::model::BuffGrant::ReloadSpeed)
             .map(|(i, b)| b.per_stack * stacks[i].current(t, b.duration) as f64)
             .sum::<f64>()
 }

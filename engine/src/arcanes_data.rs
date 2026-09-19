@@ -21,7 +21,9 @@ use std::sync::{Mutex, OnceLock};
 use serde::Deserialize;
 use serde_norway::Value;
 
-use crate::loadout::{count_x, fill_x, pct, Rarity, StackPolicy};
+use crate::model::{Rarity, StackPolicy};
+use crate::model::{count_x, fill_x, pct};
+use crate::model::{ArcGrant, TennoStat};
 
 #[derive(Debug, Deserialize)]
 struct ArcaneFile {
@@ -75,35 +77,6 @@ impl Scale {
         }
         r0 + (self.rank_max - r0) * rank.min(max_rank) as f64 / max_rank as f64
     }
-}
-
-/// What an emergent arcane stacking buff adds per stack.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ArcGrant {
-    /// Joins the Hornet Strike bracket live (scales ModifiedBase too).
-    BaseDamage,
-    /// Additive multishot (already an absolute pellet-count bonus × base? —
-    /// no: a RELATIVE bonus; the sim multiplies by base pellets itself).
-    Multishot,
-    /// Joins the reload-speed bucket (time = base / (1 + Σ)).
-    ReloadSpeed,
-    /// Joins the crit-DAMAGE bucket — a RELATIVE bonus on the attack part's
-    /// own base crit damage, like the crit-damage mods (Primary
-    /// Blight/Frostbite). Multiplied out per stage in the sim, not here.
-    CritDamage,
-    /// Joins the status-chance bucket (Primary Crux). VERBATIM (wiki):
-    /// "Status Chance bonus is additive to mods like Rifle Aptitude", so it is
-    /// a RELATIVE bonus on the attack part's base status chance.
-    ///
-    /// Unlike `CritDamage` this is NOT resolved to an absolute value in
-    /// [`ArcaneDef::fx`]: the direct hit and the explosion carry DIFFERENT
-    /// base status chances, so only the sim — which knows which attack part it
-    /// is resolving — can multiply it out.
-    StatusChance,
-    /// Additive ammo efficiency, i.e. the refunded fraction of a round
-    /// (Primary Crux's second grant). Wiki: "additive with other sources of
-    /// Ammo Efficiency", the same bucket Frenzy feeds.
-    AmmoEfficiency,
 }
 
 /// What event grants/refreshes a stack.
@@ -320,23 +293,6 @@ impl Default for ArcaneFx {
     }
 }
 
-impl ArcGrant {
-    /// The `disables:` key this grant feeds — the same vocabulary a locking mod
-    /// writes. A lock is *"set to its default ignoring other bonuses, even
-    /// negative effects"* (MEASUREMENTS M30), and an arcane's buff is a bonus
-    /// like a mod's, so the two only have to agree on the stat's NAME.
-    pub fn locked_stat(self) -> &'static str {
-        match self {
-            ArcGrant::BaseDamage => "base_damage",
-            ArcGrant::Multishot => "multishot",
-            ArcGrant::ReloadSpeed => "reload_speed",
-            ArcGrant::CritDamage => "crit_damage",
-            ArcGrant::StatusChance => "status_chance",
-            ArcGrant::AmmoEfficiency => "ammo_efficiency",
-        }
-    }
-}
-
 impl ArcaneFx {
     /// Drop every buff whose grant a LOCKED stat silences.
     ///
@@ -482,57 +438,6 @@ pub struct ArcaneDef {
     pub live_bugs: Vec<String>,
     perk: Option<String>,
     effects: Vec<ArcEffect>,
-}
-
-/// Which WARFRAME stat an arcane scales off. The Tenno carries them; this
-/// names the one an arcane reads.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TennoStat {
-    /// Primary Bulwark: "+1% damage for each unit of armor past 1,000".
-    Armor,
-    /// Primary Overcharge: "35% of Max Energy as Multishot".
-    MaxEnergy,
-    /// Dreadful Killshot: "for every 75 Current Warframe Health".
-    ///
-    /// CURRENT health is what the card says and MAX health is what this reads,
-    /// which is the house rule for a Tenno state the arena does not simulate:
-    /// nothing in this fight damages the player, so the two are the same number
-    /// for the whole engagement unless somebody types otherwise.
-    Health,
-    /// Melee Retaliation: *"Gain 30% Melee Damage for every 200 current
-    /// Shields, up to 420%"*.
-    ///
-    /// CURRENT shields, and the arena's Tenno carries whatever the fight says —
-    /// which for the neutral player is ZERO, so the card pays nothing and the
-    /// panel says why. That is the honest answer rather than a broken gate:
-    /// Secondary Kinship reads the same way in a solo fight, and the difference
-    /// between "this reads a state you have not got" and "this does not work"
-    /// is exactly what `TennoScaled`'s own panel line exists to draw.
-    ///
-    /// THE OVERSHIELD HALF IS NOT MODELLED — *"Bonus halved for Overshields"* —
-    /// and the card says so.
-    Shields,
-}
-
-impl TennoStat {
-    /// The stat's own name, for a card that has to say which one it reads.
-    pub fn name(self) -> &'static str {
-        match self {
-            TennoStat::Armor => "armor",
-            TennoStat::MaxEnergy => "max energy",
-            TennoStat::Health => "health",
-            TennoStat::Shields => "shields",
-        }
-    }
-
-    pub fn of(self, t: &crate::tenno_data::Tenno) -> f64 {
-        match self {
-            TennoStat::Armor => t.armor,
-            TennoStat::MaxEnergy => t.energy,
-            TennoStat::Health => t.health,
-            TennoStat::Shields => t.shield,
-        }
-    }
 }
 
 /// One rank-parameterized arcane effect (the loader's vocabulary — every
@@ -970,7 +875,7 @@ impl ArcaneDef {
                         // clock. Said as a duration rather than as a flag,
                         // like every other never-expires in the engine.
                         duration: if assumed {
-                            crate::loadout::NO_TIMEOUT
+                            crate::model::NO_TIMEOUT
                         } else {
                             *duration
                         },
@@ -1005,7 +910,7 @@ impl ArcaneDef {
                         // A Warframe stat does not decay mid-fight. It was a
                         // `pinned` flag beside a 0 s duration, which is a
                         // decay loop that would spin if anything ever read it.
-                        duration: crate::loadout::NO_TIMEOUT,
+                        duration: crate::model::NO_TIMEOUT,
                         all_drop: false,
                         // A passive has no instance to be one-per.
                         one_per_instance: false,
@@ -1242,7 +1147,7 @@ impl ArcaneDef {
     }
 
     /// Display lines at a rank — OUR statement of what the model computes
-    /// (mirrors [`crate::loadout::ModEffect::describe`]).
+    /// (mirrors [`crate::model::ModEffect::describe`]).
     pub fn describe_at(&self, rank: u32) -> Vec<String> {
         let rank = rank.min(self.max_rank);
         let mut out = Vec::new();
@@ -1817,7 +1722,7 @@ mod tests {
             for r in 0..=a.max_rank {
                 let d = a.desc_at(r);
                 assert_eq!(
-                    crate::loadout::count_x(&d),
+                    crate::model::count_x(&d),
                     0,
                     "{} rank {r}: unfilled X in {d:?}",
                     a.id
@@ -2082,7 +1987,7 @@ mod tests {
             for r in 0..=a.max_rank {
                 let d = a.desc_at(r);
                 assert_eq!(
-                    crate::loadout::count_x(&d),
+                    crate::model::count_x(&d),
                     0,
                     "{} rank {r}: unfilled X in {d:?}",
                     a.id
@@ -2197,7 +2102,7 @@ mod tests {
         assert_eq!(b.grant, ArcGrant::BaseDamage);
         assert_eq!(b.trigger, ArcTrigger::Passive);
         assert_eq!((b.max_stacks, b.initial_stacks), (1, 1));
-        assert_eq!(b.duration, crate::loadout::NO_TIMEOUT, "a stat has no clock");
+        assert_eq!(b.duration, crate::model::NO_TIMEOUT, "a stat has no clock");
 
         // Overcharge: 35% of MAX energy, and the gate is on how FULL the pool
         // is — 300 energy at 100% pays +105%, the same frame at 50% pays

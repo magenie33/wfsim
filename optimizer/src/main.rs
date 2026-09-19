@@ -10,9 +10,10 @@
 //! Usage: wfsim-optimizer [require=mod_id]... [forbid=mod_id]...
 
 use std::time::Instant;
-use wfsim_engine::fight::{LockMode, TargetMode};
+use wfsim_engine::fight::LockMode;
+use wfsim_engine::target::TargetMode;
 use wfsim_engine::enemy_data::EnemySpec;
-use wfsim_engine::loadout::WeaponBase;
+use wfsim_engine::model::WeaponBase;
 use wfsim_optimizer::*;
 
 fn main() {
@@ -114,7 +115,7 @@ fn main() {
         // The CLI drives one weapon with an infinite reserve and no companion,
         // so these are the ordinary answers rather than a choice it offers.
         infinite_ammo: true,
-        policy: wfsim_engine::loadout::StackPolicy::Emergent,
+        policy: wfsim_engine::model::StackPolicy::Emergent,
         // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
         // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->
         // transmute 2.35 s -> repeat. Frenzy locked Permanent (chosen
@@ -202,8 +203,8 @@ fn main() {
     // resolved at MAX RANK from data/arcanes/secondary under the Emergent
     // policy (non-simmable triggers are honest no-ops there).
     use wfsim_engine::arcanes_data::{self, ArcaneFx};
-    use wfsim_engine::loadout::StackPolicy;
-    let arc_base = wfsim_engine::loadout::WeaponBase::from_data(
+    use wfsim_engine::model::StackPolicy;
+    let arc_base = wfsim_engine::model::WeaponBase::from_data(
         "dual_toxocyst",
         true,
         &[

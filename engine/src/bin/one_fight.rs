@@ -33,8 +33,11 @@ use std::time::Instant;
 
 use wfsim_engine::arcanes_data::ArcaneFx;
 use wfsim_engine::arena::Arena;
-use wfsim_engine::fight::{monte_carlo, FightParams, TargetMode};
-use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
+use wfsim_engine::fight::{monte_carlo, FightParams};
+use wfsim_engine::target::TargetMode;
+use wfsim_engine::loadout::resolve;
+use wfsim_engine::model::WeaponBase;
+use wfsim_engine::model::StackPolicy;
 
 /// The default build: eight mods a real rifle build carries, so the fight
 /// exercises the elemental hierarchy, crit and status rather than a bare
@@ -164,7 +167,7 @@ fn crowd(mut arena: Arena, bodies: usize, spacing: f64) -> Arena {
         .map(|(i, p)| wfsim_engine::formation::FoeSpec {
             id: format!("e{}", i + 2),
             params: arena.target.clone(),
-            body_parts: wfsim_engine::fight::FightParams::humanoid_parts(),
+            body_parts: wfsim_engine::target::BodyPart::humanoid(),
             at: *p,
         })
         .collect();
