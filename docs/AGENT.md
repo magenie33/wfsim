@@ -139,6 +139,12 @@ whatever the result was. The branch is made by the page (`nonaBranch`) before
 her first change, not asked of the model: a promise kept by instruction alone is
 kept only as often as the model obeys.
 
+**A new control is taught by adding its row.** A control with no door row is a
+feature she silently cannot use, so `check_agent_coverage` fails on any control
+outside every action's `anchor` and outside `AGENT_EXEMPT` — which names the
+kind (outward, view, pref, reader, todo) and the reason for each. An anchor is a
+selector list, so one action may stand for several controls.
+
 **Her tools are the table.** She is handed `tools()` at each request and her
 prompt carries rules, never game data, so an action, a query or a weapon added
 to the page reaches her with no edit to her section.

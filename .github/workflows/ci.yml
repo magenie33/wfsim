@@ -70,6 +70,11 @@ jobs:
       # reader's build. Neither is visible until a reader loses a build.
       - name: Nona works the page on a copy
         run: node scripts/check_nona.mjs
+      # A CONTROL WITH NO DOOR ROW is a feature Nona silently cannot use. Every
+      # control on the page is inside an action's anchor or in AGENT_EXEMPT
+      # with its reason, and the not-yet list only shrinks.
+      - name: Every control is on the door or says why not
+        run: node scripts/check_agent_coverage.mjs
       - name: Builder / optimizer parity
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.

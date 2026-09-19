@@ -23433,6 +23433,47 @@ function agentSearchResults(limit) {
   };
 }
 
+/// WHAT A READER CAN TOUCH THAT THE DOOR DOES NOT, AND WHY. `check_agent_coverage`
+/// fails on any control that is neither inside an action's anchor nor in here,
+/// so a feature added to the page without a door row is loud rather than a
+/// thing Nona silently cannot do. `todo` only shrinks: it is the door's backlog.
+const AGENT_EXEMPT = [
+  { sel: ".bh", kind: "view", why: "a block's header folds it" },
+  { sel: ".fold-h", kind: "view", why: "a section's header folds it" },
+  { sel: "#jump-grip", kind: "view", why: "the jump menu scrolls the page" },
+  { sel: "#topmenu", kind: "view", why: "moves between the site's pages" },
+  { sel: "#tbmore-toggle", kind: "view", why: "opens the topbar's overflow" },
+  { sel: "#sim-buffs-all", kind: "view", why: "shows every buff that could apply, not only this build's" },
+  { sel: "#opt-mod-filter", kind: "view", why: "filters the list on screen" },
+  { sel: "#opt-arc-filter", kind: "view", why: "filters the list on screen" },
+  { sel: "#opt-picker-tools", kind: "view", why: "sorts and filters the list on screen" },
+  { sel: "#opk-dir", kind: "view", why: "flips the list's sort order" },
+  { sel: "#nona-fab", kind: "view", why: "opens Nona herself" },
+  { sel: "#theme-toggle", kind: "pref", why: "light or dark, for this browser" },
+  { sel: "#quick-calc", kind: "pref", why: "the quick calc's own settings, for this browser" },
+  { sel: "#opt-runs", kind: "pref", why: "final-round runs, a preference of this browser" },
+  { sel: "#board-no", kind: "pref", why: "whether this browser sends results to the board" },
+  { sel: "#w-name a", kind: "outward", why: "links to the wiki and the market" },
+  { sel: ".opt .mn a", kind: "outward", why: "links to the wiki and the market" },
+  { sel: "#qq-copy-foot", kind: "outward", why: "copies the community group number" },
+  { sel: ".pop.ren", kind: "reader", why: "renaming a build is the reader's" },
+  { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
+  { sel: ".pundo", kind: "todo", why: "undo and redo in a preset bar" },
+  { sel: "#preset-bar-optimizer", kind: "todo", why: "saved search scopes" },
+  { sel: "#opt-plan", kind: "todo", why: "the search's scope: which mods, arcanes, evolutions, modes, sizes" },
+  { sel: "#opt-fight-half", kind: "todo", why: "the search's view of the fight" },
+  { sel: "#forma-block", kind: "todo", why: "the Forma planner" },
+  { sel: "#wielder-block", kind: "todo", why: "the Warframe holding the weapon" },
+  { sel: "#assembly-row", kind: "todo", why: "a Kitgun's grip and loader" },
+  { sel: "#riven-block", kind: "todo", why: "making and editing rivens" },
+  { sel: "#enemy-block", kind: "todo", why: "making custom targets" },
+  { sel: "[data-bev], [data-bevg], .bevg", kind: "todo", why: "which buff triggers the fight allows" },
+  { sel: "[data-cr]", kind: "todo", why: "a fight's per-class rules" },
+  { sel: "#sim-squad", kind: "todo", why: "squad auras and shards" },
+  { sel: "#sim-extra", kind: "todo", why: "the fight's own stat bonuses" },
+  { sel: "#wfbuff-block", kind: "todo", why: "Warframe ability buffs" },
+];
+
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
   {
@@ -23528,7 +23569,7 @@ const AGENT_ACTIONS = [
     id: "shell.presets.list",
     query: true,
     what: "List the saved builds or fight scenarios for this weapon, which one is open, and which are read-only (benchmarks).",
-    anchor: "#preset-bar-builder-builds",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { return { rows: agentPresetRows(AGENT_BARS[bar]()) }; },
@@ -23536,7 +23577,7 @@ const AGENT_ACTIONS = [
   {
     id: "shell.preset.open",
     what: "Open a saved build or scenario by the id presets.list gives.",
-    anchor: "#preset-bar-builder-builds",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
     needs_weapon: true,
     args: { bar: agentBarArg, preset: { kind: "string", required: true, what: "preset id" } },
     run({ bar, preset }) {
@@ -23550,7 +23591,7 @@ const AGENT_ACTIONS = [
   {
     id: "shell.preset.new",
     what: "Start a new blank build or scenario and open it; the one open before is kept as it was.",
-    anchor: "#preset-bar-builder-builds",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { return { preset: newPreset(AGENT_BARS[bar]()) }; },
@@ -23558,7 +23599,7 @@ const AGENT_ACTIONS = [
   {
     id: "shell.preset.copy",
     what: "Duplicate the open build or scenario and open the copy — the way to try changes without touching the reader's own.",
-    anchor: "#preset-bar-builder-builds",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { return { preset: copyActivePreset(AGENT_BARS[bar]()) }; },
@@ -23703,7 +23744,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.weapon.set",
     what: "Switch the builder to another weapon. Its own presets and fight come with it.",
-    anchor: "#weapon",
+    anchor: "#weapon, #wsearch-input",
     args: { weapon: { kind: "string", required: true, what: "weapon id", enum: agentWeaponIds } },
     run({ weapon }) {
       switchWeapon(weapon);
@@ -23714,7 +23755,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.mod.set",
     what: "Seat a mod in a slot, or empty the slot with mod=null. A mod already seated elsewhere is exchanged with this slot, as it is when a reader picks it.",
-    anchor: "#mod-slots",
+    anchor: "#mod-slots, #exilus",
     needs_weapon: true,
     args: {
       slot: { kind: "seat", required: true, what: "0-7, or \"exilus\" / \"stance\"" },
@@ -23746,7 +23787,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.polarity.set",
     what: "Set a slot's polarity, or remove it with polarity=null. The mod in the slot stays.",
-    anchor: "#mod-slots",
+    anchor: "#mod-slots .pol-btn, #exilus .pol-btn",
     needs_weapon: true,
     args: {
       slot: { kind: "seat", required: true, what: "0-7, or \"exilus\" / \"stance\"" },
@@ -23845,7 +23886,7 @@ const AGENT_ACTIONS = [
   {
     id: "simulator.scenario.set",
     what: "Change fields of the fight — the enemy, its level, the duration, the metric. Fields that are not a single value (the formation, the buffs) have their own editors and are refused here.",
-    anchor: "#sim-target",
+    anchor: "#sim-target, #dd-metric, input[data-k], select[data-k]",
     needs_weapon: true,
     args: { patch: { kind: "object", required: true, what: "fight fields to set" } },
     run({ patch }) {

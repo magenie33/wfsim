@@ -47,6 +47,16 @@ is sent are the door's table plus the observation, a scripted tool call lands
 on the page and in the trail, and her first change branches the reader's build
 — which is asserted untouched afterwards.
 
+## `check_agent_coverage`
+
+Every control a reader can use is on the door or says why not. A control is
+what the page made one — an element handed a click, change or input listener
+(recorded by wrapping `addEventListener` before the boot), an `on*` property,
+or a `[data-dd]` dropdown — on three weapons and every module, all folds open.
+Each is inside an action's `anchor` or an `AGENT_EXEMPT` entry, the innermost
+match deciding; an exemption no page matches is stale; the `todo` count is a
+ratchet. Verified to bite: dropping one exemption named its control.
+
 ## `check_parity`
 
 The builder and the optimizer offer the same options, the
