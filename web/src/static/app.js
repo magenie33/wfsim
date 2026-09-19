@@ -4537,6 +4537,34 @@ const nextFoeId = (s) => {
 /// enemy on one spot: a formation you have to untangle before you can read it
 /// is worse than no formation. Three metres is the owner's own fixture spacing
 /// and the distance a chain's step edges sit at.
+/// Is this point clear of every body and of the player — one contact apart?
+/// `skip` is a body's own index, so a body being dragged does not collide with
+/// itself.
+const arenaFree = (s, p, skip) => arenaBodies(s).every((b, i) => i === skip
+  || Math.hypot(b[0] - p[0], b[1] - p[1]) >= CONTACT_M - 1e-9)
+  && Math.hypot(s.player_at[0] - p[0], s.player_at[1] - p[1]) >= CONTACT_M - 1e-9;
+
+/// ONE BODY PLACED AT A POINT, or false when the floor is full or (with
+/// `collide`) the point is taken. A BODY IS THE UNIT IT WAS PLACED WITH: the
+/// unit is STAMPED here and nothing afterwards moves it, so picking a Thrax to
+/// place next does not turn every Gunner already down into a Thrax — a body
+/// with no unit is read by the server as "the aimed body's". The LEVEL is not
+/// stamped: it is a dial for the whole fight, and a body left blank follows it.
+function arenaPlaceBody(s, p, collide = true) {
+  if (arenaBodies(s).length >= ARENA_MAX_BODIES()) return false;
+  if (collide && !arenaFree(s, p)) return false;
+  s.formation = s.formation || [];
+  s.formation.push({ id: nextFoeId(s), at: [p[0], p[1]], enemy: s.enemy });
+  return true;
+}
+
+/// BACK TO ONE BODY, aimed at the target — the fight every golden value and
+/// both boards are measured under.
+function arenaReset(s) {
+  s.formation = [];
+  s.aim_at = null;
+}
+
 function arenaAddFoe(s) {
   if (1 + (s.formation || []).length >= ARENA_MAX_BODIES()) return false;
   const [cx, cy] = s.target_at;
@@ -5012,33 +5040,12 @@ function mountArenaCanvas(host, s, en, opts) {
   };
 
   // ---- placement --------------------------------------------------------
-  const clearAt = (p, skip) => {
-    if (!collide) return true;
-    const bodies = arenaBodies(s);
-    return bodies.every((b, i) => i === skip
-      || Math.hypot(b[0] - p[0], b[1] - p[1]) >= CONTACT_M - 1e-9)
-      && Math.hypot(s.player_at[0] - p[0], s.player_at[1] - p[1]) >= CONTACT_M - 1e-9;
-  };
+  const clearAt = (p, skip) => !collide || arenaFree(s, p, skip);
   function placeAt(raw) {
     const p = snapTo(raw);
     const floor = collide ? 0 : BODY_R_M;
     if (painted && Math.hypot(painted[0] - p[0], painted[1] - p[1]) < floor) return;
-    if (arenaBodies(s).length >= ARENA_MAX_BODIES() || !clearAt(p)) return;
-    s.formation = s.formation || [];
-    // A BODY IS THE UNIT IT WAS PLACED WITH. The brush on
-    // the left says what you are ABOUT to place; it does not reach back and
-    // rewrite what is already standing on the floor. Placing a Gunner and then
-    // picking a Thrax to place next must not turn every Gunner already down
-    // into a Thrax. A body carrying no unit of its own does exactly that: the
-    // server reads a blank one as "the aimed body's" — the right default for a
-    // scenario written before a formation existed and the wrong one for a
-    // formation you are building unit by unit.
-    //
-    // So the unit is STAMPED here, at the moment of placement, and nothing
-    // afterwards moves it. The LEVEL deliberately is not: it is a dial for the
-    // whole fight (a ruler pins one number for every body on the floor), so it
-    // stays the scenario's and a body left blank keeps following it.
-    s.formation.push({ id: nextFoeId(s), at: [p[0], p[1]], enemy: s.enemy });
+    if (!arenaPlaceBody(s, p, collide)) return;
     painted = [p[0], p[1]];
     changed();
   }
@@ -5467,11 +5474,7 @@ function mountArena(host, s, en, opts) {
     else if (b.dataset.add) {
       for (let i = 0; i < Number(b.dataset.add); i++) if (!arenaAddFoe(s)) break;
     } else if (b.dataset.clear) {
-      // BACK TO ONE BODY, which is the fight every golden value and both
-      // boards are measured under — so it is one click away and never
-      // something you have to drag your way back to.
-      s.formation = [];
-      s.aim_at = null;
+      arenaReset(s);
     } else if (b.dataset.unaim) s.aim_at = null;
     else return;
     paint();
@@ -23368,6 +23371,12 @@ async function agentDo(id, args = {}) {
   if (a.needs_weapon && !agentRoute().weapon) return agentNo("no_weapon_open", { alternatives: ["shell.module.open"] });
   const bad = agentCheckArgs(a, args);
   if (bad) return bad;
+  // AN OFFICIAL RULER'S FIGHT IS LOCKED, and the door is not a way round the
+  // lock the page puts on every one of its controls: a ruler edited in memory
+  // reports a modified fight under the ruler's own name.
+  if (agentWritesFight(a) && officialScenarioActive()) {
+    return agentNo("official_scenario", { try: "shell.preset.copy with bar scenario" });
+  }
   // IT NEVER REJECTS. A caller that must wrap every call in a try is a caller
   // that will forget once, and the page's own handlers call through here too —
   // an unhandled rejection from a click is a failure with no reader-visible
@@ -23409,6 +23418,10 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
 }));
 
 const agentWeaponIds = () => (META.weapons || []).map((w) => w.id);
+/// Every simulator action writes the fight, except running it and the run
+/// count, which is a preference of this browser.
+const agentWritesFight = (a) => !a.query && a.id.startsWith("simulator.")
+  && a.id !== "simulator.run.start" && a.id !== "simulator.runs.set";
 
 /// A FOUND LIST IS CAPPED, and says how many it left out, so a caller knows to
 /// narrow the query rather than believe the list is complete.
@@ -23513,7 +23526,6 @@ const AGENT_EXEMPT = [
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
   { sel: "#opk-gain", kind: "pref", why: "the search list's own quick-calc scan" },
   { sel: "#opt-fight-half", kind: "view", why: "the simulator's fight, shown read-only beside the search" },
-  { sel: "#sim-target-arena", kind: "todo", why: "placing the formation, the aim and the distance on the arena" },
   { sel: "#forma-block", kind: "todo", why: "the Forma planner" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
@@ -23542,8 +23554,96 @@ const agentMarks = (map, name) => {
   return out;
 };
 
-/// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
+/// AN ARENA EDIT IS A FIGHT EDIT: the page repaints and saves the scenario
+/// after it (and `agentDo` refuses it on an official ruler, as the drag does).
+const agentArena = (fn) => {
+  const out = fn();
+  if (out && out.ok === false) return out;
+  markScenarioDirty(); renderSim();
+  return out || agentArenaState();
+};
+const agentArenaState = () => ({
+  player_at: sim.player_at, target: { id: "e1", at: sim.target_at, enemy: sim.enemy },
+  formation: (sim.formation || []).map((f) => ({ id: f.id, at: f.at, enemy: f.enemy || sim.enemy })),
+  aim_at: sim.aim_at || null,
+  gap_m: Math.round((arenaSpan(sim) - CONTACT_M) * 100) / 100, max_bodies: ARENA_MAX_BODIES(),
+});
+
 const AGENT_ACTIONS = [
+  {
+    id: "simulator.arena.read",
+    query: true,
+    what: "Read the arena: where the player stands, the target (e1, the body the fight is scored against), every other body in the formation, where the player aims, and the gap to the target in metres. Coordinates are metres on the plane.",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: {},
+    run() { return agentArenaState(); },
+  },
+  {
+    id: "simulator.arena.distance",
+    what: "Put the target this many metres from the player (the gap between them; 0 is contact, where both boards are scored).",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: { meters: { kind: "number", required: true, min: 0, max: 200, what: "gap in metres" } },
+    run({ meters }) { return agentArena(() => { setArenaDistance(sim, meters); }); },
+  },
+  {
+    id: "simulator.arena.add",
+    what: "Add bodies around the target, each of the fight's current enemy, in the first free places — the +1/+8 quick sets.",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: { count: { kind: "number", required: true, min: 1, max: 50, what: "bodies to add" } },
+    run({ count }) {
+      return agentArena(() => {
+        let n = 0;
+        while (n < count && arenaAddFoe(sim)) n++;
+        return { added: n, ...agentArenaState() };
+      });
+    },
+  },
+  {
+    id: "simulator.arena.place",
+    what: "Place one body of the fight's current enemy at a point (metres). Refused where it would overlap another body or the player, or when the floor is full.",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: { x: { kind: "number", required: true, min: -500, max: 500, what: "metres" }, y: { kind: "number", required: true, min: -500, max: 500, what: "metres" } },
+    run({ x, y }) {
+      return agentArena(() => (arenaPlaceBody(sim, [x, y]) ? agentArenaState() : agentNo("place_taken", { because: "overlaps a body or the player, or the floor is full" })));
+    },
+  },
+  {
+    id: "simulator.arena.remove",
+    what: "Remove one body from the formation by its id. The target (e1) cannot be removed.",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: { body: { kind: "string", required: true, what: "body id" } },
+    run({ body }) {
+      return agentArena(() => {
+        const i = (sim.formation || []).findIndex((f) => f.id === body);
+        if (i < 0) return agentNo("bad_argument", { argument: "body", alternatives: (sim.formation || []).map((f) => f.id).slice(0, 20) });
+        sim.formation.splice(i, 1);
+      });
+    },
+  },
+  {
+    id: "simulator.arena.reset",
+    what: "Back to one body, aimed at the target — the fight the boards are measured under.",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: {},
+    run() { return agentArena(() => { arenaReset(sim); }); },
+  },
+  {
+    id: "simulator.arena.aim",
+    what: "Aim at a point (metres) — aiming is a direction, and the shot hits the first body it crosses — or omit x and y to aim at the target.",
+    anchor: "#sim-target-arena",
+    needs_weapon: true,
+    args: { x: { kind: "number", min: -500, max: 500, what: "metres" }, y: { kind: "number", min: -500, max: 500, what: "metres" } },
+    run({ x, y }) {
+      if ((x == null) !== (y == null)) return agentNo("bad_argument", { because: "give both x and y, or neither" });
+      return agentArena(() => { sim.aim_at = x == null ? null : [x, y]; });
+    },
+  },
   {
     id: "simulator.auras.list",
     query: true,
@@ -24591,11 +24691,11 @@ async function nonaBranch(id) {
     if (r && r.ok) { nona.owned.add(`riven:${r.riven}`); return r.riven; }
     return null;
   }
-  // EVERY SIMULATOR ACTION WRITES THE FIGHT except running it and the run
-  // count, which is a preference of this browser; a scope edit writes the
-  // reader's saved search.
+  // A scope edit writes the reader's saved search; the fight's edits are
+  // `agentWritesFight`'s.
+  const act = AGENT_ACTIONS.find((x) => x.id === id);
   const bar = id.startsWith("optimizer.scope.") ? "search"
-    : id.startsWith("simulator.") && id !== "simulator.run.start" && id !== "simulator.runs.set" ? "scenario"
+    : act && agentWritesFight(act) ? "scenario"
     : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;
   if (!bar) return null;
   const active = bar === "build" ? activePreset : bar === "search" ? activeOptPreset : activeScenario;

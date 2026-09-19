@@ -90,6 +90,10 @@ const loop = await evaluate(`(async () => {
   out.moved = slotHtml() !== before;
   out.clear = await window.wfsim.do("builder.mods.clear", {});
   out.emptied = window.wfsim.observe().build.slots.every(s => !s.mod);
+  // THE OFFICIAL RULER IS LOCKED to the door as to the page; a copy is not.
+  out.official = officialScenarioActive();
+  out.locked = await window.wfsim.do("simulator.scenario.set", { patch: { level: 130 } });
+  await window.wfsim.do("shell.preset.copy", { bar: "scenario" });
   out.fight = await window.wfsim.do("simulator.scenario.set", { patch: { level: 130 } });
   out.level = window.wfsim.observe().scenario.level;
   out.runs = await window.wfsim.do("simulator.runs.set", { runs: 5 });
@@ -151,6 +155,10 @@ if (build.hasEvos) {
   check("a tier past the open one is refused", build.evoLocked.ok === false && build.evoLocked.reason === "tier_locked",
     JSON.stringify(build.evoLocked));
   check("an evolution installs and is observed", build.evo.ok === true && build.evoSeen === true, JSON.stringify(build.evo).slice(0, 200));
+}
+if (loop.official) {
+  check("an official ruler's fight refuses the door", loop.locked.ok === false && loop.locked.reason === "official_scenario",
+    JSON.stringify(loop.locked));
 }
 check("the fight takes a new level", loop.fight.ok === true && loop.level === 130, loop.level);
 check("the run count is a preference the door can set", loop.runs.ok === true);
@@ -334,6 +342,34 @@ check("a Warframe ability runs with the element asked for, at the strength set, 
   fight.ability.ok && fight.abilitySeen && (!fight.abilityEl || fight.abilitySeen.element === fight.abilityEl)
   && fight.strength.ok && fight.strengthSeen && fight.abilityOff.ok && fight.abilityGone,
   JSON.stringify([fight.ability, fight.abilitySeen]));
+
+// ---- the arena: distance, bodies, aim ----------------------------------------
+
+const arena = await evaluate(`(async () => {
+  const out = {};
+  out.dist = await window.wfsim.do("simulator.arena.distance", { meters: 10 });
+  out.gap = (await window.wfsim.do("simulator.arena.read", {})).gap_m;
+  out.add = await window.wfsim.do("simulator.arena.add", { count: 3 });
+  const t = sim.target_at;
+  out.place = await window.wfsim.do("simulator.arena.place", { x: t[0] + 6, y: t[1] + 6 });
+  out.taken = await window.wfsim.do("simulator.arena.place", { x: t[0], y: t[1] });
+  const st = await window.wfsim.do("simulator.arena.read", {});
+  out.bodies = st.formation.length;
+  out.remove = await window.wfsim.do("simulator.arena.remove", { body: st.formation[0].id });
+  out.afterRemove = (await window.wfsim.do("simulator.arena.read", {})).formation.length;
+  out.aim = await window.wfsim.do("simulator.arena.aim", { x: t[0] + 6, y: t[1] + 6 });
+  out.aimed = !!sim.aim_at;
+  out.reset = await window.wfsim.do("simulator.arena.reset", {});
+  out.one = !(sim.formation || []).length && !sim.aim_at;
+  await window.wfsim.do("simulator.arena.distance", { meters: 0 });
+  return out;
+})()`, { awaitPromise: true });
+
+check("the arena takes a distance, and reads it back as the gap", arena.dist.ok && Math.abs(arena.gap - 10) < 0.01, JSON.stringify(arena.gap));
+check("bodies are added, placed and removed by id", arena.add.ok && arena.add.added === 3 && arena.place.ok
+  && arena.bodies === 4 && arena.remove.ok && arena.afterRemove === 3, JSON.stringify([arena.add.added, arena.bodies, arena.afterRemove]));
+check("...a place already taken is refused", arena.taken.ok === false && arena.taken.reason === "place_taken", JSON.stringify(arena.taken));
+check("aiming at a point, and back to one body", arena.aim.ok && arena.aimed && arena.reset.ok && arena.one);
 
 // ---- the search's scope, set through the page's own rules ---------------------
 
