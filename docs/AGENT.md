@@ -89,11 +89,27 @@ door are two implementations of one behaviour, and they agree until the day one
 is edited. `check_agent_door` asserts the shared decisions exist once, on the
 SOURCE, because a running page cannot see its own duplication.
 
+**Every action declares what it writes** — the document of one bar (build,
+scenario, search, riven, target), this browser's preferences, the bar its `bar`
+argument names, or nothing — and a query writes nothing. The official ruler's
+lock and an agent's copy-before-write both read the declaration, so they
+cannot disagree about what counts as an edit.
+
+**A hand action is a reader's gesture.** Marked `hand`, it is called by the
+page's own control with `{ hand: true }` and refused without it, and it is not
+in `tools()`: taking an agent's copy back (`shell.preset.adopt`) is the reader's
+click, whatever the model decides. An agent has no route to it — not a
+different route, none.
+
 **The id is the wire.** `<module>.<subject>.<verb>`, named after the domain and
 never after the widget — the same namespace `docs/ANALYTICS.md` fixes for event
 names, for the same reason. An agent that learned an id cannot be migrated when
 it changes, so an id that ships is frozen under the rule `naming::FROZEN`
 states for every other wire.
+
+**The observation says what is open** — the document in each bar that an
+edit would write, whether the fight is an official ruler, and the page's
+language — so a caller never reads the page's variables to find out.
 
 **The observation is bounded.** An agent pays for every byte in the window it
 has to think in, so `observe()` is state and not a DOM dump: scalars travel as

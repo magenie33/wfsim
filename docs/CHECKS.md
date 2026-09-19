@@ -35,7 +35,10 @@ copy. The rest drive the page through the door itself — seat a mod, set a
 polarity, plan the Forma, seat an arcane, install an evolution, clear the
 build, change the fight, open a module, run it — and assert the SLOT ON SCREEN
 redrew, which is the difference between an agent working the page and one
-working behind it. A search must start, refuse a second start, report its phase and
+working behind it. Every action that is not a query declares what it writes, and a reader's-hand
+action is never a tool and is refused without the hand. An edit made just
+before opening another build, or duplicating, is kept (verified to bite: with
+the flush removed both fail). A search must start, refuse a second start, report its phase and
 stop when asked. Every query must leave the observation byte-identical, and
 the stats read must name the mod behind a change. Then the refusals, each of which must come back as
 `ok:false` with a reason rather than as an exception.

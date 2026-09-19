@@ -52,12 +52,21 @@ const table = await evaluate(`(() => {
     if (!document.querySelector(a.anchor)) bad.push(a.id + ": anchor " + a.anchor + " is not on the page");
   }
   const tools = window.wfsim.tools();
-  const untooled = window.wfsim.actions.filter(a => !tools.some(t => t.name === a.id && t.input_schema));
-  return { bad, n: window.wfsim.actions.length, untooled: untooled.map(a => a.id) };
+  const untooled = window.wfsim.actions.filter(a => !a.hand && !tools.some(t => t.name === a.id && t.input_schema));
+  // WHAT EACH ACTION WRITES is declared, and only by actions: the lock on an
+  // official ruler and an agent's copy-before-write both read it.
+  for (const a of window.wfsim.actions) {
+    if (!a.query && !AGENT_WRITES.includes(a.writes)) bad.push(a.id + ": does not declare what it writes");
+    if (a.query && a.writes) bad.push(a.id + ": a query that writes");
+    if (a.hand && tools.some(t => t.name === a.id)) bad.push(a.id + ": a reader's-hand action offered as a tool");
+  }
+  return { bad, n: window.wfsim.actions.length, untooled: untooled.map(a => a.id),
+    hands: window.wfsim.actions.filter(a => a.hand).length };
 })()`);
 check("every action is named and anchored on a control", table.bad.length === 0, table.bad.join(" · "));
 check("every action is a tool definition", table.untooled.length === 0, table.untooled.join(" · "));
 check("the table is not empty", table.n > 0, table.n);
+check("there is a reader's-hand action, and none is a tool", table.hands > 0, table.hands);
 
 // ---- the observation ---------------------------------------------------------
 
@@ -69,12 +78,16 @@ const obs = await evaluate(`(() => {
     can: o.can.length, keys: Object.keys(o),
     // The fight carries a formation; the observation must carry its SIZE.
     bodies: o.scenario ? o.scenario.bodies : "no scenario",
+    open: o.open, official: o.official_scenario, lang: o.lang,
   };
 })()`);
 check("the observation is bounded", obs.bytes <= 4096, obs.bytes + " bytes");
 check("it says where the reader is", obs.ready === true && obs.module === "builder" && obs.weapon === "torid",
   JSON.stringify([obs.ready, obs.module, obs.weapon]));
 check("it says what can be done from here", obs.can > 0, obs.can);
+check("it says what is open in every bar, whether the fight is an official ruler, and the page's language",
+  obs.open && ["build", "scenario", "search", "riven", "target"].every(k => k in obs.open)
+  && typeof obs.official === "boolean" && !!obs.lang, JSON.stringify([obs.open, obs.official, obs.lang]));
 check("a non-scalar fight field reports its size", obs.bodies === undefined || typeof obs.bodies === "object",
   JSON.stringify(obs.bodies));
 
@@ -177,10 +190,10 @@ const pre = await evaluate(`(async () => {
   const out = {};
   await window.wfsim.do("builder.mod.set", { slot: 0, mod: "serration" });
   await new Promise(r => setTimeout(r, 700)); // auto-save births the reader's build
-  const mine = window.wfsim.observe().build.preset;
+  const mine = window.wfsim.observe().open.build;
   out.mine = mine;
   out.copy = await window.wfsim.do("shell.preset.copy", { bar: "build" });
-  out.onCopy = window.wfsim.observe().build.preset;
+  out.onCopy = window.wfsim.observe().open.build;
   await window.wfsim.do("builder.mods.clear", {});
   await new Promise(r => setTimeout(r, 700));
   out.list = await window.wfsim.do("shell.presets.list", { bar: "build" });
@@ -209,6 +222,38 @@ check("presets list, marking the open one", pre.list.ok === true && pre.list.row
 check("the reader's own build is untouched by work on the copy", pre.back.ok === true && pre.mineKept === true);
 check("a new build opens blank", pre.fresh.ok === true && pre.blank === true, JSON.stringify(pre.fresh));
 check("a build that does not exist is refused", pre.bad.ok === false && pre.bad.reason === "unknown_preset", JSON.stringify(pre.bad));
+
+// ---- an edit is never lost to a switch; a copy is taken back by the reader ---
+
+const keep = await evaluate(`(async () => {
+  const out = {};
+  const has = (r, mod) => r.ok && r.mods.some(m => m.id === mod);
+  // EDIT, THEN SWITCH AT ONCE — inside the auto-save's debounce.
+  const a = (await window.wfsim.do("shell.preset.new", { bar: "build" })).preset;
+  await window.wfsim.do("builder.mod.set", { slot: 0, mod: "serration" });
+  await window.wfsim.do("shell.preset.new", { bar: "build" });
+  out.afterNew = has(await window.wfsim.do("shell.preset.read", { bar: "build", preset: a }), "serration");
+  // EDIT, THEN DUPLICATE AT ONCE — the edit is the original's, not the copy's alone.
+  await window.wfsim.do("shell.preset.open", { bar: "build", preset: a });
+  await window.wfsim.do("builder.mod.set", { slot: 1, mod: "hellfire" });
+  const copy = (await window.wfsim.do("shell.preset.copy", { bar: "build" })).preset;
+  out.afterCopy = has(await window.wfsim.do("shell.preset.read", { bar: "build", preset: a }), "hellfire");
+  // THE READER TAKES A COPY BACK — by hand; a caller without one is refused.
+  await window.wfsim.do("builder.mod.set", { slot: 2, mod: "split_chamber" });
+  out.noHand = await window.wfsim.do("shell.preset.adopt", { bar: "build", from: copy, into: a });
+  out.hand = await window.wfsim.do("shell.preset.adopt", { bar: "build", from: copy, into: a }, { hand: true });
+  out.adopted = window.wfsim.observe().open.build === a
+    && has(await window.wfsim.do("shell.preset.read", { bar: "build", preset: a }), "split_chamber");
+  await window.wfsim.do("builder.mods.clear", {});
+  return out;
+})()`, { awaitPromise: true });
+
+check("an edit made just before opening another build is kept", keep.afterNew === true);
+check("an edit made just before duplicating is the original's too", keep.afterCopy === true);
+check("taking a copy back is refused without the reader's hand", keep.noHand.ok === false && keep.noHand.reason === "reader_only",
+  JSON.stringify(keep.noHand));
+check("...and with it, the reader's build takes the copy's contents", keep.hand.ok === true && keep.adopted === true,
+  JSON.stringify(keep.hand));
 check("undo takes the last change back, and redo returns it", pre.undo.ok === true && pre.undone === true && pre.redo.ok === true,
   JSON.stringify([pre.undo, pre.redo]));
 check("the saved searches list like any other bar", pre.searches.ok === true && Array.isArray(pre.searches.rows), JSON.stringify(pre.searches));
@@ -325,7 +370,7 @@ const board = await evaluate(`(async () => {
   const top = out.read.ok && out.read.rows[0];
   if (top) {
     out.open = await window.wfsim.do("shell.preset.open", { bar: "build", preset: top.id });
-    out.onIt = window.wfsim.observe().build.preset === top.id;
+    out.onIt = window.wfsim.observe().open.build === top.id;
   }
   await window.wfsim.do("shell.preset.new", { bar: "build" });
   return out;

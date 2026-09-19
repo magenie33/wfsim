@@ -3672,6 +3672,7 @@ function ensureRivenList() {
 /// OPEN A SAVED RIVEN for editing, or "" for the list. Its card is re-read from
 /// storage by the render.
 function openRiven(id) {
+  flushPresetSaves();
   activeRiven = id;
   if (id) localStorage.setItem(presetActiveKey(RIVENS), id);
   else localStorage.removeItem(presetActiveKey(RIVENS));
@@ -4116,8 +4117,7 @@ function pruneDanglingRivens() {
 }
 
 function saveRivenSoon() {
-  clearTimeout(rivenSaveTimer);
-  rivenSaveTimer = setTimeout(() => {
+  rivenSaveTimer = deferSave("rivens", () => {
     const ps = loadPresetList(RIVENS);
     const open = activeRivenId();
     const i = ps.findIndex((p) => p.id === open);
@@ -8536,12 +8536,34 @@ function whileApplying(fn) {
     presetApplying--;
     // Renders during the apply queue their own debounced saves — drop
     // them, or the applied (possibly pruned) state writes itself back.
-    clearTimeout(presetSaveTimer);
-    clearTimeout(optSaveTimer);
+    dropSave("builds");
+    dropSave("search");
   }
 }
 
 let presetSaveTimer = null;
+/// THE SAVES WAITING ON A DEBOUNCE, by collection. A switch of document first
+/// runs them (`flushPresetSaves`): `whileApplying` clears the timers so an
+/// apply cannot write itself back, and before this a switch inside the
+/// debounce dropped the reader's last edit — or, on duplicate, wrote it into
+/// the copy instead. A save deliberately dropped leaves the table too.
+const pendingSaves = new Map();
+function deferSave(key, fn, ms) {
+  dropSave(key);
+  const run = () => { pendingSaves.delete(key); fn(); };
+  const t = setTimeout(run, ms);
+  pendingSaves.set(key, { t, run });
+  return t;
+}
+function dropSave(key) {
+  const p = pendingSaves.get(key);
+  if (p) { clearTimeout(p.t); pendingSaves.delete(key); }
+}
+function flushPresetSaves() {
+  for (const [key, p] of [...pendingSaves]) { clearTimeout(p.t); pendingSaves.delete(key); p.run(); }
+}
+// …AND BEFORE THE PAGE GOES: a tab closed inside the debounce kept nothing.
+window.addEventListener("pagehide", () => flushPresetSaves());
 /// TWO STATES ARE THE SAME STATE WHATEVER ORDER THEIR KEYS CAME IN.
 ///
 /// `JSON.stringify` is key-ORDER sensitive, and the order is whatever order the
@@ -8586,8 +8608,7 @@ const buildIsUntouched = () =>
 
 function markPresetDirty() {
   if (presetApplying) return;
-  clearTimeout(presetSaveTimer);
-  presetSaveTimer = setTimeout(() => {
+  presetSaveTimer = deferSave("builds", () => {
     if (presetApplying) return;
     // An official build is not written — same rule as the official scenario,
     // and enforced in the same place. Auto-save is what would otherwise make
@@ -8662,8 +8683,7 @@ function writeScenarioFields(patch) {
 
 function markScenarioDirty() {
   if (presetApplying) return;
-  clearTimeout(scenarioSaveTimer);
-  scenarioSaveTimer = setTimeout(() => {
+  scenarioSaveTimer = deferSave("scenarios", () => {
     if (!activeScenario || presetApplying) return;
     // NO BIRTH-ON-EDIT HERE, deliberately. The fight always resolves to
     // something — an official ruler when you own nothing — and a ruler is
@@ -8724,6 +8744,7 @@ const presetId = (p) => (p || {}).builtin || (p || {}).name || "";
 const presetLabel = (p) => (p || {}).name || "";
 
 const pickPreset = (cfg, key) => {
+  flushPresetSaves();
   const ps = cfg.load();
   // By ID first: a name may now be shared by two rulers' rows.
   const p = ps.find((x) => presetId(x) === key) || ps.find((x) => x.name === key);
@@ -8739,6 +8760,7 @@ const pickPreset = (cfg, key) => {
 /// sees the new one; the stored state is the live snapshot after the blank is
 /// applied, so it matches exactly what the editor shows.
 const newPreset = (cfg) => {
+  flushPresetSaves();
   const ps = cfg.load();
   const name = freeName(ps, (n) => autoPresetName(cfg.noun || "preset", n));
   cfg.setActive(name);
@@ -8753,6 +8775,7 @@ const newPreset = (cfg) => {
 // original keeps what auto-save last wrote into it. For a read-only entry the
 // live state IS that entry, because selecting it is what put it there.
 const copyActivePreset = (cfg) => {
+  flushPresetSaves();
   const ps = cfg.load();
   const base = cfg.active();
   const name = freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : ""));
@@ -8948,8 +8971,8 @@ function renderPresetBarIn(bar, cfg) {
     // create the row that was just removed.
     if (!ps2.length && cfg.pristine) cfg.pristine();
     cfg.rerender();
-    clearTimeout(presetSaveTimer);
-    clearTimeout(optSaveTimer);
+    dropSave("builds");
+    dropSave("search");
   });
 }
 
@@ -10451,6 +10474,7 @@ function applyWeapon(id, presetMods) {
 // renderOpt re-runs bootstrapOptPresets against the new scope.
 // NOT called from restoreState: loading a preset must not re-enter this.
 function switchWeapon(id) {
+  flushPresetSaves();
   $("weapon").value = id;
   ensureWeaponBoard(id);
   applyWeapon(id, null);
@@ -21482,8 +21506,7 @@ function updateOptEstimate() {
   $("run-opt").disabled = !valid || optJobId != null;
   // Every scope mutation funnels through here — AUTO-SAVE into the active
   // preset (debounced), same contract as the build bar.
-  clearTimeout(optSaveTimer);
-  optSaveTimer = setTimeout(() => {
+  optSaveTimer = deferSave("search", () => {
     if (presetApplying) return;
     const ps = loadOptPresets();
     // A SEARCH IS BORN ON THE FIRST EDIT, like a build (`markPresetDirty`).
@@ -23319,7 +23342,7 @@ function agentResult() {
 function agentObserve() {
   if (!window.__wfsimReady) return { v: AGENT_DOOR_V, ready: false };
   const r = agentRoute();
-  const out = { v: AGENT_DOOR_V, ready: true, route: r };
+  const out = { v: AGENT_DOOR_V, ready: true, route: r, lang: LANG };
   if (r.weapon) {
     const st = snapshotState();
     out.weapon = { id: r.weapon, name: weaponInfo(r.weapon).name };
@@ -23328,7 +23351,6 @@ function agentObserve() {
     // neither.
     const f = formaCount();
     out.build = {
-      preset: activePreset || null,
       slots: st.slots
         .map((s, i) => ({ seat: agentSeatName(i), mod: s.mod, rank: s.rank, pol: s.pol }))
         .filter((s) => s.mod || s.pol),
@@ -23339,8 +23361,12 @@ function agentObserve() {
       forma: { regular: f.regular, umbra: f.umbra, omni: f.omni },
     };
     out.scenario = agentScenario();
-    out.scenario_preset = activeScenario || null;
     out.result = agentResult();
+    // WHAT IS OPEN in each bar — the document an edit would write — and
+    // whether the fight is an official ruler, which no edit may touch.
+    out.open = { build: activePreset || null, scenario: activeScenario || null, search: activeOptPreset || null,
+      riven: activeRivenId() || null, target: activeEnemyName() || null };
+    out.official_scenario = officialScenarioActive();
   }
   out.can = AGENT_ACTIONS.filter((a) => !a.needs_weapon || r.weapon).map((a) => a.id);
   return out;
@@ -23404,9 +23430,12 @@ const agentDiff = (a, b) => {
   return out;
 };
 
-async function agentDo(id, args = {}) {
+async function agentDo(id, args = {}, opts = {}) {
   const a = AGENT_ACTIONS.find((x) => x.id === id);
   if (!a) return agentNo("unknown_action", { alternatives: agentNear(id) });
+  // A HAND ACTION IS THE READER'S GESTURE: the page's own control passes
+  // `hand`, and nothing a model can reach does — it is not in `tools()`.
+  if (a.hand && !opts.hand) return agentNo("reader_only", { because: "this is a reader's click, not a tool" });
   if (a.needs_weapon && !agentRoute().weapon) return agentNo("no_weapon_open", { alternatives: ["shell.module.open"] });
   const bad = agentCheckArgs(a, args);
   if (bad) return bad;
@@ -23437,7 +23466,7 @@ async function agentDo(id, args = {}) {
 /// The table as a model sees it. DERIVED — a tool definition hand-written
 /// beside the action it describes is a second declaration, and the day they
 /// disagree the agent is calling something that does not exist.
-const agentTools = () => AGENT_ACTIONS.map((a) => ({
+const agentTools = () => AGENT_ACTIONS.filter((a) => !a.hand).map((a) => ({
   name: a.id,
   description: a.what,
   input_schema: {
@@ -23458,10 +23487,14 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
 }));
 
 const agentWeaponIds = () => (META.weapons || []).map((w) => w.id);
-/// Every simulator action writes the fight, except running it and the run
-/// count, which is a preference of this browser.
-const agentWritesFight = (a) => !a.query && a.id.startsWith("simulator.")
-  && a.id !== "simulator.run.start" && a.id !== "simulator.runs.set";
+/// WHAT AN ACTION WRITES, declared on the action: the document of one bar
+/// (build, scenario, search, riven, target), this browser's preferences, the
+/// bar its `bar` argument names, or nothing. The official ruler's lock and an
+/// agent's copy-before-write both read it, so they cannot disagree about what
+/// an edit is. `check_agent_door` requires it of every action that is not a
+/// query.
+const AGENT_WRITES = ["build", "scenario", "search", "riven", "target", "prefs", "bar", "none"];
+const agentWritesFight = (a) => a.writes === "scenario";
 
 /// A FOUND LIST IS CAPPED, and says how many it left out, so a caller knows to
 /// narrow the query rather than believe the list is complete.
@@ -23501,6 +23534,12 @@ function agentRunSummary() {
       .map((x) => ({ source: x.source, share: `${Math.round((x.dmg / total) * 1000) / 10}%`, by_type: x.by_type })),
   };
 }
+
+/// A BUILD'S STATE AS IT IS NOW — live if it is the one on screen, stored
+/// otherwise. Pending auto-saves are flushed on every switch
+/// (`flushPresetSaves`), so the stored one is never behind.
+const agentBuildState = (id) => (activePreset === id ? snapshotState()
+  : ((loadPresetList(BUILDS).find((p) => presetId(p) === id) || {}).state || null));
 
 /// THE PRESET BARS the door reaches: the build's and the fight's. Picking,
 /// "+ new" and duplicate are the moves; rename and delete stay a reader's.
@@ -23650,6 +23689,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "enemies.target.new",
+    writes: "none",
     what: "Make a blank custom target — a plain humanoid, every number meant to be replaced — and open it.",
     anchor: "#enemy-tools",
     args: {},
@@ -23657,6 +23697,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "enemies.target.copy",
+    writes: "none",
     what: "Duplicate the open custom target and open the copy.",
     anchor: "#enemy-tools",
     args: {},
@@ -23664,6 +23705,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "enemies.target.open",
+    writes: "none",
     what: "Open a custom target for editing by name.",
     anchor: "#enemy-tools, #enemy-all",
     args: { name: { kind: "string", required: true, what: "the target's name" } },
@@ -23676,6 +23718,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "enemies.target.set",
+    writes: "target",
     what: "Write fields of the open custom target: faction, scaling_faction, can_be_eximus, stats {base_level, health, shield, armor, overguard, affinity}, damage_modifiers (a column of multipliers by damage type, \"faction\" to start one from the faction's, or null for the faction's own), status_immunities (the types whose procs cannot land), body_parts [{name, multiplier, is_head, crit_bonus}].",
     anchor: "#enemy-form",
     args: {
@@ -23721,8 +23764,8 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.forma.rules",
+    writes: "prefs",
     what: "Change the Forma planner's rules — this browser's, for every build — which the Forma plan and the reach both obey. forma_limit is a whole number or null.",
-    keeps_build: true,
     anchor: "#forma-plan",
     needs_weapon: true,
     args: {
@@ -23742,7 +23785,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.forma.partner",
-    keeps_build: true,
+    writes: "prefs",
     what: "Plan another saved build of this weapon together with the open one (on=true) or stop — the Forma plan then fits both on one set of polarities.",
     anchor: "#forma-plan",
     needs_weapon: true,
@@ -23757,7 +23800,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.reach.run",
-    keeps_build: true,
+    writes: "none",
     what: "Work out what one polarity layout reaches across this weapon's board rulers, and what each extra Forma buys; optionally set the scope first. Returns the curve and, at the first point that meets the line, each ruler's best build that fits.",
     anchor: "#forma-plan",
     needs_weapon: true,
@@ -23785,7 +23828,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.reach.mark",
-    keeps_build: true,
+    writes: "none",
     what: "Mark a point of the worked-out reach curve by its index, to read and apply that layout.",
     anchor: "#forma-plan",
     needs_weapon: true,
@@ -23799,6 +23842,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.reach.apply",
+    writes: "build",
     what: "Put the open build's slots on the marked point's polarities, as the planner's apply button does.",
     anchor: "#forma-plan",
     needs_weapon: true,
@@ -23813,7 +23857,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.reach.save",
-    keeps_build: true,
+    writes: "none",
     what: "Save a ruler's best-fitting build at the marked point as a build of its own, on that point's polarities.",
     anchor: "#forma-plan",
     needs_weapon: true,
@@ -23835,6 +23879,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.arena.distance",
+    writes: "scenario",
     what: "Put the target this many metres from the player (the gap between them; 0 is contact, where both boards are scored).",
     anchor: "#sim-target-arena",
     needs_weapon: true,
@@ -23843,6 +23888,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.arena.add",
+    writes: "scenario",
     what: "Add bodies around the target, each of the fight's current enemy, in the first free places — the +1/+8 quick sets.",
     anchor: "#sim-target-arena",
     needs_weapon: true,
@@ -23857,6 +23903,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.arena.place",
+    writes: "scenario",
     what: "Place one body of the fight's current enemy at a point (metres). Refused where it would overlap another body or the player, or when the floor is full.",
     anchor: "#sim-target-arena",
     needs_weapon: true,
@@ -23867,6 +23914,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.arena.remove",
+    writes: "scenario",
     what: "Remove one body from the formation by its id. The target (e1) cannot be removed.",
     anchor: "#sim-target-arena",
     needs_weapon: true,
@@ -23881,6 +23929,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.arena.reset",
+    writes: "scenario",
     what: "Back to one body, aimed at the target — the fight the boards are measured under.",
     anchor: "#sim-target-arena",
     needs_weapon: true,
@@ -23889,6 +23938,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.arena.aim",
+    writes: "scenario",
     what: "Aim at a point (metres) — aiming is a direction, and the shot hits the first body it crosses — or omit x and y to aim at the target.",
     anchor: "#sim-target-arena",
     needs_weapon: true,
@@ -23914,6 +23964,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.aura.set",
+    writes: "scenario",
     what: "Set how many of the squad run an aura (1 to 4 for one that stacks, else 1); 0 removes it. An aura is the fight's, never the build's.",
     anchor: "#sim-squad",
     needs_weapon: true,
@@ -23950,6 +24001,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.ability.set",
+    writes: "scenario",
     what: "Run a Warframe ability as a buff for the whole fight (on=true) or stop it; where it offers one, choose its element.",
     anchor: "#sim-wfbuffs",
     needs_weapon: true,
@@ -23971,6 +24023,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.strength.set",
+    writes: "scenario",
     what: "The Warframe's Ability Strength for the fight, in percent as the arsenal shows it; every ability buff scales with it.",
     anchor: "#sim-wfbuffs",
     needs_weapon: true,
@@ -23995,6 +24048,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.trigger.set",
+    writes: "scenario",
     what: "Switch a buff trigger off (off=true) or back on, or a whole group of them by the group's id.",
     anchor: "[data-bev], [data-bevg]",
     needs_weapon: true,
@@ -24012,6 +24066,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.extra.set",
+    writes: "scenario",
     what: "Set one of the fight's own stat bonuses — what the weapon is handed by something outside its build (a squad buff, another weapon's arcane) — as a percentage into the same bucket a mod of that stat feeds. 0 or null clears it.",
     anchor: "[data-xk]",
     needs_weapon: true,
@@ -24039,6 +24094,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.rule.set",
+    writes: "scenario",
     what: "Set a per-class rule for this fight, or null to fall back to the default. Only the pairs simulator.rules.list gives exist.",
     anchor: "[data-cr]",
     needs_weapon: true,
@@ -24075,6 +24131,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "optimizer.scope.mark",
+    writes: "search",
     what: "Mark one option in the build search's scope: \"fixed\" requires it, \"search\" lets the search try it, \"off\" clears it. Axes: mods, exilus, arcanes, evolutions (give the tier), modes, valence. The page's own rules apply: requiring a mod clears its family, one slot takes one pin, a build is played one way.",
     anchor: "#opt-plan",
     needs_weapon: true,
@@ -24109,6 +24166,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "optimizer.scope.empty",
+    writes: "search",
     what: "Say whether the search may leave a single slot empty: the exilus slot, an arcane seat (give the seat's pool, e.g. primary) or an evolution tier. never = always filled, allowed = both, only = searched empty.",
     anchor: "#opt-plan",
     needs_weapon: true,
@@ -24129,6 +24187,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "optimizer.scope.size",
+    writes: "search",
     what: "How many mods a searched build holds (min to max, 0 to 8), and how many builds reach the search's last round.",
     anchor: "#opt-plan",
     needs_weapon: true,
@@ -24169,6 +24228,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "rivens.card.new",
+    writes: "none",
     what: "Make a blank riven for this weapon's family and open it for editing.",
     anchor: "#riven-tools",
     needs_weapon: true,
@@ -24177,6 +24237,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "rivens.card.copy",
+    writes: "none",
     what: "Duplicate the open riven and open the copy.",
     anchor: "#riven-tools",
     needs_weapon: true,
@@ -24188,6 +24249,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "rivens.card.open",
+    writes: "none",
     what: "Open a saved riven for editing, by the id rivens.cards.list gives.",
     anchor: "#riven-tools, #riven-all",
     needs_weapon: true,
@@ -24201,6 +24263,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "rivens.card.set",
+    writes: "riven",
     what: "Write the open riven whole: its shape, each bonus and the malus by stat id with either the value printed on the card or a roll (0.9 to 1.1), its rank and polarity. Returns what the engine made of it — printed values, generated name, anything illegal.",
     anchor: "#riven-shape, #riven-stats, #riven-foot",
     needs_weapon: true,
@@ -24260,6 +24323,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.wielder.set",
+    writes: "build",
     what: "Choose who holds the weapon: a Warframe unmodded, a Warframe with one of its saved builds, or frame=null for the Prototype. The wielder's abilities and stats change the weapon's numbers.",
     anchor: "#wielder-row",
     needs_weapon: true,
@@ -24299,6 +24363,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.part.set",
+    writes: "build",
     what: "Swap a Kitgun's grip or loader. The chamber is the weapon itself; the other slot's version of the same chamber is another weapon id (builder.weapon.set).",
     anchor: "#assembly-row",
     needs_weapon: true,
@@ -24349,6 +24414,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "optimizer.search.start",
+    writes: "none",
     what: "Start a build search with the optimizer's current scope against the current fight. Returns at once; a search takes minutes — read its progress with optimizer.search.read.",
     anchor: "#run-opt",
     needs_weapon: true,
@@ -24383,6 +24449,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "optimizer.search.stop",
+    writes: "none",
     what: "Stop the running build search. What it has ranked so far is kept.",
     anchor: "#run-opt",
     needs_weapon: true,
@@ -24395,6 +24462,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "optimizer.result.save",
+    writes: "none",
     what: "Save a ranked build from the last search as a new build preset (named opt N). Open it with shell.preset.open to measure it in the simulator.",
     anchor: "#opt-results",
     needs_weapon: true,
@@ -24416,6 +24484,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "shell.preset.open",
+    writes: "none",
     what: "Open a saved build or scenario by the id presets.list gives.",
     anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
@@ -24430,6 +24499,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "shell.preset.new",
+    writes: "none",
     what: "Start a new blank build or scenario and open it; the one open before is kept as it was.",
     anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
@@ -24437,7 +24507,52 @@ const AGENT_ACTIONS = [
     run({ bar }) { return { preset: newPreset(AGENT_BARS[bar]()) }; },
   },
   {
+    id: "shell.preset.read",
+    query: true,
+    what: "Read what a saved build holds — its mods, arcanes, evolutions and mode — by the id presets.list gives; the open one is read as it is on screen.",
+    anchor: "#preset-bar-builder-builds",
+    needs_weapon: true,
+    args: { bar: { kind: "string", required: true, what: "which bar", enum: () => ["build"] },
+      preset: { kind: "string", required: true, what: "preset id" } },
+    run({ preset }) {
+      const st = agentBuildState(preset);
+      if (!st) return agentNo("unknown_preset", { alternatives: agentPresetRows(buildBarCfg()).map((r) => r.id).slice(0, 12) });
+      const name = (id) => (modById(id) || arcaneById(id) || { name: id }).name;
+      return {
+        mods: (st.slots || []).map((x, i) => (x.mod ? { seat: agentSeatName(i), id: x.mod, name: name(x.mod), rank: x.rank } : null)).filter(Boolean),
+        arcanes: (st.arcane || []).filter((x) => x && x !== "none").map((id) => ({ id, name: name(id) })),
+        evolutions: st.evoSel, mode: st.mode,
+      };
+    },
+  },
+  {
+    id: "shell.preset.adopt",
+    writes: "build",
+    hand: true,
+    what: "Write one saved build's contents over another's and open it — the reader taking an agent's copy back. A reader's click only.",
+    anchor: "#preset-bar-builder-builds",
+    needs_weapon: true,
+    args: { bar: { kind: "string", required: true, what: "which bar", enum: () => ["build"] },
+      from: { kind: "string", required: true, what: "the build whose contents are taken" },
+      into: { kind: "string", required: true, what: "the build they are written over" } },
+    run({ from, into }) {
+      flushPresetSaves();
+      const st = agentBuildState(from);
+      const cfg = buildBarCfg();
+      const ps = loadPresetList(BUILDS);
+      const at = ps.findIndex((p) => presetId(p) === into);
+      if (!st || at < 0) return agentNo("unknown_preset", { alternatives: ps.map((p) => presetId(p)).slice(0, 12) });
+      ps[at] = { ...ps[at], savedAt: Date.now(), state: JSON.parse(JSON.stringify(st)) };
+      storePresetList(BUILDS, ps);
+      cfg.setActive(into);
+      whileApplying(() => cfg.apply(ps[at].state));
+      cfg.rerender();
+      return { text: `${from} → ${into}` };
+    },
+  },
+  {
     id: "shell.preset.undo",
+    writes: "bar",
     what: "Undo the last change to a bar's documents — the build, the scenario, the search or the riven — or redo it with redo=true.",
     anchor: ".pundo",
     needs_weapon: true,
@@ -24454,6 +24569,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "shell.preset.copy",
+    writes: "none",
     what: "Duplicate the open build or scenario and open the copy — the way to try changes without touching the reader's own.",
     anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
@@ -24583,6 +24699,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "shell.module.open",
+    writes: "none",
     what: "Open a module of the page, optionally on another weapon.",
     anchor: "#module-tabs",
     args: {
@@ -24599,6 +24716,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.weapon.set",
+    writes: "none",
     what: "Switch the builder to another weapon. Its own presets and fight come with it.",
     anchor: "#weapon, #wsearch-input",
     args: { weapon: { kind: "string", required: true, what: "weapon id", enum: agentWeaponIds } },
@@ -24610,6 +24728,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.mod.set",
+    writes: "build",
     what: "Seat a mod in a slot, or empty the slot with mod=null. A mod already seated elsewhere is exchanged with this slot, as it is when a reader picks it.",
     anchor: "#mod-slots, #exilus",
     needs_weapon: true,
@@ -24634,6 +24753,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.mods.clear",
+    writes: "build",
     what: "Empty every mod slot, leaving the weapon bare.",
     anchor: "#clear-mods",
     needs_weapon: true,
@@ -24642,6 +24762,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.polarity.set",
+    writes: "build",
     what: "Set a slot's polarity, or remove it with polarity=null. The mod in the slot stays.",
     anchor: "#mod-slots .pol-btn, #exilus .pol-btn",
     needs_weapon: true,
@@ -24657,6 +24778,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.forma.plan",
+    writes: "build",
     what: "Re-polarize the slots for the fewest Forma that fit the seated mods, as the auto button does.",
     anchor: "#auto-forma",
     needs_weapon: true,
@@ -24665,6 +24787,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.arcane.set",
+    writes: "build",
     what: "Seat an arcane, or empty the seat with arcane=null. Only arcanes this weapon's seat takes are accepted.",
     anchor: "#arcane-slots",
     needs_weapon: true,
@@ -24687,6 +24810,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.evolution.set",
+    writes: "build",
     what: "Install an Incarnon evolution in a tier, or empty it with evolution=null (which empties every tier after it). Tier N opens only once tier N-1 is filled.",
     anchor: "#evo-rows",
     needs_weapon: true,
@@ -24709,6 +24833,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.mode.set",
+    writes: "build",
     what: "Choose how the build is played — the weapon's firing mode or form.",
     anchor: "#mode-row",
     needs_weapon: true,
@@ -24724,6 +24849,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "builder.valence.set",
+    writes: "build",
     what: "An adversary weapon's valence: its element and its bonus as a fraction of base damage (clamped to what a Lich can roll).",
     anchor: "#element-cfg",
     needs_weapon: true,
@@ -24741,6 +24867,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.scenario.set",
+    writes: "scenario",
     what: "Change fields of the fight — the enemy, its level, the duration, the metric. Fields that are not a single value (the formation, the buffs) have their own editors and are refused here.",
     anchor: "#sim-target, #dd-metric, input[data-k], select[data-k]",
     needs_weapon: true,
@@ -24764,6 +24891,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.runs.set",
+    writes: "prefs",
     what: "How many times the simulator replays the fight. A preference of this browser, not part of the fight.",
     anchor: "#sim-runs-block",
     needs_weapon: true,
@@ -24772,6 +24900,7 @@ const AGENT_ACTIONS = [
   },
   {
     id: "simulator.run.start",
+    writes: "none",
     what: "Run the fight and return the headline number. Takes as long as the reader's own run takes.",
     anchor: "#run-sim",
     needs_weapon: true,
@@ -25409,8 +25538,10 @@ const nonaTooLong = (e) => e && (e.status === 400 || e.status === 413)
 /// as often as the model obeys. The first change to a build or a fight that
 /// she did not make herself branches it first.
 async function nonaBranch(id) {
+  const act = AGENT_ACTIONS.find((x) => x.id === id);
+  const writes = act && act.writes;
   // A CUSTOM TARGET IS THE READER'S ITEM too.
-  if (id === "enemies.target.set") {
+  if (writes === "target") {
     const open = activeEnemyName();
     if (!open || nona.owned.has(`target:${open}`)) return null;
     const r = await window.wfsim.do("enemies.target.copy", {});
@@ -25418,21 +25549,15 @@ async function nonaBranch(id) {
     return null;
   }
   // A RIVEN IS THE READER'S ITEM like a build is: edited on a copy too.
-  if (id === "rivens.card.set") {
+  if (writes === "riven") {
     const open = activeRivenId();
     if (!open || nona.owned.has(`riven:${open}`)) return null;
     const r = await window.wfsim.do("rivens.card.copy", {});
     if (r && r.ok) { nona.owned.add(`riven:${r.riven}`); return r.riven; }
     return null;
   }
-  // A scope edit writes the reader's saved search; the fight's edits are
-  // `agentWritesFight`'s.
-  const act = AGENT_ACTIONS.find((x) => x.id === id);
-  // A planner preference or a saved copy leaves the open build as it was.
-  if (act && act.keeps_build) return null;
-  const bar = id.startsWith("optimizer.scope.") ? "search"
-    : act && agentWritesFight(act) ? "scenario"
-    : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;
+  // WHICH DOCUMENT THE ACTION WRITES is the action's own declaration.
+  const bar = writes === "build" || writes === "scenario" || writes === "search" ? writes : null;
   if (!bar) return null;
   const active = bar === "build" ? activePreset : bar === "search" ? activeOptPreset : activeScenario;
   if (active && nona.owned.has(`${bar}:${active}`)) return null;
@@ -25493,18 +25618,12 @@ function nonaChangeCard(pair) {
   const cfg = buildBarCfg();
   el.querySelector('[data-card="open"]').onclick = () => pickPreset(cfg, pair.copy);
   el.querySelector('[data-card="back"]').onclick = () => pickPreset(cfg, pair.from);
-  el.querySelector('[data-card="apply"]').onclick = (e) => {
-    const state = pair.state;
-    const ps = loadPresetList(BUILDS);
-    const at = ps.findIndex((p) => presetId(p) === pair.from);
-    if (!state || at < 0) return;
-    ps[at] = { ...ps[at], savedAt: Date.now(), state: JSON.parse(JSON.stringify(state)) };
-    storePresetList(BUILDS, ps);
-    cfg.setActive(pair.from);
-    whileApplying(() => cfg.apply(ps[at].state));
-    cfg.rerender();
-    e.currentTarget.textContent = `✓ ${tr("applied")}`;
-    e.currentTarget.disabled = true;
+  // THE READER'S HAND on the door's own action — the same one any page
+  // control would call, and one no model can reach.
+  el.querySelector('[data-card="apply"]').onclick = async (e) => {
+    const b = e.currentTarget;
+    const r = await window.wfsim.do("shell.preset.adopt", { bar: "build", from: pair.copy, into: pair.from }, { hand: true });
+    if (r && r.ok) { b.textContent = `✓ ${tr("applied")}`; b.disabled = true; }
   };
 }
 
@@ -26078,7 +26197,14 @@ window.wfsim = {
   observe: agentObserve,
   do: agentDo,
   tools: agentTools,
-  get actions() { return AGENT_ACTIONS.map((a) => ({ id: a.id, what: a.what, anchor: a.anchor, query: !!a.query })); },
+  // THE PAGE'S UI KIT, for a panel that lives on the page (Nona's): its
+  // translation, its dropdown and its escaping, so such a panel looks and
+  // reads like the page without reaching into it.
+  ui: { tr: (s) => tr(s), dd: (id, cfg) => ddButton(id, cfg), esc: (s) => escHtml(s) },
+  get actions() {
+    return AGENT_ACTIONS.map((a) => ({ id: a.id, what: a.what, anchor: a.anchor, query: !!a.query,
+      writes: a.writes || null, hand: !!a.hand }));
+  },
 };
 
 // THE BOOT IS OVER, one way or the other, and the page must say which.

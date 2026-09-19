@@ -116,7 +116,7 @@ const run = (provider, base) => evaluate(`(async () => {
   await window.wfsim.do("shell.preset.new", { bar: "build" });
   await window.wfsim.do("builder.mods.clear", {});
   await wait(600);
-  const mine = window.wfsim.observe().build.preset;
+  const mine = window.wfsim.observe().open.build;
   localStorage.setItem("wfsim-nona", JSON.stringify({ proto: ${JSON.stringify(provider === "anthropic" ? "anthropic" : "openai")}, base: ${JSON.stringify(base)}, key: "test", remember: true, model: "mock", price: [1, 2] }));
   document.getElementById("nona-fab").click();
   document.getElementById("nona-new").click();
@@ -128,18 +128,21 @@ const run = (provider, base) => evaluate(`(async () => {
   const foot = document.getElementById("nona-foot-note").textContent;
   const card = !!document.querySelector("#nona-log .card [data-card=apply]");
   const cardText = (document.querySelector("#nona-log .card") || {}).textContent || "";
-  const onCopy = window.wfsim.observe().build;
+  const onCopyObs = window.wfsim.observe();
+  const onCopy = onCopyObs.build;
   await window.wfsim.do("shell.preset.open", { bar: "build", preset: mine });
   const mineAfter = window.wfsim.observe().build;
   // THE READER TAKES THE CHANGE: the card writes the copy over their build.
   const apply = document.querySelector("#nona-log .card [data-card=apply]");
   if (apply) apply.click();
   await wait(300);
-  const taken = window.wfsim.observe().build;
+  for (let i = 0; i < 20 && !window.wfsim.observe().build.slots.some(s => s.mod === "serration"); i++) await wait(100);
+  const takenObs = window.wfsim.observe();
+  const taken = takenObs.build;
   document.getElementById("nona-close").click();
   return {
-    log, mine, copy: onCopy.preset, foot, suggested, card, cardText,
-    taken: taken.preset === mine && taken.slots.some(s => s.mod === "serration"),
+    log, mine, copy: onCopyObs.open.build, foot, suggested, card, cardText,
+    taken: takenObs.open.build === mine && taken.slots.some(s => s.mod === "serration"),
     copyHasIt: onCopy.slots.some(s => s.mod === "serration"),
     mineClean: mineAfter.slots.every(s => !s.mod),
     tools: window.wfsim.tools().length,
