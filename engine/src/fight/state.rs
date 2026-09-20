@@ -401,3 +401,111 @@ impl DoubleTap {
         self.other = held;
     }
 }
+
+impl Ammo {
+    /// WHAT THE BODIES DROPPED, credited to the reserve — one pickup at a
+    /// time, because a pack is only worth what the reserve has room for.
+    pub(super) fn credit_pickups(
+        &mut self,
+        params: &FightParams,
+        r: &mut RunResult,
+        dropped_primary: u32,
+        dropped_secondary: u32,
+    ) {
+        let ammo = self;
+        if !params.ammo_drops || params.infinite_reserve {
+            return;
+        }
+        if let Some(takes) = params.ammo_class {
+            for (kind, n) in [
+                (crate::rules::ammo::Pickup::Primary, dropped_primary),
+                (crate::rules::ammo::Pickup::Secondary, dropped_secondary),
+            ] {
+                for _ in 0..n {
+                    let got = crate::rules::ammo::credit(
+                        kind,
+                        takes,
+                        ammo.reserve,
+                        params.reserve_ammo,
+                        params.ammo_pickup,
+                        params.ammo_conversion,
+                    );
+                    if got > 0.0 {
+                        ammo.reserve += got;
+                        r.picked_up_ammo += got;
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Meter {
+    /// THE RECHARGE METER, credited with the seconds since it was last looked
+    /// at. A shot boundary is where every other clock in this loop is read,
+    /// and the meter is coarse enough not to care: it is 45 seconds long and
+    /// the fastest thing that fills it is worth one.
+    pub(super) fn tick(
+        &mut self,
+        m: crate::build::loadout::ResolvedMeter,
+        ap: &FightParams,
+        params: &FightParams,
+        dropped_secondary: u32,
+        t: &mut f64,
+        orbs: &mut Vec<OrbState>,
+    ) {
+        let meter = self;
+        meter.seconds += *t - meter.clocked;
+        meter.clocked = *t;
+        // …AND WHAT THE BODIES DROPPED. *"Picking up secondary or universal
+        // ammo reduces recharge time by 10 seconds"*.
+        //
+        // ONLY SECONDARY COUNTS. A primary pickup does nothing for a tome's
+        // meter, and universal packs are placed in a Simulacrum rather than
+        // dropped by anything, so a kill can only ever contribute through
+        // the secondary half of its roll.
+        //
+        // INFINITE AMMO DOES NOT REMOVE THE PICKUP. The house rule is about
+        // the reserve, and a real fight is under its cap almost all of the
+        // time — the pack is still on the floor either way.
+        meter.seconds += f64::from(dropped_secondary) * m.seconds_per_ammo_pickup;
+        // A FULL METER IS ONE THROW. It is not a magazine — the page says
+        // "requires a fully filled meter in order to fire", so what is
+        // spent is the whole thing and what is bought is a single orb.
+        if meter.seconds >= m.seconds_to_fill {
+            meter.seconds -= m.seconds_to_fill;
+            if let Some(o) = ap.orb {
+                throw_orb(o, params, *t, orbs);
+                // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
+                // a wind-up and a recovery, and the weapon can do nothing
+                // else until both are over — which is the cycle's whole
+                // price beyond the meter.
+                //
+                // THEN IT WINDS UP AGAIN. Coming back to the primary is
+                // pressing its trigger, and that costs what pressing it
+                // always costs; the interval only "corresponds exactly to
+                // the fire rate" while you are holding it down.
+                *t += o.throw_seconds + o.recovery_seconds + ap.windup_seconds;
+            }
+        }
+    }
+}
+
+impl Ammo {
+    /// AN INSTANT RELOAD — the magazine the weapon is actually firing, which
+    /// in a cycle is the base form's while the Incarnon one is out.
+    pub(super) fn instant_reload(&mut self, params: &FightParams, incarnon: &mut IncarnonState) {
+        let ammo = self;
+        ammo.instant_reload_now = false;
+        match &params.cycle {
+            Some(cy) => {
+                incarnon.base_magazine += draw_from(&mut ammo.reserve, params.infinite_reserve,
+                    reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
+            }
+            None => {
+                ammo.loaded += draw_from(&mut ammo.reserve, params.infinite_reserve,
+                    reload_draw(ammo.cap, ammo.loaded));
+            }
+        }
+    }
+}

@@ -78,7 +78,7 @@ pub fn run_once(params: &FightParams, rng: &mut Rng) -> RunResult {
 /// The STACKS stay shared (one buff, one count, across the whole engagement);
 /// only the conversion is per form.
 #[inline]
-fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, stacks: &mut [LiveStacks], t: f64) -> f64 {
+pub(super) fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, stacks: &mut [LiveStacks], t: f64) -> f64 {
     from.stacking_buffs
         .iter()
         .enumerate()
@@ -97,7 +97,7 @@ fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, stacks: &mut [
 /// needs to say how many. Reload-counting buffs are left out — they are
 /// waiting for the reload to finish, and it has not.
 #[inline]
-fn bump_shells(params: &FightParams, stacks: &mut [LiveStacks], n: u32, t: f64, rng: &mut Rng) {
+pub(super) fn bump_shells(params: &FightParams, stacks: &mut [LiveStacks], n: u32, t: f64, rng: &mut Rng) {
     for (i, b) in params.stacking_buffs.iter().enumerate() {
         if b.per_shell
             && b.trigger == crate::model::BuffTrigger::ReloadComplete
@@ -123,7 +123,7 @@ fn bump_shells(params: &FightParams, stacks: &mut [LiveStacks], n: u32, t: f64, 
 /// swapping OUT of the Incarnon form refills the base magazine, and Blazing
 /// Barrel is stated to survive it.
 #[inline]
-fn magazine_refilled(
+pub(super) fn magazine_refilled(
     params: &FightParams,
     ammo: &mut Ammo,
     r: &mut RunResult,
@@ -165,7 +165,7 @@ fn magazine_refilled(
 /// `transform_end` that has just put 216 charges in an Incarnon magazine
 /// reports `base 0/12` — the one row a reader opens the record to see.
 #[inline]
-fn record_weapon(
+pub(super) fn record_weapon(
     params: &FightParams,
     rec: &mut crate::record::Record,
     ammo: &Ammo,
@@ -237,7 +237,7 @@ fn record_weapon(
 /// sampler reads nine pieces at once and writes one frame, which is the whole
 /// reason it was a macro.
 #[allow(clippy::too_many_arguments)]
-fn sample_frames_up_to(
+pub(super) fn sample_frames_up_to(
     until: f64,
     params: &FightParams,
     trace: &mut Option<&mut Replay>,
@@ -308,6 +308,53 @@ fn sample_frames_up_to(
                     .collect(),
             });
             *next_frame += frame_seconds;
+        }
+    }
+}
+
+/// ONE TRIGGER'S BUFFS, bumped. The per-shell family is the other arm
+/// (`bump_shells`); this one is every buff a single event grants.
+pub(super) fn bump_on_trigger(
+    params: &FightParams,
+    stacks: &mut [LiveStacks],
+    want: crate::model::BuffTrigger,
+    t: f64,
+    rng: &mut Rng,
+) {
+    for (i, b) in params.stacking_buffs.iter().enumerate() {
+        if !b.per_shell && b.trigger == want && (b.chance >= 1.0 || rng.chance(b.chance)) {
+            for _ in 0..b.stacks_per_trigger.max(1) {
+                stacks[i].bump(t, b.duration, b.max_stacks);
+            }
+        }
+    }
+}
+
+/// A RELOAD FROM EMPTY, and what rides on it: the trigger's own buffs, and
+/// Resonant Restore, which is not a `StackingGrant` because what it grants is
+/// the capacity every other line of the loop reads.
+pub(super) fn bump_reload_from_empty(
+    params: &FightParams,
+    stacks: &mut [LiveStacks],
+    ammo: &mut Ammo,
+    t: f64,
+    rng: &mut Rng,
+) {
+    bump_on_trigger(params, stacks, crate::model::BuffTrigger::ReloadFromEmpty, t, rng);
+    // RESONANT RESTORE rides the same event, because it is the same
+    // event: "On Reload From Empty: Increase Base Magazine Capacity by
+    // +15. Stacks up to 3x". It is not a `StackingGrant` because what
+    // it grants is not a term in a bracket — it is the capacity every
+    // other line of this loop reads, so it moves `mag_cap` itself.
+    //
+    // MONOTONIC AND CAPPED: no card in this family carries a clock, and
+    // the stack count is the only thing that stops it. The magazine
+    // GROWS but does not fill — a reload draws from the reserve as it
+    // always did, and the extra room is what the next draw can use.
+    if let Some((per, max)) = params.magazine_growth_on_empty_reload {
+        if ammo.growth_stacks < max {
+            ammo.growth_stacks += 1;
+            ammo.cap += per * ammo.summon_multiplier;
         }
     }
 }
@@ -773,18 +820,6 @@ pub fn run_once_traced(
         };
     }
 
-    macro_rules! bump_on_trigger {
-        ($want:expr, $t:expr, $rng:expr) => {
-            for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if !b.per_shell && b.trigger == $want && (b.chance >= 1.0 || $rng.chance(b.chance))
-                {
-                    for _ in 0..b.stacks_per_trigger.max(1) {
-                        buff_stacks[i].bump($t, b.duration, b.max_stacks);
-                    }
-                }
-            }
-        };
-    }
 
     // …and the target-conditional family, which needs the fight's debuff state
     // as well as the clock. One arm, however many buffs use it.
@@ -800,27 +835,6 @@ pub fn run_once_traced(
         };
     }
 
-    macro_rules! bump_reload_from_empty {
-        ($t:expr, $rng:expr) => {
-            bump_on_trigger!(crate::model::BuffTrigger::ReloadFromEmpty, $t, $rng);
-            // RESONANT RESTORE rides the same event, because it is the same
-            // event: "On Reload From Empty: Increase Base Magazine Capacity by
-            // +15. Stacks up to 3x". It is not a `StackingGrant` because what
-            // it grants is not a term in a bracket — it is the capacity every
-            // other line of this loop reads, so it moves `mag_cap` itself.
-            //
-            // MONOTONIC AND CAPPED: no card in this family carries a clock, and
-            // the stack count is the only thing that stops it. The magazine
-            // GROWS but does not fill — a reload draws from the reserve as it
-            // always did, and the extra room is what the next draw can use.
-            if let Some((per, max)) = params.magazine_growth_on_empty_reload {
-                if ammo.growth_stacks < max {
-                    ammo.growth_stacks += 1;
-                    ammo.cap += per * ammo.summon_multiplier;
-                }
-            }
-        };
-    }
 
     let mut ghost_pile = Ghosts {
         standing: Vec::new(),
@@ -984,7 +998,7 @@ pub fn run_once_traced(
             let fresh = r.kills - kill_buff_mark;
             kill_buff_mark = r.kills;
             for _ in 0..fresh {
-                bump_on_trigger!(crate::model::BuffTrigger::Kill, t, d.extra);
+                bump_on_trigger(params, &mut buff_stacks, crate::model::BuffTrigger::Kill, t, &mut d.extra);
                 // EXACT PENANCE, on the same counter and for the same reason:
                 // "Kills from status effects can also trigger the effect", and
                 // a DoT kill happens nowhere near the direct-hit site that
@@ -1105,177 +1119,14 @@ pub fn run_once_traced(
                 }
             }
         }
-        if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
-            if !incarnon.in_base_form && ammo.loaded < 1e-9 {
-                // Charge magazine spent: revert to the base form. The swap
-                // fully reloads the base magazine (wiki side effect). The
-                // revert does NOT count as a transform — `transforms` counts
-                // TRANSMUTES INTO the Incarnon form only (user:
-                // both-directions counting read as doubled).
-                // COMING OUT OF INCARNON FORM IS A RELOAD too, and for the
-                // same stated reason: the swap refills the base magazine. It
-                // takes the speed if the buff is up and spends it — which is
-                // also why this animation is scaled by reload speed at all.
-                let spent = rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
-                    live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
-                rec.push(t, None, crate::record::Kind::TransformStart {
-                    seconds: spent,
-                    into_transmuted: false,
-                });
-                r.downtime_seconds += spent;
-                t += spent;
-                // …but it is NOT a reload, and one perk can tell the difference:
-                // see `ClearedBy::Reload`.
-                magazine_refilled(params, &mut ammo, &mut r, &mut buff_stacks, &mut rs_armed, &mut opening_closed, false);
-                incarnon.in_base_form = true;
-                double_tap.swap(t);
-                record_weapon(params, rec, &ammo, &incarnon);
-                rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: false });
-                incarnon.charges = 0;
-                // The swap's auto-reload is the SAME mechanism as a normal one, so it draws whole rounds rather than
-                // filling to capacity: a base magazine sitting on 4.25 comes
-                // back on 4.25, not 5.
-                //
-                // ...and it draws from the SAME RESERVE, because one weapon has
-                // one supply. Until 2026-08-04 every draw inside the cycle was
-                // free, so a finite reserve was silently ignored on every
-                // Incarnon weapon — the Infinite-ammo setting did nothing on
-                // five of the seven weapons in the roster.
-                incarnon.base_magazine += draw_from(&mut ammo.reserve, params.infinite_reserve,
-                    reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
-                // THE REST OF THE SHELLS LAND HERE. The draw above is normally
-                // zero — the magazine came back full on the way IN — so this is
-                // the second half of that one reload, not a second reload.
-                if ammo.owed_shells > 0 {
-                    bump_shells(params, &mut buff_stacks, ammo.owed_shells, t, rng);
-                    ammo.owed_shells = 0;
-                    // …and only now has a reload finished, for whatever was
-                    // counting reloads instead of shells.
-                    bump_on_trigger!(crate::model::BuffTrigger::ReloadComplete, t, rng);
-                }
-                continue;
-            }
-            if incarnon.in_base_form && !can_fire(incarnon.base_magazine, next_cost) {
-                // Base-form reload. A dry finite reserve stops the gun here
-                // exactly as it does outside the cycle — the weapon is out of
-                // ammo, not out of one of its two forms.
-                if !params.infinite_reserve && ammo.reserve < 1e-9 {
-                    break;
-                }
-                // THE SAME CLEAR as the plain path below: an empty magazine
-                // takes the pile whichever branch notices it, and a CYCLE
-                // reloads the base form here.
-                for (i, b) in params.stacking_buffs.iter().enumerate() {
-                    if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
-                        buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
-                    }
-                }
-                let rs = live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t);
-                let spent = live_reload_time(&cy.base_form, params, &mut arc, rs, t);
-                // THE OPENING WINDOW closes when the first reload STARTS, which
-                // is here — everything dealt up to this instant is what the
-                // magazine you walked in with was worth.
-                rec.push(t, None, crate::record::Kind::ReloadStart { seconds: spent });
-                r.downtime_seconds += spent;
-                t += spent;
-                magazine_refilled(params, &mut ammo, &mut r, &mut buff_stacks, &mut rs_armed, &mut opening_closed, true);
-                r.reloads += 1;
-                if let Some(b) = cy.base_form.fire_rate_on_reload {
-                    windows.fire_rate_after_reload = t + b.duration;
-                }
-                if let Some(b) = cy.base_form.base_damage_on_reload {
-                    windows.base_damage_after_reload = t + b.duration;
-                }
-                // Same whole-rounds rule as the plain reload below (M14), and
-                // the same shared reserve: a short draw is a short magazine.
-                let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve,
-                    reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
-                incarnon.base_magazine += loaded;
-                record_weapon(params, rec, &ammo, &incarnon);
-                rec.push(t, None, crate::record::Kind::ReloadEnd);
-                // ONE STACK PER SHELL THIS RELOAD LOADED, counted here and not
-                // from a number resolved once at the panel.
-                //
-                // The static `stacks_per_trigger` is the OUTER form's magazine,
-                // and in a cycle the outer form is the INCARNON one — so a
-                // base-form reload of 6 shells was granting 60 stacks, straight
-                // to +600% fire rate (measured 61 on the Felarx).
-                // Counting the draw is the same rule the Incarnon route already
-                // used and it needs no second number to stay true: a dry
-                // reserve loads fewer shells and pays fewer stacks, with
-                // nothing written down to say so.
-                bump_shells(params, &mut buff_stacks, loaded.round().max(0.0) as u32, t, rng);
-                bump_on_trigger!(crate::model::BuffTrigger::ReloadComplete, t, rng);
-                bump_reload_from_empty!(t, rng);
-                // Renewed Horror: "On Reload from Empty". This branch IS the
-                // reload-from-empty path.
-                field_duration_boost = true;
-                continue;
-            }
-        } else if !can_fire(ammo.loaded, next_cost) {
-            // AN EMPTY MAGAZINE TAKES THE WHOLE PILE, before the reload that
-            // rebuilds it. Mounting Momentum is cleared the instant the count
-            // reaches zero — not by the reload, and not by a clock — so firing
-            // a magazine dry earns one magazine's worth and never more. The
-            // 99-stack cap belongs to a player who tops up a magazine that
-            // never empties, which is not what this loop does.
-            for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
-                    buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
-                }
-            }
-            // Cannot fire: reload (blocking) or, with dry finite reserves,
-            // stop firing altogether (DoTs still drain below).
-            if !params.infinite_reserve && ammo.reserve < 1e-9 {
-                break;
-            }
-            // THE WINDOW OPENS WHEN THE RELOAD BEGINS — the player's reload
-            // ACTION is the trigger, not its completion.
-            // So it is armed BEFORE the line below, and the reload that armed
-            // it is the first thing it speeds up.
-            //
-            // Every reload this loop performs is a reload from empty — it only
-            // reloads when it cannot fire — which is exactly the condition.
-            let rs = live_reload_speed(params, params, rs_armed, &mut buff_stacks, t);
-            let spent = live_reload_time(params, params, &mut arc, rs, t);
-            // TWO ROWS, THE START AND THE END, and nothing in between. What is between them is not a reload event — it is
-            // whatever the fight went on doing while the weapon was down, which
-            // for a status build is most of its damage.
-            rec.push(t, None, crate::record::Kind::ReloadStart { seconds: spent });
-            r.downtime_seconds += spent;
-            t += spent;
-            magazine_refilled(params, &mut ammo, &mut r, &mut buff_stacks, &mut rs_armed, &mut opening_closed, true);
-            r.reloads += 1;
-            if let Some(b) = params.fire_rate_on_reload {
-                windows.fire_rate_after_reload = t + b.duration;
-            }
-            if let Some(b) = params.base_damage_on_reload {
-                windows.base_damage_after_reload = t + b.duration;
-            }
-            // Whole rounds only, and `+=` not `=` — both measured (M14). The
-            // draw covers the overdraw debt for free: the counter is in (−1, 0]
-            // here, so `floor(capacity − current)` is a full magazine, and a
-            // −0.75 counter comes back at 4.25 rather than 5.00.
-            let want = reload_draw(ammo.cap, ammo.loaded);
-            let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve, want);
-            ammo.loaded += loaded;
-            // THE ROW LANDS HERE, after the rounds are actually in. Announced
-            // one line earlier it read `0 / 6` — a reload that had just
-            // finished reporting an empty magazine, which is the one thing that
-            // row exists to deny (found by reading a Felarx record).
-            record_weapon(params, rec, &ammo, &incarnon);
-            rec.push(t, None, crate::record::Kind::ReloadEnd);
-            // …AND THE SHELLS IT LOADED PAY THEIR STACKS. One per shell, from
-            // the count the draw actually produced — see the note at the cycle's
-            // base-form reload for why this is per-site rather than a single
-            // trigger at the top of the loop.
-            bump_shells(params, &mut buff_stacks, loaded.round().max(0.0) as u32, t, rng);
-            bump_on_trigger!(crate::model::BuffTrigger::ReloadComplete, t, rng);
-            bump_reload_from_empty!(t, rng);
-            field_duration_boost = true; // reloaded from empty (Renewed Horror)
-            if t >= params.duration_seconds {
-                break;
-            }
+        match charge_magazine_cycle(
+            params, rec, rng, next_cost, &mut t, &mut r, &mut ammo, &mut incarnon, &mut double_tap,
+            &mut windows, &mut arc, &mut buff_stacks, &mut rs_armed, &mut opening_closed,
+            &mut field_duration_boost,
+        ) {
+            Flow::Continue => continue,
+            Flow::Break => break,
+            Flow::Go => {}
         }
 
         // Active-phase view: the base form's panel during the rebuild
@@ -1323,7 +1174,7 @@ pub fn run_once_traced(
         let initial_now =
             ap.initial_combo + buff_total(ap, crate::model::BuffGrant::InitialCombo, &mut buff_stacks, t);
         let combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
-        let combo_mult = melee_combo_multiplier(combo_now);
+        let combo_multiplier = melee_combo_multiplier(combo_now);
         // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
         // takes the combo multiplier on top of it.
         //
@@ -1379,7 +1230,7 @@ pub fn run_once_traced(
         // one; Master's Edge and Truth's Flame are the window's own.
         let swing_mult = if tennokai_heavy {
             ap.heavy.map_or(1.0, |h| h.multiplier)
-                * combo_mult
+                * combo_multiplier
                 // KILLING BLOW ON A LIGHT FORM'S FREE HEAVY. The card's bucket
                 // is the base-damage one, so what it is worth here is the
                 // RATIO that bucket grows by — `heavy_attack_base_damage` reads
@@ -1397,7 +1248,7 @@ pub fn run_once_traced(
                     })
         } else {
             swing.as_ref().map_or(1.0, |h| h.multiplier)
-                * if ap.spends_combo { combo_mult } else { 1.0 }
+                * if ap.spends_combo { combo_multiplier } else { 1.0 }
                 * mode_damage
         };
         // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes
@@ -1652,7 +1503,7 @@ pub fn run_once_traced(
             // worth everything in the four combo modes and nothing in the two
             // heavy ones: there the counter is emptied by the swing that reads
             // it, so it is standing at the floor when the next one starts.
-            + ap.crit_chance_per_combo * (combo_mult - 1.0)
+            + ap.crit_chance_per_combo * (combo_multiplier - 1.0)
             // …AND EVERY STACKING GRANT OF IT, the bracket Prolific
             // Perforation's card puts itself in by naming Pistol Gambit.
             + buff_total(ap, crate::model::BuffGrant::CritChance, &mut buff_stacks, t);
@@ -1685,7 +1536,7 @@ pub fn run_once_traced(
             // Wounds Bonus x (Combo Multi - 1)]`. It rides `sc_arc_shot`
             // because that is this loop's name for "relative status the panel
             // could not fold in", which is exactly what a live counter is.
-            + ap.status_chance_per_combo * (combo_mult - 1.0)
+            + ap.status_chance_per_combo * (combo_multiplier - 1.0)
             // ENDURING AFFLICTION, whose gate is a status the engine tracks:
             // every heavy slam forces `Lifted`, so from the second slam on the
             // target is carrying it and the card pays.
@@ -2144,67 +1995,13 @@ pub fn run_once_traced(
         // …AND WHAT THIS WEAPON DOES WITH THEM (`rules::ammo::credit`). Nothing at all
         // while the reserve is infinite: the house rule already hands the
         // weapon everything a pack could.
-        if params.ammo_drops && !params.infinite_reserve {
-            if let Some(takes) = params.ammo_class {
-                for (kind, n) in [
-                    (crate::rules::ammo::Pickup::Primary, dropped_primary),
-                    (crate::rules::ammo::Pickup::Secondary, dropped_secondary),
-                ] {
-                    for _ in 0..n {
-                        let got = crate::rules::ammo::credit(
-                            kind,
-                            takes,
-                            ammo.reserve,
-                            params.reserve_ammo,
-                            params.ammo_pickup,
-                            params.ammo_conversion,
-                        );
-                        if got > 0.0 {
-                            ammo.reserve += got;
-                            r.picked_up_ammo += got;
-                        }
-                    }
-                }
-            }
-        }
+        ammo.credit_pickups(params, &mut r, dropped_primary, dropped_secondary);
         // THE RECHARGE METER, credited with the seconds since it was last
         // looked at. A shot boundary is where every other clock in this loop is
         // read, and the meter is coarse enough not to care: it is 45 seconds
         // long and the fastest thing that fills it is worth one.
         if let Some(m) = ap.meter {
-            meter.seconds += t - meter.clocked;
-            meter.clocked = t;
-            // …AND WHAT THE BODIES DROPPED. *"Picking up secondary or universal
-            // ammo reduces recharge time by 10 seconds"*.
-            //
-            // ONLY SECONDARY COUNTS. A primary pickup does nothing for a tome's
-            // meter, and universal packs are placed in a Simulacrum rather than
-            // dropped by anything, so a kill can only ever contribute through
-            // the secondary half of its roll.
-            //
-            // INFINITE AMMO DOES NOT REMOVE THE PICKUP. The house rule is about
-            // the reserve, and a real fight is under its cap almost all of the
-            // time — the pack is still on the floor either way.
-            meter.seconds += f64::from(dropped_secondary) * m.seconds_per_ammo_pickup;
-            // A FULL METER IS ONE THROW. It is not a magazine — the page says
-            // "requires a fully filled meter in order to fire", so what is
-            // spent is the whole thing and what is bought is a single orb.
-            if meter.seconds >= m.seconds_to_fill {
-                meter.seconds -= m.seconds_to_fill;
-                if let Some(o) = ap.orb {
-                    throw_orb(o, params, t, &mut orbs);
-                    // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
-                    // a wind-up and a recovery, and the weapon can do nothing
-                    // else until both are over — which is the cycle's whole
-                    // price beyond the meter.
-                    //
-                    // THEN IT WINDS UP AGAIN. Coming back to the primary is
-                    // pressing its trigger, and that costs what pressing it
-                    // always costs; the interval only "corresponds exactly to
-                    // the fire rate" while you are holding it down.
-                    t += o.throw_seconds + o.recovery_seconds + ap.windup_seconds;
-                }
-            }
+            meter.tick(m, ap, params, dropped_secondary, &mut t, &mut orbs);
         }
         // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
         // buff snapshot the field walk takes; an orb's clock is its own and no
@@ -2821,7 +2618,7 @@ pub fn run_once_traced(
                 && ap.slam.is_some()
                 && swing.as_ref().is_some_and(|h| h.slam_multiplier.is_some());
             let radial_mult = if stance_slam {
-                (if ap.spends_combo { combo_mult } else { 1.0 }) * (1.0 + ap.slam_damage)
+                (if ap.spends_combo { combo_multiplier } else { 1.0 }) * (1.0 + ap.slam_damage)
             } else {
                 swing_mult
             };
@@ -3216,7 +3013,7 @@ pub fn run_once_traced(
                 // below.
                 let combo_now =
                     combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t);
-                let combo_mult = ap.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
+                let combo_multiplier = ap.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
                 // DAMAGE FALLOFF over the distance this instance travelled.
                 //
                 // THE DIRECT PART ONLY, and the range is asked of the POINT it
@@ -3302,7 +3099,7 @@ pub fn run_once_traced(
                     // is the only one of the two this reading can tell apart.
                     * eclipse_at(params.ability_final_at(t), co_mult.co_share)
                     * beam_ramp
-                    * combo_mult
+                    * combo_multiplier
                     // Multishot paid in DAMAGE, for the weapon that works that
                     // way — "multiplicative to other sources of damage", so it
                     // stands here beside Double Tap rather than in a bucket.
@@ -3651,7 +3448,7 @@ pub fn run_once_traced(
                         (crate::record::Factor::DoubleTap, dt_here),
                         (crate::record::Factor::SynthCharge, sc_mult),
                         (crate::record::Factor::ChamberFirstRound, cc_mult),
-                        (crate::record::Factor::SniperCombo, combo_mult),
+                        (crate::record::Factor::SniperCombo, combo_multiplier),
                         (crate::record::Factor::MultishotAsDamage, ms_damage),
                         (crate::record::Factor::MultishotGenerated, pm_mult),
                         // DISTANCE. Listed even when it is 1.0 — this
@@ -4528,17 +4325,7 @@ pub fn run_once_traced(
         // The form was already checked at the roll — an Incarnon form never
         // sets this flag — so this only has to fill the right counter.
         if ammo.instant_reload_now {
-            ammo.instant_reload_now = false;
-            match &params.cycle {
-                Some(cy) => {
-                    incarnon.base_magazine += draw_from(&mut ammo.reserve, params.infinite_reserve,
-                        reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
-                }
-                None => {
-                    ammo.loaded += draw_from(&mut ammo.reserve, params.infinite_reserve,
-                        reload_draw(ammo.cap, ammo.loaded));
-                }
-            }
+            ammo.instant_reload(params, &mut incarnon);
         }
 
         // Renewed Horror is spent by the shot that follows the reload, however
@@ -4616,117 +4403,18 @@ pub fn run_once_traced(
                 Arms::HeavyAtCombo(_) => None,
             })
         {
-            // KILLS ADVANCE THEIR MARK IN EITHER FORM, and the two halves are
-            // separate on purpose. A hit is bounded by the shot that caused it,
-            // so `_before` is exact for one; a kill is not — a status tick
-            // between two shots kills, and a delta taken at the top of the next
-            // shot has already missed it. And the mark advances even while
-            // TRANSFORMED, so a kill made with the earned form can never pay
-            // for the next one: it is kills with the PRIMARY fire that recharge
-            // the Mausolon's laser (wiki), not kills of any kind.
-            let fresh_kills = r.kills - incarnon.kill_mark;
-            incarnon.kill_mark = r.kills;
-            if incarnon.in_base_form {
-                // Per PELLET, and per the WEAPON's rule: weak-point hits for
-                // the Zariman pistols, any direct hit for the Torid, kills for
-                // the Mausolon. A field or radial instance is neither of the
-                // first two, so neither can charge those — but it CAN kill,
-                // which is the whole difference the third one makes.
-                incarnon.charges += match charge_on {
-                    crate::model::ChargeOn::WeakpointHits => r.headshots - headshots_before,
-                    crate::model::ChargeOn::DirectHits => r.pellets - pellets_before,
-                    crate::model::ChargeOn::Kills => fresh_kills,
-                };
-                // A FULL GAUGE ARMS THE TRANSFORM; the cadence below still
-                // runs. A `continue` here would skip the completing shot's OWN
-                // interval and let the next shot fire at the same instant,
-                // making the transform a free extra shot. The moment is the end
-                // of the shot that filled the gauge, which is the start of the
-                // next one.
-                //
-                // The gauge also OVERSHOOTS and that is not a rounding: a
-                // 7-pellet shot into a 30-charge gauge arrives at 35 on the
-                // fifth shot, never at 30, so the comparison is `>=` and the
-                // shot that crosses it is fired in the BASE form.
-                if incarnon.charges >= charges_to_fill {
-                    // BOTH DIRECTIONS TAKE IT. The wiki says Ready
-                    // Retaliation "can affect transition INTO Incarnon form
-                    // with a well-timed manual reload" and not the way back;
-                    // the second half is wrong, and transforming with an EMPTY
-                    // magazine is the proof — the animation is faster, so the
-                    // buff was there before any reload began.
-                    //
-                    // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES, which
-                    // collapses the rule to one line: swapping either way fully
-                    // reloads the base form's magazine (wiki), so both
-                    // transforms are reloads and the buff is spent by whatever
-                    // refills the magazine.
-                    // WAS THE BASE MAGAZINE ACTUALLY EMPTY? Read BEFORE the
-                    // refill below, because that is the question the card asks:
-                    // "Switching to Incarnon Form from empty will also trigger
-                    // the buff" (wiki, Soma's Fresh Havoc). Transforming with
-                    // rounds still in the magazine reloads it and earns nothing,
-                    // which is the one place `ReloadFromEmpty` and
-                    // `ReloadComplete` are different events.
-                    let transformed_from_empty = !can_fire(incarnon.base_magazine, 1.0);
-                    let spent = rescale_reload(cy.transmute_seconds, cy.reload_bucket,
-                        live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
-                    rec.push(t, None, crate::record::Kind::TransformStart {
-                        seconds: spent,
-                        into_transmuted: true,
-                    });
-                    r.downtime_seconds += spent;
-                    t += spent;
-                    magazine_refilled(params, &mut ammo, &mut r, &mut buff_stacks, &mut rs_armed, &mut opening_closed, true);
-                    if transformed_from_empty {
-                        bump_on_trigger!(crate::model::BuffTrigger::ReloadFromEmpty, t, d.spine);
-                    }
-                    r.transforms += 1;
-                    incarnon.in_base_form = false;
-                    double_tap.swap(t);
-                    // The CHARGE magazine is filled by the gauge, not reloaded
-                    // from reserve — it is outside the ammo economy, takes no
-                    // efficiency, and so is always whole anyway.
-                    ammo.loaded = ammo.cap;
-                    // THE ROW LANDS HERE, not beside the push above: an event
-                    // is stamped with the weapon AS IT NOW IS, and until this
-                    // line the form and the magazine are still the old ones.
-                    // The base magazine's refill IS a reload: whole rounds off whatever is already in it,
-                    // and out of the same reserve as every other reload. This
-                    // was the site that kept the base magazine topped up for
-                    // free — with all three draws inside the cycle unbilled, a
-                    // finite reserve never moved off its starting value.
-                    let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve,
-                        reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
-                    incarnon.base_magazine += loaded;
-                    // THE ROW LANDS HERE, once BOTH magazines are what the
-                    // transmute made them: the charge magazine it filled and the
-                    // base one it silently reloaded. Announced any earlier and
-                    // the free reload — the whole reason both magazines are on
-                    // every row — is missing from the row that performed it.
-                    record_weapon(params, rec, &ammo, &incarnon);
-                    rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: true });
-                    // …AND THAT RELOAD PAYS ITS SHELLS. One as you go in, the
-                    // rest owed until you come out.
-                    //
-                    // Counting the shells the draw ACTUALLY loaded is what
-                    // makes a dry reserve behave: no shells, no stacks, and no
-                    // separate rule needed to say so.
-                    let shells = loaded.round().max(0.0) as u32;
-                    if shells > 0 {
-                        bump_shells(params, &mut buff_stacks, 1, t, rng);
-                        ammo.owed_shells = shells - 1;
-                    }
-                                                           // Frenzy persists across the transform.
-                }
-            }
+            charge_the_gauge(
+                params, rec, rng, d, cy, charge_on, charges_to_fill, pellets_before, headshots_before,
+                &mut t, &mut r, &mut ammo, &mut incarnon, &mut double_tap, &mut buff_stacks,
+                &mut rs_armed, &mut opening_closed,
+            );
         }
 
         // ---- WHAT THIS SWING DID TO THE COMBO COUNTER -------------------
         //
         // GAIN FIRST, THEN SPEND, and the order is the game's: a heavy attack
         // pays the multiplier that was standing when it went down (read above,
-        // into `combo_mult`), lands, and then empties the counter.
+        // into `combo_multiplier`), lands, and then empties the counter.
         //
         // POINTS ARE THE STANCE MULTIPLIER. *"Stance attacks add combo points,
         // scaling with the attack's stance damage multiplier (100% stance
@@ -4738,209 +4426,12 @@ pub fn run_once_traced(
         // ONLY A LANDED SWING COUNTS: *"Only successful strikes against enemies
         // award points"*, so a miss neither adds nor refreshes.
         if let Some(h) = &swing {
-            let landed = (r.pellets - pellets_before) as f64;
-            // RAGE BUILDS ON EVERY BODY A HIT LANDED ON AND EVERY KILL SINCE THE
-            // LAST SWING — a status kill "still counts as a melee kill". The kill
-            // is paid at this swing rather than at the death.
-            if let Some(g) = arc.rage.as_mut() {
-                let s = g.spec();
-                g.build(t, landed * s.per_hit + f64::from(r.kills - melee.rage_kill_mark) * s.per_kill);
-            }
-            melee.rage_kill_mark = r.kills;
-            // …AND A LANDED HIT MAY OPEN THE TENNOKAI WINDOW.
-            //
-            // *"Triggering Tennokai requires directly striking an enemy ...
-            // striking multiple enemies from a single hit and multi-strike
-            // attacks do not count as hits"* — so it is ONE roll per swing that
-            // landed, not one per body, which is why `landed > 0` rather than
-            // `landed` times anything.
-            //
-            // A CADENCE REPLACES THE ROLL where a card sets one (Discipline's
-            // Merit: every 4 hits), and the count only advances while the
-            // window is SHUT: a hit landed during the flash is a hit the player
-            // is about to spend it on.
-            // TRUTH'S FLAME'S TWO TERMS, settled before the ordinary roll
-            // because a chain replaces it: a Tennokai KILL re-opens the window
-            // with no hit in between, which is the only way in this mechanic to
-            // swing it twice in a row.
-            if tennokai && ap.tennokai.chain_seconds > 0.0 && r.kills > tennokai_kill_mark {
-                melee.tennokai_until = t + ap.tennokai.chain_seconds;
-                melee.tennokai_chained = true;
-                melee.tennokai_hits = 0;
-            }
-            // …AND THE CURSE, which is the whole cost of the card: a Tennokai
-            // attack that FAILS to kill empties the counter. Status immunity
-            // does not save it — *"your combo will still be reset"* — so it is
-            // unconditional here, and the Heat is COUNTED rather than applied
-            // because nothing in this arena damages the Tenno.
-            if tennokai && ap.tennokai.curse_resets_combo && r.kills == tennokai_kill_mark {
-                melee.combo_points = 0.0;
-                r.self_damage.add(
-                    DamageType::Heat,
-                    ap.tennokai.curse_heat_per_second * ap.tennokai.curse_seconds,
-                );
-            }
-            if ap.tennokai.enabled && landed > 0.0 && t >= melee.tennokai_until {
-                melee.tennokai_hits += 1;
-                let opens = if ap.tennokai.every_n_hits > 0 {
-                    melee.tennokai_hits.is_multiple_of(ap.tennokai.every_n_hits)
-                } else {
-                    // 15% BASE, and the cards add to it.
-                    d.spine.chance(TENNOKAI_BASE_CHANCE + ap.tennokai.chance)
-                };
-                if opens {
-                    let w = if ap.tennokai.window_seconds > 0.0 {
-                        ap.tennokai.window_seconds
-                    } else {
-                        TENNOKAI_WINDOW_SECONDS
-                    };
-                    melee.tennokai_until = t + w;
-                    melee.tennokai_hits = 0;
-                }
-            }
-            // A HEAVY ATTACK EARNS NOTHING. *"connecting with a heavy attack
-            // does not add to the combo counter"* (wiki, Melee), and it is the
-            // swing's KIND that says so rather than the form: a Tennokai heavy
-            // on a light combo is one too. On a spending form it is visible
-            // only through Melee Combo Efficiency, which is the share of the
-            // counter the swing does NOT empty.
-            let earns = !(ap.spends_combo || tennokai_heavy);
-            let mut gained = 0.0;
-            if landed > 0.0 && earns {
-                // EVERY LANDED INSTANCE IS A HIT OF ITS OWN: its base points take
-                // the gain roll, Additional Combo Count Chance and what is left
-                // of it — `swing_combo_gain`. ENDURING STRIKE adds to that chance
-                // while the target is LIFTED, a status this engine tracks rather
-                // than a state it has to assume.
-                let chance_now = ap.combo_count_chance
-                    + if debuffs.lifted.is_some_and(|e| e > t) {
-                        ap.combo_count_chance_on_lifted
-                    } else {
-                        0.0
-                    };
-                for _ in 0..(landed as u32) {
-                    gained += swing_combo_gain(
-                        h.combo_points,
-                        h.combo_points_base,
-                        chance_now,
-                        ap.combo_gain_chance,
-                        &mut |p| d.spine.chance(p),
-                    );
-                }
-                melee.combo_points += gained;
-            }
-            if refreshes_combo_timer(landed, earns, gained) {
-                melee.combo_expiry = t + ap.combo_duration_seconds;
-            }
-            // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the
-            // share NOT spent — *"40% heavy attack efficiency will change the
-            // amount spent to 60% combo points"* — already clamped to the
-            // game's 90% cap where it was resolved.
-            //
-            // IT SPENDS WHETHER OR NOT IT LANDED, because the counter is paid
-            // at the swing rather than at the hit, and it restarts the
-            // initial-combo floor's clock either way.
-            // A TENNOKAI HEAVY SPENDS NOTHING — *"does not consume Combo
-            // Counter"* — which is the difference that makes it worth having
-            // at all: the counter it read is still there for the next one.
-            // …AND A TENNOKAI SWING SPENDS NOTHING — *"does not consume Combo
-            // Counter"* — which on a HEAVY mode is the whole of what the window
-            // buys, and on a light one is what makes a free 12x heavy free.
-            if ap.spends_combo && !tennokai {
-                // …AND IT SPENDS WHAT THE SWING READ, floor included. The
-                // counter is ONE number: *"40% heavy attack efficiency will
-                // change the amount spent to 60% combo points"*, and the points
-                // an initial-combo floor put there are points like any other.
-                // Spending only the EARNED half left a heavy mode at zero after
-                // every swing — it earns none — so efficiency bought nothing at
-                // all in the one family of modes whose cards sell it.
-                melee.combo_points = combo_now * ap.heavy_attack_efficiency;
-                melee.combo_spent_t = t;
-            }
-            // …AND A HEAVY SWING IS WHAT ARMS A MELEE INCARNON.
-            //
-            // *"Reach 6x Combo and then Heavy Attack to activate Incarnon Form
-            // for 180 seconds"* — so the number read is the multiplier the
-            // swing WENT DOWN with, which is the one it was paid at, taken
-            // before the spend above emptied the counter. A Tennokai heavy is a
-            // heavy attack and arms it too.
-            //
-            // IT IS A BUFF AND NOT A TRANSFORM, so nothing is announced and
-            // nothing is counted: a melee Incarnon changes numbers rather than
-            // attacks, there is no animation to play and none to bill, and the
-            // reader sees it where the other windows are — the `melee_incarnon`
-            // series in the buff roster. `transforms` counts transmutes into a
-            // second WEAPON, which this is not.
-            //
-            // A TENNOKAI HEAVY ARMS IT TOO: the heavy attack is the
-            // condition, and a Tennokai swing is a heavy attack — which is what
-            // gives a light combo mode any way in at all, since its loop
-            // performs no heavy of its own.
-            if let Some(cy) = &params.cycle {
-                if let (Arms::HeavyAtCombo(at), Ends::After(window)) = (cy.arms, cy.ends) {
-                    if incarnon.in_base_form && (ap.spends_combo || tennokai_heavy) && combo_mult >= at {
-                        incarnon.in_base_form = false;
-                        incarnon.incarnon_until = t + window;
-                        record_weapon(params, rec, &ammo, &incarnon);
-                    }
-                }
-            }
-            // SHOCKWAVE SYNERGY — THE ONE THING THAT EARNS COMBO ON A HEAVY
-            // MODE, and it is AFTER the spend on purpose: the heavy attack
-            // empties the counter and the slam lands after it, so a grant
-            // written above would be overwritten and the perk would be worth
-            // exactly nothing on the mode it is bought for.
-            //
-            // *"For each enemy hit by Slam radius, gain 4 Combo Count"*, scaled
-            // by combo count chance: *"True Punishment affects Shockwave
-            // Synergy, effectively doubling the Combo Count gain from 4 to 8"*
-            // (wiki, Praedos). A crowd is what pays it, which is why the count
-            // is over the bodies the sphere actually reached.
-            //
-            // …AND A HEAVY SLAM EARNS NOTHING FROM IT. The
-            // same rule the stance points above obey — a swing that SPENDS the
-            // counter adds nothing to it — read off the same flag, so the perk
-            // and every other earner cannot disagree about what a heavy is.
-            if ap.combo_count_on_slam_hit > 0.0 && !(ap.spends_combo || tennokai_heavy) {
-                let slam_rad = match (h.slam_multiplier, ap.slam) {
-                    (Some(_), Some(s)) => Some(s),
-                    _ => ap.radial.filter(|r| {
-                        r.blast_kind == crate::model::BlastKind::Slam
-                    }),
-                };
-                if let Some(rad) = slam_rad {
-                    // A SLAM GOES OFF AT THE WIELDER'S OWN FEET — the same
-                    // epicentre the explosion itself used, so the count and the
-                    // damage agree on who was in it.
-                    let det = crate::rules::space::Detonation {
-                        at: params.player_at,
-                        height_m: 0.0,
-                    };
-                    let reached = (target.health > 0.0
-                        && crate::rules::space::caught_by_blast(
-                            det.distance_to(params.target_at),
-                            rad.radius_m,
-                        )) as u32
-                        + params
-                            .others
-                            .iter()
-                            .enumerate()
-                            .filter(|(i, spec)| {
-                                others[*i].state.health > 0.0
-                                    && crate::rules::space::caught_by_blast(
-                                        det.distance_to(spec.at),
-                                        rad.radius_m,
-                                    )
-                            })
-                            .count() as u32;
-                    if reached > 0 {
-                        melee.combo_points += ap.combo_count_on_slam_hit
-                            * f64::from(reached)
-                            * (1.0 + ap.combo_count_chance);
-                        melee.combo_expiry = t + ap.combo_duration_seconds;
-                    }
-                }
-            }
+            after_swing(
+                h, ap, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
+                tennokai_heavy, pellets_before, t,
+                &mut r, &mut melee, &mut incarnon, &ammo, &mut arc, &mut target, &mut debuffs,
+                &mut others,
+            );
         }
 
         // Next shot: cadence reflects the bar as of now (Frenzy just
@@ -4987,101 +4478,9 @@ pub fn run_once_traced(
         // modded charge time by whatever the live buffs did to the rate
         // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
         // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
-        t += match ap.charge_seconds {
-            Some(c) => {
-                let draw = c * ap.fire_rate / rate.max(1e-9);
-                match ap.charge_cadence {
-                    // A bow's draw IS the cycle (wiki's bow formula).
-                    crate::model::ChargeCadence::DrawOnly => draw,
-                    // Everything else pays the draw AND the listed rate's
-                    // interval: "1 / (Modded Charge Time + 1 / Modded Fire
-                    // Rate)". The rate is what happens after the charge.
-                    crate::model::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
-                }
-            }
-            // A BURST pull fires `count` rounds and then waits; the listed
-            // rate is BURSTS per second. PLAYED ROUND BY ROUND, not averaged:
-            // inside a pull the next round waits the burst delay, and the
-            // pull's LAST round waits `1 / rate`. A pull the magazine cannot
-            // finish ends early — an Akarius with one rocket left fires it
-            // and reloads — so a lone round pays the full wait.
-            //
-            // `b.delay_seconds` arrives already shortened by the mod layer
-            // (the wiki's net-negative exception); the LIVE buff factor is
-            // `rate / ap.fire_rate`, clamped so a penalty does not stretch it.
-            // A MELEE SWING HAS ITS OWN LENGTH. A stance publishes a
-            // sequence and a per-combo damage-per-second, so the combo lasts
-            // `sum of multipliers / that rate` and the swings share it EVENLY —
-            // the script's one approximation, declared on every melee entry,
-            // since nothing published states a swing's animation length.
-            //
-            // DIVIDED BY THE LIVE ATTACK SPEED: the script is published at
-            // 1.0x, so Fury is an ordinary fire-rate mod here and an on-kill
-            // speed buff shortens a swing without knowing melee exists.
-            None if !ap.combo_script.is_empty() => {
-                // TWO CLOCKS, and only one of them is attack speed's.
-                //
-                // *"Increasing melee attack speed does not reduce the wind-up
-                // time; rather, it reduces the interval between heavy
-                // attacks"* (wiki, Melee) — so the charge before a heavy swing
-                // is divided by its OWN bucket, already applied where the
-                // script was resolved, and the animation after it is divided by
-                // the live attack speed here. A light swing carries no wind-up
-                // and is unaffected by the split.
-                let (mut w, d) = swing
-                    .as_ref()
-                    .map_or((0.0, 0.0), |h| (h.windup_seconds, h.delay_seconds));
-                // …AND A TENNOKAI ATTACK CHARGES AT ITS OWN SPEED, which is the
-                // class's divided by the window's bonus and by nothing else:
-                // *"the Wind-Up Speed of Tennokai attacks is not affected by
-                // Wind-Up Speed bonuses from other sources"*. On a LIGHT form
-                // it is a charge the swing did not have; on a HEAVY one it
-                // REPLACES the build's, which a heavy build stacking wind-up
-                // cards feels as a swing that is slower than its ordinary one.
-                if tennokai && (tennokai_heavy || ap.spends_combo) {
-                    w = ap.tennokai.windup_seconds;
-                }
-                // A HEAVY ATTACK BREAKS THE CHAIN, so the next light swing
-                // starts the combo over (owner — the wiki says
-                // nothing about a stance chain's position, so this is his
-                // answer and not a derivation).
-                //
-                // IT IS THE HALF THAT DECIDES WHICH SWINGS EVER HAPPEN. Raging
-                // Whirlwind is `400 / 200 / 300 / 500`, and a build whose chain
-                // restarts fires the opener over and over and reaches the 500%
-                // finisher only when the window does not. With Discipline's
-                // Merit — every four hits — it would reach it never, which is
-                // the sharpest case and the reason this could not be left to a
-                // default: `swing_idx += 1` was the whole difference.
-                if tennokai {
-                    melee.swing_idx = 0;
-                } else {
-                    melee.swing_idx += 1;
-                }
-                let cycle = (w + d / rate.max(1e-9)).max(1e-6);
-                // …AND A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING,
-                // which is not always as soon as the animation allows — see
-                // `heavy_cycle_seconds`. Derived from the swing SPENDING the
-                // counter rather than from the mode, so a standing heavy and a
-                // heavy slam make the same decision and the next weapon needs
-                // no field.
-                if ap.spends_combo {
-                    heavy_cycle_seconds(cycle, melee.combo_points, initial_now)
-                } else {
-                    cycle
-                }
-            }
-            None => match ap.burst {
-                Some(b) if b.count > 1 => {
-                    let live = (rate / ap.fire_rate.max(1e-9)).max(1.0);
-                    let mag_now = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
-                    let pull_goes_on =
-                        !ammo.rounds_this_mag.is_multiple_of(b.count) && can_fire(mag_now, 1.0);
-                    if pull_goes_on { b.delay_seconds / live } else { 1.0 / rate }
-                }
-                _ => 1.0 / rate,
-            },
-        };
+        t += seconds_to_next_shot(
+            ap, rate, initial_now, swing, tennokai, tennokai_heavy, &ammo, &incarnon, &mut melee,
+        );
         spool.due = t;
     }
 

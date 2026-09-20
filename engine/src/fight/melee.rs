@@ -231,3 +231,348 @@ pub(super) struct MeleeState {
     pub(super) tennokai_chained: bool,
     pub(super) tennokai_hits: u32,
 }
+
+/// WHAT THIS SWING DID TO THE COMBO COUNTER, and what the counter did back.
+///
+/// GAIN FIRST, THEN SPEND, and the order is the game's: a heavy attack pays
+/// the multiplier that was standing when it went down, lands, and then empties
+/// the counter. A melee Incarnon arms here too — its way in is a swing rather
+/// than a gauge.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn after_swing(
+    h: &crate::model::ComboHit,
+    ap: &FightParams,
+    params: &FightParams,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rules::rng::Draws,
+    combo_now: f64,
+    combo_multiplier: f64,
+    tennokai: bool,
+    tennokai_kill_mark: u32,
+    tennokai_heavy: bool,
+    pellets_before: u32,
+    t: f64,
+    r: &mut RunResult,
+    melee: &mut MeleeState,
+    incarnon: &mut IncarnonState,
+    ammo: &Ammo,
+    arc: &mut ArcRuntime,
+    target: &mut TargetState,
+    debuffs: &mut DebuffState,
+    others: &mut [SpreadFoe],
+) {
+        let landed = (r.pellets - pellets_before) as f64;
+        // RAGE BUILDS ON EVERY BODY A HIT LANDED ON AND EVERY KILL SINCE THE
+        // LAST SWING — a status kill "still counts as a melee kill". The kill
+        // is paid at this swing rather than at the death.
+        if let Some(g) = arc.rage.as_mut() {
+            let s = g.spec();
+            g.build(t, landed * s.per_hit + f64::from(r.kills - melee.rage_kill_mark) * s.per_kill);
+        }
+        melee.rage_kill_mark = r.kills;
+        // …AND A LANDED HIT MAY OPEN THE TENNOKAI WINDOW.
+        //
+        // *"Triggering Tennokai requires directly striking an enemy ...
+        // striking multiple enemies from a single hit and multi-strike
+        // attacks do not count as hits"* — so it is ONE roll per swing that
+        // landed, not one per body, which is why `landed > 0` rather than
+        // `landed` times anything.
+        //
+        // A CADENCE REPLACES THE ROLL where a card sets one (Discipline's
+        // Merit: every 4 hits), and the count only advances while the
+        // window is SHUT: a hit landed during the flash is a hit the player
+        // is about to spend it on.
+        // TRUTH'S FLAME'S TWO TERMS, settled before the ordinary roll
+        // because a chain replaces it: a Tennokai KILL re-opens the window
+        // with no hit in between, which is the only way in this mechanic to
+        // swing it twice in a row.
+        if tennokai && ap.tennokai.chain_seconds > 0.0 && r.kills > tennokai_kill_mark {
+            melee.tennokai_until = t + ap.tennokai.chain_seconds;
+            melee.tennokai_chained = true;
+            melee.tennokai_hits = 0;
+        }
+        // …AND THE CURSE, which is the whole cost of the card: a Tennokai
+        // attack that FAILS to kill empties the counter. Status immunity
+        // does not save it — *"your combo will still be reset"* — so it is
+        // unconditional here, and the Heat is COUNTED rather than applied
+        // because nothing in this arena damages the Tenno.
+        if tennokai && ap.tennokai.curse_resets_combo && r.kills == tennokai_kill_mark {
+            melee.combo_points = 0.0;
+            r.self_damage.add(
+                DamageType::Heat,
+                ap.tennokai.curse_heat_per_second * ap.tennokai.curse_seconds,
+            );
+        }
+        if ap.tennokai.enabled && landed > 0.0 && t >= melee.tennokai_until {
+            melee.tennokai_hits += 1;
+            let opens = if ap.tennokai.every_n_hits > 0 {
+                melee.tennokai_hits.is_multiple_of(ap.tennokai.every_n_hits)
+            } else {
+                // 15% BASE, and the cards add to it.
+                d.spine.chance(TENNOKAI_BASE_CHANCE + ap.tennokai.chance)
+            };
+            if opens {
+                let w = if ap.tennokai.window_seconds > 0.0 {
+                    ap.tennokai.window_seconds
+                } else {
+                    TENNOKAI_WINDOW_SECONDS
+                };
+                melee.tennokai_until = t + w;
+                melee.tennokai_hits = 0;
+            }
+        }
+        // A HEAVY ATTACK EARNS NOTHING. *"connecting with a heavy attack
+        // does not add to the combo counter"* (wiki, Melee), and it is the
+        // swing's KIND that says so rather than the form: a Tennokai heavy
+        // on a light combo is one too. On a spending form it is visible
+        // only through Melee Combo Efficiency, which is the share of the
+        // counter the swing does NOT empty.
+        let earns = !(ap.spends_combo || tennokai_heavy);
+        let mut gained = 0.0;
+        if landed > 0.0 && earns {
+            // EVERY LANDED INSTANCE IS A HIT OF ITS OWN: its base points take
+            // the gain roll, Additional Combo Count Chance and what is left
+            // of it — `swing_combo_gain`. ENDURING STRIKE adds to that chance
+            // while the target is LIFTED, a status this engine tracks rather
+            // than a state it has to assume.
+            let chance_now = ap.combo_count_chance
+                + if debuffs.lifted.is_some_and(|e| e > t) {
+                    ap.combo_count_chance_on_lifted
+                } else {
+                    0.0
+                };
+            for _ in 0..(landed as u32) {
+                gained += swing_combo_gain(
+                    h.combo_points,
+                    h.combo_points_base,
+                    chance_now,
+                    ap.combo_gain_chance,
+                    &mut |p| d.spine.chance(p),
+                );
+            }
+            melee.combo_points += gained;
+        }
+        if refreshes_combo_timer(landed, earns, gained) {
+            melee.combo_expiry = t + ap.combo_duration_seconds;
+        }
+        // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the
+        // share NOT spent — *"40% heavy attack efficiency will change the
+        // amount spent to 60% combo points"* — already clamped to the
+        // game's 90% cap where it was resolved.
+        //
+        // IT SPENDS WHETHER OR NOT IT LANDED, because the counter is paid
+        // at the swing rather than at the hit, and it restarts the
+        // initial-combo floor's clock either way.
+        // A TENNOKAI HEAVY SPENDS NOTHING — *"does not consume Combo
+        // Counter"* — which is the difference that makes it worth having
+        // at all: the counter it read is still there for the next one.
+        // …AND A TENNOKAI SWING SPENDS NOTHING — *"does not consume Combo
+        // Counter"* — which on a HEAVY mode is the whole of what the window
+        // buys, and on a light one is what makes a free 12x heavy free.
+        if ap.spends_combo && !tennokai {
+            // …AND IT SPENDS WHAT THE SWING READ, floor included. The
+            // counter is ONE number: *"40% heavy attack efficiency will
+            // change the amount spent to 60% combo points"*, and the points
+            // an initial-combo floor put there are points like any other.
+            // Spending only the EARNED half left a heavy mode at zero after
+            // every swing — it earns none — so efficiency bought nothing at
+            // all in the one family of modes whose cards sell it.
+            melee.combo_points = combo_now * ap.heavy_attack_efficiency;
+            melee.combo_spent_t = t;
+        }
+        // …AND A HEAVY SWING IS WHAT ARMS A MELEE INCARNON.
+        //
+        // *"Reach 6x Combo and then Heavy Attack to activate Incarnon Form
+        // for 180 seconds"* — so the number read is the multiplier the
+        // swing WENT DOWN with, which is the one it was paid at, taken
+        // before the spend above emptied the counter. A Tennokai heavy is a
+        // heavy attack and arms it too.
+        //
+        // IT IS A BUFF AND NOT A TRANSFORM, so nothing is announced and
+        // nothing is counted: a melee Incarnon changes numbers rather than
+        // attacks, there is no animation to play and none to bill, and the
+        // reader sees it where the other windows are — the `melee_incarnon`
+        // series in the buff roster. `transforms` counts transmutes into a
+        // second WEAPON, which this is not.
+        //
+        // A TENNOKAI HEAVY ARMS IT TOO: the heavy attack is the
+        // condition, and a Tennokai swing is a heavy attack — which is what
+        // gives a light combo mode any way in at all, since its loop
+        // performs no heavy of its own.
+        if let Some(cy) = &params.cycle {
+            if let (Arms::HeavyAtCombo(at), Ends::After(window)) = (cy.arms, cy.ends) {
+                if incarnon.in_base_form && (ap.spends_combo || tennokai_heavy) && combo_multiplier >= at {
+                    incarnon.in_base_form = false;
+                    incarnon.incarnon_until = t + window;
+                    record_weapon(params, rec, ammo, incarnon);
+                }
+            }
+        }
+        // SHOCKWAVE SYNERGY — THE ONE THING THAT EARNS COMBO ON A HEAVY
+        // MODE, and it is AFTER the spend on purpose: the heavy attack
+        // empties the counter and the slam lands after it, so a grant
+        // written above would be overwritten and the perk would be worth
+        // exactly nothing on the mode it is bought for.
+        //
+        // *"For each enemy hit by Slam radius, gain 4 Combo Count"*, scaled
+        // by combo count chance: *"True Punishment affects Shockwave
+        // Synergy, effectively doubling the Combo Count gain from 4 to 8"*
+        // (wiki, Praedos). A crowd is what pays it, which is why the count
+        // is over the bodies the sphere actually reached.
+        //
+        // …AND A HEAVY SLAM EARNS NOTHING FROM IT. The
+        // same rule the stance points above obey — a swing that SPENDS the
+        // counter adds nothing to it — read off the same flag, so the perk
+        // and every other earner cannot disagree about what a heavy is.
+        if ap.combo_count_on_slam_hit > 0.0 && !(ap.spends_combo || tennokai_heavy) {
+            let slam_rad = match (h.slam_multiplier, ap.slam) {
+                (Some(_), Some(s)) => Some(s),
+                _ => ap.radial.filter(|r| {
+                    r.blast_kind == crate::model::BlastKind::Slam
+                }),
+            };
+            if let Some(rad) = slam_rad {
+                // A SLAM GOES OFF AT THE WIELDER'S OWN FEET — the same
+                // epicentre the explosion itself used, so the count and the
+                // damage agree on who was in it.
+                let det = crate::rules::space::Detonation {
+                    at: params.player_at,
+                    height_m: 0.0,
+                };
+                let reached = (target.health > 0.0
+                    && crate::rules::space::caught_by_blast(
+                        det.distance_to(params.target_at),
+                        rad.radius_m,
+                    )) as u32
+                    + params
+                        .others
+                        .iter()
+                        .enumerate()
+                        .filter(|(i, spec)| {
+                            others[*i].state.health > 0.0
+                                && crate::rules::space::caught_by_blast(
+                                    det.distance_to(spec.at),
+                                    rad.radius_m,
+                                )
+                        })
+                        .count() as u32;
+                if reached > 0 {
+                    melee.combo_points += ap.combo_count_on_slam_hit
+                        * f64::from(reached)
+                        * (1.0 + ap.combo_count_chance);
+                    melee.combo_expiry = t + ap.combo_duration_seconds;
+                }
+            }
+        }
+}
+
+/// HOW LONG UNTIL THE NEXT SHOT — a draw, a swing's animation, or the fire
+/// rate's own interval, whichever this form pays.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn seconds_to_next_shot(
+    ap: &FightParams,
+    rate: f64,
+    initial_now: f64,
+    swing: Option<crate::model::ComboHit>,
+    tennokai: bool,
+    tennokai_heavy: bool,
+    ammo: &Ammo,
+    incarnon: &IncarnonState,
+    melee: &mut MeleeState,
+) -> f64 {
+    match ap.charge_seconds {
+        Some(c) => {
+            let draw = c * ap.fire_rate / rate.max(1e-9);
+            match ap.charge_cadence {
+                // A bow's draw IS the cycle (wiki's bow formula).
+                crate::model::ChargeCadence::DrawOnly => draw,
+                // Everything else pays the draw AND the listed rate's
+                // interval: "1 / (Modded Charge Time + 1 / Modded Fire
+                // Rate)". The rate is what happens after the charge.
+                crate::model::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
+            }
+        }
+        // A BURST pull fires `count` rounds and then waits; the listed
+        // rate is BURSTS per second. PLAYED ROUND BY ROUND, not averaged:
+        // inside a pull the next round waits the burst delay, and the
+        // pull's LAST round waits `1 / rate`. A pull the magazine cannot
+        // finish ends early — an Akarius with one rocket left fires it
+        // and reloads — so a lone round pays the full wait.
+        //
+        // `b.delay_seconds` arrives already shortened by the mod layer
+        // (the wiki's net-negative exception); the LIVE buff factor is
+        // `rate / ap.fire_rate`, clamped so a penalty does not stretch it.
+        // A MELEE SWING HAS ITS OWN LENGTH. A stance publishes a
+        // sequence and a per-combo damage-per-second, so the combo lasts
+        // `sum of multipliers / that rate` and the swings share it EVENLY —
+        // the script's one approximation, declared on every melee entry,
+        // since nothing published states a swing's animation length.
+        //
+        // DIVIDED BY THE LIVE ATTACK SPEED: the script is published at
+        // 1.0x, so Fury is an ordinary fire-rate mod here and an on-kill
+        // speed buff shortens a swing without knowing melee exists.
+        None if !ap.combo_script.is_empty() => {
+            // TWO CLOCKS, and only one of them is attack speed's.
+            //
+            // *"Increasing melee attack speed does not reduce the wind-up
+            // time; rather, it reduces the interval between heavy
+            // attacks"* (wiki, Melee) — so the charge before a heavy swing
+            // is divided by its OWN bucket, already applied where the
+            // script was resolved, and the animation after it is divided by
+            // the live attack speed here. A light swing carries no wind-up
+            // and is unaffected by the split.
+            let (mut w, d) = swing
+                .as_ref()
+                .map_or((0.0, 0.0), |h| (h.windup_seconds, h.delay_seconds));
+            // …AND A TENNOKAI ATTACK CHARGES AT ITS OWN SPEED, which is the
+            // class's divided by the window's bonus and by nothing else:
+            // *"the Wind-Up Speed of Tennokai attacks is not affected by
+            // Wind-Up Speed bonuses from other sources"*. On a LIGHT form
+            // it is a charge the swing did not have; on a HEAVY one it
+            // REPLACES the build's, which a heavy build stacking wind-up
+            // cards feels as a swing that is slower than its ordinary one.
+            if tennokai && (tennokai_heavy || ap.spends_combo) {
+                w = ap.tennokai.windup_seconds;
+            }
+            // A HEAVY ATTACK BREAKS THE CHAIN, so the next light swing
+            // starts the combo over (owner — the wiki says
+            // nothing about a stance chain's position, so this is his
+            // answer and not a derivation).
+            //
+            // IT IS THE HALF THAT DECIDES WHICH SWINGS EVER HAPPEN. Raging
+            // Whirlwind is `400 / 200 / 300 / 500`, and a build whose chain
+            // restarts fires the opener over and over and reaches the 500%
+            // finisher only when the window does not. With Discipline's
+            // Merit — every four hits — it would reach it never, which is
+            // the sharpest case and the reason this could not be left to a
+            // default: `swing_idx += 1` was the whole difference.
+            if tennokai {
+                melee.swing_idx = 0;
+            } else {
+                melee.swing_idx += 1;
+            }
+            let cycle = (w + d / rate.max(1e-9)).max(1e-6);
+            // …AND A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING,
+            // which is not always as soon as the animation allows — see
+            // `heavy_cycle_seconds`. Derived from the swing SPENDING the
+            // counter rather than from the mode, so a standing heavy and a
+            // heavy slam make the same decision and the next weapon needs
+            // no field.
+            if ap.spends_combo {
+                heavy_cycle_seconds(cycle, melee.combo_points, initial_now)
+            } else {
+                cycle
+            }
+        }
+        None => match ap.burst {
+            Some(b) if b.count > 1 => {
+                let live = (rate / ap.fire_rate.max(1e-9)).max(1.0);
+                let mag_now = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
+                let pull_goes_on =
+                    !ammo.rounds_this_mag.is_multiple_of(b.count) && can_fire(mag_now, 1.0);
+                if pull_goes_on { b.delay_seconds / live } else { 1.0 / rate }
+            }
+            _ => 1.0 / rate,
+        },
+    }
+}
