@@ -31,9 +31,16 @@ SMALL_SVG = ROOT / "desktop" / "logo_small.svg"
 OUT = ROOT / "desktop" / "icons"
 CHROME = pathlib.Path(r"C:/Program Files/Google/Chrome/Application/chrome.exe")
 
-# Below this the wordmark is unreadable and the WF mark takes over. Measured by
-# rendering both and looking: at 24 "WFSim" is already a smudge, at 32 it reads.
-SMALL_BELOW = 32
+# Below this the WF mark takes over, and the threshold is about WEIGHT, not only
+# about whether the letters resolve. The wordmark sits in a disc with a 2% ring
+# (10 of 512): under 64px that ring is well under a pixel and the white plate
+# loses its edge on a light background, while five glyphs occupy less than half
+# the width — an icon that reads as something faint rather than as a mark. The
+# WF disc carries a 4.3% ring and two glyphs that fill it.
+#
+# 32 AND 48 ARE THE SIZES THAT MATTER MOST: the taskbar and medium desktop
+# icons. Above 64 the wordmark has the room to carry the name, and does.
+SMALL_BELOW = 64
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 
