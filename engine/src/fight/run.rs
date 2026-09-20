@@ -2957,43 +2957,11 @@ pub fn run_once_traced(
                 // types and the merge below refuses a duplicate, so the union
                 // can never be longer than the type list itself.
                 let mut forced_buf = [DamageType::Impact; DamageType::ALL.len()];
-                let forced: &[DamageType] = {
-                    let mut n = match (&rad, direct) {
-                        (None, true) => {
-                            for (i, ty) in ap.forced_procs.iter().enumerate() {
-                                forced_buf[i] = *ty;
-                            }
-                            ap.forced_procs.len()
-                        }
-                        (Some(r), _) => r.forced_procs.fill(&mut forced_buf),
-                        _ => 0,
-                    };
-                    // …AND THE SWING'S OWN, on a DIRECT melee hit. A stance
-                    // marks them per attack — Crushing Ruin's first swing
-                    // forces Impact and its last forces Knockdown — so they
-                    // belong to the swing rather than to the weapon, which is
-                    // why `ap.forced_procs` above cannot carry them. `forced_hits`
-                    // is how many of the row's hits carry them, when not all do.
-                    let swing_forces = direct
-                        && swing.as_ref().and_then(|h| h.forced_hits).is_none_or(|k| pellet_idx < k);
-                    for ty in swing_forced_types.iter().filter(|_| swing_forces) {
-                        if !forced_buf[..n].contains(ty) && n < forced_buf.len() {
-                            forced_buf[n] = *ty;
-                            n += 1;
-                        }
-                    }
-                    for ty in &ability_forced {
-                        // A weapon that already forces this element does not
-                        // force it twice: `procs_for_hit` copies the list
-                        // through, and a duplicate would be a second proc the
-                        // game does not apply.
-                        if !forced_buf[..n].contains(ty) && n < forced_buf.len() {
-                            forced_buf[n] = *ty;
-                            n += 1;
-                        }
-                    }
-                    &forced_buf[..n]
-                };
+                let forced_len = forced_procs(
+                    ap, &rad, direct, &swing, &swing_forced_types, &ability_forced, pellet_idx,
+                    &mut forced_buf,
+                );
+                let forced: &[DamageType] = &forced_buf[..forced_len];
 
                 // Devouring Attrition: an INDEPENDENT multiplier rolled per
                 // INSTANCE that did not crit (wiki: "multiplicative to base
@@ -3028,21 +2996,7 @@ pub fn run_once_traced(
                 // falloff, which is the whole roster minus nineteen entries —
                 // so this factor moves no number the engine reported before the
                 // arena had a distance in it.
-                let falloff = match (rad, ap.falloff) {
-                    // THE EXPLOSION reads the distance from its EPICENTRE to
-                    // the body's NEAREST POINT, not to its centre — a body
-                    // standing across a falloff gradient takes the best number
-                    // on it (`rules::space::blast_reach`,). Zero when
-                    // the pellet hit, and zero for anything the blast is
-                    // standing inside.
-                    (Some(r), _) => {
-                        r.falloff_at(crate::rules::space::blast_reach(det.distance_to(params.target_at)))
-                    }
-                    // THE DIRECT HIT reads the GAP, which IS the distance it
-                    // flew: a bullet vanishes at the surface it hits.
-                    (None, Some(f)) => f.factor(gap_m),
-                    (None, None) => 1.0,
-                };
+                let falloff = falloff_factor(ap, params, rad.as_ref(), det, gap_m);
                 // A SPREAD INSTANCE LANDS ON A BODY, so the pellet's own
                 // head factor comes back off before it is handed on.
                 //
@@ -3521,19 +3475,7 @@ pub fn run_once_traced(
                         }
                     }
                 }
-                if let Some(ef) = params.instant_reload {
-                    let has_magazine = match &params.cycle {
-                        Some(_) => incarnon.in_base_form,
-                        None => ap.ammo_efficiency_applies,
-                    };
-                    if has_magazine
-                        && head_direct
-                        && (!ef.needs_kill || killed)
-                        && d.extra.chance(ef.chance)
-                    {
-                        ammo.instant_reload_now = true;
-                    }
-                }
+                roll_instant_reload(ap, params, d, head_direct, killed, &incarnon, &mut ammo);
                 // A LANDED grenade leaves its field, whatever it rolled:
                 // "Grenades stick to allies, enemies and surfaces", and a stuck
                 // grenade means the target "cannot move out of the cloud".
@@ -3922,19 +3864,7 @@ pub fn run_once_traced(
             // `forced_procs`. Hunter Munitions pushes above, so it is already
             // in `procs` here and this roll is skipped, which is exactly
             // "if both proc at the same time, only 1 slash proc is applied".
-            if let Some(pc) = ap.proc_conversion {
-                if procs.contains(&pc.from) && !procs.contains(&pc.to) {
-                    let chance = pc.chance
-                        * if live_rate < pc.low_rate_threshold {
-                            pc.low_rate_multiplier
-                        } else {
-                            1.0
-                        };
-                    if d.status.chance(chance) {
-                        procs.push(pc.to);
-                    }
-                }
-            }
+            roll_proc_conversion(ap, d, live_rate, &mut procs);
             // Overwhelming Attrition's TRIGGER, evaluated once the proc
             // list is final: "On Hit that is neither Critical nor applies
             // a Status Effect" (wiki). PER DAMAGE INSTANCE — measured

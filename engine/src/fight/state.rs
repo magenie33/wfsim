@@ -509,3 +509,29 @@ impl Ammo {
         }
     }
 }
+
+/// EXACT PENANCE'S ROLL on a weak-point hit: a magazine the weapon actually
+/// has, the head it names, the kill if the card asks for one.
+pub(super) fn roll_instant_reload(
+    ap: &FightParams,
+    params: &FightParams,
+    d: &mut crate::rules::rng::Draws,
+    head_direct: bool,
+    killed: bool,
+    incarnon: &IncarnonState,
+    ammo: &mut Ammo,
+) {
+    if let Some(ef) = params.instant_reload {
+        let has_magazine = match &params.cycle {
+            Some(_) => incarnon.in_base_form,
+            None => ap.ammo_efficiency_applies,
+        };
+        if has_magazine
+            && head_direct
+            && (!ef.needs_kill || killed)
+            && d.extra.chance(ef.chance)
+        {
+            ammo.instant_reload_now = true;
+        }
+    }
+}

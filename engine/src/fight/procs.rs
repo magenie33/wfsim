@@ -1158,3 +1158,79 @@ pub(super) fn settle_procs(
         }
     }
 }
+
+/// EVERY PROC THIS INSTANCE FORCES, in one buffer: the weapon's, the radial's,
+/// the swing's (a stance marks them per attack) and any a Warframe ability
+/// adds. Returns how many of `buf` are filled; a type is never forced twice,
+/// because `procs_for_hit` copies the list through and the game applies one.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn forced_procs(
+    ap: &FightParams,
+    rad: &Option<crate::build::loadout::ResolvedRadial>,
+    direct: bool,
+    swing: &Option<crate::model::ComboHit>,
+    swing_forced_types: &[DamageType],
+    ability_forced: &[DamageType],
+    pellet_idx: u32,
+    buf: &mut [DamageType; 17],
+) -> usize {
+        let mut n = match (&rad, direct) {
+            (None, true) => {
+                for (i, ty) in ap.forced_procs.iter().enumerate() {
+                    buf[i] = *ty;
+                }
+                ap.forced_procs.len()
+            }
+            (Some(r), _) => r.forced_procs.fill(buf),
+            _ => 0,
+        };
+        // …AND THE SWING'S OWN, on a DIRECT melee hit. A stance
+        // marks them per attack — Crushing Ruin's first swing
+        // forces Impact and its last forces Knockdown — so they
+        // belong to the swing rather than to the weapon, which is
+        // why `ap.forced_procs` above cannot carry them. `forced_hits`
+        // is how many of the row's hits carry them, when not all do.
+        let swing_forces = direct
+            && swing.as_ref().and_then(|h| h.forced_hits).is_none_or(|k| pellet_idx < k);
+        for ty in swing_forced_types.iter().filter(|_| swing_forces) {
+            if !buf[..n].contains(ty) && n < buf.len() {
+                buf[n] = *ty;
+                n += 1;
+            }
+        }
+        for ty in ability_forced {
+            // A weapon that already forces this element does not
+            // force it twice: `procs_for_hit` copies the list
+            // through, and a duplicate would be a second proc the
+            // game does not apply.
+            if !buf[..n].contains(ty) && n < buf.len() {
+                buf[n] = *ty;
+                n += 1;
+            }
+        }
+        n
+}
+
+/// HEMORRHAGE'S ROLL: a proc the instance already applied can bring another
+/// with it, at a chance the card doubles below a fire-rate threshold. The
+/// converted type is never added twice.
+pub(super) fn roll_proc_conversion(
+    ap: &FightParams,
+    d: &mut crate::rules::rng::Draws,
+    live_rate: f64,
+    procs: &mut Vec<DamageType>,
+) {
+    if let Some(pc) = ap.proc_conversion {
+        if procs.contains(&pc.from) && !procs.contains(&pc.to) {
+            let chance = pc.chance
+                * if live_rate < pc.low_rate_threshold {
+                    pc.low_rate_multiplier
+                } else {
+                    1.0
+                };
+            if d.status.chance(chance) {
+                procs.push(pc.to);
+            }
+        }
+    }
+}

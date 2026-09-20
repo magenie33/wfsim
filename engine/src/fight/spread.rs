@@ -1420,3 +1420,29 @@ pub(super) fn fire_syndicate_radial(
         );
     }
 }
+
+/// WHAT DISTANCE LEAVES OF THIS INSTANCE — the explosion's own ramp from its
+/// epicentre, or the direct hit's falloff over the gap it flew.
+pub(super) fn falloff_factor(
+    ap: &FightParams,
+    params: &FightParams,
+    rad: Option<&crate::build::loadout::ResolvedRadial>,
+    det: crate::rules::space::Detonation,
+    gap_m: f64,
+) -> f64 {
+    match (rad, ap.falloff) {
+        // THE EXPLOSION reads the distance from its EPICENTRE to
+        // the body's NEAREST POINT, not to its centre — a body
+        // standing across a falloff gradient takes the best number
+        // on it (`rules::space::blast_reach`,). Zero when
+        // the pellet hit, and zero for anything the blast is
+        // standing inside.
+        (Some(r), _) => {
+            r.falloff_at(crate::rules::space::blast_reach(det.distance_to(params.target_at)))
+        }
+        // THE DIRECT HIT reads the GAP, which IS the distance it
+        // flew: a bullet vanishes at the surface it hits.
+        (None, Some(f)) => f.factor(gap_m),
+        (None, None) => 1.0,
+    }
+}
