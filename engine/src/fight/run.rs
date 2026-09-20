@@ -944,96 +944,22 @@ pub fn run_once_traced(
             }
         }
 
-        // …AND THE TENDRILS, ONCE FOR THE SHOT. They are extra BEAMS rather
-        // than a spread of this one, so they neither take its multishot nor
-        // fire per pellet — and they only exist once there is a body that is
-        // not the one the main beam is on (`spread_from_tendrils`).
-        if let (Some(s), false) = (&shot_spread, others.is_empty()) {
-            spread_from_tendrils(
-                &mut others,
+        // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
+        if !others.is_empty() {
+            spread_beyond_the_target(
                 params,
                 ap,
+                rec,
+                d,
+                t,
+                &shot_spread,
+                &mut others,
+                &mut gal,
+                &mut arc,
+                &mut r,
                 tendril.count,
-                s.raw_per_bucket,
-                s.shares,
-                s.crit_multiplier,
-                s.crit_tier,
-                s.attrition,
-                s.modded_base,
-                s.status_chance,
-                &s.forced,
-                &s.vector,
-                &mut gal,
-                &mut arc,
-                &mut r,
-                rec,
-                d,
-                t,
-            );
-        }
-        // …AND THE RADIUS-CAUGHT SEEDS' CHAINS, ONCE FOR THE SHOT. The other
-        // half of the multishot rule: "beams chaining from targets that were in
-        // the damage radius but not directly struck by the initial beam itself
-        // will also not benefit from multishot", so these fire here rather than
-        // inside the pellet loop above.
-        if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
-            spread_from_seeds(
-                &mut others,
-                params,
-                ap,
-                beam,
-                s.raw_per_bucket,
-                s.shares,
-                s.crit_multiplier,
-                s.crit_tier,
-                s.attrition,
-                s.modded_base,
-                s.status_chance,
-                &s.forced,
-                &s.vector,
-                &mut gal,
-                &mut arc,
-                &mut r,
-                rec,
-                d,
-                t,
                 chain_layout.as_ref(),
-                false,
-                // THE SAME STRUCK LIST the per-pellet half used — this pass
-                // fires the seeds the RADIUS caught, and it tells them apart by
-                // filtering on `multishot`, so it has to agree with that half
-                // about who was struck directly.
                 &struck,
-            );
-        }
-
-        // EVERY BODY'S STATUS BURNS, not just the aimed one's. A formation
-        // body's DoTs were pushed and never ticked until 2026-08-17 — recorded
-        // and never paid — so a chain hop's Slash, a splash's Heat and a gas
-        // cloud all landed on a ledger nobody read.
-        //
-        // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
-        // kill is a kill whichever body it was.
-        for (bi, f) in others.iter_mut().enumerate() {
-            // NOTHING TO BURN, NOTHING TO DO. A formation is up to 400 bodies
-            // and a shot reaches a handful; walking the rest once per shot is
-            // the whole difference between a crowd being affordable and not.
-            if f.debuffs.idle() {
-                continue;
-            }
-            process_ticks(
-                &mut f.debuffs,
-                &mut gal,
-                &mut arc,
-                t + 1e-9,
-                &mut f.state,
-                params,
-                ap,
-                &mut r,
-                rec,
-                &mut d.status,
-                &params.others[bi].params,
-                bi + 1,
             );
         }
 

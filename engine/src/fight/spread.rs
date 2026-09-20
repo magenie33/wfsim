@@ -1446,3 +1446,124 @@ pub(super) fn falloff_factor(
         (None, None) => 1.0,
     }
 }
+
+/// WHAT THE SHOT REACHED BEYOND THE BODY IT WAS AIMED AT — the tendrils and
+/// the radius-caught chains, which are the shot's and not any pellet's, and
+/// every other body's own status burning.
+///
+/// NOTHING TO DO WITHOUT A FORMATION, and the caller checks that rather than
+/// this: every line here is a no-op on an empty one, and paying a call for
+/// them on every shot of the single-target fight cost 3.4%.
+///
+/// ONCE PER SHOT, which is the multishot rule these two spreads are named by:
+/// a tendril is an extra BEAM rather than a spread of this one, so it neither
+/// takes the multishot nor fires per pellet.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn spread_beyond_the_target(
+    params: &FightParams,
+    ap: &FightParams,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rules::rng::Draws,
+    t: f64,
+    shot_spread: &Option<SpreadShot>,
+    others: &mut [SpreadFoe],
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    tendril_count: u32,
+    chain_layout: Option<&crate::rules::chain::Layout>,
+    struck: &[usize],
+) {
+    // …AND THE TENDRILS, ONCE FOR THE SHOT. They are extra BEAMS rather
+    // than a spread of this one, so they neither take its multishot nor
+    // fire per pellet — and they only exist once there is a body that is
+    // not the one the main beam is on (`spread_from_tendrils`).
+    if let (Some(s), false) = (&shot_spread, others.is_empty()) {
+        spread_from_tendrils(
+            others,
+            params,
+            ap,
+            tendril_count,
+            s.raw_per_bucket,
+            s.shares,
+            s.crit_multiplier,
+            s.crit_tier,
+            s.attrition,
+            s.modded_base,
+            s.status_chance,
+            &s.forced,
+            &s.vector,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
+        );
+    }
+    // …AND THE RADIUS-CAUGHT SEEDS' CHAINS, ONCE FOR THE SHOT. The other
+    // half of the multishot rule: "beams chaining from targets that were in
+    // the damage radius but not directly struck by the initial beam itself
+    // will also not benefit from multishot", so these fire here rather than
+    // inside the pellet loop above.
+    if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
+        spread_from_seeds(
+            others,
+            params,
+            ap,
+            beam,
+            s.raw_per_bucket,
+            s.shares,
+            s.crit_multiplier,
+            s.crit_tier,
+            s.attrition,
+            s.modded_base,
+            s.status_chance,
+            &s.forced,
+            &s.vector,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
+            chain_layout,
+            false,
+            // THE SAME STRUCK LIST the per-pellet half used — this pass
+            // fires the seeds the RADIUS caught, and it tells them apart by
+            // filtering on `multishot`, so it has to agree with that half
+            // about who was struck directly.
+            struck,
+        );
+    }
+
+    // EVERY BODY'S STATUS BURNS, not just the aimed one's. A formation
+    // body's DoTs were pushed and never ticked until 2026-08-17 — recorded
+    // and never paid — so a chain hop's Slash, a splash's Heat and a gas
+    // cloud all landed on a ledger nobody read.
+    //
+    // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
+    // kill is a kill whichever body it was.
+    for (bi, f) in others.iter_mut().enumerate() {
+        // NOTHING TO BURN, NOTHING TO DO. A formation is up to 400 bodies
+        // and a shot reaches a handful; walking the rest once per shot is
+        // the whole difference between a crowd being affordable and not.
+        if f.debuffs.idle() {
+            continue;
+        }
+        process_ticks(
+            &mut f.debuffs,
+            gal,
+            arc,
+            t + 1e-9,
+            &mut f.state,
+            params,
+            ap,
+            r,
+            rec,
+            &mut d.status,
+            &params.others[bi].params,
+            bi + 1,
+        );
+    }
+}
