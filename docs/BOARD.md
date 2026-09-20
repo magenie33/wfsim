@@ -1817,9 +1817,9 @@ so the next reading does not have to re-derive the refusal.
 units to weapon classes so a melee change retires melee rows: a hash of what a
 row READ says the bytes moved, which is a different question from whether a
 number did. And the refactor it needs is real — every melee commit touches
-`engine/src/fight/run.rs`, whose one loop swings the blade and fires the gun
-alike, so a file-level attribution buys nothing until the swing is moved out of
-it.
+`engine/src/fight/melee.rs` now, and a gun change touches `fight/pellet.rs` —
+so the files tell a melee commit from a gun one. What a hash of them still
+cannot say is whether a NUMBER moved, which is the question a row asks.
 
 **A message queue.** The pipeline wears every sign of one — durable work,
 stateless workers scaled sideways, at-least-once semantics, backpressure, a
