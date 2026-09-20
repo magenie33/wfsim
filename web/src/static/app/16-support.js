@@ -281,10 +281,10 @@ function renderHomeFacts() {
 /// saying `dev` beside two real digests is worse than three lines that are all
 /// true — a reader quoting it would be quoting nothing.
 ///
-/// ASYNC ONLY FOR THE SHELL, which is one IPC call away and may not answer at
-/// all. The two lines that are already known are drawn first and the shell
-/// appends itself, so a wedged bridge costs the shell line and not the block.
-async function identityLines() {
+/// THE THREE ARE THREE FACTS, not one restated. The release is what every
+/// client of this version runs, the board moves on its own hourly schedule, and
+/// the shell is the binary — the only one of them an update cannot move.
+function identityLines() {
   const el = $("support-identity");
   if (!el) return;
   const lines = [];
@@ -305,14 +305,15 @@ async function identityLines() {
     el.innerHTML = lines.map(escHtml).join("<br>");
   };
   draw();
-  if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
-  try {
-    const v = await window.__TAURI_INTERNALS__.invoke("app_version");
-    if (v) {
-      lines.push(trF("shell {v}", { v }));
-      draw();
-    }
-  } catch (_) { /* a shell that cannot say is a line that is not drawn */ }
+  // THE BINARY, NEVER THE RELEASE IT UNPACKED. `app_version` answers the
+  // second, which the release line above already carries; this line is the one
+  // number that dates the executable, on the page a bug report is read off.
+  //
+  // A SHELL THAT CANNOT SAY IS A LINE THAT IS NOT DRAWN: one older than this
+  // global leaves it undefined, and that absence is itself the answer.
+  if (!window.__WFSIM_DESKTOP__ || !window.__WFSIM_SHELL__) return;
+  lines.push(trF("shell {v}", { v: window.__WFSIM_SHELL__ }));
+  draw();
 }
 
 function renderSupport() {

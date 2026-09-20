@@ -282,6 +282,11 @@ const SELFTEST_PROBE: &str = r#"
         const v = await window.__TAURI_INTERNALS__.invoke('app_version');
         check('ipc + version', /^[0-9a-f]{6,}$/.test(v) || v === 'nogit', v);
       } catch (e) { check('ipc + version', false, 'invoke failed: ' + e.message); }
+      // THE BINARY SAYS WHICH BINARY IT IS, and an exe that cannot is one no
+      // bug report can name — the fallbacks are 'undated' and 'nogit', which
+      // build and run and say nothing, so the shape is asserted here.
+      check('shell build', /^20\d\d\.\d+\.\d+ [0-9a-f]{6,}$/.test(window.__WFSIM_SHELL__ || ''),
+            String(window.__WFSIM_SHELL__));
       // THE HOME PAGE OFFERS A DOWNLOAD, and in here that is an invitation to
       // install what is already running. The element still exists — the same
       // index.html serves both — so what is asserted is that NOTHING IS
@@ -645,8 +650,13 @@ TIMEOUT: the page never reported after {secs}s
         }
     }
 
+    // WHICH SHELL, SAID BEFORE THE PAGE ASKS. A global and not a command: the
+    // page has to be able to branch on it while it boots, and an `invoke` is a
+    // round trip that has not answered yet. A shell too old to set it leaves it
+    // undefined, and that absence is itself the answer — it predates this.
+    let shell = serde_json::Value::from(env!("WFSIM_SHELL_BUILD"));
     let init = format!(
-        "window.__WFSIM_DESKTOP__ = true; window.__WFSIM_ROLLED_BACK__ = {rolled_back}; window.__WFSIM_EXPECT_REFUSED__ = {expect_refused};{LINK_HANDOFF}{}",
+        "window.__WFSIM_DESKTOP__ = true; window.__WFSIM_SHELL__ = {shell}; window.__WFSIM_ROLLED_BACK__ = {rolled_back}; window.__WFSIM_EXPECT_REFUSED__ = {expect_refused};{LINK_HANDOFF}{}",
         match measure_lanes {
             Some(_) => MEASURE_PROBE,
             None if update_test => UPDATE_PROBE,

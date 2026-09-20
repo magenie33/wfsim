@@ -94,6 +94,21 @@ fn main() {
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
         .unwrap_or_else(|| "nogit".into());
 
+    // WHICH SHELL THIS IS — the one identifier no update can move, because
+    // content replaces itself and the binary does not. It carries both halves
+    // for two readers: the DATE is what a person compares at a glance ("mine
+    // is from August"), the COMMIT is what a bug report needs. The payload's
+    // `version` below is a different fact — the release this binary unpacks —
+    // and after the first update it is no longer even this one.
+    let conf = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tauri.conf.json");
+    println!("cargo:rerun-if-changed={}", conf.display());
+    let date = std::fs::read_to_string(&conf)
+        .ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .and_then(|c| c["version"].as_str().map(str::to_string))
+        .unwrap_or_else(|| "undated".into());
+    println!("cargo:rustc-env=WFSIM_SHELL_BUILD={date} {version}");
+
     let manifest = serde_json::json!({ "version": version, "files": index });
     let head = serde_json::to_vec(&manifest).unwrap();
 

@@ -199,9 +199,18 @@ python scripts/build_desktop.py           # dist/WFSim.exe + source.zip + notes
 ~52 s, and it is plain `cargo build --release` — no bundler.
 
 No version number is ever chosen, and none appears in the filename. Windows
-needs a version field for its own bookkeeping, so it comes from the build date;
-what identifies a build for a bug report is the **commit**, which the page
-footer already shows.
+needs a version field for its own bookkeeping, so `build_desktop.py` derives it
+from the build date, and `build.rs` stamps that date plus the **commit** into
+the binary as `WFSIM_SHELL_BUILD`. The window declares it as
+`window.__WFSIM_SHELL__` before the page boots — a global rather than a command
+because content has to be able to branch on it while it loads — and `/support`
+prints it as the `shell` line.
+
+**IT IS THE ONE IDENTIFIER AN UPDATE CANNOT MOVE**, which is what makes it the
+one worth quoting: the release a client runs is everyone's release and changes
+under it weekly, while the binary is whatever was downloaded and stays that
+until somebody downloads again. A shell too old to set the global leaves it
+undefined, and that absence dates it too.
 
 **On the network drive the download is always `WFSim.exe`, and the notes carry
 no date.** A share link is tied to the filename, so renaming invalidates every
