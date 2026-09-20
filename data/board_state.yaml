@@ -11,14 +11,14 @@
 # question and the page answers it (docs/BOARD.md).
 boards:
   group_clear:
-    submissions: 9199
-    listed: 8299
-    scored_at_epoch_seconds: 1789819743
+    submissions: 9353
+    listed: 9459
+    scored_at_epoch_seconds: 1789863561
   single_target:
-    submissions: 9199
-    listed: 13008
-    scored_at_epoch_seconds: 1789819745
+    submissions: 9353
+    listed: 14911
+    scored_at_epoch_seconds: 1789863564
   single_target_demolisher:
-    submissions: 9199
-    listed: 11228
-    scored_at_epoch_seconds: 1789819747
+    submissions: 9353
+    listed: 12703
+    scored_at_epoch_seconds: 1789863566
