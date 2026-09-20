@@ -511,192 +511,35 @@ pub fn run_once_traced(
         } else {
             (&main_pre.0, main_pre.2)
         };
-        // ---- THE MELEE SWING THIS SHOT IS -------------------------------
-        //
-        // A gun's script is empty and every line below is a no-op for it: the
-        // swing is `None`, the multiplier is 1.0, and the counter never moves.
-        let swing = ap.combo_script.get(melee.swing_idx % ap.combo_script.len().max(1)).cloned();
-        // THE COUNTER, BEFORE THIS SWING. A heavy attack reads it and then
-        // empties it, so the multiplier it pays is the one that was standing
-        // when the trigger went down — the same rule the game states by
-        // spending "all or part of the combo counter" as part of the attack.
-        // …OR THE CLOCK RAN OUT ZERO. *"A zero or negative combo duration
-        // prevents increasing the combo counter"* — so the counter is cleared
-        // HERE, upstream of the one place it is read, rather than by each of
-        // the four swings that earn into it remembering to ask.
-        if t > melee.combo_expiry || ap.combo_frozen {
-            // *"Melee Combo resets after this time"*. Power Spike's partial
-            // decay is a WARFRAME passive and is not modelled — declared,
-            // because a build running it keeps far more of the counter than
-            // this does and is therefore UNDER-reported here.
-            melee.combo_points = 0.0;
-        }
-        // …AND THE FLOOR IS LIVE. Galvanized Reflex earns +20 initial combo per
-        // melee kill to four stacks, so the number the counter returns to moves
-        // during the fight — read here rather than at resolve, which is where
-        // it was a static build-time value and the card's whole second half
-        // went unpaid.
-        let initial_now =
-            ap.initial_combo + buff_total(ap, crate::model::BuffGrant::InitialCombo, &mut buff_stacks, t);
-        let combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
-        let combo_multiplier = melee_combo_multiplier(combo_now);
-        // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
-        // takes the combo multiplier on top of it.
-        //
-        // IT IS FOLDED INTO THE BASE rather than applied to the finished
-        // instance, and the difference is the QUANTIZATION GRID — the snap is
-        // per component against `ModdedBase / 32`. Folding is the reading with
-        // an argument behind it (DE publishes a damage figure per combo attack,
-        // so the swing IS the attack's damage) and the harmless one, since
-        // quantizing `kX` against `ks` is `k` times quantizing `X` against `s`.
-        // UNMEASURED either way, and flagged as such.
-        // ---- IS THIS SWING A TENNOKAI HEAVY? --------------------------
-        // Only on a form that is not ALREADY heavy: the window makes a heavy
-        // attack free and a mode whose every swing is one has nothing to
-        // convert. `heavy` is the CLASS's multiplier and wind-up.
-        // THE WINDOW IS OPEN, and what it BUYS depends on the mode. On a LIGHT
-        // form the swing becomes a heavy attack — the class's multiplier in
-        // place of the stance's, times a combo multiplier it does not spend. On
-        // an already-heavy form the other half pays: the swing costs no combo,
-        // so the counter it read is there for the next one. ONE WINDOW, ONE
-        // SWING either way — the flash goes out with it.
-        let tennokai = ap.tennokai.enabled && t < melee.tennokai_until;
-        let tennokai_heavy = tennokai && !ap.spends_combo && ap.heavy.is_some();
-        // …AND WHETHER THE ONE BEING SPENT WAS CHAINED, kept because spending
-        // it clears the flag and the damage is decided after.
-        let tennokai_was_chained = tennokai && melee.tennokai_chained;
-        // WHAT THE COUNT WAS BEFORE IT, so "did this swing kill" is a
-        // subtraction rather than a flag every path would have to set.
-        let tennokai_kill_mark = r.kills;
-        if tennokai {
-            melee.tennokai_until = f64::NEG_INFINITY;
-            melee.tennokai_chained = false;
-        }
-        // SEISMIC WAVE IS A MULTIPLIER OF ITS OWN: *"Slam damage bonus is
-        // multiplicative to base damage (e.g. Pressure Point)"* (wiki). Killing
-        // Blow's `+X% on Heavy Attack` reads the same on the card and lands in
-        // the base-damage BUCKET instead — `heavy_attack_base_damage`.
-        //
-        // A SLAM IS A FORM WHOSE EXPLOSION IS A SLAM. Reading the form rather
-        // than a flag is what keeps this true for the next slam weapon.
-        let is_slam = ap
-            .radial
-            .as_ref()
-            .is_some_and(|r| r.blast_kind == crate::model::BlastKind::Slam);
-        let mode_damage = 1.0 + if is_slam { ap.slam_damage } else { 0.0 };
-        // …AND WHAT THE SWING IS WORTH.
-        //
-        // A TENNOKAI SWING IS A HEAVY ATTACK: the class multiplier in place of
-        // the stance's, times the combo multiplier it READS AND DOES NOT SPEND
-        // — which is the whole of the mechanic. A light build that has climbed
-        // to 12x fires free 12x heavy attacks between its swings.
-        //
-        // Killing Blow's `on Heavy Attack` bonus rides it too, because this IS
-        // one; Master's Edge and Truth's Flame are the window's own.
-        let swing_mult = if tennokai_heavy {
-            ap.heavy.map_or(1.0, |h| h.multiplier)
-                * combo_multiplier
-                // KILLING BLOW ON A LIGHT FORM'S FREE HEAVY. The card's bucket
-                // is the base-damage one, so what it is worth here is the
-                // RATIO that bucket grows by — `heavy_attack_base_damage` reads
-                // zero on a form that does not spend the counter, which this
-                // one is.
-                * (1.0 + ap.base_damage_bonus + ap.heavy_attack_damage)
-                / (1.0 + ap.base_damage_bonus)
-                // …AND ONLY WHERE THE CARD PAYS IT. Truth's Flame's bonus is
-                // the CHAINED window's; every other card's is unconditional.
-                * (1.0
-                    + if ap.tennokai.damage_needs_chain && !tennokai_was_chained {
-                        0.0
-                    } else {
-                        ap.tennokai.damage
-                    })
-        } else {
-            swing.as_ref().map_or(1.0, |h| h.multiplier)
-                * if ap.spends_combo { combo_multiplier } else { 1.0 }
-                * mode_damage
-        };
-        // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes
-        // everything within the weapon's range; an ordinary one sweeps in
-        // front. Empty for a gun, which never asks.
-        let melee_struck = match &swing {
-            Some(h) if ap.follow_through.is_some() => params
-                .melee_struck(h.all_around, buff_total(ap, crate::model::BuffGrant::MeleeRange, &mut buff_stacks, t)),
-            _ => Vec::new(),
-        };
-        // WHAT THIS SWING FORCES, split into the two machines that carry it —
-        // damage types compete for the proc roll, independent procs never do.
-        // Resolved once per swing rather than per pellet: a melee swing is one
-        // instance, and the split is a string comparison over a list of at most
-        // two.
-        let (swing_forced_types, swing_forced_independent) =
-            swing.as_ref().map_or_else(|| (Vec::new(), Vec::new()), |h| h.split_forced());
-        // …AND THE PHYSICAL BONUS SOME SWINGS CARRY. `ImpactMultiplier = { 1.5 }`
-        // on three of Crushing Ruin's swings, `SlashMultiplier = { 1.25 }` on one
-        // of Sovereign Outcast's — the wiki's own module, and a different thing
-        // from the forced proc several of the same swings ALSO carry.
-        //
-        // SCALING THE FINISHED VECTOR IS EXACT here, not an approximation:
-        // neither type enters the elemental hierarchy, so nothing can have
-        // consumed it on the way and `Base x 1.5` on the component is the same
-        // number as `Base x 1.5` before the mods that multiply the whole thing.
-        let physical_bonus = [
-            (DamageType::Impact, swing.as_ref().map_or(1.0, |h| h.impact_multiplier)),
-            (DamageType::Slash, swing.as_ref().map_or(1.0, |h| h.slash_multiplier)),
-        ];
-        let any_physical = physical_bonus.iter().any(|(_, b)| (b - 1.0).abs() > 1e-12);
-        // THE FLAT ADD RIDES BESIDE THE SWING, NEVER INSIDE IT (MEASUREMENTS
-        // M79). A stance's multiplier, a slam's and a heavy's are the WEAPON's,
-        // so the packet an Incarnon perk added keeps its size while the
-        // weapon's own base is multiplied: `mods x (base x swing + flat)`.
-        // Its IMPACT multiplier is treated the same way — the attack's own
-        // shape, on the attack's own base — which is a generalisation and not
-        // one of M79's four readings.
-        let unswung = ap.unswung_fraction.clamp(0.0, 1.0);
-        let swung;
-        // What the fold did to the whole base, and to the WEAPON's half of it.
-        // The two differ exactly when a flat add is present, and the GunCO
-        // bracket needs the second: it reads the weapon's base and takes the
-        // swing with it, where the flat packet takes neither.
-        let (mut swing_eff, mut swing_on_weapon) = (1.0, 1.0);
-        let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 || any_physical {
-            let flat = qvec.scale(unswung);
-            let mut v = qvec.scale((1.0 - unswung) * swing_mult);
-            for (ty, bonus) in physical_bonus {
-                if (bonus - 1.0).abs() > 1e-12 {
-                    let extra = v.get(ty) * (bonus - 1.0);
-                    v.add(ty, extra);
-                }
-            }
-            // The ModifiedBase grows by the same share the vector did, so
-            // the quantization grid stays proportional to what is on it.
-            let before = qvec.total() * (1.0 - unswung) * swing_mult;
-            let shape = if before > 0.0 { v.total() / before } else { 1.0 };
-            swing_on_weapon = swing_mult * shape;
-            swing_eff = (1.0 - unswung) * swing_on_weapon + unswung;
-            let mb = modded_base * swing_eff;
-            for (ty, amount) in flat.iter_nonzero() {
-                v.add(ty, amount);
-            }
-            swung = v;
-            (&swung, mb)
-        } else {
-            (qvec, modded_base)
-        };
-        // THE SWUNG VECTOR, kept for the LEDGER. Its quantization layer is
-        // drawn against `stage_mb`, which the fold has already grown, so
-        // handing it the unswung vector printed a grid and a set of components
-        // that were never on it — the ledger's own product then fell short of
-        // the number by exactly the swing, on every melee row.
-        let direct_pre_snap = *qvec;
-        // …AND THE CO BRACKET FOLLOWS THE WEAPON'S HALF. `ap`'s fraction is
-        // read against the UNSWUNG base; once the swing has landed on one half
-        // only, the share the term reads is a different number.
-        let co_base = if swing_eff > 0.0 {
-            ap.co_base.against(ap.co_base.of() * swing_eff / swing_on_weapon)
-        } else {
-            ap.co_base
-        };
+        // ---- THE MELEE SWING THIS SHOT IS — see [`swing_this_shot`] ------
+        let Swung {
+            swing,
+            initial_now,
+            combo_now,
+            combo_multiplier,
+            tennokai,
+            tennokai_heavy,
+            tennokai_kill_mark,
+            swing_mult,
+            melee_struck,
+            swing_forced_types,
+            swing_forced_independent,
+            qvec,
+            modded_base,
+            direct_pre_snap,
+            co_base,
+        } = swing_this_shot(
+            params,
+            ap,
+            t,
+            qvec,
+            modded_base,
+            &mut buff_stacks,
+            &mut melee,
+            &r,
+        );
+        // …and the instances read it where they always did.
+        let qvec = &qvec;
         // The per-projectile vectors belong to the FORM that is firing, like
         // everything else at this scope. A cycle whose base form has them and
         // whose Incarnon form does not simply reads an empty slice there.
