@@ -1614,234 +1614,47 @@ pub fn run_once_traced(
             &mut d.arc_landing,
         );
 
-        // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
-        //
-        // A counter that decays only through its own timer runs slightly
-        // generous, and is the right model only in an arena where nothing can
-        // miss. This one can, so the other half of the mechanic is here.
-        //
-        // PER SHOT, not per pellet: the counter counts trigger pulls that
-        // connected, and a multishot pull that lands one pellet connected.
-        // Nothing happens on a weapon with no combo, and nothing happens at
-        // point blank — `landed_this_shot` cannot be false there.
-        if ap.sniper_combo.is_some() && !landed_this_shot {
-            sniper_combo.count = 0;
-        }
-
-        // THE SPEAR PLANTS ITS FIELD, and the shot that planted it does not
-        // benefit from it — hence here, after every pellet of this throw has
-        // landed. The next one is 1.6 s away against a 4.7 s field, so from
-        // the second throw on it is simply up; only the opening throw is
-        // affected by the ordering, and this is the ordering that claims the
-        // least (the wiki has the field pulse ON impact, not before it).
-        //
-        // ONE FIELD, replaced rather than stacked, which is already what
-        // `push_capped(.., 1, ..)` does — and it is the right shape for a
-        // second reason the owner measured: a new throw destroys
-        // the OLD FIELD at the moment it starts, but what that field already
-        // applied to an enemy runs its own clock. A field the sim never
-        // re-pulses and a debuff that survives its field are the same thing
-        // from the target's side, which is the only side this arena has.
-        if let Some(secs) = ap.attractor_seconds {
-            DebuffState::push_capped(&mut debuffs.attractor, t + secs, 1, t);
-        }
-
-        // REAVER'S RAPTURE: THE ROUND THAT COMPLETED A BURST, counted here —
-        // after every pellet of it has landed, so the burst that earns the
-        // stack does not carry it. The next burst does.
-        //
-        // "Not affected by multishot or punch through" is why this is outside
-        // the pellet loop; "counts object hits" and "activates even if the
-        // first hit of a burst kills the target" are both already true of this
-        // arena, where one target respawns and every round reaches it. So a
-        // completed burst IS a full burst hit, with nothing left to condition
-        // on.
-        //
-        // A weapon with no burst has a count of one, and then every round
-        // completes its own burst — which is what the trigger means there.
-        let burst_len = ap.burst.map_or(1, |b| b.count.max(1));
-        if ammo.rounds_this_mag.is_multiple_of(burst_len) {
-            bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::FullBurst, t, rng);
-        }
-
-        // EXECUTIONER'S FORTUNE, SPENT. The roll is per pellet, the effect is
-        // not: a magazine fills once however many pellets rolled it, so this is
-        // a flag the pellet loop sets and the shot consumes.
-        //
-        // It is an INSTANT reload, so no time passes — which is the whole perk,
-        // and why it is not in the reload bucket. It draws from the reserve
-        // like every other refill here (a dry reserve gives nothing), and it
-        // fills whole rounds to capacity the way `reload_draw` defines a
-        // reload, so an overdrawn counter comes back where a real reload would
-        // leave it.
-        //
-        // A REFILL IS NOT A RELOAD, the rule Sentient Surge established above:
-        // `r.reloads` is untouched, so nothing keyed on reloads — Mounting
-        // Momentum's shells, Deadly Efficiency's window, Ready Retaliation's —
-        // is triggered by it. That is a reading, not a measurement: DE's own
-        // text calls it a reload, and if it turns out to arm those buffs this
-        // is the one line to change.
-        //
-        // The form was already checked at the roll — an Incarnon form never
-        // sets this flag — so this only has to fill the right counter.
-        if ammo.instant_reload_now {
-            ammo.instant_reload(params, &mut incarnon);
-        }
-
-        // Renewed Horror is spent by the shot that follows the reload, however
-        // many grenades that shot put out.
-        field_duration_boost = false;
-
-        // GALVANIC RELOAD: "On hitting a target affected by an Electricity
-        // status, 40% chance to restore 1 round in the magazine from ammo pool."
-        //
-        // ONCE PER SHOT, which is the card's own qualifier — "The bonus can only
-        // apply once per enemy hit" — and on a shotgun family the difference
-        // between that and once per pellet is tenfold. So it is rolled HERE,
-        // outside the pellet loop, beside the other per-pull events.
-        //
-        // "FROM AMMO POOL", so a dry reserve restores nothing: the round is
-        // drawn like any other. And a restore is NOT a reload — nothing that
-        // watches reloads sees it, the same rule `magazine_refill_on_kill` follows.
-        if let Some((st, chance, rounds)) = ap.round_restore_on_status {
-            if has_status(&debuffs, st) && d.extra.chance(chance) {
-                let room = (ammo.cap - ammo.loaded).max(0.0);
-                let want = rounds.min(room);
-                if want > 0.0 {
-                    ammo.loaded += draw_from(&mut ammo.reserve, params.infinite_reserve, want);
-                }
-            }
-        }
-
-        // ONE Hit event per trigger pull (hitscan pellets are not separate
-        // Hits - GLOSSARY): headshot/big-crit flags aggregate any pellet.
-        let hit = Event::Hit(Hit {
-            big_crit: any_big,
-            headshot: any_head,
-            target_alive: true,
-        });
-        // A BLAST THAT WENT OFF SINCE THE LAST SHOT IS A HIT TOO — one per
-        // MOMENT, however many stacks shared it, which is what the pile records.
-        //
-        // A fuse paying out is a damage number at a moment, and that is what an
-        // arcane counting hits sees: nine stacks expiring one at a time are
-        // nine, ten going off together are one. AND BLAST NEVER CRITS, so a pop
-        // only ever BUILDS the ramp — it can never fill the big-crit counter
-        // that resets it, which is why `big_crit` is false here and not read
-        // from anything.
-        //
-        // Fed at the pop's own time and before this shot's, because both are
-        // true: the arcane is rate-limited, and the ramp this shot fires under
-        // is the one the pops left behind.
-        for pop in arc.blast_pops.drain(..) {
-            if let Some(en) = enervate.as_mut() {
-                en.on_event(
-                    &Event::Hit(Hit { big_crit: false, headshot: false, target_alive: true }),
-                    pop,
-                    &mut bar,
-                );
-            }
-        }
-        if let Some(en) = enervate.as_mut() {
-            en.on_event(&hit, t, &mut bar);
-        }
-        if ap.frenzy {
-            frenzy.on_event(&hit, t, &mut bar);
-        }
-
-        // Gauge charging (base phase): every weakpoint PELLET builds one
-        // charge (charge_rules); a full gauge transmutes back immediately.
-        //
-        // A GAUGE IS ONE OF TWO WAYS IN, so the whole block is the GUN's. A
-        // melee Incarnon arms on the swing itself (`Arms::HeavyAtCombo`, below
-        // beside the combo counter it reads) and skips every line of this: it
-        // has no gauge to fill, no charge magazine to fill, and no transmute
-        // animation to spend.
-        if let Some((cy, charge_on, charges_to_fill)) =
-            params.cycle.as_ref().and_then(|cy| match cy.arms {
-                Arms::Gauge { charge_on, charges_to_fill } => Some((cy, charge_on, charges_to_fill)),
-                Arms::HeavyAtCombo(_) => None,
-            })
-        {
-            charge_the_gauge(
-                params, rec, rng, d, cy, charge_on, charges_to_fill, pellets_before, headshots_before,
-                &mut t, &mut r, &mut ammo, &mut incarnon, &mut double_tap, &mut buff_stacks,
-                &mut rs_armed, &mut opening_closed,
-            );
-        }
-
-        // ---- WHAT THIS SWING DID TO THE COMBO COUNTER -------------------
-        //
-        // GAIN FIRST, THEN SPEND, and the order is the game's: a heavy attack
-        // pays the multiplier that was standing when it went down (read above,
-        // into `combo_multiplier`), lands, and then empties the counter.
-        //
-        // POINTS ARE THE STANCE MULTIPLIER. *"Stance attacks add combo points,
-        // scaling with the attack's stance damage multiplier (100% stance
-        // damage multiplier = 1 point)"* — one number doing two jobs, and it is
-        // the same number in game. PER BODY LANDED, which is the wiki's own
-        // reading of the Rauta: *"generates 2 combo points per pellet landing
-        // on enemy (max 28 points across 14 pellets)"*.
-        //
-        // ONLY A LANDED SWING COUNTS: *"Only successful strikes against enemies
-        // award points"*, so a miss neither adds nor refreshes.
-        if let Some(h) = &swing {
-            after_swing(
-                h, ap, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
-                tennokai_heavy, pellets_before, t,
-                &mut r, &mut melee, &mut incarnon, &ammo, &mut arc, &mut target, &mut debuffs,
-                &mut others,
-            );
-        }
-
-        // Next shot: cadence reflects the bar as of now (Frenzy just
-        // granted/refreshed counts immediately), plus Pressurized
-        // Magazine's live on-reload fire-rate buff.
-        bar.expire(t);
-        let mut fr_add = match ap.fire_rate_on_reload {
-            Some(b) if t < windows.fire_rate_after_reload => b.value,
-            _ => 0.0,
-        };
-        // THE SAME BUCKET fire-rate mods and a static `fire_rate_bonus`
-        // evolution live in — `base * (1 + fr + evo + 0.05n)`. `per_stack` is
-        // already the absolute rate that fraction is worth, so adding it here,
-        // inside the bracket rather than outside it, is what keeps it additive
-        // with mods instead of multiplicative with them.
-        fr_add += buff_total(ap, crate::model::BuffGrant::FireRate, &mut buff_stacks, t);
-        let rate = if params.locks("fire_rate") {
-            ap.fire_rate
-        } else {
-            (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
-        };
-        // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
-        // this loop — a reload, a transform, a dry magazine, a stall on a dry
-        // reserve — leaves this shot LATER than the moment the last one made it
-        // due, and that is precisely what releasing the trigger is. Asking the
-        // clock here, rather than clearing the count in each branch that
-        // pauses, is what stops the next pause anyone adds from silently
-        // keeping the spool alive — and the reload branch already proves the
-        // point: it does not `continue`, it falls through and fires in the same
-        // iteration, so a check at the top of the loop would never have seen
-        // it (the test caught this: 66 shots against the 80 a released trigger
-        // owes).
-        if t > spool.due + 1e-9 {
-            spool.shots = 0.0;
-        }
-        last_shot_t = t;
-        // …and then the SPOOL, which is a fraction of whatever that rate came
-        // to: a fire-rate mod raises the ceiling and the floor together, so the
-        // Phenmor's Incarnon form still spends most of its 408-round magazine
-        // at 60% of whatever it was built to.
-        let rate = rate * spool_factor(ap.sustained_fire_rate, spool.shots);
-        spool.shots += 1.0;
-        // On a CHARGE weapon the pull costs a draw, not a rate: divide the
-        // modded charge time by whatever the live buffs did to the rate
-        // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
-        // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
-        t += seconds_to_next_shot(
-            ap, rate, initial_now, swing, tennokai, tennokai_heavy, &ammo, &incarnon, &mut melee,
+        after_the_shot(
+            params,
+            ap,
+            rec,
+            rng,
+            d,
+            &mut t,
+            landed_this_shot,
+            any_big,
+            any_head,
+            pellets_before,
+            headshots_before,
+            swing,
+            combo_now,
+            combo_multiplier,
+            initial_now,
+            tennokai,
+            tennokai_heavy,
+            tennokai_kill_mark,
+            &mut r,
+            &mut bar,
+            &mut arc,
+            &mut enervate,
+            &mut frenzy,
+            &mut buff_stacks,
+            &rec_buff_index,
+            &mut target,
+            &mut debuffs,
+            &mut others,
+            &mut ammo,
+            &mut incarnon,
+            &mut double_tap,
+            &mut melee,
+            &mut sniper_combo,
+            &mut spool,
+            &windows,
+            &mut rs_armed,
+            &mut opening_closed,
+            &mut field_duration_boost,
+            &mut last_shot_t,
         );
-        spool.due = t;
     }
 
     // THE METER'S LAST FILLS, after the trigger stops. A weapon that is out of
