@@ -539,3 +539,124 @@ pub(super) fn process_ticks(
     debuffs.tick_q = q;
     debuffs.dots.retain(|d| d.ticks_left > 0);
 }
+
+/// WHAT IS STILL IN THE AIR, settled up to this shot — the clouds and the
+/// orbs already out there, the armour the kills since the last shot stripped,
+/// and the packs they dropped.
+///
+/// A SHOT BOUNDARY IS THE CLOCK every one of these is read on. None of them
+/// is fired by the trigger, and each carries the same buff snapshot the shot
+/// about to go off does.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn settle_what_is_in_the_air(
+    params: &FightParams,
+    ap: &FightParams,
+    field_ap: &FightParams,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rules::rng::Draws,
+    t: &mut f64,
+    field_ctx: &FieldCtx,
+    fields: &mut Vec<FieldState>,
+    orbs: &mut Vec<OrbState>,
+    meter: &mut Meter,
+    ammo: &mut Ammo,
+    target: &mut TargetState,
+    debuffs: &mut DebuffState,
+    others: &mut [SpreadFoe],
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    strip_kills_seen: &mut u32,) {
+        process_field_ticks(
+            fields,
+            debuffs,
+            gal,
+            arc,
+            *t,
+            target,
+            params,
+            field_ap,
+            field_ctx,
+            r,
+            rec,
+            d,
+            others,
+        );
+        // JAHU CANTICLE. Every kill takes a share off the armour of every enemy
+        // inside Affinity Range — which is measured from the PLAYER, not from
+        // the corpse (wiki `Affinity`: the squad shares within a 50 m radius),
+        // so which body died does not matter and a count is enough.
+        //
+        // THE SHARES COMPOSE rather than adding: each kill removes a share of
+        // what is LEFT, which is the rule every other strip in this engine
+        // follows and the only one under which repeated kills cannot take
+        // armour past zero. Two kills at 5% leave 0.9025 of it, not 0.90.
+        //
+        // NO CLOCK. The card states no duration, so what it takes it keeps.
+        if let Some((share, radius)) = ap.strip_on_kill_in_range {
+            let fresh = r.kills.saturating_sub(*strip_kills_seen);
+            *strip_kills_seen = r.kills;
+            if fresh > 0 && share > 0.0 {
+                let keep = (1.0 - share).powi(fresh as i32);
+                if crate::rules::space::gap(params.player_at, params.target_at) <= radius {
+                    debuffs.canticle_armor_strip =
+                        1.0 - (1.0 - debuffs.canticle_armor_strip) * keep;
+                }
+                for (bi, spec) in params.others.iter().enumerate() {
+                    if crate::rules::space::gap(params.player_at, spec.at) > radius {
+                        continue;
+                    }
+                    if let Some(SpreadFoe { debuffs: fd, .. }) = others.get_mut(bi) {
+                        fd.canticle_armor_strip =
+                            1.0 - (1.0 - fd.canticle_armor_strip) * keep;
+                    }
+                }
+            }
+        }
+        // WHAT THE BODIES DROPPED since this was last looked at — ONE roll per
+        // kill IN REACH, read by everything that cares (docs/MECHANICS.md
+        // §"THE AMMO ECONOMY"). Rolled whether or not anything reads it, which
+        // is what keeps two builds of one weapon on the same dice.
+        let (mut dropped_primary, mut dropped_secondary) = (0u32, 0u32);
+        for _ in 0..r.kills_in_reach.saturating_sub(ammo.drop_kill_mark) {
+            let (p, s) = crate::rules::ammo::on_kill(
+                params.squad_size,
+                params.landscape,
+                params.target.eximus,
+                &mut d.drops,
+            );
+            dropped_primary += p;
+            dropped_secondary += s;
+        }
+        ammo.drop_kill_mark = r.kills_in_reach;
+        // …AND WHAT THIS WEAPON DOES WITH THEM (`rules::ammo::credit`). Nothing at all
+        // while the reserve is infinite: the house rule already hands the
+        // weapon everything a pack could.
+        ammo.credit_pickups(params, r, dropped_primary, dropped_secondary);
+        // THE RECHARGE METER, credited with the seconds since it was last
+        // looked at. A shot boundary is where every other clock in this loop is
+        // read, and the meter is coarse enough not to care: it is 45 seconds
+        // long and the fastest thing that fills it is worth one.
+        if let Some(m) = ap.meter {
+            meter.tick(m, ap, params, dropped_secondary, t, orbs);
+        }
+        // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
+        // buff snapshot the field walk takes; an orb's clock is its own and no
+        // fire-rate bucket reaches it, which is the wiki's *"Tick rate is not
+        // affected by Fire Rate"* holding by construction.
+        process_orbs(
+            orbs,
+            debuffs,
+            gal,
+            arc,
+            *t,
+            target,
+            params,
+            field_ap,
+            field_ctx,
+            r,
+            rec,
+            d,
+            others,
+        );
+}

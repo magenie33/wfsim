@@ -736,97 +736,25 @@ pub fn run_once_traced(
             },
             head_landing: shot_head_landing,
         };
-        process_field_ticks(
+        settle_what_is_in_the_air(
+            params,
+            ap,
+            field_ap,
+            rec,
+            d,
+            &mut t,
+            &field_ctx,
             &mut fields,
-            &mut debuffs,
-            &mut gal,
-            &mut arc,
-            t,
-            &mut target,
-            params,
-            field_ap,
-            &field_ctx,
-            &mut r,
-            rec,
-            d,
-            &mut others,
-        );
-        // JAHU CANTICLE. Every kill takes a share off the armour of every enemy
-        // inside Affinity Range — which is measured from the PLAYER, not from
-        // the corpse (wiki `Affinity`: the squad shares within a 50 m radius),
-        // so which body died does not matter and a count is enough.
-        //
-        // THE SHARES COMPOSE rather than adding: each kill removes a share of
-        // what is LEFT, which is the rule every other strip in this engine
-        // follows and the only one under which repeated kills cannot take
-        // armour past zero. Two kills at 5% leave 0.9025 of it, not 0.90.
-        //
-        // NO CLOCK. The card states no duration, so what it takes it keeps.
-        if let Some((share, radius)) = ap.strip_on_kill_in_range {
-            let fresh = r.kills.saturating_sub(strip_kills_seen);
-            strip_kills_seen = r.kills;
-            if fresh > 0 && share > 0.0 {
-                let keep = (1.0 - share).powi(fresh as i32);
-                if crate::rules::space::gap(params.player_at, params.target_at) <= radius {
-                    debuffs.canticle_armor_strip =
-                        1.0 - (1.0 - debuffs.canticle_armor_strip) * keep;
-                }
-                for (bi, spec) in params.others.iter().enumerate() {
-                    if crate::rules::space::gap(params.player_at, spec.at) > radius {
-                        continue;
-                    }
-                    if let Some(SpreadFoe { debuffs: fd, .. }) = others.get_mut(bi) {
-                        fd.canticle_armor_strip =
-                            1.0 - (1.0 - fd.canticle_armor_strip) * keep;
-                    }
-                }
-            }
-        }
-        // WHAT THE BODIES DROPPED since this was last looked at — ONE roll per
-        // kill IN REACH, read by everything that cares (docs/MECHANICS.md
-        // §"THE AMMO ECONOMY"). Rolled whether or not anything reads it, which
-        // is what keeps two builds of one weapon on the same dice.
-        let (mut dropped_primary, mut dropped_secondary) = (0u32, 0u32);
-        for _ in 0..r.kills_in_reach.saturating_sub(ammo.drop_kill_mark) {
-            let (p, s) = crate::rules::ammo::on_kill(
-                params.squad_size,
-                params.landscape,
-                params.target.eximus,
-                &mut d.drops,
-            );
-            dropped_primary += p;
-            dropped_secondary += s;
-        }
-        ammo.drop_kill_mark = r.kills_in_reach;
-        // …AND WHAT THIS WEAPON DOES WITH THEM (`rules::ammo::credit`). Nothing at all
-        // while the reserve is infinite: the house rule already hands the
-        // weapon everything a pack could.
-        ammo.credit_pickups(params, &mut r, dropped_primary, dropped_secondary);
-        // THE RECHARGE METER, credited with the seconds since it was last
-        // looked at. A shot boundary is where every other clock in this loop is
-        // read, and the meter is coarse enough not to care: it is 45 seconds
-        // long and the fastest thing that fills it is worth one.
-        if let Some(m) = ap.meter {
-            meter.tick(m, ap, params, dropped_secondary, &mut t, &mut orbs);
-        }
-        // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
-        // buff snapshot the field walk takes; an orb's clock is its own and no
-        // fire-rate bucket reaches it, which is the wiki's *"Tick rate is not
-        // affected by Fire Rate"* holding by construction.
-        process_orbs(
             &mut orbs,
+            &mut meter,
+            &mut ammo,
+            &mut target,
             &mut debuffs,
+            &mut others,
             &mut gal,
             &mut arc,
-            t,
-            &mut target,
-            params,
-            field_ap,
-            &field_ctx,
             &mut r,
-            rec,
-            d,
-            &mut others,
+            &mut strip_kills_seen,
         );
         // Secondary Encumber: at most ONE extra proc per instant — pellets
         // of one pull land simultaneously, so one roll per pull.
