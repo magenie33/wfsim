@@ -246,6 +246,15 @@ promote()    swap the directory
 data(name)   serve the freshest live data this shell holds, else the seed
 ```
 
+**THE PAGE MAY NOT REQUIRE A SHELL FEATURE THE FIELD DOES NOT HAVE.** Content
+replaces itself and a shell does not, so a shell that predates a capability goes
+on predating it for as long as its reader never downloads again — and it keeps
+receiving releases the whole time. A release that begins depending on one has to
+degrade to the site for the shells without it: `fetchJson` and
+`loadWeaponBoard` ask this origin and then `wfsim.app`, which is why
+`board.meta.json` not answering is read as "this origin holds no board" rather
+than as a failure.
+
 **Verification lives in the shell, never in the page.** The page is the thing
 being replaced; asking it to verify its own replacement is circular. Policy and
 interface stay in the page — when to check, what to show — because those are the

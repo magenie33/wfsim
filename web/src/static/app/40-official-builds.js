@@ -161,10 +161,15 @@ let BOARD_INDEX = null;
 /// 387 weapons are 387 files and a weapon page reads one, so boot fetches the
 /// file it is about to draw and nothing else. A reader who never opens the
 /// benchmark page never downloads the rest.
-async function loadWeaponBoard(id) {
+///
+/// `base` IS THE SITE WHEN THIS ORIGIN HOLDS NO BOARD — see `boardOffOrigin`.
+/// The index alone is not enough for a weapon page: the ranking across weapons
+/// and the rows one weapon draws are different files, so a client served only
+/// the first has a populated benchmark page and an empty board everywhere else.
+async function loadWeaponBoard(id, base = "") {
   if (!id || BOARD_HAVE.has(id)) return;
   let rows = null;
-  try { rows = await fetchJsonPatient(`/board/${id}.json`); } catch (_) { /* unreachable */ }
+  try { rows = await fetchJsonPatient(`${base}/board/${id}.json`); } catch (_) { /* unreachable */ }
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
   if (!rows) return;
@@ -203,7 +208,7 @@ function loadFullBoard() {
   if (BOARD_INDEX) return Promise.resolve();
   if (!boardIndexAsk) {
     boardIndexUnreachable = false;
-    boardIndexAsk = fetchJsonPatient("/board/index.json")
+    boardIndexAsk = fetchJsonPatient(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board/index.json`)
       .then((idx) => { BOARD_INDEX = idx; }, () => { boardIndexUnreachable = true; })
       .finally(() => { boardIndexAsk = null; });
   }
@@ -228,7 +233,28 @@ function showBenchBoard() {
 async function loadBoard(weapon) {
   await loadWeaponBoard(weapon);
   BOARD_META = await fetchJson("/board.meta.json");
-  if (!BOARD_META) boardFromSite();
+  if (!BOARD_META) {
+    boardOffOrigin = true;
+    boardFromSite(weapon);
+  }
+}
+
+/// THIS ORIGIN HOLDS NO BOARD OF ITS OWN, and every later weapon asks the site
+/// first because of it. `board.meta.json` not answering is the whole test: the
+/// site always has one, a shell keeps one beside its release, and a shell too
+/// old to know about that directory never will.
+let boardOffOrigin = false;
+
+/// The rows for `id` landed — and they are PRESETS, so this is `initPresets`
+/// and not a repaint: a bar redrawn without them is a bar with no benchmark
+/// builds in it, which is what the reader came for.
+///
+/// ONLY IF THE READER IS STILL THERE. A slow answer for a weapon they have
+/// already left must not redraw the one they are looking at.
+function boardRowsLanded(id) {
+  if (!$("weapon") || $("weapon").value !== id) return;
+  try { initPresets(); renderPresetBar(); refreshPanel(); }
+  catch (_) { /* nothing is showing it yet */ }
 }
 
 /// A WEAPON THE READER SWITCHED TO, fetched without blocking the switch.
@@ -238,31 +264,28 @@ async function loadBoard(weapon) {
 /// would put a network round trip inside a control that is otherwise instant.
 function ensureWeaponBoard(id) {
   if (!id || BOARD_HAVE.has(id)) return;
-  loadWeaponBoard(id).then(() => {
-    // ONLY IF THE READER IS STILL THERE. A slow answer for a weapon they have
-    // already left must not redraw the one they are looking at.
-    if ($("weapon") && $("weapon").value === id) {
-      // THE ROWS ARE PRESETS, so landing them is `initPresets` and not a
-      // repaint — a bar redrawn without them is a bar with no benchmark builds
-      // in it, which is what the reader came for.
-      try { initPresets(); renderPresetBar(); refreshPanel(); }
-      catch (_) { /* nothing is showing it yet */ }
-    }
-  });
+  loadWeaponBoard(id, boardOffOrigin ? BOARD_ORIGIN : "").then(() => boardRowsLanded(id));
 }
 
 /// The site, for a shell whose own origin has no board: one that has never
 /// reached the network, or one older than the release that stopped shipping a
 /// copy. The index carries `Access-Control-Allow-Origin` for exactly this.
 ///
-/// NOT AWAITED ANYWHERE. It redraws the ranking when it lands, and an empty
-/// board until then is a state the page already renders.
-async function boardFromSite() {
+/// IT FETCHES THE OPEN WEAPON'S ROWS TOO, because the ranking across weapons
+/// and the rows a weapon page draws are different files. A client handed only
+/// the index has a populated benchmark page and an empty board on every weapon,
+/// with nothing on screen saying which of the two it is looking at.
+///
+/// NOT AWAITED ANYWHERE. It redraws when it lands, and an empty board until
+/// then is a state the page already renders.
+async function boardFromSite(weapon) {
   const idx = await fetchJson(BOARD_ORIGIN + "/board/index.json");
   if (!idx) return;
   BOARD_INDEX = idx;
   BOARD_META = await fetchJson(BOARD_ORIGIN + "/board.meta.json");
   try { renderBenchBoard(); } catch (_) { /* nothing is showing it yet */ }
+  await loadWeaponBoard(weapon, BOARD_ORIGIN);
+  boardRowsLanded(weapon);
 }
 
 /// THE BOARD'S ROWS, as read-only builds you can open.
