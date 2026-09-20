@@ -169,7 +169,10 @@ crate and nothing else would notice one.
   its mods and its evolutions into a `ResolvedPanel`.
 - **the fight** — `target` is who is shot, `formation` the crowd, `arena` both
   actors, `fight` the simulation (`FightParams`, `run_once`, `monte_carlo`,
-  `replay`) and `record` what it wrote down.
+  `replay`) and `record` what it wrote down. `fight` is itself split by the
+  MOMENT of a shot — `open` the engagement, `before` and `after` the shot,
+  `resolve` its numbers, `pellet` one of its pellets — so the loop in `run` is
+  the order those happen in and nothing else.
 - **`board/`** is build identity (`board::builds`) and the rulers
   (`board::benchmarks`).
 
