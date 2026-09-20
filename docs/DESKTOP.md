@@ -155,8 +155,21 @@ rather than keeping a second copy.
 
 - `--selftest` — wasm engine, page render, SPA fallback, storage, compute
   lanes, external links (both directions), IPC, the AGPL source offer, and the
-  update channel. Run it on the RELEASE binary before shipping: that is the one
-  being downloaded, and it is built differently from the debug one.
+  update channel. Run it as `dist/WFSim.exe --reset --selftest` before
+  shipping. **Both flags carry their weight**: the release binary is the one
+  being downloaded and is built differently from the debug one, and `--reset`
+  is what makes the run about the payload just built — `Layout::open` unpacks
+  on FIRST launch and never again, so on a machine that already has the app a
+  selftest asserts against whatever content is already in `current/`, which on
+  a developer's machine is the oldest copy anywhere. A probe that has drifted
+  from the app then passes, and goes on passing until a reader with no install
+  becomes the first person to run it.
+- The probe spells NO content-addressed name of its own. `worker.js`, `app.js`
+  and the wasm module are served under names that move every release, so a URL
+  written into the probe is a second copy of a fact the build owns: it goes
+  stale, the SPA fallback answers it with `index.html`, and the failure reads
+  as a broken engine. Reach them the way the page does — `api()` for the
+  engine, the live paths for the board.
 - `python scripts/check_desktop_update.py` — publishes a baseline, changes one
   file, publishes again, and drives a real client through seeing, fetching and
   applying it, then verifies the change by reading it out of `current/`. Ends

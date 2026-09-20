@@ -207,15 +207,15 @@ const SELFTEST_PROBE: &str = r#"
     };
     try {
       check('desktop flag', window.__WFSIM_DESKTOP__ === true, String(window.__WFSIM_DESKTOP__));
+      // THE ENGINE THROUGH THE PAGE'S OWN TRANSPORT, never a Worker this probe
+      // constructs. `worker.js` is served under a CONTENT-ADDRESSED name that
+      // moves every release, so a URL spelled here is a copy that goes stale
+      // and then fails for a reason that has nothing to do with the engine —
+      // the SPA fallback hands it index.html and the report says
+      // "Unexpected token '<'". `api` spells it once, in the app.
       try {
         const t0 = performance.now();
-        const w = new Worker('/worker.js');
-        const meta = await new Promise((res, rej) => {
-          const t = setTimeout(() => rej(new Error('timeout')), 60000);
-          w.onerror = (e) => { clearTimeout(t); rej(new Error(e.message || 'worker failed to load')); };
-          w.onmessage = (e) => { clearTimeout(t); res(e.data.payload); };
-          w.postMessage({ id: 1, kind: 'api', path: '/api/meta', body: {} });
-        });
+        const meta = await api('/api/meta', {});
         const n = (meta && meta.weapons && meta.weapons.length) || 0;
         check('wasm engine', n > 100, n + ' weapons in ' + Math.round(performance.now() - t0) + 'ms');
       } catch (e) { check('wasm engine', false, e.message); }
@@ -232,13 +232,22 @@ const SELFTEST_PROBE: &str = r#"
       // must never happen is the SPA fallback answering with `index.html` and a
       // 200: `res.ok` reads that as success and the page parses markup as a
       // ranking. So JSON or an honest 404, and nothing else passes.
+      //
+      // BOTH LIVE PATHS, because they are read by different decisions: the
+      // stamp is what tells the page this origin holds no board at all, and a
+      // weapon file is what a weapon page draws its rows from.
       try {
-        const r = await fetch('/board.json', { cache: 'no-cache' });
-        const ct = r.headers.get('content-type') || '';
-        check('board.json honest', (r.ok || r.status === 404) && ct.includes('json'),
-              'HTTP ' + r.status + ' ' + ct.split(';')[0]);
+        const said = [];
+        let honest = true;
+        for (const p of ['/board.meta.json', '/board/torid.json']) {
+          const r = await fetch(p, { cache: 'no-cache' });
+          const ct = r.headers.get('content-type') || '';
+          honest = honest && (r.ok || r.status === 404) && ct.includes('json');
+          said.push(r.status + ' ' + ct.split(';')[0]);
+        }
+        check('board honest', honest, said.join(', '));
       }
-      catch (e) { check('board.json honest', false, e.message); }
+      catch (e) { check('board honest', false, e.message); }
       try { const r = await fetch('/weapons/Torid'); const b = await r.text(); check('spa fallback', r.ok && b.includes('<'), 'HTTP ' + r.status + ', ' + b.length + ' bytes'); }
       catch (e) { check('spa fallback', false, e.message); }
       try { localStorage.setItem('wfsim-selftest', '1'); localStorage.removeItem('wfsim-selftest'); check('localStorage', true, 'writable'); }
@@ -287,16 +296,24 @@ const SELFTEST_PROBE: &str = r#"
       // build and run and say nothing, so the shape is asserted here.
       check('shell build', /^20\d\d\.\d+\.\d+ [0-9a-f]{6,}$/.test(window.__WFSIM_SHELL__ || ''),
             String(window.__WFSIM_SHELL__));
-      // THE HOME PAGE OFFERS A DOWNLOAD, and in here that is an invitation to
-      // install what is already running. The element still exists — the same
-      // index.html serves both — so what is asserted is that NOTHING IS
-      // OFFERED, which this build reaches by never calling `renderDownloads`
-      // at all. Empty and hidden both satisfy it; either is a reader who is
-      // not asked to install what they are inside.
+      // /download IS WHERE THE OFFER LIVES, so that is where the client has to
+      // answer — the URL is typed by hand and read off a video, and a reader
+      // who is already inside the app must be told there is nothing to install
+      // rather than handed a button to install what they are running.
+      //
+      // IT MUST SAY SOMETHING. A blank host and a suppressed button look alike
+      // from the outside and are different answers to the reader.
       try {
-        const dl = document.getElementById('hero-dl');
-        const shown = dl && !dl.hidden && dl.textContent.trim();
-        check('no download offer', !!dl && !shown, dl ? 'shows ' + JSON.stringify(dl.textContent.trim().slice(0, 40)) : 'element missing');
+        history.pushState({}, '', '/download'); route();
+        await new Promise((r) => setTimeout(r, 400));
+        const host = document.getElementById('dl-offer');
+        const btn = host && host.querySelector('.dl-btn');
+        check('no download offer', !!host && !btn && !!host.textContent.trim(),
+              !host ? 'element missing'
+                : btn ? 'OFFERS ONE: ' + btn.textContent.trim()
+                : 'says ' + JSON.stringify(host.textContent.trim().slice(0, 40)));
+        history.pushState({}, '', '/'); route();
+        await new Promise((r) => setTimeout(r, 200));
       } catch (e) { check('no download offer', false, e.message); }
       // THE BOARD IS A SERVICE, NOT A CALCULATION — the one thing the wasm
       // engine cannot answer. app.js fetches it same-origin on purpose, and in
