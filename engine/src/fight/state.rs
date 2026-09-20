@@ -182,14 +182,14 @@ pub(super) struct IncarnonState {
     /// reading that opens transformed.
     pub(super) in_base_form: bool,
     /// When a CLOCK-ended Incarnon falls out of its window (`Ends::After`).
-    /// Unread by a gauge cycle, whose way out is a ammo.loaded.
+    /// Unread by a gauge cycle, whose way out is a magazine.
     ///
     /// A RUN THAT OPENS WITH IT UP OPENS ITS CLOCK TOO — the card's `stacks`
     /// knob is "you walked in with it", not "it is up and already expired".
     pub(super) incarnon_until: f64,
     /// READY RETALIATION IS ARMED BY THE EMPTY MAGAZINE, not by the reload.
     ///
-    /// The owner's evidence is the transmute: empty the ammo.loaded
+    /// The owner's evidence is the transmute: empty the magazine
     /// and transform immediately, and the TRANSFORM is faster too — which it
     /// could only be if the buff was already on the weapon before any reload
     /// started. It is then spent by the next reload, and coming out of Incarnon

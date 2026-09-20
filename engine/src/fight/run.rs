@@ -189,7 +189,7 @@ pub fn run_once_traced(
                 },
             );
             // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `rules::chain::acquired`, the
-            // same rule the Ocucor's tendril.count are picked by.
+            // same rule the Ocucor's tendrils are picked by.
             Some(layout.acquiring(
                 &bodies,
                 params.player_at,
@@ -279,11 +279,11 @@ pub fn run_once_traced(
     // needs, and the only two. `ArcRuntime` has had exactly this pair since the
     // arcanes were written; these are its weapon-side twins.
     let mut rs_armed = false;
-    // THE OPENING WINDOW closes the first time the ammo.loaded is refilled, and
+    // THE OPENING WINDOW closes the first time the magazine is refilled, and
     // that is not always a reload: a weapon that TRANSMUTES instead of
     // reloading — the Torid, played as its cycle — never performs one in the
     // base form, and the window would never close at all. Measured 2026-08-11:
-    // 0 reloads in the median run, 4.4 s of downtime, and an opening ammo.loaded
+    // 0 reloads in the median run, 4.4 s of downtime, and an opening magazine
     // reading zero. The refill is the moment, whichever event caused it.
     let mut opening_closed = false;
     let mut r = RunResult {
@@ -356,7 +356,7 @@ pub fn run_once_traced(
             }
         };
     }
-    // …AND A BUMP THAT COUNTS SHELLS. `bump_buffs!` grants a whole ammo.loaded
+    // …AND A BUMP THAT COUNTS SHELLS. `bump_buffs!` grants a whole magazine
     // per trigger, which is what an ordinary reload loads; the Incarnon route
     // loads a KNOWN number of shells and splits them across two moments, so it
     // needs to say how many. Reload-counting buffs are left out — they are
@@ -377,7 +377,7 @@ pub fn run_once_traced(
     }
     // THE MAGAZINE IS FULL AGAIN — a reload that COMPLETED, or either Incarnon
     // transform completing, since swapping either way fully reloads the base
-    // form's ammo.loaded (wiki).
+    // form's magazine (wiki).
     //
     // One macro rather than the same three lines at four sites: everything that
     // a refill ends, ends here. Ready Retaliation is spent, Reaver's Rapture is
@@ -386,7 +386,7 @@ pub fn run_once_traced(
     macro_rules! magazine_refilled {
         // The default: this event is a reload as well as a refill, which three
         // of the four sites are. Swapping OUT of the Incarnon form passes
-        // `false` — it refills the base ammo.loaded and is not a reload, and
+        // `false` — it refills the base magazine and is not a reload, and
         // Blazing Barrel is stated to survive it.
         () => {
             magazine_refilled!(also_a_reload: true)
@@ -397,7 +397,7 @@ pub fn run_once_traced(
             // HOW MANY TIMES THE MAGAZINE HAS BEEN FULL AGAIN. Counted here
             // rather than derived from `r.reloads` and `r.transforms`, because
             // those two miss the fourth site: the Incarnon EXIT refills the
-            // base ammo.loaded and increments neither.
+            // base magazine and increments neither.
             ammo.refills += 1;
             if !opening_closed {
                 opening_closed = true;
@@ -436,9 +436,9 @@ pub fn run_once_traced(
     // …and the FROM-EMPTY half, which is deliberately NOT folded into the macro
     // above. Of that macro's three sites only two are reloads from empty: the
     // third is the Incarnon EXIT completing the reload that the transform IN
-    // began, and whether THAT was from empty is a question about the ammo.loaded
+    // began, and whether THAT was from empty is a question about the magazine
     // one transform ago. So this fires at the two real reload sites and at the
-    // transform, where it reads the ammo.loaded it actually refilled.
+    // transform, where it reads the magazine it actually refilled.
     macro_rules! bump_reload_from_empty {
         ($t:expr, $rng:expr) => {
             bump_on_trigger!(crate::model::BuffTrigger::ReloadFromEmpty, $t, $rng);
@@ -446,11 +446,11 @@ pub fn run_once_traced(
             // event: "On Reload From Empty: Increase Base Magazine Capacity by
             // +15. Stacks up to 3x". It is not a `StackingGrant` because what
             // it grants is not a term in a bracket — it is the capacity every
-            // other line of this loop reads, so it moves `ammo.cap` itself.
+            // other line of this loop reads, so it moves `mag_cap` itself.
             //
             // MONOTONIC AND CAPPED: no card in this family carries a clock, and
-            // the stack count is the only thing that stops it. The ammo.loaded
-            // GROWS but does not fill — a reload draws from the ammo.reserve as it
+            // the stack count is the only thing that stops it. The magazine
+            // GROWS but does not fill — a reload draws from the reserve as it
             // always did, and the extra room is what the next draw can use.
             if let Some((per, max)) = params.magazine_growth_on_empty_reload {
                 if ammo.growth_stacks < max {
@@ -570,7 +570,7 @@ pub fn run_once_traced(
     let mut beam = BeamRamp::default();
     // Renewed Horror: armed by a reload from empty, spent by the next shot's
     // field. The sim always reloads from empty (it fires until dry), so on the
-    // Torid this is the first shot of every ammo.loaded after the first.
+    // Torid this is the first shot of every magazine after the first.
     let mut field_duration_boost = false;
     // Live lingering FIELDS (Torid's clouds), one entry per grenade that stuck.
     let mut fields: Vec<FieldState> = Vec::new();
@@ -668,7 +668,7 @@ pub fn run_once_traced(
     // round, the two ends of a reload, and the two ends of each transform. It
     // Written at every EVENT and not at the shot only: otherwise every event
     // between two shots carries the previous shot's weapon, and a
-    // `transform_end` that has just put 216 incarnon.charges in an Incarnon ammo.loaded
+    // `transform_end` that has just put 216 charges in an Incarnon magazine
     // reports `base 0/12` — the one row a reader opens the record to see.
     macro_rules! weapon_now {
         () => {
@@ -683,23 +683,23 @@ pub fn run_once_traced(
                         .map_or(ammo.cap, |cy| cy.base_form.magazine_size)
                         as u32,
                     // THE FORM THAT IS NOT FIRING, so the free reload a
-                    // transmute performs on the base ammo.loaded is visible rather
+                    // transmute performs on the base magazine is visible rather
                     // than inferred.
                     idle_magazine: params.cycle.as_ref().map(|cy| {
                         if incarnon.in_base_form {
-                            // THE CHARGES ARE THE GAUGE IN ANOTHER UNIT. A Laetum's 216 incarnon.charges over a
+                            // THE CHARGES ARE THE GAUGE IN ANOTHER UNIT. A Laetum's 216 charges over a
                             // 12-unit gauge is 18 a unit exactly, and the row
                             // must not print `216 / 216` from the moment the
-                            // fight opens — a full Incarnon ammo.loaded on a
+                            // fight opens — a full Incarnon magazine on a
                             // weapon that has not earned a single unit of it is
                             // the one column a reader opens this panel to
-                            // check. The gauge decides it; `incarnon.charges` can run
+                            // check. The gauge decides it; `charges` can run
                             // past the fill mark, so the share is clamped.
                             let to_fill = match cy.arms {
                                 Arms::Gauge { charges_to_fill, .. } => charges_to_fill,
                                 // A melee Incarnon has no gauge, and this
                                 // column is never drawn for one: melee has no
-                                // ammo.loaded either.
+                                // magazine either.
                                 Arms::HeavyAtCombo(_) => 0,
                             };
                             let share = if to_fill > 0 {
@@ -733,7 +733,7 @@ pub fn run_once_traced(
         standing: Vec::new(),
         kill_mark: 0u32,
     };
-    // Which kills the ammo.loaded refill has already paid out — see the spend
+    // Which kills the magazine refill has already paid out — see the spend
     // below for why this cannot be the same watermark.
     let mut refill_kill_mark = 0u32;
     // ...and the FORM gauge fed by kills rather than by hits (ChargeOn::Kills),
@@ -797,7 +797,7 @@ pub fn run_once_traced(
     // fight rather than the 18 s its card names.
     // OPEN IF THE READER SAID SO, otherwise shut until a roll opens it.
     let mut influence_until = params.influence_open.unwrap_or(f64::NEG_INFINITY);
-    // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool.due`. That one
+    // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
     // is when the next shot was DUE, so the interval is already inside it and
     // the difference is zero on every ordinary pull — right for a spool, which
     // asks "did anything intervene", and useless for a battery, which asks how
@@ -878,19 +878,19 @@ pub fn run_once_traced(
         }
 
         // The buff bar has to be settled BEFORE the reload decision, not after:
-        // whether an empty ammo.loaded reloads depends on what the NEXT shot would
+        // whether an empty magazine reloads depends on what the NEXT shot would
         // cost, and that is a live buff read. Expiry is monotone, so the second
         // `bar.expire` below (at the post-reload t) is still correct.
         // Whether the NEXT shot costs zero ammo — it decides whether an empty
-        // ammo.loaded reloads, so it has to be known before that branch.
+        // magazine reloads, so it has to be known before that branch.
         // A BATTERY REFILLS WHILE NOBODY IS SHOOTING, counted BEFORE anything
-        // asks whether this shot can be fired — otherwise an empty ammo.loaded
+        // asks whether this shot can be fired — otherwise an empty magazine
         // goes straight to the reload branch and the mechanic never gets a
-        // turn. The gap is the one a spool reads: `t - spool.due` is what the
+        // turn. The gap is the one a spool reads: `t - spool_due` is what the
         // weapon spent not firing (`data::weapons::Battery`).
         //
         // THE EMPTY CASE IS NOT HERE — that is the ordinary reload, whose
-        // `reload_seconds` already IS `delay_empty + ammo.loaded/rate` (1.25 s on
+        // `reload_seconds` already IS `delay_empty + magazine/rate` (1.25 s on
         // the Shedu). What this adds is the battery filling BETWEEN shots,
         // which on a weapon slowed below one shot per `delay_partial` means it
         // never empties at all.
@@ -930,7 +930,7 @@ pub fn run_once_traced(
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
                 crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
             );
-            // `ap` already picks the form whose ammo.loaded is about to be
+            // `ap` already picks the form whose magazine is about to be
             // checked, so this is THAT form's cost.
             if eff >= 1.0 - 1e-9 {
                 0.0
@@ -942,7 +942,7 @@ pub fn run_once_traced(
         // A KILL IS A KILL WHEREVER IT CAME FROM, so on-kill stacks are read
         // off the counter rather than bumped at each of the six places one can
         // happen — a direct hit, a DoT tick, a field tick and three more. The
-        // same mark-and-diff Sentient Surge's refill and the tendril.count use, two
+        // same mark-and-diff Sentient Surge's refill and the tendrils use, two
         // blocks down, and for the same reason: a list of call sites is a list
         // to forget one from.
         if r.kills != kill_buff_mark {
@@ -978,9 +978,9 @@ pub fn run_once_traced(
             }
         }
         // …AND THE MAGAZINE FOLLOWS THE BAR, at one site for both edges. It
-        // arrives with a modded ammo.loaded's worth of rounds, and "when the
-        // ethereal Pyrana disappears, the ammo.loaded is reduced to the modded
-        // ammo.loaded size" (wiki).
+        // arrives with a modded magazine's worth of rounds, and "when the
+        // ethereal Pyrana disappears, the magazine is reduced to the modded
+        // magazine size" (wiki).
         if let Some(s) = params.kill_streak_summon {
             let want = if bar.get(crate::model::KillStreakSummonSpec::BUFF_ID).is_some() {
                 s.magazine_multiplier
@@ -997,12 +997,12 @@ pub fn run_once_traced(
             }
         }
 
-        // TENDRILS and the ammo.loaded they keep alive, both re-derived from the
+        // TENDRILS and the magazine they keep alive, both re-derived from the
         // counters above before anything decides to reload.
         if params.tendril_max > 0 || params.magazine_refill_on_kill > 0.0 {
-            // A reload — or an empty ammo.loaded, which in this sim always leads
+            // A reload — or an empty magazine, which in this sim always leads
             // to one — clears every tendril. "Tendrils disappear upon
-            // reloading or emptying the ammo.loaded."
+            // reloading or emptying the magazine."
             //
             // ...unless the card says no event takes them (`tendrils_held`),
             // which is what "no timeout" means for a buff whose end is an
@@ -1018,22 +1018,22 @@ pub fn run_once_traced(
             // that a kill can genuinely save a reload — which is the whole
             // point of the mod. "Reloaded ammo is taken from the Ocucor's ammo
             // reserves. This mod does not generate ammo", so it draws like any
-            // other reload and a dry ammo.reserve gives nothing.
+            // other reload and a dry reserve gives nothing.
             //
             // ITS OWN WATERMARK, and NOT the tendril one. The two answer
             // different questions: a tendril asks "how many kills since the
-            // last reload" (so its mark moves when the ammo.loaded event clears
+            // last reload" (so its mark moves when the magazine event clears
             // them), while a refill asks "which kills have I already been paid
             // for" (so its mark moves when it is SPENT). Sharing the tendril
             // mark made every loop iteration re-earn the same kills, which
-            // topped the ammo.loaded up on every shot and handed the weapon an
+            // topped the magazine up on every shot and handed the weapon an
             // effectively infinite one.
             //
             // And a REFILL IS NOT A RELOAD: it never touches `r.reloads`, so
-            // the tendril.count live through it. That is the whole reason this mod
+            // the tendrils live through it. That is the whole reason this mod
             // pairs with this passive — the wiki says it from the other side,
             // "Magazine refill effects such as ... kills with Sentient Surge
-            // ... will PREVENT the tendril.count from disappearing."
+            // ... will PREVENT the tendrils from disappearing."
             if params.magazine_refill_on_kill > 0.0 && r.kills > refill_kill_mark {
                 let earned = f64::from(r.kills - refill_kill_mark)
                     * params.magazine_refill_on_kill
@@ -1041,7 +1041,7 @@ pub fn run_once_traced(
                 refill_kill_mark = r.kills;
                 // Capped at the magazine: a refill tops up, it does not bank.
                 // Overflow is simply lost, which is what "Refill X% of the
-                // Magazine" means on a ammo.loaded already near full.
+                // Magazine" means on a magazine already near full.
                 let room = (ammo.cap - ammo.loaded).max(0.0);
                 let want = earned.min(room);
                 if want > 0.0 {
@@ -1090,10 +1090,10 @@ pub fn run_once_traced(
             // wiki names only the way in, and reading its two events literally
             // left the way out counting as neither a reload nor a transform —
             // so a pile at its ceiling rode the revert into the base form and
-            // spent a whole ammo.loaded there at +500% that the game would have
+            // spent a whole magazine there at +500% that the game would have
             // taken away. This is the engine's own rule about the cycle, which
             // was already written one screen down: swapping EITHER WAY fully
-            // reloads the base form's ammo.loaded, so the buff is spent by
+            // reloads the base form's magazine, so the buff is spent by
             // whatever refills it. One mark instead of two, and the event that
             // was missing is the one it now cannot miss — every refill in this
             // loop goes through `magazine_refilled!`.
@@ -1164,8 +1164,8 @@ pub fn run_once_traced(
         if params.no_magazine {
             ammo.loaded = ammo.cap;
         }
-        // …AND A CLOCK ENDS THE OTHER KIND, before the ammo.loaded block below,
-        // which is entirely about a ammo.loaded a melee weapon does not have.
+        // …AND A CLOCK ENDS THE OTHER KIND, before the magazine block below,
+        // which is entirely about a magazine a melee weapon does not have.
         // *"activate Incarnon Form for 90 seconds"* — the window runs from the
         // swing that armed it, is not refreshed by anything, and re-arms the
         // same way it armed the first time.
@@ -1179,13 +1179,13 @@ pub fn run_once_traced(
         }
         if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
             if !incarnon.in_base_form && ammo.loaded < 1e-9 {
-                // Charge ammo.loaded spent: revert to the base form. The swap
-                // fully reloads the base ammo.loaded (wiki side effect). The
+                // Charge magazine spent: revert to the base form. The swap
+                // fully reloads the base magazine (wiki side effect). The
                 // revert does NOT count as a transform — `transforms` counts
                 // TRANSMUTES INTO the Incarnon form only (user:
                 // both-directions counting read as doubled).
                 // COMING OUT OF INCARNON FORM IS A RELOAD too, and for the
-                // same stated reason: the swap refills the base ammo.loaded. It
+                // same stated reason: the swap refills the base magazine. It
                 // takes the speed if the buff is up and spends it — which is
                 // also why this animation is scaled by reload speed at all.
                 let spent = rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
@@ -1205,18 +1205,18 @@ pub fn run_once_traced(
                 rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: false });
                 incarnon.charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one, so it draws whole rounds rather than
-                // filling to capacity: a base ammo.loaded sitting on 4.25 comes
+                // filling to capacity: a base magazine sitting on 4.25 comes
                 // back on 4.25, not 5.
                 //
                 // ...and it draws from the SAME RESERVE, because one weapon has
                 // one supply. Until 2026-08-04 every draw inside the cycle was
-                // free, so a finite ammo.reserve was silently ignored on every
+                // free, so a finite reserve was silently ignored on every
                 // Incarnon weapon — the Infinite-ammo setting did nothing on
                 // five of the seven weapons in the roster.
                 incarnon.base_magazine += draw_from(&mut ammo.reserve, params.infinite_reserve,
                     reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
                 // THE REST OF THE SHELLS LAND HERE. The draw above is normally
-                // zero — the ammo.loaded came back full on the way IN — so this is
+                // zero — the magazine came back full on the way IN — so this is
                 // the second half of that one reload, not a second reload.
                 if ammo.owed_shells > 0 {
                     bump_shells!(ammo.owed_shells, t, rng);
@@ -1228,13 +1228,13 @@ pub fn run_once_traced(
                 continue;
             }
             if incarnon.in_base_form && !can_fire(incarnon.base_magazine, next_cost) {
-                // Base-form reload. A dry finite ammo.reserve stops the gun here
+                // Base-form reload. A dry finite reserve stops the gun here
                 // exactly as it does outside the cycle — the weapon is out of
                 // ammo, not out of one of its two forms.
                 if !params.infinite_reserve && ammo.reserve < 1e-9 {
                     break;
                 }
-                // THE SAME CLEAR as the plain path below: an empty ammo.loaded
+                // THE SAME CLEAR as the plain path below: an empty magazine
                 // takes the pile whichever branch notices it, and a CYCLE
                 // reloads the base form here.
                 for (i, b) in params.stacking_buffs.iter().enumerate() {
@@ -1246,7 +1246,7 @@ pub fn run_once_traced(
                 let spent = live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
-                // ammo.loaded you walked in with was worth.
+                // magazine you walked in with was worth.
                 rec.push(t, None, crate::record::Kind::ReloadStart { seconds: spent });
                 r.downtime_seconds += spent;
                 t += spent;
@@ -1259,7 +1259,7 @@ pub fn run_once_traced(
                     windows.base_damage_after_reload = t + b.duration;
                 }
                 // Same whole-rounds rule as the plain reload below (M14), and
-                // the same shared reserve: a short draw is a short ammo.loaded.
+                // the same shared reserve: a short draw is a short magazine.
                 let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve,
                     reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
                 incarnon.base_magazine += loaded;
@@ -1268,13 +1268,13 @@ pub fn run_once_traced(
                 // ONE STACK PER SHELL THIS RELOAD LOADED, counted here and not
                 // from a number resolved once at the panel.
                 //
-                // The static `stacks_per_trigger` is the OUTER form's ammo.loaded,
+                // The static `stacks_per_trigger` is the OUTER form's magazine,
                 // and in a cycle the outer form is the INCARNON one — so a
                 // base-form reload of 6 shells was granting 60 stacks, straight
                 // to +600% fire rate (measured 61 on the Felarx).
                 // Counting the draw is the same rule the Incarnon route already
                 // used and it needs no second number to stay true: a dry
-                // ammo.reserve loads fewer shells and pays fewer stacks, with
+                // reserve loads fewer shells and pays fewer stacks, with
                 // nothing written down to say so.
                 bump_shells!(loaded.round().max(0.0) as u32, t, rng);
                 bump_reload_only!(t, rng);
@@ -1288,8 +1288,8 @@ pub fn run_once_traced(
             // AN EMPTY MAGAZINE TAKES THE WHOLE PILE, before the reload that
             // rebuilds it. Mounting Momentum is cleared the instant the count
             // reaches zero — not by the reload, and not by a clock — so firing
-            // a ammo.loaded dry earns one ammo.loaded's worth and never more. The
-            // 99-stack cap belongs to a player who tops up a ammo.loaded that
+            // a magazine dry earns one magazine's worth and never more. The
+            // 99-stack cap belongs to a player who tops up a magazine that
             // never empties, which is not what this loop does.
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
@@ -1326,14 +1326,14 @@ pub fn run_once_traced(
             }
             // Whole rounds only, and `+=` not `=` — both measured (M14). The
             // draw covers the overdraw debt for free: the counter is in (−1, 0]
-            // here, so `floor(capacity − current)` is a full ammo.loaded, and a
+            // here, so `floor(capacity − current)` is a full magazine, and a
             // −0.75 counter comes back at 4.25 rather than 5.00.
             let want = reload_draw(ammo.cap, ammo.loaded);
             let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve, want);
             ammo.loaded += loaded;
             // THE ROW LANDS HERE, after the rounds are actually in. Announced
             // one line earlier it read `0 / 6` — a reload that had just
-            // finished reporting an empty ammo.loaded, which is the one thing that
+            // finished reporting an empty magazine, which is the one thing that
             // row exists to deny (found by reading a Felarx record).
             weapon_now!();
             rec.push(t, None, crate::record::Kind::ReloadEnd);
@@ -1602,23 +1602,23 @@ pub fn run_once_traced(
         // damage only — which our shots are).
         let contribs = bar.total_contributions();
         // Ammo: consume (1 - efficiency) per shot; Frenzy's +100% efficiency
-        // zeroes consumption (unless this ammo.loaded is charge-backed).
+        // zeroes consumption (unless this magazine is charge-backed).
         // Efficiency is a DIVIDED COST, not a chance to save a round: the cost
-        // is `1 x (1 - efficiency)` and the ammo.loaded keeps the fraction (wiki
+        // is `1 x (1 - efficiency)` and the magazine keeps the fraction (wiki
         // Energized Munitions: "dividing the ammo cost … and keeps track of the
         // fractions as well"). A partial round still fires — the Exergis's
-        // 1-round ammo.loaded takes four 0.25 shots — which is why the gate above
+        // 1-round magazine takes four 0.25 shots — which is why the gate above
         // is "anything left" rather than "a whole round left".
         //
         // A lapsing buff does NOT strand the remainder — ✅ measured
         // (MEASUREMENTS M14): the shot fires at full cost off whatever is left,
         // the counter goes NEGATIVE, and the reload carries that debt into the
-        // fresh ammo.loaded (see the `+=` above).
+        // fresh magazine (see the `+=` above).
         // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max) +
         // live arcane stacks (Primary Crux). Summed and capped by
         // `ammo_efficiency`, which is also what `next_cost` above reads — one
         // definition, so the two cannot drift apart.
-        // …AND DEATH KNELL'S: on a one-round ammo.loaded, the reload not happening.
+        // …AND DEATH KNELL'S: on a one-round magazine, the reload not happening.
         let efficiency = ammo_efficiency(
             ap.ammo_efficiency_applies,
             contribs.ammo_efficiency
@@ -1628,36 +1628,36 @@ pub fn run_once_traced(
             crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
         );
         // Final Fusillade's gate, read BEFORE the round is spent: this pull is
-        // the ammo.loaded's last round if there is at most one left to fire. On a
+        // the magazine's last round if there is at most one left to fire. On a
         // charge-backed form `multishot_on_last_round` is 0.0 anyway (the
         // evolution loader dropped it), so the flag costs nothing there.
         //
         // On a BURST weapon the window is the last BURST, not the last round —
-        // Forceful Finality reads "+5 Base Multishot on final ammo.loaded burst",
+        // Forceful Finality reads "+5 Base Multishot on final magazine burst",
         // and a Burston's final burst is three rounds. Taking the wiki
-        // literally as one round would have understated a full ammo.loaded's
+        // literally as one round would have understated a full magazine's
         // pellets by a fifth (42 + 3x6 = 60 real, against 44 + 6 = 50), which
         // is far too big to wave through as a rounding difference.
         let last_n = ap.burst.map_or(1.0, |b| f64::from(b.count));
         // …AND THE WINDOW IS THE ACTIVE MAGAZINE'S, whichever that is.
-        // `incarnon.in_base_form` is only ever true inside an Incarnon CYCLE, so this
+        // `in_base_form` is only ever true inside an Incarnon CYCLE, so this
         // branch must not read "the cycle's base phase" against "everything
         // else": everything else includes a plain base-form run, which is how a
         // `base`-mode board row is played and how anyone measures the weapon on
         // its own. A burst window written for the cycle silently becomes one
-        // round outside it — 5 pellets a ammo.loaded instead of 15 on a Burston.
+        // round outside it — 5 pellets a magazine instead of 15 on a Burston.
         let mag_left = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
         let last_round = mag_left <= last_n + 1e-9;
         // THE CHAMBER FAMILY'S GATE, and it is READ AFTER THE ROUND IS PAID
         // FOR. Both cards say "+X% Damage on first shot in Magazine" and both
         // pages say what that really means: the bonus lands *"as long as the
-        // ammo.loaded counter is at Max Magazine - 1 AFTER a shot is fired"*, and
+        // magazine counter is at Max Magazine - 1 AFTER a shot is fired"*, and
         // *"the buff doesn't apply on a completely full one"*.
         //
         // On an ordinary weapon that is exactly the first shot out of a fresh
-        // ammo.loaded — full goes to full-1 — so the plain case needs no thought.
+        // magazine — full goes to full-1 — so the plain case needs no thought.
         // It is AMMO EFFICIENCY that makes the wording load-bearing: a free
-        // shot leaves the counter where it was, so a FULL ammo.loaded pays
+        // shot leaves the counter where it was, so a FULL magazine pays
         // nothing however often you fire it and one sitting at max-1 pays
         // every single shot. That is the wiki's Vulkar example, and it is the
         // reason this cannot be `mag_left == mag_max` at the top of the pull.
@@ -1831,13 +1831,13 @@ pub fn run_once_traced(
             } else {
                 ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
             }
-            // Final Fusillade: a FLAT add on the ammo.loaded's last round. It
+            // Final Fusillade: a FLAT add on the magazine's last round. It
             // joins `ms_eff` rather than the multishot BUCKET because the
             // evolution grants multishot outright ("+3 Multishot"), not a
             // percentage of the weapon's base.
             + if last_round { ap.multishot_on_last_round } else { 0.0 }
             // FORCEFUL FINALITY IS THE OTHER BRACKET, and the card says which:
-            // "+5 BASE Multishot on final ammo.loaded burst", with the wiki noting
+            // "+5 BASE Multishot on final magazine burst", with the wiki noting
             // on that same row that it is "added before mods, and is thus
             // multiplied by multishot bonuses". So for that burst the weapon's
             // base pellet count IS higher, and everything relative reads the
@@ -1889,9 +1889,9 @@ pub fn run_once_traced(
         // trigger multiple stacks"), so the pull's hits are its pellets.
         // SYNTH CHARGE's window, read off the SAME gate Final Fusillade uses —
         // so a burst weapon's "last round" is its last BURST, and a cycle's
-        // window is whichever ammo.loaded is actually being fired.
+        // window is whichever magazine is actually being fired.
         let sc_mult = if last_round { 1.0 + ap.last_round_damage } else { 1.0 };
-        // THE CHAMBERS' multiplier, on the ammo.loaded's FIRST round only. The two
+        // THE CHAMBERS' multiplier, on the magazine's FIRST round only. The two
         // cards are already summed into one number by `resolve` — "stacks
         // additively … for up to 140% bonus damage" — so this is one factor
         // beside Synth Charge's rather than a second bracket.
@@ -1962,20 +1962,20 @@ pub fn run_once_traced(
         };
         // Ammo, settled now that the roll is known.
         //
-        // The ROUND itself always comes from the ammo.loaded and always takes ammo
+        // The ROUND itself always comes from the magazine and always takes ammo
         // efficiency — that path is unchanged by any perk.
         //
         // PLENTIFUL MAYHEM bills the EXTRA projectiles on top, one round
         // each, and the draw follows the RAW rolled count rather than the
         // 60%-scaled one: the bonus is paid in damage, not billed twice. Ammo
-        // efficiency does NOT reach the surcharge (measured), so the ammo.loaded
+        // efficiency does NOT reach the surcharge (measured), so the magazine
         // round keeps its discount, every generated projectile pays full price,
         // and a 100% efficiency source does not make multishot free.
         //
         // AMMO STARVATION IS REAL, and is why this is a loop rather than one
         // subtraction: the projectiles are produced in order, each paying as it
         // goes, and one that cannot pay IS NOT FIRED. A 4-multishot pull
-        // against 3 incarnon.charges fires three pellets and lands on empty.
+        // against 3 charges fires three pellets and lands on empty.
         // `ammo_cost` scales the whole spend: efficiency is a DISCOUNT on the
         // cost, not a separate round. A beam paying 0.5 with 20% efficiency
         // spends 0.4, which is what "0.5 ammo per trace" plus an efficiency
@@ -1991,7 +1991,7 @@ pub fn run_once_traced(
         // every status this shot goes on to cause points back at
         // (`record::Event::cause`). It is also where the weapon's state is
         // stamped, so a row four seconds later still says which form fired it
-        // and what was left in the ammo.loaded at the time.
+        // and what was left in the magazine at the time.
         if rec.is_on() {
             weapon_now!();
             // …AND WHAT THE SHOOTER HAS UP. Sampled at the SHOT, which is the
@@ -2021,7 +2021,7 @@ pub fn run_once_traced(
         // HERE — the shot that spends the last round — and not at the reload
         // that follows. The two are the same instant for a reload and are not
         // the same instant for a TRANSFORM: the shot that fills the gauge can
-        // also be the shot that empties the ammo.loaded, and the transform is
+        // also be the shot that empties the magazine, and the transform is
         // decided before any reload is. Arming at the reload would have left
         // that transform at the plain speed, which is the case the owner used
         // to state the rule.
@@ -2041,7 +2041,7 @@ pub fn run_once_traced(
         //
         // The COUNT is zeroed rather than the loop jumped past, and that is not
         // a style choice — a `continue` here skips the rest of the shot's own
-        // body, which is where the clock, the ammo.loaded and the reload live. It
+        // body, which is where the clock, the magazine and the reload live. It
         // hung the engine on the first run.
         let mut n_pellets = if ap.orb.is_some() && ap.meter.is_none() { 0 } else { n_pellets };
         // A SWING THAT LANDS TWICE IS TWO INSTANCES. `Hits = { 1, 2 }` in the
@@ -2063,7 +2063,7 @@ pub fn run_once_traced(
         }
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
             // `ammo_efficiency_applies == false` IS the charge-backed marker —
-            // such a ammo.loaded is "outside the ammo economy entirely", so it has
+            // such a magazine is "outside the ammo economy entirely", so it has
             // no Capacity behind it and the surcharge comes out of the charge
             // pool itself. That is what shortens the Incarnon window.
             let charge_backed = !ap.ammo_efficiency_applies;
@@ -2214,7 +2214,7 @@ pub fn run_once_traced(
         }
         drop_kills_seen = r.kills_in_reach;
         // …AND WHAT THIS WEAPON DOES WITH THEM (`rules::ammo::credit`). Nothing at all
-        // while the ammo.reserve is infinite: the house rule already hands the
+        // while the reserve is infinite: the house rule already hands the
         // weapon everything a pack could.
         if params.ammo_drops && !params.infinite_reserve {
             if let Some(takes) = params.ammo_class {
@@ -2255,10 +2255,10 @@ pub fn run_once_traced(
             // the secondary half of its roll.
             //
             // INFINITE AMMO DOES NOT REMOVE THE PICKUP. The house rule is about
-            // the ammo.reserve, and a real fight is under its cap almost all of the
+            // the reserve, and a real fight is under its cap almost all of the
             // time — the pack is still on the floor either way.
             meter.seconds += f64::from(dropped_secondary) * m.seconds_per_ammo_pickup;
-            // A FULL METER IS ONE THROW. It is not a ammo.loaded — the page says
+            // A FULL METER IS ONE THROW. It is not a magazine — the page says
             // "requires a fully filled meter in order to fire", so what is
             // spent is the whole thing and what is bought is a single orb.
             if meter.seconds >= m.seconds_to_fill {
@@ -2525,7 +2525,7 @@ pub fn run_once_traced(
             // The landing spot is rolled PER PELLET, not per trigger pull: aiming at the head does not put every
             // pellet of a spread on it, so `headshot_pct` is a per-pellet
             // aim weight. Consequences that follow from this and are
-            // deliberate: the Incarnon gauge incarnon.charges per headshot PELLET
+            // deliberate: the Incarnon gauge charges per headshot PELLET
             // (multishot fills it faster), on-headshot buffs trigger from
             // any one pellet, and the reported headshot rate is
             // pellets/pellets. Do NOT "fix" this into a per-pull roll.
@@ -3349,14 +3349,14 @@ pub fn run_once_traced(
                     // ON THE LATRON INCARNON ONLY THE EXPLOSION TAKES IT: the
                     // collision reads 148 with the pile empty and full (M102).
                     * dt_here
-                    // SYNTH CHARGE, on the ammo.loaded's LAST round only: "Damage
+                    // SYNTH CHARGE, on the magazine's LAST round only: "Damage
                     // stacks multiplicatively with Hornet Strike, and any area
                     // damage the weapon may have is also affected" — so it is a
                     // factor here, beside Double Tap's, and it reaches the
                     // explosion because every part of the shot comes through
                     // this line.
                     * sc_mult
-                    // THE CHAMBERS, on the ammo.loaded's FIRST round only: Charged
+                    // THE CHAMBERS, on the magazine's FIRST round only: Charged
                     // Chamber is "multiplicative with other damage mods" and
                     // Primed Chamber "is applied multiplicatively after all
                     // other modifiers from mods and abilities", so it is a
@@ -4580,12 +4580,12 @@ pub fn run_once_traced(
         }
 
         // EXECUTIONER'S FORTUNE, SPENT. The roll is per pellet, the effect is
-        // not: a ammo.loaded fills once however many pellets rolled it, so this is
+        // not: a magazine fills once however many pellets rolled it, so this is
         // a flag the pellet loop sets and the shot consumes.
         //
         // It is an INSTANT reload, so no time passes — which is the whole perk,
-        // and why it is not in the reload bucket. It draws from the ammo.reserve
-        // like every other refill here (a dry ammo.reserve gives nothing), and it
+        // and why it is not in the reload bucket. It draws from the reserve
+        // like every other refill here (a dry reserve gives nothing), and it
         // fills whole rounds to capacity the way `reload_draw` defines a
         // reload, so an overdrawn counter comes back where a real reload would
         // leave it.
@@ -4618,14 +4618,14 @@ pub fn run_once_traced(
         field_duration_boost = false;
 
         // GALVANIC RELOAD: "On hitting a target affected by an Electricity
-        // status, 40% chance to restore 1 round in the ammo.loaded from ammo pool."
+        // status, 40% chance to restore 1 round in the magazine from ammo pool."
         //
         // ONCE PER SHOT, which is the card's own qualifier — "The bonus can only
         // apply once per enemy hit" — and on a shotgun family the difference
         // between that and once per pellet is tenfold. So it is rolled HERE,
         // outside the pellet loop, beside the other per-pull events.
         //
-        // "FROM AMMO POOL", so a dry ammo.reserve restores nothing: the round is
+        // "FROM AMMO POOL", so a dry reserve restores nothing: the round is
         // drawn like any other. And a restore is NOT a reload — nothing that
         // watches reloads sees it, the same rule `magazine_refill_on_kill` follows.
         if let Some((st, chance, rounds)) = ap.round_restore_on_status {
@@ -4680,7 +4680,7 @@ pub fn run_once_traced(
         // A GAUGE IS ONE OF TWO WAYS IN, so the whole block is the GUN's. A
         // melee Incarnon arms on the swing itself (`Arms::HeavyAtCombo`, below
         // beside the combo counter it reads) and skips every line of this: it
-        // has no gauge to fill, no charge ammo.loaded to fill, and no transmute
+        // has no gauge to fill, no charge magazine to fill, and no transmute
         // animation to spend.
         if let Some((cy, charge_on, charges_to_fill)) =
             params.cycle.as_ref().and_then(|cy| match cy.arms {
@@ -4725,19 +4725,19 @@ pub fn run_once_traced(
                     // Retaliation "can affect transition INTO Incarnon form
                     // with a well-timed manual reload" and not the way back;
                     // the second half is wrong, and transforming with an EMPTY
-                    // ammo.loaded is the proof — the animation is faster, so the
+                    // magazine is the proof — the animation is faster, so the
                     // buff was there before any reload began.
                     //
                     // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES, which
                     // collapses the rule to one line: swapping either way fully
-                    // reloads the base form's ammo.loaded (wiki), so both
+                    // reloads the base form's magazine (wiki), so both
                     // transforms are reloads and the buff is spent by whatever
-                    // refills the ammo.loaded.
+                    // refills the magazine.
                     // WAS THE BASE MAGAZINE ACTUALLY EMPTY? Read BEFORE the
                     // refill below, because that is the question the card asks:
                     // "Switching to Incarnon Form from empty will also trigger
                     // the buff" (wiki, Soma's Fresh Havoc). Transforming with
-                    // rounds still in the ammo.loaded reloads it and earns nothing,
+                    // rounds still in the magazine reloads it and earns nothing,
                     // which is the one place `ReloadFromEmpty` and
                     // `ReloadComplete` are different events.
                     let transformed_from_empty = !can_fire(incarnon.base_magazine, 1.0);
@@ -4757,23 +4757,23 @@ pub fn run_once_traced(
                     r.transforms += 1;
                     incarnon.in_base_form = false;
                     swap_dt_pile!(t);
-                    // The CHARGE ammo.loaded is filled by the gauge, not reloaded
-                    // from ammo.reserve — it is outside the ammo economy, takes no
+                    // The CHARGE magazine is filled by the gauge, not reloaded
+                    // from reserve — it is outside the ammo economy, takes no
                     // efficiency, and so is always whole anyway.
                     ammo.loaded = ammo.cap;
                     // THE ROW LANDS HERE, not beside the push above: an event
                     // is stamped with the weapon AS IT NOW IS, and until this
-                    // line the form and the ammo.loaded are still the old ones.
-                    // The base ammo.loaded's refill IS a reload: whole rounds off whatever is already in it,
-                    // and out of the same ammo.reserve as every other reload. This
-                    // was the site that kept the base ammo.loaded topped up for
+                    // line the form and the magazine are still the old ones.
+                    // The base magazine's refill IS a reload: whole rounds off whatever is already in it,
+                    // and out of the same reserve as every other reload. This
+                    // was the site that kept the base magazine topped up for
                     // free — with all three draws inside the cycle unbilled, a
-                    // finite ammo.reserve never moved off its starting value.
+                    // finite reserve never moved off its starting value.
                     let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve,
                         reload_draw(cy.base_form.magazine_size, incarnon.base_magazine));
                     incarnon.base_magazine += loaded;
                     // THE ROW LANDS HERE, once BOTH magazines are what the
-                    // transmute made them: the charge ammo.loaded it filled and the
+                    // transmute made them: the charge magazine it filled and the
                     // base one it silently reloaded. Announced any earlier and
                     // the free reload — the whole reason both magazines are on
                     // every row — is missing from the row that performed it.
@@ -4783,7 +4783,7 @@ pub fn run_once_traced(
                     // rest owed until you come out.
                     //
                     // Counting the shells the draw ACTUALLY loaded is what
-                    // makes a dry ammo.reserve behave: no shells, no stacks, and no
+                    // makes a dry reserve behave: no shells, no stacks, and no
                     // separate rule needed to say so.
                     let shells = loaded.round().max(0.0) as u32;
                     if shells > 0 {
@@ -5036,8 +5036,8 @@ pub fn run_once_traced(
             (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
         };
         // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
-        // this loop — a reload, a transform, a dry ammo.loaded, a stall on a dry
-        // ammo.reserve — leaves this shot LATER than the moment the last one made it
+        // this loop — a reload, a transform, a dry magazine, a stall on a dry
+        // reserve — leaves this shot LATER than the moment the last one made it
         // due, and that is precisely what releasing the trigger is. Asking the
         // clock here, rather than clearing the count in each branch that
         // pauses, is what stops the next pause anyone adds from silently
@@ -5052,7 +5052,7 @@ pub fn run_once_traced(
         last_shot_t = t;
         // …and then the SPOOL, which is a fraction of whatever that rate came
         // to: a fire-rate mod raises the ceiling and the floor together, so the
-        // Phenmor's Incarnon form still spends most of its 408-round ammo.loaded
+        // Phenmor's Incarnon form still spends most of its 408-round magazine
         // at 60% of whatever it was built to.
         let rate = rate * spool_factor(ap.sustained_fire_rate, spool.shots);
         spool.shots += 1.0;
@@ -5075,7 +5075,7 @@ pub fn run_once_traced(
             // A BURST pull fires `count` rounds and then waits; the listed
             // rate is BURSTS per second. PLAYED ROUND BY ROUND, not averaged:
             // inside a pull the next round waits the burst delay, and the
-            // pull's LAST round waits `1 / rate`. A pull the ammo.loaded cannot
+            // pull's LAST round waits `1 / rate`. A pull the magazine cannot
             // finish ends early — an Akarius with one rocket left fires it
             // and reloads — so a lone round pays the full wait.
             //
@@ -5125,7 +5125,7 @@ pub fn run_once_traced(
                 // finisher only when the window does not. With Discipline's
                 // Merit — every four hits — it would reach it never, which is
                 // the sharpest case and the reason this could not be left to a
-                // default: `melee.swing_idx += 1` was the whole difference.
+                // default: `swing_idx += 1` was the whole difference.
                 if tennokai {
                     melee.swing_idx = 0;
                 } else {
@@ -5237,7 +5237,7 @@ pub fn run_once_traced(
     );
 
     // THE REPLAY COVERS THE WHOLE FIGHT, INCLUDING THE PART WITH NO SHOOTING
-    // IN IT. The firing loop `break`s the moment a finite ammo.reserve runs dry,
+    // IN IT. The firing loop `break`s the moment a finite reserve runs dry,
     // and the sampler must NOT go with it: a 180-second engagement that runs
     // out of ammo at 58.5 would be drawn as a 58.5-second one, and every rate
     // the replay derives would divide by that shorter clock — 378 KPM beside
