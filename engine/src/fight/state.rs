@@ -2,6 +2,8 @@
 //! WHAT ONE RUN CARRIES FROM SHOT TO SHOT, one struct per mechanic, so the
 //! loop in `run` names a piece of state by what it belongs to.
 
+use super::*;
+
 
 /// DOUBLE TAP'S PILE — consecutive hits, its window, and the other form's pile
 /// frozen at the last swap.
@@ -119,6 +121,17 @@ pub(super) struct Spool {
 /// THE MAGAZINE AND THE RESERVE — what is loaded, what is carried, what the
 /// magazine holds now, and the bookkeeping the ammo cards read.
 pub(super) struct Ammo {
+    /// KILLS ALREADY PAID FOR, so the pickup roll happens once per body.
+    ///
+    /// Read as a DELTA off the run's own counter rather than hooked onto each
+    /// place a body dies — there are nine of those, they are the same nine
+    /// `ledger::settle` guards, and a tenth would silently stop dropping ammo.
+    /// The counter cannot be missed because every kill already goes through it.
+    /// Kills already rolled for drops — the shared tally every reader works off.
+    pub(super) drop_kill_mark: u32,
+    /// Which kills the magazine refill has already paid out — see the spend
+    /// below for why this cannot be the same watermark.
+    pub(super) refill_kill_mark: u32,
     /// ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
     /// BURST completes: Reaver's Rapture wants a full burst, and a burst is
     /// `burst.count` consecutive rounds out of one magazine. It restarts with
@@ -177,6 +190,10 @@ pub(super) struct Ammo {
 /// Incarnon window closes, the charges toward the next, and the base form's
 /// magazine held while it is away.
 pub(super) struct IncarnonState {
+    /// ...and the FORM gauge fed by kills rather than by hits (ChargeOn::Kills),
+    /// which needs its own because it advances in both forms while the others
+    /// only pay out in one.
+    pub(super) kill_mark: u32,
     /// Incarnon cycle state. The engagement opens in the BASE form and earns
     /// its way in — see `IncarnonCycle::starts_primed` for why, and for the
     /// reading that opens transformed.
@@ -223,4 +240,164 @@ pub(super) struct CardWindows {
     /// EXIMUS ADVANTAGE's window, the same clock as the one above with a
     /// different key. It never opens at all unless the target is an Eximus.
     pub(super) base_damage_eximus: f64,
+}
+
+impl Ammo {
+    pub(super) fn resize_for_summon(&mut self, params: &FightParams, bar: &BuffBar) {
+        let ammo = self;
+        // …AND THE MAGAZINE FOLLOWS THE BAR, at one site for both edges. It
+        // arrives with a modded magazine's worth of rounds, and "when the
+        // ethereal Pyrana disappears, the magazine is reduced to the modded
+        // magazine size" (wiki).
+        if let Some(s) = params.kill_streak_summon {
+            let want = if bar.get(crate::model::KillStreakSummonSpec::BUFF_ID).is_some() {
+                s.magazine_multiplier
+            } else {
+                1.0
+            };
+            if (want - ammo.summon_multiplier).abs() > 1e-12 {
+                if want > ammo.summon_multiplier {
+                    ammo.loaded += ammo.cap / ammo.summon_multiplier;
+                }
+                ammo.cap = ammo.cap / ammo.summon_multiplier * want;
+                ammo.loaded = ammo.loaded.min(ammo.cap);
+                ammo.summon_multiplier = want;
+            }
+        }
+    }
+}
+
+impl Ghosts {
+    /// WHAT THE KILLS LEFT STANDING, as a duration. The kills were counted
+    /// where they happened; this is where they become ghosts.
+    pub(super) fn settle(&mut self, g: crate::model::SpawnOnKillSpec, t: f64, r: &mut RunResult) {
+        let ghost_pile = self;
+        ghost_pile.standing.retain(|e| *e > t);
+        for _ in 0..(r.ghost_kills - ghost_pile.kill_mark) {
+            ghost_pile.standing.push(t + g.seconds);
+        }
+        ghost_pile.kill_mark = r.ghost_kills;
+        r.ghosts_peak = r.ghosts_peak.max(ghost_pile.standing.len() as u32);
+    }
+}
+
+impl CritPerHit {
+    /// HATA-SATYA'S PILE — mark-and-diff on the hits, read at the START of the
+    /// shot so the hit that earns a stack does not carry it, the rule every
+    /// other trigger in the loop follows.
+    pub(super) fn settle(&mut self, params: &FightParams, r: &RunResult, ammo: &Ammo) {
+        let crit_per_hit = self;
+        // WHAT TAKES THE PILE: "Resets upon reloading or holstering", plus
+        // "Swapping to Incarnon Form counts as reloading the Soma Prime and
+        // will therefore end the bonus". Holstering is a weapon swap, which
+        // this arena never does.
+        //
+        // KEYED ON THE REFILL, NOT ON THE RELOAD COUNTER (owner measured
+        // 2026-08-22: coming OUT of the Incarnon form clears it too). The
+        // wiki names only the way in, and reading its two events literally
+        // left the way out counting as neither a reload nor a transform —
+        // so a pile at its ceiling rode the revert into the base form and
+        // spent a whole magazine there at +500% that the game would have
+        // taken away. This is the engine's own rule about the cycle, which
+        // was already written one screen down: swapping EITHER WAY fully
+        // reloads the base form's magazine, so the buff is spent by
+        // whatever refills it. One mark instead of two, and the event that
+        // was missing is the one it now cannot miss — every refill in this
+        // loop goes through `magazine_refilled!`.
+        //
+        // The seed dies with the earned stacks: it is the same buff.
+        if ammo.refills != crit_per_hit.refill_mark && !params.crit_chance_per_hit_held {
+            crit_per_hit.refill_mark = ammo.refills;
+            crit_per_hit.hit_mark = r.pellets;
+            crit_per_hit.seed = 0;
+        }
+        // THE COUNTER IS NOT CAPPED — the BONUS is.
+        // The pile takes every hit that lands, and 500% is what it is worth
+        // once it passes the ceiling: a card of this class publishes a
+        // NUMBER and lets the count run, so 417 stacks and 4,000 stacks are
+        // both ordinary states of the same fight. Clamping the count would
+        // be modelling a mechanic DE did not write, and the row is drawn as
+        // the value anyway, so its ceiling is never on screen.
+        crit_per_hit.stacks = crit_per_hit.seed + (r.pellets - crit_per_hit.hit_mark);
+    }
+}
+
+impl Ammo {
+    /// SENTIENT SURGE'S REFILL, spent before the reload check so that a kill
+    /// can genuinely save a reload — which is the whole point of the mod.
+    pub(super) fn refill_on_kill(&mut self, params: &FightParams, r: &RunResult) {
+        let ammo = self;
+        // SENTIENT SURGE's refill, spent before the reload check below so
+        // that a kill can genuinely save a reload — which is the whole
+        // point of the mod. "Reloaded ammo is taken from the Ocucor's ammo
+        // reserves. This mod does not generate ammo", so it draws like any
+        // other reload and a dry reserve gives nothing.
+        //
+        // ITS OWN WATERMARK, and NOT the tendril one. The two answer
+        // different questions: a tendril asks "how many kills since the
+        // last reload" (so its mark moves when the magazine event clears
+        // them), while a refill asks "which kills have I already been paid
+        // for" (so its mark moves when it is SPENT). Sharing the tendril
+        // mark made every loop iteration re-earn the same kills, which
+        // topped the magazine up on every shot and handed the weapon an
+        // effectively infinite one.
+        //
+        // And a REFILL IS NOT A RELOAD: it never touches `r.reloads`, so
+        // the tendrils live through it. That is the whole reason this mod
+        // pairs with this passive — the wiki says it from the other side,
+        // "Magazine refill effects such as ... kills with Sentient Surge
+        // ... will PREVENT the tendrils from disappearing."
+        if params.magazine_refill_on_kill > 0.0 && r.kills > ammo.refill_kill_mark {
+            let earned = f64::from(r.kills - ammo.refill_kill_mark)
+                * params.magazine_refill_on_kill
+                * ammo.cap;
+            ammo.refill_kill_mark = r.kills;
+            // Capped at the magazine: a refill tops up, it does not bank.
+            // Overflow is simply lost, which is what "Refill X% of the
+            // Magazine" means on a magazine already near full.
+            let room = (ammo.cap - ammo.loaded).max(0.0);
+            let want = earned.min(room);
+            if want > 0.0 {
+                ammo.loaded += draw_from(&mut ammo.reserve, params.infinite_reserve, want);
+            }
+        }
+    }
+}
+
+impl Tendrils {
+    /// THE TENDRILS a reload takes away and kills grow back, re-derived before
+    /// anything decides to reload. A weapon with none has `tendril_max` 0 and
+    /// keeps a count of 0 through all of it.
+    pub(super) fn settle(&mut self, params: &FightParams, r: &RunResult) {
+        let tendril = self;
+        // A reload — or an empty magazine, which in this sim always leads
+        // to one — clears every tendril. "Tendrils disappear upon
+        // reloading or emptying the magazine."
+        //
+        // ...unless the card says no event takes them (`tendrils_held`),
+        // which is what "no timeout" means for a buff whose end is an
+        // event rather than a clock. The seed dies with the earned ones:
+        // it is the same buff.
+        if r.reloads != tendril.reload_mark && !params.tendrils_held {
+            tendril.reload_mark = r.reloads;
+            // The mark tracks the SAME quantity the count reads.
+            tendril.kill_mark = r.kills - r.kills_by_tendril;
+            tendril.seed = 0;
+        }
+        // A TENDRIL'S OWN KILL SPAWNS NOTHING, so the count is fed by
+        // every OTHER kill — the beam's, and any status kill including one
+        // a tendril's own proc caused.
+        let spawning = r.kills - r.kills_by_tendril;
+        tendril.count = (tendril.seed + (spawning - tendril.kill_mark)).min(params.tendril_max);
+    }
+}
+
+impl DoubleTap {
+
+    pub(super) fn swap(&mut self, now: f64) {
+        let held = (self.hits, (self.expiry - now).max(0.0));
+        self.hits = self.other.0;
+        self.expiry = if self.other.1 > 0.0 { now + self.other.1 } else { f64::NEG_INFINITY };
+        self.other = held;
+    }
 }
