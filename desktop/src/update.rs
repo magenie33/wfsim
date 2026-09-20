@@ -252,19 +252,42 @@ fn legacy_manifest(base: &str) -> Result<Manifest, String> {
 }
 
 /// Fetch and verify the remote manifest, from the first source that answers.
+///
+/// THE KIND OF FAILURE MATTERS MORE THAN WHICH SOURCE PRODUCED IT. A reader
+/// waits out a network error and cannot wait out a refusal, so the two may not
+/// be reported alike — and reporting the LAST message reports neither: only the
+/// bucket keeps a pointer, the site answers `channel.json` with its own SPA
+/// page, so an unreachable bucket came out as "signature is malformed". A
+/// verification word for a transport failure, on the one line the reader
+/// decides from.
+///
+/// So a real refusal is kept and preferred, and otherwise the FIRST source's
+/// reason is the one shown: it is the source that could have answered.
 fn remote_manifest(local: &Manifest) -> Result<Manifest, String> {
-    let mut last = String::from("no sources configured");
+    let mut refused: Option<String> = None;
+    let mut unreachable: Option<String> = None;
     for base in sources(local) {
         let base = base.trim_end_matches('/');
-        match pointer_manifest(base).or_else(|e| {
-            last = e;
-            legacy_manifest(base)
-        }) {
+        let mut why = Vec::new();
+        match pointer_manifest(base) {
             Ok(m) => return Ok(m),
-            Err(e) => last = e,
+            Err(e) => why.push(e),
+        }
+        match legacy_manifest(base) {
+            Ok(m) => return Ok(m),
+            Err(e) => why.push(e),
+        }
+        for e in why {
+            if e.starts_with("SIGNATURE DOES NOT MATCH") {
+                refused.get_or_insert(e);
+            } else if unreachable.is_none() {
+                unreachable = Some(e);
+            }
         }
     }
-    Err(last)
+    Err(refused
+        .or(unreachable)
+        .unwrap_or_else(|| "no sources configured".to_string()))
 }
 
 fn missing<'a>(local: &Manifest, remote: &'a Manifest) -> Vec<&'a crate::payload::Entry> {
