@@ -42,10 +42,10 @@ ammo_type: archgun
 ammo_max: 100
 no_resupply: true
 
-# No Condition Overload row for the ORDINARY Corvas. The catalog names
-# "Corvas Prime" on both of its forms and this weapon on neither, so it takes
-# the ordinary class — a row is never generalised across a Prime boundary.
-co_behavior: additive_with_base_damage
+# The catalog names "Corvas Prime" on BOTH of its forms and this weapon on
+# neither, so both forms here carry the Prime's class.
+# CARRIED FROM `corvas_prime` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from

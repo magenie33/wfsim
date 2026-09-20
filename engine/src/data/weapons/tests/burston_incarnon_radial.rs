@@ -86,13 +86,12 @@ fn the_akarius_fires_two_rockets_a_pull_and_each_one_explodes() {
         spec("akarius_prime").unwrap().co_behavior.as_deref(),
         Some("independent")
     );
-    // The base has no row. Written out rather than left blank, so the
-    // assertion is on the VALUE — absence and the ordinary value are the
-    // same statement and a file may make either.
+    // …and the base, which no row names, carries the Prime's class
+    // (docs/CATALOGS.md §1). The ROCKET is the same rocket.
     assert_eq!(
-        spec("akarius").unwrap().co_behavior.as_deref().unwrap_or("additive_with_base_damage"),
-        "additive_with_base_damage",
-        "no row, so ordinary"
+        spec("akarius").unwrap().co_behavior.as_deref(),
+        Some("independent"),
+        "carried from the family"
     );
 }
 

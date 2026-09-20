@@ -27,7 +27,13 @@ ammo_pickup: 40
 magazine: 48
 reload_seconds: 1.6
 
-# see notes: condition_overload_no_row
+# THE CLASS IS CARRIED AND THE FRACTION IS NOT. The Acceltra's row is
+# "35 | 26 | 74.3% | Adding", and Adding at the full 100% is also the ordinary
+# class — so this entry already reads what the family reads. The 74.3% is a
+# MEASUREMENT of the base weapon's own 26 against its own 35, with no rule
+# behind it that this weapon's 44 could be put through, and a fraction guessed
+# is worse than one absent. It wants one in-game reading.
+# see notes: co_carried_from_the_family
 co_behavior: additive_with_base_damage
 
 attack:

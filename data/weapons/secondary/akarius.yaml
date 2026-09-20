@@ -37,10 +37,8 @@ ammo_pickup: 5
 magazine: 10
 reload_seconds: 3.4
 
-# No CO catalog row for this weapon, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies. The
-# PRIME has rows; a row is transcribed for the entry it names and no other.
-co_behavior: additive_with_base_damage
+# CARRIED FROM `akarius_prime` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from

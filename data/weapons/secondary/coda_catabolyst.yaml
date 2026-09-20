@@ -30,8 +30,8 @@ ammo_pickup: 20
 magazine: 37
 reload_seconds: 1.7
 
-# see notes: condition_overload_no_row_6
-co_behavior: additive_with_base_damage
+# CARRIED FROM `catabolyst` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 # THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
 # Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the

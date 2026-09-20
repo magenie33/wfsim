@@ -27,8 +27,8 @@ ammo_pickup: 20
 magazine: 1
 reload_seconds: 0.6
 
-# see notes: condition_overload_no_row_4
-co_behavior: additive_with_base_damage
+# CARRIED FROM `epitaph` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from_2

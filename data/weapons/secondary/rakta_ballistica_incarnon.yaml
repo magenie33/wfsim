@@ -29,8 +29,12 @@ pseudo_reload:
   magazine: 18
   reload_seconds: 3.0
 
-# see notes: no_co_catalog_row
-co_behavior: additive_with_base_damage
+# CARRIED FROM `ballistica_prime_incarnon` — the catalog rows the Prime's
+# Incarnon Mode alone ("833 | 833 | 100% | Multiplying") and the family's
+# three share the Genesis. Their CHARGED shots are rowed one by one and do
+# NOT agree — 25%, 50%, 25% — which is a fraction, not a class.
+# see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from

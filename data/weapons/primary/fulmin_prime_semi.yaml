@@ -8,8 +8,8 @@ transform_group: fulmin_prime
 
 introduced: "33.6"
 
-# see notes: inherited_co_catalog_gives
-co_behavior: additive_with_base_damage
+# CARRIED FROM `fulmin_semi` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 # see notes: head_worth_1x_attack
 headshot_multiplier: 1.0

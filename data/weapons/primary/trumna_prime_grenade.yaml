@@ -7,8 +7,8 @@ transform_group: trumna_prime
 
 introduced: "37.0.9"
 
-# see notes: inherited_co_catalog_gives_3
-co_behavior: additive_with_base_damage
+# CARRIED FROM `trumna_grenade` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from_2

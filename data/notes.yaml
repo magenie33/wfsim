@@ -379,6 +379,13 @@ notes:
     which no `condition:` here can express, since every one of those asks about
     the Tenno or the target. Its own kind, granted late in `resolve` and
     re-checked per shot by the sim (see furis_prelude_of_might for the argument).
+  co_carried_from_the_family: |
+    Condition Overload: NOT NAMED by the catalog, and CARRIED FROM THE FAMILY
+    — a sibling of the same family and the same form is on the table, and a
+    class generalises to the variants of a form a row names
+    (docs/CATALOGS.md §1). The row itself is quoted on the entry the catalog
+    does name. A measured FRACTION does not travel this way, only the class.
+
   condition_overload_behavior_class: |
     Condition Overload behavior class. The wiki's CO catalog carries ONE Braton
     row and it is the Incarnon form's RADIAL (see the incarnon entry); this

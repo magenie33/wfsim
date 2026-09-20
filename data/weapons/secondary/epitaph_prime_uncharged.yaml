@@ -7,8 +7,8 @@ transform_group: epitaph_prime
 
 introduced: "36.1"
 
-# see notes: inherited_co_catalog_gives_2
-co_behavior: additive_with_base_damage
+# CARRIED FROM `epitaph_uncharged` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from_2

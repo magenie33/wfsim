@@ -5,7 +5,8 @@ inherits: corvas
 form: base
 transform_group: corvas
 
-co_behavior: additive_with_base_damage
+# CARRIED FROM `corvas_prime_uncharged` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki

@@ -49,6 +49,17 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 100 }   # total 100
   # The radial part — rules in MECHANICS §7.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320%. THE ROW
+  # NAMES THE STRUN, ITS PRIME AND ITS WRAITH AND NOT THIS ONE, and it is
+  # carried anyway — the MK1 shares the Genesis and the same 4 m explosion, so
+  # the omission is the wiki's, not the arcane's. See §2's family rule.
+  # A shotgun, so it can never enlarge the radius: there is no shotgun
+  # blast-radius mod.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
   radial:
     damage: { slash: 60, puncture: 25, blast: 45 }   # total 130
     radius_m: 4

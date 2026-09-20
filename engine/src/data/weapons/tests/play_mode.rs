@@ -345,10 +345,15 @@ fn the_roster_reproduces_primary_compressions_published_column() {
         ("prisma_gorgon_incarnon", 4.00),
         ("latron_incarnon", 3.20),
         ("latron_prime_incarnon", 3.20),
+        // NOT ON THE ROW, and carried from the family below — the wiki's
+        // Weapon cell names the Latron and its Prime, and the Gorgon's and
+        // the Strun's name their Wraiths.
+        ("latron_wraith_incarnon", 3.20),
         ("miter_incarnon", 2.40),
         ("strun_incarnon", 3.20),
         ("strun_prime_incarnon", 3.20),
         ("strun_wraith_incarnon", 3.20),
+        ("mk1_strun_incarnon", 3.20),   // not on the row; carried from the family
         ("phantasma_charged", 3.84),
         ("phantasma_prime_charged", 3.84),
         // THE ONE OVERRIDE: 0.8 x 0.1 m, not 0.8 x 6.7 m x 4%.
@@ -525,6 +530,50 @@ fn the_roster_reproduces_primary_compressions_published_column() {
         assert!(table.iter().any(|(t, _)| t == id), "{id} has a row and no expected bonus");
     }
     assert_eq!(carried.len(), table.len());
+}
+
+/// A COMPRESSION ROW BELONGS TO THE FAMILY, not to the variant the wiki's
+/// Weapon cell happens to spell out — the rule, and why it is §1's
+/// inverted, are docs/CATALOGS.md §2 "THE RULE".
+///
+/// Two things it keys on. SECONDARIES ARE EXEMPT: the arcane is a primary
+/// one, so a Kitgun chamber in the pistol slot has nothing to carry. And the
+/// FORM is part of the key, because a weapon's alt-fire has a row of its own
+/// and may answer differently — the Trumna's grenade against its own
+/// primary fire.
+#[test]
+fn a_variant_carries_its_familys_compression_row() {
+    // DE's own grouping, which a second form answers for through its base.
+    fn family(w: &crate::data::weapons::WeaponSpec) -> Option<String> {
+        w.riven_family.clone().or_else(|| {
+            let group = w.transform_group.as_deref()?;
+            all()
+                .iter()
+                .find(|b| b.transform_group.as_deref() == Some(group) && b.riven_family.is_some())?
+                .riven_family
+                .clone()
+        })
+    }
+    let mut by_family: std::collections::BTreeMap<
+        (String, String),
+        Vec<&crate::data::weapons::WeaponSpec>,
+    > = Default::default();
+    for w in all().iter().filter(|w| w.slot == "primary" && w.attack.radial.is_some()) {
+        if let Some(f) = family(w) {
+            by_family.entry((f, w.form.clone())).or_default().push(w);
+        }
+    }
+    for ((f, form), ws) in by_family {
+        let carried: Vec<&str> =
+            ws.iter().filter(|w| w.attack.compression.is_some()).map(|w| w.id.as_str()).collect();
+        let bare: Vec<&str> =
+            ws.iter().filter(|w| w.attack.compression.is_none()).map(|w| w.id.as_str()).collect();
+        assert!(
+            carried.is_empty() || bare.is_empty(),
+            "{f} ({form}): {carried:?} pay Primary Compression and {bare:?} pay nothing, \
+             from one family, one form and one catalog row"
+        );
+    }
 }
 
 /// A THROW PAYS FOR ITS OWN RELOAD, so the wind-up is not the cycle.

@@ -36,14 +36,15 @@ pseudo_reload:
   magazine: 40
   reload_seconds: 3.4   # transmute out (1.0) + in (2.4), unmodded
 
-# ORDINARY — THIS VARIANT IS NOT ON THE ROW. Verbatim:
+# NOT NAMED, AND CARRIED FROM THE FAMILY. Verbatim:
 #
 #   |{{Weapon|Latron}}/{{Weapon|Latron Prime}}||Incarnon Mode||Projectile||50||50||100%||Multiplying||CO does not apply for Latron's AoE in any way
 #
-# and the row names the Latron and the Latron Prime, not the Wraith. A shared Genesis does not make one weapon: an
-# Incarnon form is still that WEAPON's form, so a row is transcribed for the
-# entries it names and no others.
-co_behavior: additive_with_base_damage
+# The row names the Latron and its Prime; this is the same Genesis on the same
+# family, and the Wraith's Incarnon form is the same projectile with the same
+# explosion. The AoE clause travels with it — the radial declares nothing.
+# see notes: co_carried_from_the_family
+co_behavior: independent
 
 # TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):
 # "Incarnon Form changes the weapon's fire mode from hitscan to a traveling
@@ -77,6 +78,8 @@ attack:
   crit_chance: 0.48
   crit_multiplier: 3.4
   status_chance: 0.28
+  # see notes: guaranteed_impact_every_shot
+  forced_procs: [impact]
   punch_through_m: 0.0
   # PUNCH THROUGH DOES NOTHING HERE, and the page says so outright rather than
   # leaving it to the AoE rule: *"Punch Through does not affect the incarnon
@@ -111,11 +114,22 @@ attack:
   ricochet:
     bounces: 5
     headshot_chance: 0.5
-  # The COLLISION: pure Impact, with a guaranteed proc the engine has no
-  # per-part forced-proc field for on a direct hit — recorded here, and the
-  # weapon's own status chance is what rolls.
+  # The COLLISION: pure Impact, and the `forced_procs` above is its guaranteed
+  # proc — *"Collision deals Impact damage and have a guaranteed Impact proc"*.
+  # Rolled status lands on top of it.
   damage: { impact: 50.0 }   # total 50
   # The EXPLOSION — rules in MECHANICS §7.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320%. THE ROW
+  # NAMES THE LATRON AND THE PRIME AND NOT THIS VARIANT, and it is carried
+  # anyway: the Gorgon's row names its Wraith and the Strun's names its Wraith,
+  # so a Latron row that does not is the wiki omitting a variant rather than
+  # the arcane refusing one. An arcane is not a per-entry anomaly the way a
+  # Condition Overload class is — see §2's family rule.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
   radial:
     damage: { puncture: 50.0, heat: 50.0 }   # total 100
     radius_m: 4.0

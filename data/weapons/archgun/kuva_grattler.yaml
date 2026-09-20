@@ -51,11 +51,8 @@ valence:
   min: 0.25
   max: 0.60
 
-# No Condition Overload row for the Kuva Grattler. The catalog lists the
-# ORDINARY Grattler ("Normal attack | Projectile | 100% | Multiplying") and a
-# row is transcribed for the entry it names — a shared Genesis does not make a
-# family one weapon (docs/CATALOGS.md). So this takes the ordinary class.
-co_behavior: additive_with_base_damage
+# CARRIED FROM `grattler` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from

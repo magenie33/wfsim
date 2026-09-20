@@ -112,9 +112,9 @@ attack:
   ricochet:
     bounces: 5
     headshot_chance: 0.5
-  # The COLLISION: pure Impact, with a guaranteed proc the engine has no
-  # per-part forced-proc field for on a direct hit — recorded here, and the
-  # weapon's own status chance is what rolls.
+  # The COLLISION: pure Impact, and the `forced_procs` above is its guaranteed
+  # proc — *"Collision deals Impact damage and have a guaranteed Impact proc"*.
+  # Rolled status lands on top of it.
   damage: { impact: 50.0 }   # total 50
   # The EXPLOSION — rules in MECHANICS §7.
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320%.
@@ -134,9 +134,10 @@ attack:
     crit_chance: 0.44
     crit_multiplier: 3.4
     status_chance: 0.3
-    # NOT DECLARED, deliberately: no CO catalog row exists for this weapon, so
-    # the radial takes the engine's default (no Condition Overload on an
-    # explosion) rather than the Burston/Braton exception.
+    # NOT DECLARED, deliberately: this form's CO row ends *"CO does not apply
+    # for Latron's AoE in any way"*, which is also the engine's default for an
+    # explosion — so the radial says nothing rather than the Burston/Braton
+    # exception.
 
 # incarnon_evolutions: see data/weapons/primary/latron_prime.yaml (shared group)
 

@@ -29,14 +29,15 @@ pseudo_reload:
   magazine: 20
   reload_seconds: 1.55
 
-# ORDINARY — THIS VARIANT IS NOT ON THE ROW. Verbatim:
+# NOT NAMED, AND CARRIED FROM THE FAMILY. Verbatim:
 #
 #   |{{Weapon|Paris}}/{{Weapon|Paris Prime}}||Incarnon Mode||Projectile||520||520||100%||Multiplying
 #
-# and the row names the Paris and the Paris Prime, not the Mk1. A shared Genesis does not make one weapon: an
-# Incarnon form is still that WEAPON's form, so a row is transcribed for the
-# entries it names and no others.
-co_behavior: additive_with_base_damage
+# The row names the Paris and its Prime; the Mk1 shares the Genesis and the
+# form, so it reads the same class. Its CHARGED shot is a different matter —
+# the catalog names the Mk1 there in a row of its own, at 50% Adding.
+# see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from

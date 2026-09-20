@@ -28,8 +28,18 @@ ammo_pickup: 15
 magazine: 1
 reload_seconds: 0.6
 
-# see notes: condition_overload_no_row
+# CARRIED FROM `daikyu_prime`, and the FRACTION travels with the class here
+# because the row states the mechanism rather than measuring one weapon:
+#
+#   |Daikyu Prime||Charged Attack||Projectile||750||375||50%||Adding||CO-bonus
+#   only applies to base (uncharged) damage; bows have innate 2x damage
+#   multiplier when fully charged
+#
+# Every bow the catalog names reads a half for the same reason, and this one
+# has the same 2x charge.
+# see notes: co_carried_from_the_family
 co_behavior: additive_with_base_damage
+co_base_fraction: 0.5
 
 attack:
   # see notes: cone_half_angle_from

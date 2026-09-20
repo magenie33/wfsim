@@ -94,7 +94,7 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   | weapon | row | what it means here |
   | --- | --- | --- |
   | **Latron / Latron Prime** | Incarnon Mode, **Multiplying** | was shipped as Additive — FIXED. A free-standing final multiplier is a different number on any build carrying Serration. |
-  | Latron **Wraith** | *no row* | left Additive. A CO anomaly is per-ENTRY and is never generalised to a form (recorded rule) — but the form is the ADAPTER's, so one of the two readings is wrong and only the catalog can say which. Flagged in the yaml. |
+  | Latron **Wraith** | *no row* | **Multiplying, carried from the family.** The row names the Latron and its Prime; the form is the ADAPTER's and the projectile is the same, so the class reaches this variant too. CATALOGS.md §1. |
   | **Kunai / MK1-Kunai** | Incarnon Mode, **Multiplying** | applied at intake. |
   | Braton family | Incarnon Form Radial, Adding, 95% | already applied. |
   | Burston family | Incarnon Form Radial, Adding, **24%** | both halves modelled: the class by `takes_condition_overload`, the 24% by the radial's OWN derived `co_base_fraction` (13 + 42 = 55, 13/55). |

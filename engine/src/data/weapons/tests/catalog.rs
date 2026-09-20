@@ -202,16 +202,16 @@ fn the_ballistica_primes_charge_multiplier_solves_out_of_its_gunco_rows() {
 }
 
 /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the
-/// catalog. Nothing else may be anything but ordinary.
+/// catalog plus what the catalog's rows carry to their families
+/// (docs/CATALOGS.md §1). Nothing else may be anything but ordinary.
 ///
-/// The rule Ordinary has a definition — direct
-/// hits only, 100% of the base, added to the base-damage bucket — and
-/// a shared Genesis does not make one weapon.
+/// Ordinary has a definition — direct hits only, 100% of the base, added to
+/// the base-damage bucket.
 ///
 /// A LIST rather than a count, because the failure this exists to stop is
 /// not "someone added an anomaly", it is "someone gave one to the variant
-/// next door" — so adding a weapon whose family has a row fails here until
-/// the row is checked for that weapon's own name.
+/// next door" — so adding a weapon fails here until its row, or its
+/// family's, has been read for it.
 #[test]
 fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
     // (entry, behaviour, co_base_fraction) — see docs/CATALOGS.md for the
@@ -219,7 +219,7 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
     const NAMED: &[(&str, &str, f64)] = &[
         ("angstrum_incarnon", "independent", 1.0),
         ("prisma_angstrum_incarnon", "independent", 1.0),
-        // Rocket Impact; the base Akarius has no row and stays ordinary.
+        // Rocket Impact; the base Akarius has no row and carries this one.
         ("akarius_prime", "independent", 1.0),
         ("ballistica", "additive_with_base_damage", 0.25),
         // 0.5263 = 40/76, MEASURED (M66); the catalog's 50% is it rounded.
@@ -243,9 +243,8 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         ("paris_incarnon", "independent", 1.0),
         ("paris_prime", "additive_with_base_damage", 0.5),
         ("paris_prime_incarnon", "independent", 1.0),
-        // THE KUVA BATCH. Four of the sixteen have a row and
-        // the rest are ordinary; each is transcribed for the entry the
-        // catalog NAMES, never generalised to the family.
+        // THE KUVA BATCH. Four of the sixteen have a row of their own; the
+        // rest are ordinary unless a sibling's row reaches them.
         //   Kuva Seer | Projectile Impact | Projectile | 131 | 131 | 100% | Multiplying
         ("kuva_seer", "independent", 1.0),
         //   Kuva Drakgoon | Charged Attack | Projectile | 460 | 230 | 50% | Adding
@@ -266,18 +265,17 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // "Does not apply"` — which would be `inert` and has no entry,
         // because that alt fire is a Mercy-finisher tool rather than a way
         // to fight and is recorded as a gap instead.
-        // THE NINETEEN BASE WEAPONS behind the adversary families. Four of them have rows and the rest are ordinary,
-        // and the pattern does NOT follow the family: on the Arca Plasmor
-        // and the Hema both variants are named, on the Bubonico only the
-        // BASE is, and on the Ferrox only the TENET. A row is transcribed
-        // for the entry the catalog names, every time.
+        // THE NINETEEN BASE WEAPONS behind the adversary families. Four of
+        // them have rows: on the Arca Plasmor and the Hema both variants are
+        // named, on the Bubonico only the BASE is and on the Ferrox only the
+        // TENET — and those two rows now reach their siblings.
         //   Arca Plasmor | Normal Attack | Projectile | 600 | 600 | 100% | Multiplying
         ("arca_plasmor", "independent", 1.0),
         //   Hema | Normal Attack | Projectile | 47 | 47 | 100% | Multiplying
         ("hema", "independent", 1.0),
         //   Bubonico | Main-fire | Projectile | 287 | 287 | 100% | Multiplying
         //   Bubonico | Alt-fire  | Projectile |   9 |   9 | 100% | Multiplying
-        // …and the CODA Bubonico has neither, which is the asymmetry.
+        // …and the CODA Bubonico is named on neither, so it carries both.
         ("bubonico", "independent", 1.0),
         ("bubonico_burst", "independent", 1.0),
         // AND TWO THE CATALOG NAMES THAT NO ENTRY CAN TAKE:
@@ -295,7 +293,7 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         //   Coda Hema | Normal Attack | Projectile | 52 | 52 | 100% | Multiplying
         ("coda_hema", "independent", 1.0),
         //   Tenet Arca Plasmor | Normal Attack | Projectile | 760 | 760 | 100% | Multiplying
-        // The ORDINARY Arca Plasmor has no row and stays Additive.
+        // The ORDINARY Arca Plasmor has a row of its own, three lines up.
         ("tenet_arca_plasmor", "independent", 1.0),
         //   Tenet Plinx | Alt Fire Impact | Projectile | 1000 | 1000 | 100%
         //     | Multiplying | "Scales properly with magazine size"
@@ -331,11 +329,10 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // three of the four are about telling near-identical entries apart:
         //   Grattler       | Normal attack | Projectile | 100% | Multiplying
         //   Larkspur Prime | Alt-fire      | Projectile | 100% | Multiplying
-        // The Grattler's row names the ORDINARY weapon, so the Kuva
-        // Grattler has none and stays additive — a shared Genesis does not
-        // make a family one weapon. The Larkspur Prime's row names its
-        // ALT-FIRE, so the Prime's normal fire has none, and the ordinary
-        // Larkspur has none on EITHER form. Both asymmetries are data.
+        // The Grattler's row names the ORDINARY weapon and the Kuva
+        // Grattler carries it. The Larkspur Prime's row names its ALT-FIRE,
+        // which the ordinary Larkspur's alt-fire carries — and NEITHER
+        // weapon's normal fire does, because a row scopes to a form.
         ("grattler", "independent", 1.0),
         // Arbucep | Direct Hit | Projectile | 100% | Multiplying, with the
         // note "Consistent on all 6 projectiles … Does not apply to the
@@ -352,8 +349,8 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         //   Mandonel     | Charged attack   | Hitscan    | 100% | ADDING
         // One weapon, two rows, two answers — so the Mandonel's charged
         // form is ordinary and does not appear here, while its uncharged
-        // one does. The ORDINARY Corvas is named on neither row and is
-        // ordinary on both forms.
+        // one does. The ORDINARY Corvas is named on neither row and carries
+        // the Prime's on both forms.
         ("velocitus", "independent", 1.0),
         ("velocitus_uncharged", "independent", 1.0),
         ("corvas_prime", "independent", 1.0),
@@ -466,6 +463,31 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // of those take no CO by default. So this line is what makes the
         // three halves of one attack agree.
         ("grimoire_active", "inert", 1.0),
+
+        // CARRIED FROM THE FAMILY (docs/CATALOGS.md §1) — entries the catalog
+        // does not name, reading the class of a sibling of the same family
+        // and the same FORM. The row behind each is quoted on the entry the
+        // catalog does name; the sibling is in brackets.
+        ("akarius", "independent", 1.0),                  // [akarius_prime]
+        ("ballistica_incarnon", "independent", 1.0),      // [ballistica_prime_incarnon]
+        ("rakta_ballistica_incarnon", "independent", 1.0),// [ballistica_prime_incarnon]
+        ("coda_bubonico", "independent", 1.0),            // [bubonico]
+        ("coda_bubonico_burst", "independent", 1.0),      // [bubonico_burst]
+        ("coda_catabolyst", "independent", 1.0),          // [catabolyst]
+        ("corvas", "independent", 1.0),                   // [corvas_prime]
+        ("corvas_uncharged", "independent", 1.0),         // [corvas_prime_uncharged]
+        ("epitaph_prime", "independent", 1.0),            // [epitaph]
+        ("epitaph_prime_uncharged", "independent", 1.0),  // [epitaph_uncharged]
+        ("fulmin_prime_semi", "independent", 1.0),        // [fulmin_semi]
+        ("kuva_grattler", "independent", 1.0),            // [grattler]
+        ("larkspur_charged", "independent", 1.0),         // [larkspur_prime_charged]
+        ("latron_wraith_incarnon", "independent", 1.0),   // [latron_incarnon]
+        ("mk1_paris_incarnon", "independent", 1.0),       // [paris_incarnon]
+        ("trumna_prime_grenade", "independent", 1.0),     // [trumna_grenade]
+        // THE ONE FRACTION THAT TRAVELS: every bow the catalog names reads a
+        // half, and the row says why — the CO bonus is the uncharged damage
+        // and a full charge doubles it. [daikyu_prime]
+        ("daikyu", "additive_with_base_damage", 0.5),
     ];
 
     let mut unexpected = Vec::new();
@@ -553,6 +575,57 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         field_co, ["mutalist_cernos", "pox", "torid"],
         "a lingering field likewise"
     );
+}
+
+/// A CO CLASS BELONGS TO THE FAMILY — docs/CATALOGS.md §1 "THE RULE".
+///
+/// The list above is the transcription and this is the shape it has to have:
+/// variants of one family in one FORM read one class, so a row reaching only
+/// the entry the wiki happened to type cannot leave its sibling behind. The
+/// form is half the key because the catalog rows a weapon's charged shot
+/// apart from its uncharged one and may answer differently — the Mandonel
+/// does.
+///
+/// THE CLASS, NOT THE FRACTION: a `co_base_fraction` is measured against one
+/// weapon's own damage, so it travels only where the row states a mechanism
+/// (the bows' half). The Acceltra pair is where that bites.
+///
+/// AND THE SLOT, because a Kitgun chamber in two slots is two weapons and
+/// the catalog rows them apart — the Sporelacer is Multiplying as a primary
+/// and Adding against a fixed 57 as a secondary.
+#[test]
+fn a_variant_carries_its_familys_condition_overload_class() {
+    fn family(w: &crate::data::weapons::WeaponSpec) -> Option<String> {
+        w.riven_family.clone().or_else(|| {
+            let group = w.transform_group.as_deref()?;
+            all()
+                .iter()
+                .find(|b| b.transform_group.as_deref() == Some(group) && b.riven_family.is_some())?
+                .riven_family
+                .clone()
+        })
+    }
+    let mut by_family: std::collections::BTreeMap<
+        (String, String, String),
+        Vec<&crate::data::weapons::WeaponSpec>,
+    > = Default::default();
+    for w in all() {
+        if let Some(f) = family(w) {
+            by_family.entry((f, w.form.clone(), w.slot.clone())).or_default().push(w);
+        }
+    }
+    for ((f, form, _slot), ws) in by_family {
+        let mut classes: Vec<(&str, &str)> = ws
+            .iter()
+            .map(|w| (w.id.as_str(), w.co_behavior.as_deref().unwrap_or("additive_with_base_damage")))
+            .collect();
+        classes.sort_unstable();
+        let first = classes[0].1;
+        assert!(
+            classes.iter().all(|(_, c)| *c == first),
+            "{f} ({form}): one family and one form, {classes:?}"
+        );
+    }
 }
 /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
 /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.

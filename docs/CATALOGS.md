@@ -6,11 +6,12 @@ weapon's own numbers never would — that this weapon's bonus multiplies where
 everyone else's adds, that this attack part is exempt, that this one does not
 work at all.
 
-Those rows are DATA, and the rule for them is the one the roster already
-follows for Condition Overload: **the catalog is
-authoritative, and absence from it means ordinary — not unknown.** A row is
-never generalised to a weapon, a form, or a class of behaviour; it is
-transcribed for the entry it names.
+Those rows are DATA, and the rule for them is: **the catalog is
+authoritative, and absence from it means ordinary — not unknown.** What a row
+reaches is the FAMILY of the entry it names — its variants, in the same form
+and the same slot — because a Wraith's Genesis projectile is not a different
+mechanism from the Latron's. What it never reaches is another FORM, another
+SLOT, or a class of behaviour.
 
 This file is where the rows live, so they stop being scattered across yaml
 comments and can be diffed against the wiki in one pass.
@@ -34,13 +35,12 @@ Columns, verbatim:
 
 ### THE RULE, stated once
 
-> A shared Incarnon Genesis does not make one weapon: a variant is still its
-> own entry. Anything not on the CO table is ordinary — direct hits only,
-> 100%, added. If the base variant is on the table and the Prime is not, the
-> base gets the anomaly and the Prime gets the ordinary rule. Never
-> generalise a row to a family.
+> A row reaches the FAMILY: the variants of the weapon it names, in the same
+> FORM and the same SLOT, read the class it gives. A weapon no row reaches at
+> all is ordinary — direct hits only, 100%, added. The CLASS travels; a
+> measured FRACTION does not.
 
-Four things, and the last two are the ones that keep being got wrong:
+Five things, and the last two are the ones that keep being got wrong:
 
 1. **ORDINARY has a definition**, not just a name: direct hits only, 100% of the
    attack's base, added into the base-damage bucket. `co_behavior:
@@ -53,14 +53,35 @@ Four things, and the last two are the ones that keep being got wrong:
    here. It is not a law — see the section below for why
    the page argues that side itself. Rule 2 already covered this; it is spelled
    out because the prose is what tempts you to break it.
-4. **A SHARED GENESIS DOES NOT MAKE ONE WEAPON.** An Incarnon form is still that
-   weapon's form, so a row is transcribed for the entries it NAMES and no
-   others. If the base variant is on the table and the Prime is not, the base
-   gets the anomaly and the Prime gets ordinary.
+4. **A VARIANT IS NOT A SPECIAL CASE.** There is no mechanism by which a
+   Wraith's Incarnon projectile reads a different CO class from the Latron's:
+   it is the same Genesis, the same form, the same numbers. Where the Weapon
+   cell names one variant and not its siblings — `Latron/Latron Prime`,
+   `Grattler`, `Larkspur Prime`, `Bubonico` — that is the wiki typing what it
+   measured, and the siblings carry it. Each carries `# see notes:
+   co_carried_from_the_family` and names the entry the row is quoted on.
+5. **A FORM AND A SLOT ARE NOT VARIANTS.** The catalog rows a charged shot
+   apart from an uncharged one and may answer differently — the Mandonel is
+   Multiplying uncharged and ADDING charged — and it rows a Kitgun chamber
+   once per slot, the Sporelacer being Multiplying as a primary and Adding
+   against a fixed 57 as a secondary. A row carries across variants, never
+   across a form or a slot.
 
-Enforced by `the_only_condition_overload_anomalies_are_the_ones_the_catalog_names`,
-which carries the anomalies as a LIST: a weapon whose FAMILY has a row fails
-until the row is checked for that weapon's own name.
+**WHAT DOES NOT TRAVEL IS A FRACTION.** `co_base_fraction` is a measurement of
+one weapon's own damage — the Acceltra's 74.3% is its 26 against its 35, and
+there is no rule to put the Prime's 44 through. So the Prime carries the class
+and NOT the number, and says so. The exception is a fraction the row explains
+rather than measures: every bow reads a half because *"CO-bonus only applies to
+base (uncharged) damage; bows have innate 2x damage multiplier when fully
+charged"*, which is a mechanism, so the Daikyu carries the Prime's half.
+
+Enforced by two tests.
+`the_only_condition_overload_anomalies_are_the_ones_the_catalog_names` carries
+every non-ordinary entry as a LIST, so a new weapon fails until its row, or
+its family's, has been read for it; the carried ones are a section of their
+own, each naming the sibling it reads.
+`a_variant_carries_its_familys_condition_overload_class` is the shape: one
+family, one form, one slot, one class.
 
 ### Rows carried
 
@@ -160,8 +181,8 @@ in yaml comments instead. That is how five of them came to be wrong.
 | Dread | Incarnon Mode | 100% | Multiplying | `independent` |
 | Paris / Paris Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
 | Mk1-Paris | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
-| Paris / Paris Prime | **Incarnon Mode** | 100% | Multiplying | `independent` — Mk1-Paris is NOT on this row |
-| Latron / Latron Prime | Incarnon Mode | 100% | Multiplying | `independent` — Latron Wraith is NOT on this row |
+| Paris / Paris Prime | **Incarnon Mode** | 100% | Multiplying | `independent` — and `mk1_paris_incarnon` carries it |
+| Latron / Latron Prime | Incarnon Mode | 100% | Multiplying | `independent` — and `latron_wraith_incarnon` carries it |
 | Felarx | Normal + Incarnon Mode | 100% | Multiplying | both `independent` |
 | Kunai | Normal Attack | 100% | Adding | ordinary |
 | Kunai / Mk1-Kunai | Incarnon Mode | 100% | Multiplying | `independent` — see the two notes below |
@@ -362,8 +383,8 @@ the exclusion is opt-in per perk.
 **AND THE DEFAULT FOLLOWS THE WIKI; A MEASUREMENT RE-CERTIFIES**. Flipping
 that default the other way would touch 107 perks across 65 weapons on the
 strength of ONE measured weapon, which the repo's own rule forbids ("the catalog
-is authoritative and absence means ORDINARY", "a row is transcribed for the
-entry it names rather than generalised to a class"). What the Burston
+is authoritative and absence means ORDINARY", and a row reaches a family's
+variants rather than a class of behaviour). What the Burston
 measurement (M48) establishes is narrower, and is what is applied:
 
 > **A fraction the catalog DERIVES belongs to the PERK, so it reaches every
@@ -796,6 +817,30 @@ Firestorm — it is a rifle — and the mod does nothing to its explosion anyway
 ("Primary Fire AoE not affected by Firestorm", shared with both Trumnas). That
 one the engine gets WRONG today, and it is recorded on the weapon's radial.
 
+### THE RULE — §1's, and it bites harder here
+
+> A compression row reaches the FAMILY. Where the catalog names one variant
+> and not its siblings, the siblings carry the row too — same Genesis, same
+> radius, same answer. What it does NOT reach is another FORM: a weapon's
+> alt-fire has a row of its own and may answer differently.
+
+Two things make the stakes higher than in §1:
+
+1. **An absent weapon has no answer at all.** §1's table lists the anomalies,
+   so absence there falls back on a defined class. This one lists every AoE
+   that was TESTED, `Doesn't Work` rows included — and the engine's fallback
+   for an entry with no `compression:` is that the arcane pays NOTHING. A
+   silent zero is not a reading of the table, it is the absence of one.
+2. **The table spells variants out when it means them** — `Gorgon (Prisma,
+   Wraith)`, `Strun (Prime, Wraith)`, and the Ferrox's base-radius cell
+   reading "3.6 m (4.0 m)" for the Tenet. A sibling missing from a cell that
+   shape is the wiki omitting a variant, not the arcane refusing one.
+
+Carried this way, and they are the only two: `latron_wraith_incarnon` and
+`mk1_strun_incarnon`. Enforced by
+`a_variant_carries_its_familys_compression_row`, which keys on family AND
+form, so the Trumna's grenade is never asked to answer for its primary fire.
+
 ### Rows the ROSTER carries
 
 Only ours, so this stays diffable. The full table lives on the wiki, and
@@ -811,7 +856,7 @@ the additions are a tested **0%** ("Archguns cannot equip", the beam
 exclusion), which is a ROW and not an omission: saying so is the difference
 between "checked" and "nobody looked".
 
-106 rows.
+108 rows.
 
 | our entry | eff | base radius | max bonus | stacking | radius calc |
 | --- | --- | --- | --- | --- | --- |
@@ -868,6 +913,7 @@ between "checked" and "nobody looked".
 | `larkspur_prime_charged` | 0% | 9.6 m | — | Doesn't Work | doesnt_work |
 | `latron_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
 | `latron_prime_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `latron_wraith_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot, **carried from the family** |
 | `lenz` | 100% | 7.2 m | +576% | Multiplies | snapshot |
 | `mausolon` | 100% | 1.8 m | +144% | Adds | stolen |
 | `mausolon_charged` | 100% | 8 m | +640% | Adds | snapshot |
@@ -904,6 +950,7 @@ between "checked" and "nobody looked".
 | `strun_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
 | `strun_prime_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
 | `strun_wraith_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `mk1_strun_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot, **carried from the family** |
 | `synoid_simulor` | 100% | 5 m | +400% | Multiplies | snapshot |
 | `tenet_envoy` | 100% | 8 m | +640% | Multiplies | snapshot |
 | `tenet_ferrox` | 100% | 4 m | +320% | Adds | snapshot |
@@ -942,7 +989,7 @@ bracket. They meet in one place and it is not the one you would guess:
   difference rather than either number on its own.
 
 `the_roster_reproduces_primary_compressions_published_column` re-derives the
-table's **Max Damage Bonus @ Base Radius** for all 26 rows from our own weapon
+table's **Max Damage Bonus @ Base Radius** for every row the roster carries, from our own weapon
 data. That column is not transcribed anywhere — it falls out of the radius, the
 row and the rank ramp — so it is a cross-check: a radius typed wrong, an
 effectiveness misread or an override invented breaks it.

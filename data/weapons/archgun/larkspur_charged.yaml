@@ -14,14 +14,11 @@ deployments:
 
 accuracy: 100                # "Very High" for the alt-fire, like the Prime's
 
-# THE CATALOG NAMES THE PRIME AND NOT THIS ONE. "Larkspur Prime | Alt-fire |
-# Projectile | 100% | Multiplying" is a row for the Prime's alt-fire; the
-# ordinary Larkspur's alt-fire has no row at all. Absence means ORDINARY, and a
-# row is transcribed for the entry it names rather than generalised to a family
-# — which is the exact mistake docs/CATALOGS.md was written about. So the Prime
-# is `independent` here and the ordinary is additive, and that asymmetry is
-# DATA, not an oversight.
-co_behavior: additive_with_base_damage
+# THE ROW IS THE PRIME'S ALT-FIRE and this is the same form on the same
+# family, so it reads the same class. The Larkspur's NORMAL fire is named on
+# neither entry and stays ordinary — the row scopes to a form, not a weapon.
+# CARRIED FROM `larkspur_prime_charged` — see notes: co_carried_from_the_family
+co_behavior: independent
 
 attack:
   # see notes: cone_half_angle_from
