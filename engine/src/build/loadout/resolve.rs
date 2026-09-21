@@ -221,6 +221,8 @@ pub fn resolve_for(
     let mut co = base.innate_co_per_type + gate(GatedGrant::ConditionOverload);
     let (mut co_stack, mut multishot_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut crit_chance_on_headshot: Option<TimedBuff> = None;
+    // LEADED GAS' window — an element and a status bonus a weak point turns on.
+    let mut on_weakpoint: Option<crate::model::WeakpointBuff> = None;
     let mut crit_chance_stack: Option<StackSpec> = None;
     // …and the weak-point crit bucket starts at the EVOLUTION's, not at zero,
     // because the card says it is additive with the mods that write here.
@@ -600,6 +602,24 @@ pub fn resolve_for(
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
+                // LEADED GAS. Under AssumedMax the status half joins its
+                // bucket and the ELEMENT does not: an element is a share of the
+                // base added to the damage VECTOR, and the vector is built
+                // above this loop. So the assumed-max panel understates it, and
+                // the fight — which has the window — is where it pays.
+                ModEffect::OnWeakpointElementAndStatus { element, bonus, duration } => {
+                    match policy {
+                        StackPolicy::AssumedMax => sc += bonus,
+                        StackPolicy::Emergent => {
+                            on_weakpoint = Some(crate::model::WeakpointBuff {
+                                element,
+                                bonus,
+                                duration,
+                            })
+                        }
+                        StackPolicy::BaseOnly => {}
+                    }
+                }
                 ModEffect::OnHeadshotKillCritChance {
                     per_stack,
                     max_stacks,
@@ -1758,6 +1778,7 @@ pub fn resolve_for(
         co_stack,
         multishot_stack,
         crit_chance_on_headshot,
+        on_weakpoint,
         crit_chance_stack,
         status_damage_multiplier: 1.0 + status_damage,
         status_duration_multiplier: 1.0 + sdur,

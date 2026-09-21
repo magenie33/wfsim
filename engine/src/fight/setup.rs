@@ -129,6 +129,9 @@ impl FightParams {
         if self.crit_chance_on_headshot.is_some() {
             push!("on_headshot_cc", 1);
         }
+        if self.on_weakpoint.is_some() {
+            push!("on_weakpoint_element", 1);
+        }
         if self.crit_damage_on_kill.is_some() {
             push!("on_kill_cd", 1);
         }
@@ -326,6 +329,10 @@ impl FightParams {
         if let Some(b) = self.crit_chance_on_headshot.as_mut() {
             set_timed(b, cfg, "on_headshot_cc");
         }
+        // LEADED GAS is one clock and both stats, so one card switches both.
+        if let Some(&(stacks, locked)) = cfg.get("on_weakpoint_element") {
+            self.weakpoint_open = Some((stacks > 0, locked));
+        }
         if let Some(b) = self.crit_damage_on_kill.as_mut() {
             set_timed(b, cfg, "on_kill_cd");
         }
@@ -396,6 +403,9 @@ impl FightParams {
         }
         if self.crit_chance_on_headshot.is_some() && by_id("on_headshot_cc") {
             self.crit_chance_on_headshot = None;
+        }
+        if self.on_weakpoint.is_some() && by_id("on_weakpoint_element") {
+            self.on_weakpoint = None;
         }
         if self.crit_damage_on_kill.is_some() && by_id("on_kill_cd") {
             self.crit_damage_on_kill = None;
@@ -1114,6 +1124,8 @@ impl FightParams {
             co_stack: panel.co_stack,
             multishot_stack: panel.multishot_stack,
             crit_chance_on_headshot: panel.crit_chance_on_headshot,
+            on_weakpoint: panel.on_weakpoint,
+            weakpoint_open: None,
             crit_chance_stack: panel.crit_chance_stack,
             status_damage_multiplier: panel.status_damage_multiplier,
             status_duration_multiplier: panel.status_duration_multiplier,

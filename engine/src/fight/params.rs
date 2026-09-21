@@ -330,6 +330,15 @@ pub struct FightParams {
     pub multishot_stack: Option<crate::model::StackSpec>,
     /// Crosshairs on-headshot buff: absolute crit chance as a timed buff.
     pub crit_chance_on_headshot: Option<crate::model::TimedBuff>,
+    /// LEADED GAS: the ELEMENT and the status chance a weak-point hit turns on
+    /// together. The element is a share of the modified base added to the
+    /// vector and to that element's DoT bracket, which is what makes this card
+    /// reach the gas clouds it is named for.
+    pub on_weakpoint: Option<crate::model::WeakpointBuff>,
+    /// …AND WHAT A CARD SAID ABOUT IT: `(open at t = 0, locked)`. A locked
+    /// window never shuts, which is how a reader asks "what is this worth while
+    /// it is up" without also asking how often they land a weak point.
+    pub weakpoint_open: Option<(bool, bool)>,
     /// Crosshairs on-headshot-kill stacks: absolute cc per stack,
     /// per-stack expiry (FIFO), NOT the lose-one-reset decay.
     pub crit_chance_stack: Option<crate::model::StackSpec>,

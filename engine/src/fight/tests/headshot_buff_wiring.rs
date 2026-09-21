@@ -73,3 +73,104 @@ fn every_evolution_buff_card_is_backed_by_the_sim() {
         }
     }
 }
+
+/// **LEADED GAS PAYS BOTH HALVES, AND ONLY WHILE THE WINDOW IS OPEN.**
+///
+/// One buff, two stats, one clock — so the assertions are paired: a fight that
+/// never lands a weak point gets neither, and the same fight aiming at a head
+/// gets both. What each half REACHES is different — the element joins the
+/// damage vector, the status chance its relative bracket — so a test on damage
+/// alone would pass on a card that granted only one of them.
+#[test]
+fn leaded_gas_turns_gas_and_status_on_at_a_weak_point() {
+    let card =
+        crate::model::WeakpointBuff { element: DamageType::Gas, bonus: 3.0, duration: 6.0 };
+    let fight = |head: bool, card: Option<crate::model::WeakpointBuff>| {
+        let p = FightParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            dot_modified_base: Some(100.0),
+            status_chance: 0.1,
+            base_status_chance: 0.1,
+            crit_multiplier: 1.0,
+            fire_rate: 2.0,
+            magazine_size: 1e9,
+            duration_seconds: 20.0,
+            body_parts: if head { all_head() } else { mono_body(1.0) },
+            on_weakpoint: card,
+            arcane: ArcaneFx::none(),
+            ..FightParams::default()
+        };
+        monte_carlo(&p, 200, 0x1EAD)
+    };
+    // A CARD THAT NEVER TRIGGERS MOVES NOTHING, which is the control that makes
+    // the rest mean anything.
+    let (body_bare, body_card) = (fight(false, None), fight(false, Some(card)));
+    assert!(
+        (body_bare.mean_damage - body_card.mean_damage).abs() < 1e-9,
+        "{} vs {}",
+        body_bare.mean_damage,
+        body_card.mean_damage
+    );
+    let (head_bare, head_card) = (fight(true, None), fight(true, Some(card)));
+    // +300% OF THE MODIFIED BASE AS GAS is most of the instance.
+    assert!(
+        head_card.mean_damage > head_bare.mean_damage * 2.0,
+        "the element reaches the hit: {:.0} -> {:.0}",
+        head_bare.mean_damage,
+        head_card.mean_damage
+    );
+    // …AND 0.1 STATUS CHANCE BECOMES 0.4, which the proc count shows and the
+    // damage could not have.
+    assert!(
+        head_card.mean_procs > head_bare.mean_procs * 3.0,
+        "{} -> {} procs",
+        head_bare.mean_procs,
+        head_card.mean_procs
+    );
+}
+
+/// …AND THE ELEMENT REACHES THE GAS CLOUD, which is what the card is for.
+///
+/// VERBATIM: *"The Gas damage bonus will increase the damage of gas status
+/// effects from the Vesper 77 while the buff is active"* — and the reason that
+/// is worth saying at all is the rule beside it: a Heat or Toxin mod adds
+/// nothing to a Gas tick, so a bonus for GAS is one of the only things that
+/// ever reaches one.
+#[test]
+fn leaded_gas_reaches_the_cloud() {
+    let dot_of = |card: Option<crate::model::WeakpointBuff>| {
+        let p = FightParams {
+            damage: DamageVector::new().with(DamageType::Gas, 100.0),
+            dot_modified_base: Some(100.0),
+            // EVERY SHOT PROCS, so the count is fixed and the only thing left
+            // that can move is what a tick is worth.
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            forced_procs: vec![DamageType::Gas],
+            crit_multiplier: 1.0,
+            fire_rate: 1.0,
+            magazine_size: 1e9,
+            duration_seconds: 20.0,
+            body_parts: all_head(),
+            on_weakpoint: card,
+            arcane: ArcaneFx::none(),
+            ..FightParams::default()
+        };
+        let s = monte_carlo(&p, 200, 0x1EAD);
+        (s.mean_dot_damage, s.mean_dot_ticks)
+    };
+    let (bare, bare_ticks) = dot_of(None);
+    let (carded, carded_ticks) = dot_of(Some(crate::model::WeakpointBuff {
+        element: DamageType::Gas,
+        bonus: 3.0,
+        duration: 6.0,
+    }));
+    assert!(
+        (bare_ticks - carded_ticks).abs() < 1.0,
+        "the same clouds either way: {bare_ticks} vs {carded_ticks}"
+    );
+    assert!(
+        carded > bare * 1.5,
+        "the bonus is in the Gas tick's bracket: {bare:.0} -> {carded:.0}"
+    );
+}

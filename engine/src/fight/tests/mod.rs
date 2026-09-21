@@ -132,6 +132,8 @@ impl Default for FightParams {
             co_stack: None,
             multishot_stack: None,
             crit_chance_on_headshot: None,
+            on_weakpoint: None,
+            weakpoint_open: None,
             crit_chance_stack: None,
             status_damage_multiplier: 1.0,
             elem_dot_bonus: Vec::new(),

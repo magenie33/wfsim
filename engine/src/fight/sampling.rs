@@ -25,6 +25,7 @@ pub(super) fn sample_stacks(
     buff_stacks: &mut [LiveStacks],
     ch_stacks: &[f64],
     ch_buff_expiry: f64,
+    weakpoint_expiry: f64,
     fire_rate_reload_expiry_seconds: f64,
     base_damage_reload_expiry_seconds: f64,
     base_damage_eximus_expiry_seconds: f64,
@@ -102,6 +103,10 @@ pub(super) fn sample_stacks(
                 until(now < influence_until, influence_until),
             ),
             "on_headshot_cc" => (live(now < ch_buff_expiry), until(now < ch_buff_expiry, ch_buff_expiry)),
+            // LEADED GAS: one window, drawn as the toggle it is.
+            "on_weakpoint_element" => {
+                (live(now < weakpoint_expiry), until(now < weakpoint_expiry, weakpoint_expiry))
+            }
             "on_kill_cd" => {
                 let e = arc.crit_damage_kill_expiry_seconds();
                 (live(now < e), until(now < e, e))

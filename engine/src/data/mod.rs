@@ -67,6 +67,7 @@ mod tests {
                 || IndirectStat::from_id(w).is_some()
                 || [
                     "status_damage", "condition_overload", "magazine_refill", "crit_and_status", "toxin_damage",
+                    "element_and_status_chance",
                     "final_damage", "ammo_efficiency", "weakpoint_crit_chance", "flat_base_magazine",
                 ]
                 .contains(&w)

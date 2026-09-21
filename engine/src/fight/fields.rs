@@ -454,6 +454,9 @@ pub(super) fn field_tick(
         procs,
         at,
         InstanceScale {
+            // A FIELD TICK IS NOT THE WEAPON'S HIT — the cloud is already
+            // there, and what it is worth was settled when it was seeded.
+            weakpoint_element: None,
             mb_live,
             crit_multiplier,
             // A STATUS IS STAMPED WITH THE MULTIPLIERS OF THE HIT THAT APPLIED

@@ -361,6 +361,19 @@ pub enum ModEffect {
     /// Galvanized Crosshairs' single refreshable buff: on HEADSHOT,
     /// +bonus relative crit chance (while aiming) for `duration`.
     OnHeadshotCritChance { bonus: f64, duration: f64 },
+    /// LEADED GAS: a weak-point hit turns an ELEMENT and STATUS CHANCE on
+    /// together, at the same number, for the same seconds.
+    ///
+    /// ONE EFFECT BECAUSE IT IS ONE BUFF — the card prints one column for both
+    /// ("Gas Damage & Status Chance Increase") and one duration beside it, so
+    /// two effects would be two windows that can only ever agree.
+    ///
+    /// THE ELEMENT IS THE ELEMENTAL BUCKET's, which is what "+300% Gas Damage"
+    /// means everywhere else: the weapon gains that share of its modified base
+    /// AS Gas, additive with elemental mods. It is also why the card reaches
+    /// the gas CLOUDS — an element bonus is in every Gas tick's bracket, and
+    /// nothing else in the game puts one there (the wiki's own note).
+    OnWeakpointElementAndStatus { element: DamageType, bonus: f64, duration: f64 },
     /// Galvanized Crosshairs' stacks: on HEADSHOT KILL, +per_stack
     /// relative crit chance; each stack has its OWN duration (per-stack
     /// expiry FIFO — unlike the other Galvanized mods' decay).

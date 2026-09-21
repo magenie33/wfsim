@@ -290,6 +290,18 @@ pub(crate) fn enumerate_buffs(
                 uncapped: false,
                 trigger: None,
                 }),
+                OnWeakpointElementAndStatus { .. } => push(BuffMeta {
+                    id: "on_weakpoint_element".into(),
+                    name: nm.clone(),
+                    grants: String::new(),
+                    max_stacks: 1,
+                    kind: "toggle",
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                    uncapped: false,
+                    trigger: None,
+                }),
                 OnHeadshotCritChance { .. } => push(BuffMeta {
                     id: "on_headshot_cc".into(),
                     name: nm.clone(),

@@ -500,6 +500,13 @@ pub(super) fn spread_hit(
         procs,
         t,
         InstanceScale {
+            // NOT CARRIED HERE, and it is the one gap in Leaded Gas: the
+            // weak-point window lives in the run loop and a spread instance is
+            // settled without it, so a Gas cloud a punched or chained body
+            // takes misses the element bonus the aimed body's gets. Worth a
+            // sentence rather than eight signatures until a second card wants
+            // the same thing.
+            weakpoint_element: None,
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
             // off `share`: a Slash bleed off a headshot is the same size as one
             // off a bodyshot, because a status effect reads the modded base.
@@ -1416,6 +1423,8 @@ pub(super) fn fire_syndicate_radial(
             vec![sy.element],
             at,
             InstanceScale {
+                // A SYNDICATE RADIAL IS NOT THE WEAPON'S HIT.
+                weakpoint_element: None,
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,
                 part_factor: 1.0,

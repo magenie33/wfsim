@@ -263,7 +263,8 @@ pub(super) fn sample_frames_up_to(
         while *next_frame <= until && *next_frame < params.duration_seconds {
             let stacks = sample_stacks(
                 params, &rep.buffs, *next_frame, arc, gal, buff_stacks,
-                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.fire_rate_after_reload, windows.base_damage_after_reload,
+                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.weakpoint_buff,
+                windows.fire_rate_after_reload, windows.base_damage_after_reload,
                 windows.base_damage_eximus, windows.streak, tendril.count, crit_per_hit.stacks, bar,
                 combo_at(combo_spec, params.combo_held, sniper_combo.count,
                     sniper_combo.last_hit, *next_frame),

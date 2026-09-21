@@ -222,6 +222,11 @@ impl ModEffect {
             OnHeadshotCritChance { bonus, duration } => {
                 format!("On Headshot: {} Crit Chance, {duration}s", pct(bonus))
             }
+            OnWeakpointElementAndStatus { element, bonus, duration } => format!(
+                "On Weak Point: {} {} Damage and Status Chance, {duration}s",
+                pct(bonus),
+                element.name(),
+            ),
             OnHeadshotKillCritChance { per_stack, max_stacks, duration } => {
                 format!("On Headshot Kill: {} Crit Chance per stack ×{max_stacks}, {duration}s", pct(per_stack))
             }

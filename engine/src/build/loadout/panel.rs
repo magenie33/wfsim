@@ -562,6 +562,8 @@ pub struct ResolvedPanel {
     /// Crosshairs' on-headshot buff (Emergent): ABSOLUTE crit chance
     /// (base_cc × bonus) as a timed buff (starts active).
     pub crit_chance_on_headshot: Option<TimedBuff>,
+    /// LEADED GAS: the element and the status chance a weak-point hit turns on.
+    pub on_weakpoint: Option<crate::model::WeakpointBuff>,
     /// Crosshairs' on-headshot-kill stacks (Emergent): per_stack is
     /// ABSOLUTE crit chance; per-stack expiry semantics.
     pub crit_chance_stack: Option<StackSpec>,

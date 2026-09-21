@@ -362,6 +362,13 @@ pub(super) fn open<'a>(
             .crit_chance_stack
             .as_ref()
             .map_or(Vec::new(), |s| vec![s.duration; s.initial_stacks as usize]),
+        // EARNED, like every timed buff: a weak point has to land first — and
+        // a card that seeds it open says so, a LOCKED one never shutting.
+        weakpoint_buff: match (params.on_weakpoint, params.weakpoint_open) {
+            (Some(_), Some((true, true))) => f64::INFINITY,
+            (Some(b), Some((true, false))) => b.duration,
+            _ => f64::NEG_INFINITY,
+        },
         headshot_times: Vec::new(),
         streak: f64::NEG_INFINITY,
         base_damage_after_reload: params

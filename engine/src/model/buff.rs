@@ -194,6 +194,22 @@ pub enum BuffTrigger {
 /// bracket — that is the part which cannot be generalised and must not be:
 /// fire rate is additive on the BASE rate, reload speed scales the reload, and
 /// base damage joins the damage bucket.
+/// WHAT A WEAK-POINT HIT TURNS ON, for a while — Leaded Gas, and the shape any
+/// card granting an ELEMENT on a trigger would take.
+///
+/// THE ELEMENT IS NOT A BUCKET. Every other grant in [`BuffGrant`] is a number
+/// added to a bracket; this one adds a share of the modified base to the damage
+/// VECTOR and to every tick of that element's status, which is why it is its
+/// own type rather than a variant there.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct WeakpointBuff {
+    pub element: crate::rules::damage::DamageType,
+    /// The share of the modified base the element is worth, and the relative
+    /// status chance — ONE number, because the card prints one.
+    pub bonus: f64,
+    pub duration: f64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuffGrant {
     BaseDamage,

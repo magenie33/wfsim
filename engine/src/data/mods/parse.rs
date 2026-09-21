@@ -393,6 +393,16 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 ("headshot", "crit_chance") => {
                     ModEffect::OnHeadshotCritChance { bonus: per, duration: dur }
                 }
+                // LEADED GAS, and the grant names both halves because the card
+                // does: one column, one duration, two stats. `element:` says
+                // which one — the same field every elemental effect reads.
+                ("headshot", "element_and_status_chance") => {
+                    ModEffect::OnWeakpointElementAndStatus {
+                        element: element(v.get("element").and_then(Value::as_str)?)?,
+                        bonus: per,
+                        duration: dur,
+                    }
+                }
                 ("headshot_kill", "crit_chance") => {
                     ModEffect::OnHeadshotKillCritChance { per_stack: per, max_stacks: stacks, duration: dur }
                 }

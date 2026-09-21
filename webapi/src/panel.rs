@@ -609,6 +609,19 @@ fn mod_sources(
                         )),
                     ),
                 },
+                // LEADED GAS. The STATUS half is a row; the ELEMENT half is a
+                // share of the base added to the damage vector, so it is a
+                // damage row nowhere and belongs to the card's own line.
+                OnWeakpointElementAndStatus { bonus, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot headshot"})),
+                    _ => push(
+                        "status_chance",
+                        bonus,
+                        Some("on a weak-point hit, buff assumed up".into()),
+                    ),
+                },
                 OnHeadshotCritChance { bonus, .. } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,

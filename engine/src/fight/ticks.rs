@@ -473,6 +473,9 @@ pub(super) fn process_ticks(
         if let Some(bracket) = xh {
             if fire_extra_hits(
                 value,
+                // A DETONATION IS SETTLED IN THE TICK LOOP, where the weapon's
+                // live windows are out of scope — see `InstanceScale`.
+                None,
                 bracket,
                 1.0,
                 false,

@@ -838,7 +838,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         if rec.wants(t) {
             let stacks = sample_stacks(
                 params, rec_roster, t, &mut *arc, &mut *gal, &mut *buff_stacks,
-                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.fire_rate_after_reload,
+                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.weakpoint_buff,
+                windows.fire_rate_after_reload,
                 windows.base_damage_after_reload, windows.base_damage_eximus,
                 windows.streak, tendril.count, crit_per_hit.stacks, bar,
                 combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t),
@@ -975,7 +976,26 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             Some(r) => r.damage,
         };
         let pre_ability_total = qvec.total();
+        // LEADED GAS' ELEMENT, AS THIS PELLET CARRIES IT. Read once, before the
+        // vector, so the hit, its extra hits and its statuses cannot disagree
+        // about whether the window was open when the round landed.
+        let weakpoint_element_now = ap
+            .on_weakpoint
+            .filter(|_| t < windows.weakpoint_buff)
+            .map(|b| (b.element, b.bonus));
         let qvec = params.with_ability_elements(qvec, stage_mb, t);
+        // …AND THE ELEMENT A WEAK POINT TURNED ON, which is the same shape as
+        // an ability's: a share of THIS stage's modified base, added on top
+        // rather than combined (`rules::elements::combine` pairs what the mods
+        // placed, and a buff is not placed anywhere).
+        let qvec = match weakpoint_element_now {
+            None => qvec,
+            Some((ty, v)) => {
+                let mut out = qvec;
+                out.add(ty, stage_mb * v);
+                out.quantized_against(stage_mb)
+            }
+        };
         // A merged beam tick carries the SUM of its beams. `qtotal`
         // is what the instance deals; the crit CHANCE that produced
         // `tier` above was deliberately left at one beam's.
@@ -1710,6 +1730,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 if let Some(b) = params.crit_chance_on_headshot {
                     windows.crit_on_headshot = t + b.duration;
                 }
+                // LEADED GAS, refreshed the same way and on the same event.
+                if let Some(b) = params.on_weakpoint {
+                    windows.weakpoint_buff = t + b.duration;
+                }
                 // EXIMUS ADVANTAGE — the WEAK POINT is the trigger
                 // ("Despite the description specifying headshots, the
                 // effect can be trigger on weak-point hits"), and the
@@ -1910,6 +1934,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // `part_factor` is already 1.0 there and this reads as it should.
         if fire_extra_hits(
             raw,
+            weakpoint_element_now,
             xh_bracket,
             part_factor,
             head_direct,
@@ -2127,6 +2152,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // only be the applying hit's, carried here. A DoT is not a
             // hit, so it never rolls one of its own. MEASUREMENTS M37.
             InstanceScale {
+                weakpoint_element: weakpoint_element_now,
                 mb_live,
                 crit_multiplier,
                 part_factor,
@@ -2169,6 +2195,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // swing.
             let open = t < *influence_until;
             let scale = InstanceScale {
+                // MELEE INFLUENCE SPREADS THE SWING'S OWN STATUS, and this
+                // card is a gun's — a melee build cannot hold it.
+                weakpoint_element: None,
                 // THE STATUS IS THE SWING'S OWN, one derivation further
                 // out — so it burns off the base the swing's statuses
                 // burn off, and only the faction rung differs. The wiki

@@ -231,6 +231,9 @@ pub(super) struct CardWindows {
     /// Crosshairs keeps a per-stack expiry rather than one clock — and takes
     /// an infinite duration exactly like the rest.
     pub(super) crit_on_headshot_stacks: Vec<f64>,
+    /// LEADED GAS' window: when the element and the status bonus run out. One
+    /// clock for both, because the card prints one.
+    pub(super) weakpoint_buff: f64,
     /// LINGERING JUDGEMENT: the recent headshots' timestamps, and the window
     /// they have opened. The ring is at most `hits` long — older ones can never
     /// matter, because a streak is the LAST `hits` inside `within`.

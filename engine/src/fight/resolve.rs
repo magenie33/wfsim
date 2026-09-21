@@ -241,7 +241,15 @@ pub(super) fn resolve_the_shot(
             + if debuffs.lifted.is_some_and(|e| e > t) { ap.status_chance_on_lifted } else { 0.0 }
             // …AND AN ON-KILL STATUS BUFF (Galvanized Elementalist), which is
             // relative like every other card in this bracket.
-            + buff_total(ap, crate::model::BuffGrant::StatusChance, buff_stacks, t);
+            + buff_total(ap, crate::model::BuffGrant::StatusChance, buff_stacks, t)
+            // …AND LEADED GAS' half of one window, relative like the rest of
+            // this bracket. Its other half is an ELEMENT and is added to the
+            // vector, not here.
+            + if t < windows.weakpoint_buff {
+                ap.on_weakpoint.map_or(0.0, |b| b.bonus)
+            } else {
+                0.0
+            };
         // HIGH GROUND, LIVE: "+25% of CURRENT Status Chance". The panel folded
         // in what it could see; this takes that back and pays what the shot
         // actually has, which is the panel's status plus whatever the arcanes
@@ -479,7 +487,8 @@ pub(super) fn resolve_the_shot(
             // that expires on a clock of its own.
             let stacks = sample_stacks(
                 params, rec_roster, t, arc, gal, buff_stacks,
-                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.fire_rate_after_reload,
+                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.weakpoint_buff,
+                windows.fire_rate_after_reload,
                 windows.base_damage_after_reload, windows.base_damage_eximus,
                 windows.streak, tendril.count, crit_per_hit.stacks, bar,
                 combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t),

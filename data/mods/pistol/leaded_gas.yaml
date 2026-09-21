@@ -1,0 +1,63 @@
+id: leaded_gas
+name: Leaded Gas
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveLasSilencedPistolAugmentMod
+description: "On Weakpoint Hit:\n+X% Gas Damage and Status Chance for Xs"
+
+# A WEAPON AUGMENT for the VESPER 77 (Nightwave Cred Offerings, 20 Creds;
+# originally Rank 13 of Nora's Mix Volume 8). WFCD's `compatName` is the same
+# weapon, which is what this gate is transcribed from.
+exclusive_to: [vesper_77]
+
+#   Rank | Gas damage & status chance | Duration | Cost
+#     0  |            +50%            |    1s    |  2
+#     1  |           +100%            |    2s    |  3
+#     2  |           +150%            |    3s    |  4
+#     3  |           +200%            |    4s    |  5
+#     4  |           +250%            |    5s    |  6
+#     5  |           +300%            |    6s    |  7
+family: leaded_gas
+
+effects:
+  # ONE BUFF, TWO STATS, ONE CLOCK — the card prints a single column ("Gas
+  # Damage & Status Chance Increase") and one duration beside it, so this is
+  # one effect rather than two that could only ever agree.
+  #
+  # THE GAS HALF IS THE ELEMENTAL BUCKET's, which is what "+X% Gas Damage"
+  # means on every other card: the weapon gains that share of its modified base
+  # AS Gas, additive with elemental mods. That is also what makes this card
+  # reach the CLOUDS — VERBATIM: "The Gas damage bonus will increase the damage
+  # of gas status effects from the Vesper 77 while the buff is active", and
+  # "This mod is one of the only ways to do so through elemental modding, as
+  # Gas only gains damage this way through mods for the element itself, not
+  # Heat or Toxin", which is the rule `settle_procs` already states from the
+  # other side.
+  #
+  # TWO EDGES, both about WHEN the bonus is read rather than what it is worth:
+  #
+  # - A CLOUD IS STAMPED WHEN IT LANDS. The game re-reads the bonus every tick —
+  #   "This applies retroactively to gas clouds created before the buff was
+  #   activated, and will no longer apply to lingering gas clouds after it
+  #   expires" — where every mod-granted element bonus in this engine is
+  #   snapshotted at the proc. So a cloud that outlives the window is worth more
+  #   here than in game, and one seeded just before it opens is worth less.
+  # - A SPREAD INSTANCE CARRIES NEITHER HALF. Punch through, chains and melee
+  #   influence are settled where the weapon's live windows are out of scope
+  #   (`InstanceScale::weakpoint_element`), so a cloud a punched body takes
+  #   misses the bonus the aimed body's gets. A floor, on a crowd.
+  - kind: buff
+    trigger: headshot
+    grants: element_and_status_chance
+    element: gas
+    rank0: 0.50
+    rankMax: 3.00
+    duration: 6                # 1s at rank 0, one more a rank
+
+source:
+  url: https://wiki.warframe.com/w/Leaded_Gas
+  # Rank table (bonus and duration) from the wiki, read 2026-09-21. Rarity,
+  # polarity, `base_drain` 2 and `max_rank` 5 from WFCD, which is authoritative
+  # for those (AGENTS.md); the wiki's own Cost column agrees with both ends.

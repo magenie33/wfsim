@@ -60,7 +60,9 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         "on_headshot_kill_cc" => "headshot_kill",
         // An Eximus weak point is a weak point.
         "on_headshot_cc" | "on_eximus_weakpoint_bd" | "on_headshot_fire_rate"
-        | "on_headshot_damage" | "on_headshot_reload_speed" => "headshot",
+        | "on_headshot_damage" | "on_headshot_reload_speed"
+        // Leaded Gas, whose one window carries an element and a status bonus.
+        | "on_weakpoint_element" => "headshot",
         "evo_headshot_streak" | "on_weakpoint_streak_damage"
         | "on_weakpoint_streak_headshot_damage" => "consecutive_headshot",
         // A landing hit, whatever it lands on: the shot combo counter,
