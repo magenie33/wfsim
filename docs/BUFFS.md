@@ -185,10 +185,12 @@ bucket effect **and** a `kind: buff` effect.
 arcane family (Cascadia Flare). A stacking buff decays by ITS OWN rule, never by
 whichever one happens to be implemented.
 
-`per_stack_expiry` became real on 2026-08-07: each stack keeps its OWN clock and
-expires on it, oldest first. Stormburst is the first perk that needed it
-(observed in game), and at the cap a new stack evicts the oldest rather
-than being dropped.
+`per_stack_expiry` means each stack keeps its OWN clock and expires on it,
+oldest first; at the cap a new stack evicts the oldest rather than being
+dropped. Stormburst is the perk that needed it, and Galvanized Scope /
+Crosshairs' KILL half is the mod that does — a list of expiries
+(`windows.crit_on_headshot_stacks`) rather than the Galvanized family's one
+clock, which is why that mod's two halves decay differently from each other.
 
 `all_at_once` became real on 2026-08-18, on a MOD rather than a perk. Split
 Flights states both halves of it in consecutive lines — *"Subsequent hits
@@ -204,6 +206,18 @@ pellets from 11 to 7 over the same engagement. `all_at_once` is identical to
 the Galvanized rule while you keep hitting and four times harsher the moment you
 stop — a full pile drains over four windows there and vanishes in one here,
 which is why the choice has to be data rather than a default nobody re-read.
+
+### A HEADSHOT KILL IS THE ROUND'S KILL
+
+One definition, in `fight::pellet::weakpoint_kill`, and everything that reads
+the trigger reads it there: the DIRECT hit entered a weak point and the DIRECT
+hit finished that body. A bleed that kills afterwards, an explosion that kills
+beside it and a bounce's assumed head are all kills and none of them is this.
+
+It is paid once per body the round killed that way — the aimed one, and each
+one behind it the round punched through (MEASUREMENTS M103). Three things read
+it: Galvanized Scope / Crosshairs' kill stacks, Primary Deadhead
+(`ArcTrigger::HeadshotKill`), and the kill-gated half of Exact Penance.
 
 ### A MOD can grant one too
 

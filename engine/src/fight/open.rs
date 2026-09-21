@@ -456,9 +456,20 @@ pub(super) fn open<'a>(
 
     // Initial locks: one natural-duration grant at t = 0 (at the set
     // stack count); afterwards only the buff's own mechanics govern it.
+    //
+    // TWO GUARDS, and each is a way the card says NOTHING. ZERO STACKS IS OFF:
+    // this loop grants by firing a synthetic headshot, so a card left at zero
+    // opened the fight with the buff UP. And THE WEAPON MUST OWN THE PASSIVE —
+    // Frenzy is a weapon perk, and an Incarnon cycle carries the lock whatever
+    // weapon it was built for, so without this a Latron built with
+    // `Initial(0)` fired at Frenzy's x2.5 rate.
     for lock in &params.locked_buffs {
-        if matches!(lock.mode, LockMode::Initial(_)) {
+        if let LockMode::Initial(stacks) = lock.mode {
+            if stacks == 0 {
+                continue;
+            }
             match lock.buff {
+                LockedBuff::Frenzy if !params.frenzy => {}
                 LockedBuff::Frenzy => frenzy.on_event(
                     &Event::Hit(Hit {
                         big_crit: false,

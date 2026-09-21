@@ -48,7 +48,8 @@ gauge twice**. A weak-point hit is a LANDING, not a trigger pull.
    round enters the same part of each body, so one shot through two heads is
    two weak-point hits: two gauge charges, two Death Knell stacks, two
    Lethal Rearmament stacks, two Primary Crux stacks, two entries in
-   Lingering Judgement's streak, two Exact Penance rolls.
+   Lingering Judgement's streak, two Exact Penance rolls — and, where the
+   round killed both, two weak-point KILLS (docs/BUFFS.md).
 
 ### What is implemented
 
@@ -59,8 +60,12 @@ and is now measured. `FightParams::struck_bodies` is computed per FORM
 points back to the aimed path, which fires each trigger once per landing and
 counts them in `RunResult::headshots_on_others` for the gauge.
 
+`fight::pellet::weakpoint_kill` is the single definition of the trigger, read
+by Galvanized Scope's kill stacks, Primary Deadhead and Exact Penance.
+
 Pinned by the `m103_*` tests in
-`engine/src/fight/tests/m103_latron_punch_through.rs`.
+`engine/src/fight/tests/m103_latron_punch_through.rs`, which also pin
+Galvanized Scope's per-stack clocks and the two guards on a locked buff.
 
 ### Still open
 

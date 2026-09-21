@@ -91,6 +91,35 @@ pub(super) struct Live<'a> {
     pub(super) super_crit_armed: &'a mut bool,
 }
 
+/// WHAT A WEAK-POINT KILL GRANTS — one site, because "headshot kill" has to
+/// mean ONE thing across the engine: the DIRECT hit entered a weak point and
+/// the DIRECT hit finished that body. A bleed that kills afterwards, an
+/// explosion that kills beside it and a bounce's assumed head are all kills,
+/// and none of them is this.
+///
+/// Called once per body the round killed that way — the aimed one, and each
+/// one behind it the same round punched through.
+fn weakpoint_kill(
+    params: &FightParams,
+    arc: &mut ArcRuntime,
+    windows: &mut CardWindows,
+    t: f64,
+) {
+    // Deadhead's precision boundary.
+    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeadshotKill, t);
+    // Galvanized Scope / Crosshairs: EACH STACK KEEPS ITS OWN 12 s CLOCK,
+    // which is what `push_capped`'s list of expiries is — the mod's second
+    // half is the one Galvanized family member that does not decay together.
+    if let Some(s) = &params.crit_chance_stack {
+        crate::fight::debuffs::DebuffState::push_capped(
+            &mut windows.crit_on_headshot_stacks,
+            t + s.duration,
+            s.max_stacks as usize,
+            t,
+        );
+    }
+}
+
 /// Fire one pellet of this shot.
 ///
 /// ALWAYS INLINED, and measured: the loop fires this per pellet, and left to
@@ -1699,6 +1728,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 // same part of each, so a shot through two heads is two
                 // weak-point hits and not one. The two windows above
                 // take no count — a refresh is a refresh.
+                // …AND A BODY THE ROUND KILLED BEHIND THE FIRST IS A
+                // WEAK-POINT KILL. Paid HERE rather than in the kill path
+                // below, which never runs when the aimed body also died: it
+                // `continue`s out of this pellet.
+                for _ in 0..punched.kills {
+                    weakpoint_kill(params, arc, windows, t);
+                }
                 for _ in 0..=punched.hits {
                     // Lethal Rearmament: every headshot grants a stack —
                     // a LOCKED buff earns it too, it just never loses it.
@@ -1841,18 +1877,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             gal.bump_on_kill(params, t);
             arc.on_kill(params, t);
             if head_direct {
-                // Deadhead's precision boundary: only direct-pellet
-                // HEADSHOT kills grant/refresh its stacks.
-                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeadshotKill, t);
-                // Crosshairs stacks: headshot kills, per-stack FIFO.
-                if let Some(s) = &params.crit_chance_stack {
-                    DebuffState::push_capped(
-                        &mut windows.crit_on_headshot_stacks,
-                        t + s.duration,
-                        s.max_stacks as usize,
-                        t,
-                    );
-                }
+                weakpoint_kill(params, arc, windows, t);
             }
             // The killing instance's procs die with the old
             // individual; the CLOUDS do not — see the note in

@@ -1,6 +1,11 @@
 //! LATRON PRIME against the owner's readings (MEASUREMENTS M103): the base
 //! form punches through and the Incarnon form does not, a round through two
 //! weak points charges the gauge twice, and no Latron declares a bounce.
+//!
+//! …AND WHAT A WEAK-POINT KILL IS, which the same reading settles for the whole
+//! engine (docs/BUFFS.md): the round's own kill, paid once per body it killed
+//! that way. Galvanized Scope's two halves and the locked-buff guards are here
+//! because they are what reads it.
 use super::*;
 
 /// A LINE OF HEADS — the aimed body and `n` more behind it, one body length
@@ -140,4 +145,164 @@ fn m103_the_incarnon_form_refuses_punch_through_and_declares_no_bounce() {
             "{inc} declares no bounce"
         );
     }
+}
+
+/// GALVANIZED SCOPE'S KILL HALF KEEPS A CLOCK PER STACK, which no other
+/// Galvanized mod does — and the discriminator is that the pile FALLS WHILE
+/// THE KILLS KEEP COMING. One clock refreshed by each kill would sit at the
+/// cap forever; five independent ones hold only the kills of the last 3.5 s.
+///
+/// A kill a second against a 5-stack cap: four is the most that can be alive
+/// at once, and between two kills one always drops out.
+#[test]
+fn galvanized_scopes_kill_stacks_each_run_their_own_clock() {
+    let p = FightParams {
+        fire_rate: 1.0,
+        magazine_size: 1e9,          // no reload: downtime is a different test
+        body_parts: all_head(),
+        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        crit_chance_stack: Some(crate::model::StackSpec {
+            per_stack: 0.04,
+            max_stacks: 5,
+            duration: 3.5,
+            initial_stacks: 0,
+            earned_on: Some("headshot_kill"),
+        }),
+        duration_seconds: 20.0,
+        ..no_status()
+    };
+    let trace = replay(&p, Rng::new(7).state(), 400);
+    let i = trace.buffs.iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    assert_eq!(series[0], 0, "the pile is earned, not given");
+    assert_eq!(
+        *series.iter().max().expect("frames"), 4,
+        "a 3.5 s clock per stack holds four kills, never the cap: {series:?}"
+    );
+    assert!(
+        series.windows(2).filter(|w| w[0] > w[1]).count() >= 4,
+        "stacks drop out one at a time while the kills go on: {series:?}"
+    );
+}
+
+/// …AND A HEADSHOT KILL IS A KILL BY THE HIT ITSELF. The bleed a weak-point
+/// hit started finishes this target, and the mod's kill half earns nothing:
+/// "On Headshot Kill" is the round's kill, not the body's death.
+#[test]
+fn a_bleed_that_finishes_a_headshot_target_is_not_a_headshot_kill() {
+    let mut target = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+    target.base_health = 150.0;   // the 100 hit leaves it standing; the bleed does not
+    let p = FightParams {
+        fire_rate: 1.0,
+        magazine_size: 1.0,
+        reload_seconds: 100.0,    // one shot, and the window belongs to the bleed
+        damage: DamageVector::new().with(DamageType::Slash, 100.0),
+        crit_multiplier: 1.0,
+        base_crit_chance: 0.0,
+        forced_procs: vec![DamageType::Slash],
+        body_parts: all_head(),
+        target,
+        crit_chance_stack: Some(crate::model::StackSpec {
+            per_stack: 0.04,
+            max_stacks: 5,
+            duration: 30.0,
+            initial_stacks: 0,
+            earned_on: Some("headshot_kill"),
+        }),
+        arcane: ArcaneFx::none(),
+        duration_seconds: 20.0,
+        ..no_status()
+    };
+    let r = run_once(&p, &mut Rng::new(7));
+    assert_eq!(r.headshots, 1, "the fixture lands one weak-point hit");
+    assert!(r.kills >= 1, "…and the bleed finishes the target: {} kills", r.kills);
+    let trace = replay(&p, Rng::new(7).state(), 400);
+    let i = trace.buffs.iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    assert!(series.iter().all(|&v| v == 0), "a bleed's kill earns no stack: {series:?}");
+}
+
+/// …AND A BODY THE SAME ROUND PUNCHED THROUGH AND KILLED IS ONE. Same rule as
+/// the weak-point HITS above: the round entered the same part of each body, so
+/// one shot through three heads is three kills the mod pays for.
+///
+/// ONE SHOT IN THE WHOLE ENGAGEMENT (a magazine of one and a reload nobody
+/// waits out), and the BASE form alone — so the pile that stands afterwards is
+/// that single round's, with no clock and no second shot in it.
+#[test]
+fn m103_a_punched_headshot_kill_pays_what_the_aimed_one_pays() {
+    let stacks = |mods: &[&str]| {
+        let mut p = a_line_of_heads(mods, 2);
+        p = FightParams {
+            cycle: None,              // the base form, which is the one that pierces
+            magazine_size: 1.0,
+            reload_seconds: 1e6,
+            fire_rate: 1.0,
+            ..p
+        };
+        p.target = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        for f in p.others.iter_mut() {
+            f.params = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        }
+        p.punch_through_m = if mods.is_empty() { 0.0 } else { 2.0 };
+        p.crit_chance_stack = Some(crate::model::StackSpec {
+            per_stack: 0.04,
+            max_stacks: 10,
+            duration: 30.0,
+            initial_stacks: 0,
+            earned_on: Some("headshot_kill"),
+        });
+        let trace = replay(&p, Rng::new(7).state(), 200);
+        let i = trace.buffs.iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+        let s: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        (*s.iter().max().unwrap_or(&0), run_once(&p, &mut Rng::new(7)))
+    };
+    let (alone, ra) = stacks(&[]);
+    assert_eq!(ra.shots, 1, "one shot, so the pile cannot be two rounds'");
+    assert_eq!(alone, 1, "the aimed kill alone");
+    let (through, rt) = stacks(&["metal_auger"]);
+    assert_eq!(rt.shots, 1, "…and the same one shot");
+    assert_eq!(through, 3, "and the two bodies behind it");
+}
+
+/// A LOCKED BUFF A WEAPON DOES NOT HAVE GRANTS NOTHING, and neither does one
+/// locked at zero stacks.
+///
+/// Found while reading the weak-point kill above: an Incarnon cycle always
+/// carries a Frenzy lock, and a configured card passes `Initial(0)` — which
+/// armed Frenzy's x2.5 fire rate at t = 0 on every cycle weapon, Frenzy being
+/// a perk the Dual Toxocyst has and the Latron does not. The cadence is the
+/// assertion because that is what the buff buys: shots per second of fight.
+#[test]
+fn a_frenzy_lock_pays_nothing_on_a_weapon_without_frenzy() {
+    let shots_in = |lock: Option<LockMode>, frenzy: bool| {
+        let mut p = FightParams {
+            fire_rate: 2.0,
+            magazine_size: 1e9,
+            body_parts: all_head(),   // every shot is the trigger Frenzy reads
+            duration_seconds: 10.0,
+            frenzy,
+            ..no_status()
+        };
+        p.locked_buffs = lock
+            .map(|mode| vec![crate::fight::BuffLock { buff: crate::fight::LockedBuff::Frenzy, mode }])
+            .unwrap_or_default();
+        run_once(&p, &mut Rng::new(7)).shots
+    };
+    let plain = shots_in(None, false);
+    assert_eq!(plain, 20, "2 shots a second for ten seconds");
+    assert_eq!(
+        shots_in(Some(LockMode::Initial(0)), false), plain,
+        "a card at zero stacks opens the fight with nothing up"
+    );
+    assert_eq!(
+        shots_in(Some(LockMode::Initial(1)), false), plain,
+        "…and a locked Frenzy on a weapon that has none grants nothing"
+    );
+    // THE CONTROL: the same lock on a weapon that DOES list the perk is worth
+    // x2.5 fire rate, and every headshot here refreshes it.
+    assert!(
+        shots_in(Some(LockMode::Initial(1)), true) > plain * 2,
+        "the fixture must be able to show Frenzy at all"
+    );
 }
