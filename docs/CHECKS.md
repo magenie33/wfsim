@@ -663,6 +663,13 @@ store nothing, and the first real edit stores exactly one. A bar with none is
 empty and says the editor stands on the default; a build edited back to the blank
 is deleted, and the next effective edit writes `preset 1` again.
 
+## `check_embed_chrome`
+
+A page framed by a weapon's Wielder block — the Warframe page, and the Operator
+page framed inside it — shows none of the outer page's furniture: no top bar,
+footer, jump menu or Nona launcher, so the screen holds one launcher, not one
+per frame. Verified to bite: against the build before the fix it counts three.
+
 ## `check_wielder_pane`
 
 A weapon's Wielder block frames the Warframe page (`?embed`, the shell's chrome

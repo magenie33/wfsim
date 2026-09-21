@@ -13,6 +13,9 @@ import { fillSettings } from "./settings.js";
 
 export function mountPanel(door, agent) {
   if ($("nona-fab")) return;
+  // A FRAMED PAGE HAS NO NONA: the page that frames it has hers, and each frame
+  // mounting another is one launcher per frame on the same screen.
+  if (document.documentElement.classList.contains("embed")) return;
   const name = tr("Nona");
   const fab = document.createElement("button");
   fab.id = "nona-fab";
