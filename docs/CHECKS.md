@@ -680,6 +680,13 @@ preset says who is affected, takes a second click, and lands its links on the
 default (sent as no wielder for the Prototype) while the other weapon's link is
 untouched.
 
+## `check_operator_link`
+
+A Warframe page links its Operator like a weapon links a wielder: a type control
+and a preset control, the linked preset pays and is marked on the Operator's own
+page with who links it, and deleting it lands the link on the read-only default
+(no Operator) and not on the first preset left.
+
 ## `check_sim_wielder`
 
 The Simulator's build card carries the Warframe with its Operator nested under

@@ -255,18 +255,38 @@ const wfOperatorPick = () => (wf ? operatorPickFor(wf.operator) : null);
 /// …by the Operator build's id. Null before the catalogue has loaded, which a
 /// weapon page may not have fetched: the Operator reaches a wielder once it has.
 function operatorPickFor(id) {
-  if (!id || !WFCAT) return null;
-  const p = opList().find((x) => x.id === id);
+  if (!WFCAT) return null;
+  const p = opBuildOf(id);
   const st = p && opNormalize(p.state);
   return st && st.school ? { ...st, artifact: { mods: st.artifact.mods.filter(Boolean), arcane: st.artifact.arcane } } : null;
 }
 
+/// WHAT A WARFRAME BUILD'S OPERATOR LINK NAMES, repaired the way a weapon's
+/// wielder link is: a written preset by its id; the seed while the Operator
+/// owns nothing and it is only drawn; else the DEFAULT, the read-only blank
+/// where a link whose preset was deleted lands. An unset link is the first
+/// preset, or the drawn "preset 1".
+const opIdOf = (id) => {
+  const list = opList();
+  const want = id || (list[0] ? list[0].id : PRESET_SEED_ID);
+  if (list.some((x) => x.id === want)) return want;
+  return want === PRESET_SEED_ID && list.length === 0 ? PRESET_SEED_ID : DEFAULT_PRESET_ID;
+};
+/// The stored Operator build a link means; `null` for the blank.
+const opBuildOf = (id) => opList().find((x) => x.id === opIdOf(id)) || null;
+
 function renderWfOperator() {
   const ps = opList();
-  const cur = wf.operator && ps.some((p) => p.id === wf.operator) ? wf.operator : "";
-  const items = [{ value: "", label: tr("no linked Operator") },
-    ...ps.map((p) => ({ value: p.id, label: p.name,
-      hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))];
+  const cur = opIdOf(wf.operator);
+  // THE SAME TWO CONTROLS AS A WEAPON'S WIELDER — the type, then which preset of
+  // it — though there is one Operator: one shape for every link. The default is
+  // offered on demand, as it is there.
+  const items = ps.length ? ps.map((p) => ({ value: p.id, label: p.name,
+    hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))
+    : [{ value: PRESET_SEED_ID, label: autoPresetName(PRESET_NAME, 1) }];
+  if (ps.length || cur === DEFAULT_PRESET_ID) {
+    items.push({ value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`, hint: tr("no Operator") });
+  }
   const box = $("wf-operator");
   // THE OPERATOR IS EDITED HERE, INSIDE THE FRAME THAT HOLDS IT: the Operator
   // page, framed as itself. The row only chooses WHICH build this frame links.
@@ -279,14 +299,14 @@ function renderWfOperator() {
       <iframe class="wld-frame" loading="lazy" title="${escHtml(tr("Operator"))}"></iframe>`;
     row = box.querySelector(".wf-op-row");
   }
-  row.innerHTML = ddButton("dd-wf-operator", {
-    value: cur, items, onPick: (v) => { wf.operator = v || null; wfChanged(); },
-  }) + `<a class="ghost-btn small" href="/operator">${escHtml(tr("open the full page"))}</a>`;
+  row.innerHTML = `<label>${escHtml(tr("Operator"))} ${ddButton("dd-wf-operator-type", {
+    value: "operator", items: [{ value: "operator", label: tr("Operator"), image: META.operator_image }],
+    onPick: () => {},
+  })}</label> <label>${escHtml(tr("Preset"))} ${ddButton("dd-wf-operator", {
+    value: cur, items, onPick: (v) => { wf.operator = v; wfChanged(); },
+  })}</label> <a class="ghost-btn small" href="/operator?build=${encodeURIComponent(cur)}">${escHtml(tr("open the full page"))}</a>`;
   const frame = box.querySelector("iframe");
-  // UNLINKED WITH OPERATORS OWNED, there is no build to show: the frame shows
-  // one only once it names one, or while there is none and the virtual one is it.
-  frame.hidden = !cur && ps.length > 0;
-  const src = `/operator?embed=1&build=${encodeURIComponent(cur || PRESET_SEED_ID)}`;
+  const src = `/operator?embed=1&build=${encodeURIComponent(cur)}`;
   if (frame.dataset.src !== src) { frame.dataset.src = src; frame.src = src; }
 }
 
@@ -294,7 +314,7 @@ function renderWfOperator() {
 addEventListener("message", (e) => {
   const d = e.data;
   if (e.origin !== location.origin || !d || d.wfsim !== "operator-build" || !wf) return;
-  if (!d.id || wf.operator === d.id) return;
+  if (!d.id || opIdOf(wf.operator) === d.id) return;
   const frame = document.querySelector("#wf-operator iframe");
   if (frame) frame.dataset.src = `/operator?embed=1&build=${encodeURIComponent(d.id)}`;
   wf.operator = d.id;

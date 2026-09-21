@@ -44,7 +44,7 @@ async function renderSimWielder(host) {
   if (!host || !host.isConnected || !f) return;
   const b = wielderBuild(buildWielder);
   const st = wfNormalize(b ? b.state : null, f.id);
-  const opBuild = st.operator && opList().find((x) => x.id === st.operator);
+  const opBuild = opBuildOf(st.operator);
   const os = opBuild && opNormalize(opBuild.state);
   const school = os && focusSchool(os.school);
   const chips = (head, list, empty) => `<div class="sb-h">${escHtml(head)}</div><div class="sb-chips">${

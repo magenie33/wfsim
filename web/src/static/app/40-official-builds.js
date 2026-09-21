@@ -106,8 +106,7 @@ function renderWielderDetail() {
   // A FRAMED PAGE NEVER FRAMES: it has this markup too, and would nest itself.
   if (!box || !f || EMBED) return;
   const linked = wielderBuild(buildWielder);
-  const opId = linked ? (linked.state || {}).operator : null;
-  const opBuild = opId && opList().find((x) => x.id === opId);
+  const opBuild = linked ? opBuildOf((linked.state || {}).operator) : null;
   const src = `${warframePath(f)}?embed=1&build=${encodeURIComponent(wielderIdOf(buildWielder))}`;
   const held = box.querySelector(".wld-pane");
   // AN UNCHANGED PANE IS LEFT ALONE: replacing its `src` reloads the page and
@@ -186,7 +185,7 @@ function linkersOfOperatorPreset(id) {
   const out = [];
   for (const f of META.warframes || []) {
     for (const p of presetListWithIds(WF_BUILDS, f.id)) {
-      if ((p.state || {}).operator === id) out.push(`${f.name} · ${p.name}`);
+      if (opIdOf((p.state || {}).operator) === id) out.push(`${f.name} · ${p.name}`);
     }
   }
   return out;

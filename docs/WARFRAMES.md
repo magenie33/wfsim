@@ -101,6 +101,13 @@ links one by the Operator build's `id` (`operator:` in its state, resolved to
 `OperatorPick` when sent), so a Focus choice made once reaches every frame and a
 rename cuts no link. An `operator:` holding a name becomes that build's id.
 
+**AN OPERATOR IS LINKED EXACTLY AS A WEAPON LINKS ITS WIELDER**, though there is
+one: a type control and a preset control, the drawn "preset 1" under the seed id,
+the read-only default (no Operator) offered on demand, and a link whose preset
+was deleted landing on the default rather than on another preset. The link's own
+page marks each preset with the Warframe builds that link it. An unset link is
+the first preset.
+
 - ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
   specific focus school they belong to" (W`Focus`). No Waybound reaches a
   Warframe, so `data/focus/` carries none.

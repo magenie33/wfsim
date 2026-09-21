@@ -84,7 +84,8 @@ function wfNormalize(st, id) {
     // THE LINKED OPERATOR BUILD'S `id`, resolved when the build is sent. A NAME
     // here is a link saved before ids, and becomes that build's id.
     operator: typeof s.operator === "string" && s.operator
-      ? ((opList().find((p) => p.id === s.operator || p.name === s.operator) || {}).id || null) : null,
+      ? (s.operator === DEFAULT_PRESET_ID || s.operator === PRESET_SEED_ID ? s.operator
+        : ((opList().find((p) => p.id === s.operator || p.name === s.operator) || {}).id || DEFAULT_PRESET_ID)) : null,
   };
 }
 
