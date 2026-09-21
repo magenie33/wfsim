@@ -129,7 +129,10 @@ jobs:
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
           bash scripts/fetch_inbox.sh inbox.ndjson
-          ./target/release/wfsim-intake --done done.txt --asked asked.ndjson \
+          # A CLOCK ON THE PASS, for the reason `scores.yml` states beside its
+          # own: a killed pass banks nothing, so an unbounded one cannot
+          # converge however often it runs.
+          ./target/release/wfsim-intake --deadline 900 --done done.txt --asked asked.ndjson \
             < inbox.ndjson > builds.ndjson
           bash scripts/ship_builds.sh builds.ndjson done.txt
           # AFTER THE BUILDS, because a queue row naming a build the library does

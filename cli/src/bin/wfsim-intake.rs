@@ -2,6 +2,7 @@
 //! THE DOOR'S SECOND HALF — inbox records in, library builds out.
 //!
 //!   cat inbox.ndjson | wfsim-intake --done done.txt > builds.ndjson
+//!   …--deadline 900   # stop taking new records after fifteen minutes
 //!
 //! WHY THIS EXISTS AT ALL. The endpoint that takes a submission runs on
 //! Cloudflare and has no game data, so it cannot say what a build IS: telling
@@ -292,9 +293,27 @@ fn asked_row(
 /// A FUNCTION rather than a loop inside `main`, because the properties worth
 /// asserting are all about this: which records collapse onto one build, which
 /// do not, and what a refusal does with the row.
+/// HOW LONG A PASS MAY TAKE, and why it needs a clock at all.
+///
+/// A RIVEN RECORD COSTS FIGHTS. Its shape has to become a BUILD, and which
+/// corner of the shape is the build is a question only the fight can answer —
+/// `corners_for` asks every ruler and every play mode, at ~20 s a record.
+/// Fifteen of them is a comfortable hour's work; a thousand is a week's.
+///
+/// AND A PASS THAT DOES NOT END BANKS NOTHING. `done` is written when `intake`
+/// returns, so a run killed halfway has taken records in, spent the CPU, and
+/// left every row exactly where it was — which is a pipeline that cannot
+/// converge however often it runs. That is not a hypothetical: the inbox
+/// reached 997 rows and the hourly run stopped finishing on 2026-09-20,
+/// silently, for seventeen ticks.
+///
+/// So a pass STOPS TAKING NEW RECORDS when the clock runs out and returns what
+/// it finished. The rest are still in the inbox, and the next hour takes them.
 fn intake(
     lines: impl Iterator<Item = String>,
+    deadline: Option<std::time::Duration>,
 ) -> (Vec<Value>, Vec<Value>, Vec<String>, usize, usize) {
+    let started = std::time::Instant::now();
     // ONE ROW PER BUILD, DEDUPED HERE TOO. Two inbox rows can be the same build
     // — a resubmission is a second row in a queue on purpose — and emitting it
     // twice would spend two writes on one row for no reason.
@@ -309,9 +328,22 @@ fn intake(
     let mut done: Vec<String> = Vec::new();
     let (mut seen, mut refused) = (0usize, 0usize);
 
+    let mut left = 0usize;
+    // …AND THE SAME RECORD IS ONLY PAID FOR ONCE. A resubmission is a second
+    // inbox row on purpose and the builds are deduped below, but the CORNER
+    // SEARCH runs before that dedupe and costs fights — so two copies of one
+    // riven build were two searches for one answer. The inbox held 997 rows
+    // over 745 distinct records the day this was written.
+    let mut already: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for line in lines {
         let line = line.trim();
         if line.is_empty() {
+            continue;
+        }
+        // BEFORE THE RECORD, NEVER INSIDE IT: a record is taken whole or not at
+        // all, so `done` never names a row whose build did not come out.
+        if deadline.is_some_and(|d| started.elapsed() >= d) {
+            left += 1;
             continue;
         }
         let Ok(row) = serde_json::from_str::<Value>(line) else { continue };
@@ -327,6 +359,23 @@ fn intake(
         }
         seen += 1;
         done.push(id(&row, "id"));
+        // WHAT THIS RECORD ALREADY PRODUCED, if a copy of it came through
+        // earlier in this pass: the row is still DONE and the build still
+        // remembers it, and nothing has to be searched for again.
+        let rkey = rec.to_string();
+        if let Some(keys) = already.get(&rkey) {
+            for k in keys {
+                if let Some(from) =
+                    built.get_mut(k).and_then(|b| b.get_mut("from")).and_then(Value::as_array_mut)
+                {
+                    let was = json!(id(&row, "id"));
+                    if !from.contains(&was) {
+                        from.push(was);
+                    }
+                }
+            }
+            continue;
+        }
 
         let weapon = id(&rec, "weapon");
         let riven = riven_of(&rec);
@@ -412,6 +461,7 @@ fn intake(
                     from.push(was);
                 }
             }
+            already.entry(rkey.clone()).or_default().push(key.clone());
             // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
             // record shadowed the inbox one, which carries neither field.
             if let Some(ask) = asked_row(&sent.0, &sent.1, &v, &key) {
@@ -422,14 +472,22 @@ fn intake(
             }
         }
     }
+    if left > 0 {
+        eprintln!("intake: {left} record(s) left for the next pass — the clock ran out");
+    }
     (built.into_values().collect(), asked.into_values().collect(), done, seen, refused)
 }
 
 fn main() {
     let done_path = flag("--done");
     let asked_path = flag("--asked");
+    // SECONDS, and no flag means no clock — a local run over a file is not the
+    // thing this bounds. The workflows pass one; see `intake`.
+    let deadline = flag("--deadline")
+        .and_then(|s| s.parse::<u64>().ok())
+        .map(std::time::Duration::from_secs);
     let (builds, asked, done, seen, refused) =
-        intake(std::io::stdin().lock().lines().map_while(Result::ok));
+        intake(std::io::stdin().lock().lines().map_while(Result::ok), deadline);
 
     let mut out = std::io::BufWriter::new(std::io::stdout().lock());
     for row in &builds {
@@ -489,7 +547,7 @@ mod tests {
     ];
 
     fn ids_of(lines: Vec<String>) -> Vec<String> {
-        intake(lines.into_iter())
+        intake(lines.into_iter(), None)
             .0
             .iter()
             .map(|b| b["id"].as_str().unwrap_or_default().to_string())
@@ -514,7 +572,7 @@ mod tests {
         assert_eq!(ids.len(), 1, "three records, one build: {ids:?}");
         // …AND THE MODE IS NOT WRITTEN DOWN EITHER, or the record would state a
         // property the build has not got.
-        let (builds, ..) = intake(vec![row("a", &FULL, json!({ "mode": "cycle" }))].into_iter());
+        let (builds, ..) = intake(vec![row("a", &FULL, json!({ "mode": "cycle" }))].into_iter(), None);
         assert!(builds[0]["record"].get("mode").is_none(), "{}", builds[0]);
     }
 
@@ -579,6 +637,7 @@ mod tests {
                 row("good", &FULL, json!({})),
             ]
             .into_iter(),
+            None,
         );
         assert_eq!((seen, refused, builds.len()), (2, 1, 1));
         assert_eq!(done, vec!["bad", "good"], "both rows are spent");
@@ -608,7 +667,7 @@ mod tests {
             "riven_neg": "zoom",
         });
         let line = json!({ "id": "u1", "at": "2026-01-01", "record": rec }).to_string();
-        let (builds, .., refused) = intake(vec![line].into_iter());
+        let (builds, .., refused) = intake(vec![line].into_iter(), None);
         assert_eq!(refused, 0, "a legal riven build is not refused");
         assert!(!builds.is_empty(), "a riven shape resolves to at least one build");
 
@@ -637,7 +696,7 @@ mod tests {
     fn a_submitted_rank_is_stored_at_max() {
         let mut mods = FULL.to_vec();
         mods[3] = "vital_sense@2";
-        let (builds, .., refused) = intake(vec![row("r", &mods, json!({}))].into_iter());
+        let (builds, .., refused) = intake(vec![row("r", &mods, json!({}))].into_iter(), None);
         assert_eq!((refused, builds.len()), (0, 1));
         let stored: Vec<&str> = builds[0]["record"]["mods"]
             .as_array()
@@ -691,7 +750,7 @@ mod tests {
     }
 
     fn asked_of(lines: Vec<String>) -> Vec<Value> {
-        intake(lines.into_iter()).1
+        intake(lines.into_iter(), None).1
     }
 
     /// **THE FIGHT THE SUBMITTER RAN IS ASKED FOR**, and it is the only thing

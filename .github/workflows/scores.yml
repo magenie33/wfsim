@@ -206,7 +206,14 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
           bash scripts/fetch_inbox.sh inbox.ndjson
-          ./target/release/wfsim-intake --done done.txt < inbox.ndjson > builds.ndjson
+          # A CLOCK ON THE PASS. A riven record costs FIGHTS — its shape has to
+          # become a build and only a fight says which corner is — so a full
+          # inbox is hours of work and an unbounded pass finishes none of it:
+          # `done` is written when the pass returns, so a killed one banks
+          # nothing and the next hour starts over. Fifteen minutes fits inside
+          # this job's cap, and what is left is still owed.
+          ./target/release/wfsim-intake --deadline 900 --done done.txt \
+            < inbox.ndjson > builds.ndjson
           bash scripts/ship_builds.sh builds.ndjson done.txt
 
       # runs: `scripts/fetch_library.sh --self-test` drives it against a stub
