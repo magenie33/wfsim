@@ -728,6 +728,13 @@ Prototype frame, which has its own builder page and saved builds like any other,
 and with nothing written for it is stored and sent as no wielder. The top
 control chooses the TYPE (a searchable list of Warframes with their faces); which
 preset of it is the framed page's own bar's.
+
+**THE BUILDER IS THE COMPLETE EDITOR AND THE SIMULATOR IS THE SUMMARY.** The
+Builder's Wielder block frames the Warframe page, and the Operator page inside
+it. The Simulator's build card shows the same configuration read-only — the
+Warframe with the Operator nested under it — each with a link to the page that
+edits it. Warframe abilities cast by others, the squad and the controller's
+buffs are the FIGHT's, outside every build, and stay below the summary.
 A weapon a frame summons offers only its frames, and its title follows the frame
 ("Valkyr Prime Talons").
 

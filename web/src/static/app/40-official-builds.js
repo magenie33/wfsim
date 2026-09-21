@@ -125,7 +125,7 @@ let wielderSync = null;
 window.addEventListener("storage", (e) => {
   if (EMBED || !e.key || !e.key.startsWith("wfsim-presets-")) return;
   clearTimeout(wielderSync);
-  wielderSync = setTimeout(() => { if (META) { renderWielder(); refreshPanel(); } }, 200);
+  wielderSync = setTimeout(() => { if (META) { renderWielder(); renderSimBuild(); refreshPanel(); } }, 200);
 });
 
 /// THE LINK FOR A FRAME: the preset that frame last had open on its own page, or
@@ -141,6 +141,7 @@ function wielderLinkFor(frame) {
 function setWielder(v) {
   buildWielder = v;
   renderWielder();
+  renderSimBuild();
   renderWeaponName();
   markPresetDirty();
   refreshPanel();

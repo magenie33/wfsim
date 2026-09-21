@@ -30,7 +30,44 @@ function renderSimBuild() {
     parts: assembly ? partChipsOf(w.id, assembly.grip, assembly.loader) : null,
     evolutions: w.uses_evo2 ? evoChipsOf(Object.values(evoSel || {}).filter(Boolean)) : null,
     valence: valenceSpec(w.id) ? `${DT(valence.element)} +${Math.round(valence.bonus * 1000) / 10}%` : null,
-  }) + `<a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+  }) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+  renderSimWielder(box.querySelector(".sb-wielder"));
+}
+
+/// THE WIELDER AS THE SIMULATOR SHOWS IT: read-only, the Warframe with the
+/// Operator it holds nested under it — the nesting is the model — and each with
+/// the way to the page that edits it. The Builder's Wielder block is the
+/// complete editor; this is the summary of what is being tested.
+async function renderSimWielder(host) {
+  await loadWarframeCatalog();
+  const f = (META.warframes || []).find((x) => x.id === buildWielder.frame);
+  if (!host || !host.isConnected || !f) return;
+  const b = wielderBuild(buildWielder);
+  const st = wfNormalize(b ? b.state : null, f.id);
+  const opBuild = st.operator && opList().find((x) => x.id === st.operator);
+  const os = opBuild && opNormalize(opBuild.state);
+  const school = os && focusSchool(os.school);
+  const chips = (head, list, empty) => `<div class="sb-h">${escHtml(head)}</div><div class="sb-chips">${
+    list.map((label) => `<span class="sb-chip"><span>${escHtml(label)}</span></span>`).join("")
+    || `<span class="sb-empty">${escHtml(empty)}</span>`}</div>`;
+  const name = (m) => (m || {}).name;
+  const shards = st.shards.filter(Boolean).map((p) => {
+    const d = SHARDS().find((x) => x.id === p.shard);
+    const o = d && d.options.find((x) => x.id === p.effect);
+    return d && o ? wfShardLine(d, o, p.tauforged) : null;
+  }).filter(Boolean);
+  const title = (label, at, href) => `<div class="wld-title"><b>${escHtml(label)}</b>${at ? ` <span class="sb-empty">${escHtml(at)}</span>` : ""}
+    <a class="ghost-btn small" href="${href}">${escHtml(tr("edit on its page"))}</a></div>`;
+  host.innerHTML = `<div class="sb-h">${escHtml(tr("Wielder"))}</div>` + `<div class="wld-nest">`
+    + title(f.name, b ? b.name : autoPresetName(PRESET_NAME, 1), `${warframePath(f)}?build=${encodeURIComponent(wielderIdOf(buildWielder))}`)
+    + chips(tr("Aura"), [name(wfMod(st.slots[WF_AURA].mod))].filter(Boolean), tr("no aura"))
+    + chips(`${tr("Mods")}`, st.slots.slice(0, 9).map((s) => name(wfMod(s.mod))).filter(Boolean), tr("no mods equipped"))
+    + chips(tr("Archon shards"), shards, tr("empty socket"))
+    + `<div class="wld-op">`
+    + title(tr("Operator"), opBuild ? opBuild.name : "", opBuild ? `/operator?build=${encodeURIComponent(opBuild.id)}` : "/operator")
+    + chips(tr("School"), school ? [school.name] : [], tr("no linked Operator"))
+    + (school ? chips(tr("Artifact"), (os.artifact.mods || []).map((id) => name(opAMod(id))).filter(Boolean), tr("no mods equipped")) : "")
+    + `</div></div>`;
 }
 
 /// A MODULAR WEAPON'S TWO PARTS AS CHIPS, named from its own assembly spec.

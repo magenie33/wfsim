@@ -672,6 +672,13 @@ own code is born as `preset 1`, becomes the wielder and reaches the request as
 the resolved shards, without reloading the frame; a fresh reader starts on the
 unbuilt Prototype with nothing stored.
 
+## `check_sim_wielder`
+
+The Simulator's build card carries the Warframe with its Operator nested under
+it, read-only, each with a link to the page that edits it (`?build=` names the
+preset); a build written for the frame shows up there from the same stored
+preset. It edits nothing.
+
 ## `check_every_rank`
 
 A card on the every-rank list is offered once per rank in the builder's picker

@@ -130,6 +130,10 @@ body.on-enemies [data-module="builder"]{display:none}
 .sb-chip .rk{color:var(--muted);font-size:11px}
 .sb-empty{color:var(--muted);font-size:12px}
 .sb-edit{display:inline-flex;margin-top:12px;text-decoration:none}
+.sb-wielder{margin-top:6px}
+.wld-nest,.wld-op{border-left:2px solid var(--line);padding-left:10px}
+.wld-op{margin-top:8px}
+.wld-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
 .hero-tested{color:var(--muted);font-size:11px;margin-top:4px}
 /* Sim results: the WoW-style damage-by-source meter */
 .meter{display:flex;flex-direction:column;gap:4px}
