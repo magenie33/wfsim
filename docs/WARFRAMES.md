@@ -211,6 +211,11 @@ different wielder and never reaches the board.
 - A weapon a frame summons names its wielders (`wielders:`) and is held by the
   first when a link names any other; `wielder_names:` renames it in one frame's
   hands ("Valkyr Prime Talons").
+- **THE BUILD'S ABILITY STRENGTH COMES WITH IT**, as the stats do: an EXALTED
+  weapon's damage is its ability's taken at 100% (`WeaponBase::exalted`), so the
+  frame that summons it scales it, and the fight's ability buffs read the same
+  number. A typed `ability_strength` overrides it, as a ticked stat overrides a
+  resolved one. The unbuilt Prototype resolves 100%, so no board row moves.
 - The BOARD never records one: every ruler scores in the Prototype's hands.
 - A share link does not carry the wielder yet (`SHARE_EXCLUDED_AXES`).
 

@@ -663,6 +663,14 @@ store nothing, and the first real edit stores exactly one. A bar with none is
 empty and says the editor stands on the default; a build edited back to the blank
 is deleted, and the next effective edit writes `preset 1` again.
 
+## `check_exalted_strength`
+
+Valkyr Talons' damage is Hysteria's at 100% strength, so the claws read 250 in a
+bare Valkyr's hands and 325 with Intensify seated on the linked build — the
++30% the build resolved, through the link the weapon holds rather than a number
+typed into the fight — while an ordinary melee weapon in the same hands is
+untouched.
+
 ## `check_companion_mods`
 
 The companion builder draws ten general slots with four innate Penjaga
