@@ -976,26 +976,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             Some(r) => r.damage,
         };
         let pre_ability_total = qvec.total();
-        // LEADED GAS' ELEMENT, AS THIS PELLET CARRIES IT. Read once, before the
-        // vector, so the hit, its extra hits and its statuses cannot disagree
-        // about whether the window was open when the round landed.
-        let weakpoint_element_now = ap
-            .on_weakpoint
-            .filter(|_| t < windows.weakpoint_buff)
-            .map(|b| (b.element, b.bonus));
-        let qvec = params.with_ability_elements(qvec, stage_mb, t);
-        // …AND THE ELEMENT A WEAK POINT TURNED ON, which is the same shape as
-        // an ability's: a share of THIS stage's modified base, added on top
-        // rather than combined (`rules::elements::combine` pairs what the mods
-        // placed, and a buff is not placed anywhere).
-        let qvec = match weakpoint_element_now {
-            None => qvec,
-            Some((ty, v)) => {
-                let mut out = qvec;
-                out.add(ty, stage_mb * v);
-                out.quantized_against(stage_mb)
-            }
-        };
+        let qvec = params.with_live_elements(qvec, stage_mb, t, windows);
         // A merged beam tick carries the SUM of its beams. `qtotal`
         // is what the instance deals; the crit CHANCE that produced
         // `tier` above was deliberately left at one beam's.
@@ -1257,6 +1238,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // falloff.
         if let (Some(rr), false) = (rad, others.is_empty()) {
             spread_from_blast(
+                windows,
                 det,
                 &mut *others,
                 params,
@@ -1293,6 +1275,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 let Some(idx) = body.checked_sub(1) else { continue };
                 let Some(fs) = params.others.get(idx) else { continue };
                 blast_at(
+                windows,
                     crate::rules::space::Detonation {
                         at: fs.at,
                         height_m: 0.0,
@@ -1401,6 +1384,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // spread that may land on a head.
             if let Some(path) = ric_path.as_deref() {
                 spread_from_ricochet(
+                windows,
                     &mut *others,
                     params,
                     ap,
@@ -1427,6 +1411,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // …AND THE ECHO, per landing pellet, because the arcane
             // says each one triggers it.
             spread_from_echo(
+                windows,
                 &mut *others,
                 debuffs.confusion.len(),
                 params,
@@ -1460,6 +1445,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // Follow Through by name), so the two can never both fire.
             if let Some(ft) = ap.follow_through.filter(|_| direct) {
                 spread_from_follow_through(
+                windows,
                     &mut *others,
                     params,
                     ap,
@@ -1485,6 +1471,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             }
             if params.beam.is_none() {
                 punched = spread_from_punch_through(
+                windows,
                     &mut *others,
                     params,
                     ap,
@@ -1515,6 +1502,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // after the loop, miss or not.
             if let Some(beam) = params.beam {
                 spread_from_seeds(
+                    windows,
                     &mut *others,
                     params,
                     ap,
@@ -1927,14 +1915,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // hit — the ratio is exactly 1 and nothing moves — and differ on
         // an explosion whose damage type is not the gun's.
         let stage_bracket = if stage_mb > 0.0 { qvec.total() / stage_mb } else { 1.0 };
-        let xh_bracket = ap.extra_hit_bracket(t) / stage_bracket.max(1e-12);
+        let xh_bracket = ap.extra_hit_bracket(t, windows) / stage_bracket.max(1e-12);
         // …and the BODY PART, a second time, on a direct hit only. DE's
         // CN card, in the same breath as the faction double-dip: "同理，
         // 弱点倍率也会被计算两次". A radial struck no body part, so
         // `part_factor` is already 1.0 there and this reads as it should.
         if fire_extra_hits(
             raw,
-            weakpoint_element_now,
             xh_bracket,
             part_factor,
             head_direct,
@@ -2152,7 +2139,6 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // only be the applying hit's, carried here. A DoT is not a
             // hit, so it never rolls one of its own. MEASUREMENTS M37.
             InstanceScale {
-                weakpoint_element: weakpoint_element_now,
                 mb_live,
                 crit_multiplier,
                 part_factor,
@@ -2161,7 +2147,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 // The BASE ATTACK's, so a Blast stack this instance applies
                 // remembers the bracket its detonation's extra hit takes —
                 // not this stage's, which the detonation itself never gets.
-                xh_bracket: ap.extra_hit_bracket(t),
+                xh_bracket: ap.extra_hit_bracket(t, windows),
             },
             &mut *debuffs,
             &mut *gal,
@@ -2195,9 +2181,6 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // swing.
             let open = t < *influence_until;
             let scale = InstanceScale {
-                // MELEE INFLUENCE SPREADS THE SWING'S OWN STATUS, and this
-                // card is a gun's — a melee build cannot hold it.
-                weakpoint_element: None,
                 // THE STATUS IS THE SWING'S OWN, one derivation further
                 // out — so it burns off the base the swing's statuses
                 // burn off, and only the faction rung differs. The wiki
@@ -2209,7 +2192,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 part_factor,
                 landing,
                 attrition,
-                xh_bracket: ap.extra_hit_bracket(t),
+                xh_bracket: ap.extra_hit_bracket(t, windows),
             };
             if open {
                 for (from, landed) in &influence_seeds {

@@ -370,6 +370,21 @@ fn single_part(part: BodyPart) -> FightParams {
 }
 
 /// A target that is nothing but head, so every pellet headshots.
+/// THE WINDOWS A FIGHT OPENS WITH — every clock shut, which is what "earned"
+/// means. A test that wants one open sets that one field and says why.
+pub(super) fn windows_for(_p: &FightParams) -> crate::fight::state::CardWindows {
+    crate::fight::state::CardWindows {
+        fire_rate_after_reload: 0.0,
+        crit_on_headshot: 0.0,
+        crit_on_headshot_stacks: Vec::new(),
+        weakpoint_buff: f64::NEG_INFINITY,
+        headshot_times: Vec::new(),
+        streak: f64::NEG_INFINITY,
+        base_damage_after_reload: 0.0,
+        base_damage_eximus: 0.0,
+    }
+}
+
 pub(super) fn all_head() -> Vec<BodyPart> {
     vec![BodyPart {
         name: "head".into(),

@@ -100,6 +100,8 @@ impl FightParams {
 /// bonus a tick reads has to include the statuses its predecessors applied.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn process_field_ticks(
+    // See `process_ticks` — a cloud reads the shooter's live windows.
+    w: &CardWindows,
     fields: &mut Vec<FieldState>,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
@@ -131,6 +133,7 @@ pub(super) fn process_field_ticks(
     {
         // Status events strictly before this tick land first.
         process_ticks(
+            w,
             debuffs,
             gal,
             arc,
@@ -149,6 +152,7 @@ pub(super) fn process_field_ticks(
         fields[i].next_tick += 1.0 / part.tick_rate;
         fields[i].ticks_left -= 1;
         let killed = field_tick(
+            w,
             &part,
             damage_multiplier,
             at,
@@ -183,6 +187,7 @@ pub(super) fn process_field_ticks(
             }
             let SpreadFoe { state, debuffs: fd } = &mut others[bi];
             field_tick(
+            w,
                 &part,
                 damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist)),
                 at,
@@ -237,6 +242,7 @@ pub(super) fn process_field_ticks(
 /// attached target, which a single-target arena always is.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn field_tick(
+    w: &CardWindows,
     f: &crate::build::loadout::ResolvedLingering,
     // Plentiful Mayhem's independent multiplier, carried from the grenade that
     // left this cloud (1.0 = the weapon's own projectile, or no such perk).
@@ -277,7 +283,7 @@ pub(super) fn field_tick(
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
-    let qvec = params.with_ability_elements(f.damage.quantized_against(f.modified_base), f.modified_base, at);
+    let qvec = params.with_live_elements(f.damage.quantized_against(f.modified_base), f.modified_base, at, w);
     let qtotal = qvec.total();
     let shares = TypeShares::of(&qvec);
 
@@ -454,9 +460,6 @@ pub(super) fn field_tick(
         procs,
         at,
         InstanceScale {
-            // A FIELD TICK IS NOT THE WEAPON'S HIT — the cloud is already
-            // there, and what it is worth was settled when it was seeded.
-            weakpoint_element: None,
             mb_live,
             crit_multiplier,
             // A STATUS IS STAMPED WITH THE MULTIPLIERS OF THE HIT THAT APPLIED
@@ -471,7 +474,7 @@ pub(super) fn field_tick(
             // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
             // applies still detonates off a gun, and the bracket its extra hit
             // takes is that gun's.
-            xh_bracket: ap.extra_hit_bracket(at),
+            xh_bracket: ap.extra_hit_bracket(at, w),
         },
         debuffs,
         gal,

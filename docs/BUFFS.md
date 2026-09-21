@@ -709,8 +709,19 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 |---|---|---|---|
 | `faction_damage` | Roar +50% | the bracket a Bane mod is in | **twice** — the bracket double-dips |
 | `final_damage` | Eclipse +200% | its own multiplier | once |
-| `add_element` | Shock Trooper +100% Electricity | the FINISHED vector | its own element's DoT |
+| `add_element` | Shock Trooper +100% Electricity | the FINISHED vector | its own element's DoT, **re-read at every tick** |
 | `extra_hit` | Xata's Whisper +26% Void | **nowhere — it fires a second instance** | rolls its own, independently |
+
+**AN ELEMENT BUFF IS A MOD WITH A CLOCK ON IT, AND THERE IS ONE PATH FOR BOTH.**
+Shock Trooper, Lavos's imbue and a weapon augment that grants one (Leaded Gas)
+are the same sentence — "+X% <element>", *additive with elemental mods* — so
+they are read in one place, `FightParams::element_at`, at the instant the
+damage is dealt. A MOD's own share sits in a DoT's frozen bracket because a mod
+is never not equipped; everything with a clock is read AT THE TICK, which is
+the only way to be right about a cloud that starts burning before the buff
+lands and is still burning after it lapses. What differs between the sources is
+only when the term is non-zero — an ability's is a schedule, a weapon's window
+is an event (`CardWindows`), and the tick loop is handed both.
 
 **The split that matters is three-and-one, not four.** The first three are
 multipliers: whoever needs one reads it at the point in the pipeline where it

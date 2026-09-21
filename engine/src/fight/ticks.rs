@@ -122,6 +122,11 @@ impl DebuffState {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn process_ticks(
+    // THE SHOOTER'S LIVE WINDOWS, because a burning cloud reads them: an
+    // element buff strengthens what is already burning and stops the moment it
+    // lapses (`FightParams::element_at`). A tick loop that could not see them
+    // would have to freeze the answer at the proc, which is a different number.
+    w: &CardWindows,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
@@ -263,9 +268,9 @@ pub(super) fn process_ticks(
                             // THE LANDING SCALES THE ACCUMULATOR TOO: 234, not
                             // 233, off a 24 body tick (M100). A group takes the
                             // landing of the seed that brought its `1`.
-                            sum += d.live(params, now) * d.landing;
+                            sum += d.live(params, now, w) * d.landing;
                             if unit == 0.0 {
-                                unit = d.accumulator_unit(params, now) * d.landing;
+                                unit = d.accumulator_unit(params, now, w) * d.landing;
                             }
                         }
                     }
@@ -294,8 +299,8 @@ pub(super) fn process_ticks(
                     d.ticks_left -= 1;
                     // Slash and Toxin tick independently, so each stack is its
                     // own tick group and carries its own accumulator.
-                    let (seeds, acc) = (d.live(params, now), d.accumulator_unit(params, now));
-                    let (over_seed, over_acc) = d.explain(params, now);
+                    let (seeds, acc) = (d.live(params, now, w), d.accumulator_unit(params, now, w));
+                    let (over_seed, over_acc) = d.explain(params, now, w);
                     dot_parts = Some(vec![
                         crate::record::Part {
                             factor: crate::record::Factor::StatusSeeds,
@@ -329,7 +334,7 @@ pub(super) fn process_ticks(
                 h.next_tick += 1.0;
                 // AT `now`. See `Dot::live` — the same rule, on the one status
                 // whose stacks all share a clock.
-                let bracket = h.bracket + params.ability_element_at(DamageType::Heat, now);
+                let bracket = h.bracket + params.element_at(DamageType::Heat, now, w);
                 let f = params.faction_at_time(now);
                 // ONE ACCUMULATOR for the whole consolidated tick, whatever
                 // `stacks` says — `Dot::accumulator_unit`, and Heat is the case
@@ -473,9 +478,6 @@ pub(super) fn process_ticks(
         if let Some(bracket) = xh {
             if fire_extra_hits(
                 value,
-                // A DETONATION IS SETTLED IN THE TICK LOOP, where the weapon's
-                // live windows are out of scope — see `InstanceScale`.
-                None,
                 bracket,
                 1.0,
                 false,
@@ -552,6 +554,8 @@ pub(super) fn process_ticks(
 /// about to go off does.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn settle_what_is_in_the_air(
+    // See `process_ticks`.
+    w: &CardWindows,
     params: &FightParams,
     ap: &FightParams,
     field_ap: &FightParams,
@@ -571,6 +575,7 @@ pub(super) fn settle_what_is_in_the_air(
     r: &mut RunResult,
     strip_kills_seen: &mut u32,) {
         process_field_ticks(
+            w,
             fields,
             debuffs,
             gal,
@@ -648,6 +653,7 @@ pub(super) fn settle_what_is_in_the_air(
         // fire-rate bucket reaches it, which is the wiki's *"Tick rate is not
         // affected by Fire Rate"* holding by construction.
         process_orbs(
+            w,
             orbs,
             debuffs,
             gal,

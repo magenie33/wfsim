@@ -161,6 +161,8 @@ impl OrbState {
 /// own (MEASUREMENTS M63).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn process_orbs(
+    // See `process_ticks`.
+    w: &CardWindows,
     orbs: &mut Vec<OrbState>,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
@@ -197,6 +199,7 @@ pub(super) fn process_orbs(
         // Status events strictly before this one land first, exactly as they do
         // before a field tick.
         process_ticks(
+            w,
             debuffs, gal, arc, at + 1e-9, target, params, ap, r, rec, &mut d.status,
             &params.target, 0,
         );
@@ -204,7 +207,7 @@ pub(super) fn process_orbs(
         let orb = orbs[i];
         if !is_strike {
             orbs.remove(i);
-            orb_detonation(&orb, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d, others, &bodies);
+            orb_detonation(w, &orb, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d, others, &bodies);
             continue;
         }
         orbs[i].next_strike += orb.part.strike_interval_seconds;
@@ -260,7 +263,7 @@ pub(super) fn process_orbs(
                 share *= orb.part.chain_damage_per_hop;
             }
             let killed = orb_strike(
-                &orb, share, at, ctx, b, debuffs, gal, arc, target, params, ap, r, rec, d, others,
+                w, &orb, share, at, ctx, b, debuffs, gal, arc, target, params, ap, r, rec, d, others,
             );
             aimed_died |= killed && b == 0;
         }
@@ -279,6 +282,8 @@ pub(super) fn process_orbs(
 /// arithmetic; WHICH body is the part an orb decides for itself.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn orb_strike(
+    // See `process_ticks`.
+    w: &CardWindows,
     orb: &OrbState,
     share: f64,
     at: f64,
@@ -314,6 +319,7 @@ pub(super) fn orb_strike(
     let mult = orb.damage_multiplier;
     match b.checked_sub(1) {
         None => field_tick(
+            w,
             &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
             &params.target, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
         ),
@@ -321,6 +327,7 @@ pub(super) fn orb_strike(
             let Some(spec) = params.others.get(bi) else { return false };
             let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
             field_tick(
+            w,
                 &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
                 &spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
             )
@@ -338,6 +345,8 @@ pub(super) fn orb_strike(
 /// near anybody.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn orb_detonation(
+    // See `process_ticks`.
+    w: &CardWindows,
     orb: &OrbState,
     at: f64,
     ctx: &FieldCtx,
@@ -364,6 +373,7 @@ pub(super) fn orb_detonation(
         match b.checked_sub(1) {
             None => {
                 field_tick(
+            w,
                     &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
                     &params.target, crate::record::Origin::Orb, None, true,
                 );
@@ -373,6 +383,7 @@ pub(super) fn orb_detonation(
                     (params.others.get(bi), others.get_mut(bi))
                 {
                     field_tick(
+            w,
                         &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
                         &spec.params, crate::record::Origin::Orb, None, true,
                     );

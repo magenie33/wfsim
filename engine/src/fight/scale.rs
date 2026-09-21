@@ -12,21 +12,6 @@ pub(super) struct InstanceScale {
     /// What an Electricity or Gas tick is worth where THIS instance struck —
     /// [`Dot::landing`]. 1.0 off a head.
     pub(super) landing: f64,
-    /// LEADED GAS' element bonus AS THIS INSTANCE CARRIED IT — `(element,
-    /// share of the modified base)` while the weak-point window was open, and
-    /// `None` the rest of the time.
-    ///
-    /// IT TRAVELS WITH THE INSTANCE for the reason the bracket below does: a
-    /// status is settled where the weapon's live windows are no longer in
-    /// scope, and an element bonus belongs in that element's DoT bracket.
-    ///
-    /// SNAPSHOT AT THE PROC, which is this engine's rule for every mod-granted
-    /// element bonus (`elem_dot_bonus` is resolved once). The game re-reads it
-    /// per tick — the wiki says the bonus reaches clouds made before the buff
-    /// and stops reaching them when it lapses — so a cloud that outlives the
-    /// window is worth more here than in game, and one made just before the
-    /// window opens is worth less.
-    pub(super) weakpoint_element: Option<(crate::rules::damage::DamageType, f64)>,
     /// DEVOURING/DEVASTATING ATTRITION on THIS instance, or 1.0.
     ///
     /// 1.0 everywhere but the Primary Debilitate split, and that is the whole

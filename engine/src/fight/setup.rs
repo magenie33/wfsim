@@ -579,14 +579,34 @@ impl FightParams {
         crate::data::abilities::final_mult_at(&self.abilities, t)
     }
 
-    /// The ability-added share of ONE element's bonus bracket at `t`.
+    /// ONE ELEMENT'S LIVE BONUS AT `t` — every source of it, and there is no
+    /// second path.
     ///
-    /// "Additive with elemental mods" (every one of the four augment pages),
-    /// so it lands in the same `1 + Σ` a Stormbringer does — which means it
-    /// raises that element's DoT tick as well as adding damage. The repo has
-    /// the precedent: `injected_elements` takes the identical line from
-    /// frenzy.yaml for the identical reason.
-    pub fn ability_element_at(&self, ty: DamageType, t: f64) -> f64 {
+    /// AN ELEMENT BUFF IS A MOD WITH A CLOCK ON IT. Volt's Shock Trooper and
+    /// Lavos's imbue are "+X% Electricity", worded and bracketed exactly as
+    /// Stormbringer is — "additive with elemental mods" on every one of those
+    /// pages — and a weapon augment that grants one (Leaded Gas) is the same
+    /// sentence again. So they are read the same way, at the same instant, in
+    /// this one function: what differs between them is only WHEN the term is
+    /// non-zero.
+    ///
+    /// AND IT IS READ AT EVERY TICK, which is what being live means: a cloud
+    /// burning when the buff lands starts hitting harder, and stops the moment
+    /// it lapses. A mod's own share is in the Dot's frozen `bracket` because a
+    /// mod is never not equipped — the same number either way.
+    pub(super) fn element_at(&self, ty: DamageType, t: f64, w: &CardWindows) -> f64 {
+        // THE WEAPON'S OWN WINDOW, opened by an event rather than by a clock —
+        // the one thing here a schedule cannot answer.
+        let weakpoint = self
+            .on_weakpoint
+            .filter(|b| b.element == ty && t < w.weakpoint_buff)
+            .map_or(0.0, |b| b.bonus);
+        weakpoint + self.scheduled_element_at(ty, t)
+    }
+
+    /// The share the ABILITIES and the arcane add, which is a pure function of
+    /// time — [`Self::element_at`] is what everything reads.
+    fn scheduled_element_at(&self, ty: DamageType, t: f64) -> f64 {
         // …AND AN ARCANE'S, which is the same kind of term in the same
         // bracket: `ArcaneFx::added_elements` is held for the whole
         // engagement, so it has no `t` to be read at.
@@ -607,12 +627,27 @@ impl FightParams {
     /// `stage_mb` is THAT attack part's ModifiedBase: an explosion's elemental
     /// mods are a percentage of the explosion's own base (MECHANICS §7), and
     /// an ability sized "additive with elemental mods" is sized the same way.
-    pub(super) fn with_ability_elements(&self, qvec: DamageVector, stage_mb: f64, t: f64) -> DamageVector {
+    pub(super) fn with_live_elements(
+        &self,
+        qvec: DamageVector,
+        stage_mb: f64,
+        t: f64,
+        w: &CardWindows,
+    ) -> DamageVector {
         let mut added = crate::data::abilities::added_elements_at(&self.abilities, t);
         for &(ty, v) in &self.arcane.added_elements {
             match added.iter_mut().find(|(t2, _)| *t2 == ty) {
                 Some(slot) => slot.1 += v,
                 None => added.push((ty, v)),
+            }
+        }
+        // …AND THE WEAPON'S OWN WINDOW, through the same list: one path, so a
+        // card that turns an element on cannot be worth a different number on
+        // the hit than in the cloud it seeds.
+        if let Some(b) = self.on_weakpoint.filter(|_| t < w.weakpoint_buff) {
+            match added.iter_mut().find(|(t2, _)| *t2 == b.element) {
+                Some(slot) => slot.1 += b.bonus,
+                None => added.push((b.element, b.bonus)),
             }
         }
         if added.is_empty() {
@@ -1398,15 +1433,18 @@ impl FightParams {
     /// `dot_modified_base` is the same number before it, so dividing cancels
     /// everything but the bracket. READ AT `t`, because an ability-granted
     /// element is additive with elemental mods and so inside this bracket.
-    pub(super) fn extra_hit_bracket(&self, t: f64) -> f64 {
+    pub(super) fn extra_hit_bracket(&self, t: f64, w: &CardWindows) -> f64 {
         let mb = self.dot_modified_base.unwrap_or_else(|| self.damage.total());
         if mb <= 0.0 {
             return 1.0;
         }
-        self.with_ability_elements(self.damage.quantized_against(mb), mb, t).total() / mb
+        self.with_live_elements(self.damage.quantized_against(mb), mb, t, w).total() / mb
     }
 
-    /// The (1 + element bonuses) bracket for an elemental DoT's ticks.
+    /// The (1 + element bonuses) bracket a MOD gives this element's DoT ticks.
+    /// Everything with a clock on it is read per tick instead
+    /// ([`Self::element_at`]), which is the same number for a mod and the only
+    /// right one for a buff.
     pub(super) fn elem_bracket(&self, t: DamageType) -> f64 {
         self.elem_dot_bonus
             .iter()

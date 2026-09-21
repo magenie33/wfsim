@@ -562,6 +562,7 @@ pub fn run_once_traced(
 
         // Status events scheduled before this shot land first.
         process_ticks(
+            &windows,
             &mut debuffs,
             &mut gal,
             &mut arc,
@@ -745,6 +746,7 @@ pub fn run_once_traced(
             head_landing: shot_head_landing,
         };
         settle_what_is_in_the_air(
+            &windows,
             params,
             ap,
             field_ap,
@@ -883,6 +885,7 @@ pub fn run_once_traced(
         // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
         if !others.is_empty() {
             spread_beyond_the_target(
+                &windows,
                 params,
                 ap,
                 rec,
@@ -979,6 +982,7 @@ pub fn run_once_traced(
             // landed. Settling up to the throw is the same order
             // the shot loop settles them in.
             process_orbs(
+                &windows,
                 &mut orbs, &mut debuffs, &mut gal, &mut arc, at, &mut target,
                 params, field_ap, &field_ctx, &mut r, rec, d, &mut others,
             );
@@ -990,6 +994,7 @@ pub fn run_once_traced(
     // reason the clouds come before the status drain: each event settles what
     // preceded it and pushes procs of its own.
     process_orbs(
+        &windows,
         &mut orbs,
         &mut debuffs,
         &mut gal,
@@ -1008,6 +1013,7 @@ pub fn run_once_traced(
     // that shot (nothing refreshes it once firing stops). FIRST, because each
     // tick settles the status events before it and pushes procs of its own…
     process_field_ticks(
+        &windows,
         &mut fields,
         &mut debuffs,
         &mut gal,
@@ -1024,6 +1030,7 @@ pub fn run_once_traced(
     );
     // …then drain what is left up to the end of the engagement.
     process_ticks(
+        &windows,
         &mut debuffs,
         &mut gal,
         &mut arc,

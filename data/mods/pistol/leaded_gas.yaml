@@ -36,18 +36,13 @@ effects:
   # Heat or Toxin", which is the rule `settle_procs` already states from the
   # other side.
   #
-  # TWO EDGES, both about WHEN the bonus is read rather than what it is worth:
-  #
-  # - A CLOUD IS STAMPED WHEN IT LANDS. The game re-reads the bonus every tick —
-  #   "This applies retroactively to gas clouds created before the buff was
-  #   activated, and will no longer apply to lingering gas clouds after it
-  #   expires" — where every mod-granted element bonus in this engine is
-  #   snapshotted at the proc. So a cloud that outlives the window is worth more
-  #   here than in game, and one seeded just before it opens is worth less.
-  # - A SPREAD INSTANCE CARRIES NEITHER HALF. Punch through, chains and melee
-  #   influence are settled where the weapon's live windows are out of scope
-  #   (`InstanceScale::weakpoint_element`), so a cloud a punched body takes
-  #   misses the bonus the aimed body's gets. A floor, on a crowd.
+  # AND IT IS READ AT EVERY TICK, which is the half of the card that needs
+  # saying: "This applies retroactively to gas clouds created before the buff
+  # was activated, and will no longer apply to lingering gas clouds after it
+  # expires." A cloud is not re-seeded when the buff lands, so a bonus stamped
+  # at the proc could only ever be right about one of those two. It is the same
+  # live bracket Volt's Shock Trooper and Lavos's imbue are read in
+  # (`FightParams::element_at`) — an element buff is a mod with a clock on it.
   - kind: buff
     trigger: headshot
     grants: element_and_status_chance

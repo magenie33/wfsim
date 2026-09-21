@@ -291,6 +291,8 @@ pub(super) fn spread_from_influence(
 /// body — which is the clause that reorders builds in a crowd (MECHANICS §12).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_hit(
+    // See `process_ticks` — an instance's statuses are settled here.
+    w: &CardWindows,
     inst: &crate::rules::chain::Instance,
     foe: &mut SpreadFoe,
     spec: &crate::formation::FoeSpec,
@@ -500,13 +502,6 @@ pub(super) fn spread_hit(
         procs,
         t,
         InstanceScale {
-            // NOT CARRIED HERE, and it is the one gap in Leaded Gas: the
-            // weak-point window lives in the run loop and a spread instance is
-            // settled without it, so a Gas cloud a punched or chained body
-            // takes misses the element bonus the aimed body's gets. Worth a
-            // sentence rather than eight signatures until a second card wants
-            // the same thing.
-            weakpoint_element: None,
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
             // off `share`: a Slash bleed off a headshot is the same size as one
             // off a bodyshot, because a status effect reads the modded base.
@@ -529,7 +524,7 @@ pub(super) fn spread_hit(
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
             // the same weapon's.
-            xh_bracket: ap.extra_hit_bracket(t),
+            xh_bracket: ap.extra_hit_bracket(t, w),
         },
         &mut foe.debuffs,
         gal,
@@ -598,6 +593,8 @@ pub(super) struct SpreadShot {
 /// the aimed body alone.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_follow_through(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
@@ -640,6 +637,7 @@ pub(super) fn spread_from_follow_through(
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
+            w,
             &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
             modded_base, status_chance, forced, vector, params, ap, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
@@ -665,6 +663,8 @@ pub(super) struct PunchedWeakPoints {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_punch_through(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
@@ -772,6 +772,7 @@ pub(super) fn spread_from_punch_through(
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
+            w,
             &inst,
             foe,
             fs,
@@ -820,6 +821,8 @@ pub(super) fn spread_from_punch_through(
 /// to a body it has hit, which is the chain path's rule.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_ricochet(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
@@ -866,6 +869,7 @@ pub(super) fn spread_from_ricochet(
             status_landing: if head { head_landing } else { 1.0 },
         };
         spread_hit(
+            w,
             &inst,
             &mut others[idx],
             fs,
@@ -910,6 +914,8 @@ pub(super) fn spread_from_ricochet(
 /// Xm"* of it, not to it.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_echo(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     others: &mut [SpreadFoe],
     // STACKS ON THE BODY THAT WAS HIT, read at the moment of the hit — the
     // arcane's gate is about the target, not about the shooter.
@@ -971,6 +977,7 @@ pub(super) fn spread_from_echo(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
+            w,
             &inst,
             foe,
             fs,
@@ -1017,6 +1024,8 @@ pub(super) fn spread_from_echo(
 /// however many pellets the main beam put out.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_tendrils(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
@@ -1072,6 +1081,7 @@ pub(super) fn spread_from_tendrils(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
+            w,
             &inst,
             foe,
             fs,
@@ -1115,6 +1125,8 @@ pub(super) fn spread_from_tendrils(
 /// the line is the only choice that invents nothing.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_blast(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     // WHERE THE ROUND WENT OFF, decided by the caller from the pellet's own
     // deviation — not assumed to be the aimed body's surface, which is what it
     // was until 2026-08-19 and the whole of the bug this signature ends.
@@ -1142,6 +1154,7 @@ pub(super) fn spread_from_blast(
     t: f64,
 ) {
     blast_at(
+        w,
         det,
         others,
         params,
@@ -1174,6 +1187,8 @@ pub(super) fn spread_from_blast(
 /// there — any body touching the sphere is caught, each reads its own falloff.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn blast_at(
+    // See `process_ticks`.
+    w: &CardWindows,
     det: crate::rules::space::Detonation,
     others: &mut [SpreadFoe],
     params: &FightParams,
@@ -1218,6 +1233,7 @@ pub(super) fn blast_at(
             status_landing: 1.0,
         };
         spread_hit(
+            w,
             &inst,
             &mut others[i],
             spec,
@@ -1261,6 +1277,8 @@ pub(super) fn blast_at(
 /// hit through the ordinary path, and the splash is not a second instance.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_seeds(
+    // See `process_ticks` — this instance's statuses are settled here.
+    w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
@@ -1329,6 +1347,7 @@ pub(super) fn spread_from_seeds(
         let idx = inst.target - 1;
         let (foe, fs) = (&mut others[idx], &params.others[idx]);
         spread_hit(
+            w,
             inst,
             foe,
             fs,
@@ -1423,8 +1442,6 @@ pub(super) fn fire_syndicate_radial(
             vec![sy.element],
             at,
             InstanceScale {
-                // A SYNDICATE RADIAL IS NOT THE WEAPON'S HIT.
-                weakpoint_element: None,
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
@@ -1490,6 +1507,8 @@ pub(super) fn falloff_factor(
 /// takes the multishot nor fires per pellet.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_beyond_the_target(
+    // See `process_ticks` — what is already burning reads the live windows.
+    w: &CardWindows,
     params: &FightParams,
     ap: &FightParams,
     rec: &mut crate::record::Record,
@@ -1510,6 +1529,7 @@ pub(super) fn spread_beyond_the_target(
     // not the one the main beam is on (`spread_from_tendrils`).
     if let (Some(s), false) = (&shot_spread, others.is_empty()) {
         spread_from_tendrils(
+            w,
             others,
             params,
             ap,
@@ -1538,6 +1558,7 @@ pub(super) fn spread_beyond_the_target(
     // inside the pellet loop above.
     if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
         spread_from_seeds(
+            w,
             others,
             params,
             ap,
@@ -1582,6 +1603,7 @@ pub(super) fn spread_beyond_the_target(
             continue;
         }
         process_ticks(
+            w,
             &mut f.debuffs,
             gal,
             arc,

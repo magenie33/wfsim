@@ -164,10 +164,6 @@ pub(super) fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn fire_extra_hits(
     trigger_raw: f64,
-    // LEADED GAS' element term as the TRIGGERING instance carried it — an
-    // extra hit is the same shot, so the window that was open for one was open
-    // for the other.
-    weakpoint_element: Option<(DamageType, f64)>,
     bracket: f64,
     part_again: f64,
     head_direct: bool,
@@ -269,9 +265,6 @@ pub(super) fn fire_extra_hits(
                 // reads as `raw` — it is written through the rule so the two
                 // members of the category cannot drift apart.
                 mb_live: extra_hit_status_base(raw, trigger_raw),
-                // THE PARENT'S, because an extra hit is the same shot: the
-                // window that was open when it fired was open for this too.
-                weakpoint_element,
                 // Both already inside `raw`. Passing them again would square
                 // what the trigger's own procs took once.
                 crit_multiplier: 1.0,
@@ -578,14 +571,8 @@ pub(super) fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale {
-        mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, weakpoint_element,
-    } = scale;
-    // LEADED GAS' term for a DoT of this type: its element bonus is in the
-    // bracket of its own element's ticks and of nothing else's.
-    let wp = |ty: DamageType| {
-        weakpoint_element.filter(|(e, _)| *e == ty).map_or(0.0, |(_, v)| v)
-    };
+    let InstanceScale { mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket } =
+        scale;
     let status_damage = params.status_duration_multiplier;
     let sdm = params.status_damage_multiplier;
     let caps = foe.stack_caps;
@@ -753,7 +740,7 @@ pub(super) fn settle_procs(
                     debuffs,
                     DamageType::Toxin,
                     DOT_COEFFICIENT,
-                    ap.elem_bracket(DamageType::Toxin) + wp(DamageType::Toxin),
+                    ap.elem_bracket(DamageType::Toxin),
                     1.0,
                     delayed_ticks,
                     false,
@@ -768,7 +755,7 @@ pub(super) fn settle_procs(
                     debuffs,
                     DamageType::Electricity,
                     DOT_COEFFICIENT,
-                    ap.elem_bracket(DamageType::Electricity) + wp(DamageType::Electricity),
+                    ap.elem_bracket(DamageType::Electricity),
                     0.0,
                     immediate_ticks,
                     false,
@@ -794,9 +781,10 @@ pub(super) fn settle_procs(
                     DOT_COEFFICIENT,
                     // LITERAL GAS SOURCES ONLY — a Heat or Toxin mod adds
                     // nothing to a Gas tick, which is the wiki's own rule and
-                    // the reason Leaded Gas is worth carrying: an element bonus
-                    // for GAS is one of the only things that reaches these.
-                    1.0 + wp(DamageType::Gas),
+                    // the reason Leaded Gas is worth carrying: a bonus for GAS
+                    // is one of the only things that ever reaches one, and it
+                    // arrives through `element_at` at every tick.
+                    1.0,
                     0.0,
                     immediate_ticks,
                     false,
@@ -848,7 +836,7 @@ pub(super) fn settle_procs(
                     expiry,
                     heat_cap,
                     HeatOrigin {
-                        bracket: ap.elem_bracket(DamageType::Heat) + wp(DamageType::Heat),
+                        bracket: ap.elem_bracket(DamageType::Heat),
                         depth,
                         // The seed taken out of `contrib`, exactly as a Dot's.
                         unit: DOT_COEFFICIENT * sdm * ecl,
@@ -1025,7 +1013,6 @@ pub(super) fn settle_procs(
                         // body part is re-applied — a detonation struck none.
                         fire_extra_hits(
                             xh_total,
-                            weakpoint_element,
                             1.0,
                             1.0,
                             false,
@@ -1092,8 +1079,6 @@ pub(super) fn settle_procs(
                         // ModifiedBase. Same rule the ability members read from
                         // the other direction; docs/EXTRA_HIT.md.
                         mb_live: extra_hit_status_base(0.0, mb_live),
-                        // The parent instance's — see the other extra hit.
-                        weakpoint_element,
                         crit_multiplier,
                         part_factor,
                         landing,

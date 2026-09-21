@@ -174,3 +174,60 @@ fn leaded_gas_reaches_the_cloud() {
         "the bonus is in the Gas tick's bracket: {bare:.0} -> {carded:.0}"
     );
 }
+
+/// …AND THE SAME CLOUD IS WORTH MORE WHILE THE WINDOW IS OPEN, which is what
+/// makes it a live term and not a stamp.
+///
+/// VERBATIM (Leaded Gas): *"This applies retroactively to gas clouds created
+/// before the buff was activated, and will no longer apply to lingering gas
+/// clouds after it expires."* A cloud is not re-seeded when the buff lands, so
+/// the only way to be right about both halves of that sentence is to read the
+/// bonus AT THE TICK — which is where an ability's added element has always
+/// been read. Volt's Shock Trooper and Lavos's imbue are the same sentence
+/// with a different trigger, and now the same code.
+#[test]
+fn a_burning_cloud_reads_the_window_at_every_tick() {
+    let p = FightParams {
+        on_weakpoint: Some(crate::model::WeakpointBuff {
+            element: DamageType::Gas,
+            bonus: 3.0,
+            duration: 6.0,
+        }),
+        arcane: ArcaneFx::none(),
+        ..FightParams::default()
+    };
+    // ONE CLOUD, SEEDED BEFORE ANY OF THIS: its own bracket carries the mods
+    // and nothing else, which is what a stored `bracket` is.
+    let cloud = Dot {
+        cause: u32::MAX,
+        next_tick: 0.0,
+        ticks_left: 6,
+        frozen: 100.0,
+        landing: 1.0,
+        bracket: 1.0,
+        depth: 0,
+        source_scaled: true,
+        unit: 0.0,
+        dtype: DamageType::Gas,
+        ignores_armor: false,
+    };
+    let at = |until: f64| {
+        let mut w = windows_for(&p);
+        w.weakpoint_buff = until;
+        cloud.live(&p, 1.0, &w)
+    };
+    let shut = at(f64::NEG_INFINITY);
+    let open = at(10.0);
+    assert!((shut - 100.0).abs() < 1e-9, "the mods' own bracket: {shut}");
+    assert!((open - 400.0).abs() < 1e-9, "+300% while the window is open: {open}");
+    // …AND THE SAME CLOUD DROPS BACK the moment it lapses, which is the half a
+    // stamp at the proc cannot do.
+    let mut w = windows_for(&p);
+    w.weakpoint_buff = 0.5;
+    assert!((cloud.live(&p, 1.0, &w) - 100.0).abs() < 1e-9, "the window shut at 0.5");
+    // …AND AN ELEMENT THE CARD DOES NOT NAME IS UNTOUCHED.
+    let bleed = Dot { dtype: DamageType::Slash, ..cloud };
+    let mut w = windows_for(&p);
+    w.weakpoint_buff = 10.0;
+    assert!((bleed.live(&p, 1.0, &w) - 100.0).abs() < 1e-9, "a Slash bleed is not Gas");
+}

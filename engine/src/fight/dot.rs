@@ -73,12 +73,12 @@ impl Dot {
     /// faction damage, which double dips for status effects, the one from
     /// Eclipse is applied once."* Eclipse lives in `frozen`, applied once at
     /// the moment the proc landed.
-    pub(super) fn live(&self, params: &FightParams, now: f64) -> f64 {
+    pub(super) fn live(&self, params: &FightParams, now: f64, w: &CardWindows) -> f64 {
         if !self.source_scaled {
             return self.frozen;
         }
         self.frozen
-            * (self.bracket + params.ability_element_at(self.dtype, now))
+            * (self.bracket + params.element_at(self.dtype, now, w))
             * faction_at(params.faction_at_time(now), self.depth)
     }
 
@@ -99,12 +99,12 @@ impl Dot {
     /// Electricity and Gas consolidate; Slash and Toxin each carry their own.
     /// ONLY ONE FACTION LAYER, since the seed already holds the hit's own, so a
     /// payload at `depth` puts `depth − 1` in the seed and one here. M56.
-    pub(super) fn accumulator_unit(&self, params: &FightParams, now: f64) -> f64 {
+    pub(super) fn accumulator_unit(&self, params: &FightParams, now: f64, w: &CardWindows) -> f64 {
         if !self.source_scaled || self.unit == 0.0 {
             return 0.0;
         }
         self.unit
-            * (self.bracket + params.ability_element_at(self.dtype, now))
+            * (self.bracket + params.element_at(self.dtype, now, w))
             * params.faction_at_time(now)
     }
 
@@ -117,9 +117,10 @@ impl Dot {
         &self,
         params: &FightParams,
         now: f64,
+        w: &CardWindows,
     ) -> (Vec<crate::record::Scale>, Vec<crate::record::Scale>) {
         use crate::record::{Factor, Scale};
-        let elem = self.bracket + params.ability_element_at(self.dtype, now);
+        let elem = self.bracket + params.element_at(self.dtype, now, w);
         let f = params.faction_bracket_at(now);
         let m = params.target.faction_bracket_multiplier;
         let at = |depth: u32| {
