@@ -13,12 +13,12 @@ boards:
   group_clear:
     submissions: 9575
     listed: 9653
-    scored_at_epoch_seconds: 1789949972
+    scored_at_epoch_seconds: 1789963753
   single_target:
     submissions: 9575
     listed: 15197
-    scored_at_epoch_seconds: 1789949974
+    scored_at_epoch_seconds: 1789963755
   single_target_demolisher:
     submissions: 9575
     listed: 12877
-    scored_at_epoch_seconds: 1789949976
+    scored_at_epoch_seconds: 1789963757
