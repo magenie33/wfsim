@@ -2174,4 +2174,38 @@ fn six_ticks_a_second_apart() {
     assert_eq!(fast.tick_rate, f.tick_rate);
     assert_eq!(fast.duration_seconds, f.duration_seconds);
 }
+
+/// **AN EXALTED WEAPON'S DAMAGE IS ITS WIELDER'S ABILITY STRENGTH.** Valkyr
+/// Talons' numbers are Hysteria's at 100% — every swing, slide and slam figure
+/// on that page carries the Strength icon — so a Valkyr built for strength
+/// deals proportionally more, and one built for none deals proportionally less.
+///
+/// ASSERTED AS A PROPORTION AND AGAINST AN ORDINARY WEAPON, because a scale
+/// applied to every weapon would pass a test that only looked at the claws.
+#[test]
+fn an_exalted_weapon_scales_with_its_wielders_ability_strength() {
+    let at = |weapon: &str, strength: f64| {
+        let base = super::WeaponBase::from_data(weapon, false, &[]);
+        let mut t = crate::data::tenno::default_tenno().clone();
+        t.ability_strength = strength;
+        super::resolve_for(&base, &[], super::StackPolicy::Emergent, &t).damage.total()
+    };
+    let hundred = at("valkyr_talons", 1.0);
+    assert!(hundred > 0.0);
+    // A PROPORTION, both ways: 2.0x doubles it and 0.5x halves it.
+    assert!((at("valkyr_talons", 2.0) - hundred * 2.0).abs() < 1e-9);
+    assert!((at("valkyr_talons", 0.5) - hundred * 0.5).abs() < 1e-9);
+    // …AND THE SPLIT IS UNTOUCHED: a scale moves the total, never the shares.
+    let base = super::WeaponBase::from_data("valkyr_talons", false, &[]);
+    let mut t = crate::data::tenno::default_tenno().clone();
+    t.ability_strength = 3.0;
+    let p = super::resolve_for(&base, &[], super::StackPolicy::Emergent, &t);
+    let share = |d: &crate::rules::damage::DamageVector, k| d.get(k) / d.total();
+    let one = super::resolve(&base, &[], super::StackPolicy::Emergent);
+    for k in [crate::rules::damage::DamageType::Puncture, crate::rules::damage::DamageType::Slash] {
+        assert!((share(&p.damage, k) - share(&one.damage, k)).abs() < 1e-12, "{k:?}");
+    }
+    // A WEAPON THE PLAYER CARRIES THEMSELVES IS NOT AN ABILITY, so nothing moves.
+    assert_eq!(at("magistar", 3.0), at("magistar", 1.0));
+}
 }

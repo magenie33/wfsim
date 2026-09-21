@@ -17,7 +17,8 @@ max_rank: 30
 # ITS DAMAGE IS AN ABILITY'S, TAKEN AT 100% STRENGTH. "Normal attacks deal
 # 250 damage … slide attacks inflict 750 damage for each strike" carry the
 # Ability Strength icon (W`Hysteria`), so every number below is the module's,
-# which is that page at 100%.
+# which is that page at 100% — and the WIELDER'S strength scales it from there
+# (`exalted`, `WeaponBase::scale_base_damage`).
 #
 # HYSTERIA IS FIXED IN THE STANCE SLOT: seated and never removed; the card grants
 # 5 and the matching slot doubles it to 10 (60 -> 70); the slot takes no Forma
@@ -56,7 +57,6 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "THE DAMAGE IS HYSTERIA'S AT 100% ABILITY STRENGTH. Every swing, slide and slam number on the page carries the Strength icon, so a Valkyr build with more strength deals proportionally more than this reports"
   - "Hysteria drains 5 energy a second while the claws are out; energy is not modelled, so they are held for the whole engagement"
   - "every hit restores 100 health, and nothing in this arena damages the Tenno"
   - "one attack input's own animation length is not published anywhere: the wiki gives a combo's total duration at 1.0x attack speed and one entry per input, so the combo's DURATION is exact and the split between its INPUTS is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"

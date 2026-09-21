@@ -687,6 +687,11 @@ pub struct WeaponBase {
     /// [`crate::data::weapons::AttackSpec::punch_through_mods`]. `None` means
     /// the class rule decides.
     pub punch_through_mods: Option<bool>,
+    /// **AN EXALTED WEAPON'S DAMAGE IS ITS ABILITY'S, TAKEN AT 100% STRENGTH**
+    /// — every number on its page carries the Strength icon — so the wielder's
+    /// `ability_strength` scales its base before any mod reads it
+    /// (`resolve_for`). False on every weapon a player carries themselves.
+    pub exalted: bool,
     pub form: crate::model::FormKind,
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's

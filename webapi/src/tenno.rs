@@ -31,6 +31,10 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     };
     let Some(build) = build else { return t };
     let Ok(r) = wf::resolve(&build) else { return t };
+    // THE WIELDER'S ABILITY STRENGTH COMES WITH THE BUILD, whatever is holding
+    // the gun: an EXALTED weapon is summoned by the Warframe behind the
+    // companion too, and its damage is that ability's.
+    t.ability_strength = r.stat(wf::FrameStat::AbilityStrength).value;
     if !info.sentinel {
         let stat = |s: wf::FrameStat| r.stat(s).value;
         t.id = r.frame.id.clone();
@@ -129,6 +133,11 @@ pub(crate) fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::te
     t.energy = get_f64(v, "wf_energy", t.energy).clamp(0.0, 100_000.0);
     t.sprint = get_f64(v, "wf_sprint", t.sprint).clamp(0.0, 10.0);
     t.state.energy_pct = get_f64(v, "wf_energy_pct", t.state.energy_pct).clamp(0.0, 1.0);
+    // …AND ABILITY STRENGTH IS AN OVERRIDE LIKE THE REST: the linked build's,
+    // until a fight types one. Same field the ability buffs read, because there
+    // is one such number and a fight that disagreed with its own wielder about
+    // it would scale Roar by one strength and the claws by another.
+    t.ability_strength = get_f64(v, "ability_strength", t.ability_strength).clamp(0.0, 10.0);
     t
 }
 

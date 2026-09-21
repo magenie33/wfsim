@@ -105,8 +105,14 @@ pub fn resolve_for(
         0.0
     };
     let owned;
-    let base = if gated_flat > 0.0 || gated_mag > 0.0 {
+    // AN EXALTED WEAPON IS SUMMONED BY AN ABILITY, so the wielder's strength is
+    // a property of the WEAPON here rather than a buff on top of it: it scales
+    // the base first, and the gated add below lands on the scaled one, which is
+    // the order the game states (the page's numbers ARE the ability at 100%).
+    let strength = if base.exalted { tenno.ability_strength } else { 1.0 };
+    let base = if gated_flat > 0.0 || gated_mag > 0.0 || strength != 1.0 {
         let mut b = base.clone();
+        b.scale_base_damage(strength);
         if gated_flat > 0.0 {
             // A GATED FLAT ADD ASKS THE SAME QUESTION THE UNGATED ONE DOES,
             // and Guardian's Might is why it must: one card, +20 unconditional

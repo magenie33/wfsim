@@ -73,6 +73,19 @@ pub struct Tenno {
     /// are built, so everything put here transfers rather than moves.
     #[serde(default)]
     pub shards: Vec<crate::data::shards::ShardPick>,
+    /// THE WIELDER'S ABILITY STRENGTH, as a fraction (1.0 = 100%) — the linked
+    /// Warframe build's `FrameStat::AbilityStrength`, or 1.0 when no build says
+    /// otherwise, which is what the board is scored under.
+    ///
+    /// It is the WIELDER's and not the fight's: an EXALTED weapon's damage is
+    /// its ability's at 100% strength, so the frame that summons it is what
+    /// scales it (`WeaponBase::exalted`).
+    #[serde(default = "full_strength")]
+    pub ability_strength: f64,
+}
+
+fn full_strength() -> f64 {
+    1.0
 }
 
 /// WHAT THE WARFRAME BRINGS, resolved — auras and shards folded into the shapes

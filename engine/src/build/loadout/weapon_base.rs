@@ -68,6 +68,30 @@ impl WeaponBase {
     /// `into_co` is USUALLY 0 or `flat` and is passed as an amount rather than
     /// a bool on purpose: a build carrying two flat-damage perks that disagree
     /// contributes part of its total, and a bool cannot say that.
+    /// **AN EXALTED WEAPON'S BASE IS ITS ABILITY'S, TAKEN AT 100% STRENGTH.**
+    /// Every swing, slide and slam number on such a page carries the Strength
+    /// icon (W`Hysteria`), so the wielder's strength is a scale on the base the
+    /// weapon HAS — applied before any mod, bucket or gated add reads it, which
+    /// is what makes "proportionally more" come out of arithmetic nobody else
+    /// has to know about.
+    ///
+    /// A PROPORTION, so the damage SPLIT is untouched: 25% Puncture and 75%
+    /// Slash stay that at any strength, and the slam and heavy multipliers ride
+    /// the scaled base by being multipliers.
+    pub fn scale_base_damage(&mut self, by: f64) {
+        if by == 1.0 {
+            return;
+        }
+        self.base_vector = self.base_vector.scale(by);
+        self.unswung_base *= by;
+        if let Some(r) = self.radial.as_mut() {
+            r.base_vector = r.base_vector.scale(by);
+        }
+        if let Some(sl) = self.slam.as_mut() {
+            sl.base_vector = sl.base_vector.scale(by);
+        }
+    }
+
     pub fn add_flat_base_damage(&mut self, flat: f64, into_co: f64) {
         if flat <= 0.0 {
             return;

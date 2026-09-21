@@ -588,7 +588,10 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // applies the strength AND settles the same-family conflicts, so nothing
     // downstream — not the sim, not the optimizer, not the replay — can end up
     // adding two Roars together.
-    let strength = get_f64(v, "ability_strength", 1.0).clamp(0.0, 10.0);
+    // THE WIELDER'S, unless the fight types one over it — `tenno_from` has
+    // already settled that, and reading the request again here would let the two
+    // disagree about one number.
+    let strength = tenno.ability_strength;
     let picks = ability_picks(v);
     // …and the WEAPON'S CLASS, because one member is worth double on a class:
     // Resupply is 20/30/40/50% on Sniper Rifles. `resolve` is the one function
