@@ -301,6 +301,24 @@ const freeName = (ps, mk) => {
 };
 /// THE NAME "+ new" GIVES A PRESET, written down once.
 const autoPresetName = (noun, n) => `${noun} ${n}`;
+/// EVERY PRESET IS BORN "preset N", WHATEVER IT IS A PRESET OF: a build, a
+/// search, a fight and an Operator build are one concept on this site, so they
+/// carry one name. The noun (`cfg.noun`) only words a tooltip. A custom (a
+/// riven, an enemy) is a different kind of thing and keeps its own.
+const PRESET_NAME = "preset";
+/// THE FIRST PRESET OF A COLLECTION HAS ONE IDENTITY, WRITTEN OR NOT. The bar
+/// draws it before anything is stored (a virtual "preset 1"), and it is stored
+/// under this id on the first real edit — so a link to it, made while it was
+/// only drawn, is a link to the stored one afterwards. No link ever names "no
+/// preset".
+const PRESET_SEED_ID = "preset-1";
+/// WHICH PRESET A PAGE OPENS ON: the one `?build=` names — else the first, the
+/// same repair a link gets when its preset is gone — and with none named, the
+/// last one open. `null` is the virtual one.
+const presetToOpen = (list, want, last) => (want
+  ? list.find((x) => x.id === want) || list[0] || null
+  : list.find((x) => x.name === last) || list[0] || null);
+const newPresetName = (ps) => freeName(ps, (n) => autoPresetName(PRESET_NAME, n));
 /// …and whether a name is one. It ASKS the generator rather than matching a
 /// shape of its own, so changing the shape above cannot leave this behind.
 ///
@@ -312,8 +330,11 @@ const isAutoPresetName = (noun, name) => {
   const n = Number(s.slice(String(noun).length + 1));
   return Number.isInteger(n) && n >= 1 && s === autoPresetName(noun, n);
 };
-/// The builds collection's noun, shared by the bar that names them and the
-/// share that asks whether a name came from there.
+/// Whether a name is one the app generated — "preset N", or the per-collection
+/// nouns a stored preset may still carry.
+const isGeneratedName = (name) => [PRESET_NAME, "build", "search", "scenario", "operator"]
+  .some((noun) => isAutoPresetName(noun, name));
+/// The builds collection's noun, which words its tooltips.
 const BUILD_NOUN = "build";
 
 /// WHAT A COLLECTION SHEDS when it will not fit, in the order of what it costs

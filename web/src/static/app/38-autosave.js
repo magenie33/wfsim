@@ -111,7 +111,7 @@ function markPresetDirty() {
     if (!activePreset) {
       // Reaching here is not evidence of an edit — see `pristineBuild`.
       if (buildIsUntouched()) return;
-      const name = freeName(ps, (n) => autoPresetName(BUILD_NOUN, n));
+      const name = newPresetName(ps);
       ps.push({ name, savedAt: Date.now(), state: snapshotState() });
       storePresetList(BUILDS, ps);
       activePreset = name;

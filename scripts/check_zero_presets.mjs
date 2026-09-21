@@ -1,8 +1,8 @@
 /// THE THIRTY-SIXTH: YOU OWN NOTHING UNTIL YOU MAKE SOMETHING.
 ///
-/// Opening a weapon must not write a blank "build 1" into storage, opening the
+/// Opening a weapon must not write a blank "preset 1" into storage, opening the
 /// app must not write a "scenario 1", and opening the optimizer must not write
-/// a "search 1" — or a reader who browsed forty weapons owns forty builds they
+/// a "preset 1" — or a reader who browsed forty weapons owns forty builds they
 /// never made. That is invisible while a preset is listed only in the bar of
 /// the weapon you are standing on, and stops being invisible the moment one
 /// page lists everything you own, where the answer becomes "everything".
@@ -42,6 +42,9 @@ const r = await evaluate(`(async () => {
     addThere: !!document.querySelector('#preset-bar-builder-builds .pchip.add'),
     // …and the simulator still has a fight, because a ruler is a builtin.
     fightThere: !!sim && typeof sim.level === 'number',
+    // THERE IS STILL ONE TO SELECT: the virtual "preset 1", drawn and selected,
+    // with nothing stored behind it.
+    virtual: [...document.querySelectorAll('#preset-bar-builder-builds .pchip.virtual.sel')].map(c => c.textContent),
   });
 
   // BROWSING IS NOT OWNING.
@@ -66,6 +69,9 @@ const r = await evaluate(`(async () => {
   markPresetDirty(); renderMods(); await sleep(1400);
   const edited = Object.assign(${counts}, {
     active: activePreset,
+    // BORN UNDER THE NAME IT WAS DRAWN WITH: one chip, real, no virtual beside it.
+    chips: [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map(c => c.textContent.replace(/[⧉✎✕]/g, '').trim()),
+    virtualLeft: document.querySelectorAll('#preset-bar-builder-builds .pchip.virtual').length,
     kept: ((((loadPresetList('builder-builds')[0] || {}).state || {}).slots || [])[0] || {}).mod,
   });
 
@@ -79,6 +85,7 @@ const r = await evaluate(`(async () => {
     active: activePreset,
     bareWeapon: slots.every(s => !s.mod),
     stillDrawn: document.querySelectorAll('#mod-slots .slot').length,
+    virtual: [...document.querySelectorAll('#preset-bar-builder-builds .pchip.virtual.sel')].map(c => c.textContent),
   });
   return { fresh, browsed, opened, scoped, edited, deleted };
 })()`);
@@ -92,21 +99,31 @@ check("...and the simulator still has a fight (a ruler is a builtin)",
   r.fresh.fightThere === true);
 check("...and there is still a deliberate way to make one", r.fresh.addThere === true);
 
+check("...and there is always one to select: a virtual preset 1, stored nowhere",
+  r.fresh.virtual.length === 1 && r.fresh.virtual[0] === "preset 1", JSON.stringify(r.fresh.virtual));
+
 check("browsing three more weapons creates nothing", r.browsed.builds === 0,
   `${r.browsed.builds} builds after three weapons`);
 check("opening the optimizer creates nothing", r.opened.searches === 0,
   `${r.opened.searches} searches from a render`);
 check("...but changing the scope creates exactly one", r.scoped.searches === 1
-  && r.scoped.active === "search 1", `${r.scoped.searches} · active="${r.scoped.active}"`);
+  && r.scoped.active === "preset 1", `${r.scoped.searches} · active="${r.scoped.active}"`);
 
 check("the first build edit creates exactly one build", r.edited.builds === 1
-  && r.edited.active === "build 1", `${r.edited.builds} · active="${r.edited.active}"`);
+  && r.edited.active === "preset 1", `${r.edited.builds} · active="${r.edited.active}"`);
 check("...carrying the edit that created it", r.edited.kept === "serration", String(r.edited.kept));
+
+check("...and it is born under the name it was drawn with, not beside it",
+  r.edited.virtualLeft === 0 && r.edited.chips.length === 1 && r.edited.chips[0] === "preset 1",
+  JSON.stringify(r.edited.chips));
 
 check("the last build can be deleted", r.deleted.builds === 0,
   `${r.deleted.builds} left · active="${r.deleted.active}"`);
 check("...and what is left is a bare weapon, not a broken page",
   r.deleted.bareWeapon === true && r.deleted.stillDrawn === 8,
   `bare=${r.deleted.bareWeapon} slots=${r.deleted.stillDrawn}`);
+
+check("...and deleting the last one leaves the virtual preset 1 to select",
+  r.deleted.virtual.length === 1 && r.deleted.virtual[0] === "preset 1", JSON.stringify(r.deleted.virtual));
 
 await app.finish("nothing is owned until it is made");

@@ -610,6 +610,14 @@ function renderWfGate(g) {
 }
 
 // ---- builds ----
+/// FRAMED BY A WEAPON PAGE, WHICH BUILD IS OPEN IS THE WEAPON'S LINK: told to the
+/// parent whenever it changes, born or picked, so the wielder follows the page.
+function wfAnnounceBuild() {
+  if (!EMBED || window.parent === window) return;
+  const p = presetListWithIds(WF_BUILDS, wf.frame).find((x) => x.name === wfActive);
+  window.parent.postMessage({ wfsim: "wielder-build", frame: wf.frame, id: p ? p.id : PRESET_SEED_ID }, location.origin);
+}
+
 function wfBarCfg() {
   return {
     domain: WF_BUILDS,
@@ -619,7 +627,14 @@ function wfBarCfg() {
     load: () => presetListWithIds(WF_BUILDS, wf.frame),
     store: (ps) => storePresetList(WF_BUILDS, opWithIds(ps), wf.frame),
     active: () => wfActive,
-    setActive: (n) => { wfActive = n; localStorage.setItem(presetActiveKey(WF_BUILDS, wf.frame), n); },
+    setActive: (n) => {
+      wfActive = n;
+      // FRAMED, THE OPEN BUILD IS A WEAPON'S LINK, not this frame's own last
+      // choice: the pointer is the standalone page's and the wielder picker's
+      // default, and another weapon's pane must not move it.
+      if (EMBED) wfAnnounceBuild();
+      else localStorage.setItem(presetActiveKey(WF_BUILDS, wf.frame), n);
+    },
     snapshot: () => JSON.parse(JSON.stringify(wf)),
     apply: (st) => wfApply(st),
     blank: () => wfBlank(wf.frame),
@@ -645,7 +660,7 @@ function wfMarkDirty() {
     const at = ps.findIndex((p) => p.name === wfActive);
     if (at < 0) {
       if (sameState(wf, wfBlank(wf.frame))) return;
-      const name = freeName(ps, (n) => autoPresetName(BUILD_NOUN, n));
+      const name = newPresetName(ps);
       ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
       cfg.store(ps);
       cfg.setActive(name);

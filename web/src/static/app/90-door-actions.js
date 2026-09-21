@@ -661,7 +661,7 @@ const AGENT_ACTIONS = [
       const c = wielderChoices();
       if (frame === null) {
         if (!c.prototype_allowed) return agentNo("prototype_not_allowed", { alternatives: c.frames.map((f) => f.id) });
-        setWielder(null);
+        setWielder(wielderLinkFor(PROTOTYPE_ID));
         return { text: "held by the Prototype" };
       }
       const f = c.frames.find((x) => x.id === frame);
@@ -669,7 +669,7 @@ const AGENT_ACTIONS = [
       if (build != null && !f.builds.some((b) => b.id === build)) {
         return agentNo("bad_argument", { argument: "build", alternatives: f.builds.map((b) => b.id) });
       }
-      setWielder(build != null ? { frame, preset: build } : { frame });
+      setWielder(build != null ? { frame, preset: build } : wielderLinkFor(frame));
       return { text: `held by ${f.name}` };
     },
   },

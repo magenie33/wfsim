@@ -170,6 +170,7 @@ async function route() {
     : wfHit ? `${wfHit.name} — WFSim`
     : opRoute ? `${tr("Operator")} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
+  trailPush();
   if (wfHit) {
     await showWarframe(wfHit.id);
     if (gen !== routeGen) return;

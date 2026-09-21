@@ -50,7 +50,10 @@ const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick"
 // before the scan that fills it has started, so the rows keep their first
 // answer for ever and a freshly opened list shows none at all. It is computed
 // at RENDER, like the mod picker's, and the order with it.
-const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key"];
+// `image` IS A CARD'S PICTURE, an id in `data/assets.yaml` that `IMG` resolves: the
+// row and the trigger both carry it, so a list of things that have a face (a
+// Warframe) reads as the picker every other list of them is.
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key", "image"];
 
 function ddCheck(id, cfg) {
   const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
@@ -82,7 +85,7 @@ function ddButton(id, cfg) {
   return `<button type="button" class="dd" id="${id}" data-dd="${id}" value="${
     escHtml(String(cfg.value ?? ""))}"${cfg.dataK ? ` data-k="${escHtml(cfg.dataK)}"` : ""}${
     data}${cfg.disabled ? " disabled" : ""}${
-    cfg.title ? ` title="${escHtml(cfg.title)}"` : ""}><span class="dd-v">${
+    cfg.title ? ` title="${escHtml(cfg.title)}"` : ""}>${cur && cur.image ? imgTag(IMG(cur.image), "dd-i") : ""}<span class="dd-v">${
     escHtml(cur ? cur.label : (cfg.placeholder || "—"))}</span><span class="dd-c">▾</span></button>`;
 }
 
@@ -142,7 +145,7 @@ function ddRender(id, query) {
       const chip = cfg.axis && i.key ? gainChipFor(i.key, cfg.axisLabel || "") : "";
       return head + `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
         i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
-        <div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}</div>${
+        ${i.image ? imgTag(IMG(i.image), "mod") : ""}<div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}</div>${
           i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
       </div>`;
     }).join("")

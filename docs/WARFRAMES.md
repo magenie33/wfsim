@@ -183,9 +183,16 @@ Valkyrs, run by `engine::data::rage`:
 
 **A WEAPON IS ALWAYS HELD BY SOMEBODY, AND A WEAPON BUILD SAYS WHO.** The
 `wielder` build axis (`board::builds::BUILD_AXES`) is a link to one of this module's
-saved builds — by its preset `id` — or a modelled frame with no build, or the
-**Prototype**: `data/tenno/default.yaml`, every stat the lowest any released
-Warframe has at rank 30, with no mods and no passive.
+saved builds, by its preset `id`, always: a frame that owns none is linked by
+the seed id (`PRESET_SEED_ID`) its virtual "preset 1" is drawn and later stored
+under, so the link survives the first edit; a link whose preset is gone means
+the frame's first. NEVER EMPTY: the floor is the **Prototype** frame (`data/warframes/prototype.yaml`), whose five
+stats are `data/tenno/default.yaml`'s — every stat the lowest any released
+Warframe has at rank 30 — with no ability, no passive and no innate polarity, so
+a Helminth has no slot on it. It is a frame like any other: the same builder
+page, saved builds and link. With nothing written for it, it is what every ruler
+scores in and is stored and sent as no wielder; a saved Prototype build is a
+different wielder and never reaches the board.
 
 - The fight's player is that build's `resolve` — health, shields, armor, energy,
   sprint — with its archon shards and its own aura (`webapi::tenno::wielder_from`).

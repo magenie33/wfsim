@@ -145,15 +145,28 @@ curve that climbs 0 → 40 over sixty seconds and answers itself.
 ## Presets and customs — two kinds of collection
 
 **PRESETS vs CUSTOMS** — two kinds of collection, and the difference is who
-CONSUMES them. "Preset" is the CATEGORY and never the name of a collection or
-of an item in one: a build is a build, a scenario a scenario, a search a
-search, a riven a riven. Each bar declares its `noun`, which names new items
-("build 2") and every tooltip that refers to one.
+CONSUMES them. **EVERY PRESET IS BORN "preset N"**, whatever it is a preset of —
+a build, a scenario, a search, a Warframe or Operator build are one concept and
+carry one name (`newPresetName`); a stored one may still carry its collection's
+old noun and is read as generated (`isGeneratedName`). Each bar declares a
+`noun`, which words its tooltips. A riven or an enemy is a custom, not a preset,
+and is named for what it is ("riven 2").
 A **preset** is a saved state of something that always exists, read only by
 its own module: `builder-builds` (a build), `simulator-scenarios` (a fight,
 buff settings included), `optimizer` (a search: the SCOPE and `finalists`, and
-nothing else — never buffs, never a run count, never a thread count). There is
-always ≥1, "active" means the state you are in.
+nothing else — never buffs, never a run count, never a thread count).
+
+**THERE IS ALWAYS ONE TO SELECT, AND NOTHING IS OWNED UNTIL IT IS MADE.** Owning
+none, a bar draws a virtual "preset 1": the blank the editor already shows
+(`cfg.blank()`), stored on the first real edit and never on a render, under a
+FIXED id (`PRESET_SEED_ID`). So it is a preset in every sense but storage, and
+every link — a weapon's wielder, a frame's Operator — names one by id, drawn or
+written, and stays valid across its first edit. Deleting the last one is a reset
+to that blank. Whether a preset
+is untouched is read from its CONTENT against the blank, never from a stored
+flag; one edited back to the blank keeps its identity and its name. A scenario
+has no virtual one: owning none, the fight is a pinned official ruler.
+"Active" means the state you are in.
 
 THE OPTIMIZER TAB IS TWO HALVES AND TWO BOXES: one box is the SEARCH and is
 exactly what a search preset saves; the next is the SIMULATOR's fight,
@@ -709,8 +722,12 @@ lives at its id rather than at nothing (`urlSlug`, and `url_slug` in
 ## The wielder is the build's; external bonuses are the fight's
 
 **A WEAPON BUILD NAMES WHO HOLDS IT** — the Wielder block, first in the builder:
-the Prototype, a modelled frame with no build, or one of the Warframe page's
-saved builds, linked by its preset `id` (docs/WARFRAMES.md §A weapon's wielder).
+one of the Warframe page's saved builds, linked by its preset `id`
+(docs/WARFRAMES.md §A weapon's wielder). It is NEVER EMPTY: the floor is the
+Prototype frame, which has its own builder page and saved builds like any other,
+and with nothing written for it is stored and sent as no wielder. The top
+control chooses the TYPE (a searchable list of Warframes with their faces); which
+preset of it is the framed page's own bar's.
 A weapon a frame summons offers only its frames, and its title follows the frame
 ("Valkyr Prime Talons").
 

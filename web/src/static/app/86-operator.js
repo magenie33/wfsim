@@ -21,7 +21,9 @@ const opList = () => presetListWithIds(OPS);
 // `randomUUID` exists only in a secure context; the fallback is as unique here.
 const opNewId = () => (crypto.randomUUID ? crypto.randomUUID()
   : Date.now().toString(36) + Math.random().toString(36).slice(2));
-const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: opNewId() }));
+/// A preset with no id is named here: the FIRST of a collection takes the seed
+/// (`PRESET_SEED_ID`), which is the id its virtual form was linked by.
+const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: ps.length === 1 ? PRESET_SEED_ID : opNewId() }));
 const focusSchool = (id) => (WFCAT && id && WFCAT.focus.find((s) => s.id === id)) || null;
 const opAMod = (id) => (WFCAT && id && WFCAT.artifact_mods.find((m) => m.id === id)) || null;
 const opAArcane = (id) => (WFCAT && id && WFCAT.artifact_arcanes.find((a) => a.id === id)) || null;
@@ -48,7 +50,15 @@ function opBarCfg() {
     load: opList,
     store: (ps) => storePresetList(OPS, opWithIds(ps)),
     active: () => opActive,
-    setActive: (n) => { opActive = n; localStorage.setItem(presetActiveKey(OPS), n); },
+    setActive: (n) => {
+      opActive = n;
+      localStorage.setItem(presetActiveKey(OPS), n);
+      // FRAMED BY A WARFRAME PAGE, the open build is that frame's link.
+      if (EMBED && window.parent !== window) {
+        const p = opList().find((x) => x.name === n);
+        window.parent.postMessage({ wfsim: "operator-build", id: p ? p.id : PRESET_SEED_ID }, location.origin);
+      }
+    },
     snapshot: () => JSON.parse(JSON.stringify(op)),
     apply: (st) => opApply(st),
     blank: opBlank,
@@ -71,7 +81,7 @@ function opMarkDirty() {
     const at = ps.findIndex((p) => p.name === opActive);
     if (at < 0) {
       if (sameState(op, opBlank())) return;
-      const name = freeName(ps, (n) => autoPresetName("operator", n));
+      const name = newPresetName(ps);
       ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
       cfg.store(ps);
       cfg.setActive(name);
@@ -230,7 +240,8 @@ async function showOperator() {
   if (!op) {
     const list = opList();
     const last = localStorage.getItem(presetActiveKey(OPS));
-    const p = list.find((x) => x.name === last) || list[0] || null;
+    const want = new URLSearchParams(location.search).get("build");
+    const p = presetToOpen(list, want, last);
     opActive = p ? p.name : "";
     op = opNormalize(p ? p.state : null);
   }
@@ -255,27 +266,46 @@ function renderWfOperator() {
   const items = [{ value: "", label: tr("no linked Operator") },
     ...ps.map((p) => ({ value: p.id, label: p.name,
       hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))];
-  const pick = wfOperatorPick();
-  const s = pick && focusSchool(pick.school);
-  $("wf-operator").innerHTML = `<div class="wf-op-row">${ddButton("dd-wf-operator", {
+  const box = $("wf-operator");
+  // THE OPERATOR IS EDITED HERE, INSIDE THE FRAME THAT HOLDS IT: the Operator
+  // page, framed as itself. The row only chooses WHICH build this frame links.
+  // A build born or picked in the frame is announced (`opAnnounceBuild`) and
+  // linked without reloading it; an unchanged `src` is left alone for the same
+  // reason a weapon's wielder pane is.
+  let row = box.querySelector(".wf-op-row");
+  if (!row) {
+    box.innerHTML = `<div class="wf-op-row"></div>
+      <iframe class="wld-frame" loading="lazy" title="${escHtml(tr("Operator"))}"></iframe>`;
+    row = box.querySelector(".wf-op-row");
+  }
+  row.innerHTML = ddButton("dd-wf-operator", {
     value: cur, items, onPick: (v) => { wf.operator = v || null; wfChanged(); },
-  })}<a class="ghost-btn small" href="/operator">${escHtml(tr("edit on the Operator page"))}</a></div>`
-    + (s ? s.nodes.filter((n) => n.always || pick.assumed.includes(n.id) || n.tags.length)
-      .map((n) => opNodeHtml(s, n, n.always || pick.assumed.includes(n.id), false)).join("") : "")
-    + (s && s.artifact ? wfArtifactHtml(s.artifact, pick.artifact) : "");
+  }) + `<a class="ghost-btn small" href="/operator">${escHtml(tr("open the full page"))}</a>`;
+  const frame = box.querySelector("iframe");
+  // UNLINKED WITH OPERATORS OWNED, there is no build to show: the frame shows
+  // one only once it names one, or while there is none and the virtual one is it.
+  frame.hidden = !cur && ps.length > 0;
+  const src = `/operator?embed=1&build=${encodeURIComponent(cur || PRESET_SEED_ID)}`;
+  if (frame.dataset.src !== src) { frame.dataset.src = src; frame.src = src; }
 }
 
-/// The linked artifact, as a line: its mods by name, and the arcane's card, which
-/// is the part that can reach a Warframe's weapons.
-function wfArtifactHtml(def, art) {
-  const mods = art.mods.map((id) => opAMod(id).name);
-  const arc = opAArcane(art.arcane);
-  if (!mods.length && !arc) return "";
-  return `<div class="op-node on"><div class="mn">${escHtml(def.name)}</div>`
-    + (mods.length ? `<div class="me">${escHtml(mods.join(" · "))}</div>` : "")
-    + (arc ? `<div class="me"><b>${escHtml(arc.name)}</b> — ${escHtml(arc.effects.join(" "))}</div>` : "")
-    + `</div>`;
-}
+// AN OPERATOR BUILD OPENED OR BORN IN THE FRAMED PAGE IS THIS FRAME'S LINK.
+addEventListener("message", (e) => {
+  const d = e.data;
+  if (e.origin !== location.origin || !d || d.wfsim !== "operator-build" || !wf) return;
+  if (!d.id || wf.operator === d.id) return;
+  const frame = document.querySelector("#wf-operator iframe");
+  if (frame) frame.dataset.src = `/operator?embed=1&build=${encodeURIComponent(d.id)}`;
+  wf.operator = d.id;
+  wfChanged();
+});
+// …AND WHAT IT WRITES IS READ BACK: the numbers above resolve the linked build.
+let wfOperatorSync = null;
+addEventListener("storage", (e) => {
+  if (!wf || !e.key || e.key !== presetListKey(OPS)) return;
+  clearTimeout(wfOperatorSync);
+  wfOperatorSync = setTimeout(() => { renderWfOperator(); refreshWfPanel(); }, 200);
+});
 
 function renderWarframe() {
   const f = wfFrame(wf.frame);
@@ -307,9 +337,10 @@ async function showWarframe(id) {
     });
   }
   if (!wf || wf.frame !== id) {
-    const list = loadPresetList(WF_BUILDS, id);
+    const list = presetListWithIds(WF_BUILDS, id);
     const last = localStorage.getItem(presetActiveKey(WF_BUILDS, id));
-    const p = list.find((x) => x.name === last) || list[0] || null;
+    // `?build=` NAMES THE BUILD TO OPEN — a weapon's wielder link.
+    const p = presetToOpen(list, new URLSearchParams(location.search).get("build"), last);
     wfActive = p ? p.name : "";
     wf = wfNormalize(p ? p.state : null, id);
   }

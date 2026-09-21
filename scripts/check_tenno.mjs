@@ -77,7 +77,7 @@ const r = await evaluate(`(async () => {
   document.getElementById('dd-wielder').click(); await sleep(400);
   const rows = pop() && !pop().hidden ? [...pop().querySelectorAll('.opt')] : [];
   const wielders = rows.map((o) => o.dataset.v);
-  const row = rows.find((o) => o.dataset.v === 'frame:valkyr_prime');
+  const row = rows.find((o) => o.dataset.v === 'valkyr_prime');
   if (row) row.click();
   await sleep(2500);
   const f = tennoFloor();
@@ -110,7 +110,7 @@ check("the Tenno block carries every player field",
 check("the check is standing on a fight of its own, not the locked ruler",
   r.editable === true);
 check("the build's Wielder picker offers the Prototype and the modelled frames",
-  r.wielders[0] === "" && r.wielders.includes("frame:valkyr_prime"), r.wielders.join(","));
+  r.wielders[0] === "prototype" && r.wielders.includes("valkyr_prime"), r.wielders.join(","));
 // Valkyr Prime, from data/frames.yaml: 1000 armor, 1.1 sprint, 225 max energy
 // (175 at rank 0, +50). Three DIFFERENT numbers from one pick is the claim —
 // moving only armor and energy would leave every sprint gate shut.

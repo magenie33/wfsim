@@ -42,7 +42,7 @@ const r = await evaluate(`(async () => {
   // meaning "the first build I made" the day those landed — and index was only
   // ever a proxy for the name anyway.
   const chips = [...bar.querySelectorAll('.pchip[data-name]')];
-  chips.find((c) => c.dataset.name === 'build 1').click(); await sleep(1600);
+  chips.find((c) => c.dataset.name === 'preset 1').click(); await sleep(1600);
   const levelAfter = sim.level;
   const onScreen = ($$('#sim-target [data-k="level"]')||{}).value;
   const modAfter = slots[0].mod;

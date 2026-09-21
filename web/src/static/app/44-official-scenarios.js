@@ -47,6 +47,8 @@ function scenarioBarCfg() {
     snapshot: snapshotScenario,
     apply: applyScenario,
     blank: snapshotScenario,
+    // Owning nothing, the fight is an official ruler: there is no blank to show.
+    noVirtual: true,
     rerender: scenariosChanged,
   };
 }

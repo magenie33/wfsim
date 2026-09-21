@@ -4,6 +4,28 @@
 // official polarity icons from the wiki, art from WFCD.
 
 const $ = (id) => document.getElementById(id);
+/// A PAGE INSIDE A PAGE: the weapon's wielder block frames the Warframe and
+/// Operator pages themselves, so the module is edited by its own code over its
+/// own stored builds. `?embed` drops the shell's chrome and nothing else.
+const EMBED = new URLSearchParams(location.search).has("embed");
+if (EMBED) document.documentElement.classList.add("embed");
+/// A FRAME SIZES ITSELF TO ITS PAGE: it tells whoever holds it how tall it is
+/// (`iframe.wld-frame`), so the pane grows with what is edited in it and never
+/// scrolls inside a scroll. Nested frames chain the same way, each to its parent.
+if (EMBED && window.parent !== window) {
+  let told = 0;
+  const tell = () => {
+    const h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (Math.abs(h - told) > 2) { told = h; window.parent.postMessage({ wfsim: "height", h }, location.origin); }
+  };
+  addEventListener("load", () => new ResizeObserver(tell).observe(document.body));
+}
+addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data || e.data.wfsim !== "height") return;
+  for (const f of document.querySelectorAll("iframe.wld-frame")) {
+    if (f.contentWindow === e.source) f.style.height = `${Math.max(240, e.data.h)}px`;
+  }
+});
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
 //

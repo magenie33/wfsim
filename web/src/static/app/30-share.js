@@ -627,7 +627,7 @@ function sharePayload() {
   // link, `importShare` names an unnamed build anyway, and `build 1` was the
   // more expensive of the two: its SPACE is outside the compact form's
   // alphabet, so every ordinary link paid 2.5x for a name nobody chose.
-  const nm = officialBuildActive() || isAutoPresetName(BUILD_NOUN, activePreset)
+  const nm = officialBuildActive() || isGeneratedName(activePreset)
     ? 0 : activePreset;
 
   const out = [2, st.weapon, nm, slots9, arcs, evos, rivens, 0, 0, md, val, asm];

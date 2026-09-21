@@ -1,30 +1,42 @@
 // ---- THE WIELDER -------------------------------------------------------
 //
 // Whoever holds the weapon: a link to one of the Warframe module's saved builds,
-// a modelled frame with no build, or the Prototype (`null`), which every ruler
-// scores in. A weapon locked to its frames (`wielders`, Valkyr Talons) offers
-// only those and never the Prototype. docs/UI.md §The wielder.
-let buildWielder = null;
+// or a frame with no build. NEVER EMPTY: the floor is the Prototype frame, and
+// its unbuilt form (`{frame: "prototype"}`) is what every ruler scores in. A
+// weapon locked to its frames (`wielders`, Valkyr Talons) offers only those and
+// never the Prototype. docs/UI.md §The wielder.
+const PROTOTYPE_ID = "prototype";
+let buildWielder = { frame: PROTOTYPE_ID, preset: PRESET_SEED_ID };
+
+/// THE STORED BUILD A LINK MEANS: the preset it names, else the frame's first —
+/// the repair for one that is gone — and none when the frame owns none, which is
+/// its virtual "preset 1", the blank.
+const wielderBuild = (v) => {
+  const list = presetListWithIds(WF_BUILDS, v.frame);
+  return list.find((x) => x.id === v.preset) || list[0] || null;
+};
+/// A link always names a preset: written, or the seed while it is only drawn.
+const wielderIdOf = (v) => (wielderBuild(v) || { id: PRESET_SEED_ID }).id;
 
 /// A stored wielder, repaired against this weapon: a frame that cannot hold it
 /// falls back to the first one allowed, or to the Prototype on a weapon anyone
-/// carries, and a build that is gone to its frame unbuilt.
+/// carries, and the preset it names to a real one (`wielderBuild`). A preset
+/// written before links named one is the frame's first.
 function defaultWielder(weaponId, v) {
   const allowed = (weaponInfo(weaponId) || {}).wielders || [];
   const holds = (id) => (META.warframes || []).some((f) => f.id === id) && (!allowed.length || allowed.includes(id));
-  if (v && holds(v.frame)) {
-    const kept = v.preset && presetListWithIds(WF_BUILDS, v.frame).some((p) => p.id === v.preset);
-    return kept ? { frame: v.frame, preset: v.preset } : { frame: v.frame };
-  }
-  return allowed.length ? { frame: allowed[0] } : null;
+  const frame = v && holds(v.frame) ? v.frame : (allowed.length ? allowed[0] : PROTOTYPE_ID);
+  return { frame, preset: wielderIdOf({ frame, preset: v && v.frame === frame ? v.preset : null }) };
 }
 
-/// The linked build as the Warframe module reads it; absent for the Prototype.
+/// The linked build as the Warframe module reads it. ABSENT for the Prototype
+/// while nothing is written for it: that is the floor every ruler scores in, and
+/// the wire keeps saying it as no wielder, so no stored link or board row moves.
 function wielderPayload() {
   const v = buildWielder;
-  if (!v) return undefined;
-  const p = v.preset && presetListWithIds(WF_BUILDS, v.frame).find((x) => x.id === v.preset);
-  return p ? wfPayloadOf({ ...p.state, frame: v.frame }) : { frame: v.frame };
+  const b = wielderBuild(v);
+  if (b) return wfPayloadOf({ ...b.state, frame: v.frame });
+  return v.frame === PROTOTYPE_ID ? undefined : { frame: v.frame };
 }
 
 /// WHAT THE WEAPON IS CALLED IN THESE HANDS — "Valkyr Prime Talons".
@@ -41,28 +53,91 @@ function renderWielder() {
   const w = weaponInfo($("weapon").value) || {};
   const allowed = w.wielders || [];
   const frames = (META.warframes || []).filter((f) => !allowed.length || allowed.includes(f.id));
-  const items = (allowed.length ? [] : [{ value: "", label: tr("Prototype"), hint: tr("the floor every board is scored on") }])
-    .concat(frames.flatMap((f) => [
-      { value: `frame:${f.id}`, label: f.name, hint: tr("no build — unmodded") },
-      ...presetListWithIds(WF_BUILDS, f.id).map((p) => ({ value: `preset:${f.id}:${p.id}`, label: `${f.name} · ${p.name}` })),
-    ]));
-  const v = buildWielder;
-  const value = !v ? "" : v.preset ? `preset:${v.frame}:${v.preset}` : `frame:${v.frame}`;
-  const f = v && frames.find((x) => x.id === v.frame);
+  // WHAT KIND OF HOLDER, and nothing finer: the list is the Warframes, with their
+  // faces, searchable. WHICH PRESET of it is the pane's own preset bar's — the
+  // wielder only remembers it, so choosing a type reopens the one that frame
+  // last had open (`wielderLinkFor`).
+  const items = frames.map((f) => ({
+    value: f.id, label: f.name, image: f.image,
+    hint: f.id === PROTOTYPE_ID ? tr("the floor every board is scored on") : null,
+  }));
   host.innerHTML = `<label>${escHtml(tr("Wielder"))} ${ddButton("dd-wielder", {
-    value, search: items.length > 6, items,
-    onPick: (pick) => {
-      const [kind, frame, preset] = String(pick).split(":");
-      setWielder(kind === "preset" ? { frame, preset } : kind === "frame" ? { frame } : null);
-    },
-  })}</label>`
-    + (f ? ` <a class="ghost-btn small" href="${warframePath(f)}">${escHtml(tr("edit on the Warframe page"))}</a>` : "");
+    value: buildWielder.frame, search: true, items,
+    onPick: (frame) => setWielder(wielderLinkFor(frame)),
+  })}</label>`;
   const sub = $("wielder-sub");
   if (sub) sub.textContent = allowed.length ? tr("only these can hold it") : "";
+  renderWielderDetail();
 }
 
-/// WHO HOLDS THE WEAPON — a frame, a frame's saved build, or null for the
-/// Prototype every board is scored on. Set by the dropdown and the door alike.
+/// THE WIELDER'S EDITOR: the Warframe page, framed as itself (`?embed`), and the
+/// Operator page framed inside IT — an Operator is a part of the frame that
+/// holds it, so the nesting is the model. There is ONE copy of each build, the
+/// module's own, and nothing here edits it: the pane is the module.
+///
+/// WHICH BUILD IT OPENS is the wielder's link. A build born or picked in the
+/// pane is announced (`wfAnnounceBuild`) and becomes the wielder's without
+/// reloading the pane. Left unloaded until the block opens: a shut
+/// `<iframe loading=lazy>` fetches nothing, so a weapon page pays for the
+/// editor only when it is asked for.
+function renderWielderDetail() {
+  const box = $("wielder-detail");
+  const f = (META.warframes || []).find((x) => x.id === buildWielder.frame);
+  // A FRAMED PAGE NEVER FRAMES: it has this markup too, and would nest itself.
+  if (!box || !f || EMBED) return;
+  const linked = wielderBuild(buildWielder);
+  const opId = linked ? (linked.state || {}).operator : null;
+  const opBuild = opId && opList().find((x) => x.id === opId);
+  const src = `${warframePath(f)}?embed=1&build=${encodeURIComponent(buildWielder.preset)}`;
+  const held = box.querySelector(".wld-pane");
+  // AN UNCHANGED PANE IS LEFT ALONE: replacing its `src` reloads the page and
+  // drops whatever is being typed in it.
+  if (!held) {
+    box.innerHTML = `<div class="wld-pane" data-src="${src}">
+      <div class="wld-head"><b>${escHtml(f.name)}</b>
+      <a class="ghost-btn small" href="${warframePath(f)}">${escHtml(tr("open the full page"))}</a></div>
+      <iframe class="wld-frame" loading="lazy" src="${src}" title="${escHtml(f.name)}"></iframe></div>`;
+  } else if (held.dataset.src !== src) {
+    held.dataset.src = src;
+    held.querySelector("iframe").src = src;
+    held.querySelector(".wld-head b").textContent = f.name;
+    held.querySelector(".wld-head a").href = warframePath(f);
+  }
+  const sub = $("wielder-sub");
+  if (sub && !allowedWielders().length) {
+    sub.textContent = [f.name, linked && linked.name, opBuild && `${tr("Operator")}: ${opBuild.name}`].filter(Boolean).join(" · ");
+  }
+}
+const allowedWielders = () => (weaponInfo($("weapon").value) || {}).wielders || [];
+
+// A BUILD OPENED OR BORN IN A PANE IS THE WIELDER'S, and what a pane writes is
+// read back here: the storage event reaches this page from the framed one.
+window.addEventListener("message", (e) => {
+  const d = e.data;
+  if (e.origin !== location.origin || !d || d.wfsim !== "wielder-build") return;
+  if (!d.id || d.frame !== buildWielder.frame || d.id === buildWielder.preset) return;
+  const held = document.querySelector("#wielder-detail .wld-pane");
+  const f = (META.warframes || []).find((x) => x.id === d.frame);
+  if (held && f) held.dataset.src = `${warframePath(f)}?embed=1&build=${encodeURIComponent(d.id)}`;
+  setWielder({ frame: d.frame, preset: d.id });
+});
+let wielderSync = null;
+window.addEventListener("storage", (e) => {
+  if (EMBED || !e.key || !e.key.startsWith("wfsim-presets-")) return;
+  clearTimeout(wielderSync);
+  wielderSync = setTimeout(() => { if (META) { renderWielder(); refreshPanel(); } }, 200);
+});
+
+/// THE LINK FOR A FRAME: the preset that frame last had open on its own page, or
+/// its first one — the seed, while it is only drawn.
+function wielderLinkFor(frame) {
+  const last = localStorage.getItem(presetActiveKey(WF_BUILDS, frame));
+  const p = presetToOpen(presetListWithIds(WF_BUILDS, frame), null, last);
+  return { frame, preset: p ? p.id : PRESET_SEED_ID };
+}
+
+/// WHO HOLDS THE WEAPON — a frame, or a frame's saved build. Set by the
+/// dropdown and the door alike.
 function setWielder(v) {
   buildWielder = v;
   renderWielder();

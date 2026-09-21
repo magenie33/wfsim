@@ -138,6 +138,7 @@
           <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
           <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
         </nav>
+        <span id="trail" class="trail" hidden></span>
         <div class="tblinks">
           <!-- THE RIGHT-HAND ROW IS THREE THINGS AND AN OVERFLOW, never
                seven ghost buttons of equal weight — that is three unrelated
@@ -692,9 +693,9 @@
     <!-- THE WIELDER: whoever holds the weapon — a link to a saved Warframe build,
          a modelled frame unbuilt, or the Prototype every ruler scores in. Part of
          the BUILD, and never of a board row. See renderWielder. -->
-    <section class="block" data-module="builder" id="wielder-block">
+    <section class="block shut" data-module="builder" id="wielder-block">
       <div class="bh"><span class="n">0</span><h2 data-i18n>Wielder</h2><span class="sub" id="wielder-sub"></span></div>
-      <div class="bb"><div id="wielder-row" class="field-grid"></div></div>
+      <div class="bb"><div id="wielder-row" class="field-grid"></div><div id="wielder-detail" class="wielder-detail"></div></div>
     </section>
 
     <section class="block" data-module="builder" id="mode-block">

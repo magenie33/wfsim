@@ -1,9 +1,11 @@
 // ---- The ONE preset-bar component -------------------------------------
 // Every preset bar on the page (the build bar and the optimizer's three
 // scope bars) is the same template on the same document model: label +
-// count, the chips (the active one carries duplicate / rename / delete;
-// the last remaining preset cannot be deleted — there is always one),
-// "+ new". Edits AUTO-SAVE into the active preset, so there is no save
+// count, the chips (the active one carries duplicate / rename / delete),
+// "+ new". THERE IS ALWAYS ONE TO SELECT: owning none, the bar draws a virtual
+// "preset 1" — the blank the editor already shows — that is written the moment
+// the first real edit lands, so nothing is stored for a page nobody edited and
+// deleting the last one is a reset to that blank. Edits AUTO-SAVE into the active preset, so there is no save
 // button and no dirty marker. "+ new" creates an EMPTY preset instantly
 // under an auto-name ("preset N") and switches to it — no naming step; rename after via ✎. Branching an existing preset
 // is the ⧉ duplicate on the active chip.
@@ -50,13 +52,25 @@ const pickPreset = (cfg, key) => {
 const newPreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
-  const name = freeName(ps, (n) => autoPresetName(cfg.noun || "preset", n));
+  const name = newPresetName(ps);
   cfg.setActive(name);
   whileApplying(() => cfg.apply(cfg.blank()));
   ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
   cfg.store(ps);
   cfg.rerender();
   return name;
+};
+
+/// THE VIRTUAL PRESET, selected: the bar's blank, owned by nobody. What the
+/// editor shows when the reader owns nothing IS `cfg.blank()`, so picking it
+/// applies that and stores nothing — a preset is born on the first edit.
+const pickBlankPreset = (cfg) => {
+  flushPresetSaves();
+  if (!cfg.active()) return;
+  cfg.setActive("");
+  whileApplying(() => cfg.apply(cfg.blank()));
+  if (cfg.pristine) cfg.pristine();
+  cfg.rerender();
 };
 
 // The copy captures the LIVE editor state and becomes the active document; the
@@ -128,6 +142,13 @@ function renderPresetBarIn(bar, cfg) {
   const f = ftext.trim().toLowerCase();
   const shown = f ? ps.filter((p) => p.name === active || p.name.toLowerCase().includes(f)) : ps;
   const hint = cfg.hint ? ` (${cfg.hint})` : "";
+  // A COLLECTION WHOSE LIVE STATE IS ITS OWN BLANK gets the virtual preset. A
+  // scenario has none: owning nothing, the fight is an official ruler, which is
+  // pinned (`noVirtual`), and a custom's editor stands down (`optional`).
+  const virtual = cfg.blank && !cfg.optional && !cfg.noVirtual;
+  const virtualChip = virtual && ps.length === 0
+    ? `<span class="pchip virtual ${active ? "" : "sel"}" data-virtual="1" title="${escHtml(tr("the blank — saved as soon as you change something"))}">${escHtml(autoPresetName(PRESET_NAME, 1))}</span>`
+    : "";
   const chip = (p) => {
     const sel = p.name === active;
     const ops = !sel
@@ -140,7 +161,7 @@ function renderPresetBarIn(bar, cfg) {
         // config page can never show you an honest count of. `cfg.optional` was
         // already the customs' flag for exactly this and is simply no longer
         // the thing that distinguishes them.
-        `<button class="pop del" title="delete">✕</button>`;
+        `<button class="pop del" title="${escHtml(tr(ps.length === 1 && virtual ? "reset to blank" : "delete"))}">✕</button>`;
     return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
   };
   // A READ-ONLY ENTRY: select, ⧉ on the one you are on, and × to take it out of
@@ -158,7 +179,7 @@ function renderPresetBarIn(bar, cfg) {
     `<span class="plabel" title="${escHtml(tr("Ctrl+Z undoes the last change"))}">${cfg.label} <b>${ps.length + ro.length}</b></span>` +
     (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
     (ro.length ? `<span class="pgroup">${escHtml(tr("Mine"))}</span>` : "") +
-    shown.map(chip).join("") +
+    virtualChip + shown.map(chip).join("") +
     (ro.length
       ? `<span class="psep" aria-hidden="true"></span><span class="pgroup">${escHtml(tr("From the board · read-only"))}</span>` + ro.map(roChip).join("")
       : "") +
@@ -182,7 +203,7 @@ function renderPresetBarIn(bar, cfg) {
     if (nf) { nf.focus(); nf.setSelectionRange(nf.value.length, nf.value.length); }
   });
   bar.querySelectorAll(".pchip:not(.add)").forEach((c) =>
-    c.addEventListener("click", () => pickPreset(cfg, c.dataset.name)));
+    c.addEventListener("click", () => (c.dataset.virtual ? pickBlankPreset(cfg) : pickPreset(cfg, c.dataset.name))));
   // No prompt()/alert()/confirm() anywhere — the browser can block those
   // dialogs, which made saving silently fail. Naming
   // happens in an INLINE input: Enter commits, Esc cancels.

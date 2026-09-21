@@ -334,7 +334,7 @@ const BUILD_STATE_KEYS = [
   // is covered, by `slots`, and saying so is the point — an axis with no entry
   // at all is the thing the check is looking for.
   { axis: "rivens", keys: ["slots"] },
-  // WHO HOLDS IT: `null` for the Prototype, `{frame}` for a modelled frame with
+  // WHO HOLDS IT: `null` for the unbuilt Prototype, `{frame}` for a frame with
   // no build, `{frame, preset}` for a link to one of its saved builds.
   { axis: "wielder", keys: ["wielder"] },
 ];
@@ -367,7 +367,9 @@ function snapshotState() {
     // THE PARTS, for the same reason: on a Kitgun they are the stat line, and
     // `null` on everything else, which is what "this weapon has none" means.
     assembly: assembly ? { ...assembly } : null,
-    wielder: buildWielder ? { ...buildWielder } : null,
+    // THE PROTOTYPE WITH NOTHING WRITTEN FOR IT IS STORED AS NULL, as it always
+    // was, so a preset written before it was a frame reads as unchanged.
+    wielder: buildWielder.frame === PROTOTYPE_ID && !wielderBuild(buildWielder) ? null : { ...buildWielder },
     // NO `sim` FIELD. A build carrying a snapshot of the fight is a snapshot
     // `restoreState` then applies, so picking a build silently rewrites the
     // scenario you are working in. The scenario is INDEPENDENT: nothing

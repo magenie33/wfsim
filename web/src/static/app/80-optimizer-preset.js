@@ -570,7 +570,7 @@ function updateOptEstimate() {
     // field by field, so an axis added tomorrow counts on the day it is added.
     if (!activeOptPreset) {
       if (sameState(snapshotOpt(), blankOpt())) return;
-      const name = freeName(ps, (n) => "search " + n);
+      const name = newPresetName(ps);
       ps.push({ name, savedAt: Date.now(), state: snapshotOpt() });
       storeOptPresets(ps);
       activeOptPreset = name;

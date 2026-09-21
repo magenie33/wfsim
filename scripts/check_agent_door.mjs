@@ -284,7 +284,7 @@ const more = await evaluate(`(async () => {
   out.seated = window.wfsim.observe().build.slots.some(s => s.mod === out.card.seat_as);
   // THE WIELDER.
   out.wielders = await window.wfsim.do("builder.wielders.list", {});
-  const f = out.wielders.frames[0];
+  const f = out.wielders.frames.find(x => x.id !== 'prototype');
   out.held = await window.wfsim.do("builder.wielder.set", { frame: f.id });
   out.heldSeen = (window.wfsim.observe().build.wielder || {}).frame === f.id;
   out.proto = await window.wfsim.do("builder.wielder.set", { frame: null });
