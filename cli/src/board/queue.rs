@@ -104,6 +104,7 @@ pub(crate) fn load_queue(spec: Option<String>, bench_id: &str) -> Option<Vec<(St
 /// where it costs a line in a file. A build that reaches a tenth of some
 /// group's leader keeps earning every row it is owed; one that reaches it
 /// nowhere keeps the facts it has and stops being asked for more.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn write_missing(
     mut missing_out: Option<std::io::BufWriter<std::fs::File>>,
     mut pending_missing: Vec<(String, String)>,
@@ -111,11 +112,12 @@ pub(crate) fn write_missing(
     cross: &[CrossFact],
     who: &std::collections::HashMap<String, Who>,
     already_owed: &std::collections::BTreeSet<String>,
+    corner_of: &std::collections::HashMap<String, String>,
     bench_id: &str,
 ) {
     let mut missing = 0usize;
     let parked = if gate {
-        park_under_entry_line(&mut pending_missing, cross, who, already_owed).len()
+        park_under_entry_line(&mut pending_missing, cross, who, already_owed, corner_of).len()
     } else {
         0
     };

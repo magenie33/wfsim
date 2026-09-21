@@ -59,6 +59,9 @@ pub(crate) fn park_under_entry_line(
     cross: &[CrossFact],
     who: &std::collections::HashMap<String, Who>,
     already_owed: &std::collections::BTreeSet<String>,
+    // WHICH BUILD EACH ALTERNATIVE CORNER OF A RIVEN WAITS ON — see
+    // `board::builds::default_corner`. Empty for every build that is one.
+    corner_of: &std::collections::HashMap<String, String>,
 ) -> std::collections::BTreeSet<String> {
     let mut leader: std::collections::HashMap<(&str, &str, &str, bool), f64> = Default::default();
     for f in cross {
@@ -85,6 +88,36 @@ pub(crate) fn park_under_entry_line(
             parked.insert(id.clone());
             return false;
         }
+        // AN ALTERNATIVE CORNER WAITS FOR ITS DEFAULT TO EARN ITS PLACE.
+        //
+        // A riven's shape is several builds and they differ only in which end
+        // of a band a stat rolled; the default is the god roll at max rank and
+        // is the one a fight is asked for on arrival. Which corner is BEST is
+        // then a comparison of scores — but only on a riven somebody will see,
+        // and a build under the entry line is one nobody will. So an
+        // alternative is asked for when the default has a fact that CLEARS the
+        // line, and until then it is a build in the library with no fact, which
+        // is what the library is for.
+        //
+        // NO FACT IS NOT A PASS HERE, unlike the rule above it: a build whose
+        // default has not been measured yet has no evidence either way, and
+        // asking now is asking for every corner of every riven ever sent —
+        // which is the bill this exists to refuse.
+        //
+        // AND ONLY WHERE THE DEFAULT IS IN THE LIBRARY. A corner stored before
+        // the corners were (the library held the winner and nothing else) has
+        // no sibling to wait for, and parking it would retire a published row
+        // by never measuring it again.
+        if let Some(def) = corner_of.get(id.as_str()).filter(|d| who.contains_key(d.as_str())) {
+            let cleared = best
+                .get(def.as_str())
+                .copied()
+                .is_some_and(|s| wfsim_engine::data::boards::keeps_earning(Some(s)));
+            if !cleared {
+                parked.insert(id.clone());
+                return false;
+            }
+        }
         // A BUILD WITH A FACT SOMEWHERE IS OWED EVERY ROW IT LACKS. One with
         // none is owed ONE, and if a row is already owed for it then that row
         // IS the one — intake asks for the fight its submitter ran, so the
@@ -97,6 +130,49 @@ pub(crate) fn park_under_entry_line(
         share.is_some() || !already_owed.contains(id.as_str())
     });
     parked
+}
+
+/// ONE ROW PER SHAPE, and the best-scoring corner stands for it.
+///
+/// The corners of one shape are separate BUILDS — the rolls are part of the
+/// fight and of the id — but the board's ADVICE is the shape ("roll this
+/// weapon for these stats"), so two rows differing only in which end a stat
+/// landed on are one piece of advice twice, and the second pushes another
+/// weapon's build off the page.
+///
+/// A TIE GOES TO THE DEFAULT: equal scores mean the fight could not separate
+/// them, and the god roll is the card a player reaches first.
+///
+/// THE TOLERANCE IS NOT HERE, and it is the one thing this cannot do. Two
+/// corners inside the ruler's own noise should read as a draw, and `scores`
+/// has a column for the number and none for its spread — so a near-tie falls
+/// to whichever came out higher, as every other near-tie here does.
+pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) {
+    let shape_of = |r: &Row| {
+        r.riven.as_ref().map(|v| (r.weapon.clone(), r.mode.clone(), v.bonuses.clone(), v.malus.clone()))
+    };
+    // THE DEFAULT FIRST AMONG EQUALS: every bonus at its ceiling, the malus at
+    // its floor, and no card dropped below max rank.
+    let is_default = |r: &Row| {
+        r.riven.as_ref().is_some_and(|v| {
+            let shape = wfsim_engine::build::rivens::RivenShape {
+                bonuses: v.bonuses.clone(),
+                malus: v.malus.clone(),
+            };
+            v.rolls == wfsim_engine::build::rivens::default_rolls(&shape)
+        }) && r.mods.iter().all(|m| !m.contains(wfsim_engine::data::mods::RANK_MARK))
+    };
+    kept.sort_by(|a, b| {
+        a.weapon
+            .cmp(&b.weapon)
+            .then(b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal))
+            .then(is_default(b).cmp(&is_default(a)))
+    });
+    let mut seen: std::collections::HashSet<_> = Default::default();
+    kept.retain(|r| match shape_of(r) {
+        None => true,
+        Some(k) => seen.insert(k),
+    });
 }
 
 /// THE ENTRY LINE, APPLIED ONCE, BY THE PASS THAT MEASURED THE RULER.
@@ -308,7 +384,7 @@ mod entry_line_tests {
             ("junk".to_string(), "cycle".to_string()),
             ("lead".to_string(), "cycle".to_string()),
         ];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]));
+        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &Default::default());
         assert_eq!(
             pending.iter().map(|(i, _)| i.as_str()).collect::<Vec<_>>(),
             ["good", "lead"],
@@ -328,7 +404,7 @@ mod entry_line_tests {
             ("new".to_string(), "cycle".to_string()),
             ("new".to_string(), "base".to_string()),
         ];
-        let parked = park_under_entry_line(&mut pending, &[], &who, &owed(&["new"]));
+        let parked = park_under_entry_line(&mut pending, &[], &who, &owed(&["new"]), &Default::default());
         assert!(pending.is_empty(), "{pending:?}");
         assert!(parked.is_empty(), "a build with no fact is owed one, not parked");
     }
@@ -344,8 +420,106 @@ mod entry_line_tests {
             ("old".to_string(), "cycle".to_string()),
             ("old".to_string(), "base".to_string()),
         ];
-        park_under_entry_line(&mut pending, &[], &who, &owed(&[]));
+        park_under_entry_line(&mut pending, &[], &who, &owed(&[]), &Default::default());
         assert_eq!(pending.len(), 2);
+    }
+
+    /// **THE CORNERS OF ONE SHAPE ARE ONE ROW**, and the best of them carries
+    /// it. Two rows differing only in which end a stat rolled are one piece of
+    /// advice printed twice; a tie goes to the god roll, which is the card a
+    /// player reaches first.
+    #[test]
+    fn one_shape_is_one_row_and_a_tie_goes_to_the_god_roll() {
+        let corner = |id: &str, score: f64, rolls: Vec<f64>| Row {
+            riven: Some(RowRiven {
+                bonuses: vec!["multishot".into()],
+                malus: Some("zoom".into()),
+                rolls,
+            }),
+            ..scored(id, "furis", "base", score, true)
+        };
+        // THE BETTER CORNER CARRIES THE SHAPE.
+        let mut kept = vec![
+            corner("god", 100.0, vec![1.1, 0.9]),
+            corner("other", 140.0, vec![0.9, 0.9]),
+        ];
+        one_row_per_shape(&mut kept);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].identity, "other");
+
+        // …AND AN EXACT TIE GOES TO THE DEFAULT, whichever order they arrive in.
+        let mut kept = vec![
+            corner("other", 100.0, vec![0.9, 0.9]),
+            corner("god", 100.0, vec![1.1, 0.9]),
+        ];
+        one_row_per_shape(&mut kept);
+        assert_eq!(kept.iter().map(|r| r.identity.as_str()).collect::<Vec<_>>(), ["god"]);
+
+        // …AND A BUILD WITH NO RIVEN IS NEVER COLLAPSED INTO ANYTHING.
+        let mut kept = vec![
+            scored("plain_a", "furis", "base", 10.0, false),
+            scored("plain_b", "furis", "base", 9.0, false),
+        ];
+        one_row_per_shape(&mut kept);
+        assert_eq!(kept.len(), 2, "two plain builds are two rows");
+    }
+
+    /// **AN ALTERNATIVE CORNER WAITS FOR ITS DEFAULT, AND IS THEN ASKED FOR.**
+    ///
+    /// A riven's shape is several builds differing only in which end of a band
+    /// a stat rolled. Only the default is asked for on arrival, so the other
+    /// corners are the bill this rule exists to refuse — until the default
+    /// shows it belongs on the board, which is the only case where "which
+    /// corner is best" is a question anybody will see the answer to.
+    ///
+    /// BOTH DIRECTIONS, because a rule that only ever parks is a rule that
+    /// loses corners for ever: the same corner is asked for the moment its
+    /// default has a clearing fact.
+    #[test]
+    fn a_corner_waits_for_its_default_and_is_then_asked_for() {
+        let who = known(vec![
+            Entry("default", "furis", true),
+            Entry("corner", "furis", true),
+            Entry("lead", "furis", true),
+        ]);
+        let corner_of: std::collections::HashMap<String, String> =
+            [("corner".to_string(), "default".to_string())].into_iter().collect();
+        // THE DEFAULT HAS NO FACT YET: nothing says the riven is worth more
+        // than one fight, and the corner is not it.
+        let mut pending = vec![("corner".to_string(), "base".to_string())];
+        let parked = park_under_entry_line(&mut pending, &[], &who, &owed(&[]), &corner_of);
+        assert!(pending.is_empty(), "the corner waits: {pending:?}");
+        assert_eq!(parked.iter().map(String::as_str).collect::<Vec<_>>(), ["corner"]);
+
+        // …AND THE DEFAULT IS UNDER THE LINE: the riven is not on the board,
+        // so which of its corners is best is a question with no reader.
+        let cross = vec![
+            fact("lead", "single_target", "base", 1000.0),
+            fact("default", "single_target", "base", 1.0),
+        ];
+        let mut pending = vec![("corner".to_string(), "base".to_string())];
+        park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &corner_of);
+        assert!(pending.is_empty(), "a corner of a parked riven is parked too");
+
+        // …AND ONCE THE DEFAULT CLEARS IT, the corner is worth measuring.
+        let cross = vec![
+            fact("lead", "single_target", "base", 1000.0),
+            fact("default", "single_target", "base", 900.0),
+        ];
+        let mut pending = vec![("corner".to_string(), "base".to_string())];
+        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &corner_of);
+        assert_eq!(pending.len(), 1, "the default earned its corners a fight");
+        assert!(parked.is_empty());
+
+        // …AND A CORNER WHOSE DEFAULT IS NOT IN THE LIBRARY WAITS FOR NOBODY.
+        // The library held the winning corner and nothing else before the
+        // corners were stored, and parking those would retire a published row
+        // by quietly never measuring it again.
+        let alone = known(vec![Entry("corner", "furis", true)]);
+        let mut pending = vec![("corner".to_string(), "base".to_string())];
+        let parked = park_under_entry_line(&mut pending, &[], &alone, &owed(&[]), &corner_of);
+        assert_eq!(pending.len(), 1, "an orphan corner is a build like any other");
+        assert!(parked.is_empty());
     }
 
     /// **A RIVEN BUILD AND A PLAIN ONE ARE TWO GROUPS** on the queue side too.
@@ -362,7 +536,7 @@ mod entry_line_tests {
             fact("plain", "single_target", "base", 50.0),
         ];
         let mut pending = vec![("plain".to_string(), "alternate".to_string())];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]));
+        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &Default::default());
         assert_eq!(pending.len(), 1, "the plain build leads its own group");
         assert!(parked.is_empty());
     }

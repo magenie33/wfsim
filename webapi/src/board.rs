@@ -11,11 +11,11 @@ use crate::request::{get_bool, get_str, get_u32};
 /// THE RIVEN SHAPE a board payload carries — two flat fields, the way the
 /// endpoint stores them.
 ///
-/// The ROLLS are deliberately not on the wire: a row states a SHAPE and the
-/// scorer finds that shape's own best corner for the ruler's fight
-/// (`build::rivens::perfect`). Sending a roll would be sending something nobody
-/// ranks, and would invite the question of why the board's number is not the
-/// one on the submitter's card.
+/// The ROLLS are deliberately not on the wire: a row states a SHAPE, the
+/// library holds that shape's corners, and the ruler's own scores say which
+/// corner leads. Sending a roll would be sending one person's luck, and would
+/// invite the question of why the board's number is not the one on the
+/// submitter's card.
 pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::build::rivens::RivenShape> {
     let bonuses: Vec<String> = v
         .get("riven_pos")

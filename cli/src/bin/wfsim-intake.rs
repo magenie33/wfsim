@@ -109,25 +109,25 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
     rec
 }
 
-/// THE ROLLS A RIVEN IS STORED WITH — the god roll, unless a stat's sign has
-/// stopped saying which end of its band is better — AND THE RANK EACH CARD ON
-/// THE EVERY-RANK LIST IS STORED AT, max unless a lower one is better.
+/// EVERY CORNER OF THE SHAPE, THE DEFAULT FIRST — and no fight to choose
+/// between them.
 ///
-/// THE DEFAULT IS THE GOD ROLL AT MAX RANK AND IT COSTS NOTHING. Every bonus at
-/// its ceiling and the malus at its floor is the same rule that scores every
-/// row at full Forma and every valence at the roll's maximum: anything a player
-/// can eventually reach is not part of what a row states.
+/// A SHAPE IS NOT A BUILD. The shape says which stats a riven rolled; a fight
+/// needs numbers, and for most stats the best number is obvious — every bonus
+/// at its ceiling, the malus at its floor, every card at max rank. That is the
+/// DEFAULT, and it is the answer for all but a few hundred builds.
 ///
-/// A STAT LOSES ITS SIGN FOR A LISTED REASON (`build::rivens::ambiguous_stats`),
+/// A STAT LOSES ITS SIGN FOR A LISTED REASON (`build::rivens::ambiguous_stats`)
 /// AND A CARD LOSES ITS MAX RANK ONLY BY BEING NAMED in
-/// `data/search/every_rank.yaml`. Only those are asked, every combination of
-/// them: a Status Duration malus at its deep end is off the -100% cliff, and a
-/// low-rank Hunter Track is what lifts it back above.
+/// `data/search/every_rank.yaml`: a Status Duration malus at its deep end is
+/// off the -100% cliff, and a low-rank Hunter Track is what lifts it back
+/// above. Each combination of those is a CORNER, and every corner is a build a
+/// player could go and assemble.
 ///
-/// AND EACH `(ruler, mode)` ANSWERS FOR ITSELF. One ruler cannot speak for
-/// another and the corner that wins a crowd need not win one target, so what
-/// comes back is the SET — usually one build. Empty is a riven this engine
-/// cannot resolve.
+/// WHICH CORNER IS BEST IS A SCORE, AND A SCORE IS THE SCORER'S — so no fight
+/// is run here. The caller asks one for the DEFAULT alone (index 0); the rest
+/// are builds in the library with no fact yet, and what asks for them is the
+/// entry line, where the numbers already are (docs/BOARD.md §Rivens).
 fn corners_for(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<wfsim_engine::board::builds::ValidBuild> {
     let class = wfsim_engine::build::rivens::class_for_weapon(&v.weapon);
     let rolls: Vec<Vec<f64>> = match (&v.riven, class) {
@@ -139,73 +139,25 @@ fn corners_for(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<wfsim_engine:
         ),
     };
     let mods = rank_choices(v);
-    let default = (rolls[0].clone(), mods[0].clone());
-    let alternatives: Vec<(Vec<f64>, Vec<String>)> = rolls
-        .iter()
-        .flat_map(|r| mods.iter().map(move |m| (r.clone(), m.clone())))
-        .filter(|c| *c != default)
-        .collect();
     let with = |c: &(Vec<f64>, Vec<String>)| {
         let mut b = v.clone().with_riven_rolls(c.0.clone());
         b.mods = c.1.clone();
         b
     };
-    if alternatives.is_empty() {
-        return vec![with(&default)];
-    }
-    let spec_of = |r: &[f64]| v.riven.as_ref().zip(class).map(|(shape, class)| shape.at(class, r));
-
-    let modes: Vec<wfsim_engine::data::weapons::WeaponPlayMode> =
-        wfsim_engine::data::weapons::play_modes(&v.weapon)
-            .into_iter()
-            .filter(|m| m.sustainable)
-            .collect();
-    let mut found: BTreeMap<String, (Vec<f64>, Vec<String>)> = BTreeMap::new();
-    for bench in wfsim_engine::board::benchmarks::all() {
-        let metric = bench.metric();
-        let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
-        let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
-        for played in &modes {
-            let best = wfsim_engine::build::rivens::perfect(
-                default.clone(),
-                alternatives.iter().cloned(),
-                |c| {
-                    let mut req = wfsim_webapi::simulate_request(&scenario, &with(c), *played);
-                    if let (Some(o), Some(spec)) = (req.as_object_mut(), spec_of(&c.0)) {
-                        o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
-                    }
-                    score_of(&wfsim_webapi::simulate_json(&req), metric, duration)
-                },
-            );
-            // KEYED ON THE CORNER ITSELF, so two rulers landing on one card
-            // leave one build. The text is only a key; the corner is the value.
-            found.insert(format!("{best:?}"), best);
-        }
-    }
-    found.values().map(with).collect()
+    // THE DEFAULT FIRST, and the order is the contract: `rolls[0]` is the god
+    // roll and `mods[0]` is every card at max rank, both by construction.
+    let default = (rolls[0].clone(), mods[0].clone());
+    let mut out = vec![with(&default)];
+    out.extend(
+        rolls
+            .iter()
+            .flat_map(|r| mods.iter().map(move |m| (r.clone(), m.clone())))
+            .filter(|c| *c != default)
+            .map(|c| with(&c)),
+    );
+    out
 }
 
-/// A FIGHT'S ANSWER IN THE RULER'S UNITS, AND ITS OWN STANDARD ERROR.
-///
-/// `metric.field` on the wire IS the mean over the runs — the scorer's own
-/// reading — and `<field>_se` sits beside it. The ruler's run count is a term
-/// of the scenario, so the request already carries it. A fight that did not
-/// run, or reports no spread, answers None and the default stands: without a
-/// spread nothing says whether a gap is a difference or a draw.
-fn score_of(
-    out: &Value,
-    metric: &wfsim_engine::rules::metrics::MetricDef,
-    duration: f64,
-) -> Option<(f64, f64)> {
-    if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        return None;
-    }
-    let read = |k: &str| out.get(k).and_then(Value::as_f64);
-    Some((
-        metric.of(read(metric.field)?, duration),
-        metric.of(read(&format!("{}_se", metric.field))?, duration),
-    ))
-}
 
 /// EVERY MOD LIST A BUILD MAY BE STORED WITH, the build as it stands first:
 /// each card the every-rank list names at each of its ranks, crossed.
@@ -293,22 +245,11 @@ fn asked_row(
 /// A FUNCTION rather than a loop inside `main`, because the properties worth
 /// asserting are all about this: which records collapse onto one build, which
 /// do not, and what a refusal does with the row.
-/// HOW LONG A PASS MAY TAKE, and why it needs a clock at all.
-///
-/// A RIVEN RECORD COSTS FIGHTS. Its shape has to become a BUILD, and which
-/// corner of the shape is the build is a question only the fight can answer —
-/// `corners_for` asks every ruler and every play mode, at ~20 s a record.
-/// Fifteen of them is a comfortable hour's work; a thousand is a week's.
-///
-/// AND A PASS THAT DOES NOT END BANKS NOTHING. `done` is written when `intake`
-/// returns, so a run killed halfway has taken records in, spent the CPU, and
-/// left every row exactly where it was — which is a pipeline that cannot
-/// converge however often it runs. That is not a hypothetical: the inbox
-/// reached 997 rows and the hourly run stopped finishing on 2026-09-20,
-/// silently, for seventeen ticks.
-///
-/// So a pass STOPS TAKING NEW RECORDS when the clock runs out and returns what
-/// it finished. The rest are still in the inbox, and the next hour takes them.
+/// AND A CLOCK ON THE PASS, because a pass that does not END banks nothing:
+/// `done` is written when this returns, so a run killed halfway has spent the
+/// CPU and left every row where it was — a pipeline that cannot converge
+/// however often it runs. It stops taking NEW records when the clock runs out;
+/// the rest are still owed and the next hour takes them.
 fn intake(
     lines: impl Iterator<Item = String>,
     deadline: Option<std::time::Duration>,
@@ -418,7 +359,7 @@ fn intake(
             refused += 1;
             continue;
         }
-        for corner in corners {
+        for (nth, corner) in corners.into_iter().enumerate() {
             // A CORNER'S MODS ARE CANONICALISED AGAIN: a lower rank drains
             // less, and the representative orders plain cards by drain.
             let v = match wfsim_engine::board::builds::validate_with(
@@ -462,6 +403,13 @@ fn intake(
                 }
             }
             already.entry(rkey.clone()).or_default().push(key.clone());
+            // THE FIGHT IS ASKED FOR THE DEFAULT CORNER ALONE. Every corner is
+            // a build and goes in the library; which of them is worth a fight
+            // is the ENTRY LINE's question, and the line is the scorer's. A
+            // riven nobody would publish costs one fight here, not four.
+            if nth > 0 {
+                continue;
+            }
             // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
             // record shadowed the inbox one, which carries neither field.
             if let Some(ask) = asked_row(&sent.0, &sent.1, &v, &key) {
@@ -720,23 +668,6 @@ mod tests {
         assert!(choices.iter().any(|m| m.contains(&"hunter_track@0".to_string())
             && m.contains(&"continuous_misery@2".to_string())));
         assert!(choices.iter().all(|m| m.contains(&"serration".to_string())), "an unlisted card is pinned");
-    }
-
-    /// A PROBE READS AN ANSWER OUT OF A REAL RESPONSE, under every ruler. A
-    /// field name the simulator does not send makes every probe "a fight that
-    /// did not run", and the default then stands without a word.
-    #[test]
-    fn a_probe_reads_the_fight_it_ran() {
-        for bench in wfsim_engine::board::benchmarks::all() {
-            let mut req: Value = serde_json::to_value(&bench.scenario).expect("scenario");
-            let o = req.as_object_mut().expect("a mapping");
-            o.insert("weapon".into(), json!("braton_prime"));
-            o.insert("mods".into(), json!(["serration"]));
-            o.insert("runs".into(), json!(4));
-            o.insert("duration".into(), json!(5));
-            let got = score_of(&wfsim_webapi::simulate_json(&req), bench.metric(), 5.0);
-            assert!(got.is_some_and(|(s, e)| s.is_finite() && e.is_finite()), "{}: {got:?}", bench.id);
-        }
     }
 
     /// ADMISSION IS THE RULER'S, NOT THIS FILE'S. A thin build is legal to

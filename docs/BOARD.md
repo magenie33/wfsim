@@ -259,11 +259,11 @@ EXERCISED: a `scores` row is replaced rather than appended, so a week of hand
 rescoring leaves nothing stale and every manual trigger asks the question the
 clock already asked and gets the same empty answer.
 
-**WHOLE WEAPONS, AND A FIFTH OF THE LIBRARY IS A TARGET RATHER THAN A CEILING.**
+**WHOLE WEAPONS, AND A TENTH OF THE LIBRARY IS A TARGET RATHER THAN A CEILING.**
 A weapon's file is written whole, so half of one re-measured ranks two
 generations against each other — splitting one is off the table. Weapons go in
 until the share is PASSED, which makes every night a little over it, by at most
-the last weapon in. Used as a ceiling instead, a weapon bigger than a fifth
+the last weapon in. Used as a ceiling instead, a weapon bigger than a tenth
 would fit no night ever, and that would be the BIGGEST weapon: the one most
 people submit to.
 
@@ -275,8 +275,16 @@ HOW OVERDUE: uniformly random, a weapon can be unlucky for a month; weighted,
 the longer one waits the harder it is to keep missing. `SWEEP_SEED` pins a draw,
 because a run nobody can reproduce is a run nobody can ask "why that weapon".
 
-A fifth a night crosses the library in five. It only ADDS to the queue — the
-hourly scorer pays for it in the hours after, which is what spreads the bill.
+A tenth a night crosses the library in ten, and the pool is what has gone five
+days unmeasured. It only ADDS to the queue — the hourly scorer pays for it in
+the hours after, which is what spreads the bill.
+
+**THE CADENCE IS THE BOARD'S BIGGEST BILL.** Counted on 2026-09-21: 6,635 of
+the 9,722 owed rows were sweeps against 2,200 from arrivals, and a scoring day
+costs 25-50 CPU-hours. What the sweep buys is the only AUTOMATIC path a model
+correction has to the board — a code change re-scores nothing on its own — so
+the number is a trade between how long a fix waits and how much is re-measured
+for nothing.
 
 **IT LANDS IN ITS OWN BATCH**, named for the night, so it can be reordered ahead
 of the arrivals or dropped — `DELETE FROM batches WHERE id = ?`.
@@ -422,11 +430,10 @@ A `--deadline` asked only before a row is dealt says when to stop TAKING rows
 and cannot touch one already in flight. **One row then sets the makespan**, and
 the worst of them sets it at ninety-five minutes.
 
-So it reaches inside. A row is not one measurement — a riven row is sixteen
-corner probes at 100 runs and one measurement at the ruler's 1000, of which the
-corners are 62% — and the clock is asked between every run of every one of them.
-What a row has finished is banked: the corner scores by their own index, and the
-one sub-measurement that is partway as a cursor. The next run resumes there.
+So it reaches inside. The clock is asked between every RUN of a row, not only
+between rows, and what a row has finished is banked: each sub-measurement under
+its own label and the one that is partway as a cursor. The next run resumes
+there.
 
 **THE RUN COUNT IS UNTOUCHED.** It is the accuracy promise, so the only thing
 that bends is how many board runs those runs are spread over. Given any row,
@@ -741,8 +748,31 @@ valence at the roll's maximum: anything a player can eventually reach is not
 part of what a row states. Two players who rolled the same stats submitted the
 same build.
 
-**AND A FIGHT IS ASKED ONLY WHERE THE SIGN HAS STOPPED ANSWERING**
-(`build::rivens::ambiguous_stats`). Three sources and no fourth:
+**AND WHERE THE SIGN HAS STOPPED ANSWERING, THE OTHER END IS A BUILD OF ITS
+OWN.** Intake stores every corner of the shape and asks a FIGHT for the default
+alone; which corner is best is a comparison of SCORES, and the scorer is what
+banks those. Three things follow, and they are the whole of the rule:
+
+- **an alternative corner waits for its default to clear the entry line**
+  (`board::entry`). A riven nobody will see on the board is a riven whose best
+  corner nobody will read, and that question costs a fight to answer.
+- **the corners of one shape publish as ONE ROW**, the best-scoring one, a tie
+  going to the god roll (`one_row_per_shape`). The advice is the shape; two
+  rows differing only in which end a stat landed on is that advice twice.
+- **and the tolerance is gone until the standard error is banked.** Two corners
+  inside the ruler's own noise should read as a draw; `scores` has a column for
+  the number and none for its spread, so a near-tie is settled by whichever came
+  out higher — the way every other near-tie on this board is.
+
+**AND NO FIGHT IS RUN AT INTAKE**, which is the whole of why this shape and not
+another. A fight there is the SCORER's fight run twice — once to pick a winner
+and throw the number away, once to bank it — which is two answers to one
+question with the evidence in the discarded half. It is also single-threaded
+and hourly, where the scorer fans out to 32 shards: 20-182 s a riven record
+against 0.01 s.
+
+**WHICH STATS GET A SECOND CORNER AT ALL** is
+`build::rivens::ambiguous_stats`. Three sources and no fourth:
 
 - **the three physical stats, on every weapon.** A physical bonus does not add
   damage beside the rest, it changes the SHARE each damage type holds of the
@@ -769,31 +799,23 @@ same build.
   a row is missing — an extra row costs two fights, a missing one publishes a
   card the fight would have argued with.
 
-**A CARD'S RANK IS ASKED THE SAME WAY, BY NAME.** A submitted rank is dropped
-and every card is stored at max rank, except the cards
-`data/search/every_rank.yaml` names: each of those in the build is asked at
-every rank, crossed with every riven corner, under the same rule below
-(`build::rivens::perfect`). A deep Status Duration malus plus a low-rank Hunter
-Track is how the edge of the -100% cliff is reached. A card joins the list by
+**A CARD'S RANK IS A CORNER THE SAME WAY, BY NAME.** A submitted rank is
+dropped and every card is stored at max rank, except the cards
+`data/search/every_rank.yaml` names: each of those in the build is a corner at
+every rank, crossed with every riven corner. A deep Status Duration malus plus
+a low-rank Hunter Track is how the edge of the -100% cliff is reached. A card joins the list by
 name, never by resembling one on it, and its rank is part of the id —
 `<card>@<rank>` in `mods` (`data::mods::RANK_MARK`).
 
-Measured over the library: 1,948 of 2,418 riven builds are answered by the god
-roll and never reach a fight; 470 name a stat worth asking about, and all but
-five of those name exactly one — two fights, not sixteen.
+Measured over the library: 1,948 of 2,418 riven builds have no ambiguous stat
+at all and are the god roll and nothing else; 470 name one worth a second
+corner, and all but five of those name exactly one — two builds, not sixteen.
 
-**WHAT IT TAKES TO MOVE A STAT OFF THE GOD ROLL** is beating it by more than the
-RULER'S OWN standard error, at the ruler's own run count. Two cards the published
-measurement cannot separate are not two builds, and between them the player gets
-the better one. That threshold is fixed by the ruler rather than by the probe: a
-test against the probe's own noise gets sharper the more you spend on it, so
-every stat eventually "separates" and the corner count grows without ever
-settling — measured, a build went from 2 corners at 40 runs to 4 at 2,560.
-
-**AND WHEN TWO RULERS DISAGREE, THAT IS TWO BUILDS.** One cannot speak for
-another and the card that wins a crowd need not win one target, so each
-`(ruler, mode)` names its own and what enters the library is the SET. The rolls
-are part of the id, so two ends of one shape cannot be filed under one another.
+**AND WHEN TWO RULERS DISAGREE, THAT IS TWO ROWS AND ONE LIBRARY.** One ruler
+cannot speak for another and the card that wins a crowd need not win one
+target — so the corners are in the library once and each ruler's own scores say
+which of them leads THERE. The rolls are part of the id, so two ends of one
+shape cannot be filed under one another.
 
 **WHICH END IS "BEST" IS ASKED OF THE FIGHT, NEVER OF THE CARD.** DE's `+` and
 `-` describe the STAT, not the build. A riven whose malus is critical chance is

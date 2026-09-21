@@ -53,18 +53,16 @@ pub(crate) fn wfsim_engine_webapi_simulate(v: &Value) -> Value {
 
 /// WHAT A ROW HAS PAID FOR SO FAR, when it ran out of clock partway.
 ///
-/// A row is not one measurement. A riven row is sixteen corner probes at 100
-/// runs and one measurement at the ruler's 1000 — 2,600 runs, of which the
-/// corners are 62% — so a budget that only bounded the last one would leave
-/// most of the bill unbounded.
+/// A row is not always one measurement, and the clock has to be able to
+/// interrupt it between the pieces rather than only before the last one.
 ///
-/// ONE CURSOR, BECAUSE ONE SUB-MEASUREMENT IS IN FLIGHT AT A TIME. The screen,
-/// then each corner in turn, then the measurement: whatever the clock
-/// interrupts is the only thing partway, and everything before it is a number.
+/// ONE CURSOR, BECAUSE ONE SUB-MEASUREMENT IS IN FLIGHT AT A TIME: whatever the
+/// clock interrupts is the only thing partway, and everything before it is a
+/// number this run has already paid for.
 #[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Partial {
-    /// Sub-measurements this row has finished: `screen` for the plain-row
-    /// probe, a riven corner under its own index.
+    /// Sub-measurements this row has finished, by label — `measure` is the
+    /// ruler's own, and a label is free to be added beside it.
     #[serde(default)]
     pub(crate) priced: std::collections::BTreeMap<String, f64>,
     /// The one that is partway: its label, how many runs are banked, and what

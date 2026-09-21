@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::args::{flag, has_flag};
 
-use super::entry::{account, apply_entry_line, Who};
+use super::entry::{account, apply_entry_line, one_row_per_shape, Who};
 use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactLog};
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
 use super::publish::{write_pages, Row, RowRiven};
@@ -119,6 +119,8 @@ pub fn run() {
     // library has been walked, so the file is written at the end rather than
     // row by row.
     let mut pending_missing: Vec<(String, String)> = Vec::new();
+    // …AND, FOR EACH ALTERNATIVE CORNER OF A RIVEN, THE DEFAULT IT WAITS ON.
+    let mut corner_of: std::collections::HashMap<String, String> = Default::default();
     // WHEN THE RUN STOPS TAKING ON WORK, in seconds of wall clock.
     //
     // A BUDGET PREDICTS AND A DEADLINE GUARANTEES, and a count can only
@@ -279,8 +281,8 @@ pub fn run() {
         let valence = s.get("valence").and_then(Value::as_str).unwrap_or("");
         // A RIVEN'S SHAPE, when the submission carries one. Two flat lists, the
         // way the endpoint stores them: the ROLLS are never submitted because
-        // they are never ranked — `wfsim-intake` finds this shape's own best
-        // corner (`build::rivens::perfect`).
+        // they are one person's luck — `wfsim-intake` stores the shape's
+        // corners and the board ranks them.
         let shape = {
             let bonuses = get("riven_pos");
             let malus = s
@@ -459,6 +461,14 @@ pub fn run() {
                 // HELD, NOT WRITTEN. The entry line needs every group's leader
                 // and the last of those is known only when the library has
                 // been walked; the file is written from this list below.
+                //
+                // …AND WHICH BUILD THIS CORNER IS AN ALTERNATIVE TO, when it is
+                // one. A riven's shape is several builds and only the DEFAULT
+                // is asked for on arrival; the line decides whether the rest
+                // are ever worth a fight (`board::entry`).
+                if let Some(def) = wfsim_engine::board::builds::default_corner(&v) {
+                    corner_of.insert(asked.0.clone(), def);
+                }
                 pending_missing.push(asked.clone());
             }
             // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
@@ -736,6 +746,11 @@ pub fn run() {
         )
     });
 
+    // …AND ONE ROW PER RIVEN SHAPE, before the line is applied: the corners of
+    // one shape are one piece of advice, and a group's leader is the same
+    // number whichever of them carried it.
+    one_row_per_shape(&mut kept);
+
     let floored_ids = apply_entry_line(&mut kept, shards);
 
     // HOW MUCH OF THIS BOARD WAS KEPT rather than recomputed, said out loud. A
@@ -797,7 +812,9 @@ pub fn run() {
     // group's leader keeps earning every row it is owed; one that reaches it
     // nowhere keeps the facts it has and stops being asked for more.
     if missing_out.is_some() {
-        write_missing(missing_out, pending_missing, gate, &cross, &who, &already_owed, &bench_id);
+        write_missing(
+            missing_out, pending_missing, gate, &cross, &who, &already_owed, &corner_of, &bench_id,
+        );
     }
     if dry {
         eprintln!(

@@ -114,10 +114,12 @@ pub struct ValidBuild {
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats, and which is the
     /// malus. `None` on a build with no riven, which is almost all of them.
     ///
-    /// The ROLLS are not here on purpose: a board row states a shape and the
-    /// shape is scored at its own ceiling (`build::rivens::perfect`), for the same
-    /// reason every row is scored at full Forma. What a particular copy landed
-    /// on is luck, and luck is not a build.
+    /// The ROLLS are not here on purpose: a board row states a shape, and the
+    /// shape is stored at its own ceiling — the god roll at max rank — for the
+    /// same reason every row is scored at full Forma. What a particular copy
+    /// landed on is luck, and luck is not a build. Where a stat's sign has
+    /// stopped answering, the other end is a build OF ITS OWN
+    /// (`default_corner`), ranked by its own score like anything else.
     ///
     /// WHERE IT SITS IS IN `mods`, as [`RIVEN_SLOT`], because position is part
     /// of the build: an elemental riven pairs with the build's other elementals

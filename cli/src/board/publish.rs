@@ -63,10 +63,10 @@ pub(crate) struct Row {
     pub(crate) grip: String,
     pub(crate) loader: String,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
-    /// malus, never a roll. A row states a shape and the shape is scored at its
-    /// own ceiling (`build::rivens::perfect`), for the reason every row is scored
-    /// at full Forma: what one copy landed on is luck, and the board does not
-    /// rank luck.
+    /// malus, never a roll. A row states a shape and the shape is stored at its
+    /// own ceiling — the god roll at max rank — for the reason every row is
+    /// scored at full Forma: what one copy landed on is luck, and the board
+    /// does not rank luck.
     ///
     /// WHERE it sits is in `mods`, which carries `riven` at its own position —
     /// an elemental riven pairs with the build's other elementals, so position
@@ -84,8 +84,9 @@ pub(crate) struct Row {
 pub(crate) struct RowRiven {
     pub(crate) bonuses: Vec<String>,
     pub(crate) malus: Option<String>,
-    /// One roll per stat, bonuses first then the malus — the corner
-    /// `build::rivens::perfect` picked for THIS fight. Not part of the identity.
+    /// One roll per stat, bonuses first then the malus — the corner this ROW
+    /// is, since the rolls are part of the build's id. Not part of the shape a
+    /// reader acts on, which is the two lists above.
     pub(crate) rolls: Vec<f64>,
 }
 

@@ -93,10 +93,20 @@ impl RivenShape {
 /// THE CARD A PLAYER WOULD WANT — every bonus at its ceiling, the malus at its
 /// floor. The default, and the answer for all but a few hundred builds.
 pub fn god_roll(shape: &RivenShape, class: &str) -> RivenSpec {
-    let rolls: Vec<f64> = (0..shape.stat_count())
+    shape.at(class, &default_rolls(shape))
+}
+
+/// THE DEFAULT CORNER'S ROLLS — every bonus at its ceiling, the malus at its
+/// floor, in the order [`RivenShape::at`] reads them.
+///
+/// ONE DEFINITION, because three things ask: `wfsim-intake` stores a shape's
+/// corners in this order, the scorer's entry line asks whether a stored build
+/// IS the default or an alternative waiting on it, and the publisher prefers it
+/// in a tie. A second spelling of "the default" would park the wrong builds.
+pub fn default_rolls(shape: &RivenShape) -> Vec<f64> {
+    (0..shape.stat_count())
         .map(|i| if i < shape.bonuses.len() { ROLL_MAX } else { ROLL_MIN })
-        .collect();
-    shape.at(class, &rolls)
+        .collect()
 }
 
 /// THE STATS WHOSE SIGN IS ALWAYS AMBIGUOUS: the three physical types.

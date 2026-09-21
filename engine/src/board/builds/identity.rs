@@ -14,6 +14,36 @@ impl ValidBuild {
     }
 }
 
+/// THE BUILD THIS CORNER IS AN ALTERNATIVE TO — `None` when it IS that build.
+///
+/// A riven arrives as a SHAPE and every corner of it is a build (`wfsim-intake`
+/// stores them all). The DEFAULT corner is the god roll at max rank, and it is
+/// the one a fight is asked for; the others wait until it has earned its place
+/// (`board::entry`). So a corner has to be able to name its default, and it can
+/// — the rolls and the ranks are in the build itself, and the default is a
+/// function of the shape rather than of anything measured.
+///
+/// A BUILD WITH NO RIVEN AND NO LOWERED CARD IS ALREADY THE DEFAULT and answers
+/// `None`, which is what keeps this out of every other build's way.
+pub fn default_corner(b: &ValidBuild) -> Option<String> {
+    let rolls = b
+        .riven
+        .as_ref()
+        .map(crate::build::rivens::default_rolls)
+        .unwrap_or_default();
+    let mods: Vec<String> = b
+        .mods
+        .iter()
+        .map(|m| crate::data::mods::split_rank(m).0.to_string())
+        .collect();
+    if rolls == b.riven_rolls && mods == b.mods {
+        return None;
+    }
+    let mut d = b.clone().with_riven_rolls(rolls);
+    d.mods = mods;
+    Some(build_id(&d))
+}
+
 /// THE BOARD'S OWN ROW KEY: a [`build_id`] and the MODE it was played in.
 ///
 /// One row per (build, mode) — a build played two ways is two entrants, and

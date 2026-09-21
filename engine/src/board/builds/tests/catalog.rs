@@ -1060,3 +1060,30 @@ fn a_weapon_seats_its_own_slots_arcanes() {
     .unwrap_err();
     assert!(e.contains("seats 0") || e.contains("not an arcane"), "{e}");
 }
+
+/// **A CORNER KNOWS WHICH BUILD IT IS AN ALTERNATIVE TO, AND THE DEFAULT KNOWS
+/// IT IS ONE.** The scorer's entry line reads this to decide whether a corner
+/// is worth a fight yet (`board::entry`), so both answers have to be exact:
+/// the god roll at max rank answers `None`, and every other corner answers the
+/// god roll's own id.
+#[test]
+fn a_corner_names_the_default_it_waits_on() {
+    use crate::build::rivens::RivenShape;
+    let shape = RivenShape {
+        bonuses: vec!["damage".into(), "puncture".into()],
+        malus: Some("zoom".into()),
+    };
+    let mods: Vec<String> =
+        [RIVEN_SLOT, "serration"].iter().map(|s| (*s).to_string()).collect();
+    let b = validate_with("braton_prime", &mods, &[], &[], "", Some(&shape), None, None).unwrap();
+    // THE DEFAULT: every bonus at its ceiling, the malus at its floor.
+    let default = b.clone().with_riven_rolls(crate::build::rivens::default_rolls(&shape));
+    assert_eq!(default_corner(&default), None, "the default is not waiting on anybody");
+    // …AND THE OTHER END OF THE AMBIGUOUS STAT is a build of its own, which
+    // names the default rather than itself.
+    let mut rolls = crate::build::rivens::default_rolls(&shape);
+    rolls[1] = 0.9;
+    let corner = b.with_riven_rolls(rolls);
+    assert_ne!(build_id(&corner), build_id(&default), "two corners are two builds");
+    assert_eq!(default_corner(&corner).as_deref(), Some(build_id(&default).as_str()));
+}
