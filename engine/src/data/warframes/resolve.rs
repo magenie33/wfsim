@@ -256,7 +256,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             Some(a) if frame.abilities.contains(&a.id) => {
                 refused.push(format!("{} already has {}", frame.name, a.name))
             }
-            Some(a) if (1..=4).contains(&h.slot) => loadout[h.slot as usize - 1] = (h.slot, a, true),
+            Some(a) if (1..=loadout.len() as u8).contains(&h.slot) => loadout[h.slot as usize - 1] = (h.slot, a, true),
             Some(_) => refused.push(format!("there is no ability slot {}", h.slot)),
             None => refused.push(format!("unknown ability: {}", h.ability)),
         }

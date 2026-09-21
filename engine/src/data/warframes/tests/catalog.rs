@@ -34,7 +34,7 @@ fn every_file_loads_and_names_what_exists() {
         }
     }
     for f in warframes() {
-        assert_eq!(f.abilities.len(), 4, "{}", f.id);
+        assert_eq!(f.abilities.len(), if f.id == PROTOTYPE { 0 } else { 4 }, "{}", f.id);
         for id in &f.abilities {
             assert!(ability(id).is_some(), "{}: {id}", f.id);
         }
@@ -291,4 +291,20 @@ fn aura_capacity_doubles_matched_and_floors_mismatched() {
     assert_eq!(aura_capacity(7, "madurai", None), 7);
     assert_eq!(aura_capacity(9, "madurai", Some("naramon")), 7);
     assert_eq!(aura_capacity(5, "madurai", Some("naramon")), 4);
+}
+
+/// THE PROTOTYPE BUILD IS THE FIGHT'S FLOOR, and a Helminth has no slot on it.
+#[test]
+fn a_bare_prototype_is_the_floor_wielder() {
+    let t = crate::data::tenno::default_tenno();
+    let mut b = Build { frame: PROTOTYPE.into(), ..Build::default() };
+    let r = resolve(&b).unwrap();
+    assert_eq!(r.stat(FrameStat::Health).value, t.health);
+    assert_eq!(r.stat(FrameStat::Shield).value, t.shield);
+    assert_eq!(r.stat(FrameStat::Armor).value, t.armor);
+    assert_eq!(r.stat(FrameStat::Energy).value, t.energy);
+    assert_eq!(r.stat(FrameStat::SprintSpeed).value, t.sprint);
+    assert!(r.abilities.is_empty());
+    b.helminth = Some(HelminthPick { slot: 1, ability: "roar".into() });
+    assert!(!resolve(&b).unwrap().refused.is_empty(), "nothing to infuse");
 }

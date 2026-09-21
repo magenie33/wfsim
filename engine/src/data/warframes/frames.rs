@@ -47,8 +47,11 @@ pub(super) struct RawFrame {
     pub(super) name: String,
     #[serde(default)]
     pub(super) internal_name: Option<String>,
-    pub(super) health: f64,
-    pub(super) shield: f64,
+    /// Absent only on the Prototype, whose stats are `data/tenno/default.yaml`'s.
+    #[serde(default)]
+    pub(super) health: Option<f64>,
+    #[serde(default)]
+    pub(super) shield: Option<f64>,
     #[serde(default)]
     pub(super) polarities: Vec<String>,
     #[serde(default)]
@@ -66,23 +69,37 @@ pub(super) struct RawFrame {
     pub(super) source: SourceFile,
 }
 
+/// The floor frame every weapon is held by when nothing else is linked.
+pub const PROTOTYPE: &str = "prototype";
+
 pub fn warframes() -> &'static [WarframeDef] {
     static F: OnceLock<Vec<WarframeDef>> = OnceLock::new();
     F.get_or_init(|| {
         leak_all("warframes/")
             .map(|(p, text)| {
                 let r: RawFrame = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
-                let roster = crate::data::tenno::frame(&r.id)
-                    .unwrap_or_else(|| panic!("{p}: `{}` is not in data/frames.yaml", r.id));
+                // THE PROTOTYPE'S FIVE NUMBERS ARE THE FIGHT'S FLOOR, read from the
+                // one file that states them; every other frame is the roster plus
+                // its own rank-30 health and shield.
+                let (health, shield, armor, energy, sprint) = if r.id == PROTOTYPE {
+                    assert!(r.health.is_none() && r.shield.is_none(), "{p}: the Prototype's stats are data/tenno/default.yaml's");
+                    let t = crate::data::tenno::default_tenno();
+                    (t.health, t.shield, t.armor, t.energy, t.sprint)
+                } else {
+                    let roster = crate::data::tenno::frame(&r.id)
+                        .unwrap_or_else(|| panic!("{p}: `{}` is not in data/frames.yaml", r.id));
+                    let own = |v: Option<f64>, what: &str| v.unwrap_or_else(|| panic!("{p}: no {what}"));
+                    (own(r.health, "health"), own(r.shield, "shield"), roster.armor, roster.energy, roster.sprint)
+                };
                 WarframeDef {
                     id: r.id,
                     name: r.name,
                     internal_name: r.internal_name,
-                    health: r.health,
-                    shield: r.shield,
-                    armor: roster.armor,
-                    energy: roster.energy,
-                    sprint: roster.sprint,
+                    health,
+                    shield,
+                    armor,
+                    energy,
+                    sprint,
                     polarities: r.polarities,
                     aura_polarity: r.aura_polarity,
                     exilus_polarity: r.exilus_polarity,

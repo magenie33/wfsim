@@ -1,0 +1,10 @@
+# THE PROTOTYPE AS A BUILDER FRAME. Its health, shields, armor, energy and sprint
+# are `data/tenno/default.yaml`'s and are stated nowhere else, so a number moved
+# there moves the frame with it and the board's floor stays the same wielder.
+#
+# No abilities, no passive and no innate polarities: it is the floor of every
+# released frame, not one of them. With no ability slots a Helminth has nothing
+# to replace, and `resolve` refuses one.
+id: prototype
+name: Prototype
+abilities: []
