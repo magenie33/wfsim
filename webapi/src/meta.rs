@@ -874,6 +874,12 @@ pub fn meta_json() -> Value {
             "name": f.name,
             "image": assets().warframes.get(&f.id),
         })).collect::<Vec<_>>(),
+        // THE COMPANIONS A ROBOTIC WEAPON CAN BE HELD BY — a Sentinel or a MOA;
+        // their stat block is `sentinel_floor` below.
+        "companions": wfsim_engine::data::tenno::companions().iter().map(|c| json!({
+            "id": c.id,
+            "name": c.name,
+        })).collect::<Vec<_>>(),
         // THE OPERATOR'S card, its own home group: a player has one Operator.
         "operator_image": assets().operators.get("operator"),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the
@@ -895,7 +901,7 @@ pub fn meta_json() -> Value {
         // cannot tell "0 because no frame" from "0 because that IS the floor".
         // TWO FLOORS, because there are two kinds of wielder: a Warframe holds
         // most of the roster and a SENTINEL the 21 companion weapons, with
-        // different lowest values — 450/130/80 against 250/0/105.
+        // different lowest values — 367/130/80 against 250/0/105.
         // **WHAT A FIGHT CONSISTS OF**, and which of it this weapon takes away.
         //
         // `engine::scenario::SCENARIO_AXES` is the one declaration; this

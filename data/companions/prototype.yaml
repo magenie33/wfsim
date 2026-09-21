@@ -1,0 +1,8 @@
+# THE PROTOTYPE COMPANION AS A HOST. A robotic weapon is carried by a companion —
+# a Sentinel or a MOA — whose own stat block is `data/tenno/sentinel.yaml`'s and
+# is stated nowhere else, so a number moved there moves the host with it.
+#
+# A COMPANION BUILD HAS NO MODS YET. What it holds today is which Warframe owns
+# it: the aura and the archon shards a companion weapon takes are the owner's.
+id: prototype_companion
+name: Prototype Companion

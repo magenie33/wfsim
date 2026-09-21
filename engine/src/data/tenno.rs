@@ -427,6 +427,25 @@ pub fn sentinel_wielder() -> &'static Tenno {
     })
 }
 
+/// A COMPANION TYPE A ROBOTIC WEAPON CAN BE HELD BY (`data/companions/`). Its
+/// stats are [`sentinel_wielder`]'s and are stated nowhere else.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Companion {
+    pub id: String,
+    pub name: String,
+}
+
+/// Every companion host, in file order.
+pub fn companions() -> &'static [Companion] {
+    static C: OnceLock<Vec<Companion>> = OnceLock::new();
+    C.get_or_init(|| {
+        crate::data::files_under("companions/")
+            .map(|(p, text)| serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}")))
+            .collect()
+    })
+}
+
 /// ONE WARFRAME, as the three numbers a weapon perk can ask about.
 ///
 /// Health and shield are deliberately absent — see `data/frames.yaml`: the
@@ -587,14 +606,28 @@ mod tests {
     /// ASSERTED AGAINST THE WARFRAME FLOOR, not as literals alone: the point of
     /// the entry is that the two DIFFER, and a test that only pinned five
     /// numbers would pass just as well on a file that had been copied.
+    /// A COMPANION HOST HAS ONE STAT BLOCK, and it is the wielder's: the entry
+    /// carries an id and a name and the stats are read from `sentinel.yaml`.
+    #[test]
+    fn a_companion_host_is_named_and_its_stats_are_the_sentinel_floors() {
+        let c = companions();
+        assert_eq!(c.len(), 1);
+        assert_eq!(c[0].id, "prototype_companion");
+        assert_eq!(c[0].name, sentinel_wielder().name);
+    }
+
     #[test]
     fn a_companion_weapon_is_held_by_a_sentinel_and_it_is_a_different_floor() {
         let s = sentinel_wielder();
         let w = default_tenno();
         assert_eq!(s.id, "sentinel");
-        assert_eq!(s.health, 450.0, "Wyrm Prime");
+        // The MOA's lowest health, 367, is under every Sentinel's (Wyrm Prime's
+        // 450), so it sets that floor; Shade's shield and Carrier's armor are
+        // under every MOA's, so they set theirs.
+        assert_eq!(s.health, 367.0, "MOA: \"Possible stat ranges are 367-473 for Health\"");
         assert_eq!(s.shield, 130.0, "Shade");
         assert_eq!(s.armor, 80.0, "Carrier and eleven others");
+        assert_eq!(s.name, "Prototype Companion");
         // The wiki's Sentinel infobox has no Energy row and no sprint row; the
         // export lists `power` and the house rule is the wiki's.
         assert_eq!(s.energy, 0.0);

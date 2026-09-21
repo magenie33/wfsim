@@ -12,9 +12,10 @@ use crate::request::{get_bool, get_f64};
 /// are the Warframe module's resolve of that build, and its archon shards and
 /// own aura come with it.
 ///
-/// A COMPANION WEAPON IS CARRIED BY A SENTINEL, whose stat block this keeps —
-/// 450/130/80 against a Warframe's 250/0/105 — while the Warframe behind it
-/// still brings the shards and the aura: `rifle_amp` reaches an Artax.
+/// A COMPANION WEAPON IS CARRIED BY A COMPANION, a Sentinel or a MOA, whose stat
+/// block this keeps — 367/130/80 against a Warframe's 250/0/105 — while the
+/// Warframe that owns it still brings the shards and the aura: `rifle_amp`
+/// reaches an Artax.
 pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::tenno::Tenno {
     use wfsim_engine::data::warframes as wf;
     let mut t = if info.sentinel {

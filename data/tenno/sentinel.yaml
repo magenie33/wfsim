@@ -23,18 +23,24 @@
 # of also having to invent one, and until then the panel stops telling a reader
 # that their Sentinel has a Warframe's armor.
 #
-# THE FLOOR RULE IS THE SAME ONE, applied to a different roster: each field is
-# the LOWEST any released Sentinel has, stat by stat, so a bonus this wielder
-# pays is one every Sentinel pays. Read off the wiki's own infoboxes across all
-# 17, which agree with DE's export digit for digit — sentinel stats do not
-# scale with rank, so there is no "at Rank 30" figure to prefer:
+# THE FLOOR RULE IS THE SAME ONE, applied to a different roster — every companion
+# that carries a robotic weapon, the 17 Sentinels and the MOA: each field is the
+# LOWEST any of them has, stat by stat, so a bonus this wielder pays is one every
+# companion pays. Sentinel stats are read off the wiki's own infoboxes, which
+# agree with DE's export digit for digit and do not scale with rank:
 #   health 450  Wyrm Prime
 #   shield 130  Shade
 #   armor   80  Carrier and eleven others
+# A MOA is 350 health, 350 shields and 350 armor before its components, which the
+# wiki (MOA (Companion)) prints as the range its parts can reach:
+#   "Possible stat ranges are 367-473 for Health, 315-438 for Shields and
+#   350-438 for Armor."
+# Its lowest health, 367, is below every Sentinel's, so it sets the floor there;
+# its lowest shield and armor are above the Sentinels', which set theirs.
 id: sentinel
-name: Sentinel
+name: Prototype Companion
 
-health: 450
+health: 367
 shield: 130
 overguard: 0
 armor: 80
