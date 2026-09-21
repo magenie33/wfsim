@@ -1476,6 +1476,11 @@ mod tests {
         let cov = optimize(&b, &[], &groups, 0.0, r, None).unwrap();
         assert!(cov.exhaustive);
         let pts: Vec<(u32, f64)> = cov.curve.iter().map(|p| (p.plan.cost.total(), p.worst)).collect();
+        // EVERY POINT COSTS MORE AND REACHES FURTHER THAN THE LAST. Asserted
+        // here, on a fixture, because the LENGTH of a real curve is a property
+        // of the board — it stops at the ceiling, which the scoring bot moves.
+        assert!(pts.len() > 1, "{pts:?}");
+        assert!(pts.windows(2).all(|w| w[1].0 > w[0].0 && w[1].1 > w[0].1), "{pts:?}");
         // Free: only the light build fits. 72 heavy needs two halvings each: 2 + 2.
         assert_eq!(pts.first(), Some(&(0, 0.5)), "{pts:?}");
         assert_eq!(pts.last().map(|p| p.1), Some(1.0), "{pts:?}");

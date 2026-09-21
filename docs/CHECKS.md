@@ -867,7 +867,10 @@ With mods kept in place neither build's mods move. Planning ahead over the
 Torid's whole board draws a curve where each point costs more and reaches
 further, marks the first point on the line, saves a pick already wearing the
 point's layout with every card of its row, and places the ticked builds onto
-the point's exact positions. `WFSIM_BASE` points it at a dev server.
+the point's exact positions. HOW MANY points that curve has is the board's and
+not the code's — it stops at the ceiling its groups reach, which the scoring bot
+moves — so that a curve has depth at all is `coverage_climbs_with_forma`, on a
+fixture. `WFSIM_BASE` points it at a dev server.
 
 ## `check_rescore_paths`
 
