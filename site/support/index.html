@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.8675cdd36ca1.css" />
+  <link rel="stylesheet" href="/asset/style.1818ade2a4ba.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -143,6 +143,7 @@
           <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
           <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
         </nav>
+        <span id="trail" class="trail" hidden></span>
         <div class="tblinks">
           <!-- THE RIGHT-HAND ROW IS THREE THINGS AND AN OVERFLOW, never
                seven ghost buttons of equal weight — that is three unrelated
@@ -697,9 +698,9 @@
     <!-- THE WIELDER: whoever holds the weapon — a link to a saved Warframe build,
          a modelled frame unbuilt, or the Prototype every ruler scores in. Part of
          the BUILD, and never of a board row. See renderWielder. -->
-    <section class="block" data-module="builder" id="wielder-block">
+    <section class="block shut" data-module="builder" id="wielder-block">
       <div class="bh"><span class="n">0</span><h2 data-i18n>Wielder</h2><span class="sub" id="wielder-sub"></span></div>
-      <div class="bb"><div id="wielder-row" class="field-grid"></div></div>
+      <div class="bb"><div id="wielder-row" class="field-grid"></div><div id="wielder-detail" class="wielder-detail"></div></div>
     </section>
 
     <section class="block" data-module="builder" id="mode-block">
@@ -1269,13 +1270,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">aa2cdc9f</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">cdd1a08b</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.576730a060f8.js"></script>
+  <script src="/asset/app.d8976ea96b37.js"></script>
   <script type="module" src="/asset/nona.215167bb23b8/index.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
