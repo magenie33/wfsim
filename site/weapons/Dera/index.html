@@ -331,6 +331,8 @@
     <div id="warframe-grid"></div>
     <h2 class="home-h" data-i18n>Operator</h2>
     <div id="operator-grid"></div>
+    <h2 class="home-h" data-i18n>Companions</h2>
+    <div id="companion-grid"></div>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
   </main>
@@ -1187,6 +1189,23 @@
     </section>
   </main>
 
+  <!-- A COMPANION HOST — `/companions/<Name>`. What carries a robotic weapon, a
+       Sentinel or a MOA, and therefore what such a weapon's build links instead
+       of a Warframe. docs/WARFRAMES.md §Companions. -->
+  <main id="companion-page" class="config-page" hidden>
+    <div class="wstrip">
+      <div>
+        <h1 id="comp-name">—</h1>
+        <div id="comp-tags" class="tags"></div>
+      </div>
+    </div>
+    <div class="preset-bar" id="preset-bar-companions"></div>
+    <section class="block" id="comp-mods-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2></div>
+      <div class="bb"><div class="wpassives"><div data-i18n>A companion's own mods are not modelled yet.</div></div></div>
+    </section>
+  </main>
+
   <!-- THE OPERATOR — `/operator`. Its Focus school, and which of that school's
        conditional nodes to count as running; a Warframe build links one.
        docs/WARFRAMES.md §Operator. -->
@@ -1273,13 +1292,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">cdd1a08b</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">41a1ebb8</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.e7a8c6ea8998.js"></script>
+  <script src="/asset/app.72889e1dfb2f.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
