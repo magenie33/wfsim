@@ -427,25 +427,6 @@ pub fn sentinel_wielder() -> &'static Tenno {
     })
 }
 
-/// A COMPANION TYPE A ROBOTIC WEAPON CAN BE HELD BY (`data/companions/`). Its
-/// stats are [`sentinel_wielder`]'s and are stated nowhere else.
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub struct Companion {
-    pub id: String,
-    pub name: String,
-}
-
-/// Every companion host, in file order.
-pub fn companions() -> &'static [Companion] {
-    static C: OnceLock<Vec<Companion>> = OnceLock::new();
-    C.get_or_init(|| {
-        crate::data::files_under("companions/")
-            .map(|(p, text)| serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}")))
-            .collect()
-    })
-}
-
 /// ONE WARFRAME, as the three numbers a weapon perk can ask about.
 ///
 /// Health and shield are deliberately absent — see `data/frames.yaml`: the
@@ -606,16 +587,6 @@ mod tests {
     /// ASSERTED AGAINST THE WARFRAME FLOOR, not as literals alone: the point of
     /// the entry is that the two DIFFER, and a test that only pinned five
     /// numbers would pass just as well on a file that had been copied.
-    /// A COMPANION HOST HAS ONE STAT BLOCK, and it is the wielder's: the entry
-    /// carries an id and a name and the stats are read from `sentinel.yaml`.
-    #[test]
-    fn a_companion_host_is_named_and_its_stats_are_the_sentinel_floors() {
-        let c = companions();
-        assert_eq!(c.len(), 1);
-        assert_eq!(c[0].id, "prototype_companion");
-        assert_eq!(c[0].name, sentinel_wielder().name);
-    }
-
     #[test]
     fn a_companion_weapon_is_held_by_a_sentinel_and_it_is_a_different_floor() {
         let s = sentinel_wielder();

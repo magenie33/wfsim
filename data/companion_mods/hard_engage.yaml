@@ -1,0 +1,17 @@
+id: hard_engage
+name: "Hard Engage"
+rarity: rare
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Moa/MoaMeleeMod
+compat: moa
+precept: false
+description: "Engages enemies within 10m with melee attacks, dealing 90 <DT_IMPACT_COLOR>Impact Damage. Melee attacks are enhanced by Mods equipped in the Moa's weapon."
+
+effects:
+  - kind: unmodelled
+    text: "Engages enemies within 10m with melee attacks, dealing 90 <DT_IMPACT_COLOR>Impact Damage. Melee attacks are enhanced by Mods equipped in the Moa's weapon."
+
+source:
+  url: https://wiki.warframe.com/w/Hard_Engage

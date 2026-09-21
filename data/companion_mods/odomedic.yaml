@@ -1,0 +1,17 @@
+id: odomedic
+name: "Odomedic"
+rarity: rare
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/HealBot
+compat: robotic
+precept: true
+description: "Every 3m traversed by Wall Running regenerates +40 Health over 4s. This effect can stack up to 3x."
+
+effects:
+  - kind: unmodelled
+    text: "Every 3m traversed by Wall Running regenerates +40 Health over 4s. This effect can stack up to 3x."
+
+source:
+  url: https://wiki.warframe.com/w/Odomedic

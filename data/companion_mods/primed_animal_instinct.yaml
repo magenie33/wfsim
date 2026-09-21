@@ -1,0 +1,17 @@
+id: primed_animal_instinct
+name: "Primed Animal Instinct"
+rarity: legendary
+polarity: naramon
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelLootRadarEnemyRadarExpertMod
+compat: companion
+precept: false
+description: "+55m Loot Radar\\r\\n+33m Enemy Radar"
+
+effects:
+  - kind: unmodelled
+    text: "+55m Loot Radar\\r\\n+33m Enemy Radar"
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Animal_Instinct

@@ -1,0 +1,17 @@
+id: thumper
+name: "Thumper"
+rarity: common
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Thumper
+compat: djinn
+precept: true
+description: "Djinn will attack the first visible enemy within 60m."
+
+effects:
+  - kind: unmodelled
+    text: "Djinn will attack the first visible enemy within 60m."
+
+source:
+  url: https://wiki.warframe.com/w/Thumper

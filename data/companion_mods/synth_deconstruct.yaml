@@ -1,0 +1,17 @@
+id: synth_deconstruct
+name: "Synth Deconstruct"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Synth/SentinelSynthDeconstructMod
+compat: companion
+precept: false
+description: "Enemies injured by the Companions have 25% chance to drop a Health Orb when killed."
+
+effects:
+  - kind: unmodelled
+    text: "Enemies injured by the Companions have 25% chance to drop a Health Orb when killed."
+
+source:
+  url: https://wiki.warframe.com/w/Synth_Deconstruct

@@ -1,0 +1,17 @@
+id: auto_omni
+name: "Auto Omni"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/RepairShip
+compat: nautilus
+precept: true
+description: "Nautilus has 100% chance to repair nearby Railjack hull damages and extinguishes fires on Railjack. Cooldown: 20s."
+
+effects:
+  - kind: unmodelled
+    text: "Nautilus has 100% chance to repair nearby Railjack hull damages and extinguishes fires on Railjack. Cooldown: 20s."
+
+source:
+  url: https://wiki.warframe.com/w/Auto_Omni

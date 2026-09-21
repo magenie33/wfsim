@@ -1,0 +1,17 @@
+id: seismic_bond
+name: "Seismic Bond"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/BondedExaltation
+compat: companion
+precept: true
+description: "While a channeled Ability is active, Companion melee attacks create a 4m shockwave for 30% of their melee attack damage. Damage dealt by your Companion increases your Ability Efficiency by 3% for 12 seconds. Max 10 stacks."
+
+effects:
+  - kind: unmodelled
+    text: "While a channeled Ability is active, Companion melee attacks create a 4m shockwave for 30% of their melee attack damage. Damage dealt by your Companion increases your Ability Efficiency by 3% for 12 seconds. Max 10 stacks."
+
+source:
+  url: https://wiki.warframe.com/w/Seismic_Bond

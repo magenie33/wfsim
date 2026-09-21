@@ -1,0 +1,17 @@
+id: ammo_case
+name: "Ammo Case"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/ItemVacum
+compat: carrier
+precept: true
+description: "Increases Ammo Capacity by 25% and converts Ammo Pickups into ammo for equipped weapons after 2s."
+
+effects:
+  - kind: unmodelled
+    text: "Increases Ammo Capacity by 25% and converts Ammo Pickups into ammo for equipped weapons after 2s."
+
+source:
+  url: https://wiki.warframe.com/w/Ammo_Case

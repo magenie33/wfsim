@@ -1,0 +1,17 @@
+id: astral_bond
+name: "Astral Bond"
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/VoidVinculum
+compat: companion
+precept: true
+description: "Damage dealt by Operator or Drifter grants 60% damage and 30% <DT_RADIANT_COLOR>Void Damage to your Companion's attacks for 10s. Companion Void Damage adds +30% Amp and Energy Efficiency to Operator or Drifter for 5s."
+
+effects:
+  - kind: unmodelled
+    text: "Damage dealt by Operator or Drifter grants 60% damage and 30% <DT_RADIANT_COLOR>Void Damage to your Companion's attacks for 10s. Companion Void Damage adds +30% Amp and Energy Efficiency to Operator or Drifter for 5s."
+
+source:
+  url: https://wiki.warframe.com/w/Astral_Bond

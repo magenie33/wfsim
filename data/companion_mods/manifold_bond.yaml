@@ -1,0 +1,17 @@
+id: manifold_bond
+name: "Manifold Bond"
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/CompoundingLaceration
+compat: robotic
+precept: true
+description: "Companion Precept Mods apply Status Effects from Companion weapons. Killing enemies with 3 or more unique Status Effects reduces Companion Ability cooldowns by 3s."
+
+effects:
+  - kind: unmodelled
+    text: "Companion Precept Mods apply Status Effects from Companion weapons. Killing enemies with 3 or more unique Status Effects reduces Companion Ability cooldowns by 3s."
+
+source:
+  url: https://wiki.warframe.com/w/Manifold_Bond

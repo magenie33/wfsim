@@ -1,0 +1,17 @@
+id: primed_regen
+name: "Primed Regen"
+rarity: legendary
+polarity: penjaga
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/PrimedRegen
+compat: sentinel
+precept: true
+description: "Sentinel recovery time reduced by 35s. Revives with 10s of invulnerability."
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel recovery time reduced by 35s. Revives with 10s of invulnerability."
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Regen

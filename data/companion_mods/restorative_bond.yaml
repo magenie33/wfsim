@@ -1,0 +1,17 @@
+id: restorative_bond
+name: "Restorative Bond"
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/MutualNourishment
+compat: companion
+precept: true
+description: "Health Orbs restore 60 more health and reduce Companion Recovery Time by 3s."
+
+effects:
+  - kind: unmodelled
+    text: "Health Orbs restore 60 more health and reduce Companion Recovery Time by 3s."
+
+source:
+  url: https://wiki.warframe.com/w/Restorative_Bond

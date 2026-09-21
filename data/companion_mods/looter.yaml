@@ -1,0 +1,17 @@
+id: looter
+name: "Looter"
+rarity: rare
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Looter
+compat: carrier
+precept: true
+description: "Emits a pulse wave to break open Loot Crates within 22m."
+
+effects:
+  - kind: unmodelled
+    text: "Emits a pulse wave to break open Loot Crates within 22m."
+
+source:
+  url: https://wiki.warframe.com/w/Looter

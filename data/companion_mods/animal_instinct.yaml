@@ -1,0 +1,17 @@
+id: animal_instinct
+name: "Animal Instinct"
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelLootRadarEnemyRadarMod
+compat: companion
+precept: false
+description: "+30m Loot Radar\\r\\n+18m Enemy Radar"
+
+effects:
+  - kind: unmodelled
+    text: "+30m Loot Radar\\r\\n+18m Enemy Radar"
+
+source:
+  url: https://wiki.warframe.com/w/Animal_Instinct

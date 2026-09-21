@@ -1,0 +1,17 @@
+id: tenacious_bond
+name: "Tenacious Bond"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/TenaciousPartner
+compat: companion
+precept: true
+description: "Headshot kills reduce Companion Recovery timer by 3s. If the Companion's Critical Chance is over 50% then you gain +1.2x Final Critical Damage Multiplier."
+
+effects:
+  - kind: unmodelled
+    text: "Headshot kills reduce Companion Recovery timer by 3s. If the Companion's Critical Chance is over 50% then you gain +1.2x Final Critical Damage Multiplier."
+
+source:
+  url: https://wiki.warframe.com/w/Tenacious_Bond

@@ -1,0 +1,17 @@
+id: sacrifice
+name: "Sacrifice"
+rarity: rare
+polarity: penjaga
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/RevivePlayer
+compat: sentinel
+precept: true
+description: "Sentinel incapacitates itself to revive its downed owner to 100% health and shields in 4s. Sentinel Recovery timer increases by 15s.\\r\\n+15s Companion Recovery Time"
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel incapacitates itself to revive its downed owner to 100% health and shields in 4s. Sentinel Recovery timer increases by 15s.\\r\\n+15s Companion Recovery Time"
+
+source:
+  url: https://wiki.warframe.com/w/Sacrifice

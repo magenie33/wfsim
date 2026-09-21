@@ -1,0 +1,17 @@
+id: guardian
+name: "Guardian"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Guardian
+compat: robotic
+precept: true
+description: "Boosts owner's shield by 100% when it runs out."
+
+effects:
+  - kind: unmodelled
+    text: "Boosts owner's shield by 100% when it runs out."
+
+source:
+  url: https://wiki.warframe.com/w/Guardian

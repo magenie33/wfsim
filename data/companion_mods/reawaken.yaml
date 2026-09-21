@@ -1,0 +1,17 @@
+id: reawaken
+name: "Reawaken"
+rarity: rare
+polarity: penjaga
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/RespawnSelf
+compat: djinn
+precept: true
+description: "Energy Orbs reduce Sentinel Recovery timer by 6s. Djinn recovers with 300 Overshields per Energy Orb collected. Djinn's max Overshields increase by 900."
+
+effects:
+  - kind: unmodelled
+    text: "Energy Orbs reduce Sentinel Recovery timer by 6s. Djinn recovers with 300 Overshields per Energy Orb collected. Djinn's max Overshields increase by 900."
+
+source:
+  url: https://wiki.warframe.com/w/Reawaken

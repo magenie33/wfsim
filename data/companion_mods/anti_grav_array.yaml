@@ -1,0 +1,17 @@
+id: anti_grav_array
+name: "Anti-Grav Array"
+rarity: rare
+polarity: penjaga
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/AntigravDilator
+compat: robotic
+precept: true
+description: "Increase height of owner's jumps by +40%."
+
+effects:
+  - kind: unmodelled
+    text: "Increase height of owner's jumps by +40%."
+
+source:
+  url: https://wiki.warframe.com/w/Anti-Grav_Array

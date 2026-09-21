@@ -1,0 +1,17 @@
+id: blast_shield
+name: "Blast Shield"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaChargePrecept
+compat: moa
+precept: true
+description: "Overshields increased by +3000. Leap at an enemy within 10m dealing 30 <DT_IMPACT_COLOR>Impact Damage and knocking down other enemies within 5m and resets Overshields."
+
+effects:
+  - kind: unmodelled
+    text: "Overshields increased by +3000. Leap at an enemy within 10m dealing 30 <DT_IMPACT_COLOR>Impact Damage and knocking down other enemies within 5m and resets Overshields."
+
+source:
+  url: https://wiki.warframe.com/w/Blast_Shield

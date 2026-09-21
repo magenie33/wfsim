@@ -876,7 +876,7 @@ pub fn meta_json() -> Value {
         })).collect::<Vec<_>>(),
         // THE COMPANIONS A ROBOTIC WEAPON CAN BE HELD BY — a Sentinel or a MOA;
         // their stat block is `sentinel_floor` below.
-        "companions": wfsim_engine::data::tenno::companions().iter().map(|c| json!({
+        "companions": wfsim_engine::data::companions::companions().iter().map(|c| json!({
             "id": c.id,
             "name": c.name,
         })).collect::<Vec<_>>(),

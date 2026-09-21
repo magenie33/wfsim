@@ -1,0 +1,17 @@
+id: metal_fiber
+name: "Metal Fiber"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelArmourMod
+compat: companion
+precept: false
+description: "+250% Armor"
+
+effects:
+  - kind: unmodelled
+    text: "+250% Armor"
+
+source:
+  url: https://wiki.warframe.com/w/Metal_Fiber

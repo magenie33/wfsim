@@ -663,6 +663,13 @@ store nothing, and the first real edit stores exactly one. A bar with none is
 empty and says the editor stands on the default; a build edited back to the blank
 is deleted, and the next effective edit writes `preset 1` again.
 
+## `check_companion_mods`
+
+The companion builder draws ten general slots with four innate Penjaga
+polarities, offers the universal pool and no model's own card, says plainly that
+none of it pays, and seating one through the picker spends capacity and is born
+as a build; a rank down costs a point less.
+
 ## `check_companion_host`
 
 A robotic weapon is held by the companion host and sends no wielder; its picker

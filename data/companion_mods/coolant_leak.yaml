@@ -1,0 +1,17 @@
+id: coolant_leak
+name: "Coolant Leak"
+rarity: rare
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/CoolantLeak
+compat: robotic
+precept: true
+description: "Unleashes a 10m radial blast of <DT_FREEZE_COLOR>Cold when multiple enemies are nearby. Add 3 stacks. 10s cooldown."
+
+effects:
+  - kind: unmodelled
+    text: "Unleashes a 10m radial blast of <DT_FREEZE_COLOR>Cold when multiple enemies are nearby. Add 3 stacks. 10s cooldown."
+
+source:
+  url: https://wiki.warframe.com/w/Coolant_Leak

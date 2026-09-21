@@ -1,0 +1,17 @@
+id: whiplash_mine
+name: "Whiplash Mine"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaTetherVaccumMinePrecept
+compat: moa
+precept: true
+description: "Deploys a tether mine snaring all enemies in a 20m. After 3s, all enemies still in range get pulled to the mine."
+
+effects:
+  - kind: unmodelled
+    text: "Deploys a tether mine snaring all enemies in a 20m. After 3s, all enemies still in range get pulled to the mine."
+
+source:
+  url: https://wiki.warframe.com/w/Whiplash_Mine

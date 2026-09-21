@@ -1,0 +1,17 @@
+id: medi_pet_kit
+name: "Medi-Pet Kit"
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Events/Index/CompanionMedipetKitMod
+compat: companion
+precept: false
+description: "+12 Companion Health Regen/s\\r\\n-15s Companion Recovery Time"
+
+effects:
+  - kind: unmodelled
+    text: "+12 Companion Health Regen/s\\r\\n-15s Companion Recovery Time"
+
+source:
+  url: https://wiki.warframe.com/w/Medi-Pet_Kit

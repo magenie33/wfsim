@@ -1,0 +1,17 @@
+id: vaporize
+name: "Vaporize"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Vaporize
+compat: dethcube
+precept: true
+description: "Every 10s the sentinel will stun and inflict 600 damage to an enemy within 30m. Damage dealt affected by Sentinel Weapon Mods."
+
+effects:
+  - kind: unmodelled
+    text: "Every 10s the sentinel will stun and inflict 600 damage to an enemy within 30m. Damage dealt affected by Sentinel Weapon Mods."
+
+source:
+  url: https://wiki.warframe.com/w/Vaporize

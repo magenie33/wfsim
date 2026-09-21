@@ -1,0 +1,17 @@
+id: accelerated_deflection
+name: "Accelerated Deflection"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelShieldRechargeRateMod
+compat: robotic
+precept: false
+description: "+90% Shield Recharge\\r\\n-45% Shield Recharge Delay"
+
+effects:
+  - kind: unmodelled
+    text: "+90% Shield Recharge\\r\\n-45% Shield Recharge Delay"
+
+source:
+  url: https://wiki.warframe.com/w/Accelerated_Deflection

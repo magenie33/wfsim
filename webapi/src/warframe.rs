@@ -71,6 +71,27 @@ pub fn warframe_catalog_json() -> Value {
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&x.tags),
         })).collect::<Vec<_>>(),
+        // THE COMPANION POOL, in the same catalogue the Warframe builder reads:
+        // a companion page is the same builder over a different pool, and one
+        // fetch serves both. Every card is unmodelled — `data/companion_mods/`.
+        "companion_slots": wfsim_engine::data::companions::COMPANION_MOD_SLOTS,
+        "companion_polarities": std::iter::repeat_n(
+            polarity_label(wfsim_engine::data::companions::COMPANION_POLARITY),
+            wfsim_engine::data::companions::COMPANION_INNATE_POLARITIES).collect::<Vec<_>>(),
+        "companion_mods": wfsim_engine::data::companions::companion_mods().iter().map(|m| json!({
+            "id": m.id,
+            "name": m.name,
+            "rarity": m.rarity,
+            "polarity": polarity_label(&m.polarity),
+            // AT MAX RANK, the convention every other picker's `drain` reads.
+            "drain": m.base_drain + m.max_rank,
+            "max_rank": m.max_rank,
+            "compat": m.compat,
+            "precept": m.precept,
+            "description": m.description,
+            "effects": m.effects,
+            "url": m.url,
+        })).collect::<Vec<_>>(),
         "artifact_slots": wf::ARTIFACT_MOD_SLOTS,
         "artifact_mods": wf::artifact_mods().iter().map(|m| json!({
             "id": m.id,

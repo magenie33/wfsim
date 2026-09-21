@@ -1,0 +1,17 @@
+id: link_redirection
+name: "Link Redirection"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/KubrowLinkShieldMaxMod
+compat: companion
+precept: false
+description: "Increase Shield by +125% of Warframe's Max Shield"
+
+effects:
+  - kind: unmodelled
+    text: "Increase Shield by +125% of Warframe's Max Shield"
+
+source:
+  url: https://wiki.warframe.com/w/Link_Redirection

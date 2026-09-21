@@ -1,0 +1,17 @@
+id: regen
+name: "Regen"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Regen
+compat: sentinel
+precept: true
+description: "Sentinel recovery time reduced by 20s. Revives with 10s of invulnerability."
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel recovery time reduced by 20s. Revives with 10s of invulnerability."
+
+source:
+  url: https://wiki.warframe.com/w/Regen

@@ -1,0 +1,17 @@
+id: cordon
+name: "Cordon"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/GatherEnemies
+compat: nautilus
+precept: true
+description: "Nautilus forces enemies within 30m of the target into clusters for easier targeting. Cooldown: 15s."
+
+effects:
+  - kind: unmodelled
+    text: "Nautilus forces enemies within 30m of the target into clusters for easier targeting. Cooldown: 15s."
+
+source:
+  url: https://wiki.warframe.com/w/Cordon

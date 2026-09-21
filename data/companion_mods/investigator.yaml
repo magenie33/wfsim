@@ -1,0 +1,17 @@
+id: investigator
+name: "Investigator"
+rarity: common
+polarity: penjaga
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/CodexScannerPrecept
+compat: helios
+precept: true
+description: "Helios Sentinel will scan objects and enemies within 50m over 2.0s. This consumes Codex Scanner charges."
+
+effects:
+  - kind: unmodelled
+    text: "Helios Sentinel will scan objects and enemies within 50m over 2.0s. This consumes Codex Scanner charges."
+
+source:
+  url: https://wiki.warframe.com/w/Investigator

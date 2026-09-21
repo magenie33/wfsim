@@ -2000,7 +2000,11 @@ ui:
   "Companions": 守护
   "Companion builds": 守护配装
   "Companion floor": 守护保底
-  "A companion's own mods are not modelled yet.": 守护自己的 MOD 尚未建模。
+  "Precept": 指令
+  "seated": 已装在别的槽位
+  "empty slot": 空槽位
+  "seated in another slot — picking it swaps the two": 已装在别的槽位 —— 选它会和这个槽位对调
+  "Nothing a companion seats moves a weapon's numbers yet: no robotic weapon reads its wielder's stats, and no precept is run. What this answers is capacity and Forma.": 守护装上的任何 MOD 目前都不会改变武器的数字：机械武器不读持有者的属性，指令也不会运行。这里能算的是容量和 Forma。
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

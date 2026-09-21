@@ -1,0 +1,17 @@
+id: shield_charger
+name: "Shield Charger"
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Events/CorpusArena/ShieldAuraPrecept
+compat: robotic
+precept: true
+description: "Increase Warframe Max Shields and Shield Regeneration by 60% for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Increase Warframe Max Shields and Shield Regeneration by 60% for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Shield_Charger

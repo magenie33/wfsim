@@ -1,0 +1,17 @@
+id: security_override
+name: "Security Override"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaHackerPrecept
+compat: moa
+precept: true
+description: "Auto-hacks consoles over 2s. 30% chance to mind control basic robotic enemies and turrets in 30m for 14s after Hacking."
+
+effects:
+  - kind: unmodelled
+    text: "Auto-hacks consoles over 2s. 30% chance to mind control basic robotic enemies and turrets in 30m for 14s after Hacking."
+
+source:
+  url: https://wiki.warframe.com/w/Security_Override

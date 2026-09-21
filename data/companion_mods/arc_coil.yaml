@@ -1,0 +1,17 @@
+id: arc_coil
+name: "Arc Coil"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/ArcTrap
+compat: diriga
+precept: true
+description: "Sentinel will zap up to 7 enemies within 10m, dealing 100 <DT_ELECTRICITY_COLOR>Electricity Damage with a 10% Status Chance."
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel will zap up to 7 enemies within 10m, dealing 100 <DT_ELECTRICITY_COLOR>Electricity Damage with a 10% Status Chance."
+
+source:
+  url: https://wiki.warframe.com/w/Arc_Coil

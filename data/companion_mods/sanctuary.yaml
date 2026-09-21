@@ -1,0 +1,17 @@
+id: sanctuary
+name: "Sanctuary"
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Sanctuary
+compat: robotic
+precept: true
+description: "Creates a shield with 1800 Health around the player when they are reviving fallen allies."
+
+effects:
+  - kind: unmodelled
+    text: "Creates a shield with 1800 Health around the player when they are reviving fallen allies."
+
+source:
+  url: https://wiki.warframe.com/w/Sanctuary

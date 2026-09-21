@@ -1,0 +1,17 @@
+id: fired_up
+name: "Fired Up"
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelOverheatDamageMod
+compat: sentinel
+precept: false
+description: "5% <DT_FIRE_COLOR>Heat Damage on weapon per hit. Stacks up to 100%. Resets after 5s with no hits."
+
+effects:
+  - kind: unmodelled
+    text: "5% <DT_FIRE_COLOR>Heat Damage on weapon per hit. Stacks up to 100%. Resets after 5s with no hits."
+
+source:
+  url: https://wiki.warframe.com/w/Fired_Up

@@ -1,0 +1,17 @@
+id: botanist
+name: "Botanist"
+rarity: rare
+polarity: penjaga
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/PlantScannerPrecept
+compat: oxylus
+precept: true
+description: "Oxylus Sentinel will automatically pick any plants within 50m over 2.0s."
+
+effects:
+  - kind: unmodelled
+    text: "Oxylus Sentinel will automatically pick any plants within 50m over 2.0s."
+
+source:
+  url: https://wiki.warframe.com/w/Botanist

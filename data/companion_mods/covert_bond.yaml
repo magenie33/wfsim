@@ -1,0 +1,17 @@
+id: covert_bond
+name: "Covert Bond"
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/PredatoryResponse
+compat: companion
+precept: true
+description: "Finisher and Mercy Kills grant your Companion 10s of stealth that attacks will not disrupt. Max 60s."
+
+effects:
+  - kind: unmodelled
+    text: "Finisher and Mercy Kills grant your Companion 10s of stealth that attacks will not disrupt. Max 60s."
+
+source:
+  url: https://wiki.warframe.com/w/Covert_Bond

@@ -1,0 +1,17 @@
+id: spare_parts
+name: "Spare Parts"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelDropChanceMod
+compat: robotic
+precept: false
+description: "Companion marks a target every 15s for 15s. The target becomes 200% more likely to drop an item when killed."
+
+effects:
+  - kind: unmodelled
+    text: "Companion marks a target every 15s for 15s. The target becomes 200% more likely to drop an item when killed."
+
+source:
+  url: https://wiki.warframe.com/w/Spare_Parts

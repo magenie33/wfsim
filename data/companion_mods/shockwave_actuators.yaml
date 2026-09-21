@@ -1,0 +1,17 @@
+id: shockwave_actuators
+name: "Shockwave Actuators"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaShockwavePrecept
+compat: moa
+precept: true
+description: "Blasts a shockwave knocking down those within 12m. The shockwave recharges every 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Blasts a shockwave knocking down those within 12m. The shockwave recharges every 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Shockwave_Actuators

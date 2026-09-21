@@ -1,0 +1,17 @@
+id: aerial_bond
+name: "Aerial Bond"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/Copilot
+compat: companion
+precept: true
+description: "Airborne kills decrease Companion Recovery Time by 3s and 9s for headshot kills. Companion creates a field of cold that increases up to 35% and 10m radius while Warframe is airborne, lasting for 3s after returning to ground."
+
+effects:
+  - kind: unmodelled
+    text: "Airborne kills decrease Companion Recovery Time by 3s and 9s for headshot kills. Companion creates a field of cold that increases up to 35% and 10m radius while Warframe is airborne, lasting for 3s after returning to ground."
+
+source:
+  url: https://wiki.warframe.com/w/Aerial_Bond

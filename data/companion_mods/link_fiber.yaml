@@ -1,0 +1,17 @@
+id: link_fiber
+name: "Link Fiber"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/KubrowLinkArmourMaxMod
+compat: companion
+precept: false
+description: "Increase Max Armor by +125% of Warframe's Armor"
+
+effects:
+  - kind: unmodelled
+    text: "Increase Max Armor by +125% of Warframe's Armor"
+
+source:
+  url: https://wiki.warframe.com/w/Link_Fiber

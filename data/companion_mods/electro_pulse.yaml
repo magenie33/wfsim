@@ -1,0 +1,17 @@
+id: electro_pulse
+name: "Electro Pulse"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/TaserStun
+compat: diriga
+precept: true
+description: "Every 5s, Sentinel will continually zap an enemy within 15m, trapping them in a stunned state."
+
+effects:
+  - kind: unmodelled
+    text: "Every 5s, Sentinel will continually zap an enemy within 15m, trapping them in a stunned state."
+
+source:
+  url: https://wiki.warframe.com/w/Electro_Pulse

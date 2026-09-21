@@ -1,0 +1,17 @@
+id: vacuum
+name: "Vacuum"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/UniversalVacuum
+compat: robotic
+precept: true
+description: "13.5m Companion Gather-Link. Detects and collects items, including mods."
+
+effects:
+  - kind: unmodelled
+    text: "13.5m Companion Gather-Link. Detects and collects items, including mods."
+
+source:
+  url: https://wiki.warframe.com/w/Vacuum

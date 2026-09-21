@@ -1,0 +1,17 @@
+id: contagious_bond
+name: "Contagious Bond"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/Proliferation
+compat: companion
+precept: true
+description: "When your Companion kills an enemy afflicted with a Status Effect, 50% of the Status Effect spreads to other enemies within 9m. Max 100 stacks."
+
+effects:
+  - kind: unmodelled
+    text: "When your Companion kills an enemy afflicted with a Status Effect, 50% of the Status Effect spreads to other enemies within 9m. Max 100 stacks."
+
+source:
+  url: https://wiki.warframe.com/w/Contagious_Bond

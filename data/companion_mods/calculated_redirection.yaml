@@ -1,0 +1,17 @@
+id: calculated_redirection
+name: "Calculated Redirection"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelShieldMaxMod
+compat: companion
+precept: false
+description: "+250% Shield Capacity"
+
+effects:
+  - kind: unmodelled
+    text: "+250% Shield Capacity"
+
+source:
+  url: https://wiki.warframe.com/w/Calculated_Redirection

@@ -228,11 +228,22 @@ the hosts and no frame.
   its parts, and the wiki prints the range they reach ("367-473 for Health,
   315-438 for Shields and 350-438 for Armor"), whose lows are the floor's
   candidates. Health is the MOA's 367 and shield and armor are the Sentinels'.
-- A COMPANION BUILD HOLDS NOTHING YET: its own mods are not modelled, and no
-  weapon in any of the 21 pools reads a wielder's stats, so a host carries no
-  number a fight reads. A robotic weapon therefore sends NO wielder and the
-  server answers it with that floor — which is what it did before a host could
-  be named.
+- A COMPANION BUILD IS MODS, AND NOT ONE OF THEM PAYS. `data/companion_mods/`
+  holds the 74-card robotic pool; **TEN GENERAL SLOTS** and no special one
+  (W`Mod`: *"Companions have 10 general slots"*), **FOUR INNATE PENJAGA
+  POLARITIES** on every companion (W`Sentinel`; W`MOA_(Companion)`: *"Like
+  Sentinels, MOAs start with four Penjaga polarities"*, a bracket adding at most
+  one more, which the floor host does not take), and an Orokin Reactor doubles
+  capacity as it does a Warframe's. No robotic weapon pool reads a wielder's
+  stat and no precept is run, so every card is `unmodelled` — the loader refuses
+  any other kind — and the builder answers capacity and Forma and nothing else.
+  A robotic weapon therefore sends NO wielder and the server answers it with the
+  floor, which is what it did before a host could be named.
+- **A HOST SEATS THE UNIVERSAL CARDS AND ITS OWN.** `compat` is DE's own
+  `compatName`: `companion` and `robotic` fit every companion, and anything else
+  names a kind (`sentinel`, `moa`) or one model. The floor host is the floor of
+  all of them rather than one of them, so it seats the 37 universal cards and no
+  model's own (`data::companions::seatable_by`).
 - The link follows the same rules as a Warframe link, by preset id
   (docs/UI.md §The default is the blank). The WARFRAME BEHIND A COMPANION — the
   aura and archon shards a robotic weapon takes from it — is not modelled: that

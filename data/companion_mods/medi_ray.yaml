@@ -1,0 +1,17 @@
+id: medi_ray
+name: "Medi-Ray"
+rarity: uncommon
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Events/ProjectNightwatch/SentinelHealthRegenPreceptNightwatchMod
+compat: robotic
+precept: true
+description: "Sentinel will occasionally heal its owner, restoring 12% Health over 4s."
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel will occasionally heal its owner, restoring 12% Health over 4s."
+
+source:
+  url: https://wiki.warframe.com/w/Medi-Ray

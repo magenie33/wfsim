@@ -1,0 +1,17 @@
+id: tractor_beam
+name: "Tractor Beam"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaTractorBeamPrecept
+compat: moa
+precept: true
+description: "+100% Aim Glide Duration\\r\\n-50% Gravity"
+
+effects:
+  - kind: unmodelled
+    text: "+100% Aim Glide Duration\\r\\n-50% Gravity"
+
+source:
+  url: https://wiki.warframe.com/w/Tractor_Beam

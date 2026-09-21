@@ -1,0 +1,17 @@
+id: molecular_conversion
+name: "Molecular Conversion"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/ShieldVampire
+compat: taxon
+precept: true
+description: "Blast enemies within 10m, converting 200 Damage into Shields for the Warframe."
+
+effects:
+  - kind: unmodelled
+    text: "Blast enemies within 10m, converting 200 Damage into Shields for the Warframe."
+
+source:
+  url: https://wiki.warframe.com/w/Molecular_Conversion

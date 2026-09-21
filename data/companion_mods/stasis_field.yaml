@@ -1,0 +1,17 @@
+id: stasis_field
+name: "Stasis Field"
+rarity: common
+polarity: penjaga
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaStasisFieldPrecept
+compat: moa
+precept: true
+description: "Creates a stasis field for 30s. While inside the field, all enemy projectiles move 90% slower and deal 60% less Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Creates a stasis field for 30s. While inside the field, all enemy projectiles move 90% slower and deal 60% less Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Stasis_Field

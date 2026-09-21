@@ -1,0 +1,17 @@
+id: anti_grav_grenade
+name: "Anti-Grav Grenade"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPrecept/MoaLiftBombPrecept
+compat: moa
+precept: true
+description: "A grenade that levitates enemies in a 6m. After 6s afflicted enemies come crashing down, causing  <DT_IMPACT_COLOR>Impact Damage equal to 80% of the damage taken while floating."
+
+effects:
+  - kind: unmodelled
+    text: "A grenade that levitates enemies in a 6m. After 6s afflicted enemies come crashing down, causing  <DT_IMPACT_COLOR>Impact Damage equal to 80% of the damage taken while floating."
+
+source:
+  url: https://wiki.warframe.com/w/Anti-Grav_Grenade

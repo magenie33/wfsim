@@ -1,0 +1,17 @@
+id: revenge
+name: "Revenge"
+rarity: common
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Revenge
+compat: shade
+precept: true
+description: "Sentinel will not attack an enemy unless that enemy has attacked the Sentinel's master within 10m."
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel will not attack an enemy unless that enemy has attacked the Sentinel's master within 10m."
+
+source:
+  url: https://wiki.warframe.com/w/Revenge

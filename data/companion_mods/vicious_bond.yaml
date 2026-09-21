@@ -1,0 +1,17 @@
+id: vicious_bond
+name: "Vicious Bond"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/BoneSplitter
+compat: companion
+precept: true
+description: "Companion melee attacks strip 15% of enemy armor. Enemies recently damaged by Abilities spread the effect to other enemies in a 9m radius."
+
+effects:
+  - kind: unmodelled
+    text: "Companion melee attacks strip 15% of enemy armor. Enemies recently damaged by Abilities spread the effect to other enemies in a 9m radius."
+
+source:
+  url: https://wiki.warframe.com/w/Vicious_Bond

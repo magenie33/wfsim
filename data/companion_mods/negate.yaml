@@ -1,0 +1,17 @@
+id: negate
+name: "Negate"
+rarity: rare
+polarity: penjaga
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/ProcAbsorb
+compat: wyrm
+precept: true
+description: "Sentinel prevents Status Effects from applying to its owner once every 5s."
+
+effects:
+  - kind: unmodelled
+    text: "Sentinel prevents Status Effects from applying to its owner once every 5s."
+
+source:
+  url: https://wiki.warframe.com/w/Negate

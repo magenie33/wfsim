@@ -1,0 +1,17 @@
+id: targeting_receptor
+name: "Targeting Receptor"
+rarity: common
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/ThrowGlaivePrecept
+compat: helios
+precept: true
+description: "Causes the Helios Sentinel to attack targets within 10m with 3 glaives."
+
+effects:
+  - kind: unmodelled
+    text: "Causes the Helios Sentinel to attack targets within 10m with 3 glaives."
+
+source:
+  url: https://wiki.warframe.com/w/Targeting_Receptor

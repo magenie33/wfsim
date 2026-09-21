@@ -1,0 +1,17 @@
+id: ghost
+name: "Ghost"
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/Ghost
+compat: shade
+precept: true
+description: "Cloaks owner when enemies are within 24m. The cloak is disrupted if owner attacks."
+
+effects:
+  - kind: unmodelled
+    text: "Cloaks owner when enemies are within 24m. The cloak is disrupted if owner attacks."
+
+source:
+  url: https://wiki.warframe.com/w/Ghost

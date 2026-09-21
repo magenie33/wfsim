@@ -1,0 +1,17 @@
+id: enhanced_vitality
+name: "Enhanced Vitality"
+rarity: common
+polarity: vazarin
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/SentinelHealthMaxMod
+compat: companion
+precept: false
+description: "+250% Health"
+
+effects:
+  - kind: unmodelled
+    text: "+250% Health"
+
+source:
+  url: https://wiki.warframe.com/w/Enhanced_Vitality

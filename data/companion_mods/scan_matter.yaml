@@ -1,0 +1,17 @@
+id: scan_matter
+name: "Scan Matter"
+rarity: common
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/LocateResources
+compat: oxylus
+precept: true
+description: "Reveals resource containers and mineral deposits within 60m. Automatically breaks containers and collects resources every 3s."
+
+effects:
+  - kind: unmodelled
+    text: "Reveals resource containers and mineral deposits within 60m. Automatically breaks containers and collects resources every 3s."
+
+source:
+  url: https://wiki.warframe.com/w/Scan_Matter
