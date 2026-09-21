@@ -57,6 +57,8 @@ jobs:
     # through, or may have fallen over an hour ago; neither changes what this
     # does, which is read the table and write what it says.
     runs-on: ubuntu-latest
+    # Capped for the reason `scores.yml` states — this one reads D1 too.
+    timeout-minutes: 45
     permissions:
       contents: write
       # NAMING ONE PERMISSION SETS EVERY OTHER TO NONE, so the CI check below

@@ -120,6 +120,12 @@ jobs:
   # makes "shard by index" a split they agree on without talking.
   submissions:
     runs-on: ubuntu-latest
+    # A CAP, BECAUSE THE GROUP IS HELD WHILE THIS RUNS. One pending run is kept
+    # per concurrency group and a second is cancelled, so a step that hangs does
+    # not cost its own run — it costs every tick until GitHub's six-hour cap.
+    # This job reads and writes D1 and builds two binaries against a warm cache;
+    # half an hour is generous for both and far short of six.
+    timeout-minutes: 30
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
       shards: ${{ steps.shards.outputs.list }}
@@ -408,6 +414,9 @@ jobs:
     if: needs.submissions.outputs.wired == 'true'
       && needs.submissions.outputs.work != 'false'
     runs-on: ubuntu-latest
+    # `SCORE_DEADLINE_MINUTES` bounds the FIGHTING; this bounds the job around
+    # it, for the same reason the one above is capped.
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:

@@ -31,7 +31,12 @@ D1_OUT=""
 D1_CODE=""
 d1() {
   [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
-  D1_CODE=$(curl -s -o "$D1_OUT" -w '%{http_code}' -X POST \
+  # A CALL THAT NEVER ANSWERS IS THE WORST SHAPE THIS PIPELINE HAS. Without a
+  # clock a hung connection holds the step until GitHub's six-hour cap, and the
+  # board's workflows keep ONE run pending per concurrency group — so every
+  # hourly tick behind it is cancelled and nothing is scored until somebody
+  # looks. Measured 2026-09-21: one hung call cost seventeen hours of ticks.
+  D1_CODE=$(curl -s --connect-timeout 15 --max-time 180     -o "$D1_OUT" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer ${CF_TOKEN:-x}" \
     -H "content-type: application/json" \
     --data-binary "$1" \
