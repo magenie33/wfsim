@@ -13,6 +13,7 @@
 // name filter; the active chip always shows (it is the document being
 // edited).
 const PRESET_FILTER_AT = 10;
+let deleteArmed = null; // "<bar>:<preset>" whose delete has said who links it
 const presetFilters = {}; // per-bar filter text — survives re-renders, not persisted
 
 // SELECT and COPY, lifted out of the bar so the BENCHMARK bar performs the
@@ -162,7 +163,12 @@ function renderPresetBarIn(bar, cfg) {
         // already the customs' flag for exactly this and is simply no longer
         // the thing that distinguishes them.
         `<button class="pop del" title="${escHtml(tr(ps.length === 1 && virtual ? "reset to blank" : "delete"))}">✕</button>`;
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
+    // WHO LINKS IT, where the collection is one others link to: the linked side
+    // only says so, and choosing here moves no link.
+    const by = cfg.usedBy ? cfg.usedBy(p) : [];
+    const used = by.length
+      ? `<span class="pby" title="${escHtml(tr("linked by") + ": " + by.join(" · "))}">↩${by.length}</span>` : "";
+    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${used}${ops}</span>`;
   };
   // A READ-ONLY ENTRY: select, ⧉ on the one you are on, and × to take it out of
   // the bar — which removes nothing from where it came from.
@@ -253,6 +259,17 @@ function renderPresetBarIn(bar, cfg) {
   });
 
   on(".pop.del", () => {
+    // A PRESET OTHERS LINK IS DELETED ON THE SECOND CLICK, and the first says
+    // who is affected: their links land on the default, so their numbers move.
+    // Inline, because a native dialog is blocked.
+    const open = cfg.usedBy && cfg.load().find((p) => p.name === cfg.active());
+    const users = open ? cfg.usedBy(open) : [];
+    if (users.length && deleteArmed !== `${bar.id}:${cfg.active()}`) {
+      deleteArmed = `${bar.id}:${cfg.active()}`;
+      bar.querySelector(".pop.del").textContent = `✕ ${tr("{n} linked — they return to the default; click again").replace("{n}", users.length)}`;
+      return;
+    }
+    deleteArmed = null;
     // YOURS ONLY, which is what the bar drawing these chips already counts
     // (`renderPresetBarIn` filters `!p.builtin`). Counting the joint list here
     // meant that on a weapon WITH board rows, deleting your last build fell

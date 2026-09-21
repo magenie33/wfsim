@@ -8,25 +8,30 @@
 const PROTOTYPE_ID = "prototype";
 let buildWielder = { frame: PROTOTYPE_ID, preset: PRESET_SEED_ID };
 
-/// THE STORED BUILD A LINK MEANS: the preset it names, else the frame's first —
-/// the repair for one that is gone — and none when the frame owns none, which is
-/// its virtual "preset 1", the blank.
-const wielderBuild = (v) => {
-  const list = presetListWithIds(WF_BUILDS, v.frame);
-  return list.find((x) => x.id === v.preset) || list[0] || null;
+/// THE STORED BUILD A LINK MEANS: the preset it names, and none when it names the
+/// default, the seed of a frame that owns nothing (its drawn "preset 1", the
+/// blank), or one that is gone — every one of those being the blank.
+const wielderBuild = (v) => presetListWithIds(WF_BUILDS, v.frame).find((x) => x.id === v.preset) || null;
+/// WHAT A LINK NAMES, repaired: a written preset by its id; the seed while the
+/// frame owns nothing and it is only drawn; and otherwise the DEFAULT, which is
+/// where a link whose preset was deleted lands.
+const wielderIdOf = (v) => {
+  if (wielderBuild(v)) return v.preset;
+  return v.preset === PRESET_SEED_ID && presetListWithIds(WF_BUILDS, v.frame).length === 0
+    ? PRESET_SEED_ID : DEFAULT_PRESET_ID;
 };
-/// A link always names a preset: written, or the seed while it is only drawn.
-const wielderIdOf = (v) => (wielderBuild(v) || { id: PRESET_SEED_ID }).id;
 
 /// A stored wielder, repaired against this weapon: a frame that cannot hold it
 /// falls back to the first one allowed, or to the Prototype on a weapon anyone
-/// carries, and the preset it names to a real one (`wielderBuild`). A preset
-/// written before links named one is the frame's first.
+/// carries, and the preset it names to a real one (`wielderIdOf`). A link written
+/// before links named one is the frame's first, or its drawn "preset 1".
 function defaultWielder(weaponId, v) {
   const allowed = (weaponInfo(weaponId) || {}).wielders || [];
   const holds = (id) => (META.warframes || []).some((f) => f.id === id) && (!allowed.length || allowed.includes(id));
   const frame = v && holds(v.frame) ? v.frame : (allowed.length ? allowed[0] : PROTOTYPE_ID);
-  return { frame, preset: wielderIdOf({ frame, preset: v && v.frame === frame ? v.preset : null }) };
+  const first = presetListWithIds(WF_BUILDS, frame)[0];
+  const asked = v && v.frame === frame && v.preset ? v.preset : (first ? first.id : PRESET_SEED_ID);
+  return { frame, preset: wielderIdOf({ frame, preset: asked }) };
 }
 
 /// The linked build as the Warframe module reads it. ABSENT for the Prototype
@@ -61,9 +66,24 @@ function renderWielder() {
     value: f.id, label: f.name, image: f.image,
     hint: f.id === PROTOTYPE_ID ? tr("the floor every board is scored on") : null,
   }));
+  // …AND WHICH PRESET OF IT, declared here by the weapon that links: the second
+  // control. A frame owning none offers its drawn "preset 1".
+  const own = presetListWithIds(WF_BUILDS, buildWielder.frame);
+  const linkedId = wielderIdOf(buildWielder);
+  const presetItems = own.length ? own.map((p) => ({ value: p.id, label: p.name }))
+    : [{ value: PRESET_SEED_ID, label: autoPresetName(PRESET_NAME, 1) }];
+  // THE DEFAULT, ON DEMAND: offered once the frame owns a preset to tell it from,
+  // or while it is what the link means. A fresh reader sees one blank, not two.
+  if (own.length || linkedId === DEFAULT_PRESET_ID) {
+    presetItems.push({ value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`,
+      hint: buildWielder.frame === PROTOTYPE_ID ? tr("the floor every board is scored on") : tr("no build — unmodded") });
+  }
   host.innerHTML = `<label>${escHtml(tr("Wielder"))} ${ddButton("dd-wielder", {
     value: buildWielder.frame, search: true, items,
     onPick: (frame) => setWielder(wielderLinkFor(frame)),
+  })}</label> <label>${escHtml(tr("Preset"))} ${ddButton("dd-wielder-preset", {
+    value: linkedId, items: presetItems,
+    onPick: (id) => setWielder({ frame: buildWielder.frame, preset: id }),
   })}</label>`;
   const sub = $("wielder-sub");
   if (sub) sub.textContent = allowed.length ? tr("only these can hold it") : "";
@@ -88,7 +108,7 @@ function renderWielderDetail() {
   const linked = wielderBuild(buildWielder);
   const opId = linked ? (linked.state || {}).operator : null;
   const opBuild = opId && opList().find((x) => x.id === opId);
-  const src = `${warframePath(f)}?embed=1&build=${encodeURIComponent(buildWielder.preset)}`;
+  const src = `${warframePath(f)}?embed=1&build=${encodeURIComponent(wielderIdOf(buildWielder))}`;
   const held = box.querySelector(".wld-pane");
   // AN UNCHANGED PANE IS LEFT ALONE: replacing its `src` reloads the page and
   // drops whatever is being typed in it.
@@ -125,15 +145,51 @@ let wielderSync = null;
 window.addEventListener("storage", (e) => {
   if (EMBED || !e.key || !e.key.startsWith("wfsim-presets-")) return;
   clearTimeout(wielderSync);
-  wielderSync = setTimeout(() => { if (META) { renderWielder(); renderSimBuild(); refreshPanel(); } }, 200);
+  wielderSync = setTimeout(() => {
+    if (!META) return;
+    // A PRESET DELETED ELSEWHERE: the link lands on the default, and says so.
+    buildWielder = { frame: buildWielder.frame, preset: wielderIdOf(buildWielder) };
+    renderWielder(); renderSimBuild(); refreshPanel();
+  }, 200);
 });
 
-/// THE LINK FOR A FRAME: the preset that frame last had open on its own page, or
-/// its first one — the seed, while it is only drawn.
+/// THE LINK FOR A FRAME, chosen by whoever links: its first preset — the seed,
+/// while it is only drawn. What the frame's own page has open is that page's and
+/// moves no link; the weapon says which preset it means (the Wielder's second
+/// control).
 function wielderLinkFor(frame) {
-  const last = localStorage.getItem(presetActiveKey(WF_BUILDS, frame));
-  const p = presetToOpen(presetListWithIds(WF_BUILDS, frame), null, last);
-  return { frame, preset: p ? p.id : PRESET_SEED_ID };
+  const first = presetListWithIds(WF_BUILDS, frame)[0];
+  return { frame, preset: first ? first.id : PRESET_SEED_ID };
+}
+
+/// WHO LINKS A PRESET, read off the links themselves — nothing stores it, so it
+/// cannot disagree with them. A weapon build links a Warframe preset (`wielder`,
+/// the Prototype's unset one meaning the frame's first), and a Warframe preset
+/// links an Operator preset (`operator`). Each entry is a name a reader knows.
+function linkersOfWarframePreset(frame, id) {
+  const first = (presetListWithIds(WF_BUILDS, frame)[0] || {}).id;
+  const out = [];
+  for (const key of Object.keys(localStorage)) {
+    const m = key.match(/^wfsim-presets-(.+)-builder-builds$/);
+    if (!m) continue;
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(key)) || []; } catch (_) { continue; }
+    const w = (META.weapons || []).find((x) => x.id === m[1]);
+    for (const p of list) {
+      const v = (p.state || {}).wielder || (frame === PROTOTYPE_ID ? { frame, preset: null } : null);
+      if (v && v.frame === frame && (v.preset ? v.preset === id : id === first)) out.push(`${w ? w.name : m[1]} · ${p.name}`);
+    }
+  }
+  return out;
+}
+function linkersOfOperatorPreset(id) {
+  const out = [];
+  for (const f of META.warframes || []) {
+    for (const p of presetListWithIds(WF_BUILDS, f.id)) {
+      if ((p.state || {}).operator === id) out.push(`${f.name} · ${p.name}`);
+    }
+  }
+  return out;
 }
 
 /// WHO HOLDS THE WEAPON — a frame, or a frame's saved build. Set by the

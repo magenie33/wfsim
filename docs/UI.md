@@ -729,6 +729,14 @@ and with nothing written for it is stored and sent as no wielder. The top
 control chooses the TYPE (a searchable list of Warframes with their faces); which
 preset of it is the framed page's own bar's.
 
+**THE ONE WHO LINKS CHOOSES; THE LINKED ONLY SAYS SO.** A weapon build names
+which preset it holds — the Wielder's second control — and choosing a preset on
+the frame's own page moves no link. That page marks each preset with who links
+it (`usedBy`), read off the links themselves. Deleting a linked preset says who
+is affected and takes a second click; their links land on the DEFAULT, the
+frame's read-only blank, which is offered in the picker only once the frame owns
+a preset or a link means it.
+
 **THE BUILDER IS THE COMPLETE EDITOR AND THE SIMULATOR IS THE SUMMARY.** The
 Builder's Wielder block frames the Warframe page, and the Operator page inside
 it. The Simulator's build card shows the same configuration read-only — the

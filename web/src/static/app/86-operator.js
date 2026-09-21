@@ -48,6 +48,7 @@ function opBarCfg() {
     label: tr("Operator builds"),
     noun: "operator",
     load: opList,
+    usedBy: (p) => linkersOfOperatorPreset(p.id),
     store: (ps) => storePresetList(OPS, opWithIds(ps)),
     active: () => opActive,
     setActive: (n) => {

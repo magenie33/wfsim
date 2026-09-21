@@ -403,6 +403,7 @@ body.on-enemies [data-module="builder"]{display:none}
 .pchip:hover{border-color:var(--accent)}
 .pchip.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:600}
 .pchip.add{border-style:dashed;color:var(--muted)}
+.pchip .pby{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 4px}
 .pchip .pop{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1}
 .pchip .pop:hover{color:var(--text)}
 .pchip .pop.del:hover{color:#e05252}

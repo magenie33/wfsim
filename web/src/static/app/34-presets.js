@@ -312,11 +312,17 @@ const PRESET_NAME = "preset";
 /// only drawn, is a link to the stored one afterwards. No link ever names "no
 /// preset".
 const PRESET_SEED_ID = "preset-1";
-/// WHICH PRESET A PAGE OPENS ON: the one `?build=` names — else the first, the
-/// same repair a link gets when its preset is gone — and with none named, the
-/// last one open. `null` is the virtual one.
+/// THE DEFAULT: a preset that always exists and cannot be edited, stored or
+/// deleted — the frame's blank baseline. It is where a link lands when its preset
+/// is gone, and it is never drawn in a collection's own bar: nobody edits it.
+/// Opening it on its page is opening the blank, and the first edit there writes
+/// a preset of the reader's own.
+const DEFAULT_PRESET_ID = "default";
+/// WHICH PRESET A PAGE OPENS ON: the one `?build=` names — the default, or one
+/// that is gone, opening the blank — and with none named, the last one open.
+/// `null` is the blank.
 const presetToOpen = (list, want, last) => (want
-  ? list.find((x) => x.id === want) || list[0] || null
+  ? list.find((x) => x.id === want) || null
   : list.find((x) => x.name === last) || list[0] || null);
 const newPresetName = (ps) => freeName(ps, (n) => autoPresetName(PRESET_NAME, n));
 /// …and whether a name is one. It ASKS the generator rather than matching a

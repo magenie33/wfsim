@@ -625,6 +625,7 @@ function wfBarCfg() {
     noun: BUILD_NOUN,
     // AN `id` ON EVERY BUILD, because a weapon's wielder links to one by it.
     load: () => presetListWithIds(WF_BUILDS, wf.frame),
+    usedBy: (p) => linkersOfWarframePreset(wf.frame, p.id),
     store: (ps) => storePresetList(WF_BUILDS, opWithIds(ps), wf.frame),
     active: () => wfActive,
     setActive: (n) => {

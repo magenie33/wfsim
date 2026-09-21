@@ -185,8 +185,10 @@ Valkyrs, run by `engine::data::rage`:
 `wielder` build axis (`board::builds::BUILD_AXES`) is a link to one of this module's
 saved builds, by its preset `id`, always: a frame that owns none is linked by
 the seed id (`PRESET_SEED_ID`) its virtual "preset 1" is drawn and later stored
-under, so the link survives the first edit; a link whose preset is gone means
-the frame's first. NEVER EMPTY: the floor is the **Prototype** frame (`data/warframes/prototype.yaml`), whose five
+under, so the link survives the first edit. A link whose preset is gone lands on
+the **default** (`DEFAULT_PRESET_ID`): the frame's read-only, never-stored blank,
+which no bar lists and only a link's own picker offers. NEVER EMPTY: the floor
+is the **Prototype** frame (`data/warframes/prototype.yaml`), whose five
 stats are `data/tenno/default.yaml`'s — every stat the lowest any released
 Warframe has at rank 30 — with no ability, no passive and no innate polarity, so
 a Helminth has no slot on it. It is a frame like any other: the same builder

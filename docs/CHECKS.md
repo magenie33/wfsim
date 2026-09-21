@@ -672,6 +672,14 @@ own code is born as `preset 1`, becomes the wielder and reaches the request as
 the resolved shards, without reloading the frame; a fresh reader starts on the
 unbuilt Prototype with nothing stored.
 
+## `check_link_direction`
+
+Two weapons link two presets of one Warframe: that frame's page marks each with
+who links it, choosing one there moves neither link, and deleting a linked
+preset says who is affected, takes a second click, and lands its links on the
+default (sent as no wielder for the Prototype) while the other weapon's link is
+untouched.
+
 ## `check_sim_wielder`
 
 The Simulator's build card carries the Warframe with its Operator nested under
