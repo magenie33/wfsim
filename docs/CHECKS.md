@@ -663,6 +663,14 @@ store nothing, and the first real edit stores exactly one. A bar with none is
 empty and says the editor stands on the default; a build edited back to the blank
 is deleted, and the next effective edit writes `preset 1` again.
 
+## `check_companion_host`
+
+A robotic weapon is held by the companion host and sends no wielder; its picker
+offers the hosts and never a Warframe, and its block frames the host's own page,
+which frames nothing further. A build of the host is what the weapon holds, and
+an ordinary weapon still holds a Warframe. The floor is the Sentinels' and the
+MOA's lowest (367 / 130 / 80).
+
 ## `check_embed_chrome`
 
 A page framed by a weapon's Wielder block — the Warframe page, and the Operator

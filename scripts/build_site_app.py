@@ -1106,10 +1106,26 @@ def prerender(flagged: str) -> None:
                        "wf-name", name))
         frame_urls.append(SITE + path)
 
+    # THE COMPANION HOSTS' PAGES, one per `data/companions/` file, at its own
+    # name: what carries a robotic weapon, between the weapon and the Warframe.
+    companion_urls = []
+    for f in sorted((ROOT / "data" / "companions").glob("*.yaml")):
+        spec = yload(f.read_text(encoding="utf-8"))
+        name = spec["name"]
+        path = "/companions/" + wiki_slug(name)
+        desc = (f"{name} — the companion that carries a robotic weapon: its stat floor and the "
+                "Warframe that owns it, whose aura and archon shards the weapon takes.")
+        out = APP / path.lstrip("/") / "index.html"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        put(out, shell(flagged, f"{name} — companion | WFSim", desc, SITE + path,
+                       f"{SITE}/logo.svg", f"    <p>{html_mod.escape(desc)}</p>\n",
+                       "comp-name", name))
+        companion_urls.append(SITE + path)
+
     urls = ([SITE + "/", SITE + "/weapons"]
             + [f"{SITE}/{path}" for path, *_ in shell_pages]
             + [SITE + wiki_path(s) for s in roster()]
-            + frame_urls)
+            + frame_urls + companion_urls)
     put(
         APP / "sitemap.xml",
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -1121,8 +1137,8 @@ def prerender(flagged: str) -> None:
     # 200, which is a soft 404 for every crawler that asks.
     put(APP / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n")
     named = ", ".join("/" + path for path, *_ in shell_pages)
-    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(frame_urls)} weapon pages + "
-          f"{len(frame_urls)} Warframe pages + /weapons + "
+    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(frame_urls) - len(companion_urls)} weapon pages + "
+          f"{len(frame_urls)} Warframe pages + {len(companion_urls)} companion pages + /weapons + "
           f"{named} + sitemap.xml + robots.txt — "
           f"{WROTE[0]} written, {WROTE[1]} already current")
 

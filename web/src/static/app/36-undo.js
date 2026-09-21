@@ -73,6 +73,11 @@ function presetDoc(d) {
     apply: wfApply,
     rerender: renderWfPresetBar,
   };
+  if (d === COMP_BUILDS) return {
+    setActive: (n) => { compActive = n; },
+    apply: compApply,
+    rerender: renderCompPresetBar,
+  };
   if (d === OPS) return {
     setActive: (n) => { opActive = n; },
     apply: opApply,
@@ -132,7 +137,8 @@ const lastIn = (stack, d, w) => {
   return -1;
 };
 /// WHOSE COLLECTION A DOMAIN IS: a weapon's, or the open Warframe's.
-const undoOwner = (d) => (d === WF_BUILDS ? (wf ? wf.frame : "") : presetWeapon());
+const undoOwner = (d) => (d === WF_BUILDS ? (wf ? wf.frame : "")
+  : d === COMP_BUILDS ? (comp ? comp.companion : "") : presetWeapon());
 const canUndoIn = (d) => lastIn(undoStack, d, undoOwner(d)) >= 0;
 const canRedoIn = (d) => lastIn(redoStack, d, undoOwner(d)) >= 0;
 
@@ -371,7 +377,8 @@ function snapshotState() {
     // following the frame's first preset, and the DEFAULT is stored by name. The
     // unset Prototype is null, as it always was, so a preset written before it
     // was a frame reads as unchanged.
-    wielder: buildWielder.frame === PROTOTYPE_ID && !buildWielder.preset ? null : { ...buildWielder },
+    wielder: (buildWielder.frame === PROTOTYPE_ID || isHostId(buildWielder.frame)) && !buildWielder.preset
+      ? null : { ...buildWielder },
     // NO `sim` FIELD. A build carrying a snapshot of the fight is a snapshot
     // `restoreState` then applies, so picking a build silently rewrites the
     // scenario you are working in. The scenario is INDEPENDENT: nothing

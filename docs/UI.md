@@ -743,6 +743,11 @@ is affected and takes a second click; their links land on the DEFAULT, the
 frame's read-only blank, which is offered in the picker only once the frame owns
 a preset or a link means it.
 
+**A ROBOTIC WEAPON'S HOLDER IS A COMPANION HOST**, never a Warframe: its Wielder
+offers the hosts and a preset of one, and frames the host's own page
+(docs/WARFRAMES.md §Companions). The same rules govern the link, and the host's
+own bar lists its presets and marks who links each.
+
 **THE BUILDER IS THE COMPLETE EDITOR AND THE SIMULATOR IS THE SUMMARY.** The
 Builder's Wielder block frames the Warframe page, and the Operator page inside
 it. The Simulator's build card shows the same configuration read-only — the

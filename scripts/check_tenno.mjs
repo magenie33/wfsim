@@ -150,16 +150,16 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
     return { line: l ? l.textContent : '', floor: tennoFloor() };
   })()`);
   check("a companion weapon states the SENTINEL's floor",
-    sen.floor && sen.floor.name === "Sentinel" && sen.floor.armor === 80,
+    sen.floor && sen.floor.name === "Prototype Companion" && sen.floor.armor === 80,
     JSON.stringify(sen.floor));
   check("...which is a different wielder from the Warframe's",
-    sen.floor.health === 450 && sen.floor.health !== 250,
+    sen.floor.health === 367 && sen.floor.health !== 250,
     `health ${sen.floor && sen.floor.health}`);
   // A SENTINEL FLIES, so the line does not offer it a sprint gate it can never
   // open — and the heading says WHOSE floor it is, since the numbers alone
   // cannot.
   check("...and the line names the wielder rather than a generic one",
-    /Sentinel|哨兵/.test(sen.line), JSON.stringify(sen.line).slice(0, 120));
+    /Companion|守护/.test(sen.line), JSON.stringify(sen.line).slice(0, 120));
 }
 
 check("the wielder floor is stated before the boxes that override it",

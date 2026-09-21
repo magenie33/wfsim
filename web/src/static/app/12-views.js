@@ -114,7 +114,13 @@ async function route() {
   const wfHit = wfSlug && wfFrames().find((f) =>
     f.id === wfSlug || f.name.toLowerCase().replace(/[\s-]+/g, "_") === wfSlug) || null;
   const opRoute = /^\/operator\/?$/.test(location.pathname);
-  const m = (support || bench || dl || thx || wfHit || opRoute) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
+  // `/companions/<Name>` — a companion host, the layer between a robotic weapon
+  // and the Warframe that owns it.
+  const compRoute = location.pathname.match(/^\/companions\/([^/]+?)\/?$/);
+  const compSlug = compRoute && decodeURIComponent(compRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const compHit = compSlug && compHosts().find((c) =>
+    c.id === compSlug || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
+  const m = (support || bench || dl || thx || wfHit || opRoute || compHit) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -133,11 +139,13 @@ async function route() {
   const gen = ++routeGen;
   if (w) await loadWeaponBoard(w.id);
   if (gen !== routeGen) return;
-  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx && !wfHit && !opRoute);
+  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx && !wfHit && !opRoute && !compHit);
   document.body.classList.toggle("on-warframe", !!wfHit);
   document.body.classList.toggle("on-operator", opRoute);
+  document.body.classList.toggle("on-companion", !!compHit);
   $("warframe-page").hidden = !wfHit;
   $("operator-page").hidden = !opRoute;
+  $("companion-page").hidden = !compHit;
   document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-thanks", thx);
   document.body.classList.toggle("on-benchmark", bench);
@@ -146,14 +154,14 @@ async function route() {
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
   document.body.classList.toggle("on-enemies", mod === "enemies");
-  $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit || opRoute;
+  $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit || opRoute || !!compHit;
   $("support-page").hidden = !support;
   $("thanks-page").hidden = !thx;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : (!w && !support && !dl && !thx && !wfHit && !opRoute) ? "home" : "";
+  const here = bench ? "benchmark" : (!w && !support && !dl && !thx && !wfHit && !opRoute && !compHit) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -168,11 +176,15 @@ async function route() {
     : dl ? `${tr("WFSim for Windows")} — WFSim`
     : bench ? `${tr("Benchmark")} — WFSim`
     : wfHit ? `${wfHit.name} — WFSim`
+    : compHit ? `${compHit.name} — WFSim`
     : opRoute ? `${tr("Operator")} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
   trailPush();
   if (wfHit) {
     await showWarframe(wfHit.id);
+    if (gen !== routeGen) return;
+  } else if (compHit) {
+    await showCompanion(compHit.id);
     if (gen !== routeGen) return;
   } else if (opRoute) {
     await showOperator();
@@ -319,6 +331,13 @@ function renderHome() {
     frames.innerHTML = `<section class="wgroup"><div class="wgrid">${wfFrames().map((f) => `<a class="wcard" href="${warframePath(f)}">
       ${imgTag(IMG(f.image), "wc-img")}
       <div class="wc-info"><div class="wc-name">${escHtml(f.name)}</div>
+      <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}</div></section>`;
+  }
+  const companions = $("companion-grid");
+  if (companions) {
+    companions.innerHTML = `<section class="wgroup"><div class="wgrid">${compHosts().map((c) => `<a class="wcard" href="${companionPath(c)}">
+      ${imgTag(null, "wc-img")}
+      <div class="wc-info"><div class="wc-name">${escHtml(c.name)}</div>
       <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}</div></section>`;
   }
   // THE OPERATOR IS ITS OWN GROUP, never a Warframe: a player has exactly one,

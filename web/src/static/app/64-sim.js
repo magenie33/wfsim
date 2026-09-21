@@ -40,9 +40,23 @@ function renderSimBuild() {
 /// complete editor; this is the summary of what is being tested.
 async function renderSimWielder(host) {
   await loadWarframeCatalog();
-  const f = (META.warframes || []).find((x) => x.id === buildWielder.frame);
-  if (!host || !host.isConnected || !f) return;
-  const b = wielderBuild(buildWielder);
+  const held = buildWielder;
+  if (!host || !host.isConnected) return;
+  const title = (label, at, href) => `<div class="wld-title"><b>${escHtml(label)}</b>${at ? ` <span class="sb-empty">${escHtml(at)}</span>` : ""}
+    <a class="ghost-btn small" href="${href}">${escHtml(tr("edit on its page"))}</a></div>`;
+  // A ROBOTIC WEAPON IS HELD BY A COMPANION, which seats nothing the engine reads
+  // yet — so the summary is the host and its build, and there is no frame under it.
+  if (isHostId(held.frame)) {
+    const cb = wielderBuild(held);
+    host.innerHTML = `<div class="sb-h">${escHtml(tr("Wielder"))}</div><div class="wld-nest">`
+      + title(holderName(held.frame), cb ? cb.name : "",
+        `${holderPath(held.frame)}?build=${encodeURIComponent(wielderIdOf(held))}`)
+      + `<div class="sb-chips"><span class="sb-empty">${escHtml(tr("A companion's own mods are not modelled yet."))}</span></div></div>`;
+    return;
+  }
+  const f = (META.warframes || []).find((x) => x.id === held.frame);
+  if (!f) return;
+  const b = wielderBuild(held);
   const st = wfNormalize(b ? b.state : null, f.id);
   const opBuild = opBuildOf(st.operator);
   const os = opBuild && opNormalize(opBuild.state);
@@ -56,10 +70,8 @@ async function renderSimWielder(host) {
     const o = d && d.options.find((x) => x.id === p.effect);
     return d && o ? wfShardLine(d, o, p.tauforged) : null;
   }).filter(Boolean);
-  const title = (label, at, href) => `<div class="wld-title"><b>${escHtml(label)}</b>${at ? ` <span class="sb-empty">${escHtml(at)}</span>` : ""}
-    <a class="ghost-btn small" href="${href}">${escHtml(tr("edit on its page"))}</a></div>`;
-  host.innerHTML = `<div class="sb-h">${escHtml(tr("Wielder"))}</div>` + `<div class="wld-nest">`
-    + title(f.name, b ? b.name : autoPresetName(PRESET_NAME, 1), `${warframePath(f)}?build=${encodeURIComponent(wielderIdOf(buildWielder))}`)
+  host.innerHTML = `<div class="sb-h">${escHtml(tr("Wielder"))}</div><div class="wld-nest">`
+    + title(f.name, b ? b.name : "", `${warframePath(f)}?build=${encodeURIComponent(wielderIdOf(held))}`)
     + chips(tr("Aura"), [name(wfMod(st.slots[WF_AURA].mod))].filter(Boolean), tr("no aura"))
     + chips(`${tr("Mods")}`, st.slots.slice(0, 9).map((s) => name(wfMod(s.mod))).filter(Boolean), tr("no mods equipped"))
     + chips(tr("Archon shards"), shards, tr("empty socket"))
@@ -166,11 +178,11 @@ const wfFloorLine = () => {
   return `<div class="wffloor" title="${escHtml(tr(
     "the fight's wielder before any override: each stat is the LOWEST any released Warframe has at rank 30, so a bonus it pays is one every frame pays. EVERY OFFICIAL BOARD IS SCORED ON THIS WIELDER — tick a box below to test a real frame instead"))}">`
     + `<span class="wffloor-h">${escHtml(
-        (f.name === "Sentinel" ? tr("Sentinel floor") : tr(f.name || "Prototype"))
+        (f.name === "Prototype Companion" ? tr("Companion floor") : tr(f.name || "Prototype"))
         + " · " + tr("the wielder before the overrides below — every board is scored on the Prototype"))}</span>`
     + cell(tr("Health"), f.health) + cell(tr("Shield"), f.shield)
     + cell(tr("Armor"), f.armor) + cell(tr("Max energy"), f.energy)
-    + (f.name === "Sentinel" ? "" : cell(tr("Sprint"), f.sprint))
+    + (f.name === "Prototype Companion" ? "" : cell(tr("Sprint"), f.sprint))
     + `</div>`;
 };
 

@@ -214,6 +214,30 @@ different wielder and never reaches the board.
 - The BOARD never records one: every ruler scores in the Prototype's hands.
 - A share link does not carry the wielder yet (`SHARE_EXCLUDED_AXES`).
 
+## Companions
+
+**A ROBOTIC WEAPON IS HELD BY A COMPANION, NOT BY A WARFRAME.** A weapon whose
+class is a Sentinel weapon (`sentinel: true`, 21 of them) is carried by a
+Sentinel or a MOA, so its `wielder` link names a companion HOST
+(`data/companions/`, `engine::data::tenno::companions`) and its picker offers
+the hosts and no frame.
+
+- The host's stat block is the wielder floor, `data/tenno/sentinel.yaml`: the
+  LOWEST any of the 17 Sentinels or the MOA has, stat by stat, stated nowhere
+  else. Sentinel stats are the wiki's infoboxes; a MOA is 350 / 350 / 350 before
+  its parts, and the wiki prints the range they reach ("367-473 for Health,
+  315-438 for Shields and 350-438 for Armor"), whose lows are the floor's
+  candidates. Health is the MOA's 367 and shield and armor are the Sentinels'.
+- A COMPANION BUILD HOLDS NOTHING YET: its own mods are not modelled, and no
+  weapon in any of the 21 pools reads a wielder's stats, so a host carries no
+  number a fight reads. A robotic weapon therefore sends NO wielder and the
+  server answers it with that floor — which is what it did before a host could
+  be named.
+- The link follows the same rules as a Warframe link, by preset id
+  (docs/UI.md §The default is the blank). The WARFRAME BEHIND A COMPANION — the
+  aura and archon shards a robotic weapon takes from it — is not modelled: that
+  is a link a companion does not carry yet.
+
 ## Adding a frame
 
 1. `data/warframes/<id>.yaml`: rank-30 `health` and `shield`, the innate

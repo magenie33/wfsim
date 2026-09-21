@@ -1996,6 +1996,11 @@ ui:
   "School": 流派
   "no Operator": 没有指挥官
   "Home": 首页
+  # THE COMPANION HOST — 守护 is the term the page already uses for a companion.
+  "Companions": 守护
+  "Companion builds": 守护配装
+  "Companion floor": 守护保底
+  "A companion's own mods are not modelled yet.": 守护自己的 MOD 尚未建模。
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
