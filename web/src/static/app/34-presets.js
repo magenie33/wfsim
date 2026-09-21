@@ -306,17 +306,12 @@ const autoPresetName = (noun, n) => `${noun} ${n}`;
 /// carry one name. The noun (`cfg.noun`) only words a tooltip. A custom (a
 /// riven, an enemy) is a different kind of thing and keeps its own.
 const PRESET_NAME = "preset";
-/// THE FIRST PRESET OF A COLLECTION HAS ONE IDENTITY, WRITTEN OR NOT. The bar
-/// draws it before anything is stored (a virtual "preset 1"), and it is stored
-/// under this id on the first real edit — so a link to it, made while it was
-/// only drawn, is a link to the stored one afterwards. No link ever names "no
-/// preset".
-const PRESET_SEED_ID = "preset-1";
+const newPresetName = (ps) => freeName(ps, (n) => autoPresetName(PRESET_NAME, n));
 /// THE DEFAULT: a preset that always exists and cannot be edited, stored or
-/// deleted — the frame's blank baseline. It is where a link lands when its preset
-/// is gone, and it is never drawn in a collection's own bar: nobody edits it.
-/// Opening it on its page is opening the blank, and the first edit there writes
-/// a preset of the reader's own.
+/// deleted — the blank. Owning nothing, the editor IS it, and the first
+/// effective edit there is what writes "preset 1"; a preset edited back to the
+/// blank is deleted, so what is left is it again. It is where a link lands when
+/// its preset is gone, and no collection's own bar lists it.
 const DEFAULT_PRESET_ID = "default";
 /// WHICH PRESET A PAGE OPENS ON: the one `?build=` names — the default, or one
 /// that is gone, opening the blank — and with none named, the last one open.
@@ -324,7 +319,6 @@ const DEFAULT_PRESET_ID = "default";
 const presetToOpen = (list, want, last) => (want
   ? list.find((x) => x.id === want) || null
   : list.find((x) => x.name === last) || list[0] || null);
-const newPresetName = (ps) => freeName(ps, (n) => autoPresetName(PRESET_NAME, n));
 /// …and whether a name is one. It ASKS the generator rather than matching a
 /// shape of its own, so changing the shape above cannot leave this behind.
 ///

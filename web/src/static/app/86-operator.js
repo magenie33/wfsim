@@ -21,9 +21,7 @@ const opList = () => presetListWithIds(OPS);
 // `randomUUID` exists only in a secure context; the fallback is as unique here.
 const opNewId = () => (crypto.randomUUID ? crypto.randomUUID()
   : Date.now().toString(36) + Math.random().toString(36).slice(2));
-/// A preset with no id is named here: the FIRST of a collection takes the seed
-/// (`PRESET_SEED_ID`), which is the id its virtual form was linked by.
-const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: ps.length === 1 ? PRESET_SEED_ID : opNewId() }));
+const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: opNewId() }));
 const focusSchool = (id) => (WFCAT && id && WFCAT.focus.find((s) => s.id === id)) || null;
 const opAMod = (id) => (WFCAT && id && WFCAT.artifact_mods.find((m) => m.id === id)) || null;
 const opAArcane = (id) => (WFCAT && id && WFCAT.artifact_arcanes.find((a) => a.id === id)) || null;
@@ -57,12 +55,13 @@ function opBarCfg() {
       // FRAMED BY A WARFRAME PAGE, the open build is that frame's link.
       if (EMBED && window.parent !== window) {
         const p = opList().find((x) => x.name === n);
-        window.parent.postMessage({ wfsim: "operator-build", id: p ? p.id : PRESET_SEED_ID }, location.origin);
+        if (p) window.parent.postMessage({ wfsim: "operator-build", id: p.id }, location.origin);
       }
     },
     snapshot: () => JSON.parse(JSON.stringify(op)),
     apply: (st) => opApply(st),
     blank: opBlank,
+    isBlank: (st) => sameState(opNormalize(st), opBlank()),
     rerender: renderOpPresetBar,
   };
 }
@@ -90,6 +89,7 @@ function opMarkDirty() {
       return;
     }
     if (sameState(ps[at].state, op)) return;
+    if (deleteIfBlank(cfg, ps[at].state)) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: cfg.snapshot() };
     cfg.store(ps);
   }, 400);
@@ -261,16 +261,14 @@ function operatorPickFor(id) {
   return st && st.school ? { ...st, artifact: { mods: st.artifact.mods.filter(Boolean), arcane: st.artifact.arcane } } : null;
 }
 
-/// WHAT A WARFRAME BUILD'S OPERATOR LINK NAMES, repaired the way a weapon's
-/// wielder link is: a written preset by its id; the seed while the Operator
-/// owns nothing and it is only drawn; else the DEFAULT, the read-only blank
-/// where a link whose preset was deleted lands. An unset link is the first
-/// preset, or the drawn "preset 1".
+/// WHAT A WARFRAME BUILD'S OPERATOR LINK NAMES, resolved the way a weapon's
+/// wielder link is: a preset that exists by its id; the DEFAULT — the read-only
+/// blank, no Operator — when it names the default or one that was deleted; and,
+/// unset, the first preset, or the default while there is none.
 const opIdOf = (id) => {
   const list = opList();
-  const want = id || (list[0] ? list[0].id : PRESET_SEED_ID);
-  if (list.some((x) => x.id === want)) return want;
-  return want === PRESET_SEED_ID && list.length === 0 ? PRESET_SEED_ID : DEFAULT_PRESET_ID;
+  if (id) return list.some((x) => x.id === id) ? id : DEFAULT_PRESET_ID;
+  return list[0] ? list[0].id : DEFAULT_PRESET_ID;
 };
 /// The stored Operator build a link means; `null` for the blank.
 const opBuildOf = (id) => opList().find((x) => x.id === opIdOf(id)) || null;
@@ -280,13 +278,10 @@ function renderWfOperator() {
   const cur = opIdOf(wf.operator);
   // THE SAME TWO CONTROLS AS A WEAPON'S WIELDER — the type, then which preset of
   // it — though there is one Operator: one shape for every link. The default is
-  // offered on demand, as it is there.
-  const items = ps.length ? ps.map((p) => ({ value: p.id, label: p.name,
-    hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))
-    : [{ value: PRESET_SEED_ID, label: autoPresetName(PRESET_NAME, 1) }];
-  if (ps.length || cur === DEFAULT_PRESET_ID) {
-    items.push({ value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`, hint: tr("no Operator") });
-  }
+  // always the last entry, and the only one while none is owned.
+  const items = [...ps.map((p) => ({ value: p.id, label: p.name,
+    hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") })),
+    { value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`, hint: tr("no Operator") }];
   const box = $("wf-operator");
   // THE OPERATOR IS EDITED HERE, INSIDE THE FRAME THAT HOLDS IT: the Operator
   // page, framed as itself. The row only chooses WHICH build this frame links.

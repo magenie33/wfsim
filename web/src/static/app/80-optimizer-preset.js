@@ -215,6 +215,7 @@ function optBarCfg() {
     snapshot: snapshotOpt,
     apply: (st) => applyOptPreset(st || {}),
     blank: blankOpt,
+    isBlank: (st) => sameState(st, blankOpt()),
     rerender: renderOptPresetBars,
   };
 }
@@ -580,6 +581,7 @@ function updateOptEstimate() {
     }
     const at = ps.findIndex((p) => p.name === activeOptPreset);
     if (at < 0) return;
+    if (deleteIfBlank(optBarCfg(), ps[at].state)) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotOpt() };
     storeOptPresets(ps);
     renderOptPresetBars();

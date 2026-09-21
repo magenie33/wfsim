@@ -156,17 +156,23 @@ its own module: `builder-builds` (a build), `simulator-scenarios` (a fight,
 buff settings included), `optimizer` (a search: the SCOPE and `finalists`, and
 nothing else — never buffs, never a run count, never a thread count).
 
-**THERE IS ALWAYS ONE TO SELECT, AND NOTHING IS OWNED UNTIL IT IS MADE.** Owning
-none, a bar draws a virtual "preset 1": the blank the editor already shows
-(`cfg.blank()`), stored on the first real edit and never on a render, under a
-FIXED id (`PRESET_SEED_ID`). So it is a preset in every sense but storage, and
-every link — a weapon's wielder, a frame's Operator — names one by id, drawn or
-written, and stays valid across its first edit. Deleting the last one is a reset
-to that blank. Whether a preset
-is untouched is read from its CONTENT against the blank, never from a stored
-flag; one edited back to the blank keeps its identity and its name. A scenario
-has no virtual one: owning none, the fight is a pinned official ruler.
-"Active" means the state you are in.
+**THE DEFAULT IS THE BLANK, AND NOTHING IS OWNED UNTIL IT IS MADE.** Every
+collection has a DEFAULT: the blank (`cfg.blank()`), always there, read-only,
+never stored and never listed in its own bar. Owning none, the bar is empty and
+the editor stands on the default; the first EFFECTIVE edit writes "preset 1", and
+a preset edited back to the blank is DELETED — by CONTENT it is the default
+again, so what is left is the default. Only an edit deletes it: a blank one made
+by "+ new" stays until it has been worked on. Whether a state is the blank is read
+from its content (`cfg.isBlank`), never from a stored flag. A build compares
+against the blank of its weapon once one has been seen. A scenario has no
+default: owning none, the fight is a pinned official ruler. "Active" means the
+state you are in.
+
+**A LINK NAMES A PRESET BY ID, OR NONE.** Named, it means that preset; the
+default, or one that was deleted, means the default. UNSET — never chosen — it
+means the first preset, or the default while there is none, and follows: a preset
+written later is what it means from then on. Picking a type (a frame) chooses no
+preset.
 
 THE OPTIMIZER TAB IS TWO HALVES AND TWO BOXES: one box is the SEARCH and is
 exactly what a search preset saves; the next is the SIMULATOR's fight,

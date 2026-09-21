@@ -367,11 +367,11 @@ function snapshotState() {
     // THE PARTS, for the same reason: on a Kitgun they are the stat line, and
     // `null` on everything else, which is what "this weapon has none" means.
     assembly: assembly ? { ...assembly } : null,
-    // THE PROTOTYPE'S DRAWN "preset 1" IS STORED AS NULL, as it always was, so a
-    // preset written before it was a frame reads as unchanged. The DEFAULT is
-    // stored by name: null reads back as the frame's first preset.
-    wielder: buildWielder.frame === PROTOTYPE_ID && wielderIdOf(buildWielder) === PRESET_SEED_ID
-      ? null : { ...buildWielder, preset: wielderIdOf(buildWielder) },
+    // AS WRITTEN, NOT AS RESOLVED: an unset link stays unset so it keeps
+    // following the frame's first preset, and the DEFAULT is stored by name. The
+    // unset Prototype is null, as it always was, so a preset written before it
+    // was a frame reads as unchanged.
+    wielder: buildWielder.frame === PROTOTYPE_ID && !buildWielder.preset ? null : { ...buildWielder },
     // NO `sim` FIELD. A build carrying a snapshot of the fight is a snapshot
     // `restoreState` then applies, so picking a build silently rewrites the
     // scenario you are working in. The scenario is INDEPENDENT: nothing

@@ -84,7 +84,7 @@ function wfNormalize(st, id) {
     // THE LINKED OPERATOR BUILD'S `id`, resolved when the build is sent. A NAME
     // here is a link saved before ids, and becomes that build's id.
     operator: typeof s.operator === "string" && s.operator
-      ? (s.operator === DEFAULT_PRESET_ID || s.operator === PRESET_SEED_ID ? s.operator
+      ? (s.operator === DEFAULT_PRESET_ID ? s.operator
         : ((opList().find((p) => p.id === s.operator || p.name === s.operator) || {}).id || DEFAULT_PRESET_ID)) : null,
   };
 }
@@ -616,7 +616,7 @@ function renderWfGate(g) {
 function wfAnnounceBuild() {
   if (!EMBED || window.parent === window) return;
   const p = presetListWithIds(WF_BUILDS, wf.frame).find((x) => x.name === wfActive);
-  window.parent.postMessage({ wfsim: "wielder-build", frame: wf.frame, id: p ? p.id : PRESET_SEED_ID }, location.origin);
+  if (p) window.parent.postMessage({ wfsim: "wielder-build", frame: wf.frame, id: p.id }, location.origin);
 }
 
 function wfBarCfg() {
@@ -640,6 +640,7 @@ function wfBarCfg() {
     snapshot: () => JSON.parse(JSON.stringify(wf)),
     apply: (st) => wfApply(st),
     blank: () => wfBlank(wf.frame),
+    isBlank: (st) => sameState(wfNormalize(st, wf.frame), wfBlank(wf.frame)),
     rerender: renderWfPresetBar,
   };
 }
@@ -670,6 +671,7 @@ function wfMarkDirty() {
       return;
     }
     if (sameState(ps[at].state, wf)) return;
+    if (deleteIfBlank(cfg, ps[at].state)) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: cfg.snapshot() };
     cfg.store(ps);
   }, 400);

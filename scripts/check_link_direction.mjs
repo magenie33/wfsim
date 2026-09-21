@@ -60,7 +60,7 @@ const d = await evaluate(`(async () => {
   const left = presetListWithIds(WF_BUILDS, 'prototype').map(p => p.id);
   history.pushState({}, '', '/weapons/Lex'); route(); await sleep(2500);
   history.pushState({}, '', '/weapons/Braton'); route(); await sleep(3500);
-  const braton = { link: JSON.stringify(buildWielder), shown: document.getElementById('dd-wielder-preset').textContent,
+  const braton = { link: JSON.stringify(buildWielder), resolved: wielderIdOf(buildWielder), shown: document.getElementById('dd-wielder-preset').textContent,
     wire: wielderPayload() === undefined };
   history.pushState({}, '', '/weapons/Lex'); route(); await sleep(2500);
   history.pushState({}, '', '/weapons/Praedos'); route(); await sleep(3500);
@@ -72,6 +72,6 @@ check("deleting a linked preset says who is affected first, and keeps it",
   /1/.test(d.armed.text) && d.armed.kept === 2, JSON.stringify(d.armed));
 check("...and the second click deletes it", d.left.length === 1 && d.left[0] === "p1", JSON.stringify(d.left));
 check("a link to it lands on the default, not on another preset",
-  d.braton.link.includes('"default"') && d.braton.wire === true, JSON.stringify(d.braton));
+  d.braton.resolved === 'default' && d.braton.wire === true, JSON.stringify(d.braton));
 check("...and the other weapon, linking the surviving one, is untouched", d.praedos.link.includes('"p1"'), JSON.stringify(d.praedos));
 await app.finish("the linker chooses; the linked says so");

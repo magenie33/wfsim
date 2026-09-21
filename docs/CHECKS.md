@@ -659,18 +659,19 @@ touch a build.
 ## `check_zero_presets`
 
 Nothing is owned until it is made: browsing weapons and opening the optimizer
-store nothing, and the first real edit stores exactly one. A bar with none still
-draws a virtual `preset 1`, selected; the first edit stores it under that name
-and deleting the last one draws it again. Verified to bite: `virtual = false` in
-`renderPresetBarIn` fails two of its assertions.
+store nothing, and the first real edit stores exactly one. A bar with none is
+empty and says the editor stands on the default; a build edited back to the blank
+is deleted, and the next effective edit writes `preset 1` again.
 
 ## `check_wielder_pane`
 
 A weapon's Wielder block frames the Warframe page (`?embed`, the shell's chrome
 off) with the Operator page framed inside it. An edit made through the frame's
 own code is born as `preset 1`, becomes the wielder and reaches the request as
-the resolved shards, without reloading the frame; a fresh reader starts on the
-unbuilt Prototype with nothing stored.
+the resolved shards, without reloading the frame; edited back to the blank it is
+deleted and the link is the default, and the next effective edit writes one
+again. A fresh reader starts on the unbuilt Prototype with nothing stored, and a
+weapon that never chose a preset follows the first one once it is written.
 
 ## `check_link_direction`
 

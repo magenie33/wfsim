@@ -102,11 +102,11 @@ links one by the Operator build's `id` (`operator:` in its state, resolved to
 rename cuts no link. An `operator:` holding a name becomes that build's id.
 
 **AN OPERATOR IS LINKED EXACTLY AS A WEAPON LINKS ITS WIELDER**, though there is
-one: a type control and a preset control, the drawn "preset 1" under the seed id,
-the read-only default (no Operator) offered on demand, and a link whose preset
-was deleted landing on the default rather than on another preset. The link's own
-page marks each preset with the Warframe builds that link it. An unset link is
-the first preset.
+one: a type control and a preset control, the read-only default (no Operator)
+always the last entry, and a link whose preset was deleted landing on the default
+rather than on another preset. The link's own page marks each preset with the
+Warframe builds that link it. An unset link is the first preset, or the default
+while there is none (docs/UI.md §The default).
 
 - ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
   specific focus school they belong to" (W`Focus`). No Waybound reaches a
@@ -190,11 +190,11 @@ Valkyrs, run by `engine::data::rage`:
 
 **A WEAPON IS ALWAYS HELD BY SOMEBODY, AND A WEAPON BUILD SAYS WHO.** The
 `wielder` build axis (`board::builds::BUILD_AXES`) is a link to one of this module's
-saved builds, by its preset `id`, always: a frame that owns none is linked by
-the seed id (`PRESET_SEED_ID`) its virtual "preset 1" is drawn and later stored
-under, so the link survives the first edit. A link whose preset is gone lands on
-the **default** (`DEFAULT_PRESET_ID`): the frame's read-only, never-stored blank,
-which no bar lists and only a link's own picker offers. NEVER EMPTY: the floor
+saved builds, by its preset `id`, or names none. Unset — never chosen — it is the
+frame's first preset, or the **default** (`DEFAULT_PRESET_ID`) while it owns none,
+and follows a preset written later; a link whose preset is gone lands on the
+default: the frame's read-only, never-stored blank, which no bar lists and every
+link's picker ends with. NEVER EMPTY: the floor
 is the **Prototype** frame (`data/warframes/prototype.yaml`), whose five
 stats are `data/tenno/default.yaml`'s — every stat the lowest any released
 Warframe has at rank 30 — with no ability, no passive and no innate polarity, so

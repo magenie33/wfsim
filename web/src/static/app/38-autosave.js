@@ -121,6 +121,7 @@ function markPresetDirty() {
     }
     const at = ps.findIndex((p) => p.name === activePreset);
     if (at < 0) return;
+    if (deleteIfBlank(buildBarCfg(), ps[at].state)) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotState() };
     storePresetList(BUILDS, ps);
   }, 400);

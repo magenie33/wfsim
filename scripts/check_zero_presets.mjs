@@ -42,9 +42,9 @@ const r = await evaluate(`(async () => {
     addThere: !!document.querySelector('#preset-bar-builder-builds .pchip.add'),
     // …and the simulator still has a fight, because a ruler is a builtin.
     fightThere: !!sim && typeof sim.level === 'number',
-    // THERE IS STILL ONE TO SELECT: the virtual "preset 1", drawn and selected,
-    // with nothing stored behind it.
-    virtual: [...document.querySelectorAll('#preset-bar-builder-builds .pchip.virtual.sel')].map(c => c.textContent),
+    // THE BAR IS EMPTY, and says where the editor stands: on the default.
+    chips: document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)').length,
+    note: !!document.querySelector('#preset-bar-builder-builds .pnote'),
   });
 
   // BROWSING IS NOT OWNING.
@@ -69,15 +69,24 @@ const r = await evaluate(`(async () => {
   markPresetDirty(); renderMods(); await sleep(1400);
   const edited = Object.assign(${counts}, {
     active: activePreset,
-    // BORN UNDER THE NAME IT WAS DRAWN WITH: one chip, real, no virtual beside it.
     chips: [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map(c => c.textContent.replace(/[⧉✎✕]/g, '').trim()),
-    virtualLeft: document.querySelectorAll('#preset-bar-builder-builds .pchip.virtual').length,
     kept: ((((loadPresetList('builder-builds')[0] || {}).state || {}).slots || [])[0] || {}).mod,
   });
 
-  // THE LAST ONE IS DELETABLE, and what is left is a bare weapon rather than a
-  // broken page — "there is always one" was only true while one was made for
-  // you.
+  // EDITED BACK TO THE BLANK, IT IS THE DEFAULT AGAIN: the build is deleted, and
+  // what is left is a bare weapon and an empty bar.
+  slots[0].mod = null; slots[0].rank = null;
+  markPresetDirty(); renderMods(); await sleep(1600);
+  const emptied = Object.assign(${counts}, {
+    active: activePreset, bareWeapon: slots.every(s => !s.mod),
+    chips: document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)').length,
+  });
+
+  // …AND THE NEXT EFFECTIVE EDIT WRITES ONE AGAIN, which can then be deleted by
+  // hand: what is left is a bare weapon rather than a broken page.
+  slots[0].mod = 'serration'; slots[0].rank = 10;
+  markPresetDirty(); renderMods(); await sleep(1400);
+  const reborn = Object.assign(${counts}, { active: activePreset });
   const del = document.querySelector('#preset-bar-builder-builds .pchip.sel .pop.del');
   if (del) del.click();
   await sleep(1600);
@@ -85,9 +94,8 @@ const r = await evaluate(`(async () => {
     active: activePreset,
     bareWeapon: slots.every(s => !s.mod),
     stillDrawn: document.querySelectorAll('#mod-slots .slot').length,
-    virtual: [...document.querySelectorAll('#preset-bar-builder-builds .pchip.virtual.sel')].map(c => c.textContent),
   });
-  return { fresh, browsed, opened, scoped, edited, deleted };
+  return { fresh, browsed, opened, scoped, edited, emptied, reborn, deleted };
 })()`);
 
 check("a fresh reader owns nothing at all",
@@ -99,8 +107,8 @@ check("...and the simulator still has a fight (a ruler is a builtin)",
   r.fresh.fightThere === true);
 check("...and there is still a deliberate way to make one", r.fresh.addThere === true);
 
-check("...and there is always one to select: a virtual preset 1, stored nowhere",
-  r.fresh.virtual.length === 1 && r.fresh.virtual[0] === "preset 1", JSON.stringify(r.fresh.virtual));
+check("...the bar is empty, and says the editor stands on the default",
+  r.fresh.chips === 0 && r.fresh.note === true, JSON.stringify([r.fresh.chips, r.fresh.note]));
 
 check("browsing three more weapons creates nothing", r.browsed.builds === 0,
   `${r.browsed.builds} builds after three weapons`);
@@ -113,17 +121,19 @@ check("the first build edit creates exactly one build", r.edited.builds === 1
   && r.edited.active === "preset 1", `${r.edited.builds} · active="${r.edited.active}"`);
 check("...carrying the edit that created it", r.edited.kept === "serration", String(r.edited.kept));
 
-check("...and it is born under the name it was drawn with, not beside it",
-  r.edited.virtualLeft === 0 && r.edited.chips.length === 1 && r.edited.chips[0] === "preset 1",
+check("...as the one chip in the bar", r.edited.chips.length === 1 && r.edited.chips[0] === "preset 1",
   JSON.stringify(r.edited.chips));
+
+check("a build edited back to the blank is deleted: the default again",
+  r.emptied.builds === 0 && r.emptied.chips === 0 && r.emptied.bareWeapon === true && r.emptied.active === "",
+  JSON.stringify(r.emptied));
+check("...and the next effective edit writes one again", r.reborn.builds === 1 && r.reborn.active === "preset 1",
+  JSON.stringify(r.reborn));
 
 check("the last build can be deleted", r.deleted.builds === 0,
   `${r.deleted.builds} left · active="${r.deleted.active}"`);
 check("...and what is left is a bare weapon, not a broken page",
   r.deleted.bareWeapon === true && r.deleted.stillDrawn === 8,
   `bare=${r.deleted.bareWeapon} slots=${r.deleted.stillDrawn}`);
-
-check("...and deleting the last one leaves the virtual preset 1 to select",
-  r.deleted.virtual.length === 1 && r.deleted.virtual[0] === "preset 1", JSON.stringify(r.deleted.virtual));
 
 await app.finish("nothing is owned until it is made");
