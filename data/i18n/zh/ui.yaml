@@ -1981,6 +1981,22 @@ ui:
   "A ruler is covered by the best of its builds that fits: the line is how close to that ruler's leader it has to come.": 每个基准取装得下的配装里最好的一套；达标线是它至少要达到该基准榜首的百分之几。
   "work it out": 计算
 
+  # THE WIELDER, and the presets a weapon links.
+  "Preset": 预设
+  "Default": 默认
+  "read-only": 只读
+  "the default is read-only": 默认是只读的
+  "your first change is saved as": 第一次改动会存为
+  "linked by": 被链接于
+  "{n} linked — they return to the default; click again": 有 {n} 处链接了它，删除后它们回到默认；再点一次确认
+  "open the full page": 整页打开
+  "edit on its page": 去它的页面编辑
+  "Aura": 光环
+  "no aura": 无光环
+  "School": 流派
+  "no Operator": 没有指挥官
+  "Home": 首页
+
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']
