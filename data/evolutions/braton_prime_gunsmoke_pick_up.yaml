@@ -2,6 +2,7 @@ id: braton_prime_gunsmoke_pick_up
 name: Gunsmoke Pick Up
 weapon: braton_prime
 tier: 3
+icon: RestoreAmmoPickUpAmountToCapacity.png
 description: "On Punch Through Hit: 20% chance for 10% Ammo restored."
 # see notes: genesis_family_s_braton_2
 base_form_only: true

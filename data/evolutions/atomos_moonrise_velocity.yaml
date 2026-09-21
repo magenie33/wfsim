@@ -2,6 +2,7 @@ id: atomos_moonrise_velocity
 name: Moonrise Velocity
 weapon: atomos
 tier: 3
+icon: MoreRange(xWhite).png
 description: "Increase Range by +7. Does not affect Incarnon Form."
 # see notes: genesis_family_s_adapter_2
 base_form_only: true

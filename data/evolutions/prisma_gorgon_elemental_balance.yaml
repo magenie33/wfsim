@@ -2,6 +2,7 @@ id: prisma_gorgon_elemental_balance
 name: Elemental Balance
 weapon: prisma_gorgon
 tier: 4
+icon: HighStatus.png
 description: "Increase Base Status Chance by +12%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

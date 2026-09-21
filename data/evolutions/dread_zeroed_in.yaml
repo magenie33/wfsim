@@ -2,6 +2,7 @@ id: dread_zeroed_in
 name: Zeroed In
 weapon: dread
 tier: 4
+icon: CritDamage(xWhite).png
 description: "Increase Base Critical Damage Multiplier by +1x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: sancti_magistar_evo1_incarnon_form
 name: Incarnon Form
 weapon: sancti_magistar
 tier: 1
+icon: IncarnonFormEfficientSlidingHeavyAttacksFasterWindUp(xWhite).png
 description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 180 seconds. +100% Melee Damage, +30 Initial Combo, +50% Heavy Attack Wind Up Speed, +10% Sprint Speed, +10% Bullet Jump."
 # A MELEE INCARNON IS NOT A FORM: it does
 # not change the attack animations, it only changes numbers. So this grants no

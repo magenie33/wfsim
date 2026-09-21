@@ -2,6 +2,7 @@ id: strun_galvanic_reload
 name: Galvanic Reload
 weapon: strun
 tier: 3
+icon: IncarnonFallOff.png
 description: "On hitting a target affected by an Electricity status, 40% chance to restore 1 round in the magazine from ammo pool."
 # see notes: genesis_family_s_adapter_4
 base_form_only: true

@@ -2,6 +2,7 @@ id: strun_commodores_fortune
 name: Commodore's Fortune
 weapon: strun
 tier: 4
+icon: HighCrit.png
 description: "Increase Base Critical Chance by +16%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

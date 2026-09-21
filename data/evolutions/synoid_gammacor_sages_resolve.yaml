@@ -2,6 +2,7 @@ id: synoid_gammacor_sages_resolve
 name: Sage's Resolve
 weapon: synoid_gammacor
 tier: 2
+icon: DamageAndMultishotWithActiveChanneledAbility(xWhite).png
 description: "Increase Base Damage by +10. With Channeled Ability active: +25% Multishot."
 # see notes: genesis_family_s_adapter
 selection: choose_one

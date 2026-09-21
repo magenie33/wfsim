@@ -2,6 +2,7 @@ id: dread_hitmans_hoard
 name: Hitman's Hoard
 weapon: dread
 tier: 3
+icon: IncarnonAmmoPool(xWhite).png
 description: "Increase Base Ammo Capacity to 144. Does not affect Incarnon Form."
 # see notes: genesis_family_s_adapter_2
 base_form_only: true

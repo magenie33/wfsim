@@ -2,7 +2,7 @@ id: burston_prime_forceful_finality
 name: Forceful Finality
 weapon: burston_prime
 tier: 2
-icon: MultishotOnLastBurstInMag(xWhite).png
+icon: MultishotOnLastBurstInMag.png
 description: "Increase Base Damage by +42.\n+5 Base Multishot on final magazine burst."
 # see notes: genesis_family_s_burston
 selection: choose_one

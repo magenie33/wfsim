@@ -2,6 +2,7 @@ id: laetum_awakened_readiness
 name: Awakened Readiness
 weapon: laetum
 tier: 3
+icon: EvolutionHolsterReload.png
 description: "30% Magazine reloaded per second while Holstered."
 selection: choose_one
 

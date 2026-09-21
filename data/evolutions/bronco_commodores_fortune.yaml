@@ -2,6 +2,7 @@ id: bronco_commodores_fortune
 name: Commodore's Fortune
 weapon: bronco
 tier: 4
+icon: HighCrit(xWhite).png
 description: "Increase Base Critical Chance by +20%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: praedos_evolved_ascension
 name: Evolved Ascension
 weapon: praedos
 tier: 4
+icon: EvolutionEvolvedAscension.png
 description: "+30% Parkour Velocity."
 selection: choose_one
 

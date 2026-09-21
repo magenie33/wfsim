@@ -2,6 +2,7 @@ id: rakta_ballistica_swift_deliverance
 name: Swift Deliverance
 weapon: rakta_ballistica
 tier: 3
+icon: IncarnonProjectileSpeed(xWhite).png
 description: "+50% Projectile Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,7 +2,7 @@ id: boar_ready_retaliation
 name: Ready Retaliation
 weapon: boar
 tier: 3
-icon: ReloadSpeedOnEmpty(xWhite).png
+icon: ReloadSpeedOnEmpty.png
 description: "On Reload From Empty: +100% Reload Speed."
 # see notes: genesis_family_s_boar
 #

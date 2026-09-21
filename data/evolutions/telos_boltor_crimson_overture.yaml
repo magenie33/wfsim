@@ -2,6 +2,7 @@ id: telos_boltor_crimson_overture
 name: Crimson Overture
 weapon: telos_boltor
 tier: 2
+icon: DamageAmmoEfficiencyOnKill(xWhite).png
 description: "Increase Base Damage by +0. On Kill: Increase Base Damage by +2 and +20% Ammo Efficiency for 5 seconds. Stacks up to 3x."
 # see notes: genesis_family_s_boltor
 selection: choose_one

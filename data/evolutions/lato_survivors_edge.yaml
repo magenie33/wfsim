@@ -2,6 +2,7 @@ id: lato_survivors_edge
 name: Survivor's Edge
 weapon: lato
 tier: 4
+icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Critical Chance by +20%. Increase Base Status Chance by +12%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

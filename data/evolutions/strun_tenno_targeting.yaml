@@ -2,6 +2,7 @@ id: strun_tenno_targeting
 name: Tenno Targeting
 weapon: strun
 tier: 2
+icon: PunchThroughWithOvershields_.png
 description: "Increase Base Damage by +54. With Channeled Ability Active: +4 Punch Through."
 # see notes: genesis_family_s_adapter
 selection: choose_one

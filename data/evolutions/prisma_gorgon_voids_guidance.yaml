@@ -2,6 +2,7 @@ id: prisma_gorgon_voids_guidance
 name: Void's Guidance
 weapon: prisma_gorgon
 tier: 3
+icon: LessRecoil.png
 description: "-50% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

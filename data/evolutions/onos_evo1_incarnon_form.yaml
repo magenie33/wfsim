@@ -2,6 +2,7 @@ id: onos_evo1_incarnon_form
 name: Incarnon Form
 weapon: onos
 tier: 1
+icon: EvolutionIncarnonFormGun.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Switching back will expend any remaining charge."
 # see notes: genesis_family_s_adapter
 selection: fixed

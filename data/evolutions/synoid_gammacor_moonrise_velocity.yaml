@@ -2,6 +2,7 @@ id: synoid_gammacor_moonrise_velocity
 name: Moonrise Velocity
 weapon: synoid_gammacor
 tier: 3
+icon: MoreRange(xWhite).png
 description: "Increase Range by +8."
 # see notes: genesis_family_s_adapter
 selection: choose_one

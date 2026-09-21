@@ -2,6 +2,7 @@ id: bronco_rain_of_lead
 name: Rain of Lead
 weapon: bronco
 tier: 4
+icon: IncarnonMultishot(xWhite).png
 description: "+2 Base Multishot."
 # see notes: genesis_family_s_adapter
 selection: choose_one

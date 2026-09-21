@@ -2,6 +2,7 @@ id: gammacor_elemental_balance
 name: Elemental Balance
 weapon: gammacor
 tier: 4
+icon: HighStatus(xWhite).png
 description: "Increase Base Status Chance by +20%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

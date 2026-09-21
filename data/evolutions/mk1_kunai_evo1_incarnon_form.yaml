@@ -2,6 +2,7 @@ id: mk1_kunai_evo1_incarnon_form
 name: Incarnon Form
 weapon: mk1_kunai
 tier: 1
+icon: AddMultishotAndKunaiSeekHeads(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Projectiles seek Headshots and have increased Multishot."
 # see notes: genesis_family_s_adapter
 selection: fixed

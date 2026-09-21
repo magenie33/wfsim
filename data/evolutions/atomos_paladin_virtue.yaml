@@ -2,6 +2,7 @@ id: atomos_paladin_virtue
 name: Paladin Virtue
 weapon: atomos
 tier: 2
+icon: IncreasedCritWithEnergy(xWhite).png
 description: "Increase Base Damage by +24. With Energy Max over 700: Increase Base Critical Damage Multiplier by +1x."
 # see notes: genesis_family_s_adapter_3
 #

@@ -2,6 +2,7 @@ id: lex_prime_executioners_dawn
 name: Executioner's Dawn
 weapon: lex_prime
 tier: 4
+icon: HeadshotDamage(xWhite).png
 description: "On Equip: +100% Headshot Damage for 4 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

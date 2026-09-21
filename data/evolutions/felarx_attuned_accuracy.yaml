@@ -2,6 +2,7 @@ id: felarx_attuned_accuracy
 name: Attuned Accuracy
 weapon: felarx
 tier: 2
+icon: MoreAccuracy.png
 description: "+40% Accuracy when Aiming."
 # see notes: genesis_family_s_adapter
 selection: choose_one

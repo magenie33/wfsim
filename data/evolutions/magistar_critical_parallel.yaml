@@ -2,6 +2,7 @@ id: magistar_critical_parallel
 name: Critical Parallel
 weapon: magistar
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Critical Chance +16%. Critical Damage +1x."
 # THE MAGISTAR'S COLUMN. The Sancti Magistar's is +12% and +0.2x, which is the
 # largest per-variant gap in this Genesis and belongs to that entry when it

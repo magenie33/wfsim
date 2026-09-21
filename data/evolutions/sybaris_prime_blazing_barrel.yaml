@@ -2,6 +2,7 @@ id: sybaris_prime_blazing_barrel
 name: Blazing Barrel
 weapon: sybaris_prime
 tier: 2
+icon: MultishotCostsAmmoTakenFromPoolNotClip.png
 description: "Increase Base Damage by +15. On Firing: +5% Multishot. Stacks up to 10x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

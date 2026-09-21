@@ -2,6 +2,7 @@ id: onos_sequential_skullbuster
 name: Sequential Skullbuster
 weapon: onos
 tier: 5
+icon: ConsecutivetHeadshotIncrDmg(xWhite).png
 description: "On Consecutive Weakpoint Hits: +30% Headshot Damage. Stacks up to 4x."
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is

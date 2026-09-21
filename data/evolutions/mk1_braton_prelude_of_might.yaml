@@ -2,6 +2,7 @@ id: mk1_braton_prelude_of_might
 name: Prelude of Might
 weapon: mk1_braton
 tier: 4
+icon: CritDamageWhenCritChanceIsBelowX.png
 description: "With Critical Chance Below 50%: Increase Base Critical Damage Multiplier by +3.3x"
 # see notes: genesis_family_s_braton
 selection: choose_one

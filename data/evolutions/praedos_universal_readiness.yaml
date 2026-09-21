@@ -2,6 +2,7 @@ id: praedos_universal_readiness
 name: Universal Readiness
 weapon: praedos
 tier: 5
+icon: EvolutionAmmoToCombo.png
 description: "Collecting ammo grants 5 Melee Combo counter."
 selection: choose_one
 

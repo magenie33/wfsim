@@ -2,7 +2,7 @@ id: phenmor_ready_retaliation
 name: Ready Retaliation
 weapon: phenmor
 tier: 3
-icon: IncarnonReloadSpeed(xWhite).png
+icon: EvolutionReadyRetaliation.png
 description: "On Reload from Empty: +100% Reload Speed for 6 seconds."
 # see notes: natural_incarnon_phenmor_carries
 selection: choose_one

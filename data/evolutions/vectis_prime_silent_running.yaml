@@ -2,6 +2,7 @@ id: vectis_prime_silent_running
 name: Silent Running
 weapon: vectis_prime
 tier: 3
+icon: ShotsAreSilent(xWhite).png
 description: "Reduce the chance an enemy will hear gunfire by 100%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: ballistica_prime_evo1_incarnon_form
 name: Incarnon Form
 weapon: ballistica_prime
 tier: 1
+icon: UnchargedAndChargedProjectiles(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire cross-shaped projectiles that punch through enemies."
 # see notes: genesis_family_s_adapter
 selection: fixed

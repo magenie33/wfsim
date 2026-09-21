@@ -2,6 +2,7 @@ id: sancti_magistar_seismic_slam
 name: Seismic Slam
 weapon: sancti_magistar
 tier: 3
+icon: IncarnonSlamRadius(xWhite).png
 description: "+100% Slam Radius."
 selection: choose_one
 

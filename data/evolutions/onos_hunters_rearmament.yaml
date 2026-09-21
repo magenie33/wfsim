@@ -2,6 +2,7 @@ id: onos_hunters_rearmament
 name: Hunter's Rearmament
 weapon: onos
 tier: 3
+icon: OnKillChancetogetXAmmo.png
 description: "On Kill: 10% chance to replenish 10 Ammo."
 # see notes: genesis_family_s_adapter
 selection: choose_one

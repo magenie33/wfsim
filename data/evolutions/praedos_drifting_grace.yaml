@@ -2,6 +2,7 @@ id: praedos_drifting_grace
 name: Drifting Grace
 weapon: praedos
 tier: 2
+icon: EvolutionDriftingGrace.png
 description: "+20% Sprint Speed, +20% Slide."
 selection: choose_one
 

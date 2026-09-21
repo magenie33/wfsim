@@ -2,6 +2,7 @@ id: onos_elemental_excess
 name: Elemental Excess
 weapon: onos
 tier: 4
+icon: XStatChanceNegYCritChance(xWhite).png
 description: "+20% Status Chance -10% Critical Chance"
 # see notes: genesis_family_s_adapter
 selection: choose_one

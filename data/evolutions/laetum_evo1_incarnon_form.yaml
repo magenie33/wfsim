@@ -2,6 +2,7 @@ id: laetum_evo1_incarnon_form
 name: Incarnon Form
 weapon: laetum
 tier: 1
+icon: EvolutionIncarnonFormGun.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.
 Gain an Auto fire mode whose shots deal Impact on direct hits and Radiation in a 2 m radius."
 selection: fixed                # tier 1 has no choice

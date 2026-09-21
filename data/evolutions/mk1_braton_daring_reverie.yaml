@@ -2,6 +2,7 @@ id: mk1_braton_daring_reverie
 name: Daring Reverie
 weapon: mk1_braton
 tier: 2
+icon: DamageAmmoEfficiencyDuringActiveChannelledAbility.png
 description: "Increase Base Damage by +28. With Channeled Ability active: Increase Base Damage by +22. +50% Ammo Efficiency"
 # see notes: genesis_family_s_braton
 selection: choose_one

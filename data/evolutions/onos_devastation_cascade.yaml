@@ -2,6 +2,7 @@ id: onos_devastation_cascade
 name: Devastation Cascade
 weapon: onos
 tier: 5
+icon: ChargeBeamCritChanceDmg(xWhite).png
 description: "Hitting enemies in Incarnon Form increases the Critical Chance and Critical Damage of the fully charged blast by +5%. Stacks up to 50x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

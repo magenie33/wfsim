@@ -2,7 +2,7 @@ id: burston_prime_evo1_incarnon_form
 name: Incarnon Form
 weapon: burston_prime
 tier: 1
-icon: AutomaticKillsExplode(xWhite).png
+icon: AutomaticKillsExplode.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nGain an Auto Fire mode and deal Radial Heat Damage."
 # see notes: genesis_family_s_burston
 selection: fixed                # tier 1 has no choice

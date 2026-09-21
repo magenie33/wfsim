@@ -2,6 +2,7 @@ id: miter_swift_sawblades
 name: Swift Sawblades
 weapon: miter
 tier: 2
+icon: IncreasedFireRateWithActiveChanneledAbility(xWhite).png
 description: "Increase Base Damage by +77. With Channeled Ability active: +70% Fire Rate."
 # see notes: genesis_family_s_adapter
 selection: choose_one

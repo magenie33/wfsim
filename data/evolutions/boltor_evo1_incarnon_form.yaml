@@ -2,6 +2,7 @@ id: boltor_evo1_incarnon_form
 name: Incarnon Form
 weapon: boltor
 tier: 1
+icon: IncarnonFormShrapnelMultishotIncreasedSlash(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Prioritize Slash Damage and gain Multishot."
 # see notes: genesis_family_s_boltor
 selection: fixed

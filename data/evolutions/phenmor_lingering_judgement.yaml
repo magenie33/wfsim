@@ -2,6 +2,7 @@ id: phenmor_lingering_judgement
 name: Lingering Judgement
 weapon: phenmor
 tier: 5
+icon: EvolutionLingeringJudgement.png
 description: "On 2 headshots within 2 seconds: +50% Headshot damage for 8 seconds."
 # see notes: natural_incarnon_phenmor_carries_2
 selection: choose_one

@@ -2,6 +2,7 @@ id: felarx_ruptured_plentitude
 name: Ruptured Plentitude
 weapon: felarx
 tier: 5
+icon: Hit3EnemiesAmmoEff.png
 description: "On Punch Through 3 enemies: +70% Ammo Efficiency for 20 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

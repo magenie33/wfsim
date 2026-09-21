@@ -2,6 +2,7 @@ id: stug_survivors_edge
 name: Survivor's Edge
 weapon: stug
 tier: 4
+icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Critical Chance by +15%. Increase Base Status Chance by +15%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

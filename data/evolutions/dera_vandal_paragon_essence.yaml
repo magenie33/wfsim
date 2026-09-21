@@ -2,6 +2,7 @@ id: dera_vandal_paragon_essence
 name: Paragon Essence
 weapon: dera_vandal
 tier: 2
+icon: WeaponStatusProcFireRate(xWhite).png
 description: "Increase Base Damage by +4. On Status Effect: +5% Fire Rate for 5 seconds. Stacks up to 6x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

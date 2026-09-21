@@ -2,6 +2,7 @@ id: miter_sawblade_storm
 name: Sawblade Storm
 weapon: miter
 tier: 4
+icon: HoldChargedShotAOEonBounce(xWhite).png
 description: "Hold charged shot for 1 second to increase area of effect. Does not affect Incarnon Form."
 # see notes: genesis_family_s_adapter_2
 base_form_only: true

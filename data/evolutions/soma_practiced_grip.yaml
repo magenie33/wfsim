@@ -2,6 +2,7 @@ id: soma_practiced_grip
 name: Practiced Grip
 weapon: soma
 tier: 3
+icon: LessRecoilMoreAccuracy(xWhite).png
 description: "Increase Accuracy by +50%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

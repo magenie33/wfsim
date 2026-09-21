@@ -2,6 +2,7 @@ id: mk1_paris_vicious_promise
 name: Vicious Promise
 weapon: mk1_paris
 tier: 4
+icon: CritChanceDamageToEnemiesAtFullHealth.png
 description: "Increase Base Critical Chance by +40% on undamaged enemies. Increase Base Critical Damage Multiplier by +2x on undamaged enemies."
 # see notes: genesis_family_s_adapter
 selection: choose_one

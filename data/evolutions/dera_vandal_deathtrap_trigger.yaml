@@ -2,6 +2,7 @@ id: dera_vandal_deathtrap_trigger
 name: Deathtrap Trigger
 weapon: dera_vandal
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +14%. Increase Base Critical Damage Multiplier by +0.4x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

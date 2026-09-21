@@ -2,6 +2,7 @@ id: laetum_feather_of_justice
 name: Feather of Justice
 weapon: laetum
 tier: 3
+icon: EvolutionFeatherOfJustice.png
 description: "60% Ammo Efficiency while Aim Gliding or Sliding."
 # "Does not affect Incarnon Form" (the row's note).
 base_form_only: true

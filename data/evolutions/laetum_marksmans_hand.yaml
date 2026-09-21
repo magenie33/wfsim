@@ -2,6 +2,7 @@ id: laetum_marksmans_hand
 name: Marksman's Hand
 weapon: laetum
 tier: 2
+icon: EvolutionReducedRecoil.png
 description: "-40% Recoil."
 selection: choose_one
 

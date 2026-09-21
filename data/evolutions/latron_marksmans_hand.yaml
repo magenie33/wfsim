@@ -2,7 +2,7 @@ id: latron_marksmans_hand
 name: Marksman's Hand
 weapon: latron
 tier: 3
-icon: LessRecoil(xWhite).png
+icon: LessRecoil.png
 description: "-60% Weapon Recoil"
 # see notes: genesis_family_s_latron
 selection: choose_one

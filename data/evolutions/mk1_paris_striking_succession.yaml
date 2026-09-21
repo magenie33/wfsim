@@ -2,6 +2,7 @@ id: mk1_paris_striking_succession
 name: Striking Succession
 weapon: mk1_paris
 tier: 4
+icon: DamageIncreasesOnEachConsecutiveHit.png
 description: "On Hit: Increase Base Damage by +15 for 3 seconds. Stacks up to 4x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

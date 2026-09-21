@@ -2,6 +2,7 @@ id: vasto_prime_survivors_edge
 name: Survivor's Edge
 weapon: vasto_prime
 tier: 4
+icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +10%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

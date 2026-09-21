@@ -2,6 +2,7 @@ id: sybaris_extended_volley
 name: Extended Volley
 weapon: sybaris
 tier: 3
+icon: IncarnonAmmoPool.png
 description: "Increase Base Magazine Capacity by +8."
 # see notes: genesis_family_s_adapter
 selection: choose_one

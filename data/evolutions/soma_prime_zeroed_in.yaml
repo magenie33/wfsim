@@ -2,6 +2,7 @@ id: soma_prime_zeroed_in
 name: Zeroed In
 weapon: soma_prime
 tier: 4
+icon: CritDamage(xWhite).png
 description: "Increase Base Critical Damage Multiplier by +0.6x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

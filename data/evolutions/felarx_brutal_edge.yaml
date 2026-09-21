@@ -2,6 +2,7 @@ id: felarx_brutal_edge
 name: Brutal Edge
 weapon: felarx
 tier: 4
+icon: EvolutionCriticalStatusUp.png
 description: "+10% Critical Chance +10% Status Chance"
 # see notes: genesis_family_s_adapter
 selection: choose_one

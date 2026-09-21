@@ -2,6 +2,7 @@ id: felarx_agile_executor
 name: Agile Executor
 weapon: felarx
 tier: 5
+icon: MultishotWhileGlidingAndSliding.png
 description: "Gain 50% Ammo Efficiency while Aim Gliding and Sliding."
 # see notes: genesis_family_s_adapter
 selection: choose_one

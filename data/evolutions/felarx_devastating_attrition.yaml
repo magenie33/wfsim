@@ -2,6 +2,7 @@ id: felarx_devastating_attrition
 name: Devastating Attrition
 weapon: felarx
 tier: 5
+icon: EvolutionNon-Critical.png
 description: "50% chance to deal +2000% damage on non-critical hits."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: bronco_prime_practiced_grip
 name: Practiced Grip
 weapon: bronco_prime
 tier: 3
+icon: MoreAccuracy(xWhite).png
 description: "Increase Accuracy by +30%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

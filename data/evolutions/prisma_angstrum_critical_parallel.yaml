@@ -2,6 +2,7 @@ id: prisma_angstrum_critical_parallel
 name: Critical Parallel
 weapon: prisma_angstrum
 tier: 4
+icon: IncarnonCritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +10%. Increase Base Critical Damage Multiplier by +0.2x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

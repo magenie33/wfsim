@@ -2,6 +2,7 @@ id: latron_critical_parallel
 name: Critical Parallel
 weapon: latron
 tier: 4
+icon: CritChanceCritDamage.png
 description: "Increase Base Critical Chance by +30%. Increase Base Critical Damage Multiplier by +0.6x."
 # see notes: genesis_family_s_latron
 selection: choose_one

@@ -2,6 +2,7 @@ id: soma_prime_fortifying_bloodshed
 name: Fortifying Bloodshed
 weapon: soma_prime
 tier: 2
+icon: OnKillSlashDamageAddOvershields(xWhite).png
 description: "Increase Base Damage by +10. On Slash Status Kill: +100 Overshield."
 # see notes: genesis_family_s_adapter
 selection: choose_one

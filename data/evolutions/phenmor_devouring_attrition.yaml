@@ -2,6 +2,7 @@ id: phenmor_devouring_attrition
 name: Devouring Attrition
 weapon: phenmor
 tier: 5
+icon: EvolutionNon-Critical.png
 description: "50% chance to deal +2000% damage on non-critical hits."
 # see notes: natural_incarnon_phenmor_carries_2
 selection: choose_one

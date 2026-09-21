@@ -2,6 +2,7 @@ id: vasto_prime_lone_gun
 name: Lone Gun
 weapon: vasto_prime
 tier: 2
+icon: DamageWithNoPrimaryOrMeleeEquipped(xWhite).png
 description: "Increase Base Damage by +24. With No Primary Equipped: Increase Base Damage by +40, Increase Base Magazine Capacity by +14."
 # see notes: genesis_family_s_adapter
 selection: choose_one

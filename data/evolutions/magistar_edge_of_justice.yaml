@@ -2,6 +2,7 @@ id: magistar_edge_of_justice
 name: Edge Of Justice
 weapon: magistar
 tier: 2
+icon: AttackSpeedInSwordAloneMode(xWhite).png
 description: "Base Damage +100. Attack Speed +40% with a Melee Weapon equipped."
 selection: choose_one
 

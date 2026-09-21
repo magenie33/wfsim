@@ -2,6 +2,7 @@ id: atomos_evo1_incarnon_form
 name: Incarnon Form
 weapon: atomos
 tier: 1
+icon: IncarnonFormNapalmGrenadeLauncher(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire high-powered grenades that explode in a 7.9 m radius."
 # see notes: genesis_family_s_adapter
 selection: fixed

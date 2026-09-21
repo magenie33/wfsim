@@ -2,6 +2,7 @@ id: lato_marksmans_gain
 name: Marksman's Gain
 weapon: lato
 tier: 3
+icon: OnHeadshotKillAmmoEff(xWhite).png
 description: "On Headshot: 20% chance for +50% Ammo Efficiency for 6 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

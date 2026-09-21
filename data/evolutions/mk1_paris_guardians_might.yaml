@@ -2,6 +2,7 @@ id: mk1_paris_guardians_might
 name: Guardian's Might
 weapon: mk1_paris
 tier: 2
+icon: DamageAndIncreasedDamageWithOvershields.png
 description: "Increase Base Damage by +50. With Overshields: Increase Base Damage by +40."
 # see notes: genesis_family_s_adapter
 selection: choose_one

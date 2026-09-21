@@ -2,6 +2,7 @@ id: gorgon_wraith_elemental_balance
 name: Elemental Balance
 weapon: gorgon_wraith
 tier: 4
+icon: HighStatus.png
 description: "Increase Base Status Chance by +14%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

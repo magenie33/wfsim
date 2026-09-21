@@ -2,6 +2,7 @@ id: dex_sybaris_blazing_barrel
 name: Blazing Barrel
 weapon: dex_sybaris
 tier: 2
+icon: MultishotCostsAmmoTakenFromPoolNotClip.png
 description: "Increase Base Damage by +15. On Firing: +5% Multishot. Stacks up to 10x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

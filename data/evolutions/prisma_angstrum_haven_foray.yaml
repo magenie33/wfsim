@@ -2,6 +2,7 @@ id: prisma_angstrum_haven_foray
 name: Haven Foray
 weapon: prisma_angstrum
 tier: 2
+icon: DamageAndIncreasedDamageWithOvershields(xWhite).png
 description: "Increase Base Damage by +50. With Overshields: Increase Base Damage by +50."
 # see notes: genesis_family_s_adapter
 selection: choose_one

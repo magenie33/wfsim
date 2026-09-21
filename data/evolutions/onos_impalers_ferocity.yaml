@@ -2,6 +2,7 @@ id: onos_impalers_ferocity
 name: Impaler's Ferocity
 weapon: onos
 tier: 5
+icon: OnPunchThroughIncreaseDmg(xWhite).png
 description: "On Punch Through Hit: +200% Damage for 10 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

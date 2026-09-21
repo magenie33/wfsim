@@ -2,7 +2,7 @@ id: boar_prime_elemental_balance
 name: Elemental Balance
 weapon: boar_prime
 tier: 4
-icon: HighStatus(xWhite).png
+icon: HighStatus.png
 description: "Increase Base Status Chance by +12% per projectile.
 Increase Base Status Chance by +96% for Incarnon Form."
 selection: choose_one

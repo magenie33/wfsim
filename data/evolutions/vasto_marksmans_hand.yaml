@@ -2,6 +2,7 @@ id: vasto_marksmans_hand
 name: Marksman's Hand
 weapon: vasto
 tier: 3
+icon: LessRecoil(xWhite).png
 description: "-50% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

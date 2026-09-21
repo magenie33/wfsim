@@ -2,7 +2,7 @@ id: boar_mercenary_chamber
 name: Mercenary Chamber
 weapon: boar
 tier: 3
-icon: IncarnonAmmoPool(xWhite).png
+icon: IncarnonAmmoPool.png
 description: "Increase Base Ammo Capacity to 195."
 # see notes: genesis_family_s_boar
 #

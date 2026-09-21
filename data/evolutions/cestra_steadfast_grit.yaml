@@ -2,6 +2,7 @@ id: cestra_steadfast_grit
 name: Steadfast Grit
 weapon: cestra
 tier: 2
+icon: OnShieldOverGuardbreakCritdamage(xWhite).png
 description: "Increase Base Damage by +10. On Shield or Overguard break: x3 Critical Damage for 6 seconds."
 # see notes: genesis_family_s_adapter_3
 #

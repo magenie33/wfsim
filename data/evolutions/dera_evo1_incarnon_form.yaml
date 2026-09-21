@@ -2,6 +2,7 @@ id: dera_evo1_incarnon_form
 name: Incarnon Form
 weapon: dera
 tier: 1
+icon: ShortRangeBeams(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fires lasers inflicting Magnetic damage with 3 Punch Through."
 # see notes: genesis_family_s_adapter
 selection: fixed

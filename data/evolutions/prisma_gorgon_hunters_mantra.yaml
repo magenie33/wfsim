@@ -2,6 +2,7 @@ id: prisma_gorgon_hunters_mantra
 name: Hunter's Mantra
 weapon: prisma_gorgon
 tier: 2
+icon: DamageAccuracyPunchThroughActiveChanAbility.png
 description: "Increase Base Damage by +5. With Channeled Ability Active: +3 Punch Through, +40% Accuracy."
 # see notes: genesis_family_s_adapter
 selection: choose_one

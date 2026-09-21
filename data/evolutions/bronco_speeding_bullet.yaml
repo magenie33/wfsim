@@ -2,6 +2,7 @@ id: bronco_speeding_bullet
 name: Speeding Bullet
 weapon: bronco
 tier: 2
+icon: DamageIncreasedFallOffRangeWithSprintSpeedLowerThanX(xWhite).png
 description: "Increase Base Damage by +36. With Sprint Speed 1.2 or Higher: +60% Projectile Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: dera_high_ground
 name: High Ground
 weapon: dera
 tier: 4
+icon: CritDamageWhenCritChanceIsBelowX(xWhite).png
 description: "Increase Base Critical Chance by +25% of current Status Chance, up to +35%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

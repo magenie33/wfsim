@@ -2,6 +2,7 @@ id: laetum_incarnon_efficiency
 name: Incarnon Efficiency
 weapon: laetum
 tier: 4
+icon: EvolutionFastTransmutation.png
 description: "Headshots build +50% more Transmutation charge."
 selection: choose_one
 # 12 weakpoint hits to fill becomes 8 (wiki) - a CYCLE parameter: it

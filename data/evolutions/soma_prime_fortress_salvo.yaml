@@ -2,6 +2,7 @@ id: soma_prime_fortress_salvo
 name: Fortress Salvo
 weapon: soma_prime
 tier: 2
+icon: PunchThroughWithArmorAboveX(xWhite).png
 description: "Increase Base Damage by +12. With Armor Over 450: +4 Punch Through."
 # see notes: genesis_family_s_adapter
 selection: choose_one

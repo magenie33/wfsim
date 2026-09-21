@@ -2,6 +2,7 @@ id: laetum_rapid_wrath
 name: Rapid Wrath
 weapon: laetum
 tier: 2
+icon: EvolutionRapidWrath.png
 description: "+20% Fire Rate."
 selection: choose_one
 

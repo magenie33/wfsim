@@ -2,6 +2,7 @@ id: lato_prime_voids_guidance
 name: Void's Guidance
 weapon: lato_prime
 tier: 3
+icon: LessRecoilMoreAccuracy(xWhite).png
 description: "+50% Accuracy, -50% Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

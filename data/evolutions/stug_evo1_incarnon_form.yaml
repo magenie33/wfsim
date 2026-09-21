@@ -2,6 +2,7 @@ id: stug_evo1_incarnon_form
 name: Incarnon Form
 weapon: stug
 tier: 1
+icon: ExplodingBouncyBallProjections(xWhite).png
 description: "Direct hits charge Incarnon Transmutation; Alt Fire transmutes. Unleash a chaotic maelstrom of bouncing corrosive blobs."
 # see notes: genesis_family_s_adapter
 selection: fixed

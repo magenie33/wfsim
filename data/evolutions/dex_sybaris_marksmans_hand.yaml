@@ -2,6 +2,7 @@ id: dex_sybaris_marksmans_hand
 name: Marksman's Hand
 weapon: dex_sybaris
 tier: 3
+icon: LessRecoil.png
 description: "-60% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,7 +2,7 @@ id: boar_critical_parallel
 name: Critical Parallel
 weapon: boar
 tier: 4
-icon: CritChanceCritDamage(xWhite).png
+icon: CritChanceCritDamage.png
 description: "Increase Base Critical Chance by +20%.
 Increase Base Critical Damage Multiplier by +0.5x."
 # see notes: genesis_family_s_boar

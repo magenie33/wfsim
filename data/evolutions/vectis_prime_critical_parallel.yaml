@@ -2,6 +2,7 @@ id: vectis_prime_critical_parallel
 name: Critical Parallel
 weapon: vectis_prime
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +8%. Increase Base Critical Damage Multiplier by +0.5x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

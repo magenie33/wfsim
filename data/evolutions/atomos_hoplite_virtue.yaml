@@ -2,6 +2,7 @@ id: atomos_hoplite_virtue
 name: Hoplite Virtue
 weapon: atomos
 tier: 2
+icon: DamageOnShieldLoss(xWhite).png
 description: "Increase Base Damage by +24. On Shield Break: Increase Base Damage by +30 for 8 seconds."
 # see notes: genesis_family_s_adapter_3
 #

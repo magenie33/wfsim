@@ -2,6 +2,7 @@ id: praedos_whirling_flurry
 name: Whirling Flurry
 weapon: praedos
 tier: 2
+icon: EvolutionAttackSpeed.png
 description: "+20% Attack Speed."
 selection: choose_one
 

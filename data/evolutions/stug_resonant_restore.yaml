@@ -2,6 +2,7 @@ id: stug_resonant_restore
 name: Resonant Restore
 weapon: stug
 tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
 description: "On Reload From Empty: Increase Base Magazine Capacity by +10. Stacks up to 3x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

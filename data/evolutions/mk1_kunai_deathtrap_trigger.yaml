@@ -2,6 +2,7 @@ id: mk1_kunai_deathtrap_trigger
 name: Deathtrap Trigger
 weapon: mk1_kunai
 tier: 4
+icon: OnEquipCritChanceDamageOnFirstAttack(xWhite).png
 description: "On equip from Primary: Increase Base Critical Chance by +42% for 4s. Increase Base Critical Damage Multiplier by +1x for 4s."
 # see notes: genesis_family_s_adapter
 selection: choose_one

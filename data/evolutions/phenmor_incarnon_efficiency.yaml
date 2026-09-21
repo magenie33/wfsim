@@ -2,6 +2,7 @@ id: phenmor_incarnon_efficiency
 name: Incarnon Efficiency
 weapon: phenmor
 tier: 4
+icon: EvolutionFastTransmutation.png
 description: "Headshots Build +50% more Incarnon Transmutation charge."
 # see notes: natural_incarnon_phenmor_carries_2
 selection: choose_one

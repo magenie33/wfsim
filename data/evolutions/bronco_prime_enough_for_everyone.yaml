@@ -2,6 +2,7 @@ id: bronco_prime_enough_for_everyone
 name: Enough for Everyone
 weapon: bronco_prime
 tier: 4
+icon: AmmoEffWhenAimGlidingOrSliding(xWhite).png
 description: "+80% Ammo Efficiency when 6 enemies are within 6 m."
 # see notes: genesis_family_s_adapter
 selection: choose_one

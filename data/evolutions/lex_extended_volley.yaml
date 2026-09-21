@@ -2,6 +2,7 @@ id: lex_extended_volley
 name: Extended Volley
 weapon: lex
 tier: 3
+icon: IncarnonClipSize(xWhite).png
 description: "Increase Base Magazine Capacity by +10."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: mk1_strun_brutal_edge
 name: Brutal Edge
 weapon: mk1_strun
 tier: 4
+icon: XCritChanceYStatChance.png
 description: "Increase Base Critical Chance by +2%. Increase Base Status Chance by +2%. Increase Base Status Chance by +20% for Incarnon Form."
 # see notes: genesis_family_s_adapter
 selection: choose_one

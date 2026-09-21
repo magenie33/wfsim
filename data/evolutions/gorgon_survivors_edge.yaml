@@ -2,6 +2,7 @@ id: gorgon_survivors_edge
 name: Survivor's Edge
 weapon: gorgon
 tier: 4
+icon: XCritChanceYStatChance.png
 description: "Increase Base Critical Chance by +8%. Increase Base Status Chance by +9%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

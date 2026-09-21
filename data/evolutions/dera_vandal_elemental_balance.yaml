@@ -2,6 +2,7 @@ id: dera_vandal_elemental_balance
 name: Elemental Balance
 weapon: dera_vandal
 tier: 4
+icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Status Chance by +14%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: gammacor_evolved_autoloader
 name: Evolved Autoloader
 weapon: gammacor
 tier: 3
+icon: ReloadWhileHolstered(xWhite).png
 description: "+50% Magazine reloaded per second while Holstered."
 # see notes: genesis_family_s_adapter
 selection: choose_one

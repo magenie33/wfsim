@@ -2,6 +2,7 @@ id: sancti_magistar_orokin_reach
 name: Orokin Reach
 weapon: sancti_magistar
 tier: 3
+icon: MoreRange(xWhite).png
 description: "+1.4 Range."
 selection: choose_one
 

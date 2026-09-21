@@ -2,6 +2,7 @@ id: zylok_evo1_incarnon_form
 name: Incarnon Form
 weapon: zylok
 tier: 1
+icon: SingleShotChargeExplosiveHit(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Charge a large single shot that deals Radial Heat Damage."
 # see notes: genesis_family_s_adapter
 selection: fixed

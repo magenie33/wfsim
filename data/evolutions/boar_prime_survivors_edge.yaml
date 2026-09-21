@@ -2,7 +2,7 @@ id: boar_prime_survivors_edge
 name: Survivor's Edge
 weapon: boar_prime
 tier: 4
-icon: XCritChanceYStatChance(xWhite).png
+icon: XCritChanceYStatChance.png
 description: "Increase Base Critical Chance by +10%.
 Increase Base Status Chance by +6% per projectile.
 Increase Base Status Chance by +48% for Incarnon Form."

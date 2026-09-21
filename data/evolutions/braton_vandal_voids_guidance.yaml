@@ -2,7 +2,7 @@ id: braton_vandal_voids_guidance
 name: Void's Guidance
 weapon: braton_vandal
 tier: 3
-icon: MoreAccuracy(xWhite).png
+icon: EvolutionVoid'sGuidance.png
 description: "+60% Accuracy, -60% Recoil"
 # see notes: genesis_family_s_braton
 selection: choose_one

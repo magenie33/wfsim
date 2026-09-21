@@ -2,6 +2,7 @@ id: zylok_prime_extended_volley
 name: Extended Volley
 weapon: zylok_prime
 tier: 3
+icon: IncarnonClipSize(xWhite).png
 description: "Increase Base Magazine Capacity by +18. Does not affect Incarnon Form."
 # see notes: genesis_family_s_adapter_2
 base_form_only: true

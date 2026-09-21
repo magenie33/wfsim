@@ -2,6 +2,7 @@ id: felarx_mounting_momentum
 name: Mounting Momentum
 weapon: felarx
 tier: 3
+icon: FireRateIncreasesPerShellReloaded.png
 description: "Reload increases Fire Rate by +10% per shell. Stacks up to 99x. Resets on reload."
 # see notes: genesis_family_s_adapter
 selection: choose_one

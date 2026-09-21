@@ -2,6 +2,7 @@ id: cestra_deathtrap_trigger
 name: Deathtrap Trigger
 weapon: cestra
 tier: 4
+icon: CritDamage(xWhite).png
 description: "Increase Base Critical Damage Multiplier by +2x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

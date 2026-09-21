@@ -2,6 +2,7 @@ id: dera_vandal_evolved_autoloader
 name: Evolved Autoloader
 weapon: dera_vandal
 tier: 3
+icon: RestoreAmmoPickUpAmountToCapacity(xWhite).png
 description: "+50% Magazine reloaded per second while Holstered."
 # see notes: genesis_family_s_adapter
 selection: choose_one

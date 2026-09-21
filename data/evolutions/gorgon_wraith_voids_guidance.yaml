@@ -2,6 +2,7 @@ id: gorgon_wraith_voids_guidance
 name: Void's Guidance
 weapon: gorgon_wraith
 tier: 3
+icon: LessRecoil.png
 description: "-50% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

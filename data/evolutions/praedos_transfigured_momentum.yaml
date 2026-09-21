@@ -2,6 +2,7 @@ id: praedos_transfigured_momentum
 name: Transfigured Momentum
 weapon: praedos
 tier: 5
+icon: EvolutionTransfiguredMomentum.png
 description: "On Slide Kill: +50% Heavy Attack Efficiency for 30s."
 selection: choose_one
 

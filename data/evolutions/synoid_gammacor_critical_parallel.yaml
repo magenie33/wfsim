@@ -2,6 +2,7 @@ id: synoid_gammacor_critical_parallel
 name: Critical Parallel
 weapon: synoid_gammacor
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +10%. Increase Base Critical Damage Multiplier by +0.2x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

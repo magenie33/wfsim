@@ -2,6 +2,7 @@ id: despair_fatal_affliction
 name: Fatal Affliction
 weapon: despair
 tier: 2
+icon: DamagePerActiveStatus(xWhite).png
 description: "Increase Base Damage by +50. +40% Direct Damage per Status Type affecting the target."
 # see notes: genesis_family_s_adapter
 selection: choose_one

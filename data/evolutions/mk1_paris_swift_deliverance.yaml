@@ -2,6 +2,7 @@ id: mk1_paris_swift_deliverance
 name: Swift Deliverance
 weapon: mk1_paris
 tier: 3
+icon: IncarnonProjectileSpeed.png
 description: "+60% Projectile Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

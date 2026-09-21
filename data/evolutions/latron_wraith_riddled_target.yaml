@@ -2,6 +2,7 @@ id: latron_wraith_riddled_target
 name: Riddled Target
 weapon: latron_wraith
 tier: 2
+icon: DamageAndOnPierce.png
 description: "Increase Base Damage by +12. On Puncture Status Effect: +25% Multishot for 8s. Stacks up to 4x."
 # see notes: genesis_family_s_latron
 selection: choose_one

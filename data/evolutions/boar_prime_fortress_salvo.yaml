@@ -2,7 +2,7 @@ id: boar_prime_fortress_salvo
 name: Fortress Salvo
 weapon: boar_prime
 tier: 2
-icon: PunchThroughWithArmorAboveX(xWhite).png
+icon: PunchThroughWithArmorAboveX.png
 description: "Increase Base Damage by +16.
 With Armor Over 450: +4 Punch Through"
 selection: choose_one

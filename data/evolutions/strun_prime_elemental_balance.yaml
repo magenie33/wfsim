@@ -2,6 +2,7 @@ id: strun_prime_elemental_balance
 name: Elemental Balance
 weapon: strun_prime
 tier: 4
+icon: HighStatus.png
 description: "Increase Base Status Chance by +11.3%. Increase Base Status Chance by +136% for Incarnon Form."
 # see notes: genesis_family_s_adapter
 selection: choose_one

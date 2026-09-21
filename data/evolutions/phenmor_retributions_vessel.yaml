@@ -2,7 +2,7 @@ id: phenmor_retributions_vessel
 name: Retribution's Vessel
 weapon: phenmor
 tier: 3
-icon: IncarnonClipSize(xWhite).png
+icon: EvolutionRetribution'sVessel.png
 description: "+50% Magazine Capacity"
 # see notes: natural_incarnon_phenmor_carries
 selection: choose_one

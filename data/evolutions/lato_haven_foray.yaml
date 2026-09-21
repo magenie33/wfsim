@@ -2,6 +2,7 @@ id: lato_haven_foray
 name: Haven Foray
 weapon: lato
 tier: 2
+icon: DamagePlusXDamageWithOvershields(xWhite).png
 description: "Increase Base Damage by +40. With Overshields: Increase Base Damage by +40."
 # see notes: genesis_family_s_adapter
 selection: choose_one

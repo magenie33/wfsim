@@ -2,6 +2,7 @@ id: laetum_raptors_chase
 name: Raptor's Chase
 weapon: laetum
 tier: 2
+icon: EvolutionRaptor'sChase.png
 description: "+50% Movement Speed while Aiming."
 selection: choose_one
 

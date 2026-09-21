@@ -2,6 +2,7 @@ id: ballistica_prime_survivors_edge
 name: Survivor's Edge
 weapon: ballistica_prime
 tier: 4
+icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Critical Chance by +7%. Increase Base Status Chance by +7% per projectile. Increase Base Status Chance by +28% for Incarnon Form."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: dread_evo1_incarnon_form
 name: Incarnon Form
 weapon: dread
 tier: 1
+icon: IncarnonFormIncreaseDamageAndSizeOfProjectile(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Sacrifice silence for increased projectile size and Heat Damage."
 # see notes: genesis_family_s_adapter
 selection: fixed

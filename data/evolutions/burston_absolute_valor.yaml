@@ -2,7 +2,7 @@ id: burston_absolute_valor
 name: Absolute Valor
 weapon: burston
 tier: 4
-icon: HighCrit(xWhite).png
+icon: HighCrit.png
 description: "Increase Base Critical Chance by +22%."
 # see notes: genesis_family_s_burston
 selection: choose_one

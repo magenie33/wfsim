@@ -2,6 +2,7 @@ id: latron_wraith_marksmans_focus
 name: Marksman's Focus
 weapon: latron_wraith
 tier: 3
+icon: LowerFOV.png
 description: "-30% Zoom"
 # see notes: genesis_family_s_latron
 selection: choose_one

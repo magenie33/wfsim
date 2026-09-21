@@ -2,6 +2,7 @@ id: stug_overcharge_blast
 name: Overcharge Blast
 weapon: stug
 tier: 2
+icon: MaxEnergyAboveXIncreaseRadialSize(xWhite).png
 description: "Increase Base Damage by +300. With Energy Max above 700: +50% Blast Radius."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: phenmor_elemental_excess
 name: Elemental Excess
 weapon: phenmor
 tier: 4
+icon: EvolutionTrade-Off.png
 description: "+20% Status Chance -10% Critical Chance"
 # see notes: natural_incarnon_phenmor_carries_2
 selection: choose_one

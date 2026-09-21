@@ -2,6 +2,7 @@ id: sicarus_evo1_incarnon_form
 name: Incarnon Form
 weapon: sicarus
 tier: 1
+icon: IncarnonFormRicochetOnHittingEnemies(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Bullets ricochet to 1 nearby enemy within 6 m of the main target."
 # see notes: genesis_family_s_adapter
 selection: fixed

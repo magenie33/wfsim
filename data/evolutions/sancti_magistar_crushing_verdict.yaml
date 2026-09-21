@@ -2,6 +2,7 @@ id: sancti_magistar_crushing_verdict
 name: Crushing Verdict
 weapon: sancti_magistar
 tier: 2
+icon: IncarnonFallOff(xWhite).png
 description: "Base Damage +20. Follow Through +40% with a Channeled Ability active."
 # THE GENESIS IS THE FAMILY'S. +100 is the Magistar's column; the Sancti
 # Magistar's is +20 and belongs to that entry.

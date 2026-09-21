@@ -2,6 +2,7 @@ id: strun_prime_blazing_barrel
 name: Blazing Barrel
 weapon: strun_prime
 tier: 2
+icon: MultishotIncreasesOnEachShotResetsOnReload.png
 description: "Increase Base Damage by +2. On Firing: +0.05 Base Multishot. Stacks up to 5x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: zylok_maulers_magazine
 name: Mauler's Magazine
 weapon: zylok
 tier: 2
+icon: CritDamageOnReloadFromEmpty(xWhite).png
 description: "Increase Base Damage by +76. On Reload From Empty: Increase Base Critical Damage Multiplier by +1x. Stacks up to 2x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

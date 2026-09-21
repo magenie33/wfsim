@@ -2,6 +2,7 @@ id: zylok_precisions_payoff
 name: Precision's Payoff
 weapon: zylok
 tier: 2
+icon: OnHeadshotFromFullBurst(xWhite).png
 description: "Increase Base Damage by +76. On Burst Headshots: Increase Base Damage by +20. Stacks up to 3x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

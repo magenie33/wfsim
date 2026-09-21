@@ -2,7 +2,7 @@ id: phenmor_executioners_fortune
 name: Executioner's Fortune
 weapon: phenmor
 tier: 3
-icon: ChanceToReplenishMagOnHeadshot(xWhite).png
+icon: EvolutionExecutioner'sFortune.png
 description: "On Headshot kill: 20% chance to instant Reload."
 # see notes: natural_incarnon_phenmor_carries
 selection: choose_one

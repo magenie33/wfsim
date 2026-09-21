@@ -2,6 +2,7 @@ id: gorgon_hoplite_virtue
 name: Hoplite Virtue
 weapon: gorgon
 tier: 2
+icon: DamageOnShieldBreak.png
 description: "Increase Base Damage by +10. On Shield Break: Increase Base Damage by +13 for 8 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

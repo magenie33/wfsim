@@ -2,6 +2,7 @@ id: dread_stalkers_resentment
 name: Stalker's Resentment
 weapon: dread
 tier: 2
+icon: IncreasedFireRateWithDespairAndHateEquipped(xWhite).png
 description: "Increase Base Damage by +50. With Hate and Despair Equipped: Hits increase Base Damage by +10 and Fire Rate by +10%. Stacks up to 5x. Resets on missed shot."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,7 +2,7 @@ id: burston_ready_retaliation
 name: Ready Retaliation
 weapon: burston
 tier: 3
-icon: IncarnonReloadSpeed(xWhite).png
+icon: IncarnonReloadSpeed.png
 description: "On Reload From Empty: +100% Reload Speed."
 # see notes: genesis_family_s_burston
 selection: choose_one

@@ -2,7 +2,7 @@ id: phenmor_rapid_wrath
 name: Rapid Wrath
 weapon: phenmor
 tier: 2
-icon: IncarnonFireRate(xWhite).png
+icon: EvolutionRapidWrath.png
 description: "+20% Fire Rate"
 # see notes: natural_incarnon_phenmor_carries
 selection: choose_one

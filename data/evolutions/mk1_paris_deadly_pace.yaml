@@ -2,6 +2,7 @@ id: mk1_paris_deadly_pace
 name: Deadly Pace
 weapon: mk1_paris
 tier: 2
+icon: DamageAndIncreasedFireRateWithSprint.png
 description: "Increase Base Damage by +50. With Sprint Speed 1.2 or Higher: +80% Fire Rate."
 # see notes: genesis_family_s_adapter
 selection: choose_one

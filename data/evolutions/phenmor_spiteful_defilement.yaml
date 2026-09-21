@@ -2,6 +2,7 @@ id: phenmor_spiteful_defilement
 name: Spiteful Defilement
 weapon: phenmor
 tier: 5
+icon: EvolutionSpitefulDefilement.png
 description: "Enemies suffering from fewer than 3 Status Effects will receive: +100% Critical Damage"
 # see notes: natural_incarnon_phenmor_carries_2
 selection: choose_one

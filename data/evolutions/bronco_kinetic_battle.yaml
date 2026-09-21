@@ -2,6 +2,7 @@ id: bronco_kinetic_battle
 name: Kinetic Battle
 weapon: bronco
 tier: 3
+icon: LessRecoil(xWhite).png
 description: "-50% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: laetum_elemental_excess
 name: Elemental Excess
 weapon: laetum
 tier: 4
+icon: EvolutionTrade-Off.png
 description: "+20% Status Chance, -10% Critical Chance."
 selection: choose_one
 

@@ -2,6 +2,7 @@ id: soma_evo1_incarnon_form
 name: Incarnon Form
 weapon: soma
 tier: 1
+icon: IncarnonFormMultishotSlowerFireRate(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Gain increased Status Chance and Multishot while slowing fire rate."
 # see notes: genesis_family_s_adapter
 selection: fixed

@@ -2,6 +2,7 @@ id: kunai_swift_conclusion
 name: Swift Conclusion
 weapon: kunai
 tier: 2
+icon: DamageAndAdditionalDamageToEnemiesAtHalfHealth(xWhite).png
 description: "Increase Damage by +70. Increase Damage by +200% if enemy has less than half health."
 # see notes: genesis_family_s_adapter
 selection: choose_one

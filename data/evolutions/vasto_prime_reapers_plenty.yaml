@@ -2,6 +2,7 @@ id: vasto_prime_reapers_plenty
 name: Reaper's Plenty
 weapon: vasto_prime
 tier: 4
+icon: OnHeadshotAmmoEfficiency(xWhite).png
 description: "On Headshot: +100% Ammo Efficiency for 2 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -206,14 +206,19 @@ fn m104_primary_compression_on_the_incarnon_form() {
 /// above cannot see it: the blast detonates ON the aimed body either way.
 #[test]
 fn m104_compression_shrinks_the_explosion_it_is_paid_for() {
-    let with_arcane = |fx: crate::data::arcanes::ArcaneFx, weapon: &str| {
+    let with_mods = |fx: crate::data::arcanes::ArcaneFx, weapon: &str, mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
-        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let pool = crate::data::mods::pool_for_weapon("latron_prime");
+        let refs: Vec<&crate::model::ModDef> = mods
+            .iter()
+            .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
+            .collect();
         let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &fx);
         let r = p.radial.expect("the explosion");
         (r.radius_m, p.compression_multiplier)
     };
+    let with_arcane = |fx: crate::data::arcanes::ArcaneFx, weapon: &str| with_mods(fx, weapon, &[]);
     let compression = |rank: u32| {
         crate::data::arcanes::for_slot("primary", "primary_compression")
             .expect("the arcane")
@@ -229,6 +234,14 @@ fn m104_compression_shrinks_the_explosion_it_is_paid_for() {
     let (kept, mult) = with_arcane(compression(2), "latron_prime_incarnon");
     assert!((kept - 0.8).abs() < 1e-9, "a fifth of 4 m: {kept}");
     assert!((mult - 3.24).abs() < 1e-9, "+224% off the 3.2 m it took: {mult}");
+    // …AND IT IS THE MODDED RADIUS THAT IS TRADED, which is the whole reason
+    // the catalog's Primed Firestorm column is 1.44x its base column: the mod
+    // grows the sphere, the arcane takes four fifths of the bigger one and pays
+    // for every metre of it. 4 x 1.44 x 0.2 = 1.152 m left, +322.6% bought.
+    let (grown, grown_mult) =
+        with_mods(compression(2), "latron_prime_incarnon", &["primed_firestorm"]);
+    assert!((grown - 1.152).abs() < 1e-9, "4 x 1.44 x 0.2: {grown}");
+    assert!((grown_mult - (1.0 + 0.7 * 4.608)).abs() < 1e-9, "+322.6%: {grown_mult}");
     // A ROW THE TABLE MARKS `doesnt_work` TAKES NOTHING AND SHRINKS NOTHING —
     // the Komorex's zoom explosion, at 0% effectiveness.
     let (komorex, komorex_mult) = with_arcane(compression(5), "komorex");

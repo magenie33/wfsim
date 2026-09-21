@@ -2,6 +2,7 @@ id: bronco_prime_infused_shots
 name: Infused Shots
 weapon: bronco_prime
 tier: 2
+icon: DamageWithEnergySpent(xWhite).png
 description: "Increase Base Damage by +16. On 50 Energy Spent: Increase Base Damage by +9 for 10 seconds. Stacks up to 4x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

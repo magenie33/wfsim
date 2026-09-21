@@ -2,6 +2,7 @@ id: sicarus_kings_gambit
 name: King's Gambit
 weapon: sicarus
 tier: 2
+icon: BodyShotsCantCritHeadshotsIncCritChance(xWhite).png
 description: "Increase Base Damage by +50. x0 Critical Chance on Bodyshots, +150% Critical Chance on Weakpoint Hits."
 # see notes: genesis_family_s_adapter
 selection: choose_one

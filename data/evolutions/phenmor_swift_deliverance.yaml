@@ -2,7 +2,7 @@ id: phenmor_swift_deliverance
 name: Swift Deliverance
 weapon: phenmor
 tier: 2
-icon: IncarnonProjectileSpeed(xWhite).png
+icon: EvolutionProjectileSpeed.png
 description: "+80% Projectile Speed"
 # see notes: natural_incarnon_phenmor_carries
 selection: choose_one

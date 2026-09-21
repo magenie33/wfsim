@@ -2,6 +2,7 @@ id: cestra_fortress_salvo
 name: Fortress Salvo
 weapon: cestra
 tier: 2
+icon: ArmorAboveXMultishot(xWhite).png
 description: "Increase Base Damage by +10. With Armor Over 450: +80% Multishot."
 # see notes: genesis_family_s_adapter_3
 #

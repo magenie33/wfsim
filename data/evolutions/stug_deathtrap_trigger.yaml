@@ -2,6 +2,7 @@ id: stug_deathtrap_trigger
 name: Deathtrap Trigger
 weapon: stug
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +25%. Increase Base Critical Damage Multiplier by +1.5x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

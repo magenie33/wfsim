@@ -2,6 +2,7 @@ id: rakta_ballistica_evo1_incarnon_form
 name: Incarnon Form
 weapon: rakta_ballistica
 tier: 1
+icon: UnchargedAndChargedProjectiles(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire cross-shaped projectiles that punch through enemies."
 # see notes: genesis_family_s_adapter
 selection: fixed

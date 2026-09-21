@@ -2,6 +2,7 @@ id: vasto_evo1_incarnon_form
 name: Incarnon Form
 weapon: vasto
 tier: 1
+icon: HammerFanBurstShotgun(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Transforms into a 6-round burst with 6 base multishot."
 # see notes: genesis_family_s_adapter
 selection: fixed

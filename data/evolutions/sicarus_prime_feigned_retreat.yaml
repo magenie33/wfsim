@@ -2,6 +2,7 @@ id: sicarus_prime_feigned_retreat
 name: Feigned Retreat
 weapon: sicarus_prime
 tier: 2
+icon: XDamageToEnemiesAtFullHealthAndBelowHalfHealth(xWhite).png
 description: "Increase Base Damage by +40. +40% Damage to enemies below half Health."
 # see notes: genesis_family_s_adapter
 selection: choose_one

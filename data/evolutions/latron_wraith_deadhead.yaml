@@ -2,6 +2,7 @@ id: latron_wraith_deadhead
 name: Deadhead
 weapon: latron_wraith
 tier: 4
+icon: HeadshotDamage.png
 description: "+100% Headshot Damage"
 # see notes: genesis_family_s_latron
 selection: choose_one

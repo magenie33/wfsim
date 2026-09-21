@@ -2,6 +2,7 @@ id: dread_hitmans_opportunity
 name: Hitman's Opportunity
 weapon: dread
 tier: 2
+icon: DamageAndAdditionalDamageToEnemiesAtHalfHealth(xWhite).png
 description: "Increase Base Damage by +70. +100% Damage to enemies below half Health."
 # see notes: genesis_family_s_adapter
 selection: choose_one

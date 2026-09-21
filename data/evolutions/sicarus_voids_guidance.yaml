@@ -2,6 +2,7 @@ id: sicarus_voids_guidance
 name: Void's Guidance
 weapon: sicarus
 tier: 3
+icon: MoreAccuracy(xWhite).png
 description: "+40% Accuracy."
 # see notes: genesis_family_s_adapter
 selection: choose_one

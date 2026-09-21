@@ -2,6 +2,7 @@ id: ballistica_prime_critical_parallel
 name: Critical Parallel
 weapon: ballistica_prime
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +12%. Increase Base Critical Damage Multiplier by +1x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

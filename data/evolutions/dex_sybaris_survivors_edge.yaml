@@ -2,6 +2,7 @@ id: dex_sybaris_survivors_edge
 name: Survivor's Edge
 weapon: dex_sybaris
 tier: 4
+icon: EvolutionCriticalStatusUp.png
 description: "Increase Base Critical Chance by +5%. Increase Base Status Chance by +10%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

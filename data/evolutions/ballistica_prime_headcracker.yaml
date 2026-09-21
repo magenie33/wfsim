@@ -2,6 +2,7 @@ id: ballistica_prime_headcracker
 name: Headcracker
 weapon: ballistica_prime
 tier: 2
+icon: OnHeadshotFireRateForXSecs(xWhite).png
 description: "Increase Base Damage by +3. On Headshot: +7.5% Fire Rate for 4 seconds. Stacks up to 10x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: laetum_overwhelming_attrition
 name: Overwhelming Attrition
 weapon: laetum
 tier: 5
+icon: EvolutionOverwhelmingAttrition.png
 description: "On Hit that is neither Critical nor applies a Status Effect: +400% damage for 10s. Stacks up to 3 times."
 selection: choose_one
 # Decay (wiki): "When the buff times out, one stack is lost and the buff

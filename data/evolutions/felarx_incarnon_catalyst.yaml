@@ -2,6 +2,7 @@ id: felarx_incarnon_catalyst
 name: Incarnon Catalyst
 weapon: felarx
 tier: 4
+icon: IncreaseChargeGainedOnKills.png
 description: "Headshots build +50% more Incarnon Transmutation charge."
 # see notes: genesis_family_s_adapter
 selection: choose_one

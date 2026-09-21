@@ -2,6 +2,7 @@ id: praedos_kinetic_harmony
 name: Kinetic Harmony
 weapon: praedos
 tier: 5
+icon: EvolutionKineticHarmony.png
 description: "+100% Heavy Attack Wind Up Speed."
 selection: choose_one
 

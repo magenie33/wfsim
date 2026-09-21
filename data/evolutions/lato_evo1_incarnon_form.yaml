@@ -2,6 +2,7 @@ id: lato_evo1_incarnon_form
 name: Incarnon Form
 weapon: lato
 tier: 1
+icon: IncarnonFormRicochetOnHittingEnemies(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Gain Punch Through and Ricochet."
 # see notes: genesis_family_s_adapter
 selection: fixed

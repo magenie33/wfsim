@@ -2,6 +2,7 @@ id: vectis_survivors_edge
 name: Survivor's Edge
 weapon: vectis
 tier: 4
+icon: GainStatusChanceOfCritChance(xWhite).png
 description: "Increase Base Status Chance by 30% of current Critical Chance, up to 40%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

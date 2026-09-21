@@ -2,7 +2,7 @@ id: burston_prime_reavers_rapture
 name: Reaver's Rapture
 weapon: burston_prime
 tier: 4
-icon: DamageIncreaseOnFullBurstHitResetOnReload(xWhite).png
+icon: DamageIncreaseOnFullBurstHitResetOnReload.png
 description: "On Full Burst Hit: +20% Damage, resets on Reload."
 # see notes: genesis_family_s_burston
 selection: choose_one

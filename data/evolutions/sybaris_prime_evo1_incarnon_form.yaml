@@ -2,6 +2,7 @@ id: sybaris_prime_evo1_incarnon_form
 name: Incarnon Form
 weapon: sybaris_prime
 tier: 1
+icon: 4RoundInnateBlast.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire 4-round bursts and gain Blast Status."
 # see notes: genesis_family_s_adapter
 selection: fixed

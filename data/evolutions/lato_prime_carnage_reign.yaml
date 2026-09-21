@@ -2,6 +2,7 @@ id: lato_prime_carnage_reign
 name: Carnage Reign
 weapon: lato_prime
 tier: 4
+icon: DamagePerActiveStatus(xWhite).png
 description: "+40% Direct Damage per Active Status Type affecting target."
 # see notes: genesis_family_s_adapter
 selection: choose_one

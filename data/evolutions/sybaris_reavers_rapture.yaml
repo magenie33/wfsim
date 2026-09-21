@@ -2,6 +2,7 @@ id: sybaris_reavers_rapture
 name: Reaver's Rapture
 weapon: sybaris
 tier: 4
+icon: DamageIncreaseOnFullBurstHitResetOnReload.png
 description: "On Full Burst Hit: +20% Damage, resets on Reload. Stacks up to 4x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

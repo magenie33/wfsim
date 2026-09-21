@@ -2,6 +2,7 @@ id: sybaris_prime_elemental_dominance
 name: Elemental Dominance
 weapon: sybaris_prime
 tier: 4
+icon: GainStatusChanceOfCritChance.png
 description: "Increase Base Status Chance by +8%. Effect doubles in Incarnon Form."
 # see notes: genesis_family_s_adapter
 selection: choose_one

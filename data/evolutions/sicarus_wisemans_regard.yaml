@@ -2,6 +2,7 @@ id: sicarus_wisemans_regard
 name: Wiseman's Regard
 weapon: sicarus
 tier: 4
+icon: GainStatusChanceOfCritChance(xWhite).png
 description: "Increase Base Status Chance by 30% of current Critical Chance, up to 40%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

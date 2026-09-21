@@ -2,6 +2,7 @@ id: lex_critical_parallel
 name: Critical Parallel
 weapon: lex
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +20%. Increase Base Critical Damage Multiplier by +0.4x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: gorgon_wraith_resonant_restore
 name: Resonant Restore
 weapon: gorgon_wraith
 tier: 3
+icon: ReloadOnEmptyGivesMagSize.png
 description: "On Reload From Empty: Increase Base Magazine Capacity by +15. Stacks up to 3x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

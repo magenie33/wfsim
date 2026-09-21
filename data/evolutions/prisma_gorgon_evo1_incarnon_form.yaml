@@ -2,6 +2,7 @@ id: prisma_gorgon_evo1_incarnon_form
 name: Incarnon Form
 weapon: prisma_gorgon
 tier: 1
+icon: ExplodingSpikes.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire embedding projectiles that explode with Heat Damage."
 # see notes: genesis_family_s_adapter
 selection: fixed

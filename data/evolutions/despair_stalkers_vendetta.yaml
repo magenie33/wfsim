@@ -2,6 +2,7 @@ id: despair_stalkers_vendetta
 name: Stalker's Vendetta
 weapon: despair
 tier: 2
+icon: MultishotThatCostsAmmoWithDreadAndHateEquipped(xWhite).png
 description: "Increase Base Damage by +60. With Dread and Hate equipped: bonus Multishot and Damage."
 # see notes: genesis_family_s_adapter_3
 #

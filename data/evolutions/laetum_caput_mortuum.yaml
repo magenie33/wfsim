@@ -2,6 +2,7 @@ id: laetum_caput_mortuum
 name: Caput Mortuum
 weapon: laetum
 tier: 4
+icon: EvolutionCaputMortuum.png
 description: "+50% Headshot Damage."
 selection: choose_one
 # "Affects both modes" (wiki). The radial part never headshots, so this

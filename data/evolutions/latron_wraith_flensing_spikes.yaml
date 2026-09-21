@@ -2,6 +2,7 @@ id: latron_wraith_flensing_spikes
 name: Flensing Spikes
 weapon: latron_wraith
 tier: 4
+icon: ArmourStrippedForEveryStackOfPierce.png
 description: "Remove 20% of enemy Armor per Puncture Status."
 # see notes: genesis_family_s_latron
 selection: choose_one

@@ -2,7 +2,7 @@ id: boar_prime_practiced_grip
 name: Practiced Grip
 weapon: boar_prime
 tier: 3
-icon: MoreAccuracy(xWhite).png
+icon: MoreAccuracy.png
 description: "Increase Accuracy by +50%."
 selection: choose_one
 

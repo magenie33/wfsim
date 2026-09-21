@@ -2,6 +2,7 @@ id: magistar_swift_break
 name: Swift Break
 weapon: magistar
 tier: 3
+icon: IncarnonWindUpSpeed(xWhite).png
 description: "+30% Heavy Attack Wind Up Speed."
 selection: choose_one
 

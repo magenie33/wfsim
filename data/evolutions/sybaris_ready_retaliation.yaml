@@ -2,6 +2,7 @@ id: sybaris_ready_retaliation
 name: Ready Retaliation
 weapon: sybaris
 tier: 3
+icon: ReloadSpeedOnEmpty.png
 description: "On Reload From Empty: +60% Reload Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

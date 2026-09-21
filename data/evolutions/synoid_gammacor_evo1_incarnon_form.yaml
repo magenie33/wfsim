@@ -2,6 +2,7 @@ id: synoid_gammacor_evo1_incarnon_form
 name: Incarnon Form
 weapon: synoid_gammacor
 tier: 1
+icon: ProjectileBombFreezeProc(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fires projectiles that pull enemies into a Cold Damage explosion."
 # see notes: genesis_family_s_adapter
 selection: fixed

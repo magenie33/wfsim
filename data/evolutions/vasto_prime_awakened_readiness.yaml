@@ -2,6 +2,7 @@ id: vasto_prime_awakened_readiness
 name: Awakened Readiness
 weapon: vasto_prime
 tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
 description: "+20% Magazine reloaded per second while Holstered."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: dex_sybaris_well_rehearsed
 name: Well Rehearsed
 weapon: dex_sybaris
 tier: 2
+icon: ConsecutivetHeadshotIncrDmg.png
 description: "Increase Base Damage by +15. On Consecutive Weakpoint Hits: Increase Base Damage by +5. Stacks up to 3x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

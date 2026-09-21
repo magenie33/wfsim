@@ -2,6 +2,7 @@ id: rakta_ballistica_critical_parallel
 name: Critical Parallel
 weapon: rakta_ballistica
 tier: 4
+icon: CritChanceCritDamage(xWhite).png
 description: "Increase Base Critical Chance by +14%. Increase Base Critical Damage Multiplier by +1x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

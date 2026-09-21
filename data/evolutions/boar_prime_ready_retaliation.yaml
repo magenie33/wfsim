@@ -2,7 +2,7 @@ id: boar_prime_ready_retaliation
 name: Ready Retaliation
 weapon: boar_prime
 tier: 3
-icon: ReloadSpeedOnEmpty(xWhite).png
+icon: ReloadSpeedOnEmpty.png
 description: "On Reload From Empty: +100% Reload Speed."
 selection: choose_one
 

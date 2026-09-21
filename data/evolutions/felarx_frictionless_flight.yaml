@@ -2,6 +2,7 @@ id: felarx_frictionless_flight
 name: Frictionless Flight
 weapon: felarx
 tier: 2
+icon: EvolutionProjectileSpeed.png
 description: "+50% Projectile Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

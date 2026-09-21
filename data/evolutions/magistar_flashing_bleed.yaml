@@ -2,6 +2,7 @@ id: magistar_flashing_bleed
 name: Flashing Bleed
 weapon: magistar
 tier: 4
+icon: ChanceForSlashOnImpact(xWhite).png
 description: "+50% Chance of a Slash Status Effect on an Impact Status Effect."
 # AN IMPACT-TO-SLASH PROC CONVERSION — the same mechanic Hemorrhage carries on
 # the mod side, reaching the same runtime. It matters more here than on most

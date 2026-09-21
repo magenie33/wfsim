@@ -2,6 +2,7 @@ id: felarx_racking_wrath
 name: Racking Wrath
 weapon: felarx
 tier: 4
+icon: EvolutionTrade-Off.png
 description: "+20% Status Chance -10% Critical Chance"
 # see notes: genesis_family_s_adapter
 selection: choose_one

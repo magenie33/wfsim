@@ -2,6 +2,7 @@ id: laetum_devouring_attrition
 name: Devouring Attrition
 weapon: laetum
 tier: 5
+icon: EvolutionNon-Critical.png
 description: "50% chance to deal +2000% damage on non-critical hits."
 selection: choose_one
 # VERBATIM (wiki): "Damage bonus is multiplicative to base damage bonuses

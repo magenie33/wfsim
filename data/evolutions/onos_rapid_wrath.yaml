@@ -2,6 +2,7 @@ id: onos_rapid_wrath
 name: Rapid Wrath
 weapon: onos
 tier: 2
+icon: IncarnonFireRate(xWhite).png
 description: "+25% Fire Rate."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: praedos_reaching_lunge
 name: Reaching Lunge
 weapon: praedos
 tier: 3
+icon: EvolutionReachingLunge.png
 description: "+1.5m Slide Attack Range."
 selection: choose_one
 

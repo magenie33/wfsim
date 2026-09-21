@@ -2,6 +2,7 @@ id: strun_prime_swift_deliverance
 name: Swift Deliverance
 weapon: strun_prime
 tier: 3
+icon: HittingEnemyWElectricityStatusRestoresRound.png
 description: "+30% Projectile Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

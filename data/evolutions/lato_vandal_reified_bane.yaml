@@ -2,6 +2,7 @@ id: lato_vandal_reified_bane
 name: Reified Bane
 weapon: lato_vandal
 tier: 2
+icon: ReloadFromEmpty(xWhite).png
 description: "Increase Base Damage by +12. On Reload from Empty Magazine: Increase Base Damage by +30."
 # see notes: genesis_family_s_adapter
 selection: choose_one

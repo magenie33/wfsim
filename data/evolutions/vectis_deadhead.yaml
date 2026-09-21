@@ -2,6 +2,7 @@ id: vectis_deadhead
 name: Deadhead
 weapon: vectis
 tier: 4
+icon: HeadshotDamage(xWhite).png
 description: "+25% Headshot Damage."
 # see notes: genesis_family_s_adapter
 selection: choose_one

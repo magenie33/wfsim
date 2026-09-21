@@ -2,6 +2,7 @@ id: mk1_kunai_accelerating_volley
 name: Accelerating Volley
 weapon: mk1_kunai
 tier: 4
+icon: IncarnonFireRate(xWhite).png
 description: "On Fire: +20% Fire Rate for 0.5 seconds. Stacks up to 5x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: soma_prime_fresh_havoc
 name: Fresh Havoc
 weapon: soma_prime
 tier: 4
+icon: ReloadFromEmpty(xWhite).png
 description: "On Reload From Empty: Increase Base Damage by +6. Stacks up to 2x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

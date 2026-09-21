@@ -2,6 +2,7 @@ id: praedos_adept_reflexes
 name: Adept Reflexes
 weapon: praedos
 tier: 3
+icon: EvolutionAdeptReflexes.png
 description: "+20 Initial Combo."
 selection: choose_one
 

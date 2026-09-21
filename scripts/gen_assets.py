@@ -107,6 +107,15 @@ def main():
                 continue
             item = by_unique.get(internal) if internal else None
             image = (item or {}).get("imageName")
+            # A FORM INHERITS ITS WEAPON'S PICTURE, which is the rule the file's
+            # own header states and the reason 29 Incarnon forms sat here
+            # unresolved: a form is not an ITEM in the export, so it has no
+            # `internal_name` to join on and never will. The relation is
+            # declared (`transform_group:`), so the leader's file is the answer
+            # rather than a guess — and the leader is resolved first, being an
+            # item of its own.
+            if not image and stem(mid) != mid:
+                image = taken.get(stem(mid)) or dict(missing.get(section, [])).get(stem(mid))
             if not image:
                 unresolved.append((section, mid, internal))
                 continue

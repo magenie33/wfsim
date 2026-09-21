@@ -2,6 +2,7 @@ id: lex_prime_trusty_sidearm
 name: Trusty Sidearm
 weapon: lex_prime
 tier: 2
+icon: DamageAndMultishotWithActiveChanneledAbility(xWhite).png
 description: "Increase Base Damage by +20. With Channeled Ability active: +60% Ammo Efficiency."
 # see notes: genesis_family_s_adapter_3
 #

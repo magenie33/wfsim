@@ -2,6 +2,7 @@ id: praedos_vaulting_leap
 name: Vaulting Leap
 weapon: praedos
 tier: 4
+icon: EvolutionVaultingLeap.png
 description: "Increase Double Jump strength by +100%."
 selection: choose_one
 

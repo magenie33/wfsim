@@ -2,6 +2,7 @@ id: dex_sybaris_elemental_dominance
 name: Elemental Dominance
 weapon: dex_sybaris
 tier: 4
+icon: GainStatusChanceOfCritChance.png
 description: "Increase Base Status Chance by +15%. Effect doubles in Incarnon Form."
 # see notes: genesis_family_s_adapter
 selection: choose_one

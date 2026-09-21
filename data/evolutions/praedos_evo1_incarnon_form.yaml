@@ -2,6 +2,7 @@ id: praedos_evo1_incarnon_form
 name: Incarnon Form
 weapon: praedos
 tier: 1
+icon: EvolutionIncarnonFormBlade.png
 description: "Reach 5x Combo and then Heavy Attack to activate Incarnon Form for 90 seconds. +3 Range, +40% Attack Speed."
 # AN INNATE INCARNON, not a Genesis: the Praedos ships with its five tiers and
 # there is no adapter to buy. A melee Incarnon is not a FORM either — it does not

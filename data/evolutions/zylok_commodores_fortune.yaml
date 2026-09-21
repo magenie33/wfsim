@@ -2,6 +2,7 @@ id: zylok_commodores_fortune
 name: Commodore's Fortune
 weapon: zylok
 tier: 4
+icon: HighCrit(xWhite).png
 description: "Increase Base Critical Chance by +32%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

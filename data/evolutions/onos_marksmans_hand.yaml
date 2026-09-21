@@ -2,6 +2,7 @@ id: onos_marksmans_hand
 name: Marksman's Hand
 weapon: onos
 tier: 2
+icon: LessRecoil(xWhite).png
 description: "-30% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

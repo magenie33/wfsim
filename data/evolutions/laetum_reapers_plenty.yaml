@@ -2,6 +2,7 @@ id: laetum_reapers_plenty
 name: Reaper's Plenty
 weapon: laetum
 tier: 5
+icon: EvolutionReaper'sPlenty.png
 description: "On Headshot: +40% Ammo Efficiency for 6s."
 # "Does not affect Incarnon Form" (the row's note).
 base_form_only: true

@@ -2,6 +2,7 @@ id: zylok_voids_guidance
 name: Void's Guidance
 weapon: zylok
 tier: 3
+icon: LessRecoilMoreAccuracy(xWhite).png
 description: "+60% Accuracy. -60% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

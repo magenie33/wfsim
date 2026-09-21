@@ -2,6 +2,7 @@ id: miter_evo1_incarnon_form
 name: Incarnon Form
 weapon: miter
 tier: 1
+icon: IncarnonFormHomingBouncingExplodingProjectiles(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire homing and bouncing Heat Damage explosives."
 # see notes: genesis_family_s_adapter
 selection: fixed

@@ -2,6 +2,7 @@ id: vectis_prime_evo1_incarnon_form
 name: Incarnon Form
 weapon: vectis_prime
 tier: 1
+icon: HeadshotsExplodeRadialSpheres(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire slowing projectiles that explode on headshot."
 # see notes: genesis_family_s_adapter
 selection: fixed

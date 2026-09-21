@@ -2,6 +2,7 @@ id: mk1_braton_evo1_incarnon_form
 name: Incarnon Form
 weapon: mk1_braton
 tier: 1
+icon: IncarnonFormAOEonHit.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Switching back will expend any remaining charge. Gain Radial Heat damage."
 # see notes: genesis_family_s_braton
 selection: fixed

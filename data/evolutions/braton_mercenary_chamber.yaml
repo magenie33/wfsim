@@ -2,6 +2,7 @@ id: braton_mercenary_chamber
 name: Mercenary Chamber
 weapon: braton
 tier: 3
+icon: IncarnonAmmoPool.png
 description: "Increase Base Ammo Capacity to 675."
 # see notes: genesis_family_s_braton
 selection: choose_one

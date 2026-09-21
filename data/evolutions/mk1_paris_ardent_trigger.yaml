@@ -2,6 +2,7 @@ id: mk1_paris_ardent_trigger
 name: Ardent Trigger
 weapon: mk1_paris
 tier: 3
+icon: HittingEnemyAfterPunchThroughEnvironment.png
 description: "On Punch Through Hit: +40% Fire Rate for 6 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

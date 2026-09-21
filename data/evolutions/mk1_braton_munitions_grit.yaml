@@ -2,6 +2,7 @@ id: mk1_braton_munitions_grit
 name: Munitions Grit
 weapon: mk1_braton
 tier: 2
+icon: MultishotCostsAmmoTakenFromPoolNotClip.png
 description: "Increase Base Damage by +20. Multishot consumes ammo directly from Capacity and does +48% Damage. +20% Multishot."
 # see notes: genesis_family_s_braton
 selection: choose_one

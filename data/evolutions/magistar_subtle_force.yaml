@@ -2,6 +2,7 @@ id: magistar_subtle_force
 name: Subtle Force
 weapon: magistar
 tier: 4
+icon: XCritChanceYStatChance(xWhite).png
 description: "Critical Chance +8%. Status Chance +8%."
 selection: choose_one
 

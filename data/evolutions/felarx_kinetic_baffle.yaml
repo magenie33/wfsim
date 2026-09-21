@@ -2,6 +2,7 @@ id: felarx_kinetic_baffle
 name: Kinetic Baffle
 weapon: felarx
 tier: 2
+icon: LessRecoil.png
 description: "-50% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

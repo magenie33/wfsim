@@ -2,6 +2,7 @@ id: dread_marksmans_focus
 name: Marksman's Focus
 weapon: dread
 tier: 3
+icon: LowerFOV(xWhite).png
 description: "-30% Zoom."
 # see notes: genesis_family_s_adapter
 selection: choose_one

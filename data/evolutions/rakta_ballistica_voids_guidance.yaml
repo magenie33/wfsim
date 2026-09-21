@@ -2,6 +2,7 @@ id: rakta_ballistica_voids_guidance
 name: Void's Guidance
 weapon: rakta_ballistica
 tier: 3
+icon: LessRecoilMoreAccuracy(xWhite).png
 description: "+40% Accuracy. -40% Weapon Recoil."
 # see notes: genesis_family_s_adapter
 selection: choose_one

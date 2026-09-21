@@ -2,7 +2,7 @@ id: boar_prime_reified_bane
 name: Reified Bane
 weapon: boar_prime
 tier: 2
-icon: ReloadFromEmpty(xWhite).png
+icon: ReloadFromEmpty.png
 description: "Increase Base Damage by +10.
 On Reload From Empty: Increase Base Damage by +10."
 selection: choose_one

@@ -2,6 +2,7 @@ id: atomos_resonant_restore
 name: Resonant Restore
 weapon: atomos
 tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
 description: "On Reload From Empty: Increase Base Magazine Capacity by +5. Stacks up to 7x. Does not affect Incarnon Form."
 # see notes: genesis_family_s_adapter_2
 base_form_only: true

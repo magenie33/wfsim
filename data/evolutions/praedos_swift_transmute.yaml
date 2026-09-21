@@ -2,6 +2,7 @@ id: praedos_swift_transmute
 name: Swift Transmute
 weapon: praedos
 tier: 4
+icon: EvolutionSwiftTransmute.png
 description: "Reach 3x Combo and Heavy Attack to activate Incarnon Form."
 selection: choose_one
 

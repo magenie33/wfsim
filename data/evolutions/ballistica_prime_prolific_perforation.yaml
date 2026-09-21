@@ -2,6 +2,7 @@ id: ballistica_prime_prolific_perforation
 name: Prolific Perforation
 weapon: ballistica_prime
 tier: 2
+icon: AdditionalCCForEveryEnemyPunchedThrough(xWhite).png
 description: "Increase Base Damage by +3. On Punch Through Hit: +10% Critical Chance for 3 seconds. Stacks up to 8x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

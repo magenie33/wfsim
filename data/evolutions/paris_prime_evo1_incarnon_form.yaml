@@ -2,6 +2,7 @@ id: paris_prime_evo1_incarnon_form
 name: Incarnon Form
 weapon: paris_prime
 tier: 1
+icon: IncarnonFormIncreaseDamageAndSizeOfProjectile.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Sacrifice silence for increased projectile size and Heat Damage."
 # see notes: genesis_family_s_adapter
 selection: fixed

@@ -2,7 +2,7 @@ id: phenmor_voids_guidance
 name: Void's Guidance
 weapon: phenmor
 tier: 2
-icon: MoreAccuracy(xWhite).png
+icon: EvolutionVoid'sGuidance.png
 description: "+50% Accuracy and +50% less Recoil while Aiming."
 # see notes: natural_incarnon_phenmor_carries
 selection: choose_one

@@ -2,6 +2,7 @@ id: felarx_dual_mode_chamber
 name: Dual-Mode Chamber
 weapon: felarx
 tier: 3
+icon: ToggleBetweenProjectileSpeedAndPunchThrough.png
 description: "Reload toggles the weapon between +100% Projectile Speed and +4m Punch Through."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: mk1_strun_evo1_incarnon_form
 name: Incarnon Form
 weapon: mk1_strun
 tier: 1
+icon: IncarnonFormExplosiveSlugs.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire staggering explosive projectiles."
 # see notes: genesis_family_s_adapter
 selection: fixed

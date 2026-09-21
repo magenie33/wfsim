@@ -2,6 +2,7 @@ id: cestra_slayers_nerve
 name: Slayer's Nerve
 weapon: cestra
 tier: 3
+icon: LessRecoilMoreAccuracy(xWhite).png
 description: "On Hit: +6% Accuracy and -6% Weapon Recoil for 6 seconds. Stacks up to 10x."
 # see notes: genesis_family_s_adapter
 selection: choose_one

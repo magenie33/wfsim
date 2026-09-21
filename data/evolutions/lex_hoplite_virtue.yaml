@@ -2,6 +2,7 @@ id: lex_hoplite_virtue
 name: Hoplite Virtue
 weapon: lex
 tier: 2
+icon: OnShieldLossDamage(xWhite).png
 description: "Increase Base Damage by +80. On Shield Break: Increase Base Damage by +80 for 8 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

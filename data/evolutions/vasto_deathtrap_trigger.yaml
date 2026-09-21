@@ -2,6 +2,7 @@ id: vasto_deathtrap_trigger
 name: Deathtrap Trigger
 weapon: vasto
 tier: 2
+icon: CritChanceAndDmgOnFirstShot(xWhite).png
 description: "Increase Base Damage by +66. On Equip From Primary: Increase Base Critical Chance by +30% for 3 seconds, Increase Base Critical Damage Multiplier by +2.2x for 3 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

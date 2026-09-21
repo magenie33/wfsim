@@ -2,7 +2,7 @@ id: braton_prime_survivors_edge
 name: Survivor's Edge
 weapon: braton_prime
 tier: 4
-icon: XCritChanceYStatChance(xWhite).png
+icon: XCritChanceYStatChance.png
 description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +14%."
 # see notes: genesis_family_s_braton
 selection: choose_one

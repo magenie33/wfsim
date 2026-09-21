@@ -2,6 +2,7 @@ id: latron_wraith_evo1_incarnon_form
 name: Incarnon Form
 weapon: latron_wraith
 tier: 1
+icon: IncarnonFormFiresWavesOfEnergyThatBounceOff.png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire Heat Damage energy waves that bounce off enemies and terrain."
 # see notes: genesis_family_s_latron
 selection: fixed

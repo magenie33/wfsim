@@ -2,6 +2,7 @@ id: miter_plentiful_mayhem
 name: Plentiful Mayhem
 weapon: miter
 tier: 2
+icon: MultishotCostsAmmoTakenFromPoolAdditionalDamage(xWhite).png
 description: "Increase Base Damage by +57. Multishot consumes ammo directly from Capacity and increases Damage by +20."
 # see notes: genesis_family_s_adapter
 selection: choose_one

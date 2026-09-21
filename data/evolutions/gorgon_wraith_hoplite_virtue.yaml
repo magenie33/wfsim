@@ -2,6 +2,7 @@ id: gorgon_wraith_hoplite_virtue
 name: Hoplite Virtue
 weapon: gorgon_wraith
 tier: 2
+icon: DamageOnShieldBreak.png
 description: "Increase Base Damage by +5. On Shield Break: Increase Base Damage by +8 for 8 seconds."
 # see notes: genesis_family_s_adapter
 selection: choose_one

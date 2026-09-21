@@ -2,6 +2,7 @@ id: miter_mercenary_chamber
 name: Mercenary Chamber
 weapon: miter
 tier: 3
+icon: IncarnonAmmoPool(xWhite).png
 description: "Increase Base Ammo Capacity to 160. Does not affect Incarnon Form."
 # see notes: genesis_family_s_adapter_2
 base_form_only: true

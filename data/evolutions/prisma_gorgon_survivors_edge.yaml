@@ -2,6 +2,7 @@ id: prisma_gorgon_survivors_edge
 name: Survivor's Edge
 weapon: prisma_gorgon
 tier: 4
+icon: XCritChanceYStatChance.png
 description: "Increase Base Critical Chance by +2%. Increase Base Status Chance by +6%."
 # see notes: genesis_family_s_adapter
 selection: choose_one

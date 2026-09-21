@@ -2,6 +2,7 @@ id: vectis_prime_inciting_incident
 name: Inciting Incident
 weapon: vectis_prime
 tier: 2
+icon: IncreasedFireRateWithActiveChanneledAbility(xWhite).png
 description: "Increase Base Damage by +200. With Channeled Ability Active: +2 Punch Through."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: zylok_prime_rapid_reinforcement
 name: Rapid Reinforcement
 weapon: zylok_prime
 tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
 description: "+50% Reload Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

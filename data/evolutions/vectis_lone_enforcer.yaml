@@ -2,6 +2,7 @@ id: vectis_lone_enforcer
 name: Lone Enforcer
 weapon: vectis
 tier: 2
+icon: XMultishotNoEnemiesWithinYm(xWhite).png
 description: "Increase Base Damage by +75. +25% Multishot if no enemies are within 5m."
 # see notes: genesis_family_s_adapter
 selection: choose_one

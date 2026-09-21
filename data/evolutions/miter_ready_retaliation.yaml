@@ -2,6 +2,7 @@ id: miter_ready_retaliation
 name: Ready Retaliation
 weapon: miter
 tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
 description: "On Reload From Empty: +100% Reload Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

@@ -2,6 +2,7 @@ id: cestra_evo1_incarnon_form
 name: Incarnon Form
 weapon: cestra
 tier: 1
+icon: OnEquipCritChanceDamageOnFirstAttack(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Shots gain an increasing Critical Chance bonus while the trigger is held, up to +200%."
 # see notes: genesis_family_s_adapter
 selection: fixed

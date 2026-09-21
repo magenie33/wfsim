@@ -2,6 +2,7 @@ id: dera_swift_deliverance
 name: Swift Deliverance
 weapon: dera
 tier: 3
+icon: LessRecoilMoreAccuracy(xWhite).png
 description: "+50% Projectile Speed."
 # see notes: genesis_family_s_adapter
 selection: choose_one

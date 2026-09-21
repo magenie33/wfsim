@@ -2,6 +2,7 @@ id: mk1_braton_critical_parallel
 name: Critical Parallel
 weapon: mk1_braton
 tier: 4
+icon: IncarnonCritChanceCritDamage.png
 description: "Increase Base Critical Chance by +18%. Increase Base Critical Damage Multiplier by +0.5x."
 # see notes: genesis_family_s_braton
 selection: choose_one
