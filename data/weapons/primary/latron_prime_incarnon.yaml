@@ -94,7 +94,10 @@ attack:
   # Rolled status lands on top of it.
   damage: { impact: 50.0 }   # total 50
   # The EXPLOSION — rules in MECHANICS §7.
-  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320%.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320% at rank 5.
+  # ✅ MEASURED (M104) at rank 2: +70% a metre over the 3.2 m it takes is
+  # +224%, and it MULTIPLIES — 2097 on the collision where the base-damage
+  # bucket would read 1074.
   compression:
     effectiveness: 1.00
     stacking: multiplies

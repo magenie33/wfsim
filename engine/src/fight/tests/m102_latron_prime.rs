@@ -151,3 +151,49 @@ fn m102_flensing_counts_bullets_and_keeps_the_armour() {
     d.flensed = 7;
     assert!((d.puncture_strip(0.2) - 1.0).abs() < 1e-9, "five bullets take all of it");
 }
+
+/// PRIMARY COMPRESSION ON THE INCARNON FORM, measured end to end (M104):
+/// 2097 on the collision and 8042 on the explosion, with a rank-2 card, a
+/// +240% base-damage bracket, Galvanized Aptitude at three stacks over two
+/// status types and Double Tap full.
+///
+/// FOUR RULES IN ONE PAIR OF NUMBERS, and the most useful is that the bonus
+/// MULTIPLIES rather than joining the base-damage bucket: adding it reads 1074
+/// on the collision where the game reads 2097. The others are the 0.8 share of
+/// the radius, the rank ramp between the two published ranks, and M102's split
+/// — Condition Overload on the collision alone, Double Tap on the explosion.
+#[test]
+fn m104_primary_compression_on_the_incarnon_form() {
+    let evo = ["latron_prime_riddled_target", "latron_prime_evo1_incarnon_form"];
+    let b = crate::model::WeaponBase::from_data("latron_prime_incarnon", false, &evo);
+    let (collision, boom) =
+        (b.base_vector.total(), b.radial.as_ref().expect("the explosion").base_vector.total());
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::build::loadout::resolve_for(
+        &b,
+        &refs,
+        crate::model::StackPolicy::Emergent,
+        crate::data::tenno::default_tenno(),
+    );
+    let c = panel.compression.expect("a compression row on this attack");
+    // 4.0 m kept to a fifth: the arcane pays for 3.2 of them.
+    assert!((c.radius_lost_m - 3.2).abs() < 1e-9, "radius lost {}", c.radius_lost_m);
+    assert!(!c.adds, "the Latron row's class is Multiplies");
+    let per_m = crate::data::arcanes::for_slot("primary", "primary_compression")
+        .expect("the arcane")
+        .fx(2, crate::model::StackPolicy::Emergent, &[], crate::data::tenno::default_tenno())
+        .compression_damage_per_m;
+    // Rank 2 of a 0..5 ramp from +50% to +100% a metre.
+    assert!((per_m - 0.7).abs() < 1e-9, "per metre {per_m}");
+    let comp = 1.0 + per_m * c.radius_lost_m;
+    assert!((comp - 3.24).abs() < 1e-9, "+224% on this weapon at this rank: {comp}");
+    // THE TWO READINGS. `base` is the build's base-damage bracket, `co` is
+    // Galvanized Aptitude at 3 stacks x 2 types, `dt` Double Tap's full pile.
+    let (base, co, dt) = (3.4, 1.0 + 0.4 * 3.0 * 2.0, 5.0);
+    assert!((collision * base * comp * co - 2097.0).abs() < 1.0, "collision reads 2097");
+    assert!((boom * base * comp * dt - 8042.0).abs() < 1.0, "explosion reads 8042");
+    // …AND THE CLASS IS WHAT THE READING SETTLES: in the base-damage bucket the
+    // same build reads 1074, which is not what the game shows.
+    let added = collision * (base + per_m * c.radius_lost_m) * co;
+    assert!((added - 1074.0).abs() < 1.0, "the Adds reading is {added:.0}, not 2097");
+}

@@ -188,6 +188,7 @@ path, so an entry may be renamed but never renumbered.
 | [M101](measurements/M101-furis-co-reads-its-own-base-under-haven-foray.md) | the Furis's CO term reads its own base in both forms (20 base, 100 Incarnon), and Haven Foray's +28 and overshield +30 both stay out of it (298 / 282 / 266, 626) | ✅ 2026-09-18 (owner) |
 | [M102](measurements/M102-latron-prime-double-tap-flensing-riddled.md) | Latron Prime: Double Tap reaches only the Incarnon explosion (148 + 1935), +40% a shot, one pile per form frozen at each swap; Flensing Spikes strips 20% per bullet for good; Riddled Target stacks keep their own clocks | ✅ 2026-09-20 (owner) |
 | [M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md) | Latron: the Incarnon bounce is three deterministic REFLECTIONS and a weak-point kill sends it into the air, so it is admitted rather than modelled; the Incarnon form takes no punch through and the base form does; a round through two weak points charges the gauge twice and fires every other weak-point trigger twice | ✅ 2026-09-21 (owner) |
+| [M104](measurements/M104-primary-compression-multiplies-on-the-latron-incarnon.md) | Primary Compression MULTIPLIES on the Latron Prime Incarnon rather than joining the base-damage bucket (2097 + 8042 against the bucket's 1074), a rank-2 card pays +70% a metre over the 3.2 m it takes, and the base form earns nothing | ✅ 2026-09-21 (owner) |
 
 ## By weapon
 
@@ -215,7 +216,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Grimoire | `grimoire` | [M63](measurements/M63-grimoire-orb-strikes.md) · [M64](measurements/M64-tome-meter-is-a-clock.md) |
 | Kuva Nukor | `kuva_nukor` | [M78](measurements/M78-kuva-nukor-valence-in-co-base.md) |
 | Laetum | `laetum` | [M9](measurements/M09-incarnon-transition-timings.md) · [M10](measurements/M10-incarnon-reload-buff-reach.md) · [M11](measurements/M11-on-hit-per-trigger-or-instance.md) · [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M46](measurements/M46-chill-ladder.md) · [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) · [M60](measurements/M60-headshot-bonuses-add.md) · [M61](measurements/M61-shield-break-spillover.md) · [M62](measurements/M62-volley-settles-per-pellet.md) |
-| Latron Prime | `latron_prime` | [M102](measurements/M102-latron-prime-double-tap-flensing-riddled.md) · [M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md) |
+| Latron Prime | `latron_prime` | [M102](measurements/M102-latron-prime-double-tap-flensing-riddled.md) · [M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md) · [M104](measurements/M104-primary-compression-multiplies-on-the-latron-incarnon.md) |
 | Larkspur Prime | `larkspur_prime` | [M19](measurements/M19-deadhead-stacking.md) |
 | Magistar | `magistar` | [M69](measurements/M69-slam-radial-and-flat-add.md) · [M79](measurements/M79-flat-base-add-and-eclipse.md) |
 | Mandonel | `mandonel` | [M47](measurements/M47-body-radius-on-the-floor.md) |
