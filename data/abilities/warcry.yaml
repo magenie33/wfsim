@@ -1,0 +1,38 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# see notes: mod_arcane_weapon_perk
+#
+# see notes: early_access_said_page
+
+# ATTACK SPEED, AND ONLY ATTACK SPEED, reaches a weapon's numbers. Warcry also
+# grants armor — "+25% / 35% / 45% / 50% Armor", tripled under Hysteria — and
+# that is the WARFRAME's stat rather than the weapon's, so it is the builder's
+# (`data/warframe_abilities/warcry.yaml`) and not a term in this fight.
+#
+# ADDITIVE WITH THE MODS, stated and worked on the page:
+#   "Attack Speed bonus is additive to mods (e.g., Fury)."
+#   "Attack Speed Mods + Warcry Modifier × (1 + Strength Mods)
+#    = 0.3 + 0.5 × (1 + 0.3)"
+# So the strength knob multiplies Warcry's own share and the result joins the
+# same sum Fury is in — which is exactly what `scales_with: strength` plus
+# `AbilityEffect::FireRate` do.
+
+id: warcry
+name: Warcry
+frame: Valkyr
+# see notes: which_buffs_replace_each
+family: warcry
+helminth: false
+
+# AT RANK 3: "15% / 20% / 25% / 50% Attack Speed … for 10 / 14 / 17 / 20
+# seconds" (W`Warcry`).
+# see notes: at_max_rank_100
+value: 0.5
+# see notes: max_rank_at_100
+duration_seconds: 20
+
+effect:
+  kind: fire_rate
+
+source:
+  url: https://wiki.warframe.com/w/Warcry

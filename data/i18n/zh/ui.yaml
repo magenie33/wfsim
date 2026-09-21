@@ -1997,6 +1997,7 @@ ui:
   "no Operator": 没有指挥官
   "Home": 首页
   # THE COMPANION HOST — 守护 is the term the page already uses for a companion.
+  "attack speed, in the same sum a fire-rate mod is in — it buys attacks rather than damage, so what it is worth is whatever more attacks are worth in this fight": 攻速，和射速 MOD 在同一个加法桶里 —— 它买到的是攻击次数而不是伤害，所以值多少取决于这场战斗里多攻击几次值多少
   "Companions": 守护
   "Companion builds": 守护配装
   "Companion floor": 守护保底

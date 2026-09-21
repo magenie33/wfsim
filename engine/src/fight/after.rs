@@ -246,6 +246,10 @@ pub(super) fn after_the_shot(
         // inside the bracket rather than outside it, is what keeps it additive
         // with mods instead of multiplicative with them.
         fr_add += buff_total(ap, crate::model::BuffGrant::FireRate, buff_stacks, *t);
+        // …AND A WARFRAME ABILITY'S SHARE, into the same sum: Warcry's attack
+        // speed is "additive to mods (e.g., Fury)" and its own strength knob has
+        // already been spent on it (`data::abilities::resolve`).
+        fr_add += crate::data::abilities::fire_rate_at(&params.abilities, *t);
         let rate = if params.locks("fire_rate") {
             ap.fire_rate
         } else {

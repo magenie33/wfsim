@@ -1093,6 +1093,12 @@ abilities:
   # English for the same reason — DE writes "Helminth 退化样式".
   roar: 战吼
   roar_helminth: 战吼（Helminth）
+  # DE's own name for Valkyr's second, and NOT 战吼, which is Roar's.
+  warcry: 咆哮
+  # …and Voruna's, which this section was missing while `warframe_abilities`
+  # below carried the same DE string all along.
+  wrathful_advance: 暴怒突进
+  wrathful_advance_helminth: 暴怒突进（Helminth）
   eclipse: 黯然失色
   eclipse_helminth: 黯然失色（Helminth）
   nourish: 消化滋养

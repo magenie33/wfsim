@@ -43,6 +43,13 @@ pub enum AbilityEffect {
     /// applied to melee weapons is a flat value applied after mods (e.g. a
     /// melee weapon with 25% critical chance becomes 225%)"*.
     FlatCritChance(f64),
+    /// **ATTACK SPEED / FIRE RATE, ADDITIVE WITH THE MODS.** Warcry states the
+    /// bracket and works the example: *"Attack Speed bonus is additive to mods
+    /// (e.g., Fury)"*, `Attack Speed Mods + Warcry Modifier × (1 + Strength
+    /// Mods)` = `0.3 + 0.5 × (1 + 0.3)`. So the strength knob multiplies this
+    /// ability's own share — which is what `scales_with: strength` already does
+    /// — and the result joins the same sum a fire-rate mod does.
+    FireRate(f64),
     /// `+x of ModifiedBase` as this element, NOT entering the elemental
     /// hierarchy. Additive with elemental mods in SIZE, separate from them in
     /// PLACEMENT.
@@ -318,6 +325,7 @@ pub fn all() -> &'static [AbilityDef] {
                             element("add_element"), v, ef.forced_status),
                         "ammo_efficiency" => AbilityEffect::AmmoEfficiency(v),
                         "flat_crit_chance" => AbilityEffect::FlatCritChance(v),
+                        "fire_rate" => AbilityEffect::FireRate(v),
                         "extra_hit" => AbilityEffect::ExtraHit {
                             element: element("extra_hit"),
                             fraction: v,
@@ -443,6 +451,7 @@ pub fn resolve(
                 }
                 AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
                 AbilityEffect::FlatCritChance(v) => AbilityEffect::FlatCritChance(scale(v)),
+                AbilityEffect::FireRate(v) => AbilityEffect::FireRate(scale(v)),
                 AbilityEffect::ExtraHit { element, fraction, forced_status } => {
                     AbilityEffect::ExtraHit {
                         element: picked(element),
@@ -477,6 +486,19 @@ pub fn faction_bonus_at(list: &[ActiveAbility], t: f64) -> f64 {
         .flat_map(|a| a.effects.iter())
         .filter_map(|e| match *e {
             AbilityEffect::FactionDamage(v) => Some(v),
+            _ => None,
+        })
+        .sum()
+}
+
+/// The FIRE-RATE share running at `t` (Warcry's attack speed). Summed, and the
+/// caller adds it to the mods' own sum rather than multiplying by it.
+pub fn fire_rate_at(list: &[ActiveAbility], t: f64) -> f64 {
+    list.iter()
+        .filter(|a| a.live_at(t))
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
+            AbilityEffect::FireRate(v) => Some(v),
             _ => None,
         })
         .sum()

@@ -700,7 +700,7 @@ That is the whole design, and everything else follows from it:
 - **They are not in the buff bar**, and should not be: the bar shows what this
   build gained during the run. An ability you cast is an input to the run.
 
-### Four effect kinds — three multipliers and one INSTANCE
+### The effect kinds — multipliers, an INSTANCE, and one that buys no damage
 
 Each is a different BUCKET, and the differences are quoted rather than assumed
 (`data/abilities/*.yaml` carries the sentence and the page it came off):
@@ -711,6 +711,15 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 | `final_damage` | Eclipse +200% | its own multiplier | once |
 | `add_element` | Shock Trooper +100% Electricity | the FINISHED vector | its own element's DoT, **re-read at every tick** |
 | `extra_hit` | Xata's Whisper +26% Void | **nowhere — it fires a second instance** | rolls its own, independently |
+| `fire_rate` | Warcry +50% attack speed | the sum a fire-rate MOD is in | **nothing — it buys no damage** |
+
+**ONE OF THEM BUYS NO DAMAGE AT ALL.** `fire_rate` is attack speed, and Warcry
+states both the bracket and the worked example: *"Attack Speed bonus is additive
+to mods (e.g., Fury)"*, `Attack Speed Mods + Warcry Modifier × (1 + Strength
+Mods)` = `0.3 + 0.5 × (1 + 0.3)`. So the strength knob is spent on the ability's
+own share and the result joins `fr_add` beside the mods — which is why the test
+asserts it against a build whose MODS alone came to the same sum, rather than
+against a shot count.
 
 **AN ELEMENT BUFF IS A MOD WITH A CLOCK ON IT, AND THERE IS ONE PATH FOR BOTH.**
 Shock Trooper, Lavos's imbue and a weapon augment that grants one (Leaded Gas)

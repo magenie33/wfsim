@@ -739,3 +739,35 @@ fn no_ability_changes_no_number() {
     with_empty.abilities = resolve(&[], 3.0, "", "melee");
     assert_eq!(direct(&bare), direct(&with_empty));
 }
+
+/// **WARCRY BUYS ATTACKS, IN THE SAME SUM A FIRE-RATE MOD IS IN.** The page
+/// states the bracket and works the example: *"Attack Speed bonus is additive
+/// to mods (e.g., Fury)"*, `Attack Speed Mods + Warcry Modifier x (1 + Strength
+/// Mods)` = `0.3 + 0.5 x (1 + 0.3)`.
+///
+/// ASSERTED AS THE BRACKET, not as a shot count: what is claimed is that the
+/// ability's share lands in the mods' own sum, so the test is that a build with
+/// Warcry fires exactly as often as one whose MODS alone came to the same sum —
+/// and not as often as the multiplicative reading of the same two numbers.
+/// Counted as SHOTS because attack speed buys no damage at all.
+#[test]
+fn warcry_is_attack_speed_additive_with_the_mods_and_scaled_by_strength() {
+    let shots = |strength: f64, mods: f64, warcry: bool| {
+        let picks: &[(&'static str, Option<f64>)] = if warcry { &[("warcry", None)] } else { &[] };
+        let mut p = params(picks, strength);
+        p.fire_rate = 1.0 + mods;
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots
+    };
+    let with = |strength: f64, mods: f64| shots(strength, mods, true);
+    let mods_only = |mods: f64| shots(1.0, mods, false);
+
+    // IT BUYS ATTACKS AT ALL, and at 100% strength it is the card's own 50%.
+    assert!(with(1.0, 0.0) > mods_only(0.0));
+    assert_eq!(with(1.0, 0.0), mods_only(0.5));
+    // THE PAGE'S OWN EXAMPLE — 0.3 + 0.5 x (1 + 0.3) = 0.95.
+    assert_eq!(with(1.3, 0.3), mods_only(0.95));
+    // …AND NOT THE MULTIPLICATIVE READING of the same two, (1.3 x 1.65) - 1.
+    assert_ne!(with(1.3, 0.3), mods_only(1.3 * 1.65 - 1.0));
+    // STRENGTH SCALES WARCRY'S SHARE AND NOTHING ELSE: at 0% it buys nothing.
+    assert_eq!(with(0.0, 0.3), mods_only(0.3));
+}

@@ -981,6 +981,7 @@ pub fn meta_json() -> Value {
                     AE::AddElement(t, v, _) => ("add_element", v, Some(t.name())),
                     AE::AmmoEfficiency(v) => ("ammo_efficiency", v, None),
                     AE::FlatCritChance(v) => ("flat_crit_chance", v, None),
+                    AE::FireRate(v) => ("fire_rate", v, None),
                     AE::ExtraHit { element, fraction, .. } => ("extra_hit", fraction, Some(element.name())),
                 };
                 json!({ "kind": kind, "value": v, "element": element })

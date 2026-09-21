@@ -86,6 +86,12 @@ function wfEffectLine(a) {
   if (a.kind === "ammo_efficiency") {
     return tr("ammo efficiency — it does not touch damage: it divides what a shot costs the magazine, so what it buys is reloads not taken. Multiplicative with other ammo-efficiency sources");
   }
+  // NOT A DAMAGE BRACKET EITHER, and worth saying where it lands: it buys
+  // swings, so on a weapon whose fight is not rate-bound it is worth less than
+  // the percentage reads.
+  if (a.kind === "fire_rate") {
+    return tr("attack speed, in the same sum a fire-rate mod is in — it buys attacks rather than damage, so what it is worth is whatever more attacks are worth in this fight");
+  }
   return tr("added on top and NOT combined with the weapon's own elements");
 }
 
