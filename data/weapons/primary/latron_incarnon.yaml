@@ -44,23 +44,19 @@ pseudo_reload:
 # any way", which the radial below obeys by declaring nothing.
 co_behavior: independent
 
-# TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):
-# "Incarnon Form changes the weapon's fire mode from hitscan to a traveling
-# projectile that can ricochet off enemies and terrain, exploding up to 6 times
-# with a 4 meter radius, dealing damage once for any collision on enemies, and
-# again for the explosion."
+# TWO ATTACK PARTS — the collision and its explosion — and A THIRD THING THIS
+# ENGINE DOES NOT TAKE. VERBATIM (wiki): "Incarnon Form changes the weapon's
+# fire mode from hitscan to a traveling projectile that can ricochet off
+# enemies and terrain, exploding up to 6 times with a 4 meter radius, dealing
+# damage once for any collision on enemies, and again for the explosion."
 #
-# The first collision and its explosion land on the target in front of you, and
-# THE BOUNCES ARE MODELLED (`ricochet:` below): a formation gives them somewhere
-# to go, which a single-target arena does not.
-#
-# What is still missing is TERRAIN — the page says enemies *and terrain*, this
-# arena has no walls, and a projectile that would have come off one finds the
-# next body instead. So a fight against ONE body still bounces nowhere, which is
-# the case the admission below is about.
+# THE BOUNCES ARE NOT MODELLED (MEASUREMENTS M103): three at most, each a
+# REFLECTION off what was touched, and a weak-point kill sends the projectile
+# almost straight up. Reflection needs surfaces this plane has none of, and
+# `ricochet:`'s nearest-body walk is the wrong shape for pure geometry — so
+# this entry declares none, and the numbers below are the aimed landing's.
 unmodeled:
-  - reason: bounce_headshot_assumed
-  - reason: ricochet_terrain
+  - "the projectile's BOUNCES are not counted. It bounces at most three times and the fourth contact ends it, a long flight ends it too, and each bounce is a REFLECTION off whatever it touched rather than a hop to the next enemy — so off a body that the collision just killed with a weak-point hit it leaves almost straight up, which is where most of them go. This plane has no surfaces to reflect off, so the shot is scored where it lands; in a tight corridor the bounces are worth up to three more collisions and three more explosions, and this number is a FLOOR"
 
 attack:
   # see notes: cone_half_angle_from
@@ -81,8 +77,9 @@ attack:
   punch_through_m: 0.0
   # PUNCH THROUGH DOES NOTHING HERE, and the page says so outright rather than
   # leaving it to the AoE rule: *"Punch Through does not affect the incarnon
-  # projectile."* Transcribed per entry, because the shape rule that would also
-  # forbid it (this attack has a `radial:`) is only the FALLBACK — see
+  # projectile."* ✅ MEASURED (M103), both halves: this form pierces nobody and
+  # the BASE form does. Transcribed per entry, because the shape rule that would
+  # also forbid it (this attack has a `radial:`) is only the FALLBACK — see
   # AGENTS.md and `punch_through_mods`.
   punch_through_mods: false
   # DOUBLE TAP REACHES ONLY THE EXPLOSION, and a landing counts twice.
@@ -92,26 +89,6 @@ attack:
   # it nothing. The wiki files the first half under Bugs; it is how the game
   # plays, so it is what this fights.
   consecutive_hit_radial_only: true
-  # THE PROJECTILE BOUNCES. VERBATIM: *"a traveling projectile that can ricochet
-  # off enemies and terrain, exploding up to 6 times with a 4 meter radius,
-  # dealing damage once for any collision on enemies, and again for the
-  # explosion"* — so five bounces after the first collision, each dealing the
-  # collision above AND the explosion below, in full. The page names no
-  # attenuation per bounce; what it names is *"Each ricochet will cause the
-  # projectile to slow down"*.
-  #
-  # HEADSHOT CHANCE 0.5. A bounce is not aimed, so the
-  # scenario's headshot_pct — which states how well the PLAYER aims — is the
-  # wrong number for it, and DE publishes none. Half is the flat rate, and it is
-  # a decision rather than a transcription.
-  #
-  # NO RANGE. The page gives the bounce COUNT and no distance, so a bounce finds
-  # the nearest body it has not already hit, however far. Its own note is the
-  # evidence that this is the shape: repeated bounces *"seem to require multiple
-  # enemies"*.
-  ricochet:
-    bounces: 5
-    headshot_chance: 0.5
   # The COLLISION: pure Impact, and the `forced_procs` above is its guaranteed
   # proc — *"Collision deals Impact damage and have a guaranteed Impact proc"*.
   # Rolled status lands on top of it.

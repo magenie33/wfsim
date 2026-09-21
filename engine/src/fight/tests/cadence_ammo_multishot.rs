@@ -195,45 +195,45 @@ fn the_latrons_puncture_perks_read_the_status_they_name() {
     );
 }
 
-/// A RICOCHET REACHES BODIES THE SHOT NEVER AIMED AT, and it takes its
-/// EXPLOSION with it.
-///
-/// Verbatim, from the Latron Incarnon Genesis page: *"a traveling
-/// projectile that can ricochet off enemies and terrain, exploding up to 6
-/// times with a 4 meter radius, dealing damage once for any collision on
-/// enemies, and again for the explosion"*.
+/// A BOUNCE REACHES BODIES THE SHOT NEVER AIMED AT, and it takes the
+/// attack's EXPLOSION with it.
 ///
 /// The claim is the WHOLE CHAIN — that a crowd takes more than one body
-/// would, that the count is the bounce count rather than the formation's
-/// size, and that a formation of ONE bounces nowhere, which is the case the
-/// weapon's own admission is about (no terrain here).
+/// would, and that a formation of ONE bounces nowhere, this arena having no
+/// terrain to come off. The fixture states the bounce itself
+/// (`a_bouncing_projectile_in_a_crowd`).
 #[test]
 fn a_bounce_needs_a_crowd_and_one_body_bounces_nowhere() {
-    let crowd = |n: usize| {
-        let p = latron_incarnon_in_a_line(n, 0.5);
+    let crowd = |n: usize, bounces: bool| {
+        let mut p = a_bouncing_projectile_in_a_crowd(n, 0.5);
+        if !bounces {
+            p.ricochet = None;
+        }
         let out = run_once(&p, &mut Rng::new(0x5EED));
         (out.spread.touched(), out.effective_damage())
     };
-    let (one, dmg_one) = crowd(0);
+    let (one, dmg_one) = crowd(0, true);
     assert_eq!(one, 1, "a formation of one bounces nowhere — no terrain here");
-    // …AND A CROWD IS WHERE IT LIVES. The claim is not a body count: the
-    // 4 m explosion reaches bodies the bounce never touched, so what is
-    // countable here is that a packed formation takes far more than one
-    // body does. The bounce COUNT is a ceiling and it is asserted where it
-    // is decided, in `rules::space::tests` — this level cannot see it, because
-    // the blast and the bounce reach the same bodies.
-    let (many, dmg_many) = crowd(24);
+    // …AND A CROWD IS WHERE IT LIVES. A BODY COUNT CANNOT TELL THE TWO
+    // APART: the 4 m explosion reaches bodies the bounce never touched, so
+    // the one thing that isolates the bounce is turning it off in the same
+    // formation. The bounce COUNT is a ceiling, asserted where it is decided
+    // (`rules::space::tests`).
+    let (many, dmg_many) = crowd(24, true);
+    let flat = crowd(24, false).1;
     assert!(many > 1, "a crowd is reached: {many} bodies");
+    assert!(dmg_many > flat * 1.05,
+        "the bounces are most of a crowd fight: {flat:.0} -> {dmg_many:.0}");
     assert!(dmg_many > dmg_one * 2.0,
         "a crowd takes far more than one body: {dmg_one:.0} -> {dmg_many:.0}");
 }
 
 /// …AND IT MAY LAND ON A HEAD, which no other spread in this engine can.
 ///
-/// Owner: half of them do. The assertion is on the DAMAGE
-/// rather than on a counter, because a chance that is stored and not
-/// applied looks exactly like one that works — a humanoid head is 3x, so a
-/// coin-flip head is worth a large, visible fraction of every bounce.
+/// The assertion is on the DAMAGE rather than on a counter, because a chance
+/// that is stored and not applied looks exactly like one that works — a
+/// humanoid head is 3x, so a coin-flip head is worth a large, visible
+/// fraction of every bounce.
 ///
 /// TWO CONTROLS, because one alone proves nothing: at 0.0 the bounces are
 /// body hits and at 1.0 they are all heads, and the measured run must sit
@@ -244,7 +244,7 @@ fn half_of_a_weapons_bounces_find_a_head() {
     // MANY RUNS: the roll is a coin flip, so one engagement says nothing
     // about the rate.
     let at = |chance: f64| {
-        monte_carlo(&latron_incarnon_in_a_line(5, chance), 60, 0x8EAD)
+        monte_carlo(&a_bouncing_projectile_in_a_crowd(5, chance), 60, 0x8EAD)
             .mean_effective_damage
     };
     let (body, half, head) = (at(0.0), at(0.5), at(1.0));

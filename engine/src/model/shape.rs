@@ -309,8 +309,8 @@ impl Falloff {
 /// attack's own radial arriving again; this says only how many and how far.
 #[derive(Debug, Clone, Copy)]
 pub struct Ricochet {
-    /// Bounces after the first collision — five on the Latron family, whose
-    /// page gives *"exploding up to 6 times"*.
+    /// Bounces after the first collision — one on the Drakgoon, whose page
+    /// gives *"Shots bounce once"*.
     pub bounces: u32,
     /// The chance a bounce lands on a head. A bounce is not aimed, so the
     /// scenario's `headshot_pct` does not decide it.

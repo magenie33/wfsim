@@ -230,6 +230,14 @@ pub struct RunResult {
     /// Below 100% the two are the same number.
     pub crit_tier_sum: u32,
     pub headshots: u32,  // hits on an `is_head` part
+    /// WEAK POINTS THE AIMING DID NOT PICK — a body the round punched through
+    /// and entered at the head, or one a bounce arrived at.
+    ///
+    /// SEPARATE FROM `headshots` because that one is a RATE's numerator, read
+    /// against `pellets`, and both count the aimed body alone. The Incarnon
+    /// gauge is not a rate: it counts weak-point LANDINGS, so it reads the sum
+    /// of the two (MEASUREMENTS M103).
+    pub headshots_on_others: u32,
     pub procs: u32,      // status procs applied (all types)
     /// STATUS DoT TICKS THAT PAID — a Heat/Electricity/Toxin/Gas/Slash burn,
     /// counted per tick GROUP (see [`Dot::accumulator_unit`]). A Blast

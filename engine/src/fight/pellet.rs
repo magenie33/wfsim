@@ -1326,6 +1326,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // Influence spreads from all of them, so they are gathered here
         // and fired once the aimed body's own statuses have landed.
         let mut influence_seeds: Vec<(usize, Landed)> = Vec::new();
+        // WHAT THE ROUND DID BEHIND THE FIRST BODY — read below, where a
+        // weak point's triggers are fired.
+        let mut punched = PunchedWeakPoints::default();
         if direct && !others.is_empty() {
             // …and the SHOT's own factors, kept for the half that fires
             // once rather than per pellet — recorded on a MISS too, so
@@ -1432,7 +1435,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 );
             }
             if params.beam.is_none() {
-                spread_from_punch_through(
+                punched = spread_from_punch_through(
                     &mut *others,
                     params,
                     ap,
@@ -1577,7 +1580,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         if let Some(s) = params.headshot_streak {
             if head_direct && s.hits > 0 {
                 windows.headshot_times.retain(|&x| t - x < s.within);
-                windows.headshot_times.push(t);
+                for _ in 0..=punched.hits {
+                    windows.headshot_times.push(t);
+                }
                 if windows.headshot_times.len() >= s.hits as usize {
                     windows.streak = t + s.duration;
                     // SPENT. A streak is the last `hits` inside the
@@ -1590,6 +1595,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             }
         }
         roll_instant_reload(ap, params, d, head_direct, killed, incarnon, ammo);
+        // …AND ONCE PER BODY BEHIND IT. A punched weak point is a weak-point
+        // hit, so it rolls; a card that asks for a KILL reads that body's.
+        for i in 0..punched.hits {
+            roll_instant_reload(ap, params, d, head_direct, i < punched.kills, incarnon, ammo);
+        }
         // A LANDED grenade leaves its field, whatever it rolled:
         // "Grenades stick to allies, enemies and surfaces", and a stuck
         // grenade means the target "cannot move out of the cloud".
@@ -1661,6 +1671,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             r.big_crits += (tier >= 2) as u32;
             r.crit_tier_sum += tier;
             r.headshots += part.is_head as u32;
+            r.headshots_on_others += punched.hits;
             *any_head |= part.is_head;
             *any_big |= tier >= 2;
 
@@ -1682,24 +1693,32 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                         windows.base_damage_eximus = t + b.duration;
                     }
                 }
-                // Lethal Rearmament: every headshot grants a stack —
-                // a LOCKED buff earns it too, it just never loses it.
-                // EVERY buff that triggers on a headshot, including
-                // its own chance roll. One line for the family.
-                bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Headshot, t, d.extra);
-                // DEATH KNELL, per PELLET: "individual Multishot bullets
-                // can proc Death Knell" (wiki).
-                if let Some(w) = params.weakpoint_stacks {
-                    weakpoint_pile.bump(t, w.duration_seconds, w.max_stacks);
+                // …AND THE PER-HIT ONES BELOW ARE PAID ONCE PER WEAK
+                // POINT THE ROUND LANDED, the bodies it punched through
+                // included (`PunchedWeakPoints`): the round enters the
+                // same part of each, so a shot through two heads is two
+                // weak-point hits and not one. The two windows above
+                // take no count — a refresh is a refresh.
+                for _ in 0..=punched.hits {
+                    // Lethal Rearmament: every headshot grants a stack —
+                    // a LOCKED buff earns it too, it just never loses it.
+                    // EVERY buff that triggers on a headshot, including
+                    // its own chance roll. One line for the family.
+                    bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Headshot, t, d.extra);
+                    // DEATH KNELL, per PELLET: "individual Multishot bullets
+                    // can proc Death Knell" (wiki).
+                    if let Some(w) = params.weakpoint_stacks {
+                        weakpoint_pile.bump(t, w.duration_seconds, w.max_stacks);
+                    }
+                    // Primary Crux: a weak-point HIT (not a kill), per
+                    // PELLET. Bumped here, AFTER this pellet's status
+                    // chance was read above — the hit that grants a stack
+                    // does not benefit from it, the same rule the
+                    // base-damage stacks follow. A killing headshot still
+                    // counts: this runs before the kill path's `continue`.
+                    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
+                    bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
                 }
-                // Primary Crux: a weak-point HIT (not a kill), per
-                // PELLET. Bumped here, AFTER this pellet's status
-                // chance was read above — the hit that grants a stack
-                // does not benefit from it, the same rule the
-                // base-damage stacks follow. A killing headshot still
-                // counts: this runs before the kill path's `continue`.
-                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
-                bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
             } else {
                 // …AND A BODY HIT TAKES THE PILE. The only trigger in
                 // this sim that the next shot can undo, and the reason

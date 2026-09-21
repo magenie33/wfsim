@@ -1148,7 +1148,8 @@ A rebound landing is a full hit, not a fraction of one: `Hit Mechanic`
 §"Rebound and Bouncing Hits" — *"ReboundPtr counts as a MainPtr"*, and it
 *"inherits the Extra Hit bonuses of its MainPtr"*.
 
-The wiki's Bounce tables name the counts: the Latron family's Incarnon Form 6,
+The wiki's Bounce tables name the counts: the Latron family's Incarnon Form 6
+(**three bounces measured** — M103, and its page counts explosions),
 Miter 5, Panthera 5 (Prime 3), Mutalist Quanta / Quanta / Quanta Vandal
 alt-fire 12, Trumna alt-fire 7, the Tetra family with Kinetic Ricochet 6,
 Drakgoon 2/3 (6/7 with Fomorian Accelerant), Tenet Arca Plasmor 4, Azima
@@ -1164,20 +1165,21 @@ NEAREST body not yet hit.
 - For a BOUNCE it is an **APPROXIMATION AND A GENEROUS ONE**. Nearest-first
   keeps the projectile inside the crowd it started in, so on a dense
   formation every bounce lands near the last one and a weapon that explodes
-  per bounce stacks its spheres on one cluster. Measured on the group-clear
-  ruler 2026-08-21: the Latron Prime's five bounces are worth **9.9x**
-  (1295 kpm against 131 with none), and only 30 of 361 bodies took any
-  damage — the signature of six 4 m spheres landing on top of each other.
-  Reflection would spread them along a line instead. **The owner's reading is
-  that a bounce should carry straight on in one direction**,
-  which is the wiki's rule; implementing it is a geometry decision that has
-  not been taken.
+  per bounce stacks its spheres on one cluster. A reflection does the
+  opposite: it leaves at the angle it arrived, which spreads the landings
+  along a line and, off a body that has just fallen over, out of the fight
+  altogether (MEASUREMENTS M103). **A WEAPON WHOSE BOUNCE IS MEASURED AS A
+  REFLECTION THEREFORE DECLARES NONE** — the Latron family's three Incarnon
+  forms carry it as an admission — and what is left on `ricochet:` is the
+  true ricochets, which seek.
 - **`headshot_chance` IS AN OWNER ASSUMPTION, NOT A TRANSCRIPTION**. A rebound hit CAN headshot — it counts
   as a MainPtr — but where it lands is geometry this arena does not model, and
-  **no source states a rate**. The whole roster uses **0.5**. The one published
+  **no source states a rate**, so **0.5** is what an entry takes when it takes
+  one at all. The one published
   remark anywhere near it is the Neutralizer's *"Ricochets prioritize Weak
   Points"*, which is written as that weapon's NOTE and so is evidence that
-  prioritising is the exception rather than the rule.
+  prioritising is the exception rather than the rule. One entry takes it (the
+  Dual Toxocyst); the Drakgoon leaves it at zero, its page publishing none.
 
 **Damage instance classes.** Every damage instance carries a source class —
 **direct** (projectile/hitscan contact), **aoe_radial** (the explosion), or

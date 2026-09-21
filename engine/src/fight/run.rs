@@ -429,6 +429,7 @@ pub fn run_once_traced(
         ricochet_layout,
         chain_layout,
         struck,
+        base_struck,
         frame_seconds,
         rec_roster,
         rec_buff_index,
@@ -500,6 +501,12 @@ pub fn run_once_traced(
         let ap: &FightParams = match &params.cycle {
             Some(cy) if incarnon.in_base_form => &cy.base_form,
             _ => params,
+        };
+        // …AND WHO IS ON THE LINE IS THE ACTIVE FORM'S ANSWER TOO, for the same
+        // reason: a form's punch through is its own (`open`).
+        let struck: &[usize] = match &base_struck {
+            Some(b) if incarnon.in_base_form => b,
+            _ => &struck,
         };
         // The instance total and its SHAPE (Toxin's shield bypass, the
         // vulnerability column) are derived PER STAGE now — each attack part
@@ -694,7 +701,7 @@ pub fn run_once_traced(
             1.0
         };
         let (mut any_head, mut any_big) = (false, false);
-        let headshots_before = r.headshots;
+        let headshots_before = r.headshots + r.headshots_on_others;
         let pellets_before = r.pellets;
         // THE HEADSHOT-DAMAGE BRACKETS as of this shot: the field's head ladder
         // below, and what a Tesla arc is worth on a neighbour's head.
@@ -809,7 +816,7 @@ pub fn run_once_traced(
                 tennokai,
                 tennokai_heavy,
                 melee_struck: &melee_struck,
-                struck: &struck,
+                struck,
                 body_at: &body_at,
                 bounce_bodies: &bounce_bodies,
                 chain_layout: &chain_layout,
@@ -887,7 +894,7 @@ pub fn run_once_traced(
                 &mut r,
                 tendril.count,
                 chain_layout.as_ref(),
-                &struck,
+                struck,
             );
         }
 

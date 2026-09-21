@@ -18,6 +18,7 @@ mod fortifier_tick;
 mod headshot_buff_wiring;
 mod incarnon_reload_route;
 mod m102_latron_prime;
+mod m103_latron_punch_through;
 mod melee;
 mod orbs_fields_beams;
 mod overguard_status;
@@ -295,25 +296,19 @@ fn flat_base() -> FightParams {
     }
 }
 
-/// A LATRON PRIME INCARNON facing a LINE of bodies, 5 m apart.
+/// A BOUNCING PROJECTILE IN A CROWD — a collision plus a 4 m explosion, with
+/// the BOUNCE stated HERE rather than read from a weapon: no entry declares
+/// both since the Latron family dropped its own (MEASUREMENTS M103), and what
+/// these tests pin is the MECHANISM, which still carries the Drakgoon's bounce
+/// and the Dual Toxocyst's ricochet.
 ///
-/// WIDER THAN THE EXPLOSION, deliberately: at 4 m radius plus a body radius
-/// a blast reaches 4.2 m, so at this spacing each bounce's explosion catches
-/// only the body it went off. That is what makes `bodies_touched` count
-/// BOUNCES — pack the line tighter and the count is the explosions' reach
-/// as well, which is correct behaviour and answers a different question.
+/// A CROWD, not a line: a bounce walks to the nearest body it has not reached
+/// (`rules::chain::bounce_path`), so bodies strung out at 5 m intervals leave
+/// it nowhere to go, and density is what a bounce weapon wants.
 ///
-/// `headshot_pct` stays 0, so the AIMED pellet is always a body shot and
-/// the only head in the fight is one a bounce found.
-#[cfg(test)]
-/// A CROWD, not a line, and the change is the mechanic's. A bounce
-/// REFLECTS (`rules::space::bounce_path`), so where it goes next is geometry: off
-/// a lone body strung out at 5 m intervals it flies into the open and the
-/// path ends. Density is what a bounce weapon needs, which is the same
-/// thing the community says about this family — it wants a tight corridor.
-///
-/// `n` is the number of OTHER bodies, packed around the aimed one.
-fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
+/// `headshot_pct` stays 0, so the AIMED pellet is always a body shot and the
+/// only head in the fight is one a bounce found. `n` is the OTHER bodies.
+fn a_bouncing_projectile_in_a_crowd(n: usize, head_chance: f64) -> FightParams {
     let base = crate::model::WeaponBase::from_data("latron_prime_incarnon", false, &[]);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
     let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
@@ -357,9 +352,11 @@ fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
         is_head: false,
         crit_bonus: false,
     }];
-    if let Some(rc) = p.ricochet.as_mut() {
-        rc.headshot_chance = head_chance;
-    }
+    p.ricochet = Some(crate::model::Ricochet {
+        bounces: 5,
+        headshot_chance: head_chance,
+        range_m: f64::INFINITY,
+    });
     p
 }
 

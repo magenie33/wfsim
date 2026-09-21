@@ -74,8 +74,8 @@ attack:
   punch_through_m: 1.5
   # ONE BOUNCE, and it is MODELLED rather than admitted: "Shots bounce once;
   # shrapnel doesn't slow after bouncing". No headshot chance is published for
-  # the bounce, so it is left at zero rather than invented — the Latron
-  # Incarnons' 50% is their page's own figure and not a class rule.
+  # the bounce, so it is left at zero rather than invented — the 0.5 the Dual
+  # Toxocyst carries is an assumption of its own and not a class rule.
   ricochet:
     bounces: 1
     headshot_chance: 0.0

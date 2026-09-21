@@ -641,6 +641,21 @@ pub(super) fn spread_from_follow_through(
     }
 }
 
+/// WHAT A ROUND LEFT IN THE BODIES BEHIND THE FIRST — the weak-point hits
+/// among them, and how many of those finished a body.
+///
+/// A PUNCHED BODY'S HEAD IS A WEAK-POINT HIT LIKE ANY OTHER (MEASUREMENTS
+/// M103): one round through two heads is two of them, so the Incarnon gauge
+/// charges twice and everything else a head fires fires twice. Counted here
+/// and PAID on the aimed path, which is where the buff bar, the piles and the
+/// magazine live — a bounce reports nothing, because where it lands is an
+/// assumption of ours rather than the shot's own line.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct PunchedWeakPoints {
+    pub(super) hits: u32,
+    pub(super) kills: u32,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_punch_through(
     others: &mut [SpreadFoe],
@@ -671,7 +686,8 @@ pub(super) fn spread_from_punch_through(
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     t: f64,
-) {
+) -> PunchedWeakPoints {
+    let mut punched = PunchedWeakPoints::default();
     // The FIRST is the body the rest of the engagement is already scored
     // against; everything behind it is what this function is for.
     for &s in struck.iter().skip(1) {
@@ -748,7 +764,7 @@ pub(super) fn spread_from_punch_through(
             status_landing: head_status_landing,
         };
         let foe = &mut others[idx];
-        spread_hit(
+        let landed = spread_hit(
             &inst,
             foe,
             fs,
@@ -771,7 +787,12 @@ pub(super) fn spread_from_punch_through(
             t,
             SpreadBy::PunchThrough,
         );
+        if inst.headshot {
+            punched.hits += 1;
+            punched.kills += u32::from(landed.killed);
+        }
     }
+    punched
 }
 
 /// A RICOCHET — the projectile arriving again, at a body it has not hit yet.

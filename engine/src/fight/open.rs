@@ -61,6 +61,8 @@ pub(super) struct Fixed<'a> {
     pub(super) ricochet_layout: Option<crate::rules::chain::Layout>,
     pub(super) chain_layout: Option<crate::rules::chain::Layout>,
     pub(super) struck: Vec<usize>,
+    /// The same, for the cycle's base form — see `open`.
+    pub(super) base_struck: Option<Vec<usize>>,
     pub(super) frame_seconds: f64,
     pub(super) rec_roster: Vec<BuffSeries>,
     pub(super) rec_buff_index: Vec<Option<usize>>,
@@ -211,6 +213,11 @@ pub(super) fn open<'a>(
     // …AND WHO IS ON THE LINE, for the same reason: nobody moves, so the bodies
     // a shot passes through are the same for every pellet of every shot.
     let struck = params.struck_bodies();
+    // …AND THE BASE FORM'S OWN LINE. Punch through is a property of the FORM
+    // rather than of the weapon — the Latron's base form pierces and its
+    // Incarnon projectile does not (M103) — so one list for the engagement
+    // answered the whole fight with the TRANSFORMED form's reach.
+    let base_struck = params.cycle.as_ref().map(|cy| cy.base_form.struck_bodies());
     let next_frame = 0.0f64;
     let frame_seconds = trace.as_ref().map_or(f64::INFINITY, |r| r.frame_seconds);
     let mut bar = BuffBar::new();
@@ -621,6 +628,7 @@ pub(super) fn open<'a>(
             ricochet_layout,
             chain_layout,
             struck,
+            base_struck,
             frame_seconds,
             rec_roster,
             rec_buff_index,
