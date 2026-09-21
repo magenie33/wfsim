@@ -197,3 +197,81 @@ fn m104_primary_compression_on_the_incarnon_form() {
     let added = collision * (base + per_m * c.radius_lost_m) * co;
     assert!((added - 1074.0).abs() < 1.0, "the Adds reading is {added:.0}, not 2097");
 }
+
+/// …AND THE RADIUS IT BOUGHT THAT WITH IS ACTUALLY GONE (M104).
+///
+/// The arcane's whole trade is damage for reach — *"x0.2 explosion radius"* —
+/// and the fight kept the full sphere while the panel paid the bonus, which is
+/// free damage in a crowd. Single-target it changes nothing, so the reading
+/// above cannot see it: the blast detonates ON the aimed body either way.
+#[test]
+fn m104_compression_shrinks_the_explosion_it_is_paid_for() {
+    let with_arcane = |fx: crate::data::arcanes::ArcaneFx, weapon: &str| {
+        let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let p = FightParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &fx);
+        let r = p.radial.expect("the explosion");
+        (r.radius_m, p.compression_multiplier)
+    };
+    let compression = |rank: u32| {
+        crate::data::arcanes::for_slot("primary", "primary_compression")
+            .expect("the arcane")
+            .fx(rank, crate::model::StackPolicy::Emergent, &[], crate::data::tenno::default_tenno())
+    };
+    // NO CARD: the weapon's row is data and the arcane is a choice, so the
+    // sphere is whole and the bonus is nothing.
+    let (bare, bare_mult) = with_arcane(ArcaneFx::none(), "latron_prime_incarnon");
+    assert!((bare - 4.0).abs() < 1e-9, "the published radius: {bare}");
+    assert!((bare_mult - 1.0).abs() < 1e-9, "no card, no bonus");
+    // WITH IT: a fifth of the sphere, and the bonus is still computed off the
+    // FULL 4 m — the arcane pays for metres it is taking, not for what is left.
+    let (kept, mult) = with_arcane(compression(2), "latron_prime_incarnon");
+    assert!((kept - 0.8).abs() < 1e-9, "a fifth of 4 m: {kept}");
+    assert!((mult - 3.24).abs() < 1e-9, "+224% off the 3.2 m it took: {mult}");
+    // A ROW THE TABLE MARKS `doesnt_work` TAKES NOTHING AND SHRINKS NOTHING —
+    // the Komorex's zoom explosion, at 0% effectiveness.
+    let (komorex, komorex_mult) = with_arcane(compression(5), "komorex");
+    assert!((komorex - 3.5).abs() < 1e-9, "the row pays nothing: {komorex}");
+    assert!((komorex_mult - 1.0).abs() < 1e-9, "…and multiplies nothing");
+}
+
+/// …AND IT REACHES THE FIGHT: the smaller sphere touches fewer bodies.
+///
+/// The claim a formation exists to make. A body count, not a total: the
+/// collision alone still lands, so damage would move for two reasons at once.
+#[test]
+fn m104_a_compressed_blast_reaches_fewer_bodies() {
+    let touched = |fx: crate::data::arcanes::ArcaneFx| {
+        let evo = ["latron_prime_evo1_incarnon_form"];
+        let base = crate::model::WeaponBase::from_data("latron_prime_incarnon", false, &evo);
+        let refs: Vec<&crate::model::ModDef> = Vec::new();
+        let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(10.0);
+        // A LINE INSIDE THE FULL 4 m AND OUTSIDE THE COMPRESSED 0.8 m, which is
+        // the only spacing that can tell the two spheres apart.
+        arena.others = (1..=3)
+            .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
+                params: TargetParams::training_dummy(),
+                body_parts: BodyPart::humanoid(),
+                at: crate::rules::space::Vec2::new(
+                    // 2, 3 and 4 m out: inside the whole sphere, outside the
+                    // compressed one even with a body's own width added to it.
+                    f64::from(i) + 1.0,
+                    crate::rules::space::CONTACT_RANGE_M,
+                ),
+            })
+            .collect();
+        let p = FightParams::from_panel(&panel, &arena, &fx);
+        run_once(&p, &mut Rng::new(0x5EED)).spread.touched()
+    };
+    let whole = touched(ArcaneFx::none());
+    let compressed = touched(
+        crate::data::arcanes::for_slot("primary", "primary_compression")
+            .expect("the arcane")
+            .fx(5, crate::model::StackPolicy::Emergent, &[], crate::data::tenno::default_tenno()),
+    );
+    assert_eq!(whole, 4, "the 4 m sphere reaches the whole line");
+    assert_eq!(compressed, 1, "a fifth of it reaches the aimed body alone");
+}

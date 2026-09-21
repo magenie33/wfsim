@@ -37,13 +37,28 @@ collision  56 × 3.4 (base) × 3.24 (compression) × 3.4 (CO)       = 2097
 explosion 146 × 3.4 (base) × 3.24 (compression) × 5   (Double Tap) = 8042
 ```
 
+### …AND THE OTHER HALF OF THE TRADE, which these readings cannot see
+
+The arcane BUYS the damage with radius, and the fight kept the full sphere
+while the panel paid the bonus. Single-target that changes nothing — the blast
+detonates on the aimed body, at the centre of whatever sphere is left, which is
+why the readings above are the same either way. In a crowd it was the whole
+cost of the arcane going unpaid: a 4 m explosion that reached a formation
+should be 0.8 m.
+
+`FightParams::from_panel` now shrinks it, and the fight is the only place that
+can: a weapon's row is data, the arcane is a choice, and the panel does not
+know whether it is equipped. A row the catalog marks `doesnt_work` takes no
+metres and shrinks nothing.
+
 ### What is implemented
 
-All of it, unchanged — this reading confirms the model rather than moving it:
-`build::loadout::resolve_for` folds the arcane's per-metre ramp against the
-weapon's own row (`docs/CATALOGS.md` §2), and `latron_prime_incarnon.yaml`
-carries `effectiveness: 1.00`, `stacking: multiplies`, `radius_calculation:
-snapshot`.
+The damage half, unchanged — these readings confirm the model rather than
+moving it: `build::loadout::resolve_for` folds the arcane's per-metre ramp
+against the weapon's own row (`docs/CATALOGS.md` §2), and
+`latron_prime_incarnon.yaml` carries `effectiveness: 1.00`, `stacking:
+multiplies`, `radius_calculation: snapshot`. The radius half is the change this
+reading led to.
 
-Pinned by `m104_primary_compression_on_the_incarnon_form` in
+Pinned by the three `m104_*` tests in
 `engine/src/fight/tests/m102_latron_prime.rs`.

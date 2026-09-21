@@ -769,6 +769,41 @@ impl FightParams {
             }
             None => (1.0, 0.0),
         };
+        // …AND THE SPHERE IT BOUGHT THAT WITH IS ACTUALLY GONE: *"x0.2 explosion
+        // radius"*. The metres charged for are the metres taken, so what is left
+        // of the blast is a fifth of it — and the fight is where this can be
+        // asked at all, the panel not knowing whether the arcane is equipped.
+        //
+        // TWO CONDITIONS, one for each way the trade does not happen: the card
+        // has to be ON (a weapon's row is data, the arcane is a choice), and the
+        // row has to take metres — `radius_lost_m` is 0 on the rows the table
+        // marks `doesnt_work`, which pay nothing and shrink nothing.
+        //
+        // IT CHANGES NO SINGLE-TARGET NUMBER, which is why it went unread for as
+        // long as it did: the blast detonates ON the aimed body, at the centre
+        // of whatever sphere is left. In a crowd it is the whole cost of the
+        // arcane — a 4 m sphere that reached a formation becomes 0.8 m.
+        let compression_keeps = match panel.compression {
+            Some(c) if c.radius_lost_m > 0.0 && arcane.compression_damage_per_m > 0.0 => {
+                crate::build::loadout::COMPRESSION_RADIUS_KEPT
+            }
+            _ => 1.0,
+        };
+        let compressed_radial = panel.radial.map(|mut r| {
+            r.radius_m *= compression_keeps;
+            r.falloff_start_m *= compression_keeps;
+            r
+        });
+        // THE FIELD ONLY WHERE THERE IS NO RADIAL, because that is how the
+        // metres were counted (`resolve_for`): a weapon with both pays for its
+        // explosion, so its explosion is what shrinks.
+        let compressed_lingering = panel.lingering.map(|mut f| {
+            if panel.radial.is_none() {
+                f.radius_m *= compression_keeps;
+                f.falloff_start_m *= compression_keeps;
+            }
+            f
+        });
         let arcane = {
             let mut fx = arcane.clone().without_locked(&panel.locked);
             fx.ammo_efficiency += panel
@@ -885,7 +920,7 @@ impl FightParams {
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
             damage: panel.damage,
-            radial: panel.radial,
+            radial: compressed_radial,
             cluster: panel.cluster,
             falloff: panel.falloff,
             spread: panel.spread,
@@ -975,7 +1010,7 @@ impl FightParams {
                 stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: r.takes_condition_overload,
             }),
-            lingering: panel.lingering,
+            lingering: compressed_lingering,
             continuous: panel.continuous,
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
             multishot_on_last_round: panel.multishot_on_last_round,

@@ -136,7 +136,14 @@ pub fn panel_json(v: &Value) -> Value {
 
     let (src, mut conditionals) = mod_sources(v, info, &refs, &forms_list, policy, &panel_tenno);
     let (evo_src, evo_flat) = evolution_sources(info, &evo_refs, &panel_tenno);
-    let inputs = SectionInputs { v, info, refs: &refs, policy, src, evo_src, evo_flat };
+    // READ BEFORE THE SECTIONS, because one of their rows depends on it — the
+    // same `arcane_fx` the buff cards below use, hoisted rather than built
+    // twice.
+    let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
+    let inputs = SectionInputs {
+        v, info, refs: &refs, policy, src, evo_src, evo_flat,
+        compression_per_m: arcane_fx.compression_damage_per_m,
+    };
 
     // ONE PLAYER, BOTH ANSWERS. These rows resolved against
     // the NEUTRAL Tenno while the sim resolved against the fight's, so every
@@ -160,7 +167,7 @@ pub fn panel_json(v: &Value) -> Value {
     // Configurable buffs of this build (weapon-scoped) for the Sim panel —
     // mods + arcane + the weapon passive, plus evolution-granted buffs
     // (Fevered Frenzy's permanent stacks).
-    let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
+    //
     // A real build: every mod on it is on it, so every lock is real.
     let mut buffs = enumerate_buffs(&refs, &refs, &arcane_fx, info, &tenno_from(v, info));
     for b in evo_buffs(&evos) {
@@ -283,6 +290,10 @@ struct SectionInputs<'a> {
     /// The flat base additions the evolutions make — base damage, crit chance,
     /// status chance, magazine — which a row subtracts to show the raw base.
     evo_flat: (f64, f64, f64, f64),
+    /// Primary Compression's per-metre damage ramp, or 0 with no such arcane on
+    /// the build. The BLAST RADIUS row needs it: the arcane keeps a fifth of the
+    /// sphere and the panel is resolved without knowing what is equipped.
+    compression_per_m: f64,
 }
 
 /// Every equipped mod's share of each bucket, and the lines that never merge
@@ -1578,6 +1589,17 @@ fn form_section(
         let rsrc = |key: &'static str| sources(key, None);
         // Geometry reads as a distance, not a stat: 2 m, not 2.0.
         let dist = display_number;
+        // PRIMARY COMPRESSION SHRINKS WHAT IT PAID FOR, so the row says the
+        // sphere the fight actually fires (`FightParams::from_panel`) rather
+        // than the one the mods built. A reader comparing the two would
+        // otherwise find the panel's radius nowhere in the fight.
+        let shown_radius = rr.radius_m
+            * match panel.compression {
+                Some(c) if c.radius_lost_m > 0.0 && inputs.compression_per_m > 0.0 => {
+                    wfsim_engine::build::loadout::COMPRESSION_RADIUS_KEPT
+                }
+                _ => 1.0,
+            };
         let mut rows = vec![
             json!({ "key": "base_damage", "label": "Base Damage",
                 "base": num(rb.base_vector.total()), "final": num(rr.modified_base),
@@ -1604,7 +1626,10 @@ fn form_section(
                 "sources": rsrc("status_duration") }),
             json!({ "key": "radius", "label": "Blast Radius",
                 "base": format!("{} m", dist(rb.radius_m)),
-                "final": format!("{} m", dist(rr.radius_m)),
+                "final": format!("{} m", dist(shown_radius)),
+                "note": (shown_radius < rr.radius_m).then(|| format!(
+                    "Primary Compression keeps a fifth of it while aiming — {} m traded for the damage bonus",
+                    dist(rr.radius_m - shown_radius))),
                 "sources": rsrc("radius") }),
         ];
         // Falloff: full damage inside `start`, then linear down to
@@ -1612,7 +1637,7 @@ fn form_section(
         // takes, which is the number a reader can act on.
         rows.push(json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
             "final": format!("{}% at {} m", dist((1.0 - rr.falloff_reduction) * 100.0),
-                dist(rr.radius_m)),
+                dist(shown_radius)),
             "note": if rr.falloff_start_m > 0.0 {
                 format!("full damage within {} m, then linear", dist(rr.falloff_start_m))
             } else {

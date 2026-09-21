@@ -666,7 +666,15 @@ aiming, and pays for every metre lost.
 radius_lost  = radius_modded × (1 − 0.2)      # continuous, NOT per whole metre
 damage_bonus = damage_per_metre(rank) × radius_lost
 ammo_eff     = eff_per_metre(rank)    × radius_lost
+radius_kept  = radius_modded × 0.2            # and the fight uses THIS
 ```
+
+**THE LAST LINE IS THE TRADE.** The bonus is paid for metres the explosion no
+longer has, so the fight fires the fifth that is left (`FightParams::from_panel`,
+which is where the arcane is known to be equipped at all). It changes no
+single-target number — the blast goes off ON the aimed body — and in a crowd it
+is the whole cost of the card. A row marked `Doesn't Work` takes no metres and
+shrinks nothing.
 
 Rank ramp (wiki rank table == WFCD `levelStats`, both linear):
 
