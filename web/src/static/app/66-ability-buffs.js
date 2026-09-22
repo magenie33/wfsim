@@ -157,8 +157,7 @@ function renderWfBuffs(host, readonly) {
     `<div class="wfb-head">
        <label title="${escHtml(tr("your Warframe's Ability Strength, as the arsenal shows it — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
          <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}"${readonly ? " disabled" : ""}></label>
-       <label title="${escHtml(tr("cast them instead of assuming them: each is cast at the start and recast the moment it lapses, paying energy out of the Warframe's own pool, and a cast that roots the frame takes the shooting time with it. Off is what every board row was measured under"))}"><input type="checkbox" id="${host}-cast"${sim.cast_abilities ? " checked" : ""}${readonly ? " disabled" : ""}> ${escHtml(tr("Cast them"))}</label>
-       <span class="wfb-early">${escHtml(tr("early access — a cast time is one unmeasured second for every ability, and no energy regen is modelled, so a pool is a budget of casts"))}</span>
+       <span class="wfb-early">${escHtml(tr("what others hand you — a squadmate's Roar, or your own frame's, assumed up. WHEN one is cast is the action priority list's question and not this block's"))}</span>
      </div>
      ${nulled ? `<div class="wfb-null">${escHtml(
         tr("this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way"))}</div>` : ""}
@@ -171,10 +170,6 @@ function renderWfBuffs(host, readonly) {
     return;
   }
   const touched = () => { markScenarioDirty(); renderSim(); };
-  const cast = $(`${host}-cast`);
-  if (cast) {
-    cast.addEventListener("change", () => setScenarioFields({ cast_abilities: cast.checked || null }));
-  }
   const str = $(`${host}-str`);
   if (str) str.addEventListener("change", () => { setAbilityStrength(Number(str.value) || 0); touched(); });
   box.querySelectorAll("[data-wfel]").forEach((el) => el.addEventListener("change", () => {

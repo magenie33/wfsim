@@ -337,9 +337,10 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     ScenarioAxis { id: "abilities", kind: AxisKind::Structured, group: Group::Squad, requires: FREE },
     ScenarioAxis { id: "ability_strength", kind: AxisKind::Number { min: 0.0, max: 10.0 }, group: Group::Squad, requires: FREE },
     ScenarioAxis { id: "extra_stats", kind: AxisKind::Structured, group: Group::Squad, requires: FREE },
-    // WHETHER THE ABILITIES ARE CAST OR ASSUMED UP. Off is what every stored
-    // scenario and every board row was measured under.
-    ScenarioAxis { id: "cast_abilities", kind: AxisKind::Flag, group: Group::Squad, requires: FREE },
+    // WHAT THE PLAYER IS DOING, as an ordered list of rules (`data::apl`).
+    // Empty is what every stored scenario and every board row was measured
+    // under: the weapon's mode and nothing else.
+    ScenarioAxis { id: "apl", kind: AxisKind::Structured, group: Group::Wielder, requires: FREE },
 ];
 
 /// **WHAT THIS WEAPON SETTLES THIS AXIS TO, AND WHY** — or `None` when the

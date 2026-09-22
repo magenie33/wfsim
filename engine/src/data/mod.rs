@@ -13,6 +13,7 @@
 //! `"mods/pistol/hornet_strike.yaml"`.
 
 pub mod abilities;
+pub mod apl;
 pub mod arcanes;
 pub mod auras;
 pub mod boards;
