@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::data::auras::AuraEffect;
 use crate::data::shards::ShardPick;

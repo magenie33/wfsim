@@ -402,6 +402,10 @@ mod page_row_tests {
                     riven.as_ref(),
                     r.get("exilus").and_then(Value::as_str),
                     assembly.as_ref(),
+                    // The row's own Warframe, which only an Exalted row has.
+                    r.get("wielder")
+                        .and_then(|x| serde_json::from_value(x.clone()).ok())
+                        .as_ref(),
                 )
                 .unwrap_or_else(|e| panic!("{weapon} row on {bench}: {e}"));
                 // `validate` already refused anything over capacity, and the

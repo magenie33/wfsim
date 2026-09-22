@@ -87,6 +87,12 @@ fn canonical(v: &wfsim_engine::board::builds::ValidBuild) -> Value {
         o.insert("grip".into(), json!(a.grip));
         o.insert("loader".into(), json!(a.loader));
     }
+    // THE WARFRAME, on the one kind of build that carries one. `ValidBuild`
+    // already dropped it everywhere a ruler supplies the frame, so writing it
+    // here cannot make two records of one gun build.
+    if let Some(w) = &v.wielder {
+        o.insert("wielder".into(), serde_json::to_value(w).unwrap_or(Value::Null));
+    }
     if let Some(r) = &v.riven {
         o.insert("riven_pos".into(), json!(r.bonuses));
         if let Some(m) = &r.malus {
@@ -336,7 +342,15 @@ fn intake(
             riven.as_ref(),
             Some(exilus).filter(|x| !x.is_empty()).as_deref(),
             assembly.as_ref(),
-        ) {
+        )
+        // THE WARFRAME, by the board's own rule rather than by a second copy
+        // of it: dropped where a ruler pins a frameless Tenno, required on an
+        // Exalted weapon whose numbers are that frame's.
+        .and_then(|v| {
+            let w: Option<wfsim_engine::data::warframes::Build> =
+                rec.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
+            v.with_wielder(w.as_ref())
+        }) {
             Ok(v) => v,
             // THE REASON IS PRINTED, not counted. "2 refused" tells nobody
             // anything, including the person who submitted them.

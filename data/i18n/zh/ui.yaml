@@ -146,6 +146,7 @@ ui:
   "5 mod slots · 1 arcane slot · every card at max rank": 5 个 mod 槽 · 1 个赋能槽 · 所有卡牌按满级计
   "other schools seated: {n}": 已装的其他流派数：{n}
   "{school} mods seated: {n}": 已装 {school} 流派 mod：{n}
+  "Exalted": 显赫
   "Exilus": Exilus
   "Archon Shards": 执刑官源力石
   "Abilities": 技能

@@ -1,6 +1,34 @@
 use super::*;
 
 impl ValidBuild {
+    /// THE WARFRAME HOLDING IT, applied by the one rule there is.
+    ///
+    /// BOTH DOORS CALL THIS. The board's admission and `wfsim-intake` each have
+    /// to answer "does this build carry a frame", and a helper that left the
+    /// DECISION to its callers would be two answers waiting to disagree — the
+    /// failure `BUILD_AXES` itself exists for.
+    ///
+    /// Dropped where a ruler pins a frameless Tenno, so two players testing one
+    /// gun build in two hands submit one build; refused on an Exalted weapon,
+    /// whose numbers are that frame's ability's and unreproducible without it.
+    pub fn with_wielder(
+        mut self,
+        w: Option<&crate::data::warframes::Build>,
+    ) -> Result<Self, String> {
+        self.wielder = if super::carries_wielder(&self.weapon) {
+            match w {
+                Some(w) => Some(w.clone()),
+                None => return Err(format!(
+                    "{} is an Exalted weapon: its row is its Warframe's too, and none was given",
+                    self.weapon
+                )),
+            }
+        } else {
+            None
+        };
+        Ok(self)
+    }
+
     /// THE NUMBERS THIS RIVEN ROLLED, once somebody knows them.
     ///
     /// A record states a SHAPE and `wfsim-intake` resolves it by asking every
@@ -157,7 +185,7 @@ pub fn identity(b: &ValidBuild) -> String {
     // two numbers: a riven at 1.1 damage and the same card at 0.9 are different
     // fights, and an id that could not tell them apart would file the second
     // under the first's.
-    match b.riven_rolls.as_slice() {
+    let key = match b.riven_rolls.as_slice() {
         [] => key,
         rolls => {
             let mut key = key;
@@ -167,5 +195,58 @@ pub fn identity(b: &ValidBuild) -> String {
             }
             key
         }
+    };
+    // THE WARFRAME, on the one kind of build that carries one, and appended for
+    // the reason everything above it was: no identity already computed moves.
+    //
+    // IT IS PART OF THE BUILD HERE AND NOWHERE ELSE. An Exalted weapon's
+    // numbers are its ability's, so the same claws in two frames built two ways
+    // are two builds with two scores — an id blind to the frame would file the
+    // second under the first's number, which is the bug the valence had.
+    match &b.wielder {
+        None => key,
+        Some(w) => format!("{key}|w:{}", wielder_key(w)),
     }
+}
+
+/// A WARFRAME BUILD AS ONE STABLE STRING — what an Exalted weapon's identity
+/// appends, and the only place the shape is spelled.
+///
+/// SORTED WHERE ORDER IS NOT THE BUILD. Mods, arcanes and shards are a SET the
+/// player filled in whatever order the page happened to hand them over, so two
+/// submissions of one frame must not key apart for it. Nothing here is elemental,
+/// which is the one axis where a weapon's order is the build.
+fn wielder_key(w: &crate::data::warframes::Build) -> String {
+    let slot = |s: &crate::data::warframes::SlotPick| match s.rank {
+        None => s.id.clone(),
+        Some(r) => format!("{}@{r}", s.id),
+    };
+    let sorted = |xs: Vec<String>| {
+        let mut xs = xs;
+        xs.sort();
+        xs.join(",")
+    };
+    let mods = sorted(w.mods.iter().map(slot).collect());
+    let arcs = sorted(w.arcanes.iter().map(slot).collect());
+    let shards = sorted(
+        w.shards.iter()
+            .map(|s| format!("{}/{}{}", s.shard, s.effect, if s.tauforged { "*" } else { "" }))
+            .collect(),
+    );
+    let op = w.operator.as_ref().map_or(String::new(), |o| {
+        format!(
+            "{}:{}:{}{}",
+            o.school,
+            sorted(o.assumed.clone()),
+            sorted(o.artifact.mods.clone()),
+            o.artifact.arcane.as_ref().map_or(String::new(), |a| format!("+{a}"))
+        )
+    });
+    format!(
+        "{};{mods};{};{};{arcs};{shards};{};{op}",
+        w.frame,
+        w.exilus.as_ref().map_or(String::new(), slot),
+        w.aura.as_ref().map_or(String::new(), slot),
+        w.helminth.as_ref().map_or(String::new(), |h| format!("{}:{}", h.slot, h.ability)),
+    )
 }

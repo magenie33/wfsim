@@ -2885,3 +2885,7 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .doc p{margin:0 0 7px;color:var(--text-2);font-size:12.5px;line-height:1.65;max-width:82ch}
 .doc p:last-child{margin-bottom:0}
 .doc a{color:var(--accent)}
+
+/* THE ENTRANT CLASS, its own row under the build filters: two answers that are
+   never added together read worse side by side with three that are. */
+.bclass{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}

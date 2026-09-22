@@ -46,7 +46,14 @@ if (!Array.isArray(meta.axes) || !meta.axes.length) {
 }
 
 const ALL = meta.axes.map((a) => a.id);
-const ON_BOARD = meta.axes.filter((a) => a.on_board).map((a) => a.id);
+// A WORD AND NOT A BOOLEAN, and the reason is the trap: `on_board` has three
+// answers now, so a truth test would read "never" as yes and every axis would
+// look like a board axis — which is the coverage this file exists to assert.
+const KEEPS = (a) => a.on_board === "always" || a.on_board === "where_the_ruler_cannot";
+const ON_BOARD = meta.axes.filter(KEEPS).map((a) => a.id);
+check("every axis says who supplies it, in a word this check knows",
+  meta.axes.every((a) => ["never", "always", "where_the_ruler_cannot"].includes(a.on_board)),
+  meta.axes.map((a) => a.id + "=" + a.on_board).join(" "));
 // Two facts worth stating out loud rather than leaving to a reader: the list is
 // not empty of either kind. A table where nothing is `on_board` would make the
 // worker's coverage assertion below pass vacuously.
@@ -164,7 +171,7 @@ check("...and the answer-side guard it leans on is still here",
     .concat(readdirSync(resolve(ROOT, "cli/src/board")).sort().map((f) => "cli/src/board/" + f))
     .map(read)
     .join(String.fromCharCode(10));
-  const fields = meta.axes.filter((a) => a.on_board).map((a) => a.request_field);
+  const fields = meta.axes.filter(KEEPS).map((a) => a.request_field);
   const missing = fields.filter((f) => !scorer.includes('"' + f + '"'));
   check(
     "the scorer names every axis a board row carries",

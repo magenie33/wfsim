@@ -162,6 +162,16 @@ function boardPayload() {
     // at.
     grip: (assembly && assembly.grip) || "",
     loader: (assembly && assembly.loader) || "",
+    // WHO IS HOLDING IT, and it is part of the BUILD on exactly one kind of
+    // weapon. Every ruler scores a gun in a frameless Tenno's hands, so the
+    // door drops this and two players who tested one build on two frames send
+    // one build; an Exalted weapon's numbers ARE its ability's, so there the
+    // frame — and the Operator in the same payload — is the build's own.
+    //
+    // SENT ALWAYS rather than only for those weapons: which ones they are is
+    // game data, and the engine at the door already has it. A page that had to
+    // know would be a second answer to a question with one.
+    wielder: wielderPayload(),
   };
 }
 
@@ -219,6 +229,9 @@ function boardPayloadFromResult(res) {
     exilus: exilusOf(res),
     grip: (assembly && assembly.grip) || "",
     loader: (assembly && assembly.loader) || "",
+    // …AND THE WARFRAME, from the page for the reason the riven and the
+    // assembly are: the search was run in these hands, so they are the row's.
+    wielder: wielderPayload(),
   };
 }
 

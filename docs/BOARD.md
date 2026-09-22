@@ -853,17 +853,30 @@ it, scored once like any other, and the scorer probes nothing.
 
 *(The exilus slot is on the board — see below.)*
 
-**THE WIELDER.** A build names who holds its weapon (docs/WARFRAMES.md §A
-weapon's wielder), and a submission does not carry it: a build tested in Ash's
-hands enters the library as the same build it is in anybody's, and every ruler
-scores it in the Prototype's.
+**THE WIELDER, ON EVERY WEAPON A RULER CAN PIN A FRAME FOR.** A build names who
+holds its weapon (docs/WARFRAMES.md §A weapon's wielder) and the record drops
+it: a build tested in Ash's hands enters the library as the same build it is in
+anybody's, and every ruler scores it in the Prototype's. The page sends it
+anyway and the door drops it, because which weapons are the exception is game
+data and the door is the half that has it.
 
-**AN EXALTED WEAPON.** Valkyr Talons are a weapon in the roster, a build for
-them is saved like any other, and the board does not rank them: their damage is
-an ability's, taken at 100% strength, and no ruler states the Warframe behind
-the weapon, so a row could not be reproduced. `validate_for_board_with` refuses
-one before anything else — the page's door and the scorer both read it —
-and `an_exalted_weapon_is_a_legal_build_and_never_a_board_row` holds it.
+## The one entrant a ruler cannot pin
+
+**AN EXALTED WEAPON CARRIES ITS WARFRAME.** Valkyr Talons are a weapon in the
+roster and their numbers are an ability's: they seat no capacity of their own
+and they scale with ability strength, so no ruler can state the frame behind
+them and a row without one could not be reproduced. So the frame — and the
+Operator travelling in the same payload — is part of the BUILD there, recorded
+on the submission, hashed into the identity, and two strengths are two builds.
+`ValidBuild::with_wielder` is the whole of that rule, called by the board's
+door and by `wfsim-intake` so the two cannot answer it differently.
+
+**AND IT IS RANKED APART.** The fight is the same fight, but an Exalted
+weapon's KPM and a gun's are not like terms, so the ranking page lists one
+class at a time and opens on the weapons; a weapon's own page shows its rows
+either way, and the rank it states is counted among its own kind. Two lists
+under one ruler is what keeps a number from being compared to a number nothing
+measured against it.
 
 ## What a row has to be
 

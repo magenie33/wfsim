@@ -5,6 +5,7 @@
 use serde_json::{json, Value};
 use wfsim_engine::target::TargetMode;
 use crate::kitgun::board_assembly_of;
+use crate::tenno::wielder_build_of;
 use crate::registry::enemies;
 use crate::request::{get_bool, get_str, get_u32};
 
@@ -125,6 +126,11 @@ pub fn board_check_json(v: &Value) -> Value {
         // record. The door and the scorer answer the same question or the door
         // is not one.
         board_assembly_of(v).as_ref(),
+        // …AND THE WARFRAME, read off the same request the simulator answers.
+        // The door drops it on every weapon a ruler can pin a frame for, so
+        // sending one costs an ordinary submission nothing; an Exalted weapon
+        // is refused without it, because its numbers are that frame's.
+        wielder_build_of(v).as_ref(),
     ) {
         // A REFUSAL IS A RESULT, not a transport error: `ok` says the question
         // was answered, `accepted` says what the answer was.

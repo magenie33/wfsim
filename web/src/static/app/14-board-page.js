@@ -88,6 +88,20 @@ const BENCH_VIEWS = [
 ];
 const rowHasRiven = (r) => !!(r && r.riven);
 
+/// WHICH ENTRANTS ARE BEING RANKED — the weapons, or the Exalted ones.
+///
+/// NEVER ONE LIST. The fight is the same fight, but an Exalted weapon's numbers
+/// are its Warframe's ability's: it seats no capacity of its own and it scales
+/// with ability strength, so its KPM and a gun's are not like terms and a
+/// ranking holding both would be a comparison nothing measured. Two lists under
+/// one ruler is the honest shape, and the weapons are the one a reader lands on.
+let benchClassView = "weapons";
+const BENCH_CLASSES = [
+  ["weapons", "Weapons"],
+  ["exalted", "Exalted"],
+];
+const inBenchClass = (w) => !!w.exalted === (benchClassView === "exalted");
+
 /// A BOARD ROW'S RIVEN, AS A LOCAL ITEM — the name it takes on the reader's
 /// machine, DERIVED from the shape so opening the same row twice reuses the
 /// one riven instead of stacking copies.
@@ -137,7 +151,7 @@ const benchRows = (id) => BOARD[id] || (BOARD_INDEX && BOARD_INDEX[id]) || [];
 
 const benchEntries = (id) => {
   const out = [];
-  for (const w of META.weapons || []) {
+  for (const w of (META.weapons || []).filter(inBenchClass)) {
     for (const m of w.modes || ["base"]) {
       const rows = benchRows(w.id)
         .filter((r) => r.benchmark === id && (r.mode || "base") === m)
@@ -268,9 +282,17 @@ function renderBenchBoard() {
   const view = $("bench-view");
   if (view) {
     view.innerHTML = BENCH_VIEWS.map(([v, label]) => `<button type="button" class="bchip${
-      benchRivenView === v ? " sel" : ""}" data-bview="${v}">${escHtml(tr(label))}</button>`).join("");
+      benchRivenView === v ? " sel" : ""}" data-bview="${v}">${escHtml(tr(label))}</button>`).join("")
+      // …AND WHICH KIND OF ENTRANT, its own row because it is its own question
+      // and its two answers are never added together.
+      + `<div class="bclass">` + BENCH_CLASSES.map(([v, label]) => `<button type="button" class="bchip${
+        benchClassView === v ? " sel" : ""}" data-bclass="${v}">${escHtml(tr(label))}</button>`).join("")
+      + `</div>`;
     view.querySelectorAll("[data-bview]").forEach((el) => {
       el.onclick = () => { benchRivenView = el.dataset.bview; renderBenchBoard(); };
+    });
+    view.querySelectorAll("[data-bclass]").forEach((el) => {
+      el.onclick = () => { benchClassView = el.dataset.bclass; renderBenchBoard(); };
     });
   }
   // THE RULES, under the ruler that makes them. Collapsed by default: a reader

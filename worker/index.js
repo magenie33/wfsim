@@ -81,6 +81,13 @@ export const AXES = [
   { key: "mods", kind: "ids", max: MAX_MODS, axis: "mods", ranked: true },
   { key: "evolutions", kind: "ids", max: 8, set: true, axis: "evolutions" },
   { key: "arcanes", kind: "ids", max: 4, axis: "arcanes" },
+  // WHO HELD IT, and the only row here that is not flat. An Exalted weapon's
+  // numbers are its Warframe's ability's, so the frame — and the Operator in
+  // the same payload — is part of the BUILD rather than a term of the fight.
+  // Which weapons those are is game data this service does not have, so it
+  // takes the object from any submission, bounded, and the engine's door drops
+  // it wherever a ruler supplies the frame instead.
+  { key: "wielder", kind: "nested", max: 4096, axis: "wielder" },
   // A MODULAR WEAPON'S PARTS, as TWO FLAT IDS rather than as the object the
   // simulate request carries. Spellings are per-protocol and always have been
   // (`arcane` on a request, `arcanes` here); what is shared is the axis, which
@@ -141,6 +148,15 @@ function record(b) {
       const s = v || "";
       if (a.required ? !ID.test(s) : s && !ID.test(s)) return { err: `bad ${a.key}` };
       if (s) rec[a.key] = s;
+    } else if (a.kind === "nested") {
+      // SHAPE AND SIZE, which is all a service with no game data can say about
+      // an object. `JSON.stringify` is also the bound: a record is stored
+      // verbatim, so what is measured is what is kept.
+      if (v === undefined) continue;
+      if (v === null || typeof v !== "object" || Array.isArray(v)) return { err: `bad ${a.key}` };
+      const text = JSON.stringify(v);
+      if (text.length > a.max) return { err: `bad ${a.key}` };
+      rec[a.key] = JSON.parse(text);
     } else {
       const list = v === undefined ? [] : v;
       if (!Array.isArray(list) || list.length > a.max) return { err: `bad ${a.key}` };

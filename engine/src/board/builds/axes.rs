@@ -30,7 +30,38 @@ pub struct BuildAxis {
     /// recording them — every row is scored at full mod rank and at the
     /// valence roll's ceiling — and a riven is an item that exists on one
     /// machine, so it can never identify a public row.
-    pub on_board: bool,
+    pub on_board: OnBoard,
+}
+
+/// WHO SUPPLIES AN AXIS: the ruler, or the entrant.
+///
+/// A THIRD ANSWER EXISTS AND IT IS NOT "SOMETIMES". `Fixed` and `Kept` are the
+/// ruler's answer and the entrant's; `KeptWhereTheRulerCannot` is the case
+/// where which of the two it is depends on the WEAPON — an Exalted weapon's
+/// damage is its Warframe's, so no ruler can pin the Warframe and the entrant
+/// has to carry it. Written as a variant rather than as a condition inside the
+/// door, because a conditional nobody declared is how an axis goes missing
+/// (see [`BUILD_AXES`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OnBoard {
+    /// The ruler fixes it for every row, so a record that carried it would be
+    /// recording a term nobody chose.
+    Fixed,
+    /// Part of what a row states, always.
+    Kept,
+    /// Kept only where the ruler cannot fix it — see [`carries_wielder`].
+    KeptWhereTheRulerCannot,
+}
+
+/// DOES THIS WEAPON'S ROW CARRY ITS WIELDER? Only an Exalted weapon's does.
+///
+/// Every other row is scored in the Prototype's hands, which is what makes a
+/// build tested on Ash the same build as one tested on Mag. An Exalted weapon
+/// has no such reading: the numbers ARE the ability's, so the Warframe holding
+/// it — and the Operator with it, which travels in the same payload — is a
+/// term of the build and not of the fight.
+pub fn carries_wielder(weapon: &str) -> bool {
+    crate::data::weapons::spec(weapon).is_some_and(|s| s.exalted)
 }
 
 /// WHAT A BUILD CONSISTS OF, declared once for the whole product.
@@ -53,22 +84,22 @@ pub struct BuildAxis {
 /// `scripts/check_opt_replay.mjs` asserts the number comes back. A list can be
 /// forgotten; an answer that has to match cannot.
 pub const BUILD_AXES: &[BuildAxis] = &[
-    BuildAxis { id: "mods", request_field: "mods", on_board: true },
-    BuildAxis { id: "evolutions", request_field: "evolutions", on_board: true },
-    BuildAxis { id: "arcanes", request_field: "arcane", on_board: true },
+    BuildAxis { id: "mods", request_field: "mods", on_board: OnBoard::Kept },
+    BuildAxis { id: "evolutions", request_field: "evolutions", on_board: OnBoard::Kept },
+    BuildAxis { id: "arcanes", request_field: "arcane", on_board: OnBoard::Kept },
     // NOT on the board: a ruler scores every arcane at its own maximum, the
     // same rule that scores every row fully forma'd — investment is not a
     // choice, so it is not part of what a row states.
-    BuildAxis { id: "arcane_ranks", request_field: "arcane_rank", on_board: false },
-    BuildAxis { id: "mode", request_field: "mode", on_board: true },
+    BuildAxis { id: "arcane_ranks", request_field: "arcane_rank", on_board: OnBoard::Fixed },
+    BuildAxis { id: "mode", request_field: "mode", on_board: OnBoard::Kept },
     // A MODULAR WEAPON'S PARTS. On the board because the assembly IS the stat
     // line — two assemblies of one chamber are two different weapons in every
     // number a row states — which is the same reason `mode` is there and the
     // opposite of `arcane_ranks`, where a ruler fixes the answer for everyone.
-    BuildAxis { id: "assembly", request_field: "assembly", on_board: true },
+    BuildAxis { id: "assembly", request_field: "assembly", on_board: OnBoard::Kept },
     // The ELEMENT only on the board, for the same reason: the roll is scored at
     // its ceiling, which every player can Valence-fuse to.
-    BuildAxis { id: "valence", request_field: "valence_element", on_board: true },
+    BuildAxis { id: "valence", request_field: "valence_element", on_board: OnBoard::Kept },
     // A RIVEN IS A MOD, and rides in `mods` as an id — but the item itself
     // exists only on the machine that rolled it, so the request carries its
     // definition too and no public record can ever hold one.
@@ -76,12 +107,15 @@ pub const BUILD_AXES: &[BuildAxis] = &[
     // machine and still cannot identify a public row — what a row holds is
     // which stats it rolled and which is the malus, scored at that shape's own
     // ceiling. Two players who rolled the same stats submitted the same build.
-    BuildAxis { id: "rivens", request_field: "rivens", on_board: true },
+    BuildAxis { id: "rivens", request_field: "rivens", on_board: OnBoard::Kept },
     // WHO HOLDS IT: a linked Warframe build, whose stats, shards and passives
-    // the fight reads. NOT on the board, and not recorded on a submission: every
-    // ruler scores its rows in the Prototype's hands, so a build tested on Ash
-    // enters the library as the same build it would be on anyone.
-    BuildAxis { id: "wielder", request_field: "wielder", on_board: false },
+    // the fight reads — the Operator travels in the same payload. Every ruler
+    // scores its rows in the Prototype's hands, so a build tested on Ash enters
+    // the library as the same build it would be on anyone; an EXALTED weapon is
+    // the one entrant a ruler cannot do that to, because the numbers are the
+    // ability's. `carries_wielder` is the whole of the distinction.
+    BuildAxis { id: "wielder", request_field: "wielder",
+                on_board: OnBoard::KeptWhereTheRulerCannot },
 ];
 
 /// A build that passed, and what it costs to actually own.
@@ -96,6 +130,12 @@ pub struct ValidBuild {
     pub evolutions: Vec<String>,
     /// Arcane ids, one per pool slot, `none` included so position is stable.
     pub arcanes: Vec<String>,
+    /// THE WARFRAME HOLDING IT, and `None` on every weapon but an Exalted one.
+    ///
+    /// The door drops it where the ruler supplies it instead, so two identical
+    /// gun builds tested in different hands stay ONE build — see
+    /// [`carries_wielder`], which is the only place the distinction is made.
+    pub wielder: Option<crate::data::warframes::Build>,
     /// An ADVERSARY weapon's VALENCE ELEMENT — the progenitor bonus this copy
     /// came out of its Lich with. Empty on every weapon that has no valence.
     ///

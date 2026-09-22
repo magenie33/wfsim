@@ -109,7 +109,7 @@ pub struct ShardDef {
 
 /// ONE SOCKET: a colour, which of its effects it is set to, and whether the
 /// shard is Tauforged.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, serde::Serialize)]
 pub struct ShardPick {
     /// The shard's id, e.g. `emerald_archon_shard`.
     pub shard: String,

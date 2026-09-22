@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 pub struct SlotPick {
     pub id: String,
     /// `None` = max rank.
@@ -8,7 +8,7 @@ pub struct SlotPick {
     pub rank: Option<u32>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 pub struct HelminthPick {
     /// 1-4.
     pub slot: u8,
@@ -32,7 +32,7 @@ pub const FLOOR_SCHOOL: &str = "vazarin";
 /// conditional nodes to count as running, and the school's artifact. A node's
 /// condition is the Operator's own action, so it is ASSUMED when ticked and
 /// never simulated.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 pub struct OperatorPick {
     pub school: String,
     #[serde(default)]
@@ -42,7 +42,7 @@ pub struct OperatorPick {
 }
 
 /// The active school's artifact, every card at max rank.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 pub struct ArtifactPick {
     #[serde(default)]
     pub mods: Vec<String>,
@@ -50,7 +50,7 @@ pub struct ArtifactPick {
     pub arcane: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
 pub struct Build {
     #[serde(default)]
     pub operator: Option<OperatorPick>,

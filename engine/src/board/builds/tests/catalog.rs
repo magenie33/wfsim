@@ -1,8 +1,8 @@
 
-/// AN EXALTED WEAPON'S BUILD IS KEPT AND NOT RANKED: legal for the builder,
-/// refused at the board's door whatever the ruler.
+/// AN EXALTED WEAPON'S ROW IS ITS WARFRAME'S TOO: refused without one at any
+/// ruler, and the frame is part of what the build IS.
 #[test]
-fn an_exalted_weapon_is_a_legal_build_and_never_a_board_row() {
+fn an_exalted_weapon_is_refused_until_it_names_its_warframe() {
     let ids = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
     let talons = ids(&["pressure_point", "hysteria"]);
     assert!(validate("valkyr_talons", &talons, &[], &[], "").is_ok(), "the builder keeps it");
@@ -14,6 +14,30 @@ fn an_exalted_weapon_is_a_legal_build_and_never_a_board_row() {
     // weapon at the same door is turned away for the ruler instead.
     let magistar = validate_for_board(ANY_RULER, "magistar", &ids(&["pressure_point"]), &[], &[], "");
     assert!(magistar.err().is_some_and(|e| e.contains("unknown benchmark")));
+}
+
+/// TWO FRAMES ARE TWO BUILDS on an Exalted weapon, and NEITHER on every other:
+/// a ruler pins a frameless Tenno for a gun, so the wielder it arrived with is
+/// dropped and two players testing one build in two hands submit one build.
+#[test]
+fn only_an_exalted_row_is_keyed_by_the_frame_holding_it() {
+    use crate::data::warframes::{Build as Frame, SlotPick};
+    let ids = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+    let frame = |mods: &[&str]| Frame {
+        frame: "valkyr".to_string(),
+        mods: mods.iter().map(|m| SlotPick { id: (*m).to_string(), rank: None }).collect(),
+        ..Default::default()
+    };
+    let door = |weapon: &str, mods: &[String], w: Option<&Frame>| {
+        validate_for_board_with(ANY_RULER, weapon, mods, &[], &[], "", None, None, None, w)
+    };
+    // The made-up ruler refuses everything AFTER the wielder rule, so the
+    // Exalted refusal is read off the error and the rest off `ValidBuild`.
+    let talons = ids(&["pressure_point", "hysteria"]);
+    assert!(door("valkyr_talons", &talons, None)
+        .err().is_some_and(|e| e.contains("Exalted")), "no frame, no row");
+    assert!(door("valkyr_talons", &talons, Some(&frame(&["intensify"])))
+        .err().is_some_and(|e| e.contains("unknown benchmark")), "with a frame it reaches the ruler");
 }
 const ANY_RULER: &str = "no_such_ruler";
 
@@ -967,7 +991,7 @@ fn the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots() {
     ];
     let go = |mods: Vec<String>, evos: Vec<String>, arcs: Vec<String>, ex: Option<&str>| {
         validate_for_board_with(
-            "standard_multi_target", "praedos", &mods, &evos, &arcs, "", None, ex, None,
+            "standard_multi_target", "praedos", &mods, &evos, &arcs, "", None, ex, None, None,
         )
     };
     let arc = || s(&["melee_influence"]);

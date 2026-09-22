@@ -465,6 +465,13 @@ pub fn meta_json() -> Value {
                     .map(|s| s.class.clone())
                     .unwrap_or_default(),
                 "sentinel": w.sentinel,
+                // AN EXALTED WEAPON IS RANKED APART, and the page needs to know
+                // which ones without a second list: its numbers are its
+                // Warframe's ability's, so it is not a like term with a gun
+                // under the same ruler even though the fight is the same fight.
+                // `board::builds::carries_wielder` is the same answer the
+                // board's door gives, read from one place.
+                "exalted": wfsim_engine::board::builds::carries_wielder(&w.id),
                 // The EQUIPMENT slot ("primary" / "secondary"), which is what
                 // the home grid groups by. `arcane_slot` happens to hold the
                 // same string today because a weapon draws its arcane from its
@@ -1144,7 +1151,15 @@ pub fn meta_json() -> Value {
         "build_axes": wfsim_engine::board::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,
-            "on_board": a.on_board,
+            // A WORD AND NOT A BOOLEAN, because there are three answers now and
+            // the third one is the trap: a reader that kept testing this for
+            // truth would read every string as "yes", including "never".
+            "on_board": match a.on_board {
+                wfsim_engine::board::builds::OnBoard::Fixed => "never",
+                wfsim_engine::board::builds::OnBoard::Kept => "always",
+                wfsim_engine::board::builds::OnBoard::KeptWhereTheRulerCannot =>
+                    "where_the_ruler_cannot",
+            },
         })).collect::<Vec<_>>(),
         "benchmarks": wfsim_engine::board::benchmarks::all().iter().map(|b| json!({
             "primary": b.primary, "id": b.id,

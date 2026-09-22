@@ -306,6 +306,11 @@ pub fn run() {
             .get("exilus")
             .and_then(Value::as_str)
             .filter(|x| !x.is_empty());
+        // THE WARFRAME HOLDING IT, and only an Exalted row carries one — its
+        // numbers are that frame's ability's, so the record states it where
+        // every other row is scored in the ruler's frameless hands.
+        let wielder: Option<wfsim_engine::data::warframes::Build> =
+            s.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
         // THE PARTS, flat, exactly as the worker stores them and as the page's
         // own door reads them (`webapi::kitgun::board_assembly_of`). The chamber is the
         // weapon's, never the record's.
@@ -333,6 +338,10 @@ pub fn run() {
             shape.as_ref(),
             exilus,
             asm.as_ref(),
+            // THE WARFRAME THE RECORD CARRIES, and it carries one only where a
+            // ruler cannot pin it. Absent on every ordinary row, which is why
+            // the door drops it there rather than asking for it.
+            wielder.as_ref(),
         ) {
             Ok(v) => v,
             Err(e) => {
@@ -861,6 +870,7 @@ mod tests {
     fn two_modes_sharing_one_form_are_two_requests() {
         let scenario = json!({ "enemy": "thrax_centurion", "level": 9999 });
         let build = |id: &str| wfsim_engine::board::builds::ValidBuild {
+            wielder: None,
             weapon: id.to_string(),
             mods: vec![],
             evolutions: vec![],
@@ -919,6 +929,7 @@ mod tests {
         let mut multi = 0usize;
         for w in wfsim_engine::data::weapons::roster() {
             let v = wfsim_engine::board::builds::ValidBuild {
+            wielder: None,
                 weapon: w.id.clone(),
                 mods: vec![],
                 evolutions: vec![],
@@ -965,6 +976,7 @@ mod tests {
             "buff_triggers_off": ["headshot_kill"],
         });
         let v = wfsim_engine::board::builds::ValidBuild {
+            wielder: None,
             weapon: "ballistica_prime".to_string(),
             mods: vec![],
             evolutions: vec![],

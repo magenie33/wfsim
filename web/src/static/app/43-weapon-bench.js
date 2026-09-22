@@ -15,11 +15,16 @@ let wbenchPick = null;
 /// NO SCORE IS COMPARED ACROSS RULERS. Two rulers are two environments and
 /// their numbers are not like terms, so the only figure that crosses a row is
 /// the rank — a position inside one ruler, with the count it is out of.
-const wbenchRank = (benchmark, mode, score) => {
+const wbenchRank = (benchmark, mode, score, exalted) => {
   if (!BOARD_INDEX || score == null) return null;
   let total = 0;
   let above = 0;
-  for (const rows of Object.values(BOARD_INDEX)) {
+  for (const [wid, rows] of Object.entries(BOARD_INDEX)) {
+    // AMONG ITS OWN KIND. An Exalted weapon's numbers are its Warframe's
+    // ability's — it seats no capacity of its own and scales with strength —
+    // so a position counted against guns would be a comparison nothing
+    // measured. The ranking page splits the same two lists.
+    if (!!(weaponInfo(wid) || {}).exalted !== !!exalted) continue;
     let best = null;
     for (const r of rows || []) {
       if (r.benchmark !== benchmark || (r.mode || "base") !== mode) continue;
@@ -126,7 +131,7 @@ function renderWeaponBench() {
     return b ? tr(b.name).split(" · ")[0] : id;
   };
   const rows = cells.map((c) => {
-    const r = wbenchRank(c.benchmark, c.mode, c.best.score);
+    const r = wbenchRank(c.benchmark, c.mode, c.best.score, w.exalted);
     const on = c === pick ? " sel" : "";
     return `<tr class="wb-row${on}" data-cell="${escHtml(c.benchmark + "#" + c.mode)}">`
       + `<td>${escHtml(nameOf(c.benchmark))}</td>`

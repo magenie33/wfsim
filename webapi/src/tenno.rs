@@ -16,6 +16,17 @@ use crate::request::{get_bool, get_f64};
 /// block this keeps — 367/130/80 against a Warframe's 250/0/105 — while the
 /// Warframe that owns it still brings the shards and the aura: `rifle_amp`
 /// reaches an Artax.
+/// THE WARFRAME A REQUEST NAMES, as the board's door wants it: the build
+/// itself, not the Tenno it resolves to.
+///
+/// ONE READING OF ONE FIELD. `wielder_from` resolves this into stats for the
+/// fight and the door records it as part of the build, and the two must be
+/// looking at the same object — a door that read a different `wielder` than
+/// the scorer would admit one build and measure another.
+pub(crate) fn wielder_build_of(v: &Value) -> Option<wfsim_engine::data::warframes::Build> {
+    v.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok())
+}
+
 pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::tenno::Tenno {
     use wfsim_engine::data::warframes as wf;
     let mut t = if info.sentinel {

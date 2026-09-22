@@ -29,7 +29,8 @@ pub fn validate_for_board(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
-    validate_for_board_with(benchmark, weapon, mods, evolutions, arcanes, valence, None, None, None)
+    validate_for_board_with(
+        benchmark, weapon, mods, evolutions, arcanes, valence, None, None, None, None)
 }
 
 /// [`validate_for_board`], for a build carrying a riven of known SHAPE.
@@ -54,15 +55,12 @@ pub fn validate_for_board_with(
     riven: Option<&crate::build::rivens::RivenShape>,
     exilus: Option<&str>,
     assembly: Option<&crate::data::weapons::kitguns::Assembly>,
+    wielder: Option<&crate::data::warframes::Build>,
 ) -> Result<ValidBuild, String> {
-    // AN EXALTED WEAPON IS NOT RANKED. Its damage is an ability's, taken at 100%
-    // strength, and no ruler states the Warframe behind it — so a row could not
-    // be reproduced. The builder keeps the build all the same; this door is the
-    // board's alone (docs/BOARD.md §What is not on the board).
-    if crate::data::weapons::spec(weapon).is_some_and(|s| s.exalted) {
-        return Err(format!("{weapon} is an Exalted weapon, and the board does not rank one"));
-    }
-    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus, assembly)?;
+    // WHO SUPPLIES THE WARFRAME — `with_wielder`, which is where that rule
+    // lives so this door and `wfsim-intake` cannot answer it differently.
+    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus, assembly)?
+        .with_wielder(wielder)?;
     let req = match crate::board::benchmarks::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler
@@ -480,6 +478,10 @@ pub fn validate_with(
         valence: val,
         riven: riven.cloned(),
         assembly: asm,
+        // THE DOOR FILLS THIS, not the builder: which weapons carry a wielder
+        // is a rule about the BOARD, and this function answers to the builder
+        // too, where every build has one and none of them is a term.
+        wielder: None,
     })
 }
 
