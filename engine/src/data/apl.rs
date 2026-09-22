@@ -22,9 +22,13 @@
 //! the list's call: the loop scans the list at each point it acts, so a rule
 //! inserted above `reload` stops the reload from happening.
 //!
-//! WHAT IS NOT THE LIST'S YET: arming a MELEE Incarnon, which is a heavy attack
-//! at a combo the vocabulary cannot say. Its gauge reads 0, so no rule can take
-//! that swing away, and the condition is what a reader adds when one is needed.
+//! **A HEAVY ATTACK IS PRESSED EITHER ALWAYS OR ON THE FLASH, AND THERE IS NO
+//! THIRD WAY.** `heavy` as the list's last rule is the build that presses it all
+//! engagement; `heavy,if=tennokai` is the one swing the window converts. A rule
+//! that pressed it on a combo count is not a build anyone plays, so the
+//! vocabulary has no such condition and `an_unknown_action_or_condition_is_refused`
+//! keeps it out. Arming a melee Incarnon is therefore not the list's: its gauge
+//! reads 0, so no rule can take the swing that arms it away.
 //!
 //! NOT A TEXT EXPRESSION, deliberately. SimC's conditions are strings parsed at
 //! load, and a typo there reads as a rule that simply never fires. Every
@@ -397,9 +401,13 @@ when: {if: always}
         assert!(of("action: {do: shoot}
 when: {if: always}
 ").is_ok());
-        // An action nothing implements, a condition nothing reads, and a field
+        // An action nothing implements, a condition NOBODY WANTS, and a field
         // the rule does not have: each is a typo SimC would read as a rule that
         // never fires, and each is refused here instead.
+        //
+        // `combo_at_least` is the deliberate one: a heavy attack is pressed
+        // either all engagement or on the Tennokai flash, so a rule gating it
+        // on a combo count describes no build and stays out of the vocabulary.
         assert!(of("action: {do: channel, ability: warcry}
 when: {if: always}
 ").is_err());
