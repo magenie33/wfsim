@@ -59,6 +59,17 @@ for (const [route, id] of Object.entries(PAGES)) {
   }
 }
 
+// …AND IT MAY NOT BE NAMED `.html`. The edge serves HTML as PAGES: an asset
+// with that extension is redirected to its extensionless twin
+// (`html_handling` in wrangler.jsonc), so the app fetches a 307 and the four
+// pages draw empty — on the DEPLOYED site only, which no local server
+// reproduces. The name is the only place this can be caught early.
+const named = readFileSync(resolve(SITE, "weapons/Torid/index.html"), "utf8")
+  .match(/\/asset\/app\.[a-f0-9]+\.js/);
+const bundle = named ? readFileSync(resolve(SITE, named[0].slice(1)), "utf8") : "";
+const url = (bundle.match(/PAGE_BODIES_URL = "([^"]*)"/) || [])[1] || "";
+check("the deferred bodies are data, not a page", !!url && !url.endsWith(".html"), url);
+
 // THE OTHER HALF: the app fetches what the document did not carry. Asserted in
 // a browser because nothing else can — the file is named by the build and the
 // injection happens on a route.

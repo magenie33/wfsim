@@ -13,7 +13,7 @@
 
 /// Replaced by the build with the hashed file's own name; the literal is what
 /// the dev server serves, where there is nothing to fetch.
-const PAGE_BODIES_URL = "/pages.html";
+const PAGE_BODIES_URL = "/pages.json";
 
 let pageBodiesAsk = null;
 let pageBodiesSettled = false;
@@ -32,15 +32,14 @@ function ensurePageBodies(id) {
   if (!el || el.childElementCount || pageBodiesSettled) return null;
   if (!pageBodiesAsk) {
     pageBodiesAsk = fetch(PAGE_BODIES_URL)
-      .then((r) => (r.ok ? r.text() : ""))
-      .then((html) => {
-        if (!html) return;
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        for (const t of doc.querySelectorAll("template[data-page]")) {
-          const into = document.getElementById(t.dataset.page);
+      .then((r) => (r.ok ? r.json() : null))
+      .then((bodies) => {
+        if (!bodies) return;
+        for (const [id, markup] of Object.entries(bodies)) {
+          const into = document.getElementById(id);
           // NEVER OVER A BODY THAT IS ALREADY THERE: the document that IS this
           // page shipped its own, and it is the one the reader was served.
-          if (into && !into.childElementCount) into.append(t.content.cloneNode(true));
+          if (into && !into.childElementCount) into.innerHTML = markup;
         }
         // THE INJECTED MARKUP IS ENGLISH, like the shell it came out of, so
         // the overlay has to reach it — it swept the document once, before

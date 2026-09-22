@@ -506,16 +506,19 @@ def publish_hashed(html: str) -> str:
     # is a click away from the others, and four requests to save nine kilobytes
     # is a worse trade than one.
     html = take_page_bodies(html)
-    (APP / "pages.html").write_text(
-        "".join(f'<template data-page="{k}">{v}</template>' for k, v in PAGE_BODIES.items()),
-        encoding="utf-8", newline=chr(10))
-    pages_url = place(APP / "pages.html", "pages", ".html")
+    # JSON AND NOT `.html`, because the edge serves HTML as PAGES: an asset
+    # named `.html` is redirected to its extensionless twin (`html_handling`
+    # in wrangler.jsonc), so the app fetched a 307 and four pages drew empty
+    # on the deployed site while every local check passed.
+    (APP / "pages.json").write_text(json.dumps(PAGE_BODIES, ensure_ascii=False),
+                                    encoding="utf-8", newline=chr(10))
+    pages_url = place(APP / "pages.json", "pages", ".json")
 
     app_src = (APP / "app.js").read_text(encoding="utf-8")
     wired = app_src.replace('new Worker("/worker.js")', f'new Worker("{worker_url}")')
     if wired == app_src:
         sys.exit('app.js: new Worker("/worker.js") not found — the worker would 404')
-    voiced = wired.replace('PAGE_BODIES_URL = "/pages.html"', f'PAGE_BODIES_URL = "{pages_url}"')
+    voiced = wired.replace('PAGE_BODIES_URL = "/pages.json"', f'PAGE_BODIES_URL = "{pages_url}"')
     if voiced == wired:
         sys.exit('app.js: PAGE_BODIES_URL not found — four pages would draw empty')
     (APP / "app.js").write_text(voiced, encoding="utf-8", newline=chr(10))
