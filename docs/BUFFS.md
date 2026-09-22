@@ -713,6 +713,23 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 | `extra_hit` | Xata's Whisper +26% Void | **nowhere — it fires a second instance** | rolls its own, independently |
 | `fire_rate` | Warcry +50% attack speed | the sum a fire-rate MOD is in | **nothing — it buys no damage** |
 
+### One window grows, and it is the only one
+
+**EVERY ABILITY WINDOW IS FIXED WHEN THE FIGHT STARTS, EXCEPT ONE.** Eternal War
+*"extends Warcry's duration for each melee kill"* — +2s a kill, *"affected by
+Ability Duration"*, *"up to a maximum of double the ability's duration after
+mods"* — so that window is the one thing here a fight can move. It is declared
+on the ability (`augment: {id, seconds_per_melee_kill, cap_multiple}`) and pays
+only when the frame casting it carries the card, which the wielder's build says
+(`Resolved::augments` → `Tenno::augments`).
+
+It is folded at the ONE site that asks a live question — the shot loop's rate,
+off the same kill watermark Rage keeps — and `resolve` PANICS if a growing
+window is declared on an ability whose effects any other reader would have to
+know about. That guard is the note to the next person: when the Warframe becomes
+an actor that casts, the window stops being an exception and becomes run state
+for every effect kind, and the guard is what will say so.
+
 **ONE OF THEM BUYS NO DAMAGE AT ALL.** `fire_rate` is attack speed, and Warcry
 states both the bracket and the worked example: *"Attack Speed bonus is additive
 to mods (e.g., Fury)"*, `Attack Speed Mods + Warcry Modifier × (1 + Strength

@@ -17,13 +17,15 @@
 # same sum Fury is in — which is exactly what `scales_with: strength` plus
 # `AbilityEffect::FireRate` do.
 
-# ETERNAL WAR IS NOT RUN HERE. The augment "extends Warcry's duration for each
-# melee kill" — +2s a kill, scaled by Ability Duration, "up to a maximum of
-# double the ability's duration after mods" — which is a window this fight would
-# have to GROW as kills land, and every ability window here is fixed when the
-# fight starts. Until it is, a reader who owns the augment says so by giving
-# Warcry the longer duration themselves. The card states the rule
-# (`data/warframe_mods/eternal_war.yaml`) and is marked unmodelled there.
+# ETERNAL WAR GROWS THE WINDOW AS KILLS LAND, and it is the one thing in this
+# fight that moves an ability's window at all:
+#   "extends Warcry's duration for each melee kill" — +2s at max rank
+#   "The duration increase per enemy killed is affected by Ability Duration"
+#   "Kills extend the active duration of Warcry up to a maximum of double the
+#    ability's duration after mods"
+#   "Only melee kills made by the caster will extend the duration."
+# It pays only when the Warframe casting this is carrying the card, which is the
+# frame's build and not this pick (`Resolved::augments`).
 
 id: warcry
 name: Warcry
@@ -41,6 +43,11 @@ duration_seconds: 20
 
 effect:
   kind: fire_rate
+
+augment:
+  id: eternal_war
+  seconds_per_melee_kill: 2
+  cap_multiple: 2
 
 source:
   url: https://wiki.warframe.com/w/Warcry

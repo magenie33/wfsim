@@ -249,7 +249,26 @@ pub(super) fn after_the_shot(
         // …AND A WARFRAME ABILITY'S SHARE, into the same sum: Warcry's attack
         // speed is "additive to mods (e.g., Fury)" and its own strength knob has
         // already been spent on it (`data::abilities::resolve`).
-        fr_add += crate::data::abilities::fire_rate_at(&params.abilities, *t);
+        //
+        // AN AUGMENT GROWS THE WINDOW FIRST — the melee kills since this was last
+        // paid, at the ability's own seconds each, capped by its own ceiling. The
+        // ONE place in this fight where an ability's window is not what it was at
+        // the start, which is why `resolve` refuses a growing window on any
+        // effect the other readers would have to know about.
+        let grows = params
+            .abilities
+            .iter()
+            .find(|a| a.extend_per_melee_kill_seconds > 0.0);
+        if let Some(a) = grows {
+            let fresh = r.kills - melee.ability_kill_mark;
+            melee.ability_kill_mark = r.kills;
+            let cap = (a.extend_cap_seconds - a.ends_at_seconds).max(0.0);
+            melee.ability_extra_seconds =
+                (melee.ability_extra_seconds + f64::from(fresh) * a.extend_per_melee_kill_seconds)
+                    .min(cap);
+        }
+        fr_add += crate::data::abilities::fire_rate_at(
+            &params.abilities, *t, melee.ability_extra_seconds);
         let rate = if params.locks("fire_rate") {
             ap.fire_rate
         } else {

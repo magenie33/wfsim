@@ -578,6 +578,8 @@ pub(super) fn open<'a>(
     let melee = MeleeState {
         combo_points: 0.0f64,
         rage_kill_mark: r.kills,
+        ability_extra_seconds: 0.0,
+        ability_kill_mark: r.kills,
         combo_expiry: f64::NEG_INFINITY,
         combo_spent_t: f64::NEG_INFINITY,
         swing_idx: 0usize,

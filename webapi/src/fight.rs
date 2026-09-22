@@ -602,6 +602,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         strength,
         wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.class.as_str()),
         wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.slot.as_str()),
+        // THE AUGMENTS THE WIELDER'S BUILD SEATS, and its ability duration:
+        // an augment pays only on the frame carrying it, and its own seconds
+        // are scaled the way every duration is.
+        &tenno.augments.iter().map(String::as_str).collect::<Vec<_>>(),
+        tenno.ability_duration,
     );
 
     // The published roster PLUS whatever this request brought with it. A

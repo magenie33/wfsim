@@ -202,6 +202,11 @@ pub struct Resolved {
     pub admissions: Vec<Admission>,
     /// What the build asked for and could not seat, each with the reason.
     pub refused: Vec<String>,
+    /// THE AUGMENTS SEATED, by mod id, and only those whose ability this loadout
+    /// actually carries — an augment without it pays nothing, which is the rule
+    /// the admissions already state. A fight reads this to know whether an
+    /// ability's augment is on the frame casting it.
+    pub augments: Vec<&'static str>,
 }
 
 pub(super) fn by_rank(ladder: &[f64], rank: u32) -> f64 {
@@ -632,7 +637,11 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
     };
     tags.sort_by_key(|t| t.tag);
 
-    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused })
+    let augments = seated
+        .iter()
+        .filter_map(|(m, _)| m.augments.as_deref().filter(|a| carries(a)).map(|_| m.id.as_str()))
+        .collect();
+    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused, augments })
 }
 
 /// The capacity an aura adds, from W`Aura`: "matching polarity … double of the

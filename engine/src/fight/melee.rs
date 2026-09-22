@@ -201,6 +201,13 @@ pub(super) struct MeleeState {
     pub(super) combo_points: f64,
     /// THE KILL COUNT AT THE LAST SWING, so the kills since are what Rage is paid.
     pub(super) rage_kill_mark: u32,
+    /// **THE SECONDS AN AUGMENT HAS ADDED TO A GROWING ABILITY WINDOW**, and the
+    /// kill count it was last paid at — the same watermark pair Rage keeps, for
+    /// the same reason: kills are counted on the run, and what is owed is the
+    /// ones since. Eternal War is the only augment that does this, and the
+    /// ability's own cap is what stops it (`ActiveAbility::extend_cap_seconds`).
+    pub(super) ability_extra_seconds: f64,
+    pub(super) ability_kill_mark: u32,
     /// WHEN THE COUNTER DIES with nothing added to it. Refreshed by any landed
     /// swing; five seconds on almost every weapon.
     pub(super) combo_expiry: f64,

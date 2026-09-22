@@ -919,6 +919,8 @@ impl FightParams {
                 ability_strength + panel.ability_strength_bonus,
                 panel.class,
                 panel.slot,
+                &[],
+                1.0 + panel.ability_duration_bonus,
             )
         } else {
             abilities

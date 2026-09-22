@@ -169,6 +169,8 @@ fn elemental_damage_moves_the_hit_and_never_the_blast_detonation() {
             1.0,
             "",
             "melee",
+                    &[],
+            1.0,
         ),
         ..bare(DamageType::Blast)
     };

@@ -87,7 +87,7 @@ fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> FightPara
             is_head: false,
             crit_bonus: false,
         }],
-        abilities: resolve(&picks, strength, "", "melee"),
+        abilities: resolve(&picks, strength, "", "melee", &[], 1.0),
         ..FightParams::default()
     }
 }
@@ -736,7 +736,7 @@ fn no_ability_changes_no_number() {
         ..params(&[], 1.0)
     };
     let mut with_empty = bare.clone();
-    with_empty.abilities = resolve(&[], 3.0, "", "melee");
+    with_empty.abilities = resolve(&[], 3.0, "", "melee", &[], 1.0);
     assert_eq!(direct(&bare), direct(&with_empty));
 }
 
@@ -770,4 +770,37 @@ fn warcry_is_attack_speed_additive_with_the_mods_and_scaled_by_strength() {
     assert_ne!(with(1.3, 0.3), mods_only(1.3 * 1.65 - 1.0));
     // STRENGTH SCALES WARCRY'S SHARE AND NOTHING ELSE: at 0% it buys nothing.
     assert_eq!(with(0.0, 0.3), mods_only(0.3));
+}
+
+/// **ETERNAL WAR GROWS WARCRY'S WINDOW AS MELEE KILLS LAND** — *"extends
+/// Warcry's duration for each melee kill"*, +2s a kill, *"up to a maximum of
+/// double the ability's duration after mods"* — and it pays only on a frame
+/// carrying the card.
+///
+/// THE ONE THING IN THIS FIGHT THAT MOVES AN ABILITY'S WINDOW, so the assertion
+/// is that the window OUTLIVES its own seconds: a 4 s Warcry still buying
+/// attacks at 8 s is the augment, and nothing else here can do that.
+#[test]
+fn eternal_war_extends_warcry_while_melee_kills_land() {
+    let shots = |augments: &[&str], secs: f64| {
+        let picks = [AbilityPick { id: "warcry", duration_seconds: Some(secs), element: None }];
+        let mut p = params(&[], 1.0);
+        p.abilities = resolve(&picks, 1.0, "", "melee", augments, 1.0);
+        // A TARGET THAT DIES TO EVERY SWING AND COMES BACK, so kills land at the
+        // swing rate. The default fixture target is `InfiniteHealth` and a 1 HP
+        // version of it still never dies — which is what a kill-gated mechanic
+        // reads as broken.
+        p.target = super::frail_target(super::TargetMode::InstantRespawn, 0.0, 0.0);
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots
+    };
+    // A SHORT WARCRY, with and without the card: the augment can only add.
+    let plain = shots(&[], 4.0);
+    let augmented = shots(&["eternal_war"], 4.0);
+    assert!(augmented > plain, "{augmented} against {plain}");
+    // …AND IT IS THE CARD DOING IT: a frame carrying some OTHER augment gets
+    // exactly the unaugmented fight.
+    assert_eq!(shots(&["eternal_war_but_not"], 4.0), plain);
+    // THE CEILING IS THE ABILITY'S OWN: twice the window, so a 4 s Warcry can
+    // reach 8 s and no further — which is the 8 s one's fight.
+    assert_eq!(augmented, shots(&[], 8.0));
 }

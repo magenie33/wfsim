@@ -102,6 +102,10 @@ pub enum AbilityEffect {
 #[derive(Debug, Clone)]
 pub struct AbilityDef {
     pub id: &'static str,
+    /// ITS AUGMENT, where one changes what the FIGHT does rather than what the
+    /// builder prints: `(mod id, seconds per melee kill, cap as a multiple of
+    /// the window)`. Eternal War is the only one so far.
+    pub augment: Option<(&'static str, f64, f64)>,
     pub name: &'static str,
     /// The Warframe it comes from, or `Helminth` for a subsumed version.
     pub frame: &'static str,
@@ -156,6 +160,19 @@ pub struct ActiveAbility {
     /// `f64::INFINITY` = the whole fight (the page's "whole fight" button).
     pub ends_at_seconds: f64,
     pub effects: Vec<AbilityEffect>,
+    /// **SECONDS THIS WINDOW GROWS BY, PER MELEE KILL** — an augment's doing
+    /// (Eternal War on Warcry), 0 when the frame casting it does not carry one.
+    ///
+    /// THE ONLY THING IN THIS FIGHT THAT MOVES AN ABILITY'S WINDOW. Every other
+    /// window is fixed when the fight starts, so this is read at the ONE site
+    /// that asks a live question — the shot loop's rate — and `resolve` refuses
+    /// to build one on an ability whose effects are read anywhere else. When the
+    /// Warframe becomes an actor that casts, the window becomes run state for
+    /// every kind and this guard is what says so.
+    pub extend_per_melee_kill_seconds: f64,
+    /// …and the ceiling it grows to: *"up to a maximum of double the ability's
+    /// duration after mods"* (W`Eternal_War`).
+    pub extend_cap_seconds: f64,
 }
 
 impl ActiveAbility {
@@ -189,6 +206,14 @@ struct EffectFile {
 }
 
 #[derive(Deserialize)]
+struct AugmentFile {
+    id: String,
+    seconds_per_melee_kill: f64,
+    cap_multiple: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct SourceFile {
     #[serde(default)]
     url: Option<String>,
@@ -238,6 +263,10 @@ struct AbilityFile {
     /// is marked to say Duration and not Strength.
     #[serde(default)]
     scales_with: Option<String>,
+    /// `augment: {id, seconds_per_melee_kill, cap_multiple}` — see
+    /// `AbilityDef::augment`.
+    #[serde(default)]
+    augment: Option<AugmentFile>,
     #[serde(default)]
     unmodelled: Vec<String>,
     #[serde(default)]
@@ -354,6 +383,9 @@ pub fn all() -> &'static [AbilityDef] {
                 elements: elements.iter().cloned().map(leak).collect(),
                 class_bonus: class_bonus.map(|(c, x)| (leak(c), x)),
                 unmodelled: f.unmodelled.into_iter().map(leak).collect(),
+                augment: f.augment.map(|a| {
+                    (leak(a.id), a.seconds_per_melee_kill, a.cap_multiple)
+                }),
                 live_bugs: f.live_bugs.into_iter().map(leak).collect(),
                 url: f.source.and_then(|s| s.url).map(leak),
             });
@@ -408,6 +440,8 @@ pub fn resolve(
     strength: f64,
     weapon_class: &str,
     weapon_slot: &str,
+    augments: &[&str],
+    duration: f64,
 ) -> Vec<ActiveAbility> {
     let mut best: Vec<(&'static str, f64, ActiveAbility)> = Vec::new();
     for p in picks {
@@ -464,10 +498,27 @@ pub fn resolve(
                 }
             })
             .collect();
+        // THE AUGMENT IS THE FRAME'S, not the pick's: it pays only when the
+        // Warframe casting this is carrying it.
+        let grows = def
+            .augment
+            .filter(|(id, _, _)| augments.contains(id))
+            .map_or((0.0, 0.0), |(_, per_kill, cap_multiple)| {
+                let ends = p.duration_seconds.unwrap_or(f64::INFINITY);
+                (per_kill * duration, ends * cap_multiple)
+            });
+        assert!(
+            grows.0 <= 0.0
+                || effects.iter().all(|e| matches!(e, AbilityEffect::FireRate(_))),
+            "{}: a window that grows is read only where the fight asks a live              question, which today is the rate — see ActiveAbility",
+            def.id
+        );
         let live = ActiveAbility {
             id: def.id,
             ends_at_seconds: p.duration_seconds.unwrap_or(f64::INFINITY),
             effects,
+            extend_per_melee_kill_seconds: grows.0,
+            extend_cap_seconds: grows.1,
         };
         match best.iter_mut().find(|(f, _, _)| *f == def.family) {
             Some(slot) if slot.1 >= value => {}
@@ -493,9 +544,9 @@ pub fn faction_bonus_at(list: &[ActiveAbility], t: f64) -> f64 {
 
 /// The FIRE-RATE share running at `t` (Warcry's attack speed). Summed, and the
 /// caller adds it to the mods' own sum rather than multiplying by it.
-pub fn fire_rate_at(list: &[ActiveAbility], t: f64) -> f64 {
+pub fn fire_rate_at(list: &[ActiveAbility], t: f64, extra_seconds: f64) -> f64 {
     list.iter()
-        .filter(|a| a.live_at(t))
+        .filter(|a| a.live_at(t - if a.extend_per_melee_kill_seconds > 0.0 { extra_seconds } else { 0.0 }))
         .flat_map(|a| a.effects.iter())
         .filter_map(|e| match *e {
             AbilityEffect::FireRate(v) => Some(v),
@@ -676,7 +727,7 @@ mod tests {
             AbilityPick { id: "roar_helminth", duration_seconds: None, element: None },
             AbilityPick { id: "roar", duration_seconds: None, element: None },
         ];
-        let live = resolve(&picks, 1.0, "", "melee");
+        let live = resolve(&picks, 1.0, "", "melee", &[], 1.0);
         assert_eq!(live.len(), 1);
         assert_eq!(live[0].id, "roar");
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
@@ -686,7 +737,7 @@ mod tests {
         // a 200%-strength Helminth Roar (0.60) beats a 100% Rhino's (0.50).
         // Same call, different strengths, is the closest this can get to two
         // players — and it is what the field means.
-        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], 2.0, "", "melee");
+        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], 2.0, "", "melee", &[], 1.0);
         assert!(faction_bonus_at(&solo, 0.0) > 0.5);
     }
 
@@ -701,7 +752,7 @@ mod tests {
             AbilityPick { id: "freeze_force", duration_seconds: None, element: None },
             AbilityPick { id: "xatas_whisper", duration_seconds: None, element: None },
         ];
-        let live = resolve(&picks, 1.0, "", "melee");
+        let live = resolve(&picks, 1.0, "", "melee", &[], 1.0);
         assert_eq!(live.len(), 5);
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
         assert!((final_mult_at(&live, 0.0) - 3.0).abs() < 1e-9);
@@ -779,7 +830,7 @@ mod tests {
     fn wrathful_advance_is_flat_melee_crit_and_a_gun_resolves_none_of_it() {
         let at = |id: &'static str, slot: &str| {
             let picks = [AbilityPick { id, duration_seconds: None, element: None }];
-            flat_crit_at(&resolve(&picks, 1.0, "hammer", slot), 0.0)
+            flat_crit_at(&resolve(&picks, 1.0, "hammer", slot, &[], 1.0), 0.0)
         };
         assert_eq!(at("wrathful_advance", "melee"), 2.0, "Kullervo's own is +200%");
         assert_eq!(at("wrathful_advance_helminth", "melee"), 1.0, "subsumed is half");
@@ -788,7 +839,7 @@ mod tests {
         // …AND ABILITY STRENGTH MOVES IT, the way it moves every other value
         // whose card carries the Strength icon.
         let picks = [AbilityPick { id: "wrathful_advance", duration_seconds: None, element: None }];
-        assert_eq!(flat_crit_at(&resolve(&picks, 1.5, "hammer", "melee"), 0.0), 3.0);
+        assert_eq!(flat_crit_at(&resolve(&picks, 1.5, "hammer", "melee", &[], 1.0), 0.0), 3.0);
         // …and it ends when the buff does. An unset duration is the page's
         // WHOLE FIGHT, so the ten seconds the card states have to be asked for.
         let ten = [AbilityPick {
@@ -796,8 +847,8 @@ mod tests {
             duration_seconds: Some(10.0),
             element: None,
         }];
-        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee"), 9.0), 2.0);
-        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee"), 11.0), 0.0);
+        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee", &[], 1.0), 9.0), 2.0);
+        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee", &[], 1.0), 11.0), 0.0);
     }
 
     #[test]
@@ -810,6 +861,8 @@ mod tests {
             1.0,
             "",
             "melee",
+            &[],
+            1.0,
         );
         assert_eq!(faction_bonus_at(&live, 29.9), 0.5);
         assert_eq!(faction_bonus_at(&live, 30.0), 0.0);
@@ -861,7 +914,7 @@ mod tests {
         assert_eq!(def.elements.len(), 10, "four primaries and six combinations");
         let pick = |e: Option<&'static str>| {
             let live =
-                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], 1.0, "rifle", "melee");
+                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], 1.0, "rifle", "melee", &[], 1.0);
             added_elements_at(&live, 0.0)
         };
         // A COMBINATION SURVIVES THE PICK. Gas is the measured case and is not
@@ -885,12 +938,14 @@ mod tests {
             2.5,
             "rifle",
             "melee",
+            &[],
+            1.0,
         );
         assert_eq!(added_elements_at(&strong, 0.0), vec![(DamageType::Gas, 2.0)]);
         // …AND THE CONTROL, because an assertion that a number did not move
         // passes just as well on a build where the knob is wired to nothing:
         // Roar's row DOES carry the Strength icon, and 50% x 2.5 is 125%.
-        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], 2.5, "rifle", "melee");
+        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], 2.5, "rifle", "melee", &[], 1.0);
         assert!((faction_bonus_at(&roar, 0.0) - 1.25).abs() < 1e-9, "{}", faction_bonus_at(&roar, 0.0));
     }
 }
@@ -929,13 +984,15 @@ mod tests {
         //    that predates the picker.
         let def = get("resupply").expect("resupply");
         assert_eq!(def.elements.len(), 10, "the gear wheel");
-        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "rifle", "melee");
+        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "rifle", "melee", &[], 1.0);
         assert_eq!(extra_hits_at(&dflt, 0.0)[0].element, DamageType::Heat, "the first choice");
         let cold = resolve(
             &[AbilityPick { id: "resupply", duration_seconds: None, element: Some("cold") }],
             1.0,
             "rifle",
             "melee",
+            &[],
+            1.0,
         );
         assert_eq!(extra_hits_at(&cold, 0.0)[0].element, DamageType::Cold);
         // …and a chosen element is ignored where the ability fixes one.
@@ -944,13 +1001,15 @@ mod tests {
             1.0,
             "rifle",
             "melee",
+            &[],
+            1.0,
         );
         assert_eq!(extra_hits_at(&fixed, 0.0)[0].element, DamageType::Void);
 
         // 2. A WEAPON CLASS that doubles it: 25% on a rifle, 50% on a sniper.
         let rifle = extra_hits_at(&dflt, 0.0)[0].fraction;
         let sniper = extra_hits_at(
-            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper", "melee"),
+            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper", "melee", &[], 1.0),
             0.0,
         )[0]
         .fraction;
@@ -961,7 +1020,7 @@ mod tests {
         //    (Toxin status chance)" and Resupply grants "the selected Elemental
         //    Damage and Status Effect"; Xata's rolls.
         for (id, forced) in [("toxic_lash", true), ("resupply", true), ("xatas_whisper", false)] {
-            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], 1.0, "rifle", "melee");
+            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], 1.0, "rifle", "melee", &[], 1.0);
             assert_eq!(extra_hits_at(&live, 0.0)[0].forced_status, forced, "{id}");
         }
 

@@ -82,6 +82,16 @@ pub struct Tenno {
     /// scales it (`WeaponBase::exalted`).
     #[serde(default = "full_strength")]
     pub ability_strength: f64,
+    /// …AND ITS ABILITY DURATION, the same way. An augment's own seconds are
+    /// scaled by it: *"The duration increase per enemy killed is affected by
+    /// Ability Duration"* (W`Eternal_War`).
+    #[serde(default = "full_strength")]
+    pub ability_duration: f64,
+    /// THE AUGMENTS THE WIELDER'S BUILD SEATS, by mod id — `Resolved::augments`.
+    /// An ability reads it to know whether the frame casting it carries its
+    /// card; empty on a wielder with no build, which is what the board scores.
+    #[serde(default)]
+    pub augments: Vec<String>,
 }
 
 fn full_strength() -> f64 {

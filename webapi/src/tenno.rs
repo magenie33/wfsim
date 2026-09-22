@@ -35,6 +35,8 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     // the gun: an EXALTED weapon is summoned by the Warframe behind the
     // companion too, and its damage is that ability's.
     t.ability_strength = r.stat(wf::FrameStat::AbilityStrength).value;
+    t.ability_duration = r.stat(wf::FrameStat::AbilityDuration).value;
+    t.augments = r.augments.iter().map(|a| (*a).to_string()).collect();
     if !info.sentinel {
         let stat = |s: wf::FrameStat| r.stat(s).value;
         t.id = r.frame.id.clone();
