@@ -49,6 +49,33 @@
    `!important` is the HTML spec's own recommendation for exactly this, and is
    what keeps the fix from being one `display:` rule behind forever. */
 [hidden]{display:none !important}
+
+/* SCROLLBARS, NAMED ONE BY ONE. The browser's own bar is a pale rod on a dark
+   panel, and this page scrolls in several places. `.scroll-thin` is the opt-in
+   and the list beside it is every container that already scrolls, so nothing
+   is restyled that has not been looked at — a `*` rule reaches menus, tables
+   and windows nobody checked. The track is invisible; only the thumb shows,
+   and it answers the pointer so a reader can tell it is grabbable. */
+.scroll-thin,.rec-scroll,.wsearch-panel .combo-menu{scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--text) 17%,transparent) transparent}
+.scroll-thin::-webkit-scrollbar,.rec-scroll::-webkit-scrollbar,
+.wsearch-panel .combo-menu::-webkit-scrollbar{width:11px;height:11px}
+.scroll-thin::-webkit-scrollbar-track,.rec-scroll::-webkit-scrollbar-track,
+.wsearch-panel .combo-menu::-webkit-scrollbar-track{background:transparent}
+/* The 3px transparent border plus `content-box` is what gives the thumb its
+   own padding, so it never sits flush against the content it scrolls. */
+.scroll-thin::-webkit-scrollbar-thumb,.rec-scroll::-webkit-scrollbar-thumb,
+.wsearch-panel .combo-menu::-webkit-scrollbar-thumb{border-radius:999px;
+  background:color-mix(in srgb,var(--text) 17%,transparent);
+  border:3px solid transparent;background-clip:content-box}
+.scroll-thin:hover::-webkit-scrollbar-thumb,.rec-scroll:hover::-webkit-scrollbar-thumb,
+.wsearch-panel .combo-menu:hover::-webkit-scrollbar-thumb{
+  background:color-mix(in srgb,var(--text) 30%,transparent);background-clip:content-box}
+.scroll-thin::-webkit-scrollbar-thumb:active,.rec-scroll::-webkit-scrollbar-thumb:active,
+.wsearch-panel .combo-menu::-webkit-scrollbar-thumb:active{
+  background:var(--accent);background-clip:content-box}
+.scroll-thin::-webkit-scrollbar-corner,.rec-scroll::-webkit-scrollbar-corner,
+.wsearch-panel .combo-menu::-webkit-scrollbar-corner{background:transparent}
 html,body{margin:0}
 body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
 
@@ -806,6 +833,60 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 /* results */
 .placeholder{color:var(--text-2);padding:24px 4px}
 .results h3{font-size:12px;margin:18px 0 8px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em}
+
+/* ---- THE RESULT IS SIX ZONES ------------------------------------------
+   A zone answers one question and says which in its own heading, so a reader
+   knows what a block is for before reading a number out of it. They do not
+   fold: the folds are inside them, and a skeleton that collapses is a page
+   with no shape. */
+.zone{border:1px solid var(--line);border-radius:12px;background:var(--surface);
+  padding:0 16px 16px;margin:0 0 14px}
+.zone-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 -16px 14px;
+  padding:10px 16px;background:var(--panel3);border-bottom:1px solid var(--line);
+  border-radius:11px 11px 0 0;font-size:12px}
+.zone-n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;
+  flex:none;border-radius:6px;background:var(--gold);color:var(--panel3);font-size:12px;font-weight:800}
+.zone-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text)}
+.zone-q{font-size:12px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0}
+.zone>.zone-b>.fold:first-child{margin-top:0}
+/* THE SEAM. Zone 3 is where the panel stops being an average and becomes one
+   engagement, so it and everything under it carry the gold edge the benchmark
+   block already used — the reader can see which numbers the playhead moves. */
+.zone[data-zone="3"]{border-color:color-mix(in srgb,var(--gold) 34%,var(--line))}
+.zone[data-zone="3"]>.zone-h{border-bottom-color:color-mix(in srgb,var(--gold) 34%,var(--line))}
+/* WHOSE A ROW OF FIGURES IS, said above it. Two identical KPI rows sat either
+   side of the replay bar with nothing saying that one was a mean over a
+   hundred fights and the other was one fight — which reads as a panel
+   disagreeing with itself. */
+.row-label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:11px;color:var(--muted);margin:16px 0 -6px}
+.who-tag{display:inline-flex;align-items:center;height:17px;padding:0 6px;border-radius:4px;
+  font-size:10px;letter-spacing:.04em;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+.who-tag.gold{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));color:var(--gold)}
+.kpi-row.bench-kpi .kpi{border-color:color-mix(in srgb,var(--gold) 28%,var(--line))}
+
+/* ---- ZONE 2: SIMULATED ON THE LEFT, ASSUMED ON THE RIGHT ---------------
+   The split is the repo's own rule made visible: a condition about the TARGET
+   is simulated, a condition about the TENNO is assumed. */
+.fight-two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:720px){.fight-two{grid-template-columns:1fr}}
+.fs-h{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+.fc-row{display:flex;flex-wrap:wrap;gap:6px}
+.fc{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--text-2);font-size:11.5px}
+.fight-side:first-child .fc{border-color:color-mix(in srgb,var(--accent) 26%,var(--line))}
+.fs-n{font-size:11.5px;color:var(--muted);line-height:1.6;margin:8px 0 0}
+.fight-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--text-2)}
+
+/* ---- ZONE 6: THE DOOR OUT --------------------------------------------- */
+.bo-consent{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;
+  padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+.bo-consent span{flex:1 1 320px;line-height:1.6}
+.exits{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.exits .exit-free{margin-left:auto;font-size:11.5px;color:var(--muted)}
+@media(max-width:640px){.exits .exit-free{margin-left:0;flex:1 0 100%}
+  .exits .ghost-btn{flex:1 0 auto;text-align:center}}
 .hero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hero-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .hero-num{font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1}
@@ -1364,13 +1445,53 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 . */
 .rp-bar{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
 .rp-play{min-width:64px}
-.rp-scrub{flex:1;accent-color:var(--accent)}
+/* THE SCRUBBER. The hand wants a wide band and the eye wants a thin line, so
+   those are two things: `.scrub` is the 30px target, `.scrub-rail` the 6px
+   line inside it. The range input keeps every behaviour it had — drag,
+   keyboard, `.value` — and only its paint is taken over, so it lies over the
+   rail with a transparent track of its own. */
+.scrub{position:relative;flex:1;height:30px;min-width:120px}
+.scrub-rail{position:absolute;left:0;right:0;top:12px;height:6px;border-radius:999px;
+  background:var(--panel2);overflow:hidden}
+.scrub-done{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 55%,transparent),var(--accent))}
+/* WHAT HAPPENED, ON THE RAIL: a kill is tall and carries the target's colour,
+   a reload is short and recessive. Both are derived from the frames already on
+   the wire (`risesIn`), so the rail costs no new field. */
+.scrub-kill{position:absolute;top:6px;width:2px;height:18px;margin-left:-1px;border-radius:1px;
+  background:var(--critical);opacity:.8;pointer-events:none}
+.scrub-reload{position:absolute;top:19px;width:2px;height:8px;margin-left:-1px;border-radius:1px;
+  background:var(--muted);opacity:.7;pointer-events:none}
+.rp-scrub{position:absolute;left:0;right:0;top:0;width:100%;height:30px;margin:0;
+  background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.rp-scrub:focus{outline:none}
+.rp-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.rp-scrub::-webkit-slider-runnable-track{height:30px;background:transparent;border:0}
+.rp-scrub::-moz-range-track{height:30px;background:transparent;border:0}
+.rp-scrub::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:16px;height:16px;margin-top:7px;border:0;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent),0 1px 4px rgba(0,0,0,.55);
+  cursor:grab}
+.rp-scrub::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent),0 1px 4px rgba(0,0,0,.55);
+  cursor:grab}
+.rp-scrub:active::-webkit-slider-thumb{cursor:grabbing;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 22%,transparent),0 1px 4px rgba(0,0,0,.55)}
+.rp-scrub:active::-moz-range-thumb{cursor:grabbing;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 22%,transparent),0 1px 4px rgba(0,0,0,.55)}
+/* A KEY ONLY FOR THE MARKS THIS FIGHT HAS (`scrubLegend`). */
+.scrub-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-size:10.5px;color:var(--muted);margin:-4px 0 10px}
+.scrub-legend .sl{display:inline-flex;align-items:center;gap:5px}
+.scrub-legend .sl-kill{width:2px;height:11px;border-radius:1px;background:var(--critical);opacity:.8}
+.scrub-legend .sl-reload{width:2px;height:8px;border-radius:1px;background:var(--muted);opacity:.7}
 .rp-clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;min-width:96px;text-align:right}
 /* FIXED columns: every figure changes on every frame, and a flowing row
    re-measures itself each time — the labels slide about for the whole
    playback and the page reads as if it were shaking. This also has room for
    a second and third enemy without a re-layout. */
 .rp-pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:2px 16px;font-size:12px;margin-bottom:8px}
+.rp-pools-head{font-size:12px;color:var(--muted);margin:0 0 4px}
 .rp-cell{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:2px 0}
 .rp-cell i{font-style:normal;color:var(--muted)}
 .rp-cell b{font-variant-numeric:tabular-nums;font-weight:600}
@@ -1379,8 +1500,17 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rp-head .rp-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rp-head .rp-now{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
 .rp-head .rp-stat{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
-.rp-chart{position:relative;height:28px;margin-top:3px}
-.rp-chart svg{width:100%;height:28px;display:block}
+/* A COVERAGE CHART IS READ, NOT GLANCED AT. 28px made every one of these a
+   wobble; at 120 the ramp, the dip on a death, the plateau against the ceiling
+   and the dead bands are all separate things. A row still collapses to its
+   header, which is what keeps a dozen of them scannable. */
+.rp-chart{position:relative;height:120px;margin-top:6px;
+  border:1px solid var(--line);border-radius:8px;background:var(--panel3);overflow:hidden}
+.rp-chart svg{width:100%;height:120px;display:block}
+/* THE CLOCK UNDER EACH CHART, so a reader can place a dip without counting
+   pixels from the replay bar above. */
+.rp-x{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);
+  font-variant-numeric:tabular-nums;padding:3px 2px 0}
 .rp-area{fill:var(--accent);opacity:.16}
 .rp-line{fill:none;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .rp-cur{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
@@ -2235,6 +2365,19 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    One row per number the game pops. It is the WIDEST thing on the panel by
    design — every column is a fact a reader checks a number against — so it
    scrolls inside itself and the page never scrolls sideways for it. */
+/* THE PEEK: the panel's own narrow view of the record. ONE renderer, two
+   widths — the columns a single column has no room for are dropped here rather
+   than in a second markup path, which is what keeps the two from drifting. */
+.rec-peek{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin:2px 0 6px}
+.rec-peek table.rec-t{min-width:0;width:100%}
+.rec-peek .rec-proc,.rec-peek .rec-wep,.rec-peek .rec-buff,.rec-peek .rec-dbf,
+.rec-peek .rec-state{display:none}
+.rec-peek thead th{font-size:10px}
+.rec-peek td{padding:5px 8px}
+.rec-peek .rec-calc{min-width:0}
+.rec-peek .lg-mit,.rec-peek .lg-exact{display:none}
+.rec-peek tr:last-child td{border-bottom:0}
+.rec-peek-n{font-size:11px;color:var(--muted);margin:0 0 8px}
 .rec-idle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0}
 .rec-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 0 8px}
 .rec-tools .tlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
@@ -2601,6 +2744,8 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .op-nodes{display:flex;flex-direction:column;gap:8px}
 .op-node{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--panel2);opacity:.65}
 .op-node.on{opacity:1;border-left:3px solid var(--accent)}
+/* A WAYBOUND IS NOT A CHOICE: always on, and no control beside it. */
+.op-node.wb{opacity:1;border-left:3px solid var(--line)}
 .op-node .mn{font-size:13px;font-weight:600}
 .op-node .me,.wf-operator .me{font-size:12px;color:var(--text-2);line-height:1.45}
 .op-when{font-size:11px;color:var(--muted);margin-top:4px}
