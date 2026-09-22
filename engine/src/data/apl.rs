@@ -12,6 +12,12 @@
 //! shape: **scan top down, the first rule whose condition holds is what you do,
 //! and the last rule is the one that always holds.**
 //!
+//! **THE LIST IS SCANNED BETWEEN SHOTS, NEVER INSIDE ONE.** A shot resolves
+//! whole — every pellet of its multishot — and only then is the next action
+//! chosen. That is what makes the gauge OVERSHOOT, which is the real thing: a
+//! 7-pellet shot into a 30-charge gauge arrives at 35, and the shot that
+//! crossed the line was fired in the form you were already in.
+//!
 //! WHAT IS HERE TODAY AND WHAT IS NOT. The four modes still run their own code,
 //! and this list carries only what they never could — the abilities the player
 //! casts. Moving a mode's own decisions in here is the next step and it is the
@@ -56,7 +62,8 @@ pub enum When {
     /// `if=!can_fire` — the magazine is empty, or the weapon otherwise cannot
     /// fire this instant.
     CannotFire,
-    /// `if=gauge.pct>=N` — the Incarnon gauge, as a share.
+    /// `if=gauge.pct>=N` — the Incarnon gauge, as a share. `>=` and not `==`
+    /// because the gauge arrives PAST the line it crossed, never on it.
     GaugeAtLeast { pct: f64 },
     /// `if=gauge.pct<=N` — spent, which is what ends a cycle's other half.
     GaugeAtMost { pct: f64 },
@@ -151,7 +158,10 @@ impl Apl {
 /// having. The fight fills it; this module never learns how a gauge is kept.
 pub struct Now<'a> {
     pub can_fire: bool,
-    /// The Incarnon gauge as a share, 0 on a weapon that has none.
+    /// The Incarnon gauge as a share, 0 on a weapon that has none, and NOT
+    /// CAPPED AT 1: the shot that fills it pays in whole pellets, so 35 charges
+    /// into a 30-charge gauge is 1.17 and a rule that read a clamped value
+    /// would be a rule that cannot tell a full gauge from an overfilled one.
     pub gauge_pct: f64,
     /// How long a named ability's buff has left, 0 when it is down.
     pub remaining: &'a dyn Fn(&str) -> f64,
@@ -330,6 +340,19 @@ prio: 3
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
         assert_eq!(apl.pick(&at(0.0)), Action::TransformOut, "spent: come back");
         assert_eq!(apl.pick(&at(0.5)), Action::Shoot, "filling: keep shooting");
+        // AN OVERFILLED GAUGE IS THE ORDINARY CASE, not an edge one: the shot
+        // that crossed the line paid in whole pellets and was fired in the form
+        // the player was already in. 35 charges into a 30-charge gauge.
+        assert_eq!(apl.pick(&at(35.0 / 30.0)), Action::TransformIn, "overfilled: still go in");
+        // …AND THE OVERSHOOT REACHES THE RULE rather than being flattened to a
+        // full gauge, which is the difference a capped value could not tell: a
+        // rule asking for more than full fires at 35 charges and not at 30.
+        let past_full = Apl(vec![Rule {
+            action: Action::TransformIn,
+            when: When::GaugeAtLeast { pct: 1.1 },
+        }]);
+        assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
+        assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
         let dry = Now { can_fire: false, gauge_pct: 0.5, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
