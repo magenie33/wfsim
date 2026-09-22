@@ -229,6 +229,69 @@ function renderResults(r, testedAt) {
   // run and a 120-second one produce comparable numbers.
   // The score itself is the total over the engagement and stays beside it,
   // the same way total damage sits beside DPS.
+  // ---- ZONE 2: THE FIGHT, RESTATED ---------------------------------------
+  //
+  // THE NUMBER IS WORTHLESS WITHOUT THE FIGHT IT CAME FROM, and the fight was
+  // stated only in the scenario controls — which are editable, so a reader
+  // coming back to a stored result, or opening a share link, was looking at a
+  // figure with nothing on screen saying what it was measured against.
+  //
+  // TWO COLUMNS, AND THE SPLIT IS THE RULE: a condition about the TARGET is
+  // simulated, a condition about the TENNO is assumed (AGENTS.md). The page
+  // has followed that rule for ever and never showed it. Shown, it stops being
+  // an internal convention and becomes the honest sentence this panel needs.
+  const fightMarkup = (r) => {
+    const t = r.target || {};
+    const n0 = (x) => Math.round(x || 0).toLocaleString();
+    const chip = (s) => `<span class="fc">${escHtml(s)}</span>`;
+    const bodies = (r.bodies || []).length;
+    const sim_ = [
+      t.name ? chip(t.name) : "",
+      chip(`${tr("Level")} ${t.level ?? sim.level}`),
+      t.steel_path ? chip("Steel Path") : "",
+      t.eximus ? chip(tr("Eximus")) : "",
+      t.overguard > 0 ? chip(`${tr("Overguard")} ${n0(t.overguard)}`) : "",
+      t.shield > 0 ? chip(`${tr("Shield")} ${n0(t.shield)}`) : "",
+      t.health > 0 ? chip(`${tr("Health")} ${n0(t.health)}`) : "",
+      t.armor > 0 ? chip(`${tr("Armour")} ${n0(t.armor)}`) : "",
+      chip(bodies > 1 ? trF("{n} bodies", { n: bodies }) : tr("one body")),
+      chip(tr("a kill is replaced at once")),
+    ].join("");
+    // WHAT THE TENNO IS DOING, which nothing simulates: it is granted. Each of
+    // these is a knob in the scenario, and every one of them is the reader's
+    // claim about their own play rather than this engine's finding.
+    const assumed = [
+      chip(sim.aiming ? tr("aiming throughout") : tr("firing from the hip")),
+      chip(`${tr("Headshots")} ${Math.round(sim.headshot_pct || 0)}%`),
+      sim.invisible ? chip(tr("invisible")) : "",
+      sim.airborne ? chip(tr("airborne")) : "",
+      sim.channeling ? chip(tr("channeling")) : "",
+      sim.infinite_ammo ? chip(tr("ammo pickups keep coming")) : chip(tr("its own reserve, and no pickups")),
+      chip(sim.melee_equipped ? tr("melee drawn") : tr("quick melee")),
+      (sim.abilities || []).length ? chip(trF("{n} abilities held up", { n: sim.abilities.length })) : "",
+      (sim.auras || []).length ? chip(trF("{n} squad auras", { n: sim.auras.length })) : "",
+    ].join("");
+    return `<div class="fight-two">
+      <div class="fight-side">
+        <div class="fs-h">${escHtml(tr("Being fought — simulated"))}</div>
+        <div class="fc-row">${sim_}</div>
+        <p class="fs-n">${escHtml(tr("armour, resistances, overguard and every status pile are what this fight arrived at, not numbers typed in"))}</p>
+      </div>
+      <div class="fight-side">
+        <div class="fs-h">${escHtml(tr("Doing the fighting — assumed"))}</div>
+        <div class="fc-row">${assumed}</div>
+        <p class="fs-n">${escHtml(tr("these are granted, not found: this engine models no movement, no survival and no missed shot you would have missed"))} <a href="/support">${escHtml(tr("what is not modelled ↗"))}</a></p>
+      </div>
+    </div>
+    <div class="fight-foot">
+      <span>${escHtml(trF("{runs} engagements · {secs}s each · {rolls} damage instances rolled, on your own machine", {
+        runs: Math.round(r.runs || 0).toLocaleString(),
+        secs: Math.round(r.duration || 0),
+        rolls: Math.round((r.runs || 0) * (r.pellets || 0)).toLocaleString(),
+      }))}</span>
+    </div>`;
+  };
+
   const met = metricOf(sim.metric);
   const heroNum = fmtScore(metricValue(met, r));
   // The UNIT belongs beside the number, not under it: "5.29" on one line and
@@ -404,7 +467,6 @@ function renderResults(r, testedAt) {
   const tlGrid = [0.25, 0.5, 0.75].map((f) =>
     `<line class="tl-grid" x1="${PADL}" x2="${W - PADR}" y1="${py(tlMax * f)}" y2="${py(tlMax * f)}"/>`).join("");
   const chart = tl.length ? `
-      <h3>${tr("DPS over time")} <span class="sim-hint">${tr("benchmark fight")}</span></h3>
       <div class="tl-wrap">
         <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${tlGrid}
@@ -417,7 +479,7 @@ function renderResults(r, testedAt) {
         <div class="tl-ymax">${n0(tlMax)}</div>
         <div id="tl-tip" class="tl-tip" hidden></div>
       </div>` : "";
-  const { bar: replayBar, curves: replayCurves } = replayMarkup(r);
+  const { bar: replayBar, where: whereBlock, curves: curveBlocks } = replayMarkup(r);
   // THE BENCHMARK FIGHT — one of the runs, the middle one by the metric
   // (`Summary::median_run`). Everything above it is a MEAN and holds still;
   // everything in its block is that one run and replays. Its figures differ
@@ -447,42 +509,46 @@ function renderResults(r, testedAt) {
   // reader needs them. The sixth was the answer's own spread, and that has
   // moved onto the answer (`spread`), where a reader deciding between two
   // builds actually looks.
-  // THE ASK, BENEATH THE ANSWER. The topbar is chrome and
-  // the ask lived only there, which put it as far from the moment this tool
-  // delivers anything as a page can put it. This is not an interruption: it is
-  // a line of text below the last fold, after the result, and it never moves,
-  // blocks, animates or asks twice.
+  // ---- THE PANEL IS SIX ZONES, AND NOTHING ELSE --------------------------
   //
-  // IT STATES THE WORK BEFORE IT STATES THE ASK, and both numbers are ones the
-  // reader can check against the Detail table directly above it — `runs` is the
-  // count they set, and `pellets` is PER RUN on the wire (webapi/src/simulate.rs),
-  // so the product is the damage instances this answer was actually averaged
-  // over. A figure a reader can verify is the only kind worth printing here.
-  const askRuns = Math.round(r.runs || 0), askRolls = Math.round(askRuns * (r.pellets || 0));
-  const ask = `<p class="sim-ask">${escHtml(trF(
-    "{runs} engagements · {rolls} damage instances rolled, on your own machine.",
-    { runs: askRuns.toLocaleString(), rolls: askRolls.toLocaleString() }))} ${
-    escHtml(tr("Builder, simulator and optimizer are free for everyone."))} <a href="/support">${
-    escHtml(tr("Chip in ↗"))}</a></p>`;
+  // Each answers ONE question, in the order a reader asks them: how much, under
+  // what conditions, which engagement exactly, what it was made of, why believe
+  // it, and what now. The rule this buys is the one worth having — anything
+  // proposed for this panel has to name the question it answers, and a block
+  // that answers none of them does not belong here.
+  //
+  // THE SEAM IS ZONE 3. Everything above it is a MEAN over every run and holds
+  // still; everything from its heading down is ONE engagement and follows the
+  // playhead. That was true before and lived only in a comment, which is why
+  // two identical-looking KPI rows sat either side of it with nothing saying
+  // that one was an average of a hundred fights and the other was one fight.
   $("sim-results").innerHTML = `
-    <!-- WHAT BECAME OF THIS RUN, above the result and OUTSIDE it. It sat inside the result, under the headline, and read as
-         a footnote to the number — which it is not: it is about the RUN, not
-         about the damage, and it carries the one sentence a submitter has to
-         act on. Its own block, above the thing it is not part of. -->
-    <div id="sim-board-outcome" class="board-outcome"></div>
     <div class="results">
-      <div class="hero"><div><div class="hero-label">${escHtml(trF("Average of {runs} runs", { runs: n0(r.runs) }))}</div><div class="hero-num">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
-      <div class="kpi-row">${kpis}</div>
-      ${speedMarkup(r)}
-      <div class="bench">
+      ${zone(1, tr("The result"), tr("what does this build do?"), `
+        <div class="hero"><div><div class="hero-label">${escHtml(trF("Average of {runs} runs", { runs: n0(r.runs) }))}</div><div class="hero-num">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
+        <div class="row-label">${escHtml(trF("averaged over {runs} engagements", { runs: n0(r.runs) }))} <span class="who-tag">${escHtml(tr("whole fight"))}</span></div>
+        <div class="kpi-row">${kpis}</div>
+        ${speedMarkup(r)}`)}
+      ${zone(2, tr("This fight"), tr("what conditions was that measured under?"), fightMarkup(r))}
+      ${zone(3, tr("The benchmark engagement"), tr("from here down it is one engagement, and it follows the playhead"), `
         ${benchHead}
         ${replayBar}
-        ${sampleKpis ? `<div class="kpi-row">${sampleKpis}</div>` : ""}
-        ${foldBlock("meter", tr("Damage by source"), "",
+        ${sampleKpis ? `<div class="row-label">${escHtml(tr("this one engagement, at the playhead"))} <span class="who-tag gold">${escHtml(tr("this engagement"))}</span></div><div class="kpi-row bench-kpi">${sampleKpis}</div>` : ""}`)}
+      ${zone(4, tr("What it was made of"), tr("four ways to cut one total — each of them comes to it"), `
+        ${foldBlock("meter", tr("Damage by source"), tr("where it came from"),
           `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
-        ${recordMarkup(r)}${chart}${replayCurves}
-      </div>
-      ${ask}
+        ${foldBlock("curve", tr("DPS over time"), tr("this engagement, one bucket a second"), chart)}
+        ${whereBlock}`)}
+      ${zone(5, tr("The evidence"), tr("why believe it — every line here can be checked against your own footage"), `
+        ${recordMarkup(r)}
+        ${curveBlocks}`)}
+      ${zone(6, tr("What now"), tr("what has already been done for you, and what you can do next"), `
+        <div id="sim-board-outcome" class="board-outcome"></div>
+        <div class="exits">
+          <button type="button" id="exit-optimize" class="ghost-btn">${escHtml(tr("Send this build to the optimizer"))}</button>
+          <button type="button" id="exit-share" class="ghost-btn">${escHtml(tr("Share this result"))}</button>
+          <span class="exit-free">${escHtml(tr("Builder, simulator and optimizer are free for everyone."))} <a href="/support">${escHtml(tr("Chip in ↗"))}</a></span>
+        </div>`)}
     </div>`;
   // WHAT BECAME OF THIS RUN, drawn on EVERY result — a stored one re-rendered
   // after a reload, a pick in the roll call, and the fresh run that
@@ -490,6 +556,29 @@ function renderResults(r, testedAt) {
   // only from there would leave "submitting…" standing for ever on the two
   // paths that submit nothing: a scenario of your own, and a board row.
   renderBoardOutcome();
+  // THE TWO EXITS. A result that ends in a number is a dead end: the reader has
+  // an answer and nowhere to take it. Neither of these is new machinery — the
+  // optimizer is a module of this page and the link is `shareUrl` — they are
+  // the door out standing where the reading finishes.
+  const toOpt = $("exit-optimize");
+  if (toOpt) {
+    toOpt.onclick = () => {
+      const w = weaponInfo($("weapon").value);
+      if (!w) return;
+      history.pushState({}, "", `${weaponPath(w.id)}/optimizer`);
+      route();
+    };
+  }
+  const toShare = $("exit-share");
+  if (toShare) {
+    toShare.onclick = async () => {
+      const url = await shareUrl();
+      // NO DIALOG. `prompt`/`alert`/`confirm` are blocked in this project, so a
+      // clipboard that refuses says so in the toast the page already has.
+      try { await navigator.clipboard.writeText(url); presetToast(tr("link copied")); }
+      catch (_) { presetToast(tr("could not reach the clipboard — the link is in the preset bar's share panel")); }
+    };
+  }
   // Meter rows that carry a per-type split toggle theirs. The choice is kept
   // across runs — a player who opened Direct hits wants it open on the next
   // simulate, not to reopen it every time.

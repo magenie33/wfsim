@@ -83,6 +83,26 @@ function recordIdle() {
 /// not fit, the panel offers to go and get it, and says what that costs.
 const RECORD_LIMIT = 20000;
 
+/// HOW MANY EVENTS THE PANEL READS WITHOUT BEING ASKED.
+///
+/// THE RECORD IS THIS PANEL'S BEST ARGUMENT AND IT WAS BEHIND THREE CLICKS —
+/// a fold, a button, and a window. Nobody who has not already decided to trust
+/// the page ever pressed them, which is exactly backwards: the rows are what
+/// earn the trust. So a small window is read on its own, the panel shows a few
+/// rows of it in its own narrow shape, and the full table still opens in the
+/// window it needs.
+///
+/// Small on purpose. The fetch costs ONE re-run of the engagement whatever the
+/// limit, and the panel is already paying a hundred of them; what a limit buys
+/// is the transfer, and a peek needs a screenful.
+const RECORD_PEEK = 300;
+/// HOW MANY ROWS THE PEEK DRAWS. Enough to see that they are real and that one
+/// leads to the next; a reader who wants the fight opens the window.
+const RECORD_PEEK_ROWS = 6;
+/// Result keys a peek has already been tried for, so a repaint — and a repaint
+/// happens on every roll-call click — does not re-run the engagement again.
+const recordPeeked = new Set();
+
 /// HOW MANY PAGES A "read the whole fight" WILL ASK FOR before giving up.
 ///
 /// A backstop, not a budget: at `RECORD_LIMIT` a page it takes twelve to cover
@@ -317,9 +337,24 @@ function paintRecord(r) {
     // THE ONE EXCEPTION IS A REFUSED POPUP, because then there is nowhere else
     // for it to go and a feature the browser blocked must not simply vanish.
     const mine = host === $("rec-host");
+    // THE FULL TABLE IS THE WINDOW'S, AND ONLY THE WINDOW'S — it is ten columns
+    // and 1080px, and this is one column. What the panel draws is a PEEK: the
+    // same rows from the same renderer, with the wide columns dropped by CSS,
+    // so there is one implementation and two widths rather than two tables that
+    // have to be kept agreeing.
     const draw = st && (!mine || recPopupBlocked);
-    host.innerHTML = draw ? recordBody(st) : recordIdle();
+    host.innerHTML = draw ? recordBody(st)
+      : (mine && st ? recordBody(st, true) : "") + recordIdle();
     wireRecord(recordResult, host);
+    // ...AND IF THERE IS NOTHING TO PEEK AT, GO AND GET A LITTLE. Once per
+    // result: `paintRecord` runs on every repaint, and each read is a re-run.
+    if (mine && !st && recordResult && recordResult.run) {
+      const key = recordKey(recordResult);
+      if (!recordPeeked.has(key)) {
+        recordPeeked.add(key);
+        loadRecord(recordResult, 0, undefined, RECORD_PEEK);
+      }
+    }
   }
   // …AND THE PANEL SAYS WHERE IT WENT. An empty block where the table belongs
   // reads as the feature breaking.
@@ -359,7 +394,7 @@ const REC_KINDS = [
   ["event", "events"], ["miss", "misses"],
 ];
 
-function recordBody(st) {
+function recordBody(st, peek) {
   if (st.loading) {
     return `<div class="rec-idle"><span class="sim-hint">${escHtml(tr("reading…"))}${
       st.page ? ` ${escHtml(tr("pass {n}").replace("{n}", st.page + 1))} · ${
@@ -389,6 +424,26 @@ function recordBody(st) {
     `<button class="pchip${st.filter === k ? " sel" : ""}" data-reckind="${k}">${escHtml(tr(label))}</button>`).join("");
 
   const dmg = shown.filter((e) => e.kind === "damage").length;
+  // THE PEEK: the same rows, the same renderer, no tools and no pager. It
+  // exists so the record is ON SCREEN instead of behind a button — the rows are
+  // what earn this panel its trust, and nothing that has to be asked for earns
+  // anything. The wide columns are dropped by CSS (`.rec-peek`), not by a
+  // second markup path, so the two views cannot drift apart.
+  if (peek) {
+    const few = shown.filter((e) => e.kind === "damage").slice(0, RECORD_PEEK_ROWS);
+    if (!few.length) return "";
+    return `<div class="rec-peek"><table class="rec-t">
+      <thead><tr>
+        <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("damage source"))}</th>
+        <th>${escHtml(tr("part"))}</th>
+        <th class="num">${escHtml(tr("damage"))}</th>
+        <th>${escHtml(tr("where the number comes from"))}</th>
+      </tr></thead>
+      <tbody>${few.map((e) => recordRow(e, st.rosters || {})).join("")}</tbody>
+    </table></div>
+    <div class="rec-peek-n">${escHtml(tr("{a} of the {b} numbers this engagement popped")
+      .replace("{a}", String(few.length)).replace("{b}", n(dmg)))}</div>`;
+  }
   // THE SLICE THIS STREAM ACTUALLY COVERS: where it was asked to start, and
   // where it ran out — which is the LAST EVENT in it when the cap bit, not the
   // window it asked for.

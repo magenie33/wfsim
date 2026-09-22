@@ -48,7 +48,7 @@ function scrubLegend(rp) {
 
 function replayMarkup(r) {
   const rp = r && r.replay;
-  if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
+  if (!rp || !rp.t || rp.t.length < 2) return { bar: "", where: "", curves: "" };
   const named = buffRosterName;
   const dbName = debuffRosterName;
   // WHOSE DEBUFFS. `rp.tracked` names the bodies the replay followed — the
@@ -91,7 +91,19 @@ function replayMarkup(r) {
   };
   const dRoster = rp.debuffs || [];
   const dSeries = (rp.dstacks || [])[dBody] || [];
-  const W = 600, H = 28;
+  // THE CHART IS 120 UNITS TALL, not 28.
+  //
+  // At 28 px a stack count spends its whole life inside two pixels: the ramp,
+  // the dip when a body dies, the plateau against the ceiling and the dead
+  // bands all collapse into one wobbling line, and the row is decoration
+  // beside its own header. These curves are the one thing on this panel no
+  // other calculator has — a state this fight DERIVED rather than one the
+  // reader typed — so they are drawn at a size where that is legible.
+  //
+  // The coordinate space is the chart's, and `preserveAspectRatio="none"`
+  // stretches it to whatever width the column is, so nothing here depends on
+  // the pixel height the CSS happens to give it.
+  const W = 600, H = 120;
   const curveRows = (roster, series, name, kind) => roster.map((b, i) => {
     // WHAT IS DRAWN, which is the stack count on an ordinary row and the number
     // the stacks are worth on a value-capped one. Everything below — the area,
@@ -139,6 +151,8 @@ function replayMarkup(r) {
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          ${[0.25, 0.5, 0.75].map((f) =>
+            `<line class="tl-grid" x1="0" x2="${W}" y1="${py(max * f).toFixed(1)}" y2="${py(max * f).toFixed(1)}"/>`).join("")}
           ${dead.join("")}
           <polygon class="rp-area" points="0,${H} ${pts} ${W},${H}"/>
           <line class="rp-mean" x1="0" x2="${W}" y1="${py(mean).toFixed(1)}" y2="${py(mean).toFixed(1)}"><title>${escHtml(tr("avg"))} ${mean.toFixed(2)}</title></line>
@@ -147,6 +161,7 @@ function replayMarkup(r) {
           <line class="rp-cur" data-cur="${i}" data-series="${kind}" y1="0" y2="${H}" x1="${W}" x2="${W}"/>
         </svg>
       </div>
+      <div class="rp-x"><span>0s</span><span>${(rp.t[rp.t.length - 1] || 0).toFixed(0)}s</span></div>
     </div>`;
   }).join("");
   const rows = curveRows(rp.buffs, rp.stacks, named, "buff");
@@ -289,13 +304,17 @@ function replayMarkup(r) {
         : "")
     : "";
 
+  // WHERE IT WENT is a CUT OF THE TOTAL — the same damage sorted by body — so
+  // it belongs with the other cuts, in the composition zone. The coverage
+  // CURVES are evidence of a state this fight derived, which is a different
+  // question, so they are returned separately and land in the evidence zone.
+  const where = crowd
+    ? foldBlock("where", tr("Where the damage went"),
+        tr("every body that took something, and how much — click one to read its debuffs"),
+        crowd)
+    : "";
   const curves =
-    (crowd
-      ? foldBlock("where", tr("Where the damage went"),
-          tr("every body that took something, and how much — click one to read its debuffs"),
-          crowd)
-      : "")
-    + foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"), rows)
+    foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"), rows)
     + (dRows
       ? foldBlock("debuffs", tr("Debuff coverage"),
           tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"),
@@ -315,7 +334,7 @@ function replayMarkup(r) {
                   .replace("{n}", dQuiet))}</div>`
             : ""))
       : "");
-  return { bar, curves };
+  return { bar, where, curves };
 }
 
 // Re-read the WHOLE result panel at frame `i` — KPIs, the damage meter, the

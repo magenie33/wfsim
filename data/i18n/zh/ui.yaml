@@ -1107,6 +1107,52 @@ ui:
   "stop": 停止
   "back to the finished fight": 回到打完的那一刻
   "a kill": 一次击杀
+  "the build travels — the weapon, its mods, evolutions and arcanes. No account, no names you gave anything, and no score: the board measures it again itself.": 上传的是这套配装——武器、MOD、进化和赋能。没有账号，没有你给任何东西起的名字，也没有分数：榜单自己再测一遍。
+  "turn automatic submission off": 关闭自动投稿
+  "turn automatic submission on": 开启自动投稿
+  "{a} of the {b} numbers this engagement popped": "这一场弹出的 {b} 个数字里的 {a} 个"
+  "The result": 结果
+  "what does this build do?": 这套配装打出多少？
+  "averaged over {runs} engagements": "{runs} 次交战的平均"
+  "whole fight": 整场
+  "This fight": 这场仗
+  "what conditions was that measured under?": 上面那个数是在什么条件下量出来的？
+  "Being fought — simulated": 被打的 —— 模拟出来的
+  "Doing the fighting — assumed": 打人的 —— 假设成立的
+  "armour, resistances, overguard and every status pile are what this fight arrived at, not numbers typed in": 护甲、抗性、超量护甲和每一摞状态层，都是这场仗自己走到的，不是填进去的
+  "these are granted, not found: this engine models no movement, no survival and no missed shot you would have missed": 这些是直接给定的，不是算出来的：本引擎不模拟走位、不模拟生存，也不会替你打空一枪
+  "what is not modelled ↗": 哪些东西没有建模 ↗
+  "one body": 单体
+  "{n} bodies": "{n} 具身体"
+  "a kill is replaced at once": 死了立刻补一具
+  "aiming throughout": 全程瞄准
+  "firing from the hip": 腰射
+  "Headshots": 爆头率
+  "invisible": 隐身
+  "airborne": 滞空
+  "channeling": 引导中
+  "ammo pickups keep coming": 弹药持续补给
+  "its own reserve, and no pickups": 只用自己的备弹，不补给
+  "melee drawn": 近战已拔出
+  "quick melee": 快速近战
+  "{n} abilities held up": "{n} 个技能常开"
+  "{n} squad auras": "{n} 个小队光环"
+  "{runs} engagements · {secs}s each · {rolls} damage instances rolled, on your own machine": "{runs} 次交战 · 每次 {secs} 秒 · 共掷了 {rolls} 次伤害，全在你自己的机器上"
+  "The benchmark engagement": 基准那一场
+  "from here down it is one engagement, and it follows the playhead": 从这里往下是同一场交战，并且跟着播放头走
+  "this one engagement, at the playhead": 这一场，在播放头所在的时刻
+  "this engagement": 这一场
+  "What it was made of": 构成
+  "four ways to cut one total — each of them comes to it": 一个总数的四种切法 —— 每一种加回去都等于它
+  "where it came from": 从哪来的
+  "this engagement, one bucket a second": 这一场，每秒一格
+  "The evidence": 证据
+  "why believe it — every line here can be checked against your own footage": 凭什么信 —— 这里每一行都能拿去跟你自己的录像对着数
+  "What now": 接下来
+  "what has already been done for you, and what you can do next": 已经替你做了什么，以及你还能做什么
+  "Send this build to the optimizer": 把这套配装交给优化器
+  "Share this result": 分享这次结果
+  "could not reach the clipboard — the link is in the preset bar's share panel": 没能访问剪贴板 —— 链接在配装栏的分享面板里
   "a reload": 一次换弹
   "drag onto a mark to land on that instant": 拖到任意一格刻度就落在那一瞬
   "stopped — nothing was measured": 已停止 —— 没有测出任何结果

@@ -631,7 +631,27 @@ function renderBoardOutcome() {
           .replace("{of}", stand.of)
           .replace("{group}", stand.group))}</div>` : "")
     + (o.kind === "sent"
-      ? `<div class="board-state">${escHtml(boardCutNote())}</div>` : "");
+      ? `<div class="board-state">${escHtml(boardCutNote())}</div>` : "")
+    // THE SWITCH STANDS WHERE THE OUTCOME IS READ. Submission is automatic and
+    // default-on, so the line above is a statement about something that has
+    // ALREADY happened — and the one control it wants is the one that stops it
+    // happening again. It sat only in the scenario block above the fight, which
+    // is where a first-time reader is warned; this is where a reader who just
+    // watched it happen looks.
+    //
+    // ONE STATE, TWO SWITCHES. Both read and write `boardConsent()` and both
+    // repaint, so there is no second answer to keep in step — and the sentence
+    // beside it says what travels, because the strongest thing this mechanism
+    // has going for it is that the SCORE is not sent: the board re-runs it.
+    + `<div class="bo-consent">
+        <span>${escHtml(boardConsent() === "yes"
+          ? tr("the build travels — the weapon, its mods, evolutions and arcanes. No account, no names you gave anything, and no score: the board measures it again itself.")
+          : tr("nothing is sent from here."))}</span>
+        <button type="button" class="ghost-btn small" id="bo-consent">${escHtml(
+          boardConsent() === "yes" ? tr("turn automatic submission off") : tr("turn automatic submission on"))}</button>
+      </div>`;
+  const sw = $("bo-consent");
+  if (sw) sw.onclick = () => { setBoardConsent(boardConsent() === "yes" ? "no" : "yes"); renderBoardOutcome(); };
 }
 
 function renderBoardConsent() {

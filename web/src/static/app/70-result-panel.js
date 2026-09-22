@@ -192,6 +192,23 @@ const saveFolds = () => localStorage.setItem("wfsim-folds", JSON.stringify(foldS
 /// including the answer "open", which no default may undo.
 const folded = (id, byDefault) => (foldState[id] == null ? !!byDefault : foldState[id] === true);
 
+/// ONE ZONE OF THE RESULT, and the result is nothing but zones.
+///
+/// A zone answers ONE question and carries the question in its own heading, so
+/// a reader can tell what a block is for before reading a number in it, and so
+/// anything added later has one test to pass: which question does it answer?
+/// A block that answers none of them does not belong on this panel.
+///
+/// Zones do not fold. They are the skeleton — the folds are inside them — and
+/// a skeleton that can be collapsed away is a page with no shape.
+function zone(n, title, question, body) {
+  return `<section class="zone" data-zone="${n}">
+    <h2 class="zone-h"><span class="zone-n">${n}</span><span class="zone-t">${escHtml(title)}</span>${
+      question ? `<span class="zone-q">${escHtml(question)}</span>` : ""}</h2>
+    <div class="zone-b">${body}</div>
+  </section>`;
+}
+
 /// One collapsible block: a heading, an optional hint, and a body.
 function foldBlock(id, title, hint, body) {
   const shut = folded(id);
