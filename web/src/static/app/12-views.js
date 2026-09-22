@@ -272,6 +272,9 @@ async function route() {
     if (mod === "rivens") renderRivens();
     if (mod === "enemies") renderEnemies();
     if (mod === "benchmark") renderWeaponBench();
+    // THE PAGE'S OWN ANSWER, on every module: it describes the WEAPON and
+    // not the tab, so it stands above them rather than inside one.
+    renderWeaponDoc();
   } else {
     renderHome();
   }

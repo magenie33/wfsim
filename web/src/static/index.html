@@ -632,6 +632,14 @@
       </div>
     </div>
 
+    <!-- THE PAGE'S OWN ANSWER, AND IT IS NOT A FALLBACK. The prerender fills
+         this with what has been measured for this weapon, and NOTHING REMOVES
+         IT: a block deleted the moment the app boots is a block the renderer
+         that decides whether anyone finds this page never sees, because it
+         indexes the page it rendered. The app keeps it current instead —
+         `renderWeaponDoc`. -->
+    <div id="doc" class="doc" hidden></div>
+
     <!-- Module tabs: Builder | Simulator | Optimizer — one view per
          module (/weapons/<name>[/simulator|/optimizer]). Rendered by
          route(); body.on-* classes swap the visible sections. -->

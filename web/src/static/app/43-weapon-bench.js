@@ -65,6 +65,38 @@ const wbenchGear = (row) => [
   ...(row.arcanes || []).map((a) => ({ id: a, kind: "arcane" })),
 ];
 
+/// THE PAGE'S OWN ANSWER, kept true. The prerender wrote this block for ONE
+/// url; the moment the reader routes to another weapon without a page load it
+/// is describing something that is no longer on screen, so it is rewritten
+/// from the rows this client already holds. `data-url` is how the two tell
+/// each other apart — while it still names the open page, the server's copy
+/// stands, which keeps a first load byte-identical to what a crawler indexed.
+function renderWeaponDoc() {
+  const box = $("doc");
+  const w = weaponInfo($("weapon").value);
+  if (!box || !w || !META) return;
+  const here = location.pathname.replace(/\/[a-z]+\/?$/, (m) =>
+    /^\/(simulator|optimizer|rivens|enemies|benchmark)\/?$/.test(m) ? "" : m);
+  if (box.dataset.url && box.dataset.url === here) { box.hidden = false; return; }
+  const cells = wbenchCells(w.id);
+  box.hidden = !cells.length;
+  if (!cells.length) { box.innerHTML = ""; return; }
+  const nameOf = (id) => {
+    const b = (META.benchmarks || []).find((x) => x.id === id);
+    return b ? tr(b.name).split(" · ")[0] : id;
+  };
+  // ONE LINE PER RULER, not per cell: a weapon played seven ways has seven
+  // rows under one ruler and they are the TAB's subject, not the summary's.
+  const lead = new Map();
+  for (const c of cells) {
+    const had = lead.get(c.benchmark);
+    if (!had || c.best.score > had.best.score) lead.set(c.benchmark, c);
+  }
+  box.innerHTML = [...lead.values()].map((c) => `<p>${escHtml(
+    `${nameOf(c.benchmark)} · ${modeLabel(w, c.mode)} — `
+    + `${tr("The best riven-free build")} ${c.best.shown != null ? c.best.shown : c.best.score.toFixed(4)}`)}</p>`).join("");
+}
+
 function renderWeaponBench() {
   const box = $("wbench");
   const w = weaponInfo($("weapon").value);

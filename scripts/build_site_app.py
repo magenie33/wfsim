@@ -934,6 +934,24 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
     # The weapon route's heading is the weapon, so it is filled rather than
     # left as the shell's placeholder; every other route spells its own out.
     page = one_h1(lded, keep_h1, name if keep_h1 in ("w-name", "wf-name") else None)
+    # A WEAPON PAGE'S ANSWER IS CONTENT, NOT A FALLBACK. It goes into the
+    # layout, under the weapon, and nothing removes it — the renderer that
+    # decides whether this page is found indexes what it rendered, so a block
+    # deleted on boot is a block it never reads. Every other page type already
+    # draws its own prose, so for those this stays the fallback it was.
+    if keep_h1 == "w-name":
+        slot = '<div id="doc" class="doc" hidden></div>'
+        if slot not in page:
+            sys.exit("index.html: the #doc slot is gone — a weapon page has nowhere to say what it is")
+        # STAMPED WITH THE PATH IT WAS WRITTEN FOR. A reader who routes to
+        # another weapon without a page load leaves this block describing a
+        # page that is no longer open, and the app rewrites it — it tells the
+        # two apart by this and by nothing else, so a first load stays exactly
+        # what a crawler indexed.
+        at = url[len(SITE):] or "/"
+        return page.replace(
+            slot, f'<div id="doc" class="doc" data-url="{html_mod.escape(at, quote=True)}">\n'
+            + seo + "    </div>", 1)
     body = (
         '<div id="seo-fallback">\n' + seo + "  </div>\n"
         "  <script>document.getElementById('seo-fallback').remove()</script>\n  "
