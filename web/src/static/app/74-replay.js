@@ -146,6 +146,12 @@ function replayMarkup(r) {
       <h3>${escHtml(tr("Replay"))}</h3>
       <div class="rp-bar">
         <button id="rp-play" class="ghost-btn small rp-play">▶ ${escHtml(tr("play"))}</button>
+        <!-- ■ IS A STOP, AND A STOP RETURNS THE PANEL TO ITS RESTING STATE —
+             which here is the FINISHED fight, the numbers the result reports.
+             Pause leaves the playhead where it stands; this is the one click
+             back to the answer, and dragging the scrubber to its far end was
+             the only way there. -->
+        <button id="rp-stop" class="ghost-btn small rp-stop" title="${escHtml(tr("back to the finished fight"))}">■ ${escHtml(tr("stop"))}</button>
         ${ddButton("rp-speed", {
           value: 5,
           items: REPLAY_SPEEDS.map((sp) => ({ value: sp, label: `${sp}x` })),
@@ -153,6 +159,10 @@ function replayMarkup(r) {
         <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="${rp.t.length - 1}">
         <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
+      <!-- THE FIGHT'S OWN NUMBERS, and only those. Damage and kills are the
+           whole engagement's however many bodies are in it; a POOL belongs to
+           one body, and a body's number sitting here reads as the crowd's.
+           The pools are down in "Where the damage went", beside the bodies. -->
       <div class="rp-pools" id="rp-pools"></div>`;
   // ---- WHERE THE DAMAGE WENT ------------------------------------------
   //
@@ -185,8 +195,16 @@ function replayMarkup(r) {
   // distance and an aim point, which is exactly what the SCENARIO's own canvas
   // draws for it. A result that changes shape with the body count is a second
   // template nobody asked for, and the reader has to learn both.
+  // WHOSE POOLS THE REPLAY CARRIES. The engine traces ONE body's overguard,
+  // shield and health — the one the weapon is on (`fight::run`) — so the row
+  // names it instead of letting a crowd read three numbers as everyone's.
+  // Following a second body's pools is a second series, not a second label.
+  const aimedId = (bodyRows.find((b) => b.aimed) || {}).id || (rp.tracked || [])[0] || "";
   const crowd = bodyRows.length
-    ? `<div class="rp-scene" id="rp-scene"></div>`
+    ? `<div class="rp-pools-head">${escHtml(tr("the body the weapon was on"))}${
+        aimedId ? ` · ${escHtml(aimedId)}` : ""}</div>`
+      + `<div class="rp-pools" id="rp-foe-pools"></div>`
+      + `<div class="rp-scene" id="rp-scene"></div>`
       + `<table class="rp-roll"><tbody>${bodyRows.map((b) => {
           const top = Math.max(...bodyRows.map((x) => x.damage)) || 1;
           const share = b.damage / top;
@@ -269,12 +287,19 @@ function replayApply(rp, i) {
   // is what lets a second and third enemy join without a re-layout.
   const cell = (label, v) =>
     `<span class="rp-cell"><i>${escHtml(label)}</i><b>${v}</b></span>`;
+  // THE TOP ROW IS THE FIGHT: what it dealt and what it killed, true of a
+  // crowd and of one body alike.
   $("rp-pools").innerHTML =
-    cell(tr("Overguard"), n(rp.og[i])) +
-    cell(tr("Shield"), n(rp.sh[i])) +
-    cell(tr("Health"), n(rp.hp[i])) +
     cell(tr("Damage"), n(rp.dmg[i])) +
     cell(tr("Kills"), rp.kills[i]);
+  // …AND THE POOLS WHERE THE BODIES ARE, under the heading that names whose.
+  const foePools = $("rp-foe-pools");
+  if (foePools) {
+    foePools.innerHTML =
+      cell(tr("Overguard"), n(rp.og[i])) +
+      cell(tr("Shield"), n(rp.sh[i])) +
+      cell(tr("Health"), n(rp.hp[i]));
+  }
 
   // The headline. KPM is `kill_progress / minutes`, and `kill_progress` is
   // kills plus the fraction of the CURRENT target's pool already gone — which
@@ -309,27 +334,63 @@ function replayApply(rp, i) {
       : n(s[i]);
   });
 
-  // The damage meter, rescaled to the damage dealt SO FAR: the bars are a
-  // composition, and a composition of a fight in progress is read against
-  // that fight, not against its end.
+  // The damage meter, on ONE FIXED SCALE — every bar is a length against the
+  // biggest source AT THE END, so a bar only ever grows and the picture fills
+  // in as the fight runs. Rescaling each frame against that frame's own
+  // leader pinned the top bar full from the first shot, which is a chart that
+  // never moves: the only thing a reader could see was the text. The SHARES
+  // stay live, because a share is about the instant.
+  //
+  // One scale for sub-rows too — the same one the panel is drawn with
+  // (`srcMax` in `76-damage-pops.js`), so the last frame is the finished
+  // panel and not a second chart that happens to carry the same numbers.
   const byKey = {};
   (rp.sources || []).forEach((s) => {
     byKey[s.source] = s.dmg;
     (s.by_type || []).forEach((ty) => { byKey[`${s.source}::${ty.type}`] = ty.dmg; });
   });
-  let total = 0, max = 0;
-  (rp.sources || []).forEach((s) => { total += s.dmg[i]; max = Math.max(max, s.dmg[i]); });
+  let total = 0, scale = 0;
+  (rp.sources || []).forEach((s) => { total += s.dmg[i]; scale = Math.max(scale, s.dmg[last]); });
+  scale = scale || 1;
   document.querySelectorAll("#sim-results [data-mk]").forEach((el) => {
     const s = byKey[el.dataset.mk];
     if (!s) return;
     const v = s[i];
-    const sub = el.classList.contains("sub");
-    // A sub-row is drawn against its own source's bar, exactly as at the end.
-    const own = sub ? (byKey[el.dataset.mk.split("::")[0]] || [])[i] || 1 : max || 1;
     const bar = el.querySelector(".mbar i");
-    if (bar) bar.style.width = `${Math.max(0, (v / own) * 100).toFixed(1)}%`;
+    if (bar) bar.style.width = `${Math.max(0, (v / scale) * 100).toFixed(1)}%`;
     const val = el.querySelector(".mval");
     if (val) val.textContent = `${n(v)} · ${total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"}%`;
+  });
+
+  // …AND THE TYPE BAR WITH IT. It is the same damage the meter just drew,
+  // counted a second way, so a bar frozen on the finished fight beside a meter
+  // following the playhead is two answers to one question. A stacked
+  // composition fills its width by construction, so what moves here is the
+  // SHARES — the segments the ramping elements own widen as they ramp.
+  //
+  // THE ORDER IS THE ONE IT WAS DRAWN IN, which is why the page is re-read by
+  // type rather than rebuilt: re-sorting each frame would have segments
+  // overtaking each other sixty times a second. A type with nothing yet is
+  // hidden rather than left at its 3px minimum, so an empty bar reads empty.
+  const typeNow = {};
+  (rp.sources || []).forEach((s) => {
+    const parts = s.by_type && s.by_type.length ? s.by_type : [{ type: s.source, dmg: s.dmg }];
+    parts.forEach((p) => {
+      const k = dtKey(p.type);
+      if (k) typeNow[k] = (typeNow[k] || 0) + (p.dmg[i] || 0);
+    });
+  });
+  const typeSum = Object.values(typeNow).reduce((a, v) => a + v, 0);
+  document.querySelectorAll("#sim-results [data-dk]").forEach((el) => {
+    const share = typeSum > 0 ? (typeNow[el.dataset.dk] || 0) / typeSum : 0;
+    if (el.classList.contains("dmg-seg")) {
+      el.hidden = share <= 0;
+      el.style.flex = share.toFixed(5);
+      el.title = `${DT(el.dataset.dk)} ${pct2(share)}`;
+      return;
+    }
+    const lv = el.querySelector(".lv");
+    if (lv) lv.textContent = pct2(share);
   });
 
   // The DPS curve: everything past `t` is greyed rather than removed, so the
@@ -564,6 +625,16 @@ function wireReplay(r) {
     st.playing = true; st.last = 0;
     $("rp-play").textContent = `❚❚ ${tr("pause")}`;
     st.raf = requestAnimationFrame(tick);
+  };
+  // STOP — playback ends and the panel goes back to the finished fight. The
+  // record window follows it, because the numbers at the end are a window like
+  // any other and a stop that left the ledger on second 12 would be two
+  // instants on one screen.
+  $("rp-stop").onclick = () => {
+    stop();
+    st.pos = rp.t.length - 1;
+    draw();
+    withRecord();
   };
   ddReg.get("rp-speed").onPick = (v) => { st.speed = Number(v) || 1; };
   $("rp-scrub").oninput = () => {

@@ -1089,7 +1089,7 @@ ui:
   "semi-auto": 半自动
   "uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. It is stored the moment it arrives; the board re-scores hourly and picks it up on its next run, and says how long ago that was": 已上传——投稿是一套**配装**，所以它会在这把武器能用的每一个模式下、以及每一块收它的榜上评分。它一到就被永久保存；榜单每小时重算一次，下一次重算时会把它算进去，并写明自己上次评分是多久以前
   "sentinels cannot equip arcanes": 守护武器无法装备赋能
-  "share of the engagement": 整场交战的占比
+  "share of the damage dealt": 已造成伤害的占比
   "share": 分享
   "sharing is off for now — this link opened the weapon instead": 分享功能暂时关闭 —— 这条链接为你打开了对应的武器页
   "shots BOUNCE off surfaces up to 4 times, which the page's own tips call worth doubling a shot's hit count when aimed off a wall behind the target — there are no surfaces here": "弹体会在表面弹跳，最多 4 次。页面自己的技巧栏说，朝目标身后的墙打反弹可以让一发的命中数翻倍——本场没有任何表面"
@@ -1105,6 +1105,7 @@ ui:
   "still measuring — {a} of {b} options ranked so far, and the order moves until it finishes": 还在测量——已排完 {a}/{b} 个选项，排序在结束前会一直变动
   "stop submitting": 停止提交
   "stop": 停止
+  "back to the finished fight": 回到打完的那一刻
   "stopped — nothing was measured": 已停止 —— 没有测出任何结果
   "submitted by players, scored here — read-only": 玩家提交，由我们自己跑分 —— 只读
   "switching firing modes takes THREE SECONDS, can be interrupted, and is scaled by Reload Speed (wiki) — this sim never switches, so each mode is measured as if it were the whole weapon and the cost of changing between them is invisible": "切换射击模式需要三秒，可以被打断，而且受装填速度影响（维基）—— 本模拟从不切换，所以每个模式都是当作整把武器来测量的，切换的代价在这里是看不见的"

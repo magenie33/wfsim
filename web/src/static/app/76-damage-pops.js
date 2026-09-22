@@ -355,8 +355,10 @@ function renderResults(r, testedAt) {
       <span class="mval">${n0(p.dmg)} · ${pct2(p.dmg / srcTotal)}</span>
     </div>`).join("");
   }).join("");
-  // WHAT THE DAMAGE WAS MADE OF — one stacked bar over the whole engagement,
-  // in DE's own colours.
+  // WHAT THE DAMAGE WAS MADE OF — one stacked bar in DE's own colours, over
+  // the damage dealt so far. `data-dk` names the type each segment and each
+  // legend line is drawn for, so the replay re-reads them at a frame the same
+  // way it re-reads the meter's rows.
   //
   // The meter above answers "where did it come from" — direct hits, a cloud, a
   // proc. This answers a different question a build actually turns on: what
@@ -382,11 +384,11 @@ function renderResults(r, testedAt) {
   // Biggest first, so the bar reads left to right in the order the legend
   // does and the eye can match a segment to a line without hunting.
   const composition = typeRows.length ? `
-      <h3>${tr("Damage by type")} <span class="sim-hint">${tr("share of the engagement")}</span></h3>
+      <h3>${tr("Damage by type")} <span class="sim-hint">${tr("share of the damage dealt")}</span></h3>
       <div class="dmg-bar">${typeRows.map(([ty, v]) =>
-        `<i class="dmg-seg" style="flex:${(v / typeSum).toFixed(5)};background:${dtColor(ty)}" title="${escHtml(DT(ty))} ${pct2(v / typeSum)}"></i>`).join("")}</div>
+        `<i class="dmg-seg" data-dk="${escHtml(ty)}" style="flex:${(v / typeSum).toFixed(5)};background:${dtColor(ty)}" title="${escHtml(DT(ty))} ${pct2(v / typeSum)}"></i>`).join("")}</div>
       <div class="legend">${typeRows.map(([ty, v]) =>
-        `<span class="li">${dtIcon(ty)}${escHtml(DT(ty))} <span class="lv">${pct2(v / typeSum)}</span></span>`).join("")}</div>` : "";
+        `<span class="li" data-dk="${escHtml(ty)}">${dtIcon(ty)}${escHtml(DT(ty))} <span class="lv">${pct2(v / typeSum)}</span></span>`).join("")}</div>` : "";
 
   // DPS-over-time curve: the MEDIAN run's per-bucket
   // EFFECTIVE dps. One series — the accent line, recessive grid, hover

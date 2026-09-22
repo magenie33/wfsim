@@ -43,7 +43,16 @@ const r = await evaluate(`(async () => {
   const read = () => ({
     kpi: Object.fromEntries([...document.querySelectorAll('[data-kpi]')].map(e=>[e.dataset.kpi, e.textContent])),
     meter: [...document.querySelectorAll('#sim-results .mrow[data-mk]:not(.sub)')].map(e=>e.querySelector('.mval').textContent.trim()),
+    // The BAR beside each figure, as the inline width the page wrote — the
+    // block is un-laid-out here, so a measured width is zero whatever it says.
+    bars: [...document.querySelectorAll('#sim-results .mrow[data-mk]:not(.sub)')].map(e=>parseFloat(((e.querySelector('.mbar i')||{}).style||{}).width) || 0),
+    // The TYPE composition, read off the legend — the shares the segments are
+    // drawn from, keyed by the type each line belongs to.
+    types: [...document.querySelectorAll('#sim-results .legend .li[data-dk]')].map(e=>e.dataset.dk+':'+e.querySelector('.lv').textContent),
+    // TWO ROWS, and which is which is the point: the top one is the FIGHT
+    // (damage, kills) and the pools sit with the bodies, whose they are.
     pools: [...document.querySelectorAll('#rp-pools .rp-cell b')].map(e=>e.textContent).join('|'),
+    foePools: [...document.querySelectorAll('#rp-foe-pools .rp-cell b')].map(e=>e.textContent).join('|'),
     hero: document.querySelector('[data-hero]').textContent,
     mean: document.querySelector('#sim-results .hero-num').textContent,
   });
@@ -65,18 +74,33 @@ const r = await evaluate(`(async () => {
   };
   const iBar = pos('.rp-bar');
   const iMeter = pos('.meter');
-  const iTable = pos('.stat-table');
+  // THE DPS CURVE, the anchor both order assertions read against: the replay
+  // bar sits above it and the buff curves below. pos() answers -1 for a block
+  // the panel does not draw, so an anchor has to be one the results carry.
+  const iChart = pos('.tl-wrap');
   const iRow = pos('.rp-row');
 
   // Rewind to the very start: the panel must read as a fight that has not
   // happened yet.
   const sc=document.getElementById('rp-scrub');
+  // HALF WAY FIRST, which is where a fixed scale is visible at all: at both
+  // ends every scheme agrees, and only the middle says whether the bars grow.
+  sc.value=Math.floor(Number(sc.max)/2); sc.dispatchEvent(new Event('input')); await sleep(300);
+  const atMid = read();
   sc.value=0; sc.dispatchEvent(new Event('input')); await sleep(300);
   const atZero = read();
   // ...and back to the end restores it exactly.
   sc.value=sc.max; sc.dispatchEvent(new Event('input')); await sleep(300);
   const restored = read();
   const nowAtEnd=[...document.querySelectorAll('.rp-now')].map(e=>e.textContent);
+
+  // STOP, FROM THE MIDDLE OF A PLAYBACK: it ends the playback and lands the
+  // panel back on the finished fight, which is the state it opens in.
+  sc.value=0; sc.dispatchEvent(new Event('input')); await sleep(200);
+  document.getElementById('rp-play').click(); await sleep(600);
+  document.getElementById('rp-stop').click(); await sleep(400);
+  const afterStop = read();
+  const playLabel = document.getElementById('rp-play').textContent.trim();
 
   sc.value=0; sc.dispatchEvent(new Event('input')); await sleep(200);
   document.getElementById('rp-play').click(); await sleep(1500);
@@ -132,7 +156,7 @@ const r = await evaluate(`(async () => {
     const v = parseFloat((el.querySelector('.mval')||{}).textContent?.replace(/[^\d.]/g,'') || '0');
     meterByType[ty] = (meterByType[ty] || 0) + v;
   }
-  return { rows, atEnd, atZero, restored, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
+  return { rows, atEnd, atMid, atZero, restored, afterStop, playLabel, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iChart, iRow, kids,
            meterRows, segs, legend, collapse, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
@@ -215,9 +239,9 @@ check("a meter source expands and collapses for real",
 }
 
 check("the replay BAR sits above everything it drives",
-  r.iBar < r.iMeter && r.iBar < r.iTable, JSON.stringify(r.kids));
+  r.iBar >= 0 && r.iBar < r.iMeter && r.iBar < r.iChart, JSON.stringify([r.iBar, r.iMeter, r.iChart, r.iRow]));
 check("...and the buff CURVES stay down with the other chart",
-  r.iRow > r.iMeter && r.iRow < r.iTable, JSON.stringify(r.kids));
+  r.iRow > r.iMeter && r.iRow > r.iChart, JSON.stringify([r.iBar, r.iMeter, r.iChart, r.iRow]));
 // IT OPENS ON THE FINISHED FIGHT — the cursor is at the LAST frame, which is
 // what this is about. Asserting "40/40" adds the claim that the buff happened
 // to fill in this particular run: two facts in one assertion, and only one of
@@ -225,12 +249,43 @@ check("...and the buff CURVES stay down with the other chart",
 check("it opens on the finished fight",
   r.nowAtOpen.length > 0 && r.nowAtOpen.join() === r.nowAtEnd.join(),
   `${r.nowAtOpen} vs ${r.nowAtEnd}`);
+// THE METER'S BARS ARE ONE FIXED SCALE — the biggest source at the END. A bar
+// therefore only grows, and the composition fills in as the fight runs.
+// Rescaling each frame against that frame's own leader kept the top bar full
+// from the first shot to the last, so the chart said the same thing at every
+// instant and only the text moved. Asserted in the MIDDLE, because at both
+// ends the two schemes agree.
+check("the meter's bars grow with the playhead",
+  Math.max(...r.atEnd.bars) === 100 && Math.max(...r.atZero.bars) === 0 &&
+  Math.max(...r.atMid.bars) > 0 && Math.max(...r.atMid.bars) < 100,
+  JSON.stringify([r.atZero.bars, r.atMid.bars, r.atEnd.bars]));
+// THE TYPE BAR FOLLOWS TOO. It is the meter's damage counted a second way, so
+// one of them frozen on the finished fight while the other walks the fight is
+// two answers to one question. The ORDER holds — the lines are the ones the
+// panel drew — and the shares are what move.
+check("the type composition follows the playhead",
+  r.atEnd.types.length > 1 &&
+  r.atEnd.types.map((x) => x.split(':')[0]).join() === r.atMid.types.map((x) => x.split(':')[0]).join() &&
+  r.atMid.types.join() !== r.atEnd.types.join(),
+  JSON.stringify([r.atMid.types, r.atEnd.types]));
 check("rewinding empties the KPIs and the meter",
   r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&
   r.atZero.meter.every((v) => /^0 /.test(v)),
   JSON.stringify(r.atZero));
 check("...and the pools go back to full",
-  r.atZero.pools !== r.atEnd.pools && r.atZero.pools.startsWith("659,445"), r.atZero.pools);
+  r.atZero.foePools !== r.atEnd.foePools && r.atZero.foePools.startsWith("659,445"), r.atZero.foePools);
+// THE TOP ROW IS THE FIGHT'S. Damage and kills are true of a crowd; a pool
+// belongs to ONE body, and a body's number on the fight's own row reads as the
+// crowd's. So the pools sit with the bodies, under the heading that names whose.
+check("the fight's row carries no single body's pools",
+  r.atEnd.pools.split("|").length === 2 && r.atEnd.foePools.split("|").length === 3,
+  `${r.atEnd.pools} :: ${r.atEnd.foePools}`);
+// ...AND STOP IS ONE CLICK BACK TO THE ANSWER. Pause leaves the playhead where
+// it stands; this is the state the panel opens in, and before the button the
+// only way there was dragging the scrubber to its far end.
+check("stop ends the playback on the finished fight",
+  JSON.stringify(r.afterStop) === JSON.stringify(r.atEnd) && /^▶/.test(r.playLabel),
+  `${r.playLabel} · ${JSON.stringify(r.afterStop)}`);
 check("the benchmark fight's headline follows too", r.atZero.hero !== r.atEnd.hero,
   r.atEnd.hero + " -> " + r.atZero.hero);
 // THE AVERAGE IS EVERY RUN AT ONCE, and a replay of one of them must not
