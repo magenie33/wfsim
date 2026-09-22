@@ -43,6 +43,10 @@ primary: true
 # terms. Truncation therefore eats the least identifying part.
 name: "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 
+# WHAT "STANDARD" CLAIMS, and it is a judgement rather than a fact — which is
+# exactly why it is written down where it can be argued with.
+standard: "Standard means this fight is claimed to represent most play, not that it is the fight you play. The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and it is tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere; and killing it is what moves a mission along. Its flaws are stated rather than hidden — it carries no shield, its Overguard may sit high, and the spectral form it enters on death is switched off here. One target can still be over-fitted to, which is why the board keeps a deep field and not only its leader."
+
 # NO VERSION NUMBER. There is one board, it is regenerated
 # whole whenever this file or the engine changes, and what is deployed is always
 # the current answer — so a version marks a distinction nobody can act on. The

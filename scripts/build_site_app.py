@@ -791,7 +791,11 @@ def board_best() -> dict:
     rulers: dict = {}
     for f in sorted((ROOT / "data" / "benchmarks").glob("*.yaml")):
         spec = yload(f.read_text(encoding="utf-8"))
-        rulers[spec["id"]] = (not spec.get("primary"), spec["id"], spec["name"])
+        # THE SAME READING ORDER THE ROSTER SORTS ON (`board::benchmarks::all`),
+        # so the sentences arrive in the order the page lists the rulers in.
+        rulers[spec["id"]] = (not spec.get("primary"),
+                              not spec["id"].startswith("standard_"),
+                              "single" not in spec["id"], spec["id"], spec["name"])
     files = [f for f in sorted((APP / "board").glob("*.json")) if f.stem != "index"]
     if not files:
         sys.exit("board_best: site/board/ holds no weapon file — wrong source")
@@ -815,8 +819,8 @@ def board_best() -> dict:
             if score > best.get(row["benchmark"], (float("-inf"),))[0]:
                 best[row["benchmark"]] = (score, ruler, row)
         if best:
-            out[f.stem] = [(ruler[2], row) for _, ruler, row
-                           in sorted(best.values(), key=lambda b: b[1][:2])]
+            out[f.stem] = [(ruler[4], row) for _, ruler, row
+                           in sorted(best.values(), key=lambda b: b[1][:4])]
     # …AND THE SECOND GUARD: rows exist and not one of them reached a page, so
     # the ruler ids in the files and in `data/benchmarks/` have come apart.
     if seen and not out:

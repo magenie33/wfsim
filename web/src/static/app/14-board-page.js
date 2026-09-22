@@ -279,9 +279,14 @@ function renderBenchBoard() {
   const rules = $("bench-rules");
   if (rules) {
     const rs = cur.rules || [];
-    rules.innerHTML = !rs.length ? "" : `<details class="brules">
+    // THE CLAIM FIRST, THEN THE TERMS. A ruler whose name says "standard" owes
+    // the reader what that rests on, and it belongs above the rules rather than
+    // beside them: the rules say what is done, this says why it is worth doing.
+    const why = cur.standard
+      ? `<p class="bstd">${escHtml(tr(cur.standard))}</p>` : "";
+    rules.innerHTML = !rs.length && !why ? "" : `<details class="brules">
       <summary>${escHtml(tr("What this benchmark measures"))}</summary>
-      <ul>${rs.map((x) => `<li>${escHtml(tr(x))}</li>`).join("")}</ul>
+      ${why}<ul>${rs.map((x) => `<li>${escHtml(tr(x))}</li>`).join("")}</ul>
     </details>`;
   }
   // THE RULER'S FIGHT, DRAWN. The rules above say it in sentences; this is

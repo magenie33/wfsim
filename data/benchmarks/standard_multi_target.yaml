@@ -17,6 +17,11 @@ id: standard_multi_target
 
 name: "Standard Multi Target · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 
+# WHAT "STANDARD" CLAIMS, and it is a judgement rather than a fact — which is
+# exactly why it is written down where it can be argued with. The target half
+# is the same claim its companion makes; the spacing is this ruler's own.
+standard: "Standard means this fight is claimed to represent most play, not that it is the fight you play. The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and it is tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere; and killing it is what moves a mission along. The crowd stands 3 m apart because the spacing, not the arrangement, is what decides whether splash or single-target damage wins — and 3 m is where the ordering matches what the same fight does in game."
+
 rules:
   - "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 3 metres centre to centre. The fight lasts 180 seconds."
   - "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces."

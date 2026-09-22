@@ -1166,6 +1166,10 @@ pub fn meta_json() -> Value {
             // the terms, and a term that only exists in a yaml comment is one
             // nobody can check the board against.
             "rules": b.rules,
+            // …AND WHAT THE WORD "STANDARD" IN THE NAME RESTS ON. Empty on a
+            // ruler that makes no such claim, which the page reads as nothing
+            // to show rather than as a missing field.
+            "standard": b.standard,
             // WHAT THIS RULER ADMITS, so the page can say what a build is still
             // missing instead of letting the server refuse in silence. It rides
             // with the benchmark because it IS the benchmark's — a second ruler

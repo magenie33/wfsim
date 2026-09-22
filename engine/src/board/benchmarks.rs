@@ -112,6 +112,15 @@ pub struct Benchmark {
     /// a wall, and the page can lay it out.
     #[serde(default)]
     pub rules: Vec<String>,
+    /// WHY THIS RULER IS A STANDARD — what the `standard_` prefix rests on,
+    /// in prose, for the reader who asks on what authority. Consumed data for
+    /// the same reason `rules` is: the page renders it.
+    ///
+    /// EMPTY ON A RULER THAT REPRESENTS NOTHING BUT ITS OWN FIGHT, and the
+    /// emptiness is the statement rather than an omission — `demolisher` is
+    /// one specific thing players do and claims to stand for no other.
+    #[serde(default)]
+    pub standard: String,
     /// What a build must look like to be admitted. Absent = admit anything
     /// legal, which is a real answer for a benchmark that wants one.
     #[serde(default)]
@@ -260,8 +269,23 @@ pub fn all() -> &'static [Benchmark] {
                 b
             })
             .collect::<Vec<_>>();
-        // THE PRIMARY RULER FIRST, then path order. See `Benchmark::primary`.
-        v.sort_by_key(|b| !b.primary);
+        // THE ORDER A READER MEETS THEM IN, and it is a property of the SET
+        // rather than of any one file — which is why it is here and not a
+        // number each yaml carries and each new ruler has to guess.
+        //
+        // The primary one leads (`Benchmark::primary`), then the STANDARDS —
+        // the rulers that claim to represent most play, which is what the
+        // `standard_` prefix is for — fewer targets before more, because the
+        // simpler claim is the one a reader checks first. Everything else
+        // follows alphabetically, so a ruler that represents nothing but
+        // itself cannot arrive ahead of one that does.
+        v.sort_by(|a, b| {
+            let key = |x: &Benchmark| {
+                (!x.primary, !x.id.starts_with("standard_"),
+                 !x.id.contains("single"), x.id.clone())
+            };
+            key(a).cmp(&key(b))
+        });
         v
     })
 }
