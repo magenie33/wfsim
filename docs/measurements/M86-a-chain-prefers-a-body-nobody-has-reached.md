@@ -17,7 +17,7 @@ Nukor and the Ignis all take it.
 
 ### What it disagreed with, and it was the model
 
-Nine instances were landing on SEVEN bodies in the group-clear formation: the
+Nine instances were landing on SEVEN bodies in the multi-target formation: the
 Boar Incarnon's three beams stand in one column, and the second beam's first hop
 went back to the body the first beam had used as its seed. THE READING IS NINE
 — nine bodies lit, counted in a fight — against the model's seven.
@@ -42,7 +42,7 @@ dense enough to force the collision to notice.
 
 The first ship of this rule marked a seed as TAKEN when its own turn came round,
 so the first beam could hop onto a body the second was about to stand on. Read
-on the live site, group-clear, the Incarnon cycle: eight bodies where nine were
+on the live site, multi-target, the Incarnon cycle: eight bodies where nine were
 expected, and the signature was in the totals — one body carrying **1.8x** a
 plain seed (its own 1.0 plus another beam's 0.8) while a ninth body took
 nothing.

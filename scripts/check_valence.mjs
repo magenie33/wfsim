@@ -490,7 +490,7 @@ const door = await evaluate(`(async () => {
   // Its own slot's pool, through the app's own helper — an arcane list filtered
   // by hand is a second copy of a rule this page already owns.
   const arc = (arcanePool(0) || [])[0];
-  const body = (valence) => ({ benchmark: 'single_target', weapon: 'kuva_nukor',
+  const body = (valence) => ({ benchmark: 'standard_single_target', weapon: 'kuva_nukor',
     mode: 'base', mods: eight, evolutions: [], arcanes: [arc ? arc.id : 'none'], valence });
   const withEl = await api('/api/board/check', body('impact'));
   const without = await api('/api/board/check', body(''));
@@ -502,7 +502,7 @@ const door = await evaluate(`(async () => {
   const realFetch = window.fetch;
   window.fetch = (u, o) => { sent.push(String(u)); return realFetch(u, o); };
   setBoardConsent('yes');
-  const sc = builtinScenarios().find(s => s.builtin === 'single_target');
+  const sc = builtinScenarios().find(s => s.builtin === 'standard_single_target');
   pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1200);
   eight.forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   arcanes = [arc ? arc.id : 'none'];
@@ -554,7 +554,7 @@ const forma = await evaluate(`(async () => {
   // This block is about CAPACITY, and a build refused for its valence would
   // pass a capacity assertion by accident.
   valence = defaultValence('kuva_nukor', null); renderValence();
-  const sc = builtinScenarios().find(s => s.builtin === 'single_target');
+  const sc = builtinScenarios().find(s => s.builtin === 'standard_single_target');
   pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1000);
   const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
                  'primed_pistol_gambit', 'primed_target_cracker',

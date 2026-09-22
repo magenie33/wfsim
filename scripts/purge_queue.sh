@@ -105,7 +105,7 @@ self_test() {
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
 
   local body
-  body=$(printf 'single_target\ngroup_clear\n' | purge_statement)
+  body=$(printf 'standard_single_target\nstandard_multi_target\n' | purge_statement)
 
   [ "$(printf '%s' "$body" | jq -r '.params | length')" = "2" ] \
     && say ok "one bound parameter per live ruler" \

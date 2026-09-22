@@ -340,7 +340,7 @@ mod tests {
         let row = |fp: &str, score: f64, finished: &str| {
             format!(
                 concat!(
-                    r#"{{"identity":"braton|m","ruler":"single_target","mode":"base","#,
+                    r#"{{"identity":"braton|m","ruler":"standard_single_target","mode":"base","#,
                     r#""data_fp":"{}","score":{},"cost_seconds":{},"finished_at":"{}"}}"#
                 ),
                 fp, score, score, finished
@@ -356,12 +356,12 @@ mod tests {
         )
         .expect("write");
 
-        let facts = load_facts(Some(path.to_string_lossy().into_owned()), "single_target");
+        let facts = load_facts(Some(path.to_string_lossy().into_owned()), "standard_single_target");
         assert_eq!(facts.len(), 1, "one row, one fact");
         // THE NEWER ONE, though the file ends with the older.
         assert_eq!(facts["braton|m#base"].score, 9.0);
         // …AND ANOTHER RULER'S ROWS ARE NOT HERE AT ALL.
-        let other = load_facts(Some(path.to_string_lossy().into_owned()), "group_clear");
+        let other = load_facts(Some(path.to_string_lossy().into_owned()), "standard_multi_target");
         assert!(other.is_empty());
         let _ = std::fs::remove_file(&path);
     }
@@ -407,9 +407,9 @@ mod tests {
             started_at: "T0".into(),
             finished_at: "T1".into(),
         };
-        log.write("group_clear", "kpm", "orthos_prime|mods#heavy_slam", &at());
+        log.write("standard_multi_target", "kpm", "orthos_prime|mods#heavy_slam", &at());
         log.write(
-            "group_clear",
+            "standard_multi_target",
             "kpm",
             "no_mode_here",
             &Fact { score: 1.0, ..at() },
@@ -424,7 +424,7 @@ mod tests {
         assert_eq!(rows[0]["identity"], "orthos_prime|mods");
         assert_eq!(rows[0]["mode"], "heavy_slam");
         assert_eq!(rows[0]["measured_by"], "abc1234");
-        assert_eq!(rows[0]["ruler"], "group_clear");
+        assert_eq!(rows[0]["ruler"], "standard_multi_target");
         // THE UNITS TRAVEL WITH THE NUMBER. A row outlives the ruler file it
         // was measured under, and nothing else can say what it is in.
         assert_eq!(rows[0]["metric"], "kpm");
@@ -441,7 +441,7 @@ mod tests {
     fn a_fact_log_with_nowhere_to_write_is_a_working_state() {
         let mut log = super::FactLog::open(None, None);
         log.write(
-            "single_target",
+            "standard_single_target",
             "kpm",
             "k#base",
             &Fact {

@@ -708,7 +708,7 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 /// So a bounce is GEOMETRY, not a nearest-first walk over the CHAIN's
 /// neighbour lists — that is the ricochet's mechanic, and for a bounce it keeps
 /// every hop inside the crowd it started in, worth 9.9x on a Latron Prime on
-/// the group-clear ruler.
+/// the multi-target ruler.
 ///
 /// EVERY BOUNCE AFTER THE FIRST IS DETERMINED: the impact point fixes the
 /// normal, the normal the outgoing ray, the ray what it meets. The ONE

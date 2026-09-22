@@ -197,7 +197,7 @@ mod wielder_tests {
     #[test]
     fn a_melee_weapon_in_valkyrs_hands_builds_rage_and_it_pays() {
         let req = |extra: serde_json::Value| {
-            let b = wfsim_engine::board::benchmarks::get("group_clear").expect("the ruler");
+            let b = wfsim_engine::board::benchmarks::get("standard_multi_target").expect("the ruler");
             let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
             let o = m.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), json!("praedos"));

@@ -41,7 +41,7 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 //
 // The enemy, its level, Steel Path, the wielder's state, the duration and how
 // many runs describe a FIGHT, and a fight is not about any particular gun —
-// which the OFFICIAL rulers always were: one `single_target` applies to every
+// which the OFFICIAL rulers always were: one `standard_single_target` applies to every
 // weapon on the board.
 //
 // It NARROWS "nothing crosses between weapons" rather than weakening it. That

@@ -57,7 +57,7 @@ a killing blow's excess is overkill, and the shield bar, whose gate passes only
 
 Every fight against an Overguard holder, which is every ruler: the official
 enemy is a Thrax Centurion and the whole board is scored on it. On the
-group-clear ruler, a Ballistica Prime build that scored 3973 KPM scores 3961
+multi-target ruler, a Ballistica Prime build that scored 3973 KPM scores 3961
 with the carry-over, and the same build with Primed Heated Charge instead of
 Heated Charge goes from 3929 to 4110 — the two swap places. The old model
 threw away 27% of everything that build dealt, and it threw away more of it the

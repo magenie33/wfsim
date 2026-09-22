@@ -1232,7 +1232,7 @@ mod asset_tests {
         // what it spreads, so a fight too small or too short to spread in
         // cannot tell the two apart.
         let req = |buffs: serde_json::Value| {
-            let b = wfsim_engine::board::benchmarks::get("group_clear").expect("the ruler");
+            let b = wfsim_engine::board::benchmarks::get("standard_multi_target").expect("the ruler");
             let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
             let o = m.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), serde_json::json!("praedos"));
@@ -1332,7 +1332,7 @@ mod asset_tests {
         );
     }
 
-    /// THE GROUP-CLEAR RULER RUNS, AND IT MEASURES THE CROWD.
+    /// THE MULTI-TARGET RULER RUNS, AND IT MEASURES THE CROWD.
     ///
     /// A benchmark is a yaml the engine never type-checks — its `scenario` is a
     /// free-form map on purpose, so a field added to scenarios needs no second
@@ -1347,10 +1347,10 @@ mod asset_tests {
     /// Cheap terms (a short fight, few runs), because the claim is about the
     /// SHAPE of the fight and not about the board's precision.
     #[test]
-    fn the_group_clear_ruler_runs_and_measures_the_crowd() {
-        let bench = wfsim_engine::board::benchmarks::get("group_clear").expect("the ruler exists");
+    fn the_standard_multi_target_ruler_runs_and_measures_the_crowd() {
+        let bench = wfsim_engine::board::benchmarks::get("standard_multi_target").expect("the ruler exists");
         let single =
-            wfsim_engine::board::benchmarks::get("single_target").expect("its companion exists");
+            wfsim_engine::board::benchmarks::get("standard_single_target").expect("its companion exists");
         // THE RULER'S OWN SCENARIO, with only the cost terms overridden.
         let req = |b: &wfsim_engine::board::benchmarks::Benchmark| {
             let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");

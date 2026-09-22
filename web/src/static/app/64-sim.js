@@ -11,7 +11,7 @@ function renderSimBuild() {
   if (!box || !META) return;
   const sub = $("sim-build-sub");
   // The LABEL, never the id: an official build's id carries its ruler and rank
-  // (`single_target#cycle#1`) and is not a thing to show anyone.
+  // (`standard_single_target#cycle#1`) and is not a thing to show anyone.
   const activeLabel = presetLabel(buildNamed(activePreset));
   if (sub) sub.textContent = activeLabel ? `${tr("testing build")}: ${activeLabel}` : "";
   const w = weaponInfo($("weapon").value);

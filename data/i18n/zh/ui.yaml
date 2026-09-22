@@ -432,7 +432,7 @@ ui:
   "Gain": 提升
   "Game data derived from the community": 游戏数据来自社区
   "Grineer": Grineer
-  "Group Clear · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM": 群体清场 · 19x19 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 180 秒 · KPM
+  "Standard Multi Target · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM": 标准群体 · 19x19 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 180 秒 · KPM
   "Headshot %": 爆头率 %
   "Headshot rate": 爆头率
   "Headshot": 爆头
@@ -633,8 +633,8 @@ ui:
   "Shrapnel Rounds, the Marelok-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Shrapnel Rounds」，Marelok 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Sim": 模拟
   "Simulator": 模拟器
-  "Single Target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM": 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 180 秒 · KPM
-  "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
+  "Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM": 爆破 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 180 秒 · KPM
+  "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 标准单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   "Skull Shots and Stinging Truth, the Viper-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Skull Shots」和「Stinging Truth」，Viper 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
     有时候它会说：数字没错，是游戏错了——顺带指出那个下次热修可能就没了的 bug。

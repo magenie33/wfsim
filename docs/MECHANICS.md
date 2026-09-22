@@ -3581,7 +3581,7 @@ own wording ("up to 10 instances of the effect can stack on the same target")
 and the rule the ten-stack families in `DEBUFF_ROSTER` already followed.
 
 **9,551 ms -> ~150 ms, a 64x cut, with `one_fight` reporting every answer
-unchanged.** A hundred runs of the group-clear ruler with the board's own #1
+unchanged.** A hundred runs of the multi-target ruler with the board's own #1
 Phantasma Prime build went from ninety minutes in the browser to 85 seconds.
 
 What is left is the mechanic itself: 146k procs times 29 neighbours is work

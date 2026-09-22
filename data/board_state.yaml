@@ -10,15 +10,15 @@
 # because every scored row is published — how deep to read is the reader's
 # question and the page answers it (docs/BOARD.md).
 boards:
-  group_clear:
+  standard_multi_target:
     submissions: 9586
     listed: 9660
     scored_at_epoch_seconds: 1789978251
-  single_target:
+  standard_single_target:
     submissions: 9586
     listed: 15197
     scored_at_epoch_seconds: 1789978253
-  single_target_demolisher:
+  demolisher:
     submissions: 9586
     listed: 12877
     scored_at_epoch_seconds: 1789978255

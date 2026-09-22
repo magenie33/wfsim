@@ -298,17 +298,17 @@ mod page_row_tests {
             .iter()
             .map(|b| family(&b.id))
             .collect();
-        assert!(live.contains("single_target"), "the roster has its primary ruler: {live:?}");
+        assert!(live.contains("standard_single_target"), "the roster has its primary ruler: {live:?}");
 
         // ANOTHER LIVE RULER IS CARRIED — the whole reason this pass reads the
         // file back rather than truncating it.
-        for other in live.iter().filter(|b| **b != "single_target") {
-            assert!(carried(Some(other), "single_target", &live), "{other} was dropped");
+        for other in live.iter().filter(|b| **b != "standard_single_target") {
+            assert!(carried(Some(other), "standard_single_target", &live), "{other} was dropped");
         }
         // THIS RULER'S ARE NOT: they are replaced from the facts.
-        assert!(!carried(Some("single_target"), "single_target", &live));
+        assert!(!carried(Some("standard_single_target"), "standard_single_target", &live));
         // …AND NEITHER IS ANOTHER VERSION OF IT, which is what `family` is for.
-        assert!(!carried(Some("single_target_v2"), "single_target", &live));
+        assert!(!carried(Some("standard_single_target_v2"), "standard_single_target", &live));
 
         // A RETIRED RULER GOES, whichever ruler is being assembled.
         assert!(!live.contains("single_target_no_aim"), "it was retired");
@@ -321,7 +321,7 @@ mod page_row_tests {
 
         // A ROW THIS PASS CANNOT READ IS CARRIED. Dropping what it cannot parse
         // would lose rows to a shape change rather than to a retirement.
-        assert!(carried(None, "single_target", &live));
+        assert!(carried(None, "standard_single_target", &live));
     }
 
     /// WHAT IS PUBLISHED, READ FROM DISK. `site/board/` is outside `data/`, so
@@ -464,7 +464,7 @@ mod page_row_tests {
     #[test]
     fn a_riven_row_carries_its_riven_to_the_page() {
         let v = page_row(
-            "single_target",
+            "standard_single_target",
             &row(Some(RowRiven {
                 bonuses: vec!["critical_chance".into(), "multishot".into()],
                 malus: Some("zoom".into()),
@@ -488,7 +488,7 @@ mod page_row_tests {
     /// every local build dirty.
     #[test]
     fn a_plain_row_omits_the_key_entirely() {
-        let v = page_row("single_target", &row(None));
+        let v = page_row("standard_single_target", &row(None));
         assert!(v.get("riven").is_none(), "{v}");
         // …and the fields a page reads by name are all still there, so the
         // extraction did not quietly drop one of the other eight.

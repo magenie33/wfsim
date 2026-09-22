@@ -1,7 +1,7 @@
 # THE OFFICIAL TEST SCENARIO — one ruler, every weapon.
 #
 # A benchmark exists so a number has a meaning. "120k DPS" says nothing on its
-# own; "0.87 KPM on single_target" is a reading anyone can reproduce, on
+# own; "0.87 KPM on standard_single_target" is a reading anyone can reproduce, on
 # their own machine, with the same engine that produced it.
 #
 # WHY THIS FILE MENTIONS NO WEAPON, AND MAY NOT.
@@ -30,7 +30,7 @@
 # contain any weapon, mod, arcane or evolution id, nor a named weapon form.
 # Adding weapon 201 therefore cannot require editing this file — it has no
 # place to say anything wrong about it.
-id: single_target
+id: standard_single_target
 # THE RULER A READER MEETS FIRST — the board opens on it and a first-time
 # visitor's default scenario is its fight. DECLARED, never taken from path
 # order, which stops being the same thing the moment a second ruler arrives.
@@ -39,9 +39,9 @@ primary: true
 # The name states the whole definition, because a benchmark whose terms are
 # hidden in a tooltip is one nobody can argue with. Order is deliberate: what
 # distinguishes it from a future second ruler comes FIRST (single target, as
-# against a group-clear benchmark), then the target, then the two measurement
+# against a multi-target benchmark), then the target, then the two measurement
 # terms. Truncation therefore eats the least identifying part.
-name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
+name: "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 
 # NO VERSION NUMBER. There is one board, it is regenerated
 # whole whenever this file or the engine changes, and what is deployed is always
@@ -107,7 +107,7 @@ scenario:
   # A single Thrax target (faction Unknown) at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated
   # against, not because it is the only fight worth having — a second ruler
-  # (group clear) is expected to exist alongside this one rather than replace
+  # (multi target) is expected to exist alongside this one rather than replace
   # it, which is why "single target" is the first thing the name says.
   enemy: thrax_centurion
   level: 9999
@@ -134,7 +134,7 @@ scenario:
   # It is not a hidden favour to the nineteen weapons that list a falloff. A
   # board row is the weapon at its best effort — every Forma, every tier, every
   # arcane seat — and the range a shotgun is best at is the one it was designed
-  # for. A GROUP-CLEAR ruler is where a distance belongs, beside the enemy
+  # for. A MULTI-TARGET ruler is where a distance belongs, beside the enemy
   # count it comes with.
   # 0.5 m = CONTACT, twice the 0.25 m body radius (`space::CONTACT_RANGE_M`),
   # which is as close as two circles go. It was 0 for the

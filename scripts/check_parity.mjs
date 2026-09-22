@@ -291,7 +291,7 @@ const AXES = await app.evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   // A weapon that HAS every axis, so nothing is missing for want of a subject.
   history.pushState({}, '', weaponPath('kuva_nukor')); route(); await s(2500);
-  const sc = builtinScenarios().find(x => x.builtin === 'single_target');
+  const sc = builtinScenarios().find(x => x.builtin === 'standard_single_target');
   pickPreset(scenarioBarCfg(), presetId(sc)); await s(900);
   return { build: Object.keys(snapshotState()), payload: Object.keys(boardPayload() || {}) };
 })()`);

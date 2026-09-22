@@ -704,7 +704,7 @@ pub(super) fn spread_from_punch_through(
         // ramp — the aimed path has said so since ranges were modelled, and
         // this path never asked at all: the gate was computed once off the
         // AIMED body's gap and every body behind it was punched through
-        // whatever distance it stood at. On the group-clear ruler that is a
+        // whatever distance it stood at. On the multi-target ruler that is a
         // Phantasma Prime's 25 m beam reaching all nineteen ranks, the last of
         // them 54.4 m away — and it is the whole of why a beam-range card was
         // worth nothing in a crowd.

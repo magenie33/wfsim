@@ -1267,18 +1267,18 @@ mod the_demolisher_ruler {
         // A NEW RULER MUST NOT BECOME THE ONE THE APP OPENS ON. `all()` sorts
         // the primary to the front and leaves the rest in path order, and the
         // page seeds both the board view and a first visitor's SCENARIO from
-        // the first entry — which is how adding `group_clear.yaml` once put
+        // the first entry — which is how adding `standard_multi_target.yaml` once put
         // every newcomer in a 361-body fight. Alphabetically this file lands
-        // between `single_target` and `single_target_no_aim`, so the guard is
+        // between `standard_single_target` and `single_target_no_aim`, so the guard is
         // worth an assertion rather than a reading of the filename.
         let order: Vec<&str> = wfsim_engine::board::benchmarks::all()
             .iter()
             .map(|b| b.id.as_str())
             .collect();
-        assert_eq!(order.first(), Some(&"single_target"), "order: {order:?}");
-        assert!(order.contains(&"single_target_demolisher"), "order: {order:?}");
+        assert_eq!(order.first(), Some(&"standard_single_target"), "order: {order:?}");
+        assert!(order.contains(&"demolisher"), "order: {order:?}");
 
-        let (aimed, demo) = (of("single_target"), of("single_target_demolisher"));
+        let (aimed, demo) = (of("standard_single_target"), of("demolisher"));
         let get = |s: &serde_norway::Value, k: &str| s.get(k).cloned();
 
         assert_eq!(

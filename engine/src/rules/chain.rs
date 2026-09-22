@@ -653,7 +653,7 @@ mod tests {
 
     /// THE BOARD'S OWN GEOMETRY, counted rather than reasoned about.
     ///
-    /// The group-clear ruler stands the shooter at CONTACT with the middle body
+    /// The multi-target ruler stands the shooter at CONTACT with the middle body
     /// of the front rank — 0.4 m — and a 10 degree cone from there covers the
     /// column ahead and nothing beside it. Three beams down one line is still
     /// three beams: the paths are independent, `seen` is per seed, and a body

@@ -117,7 +117,7 @@ jobs:
                 code=$?
                 # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
                 # three rankings and they differ sixfold in cost —
-                # single_target settles in an hour where group_clear takes
+                # standard_single_target settles in an hour where standard_multi_target takes
                 # six — so an incomplete one may not hold a complete one back.
                 if [ "$code" = "2" ]; then
                   echo "::notice::$id is not complete yet — left as it was"

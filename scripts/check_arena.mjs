@@ -233,7 +233,7 @@ const r = await evaluate(`(async () => {
   // picker instead of guessing at its markup.
   // The official rulers are BUILTINS and are not in the user's preset list —
   // they are addressed by their own id, which is the benchmark's.
-  pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
+  pickPreset(scenarioBarCfg(), 'standard_single_target'); await sleep(1800);
   out.officialDistance = gap();
   // WHAT THE PAGE THINKS A BODY IS, and where it got it: the engine serves it
   // at /api/meta.body_radius_m and the arena adopts it. A page that kept its

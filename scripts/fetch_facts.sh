@@ -136,9 +136,9 @@ for a in "$@"; do
 done
 off=$(printf '%s' "$body" | jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"single_target",mode:"base",measured_by:"abc",score:1.5,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"standard_single_target",mode:"base",measured_by:"abc",score:1.5,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
 else
-  jq -n -c '{result:[{results:[{identity:"last",ruler:"single_target",mode:"base",measured_by:"abc",score:9.0,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{identity:"last",ruler:"standard_single_target",mode:"base",measured_by:"abc",score:9.0,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
 fi
 printf '200'
 PAGES

@@ -828,18 +828,18 @@ fn complete_means_something_different_on_every_weapon() {
         .collect();
     assert_eq!(mods.len(), MAIN_SLOTS, "the pool can fill a build");
     let arc = vec!["primary_merciless".to_string()];
-    let ok = validate_for_board("single_target", "gotva_prime", &mods, &[], &arc, "");
+    let ok = validate_for_board("standard_single_target", "gotva_prime", &mods, &[], &arc, "");
     assert!(ok.is_ok(), "a full rifle build is admitted: {ok:?}");
 
     // ...and the same build with the arcane seat empty is not.
     let none = vec!["none".to_string()];
-    let err = validate_for_board("single_target", "gotva_prime", &mods, &[], &none, "")
+    let err = validate_for_board("standard_single_target", "gotva_prime", &mods, &[], &none, "")
         .unwrap_err();
     assert!(err.contains("arcane"), "the reason names the axis: {err}");
 
     // One mod short is refused on the MOD axis, not the arcane one.
     let short = &mods[..MAIN_SLOTS - 1];
-    let err = validate_for_board("single_target", "gotva_prime", short, &[], &arc, "")
+    let err = validate_for_board("standard_single_target", "gotva_prime", short, &[], &arc, "")
         .unwrap_err();
     assert!(err.contains("main slots"), "{err}");
 
@@ -851,7 +851,7 @@ fn complete_means_something_different_on_every_weapon() {
         .take(MAIN_SLOTS)
         .map(|m| m.id.to_string())
         .collect();
-    let err = validate_for_board("single_target", "boar_prime", &bp, &[],
+    let err = validate_for_board("standard_single_target", "boar_prime", &bp, &[],
                                  &["primary_crux".to_string()], "")
         .unwrap_err();
     assert!(err.contains("evolution"), "{err}");
@@ -931,13 +931,13 @@ fn a_full_adversary_build_is_admissible() {
                 .map_or("none".to_string(), |a| a.id.to_string())
         })
         .collect();
-    let ok = validate_for_board("single_target", "kuva_nukor", &mods, &[], &arc, "heat");
+    let ok = validate_for_board("standard_single_target", "kuva_nukor", &mods, &[], &arc, "heat");
     assert!(ok.is_ok(), "a full adversary build is admitted: {ok:?}");
     assert_eq!(ok.unwrap().valence, "heat");
 
     // ...and the ruler's own `valence: full` still bites, now from one
     // layer down: the same build with no element is refused.
-    let e = validate_for_board("single_target", "kuva_nukor", &mods, &[], &arc, "").unwrap_err();
+    let e = validate_for_board("standard_single_target", "kuva_nukor", &mods, &[], &arc, "").unwrap_err();
     assert!(e.contains("Valence"), "{e}");
 }
 
@@ -967,7 +967,7 @@ fn the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots() {
     ];
     let go = |mods: Vec<String>, evos: Vec<String>, arcs: Vec<String>, ex: Option<&str>| {
         validate_for_board_with(
-            "group_clear", "praedos", &mods, &evos, &arcs, "", None, ex, None,
+            "standard_multi_target", "praedos", &mods, &evos, &arcs, "", None, ex, None,
         )
     };
     let arc = || s(&["melee_influence"]);
@@ -1042,20 +1042,20 @@ fn a_weapon_seats_its_own_slots_arcanes() {
         })
         .collect();
     let ok = validate_for_board(
-        "single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
+        "standard_single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
         &["secondary_deadhead".to_string()], "");
     assert!(ok.is_ok(), "a secondary seats a secondary arcane: {ok:?}");
 
     // ...and it does NOT seat a primary one.
     let e = validate_for_board(
-        "single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
+        "standard_single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
         &["primary_deadhead".to_string()], "")
     .unwrap_err();
     assert!(e.contains("not an arcane"), "{e}");
 
     // A sentinel weapon seats none, so any arcane at all is refused.
     let e = validate_for_board(
-        "single_target", "verglas_prime", &mods("verglas_prime"), &[],
+        "standard_single_target", "verglas_prime", &mods("verglas_prime"), &[],
         &["primary_crux".to_string()], "")
     .unwrap_err();
     assert!(e.contains("seats 0") || e.contains("not an arcane"), "{e}");

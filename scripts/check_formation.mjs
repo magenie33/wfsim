@@ -338,7 +338,7 @@ const r = await evaluate(`(async () => {
   out.aimCleared = theFight().aim_at === null;
 
   // 7. AN OFFICIAL RULER CANNOT BE GIVEN A CROWD.
-  pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
+  pickPreset(scenarioBarCfg(), 'standard_single_target'); await sleep(1800);
   out.official = officialScenarioActive();
   const n0 = (sim.formation || []).length;
   // THE PLACE TOOL IS DISABLED and painting writes nothing — the tool is what

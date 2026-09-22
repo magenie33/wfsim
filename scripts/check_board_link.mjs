@@ -121,7 +121,7 @@ const r = await evaluate(`(async () => {
   //
   // This was injection-only, and the injection went wrong the day the board
   // stopped needing it: the Larkspur Prime now holds a REAL alternate-fire row
-  // under single_target, so a synthetic second-mode row landed beside it, the
+  // under standard_single_target, so a synthetic second-mode row landed beside it, the
   // rendered mode= link resolved to the REAL leader, and the check compared
   // that leader's build against the base row it had copied. It reported a
   // one-mod difference and blamed the link.

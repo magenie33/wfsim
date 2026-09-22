@@ -145,10 +145,10 @@ const r = await evaluate(`(async () => {
   // but a button reading Simulating... for half a minute is reported as a
   // hang, and it should be.
   {
-    const ruler = scenarioList().find((p) => presetId(p) === 'group_clear');
+    const ruler = scenarioList().find((p) => presetId(p) === 'standard_multi_target');
     if (ruler) {
       const cfg = scenarioBarCfg();
-      cfg.setActive('group_clear');
+      cfg.setActive('standard_multi_target');
       cfg.apply(ruler.state);
       renderSim();
       await sleep(1500);
@@ -203,7 +203,7 @@ const r = await evaluate(`(async () => {
   // check a flag at, so the worker is TERMINATED — instant, and costs nothing
   // to recover from since a sim carries no state between calls.
   {
-    const ruler = scenarioList().find((p) => presetId(p) === 'group_clear');
+    const ruler = scenarioList().find((p) => presetId(p) === 'standard_multi_target');
     if (ruler) {
       setSimRuns(4000);
       document.getElementById('run-sim').click();

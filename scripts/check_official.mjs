@@ -136,7 +136,7 @@ for (const lang of ["en", "zh"]) {
   check("it offers a copy and nothing that would edit it", r.chipFound && r.chipMarked);
   check("...in the BENCHMARK bar, not yours", r.barVisible && r.notInOwnBar);
   check("opening it makes it the active fight", r.isOfficial === true, r.active);
-  // 180 s since 2026-08-10, down from 300 — see data/benchmarks/single_target.yaml
+  // 180 s since 2026-08-10, down from 300 — see data/benchmarks/standard_single_target.yaml
   // for the argument, which cuts both ways and is why the number moved.
   check("...and that fight is the benchmark's", r.level === 9999 && r.duration === 180 && r.metric === "kpm" && r.enemy === "thrax_centurion",
     `lv ${r.level}, ${r.duration}s, ${r.metric}, ${r.enemy}`);
@@ -174,7 +174,7 @@ const BUILDS_PROBE = `(async () => {
   // whatever the board happens to hold on the day — a check that only works
   // while data exists stops testing the moment the data is cleared, which is
   // exactly what happened when the seed was removed.
-  const inject = { benchmark: 'single_target', score: 1.2345,
+  const inject = { benchmark: 'standard_single_target', score: 1.2345,
                    mods: ['serration','split_chamber','point_strike'],
                    evolutions: [], arcanes: ['none'] };
   BOARD = { torid: [inject] };     // the runtime board, as /board.json would give it
@@ -455,7 +455,7 @@ check("...carrying the BUILD and no score",
     ["arcanes","benchmark","evolutions","exilus","grip","loader","mode","mods",
      "riven_neg","riven_pos","valence","weapon"]) && c.sentHasScore === false,
   JSON.stringify(c.sentKeys));
-check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
+check("...against the official benchmark", c.sentBenchmark === "standard_single_target", String(c.sentBenchmark));
 // ...and the mode is the one on screen, not a default the scorer guessed.
 check("...and the mode it was played in", !!c.sentMode && c.sentMode === c.modeOnScreen,
   `sent ${JSON.stringify(c.sentMode)}, on screen ${JSON.stringify(c.modeOnScreen)}`);
@@ -490,7 +490,7 @@ for (const id of qc.ids || []) {
 //
 // It compared headshot_pct and aiming, which was the whole difference between
 // the two rulers that existed when it was written and stopped being one the day
-// a third arrived: group_clear differs from single_target by its FORMATION —
+// a third arrived: standard_multi_target differs from standard_single_target by its FORMATION —
 // 361 bodies against one — and matches it on both of the fields this named, so
 // the check failed for a ruler that is as distinct as a ruler can be. The expected value is now the fight ITSELF, which is the same
 // rule check_one_fight rests on: a check about "the fight" that holds a list of

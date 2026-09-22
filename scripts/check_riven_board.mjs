@@ -31,8 +31,8 @@ const setup = `
   history.pushState({}, '', '/weapons/Torid'); route();
   await new Promise(r => setTimeout(r, 4500));
   const id = $('weapon').value;
-  const rows = (BOARD[id] || []).filter(r => r.benchmark === 'single_target');
-  if (!rows.length) return { error: 'no single_target rows for ' + id };
+  const rows = (BOARD[id] || []).filter(r => r.benchmark === 'standard_single_target');
+  if (!rows.length) return { error: 'no standard_single_target rows for ' + id };
   const best = rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]);
   // A RIVEN ROW BEATING THE PLAIN LEADER, which is the case the "no riven"
   // view exists for: under "all builds" it hides the plain one.
@@ -58,8 +58,8 @@ const views = await evaluate(`(async () => {
   const seen = {};
   for (const v of ['all', 'plain', 'riven']) {
     benchRivenView = v;
-    const e = benchEntries('single_target').find(x => x.w.id === id && x.mode === 'cycle')
-           || benchEntries('single_target').find(x => x.w.id === id);
+    const e = benchEntries('standard_single_target').find(x => x.w.id === id && x.mode === 'cycle')
+           || benchEntries('standard_single_target').find(x => x.w.id === id);
     seen[v] = e && e.row ? { score: e.row.score, riven: !!e.row.riven } : null;
   }
   benchRivenView = 'all';
@@ -86,7 +86,7 @@ check("...`riven only` shows the riven build",
 const picker = await evaluate(`(async () => {
   ${setup}
   const bs = builtinBuilds();
-  const mine = bs.filter(b => b.benchmark === 'single_target');
+  const mine = bs.filter(b => b.benchmark === 'standard_single_target');
   const riven = mine.filter(b => b.board && b.board.riven);
   const plain = mine.filter(b => !(b.board && b.board.riven));
   return {
@@ -221,7 +221,7 @@ const plain = await evaluate(`(async () => {
   await new Promise(r => setTimeout(r, 4000));
   const id = $('weapon').value;
   const before = loadPresetList(RIVENS).length;
-  const entry = builtinBuilds().find(b => b.benchmark === 'single_target');
+  const entry = builtinBuilds().find(b => b.benchmark === 'standard_single_target');
   if (entry) { restoreState(entry.state, id); await new Promise(r => setTimeout(r, 800)); }
   return {
     took: !!entry,

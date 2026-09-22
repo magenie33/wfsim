@@ -1,6 +1,6 @@
 # THE THIRD RULER — the aimed single-target fight, against a Demolisher.
 #
-# `single_target.yaml` is the full definition and the reasoning behind every
+# `standard_single_target.yaml` is the full definition and the reasoning behind every
 # term; this file is that fight with the TARGET changed, and it says only what
 # is different. Read them together, not this one alone.
 #
@@ -32,9 +32,9 @@
 #
 # TWO TERMS DIFFER FROM THE AIMED BOARD AND NO MORE: `enemy` and `squad_size`.
 # A third unnamed difference between them would be a bug, not a ruler.
-id: single_target_demolisher
+id: demolisher
 
-name: "Single Target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM"
+name: "Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM"
 
 rules:
   # MECHANICAL LANGUAGE, AND NO WEAPON IN IT — the standard all three rulers are
@@ -84,7 +84,7 @@ scenario:
   squad_size: 4
 
   # POINT BLANK, and the SAME value as the aimed board's — see
-  # `single_target.yaml` for the argument. A Demolisher is fought in a corridor.
+  # `standard_single_target.yaml` for the argument. A Demolisher is fought in a corridor.
   player_at: [0, 0]
   target_at: [0, 0.5]
   duration: 180

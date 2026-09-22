@@ -370,14 +370,14 @@ mod entry_line_tests {
             Entry("lead", "torid", false),
         ]);
         let cross = vec![
-            fact("lead", "single_target", "base", 100.0),
-            fact("lead", "group_clear", "base", 100.0),
+            fact("lead", "standard_single_target", "base", 100.0),
+            fact("lead", "standard_multi_target", "base", 100.0),
             // Bad on the board it was sent to, and a fifth of the leader on
             // the other one — which is the case the fan-out exists for.
-            fact("good", "single_target", "base", 1.0),
-            fact("good", "group_clear", "base", 20.0),
-            fact("junk", "single_target", "base", 1.0),
-            fact("junk", "group_clear", "base", 2.0),
+            fact("good", "standard_single_target", "base", 1.0),
+            fact("good", "standard_multi_target", "base", 20.0),
+            fact("junk", "standard_single_target", "base", 1.0),
+            fact("junk", "standard_multi_target", "base", 2.0),
         ];
         let mut pending = vec![
             ("good".to_string(), "cycle".to_string()),
@@ -494,8 +494,8 @@ mod entry_line_tests {
         // …AND THE DEFAULT IS UNDER THE LINE: the riven is not on the board,
         // so which of its corners is best is a question with no reader.
         let cross = vec![
-            fact("lead", "single_target", "base", 1000.0),
-            fact("default", "single_target", "base", 1.0),
+            fact("lead", "standard_single_target", "base", 1000.0),
+            fact("default", "standard_single_target", "base", 1.0),
         ];
         let mut pending = vec![("corner".to_string(), "base".to_string())];
         park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &corner_of);
@@ -503,8 +503,8 @@ mod entry_line_tests {
 
         // …AND ONCE THE DEFAULT CLEARS IT, the corner is worth measuring.
         let cross = vec![
-            fact("lead", "single_target", "base", 1000.0),
-            fact("default", "single_target", "base", 900.0),
+            fact("lead", "standard_single_target", "base", 1000.0),
+            fact("default", "standard_single_target", "base", 900.0),
         ];
         let mut pending = vec![("corner".to_string(), "base".to_string())];
         let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &corner_of);
@@ -532,8 +532,8 @@ mod entry_line_tests {
             Entry("plain", "laetum", false),
         ]);
         let cross = vec![
-            fact("carded", "single_target", "base", 1000.0),
-            fact("plain", "single_target", "base", 50.0),
+            fact("carded", "standard_single_target", "base", 1000.0),
+            fact("plain", "standard_single_target", "base", 50.0),
         ];
         let mut pending = vec![("plain".to_string(), "alternate".to_string())];
         let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &Default::default());

@@ -692,10 +692,10 @@ mod tests {
         let asked = asked_of(vec![row(
             "a",
             &FULL,
-            json!({ "benchmark": "group_clear", "mode": "cycle" }),
+            json!({ "benchmark": "standard_multi_target", "mode": "cycle" }),
         )]);
         assert_eq!(asked.len(), 1, "one arrival, one fight");
-        assert_eq!(asked[0]["ruler"], "group_clear");
+        assert_eq!(asked[0]["ruler"], "standard_multi_target");
         assert_eq!(asked[0]["mode"], "cycle");
     }
 
@@ -705,9 +705,9 @@ mod tests {
     #[test]
     fn one_fight_per_build_ruler_and_mode() {
         let asked = asked_of(vec![
-            row("a", &FULL, json!({ "benchmark": "group_clear", "mode": "cycle" })),
-            row("b", &FULL, json!({ "benchmark": "group_clear", "mode": "cycle" })),
-            row("c", &FULL, json!({ "benchmark": "single_target", "mode": "cycle" })),
+            row("a", &FULL, json!({ "benchmark": "standard_multi_target", "mode": "cycle" })),
+            row("b", &FULL, json!({ "benchmark": "standard_multi_target", "mode": "cycle" })),
+            row("c", &FULL, json!({ "benchmark": "standard_single_target", "mode": "cycle" })),
         ]);
         assert_eq!(asked.len(), 2, "{asked:?}");
     }
@@ -721,7 +721,7 @@ mod tests {
         let asked = asked_of(vec![row(
             "a",
             &FULL,
-            json!({ "benchmark": "single_target", "mode": "transformed" }),
+            json!({ "benchmark": "standard_single_target", "mode": "transformed" }),
         )]);
         assert_eq!(asked.len(), 1);
         let modes: Vec<String> = wfsim_engine::data::weapons::play_modes("torid")
@@ -747,16 +747,16 @@ mod tests {
     }
 
     /// **AN OLDER VERSION OF A LIVE RULER IS THAT RULER.** Records in the store
-    /// name `single_target_v1`, and a build aimed at it belongs on the current
+    /// name `standard_single_target_v1`, and a build aimed at it belongs on the current
     /// one's board — the same `_vN` rule the scorer applies.
     #[test]
     fn an_older_version_of_a_ruler_asks_for_the_current_one() {
         let asked = asked_of(vec![row(
             "a",
             &FULL,
-            json!({ "benchmark": "single_target_v1", "mode": "base" }),
+            json!({ "benchmark": "standard_single_target_v1", "mode": "base" }),
         )]);
         assert_eq!(asked.len(), 1, "{asked:?}");
-        assert_eq!(asked[0]["ruler"], "single_target");
+        assert_eq!(asked[0]["ruler"], "standard_single_target");
     }
 }

@@ -174,7 +174,7 @@ self_test() {
   cd "$DIR/work"
 
   row() {
-    printf '{"identity":"%s","ruler":"single_target","mode":"%s","measured_by":"abc","score":%s,"metric":"kpm","cost_seconds":1.5,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
+    printf '{"identity":"%s","ruler":"standard_single_target","mode":"%s","measured_by":"abc","score":%s,"metric":"kpm","cost_seconds":1.5,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
   }
   row 'a|b' base 1.0 > facts.ndjson
   row 'a|b' heavy_slam 2.0 >> facts.ndjson

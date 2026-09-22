@@ -342,7 +342,7 @@ Gotva Prime — sees none of it.
 
 **`bodies=361 spacing=3` STANDS THE RULER'S CROWD THERE**, unkillable, and
 `arcanes=` seats what the row wears. The rows that set this board's makespan are
-all group-clear ones and a build pays 141x there what it pays against one body,
+all multi-target ones and a build pays 141x there what it pays against one body,
 so a table taken against the fixture alone profiles the cheap 0.7% of the
 weapon. It is off by default: every saved baseline and every golden value was
 measured against one body.

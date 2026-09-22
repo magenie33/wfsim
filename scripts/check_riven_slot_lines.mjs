@@ -23,7 +23,7 @@ await evaluate("localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')")
 // The riven parameter rides WITH a bench link — that is the shape the board
 // hands out, and the only one that seeds a riven on arrival.
 await send("Page.navigate", {
-  url: `${BASE}/weapons/Ballistica_Prime?bench=single_target&riven=1`,
+  url: `${BASE}/weapons/Ballistica_Prime?bench=standard_single_target&riven=1`,
 });
 await sleep(14000);
 

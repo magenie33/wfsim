@@ -623,7 +623,7 @@ function sharePayload() {
 
   // A NAME THE SHARER CHOSE TRAVELS; A MACHINE-GENERATED ONE DOES NOT — and
   // "+ new"'s `build 1` is as machine-generated as a board build's
-  // `single_target#cycle#p#1`. Neither means anything to the person opening the
+  // `standard_single_target#cycle#p#1`. Neither means anything to the person opening the
   // link, `importShare` names an unnamed build anyway, and `build 1` was the
   // more expensive of the two: its SPACE is outside the compact form's
   // alphabet, so every ordinary link paid 2.5x for a name nobody chose.

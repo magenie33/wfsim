@@ -20,7 +20,7 @@ const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
 
 await evaluate("localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')");
-await send("Page.navigate", { url: `${BASE}/weapons/Praedos?bench=group_clear` });
+await send("Page.navigate", { url: `${BASE}/weapons/Praedos?bench=standard_multi_target` });
 await sleep(15000);
 
 const r = await evaluate(`(async () => {

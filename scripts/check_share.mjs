@@ -261,7 +261,7 @@ check("...and the sender's measurement did not land", bo.landedResult === false)
   const enc = await evaluate(`(async () => {
     const s = (ms) => new Promise(r => setTimeout(r, ms));
     localStorage.clear();
-    history.pushState({}, '', '/weapons/Dual_Toxocyst?bench=single_target&mode=cycle&riven=1');
+    history.pushState({}, '', '/weapons/Dual_Toxocyst?bench=standard_single_target&mode=cycle&riven=1');
     route(); await s(4000);
     const out = { build: activePreset };
     out.hasRiven = slots.some(x => String(x.mod || '').startsWith('riven'));

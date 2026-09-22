@@ -124,7 +124,7 @@ struct Cfg<'a> {
     steel_path: bool,
     verbose: bool,
     /// HOW MANY BODIES STAND THERE. One is the fixture every golden value was
-    /// measured under; the group-clear ruler's crowd is 361, and the rows that
+    /// measured under; the multi-target ruler's crowd is 361, and the rows that
     /// cost this board its makespan are all in it. A cost table that can only
     /// be taken against one body cannot see where their time goes.
     bodies: usize,

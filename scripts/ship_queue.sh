@@ -140,7 +140,7 @@ self_test() {
 
   : > missing.ndjson
   for i in 1 2 3 4; do
-    jq -n -c --arg i "$i" '{build_id:("h"+$i),ruler:"single_target",mode:"base"}' >> missing.ndjson
+    jq -n -c --arg i "$i" '{build_id:("h"+$i),ruler:"standard_single_target",mode:"base"}' >> missing.ndjson
   done
 
   local first; first=$(queue_batches "arrivals" missing.ndjson | head -1)

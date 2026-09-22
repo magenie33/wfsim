@@ -100,8 +100,9 @@ const finder = {
 };
 
 /// A RULER'S NAME, SHORT: its first clause and the unit off its last one.
-/// "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM" -> "Single Target
-/// · Thrax Centurion", and "KPM". The whole name rides the tooltip.
+/// "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM" ->
+/// "Standard Single Target · Thrax Centurion", and "KPM". The whole name rides
+/// the tooltip.
 const rulerShort = (name) => {
   const parts = String(name || "").split(" · ");
   const second = (parts[1] || "").replace(/\s*(Lv\s*)?\d.*$/, "").trim();
@@ -516,7 +517,7 @@ function applyScenario(st) {
   // not mention holding the outgoing one's value — and a benchmark yaml
   // mentions only what it has an opinion about. Tick Eximus on a copy of the
   // official ruler, switch back to the official, and the official fight is
-  // now against an Eximus, because `single_target.yaml` never says `eximus:`. `invisible` did not leak in the same
+  // now against an Eximus, because `standard_single_target.yaml` never says `eximus:`. `invisible` did not leak in the same
   // test only because that yaml happens to state it.
   //
   // A scenario is therefore applied onto a COMPLETE fight — the server's

@@ -38,17 +38,17 @@ const FIXTURE = `(() => {
     riven: riven ? { bonuses: ["damage"], malus: null, rolls: [1.1] } : null,
   });
   BOARD[W] = [
-    // plain / single_target / base — leader 100, one row exactly on the line
-    row("single_target", "base", false, 100, "p100"),
-    row("single_target", "base", false, 50, "p50"),    // exactly half
-    row("single_target", "base", false, 49.9, "p49"),  // a hair under
-    row("single_target", "base", false, 10, "p10"),
+    // plain / standard_single_target / base — leader 100, one row exactly on the line
+    row("standard_single_target", "base", false, 100, "p100"),
+    row("standard_single_target", "base", false, 50, "p50"),    // exactly half
+    row("standard_single_target", "base", false, 49.9, "p49"),  // a hair under
+    row("standard_single_target", "base", false, 10, "p10"),
     // riven rows of the SAME ruler and mode: a group of their own
-    row("single_target", "base", true, 400, "r400"),
-    row("single_target", "base", true, 210, "r210"),   // 52% of its own leader
+    row("standard_single_target", "base", true, 400, "r400"),
+    row("standard_single_target", "base", true, 210, "r210"),   // 52% of its own leader
     // …and a group that scored nothing at all
-    row("group_clear", "base", false, 0, "z1"),
-    row("group_clear", "base", false, 0, "z2"),
+    row("standard_multi_target", "base", false, 0, "z1"),
+    row("standard_multi_target", "base", false, 0, "z2"),
   ];
   builtinMemo = null;
   return BOARD[W].length;
@@ -90,7 +90,7 @@ check("the line is per group, so the riven leader does not empty the plain list"
 const ranksAt = (d) => evaluate(`(() => {
   setBoardDepth(${d});
   builtinMemo = null;
-  return builtinBuilds().filter((b) => !b.riven && b.benchmark === "single_target")
+  return builtinBuilds().filter((b) => !b.riven && b.benchmark === "standard_single_target")
     .map((b) => b.rank + ":" + b.board.score).join(",");
 })()`);
 const rHalf = await ranksAt(0.5);

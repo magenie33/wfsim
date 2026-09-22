@@ -116,7 +116,7 @@ for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
 n=$(cat "$PWD/page.n" 2>/dev/null || echo 0)
 echo $((n + 1)) > "$PWD/page.n"
 if [ "$n" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{batch:"arrivals",build_id:("b"+(.|tostring)),ruler:"single_target",mode:"base"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{batch:"arrivals",build_id:("b"+(.|tostring)),ruler:"standard_single_target",mode:"base"}],success:true}],success:true}' > "$out"
 else
   jq -n -c '{result:[{results:[],success:true}],success:true}' > "$out"
 fi

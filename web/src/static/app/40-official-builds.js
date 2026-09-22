@@ -578,7 +578,7 @@ const builtinBuildsUncached = (w) => {
   //
   // It was the published file's order, which is the scorer's, and that was
   // indistinguishable from "the primary ruler first" until a second ruler took
-  // rows: a cold load then restored a GROUP-CLEAR build under a weapon page,
+  // rows: a cold load then restored a MULTI-TARGET build under a weapon page,
   // which is not the row a first-time reader is looking at.
   const order = (id) => {
     const i = benchList().findIndex((b) => b.id === id);

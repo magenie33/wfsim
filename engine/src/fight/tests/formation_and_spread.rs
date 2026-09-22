@@ -1184,7 +1184,7 @@ fn ardent_trigger_buys_draw_speed_and_only_against_a_column() {
 ///
 /// The gate was computed ONCE, off the aimed body's gap, and every body
 /// behind it was punched through at whatever distance it stood — so a 25 m
-/// beam reached the whole of the group-clear ruler's column, the last rank
+/// beam reached the whole of the multi-target ruler's column, the last rank
 /// 54.4 m away, and a beam-range card bought nothing in a crowd.
 ///
 /// A COUNT, not a total, for the reason the test above it gives: the
@@ -1356,7 +1356,7 @@ fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
 /// ModifiedBase carries the merge, which is what makes a damaging status
 /// *"affected twice by multishot"*. Every spread was handed the UNMERGED
 /// base, so a body a beam punched through took the same HIT and a DoT
-/// `beam_merge` times smaller — on the group-clear ruler the aimed Thrax
+/// `beam_merge` times smaller — on the multi-target ruler the aimed Thrax
 /// read twice the damage of the one standing behind it, out of a Toxin tick
 /// of 1778 against 32.6.
 ///

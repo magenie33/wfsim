@@ -14,7 +14,7 @@ number**. Everything else follows from it:
   gate was expensive: of 914 distinct builds players had sent, only 46 had ever
   been scored on more than one board. ANY fight can upload now, and a new ruler
   is scored from the library the day it lands rather than waiting for anyone to
-  resubmit. Measured on the first run after it landed: group_clear went from 106
+  resubmit. Measured on the first run after it landed: standard_multi_target went from 106
   published rows to 551, single_target_no_aim from 113 to 498;
 - **…AND EVERY MODE OF THE WEAPON IS SCORED FROM IT.** The mode a build was
   tuned for was never a property of the record either — mods are equipped on the
@@ -424,7 +424,7 @@ such commits, against a generation of 23,260 rows.
 The store made a run's work survive the run. It did not make a ROW survive one,
 and a row is where the tail lives: the board holds 35 rows costing over twenty
 minutes each and eight over an hour, against a schedule that fires every hour.
-0.4% of the rows are 20% of the group-clear bill.
+0.4% of the rows are 20% of the multi-target bill.
 
 A `--deadline` asked only before a row is dealt says when to stop TAKING rows
 and cannot touch one already in flight. **One row then sets the makespan**, and
@@ -522,7 +522,7 @@ thing.
 
 ```
 python scripts/board_select.py --element heat --delete
-python scripts/board_select.py --mod 'galvanized_*' --board single_target --plain
+python scripts/board_select.py --mod 'galvanized_*' --board standard_single_target --plain
 python scripts/board_select.py --weapon 'torid*' --mode cycle --rows
 ```
 
@@ -724,7 +724,7 @@ the builds away, storing builds would have bought nothing.
 
 `wfsim-board` still strips a trailing `_v<n>` when matching a record to a
 benchmark. That is a MIGRATION SHIM and nothing else: records already in the
-store name `single_target_v1`, and they are builds like any other.
+store name `standard_single_target_v1`, and they are builds like any other.
 
 The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty
@@ -1298,9 +1298,9 @@ three** — 1.00x / 1.50x / 2.17x — and it is a round number rather than one
 fitted to the mod pair: 1.45 m gives the same three-way split, so the answer is
 a band and 1.5 sits in it.
 
-## The group-clear ruler
+## The multi-target ruler
 
-`data/benchmarks/group_clear.yaml` — the second ruler, and the first that is
+`data/benchmarks/standard_multi_target.yaml` — the second ruler, and the first that is
 about a ROOM rather than a target. Its companion's name has said "Single
 Target" first since it was written, precisely so this could exist beside it.
 
@@ -1335,12 +1335,12 @@ could not have one, and now draws the ruler's real crowd.
 ### A second ruler broke two things that were the same thing
 
 The rulers were in PATH ORDER, and that was indistinguishable from "the primary
-one" while `single_target.yaml` sorted first. `group_clear.yaml` sorts before
+one" while `standard_single_target.yaml` sorted first. `standard_multi_target.yaml` sorts before
 it, so the board page opened on a brand-new EMPTY ranking — and, worse, every
 first-time visitor's default SCENARIO became a 361-body fight, because the app
 seeds the active scenario from the first builtin.
 
-`primary: true` on `single_target.yaml` is the declaration, and
+`primary: true` on `standard_single_target.yaml` is the declaration, and
 `board::benchmarks::all()` sorts on it, so both consumers inherit one answer
 rather than each carrying its own idea of which ruler leads.
 
@@ -1354,8 +1354,8 @@ exactly like one that exercised everything.
 
 ## Adding a ruler: what it costs (audited 2026-08-17)
 
-There will be many. `single_target` was alone for months, then a companion,
-then `group_clear` — so the chain was walked end to end asking what the FOURTH
+There will be many. `standard_single_target` was alone for months, then a companion,
+then `standard_multi_target` — so the chain was walked end to end asking what the FOURTH
 one would cost.
 
 **A ruler is a data file.** Nothing on the path holds a list of benchmark ids:
@@ -1370,8 +1370,8 @@ one would cost.
 | `site/board/` | a weapon's file holds every ruler's rows, so one replaces only its own |
 | the site build | globs `data/benchmarks/*.yaml` for the roster's files |
 
-**And the rules come with it.** `group_clear` refuses an incomplete build with
-the same words `single_target` does — "0 mods, and this benchmark wants all 8
+**And the rules come with it.** `standard_multi_target` refuses an incomplete build with
+the same words `standard_single_target` does — "0 mods, and this benchmark wants all 8
 main slots", "0 of 4 evolution tiers" — because `validate_for_board` reads the
 `build:` block out of the yaml. A new ruler's admission standard is written, not
 coded.
@@ -1559,13 +1559,13 @@ free 5M/day, and 107k writes against a free 100k/day.
 Every row records what it cost, so the bill can be read straight off the boards
 rather than estimated. READ AT 7,493 ROWS A RULER, across the three the board
 held then — `single_target_no_aim` has since been retired and
-`single_target_demolisher` has taken its place, and neither the row counts nor
+`demolisher` has taken its place, and neither the row counts nor
 the totals below have been re-read since:
 
 | ruler | rows | total | median row | worst row |
 | --- | --- | --- | --- | --- |
-| `group_clear` | 7,493 | **6,153 min** | 20.0 s | **121 min** |
-| `single_target` | 7,493 | 999 min | 3.6 s | 4.2 min |
+| `standard_multi_target` | 7,493 | **6,153 min** | 20.0 s | **121 min** |
+| `standard_single_target` | 7,493 | 999 min | 3.6 s | 4.2 min |
 | `single_target_no_aim` | 7,493 | 759 min | 2.6 s | 1.7 min |
 
 WHAT CARRIES IS THE SHAPE, not the figures: the bill is dominated by the ruler
@@ -1573,7 +1573,7 @@ with the most bodies in it, and a single-target ruler costs an order of
 magnitude less however many of them there are. That is a fact about 361 bodies
 against one, and it does not depend on which single-target rulers exist.
 
-**`group_clear` is 78% of it**, and inside that a handful of rows are the tail:
+**`standard_multi_target` is 78% of it**, and inside that a handful of rows are the tail:
 the top 100 rows of 7,493 are 31% of that ruler's bill, and thirteen of the
 top fifteen are one weapon (Phantasma, a status beam against 361 bodies for
 180 s). That is not a pathology to hunt — the cost of a row is how much the
@@ -1581,7 +1581,7 @@ build actually DOES, so the most expensive rows are the strongest builds on the
 biggest ruler. It is the makespan floor: one row is one indivisible unit, so no
 row-wise fan-out goes below the biggest row.
 
-**RIVEN ROWS ARE 58% of the `group_clear` bill on 33% of its rows** (mean 86 s
+**RIVEN ROWS ARE 58% of the `standard_multi_target` bill on 33% of its rows** (mean 86 s
 against 31 s), which is the corner search: sixteen probes at `PROBE_RUNS` plus
 one real measurement, ~2.6x a plain row.
 

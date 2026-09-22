@@ -240,7 +240,7 @@ takes it from the wiki; the cached name and the page's URL are the bare name.
 **A SIMULATION RUNS ON A WORKER FLEET.** The runs are INDEPENDENT given their
 index, so the page shards them across one worker per core (capped at eight)
 and the shards merge back into exactly what one worker would have produced.
-Measured on the group-clear ruler with the board's #1 Phantasma Prime build:
+Measured on the multi-target ruler with the board's #1 Phantasma Prime build:
 **85.7 s → 18.3 s**. THE ENABLER IS THE SEED — each run's dice are a pure
 function of `(seed, index)`. THE MERGE IS IN RUST, so there is one
 implementation of the arithmetic: the page schedules and collects,

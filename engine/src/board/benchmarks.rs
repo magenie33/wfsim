@@ -119,8 +119,8 @@ pub struct Benchmark {
     /// THE ONE A READER MEETS FIRST, and there is at most one.
     ///
     /// The rulers were in PATH ORDER and that was the same thing as "the
-    /// primary one" while `single_target.yaml` sorted first. Adding
-    /// `group_clear.yaml` broke it in two places at once: the
+    /// primary one" while `standard_single_target.yaml` sorted first. Adding
+    /// `standard_multi_target.yaml` broke it in two places at once: the
     /// board page opened on a brand-new EMPTY ranking, and — worse — every
     /// first-time visitor's default SCENARIO became a 361-body fight, because
     /// the app seeds the active scenario from the first builtin.
@@ -271,8 +271,8 @@ pub fn get(id: &str) -> Option<&'static Benchmark> {
     all().iter().find(|b| b.id == id)
 }
 
-/// A benchmark id without its `_v<n>` suffix — `single_target_v2` and
-/// `single_target_v1` are the same ruler, and a build aimed at
+/// A benchmark id without its `_v<n>` suffix — `standard_single_target_v2` and
+/// `standard_single_target_v1` are the same ruler, and a build aimed at
 /// either belongs on the current one's board.
 pub fn family(id: &str) -> &str {
     match id.rsplit_once("_v") {
@@ -376,9 +376,9 @@ mod tests {
     /// This test is where that gets noticed — not to forbid the change, but so
     /// it is made deliberately and the board is re-scored with it.
     #[test]
-    fn the_official_single_target_benchmark_is_what_we_published() {
-        let b = get("single_target").expect("data/benchmarks/single_target.yaml");
-        assert_eq!(b.name, "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM");
+    fn the_standard_single_target_benchmark_is_what_we_published() {
+        let b = get("standard_single_target").expect("data/benchmarks/standard_single_target.yaml");
+        assert_eq!(b.name, "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM");
         let s = |k: &str| b.scenario.get(k).cloned();
         assert_eq!(s("enemy").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("thrax_centurion"));
         assert_eq!(s("level").and_then(|v| v.as_u64()), Some(9999));
@@ -432,7 +432,7 @@ mod tests {
 
     /// A RULER'S PROSE QUOTES ITS OWN NUMBERS.
     ///
-    /// The spacing is written THREE times in `group_clear.yaml` — the machine
+    /// The spacing is written THREE times in `standard_multi_target.yaml` — the machine
     /// field `spacing_m`, the ruler's NAME, and the rule sentence a reader is
     /// shown — and on 2026-08-22 the field moved from 1.5 m to 3 m and the
     /// other two did not. The board went on saying "19x19 at 1.5 m" over a

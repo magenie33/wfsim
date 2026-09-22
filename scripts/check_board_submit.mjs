@@ -94,7 +94,7 @@ const post = async (body, db) =>
 // web/src/static/app/. An adversary weapon, because that is the case with the
 // most axes on it.
 const PAYLOAD = {
-  benchmark: "single_target_v1",
+  benchmark: "standard_single_target_v1",
   weapon: "kuva_nukor",
   mode: "base",
   mods: ["hornet_strike", "barrel_diffusion", "primed_target_cracker",
@@ -214,8 +214,8 @@ console.log("the board's submission endpoint\n");
 
 // ---- 5. A BENCHMARK THE WORKER HAS NEVER HEARD OF -------------------------
 //
-// THERE WILL BE MANY RULERS. `single_target` was alone for months, then a
-// companion, then `group_clear` — and the point of this block is
+// THERE WILL BE MANY RULERS. `standard_single_target` was alone for months, then a
+// companion, then `standard_multi_target` — and the point of this block is
 // that adding the FOURTH costs nothing here. The worker validates `benchmark`
 // as an ID and holds no LIST of them, which is what makes a ruler a data file
 // rather than a deploy; this asserts it stays that way.

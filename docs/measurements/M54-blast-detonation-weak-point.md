@@ -63,7 +63,7 @@ numbers on the host, ONE combined instance on the neighbours, which is the
 wiki's *"The radial damage of all procs will be combined into one damage
 instance"*.
 
-**WHAT IT SETTLED.** `data/benchmarks/group_clear.yaml` said "Nothing a chain, a
+**WHAT IT SETTLED.** `data/benchmarks/standard_multi_target.yaml` said "Nothing a chain, a
 blast or a cloud reaches can be a weak point hit" and the engine had never
 implemented that for a blast. The measurement says the ENGINE was right and the
 RULE TEXT was wrong, so the text changed. Worth 14.8× on the Larkspur Prime's
