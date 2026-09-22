@@ -147,7 +147,7 @@ pub(crate) fn park_under_entry_line(
 /// corners inside the ruler's own noise should read as a draw, and `scores`
 /// has a column for the number and none for its spread — so a near-tie falls
 /// to whichever came out higher, as every other near-tie here does.
-pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) {
+pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
     let shape_of = |r: &Row| {
         r.riven.as_ref().map(|v| (r.weapon.clone(), r.mode.clone(), v.bonuses.clone(), v.malus.clone()))
     };
@@ -169,10 +169,35 @@ pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) {
             .then(is_default(b).cmp(&is_default(a)))
     });
     let mut seen: std::collections::HashSet<_> = Default::default();
+    // WHICH BUILDS THIS DROPPED, and it has to say: a corner of a shape is a
+    // VALIDATED build that now produces no row, and `account` panics on a
+    // validated build it cannot place. The row went because its shape already
+    // has one, which is an answer about the build rather than a row going
+    // missing — the fifth outcome, beside listed, deferred, floored and
+    // refused. Silence here is what stopped the publisher for a day and a half.
+    let mut collapsed: std::collections::BTreeSet<String> = Default::default();
     kept.retain(|r| match shape_of(r) {
         None => true,
-        Some(k) => seen.insert(k),
+        Some(k) => {
+            let first = seen.insert(k);
+            if !first {
+                collapsed.insert(r.identity.clone());
+            }
+            first
+        }
     });
+    // …AND ONLY THE ONES THAT KEPT NOTHING. A build with a row under another
+    // mode is placed already, and reporting it here would hide a real hole.
+    let placed: std::collections::BTreeSet<&str> =
+        kept.iter().map(|r| r.identity.as_str()).collect();
+    collapsed.retain(|id| !placed.contains(id.as_str()));
+    if !collapsed.is_empty() {
+        eprintln!(
+            "one row per shape: {} build(s) are another corner of a shape already listed",
+            collapsed.len()
+        );
+    }
+    collapsed
 }
 
 /// THE ENTRY LINE, APPLIED ONCE, BY THE PASS THAT MEASURED THE RULER.
@@ -212,6 +237,7 @@ pub(crate) fn account(
     scored_ids: &std::collections::BTreeSet<String>,
     deferred_ids: &std::collections::BTreeSet<String>,
     floored_ids: &std::collections::BTreeSet<String>,
+    collapsed_ids: &std::collections::BTreeSet<String>,
     shards: usize,
     refused: usize,
 ) {
@@ -230,6 +256,9 @@ pub(crate) fn account(
                 // leader, which is an ANSWER about the build rather than a row
                 // going missing.
                 && !floored_ids.contains(id.as_str())
+                // …NOR ONE WHOSE SHAPE IS ALREADY LISTED UNDER ANOTHER CORNER.
+                // The row was dropped deliberately, by `one_row_per_shape`.
+                && !collapsed_ids.contains(id.as_str())
         })
         .collect();
     assert!(
@@ -239,9 +268,10 @@ pub(crate) fn account(
         &unaccounted[..unaccounted.len().min(5)],
     );
     eprintln!(
-        "accounted: {} published, {refused} refused at the door, {} under the entry line",
+        "accounted: {} published, {refused} refused at the door, {} under the entry line, {} another corner",
         listed.len(),
         floored_ids.len(),
+        collapsed_ids.len(),
     );
 }
 
@@ -462,6 +492,34 @@ mod entry_line_tests {
         ];
         one_row_per_shape(&mut kept);
         assert_eq!(kept.len(), 2, "two plain builds are two rows");
+    }
+
+    /// **A COLLAPSED CORNER IS ACCOUNTED FOR, NOT MISSING.** `account` panics
+    /// on a validated build that reached no row, which is what keeps a hole
+    /// from being published quietly — and a corner dropped for sharing its
+    /// shape with a listed one is not a hole. It stopped the publisher for a
+    /// day and a half, and the board a reader saw went stale with it.
+    #[test]
+    fn a_corner_dropped_for_its_shape_does_not_read_as_a_missing_row() {
+        let corner = |id: &str, score: f64, rolls: Vec<f64>| Row {
+            riven: Some(RowRiven {
+                bonuses: vec!["multishot".into()],
+                malus: Some("zoom".into()),
+                rolls,
+            }),
+            ..scored(id, "furis", "base", score, true)
+        };
+        let mut kept = vec![
+            corner("god", 100.0, vec![1.1, 0.9]),
+            corner("other", 140.0, vec![0.9, 0.9]),
+        ];
+        let collapsed = one_row_per_shape(&mut kept);
+        assert_eq!(collapsed.iter().collect::<Vec<_>>(), ["god"], "the dropped corner is named");
+        let every: std::collections::BTreeSet<String> =
+            ["god", "other"].iter().map(|s| (*s).to_string()).collect();
+        let none: std::collections::BTreeSet<String> = Default::default();
+        // Panics without the collapsed set, which is the bug this holds shut.
+        account(&kept, &every, &none, &none, &collapsed, 1, 0);
     }
 
     /// **AN ALTERNATIVE CORNER WAITS FOR ITS DEFAULT, AND IS THEN ASKED FOR.**

@@ -758,7 +758,7 @@ pub fn run() {
     // …AND ONE ROW PER RIVEN SHAPE, before the line is applied: the corners of
     // one shape are one piece of advice, and a group's leader is the same
     // number whichever of them carried it.
-    one_row_per_shape(&mut kept);
+    let collapsed_ids = one_row_per_shape(&mut kept);
 
     let floored_ids = apply_entry_line(&mut kept, shards);
 
@@ -832,7 +832,7 @@ pub fn run() {
         return;
     }
 
-    account(&kept, &scored_ids, &deferred_ids, &floored_ids, shards, refused);
+    account(&kept, &scored_ids, &deferred_ids, &floored_ids, &collapsed_ids, shards, refused);
 
     // WHAT THE PAGE FETCHES, and the only thing published: one file per weapon,
     // plus an INDEX of each group's leader for the one view that ranks across
