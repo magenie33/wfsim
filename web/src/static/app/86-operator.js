@@ -28,9 +28,14 @@ const opAArcane = (id) => (WFCAT && id && WFCAT.artifact_arcanes.find((a) => a.i
 const opBlank = () => opNormalize(null);
 /// The artifact stays with the build when the school changes: any artifact
 /// seats any school's card, and the page shows the one the school owns.
+///
+/// **A BUILD WITH NO SCHOOL IS THE FLOOR, NOT NOTHING.** Focus is one-way, so
+/// an account far enough in to have an Operator has picked one and cannot
+/// un-pick it — the engine reads an unlinked build as `operator_floor` and this
+/// is the same answer on the page, off the same served value.
 function opNormalize(st) {
   const s = st || {};
-  const school = focusSchool(s.school);
+  const school = focusSchool(s.school) || focusSchool(WFCAT.operator_floor);
   const art = s.artifact || {};
   const mods = Array.from({ length: WFCAT.artifact_slots }, (_, i) => (art.mods || [])[i])
     .map((id, i, all) => (opAMod(id) && all.indexOf(id) === i ? id : null));

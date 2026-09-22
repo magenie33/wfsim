@@ -26,6 +26,9 @@ const r = await evaluate(`(async () => {
   const served = (WFCAT.focus || []).map((s) => [s.id, (s.waybound || []).length]);
   return { none: none.length, picked: picked.map((x) => x.text),
            controls: picked.reduce((n, x) => n + x.controls, 0), served,
+           // THE FLOOR: an Operator with no school is an account nobody has, so
+           // a blank build opens on the one the engine reads it as.
+           floor: WFCAT.operator_floor, opened: opBlank().school,
            same: JSON.stringify(none.map((x) => x.text)) === JSON.stringify(picked.map((x) => x.text)) };
 })()`);
 console.log(JSON.stringify(r, null, 1));
@@ -37,4 +40,6 @@ check("...and picking a school changes none of them — they are unbound from it
   r.same && r.picked.length === 10, JSON.stringify(r.picked.length));
 check("...and not one of them offers a control: unlocking cannot be undone",
   r.controls === 0, String(r.controls));
+check("a blank Operator opens on the engine's floor, not on no school",
+  !!r.floor && r.opened === r.floor, JSON.stringify({ floor: r.floor, opened: r.opened }));
 await app.finish("the Waybounds are shown and not offered");

@@ -113,6 +113,10 @@ pub fn warframe_catalog_json() -> Value {
             "effects": x.description.lines().collect::<Vec<_>>(),
             "url": x.url,
         })).collect::<Vec<_>>(),
+        // **THE SCHOOL A BUILD THAT LINKS NOTHING IS READ AS** — the engine's
+        // own floor (`FLOOR_SCHOOL`), served rather than spelled on the page so
+        // the two cannot name different schools.
+        "operator_floor": wf::FLOOR_SCHOOL,
         // THE OPERATOR'S FOCUS, for the Operator page and for what a Warframe
         // build shows it linking.
         "focus": wf::focus_schools().iter().map(|s| json!({

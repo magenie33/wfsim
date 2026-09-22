@@ -15,6 +15,19 @@ pub struct HelminthPick {
     pub ability: String,
 }
 
+/// **THE FLOOR AN OPERATOR CANNOT BE BELOW.**
+///
+/// Focus is ONE-WAY: a player far enough in to have an Operator has picked a
+/// school and cannot un-pick it, so "no Focus at all" is an account nobody has
+/// and a poor thing to measure a weapon against. A build that links no Operator
+/// is read as this one.
+///
+/// VAZARIN, because it is the school that pays a weapon NOTHING — not one of
+/// its nodes carries an `effects:`, so the floor is a real choice that grants
+/// no number. (Naramon is the other such school; picking between the two moves
+/// nothing.) The artifact stays EMPTY, which is what an unearned one is.
+pub const FLOOR_SCHOOL: &str = "vazarin";
+
 /// THE OPERATOR a Warframe build links: the active Focus school, which of its
 /// conditional nodes to count as running, and the school's artifact. A node's
 /// condition is the Operator's own action, so it is ASSUMED when ticked and
@@ -420,15 +433,17 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
 
     // THE OPERATOR'S FOCUS: an always-on node counts, a conditional one only
     // when the Operator build assumes it.
-    let school = match &b.operator {
-        Some(o) => match focus_school(&o.school) {
-            Some(s) => Some((s, o)),
-            None => {
-                refused.push(format!("unknown Focus school: {}", o.school));
-                None
-            }
-        },
-        None => None,
+    // NO LINK IS THE FLOOR, NOT NOTHING: see `FLOOR_SCHOOL`. It is resolved here
+    // rather than at each surface that builds a request, so the page, the board
+    // and the search cannot disagree about what a weapon's least is.
+    let floor = OperatorPick { school: FLOOR_SCHOOL.into(), ..Default::default() };
+    let linked = b.operator.as_ref().unwrap_or(&floor);
+    let school = match focus_school(&linked.school) {
+        Some(s) => Some((s, linked)),
+        None => {
+            refused.push(format!("unknown Focus school: {}", linked.school));
+            None
+        }
     };
     if let Some((_, o)) = school {
         refused.extend(artifact_refusals(&o.artifact));

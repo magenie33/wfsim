@@ -109,8 +109,19 @@ Warframe builds that link it. An unset link is the first preset, or the default
 while there is none (docs/UI.md §The default).
 
 - ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
-  specific focus school they belong to" (W`Focus`). No Waybound reaches a
-  Warframe, so `data/focus/` carries none.
+  specific focus school they belong to" (W`Focus`) — except the two WAYBOUNDS a
+  school has, which apply whichever school is active.
+- **A BUILD THAT LINKS NO OPERATOR IS READ AS THE FLOOR**, not as a player with
+  no Focus: the choice is one-way, so "no school" is an account nobody has.
+  `FLOOR_SCHOOL` is Vazarin, the school not one of whose nodes carries an
+  effect, so the floor is a real choice that grants no number; the artifact
+  stays empty. The page reads it from `operator_floor` rather than naming it.
+- **THE TEN WAYBOUNDS ARE SHOWN AND NOT OFFERED.** Two a school, at max rank,
+  no control beside them — unlocking one cannot be undone, so an account that
+  has a school has them. Every one is `waybound=y|passive=y|warframe=|operator=y`
+  on the wiki: the empty `warframe=` says none reaches the Warframe, which is
+  why `WayboundNode` has nowhere to put an effect (`data/notes.yaml`
+  `focus_waybound`).
 - `always: true` counts whenever the school is active (Stone Skin). A node that
   needs an Operator action counts only when the Operator build ASSUMES it, which
   is the house rule for a condition about the Tenno.

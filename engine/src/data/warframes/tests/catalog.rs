@@ -206,6 +206,32 @@ fn the_operator_counts_what_is_always_on_and_what_is_assumed() {
     assert!(close(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.4));
 }
 
+/// **THE FLOOR IS A REAL CHOICE THAT GRANTS NOTHING.**
+///
+/// Focus is one-way, so a build linking no Operator is read as the floor rather
+/// than as a player with no school — and the floor has to be the school that
+/// moves no number, or every weapon measured before it existed would have moved
+/// under a reader.
+#[test]
+fn the_operator_floor_is_a_school_that_pays_a_weapon_nothing() {
+    let s = focus_school(FLOOR_SCHOOL).unwrap_or_else(|| panic!("{FLOOR_SCHOOL}"));
+    // NOT ONE NODE CARRIES AN EFFECT — which is what makes it the floor and not
+    // a gift. A school with one would hand every unlinked build a bonus.
+    for n in &s.nodes {
+        assert!(n.effects.is_empty(), "{}: {} pays {:?}", s.id, n.id, n.effects);
+    }
+    // …AND LINKING IT EXPLICITLY IS THE SAME BUILD AS LINKING NOTHING, which is
+    // the whole claim: the floor is what an unlinked build already was.
+    // THE PROTOTYPE, which is the other half of a weapon's floor.
+    let mut b = Build { frame: PROTOTYPE.into(), ..Build::default() };
+    let unlinked = resolve(&b).unwrap();
+    b.operator = Some(OperatorPick { school: FLOOR_SCHOOL.into(), ..Default::default() });
+    let linked = resolve(&b).unwrap();
+    for st in [FrameStat::AbilityStrength, FrameStat::Health, FrameStat::Armor, FrameStat::Shield] {
+        assert!(close(unlinked.stat(st).value, linked.stat(st).value), "{st:?}");
+    }
+}
+
 /// **TEN WAYBOUNDS, TWO A SCHOOL, AND NONE OF THEM PAYS A WEAPON.**
 ///
 /// They are what a real account cannot give back — *"these can be 'unbound'
