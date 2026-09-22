@@ -39,5 +39,18 @@ nodes:
     text: "Create 4 spectral pages granting an additional 10% Cast Speed, Ability Strength, Duration, and 100 bonus Energy per page."
     when: after a Lorak Tauron Strike, spent by casting
 
+# see notes: focus_waybound
+waybound:
+  # "Increases Operator Energy Regeneration by '''22 / 45 / 67 / 90'''%." — the page's
+  # info: "Only increases energy regen for the Operator and not for Amps."
+  - id: void_siphon
+    name: Void Siphon
+    text: "Increases Operator Energy Regeneration by 90%."
+  # "Increases Operator Energy by '''22 / 45 / 67 / 90'''%." — "Only increases the
+  # Operator's energy capacity, not Amp's."
+  - id: void_flow
+    name: Void Flow
+    text: "Increases Operator Energy by 90%."
+
 source:
   url: https://wiki.warframe.com/w/Focus/Zenurik

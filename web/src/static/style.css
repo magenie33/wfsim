@@ -1371,6 +1371,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    playback and the page reads as if it were shaking. This also has room for
    a second and third enemy without a re-layout. */
 .rp-pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:2px 16px;font-size:12px;margin-bottom:8px}
+.rp-pools-head{font-size:12px;color:var(--muted);margin:0 0 4px}
 .rp-cell{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:2px 0}
 .rp-cell i{font-style:normal;color:var(--muted)}
 .rp-cell b{font-variant-numeric:tabular-nums;font-weight:600}
@@ -2601,6 +2602,8 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .op-nodes{display:flex;flex-direction:column;gap:8px}
 .op-node{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--panel2);opacity:.65}
 .op-node.on{opacity:1;border-left:3px solid var(--accent)}
+/* A WAYBOUND IS NOT A CHOICE: always on, and no control beside it. */
+.op-node.wb{opacity:1;border-left:3px solid var(--line)}
 .op-node .mn{font-size:13px;font-weight:600}
 .op-node .me,.wf-operator .me{font-size:12px;color:var(--text-2);line-height:1.45}
 .op-when{font-size:11px;color:var(--muted);margin-top:4px}

@@ -32,5 +32,16 @@ nodes:
     text: "Performing a Slam as Operator switches to Warframe and grants double Combo gain for 20s."
     when: after an Operator slam, 20 s
 
+# see notes: focus_waybound
+waybound:
+  # "Increases Operator Movement Speed by '''7 / 15 / 22 / 30'''%."
+  - id: mind_step
+    name: Mind Step
+    text: "Increases Operator Movement Speed by 30%."
+  # "Increases maximum Void Sling distance by '''7 / 15 / 22 / 30'''%."
+  - id: far_sling
+    name: Far Sling
+    text: "Increases maximum Void Sling distance by 30%."
+
 source:
   url: https://wiki.warframe.com/w/Focus/Naramon

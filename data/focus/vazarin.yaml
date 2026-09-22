@@ -52,5 +52,17 @@ nodes:
     text: "Vortex heals allies for 250 health/s."
     when: inside the Nidri Tauron Strike's vortex
 
+# see notes: focus_waybound
+waybound:
+  # "Increases Operator Health and Armor by '''50 / 100 / 150 / 200'''%."
+  - id: enduring_tides
+    name: Enduring Tides
+    text: "Increases Operator Health and Armor by 200%."
+  # "Operator Health Regeneration is increased by '''1.5 / 3 / 4.5 / 6'''/s, and is
+  # doubled while controlling the Warframe."
+  - id: rejuvenating_tides
+    name: Rejuvenating Tides
+    text: "Operator Health Regeneration is increased by 6/s, and is doubled while controlling the Warframe."
+
 source:
   url: https://wiki.warframe.com/w/Focus/Vazarin

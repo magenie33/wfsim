@@ -103,6 +103,23 @@ const opNodeHtml = (s, n, on, toggle) => `<div class="op-node${on ? " on" : ""}"
     : toggle ? `<label><input type="checkbox" data-node="${n.id}"${on ? " checked" : ""}> ${escHtml(tr("count it as running"))} — ${escHtml(n.when)}</label>`
     : escHtml(n.when)}</div></div>`;
 
+/// **THE TEN WAYBOUNDS, SHOWN AND NOT OFFERED.** Two a school, and they apply
+/// whichever school is active: "these can be 'unbound' from the Focus school
+/// they are part of, therefore showing up … in any selected school afterwards"
+/// (W`Focus`). Unlocking one cannot be undone, so an account that has played
+/// far enough to pick a school has them — which is why they are drawn at max
+/// rank with no control beside them. None of them reaches the Warframe, so
+/// nothing here pays a weapon and none of it is part of a build.
+function wayboundHtml() {
+  const rows = (WFCAT.focus || []).flatMap((s) => (s.waybound || []).map((w) =>
+    `<div class="op-node wb"><div class="mn">${wl(w.name, s.url)}<span class="exchip">${escHtml(s.name)}</span></div>
+     <div class="me">${escHtml(w.text)}</div></div>`));
+  if (!rows.length) return "";
+  return `<div class="sb-h">${escHtml(tr("Waybound"))}</div>
+    <div class="exhint">${escHtml(tr("unbound from their school and permanent, so they are always on, at max rank, whichever school is active — none of them reaches the Warframe"))}</div>
+    ${rows.join("")}`;
+}
+
 function renderOperator() {
   renderOpPresetBar();
   $("op-schools").innerHTML = WFCAT.focus.map((s) =>
@@ -114,9 +131,9 @@ function renderOperator() {
     opMarkDirty();
   }));
   const s = focusSchool(op.school);
-  $("op-nodes").innerHTML = s
+  $("op-nodes").innerHTML = (s
     ? s.nodes.map((n) => opNodeHtml(s, n, n.always || op.assumed.includes(n.id), true)).join("")
-    : `<div class="exhint">${escHtml(tr("pick the active Focus school"))}</div>`;
+    : `<div class="exhint">${escHtml(tr("pick the active Focus school"))}</div>`) + wayboundHtml();
   $("op-nodes").querySelectorAll("[data-node]").forEach((c) => c.addEventListener("change", () => {
     op.assumed = c.checked ? [...op.assumed, c.dataset.node] : op.assumed.filter((x) => x !== c.dataset.node);
     renderOperator();

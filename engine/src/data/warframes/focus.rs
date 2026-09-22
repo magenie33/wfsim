@@ -13,6 +13,27 @@ pub struct FocusNode {
     pub tags: Vec<TagGrant>,
 }
 
+/// **A WAYBOUND NODE — UNBOUND FROM ITS SCHOOL, AND PERMANENT.**
+///
+/// *"Unlike all other Ways, these can be 'unbound' from the Focus school they
+/// are part of, therefore showing up (and treated as) as an additional unlocked
+/// Way in any selected school afterwards"* (W`Focus`). Two per school, ten in
+/// all, and unlocking one cannot be undone — which is why they are shown at max
+/// rank and are not a choice anyone makes in a build.
+///
+/// **IT CANNOT CARRY AN EFFECT, and that is the point.** All ten are
+/// `waybound=y|passive=y|warframe=|operator=y` on the wiki — the empty
+/// `warframe=` flag says the node does not reach the Warframe, so none of them
+/// pays a weapon anything. A struct that COULD state an effect and did not
+/// would read as a gap somebody has yet to fill; one that cannot says there is
+/// nothing to fill.
+#[derive(Debug, Clone, Deserialize)]
+pub struct WayboundNode {
+    pub id: String,
+    pub name: String,
+    pub text: String,
+}
+
 /// A Focus school. Only the ACTIVE school's nodes apply: "Active and Passive ways
 /// are only usable in the specific focus school they belong to" (W`Focus`).
 #[derive(Debug, Clone)]
@@ -20,6 +41,9 @@ pub struct FocusSchool {
     pub id: String,
     pub name: String,
     pub nodes: Vec<FocusNode>,
+    /// The school's two Waybounds. Every school's apply whichever is active, so
+    /// the panel shows all ten and lets nobody edit them.
+    pub waybound: Vec<WayboundNode>,
     /// The school's Tektolyst Artifact: one per school, seated by the Operator.
     pub artifact: Option<ArtifactDef>,
     pub url: Option<String>,
@@ -51,6 +75,7 @@ pub(super) struct RawSchool {
     pub(super) id: String,
     pub(super) name: String,
     pub(super) nodes: Vec<RawNode>,
+    pub(super) waybound: Vec<WayboundNode>,
     #[serde(default)]
     pub(super) artifact: Option<ArtifactDef>,
     #[serde(default)]
@@ -82,6 +107,10 @@ pub fn focus_schools() -> &'static [FocusSchool] {
                             }
                         })
                         .collect(),
+                    waybound: {
+                        assert_eq!(r.waybound.len(), 2, "{p}: a school has exactly two Waybounds");
+                        r.waybound
+                    },
                     artifact: r.artifact,
                     url: r.source.url,
                 }

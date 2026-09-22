@@ -9,6 +9,15 @@
 # an entry from being orphaned.
 
 notes:
+  focus_waybound: |
+    THE TWO WAYBOUNDS — unbound from this school and permanent, so they are
+    shown at max rank and nobody edits them: "Unlike all other Ways, these can
+    be 'unbound' from the Focus school they are part of, therefore showing up
+    (and treated as) as an additional unlocked Way in any selected school
+    afterwards" (W`Focus`). All ten are `waybound=y|passive=y|warframe=|
+    operator=y`: the empty `warframe=` says they reach the Operator and pay a
+    weapon nothing, which is why the shape they load into cannot state an
+    effect at all.
   0_05_base_multishot: |
     "+0.05 BASE Multishot": added before mods and therefore multiplied by them,
     the bracket the wiki spells out on Forceful Finality ("added before mods,

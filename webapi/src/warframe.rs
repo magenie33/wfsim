@@ -132,6 +132,15 @@ pub fn warframe_catalog_json() -> Value {
                 "when": n.when,
                 "tags": tags(&n.tags),
             })).collect::<Vec<_>>(),
+            // THE TWO WAYBOUNDS — shown at max rank whichever school is
+            // active, and never a choice: unlocking one cannot be undone. No
+            // `always`, no `when` and no tags, because none of them reaches the
+            // Warframe (`data/notes.yaml` focus_waybound).
+            "waybound": s.waybound.iter().map(|w| json!({
+                "id": w.id,
+                "name": w.name,
+                "text": w.text,
+            })).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         "abilities": wf::abilities().iter().map(|x| json!({
             "id": x.id,

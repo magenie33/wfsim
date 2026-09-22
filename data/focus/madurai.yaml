@@ -60,5 +60,16 @@ nodes:
       - kind: ability_strength_bonus
         rankMax: 0.5
 
+# see notes: focus_waybound
+waybound:
+  # "Increase Energy for Amps and [[Void Beam]] by '''10 / 20 / 30 / 40'''%."
+  - id: inner_gaze
+    name: Inner Gaze
+    text: "Increase Energy for Amps and Void Beam by 40%."
+  # "Increase Energy Regeneration Rate for Amps and Void Beam by '''15 / 30 / 45 / 60'''%."
+  - id: eternal_gaze
+    name: Eternal Gaze
+    text: "Increase Energy Regeneration Rate for Amps and Void Beam by 60%."
+
 source:
   url: https://wiki.warframe.com/w/Focus/Madurai

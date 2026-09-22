@@ -36,5 +36,18 @@ nodes:
     text: "Shockwaves create 5 Armor Motes that grant +450 temporary Armor. Max 5."
     when: after a Cogron Tauron Strike
 
+# see notes: focus_waybound
+waybound:
+  # "Revive your Warframe by transferring to Operator and killing '''3 / 3 / 3 / 3'''
+  # enemies before '''9 / 11 / 13 / 15s''' elapse and the revive meter begins to drain."
+  - id: last_gasp
+    name: Last Gasp
+    text: "Revive your Warframe by transferring to Operator and killing 3 enemies before 15s elapse and the revive meter begins to drain."
+  # "During Last Gasp, Operator Damage is increased by '''25 / 50 / 75 / 100'''% plus an
+  # additional '''10 / 15 / 20 / 25'''% per second."
+  - id: vengeance
+    name: Vengeance
+    text: "During Last Gasp, Operator Damage is increased by 100% plus an additional 25% per second."
+
 source:
   url: https://wiki.warframe.com/w/Focus/Unairu

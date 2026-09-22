@@ -206,6 +206,36 @@ fn the_operator_counts_what_is_always_on_and_what_is_assumed() {
     assert!(close(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.4));
 }
 
+/// **TEN WAYBOUNDS, TWO A SCHOOL, AND NONE OF THEM PAYS A WEAPON.**
+///
+/// They are what a real account cannot give back — *"these can be 'unbound'
+/// from the Focus school they are part of, therefore showing up … in any
+/// selected school afterwards"* (W`Focus`) — so the panel shows all ten at max
+/// rank and nobody edits one. Every one is `warframe=` empty on the wiki, which
+/// is why the shape they load into has no place to put an effect: this test
+/// pins the COUNT, and the type pins the rest.
+#[test]
+fn ten_waybounds_are_shown_and_not_one_of_them_is_a_choice() {
+    let all: Vec<&str> = focus_schools()
+        .iter()
+        .flat_map(|s| {
+            assert_eq!(s.waybound.len(), 2, "{}: a school has exactly two", s.id);
+            s.waybound.iter().map(|w| w.id.as_str())
+        })
+        .collect();
+    assert_eq!(all.len(), 10, "{all:?}");
+    // …AND EACH IS ITS OWN, because an id is what the panel keys a row on.
+    let mut sorted = all.clone();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(sorted.len(), 10, "two Waybounds share an id: {all:?}");
+    for s in focus_schools() {
+        for w in &s.waybound {
+            assert!(!w.text.is_empty(), "{}: {} says nothing", s.id, w.id);
+        }
+    }
+}
+
 /// Every school has its artifact, every card's school and `bonus_per` name a
 /// school, and a seating the artifact cannot hold is refused.
 #[test]
