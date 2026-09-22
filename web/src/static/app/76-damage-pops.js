@@ -212,6 +212,9 @@ let shownResult = null;
 
 function renderResults(r, testedAt) {
   shownResult = { r, at: testedAt };
+  // …AND THE BUILD CARD WITH IT: the action priority list it prints is this
+  // run's answer, so a new verdict is a new list (`aplHtml`).
+  renderSimBuild();
   const t = r.target || {};
   const pc = pct2; // 2 decimals, more when the value would otherwise vanish
   const n0 = (x) => Math.round(x || 0).toLocaleString();

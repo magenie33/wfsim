@@ -34,21 +34,21 @@ function renderSimBuild() {
   renderSimWielder(box.querySelector(".sb-wielder"));
 }
 
-/// **THE LIST THE FIGHT IS RUNNING**, in the order it is scanned.
+/// **THE LIST THE FIGHT RAN**, in the order it is scanned.
 ///
 /// A mode has always BEEN an action priority list — `play_modes` calls it "a
 /// policy over its forms" — and it was only ever written in Rust. This is that
 /// policy shown, in the vocabulary the combat record uses for what a fight does
-/// (a shot, a reload, a transmute's two ends) and the shape SimC writes one in:
-/// top down, the first rule that holds is what the player does.
+/// (a press, a reload, a transmute's two ends) and the shape SimC writes one
+/// in: top down, the first rule that holds is what the player does.
 ///
-/// THE FIGHT'S OWN ANSWER IS `r.apl` and this is the mode's half of it. They
-/// agree while nothing on this page inserts a rule, which `check_apl_shown`
-/// asserts against a live response — the day an insert UI exists, this reads
-/// the response instead, because composing the list twice is two answers.
+/// **THE FIGHT'S OWN ANSWER, NEVER COMPOSED HERE.** Which press a mode is
+/// played on is the FORM's, and whether the Tennokai flash converts a swing is
+/// the BUILD's — so only a run can say, and what it says comes back on the
+/// response. Nothing to show before the first run, which is honest: no fight
+/// has happened.
 function aplHtml(w) {
-  const kind = ((w || {}).mode_kinds || {})[mode];
-  const lines = ((META && META.apl_presets) || {})[kind] || [];
+  const lines = (shownResult && shownResult.r && shownResult.r.apl) || [];
   if (!lines.length) return "";
   return `<div class="sb-h">${escHtml(tr("Action priority"))} · ${escHtml(modeLabel(w, mode) || "")}</div>`
     + `<ol class="sb-apl">${lines.map((l) => {

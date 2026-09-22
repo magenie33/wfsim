@@ -38,8 +38,34 @@ use serde::Deserialize;
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "do", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
-    /// Pull the trigger — the rule every list ends with.
+    // ---- ONE PRESS OF ONE INPUT, and the list ends with whichever of these
+    // the mode is played on -------------------------------------------------
+    //
+    // NAMED FOR THE INPUT AND NOT FOR WHAT IT PRODUCES, the same rule
+    // `model::FormKind` states for its melee half: a stance names its neutral
+    // combo (Crushing Ruin calls it Raging Whirlwind) and the next stance names
+    // it something else, while the button does not change. One action per form
+    // kind, which `every_form_kind_is_one_input` pins.
+    /// The ordinary trigger. Also what a TRANSFORMED weapon is fired on — an
+    /// Incarnon form is a state you are in, not a button you press.
     Shoot,
+    /// A drawn shot, where holding is a different press from tapping.
+    Charged,
+    /// The second trigger, and the two further pulls a weapon that CYCLES
+    /// triggers has (`FormKind::SemiAuto`).
+    AltFire,
+    SemiAuto,
+    Auto,
+    /// The stance's four ground combos, by the input that starts them. The
+    /// fight plays the whole combo out; the list names the press.
+    Neutral,
+    Forward,
+    Block,
+    BlockForward,
+    /// Slide attack, heavy attack, heavy slam — each its own press.
+    Slide,
+    Heavy,
+    HeavySlam,
     /// Put a magazine in.
     Reload,
     /// Go into the other form, and come back out of it. TWO ACTIONS AND NOT
@@ -52,6 +78,32 @@ pub enum Action {
     /// Cast a Warframe ability (`data/abilities/<id>.yaml`). It costs energy
     /// and, when it roots the frame, the shooting it interrupts.
     Cast { ability: String },
+}
+
+impl Action {
+    /// **THE PRESS THAT FIRES THIS FORM.** One per form kind and no choices:
+    /// the vocabulary and `model::FormKind` are the same set of inputs said
+    /// twice, and `every_form_kind_is_one_input` refuses a drift between them.
+    ///
+    /// `Incarnon` answers `Shoot` because it is the one kind that is not an
+    /// input at all — you are IN the form, and what you press is the trigger.
+    pub fn firing(form: crate::model::FormKind) -> Self {
+        use crate::model::FormKind as F;
+        match form {
+            F::Base | F::Incarnon => Action::Shoot,
+            F::Charged => Action::Charged,
+            F::AltFire => Action::AltFire,
+            F::SemiAuto => Action::SemiAuto,
+            F::Auto => Action::Auto,
+            F::Neutral => Action::Neutral,
+            F::Forward => Action::Forward,
+            F::Block => Action::Block,
+            F::BlockForward => Action::BlockForward,
+            F::Slide => Action::Slide,
+            F::Heavy => Action::Heavy,
+            F::HeavySlam => Action::HeavySlam,
+        }
+    }
 }
 
 /// When a rule applies.
@@ -71,6 +123,11 @@ pub enum When {
     /// `if=buff.<ability>.remains<N` — the buff is down, or has less than this
     /// long to run. Zero means "only once it is actually down".
     BuffRemainsUnder { ability: String, seconds: f64 },
+    /// `if=tennokai` — the Tennokai flash is up, and what it buys is ONE swing
+    /// turned into a heavy attack that spends no combo. A condition and not a
+    /// property of the heavy action, because on a form that already spends
+    /// combo the flash pays the other way and no rule fires.
+    Tennokai,
 }
 
 /// One line of the list.
@@ -89,6 +146,17 @@ impl Rule {
         let act = match &self.action {
             Action::Cast { ability } => ability.clone(),
             Action::Shoot => "shoot".into(),
+            Action::Charged => "charged".into(),
+            Action::AltFire => "alt_fire".into(),
+            Action::SemiAuto => "semi_auto".into(),
+            Action::Auto => "auto".into(),
+            Action::Neutral => "neutral".into(),
+            Action::Forward => "forward".into(),
+            Action::Block => "block".into(),
+            Action::BlockForward => "block_forward".into(),
+            Action::Slide => "slide".into(),
+            Action::Heavy => "heavy".into(),
+            Action::HeavySlam => "heavy_slam".into(),
             Action::Reload => "reload".into(),
             Action::TransformIn => "transform_in".into(),
             Action::TransformOut => "transform_out".into(),
@@ -101,6 +169,7 @@ impl Rule {
             When::BuffRemainsUnder { ability, seconds } => {
                 format!("{act},if=buff.{ability}.remains<{seconds}")
             }
+            When::Tennokai => format!("{act},if=tennokai"),
         }
     }
 }
@@ -142,6 +211,13 @@ impl Apl {
     /// would open on `transform_out,if=gauge.pct<=0`, the base form's gauge
     /// being empty at the start of every engagement.
     pub fn pick(&self, now: &Now<'_>) -> Action {
+        self.pick_rule(now).map_or(Action::Shoot, |r| r.action.clone())
+    }
+
+    /// **THE RULE ITSELF**, for a caller that has to tell two lines with the
+    /// same action apart — `heavy,if=tennokai` on a light combo is a different
+    /// swing from the `heavy` a heavy-attack build presses all engagement.
+    pub fn pick_rule(&self, now: &Now<'_>) -> Option<&Rule> {
         for r in &self.0 {
             let possible = match &r.action {
                 Action::TransformIn => now.in_base_form,
@@ -157,12 +233,13 @@ impl Apl {
                 When::GaugeAtLeast { pct } => now.gauge_pct >= *pct,
                 When::GaugeAtMost { pct } => now.gauge_pct <= *pct,
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
+                When::Tennokai => now.tennokai,
             };
             if holds {
-                return r.action.clone();
+                return Some(r);
             }
         }
-        Action::Shoot
+        None
     }
 
     /// **IS THIS THE ACTION THE LIST CALLS FOR?** — what the fight asks at each
@@ -192,6 +269,9 @@ pub struct Now<'a> {
     /// charges into a 30-charge gauge is 1.17, and a rule reading a clamped
     /// value could not tell a full gauge from an overfilled one.
     pub gauge_pct: f64,
+    /// Is the Tennokai flash up — a melee-only fact, and `false` on every
+    /// weapon and every instant that has no window open.
+    pub tennokai: bool,
     /// Which half of a cycle the player is in — `true` on a weapon with no
     /// other form at all. A transmute's two ends are each possible from exactly
     /// one of them, which is what [`Apl::pick`] reads it for.
@@ -200,60 +280,63 @@ pub struct Now<'a> {
     pub remaining: &'a dyn Fn(&str) -> f64,
 }
 
+/// **WHAT THE FIGHT ITSELF CONTRIBUTES TO THE LIST** — the three facts that
+/// decide its own half, and nothing a rule reads at run time.
+pub struct Shape {
+    /// The press this mode is played on (`Action::firing`).
+    pub attack: Action,
+    /// Is there a transmute to decide? The only mode with two forms in it.
+    pub has_cycle: bool,
+    /// Can the Tennokai flash turn a swing into a heavy attack? False on a gun
+    /// and on a form that already SPENDS combo, where the flash pays the other
+    /// way round and no rule of this shape fires.
+    pub tennokai_heavy: bool,
+}
+
 /// **THE LIST A FIGHT RUNS**: what the player inserted, then the fight's own.
 ///
 /// INSERTED RULES GO ON TOP, and that is what makes them do anything: the
-/// mode's last rule is `shoot`, which always holds, so a cast written below it
-/// is a cast that never happens. It is also what a cast MEANS — you cast
-/// INSTEAD of shooting this instant, and pay the shooting for it.
+/// fight's last rule is its attack, which always holds, so a cast written
+/// below it is a cast that never happens. It is also what a cast MEANS — you
+/// cast INSTEAD of attacking this instant, and pay the attack for it.
 ///
-/// **THE FIGHT'S OWN HALF IS CHOSEN BY WHETHER IT CYCLES, NOT BY A MODE NAME.**
-/// `base`, `alternate` and `transformed` are one form fired throughout and
-/// differ in nothing this list can say; a cycle is the only mode with a
-/// transmute to decide. Composed where the params are built, so a fight cannot
-/// run a list assembled from a name that no longer describes it.
-pub fn for_fight(inserted: &Apl, has_cycle: bool) -> Apl {
+/// **THE FIGHT'S OWN HALF IS BUILT FROM WHAT IT IS, NOT FROM A MODE NAME.**
+/// Which press, whether there is a transmute, whether a flash can convert a
+/// swing: a name could disagree with any of them, and these cannot.
+pub fn for_fight(inserted: &Apl, shape: &Shape) -> Apl {
+    let rule = |action: Action, when: When| Rule { action, when };
     let mut out = inserted.0.clone();
-    out.extend(preset(if has_cycle { "cycle" } else { "base" }).unwrap_or_default().0);
+    // FILL THE GAUGE IN THE FORM YOU CAN HOLD, SPEND IT IN THE OTHER, COME
+    // BACK — `PlayMode::Cycle`'s own sentence, as two rules.
+    if shape.has_cycle {
+        out.push(rule(Action::TransformIn, When::GaugeAtLeast { pct: 1.0 }));
+        out.push(rule(Action::TransformOut, When::GaugeAtMost { pct: 0.0 }));
+    }
+    // *"Performing a Heavy Attack or Heavy Slam during this flash"* — one swing
+    // converted, and it outranks the combo because it REPLACES it.
+    if shape.tennokai_heavy {
+        out.push(rule(Action::Heavy, When::Tennokai));
+    }
+    out.push(rule(Action::Reload, When::CannotFire));
+    out.push(rule(shape.attack.clone(), When::Always));
     Apl(out)
 }
 
-/// **THE FOUR MODES, WRITTEN OUT AS THE LISTS THEY ALREADY ARE.**
+/// **THE FOUR MODE KINDS AS THE LISTS THEY ARE**, for a reader who has a mode
+/// name and not a fight — the page, before a run has answered.
 ///
-/// `data::weapons::play_modes` says it in prose — *"a policy over its forms …
-/// what you do with those forms for three hundred seconds"* — and this is the
-/// same policy in the one vocabulary the COMBAT RECORD already uses for what a
-/// fight does: a shot, a reload's two ends, a transmute's two ends
-/// (docs/RECORD.md §"The stream is the four things a fight does").
-///
-/// `mode` is a BOARD axis, so every published row on every weapon rides on
-/// these being the policy its own Rust was: the decisions were routed through
-/// this list one at a time, each compared against the branch it replaced on
-/// every fight the suite runs and on the board's leading rows.
+/// It is [`for_fight`] with the ordinary trigger and no flash, so the two
+/// cannot drift: a mode kind says only whether there is a transmute.
 pub fn preset(mode: &str) -> Option<Apl> {
-    let rule = |action: Action, when: When| Rule { action, when };
-    let shoot_and_reload = || {
-        vec![
-            rule(Action::Reload, When::CannotFire),
-            rule(Action::Shoot, When::Always),
-        ]
-    };
-    Some(Apl(match mode {
-        // THE ARSENAL'S FORM, ALL ENGAGEMENT: there is nothing to decide but
-        // when to put a magazine in.
-        "base" | "alternate" | "transformed" => shoot_and_reload(),
-        // FILL THE GAUGE IN THE FORM YOU CAN HOLD, SPEND IT IN THE OTHER, COME
-        // BACK — `PlayMode::Cycle`'s own sentence, as three rules.
-        "cycle" => {
-            let mut v = vec![
-                rule(Action::TransformIn, When::GaugeAtLeast { pct: 1.0 }),
-                rule(Action::TransformOut, When::GaugeAtMost { pct: 0.0 }),
-            ];
-            v.extend(shoot_and_reload());
-            v
-        }
+    let has_cycle = match mode {
+        "base" | "alternate" | "transformed" => false,
+        "cycle" => true,
         _ => return None,
-    }))
+    };
+    Some(for_fight(
+        &Apl::default(),
+        &Shape { attack: Action::Shoot, has_cycle, tennokai_heavy: false },
+    ))
 }
 
 #[cfg(test)]
@@ -261,7 +344,12 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_fire: true, gauge_pct: 0.0, in_base_form: true, remaining }
+        Now { can_fire: true, gauge_pct: 0.0, tennokai: false, in_base_form: true, remaining }
+    }
+
+    /// An ordinary gun: the trigger, and no flash to convert a swing.
+    fn gun(has_cycle: bool) -> Shape {
+        Shape { attack: Action::Shoot, has_cycle, tennokai_heavy: false }
     }
 
     fn cast(id: &str, under: f64) -> Rule {
@@ -352,18 +440,81 @@ prio: 3
     fn an_inserted_rule_outranks_the_mode_and_an_empty_insert_changes_nothing() {
         let mine = Apl(vec![cast("warcry", 0.0)]);
         assert_eq!(
-            for_fight(&mine, false).to_simc(),
+            for_fight(&mine, &gun(false)).to_simc(),
             "warcry,if=buff.warcry.remains<0\nreload,if=!can_fire\nshoot"
         );
         // NOTHING INSERTED IS THE FIGHT EVERY BOARD ROW WAS MEASURED UNDER, and
         // it has to be the mode's own list to the line.
         for m in ["base", "alternate", "transformed", "cycle"] {
             let cycles = m == "cycle";
-            assert_eq!(for_fight(&Apl::default(), cycles), preset(m).unwrap(), "{m}");
-            assert!(for_fight(&Apl::default(), cycles).abilities().is_empty(), "{m} casts nothing");
+            assert_eq!(for_fight(&Apl::default(), &gun(cycles)), preset(m).unwrap(), "{m}");
+            assert!(for_fight(&Apl::default(), &gun(cycles)).abilities().is_empty(), "{m} casts nothing");
         }
         // …and the ability the fight casts is the one the inserted rule names.
-        assert_eq!(for_fight(&mine, true).abilities(), vec!["warcry"]);
+        assert_eq!(for_fight(&mine, &gun(true)).abilities(), vec!["warcry"]);
+    }
+
+    /// **EVERY FORM KIND IS ONE INPUT, AND THE WORDS DO NOT COLLIDE.** The
+    /// vocabulary and `model::FormKind` are the same set of presses said twice,
+    /// so a kind that answered the wrong word would put a Magistar's slide
+    /// attack on the list as a block combo. `Action::firing` matches
+    /// exhaustively, which is what makes a NEW kind a compile error here.
+    #[test]
+    fn every_form_kind_is_one_input() {
+        use crate::model::FormKind as F;
+        let word = |f: F| Rule { action: Action::firing(f), when: When::Always }.to_simc();
+        // The melee half is named for the BUTTON, and each button is its own.
+        let melee = [F::Neutral, F::Forward, F::Block, F::BlockForward, F::Slide,
+                     F::Heavy, F::HeavySlam];
+        let mut seen: Vec<String> = melee.iter().map(|f| word(*f)).collect();
+        assert_eq!(seen, ["neutral", "forward", "block", "block_forward", "slide",
+                          "heavy", "heavy_slam"]);
+        // …and a melee form's mode id IS that button (`play_modes::free_form_id`),
+        // so the list a reader sees names the mode they picked.
+        for f in melee {
+            assert_eq!(word(f), f.id(), "{f:?}");
+        }
+        // THE TRIGGERS, and the one kind that is not a press at all: you are IN
+        // the Incarnon form, and what you pull there is the ordinary trigger.
+        assert_eq!(word(F::Base), "shoot");
+        assert_eq!(word(F::Incarnon), "shoot");
+        for f in [F::Charged, F::AltFire, F::SemiAuto, F::Auto] {
+            assert_eq!(word(f), f.id(), "{f:?}");
+        }
+        seen.extend(["shoot".into(), "charged".into(), "alt_fire".into(),
+                     "semi_auto".into(), "auto".into()]);
+        let mut sorted = seen.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), seen.len(), "two inputs share a word: {seen:?}");
+    }
+
+    /// **A MELEE LIST NAMES THE PRESS, AND THE FLASH OUTRANKS IT.** One swing
+    /// converted into a heavy attack is what the Tennokai window buys, so the
+    /// rule sits above the combo it replaces — and on a form that already
+    /// spends combo there is no rule, because the flash pays the other way.
+    #[test]
+    fn a_melee_list_is_the_button_with_the_flash_above_it() {
+        let light = Shape { attack: Action::Slide, has_cycle: false, tennokai_heavy: true };
+        assert_eq!(
+            for_fight(&Apl::default(), &light).to_simc(),
+            "heavy,if=tennokai
+reload,if=!can_fire
+slide"
+        );
+        let heavy = Shape { attack: Action::Heavy, has_cycle: false, tennokai_heavy: false };
+        assert_eq!(for_fight(&Apl::default(), &heavy).to_simc(), "reload,if=!can_fire
+heavy");
+        // AND THE TWO `heavy` LINES ARE TOLD APART BY THEIR CONDITION, which is
+        // the only thing that distinguishes a converted swing from the press a
+        // heavy build makes all engagement.
+        let none = |_: &str| 0.0;
+        let flash = Now { can_fire: true, gauge_pct: 0.0, tennokai: true,
+                          in_base_form: true, remaining: &none };
+        let converted = |a: &Apl| a.pick_rule(&flash)
+            .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
+        assert!(converted(&for_fight(&Apl::default(), &light)), "the light combo converts");
+        assert!(!converted(&for_fight(&Apl::default(), &heavy)), "a heavy build converts nothing");
     }
 
     /// A GAUGE CONDITION READS THE GAUGE, which is the fact the cycle turns on.
@@ -373,9 +524,9 @@ prio: 3
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, tennokai: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_fire: true, gauge_pct: 0.0, in_base_form: false, remaining: &none };
+        let spent = Now { can_fire: true, gauge_pct: 0.0, tennokai: false, in_base_form: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -396,7 +547,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_fire: false, gauge_pct: 0.5, in_base_form: true, remaining: &none };
+        let dry = Now { can_fire: false, gauge_pct: 0.5, tennokai: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 }

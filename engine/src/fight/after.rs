@@ -15,6 +15,7 @@ use super::*;
 pub(super) fn after_the_shot(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
+    flash: bool,
     ap: &FightParams,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
@@ -207,7 +208,7 @@ pub(super) fn after_the_shot(
             })
         {
             charge_the_gauge(
-                params, apl, rec, rng, d, cy, charge_on, pellets_before, headshots_before,
+                params, apl, flash, rec, rng, d, cy, charge_on, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
                 rs_armed, opening_closed,
             );

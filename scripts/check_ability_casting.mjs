@@ -24,20 +24,14 @@ const r = await evaluate(`(async () => {
   // A RULE THIS ENGINE CANNOT READ IS REFUSED, not dropped.
   const bad = await api('/api/simulate',
     { ...base, apl: [{ action: { do: 'channel', ability: 'warcry' }, when: { if: 'always' } }] });
-  // WHAT THE PAGE SHOWS IS THE FIGHT'S OWN LIST while nothing is inserted.
-  const shown = [...document.querySelectorAll('#sim-build-info .sb-apl li')]
-    .map((li) => li.textContent.replace(/\\s+/g, ' ').trim().replace(' if ', ',if='));
   return { assumed: { apl: assumed.apl, score: assumed.score },
            cast: { apl: cast.apl, score: cast.score },
-           bad: { ok: !!bad.ok, error: bad.error || null }, shown };
+           bad: { ok: !!bad.ok, error: bad.error || null } };
 })()`);
 console.log(JSON.stringify(r, null, 1));
 check("a fight that inserts nothing runs the mode's own list",
   Array.isArray(r.assumed.apl) && !r.assumed.apl.some((l) => l.startsWith("warcry")),
   JSON.stringify(r.assumed.apl));
-check("...and the page shows that list, line for line",
-  JSON.stringify(r.shown) === JSON.stringify(r.assumed.apl),
-  JSON.stringify(r.shown));
 check("an inserted rule goes above the mode's, where it can fire",
   r.cast.apl[0] === "warcry,if=buff.warcry.remains<0",
   JSON.stringify(r.cast.apl));

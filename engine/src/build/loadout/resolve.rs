@@ -1349,6 +1349,7 @@ pub fn resolve_for(
     });
 
     ResolvedPanel {
+        form: base.form,
         class: base.class,
         slot: base.slot,
         mod_pools: base.mod_pools,

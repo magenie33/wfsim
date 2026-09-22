@@ -460,9 +460,13 @@ pub fn run_once_traced(
             // NOTHING TO SAMPLE WITHOUT A TRACE, and the check is HERE rather than
         // only inside: the sampler reads twenty pieces of the run, and a fight
         // nobody is replaying should not pay for passing them.
+        // THE FLASH, READ ONCE FOR THIS SCAN. Melee state, and the one fact in
+        // `Now` no other part of the fight can answer.
+        let flash = params.tennokai.enabled && t < melee.tennokai_until;
         match before_the_shot(
             params,
             &apl,
+            flash,
             rec,
             rng,
             &mut trace,
@@ -543,6 +547,7 @@ pub fn run_once_traced(
             co_base,
         } = swing_this_shot(
             params,
+            &apl,
             ap,
             t,
             qvec,
@@ -928,6 +933,7 @@ pub fn run_once_traced(
         after_the_shot(
             params,
             &apl,
+            flash,
             ap,
             rec,
             rng,

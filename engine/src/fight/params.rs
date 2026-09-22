@@ -375,6 +375,9 @@ pub struct FightParams {
     /// one because the other half is a fact this struct already carries: a
     /// fight cycles or it does not, and a stored copy could disagree with it.
     pub apl_inserted: crate::data::apl::Apl,
+    /// WHICH PRESS THIS FORM IS FIRED ON, off the panel (`ResolvedPanel::form`)
+    /// — the last rule of the list the fight runs (`Self::apl`).
+    pub form: crate::model::FormKind,
     /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).

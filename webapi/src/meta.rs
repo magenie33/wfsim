@@ -187,18 +187,6 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
         .collect()
 }
 
-/// THE MODES AS THE LISTS THEY ARE, keyed by mode id — `data::apl::preset`.
-fn apl_presets() -> Value {
-    let mut out = serde_json::Map::new();
-    for m in ["base", "alternate", "transformed", "cycle"] {
-        if let Some(a) = wfsim_engine::data::apl::preset(m) {
-            let lines: Vec<String> = a.0.iter().map(|r| r.to_simc()).collect();
-            out.insert(m.to_string(), json!(lines));
-        }
-    }
-    Value::Object(out)
-}
-
 pub fn meta_json() -> Value {
     let weapons: Vec<Value> = weapons()
         .iter()
@@ -299,9 +287,10 @@ pub fn meta_json() -> Value {
                     .filter(|m| m.sustainable)
                     .map(|m| m.id)
                     .collect::<Vec<_>>(),
-                // …AND WHICH KIND EACH ONE IS, so the page can show the list a
-                // mode runs (`data::apl::preset`) without re-deriving the
-                // policy from the mode's name.
+                // …AND WHICH KIND EACH ONE IS: what a ruler may rank, and what
+                // the page labels. NOT the action list — that one names the
+                // PRESS and carries the build's own rules, so only the fight
+                // can answer it and it comes back on the response.
                 "mode_kinds": wfsim_engine::data::weapons::play_modes(&w.id)
                     .iter()
                     .map(|m| (m.id.to_string(), json!(m.mode.id())))
@@ -906,11 +895,6 @@ pub fn meta_json() -> Value {
             "id": c.id,
             "name": c.name,
         })).collect::<Vec<_>>(),
-        // **WHAT EACH MODE ACTUALLY DOES**, as the list it is — one entry per
-        // mode id, each a SimC line. The page shows the APL the fight is
-        // running; the fight still runs the mode's own Rust, and these are the
-        // translation (`data::apl::preset`).
-        "apl_presets": apl_presets(),
         // THE OPERATOR'S card, its own home group: a player has one Operator.
         "operator_image": assets().operators.get("operator"),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the

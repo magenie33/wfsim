@@ -972,6 +972,7 @@ impl FightParams {
             abilities: abilities.clone(),
             cast_interrupts,
             apl_inserted,
+            form: panel.form,
             damage: panel.damage,
             radial: compressed_radial,
             cluster: panel.cluster,

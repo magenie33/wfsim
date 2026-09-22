@@ -243,12 +243,17 @@ impl IncarnonState {
         ammo: &Ammo,
         next_cost: f64,
         t: f64,
+        // IS THE FLASH UP — passed in because it is MELEE state and this
+        // struct is the cycle's, and a `Now` that guessed it would be a rule
+        // answered from a fact nobody supplied.
+        tennokai: bool,
         remaining: &'a dyn Fn(&str) -> f64,
     ) -> crate::data::apl::Now<'a> {
         let Some(cy) = params.cycle.as_ref() else {
             return crate::data::apl::Now {
                 can_fire: can_fire(ammo.loaded, next_cost),
                 gauge_pct: 0.0,
+                tennokai,
                 in_base_form: true,
                 remaining,
             };
@@ -296,6 +301,7 @@ impl IncarnonState {
                 next_cost,
             ),
             gauge_pct,
+            tennokai,
             in_base_form: self.in_base_form,
             remaining,
         }

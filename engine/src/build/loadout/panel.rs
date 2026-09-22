@@ -220,6 +220,12 @@ pub struct ResolvedPanel {
     /// being fine the moment something asks a question about the WEAPON. The
     /// Amp auras are the first: Rifle Amp pays a rifle and nothing else, so
     /// somebody has to know the class.
+    /// **WHICH FORM THIS PANEL IS** — the entry's own `form:`, carried through
+    /// so the fight knows which PRESS it is played on (`data::apl`). The panel
+    /// is everything the sim needs from the build, and the input is part of it:
+    /// a Magistar's slide attack and its block combo resolve to different
+    /// numbers AND to different buttons.
+    pub form: crate::model::FormKind,
     pub class: &'static str,
     /// …AND THE POOLS IT DRAWS, because three of the four amps ask THAT
     /// rather than the class: Rifle Amp "also affects bows, sniper rifles

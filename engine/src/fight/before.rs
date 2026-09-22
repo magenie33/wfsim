@@ -15,6 +15,7 @@ use super::*;
 pub(super) fn before_the_shot(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
+    tennokai: bool,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     trace: &mut Option<&mut Replay>,
@@ -247,7 +248,7 @@ pub(super) fn before_the_shot(
         if let Some(cy) = &params.cycle {
             if let Ends::After(_) = cy.ends {
                 let remains = crate::fight::cycle::ability_remains(params, t);
-                let out = apl.pick(&incarnon.now(params, ammo, next_cost, t, &remains))
+                let out = apl.pick(&incarnon.now(params, ammo, next_cost, t, tennokai, &remains))
                     == crate::data::apl::Action::TransformOut;
                 if out {
                     incarnon.in_base_form = true;
@@ -256,7 +257,7 @@ pub(super) fn before_the_shot(
             }
         }
         charge_magazine_cycle(
-            params, apl, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
+            params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
             field_duration_boost,
         )

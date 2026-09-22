@@ -37,6 +37,7 @@ pub(super) enum Flow {
 pub(super) fn charge_magazine_cycle(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
+    tennokai: bool,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     next_cost: f64,
@@ -56,7 +57,7 @@ pub(super) fn charge_magazine_cycle(
         // against, so the branches below are what the fight DOES and the list
         // is what decides — a rule inserted above `reload` stops the reload.
         let remains = ability_remains(params, *t);
-        let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, &remains));
+        let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, tennokai, &remains));
         if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
             if want == Action::TransformOut {
                 // Charge magazine spent: revert to the base form. The swap
@@ -239,6 +240,7 @@ pub(super) fn charge_magazine_cycle(
 pub(super) fn charge_the_gauge(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
+    tennokai: bool,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     d: &mut crate::rules::rng::Draws,
@@ -297,7 +299,7 @@ pub(super) fn charge_the_gauge(
             // the only rule above `transform_in` a reader can write is a cast,
             // and `reload` sits below it and is asked again at the top of the
             // loop with the real cost.
-            if apl.pick(&incarnon.now(params, ammo, 0.0, *t, &remains)) == Action::TransformIn {
+            if apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains)) == Action::TransformIn {
                 // BOTH DIRECTIONS TAKE IT. The wiki says Ready
                 // Retaliation "can affect transition INTO Incarnon form
                 // with a well-timed manual reload" and not the way back;

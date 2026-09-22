@@ -25,6 +25,7 @@ fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
         cast_interrupts: Vec::new(),
         apl_inserted: Default::default(),
+        form: wfsim_engine::model::FormKind::Base,
         sample_by: wfsim_engine::rules::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.

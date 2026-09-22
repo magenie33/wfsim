@@ -62,7 +62,19 @@ impl FightParams {
     /// already carries — whether there is a cycle to decide — and a stored copy
     /// is the second source that would disagree with it.
     pub fn apl(&self) -> crate::data::apl::Apl {
-        crate::data::apl::for_fight(&self.apl_inserted, self.cycle.is_some())
+        crate::data::apl::for_fight(
+            &self.apl_inserted,
+            &crate::data::apl::Shape {
+                attack: crate::data::apl::Action::firing(self.form),
+                has_cycle: self.cycle.is_some(),
+                // THE SAME TWO GUARDS THE SWING READS (`fight::melee`): a form
+                // that spends combo pays the flash the other way, and a weapon
+                // with no heavy attack has nothing to convert into.
+                tennokai_heavy: self.tennokai.enabled
+                    && !self.spends_combo
+                    && self.heavy.is_some(),
+            },
+        )
     }
 
     /// A TOME'S CYCLE: fire the weapon, fill the meter, throw an orb, carry on.

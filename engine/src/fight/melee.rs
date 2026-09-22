@@ -609,6 +609,7 @@ pub(super) struct Swung {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn swing_this_shot(
     params: &FightParams,
+    apl: &crate::data::apl::Apl,
     ap: &FightParams,
     t: f64,
     qvec: &DamageVector,
@@ -666,7 +667,22 @@ pub(super) fn swing_this_shot(
     // so the counter it read is there for the next one. ONE WINDOW, ONE
     // SWING either way — the flash goes out with it.
     let tennokai = ap.tennokai.enabled && t < melee.tennokai_until;
-    let tennokai_heavy = tennokai && !ap.spends_combo && ap.heavy.is_some();
+    // **THE LIST DECIDES WHETHER THE SWING CONVERTS**, by the RULE it picks and
+    // not by its action: `heavy,if=tennokai` on a light combo is a converted
+    // swing, while the `heavy` a heavy-attack build presses all engagement is
+    // the mode's own press and converts nothing. Two lines, one action, and
+    // only the condition tells them apart.
+    let tennokai_heavy = apl
+        .pick_rule(&crate::data::apl::Now {
+            can_fire: true,
+            gauge_pct: 0.0,
+            tennokai,
+            in_base_form: true,
+            remaining: &|_| 0.0,
+        })
+        .is_some_and(|r| {
+            r.action == crate::data::apl::Action::Heavy && r.when == crate::data::apl::When::Tennokai
+        });
     // …AND WHETHER THE ONE BEING SPENT WAS CHAINED, kept because spending
     // it clears the flag and the damage is decided after.
     let tennokai_was_chained = tennokai && melee.tennokai_chained;
