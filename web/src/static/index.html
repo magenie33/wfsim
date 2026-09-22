@@ -637,6 +637,16 @@
          route(); body.on-* classes swap the visible sections. -->
     <nav class="module-tabs" id="module-tabs"></nav>
 
+    <!-- THE BENCHMARK TAB — this weapon's own board. Every ruler and mode it
+         has been measured at, one line each, and the build behind the line the
+         reader opens. It COMPUTES NOTHING: every number on it is a published
+         row, which is what lets the page state a figure a reader can check
+         against the ranking page. See `43-weapon-bench.js`. -->
+    <section class="block wbench" data-module="benchmark" id="wbench-block">
+      <div class="bh"><h2 data-i18n>Benchmark</h2><span class="sub" id="wbench-sub"></span></div>
+      <div class="bb"><div id="wbench"></div></div>
+    </section>
+
     <!-- Preset bar: click a chip to load; the active chip carries save /
          rename / delete; "+ new" stores the current build. Unlimited —
          past 10 the bar grows a name filter. -->

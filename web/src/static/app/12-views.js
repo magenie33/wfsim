@@ -120,7 +120,7 @@ async function route() {
   const compSlug = compRoute && decodeURIComponent(compRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const compHit = compSlug && compHosts().find((c) =>
     c.id === compSlug || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
-  const m = (support || bench || dl || thx || wfHit || opRoute || compHit) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
+  const m = (support || bench || dl || thx || wfHit || opRoute || compHit) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies|\/benchmark)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -154,6 +154,10 @@ async function route() {
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
   document.body.classList.toggle("on-enemies", mod === "enemies");
+  // THE WEAPON'S OWN BOARD, and NOT `on-benchmark`: that class already
+  // means the site-wide ranking page, and one class with two meanings is
+  // two pages hiding each other's blocks.
+  document.body.classList.toggle("on-wbench", mod === "benchmark");
   $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit || opRoute || !!compHit;
   $("support-page").hidden = !support;
   $("thanks-page").hidden = !thx;
@@ -166,7 +170,7 @@ async function route() {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
   document.querySelector(".config-page").hidden = !w;
-  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens", enemies: " · Enemies" }[mod] || "";
+  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens", enemies: " · Enemies", benchmark: " · Benchmark" }[mod] || "";
   // The home title carries the SEARCH TERMS, not the headline: nobody looks
   // for "Simulacrum Prime", and the tab/result/share-card is the one place
   // that has to be found rather than enjoyed. The joke
@@ -256,6 +260,7 @@ async function route() {
       `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
       `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>` +
       `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>` +
+      `<a class="mtab ${mod === "benchmark" ? "sel" : ""}" href="${weaponPath(w.id)}/benchmark">${tr("Benchmark")}</a>` +
       `<a class="mtab ${mod === "enemies" ? "sel" : ""}" href="${weaponPath(w.id)}/enemies">${tr("Enemies")}</a>`;
     // Arriving on the simulator: refresh its build summary (builder edits
     // don't re-render sim views while they are hidden). The SCENARIO is one
@@ -266,6 +271,7 @@ async function route() {
     if (mod === "optimizer") { renderOptEnemy(); updateOptEstimate(); }
     if (mod === "rivens") renderRivens();
     if (mod === "enemies") renderEnemies();
+    if (mod === "benchmark") renderWeaponBench();
   } else {
     renderHome();
   }
@@ -276,7 +282,7 @@ async function route() {
 
 // The current module's path suffix — weapon switches (search, select,
 // preset load) keep the visitor on the tab they are on.
-const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens)\/?$/) || [null, ""])[1];
+const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens|benchmark)\/?$/) || [null, ""])[1];
 const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
 
 // The home grid groups by EQUIPMENT SLOT in loadout order:
