@@ -171,8 +171,18 @@ check("...and the answer-side guard it leans on is still here",
     .concat(readdirSync(resolve(ROOT, "cli/src/board")).sort().map((f) => "cli/src/board/" + f))
     .map(read)
     .join(String.fromCharCode(10));
-  const fields = meta.axes.filter(KEEPS).map((a) => a.request_field);
-  const missing = fields.filter((f) => !scorer.includes('"' + f + '"'));
+  // BY ANY SPELLING IT USES. Each protocol spells its own half — `arcane` on a
+  // request, `arcanes` on a record, `grip`/`loader` for the assembly — so
+  // matching the REQUEST field alone asked the scorer for words it has no
+  // reason to hold. The worker's table is where an axis's record keys are
+  // declared, so the question is: does the scorer name this axis at all?
+  const keysOf = (axis) => [...(axesBlock ? axesBlock[1] : "")
+    .matchAll(/\{\s*key:\s*"([a-z_]+)"[^}]*axis:\s*"([a-z_]+)"/g)]
+    .filter((m) => m[2] === axis).map((m) => m[1]);
+  const missing = meta.axes.filter(KEEPS)
+    .filter((a) => ![a.request_field, a.id, ...keysOf(a.id)]
+      .some((f) => scorer.includes('"' + f + '"')))
+    .map((a) => a.id);
   check(
     "the scorer names every axis a board row carries",
     missing.length === 0,
