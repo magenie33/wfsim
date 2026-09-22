@@ -117,6 +117,12 @@ jobs:
       # nothing — and each looks like a working page.
       - name: The download offer answers the machine asking
         run: node scripts/check_downloads.mjs
+      # A DOCUMENT CARRIES ITS OWN PAGE AND NOBODY ELSE'S. Both halves of that
+      # fail silently — a document keeping all four bodies is merely large, and
+      # a page whose body was taken and never fetched is merely blank — so
+      # neither shows up as an error anywhere else.
+      - name: A document carries its own page
+        run: node scripts/check_own_body.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two

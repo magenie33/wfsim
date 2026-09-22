@@ -408,6 +408,58 @@ ONE PREVIOUS GENERATION IS KEPT — `keep_one_generation` says why. A stale
 
 ASSET_DIR = "asset"
 
+# THE ROUTES WHOSE BODY IS NOT IN EVERY DOCUMENT, path -> the `<main>` that is
+# theirs. The shell holds one per route and the app shows one of them, so every
+# url shipped all four — six thousand characters of somebody else's text on
+# four hundred urls, which is four hundred near-copies of one document to
+# anything that reads them. Each document keeps the one it IS about; the rest
+# travel in a file of their own that the app fetches when a reader asks for one.
+DEFERRED_PAGES = {
+    "/download": "download-page",
+    "/support": "support-page",
+    "/thanks": "thanks-page",
+    "/benchmark": "bench-page",
+}
+PAGE_BODIES: dict[str, str] = {}
+# …and the route headings that travel inside them, DERIVED rather than
+# listed: a second list is a place to forget one.
+DEFERRED_H1: set[str] = set()
+
+
+def take_page_bodies(html: str) -> str:
+    """Lift each deferred route's body out of the shell, leaving it empty.
+
+    DEPTH-COUNTED rather than matched with a regex: `<main>` nests inside this
+    document, and the first `</main>` after an opening tag is not its own.
+    """
+    for wanted in DEFERRED_PAGES.values():
+        m = re.search(rf'<main id="{wanted}"[^>]*>', html)
+        if not m:
+            sys.exit(f"index.html: <main id=\"{wanted}\"> is gone — a route would ship no body")
+        depth, i = 0, m.start()
+        for t in re.finditer(r"</?main\b", html[i:]):
+            depth += 1 if t.group(0) == "<main" else -1
+            if depth == 0:
+                inner = html[i + m.end() - m.start():i + t.start()]
+                PAGE_BODIES[wanted] = inner
+                DEFERRED_H1.update(re.findall(r'<h1 id="([^"]+)"', inner))
+                html = html[:i + m.end() - m.start()] + html[i + t.start():]
+                break
+        else:
+            sys.exit(f"index.html: <main id=\"{wanted}\"> is never closed")
+    return html
+
+
+def put_page_body(html: str, url: str) -> str:
+    """Put one route's own body back, for the document that IS that route."""
+    wanted = DEFERRED_PAGES.get(url[len(SITE):] or "/")
+    if not wanted:
+        return html
+    m = re.search(rf'(<main id="{wanted}"[^>]*>)', html)
+    if not m:
+        sys.exit(f"shell: <main id=\"{wanted}\"> is gone — {url} would ship no body")
+    return html[:m.end()] + PAGE_BODIES[wanted] + html[m.end():]
+
 
 def publish_hashed(html: str) -> str:
     """Give `app.js`, `style.css` and `worker.js` CONTENT-ADDRESSED names, and
@@ -448,11 +500,25 @@ def publish_hashed(html: str) -> str:
 
     worker_url = place(APP / "worker.js", "worker", ".js")
 
+    # THE DEFERRED BODIES, hashed before `app.js` for the reason every leaf is:
+    # the page names the script and the script names this, so this is final
+    # first. One file rather than four — a reader who opens one of these pages
+    # is a click away from the others, and four requests to save nine kilobytes
+    # is a worse trade than one.
+    html = take_page_bodies(html)
+    (APP / "pages.html").write_text(
+        "".join(f'<template data-page="{k}">{v}</template>' for k, v in PAGE_BODIES.items()),
+        encoding="utf-8", newline=chr(10))
+    pages_url = place(APP / "pages.html", "pages", ".html")
+
     app_src = (APP / "app.js").read_text(encoding="utf-8")
     wired = app_src.replace('new Worker("/worker.js")', f'new Worker("{worker_url}")')
     if wired == app_src:
         sys.exit('app.js: new Worker("/worker.js") not found — the worker would 404')
-    (APP / "app.js").write_text(wired, encoding="utf-8", newline=chr(10))
+    voiced = wired.replace('PAGE_BODIES_URL = "/pages.html"', f'PAGE_BODIES_URL = "{pages_url}"')
+    if voiced == wired:
+        sys.exit('app.js: PAGE_BODIES_URL not found — four pages would draw empty')
+    (APP / "app.js").write_text(voiced, encoding="utf-8", newline=chr(10))
 
     app_url = place(APP / "app.js", "app", ".js")
     css_url = place(APP / "style.css", "style", ".css")
@@ -734,6 +800,12 @@ def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
             page = re.sub(rf'<h1 (id="{hid}"[^>]*)>(.*?)</h1>',
                           r"<h2 \1>\2</h2>", page, count=1, flags=re.S)
         if page == was:
+            # A HEADING THAT IS NOT HERE IS NOT A FAILURE WHEN ITS PAGE IS NOT
+            # HERE EITHER: a deferred body takes its own <h1> with it, which is
+            # this function's goal reached earlier and not a shell that lost
+            # one. Any other absence still stops the build.
+            if hid in DEFERRED_H1 and hid != keep:
+                continue
             sys.exit(f"index.html: <h1 id=\"{hid}\"> not found — heading not set")
     return page
 
@@ -891,6 +963,10 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
     `keep_h1` names the route hero this page is about; a weapon page passes
     none, because its heading is the weapon and the shell has no hero for it.
     """
+    # ITS OWN BODY FIRST, because everything below reads the page's markup —
+    # `one_h1` looks for a heading that lives inside it. Every other document
+    # leaves those four `<main>`s empty and the app fetches them.
+    flagged = put_page_body(flagged, url)
     page = flagged.replace(
         "<title>WFSim — Warframe Calculator</title>",
         f"<title>{html_mod.escape(title)}</title>",

@@ -158,6 +158,16 @@ async function route() {
   // means the site-wide ranking page, and one class with two meanings is
   // two pages hiding each other's blocks.
   document.body.classList.toggle("on-wbench", mod === "benchmark");
+  // THE BODY THIS DOCUMENT DID NOT SHIP, before anything draws into it. The
+  // four pages below are the ones a document carries only when it IS one of
+  // them (`11-page-bodies.js`), and the route runs again once the file lands —
+  // `ensurePageBodies` answers null the second time, so it cannot loop.
+  const away = dl ? "download-page" : support ? "support-page"
+    : thx ? "thanks-page" : bench ? "bench-page" : null;
+  if (away) {
+    const ask = ensurePageBodies(away);
+    if (ask) ask.then(() => route());
+  }
   $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit || opRoute || !!compHit;
   $("support-page").hidden = !support;
   $("thanks-page").hidden = !thx;
