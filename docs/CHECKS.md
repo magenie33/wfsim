@@ -663,6 +663,14 @@ store nothing, and the first real edit stores exactly one. A bar with none is
 empty and says the editor stands on the default; a build edited back to the blank
 is deleted, and the next effective edit writes `preset 1` again.
 
+## `check_ability_casting`
+
+The fight offers a **Cast them** box, off by default — which is what every board
+row was measured under — and ticking it sets the fight's own field, reaches the
+request through `theFight()`, and unticking clears the key rather than sending
+`false`. The box is re-found after each toggle: a re-render replaces the node,
+and clicking the old one clicks something no longer on the page.
+
 ## `check_exalted_strength`
 
 Valkyr Talons' damage is Hysteria's at 100% strength, so the claws read 250 in a
