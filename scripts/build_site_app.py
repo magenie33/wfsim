@@ -752,17 +752,17 @@ def gear_names() -> dict:
 
 @functools.lru_cache(maxsize=1)
 def board_asof() -> str:
-    """The day the board archive last moved, from git rather than from a clock.
+    """The day `site/board/` last moved, from git rather than from a clock.
 
     A BUILD IS REPRODUCIBLE OR THE DATE IS A LIE. `datetime.now()` would stamp
     "today" onto a page whose numbers are a week old, which is the opposite of
-    what the date is for; the archive's own last commit is when those numbers
-    were actually written, and any checkout of this commit computes the same.
+    what the date is for; the published board's own last commit is when those
+    numbers were written, and any checkout of this commit computes the same.
     """
     import subprocess
 
     r = subprocess.run(
-        ("git", "log", "-1", "--format=%cs", "--", "boards"),
+        ("git", "log", "-1", "--format=%cs", "--", "site/board"),
         cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else ""
@@ -782,18 +782,48 @@ def board_best() -> dict:
     RIVEN-FREE, because a riven is a roll nobody else has. The top row overall
     is frequently one, and a build the reader cannot reproduce is a worse answer
     to "what should I put on this" than the best one they can.
+
+    THE SOURCE IS `site/board/`, the only place a published row lives, and
+    reading the wrong one FAILS SILENTLY: an empty result is exactly what a
+    roster nobody has measured returns, so the two guards below are what say
+    which of them happened.
     """
+    rulers: dict = {}
+    for f in sorted((ROOT / "data" / "benchmarks").glob("*.yaml")):
+        spec = yload(f.read_text(encoding="utf-8"))
+        rulers[spec["id"]] = (not spec.get("primary"), spec["id"], spec["name"])
+    files = [f for f in sorted((APP / "board").glob("*.json")) if f.stem != "index"]
+    if not files:
+        sys.exit("board_best: site/board/ holds no weapon file — wrong source")
+    seen = 0
     out: dict = {}
-    for f in sorted((ROOT / "boards").glob("*.yaml")):
-        board = yload(f.read_text(encoding="utf-8"))
-        ruler = yload((ROOT / "data" / "benchmarks" / f.name).read_text(encoding="utf-8"))
-        for row in board.get("entries") or ():
-            if row.get("riven"):
+    for f in files:
+        best: dict = {}
+        for row in json.loads(f.read_text(encoding="utf-8")):
+            seen += 1
+            if row.get("riven") or "riven" in (row.get("mods") or ()):
                 continue
-            rows = out.setdefault(row["weapon"], {})
-            # Entries arrive best-first per weapon, so the first is the best.
-            rows.setdefault(board["benchmark"], (ruler["name"], row))
-    return {w: list(v.values()) for w, v in out.items()}
+            ruler = rulers.get(row.get("benchmark"))
+            # A ROW UNDER A RETIRED RULER IS SKIPPED, not published under its
+            # id: the file may hold rows this roster no longer defines, and a
+            # sentence naming a ruler the reader cannot look up states nothing.
+            if ruler is None:
+                continue
+            score = row.get("score")
+            if score is None:
+                continue
+            if score > best.get(row["benchmark"], (float("-inf"),))[0]:
+                best[row["benchmark"]] = (score, ruler, row)
+        if best:
+            out[f.stem] = [(ruler[2], row) for _, ruler, row
+                           in sorted(best.values(), key=lambda b: b[1][:2])]
+    # …AND THE SECOND GUARD: rows exist and not one of them reached a page, so
+    # the ruler ids in the files and in `data/benchmarks/` have come apart.
+    if seen and not out:
+        sys.exit(f"board_best: {seen} published rows and not one sentence — "
+                 "the ruler ids in site/board/ are not the roster's")
+    print(f"board: {len(out)} weapon(s) carry a board sentence")
+    return out
 
 
 def board_sentence(ruler_name: str, row: dict, weapon: str) -> str:
