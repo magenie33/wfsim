@@ -261,62 +261,7 @@
 
        Hidden inside the desktop app, where the offer is replaced by the fact
        that they are already running it. -->
-  <main id="download-page" class="dl-page" hidden>
-    <h2 id="h-download" class="hero-h" data-i18n>WFSim for Windows</h2>
-    <p class="hero-sub" data-i18n>The same calculator on your own machine — it opens instantly, works with no connection, and keeps itself up to date. It is not a cut-down version: the engine is the same wasm module this site serves.</p>
-
-    <!-- The button and the source it comes from, drawn by `renderDownloadPage`
-         so that one function answers the machine asking. -->
-    <div class="dl-offer" id="dl-offer"></div>
-
-    <!-- FIRST, because it is the first thing that happens and the most common
-         reason a download is abandoned. The wording is the owner's own, from
-         the notes file that ships beside the binary; it is on the page as well
-         because a warning you meet before you have read the notes is a warning
-         with no answer next to it. -->
-    <section class="block">
-      <div class="bh"><h2 data-i18n>The first time you open it</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>Windows shows a blue notice, "Windows protected your PC". Click "More info", then "Run anyway".</li>
-          <li data-i18n>It says that because this program has no code-signing certificate — one costs several thousand yuan a year, which a free tool does not justify. An antivirus warning is the same thing for the same reason: an unsigned program nobody has seen before.</li>
-          <li data-i18n>If you would rather check first, the SHA-256 and the command to verify it ship in the notes beside the download. Or just use the site — it does everything this does.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Why install it</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>Nothing is downloaded when you open it. The engine is already on your disk, so a fight is computed the moment you ask for it — however slow this site is to reach from where you are.</li>
-          <li data-i18n>It works with no connection at all.</li>
-          <li data-i18n>It updates itself, and takes only what changed: a release touching one file is under a kilobyte on the wire. You download this once.</li>
-          <li data-i18n>The site stays exactly where it is. Both run the same engine, and a build link opens in either.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>What it is not</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>Not an installer. There is nothing to run as administrator, and nothing is written to the registry.</li>
-          <li data-i18n>Not a second engine. It carries the same wasm the site serves, so a number is the same number in both.</li>
-          <li data-i18n>Uninstalling is deleting the file. Its data sits in %LOCALAPPDATA%\WFSim and can go with it.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>The source</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li><span data-i18n>AGPL-3.0. A source archive sits beside the download because the licence requires the source to be offered wherever the binary is — it is the same source that is on GitHub, and you do not need it to run the program.</span> <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a></li>
-        </ul>
-      </div>
-    </section>
-  </main>
+  <main id="download-page" class="dl-page" hidden></main>
 
   <!-- Home: the weapon list. Click a card → that weapon's config page. -->
   <main id="home-page" class="home-page" hidden>
@@ -354,30 +299,7 @@
        One row per weapon showing its BEST build; the rest of a weapon's rows
        live on that weapon's own page, which is also where the deeper ranks are
        computed on demand. -->
-  <main id="bench-page" class="home-page" hidden>
-    <h2 id="h-benchmark" class="home-h" data-i18n>Benchmark</h2>
-    <!-- THE CLAIM, THEN THE CONTROLS, THEN THE TERMS. "One ruler, every
-         weapon" is the whole of what this page is; how a score is arrived at
-         is a question a reader has after seeing the ranking, not before, so it
-         sits with the rules it belongs to rather than in front of them. -->
-    <p class="bench-sub" data-i18n>One ruler, every weapon.</p>
-    <div id="bench-picker"></div>
-    <!-- WHICH BUILDS ARE LISTED, not which fight. Its own row of chips because
-         it is its own question: the ruler above picks the FIGHT, this picks
-         which entrants the ranking draws each weapon's row from. Under "All
-         builds" a weapon whose riven build wins hides its plain one, and those
-         are the builds most readers can actually make. -->
-    <div id="bench-view"></div>
-    <p class="bench-note" data-i18n>A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.</p>
-    <div id="bench-rules"></div>
-    <!-- THE RULER'S OWN FIGHT, as the picture the simulator draws. Read-only:
-         a benchmark pins its positions, and the scene refuses the gesture
-         itself. It is here because the rules above describe the fight in
-         sentences and this IS the fight — the same component, the same
-         geometry, and the same body radius the numbers were computed at. -->
-    <div id="bench-arena" class="arena ar-ro"></div>
-    <div id="bench-board"></div>
-  </main>
+  <main id="bench-page" class="home-page" hidden></main>
 
   <!-- Support: what WFSim costs to run, and where to chip in. NOT a module and
        not an editor — a page of the SHELL, like the home grid, reached from the
@@ -452,185 +374,9 @@
        rather than a section of /support somebody has to be told to scroll to.
        It carries no figure: `publish_thanks.py` writes names and a month, and
        the order is the only thing the ranking is allowed to say. -->
-  <main id="thanks-page" class="support-page" hidden>
-    <h1 id="h-thanks" class="hero-h" data-i18n>Thank you</h1>
-    <p class="hero-sub" data-i18n>WFSim is free for everyone. These are the people who chipped in anyway, earliest and largest first — no ranks, and no numbers beside a name.</p>
-    <section class="block">
-      <div class="bb">
-        <div id="thanks-block" class="thx-block" hidden>
-          <ul id="thanks-list" class="thx-list thx-full"></ul>
-        </div>
-        <!-- WHAT AN EMPTY LIST SAYS. On /support the block is simply absent —
-             a list of nobody is social proof pointing the wrong way — but a
-             page somebody navigated TO owes them a sentence rather than a
-             blank. -->
-        <p id="thanks-none" class="sup-note" hidden data-i18n>Nobody has chipped in yet. The list starts with whoever is first.</p>
-        <p class="sup-note"><a href="/support" data-i18n>How to chip in →</a></p>
-      </div>
-    </section>
-  </main>
+  <main id="thanks-page" class="support-page" hidden></main>
 
-  <main id="support-page" class="support-page" hidden>
-    <h2 id="h-support" class="hero-h" data-i18n>Support WFSim</h2>
-    <!-- What this says nothing about is pricing, accounts, or anything else
-         that does not exist yet. What it names is the THREE MODULES and the
-         MEASUREMENTS — both true today, and both checkable by the reader
-         today. -->
-    <p class="hero-sub" data-i18n>A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone.</p>
-    <!-- THE ONE SENTENCE ABOUT METHOD, and it is on this page because it is
-         what a reader deciding whether any of this is worth anything is
-         actually asking. It names a MECHANISM rather than a virtue — whether a
-         calculator scores an opening state or runs the fight is something you
-         can go and read in the engine — which is the only shape of claim this
-         page is allowed to make about itself. -->
-    <p class="hero-method" data-i18n>It does not score an opening state. It runs the engagement — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.</p>
-
-    <!-- THE FACTS STRIP. Filled by `projectFacts()` — the roster and the pools
-         from META, the tests, checks and measurements from the site build. It
-         is the first thing on the page because a reader deciding whether this
-         is worth anything is asking what is behind it, and this answers in the
-         only currency this project accepts. -->
-    <div id="support-facts" class="sup-facts"></div>
-    <p id="support-built" class="sup-note" hidden></p>
-
-    <!-- THE EVIDENCE, WHERE SOMEBODY READS IT. This site's
-         strongest property is that it says what it CANNOT do — a weapon
-         banner, an evolution chip, a mod line, an arcane line, an enemy caveat
-         (`check_disclosure.mjs` asserts all five). Every one of them lives
-         deep inside a weapon page: a reader has to pick a weapon and equip
-         something before any of it is visible, so the most persuasive thing
-         here sat at the bottom of the funnel and no surface above it said a
-         word. None of these claims is an adjective — each names something
-         checkable, which is the only kind of confidence this repo allows
-         itself outside the home hero. -->
-    <!-- WHAT IT DOES, BEFORE WHY IT CAN BE TRUSTED. The section below is a
-         guarantee, and a guarantee stated first is an adjective — it has to
-         follow something concrete or a reader has nothing to attach it to.
-         Each line is a MECHANISM a player recognises from their own arsenal
-         and can go and check, and none of them names a number, a build or
-         anybody else's product: a figure here would bind the claim to one
-         weapon on one day, and this is a claim about how the engine works. -->
-    <section class="block">
-      <div class="bh"><h2 data-i18n>How it works</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>How much of a grenade's damage was the impact and how much was the cloud it left behind is something the fight works out. It is not a ratio you type in.</li>
-          <li data-i18n>A mod that stacks on kill starts the fight at zero stacks. It builds during the fight, expires, and decays — so the build's own numbers change while you are shooting.</li>
-          <li data-i18n>How many Forma a build needs is computed, and so is whether it fits in the weapon at all.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Why you can check it</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.</li>
-          <li data-i18n>It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.</li>
-          <li data-i18n>Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.</li>
-          <li data-i18n>And if your own in-game measurement disagrees with it, the measurement wins. That is a bug report about reality, and it is the one thing that changes what this engine does.</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- WHAT THE READER HAS ALREADY GOT OUT OF IT, counted on their own
-         machine. It is the last thing before the door because that is where a
-         reason to give is worth the most, and it is drawn only once there is
-         something to draw — a fresh visitor is told nothing about themselves. -->
-    <p id="support-usage" class="sup-usage" hidden></p>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Chip in</h2></div>
-      <div class="bb">
-        <div id="support-channels" class="sup-channels"></div>
-        <!-- LEGITIMISING THE SMALL GIFT, which is the one sentence on this page
-             with a replicated experiment behind it. It states a floor and
-             refuses to state a target: a target turns a thank-you into a
-             fundraiser, and there is nothing here that a sum unlocks. -->
-        <p class="sup-note" data-i18n>One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.</p>
-        <!-- THE NAMES, UNDER THE DOOR AND NOT OVER IT. Social proof is the one
-             lever here with a replicated experiment behind it, and a name
-             carries it where a count could not: a reader recognises the kind
-             of person who does this. It sits BELOW the channels because it is
-             there to say that people do this, not to be read instead of the
-             thing above it. Drawn only when there is somebody to draw. -->
-        <div id="support-thanks" class="thx-block" hidden>
-          <h3 class="thx-head" data-i18n>The people who have chipped in</h3>
-          <ul id="support-thanks-list" class="thx-list"></ul>
-          <p class="thx-more" hidden><a href="/thanks" data-i18n>Everyone who has →</a></p>
-        </div>
-      </div>
-    </section>
-
-    <!-- DIRECTLY UNDER THE DOOR, because it answers the question the door has
-         just put in the reader's head, and STATED RATHER THAN DENIED. The same
-         four facts written as "it never buys a number, it never buys a feature"
-         are a row of refusals: they argue with a reader who has not asked for
-         anything, and a page that braces against its own visitors reads as one
-         with something to brace about. Said forwards they are the strongest
-         thing here — everyone gets the same build, the same engine and the same
-         answer, and the licence is what guarantees it rather than a promise. -->
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Everyone gets the same thing</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>An in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it — so the way to move a number here is to go and measure one.</li>
-          <li data-i18n>Building, simulating and optimizing are the same for everyone, and what guarantees that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own copy.</li>
-          <li data-i18n>A fix to the builder, the simulator or the optimizer ships to everybody at once. There is no earlier copy.</li>
-          <li data-i18n>There are no recommended builds here and no curated list. Every row on the board is what this engine computed under the benchmark's own pinned terms, so anyone with the repository reproduces the same number.</li>
-          <li data-i18n>What you have run here stays in your own browser and is sent nowhere. The only place a visit is counted at all is Cloudflare's own request log, which is what serves the page.</li>
-          <!-- THE LINE THAT PREVENTS AN ARGUMENT LATER, and the only one on
-               this page that says something true about the author rather than
-               about the software. A page that claims supporters get NOTHING is
-               not believed, because everybody knows a person reads a backer's
-               message differently; a page that stays silent lets each supporter
-               invent their own entitlement. So it states both halves and names
-               which is which — a courtesy is offered and an obligation is owed,
-               and only one of them can be claimed. -->
-          <li data-i18n>Supporting this buys no priority: not over what gets built next, not in the queue, not on a reply. I will read your message knowing you backed this, and it would be dishonest to claim that changes nothing — but that is a courtesy, not an obligation, and it is the whole of what it is.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Where it goes</h2></div>
-      <div class="bb">
-        <!-- NAMED, AND THE ZERO NAMED WITH THEM. A page whose whole claim is
-             that its figures can be checked cannot hand-wave the one figure
-             that is about itself, and "serving the site" is NOT where the money
-             goes: Cloudflare does not meter static assets and this site's bill
-             there is nothing. The metered path is the desktop update channel —
-             `docs/UI.md` §"The page that asks for something" holds the rule. -->
-        <ul class="sup-costs">
-          <li data-i18n>The wfsim.app domain, and its renewal — the one bill that arrives whether anybody visits or not.</li>
-          <li data-i18n>Serving this site costs nothing, and that is worth saying plainly: Cloudflare does not meter what it hands out, so the pages, the art and the board are free however many of you turn up. What is metered is the update channel behind the Windows client, billed by the byte every time a copy updates itself.</li>
-          <li data-i18n>Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Free, and worth more</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li><span data-i18n>Report a number that disagrees with your own in-game measurement. That is the one contribution nothing else can replace — every formula here is calibrated against a real run, and a discrepancy is a bug report on reality.</span> <a href="https://github.com/magenie33/wfsim/issues" target="_blank" rel="noopener">GitHub Issues</a> · <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" data-i18n>QQ group</a> · <a href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a></li>
-          <li><span data-i18n>Star the repository, or send a build link to someone who is still doing this by hand.</span> <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a></li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- Only the DONATION-specific clause: the shell's footer sits directly
-         below with the unofficial-fan-project disclaimer, and printing it
-         twice on one screen reads as boilerplate rather than as a statement. -->
-    <p class="sup-fine" data-i18n>Chipping in is a gift rather than a purchase — it covers what this site costs to run, and it buys nobody an advantage.</p>
-    <!-- WHAT THIS CLIENT IS RUNNING — the release, the board it is reading, and
-         the shell around it. It answers the one question two readers comparing
-         numbers ask each other, and without it a version difference and a real
-         defect read identically (docs/DISTRIBUTION.md §Identity). AT THE FOOT,
-         because it is looked UP when there is a disagreement; in the middle of
-         the argument it is three lines of noise to everybody else. -->
-    <p id="support-identity" class="sup-note" hidden></p>
-  </main>
+  <main id="support-page" class="support-page" hidden></main>
 
   <main class="config-page" hidden>
     <div class="wstrip">
@@ -1329,13 +1075,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">2bba8f48</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">31adb342</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.7840fad34794.js"></script>
+  <script src="/asset/app.4b26212f53bc.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
