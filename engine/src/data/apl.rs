@@ -35,8 +35,13 @@ pub enum Action {
     Shoot,
     /// Put a magazine in.
     Reload,
-    /// Change form: into the Incarnon and back out of it.
-    Transform,
+    /// Go into the other form, and come back out of it. TWO ACTIONS AND NOT
+    /// ONE: the record logs a transmute's two ends separately, and a list that
+    /// said only "transform" would mean different things on different lines —
+    /// which is also what makes leaving EARLY expressible, since a rule can
+    /// name the way out without naming the way in.
+    TransformIn,
+    TransformOut,
     /// Cast a Warframe ability (`data/abilities/<id>.yaml`). It costs energy
     /// and, when it roots the frame, the shooting it interrupts.
     Cast { ability: String },
@@ -77,7 +82,8 @@ impl Rule {
             Action::Cast { ability } => ability.clone(),
             Action::Shoot => "shoot".into(),
             Action::Reload => "reload".into(),
-            Action::Transform => "transform".into(),
+            Action::TransformIn => "transform_in".into(),
+            Action::TransformOut => "transform_out".into(),
         };
         match &self.when {
             When::Always => act,
@@ -180,8 +186,8 @@ pub fn preset(mode: &str) -> Option<Apl> {
         // BACK — `PlayMode::Cycle`'s own sentence, as three rules.
         "cycle" => {
             let mut v = vec![
-                rule(Action::Transform, When::GaugeAtLeast { pct: 1.0 }),
-                rule(Action::Transform, When::GaugeAtMost { pct: 0.0 }),
+                rule(Action::TransformIn, When::GaugeAtLeast { pct: 1.0 }),
+                rule(Action::TransformOut, When::GaugeAtMost { pct: 0.0 }),
             ];
             v.extend(shoot_and_reload());
             v
@@ -269,7 +275,7 @@ prio: 3
         // go in when the gauge is full, come back out when it is spent.
         assert_eq!(
             preset("cycle").unwrap().to_simc(),
-            "transform,if=gauge.pct>=1\ntransform,if=gauge.pct<=0\nreload,if=!can_fire\nshoot"
+            "transform_in,if=gauge.pct>=1\ntransform_out,if=gauge.pct<=0\nreload,if=!can_fire\nshoot"
         );
         // EVERY MODE THE WEAPONS DECLARE HAS ONE, or the translation is partial
         // and the day the fight reads these a weapon plays as a bare shoot.
@@ -286,8 +292,8 @@ prio: 3
         let apl = preset("cycle").unwrap();
         let none = |_: &str| 0.0;
         let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, remaining: &none };
-        assert_eq!(apl.pick(&at(1.0)), Action::Transform, "full: go in");
-        assert_eq!(apl.pick(&at(0.0)), Action::Transform, "spent: come back");
+        assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
+        assert_eq!(apl.pick(&at(0.0)), Action::TransformOut, "spent: come back");
         assert_eq!(apl.pick(&at(0.5)), Action::Shoot, "filling: keep shooting");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
         let dry = Now { can_fire: false, gauge_pct: 0.5, remaining: &none };

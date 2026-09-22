@@ -187,6 +187,18 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
         .collect()
 }
 
+/// THE MODES AS THE LISTS THEY ARE, keyed by mode id — `data::apl::preset`.
+fn apl_presets() -> Value {
+    let mut out = serde_json::Map::new();
+    for m in ["base", "alternate", "transformed", "cycle"] {
+        if let Some(a) = wfsim_engine::data::apl::preset(m) {
+            let lines: Vec<String> = a.0.iter().map(|r| r.to_simc()).collect();
+            out.insert(m.to_string(), json!(lines));
+        }
+    }
+    Value::Object(out)
+}
+
 pub fn meta_json() -> Value {
     let weapons: Vec<Value> = weapons()
         .iter()
@@ -287,6 +299,13 @@ pub fn meta_json() -> Value {
                     .filter(|m| m.sustainable)
                     .map(|m| m.id)
                     .collect::<Vec<_>>(),
+                // …AND WHICH KIND EACH ONE IS, so the page can show the list a
+                // mode runs (`data::apl::preset`) without re-deriving the
+                // policy from the mode's name.
+                "mode_kinds": wfsim_engine::data::weapons::play_modes(&w.id)
+                    .iter()
+                    .map(|m| (m.id.to_string(), json!(m.mode.id())))
+                    .collect::<serde_json::Map<_, _>>(),
                 // TWO FACTS ABOUT AMMO, and they were one until 2026-08-04.
                 // `has_reserve` is whether there is a pool behind the magazine
                 // at all — false only for a sentinel weapon ("Ammo Max: ∞ /
@@ -394,6 +413,13 @@ pub fn meta_json() -> Value {
                     .iter()
                     .map(|m| m.id)
                     .collect::<Vec<_>>(),
+                // …AND WHICH KIND EACH ONE IS, so the page can show the list a
+                // mode runs (`data::apl::preset`) without re-deriving the
+                // policy from the mode's name.
+                "mode_kinds": wfsim_engine::data::weapons::play_modes(&w.id)
+                    .iter()
+                    .map(|m| (m.id.to_string(), json!(m.mode.id())))
+                    .collect::<serde_json::Map<_, _>>(),
                 // ...and which of them each EVOLUTION takes away. An equip rule
                 // is asked of every firing mode a weapon has, and installing the
                 // Incarnon form adds one — so Dual Toxocyst wears a Cannonade
@@ -880,6 +906,11 @@ pub fn meta_json() -> Value {
             "id": c.id,
             "name": c.name,
         })).collect::<Vec<_>>(),
+        // **WHAT EACH MODE ACTUALLY DOES**, as the list it is — one entry per
+        // mode id, each a SimC line. The page shows the APL the fight is
+        // running; the fight still runs the mode's own Rust, and these are the
+        // translation (`data::apl::preset`).
+        "apl_presets": apl_presets(),
         // THE OPERATOR'S card, its own home group: a player has one Operator.
         "operator_image": assets().operators.get("operator"),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the

@@ -30,8 +30,26 @@ function renderSimBuild() {
     parts: assembly ? partChipsOf(w.id, assembly.grip, assembly.loader) : null,
     evolutions: w.uses_evo2 ? evoChipsOf(Object.values(evoSel || {}).filter(Boolean)) : null,
     valence: valenceSpec(w.id) ? `${DT(valence.element)} +${Math.round(valence.bonus * 1000) / 10}%` : null,
-  }) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+  }) + aplHtml(w) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
   renderSimWielder(box.querySelector(".sb-wielder"));
+}
+
+/// **THE LIST THE FIGHT IS RUNNING**, in the order it is scanned.
+///
+/// A mode has always BEEN an action priority list — `play_modes` calls it "a
+/// policy over its forms" — and it was only ever written in Rust. This is that
+/// policy shown, in the vocabulary the combat record uses for what a fight does
+/// (a shot, a reload, a transmute's two ends) and the shape SimC writes one in:
+/// top down, the first rule that holds is what the player does.
+function aplHtml(w) {
+  const kind = ((w || {}).mode_kinds || {})[mode];
+  const lines = ((META && META.apl_presets) || {})[kind] || [];
+  if (!lines.length) return "";
+  return `<div class="sb-h">${escHtml(tr("Action priority"))} · ${escHtml(modeLabel(w, mode) || "")}</div>`
+    + `<ol class="sb-apl">${lines.map((l) => {
+      const [act, cond] = l.split(",if=");
+      return `<li><code>${escHtml(act)}</code>${cond ? ` <span class="sb-empty">if ${escHtml(cond)}</span>` : ""}</li>`;
+    }).join("")}</ol>`;
 }
 
 /// THE WIELDER AS THE SIMULATOR SHOWS IT: read-only, the Warframe with the
