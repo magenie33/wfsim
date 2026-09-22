@@ -106,6 +106,23 @@ pub struct AbilityDef {
     /// builder prints: `(mod id, seconds per melee kill, cap as a multiple of
     /// the window)`. Eternal War is the only one so far.
     pub augment: Option<(&'static str, f64, f64)>,
+    /// **WHAT ONE CAST COSTS**, before Ability Efficiency — `None` where no
+    /// source states it.
+    ///
+    /// Read from the BUILDER'S CARD (`data/warframe_abilities/<id>.yaml`) where
+    /// the frame is one this app seats, so the number is written once. Seven of
+    /// these buffs belong to frames the builder does not seat and no page this
+    /// repo has read states their cost, so they are `None` and the fight
+    /// REFUSES TO CAST THEM rather than inventing a price — they keep the
+    /// assumed-up reading, and the page says which.
+    pub energy_cost: Option<f64>,
+    /// Whether casting it STOPS THE SHOOTING. True is the honest default: most
+    /// casts root the frame, and a fight that assumed otherwise would invent
+    /// shots a player never took.
+    pub interrupts_fire: bool,
+    /// Seconds one cast takes at 100% casting speed — [`CAST_SECONDS_UNMEASURED`]
+    /// until a measurement replaces it.
+    pub cast_seconds: f64,
     pub name: &'static str,
     /// The Warframe it comes from, or `Helminth` for a subsumed version.
     pub frame: &'static str,
@@ -173,6 +190,99 @@ pub struct ActiveAbility {
     /// …and the ceiling it grows to: *"up to a maximum of double the ability's
     /// duration after mods"* (W`Eternal_War`).
     pub extend_cap_seconds: f64,
+    /// WHAT ONE CAST COSTS in this fight, efficiency already spent — `None`
+    /// where no source states it, which is what stops it being cast at all.
+    pub energy_cost: Option<f64>,
+    /// …and what it costs in TIME, casting speed already spent.
+    pub cast_seconds: f64,
+    /// Whether that time comes out of the shooting.
+    pub interrupts_fire: bool,
+    /// How long one cast lasts — `ends_at_seconds` is the FIRST window's end,
+    /// and a recast opens another of this length.
+    pub window_seconds: f64,
+}
+
+/// **HOW LONG A CAST TAKES, UNTIL EACH ONE IS MEASURED.** One number for every
+/// ability rather than eighteen invented ones: no page this repo has read
+/// publishes a cast time, and a per-ability guess would read as sourced.
+///
+/// It is not idle: the builder already resolves CASTING SPEED, which divides
+/// this (`time / (1 + bonus)`), so a build made for it genuinely casts faster.
+/// Replace it one ability at a time with `cast: {seconds: …}` and a measurement.
+pub const CAST_SECONDS_UNMEASURED: f64 = 1.0;
+
+/// **CASTING THEM, AS AGAINST ASSUMING THEY ARE UP.**
+///
+/// The fight's default reading is that a ticked ability runs its window and
+/// nobody paid for it — what every stored scenario and every board row was
+/// measured under, and it stays the default. In the CAST mode this plans the
+/// fight instead: each ability is cast at the start and RECAST the moment its
+/// window lapses, each cast paying energy from a pool that does not refill.
+///
+/// **A RECAST IS SEAMLESS, WHICH IS WHY A PLAN IS ENOUGH.** Recasting exactly
+/// at expiry makes the windows contiguous, so "how many casts the energy buys"
+/// IS "how long the buff is up" — one window, the shape every reader of these
+/// already handles. Nothing downstream has to learn that casting exists.
+///
+/// WHAT IT DOES NOT MODEL, and says so rather than pretending: energy REGEN of
+/// any kind (Energize, Zenurik, Equilibrium), so a pool is a budget of casts;
+/// and the cast time is one unmeasured number ([`CAST_SECONDS_UNMEASURED`]).
+///
+/// AN ABILITY WITH NO PRICE IS LEFT ALONE rather than switched off: the gap is
+/// this repo's knowledge of its cost, not the player's build.
+pub struct CastPlan {
+    /// The moments a cast takes the trigger finger away, in order, each with
+    /// the seconds it costs.
+    pub interrupts: Vec<(f64, f64)>,
+}
+
+/// Plan the casting of `list` out of `energy`, shortening each window to what
+/// the pool pays for. Returns what the shooting loses and when.
+pub fn plan_casts(list: &mut [ActiveAbility], energy: f64, fight_seconds: f64) -> CastPlan {
+    // IN TIME ORDER, because one pool pays for all of them: two abilities due at
+    // the same moment are paid in the order they were picked, and a pool that
+    // cannot pay the second leaves it down from there.
+    let mut due: Vec<(f64, usize)> =
+        list.iter().enumerate().filter(|(_, a)| a.energy_cost.is_some()).map(|(i, _)| (0.0, i)).collect();
+    let mut left = energy;
+    let mut ends: Vec<Option<f64>> = vec![None; list.len()];
+    let mut interrupts = Vec::new();
+    while let Some(k) = due
+        .iter()
+        .enumerate()
+        .filter(|(_, (t, _))| *t <= fight_seconds)
+        .min_by(|a, b| a.1 .0.total_cmp(&b.1 .0).then(a.0.cmp(&b.0)))
+        .map(|(k, _)| k)
+    {
+        let (t, i) = due.remove(k);
+        let a = &list[i];
+        let Some(cost) = a.energy_cost else { continue };
+        if left < cost {
+            continue;
+        }
+        left -= cost;
+        let end = t + a.window_seconds;
+        ends[i] = Some(end);
+        if a.interrupts_fire {
+            interrupts.push((t, a.cast_seconds));
+        }
+        if end.is_finite() {
+            due.push((end, i));
+        }
+    }
+    for (i, end) in ends.iter().enumerate() {
+        // THE PLAN REPLACES THE WINDOW RATHER THAN CAPPING IT: `ends_at_seconds`
+        // was ONE cast's worth, and recasting is exactly how a player keeps a
+        // 20 s buff up for a 180 s fight. What limits it is the pool, above.
+        if let Some(e) = end {
+            list[i].ends_at_seconds = *e;
+        } else if list[i].energy_cost.is_some() {
+            // Not one cast was affordable, so it was never up.
+            list[i].ends_at_seconds = f64::NEG_INFINITY;
+        }
+    }
+    interrupts.sort_by(|a, b| a.0.total_cmp(&b.0));
+    CastPlan { interrupts }
 }
 
 impl ActiveAbility {
@@ -267,6 +377,16 @@ struct AbilityFile {
     /// `AbilityDef::augment`.
     #[serde(default)]
     augment: Option<AugmentFile>,
+    /// ONLY WHERE THERE IS NO BUILDER CARD to read it off — the loader refuses
+    /// both, so the cost is stated once.
+    #[serde(default)]
+    energy_cost: Option<f64>,
+    /// Whether the cast stops the shooting; true where it is not said.
+    #[serde(default)]
+    interrupts_fire: Option<bool>,
+    /// Seconds at 100% casting speed, once one is measured.
+    #[serde(default)]
+    cast_seconds: Option<f64>,
     #[serde(default)]
     unmodelled: Vec<String>,
     #[serde(default)]
@@ -369,6 +489,19 @@ pub fn all() -> &'static [AbilityDef] {
                 Some("none") => false,
                 Some(other) => panic!("{path}: unknown `scales_with: {other}`"),
             };
+            // THE CARD IS THE AUTHORITY on what a cast costs, and the yaml may
+            // state it only where the frame is not one this app seats.
+            // BY THE BASE ID: a subsumed variant is the same ability, and its
+            // card is filed under the name the frame casts it by.
+            let base_id = f.id.trim_end_matches("_helminth");
+            let card_cost = crate::data::warframes::ability(base_id).map(|a| a.energy_cost);
+            let energy_cost = match (card_cost, f.energy_cost) {
+                (Some(_), Some(_)) => {
+                    panic!("{path}: the builder's card already states this energy cost")
+                }
+                (Some(c), None) => Some(c),
+                (None, v) => v,
+            };
             out.push(AbilityDef {
                 id: leak(f.id),
                 name: leak(f.name),
@@ -386,6 +519,9 @@ pub fn all() -> &'static [AbilityDef] {
                 augment: f.augment.map(|a| {
                     (leak(a.id), a.seconds_per_melee_kill, a.cap_multiple)
                 }),
+                energy_cost,
+                interrupts_fire: f.interrupts_fire.unwrap_or(true),
+                cast_seconds: f.cast_seconds.unwrap_or(CAST_SECONDS_UNMEASURED),
                 live_bugs: f.live_bugs.into_iter().map(leak).collect(),
                 url: f.source.and_then(|s| s.url).map(leak),
             });
@@ -435,14 +571,38 @@ pub fn at_strength(v: f64, strength: f64) -> f64 {
 /// Unknown ids are dropped rather than erroring: a stored scenario outlives the
 /// data, and a fight that refuses to run because a buff was renamed is worse
 /// than one that runs without it. The page reports what it dropped.
+/// **THE FRAME CASTING THEM**, as the four stats and the cards that change what
+/// a cast is worth. One struct rather than six positional arguments: every one
+/// of these arrives from the same resolve of the same Warframe build, and the
+/// day a fifth stat matters it is added in one place.
+#[derive(Debug, Clone, Copy)]
+pub struct Caster<'a> {
+    /// 1.0 = 100%.
+    pub strength: f64,
+    pub duration: f64,
+    pub efficiency: f64,
+    /// A share, not a multiplier: `time / (1 + bonus)`.
+    pub casting_speed_bonus: f64,
+    /// Augment mod ids the frame seats (`Resolved::augments`).
+    pub augments: &'a [&'a str],
+}
+
+impl Default for Caster<'_> {
+    /// THE FRAME NOBODY NAMED: every stat at 100% and no card, which is what
+    /// the board is scored under.
+    fn default() -> Self {
+        Self { strength: 1.0, duration: 1.0, efficiency: 1.0, casting_speed_bonus: 0.0, augments: &[] }
+    }
+}
+
 pub fn resolve(
     picks: &[AbilityPick<'_>],
-    strength: f64,
+    by: &Caster<'_>,
     weapon_class: &str,
     weapon_slot: &str,
-    augments: &[&str],
-    duration: f64,
 ) -> Vec<ActiveAbility> {
+    let (strength, duration, efficiency, casting_speed_bonus, augments) =
+        (by.strength, by.duration, by.efficiency, by.casting_speed_bonus, by.augments);
     let mut best: Vec<(&'static str, f64, ActiveAbility)> = Vec::new();
     for p in picks {
         let Some(def) = get(p.id) else { continue };
@@ -519,6 +679,15 @@ pub fn resolve(
             effects,
             extend_per_melee_kill_seconds: grows.0,
             extend_cap_seconds: grows.1,
+            // EFFICIENCY AND CASTING SPEED ARE SPENT HERE, the one place handed
+            // both the ability and the frame casting it — the same reason the
+            // strength knob is spent here (W`Ability_Efficiency`:
+            // `cost x max(2 - efficiency, 25%)`; W`Ability_Duration`'s sibling
+            // rule for speed: `time / (1 + bonus)`).
+            energy_cost: def.energy_cost.map(|c| c * (2.0 - efficiency).max(0.25)),
+            cast_seconds: def.cast_seconds / (1.0 + casting_speed_bonus),
+            interrupts_fire: def.interrupts_fire,
+            window_seconds: p.duration_seconds.unwrap_or(f64::INFINITY),
         };
         match best.iter_mut().find(|(f, _, _)| *f == def.family) {
             Some(slot) if slot.1 >= value => {}
@@ -697,6 +866,71 @@ pub fn checkpoints(list: &[ActiveAbility]) -> Vec<f64> {
 }
 
 #[cfg(test)]
+mod cast_tests {
+    use super::*;
+
+    fn ab(id: &'static str, window: f64, cost: f64, interrupts: bool) -> ActiveAbility {
+        ActiveAbility {
+            id,
+            ends_at_seconds: f64::INFINITY,
+            effects: vec![],
+            extend_per_melee_kill_seconds: 0.0,
+            extend_cap_seconds: 0.0,
+            energy_cost: Some(cost),
+            cast_seconds: 0.5,
+            interrupts_fire: interrupts,
+            window_seconds: window,
+        }
+    }
+
+    /// **A POOL IS A BUDGET OF CASTS, AND THE WINDOW IS WHAT IT BUYS.** A 20 s
+    /// Warcry at 75 energy out of a 300 pool is four casts, so it is up for 80 s
+    /// of a longer fight and down after — which is the whole point of casting
+    /// rather than assuming.
+    #[test]
+    fn a_pool_buys_a_number_of_casts_and_the_window_is_what_it_bought() {
+        let mut list = vec![ab("warcry", 20.0, 75.0, true)];
+        let plan = plan_casts(&mut list, 300.0, 180.0);
+        assert_eq!(list[0].ends_at_seconds, 80.0);
+        // …AND EACH CAST TOOK THE TRIGGER FINGER: four of them, half a second each.
+        assert_eq!(plan.interrupts.len(), 4);
+        assert_eq!(plan.interrupts.iter().map(|(_, s)| s).sum::<f64>(), 2.0);
+        assert_eq!(plan.interrupts[1].0, 20.0, "the recast is at the lapse");
+    }
+
+    /// ONE POOL PAYS FOR ALL OF THEM, so two abilities share it and the second
+    /// goes down first when it runs out.
+    #[test]
+    fn one_pool_pays_for_every_ability() {
+        let mut list = vec![ab("a", 10.0, 50.0, false), ab("b", 10.0, 50.0, false)];
+        plan_casts(&mut list, 150.0, 100.0);
+        // 150 buys three casts between them, and the ties go to the pick order.
+        let total: f64 = list.iter().map(|a| a.ends_at_seconds).sum();
+        assert_eq!(total, 30.0, "{:?}", list.iter().map(|a| a.ends_at_seconds).collect::<Vec<_>>());
+    }
+
+    /// A CAST NOBODY CAN AFFORD NEVER HAPPENS, and the buff was never up.
+    #[test]
+    fn an_ability_no_pool_can_pay_for_is_never_up() {
+        let mut list = vec![ab("warcry", 20.0, 75.0, true)];
+        let plan = plan_casts(&mut list, 10.0, 180.0);
+        assert!(list[0].ends_at_seconds.is_infinite() && list[0].ends_at_seconds < 0.0);
+        assert!(plan.interrupts.is_empty());
+    }
+
+    /// AN ABILITY WITH NO PRICE IS LEFT ALONE — the gap is ours, not the build's.
+    #[test]
+    fn an_ability_with_no_stated_cost_keeps_its_window() {
+        let mut list = vec![ab("x", 10.0, 0.0, true)];
+        list[0].energy_cost = None;
+        list[0].ends_at_seconds = 30.0;
+        let plan = plan_casts(&mut list, 0.0, 180.0);
+        assert_eq!(list[0].ends_at_seconds, 30.0);
+        assert!(plan.interrupts.is_empty());
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -727,7 +961,7 @@ mod tests {
             AbilityPick { id: "roar_helminth", duration_seconds: None, element: None },
             AbilityPick { id: "roar", duration_seconds: None, element: None },
         ];
-        let live = resolve(&picks, 1.0, "", "melee", &[], 1.0);
+        let live = resolve(&picks, &Caster { strength: 1.0, ..Default::default() }, "", "melee");
         assert_eq!(live.len(), 1);
         assert_eq!(live[0].id, "roar");
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
@@ -737,7 +971,7 @@ mod tests {
         // a 200%-strength Helminth Roar (0.60) beats a 100% Rhino's (0.50).
         // Same call, different strengths, is the closest this can get to two
         // players — and it is what the field means.
-        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], 2.0, "", "melee", &[], 1.0);
+        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], &Caster { strength: 2.0, ..Default::default() }, "", "melee");
         assert!(faction_bonus_at(&solo, 0.0) > 0.5);
     }
 
@@ -752,7 +986,7 @@ mod tests {
             AbilityPick { id: "freeze_force", duration_seconds: None, element: None },
             AbilityPick { id: "xatas_whisper", duration_seconds: None, element: None },
         ];
-        let live = resolve(&picks, 1.0, "", "melee", &[], 1.0);
+        let live = resolve(&picks, &Caster { strength: 1.0, ..Default::default() }, "", "melee");
         assert_eq!(live.len(), 5);
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
         assert!((final_mult_at(&live, 0.0) - 3.0).abs() < 1e-9);
@@ -830,7 +1064,7 @@ mod tests {
     fn wrathful_advance_is_flat_melee_crit_and_a_gun_resolves_none_of_it() {
         let at = |id: &'static str, slot: &str| {
             let picks = [AbilityPick { id, duration_seconds: None, element: None }];
-            flat_crit_at(&resolve(&picks, 1.0, "hammer", slot, &[], 1.0), 0.0)
+            flat_crit_at(&resolve(&picks, &Caster { strength: 1.0, ..Default::default() }, "hammer", slot), 0.0)
         };
         assert_eq!(at("wrathful_advance", "melee"), 2.0, "Kullervo's own is +200%");
         assert_eq!(at("wrathful_advance_helminth", "melee"), 1.0, "subsumed is half");
@@ -839,7 +1073,7 @@ mod tests {
         // …AND ABILITY STRENGTH MOVES IT, the way it moves every other value
         // whose card carries the Strength icon.
         let picks = [AbilityPick { id: "wrathful_advance", duration_seconds: None, element: None }];
-        assert_eq!(flat_crit_at(&resolve(&picks, 1.5, "hammer", "melee", &[], 1.0), 0.0), 3.0);
+        assert_eq!(flat_crit_at(&resolve(&picks, &Caster { strength: 1.5, ..Default::default() }, "hammer", "melee"), 0.0), 3.0);
         // …and it ends when the buff does. An unset duration is the page's
         // WHOLE FIGHT, so the ten seconds the card states have to be asked for.
         let ten = [AbilityPick {
@@ -847,8 +1081,8 @@ mod tests {
             duration_seconds: Some(10.0),
             element: None,
         }];
-        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee", &[], 1.0), 9.0), 2.0);
-        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee", &[], 1.0), 11.0), 0.0);
+        assert_eq!(flat_crit_at(&resolve(&ten, &Caster { strength: 1.0, ..Default::default() }, "hammer", "melee"), 9.0), 2.0);
+        assert_eq!(flat_crit_at(&resolve(&ten, &Caster { strength: 1.0, ..Default::default() }, "hammer", "melee"), 11.0), 0.0);
     }
 
     #[test]
@@ -858,11 +1092,9 @@ mod tests {
                 AbilityPick { id: "roar", duration_seconds: Some(30.0), element: None },
                 AbilityPick { id: "eclipse", duration_seconds: None, element: None },
             ],
-            1.0,
+            &Caster { strength: 1.0, ..Default::default() },
             "",
             "melee",
-            &[],
-            1.0,
         );
         assert_eq!(faction_bonus_at(&live, 29.9), 0.5);
         assert_eq!(faction_bonus_at(&live, 30.0), 0.0);
@@ -914,7 +1146,7 @@ mod tests {
         assert_eq!(def.elements.len(), 10, "four primaries and six combinations");
         let pick = |e: Option<&'static str>| {
             let live =
-                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], 1.0, "rifle", "melee", &[], 1.0);
+                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], &Caster::default(), "rifle", "melee");
             added_elements_at(&live, 0.0)
         };
         // A COMBINATION SURVIVES THE PICK. Gas is the measured case and is not
@@ -935,17 +1167,15 @@ mod tests {
         // which would read as +500% elemental damage on a card and in the sim.
         let strong = resolve(
             &[AbilityPick { id: "valence_formation", duration_seconds: None, element: Some("gas") }],
-            2.5,
+            &Caster { strength: 2.5, ..Default::default() },
             "rifle",
             "melee",
-            &[],
-            1.0,
         );
         assert_eq!(added_elements_at(&strong, 0.0), vec![(DamageType::Gas, 2.0)]);
         // …AND THE CONTROL, because an assertion that a number did not move
         // passes just as well on a build where the knob is wired to nothing:
         // Roar's row DOES carry the Strength icon, and 50% x 2.5 is 125%.
-        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], 2.5, "rifle", "melee", &[], 1.0);
+        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], &Caster { strength: 2.5, ..Default::default() }, "rifle", "melee");
         assert!((faction_bonus_at(&roar, 0.0) - 1.25).abs() < 1e-9, "{}", faction_bonus_at(&roar, 0.0));
     }
 }
@@ -984,32 +1214,28 @@ mod tests {
         //    that predates the picker.
         let def = get("resupply").expect("resupply");
         assert_eq!(def.elements.len(), 10, "the gear wheel");
-        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "rifle", "melee", &[], 1.0);
+        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], &Caster::default(), "rifle", "melee");
         assert_eq!(extra_hits_at(&dflt, 0.0)[0].element, DamageType::Heat, "the first choice");
         let cold = resolve(
             &[AbilityPick { id: "resupply", duration_seconds: None, element: Some("cold") }],
-            1.0,
+            &Caster { strength: 1.0, ..Default::default() },
             "rifle",
             "melee",
-            &[],
-            1.0,
         );
         assert_eq!(extra_hits_at(&cold, 0.0)[0].element, DamageType::Cold);
         // …and a chosen element is ignored where the ability fixes one.
         let fixed = resolve(
             &[AbilityPick { id: "xatas_whisper", duration_seconds: None, element: Some("cold") }],
-            1.0,
+            &Caster { strength: 1.0, ..Default::default() },
             "rifle",
             "melee",
-            &[],
-            1.0,
         );
         assert_eq!(extra_hits_at(&fixed, 0.0)[0].element, DamageType::Void);
 
         // 2. A WEAPON CLASS that doubles it: 25% on a rifle, 50% on a sniper.
         let rifle = extra_hits_at(&dflt, 0.0)[0].fraction;
         let sniper = extra_hits_at(
-            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper", "melee", &[], 1.0),
+            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], &Caster::default(), "sniper", "melee"),
             0.0,
         )[0]
         .fraction;
@@ -1020,7 +1246,7 @@ mod tests {
         //    (Toxin status chance)" and Resupply grants "the selected Elemental
         //    Damage and Status Effect"; Xata's rolls.
         for (id, forced) in [("toxic_lash", true), ("resupply", true), ("xatas_whisper", false)] {
-            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], 1.0, "rifle", "melee", &[], 1.0);
+            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], &Caster::default(), "rifle", "melee");
             assert_eq!(extra_hits_at(&live, 0.0)[0].forced_status, forced, "{id}");
         }
 

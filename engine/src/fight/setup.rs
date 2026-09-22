@@ -869,6 +869,7 @@ impl FightParams {
         let recharging = arcane.rechargeable_magazine;
         let arc_reload_bonus = arcane.reload_bonus;
         let crate::arena::Arena {
+            cast_interrupts,
             target_id,
             tenno,
             target,
@@ -916,11 +917,13 @@ impl FightParams {
                 .collect();
             crate::data::abilities::resolve(
                 &picks,
-                ability_strength + panel.ability_strength_bonus,
+                &crate::data::abilities::Caster {
+                    strength: ability_strength + panel.ability_strength_bonus,
+                    duration: 1.0 + panel.ability_duration_bonus,
+                    ..Default::default()
+                },
                 panel.class,
                 panel.slot,
-                &[],
-                1.0 + panel.ability_duration_bonus,
             )
         } else {
             abilities
@@ -966,6 +969,7 @@ impl FightParams {
             squad: tenno.squad(panel.class),
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
+            cast_interrupts,
             damage: panel.damage,
             radial: compressed_radial,
             cluster: panel.cluster,

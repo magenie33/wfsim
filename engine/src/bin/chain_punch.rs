@@ -46,6 +46,7 @@ fn arena(weapon_bodies: usize, spacing_m: f64) -> Arena {
         });
     }
     Arena {
+        cast_interrupts: Vec::new(),
         squad_size: 1,
         target_id: "e1".to_string(),
         tenno: wfsim_engine::data::tenno::default_tenno().clone(),

@@ -83,6 +83,7 @@ fn main() {
 
     let scenario = Scenario {
         arena: wfsim_engine::arena::Arena {
+            cast_interrupts: Vec::new(),
             squad_size: 1,
             target_id: "e1".to_string(),
             // The CLI has no scenario UI, so it fights the NEUTRAL Tenno:

@@ -571,6 +571,7 @@ pub(super) fn open<'a>(
         count: params.tendrils_initial.min(params.tendril_max),
     };
     let spool = Spool {
+        casts_paid: 0,
         shots: 0.0f64,
         due: f64::NEG_INFINITY,
     };

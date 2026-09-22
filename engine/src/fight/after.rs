@@ -255,6 +255,19 @@ pub(super) fn after_the_shot(
         // ONE place in this fight where an ability's window is not what it was at
         // the start, which is why `resolve` refuses a growing window on any
         // effect the other readers would have to know about.
+        // A CAST THAT ROOTS THE FRAME IS A PAUSE IN THE SHOOTING, and it is the
+        // honest half of what an ability costs: the energy buys the window and
+        // this buys nothing at all. Planned before the run and in time order, so
+        // the run only remembers how far down the list it is.
+        while spool
+            .casts_paid
+            .lt(&params.cast_interrupts.len())
+            .then(|| params.cast_interrupts[spool.casts_paid])
+            .is_some_and(|(at, _)| at <= *t)
+        {
+            *t += params.cast_interrupts[spool.casts_paid].1;
+            spool.casts_paid += 1;
+        }
         let grows = params
             .abilities
             .iter()

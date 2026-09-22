@@ -597,17 +597,26 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // Resupply is 20/30/40/50% on Sniper Rifles. `resolve` is the one function
     // handed both the ability and the weapon, so nothing downstream has to know
     // what a sniper is.
-    let abilities = wfsim_engine::data::abilities::resolve(
+    // THE FRAME CASTING THEM: every one of these is the wielder's build, which
+    // is why they travel together (`abilities::Caster`).
+    let seated: Vec<&str> = tenno.augments.iter().map(String::as_str).collect();
+    let mut abilities = wfsim_engine::data::abilities::resolve(
         &picks,
-        strength,
+        &wfsim_engine::data::abilities::Caster {
+            strength,
+            duration: tenno.ability_duration,
+            efficiency: tenno.ability_efficiency,
+            casting_speed_bonus: tenno.casting_speed_bonus,
+            augments: &seated,
+        },
         wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.class.as_str()),
         wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.slot.as_str()),
-        // THE AUGMENTS THE WIELDER'S BUILD SEATS, and its ability duration:
-        // an augment pays only on the frame carrying it, and its own seconds
-        // are scaled the way every duration is.
-        &tenno.augments.iter().map(String::as_str).collect::<Vec<_>>(),
-        tenno.ability_duration,
     );
+    // …AND WHETHER THEY ARE CAST OR ASSUMED. Off is the reading every stored
+    // scenario and every board row was measured under, so it is the default.
+    let cast_interrupts = get_bool(v, "cast_abilities", false)
+        .then(|| wfsim_engine::data::abilities::plan_casts(&mut abilities, tenno.energy, duration))
+        .map_or_else(Vec::new, |p| p.interrupts);
 
     // The published roster PLUS whatever this request brought with it. A
     // custom shadows nothing (`custom_enemies` refuses a published id), so the
@@ -709,6 +718,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         } else {
             abilities
         },
+        // A NULLIFIER EATS THE CASTS TOO — what it dispels is the ability, so
+        // the pauses it would have cost are not paid either.
+        cast_interrupts: if spec.nullifies_warframe_abilities { Vec::new() } else { cast_interrupts },
         // …AND THE PICKS THAT PRODUCED THEM, so a build carrying an Invocation
         // can resolve them again at its own Ability Strength. A Nullifier eats
         // the picks too: what it dispels is the ability, not the number that

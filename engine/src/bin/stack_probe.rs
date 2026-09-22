@@ -26,6 +26,7 @@ fn main() {
     // build and nothing resets them: the question is how high a row can read,
     // not how fast this weapon kills.
     let arena = Arena {
+        cast_interrupts: Vec::new(),
         squad_size: 1,
         target_id: "e1".to_string(),
         tenno: wfsim_engine::data::tenno::default_tenno().clone(),

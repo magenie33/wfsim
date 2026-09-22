@@ -23,6 +23,7 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        cast_interrupts: Vec::new(),
         sample_by: wfsim_engine::rules::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
@@ -228,6 +229,7 @@ fn dual_toxocyst_baseline() -> FightParams {
 /// locked, Fevered pre-stacked to 20 (+100% multishot).
 fn dual_toxocyst_base_params() -> FightParams {
     FightParams {
+        cast_interrupts: Vec::new(),
         damage: DamageVector::new()
             .with(DamageType::Impact, 7.5)
             .with(DamageType::Puncture, 60.0)
@@ -244,6 +246,7 @@ fn dual_toxocyst_base_params() -> FightParams {
 /// Incarnon Form (pseudo-reload model, gauge locked full).
 fn dual_toxocyst_incarnon_params() -> FightParams {
     FightParams {
+        cast_interrupts: Vec::new(),
         damage: DamageVector::new()
             .with(DamageType::Impact, 25.0)
             .with(DamageType::Puncture, 62.5)

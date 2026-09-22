@@ -364,6 +364,11 @@ pub struct FightParams {
     /// [`FightParams::ability_element_at`] are the three reads, one per effect
     /// kind, and there is no fourth.
     pub abilities: Vec<crate::data::abilities::ActiveAbility>,
+    /// WHEN A CAST TAKES THE TRIGGER FINGER AND FOR HOW LONG, in time order —
+    /// empty unless the fight is CASTING its abilities rather than assuming
+    /// them up (`data::abilities::plan_casts`). The windows in `abilities` are
+    /// already what the energy paid for; this is the other half of the price.
+    pub cast_interrupts: Vec<(f64, f64)>,
     /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).

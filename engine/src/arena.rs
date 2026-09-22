@@ -104,6 +104,11 @@ pub struct Arena {
     /// and the same-family conflicts settled, so nothing downstream can forget
     /// that two Roars do not stack.
     pub abilities: Vec<crate::data::abilities::ActiveAbility>,
+    /// WHEN A CAST TAKES THE TRIGGER FINGER, in time order — empty unless this
+    /// fight is CASTING its abilities rather than assuming them up. Both halves
+    /// of an ability's price travel together: the window the energy bought is
+    /// already in `abilities`, and this is the shooting it cost.
+    pub cast_interrupts: Vec<(f64, f64)>,
     /// WHAT WAS PICKED, unresolved, and the strength it was resolved AT.
     ///
     /// Carried beside the resolved list because a MOD can raise Ability
@@ -149,6 +154,7 @@ impl Arena {
     /// exactly this and should not have to spell it out.
     pub fn training(duration_seconds: f64) -> Self {
         Self {
+            cast_interrupts: Vec::new(),
             target_id: "e1".to_string(),
             tenno: crate::data::tenno::default_tenno().clone(),
             // SOLO, like every fight that does not say otherwise.

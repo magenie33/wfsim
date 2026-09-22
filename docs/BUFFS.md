@@ -713,6 +713,34 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 | `extra_hit` | Xata's Whisper +26% Void | **nowhere — it fires a second instance** | rolls its own, independently |
 | `fire_rate` | Warcry +50% attack speed | the sum a fire-rate MOD is in | **nothing — it buys no damage** |
 
+### Cast, or assumed up
+
+**A TICKED ABILITY IS ASSUMED UP AND NOBODY PAID FOR IT.** That is the reading
+every stored scenario and every board row was measured under, and it stays the
+default. Tick **Cast them** (`cast_abilities`) and the fight plans the casting
+instead: each ability is cast at the start and RECAST the moment its window
+lapses, out of the Warframe's own energy pool.
+
+- **A RECAST IS SEAMLESS, WHICH IS WHY A PLAN IS ENOUGH.** Recasting exactly at
+  expiry makes the windows contiguous, so "how many casts the energy buys" IS
+  "how long the buff is up" — one window, the shape every reader of these
+  already handles. `plan_casts` shortens the window and hands back WHEN the
+  casting took the trigger finger; nothing else in the fight learned that
+  casting exists.
+- **BOTH HALVES OF THE PRICE.** Energy buys the window; a cast that roots the
+  frame (`interrupts_fire`, true where nothing says otherwise) takes shooting
+  time with it, which is what makes a kill rate honest about it.
+- **EFFICIENCY, CASTING SPEED, DURATION AND STRENGTH ALL COME OFF THE BUILD**
+  (`abilities::Caster`), so a frame built for energy genuinely keeps a buff up
+  longer than one that is not.
+- **WHAT IT DOES NOT MODEL, and says so**: energy REGEN of any kind (Energize,
+  Zenurik, Equilibrium), so a pool is a budget of casts; and the cast time is
+  one unmeasured second for every ability (`CAST_SECONDS_UNMEASURED`) until each
+  is measured — the builder's CASTING SPEED already divides it, so a build made
+  for it casts faster. Seven buffs belong to frames the builder does not seat
+  and no page states their energy cost: those are never cast and keep the
+  assumed-up reading rather than being priced by guesswork.
+
 ### One window grows, and it is the only one
 
 **EVERY ABILITY WINDOW IS FIXED WHEN THE FIGHT STARTS, EXCEPT ONE.** Eternal War

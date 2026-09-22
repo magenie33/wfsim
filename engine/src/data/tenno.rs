@@ -92,6 +92,12 @@ pub struct Tenno {
     /// card; empty on a wielder with no build, which is what the board scores.
     #[serde(default)]
     pub augments: Vec<String>,
+    /// ABILITY EFFICIENCY, as a fraction: `cost x max(2 - efficiency, 25%)`.
+    #[serde(default = "full_strength")]
+    pub ability_efficiency: f64,
+    /// CASTING SPEED, as a share: `time / (1 + bonus)`.
+    #[serde(default)]
+    pub casting_speed_bonus: f64,
 }
 
 fn full_strength() -> f64 {

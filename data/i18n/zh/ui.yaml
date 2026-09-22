@@ -1998,6 +1998,9 @@ ui:
   "Home": 首页
   # THE COMPANION HOST — 守护 is the term the page already uses for a companion.
   "attack speed, in the same sum a fire-rate mod is in — it buys attacks rather than damage, so what it is worth is whatever more attacks are worth in this fight": 攻速，和射速 MOD 在同一个加法桶里 —— 它买到的是攻击次数而不是伤害，所以值多少取决于这场战斗里多攻击几次值多少
+  "Cast them": 实际释放
+  "cast them instead of assuming them: each is cast at the start and recast the moment it lapses, paying energy out of the Warframe's own pool, and a cast that roots the frame takes the shooting time with it. Off is what every board row was measured under": 真的去释放，而不是默认它一直在：开场释放一次，失效的瞬间再放一次，能量从战甲自己的能量池里扣；会定身的释放还会把射击时间一起拿走。不勾选时就是所有榜单行的测量口径。
+  "early access — a cast time is one unmeasured second for every ability, and no energy regen is modelled, so a pool is a budget of casts": 早期功能 —— 每个技能的施放时间目前都是同一个未实测的 1 秒，且没有建模任何能量回复，所以能量池就是能放几次的预算
   "Companions": 守护
   "Companion builds": 守护配装
   "Companion floor": 守护保底

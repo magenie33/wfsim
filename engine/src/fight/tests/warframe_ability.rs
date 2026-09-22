@@ -1,5 +1,5 @@
 use super::*;
-use crate::data::abilities::{resolve, AbilityPick};
+use crate::data::abilities::{resolve, AbilityPick, Caster};
 use crate::rules::damage::DamageVector;
 
 /// THE FOUR READINGS OF M79, and the arithmetic that lands on all of them.
@@ -87,7 +87,7 @@ fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> FightPara
             is_head: false,
             crit_bonus: false,
         }],
-        abilities: resolve(&picks, strength, "", "melee", &[], 1.0),
+        abilities: resolve(&picks, &Caster { strength, ..Default::default() }, "", "melee"),
         ..FightParams::default()
     }
 }
@@ -736,7 +736,7 @@ fn no_ability_changes_no_number() {
         ..params(&[], 1.0)
     };
     let mut with_empty = bare.clone();
-    with_empty.abilities = resolve(&[], 3.0, "", "melee", &[], 1.0);
+    with_empty.abilities = resolve(&[], &Caster { strength: 3.0, ..Default::default() }, "", "melee");
     assert_eq!(direct(&bare), direct(&with_empty));
 }
 
@@ -785,7 +785,7 @@ fn eternal_war_extends_warcry_while_melee_kills_land() {
     let shots = |augments: &[&str], secs: f64| {
         let picks = [AbilityPick { id: "warcry", duration_seconds: Some(secs), element: None }];
         let mut p = params(&[], 1.0);
-        p.abilities = resolve(&picks, 1.0, "", "melee", augments, 1.0);
+        p.abilities = resolve(&picks, &Caster { strength: 1.0, augments, ..Default::default() }, "", "melee");
         // A TARGET THAT DIES TO EVERY SWING AND COMES BACK, so kills land at the
         // swing rate. The default fixture target is `InfiniteHealth` and a 1 HP
         // version of it still never dies — which is what a kill-gated mechanic
@@ -803,4 +803,38 @@ fn eternal_war_extends_warcry_while_melee_kills_land() {
     // THE CEILING IS THE ABILITY'S OWN: twice the window, so a 4 s Warcry can
     // reach 8 s and no further — which is the 8 s one's fight.
     assert_eq!(augmented, shots(&[], 8.0));
+}
+
+/// **CASTING IS PAID FOR IN TIME AND IN ENERGY, AND THE FIGHT SHOWS BOTH.**
+///
+/// The default reading is that a ticked ability is up and nobody paid — which
+/// is what every board row was measured under. Casting it instead buys a window
+/// out of a pool that does not refill, and a cast that roots the frame takes
+/// the trigger finger with it.
+#[test]
+fn casting_costs_shots_and_the_pool_limits_the_window() {
+    let plan = |energy: f64, interrupts: bool| {
+        let picks = [AbilityPick { id: "warcry", duration_seconds: Some(20.0), element: None }];
+        let mut p = params(&[], 1.0);
+        p.abilities = resolve(&picks, &Caster::default(), "", "melee");
+        p.abilities[0].interrupts_fire = interrupts;
+        p.duration_seconds = 60.0;
+        let cast = crate::data::abilities::plan_casts(&mut p.abilities, energy, 60.0);
+        p.cast_interrupts = cast.interrupts;
+        (p.abilities[0].ends_at_seconds, run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots)
+    };
+    // A POOL OF 150 AT 75 A CAST IS TWO CASTS: up for 40 s of a 60 s fight.
+    let (ends, shots) = plan(150.0, true);
+    assert_eq!(ends, 40.0);
+    // …AND A BIGGER POOL KEEPS IT UP FOR THE WHOLE FIGHT, which is more attack
+    // speed and more shots. Past the end rather than exactly at it: the last
+    // recast opens a window the fight does not live to see the end of.
+    let (long_ends, long_shots) = plan(1000.0, true);
+    assert!(long_ends >= 60.0, "{long_ends}");
+    assert!(long_shots > shots, "{long_shots} against {shots}");
+    // THE ROOTING IS WHAT COSTS SHOTS: the same fight where the cast does not
+    // interrupt fires more, and it is the only difference between the two.
+    let (free_ends, free_shots) = plan(1000.0, false);
+    assert_eq!(free_ends, long_ends);
+    assert!(free_shots > long_shots, "{free_shots} against {long_shots}");
 }

@@ -43,6 +43,8 @@ impl Default for FightParams {
     fn default() -> Self {
         Self {
             sample_by: crate::rules::metrics::RunStat::KillProgress,
+            // A FIXTURE ASSUMES ITS ABILITIES UP, which is the fight's default.
+            cast_interrupts: Vec::new(),
             // Ordinary: only one measured entry differs (see the field).
             echo_multiplier: 1.0,
             // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.

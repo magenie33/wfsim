@@ -166,11 +166,9 @@ fn elemental_damage_moves_the_hit_and_never_the_blast_detonation() {
                 duration_seconds: None,
                 element: Some("blast"),
             }],
-            1.0,
+            &crate::data::abilities::Caster::default(),
             "",
             "melee",
-                    &[],
-            1.0,
         ),
         ..bare(DamageType::Blast)
     };

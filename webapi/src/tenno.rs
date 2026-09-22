@@ -37,6 +37,8 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     t.ability_strength = r.stat(wf::FrameStat::AbilityStrength).value;
     t.ability_duration = r.stat(wf::FrameStat::AbilityDuration).value;
     t.augments = r.augments.iter().map(|a| (*a).to_string()).collect();
+    t.ability_efficiency = r.stat(wf::FrameStat::AbilityEfficiency).value;
+    t.casting_speed_bonus = r.stat(wf::FrameStat::CastingSpeed).value - 1.0;
     if !info.sentinel {
         let stat = |s: wf::FrameStat| r.stat(s).value;
         t.id = r.frame.id.clone();
