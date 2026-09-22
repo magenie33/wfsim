@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.f8f09e0db6cf.css" />
+  <link rel="stylesheet" href="/asset/style.3035affd1048.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -94,14 +94,6 @@
   </script>
 </head>
 <body>
-  <div id="seo-fallback">
-    <p>Brakk / 布拉克 — Warframe. Shotgun Sidearm · Secondary · Mastery Rank 6</p>
-    <p>20 base damage x10 multishot (impact 9, puncture 5, slash 6), 17% crit chance, 2x crit multiplier, 5.1% status chance.</p>
-    <p>5-round magazine, 1.05 s reload, 210 reserve ammo, 7.7 accuracy, 1.25 riven disposition.</p>
-    <p>Traits: grineer.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
-  </div>
-  <script>document.getElementById('seo-fallback').remove()</script>
   <!-- The first paint. Removed by `init()`; if it is still here, the app never
        started and the banner above says why. -->
   <div id="booting" class="booting">WFSim<span class="bdot">·</span><span class="bdot">·</span><span class="bdot">·</span></div>
@@ -640,10 +632,34 @@
       </div>
     </div>
 
+    <!-- THE PAGE'S OWN ANSWER, AND IT IS NOT A FALLBACK. The prerender fills
+         this with what has been measured for this weapon, and NOTHING REMOVES
+         IT: a block deleted the moment the app boots is a block the renderer
+         that decides whether anyone finds this page never sees, because it
+         indexes the page it rendered. The app keeps it current instead —
+         `renderWeaponDoc`. -->
+    <div id="doc" class="doc" data-url="/weapons/Brakk">
+    <p>Brakk / 布拉克 — Warframe. Shotgun Sidearm · Secondary · Mastery Rank 6</p>
+    <p>20 base damage x10 multishot (impact 9, puncture 5, slash 6), 17% crit chance, 2x crit multiplier, 5.1% status chance.</p>
+    <p>5-round magazine, 1.05 s reload, 210 reserve ammo, 7.7 accuracy, 1.25 riven disposition.</p>
+    <p>Traits: grineer.</p>
+    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    </div>
+
     <!-- Module tabs: Builder | Simulator | Optimizer — one view per
          module (/weapons/<name>[/simulator|/optimizer]). Rendered by
          route(); body.on-* classes swap the visible sections. -->
     <nav class="module-tabs" id="module-tabs"></nav>
+
+    <!-- THE BENCHMARK TAB — this weapon's own board. Every ruler and mode it
+         has been measured at, one line each, and the build behind the line the
+         reader opens. It COMPUTES NOTHING: every number on it is a published
+         row, which is what lets the page state a figure a reader can check
+         against the ranking page. See `43-weapon-bench.js`. -->
+    <section class="block wbench" data-module="benchmark" id="wbench-block">
+      <div class="bh"><h2 data-i18n>Benchmark</h2><span class="sub" id="wbench-sub"></span></div>
+      <div class="bb"><div id="wbench"></div></div>
+    </section>
 
     <!-- Preset bar: click a chip to load; the active chip carries save /
          rename / delete; "+ new" stores the current build. Unlimited —
@@ -1305,13 +1321,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">3b434a14</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">2bba8f48</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.34b1b6711fe0.js"></script>
+  <script src="/asset/app.7840fad34794.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property

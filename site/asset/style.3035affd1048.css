@@ -133,11 +133,13 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 body:not(.on-optimizer) [data-module="optimizer"],
 body:not(.on-rivens) [data-module="rivens"],
 body:not(.on-enemies) [data-module="enemies"],
+body:not(.on-wbench) [data-module="benchmark"],
 body:not(.on-simulator) [data-module="simulator"]{display:none}
 body.on-optimizer [data-module="builder"],
 body.on-simulator [data-module="builder"],
 body.on-rivens [data-module="builder"],
-body.on-enemies [data-module="builder"]{display:none}
+body.on-enemies [data-module="builder"],
+body.on-wbench [data-module="builder"]{display:none}
 /* THE SIMULATOR'S BLOCKS, and `#wfbuff-block` is one of them: a Warframe buff
    is not part of the weapon. It is something done TO this
    weapon for a while, which is the fight's business — the builder answers
@@ -196,8 +198,10 @@ body.on-enemies [data-module="builder"]{display:none}
 /* THE BUILD FINDER IS THE BUILDER'S ALONE. The build bar follows a build onto
    the simulator; finding one is a builder question, so every other module
    hides it. */
-.on-simulator #build-finder,.on-optimizer #build-finder,.on-rivens #build-finder,.on-enemies #build-finder{display:none}
-.on-simulator #forma-block,.on-optimizer #forma-block,.on-rivens #forma-block,.on-enemies #forma-block{display:none}
+.on-simulator #build-finder,.on-optimizer #build-finder,.on-rivens #build-finder,.on-enemies #build-finder,
+.on-wbench #build-finder{display:none}
+.on-simulator #forma-block,.on-optimizer #forma-block,.on-rivens #forma-block,.on-enemies #forma-block,
+.on-wbench #forma-block{display:none}
 /* The builder's furniture that is not a `.block`: its preset bar and the quick
    calc travel with the blocks the other modules hide. */
 .on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
@@ -1872,6 +1876,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .brules summary::-webkit-details-marker{display:none}
 .brules summary::before{content:"▸ ";color:var(--text-2)}
 .brules[open] summary::before{content:"▾ "}
+.bstd{margin:9px 0 0;color:var(--text);font-size:12.5px;line-height:1.65;max-width:78ch}
 .brules ul{margin:8px 0 2px;padding-left:18px}
 .brules li{margin:5px 0;color:var(--text-2);font-size:12.5px;line-height:1.6;max-width:78ch}
 .bench-meta{margin-bottom:8px;color:var(--text-2);font-size:12px}
@@ -2851,3 +2856,32 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .nona-mem-row input{flex:1;min-width:0}
 .nona-mem-b{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .nona-mem-b label.check{padding-top:0}
+
+/* THE WEAPON'S BENCHMARK TAB. The matrix states one cell per line; nothing in
+   it compares two lines, because two rulers are two environments. */
+.wb-tab{width:100%;border-collapse:collapse;font-size:12.5px}
+.wb-tab th{text-align:left;font-weight:600;color:var(--text-2);font-size:11.5px;
+  padding:4px 8px;border-bottom:1px solid var(--line)}
+.wb-row{cursor:pointer}
+.wb-row td{padding:6px 8px;border-bottom:1px solid var(--line);color:var(--text)}
+.wb-row:hover td{background:var(--panel3)}
+.wb-row.sel td{background:var(--panel2);font-weight:600}
+.wb-mode,.wb-rank{color:var(--text-2)}
+.wb-score{font-variant-numeric:tabular-nums}
+.wb-rank{text-align:right;font-variant-numeric:tabular-nums}
+.wb-detail{margin-top:12px}
+.wb-terms{margin:0 0 8px;color:var(--text-2);font-size:11.5px}
+.wb-cards{display:flex;flex-wrap:wrap;gap:5px}
+.wb-card{font-size:11.5px;border:1px solid var(--line);border-radius:6px;
+  padding:2.5px 7px;background:var(--panel2);color:var(--text)}
+.wb-card.wb-evo{background:transparent;color:var(--text-2)}
+.wb-ceiling{margin:10px 0 0;color:var(--text-2);font-size:12px}
+.wb-empty{margin:0;color:var(--text-2);font-size:12.5px;max-width:64ch}
+
+/* THE PAGE'S OWN ANSWER, above the modules. It is content and not chrome, so
+   it reads at body size rather than as a caption. */
+.doc{margin:0 0 14px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;
+  background:var(--surface)}
+.doc p{margin:0 0 7px;color:var(--text-2);font-size:12.5px;line-height:1.65;max-width:82ch}
+.doc p:last-child{margin-bottom:0}
+.doc a{color:var(--accent)}
