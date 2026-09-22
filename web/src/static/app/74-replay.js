@@ -1,3 +1,51 @@
+/// WHERE A COUNTER WENT UP, as percentages along the rail.
+///
+/// A cumulative series is what the frames carry, so an EVENT is a frame whose
+/// count exceeds the one before it. Marks closer together than `MARK_MIN_GAP`
+/// are dropped: at a tick apiece they would not be told apart anyway, and a
+/// dense reloader would otherwise put six hundred elements in the DOM. What
+/// survives merges into a band, which is what that fight looks like.
+const MARK_MIN_GAP = 0.3;
+function risesIn(series, last) {
+  const at = [];
+  let prevPct = -MARK_MIN_GAP;
+  for (let i = 1; i <= last; i++) {
+    if (!((series[i] || 0) > (series[i - 1] || 0))) continue;
+    const pct = (i / last) * 100;
+    if (pct - prevPct < MARK_MIN_GAP) continue;
+    at.push(pct);
+    prevPct = pct;
+  }
+  return at;
+}
+
+/// The marks themselves: kills tall and red, reloads short and recessive.
+function scrubMarks(rp) {
+  const last = rp.t.length - 1;
+  if (last < 1) return "";
+  const kills = risesIn(rp.kills || [], last);
+  const reloads = risesIn((rp.kpi || {}).reloads || [], last);
+  return kills.map((p) => `<i class="scrub-kill" style="left:${p.toFixed(2)}%"></i>`).join("")
+    + reloads.map((p) => `<i class="scrub-reload" style="left:${p.toFixed(2)}%"></i>`).join("");
+}
+
+/// …and what they mean, drawn only for the marks this fight actually has. A
+/// legend entry for a mark that is not on the rail is a key to nothing.
+function scrubLegend(rp) {
+  const last = rp.t.length - 1;
+  const has = (s) => (s || []).some((v, i) => i > 0 && v > s[i - 1]);
+  const items = [];
+  if (last >= 1 && has(rp.kills)) {
+    items.push(`<span class="sl"><i class="sl-kill"></i>${escHtml(tr("a kill"))}</span>`);
+  }
+  if (last >= 1 && has((rp.kpi || {}).reloads)) {
+    items.push(`<span class="sl"><i class="sl-reload"></i>${escHtml(tr("a reload"))}</span>`);
+  }
+  if (!items.length) return "";
+  items.push(`<span class="sl-note">${escHtml(tr("drag onto a mark to land on that instant"))}</span>`);
+  return `<div class="scrub-legend">${items.join("")}</div>`;
+}
+
 function replayMarkup(r) {
   const rp = r && r.replay;
   if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
@@ -156,9 +204,18 @@ function replayMarkup(r) {
           value: 5,
           items: REPLAY_SPEEDS.map((sp) => ({ value: sp, label: `${sp}x` })),
         })}
-        <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="${rp.t.length - 1}">
+        <!-- THE SCRUBBER CARRIES THE FIGHT'S OWN EVENTS. A rail that knows only
+             "0 to 180 seconds" makes a reader hunt for the instant something
+             died; with the marks on it, that instant is a place to drag TO.
+             Both series are already on the wire — no engine asked. -->
+        <div class="scrub">
+          <div class="scrub-rail"><i id="rp-done" class="scrub-done"></i></div>
+          ${scrubMarks(rp)}
+          <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="${rp.t.length - 1}">
+        </div>
         <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
+      ${scrubLegend(rp)}
       <!-- THE FIGHT'S OWN NUMBERS, and only those. Damage and kills are the
            whole engagement's however many bodies are in it; a POOL belongs to
            one body, and a body's number sitting here reads as the crowd's.
@@ -280,6 +337,11 @@ function replayApply(rp, i) {
 
   $("rp-clock").textContent = `${rp.t[i].toFixed(1)}s / ${rp.t[last].toFixed(0)}s`;
   $("rp-scrub").value = i;
+  // THE RAIL FILLS BEHIND THE THUMB. A range input paints one track, so the
+  // "played" half is an element of its own under it — which is also what lets
+  // the marks sit between the rail and the thumb.
+  const done = $("rp-done");
+  if (done) done.style.width = `${(frac * 100).toFixed(2)}%`;
   // A FIXED GRID, not a flowing row. Every value here
   // changes on every frame, and a flex row re-measures itself each time — the
   // labels slide left and right for the whole playback, which reads as the

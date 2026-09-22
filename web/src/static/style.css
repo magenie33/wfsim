@@ -49,6 +49,33 @@
    `!important` is the HTML spec's own recommendation for exactly this, and is
    what keeps the fix from being one `display:` rule behind forever. */
 [hidden]{display:none !important}
+
+/* SCROLLBARS, NAMED ONE BY ONE. The browser's own bar is a pale rod on a dark
+   panel, and this page scrolls in several places. `.scroll-thin` is the opt-in
+   and the list beside it is every container that already scrolls, so nothing
+   is restyled that has not been looked at — a `*` rule reaches menus, tables
+   and windows nobody checked. The track is invisible; only the thumb shows,
+   and it answers the pointer so a reader can tell it is grabbable. */
+.scroll-thin,.rec-scroll,.wsearch-panel .combo-menu{scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--text) 17%,transparent) transparent}
+.scroll-thin::-webkit-scrollbar,.rec-scroll::-webkit-scrollbar,
+.wsearch-panel .combo-menu::-webkit-scrollbar{width:11px;height:11px}
+.scroll-thin::-webkit-scrollbar-track,.rec-scroll::-webkit-scrollbar-track,
+.wsearch-panel .combo-menu::-webkit-scrollbar-track{background:transparent}
+/* The 3px transparent border plus `content-box` is what gives the thumb its
+   own padding, so it never sits flush against the content it scrolls. */
+.scroll-thin::-webkit-scrollbar-thumb,.rec-scroll::-webkit-scrollbar-thumb,
+.wsearch-panel .combo-menu::-webkit-scrollbar-thumb{border-radius:999px;
+  background:color-mix(in srgb,var(--text) 17%,transparent);
+  border:3px solid transparent;background-clip:content-box}
+.scroll-thin:hover::-webkit-scrollbar-thumb,.rec-scroll:hover::-webkit-scrollbar-thumb,
+.wsearch-panel .combo-menu:hover::-webkit-scrollbar-thumb{
+  background:color-mix(in srgb,var(--text) 30%,transparent);background-clip:content-box}
+.scroll-thin::-webkit-scrollbar-thumb:active,.rec-scroll::-webkit-scrollbar-thumb:active,
+.wsearch-panel .combo-menu::-webkit-scrollbar-thumb:active{
+  background:var(--accent);background-clip:content-box}
+.scroll-thin::-webkit-scrollbar-corner,.rec-scroll::-webkit-scrollbar-corner,
+.wsearch-panel .combo-menu::-webkit-scrollbar-corner{background:transparent}
 html,body{margin:0}
 body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
 
@@ -1364,7 +1391,46 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 . */
 .rp-bar{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
 .rp-play{min-width:64px}
-.rp-scrub{flex:1;accent-color:var(--accent)}
+/* THE SCRUBBER. The hand wants a wide band and the eye wants a thin line, so
+   those are two things: `.scrub` is the 30px target, `.scrub-rail` the 6px
+   line inside it. The range input keeps every behaviour it had — drag,
+   keyboard, `.value` — and only its paint is taken over, so it lies over the
+   rail with a transparent track of its own. */
+.scrub{position:relative;flex:1;height:30px;min-width:120px}
+.scrub-rail{position:absolute;left:0;right:0;top:12px;height:6px;border-radius:999px;
+  background:var(--panel2);overflow:hidden}
+.scrub-done{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 55%,transparent),var(--accent))}
+/* WHAT HAPPENED, ON THE RAIL: a kill is tall and carries the target's colour,
+   a reload is short and recessive. Both are derived from the frames already on
+   the wire (`risesIn`), so the rail costs no new field. */
+.scrub-kill{position:absolute;top:6px;width:2px;height:18px;margin-left:-1px;border-radius:1px;
+  background:var(--critical);opacity:.8;pointer-events:none}
+.scrub-reload{position:absolute;top:19px;width:2px;height:8px;margin-left:-1px;border-radius:1px;
+  background:var(--muted);opacity:.7;pointer-events:none}
+.rp-scrub{position:absolute;left:0;right:0;top:0;width:100%;height:30px;margin:0;
+  background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.rp-scrub:focus{outline:none}
+.rp-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.rp-scrub::-webkit-slider-runnable-track{height:30px;background:transparent;border:0}
+.rp-scrub::-moz-range-track{height:30px;background:transparent;border:0}
+.rp-scrub::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:16px;height:16px;margin-top:7px;border:0;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent),0 1px 4px rgba(0,0,0,.55);
+  cursor:grab}
+.rp-scrub::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent),0 1px 4px rgba(0,0,0,.55);
+  cursor:grab}
+.rp-scrub:active::-webkit-slider-thumb{cursor:grabbing;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 22%,transparent),0 1px 4px rgba(0,0,0,.55)}
+.rp-scrub:active::-moz-range-thumb{cursor:grabbing;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 22%,transparent),0 1px 4px rgba(0,0,0,.55)}
+/* A KEY ONLY FOR THE MARKS THIS FIGHT HAS (`scrubLegend`). */
+.scrub-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-size:10.5px;color:var(--muted);margin:-4px 0 10px}
+.scrub-legend .sl{display:inline-flex;align-items:center;gap:5px}
+.scrub-legend .sl-kill{width:2px;height:11px;border-radius:1px;background:var(--critical);opacity:.8}
+.scrub-legend .sl-reload{width:2px;height:8px;border-radius:1px;background:var(--muted);opacity:.7}
 .rp-clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;min-width:96px;text-align:right}
 /* FIXED columns: every figure changes on every frame, and a flowing row
    re-measures itself each time — the labels slide about for the whole

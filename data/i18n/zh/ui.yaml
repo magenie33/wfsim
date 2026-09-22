@@ -1106,6 +1106,9 @@ ui:
   "stop submitting": 停止提交
   "stop": 停止
   "back to the finished fight": 回到打完的那一刻
+  "a kill": 一次击杀
+  "a reload": 一次换弹
+  "drag onto a mark to land on that instant": 拖到任意一格刻度就落在那一瞬
   "stopped — nothing was measured": 已停止 —— 没有测出任何结果
   "submitted by players, scored here — read-only": 玩家提交，由我们自己跑分 —— 只读
   "switching firing modes takes THREE SECONDS, can be interrupted, and is scaled by Reload Speed (wiki) — this sim never switches, so each mode is measured as if it were the whole weapon and the cost of changing between them is invisible": "切换射击模式需要三秒，可以被打断，而且受装填速度影响（维基）—— 本模拟从不切换，所以每个模式都是当作整把武器来测量的，切换的代价在这里是看不见的"

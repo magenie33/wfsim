@@ -33,6 +33,7 @@ const r = await evaluate(`(async () => {
   // THE BUFF SIDE ONLY. The target debuffs draw with the same component and the
   // same class since 2026-08-11 — they are told apart by which side of the
   // fight they came from, which is what data-buff says.
+  const rp0 = replayState.data;
   const rows=[...document.querySelectorAll('.rp-row[data-buff]')].map(e=>({
     name:e.querySelector('.rp-name').textContent,
     stat:e.querySelector('.rp-stat').textContent,
@@ -51,6 +52,9 @@ const r = await evaluate(`(async () => {
     types: [...document.querySelectorAll('#sim-results .legend .li[data-dk]')].map(e=>e.dataset.dk+':'+e.querySelector('.lv').textContent),
     // TWO ROWS, and which is which is the point: the top one is the FIGHT
     // (damage, kills) and the pools sit with the bodies, whose they are.
+    // The rail fills behind the thumb, so the played fraction is readable as
+    // one inline width rather than out of the range input's paint.
+    done: (((document.getElementById('rp-done')||{}).style)||{}).width || '',
     pools: [...document.querySelectorAll('#rp-pools .rp-cell b')].map(e=>e.textContent).join('|'),
     foePools: [...document.querySelectorAll('#rp-foe-pools .rp-cell b')].map(e=>e.textContent).join('|'),
     hero: document.querySelector('[data-hero]').textContent,
@@ -71,6 +75,31 @@ const r = await evaluate(`(async () => {
     if (!el) return -1;
     const all = [...res.querySelectorAll('*')];
     return all.indexOf(el);
+  };
+  // WHAT THE RAIL SAYS HAPPENED, against the series it is derived from. The
+  // marks are frames where a cumulative counter went up, thinned to 0.3% apart
+  // — so the assertion recomputes that here rather than trusting a count.
+  const rises = (sr) => {
+    const n = rp0.t.length - 1;
+    let k = 0, prev = -0.3;
+    for (let i = 1; i <= n; i++) {
+      if (!((sr[i] || 0) > (sr[i - 1] || 0))) continue;
+      const p = (i / n) * 100;
+      if (p - prev < 0.3) continue;
+      k++; prev = p;
+    }
+    return k;
+  };
+  const rail = {
+    killMarks: document.querySelectorAll('.scrub-kill').length,
+    reloadMarks: document.querySelectorAll('.scrub-reload').length,
+    killRises: rises(rp0.kills || []),
+    reloadRises: rises((rp0.kpi || {}).reloads || []),
+    legend: document.querySelectorAll('.scrub-legend .sl').length,
+    // The PLATFORM thumb switched off is what lets the page draw its own;
+    // a pseudo-element's computed style is not readable, but this is.
+    appearance: getComputedStyle(document.getElementById('rp-scrub')).appearance,
+    railBg: getComputedStyle(document.querySelector('.scrub-rail')).backgroundColor,
   };
   const iBar = pos('.rp-bar');
   const iMeter = pos('.meter');
@@ -156,7 +185,7 @@ const r = await evaluate(`(async () => {
     const v = parseFloat((el.querySelector('.mval')||{}).textContent?.replace(/[^\d.]/g,'') || '0');
     meterByType[ty] = (meterByType[ty] || 0) + v;
   }
-  return { rows, atEnd, atMid, atZero, restored, afterStop, playLabel, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iChart, iRow, kids,
+  return { rows, atEnd, atMid, atZero, restored, afterStop, playLabel, rail, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iChart, iRow, kids,
            meterRows, segs, legend, collapse, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
@@ -268,6 +297,36 @@ check("the type composition follows the playhead",
   r.atEnd.types.map((x) => x.split(':')[0]).join() === r.atMid.types.map((x) => x.split(':')[0]).join() &&
   r.atMid.types.join() !== r.atEnd.types.join(),
   JSON.stringify([r.atMid.types, r.atEnd.types]));
+// THE RAIL CARRIES THE FIGHT'S OWN EVENTS, and they are DERIVED rather than
+// shipped: a mark is a frame where a cumulative counter went up. Asserted
+// against a recomputation of that rule, so it holds whatever this fight does —
+// a run that kills nothing draws no kill marks and is still correct.
+check("the scrubber's marks are the fight's own events",
+  r.rail.killMarks === r.rail.killRises && r.rail.reloadMarks === r.rail.reloadRises
+  && (r.rail.killMarks + r.rail.reloadMarks) > 0,
+  JSON.stringify(r.rail));
+// ...and the key names only the marks that are on the rail. A legend entry for
+// a mark this fight never drew is a key to nothing.
+check("...and the key names only the marks it drew",
+  r.rail.legend === (r.rail.killMarks > 0 ? 1 : 0) + (r.rail.reloadMarks > 0 ? 1 : 0),
+  JSON.stringify(r.rail));
+// THE THUMB IS THE PAGE'S, not the platform's: a bare range input paints a
+// browser thumb that ignores the theme, and the rail underneath it would be
+// the only styled half.
+check("the scrubber's thumb is the page's own",
+  r.rail.appearance === "none" && /^rgba?\(/.test(r.rail.railBg)
+    && r.rail.railBg !== "rgba(0, 0, 0, 0)",
+  `${r.rail.appearance} · ${r.rail.railBg}`);
+// THE RAIL FILLS BEHIND IT, from nothing to the whole width. Read as a NUMBER:
+// the browser normalises "0.00%" to "0%", so comparing the string would assert
+// the serialiser rather than the fill.
+{
+  const w = (x) => parseFloat(x);
+  check("the rail fills behind the playhead",
+    w(r.atZero.done) === 0 && w(r.atEnd.done) === 100
+    && w(r.atMid.done) > 20 && w(r.atMid.done) < 80,
+    `${r.atZero.done} -> ${r.atMid.done} -> ${r.atEnd.done}`);
+}
 check("rewinding empties the KPIs and the meter",
   r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&
   r.atZero.meter.every((v) => /^0 /.test(v)),
