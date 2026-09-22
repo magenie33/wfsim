@@ -135,7 +135,12 @@
              as ghost buttons. The brand alone is a way back to the roster
              you have to know rather than see. -->
         <nav class="topnav">
-          <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
+          <!-- THE ROSTER'S ADDRESS, NOT `/`. Both render this same grid, but
+               only `/weapons` carries the 398 weapon links in its HTML, and
+               this is the ONLY link into it — pointed at `/`, every weapon
+               page is reachable to a crawler through the sitemap or not at
+               all, which is how they went undiscovered. -->
+          <a class="tnav" data-nav="home" href="/weapons" data-i18n>Weapons</a>
           <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
         </nav>
         <span id="trail" class="trail" hidden></span>
