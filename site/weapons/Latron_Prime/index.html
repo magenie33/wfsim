@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.58157a448a9d.css" />
+  <link rel="stylesheet" href="/asset/style.db169500d642.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -143,7 +143,12 @@
              as ghost buttons. The brand alone is a way back to the roster
              you have to know rather than see. -->
         <nav class="topnav">
-          <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
+          <!-- THE ROSTER'S ADDRESS, NOT `/`. Both render this same grid, but
+               only `/weapons` carries the 398 weapon links in its HTML, and
+               this is the ONLY link into it — pointed at `/`, every weapon
+               page is reachable to a crawler through the sitemap or not at
+               all, which is how they went undiscovered. -->
+          <a class="tnav" data-nav="home" href="/weapons" data-i18n>Weapons</a>
           <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
         </nav>
         <span id="trail" class="trail" hidden></span>
@@ -1300,13 +1305,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">f544e389</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">d110b097</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.383ce35b6b21.js"></script>
+  <script src="/asset/app.691016f4ed01.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
