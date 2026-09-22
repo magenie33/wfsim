@@ -223,6 +223,7 @@ fn arena_for(c: &Cfg) -> Arena {
     // engagement — that a build killing 537 bodies a run never sees.
     crowd(Arena {
         cast_interrupts: Vec::new(),
+        apl: Default::default(),
         squad_size: 1,
         target_id: "e1".to_string(),
         tenno: wfsim_engine::data::tenno::default_tenno().clone(),

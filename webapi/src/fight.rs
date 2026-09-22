@@ -304,11 +304,6 @@ pub(crate) struct Fight {
     /// it as the fallback for a request that names no mode axis, so "the mode
     /// a simulate would run" and "the mode a search runs" are one answer.
     pub(crate) mode: String,
-    /// **WHAT THE PLAYER IS DOING, AS THE ORDERED LIST IT IS** — the mode's own
-    /// rules with whatever the request inserted on top (`data::apl::for_fight`).
-    /// A property of the FIGHT, so it is settled here once and the simulate and
-    /// search paths cannot disagree about which abilities are being cast.
-    pub(crate) apl: wfsim_engine::data::apl::Apl,
     pub(crate) level: u32,
     pub(crate) steel_path: bool,
     /// Is the target its ELITE variant? A property of the fight, like the
@@ -622,7 +617,10 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // roots the frame, the shooting with it; one it never names is handed to
     // you, which is what every stored scenario and every board row was measured
     // under. An empty list is that reading for all of them.
-    let apl = wfsim_engine::data::apl::for_fight(&mode_id, &inserted_apl(v)?);
+    // THE RULES THIS REQUEST INSERTED. The fight's own half is added where the
+    // params are built, off the one fact that decides it (`FightParams::apl`),
+    // so nothing here has to know what a mode resolves to.
+    let apl = inserted_apl(v)?;
     let cast_interrupts =
         wfsim_engine::data::abilities::plan_casts(&mut abilities, &apl.abilities(), tenno.energy, duration)
             .interrupts;
@@ -687,6 +685,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
     let arena = wfsim_engine::arena::Arena {
+        apl,
         // THE SQUAD THE SCENARIO NAMED. It rides on the arena so the optimizer
         // inherits it from the same constructor rather than re-deriving it.
         squad_size,
@@ -758,7 +757,6 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         cycle_from,
         single_form,
         mode: mode_id,
-        apl,
         enemy_name: spec.name.clone(),
         metric,
         level,

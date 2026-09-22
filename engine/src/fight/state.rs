@@ -227,6 +227,81 @@ pub(super) struct IncarnonState {
     pub(super) base_magazine: f64,
 }
 
+impl IncarnonState {
+    /// **WHAT THE ACTION LIST SEES RIGHT NOW** — `data::apl::Now`, built from
+    /// the one state that answers its questions.
+    ///
+    /// The gauge is ONE number for both halves of the cycle, because a cycle
+    /// only ever asks one question: in the form you can hold it is how much of
+    /// the next one you have EARNED, and in the earned form it is how much of
+    /// it you have LEFT — a charge magazine or a clock, both draining to zero.
+    /// A weapon with no cycle has no gauge and reads 0 in the base form, which
+    /// is the reading under which no transmute rule can fire at all.
+    pub(super) fn now<'a>(
+        &self,
+        params: &FightParams,
+        ammo: &Ammo,
+        next_cost: f64,
+        t: f64,
+        remaining: &'a dyn Fn(&str) -> f64,
+    ) -> crate::data::apl::Now<'a> {
+        let Some(cy) = params.cycle.as_ref() else {
+            return crate::data::apl::Now {
+                can_fire: can_fire(ammo.loaded, next_cost),
+                gauge_pct: 0.0,
+                in_base_form: true,
+                remaining,
+            };
+        };
+        let gauge_pct = match (self.in_base_form, cy.arms, cy.ends) {
+            // FILLING: whole charges against the whole it takes, and it
+            // OVERSHOOTS past 1 because the shot that crosses the line pays in
+            // whole pellets (`charge_the_gauge`).
+            (true, Arms::Gauge { charges_to_fill, .. }, _) => {
+                f64::from(self.charges) / f64::from(charges_to_fill.max(1))
+            }
+            // …and a melee Incarnon is armed by the COMBO, which is not a
+            // gauge and not yet a condition this list can say. It reads 0, so
+            // nothing in the list takes the swing that arms it away.
+            (true, Arms::HeavyAtCombo(_), _) => 0.0,
+            // SPENDING A CHARGE MAGAZINE, or SPENDING A CLOCK: the same
+            // question, and the rule that ends the form cannot tell them apart.
+            //
+            // EMPTY IS THE ENGINE'S OWN EPSILON and not `> 0`: a magazine sits
+            // on 1e-10 after an overdraw, and a gauge calling that "not spent"
+            // would hold the form open on rounds nothing can fire.
+            (false, _, Ends::ChargeMagazine) if ammo.loaded < 1e-9 => 0.0,
+            (false, _, Ends::ChargeMagazine) => ammo.loaded / ammo.cap.max(1e-9),
+            // A LOCKED WINDOW NEVER RUNS OUT, so the form is never spent. Said
+            // before the division and not after: `inf / inf` is NaN, and NaN
+            // through a `.max(0.0)` comes back as ZERO — which read as a locked
+            // Incarnon reverting on the first shot of every run.
+            (false, _, Ends::After(window)) if !window.is_finite() => 1.0,
+            (false, _, Ends::After(window)) => {
+                ((self.incarnon_until - t) / window.max(1e-9)).clamp(0.0, 1.0)
+            }
+        };
+        crate::data::apl::Now {
+            // THE ACTIVE FORM'S MAGAZINE: a CHARGE-MAGAZINE cycle holds the
+            // base form's rounds aside while it is transformed, so in that half
+            // asking `ammo.loaded` is asking about a magazine nobody holds. A
+            // clock-ended cycle keeps no second magazine — a melee weapon has
+            // none at all — and fires the one magazine throughout.
+            can_fire: can_fire(
+                if self.in_base_form && cy.ends == Ends::ChargeMagazine {
+                    self.base_magazine
+                } else {
+                    ammo.loaded
+                },
+                next_cost,
+            ),
+            gauge_pct,
+            in_base_form: self.in_base_form,
+            remaining,
+        }
+    }
+}
+
 /// THE WINDOWS A CARD OPENS AND A CLOCK CLOSES — reload and headshot buffs,
 /// their piles and their expiries.
 pub(super) struct CardWindows {

@@ -870,6 +870,7 @@ impl FightParams {
         let arc_reload_bonus = arcane.reload_bonus;
         let crate::arena::Arena {
             cast_interrupts,
+            apl: apl_inserted,
             target_id,
             tenno,
             target,
@@ -970,6 +971,7 @@ impl FightParams {
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
             cast_interrupts,
+            apl_inserted,
             damage: panel.damage,
             radial: compressed_radial,
             cluster: panel.cluster,

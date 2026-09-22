@@ -4,6 +4,19 @@
 //! a refill takes, and the buffs a reload arms.
 
 use super::*;
+use crate::data::apl::Action;
+
+/// HOW LONG EACH ABILITY'S WINDOW HAS LEFT — the one fact a `buff.X.remains`
+/// rule reads. Zero for an ability nobody picked and for one already lapsed.
+pub(super) fn ability_remains(params: &FightParams, t: f64) -> impl Fn(&str) -> f64 + '_ {
+    move |id: &str| {
+        params
+            .abilities
+            .iter()
+            .find(|a| a.id == id)
+            .map_or(0.0, |a| (a.ends_at_seconds - t).max(0.0))
+    }
+}
 
 /// WHAT THE SHOT LOOP DOES NEXT, when a transition has decided it.
 pub(super) enum Flow {
@@ -23,6 +36,7 @@ pub(super) enum Flow {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn charge_magazine_cycle(
     params: &FightParams,
+    apl: &crate::data::apl::Apl,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     next_cost: f64,
@@ -38,8 +52,13 @@ pub(super) fn charge_magazine_cycle(
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,
 ) -> Flow {
+        // WHAT THE LIST CALLS FOR AT THIS INSTANT. Asked once and matched
+        // against, so the branches below are what the fight DOES and the list
+        // is what decides — a rule inserted above `reload` stops the reload.
+        let remains = ability_remains(params, *t);
+        let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, &remains));
         if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
-            if !incarnon.in_base_form && ammo.loaded < 1e-9 {
+            if want == Action::TransformOut {
                 // Charge magazine spent: revert to the base form. The swap
                 // fully reloads the base magazine (wiki side effect). The
                 // revert does NOT count as a transform — `transforms` counts
@@ -88,7 +107,7 @@ pub(super) fn charge_magazine_cycle(
                 }
                 return Flow::Continue;
             }
-            if incarnon.in_base_form && !can_fire(incarnon.base_magazine, next_cost) {
+            if want == Action::Reload {
                 // Base-form reload. A dry finite reserve stops the gun here
                 // exactly as it does outside the cycle — the weapon is out of
                 // ammo, not out of one of its two forms.
@@ -145,7 +164,7 @@ pub(super) fn charge_magazine_cycle(
                 *field_duration_boost = true;
                 return Flow::Continue;
             }
-        } else if !can_fire(ammo.loaded, next_cost) {
+        } else if want == Action::Reload {
             // AN EMPTY MAGAZINE TAKES THE WHOLE PILE, before the reload that
             // rebuilds it. Mounting Momentum is cleared the instant the count
             // reaches zero — not by the reload, and not by a clock — so firing
@@ -219,12 +238,12 @@ pub(super) fn charge_magazine_cycle(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn charge_the_gauge(
     params: &FightParams,
+    apl: &crate::data::apl::Apl,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     d: &mut crate::rules::rng::Draws,
     cy: &IncarnonCycle,
     charge_on: crate::model::ChargeOn,
-    charges_to_fill: u32,
     pellets_before: u32,
     headshots_before: u32,
     t: &mut f64,
@@ -272,7 +291,13 @@ pub(super) fn charge_the_gauge(
             // 7-pellet shot into a 30-charge gauge arrives at 35 on the
             // fifth shot, never at 30, so the comparison is `>=` and the
             // shot that crosses it is fired in the BASE form.
-            if incarnon.charges >= charges_to_fill {
+            let remains = ability_remains(params, *t);
+            // NO `next_cost` TO ASK ABOUT HERE — the shot is over and the next
+            // one has not been priced. A full magazine is the honest stand-in:
+            // the only rule above `transform_in` a reader can write is a cast,
+            // and `reload` sits below it and is asked again at the top of the
+            // loop with the real cost.
+            if apl.pick(&incarnon.now(params, ammo, 0.0, *t, &remains)) == Action::TransformIn {
                 // BOTH DIRECTIONS TAKE IT. The wiki says Ready
                 // Retaliation "can affect transition INTO Incarnon form
                 // with a well-timed manual reload" and not the way back;

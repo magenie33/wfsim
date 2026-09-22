@@ -304,7 +304,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         info, policy, buff_cfg, denied_buff_triggers, arena, evos, cycle_from, single_form,
         enemy_name, metric, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
         ammo_drops, pickup_range_m, landscape,
-        frenzy_single, frenzy_locks, cycle_frenzy_lock, apl, ..
+        frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
     let ammo = AmmoEconomy { drops: ammo_drops, pickup_range_m, landscape };
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
@@ -777,11 +777,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
 
     json!({
         "ok": true,
-        // **THE LIST THIS FIGHT RAN**, as SimC writes one. The page prints what
-        // comes back rather than composing it again from the mode and the
-        // request: the fight settled which abilities are cast, and a second
-        // assembly on the page is a second answer to that.
-        "apl": apl.0.iter().map(wfsim_engine::data::apl::Rule::to_simc).collect::<Vec<_>>(),
+        // **THE LIST THIS FIGHT RAN**, as SimC writes one, off the params the
+        // loop was handed — not composed again here. The page prints what comes
+        // back, so what it shows is what ran.
+        "apl": params.apl().0.iter().map(wfsim_engine::data::apl::Rule::to_simc).collect::<Vec<_>>(),
         // WHICH ENGAGEMENT THE BENCHMARK FIGHT IS — its own RNG state, as TWO
         // u32 halves.
         //

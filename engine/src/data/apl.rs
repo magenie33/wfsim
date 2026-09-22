@@ -18,12 +18,13 @@
 //! 7-pellet shot into a 30-charge gauge arrives at 35, and the shot that
 //! crossed the line was fired in the form you were already in.
 //!
-//! WHAT IS HERE TODAY AND WHAT IS NOT. The four modes still run their own code,
-//! and this list carries only what they never could — the abilities the player
-//! casts. Moving a mode's own decisions in here is the next step and it is the
-//! one that must move no number, because `mode` is a BOARD axis: every
-//! published row names one, so a mode that plays differently is every row on
-//! that weapon changing under a reader.
+//! **THE FIGHT EXECUTES THIS.** Every reload, every transmute and every shot is
+//! the list's call: the loop scans the list at each point it acts, so a rule
+//! inserted above `reload` stops the reload from happening.
+//!
+//! WHAT IS NOT THE LIST'S YET: arming a MELEE Incarnon, which is a heavy attack
+//! at a combo the vocabulary cannot say. Its gauge reads 0, so no rule can take
+//! that swing away, and the condition is what a reader adds when one is needed.
 //!
 //! NOT A TEXT EXPRESSION, deliberately. SimC's conditions are strings parsed at
 //! load, and a typo there reads as a rule that simply never fires. Every
@@ -134,8 +135,22 @@ impl Apl {
 
     /// **WHAT THE PLAYER DOES NOW** — the first rule that holds, and `Shoot`
     /// when none does, which is also what an empty list answers.
+    ///
+    /// A RULE WHOSE ACTION IS NOT POSSIBLE IS SKIPPED, not taken and refused:
+    /// you cannot go into a form you are already in, and the scan has to carry
+    /// on to the rule that says what you do instead. Without it every fight
+    /// would open on `transform_out,if=gauge.pct<=0`, the base form's gauge
+    /// being empty at the start of every engagement.
     pub fn pick(&self, now: &Now<'_>) -> Action {
         for r in &self.0 {
+            let possible = match &r.action {
+                Action::TransformIn => now.in_base_form,
+                Action::TransformOut => !now.in_base_form,
+                _ => true,
+            };
+            if !possible {
+                continue;
+            }
             let holds = match &r.when {
                 When::Always => true,
                 When::CannotFire => !now.can_fire,
@@ -149,6 +164,16 @@ impl Apl {
         }
         Action::Shoot
     }
+
+    /// **IS THIS THE ACTION THE LIST CALLS FOR?** — what the fight asks at each
+    /// point it acts.
+    ///
+    /// Through [`Self::pick`] and never by looking for the rule, so the LIST'S
+    /// ORDER decides: a rule inserted above `reload` stops the reload from
+    /// happening that instant, which is the whole of what a priority list is.
+    pub fn wants(&self, action: &Action, now: &Now<'_>) -> bool {
+        self.pick(now) == *action
+    }
 }
 
 /// **THE FACTS A CONDITION MAY READ**, and nothing else.
@@ -158,28 +183,38 @@ impl Apl {
 /// having. The fight fills it; this module never learns how a gauge is kept.
 pub struct Now<'a> {
     pub can_fire: bool,
-    /// The Incarnon gauge as a share, 0 on a weapon that has none, and NOT
-    /// CAPPED AT 1: the shot that fills it pays in whole pellets, so 35 charges
-    /// into a 30-charge gauge is 1.17 and a rule that read a clamped value
-    /// would be a rule that cannot tell a full gauge from an overfilled one.
+    /// **HOW MUCH OF THE EARNED FORM YOU HAVE LEFT, OR HOW MUCH OF THE NEXT ONE
+    /// YOU HAVE EARNED** — one number, because a cycle only ever asks one
+    /// question. In the form you can HOLD it fills 0 → 1; in the earned form it
+    /// drains 1 → 0, whether what drains is a charge magazine or a clock.
+    ///
+    /// NOT CAPPED AT 1: the shot that fills it pays in whole pellets, so 35
+    /// charges into a 30-charge gauge is 1.17, and a rule reading a clamped
+    /// value could not tell a full gauge from an overfilled one.
     pub gauge_pct: f64,
+    /// Which half of a cycle the player is in — `true` on a weapon with no
+    /// other form at all. A transmute's two ends are each possible from exactly
+    /// one of them, which is what [`Apl::pick`] reads it for.
+    pub in_base_form: bool,
     /// How long a named ability's buff has left, 0 when it is down.
     pub remaining: &'a dyn Fn(&str) -> f64,
 }
 
-/// **THE LIST A FIGHT RUNS**: what the player inserted, then the mode's own.
+/// **THE LIST A FIGHT RUNS**: what the player inserted, then the fight's own.
 ///
 /// INSERTED RULES GO ON TOP, and that is what makes them do anything: the
 /// mode's last rule is `shoot`, which always holds, so a cast written below it
 /// is a cast that never happens. It is also what a cast MEANS — you cast
 /// INSTEAD of shooting this instant, and pay the shooting for it.
 ///
-/// An unknown mode contributes nothing rather than refusing: the inserted rules
-/// are still the player's, and a mode this build does not have is already
-/// refused where the mode is resolved.
-pub fn for_fight(mode: &str, inserted: &Apl) -> Apl {
+/// **THE FIGHT'S OWN HALF IS CHOSEN BY WHETHER IT CYCLES, NOT BY A MODE NAME.**
+/// `base`, `alternate` and `transformed` are one form fired throughout and
+/// differ in nothing this list can say; a cycle is the only mode with a
+/// transmute to decide. Composed where the params are built, so a fight cannot
+/// run a list assembled from a name that no longer describes it.
+pub fn for_fight(inserted: &Apl, has_cycle: bool) -> Apl {
     let mut out = inserted.0.clone();
-    out.extend(preset(mode).unwrap_or_default().0);
+    out.extend(preset(if has_cycle { "cycle" } else { "base" }).unwrap_or_default().0);
     Apl(out)
 }
 
@@ -191,11 +226,10 @@ pub fn for_fight(mode: &str, inserted: &Apl) -> Apl {
 /// fight does: a shot, a reload's two ends, a transmute's two ends
 /// (docs/RECORD.md §"The stream is the four things a fight does").
 ///
-/// **NOTHING EXECUTES THESE YET.** The fight still runs each mode in its own
-/// Rust, and these are the translation to check before that changes. `mode` is
-/// a BOARD axis, so the day the fight reads these instead, every published row
-/// on every weapon is riding on them being the same policy — which is why the
-/// translation is written down and reviewed before it is wired.
+/// `mode` is a BOARD axis, so every published row on every weapon rides on
+/// these being the policy its own Rust was: the decisions were routed through
+/// this list one at a time, each compared against the branch it replaced on
+/// every fight the suite runs and on the board's leading rows.
 pub fn preset(mode: &str) -> Option<Apl> {
     let rule = |action: Action, when: When| Rule { action, when };
     let shoot_and_reload = || {
@@ -227,7 +261,7 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_fire: true, gauge_pct: 0.0, remaining }
+        Now { can_fire: true, gauge_pct: 0.0, in_base_form: true, remaining }
     }
 
     fn cast(id: &str, under: f64) -> Rule {
@@ -318,17 +352,18 @@ prio: 3
     fn an_inserted_rule_outranks_the_mode_and_an_empty_insert_changes_nothing() {
         let mine = Apl(vec![cast("warcry", 0.0)]);
         assert_eq!(
-            for_fight("base", &mine).to_simc(),
+            for_fight(&mine, false).to_simc(),
             "warcry,if=buff.warcry.remains<0\nreload,if=!can_fire\nshoot"
         );
         // NOTHING INSERTED IS THE FIGHT EVERY BOARD ROW WAS MEASURED UNDER, and
         // it has to be the mode's own list to the line.
         for m in ["base", "alternate", "transformed", "cycle"] {
-            assert_eq!(for_fight(m, &Apl::default()), preset(m).unwrap(), "{m}");
-            assert!(for_fight(m, &Apl::default()).abilities().is_empty(), "{m} casts nothing");
+            let cycles = m == "cycle";
+            assert_eq!(for_fight(&Apl::default(), cycles), preset(m).unwrap(), "{m}");
+            assert!(for_fight(&Apl::default(), cycles).abilities().is_empty(), "{m} casts nothing");
         }
         // …and the ability the fight casts is the one the inserted rule names.
-        assert_eq!(for_fight("cycle", &mine).abilities(), vec!["warcry"]);
+        assert_eq!(for_fight(&mine, true).abilities(), vec!["warcry"]);
     }
 
     /// A GAUGE CONDITION READS THE GAUGE, which is the fact the cycle turns on.
@@ -336,9 +371,16 @@ prio: 3
     fn the_cycle_turns_on_the_gauge() {
         let apl = preset("cycle").unwrap();
         let none = |_: &str| 0.0;
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, remaining: &none };
+        // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
+        // question; the way back is asked from the other half, below.
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        assert_eq!(apl.pick(&at(0.0)), Action::TransformOut, "spent: come back");
+        let spent = Now { can_fire: true, gauge_pct: 0.0, in_base_form: false, remaining: &none };
+        assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
+        // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
+        // ANYWAY: a fight opens in the base form with an empty gauge, which is
+        // `gauge.pct<=0` to the letter, and it must not read as "revert".
+        assert_eq!(apl.pick(&at(0.0)), Action::Shoot, "empty gauge in base form: just shoot");
         assert_eq!(apl.pick(&at(0.5)), Action::Shoot, "filling: keep shooting");
         // AN OVERFILLED GAUGE IS THE ORDINARY CASE, not an edge one: the shot
         // that crossed the line paid in whole pellets and was fired in the form
@@ -354,7 +396,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_fire: false, gauge_pct: 0.5, remaining: &none };
+        let dry = Now { can_fire: false, gauge_pct: 0.5, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 }

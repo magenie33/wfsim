@@ -14,6 +14,7 @@ use super::*;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn after_the_shot(
     params: &FightParams,
+    apl: &crate::data::apl::Apl,
     ap: &FightParams,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
@@ -195,14 +196,18 @@ pub(super) fn after_the_shot(
         // beside the combo counter it reads) and skips every line of this: it
         // has no gauge to fill, no charge magazine to fill, and no transmute
         // animation to spend.
-        if let Some((cy, charge_on, charges_to_fill)) =
+        // HOW MANY CHARGES IT TAKES IS THE GAUGE'S OWN BUSINESS NOW: the list
+        // asks `gauge.pct`, and `IncarnonState::now` reads the count off the
+        // form entry. What this still decides is WHETHER there is a gauge —
+        // a melee Incarnon arms on the swing and skips every line of it.
+        if let Some((cy, charge_on)) =
             params.cycle.as_ref().and_then(|cy| match cy.arms {
-                Arms::Gauge { charge_on, charges_to_fill } => Some((cy, charge_on, charges_to_fill)),
+                Arms::Gauge { charge_on, .. } => Some((cy, charge_on)),
                 Arms::HeavyAtCombo(_) => None,
             })
         {
             charge_the_gauge(
-                params, rec, rng, d, cy, charge_on, charges_to_fill, pellets_before, headshots_before,
+                params, apl, rec, rng, d, cy, charge_on, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
                 rs_armed, opening_closed,
             );

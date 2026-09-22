@@ -14,6 +14,7 @@ use super::*;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn before_the_shot(
     params: &FightParams,
+    apl: &crate::data::apl::Apl,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     trace: &mut Option<&mut Replay>,
@@ -245,14 +246,17 @@ pub(super) fn before_the_shot(
         // same way it armed the first time.
         if let Some(cy) = &params.cycle {
             if let Ends::After(_) = cy.ends {
-                if !incarnon.in_base_form && t >= incarnon.incarnon_until {
+                let remains = crate::fight::cycle::ability_remains(params, t);
+                let out = apl.pick(&incarnon.now(params, ammo, next_cost, t, &remains))
+                    == crate::data::apl::Action::TransformOut;
+                if out {
                     incarnon.in_base_form = true;
                     record_weapon(params, rec, ammo, incarnon);
                 }
             }
         }
         charge_magazine_cycle(
-            params, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
+            params, apl, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
             field_duration_boost,
         )

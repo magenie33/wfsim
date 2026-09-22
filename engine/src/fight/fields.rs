@@ -55,6 +55,16 @@ pub(super) struct FieldCtx {
 }
 
 impl FightParams {
+    /// **THE ACTION PRIORITY LIST THIS FIGHT RUNS** — the player's inserted
+    /// rules above the fight's own half (`data::apl::for_fight`).
+    ///
+    /// COMPOSED, NEVER STORED. The fight's half turns on one fact this struct
+    /// already carries — whether there is a cycle to decide — and a stored copy
+    /// is the second source that would disagree with it.
+    pub fn apl(&self) -> crate::data::apl::Apl {
+        crate::data::apl::for_fight(&self.apl_inserted, self.cycle.is_some())
+    }
+
     /// A TOME'S CYCLE: fire the weapon, fill the meter, throw an orb, carry on.
     ///
     /// The params are the BASE form's — a Tome shoots its primary fire the

@@ -24,6 +24,7 @@ use wfsim_engine::rules::scaling;
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
         cast_interrupts: Vec::new(),
+        apl_inserted: Default::default(),
         sample_by: wfsim_engine::rules::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.

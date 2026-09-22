@@ -369,6 +369,12 @@ pub struct FightParams {
     /// them up (`data::abilities::plan_casts`). The windows in `abilities` are
     /// already what the energy paid for; this is the other half of the price.
     pub cast_interrupts: Vec<(f64, f64)>,
+    /// **THE RULES THE PLAYER INSERTED ABOVE THE FIGHT'S OWN** — empty for
+    /// every fight this app has run, which is exactly the mode's own list
+    /// (`data::apl::for_fight`). It is the INSERTED half and not the composed
+    /// one because the other half is a fact this struct already carries: a
+    /// fight cycles or it does not, and a stored copy could disagree with it.
+    pub apl_inserted: crate::data::apl::Apl,
     /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).

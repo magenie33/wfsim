@@ -445,6 +445,10 @@ pub fn run_once_traced(
         combo_spec,
     } = fixed;
 
+    // **THE LIST THIS RUN EXECUTES**, composed once rather than per decision:
+    // it is the same list for the whole engagement, and building it inside the
+    // loop would allocate on every shot.
+    let apl = params.apl();
     loop {
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
@@ -458,6 +462,7 @@ pub fn run_once_traced(
         // nobody is replaying should not pay for passing them.
         match before_the_shot(
             params,
+            &apl,
             rec,
             rng,
             &mut trace,
@@ -922,6 +927,7 @@ pub fn run_once_traced(
 
         after_the_shot(
             params,
+            &apl,
             ap,
             rec,
             rng,

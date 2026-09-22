@@ -109,6 +109,11 @@ pub struct Arena {
     /// of an ability's price travel together: the window the energy bought is
     /// already in `abilities`, and this is the shooting it cost.
     pub cast_interrupts: Vec<(f64, f64)>,
+    /// **THE RULES THE PLAYER INSERTED INTO THE ACTION PRIORITY LIST**, above
+    /// whatever the mode already does. A property of the FIGHT, like the
+    /// abilities beside it: the optimizer gets it by construction and the board
+    /// sends none, so every published row is the mode's own list.
+    pub apl: crate::data::apl::Apl,
     /// WHAT WAS PICKED, unresolved, and the strength it was resolved AT.
     ///
     /// Carried beside the resolved list because a MOD can raise Ability
@@ -155,6 +160,7 @@ impl Arena {
     pub fn training(duration_seconds: f64) -> Self {
         Self {
             cast_interrupts: Vec::new(),
+            apl: crate::data::apl::Apl::default(),
             target_id: "e1".to_string(),
             tenno: crate::data::tenno::default_tenno().clone(),
             // SOLO, like every fight that does not say otherwise.

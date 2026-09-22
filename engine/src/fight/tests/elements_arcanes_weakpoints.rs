@@ -289,6 +289,31 @@ fn incarnon_cycle_alternates_forms_deterministically() {
     // rate that can never refill the gauge it is the whole of its Incarnon
     // damage.
     assert!(q.mean_damage > s.mean_damage, "the gift is worth something");
+
+    // **THE FIGHT IS EXECUTING THE LIST, NOT ITS OWN MIND.** One rule inserted
+    // above the mode's own — go in whenever there is anything to go in WITH —
+    // and the same weapon on the same dice transmutes on a part-filled gauge
+    // instead of waiting for a full one. It is the whole claim `data::apl`
+    // makes, and no other test here would notice a loop that ignored the list.
+    let eager = FightParams {
+        apl_inserted: crate::data::apl::Apl(vec![crate::data::apl::Rule {
+            action: crate::data::apl::Action::TransformIn,
+            when: crate::data::apl::When::GaugeAtLeast { pct: 0.0 },
+        }]),
+        ..p.clone()
+    };
+    let e = monte_carlo(&eager, 5, 9);
+    assert!(
+        e.mean_transforms > s.mean_transforms,
+        "an eager rule did not reach the loop: {} transforms, was {}",
+        e.mean_transforms,
+        s.mean_transforms,
+    );
+    // …AND THE MODE'S OWN LIST IS WHAT AN EMPTY INSERT RUNS, to the line, so
+    // every published row is the policy it was measured under.
+    assert_eq!(p.apl(), crate::data::apl::preset("cycle").unwrap());
+    let plain = FightParams { cycle: None, ..p.clone() };
+    assert_eq!(plain.apl(), crate::data::apl::preset("base").unwrap());
 }
 
 /// `charge_on` is WEAPON DATA, not a constant. Documented in the yaml and

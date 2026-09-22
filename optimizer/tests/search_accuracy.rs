@@ -51,6 +51,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
     Scenario {
         arena: Arena {
             cast_interrupts: Vec::new(),
+            apl: Default::default(),
             squad_size: 1,
             target_id: "e1".to_string(),
             abilities: Vec::new(),
