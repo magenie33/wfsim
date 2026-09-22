@@ -819,7 +819,7 @@ fn casting_costs_shots_and_the_pool_limits_the_window() {
         p.abilities = resolve(&picks, &Caster::default(), "", "melee");
         p.abilities[0].interrupts_fire = interrupts;
         p.duration_seconds = 60.0;
-        let cast = crate::data::abilities::plan_casts(&mut p.abilities, energy, 60.0);
+        let cast = crate::data::abilities::plan_casts(&mut p.abilities, &["warcry"], energy, 60.0);
         p.cast_interrupts = cast.interrupts;
         (p.abilities[0].ends_at_seconds, run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots)
     };

@@ -717,9 +717,16 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 
 **A TICKED ABILITY IS ASSUMED UP AND NOBODY PAID FOR IT.** That is the reading
 every stored scenario and every board row was measured under, and it stays the
-default. Tick **Cast them** (`cast_abilities`) and the fight plans the casting
-instead: each ability is cast at the start and RECAST the moment its window
-lapses, out of the Warframe's own energy pool.
+default. It is also what a fight whose ACTION PRIORITY LIST never names the
+ability means — casting is an action, so the list that says when you act is the
+one that says you cast at all, and no switch sits beside it.
+
+Name it in the list (`apl`, `data::apl`) and the fight plans the casting
+instead: it is cast at the start and RECAST the moment its window lapses, out
+of the Warframe's own energy pool. A fight's request carries the rules the
+player INSERTED and the engine puts them above the mode's own, which is the
+only place they can fire — the mode's last rule is `shoot`, and it always
+holds. The response carries back the whole list it ran.
 
 - **A RECAST IS SEAMLESS, WHICH IS WHY A PLAN IS ENOUGH.** Recasting exactly at
   expiry makes the windows contiguous, so "how many casts the energy buys" IS

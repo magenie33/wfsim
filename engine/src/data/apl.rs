@@ -157,6 +157,22 @@ pub struct Now<'a> {
     pub remaining: &'a dyn Fn(&str) -> f64,
 }
 
+/// **THE LIST A FIGHT RUNS**: what the player inserted, then the mode's own.
+///
+/// INSERTED RULES GO ON TOP, and that is what makes them do anything: the
+/// mode's last rule is `shoot`, which always holds, so a cast written below it
+/// is a cast that never happens. It is also what a cast MEANS — you cast
+/// INSTEAD of shooting this instant, and pay the shooting for it.
+///
+/// An unknown mode contributes nothing rather than refusing: the inserted rules
+/// are still the player's, and a mode this build does not have is already
+/// refused where the mode is resolved.
+pub fn for_fight(mode: &str, inserted: &Apl) -> Apl {
+    let mut out = inserted.0.clone();
+    out.extend(preset(mode).unwrap_or_default().0);
+    Apl(out)
+}
+
 /// **THE FOUR MODES, WRITTEN OUT AS THE LISTS THEY ALREADY ARE.**
 ///
 /// `data::weapons::play_modes` says it in prose — *"a policy over its forms …
@@ -284,6 +300,25 @@ prio: 3
             assert!(matches!(apl.0.last().map(|r| &r.when), Some(When::Always)), "{m} ends with a fallback");
         }
         assert!(preset("no_such_mode").is_none());
+    }
+
+    /// **WHAT THE PLAYER INSERTS GOES ABOVE WHAT THE MODE ALREADY DOES**, or it
+    /// does nothing: the mode ends in `shoot`, which always holds.
+    #[test]
+    fn an_inserted_rule_outranks_the_mode_and_an_empty_insert_changes_nothing() {
+        let mine = Apl(vec![cast("warcry", 0.0)]);
+        assert_eq!(
+            for_fight("base", &mine).to_simc(),
+            "warcry,if=buff.warcry.remains<0\nreload,if=!can_fire\nshoot"
+        );
+        // NOTHING INSERTED IS THE FIGHT EVERY BOARD ROW WAS MEASURED UNDER, and
+        // it has to be the mode's own list to the line.
+        for m in ["base", "alternate", "transformed", "cycle"] {
+            assert_eq!(for_fight(m, &Apl::default()), preset(m).unwrap(), "{m}");
+            assert!(for_fight(m, &Apl::default()).abilities().is_empty(), "{m} casts nothing");
+        }
+        // …and the ability the fight casts is the one the inserted rule names.
+        assert_eq!(for_fight("cycle", &mine).abilities(), vec!["warcry"]);
     }
 
     /// A GAUGE CONDITION READS THE GAUGE, which is the fact the cycle turns on.

@@ -41,6 +41,11 @@ function renderSimBuild() {
 /// policy shown, in the vocabulary the combat record uses for what a fight does
 /// (a shot, a reload, a transmute's two ends) and the shape SimC writes one in:
 /// top down, the first rule that holds is what the player does.
+///
+/// THE FIGHT'S OWN ANSWER IS `r.apl` and this is the mode's half of it. They
+/// agree while nothing on this page inserts a rule, which `check_apl_shown`
+/// asserts against a live response — the day an insert UI exists, this reads
+/// the response instead, because composing the list twice is two answers.
 function aplHtml(w) {
   const kind = ((w || {}).mode_kinds || {})[mode];
   const lines = ((META && META.apl_presets) || {})[kind] || [];

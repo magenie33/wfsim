@@ -304,6 +304,11 @@ pub(crate) struct Fight {
     /// it as the fallback for a request that names no mode axis, so "the mode
     /// a simulate would run" and "the mode a search runs" are one answer.
     pub(crate) mode: String,
+    /// **WHAT THE PLAYER IS DOING, AS THE ORDERED LIST IT IS** — the mode's own
+    /// rules with whatever the request inserted on top (`data::apl::for_fight`).
+    /// A property of the FIGHT, so it is settled here once and the simulate and
+    /// search paths cannot disagree about which abilities are being cast.
+    pub(crate) apl: wfsim_engine::data::apl::Apl,
     pub(crate) level: u32,
     pub(crate) steel_path: bool,
     /// Is the target its ELITE variant? A property of the fight, like the
@@ -612,11 +617,15 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.class.as_str()),
         wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.slot.as_str()),
     );
-    // …AND WHETHER THEY ARE CAST OR ASSUMED. Off is the reading every stored
-    // scenario and every board row was measured under, so it is the default.
-    let cast_interrupts = get_bool(v, "cast_abilities", false)
-        .then(|| wfsim_engine::data::abilities::plan_casts(&mut abilities, tenno.energy, duration))
-        .map_or_else(Vec::new, |p| p.interrupts);
+    // …AND WHETHER THEY ARE CAST OR ASSUMED, WHICH IS THE ACTION LIST'S ANSWER.
+    // An ability the list names is cast — energy out of the pool and, when it
+    // roots the frame, the shooting with it; one it never names is handed to
+    // you, which is what every stored scenario and every board row was measured
+    // under. An empty list is that reading for all of them.
+    let apl = wfsim_engine::data::apl::for_fight(&mode_id, &inserted_apl(v)?);
+    let cast_interrupts =
+        wfsim_engine::data::abilities::plan_casts(&mut abilities, &apl.abilities(), tenno.energy, duration)
+            .interrupts;
 
     // The published roster PLUS whatever this request brought with it. A
     // custom shadows nothing (`custom_enemies` refuses a published id), so the
@@ -749,6 +758,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         cycle_from,
         single_form,
         mode: mode_id,
+        apl,
         enemy_name: spec.name.clone(),
         metric,
         level,
@@ -941,6 +951,21 @@ fn positions(v: &Value) -> (wfsim_engine::rules::space::Vec2, wfsim_engine::rule
 
 /// The abilities the player ticked, each with its own seconds (`None` for the
 /// whole fight) and, where the ability offers one, its element.
+/// **THE RULES THE PLAYER INSERTED**, above whatever the mode already does.
+///
+/// REFUSED RATHER THAN IGNORED. Every action and every condition is a typed
+/// field (`data::apl`), so a rule naming something this engine does not have
+/// comes back as an error the reader can see — SimC's own failure is a
+/// mistyped condition that quietly never fires, and a fight that silently
+/// dropped a cast would report a kpm nobody's build produces.
+fn inserted_apl(v: &Value) -> Result<wfsim_engine::data::apl::Apl, Value> {
+    let Some(raw) = v.get("apl") else {
+        return Ok(wfsim_engine::data::apl::Apl::default());
+    };
+    serde_json::from_value(raw.clone())
+        .map_err(|e| err_json(format!("bad action priority list: {e}")))
+}
+
 fn ability_picks(v: &Value) -> Vec<wfsim_engine::data::abilities::AbilityPick<'_>> {
     v
         .get("abilities")
