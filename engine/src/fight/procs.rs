@@ -163,6 +163,8 @@ pub(super) fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> 
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn fire_extra_hits(
+    // WHOSE EXTRA HIT. An ability grants it, and the ability is the seat's.
+    owner: Seat,
     trigger_raw: f64,
     bracket: f64,
     part_again: f64,
@@ -203,7 +205,7 @@ pub(super) fn fire_extra_hits(
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         ledger::settle(
-            r, rec, at, Seat::WIELDER, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            r, rec, at, owner, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
             ledger::Clock::Hit,
             || Instance {
                 origin: crate::record::Origin::ExtraHit,
@@ -223,12 +225,12 @@ pub(super) fn fire_extra_hits(
         );
         r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
         if let Some(pool) = broke {
-            push_break_proc(debuffs, params, at, pool);
+            push_break_proc(debuffs, owner, params, at, pool);
         }
         if killed {
             gal.bump_on_kill(params, at);
             arc.on_kill(params, at);
-            debuffs.on_death(params.acid_shells, &params.foe);
+            debuffs.on_death(owner, params.acid_shells, &params.foe);
             // A fresh individual, so the remaining extra hits of this trigger
             // are gone with the one that earned them — the same rule the wiki
             // states for the trigger itself ("If a hit that would trigger an
@@ -256,6 +258,7 @@ pub(super) fn fire_extra_hits(
         );
         settle_procs(
             procs,
+            owner,
             at,
             InstanceScale {
                 // THE CATEGORY'S RULE, not this function's: an extra hit that
@@ -363,6 +366,8 @@ pub(super) fn dot_family_cap(dtype: DamageType) -> Option<usize> {
 }
 
 #[allow(clippy::too_many_arguments)]
+// WHOSE AREAS THESE ARE — each `AreaHit` carries it, because a cloud pays out
+// to whoever stands near the body long after the proc that left it.
 pub(super) fn drain_area_procs(
     debuffs: &mut DebuffState,
     target: &mut TargetState,
@@ -508,7 +513,7 @@ pub(super) fn drain_area_procs(
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
             r.sources.add_status(hit.shares.dominant(), eff);
             ledger::settle(
-                r, rec, at_now, Seat::WIELDER, j, hit.shares.dominant(), PopKind::BlastArea,
+                r, rec, at_now, hit.owner, j, hit.shares.dominant(), PopKind::BlastArea,
                 &breakdown, settled, Some(dbf),
                 ledger::Clock::Dot,
                 || Instance {
@@ -531,7 +536,7 @@ pub(super) fn drain_area_procs(
                 // areas being cleared from a single shot".
                 let acid = params.acid_shells.filter(|_| !exploded[j]);
                 exploded[j] = true;
-                dbf.on_death(acid, fp);
+                dbf.on_death(hit.owner, acid, fp);
             }
         }
     }
@@ -548,6 +553,9 @@ pub(super) const TESLA_RADIUS_M: f64 = 3.0;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn settle_procs(
     procs: Vec<DamageType>,
+    // WHOSE PROCS THESE ARE. Every DoT they leave carries it, so the tick that
+    // pays out four seconds later is still credited to whoever applied it.
+    owner: Seat,
     at: f64,
     scale: InstanceScale,
     debuffs: &mut DebuffState,
@@ -649,6 +657,7 @@ pub(super) fn settle_procs(
         // exists to make a one-line change.
         let part = if dot_takes_weakpoint(dtype) { part_factor } else { 1.0 };
         let dot = Dot {
+                owner,
                 next_tick: at + delay,
                 ticks_left: ticks,
                 cause: seeded_by,
@@ -929,6 +938,7 @@ pub(super) fn settle_procs(
                     // procs is not dealt this AoE damage" — and by the drain,
                     // which never hands a body its own.
                     debuffs.area_hit.push(AreaHit {
+                        owner,
                         damage: total / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
                         radius_m: BLAST_AOE_RADIUS_M,
                         shares: TypeShares::single(DamageType::Blast),
@@ -975,7 +985,7 @@ pub(super) fn settle_procs(
                         r.sources.add_status(DamageType::Blast, eff);
                         let stack = b.value;
                         ledger::settle(
-                            r, rec, at, Seat::WIELDER, 0, DamageType::Blast, PopKind::Blast,
+                            r, rec, at, owner, 0, DamageType::Blast, PopKind::Blast,
                             &breakdown, settled, Some(debuffs),
                             ledger::Clock::Dot,
                             || Instance {
@@ -1001,17 +1011,18 @@ pub(super) fn settle_procs(
                     // counting hits sees.
                     r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
                     if let Some(pool) = broke_any {
-                        push_break_proc(debuffs, params, at, pool);
+                        push_break_proc(debuffs, owner, params, at, pool);
                     }
                     if killed {
                         gal.bump_on_kill(params, at);
                         arc.on_kill(params, at);
-                        debuffs.on_death(params.acid_shells, &params.foe);
+                        debuffs.on_death(owner, params.acid_shells, &params.foe);
                     } else {
                         // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT.
                         // The bracket is already folded into `xh_total`, and no
                         // body part is re-applied — a detonation struck none.
                         fire_extra_hits(
+                            owner,
                             xh_total,
                             1.0,
                             1.0,
@@ -1069,6 +1080,7 @@ pub(super) fn settle_procs(
                 // MEASUREMENTS M33.
                 settle_procs(
                     vec![part],
+                    owner,
                     at,
                     InstanceScale {
                         // THE 0% MEMBER OF THE EXTRA HIT CATEGORY. This arcane
@@ -1139,7 +1151,7 @@ pub(super) fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             ledger::settle(
-                r, rec, at, Seat::WIELDER, 0, proc, PopKind::Arcane, &breakdown, settled,
+                r, rec, at, owner, 0, proc, PopKind::Arcane, &breakdown, settled,
                 Some(debuffs),
                 ledger::Clock::Hit,
                 || Instance {
@@ -1154,12 +1166,12 @@ pub(super) fn settle_procs(
             );
             r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
             if let Some(pool) = broke {
-                push_break_proc(debuffs, params, at, pool);
+                push_break_proc(debuffs, owner, params, at, pool);
             }
             if killed {
                 gal.bump_on_kill(params, at);
                 arc.on_kill(params, at);
-                debuffs.on_death(params.acid_shells, &params.foe);
+                debuffs.on_death(owner, params.acid_shells, &params.foe);
             }
         }
     }

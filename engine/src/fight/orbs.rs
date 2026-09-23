@@ -273,7 +273,7 @@ pub(super) fn process_orbs(
             aimed_died |= killed && b == 0;
         }
         if aimed_died {
-            debuffs.on_death(params.acid_shells, &params.foe);
+            debuffs.on_death(orb.owner, params.acid_shells, &params.foe);
             return;
         }
     }

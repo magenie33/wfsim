@@ -289,7 +289,7 @@ fn a_blast_aoe_carries_the_weak_point_and_a_toxin_dot_does_not() {
         // `on_death` is the OTHER trigger the wiki names -- "10 stacks OR
         // the target dying" -- and it posts the same radial the tenth stack
         // would, which is the cheap way to read it here.
-        d.on_death(None, &frail_target(TargetMode::InstantRespawn, 0.0, 0.0));
+        d.on_death(Seat::WIELDER, None, &frail_target(TargetMode::InstantRespawn, 0.0, 0.0));
         d.area_hit.first().map(|h| h.damage).unwrap_or(0.0)
     };
     let body = aoe(1.0);

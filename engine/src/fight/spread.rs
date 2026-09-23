@@ -125,6 +125,11 @@ pub(super) fn influence_can_spread(ty: DamageType) -> bool {
 /// docs/EXTRA_HIT.md §"…and the one that is not a percentage".
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_influence(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
+    // WHOSE ATTACK THIS IS SPREADING. Carried rather than assumed: the body it
+    // reaches is not the one aimed at, and the seat is the same either way.
     // WHERE EVERY BODY STANDS, built once for the fight rather than per landed
     // hit — Influence spreads 20 m across a 361-body formation, so that was the
     // allocation this engine could least afford.
@@ -211,7 +216,7 @@ pub(super) fn spread_from_influence(
             r.sources.extra_hit += eff;
             r.sources.extra_hit_by_type[ty as usize] += eff;
             ledger::settle(
-                r, rec, t, Seat::WIELDER, b, ty, PopKind::Extra, &breakdown, settled, Some(dbf),
+                r, rec, t, seat, b, ty, PopKind::Extra, &breakdown, settled, Some(dbf),
                 ledger::Clock::Hit,
                 || Instance {
                     origin: crate::record::Origin::Influence,
@@ -250,6 +255,7 @@ pub(super) fn spread_from_influence(
             );
             settle_procs(
                 procs,
+                seat,
                 t,
                 scale,
                 dbf,
@@ -291,6 +297,9 @@ pub(super) fn spread_from_influence(
 /// body — which is the clause that reorders builds in a crowd (MECHANICS §12).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_hit(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — an instance's statuses are settled here.
     w: &CardWindows,
     inst: &crate::rules::chain::Instance,
@@ -383,7 +392,7 @@ pub(super) fn spread_hit(
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
     ledger::settle(
-        r, rec, t, Seat::WIELDER, inst.target, shares.dominant(),
+        r, rec, t, seat, inst.target, shares.dominant(),
         // WHAT THE GAME DRAWS THIS AS, and the crit half of it is carried the
         // way the headshot is: the crit multiplier is already inside
         // `raw_per_bucket`, so a body a shot punched through takes the crit and
@@ -477,7 +486,7 @@ pub(super) fn spread_hit(
         // once-per-corpse guard (`exploded`); this path has none, so passing
         // them would detonate a Sobek's corpse once per spread instance. It
         // does not fire them today and this does not start.
-        foe.debuffs.on_death(None, &spec.params);
+        foe.debuffs.on_death(seat, None, &spec.params);
         // A FRESH INDIVIDUAL TAKES NO STATUS FROM THE HIT THAT KILLED THE LAST
         // ONE — the aimed path returns here for the same reason.
         return Landed { procs: Vec::new(), raw, killed };
@@ -500,6 +509,7 @@ pub(super) fn spread_hit(
     let landed = Landed { procs: procs.clone(), raw, killed };
     settle_procs(
         procs,
+        seat,
         t,
         InstanceScale {
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
@@ -593,7 +603,11 @@ pub(super) struct SpreadStrike {
 /// the aimed body alone.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_follow_through(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
@@ -637,6 +651,7 @@ pub(super) fn spread_from_follow_through(
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
+            seat,
             w,
             &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
             modded_base, status_chance, forced, vector, params, active, gal, arc, r, rec, d, t,
@@ -663,7 +678,11 @@ pub(super) struct PunchedWeakPoints {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_punch_through(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
@@ -772,6 +791,7 @@ pub(super) fn spread_from_punch_through(
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
+            seat,
             w,
             &inst,
             foe,
@@ -821,7 +841,11 @@ pub(super) fn spread_from_punch_through(
 /// to a body it has hit, which is the chain path's rule.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_ricochet(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
@@ -869,6 +893,7 @@ pub(super) fn spread_from_ricochet(
             status_landing: if head { head_landing } else { 1.0 },
         };
         spread_hit(
+            seat,
             w,
             &inst,
             &mut others[idx],
@@ -914,7 +939,11 @@ pub(super) fn spread_from_ricochet(
 /// Xm"* of it, not to it.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_echo(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     others: &mut [SpreadFoe],
     // STACKS ON THE BODY THAT WAS HIT, read at the moment of the hit — the
@@ -977,6 +1006,7 @@ pub(super) fn spread_from_echo(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
+            seat,
             w,
             &inst,
             foe,
@@ -1024,7 +1054,11 @@ pub(super) fn spread_from_echo(
 /// however many pellets the main beam put out.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_tendrils(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
@@ -1081,6 +1115,7 @@ pub(super) fn spread_from_tendrils(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
+            seat,
             w,
             &inst,
             foe,
@@ -1125,6 +1160,9 @@ pub(super) fn spread_from_tendrils(
 /// the line is the only choice that invents nothing.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_blast(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
     w: &CardWindows,
     // WHERE THE ROUND WENT OFF, decided by the caller from the pellet's own
@@ -1154,6 +1192,7 @@ pub(super) fn spread_from_blast(
     t: f64,
 ) {
     blast_at(
+        seat,
         w,
         det,
         others,
@@ -1187,7 +1226,11 @@ pub(super) fn spread_from_blast(
 /// there — any body touching the sphere is caught, each reads its own falloff.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn blast_at(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks`.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     det: crate::rules::space::Detonation,
     others: &mut [SpreadFoe],
@@ -1233,6 +1276,7 @@ pub(super) fn blast_at(
             status_landing: 1.0,
         };
         spread_hit(
+            seat,
             w,
             &inst,
             &mut others[i],
@@ -1277,7 +1321,11 @@ pub(super) fn blast_at(
 /// hit through the ordinary path, and the splash is not a second instance.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_from_seeds(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
+    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
@@ -1347,6 +1395,7 @@ pub(super) fn spread_from_seeds(
         let idx = inst.target - 1;
         let (foe, fs) = (&mut others[idx], &params.others[idx]);
         spread_hit(
+            seat,
             w,
             inst,
             foe,
@@ -1386,6 +1435,10 @@ pub(super) fn spread_from_seeds(
 /// inside it.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn fire_syndicate_radial(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
+    // WHOSE BLAST. A syndicate radial is the weapon's, so it is the seat's.
     sy: &crate::data::syndicates::SyndicateDef,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
@@ -1416,7 +1469,7 @@ pub(super) fn fire_syndicate_radial(
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     ledger::settle(
-        r, rec, at, Seat::WIELDER, 0, sy.element, PopKind::Arcane, &breakdown, settled,
+        r, rec, at, seat, 0, sy.element, PopKind::Arcane, &breakdown, settled,
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {
@@ -1440,6 +1493,7 @@ pub(super) fn fire_syndicate_radial(
         arc.next_instance();
         settle_procs(
             vec![sy.element],
+            seat,
             at,
             InstanceScale {
                 mb_live: sy.damage,
@@ -1507,6 +1561,9 @@ pub(super) fn falloff_factor(
 /// takes the multishot nor fires per pellet.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_beyond_the_target(
+    // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
+    // and whatever it travelled through.
+    seat: Seat,
     // See `process_ticks` — what is already burning reads the live windows.
     w: &CardWindows,
     params: &FightParams,
@@ -1529,6 +1586,7 @@ pub(super) fn spread_beyond_the_target(
     // not the one the main beam is on (`spread_from_tendrils`).
     if let (Some(s), false) = (&strike_spread, others.is_empty()) {
         spread_from_tendrils(
+            seat,
             w,
             others,
             params,
@@ -1558,6 +1616,7 @@ pub(super) fn spread_beyond_the_target(
     // inside the pellet loop above.
     if let (Some(s), Some(beam), false) = (&strike_spread, params.beam, others.is_empty()) {
         spread_from_seeds(
+            seat,
             w,
             others,
             params,

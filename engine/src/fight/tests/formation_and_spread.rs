@@ -826,6 +826,7 @@ fn a_blast_is_one_hit_per_moment_however_many_stacks_share_it() {
 #[test]
 fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
     let dot = |dtype| Dot {
+        owner: Seat::WIELDER,
         cause: u32::MAX,
         next_tick: 5.0, ticks_left: 4, frozen: 100.0, landing: 1.0, bracket: 1.0, depth: 0,
         source_scaled: false, unit: 0.0, dtype, ignores_armor: false,
@@ -837,7 +838,7 @@ fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
     d.blast.push(BlastStack { fuse: 9.0, value: 30.0, xh_bracket: 1.0 });
     d.microwave = true;
 
-    d.on_death(None, &frail_target(TargetMode::InstantRespawn, 0.0, 0.0));
+    d.on_death(Seat::WIELDER, None, &frail_target(TargetMode::InstantRespawn, 0.0, 0.0));
 
     assert_eq!(d.dots.len(), 1, "only the cloud stays: {:?}", d.dots);
     assert_eq!(d.dots[0].dtype, DamageType::Gas);

@@ -138,7 +138,15 @@ impl GalStacks {
 /// instance totalling 3% of the broken pool's MAX per Magnetic stack
 /// (cap 30%), over 6 ticks; status-damage mods apply TWICE; base-damage
 /// mods never.
-pub(super) fn push_break_proc(debuffs: &mut DebuffState, params: &FightParams, now: f64, pool: BrokenPool) {
+// WHOSE BREAK IT WAS. The tick is a share of the pool that broke, and the
+// seat that broke it is the one it pays.
+pub(super) fn push_break_proc(
+    debuffs: &mut DebuffState,
+    owner: Seat,
+    params: &FightParams,
+    now: f64,
+    pool: BrokenPool,
+) {
     let stacks = debuffs.disrupt.len();
     if stacks == 0 {
         return;
@@ -150,6 +158,7 @@ pub(super) fn push_break_proc(debuffs: &mut DebuffState, params: &FightParams, n
     let fraction = (0.03 * stacks as f64).min(0.30);
     let total = fraction * pool_max * params.status_damage_multiplier.powi(2);
     debuffs.dots.push(Dot {
+        owner,
         next_tick: now,
         ticks_left: 6,
         // A BROKEN POOL is the TARGET's own doing, so it points at no shot.

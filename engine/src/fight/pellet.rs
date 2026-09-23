@@ -1249,6 +1249,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // falloff.
         if let (Some(rr), false) = (rad, others.is_empty()) {
             spread_from_blast(
+                seat,
                 windows,
                 det,
                 &mut *others,
@@ -1286,6 +1287,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 let Some(idx) = body.checked_sub(1) else { continue };
                 let Some(fs) = params.others.get(idx) else { continue };
                 blast_at(
+                seat,
                 windows,
                     crate::rules::space::Detonation {
                         at: fs.at,
@@ -1395,6 +1397,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // spread that may land on a head.
             if let Some(path) = ric_path.as_deref() {
                 spread_from_ricochet(
+                seat,
                 windows,
                     &mut *others,
                     params,
@@ -1422,6 +1425,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // …AND THE ECHO, per landing pellet, because the arcane
             // says each one triggers it.
             spread_from_echo(
+                seat,
                 windows,
                 &mut *others,
                 debuffs.confusion.len(),
@@ -1456,6 +1460,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // Follow Through by name), so the two can never both fire.
             if let Some(ft) = active.follow_through.filter(|_| direct) {
                 spread_from_follow_through(
+                seat,
                 windows,
                     &mut *others,
                     params,
@@ -1482,6 +1487,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             }
             if params.beam.is_none() {
                 punched = spread_from_punch_through(
+                seat,
                 windows,
                     &mut *others,
                     params,
@@ -1513,6 +1519,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // after the loop, miss or not.
             if let Some(beam) = params.beam {
                 spread_from_seeds(
+                    seat,
                     windows,
                     &mut *others,
                     params,
@@ -1793,7 +1800,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         }
 
         if let Some(pool) = broke {
-            push_break_proc(&mut *debuffs, params, t, pool);
+            push_break_proc(&mut *debuffs, seat, params, t, pool);
         }
         // THE ROW FOR THIS PELLET — a MACRO with two call sites,
         // because a pellet has two ways of ending and the row has to
@@ -1908,7 +1915,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // individual; the CLOUDS do not — see the note in
             // `field_tick`. What follows hits the fresh spawn, standing
             // in whatever is still burning where it spawned.
-            debuffs.on_death(params.acid_shells, &params.foe);
+            debuffs.on_death(seat, params.acid_shells, &params.foe);
             log_this_pellet!(Vec::new());
             continue;
         }
@@ -1934,6 +1941,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // 弱点倍率也会被计算两次". A radial struck no body part, so
         // `part_factor` is already 1.0 there and this reads as it should.
         if fire_extra_hits(
+            seat,
             raw,
             xh_bracket,
             part_factor,
@@ -2139,6 +2147,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         };
         settle_procs(
             procs,
+            seat,
             t,
             // THE HIT'S ATTRITION ROLL TRAVELS WITH ITS STATUSES. A proc's
             // magnitude is the applying instance's — which is why
@@ -2220,6 +2229,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                         .map(|ty| (ty, landed.raw * shares.share(ty)))
                         .collect();
                     spread_from_influence(
+                        seat,
                         body_at,
                         &mut *others,
                         &mut *target,

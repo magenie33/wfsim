@@ -929,6 +929,7 @@ pub fn run_once_traced(
         // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
         if !others.is_empty() {
             spread_beyond_the_target(
+                me.seat,
                 &me.windows,
                 me.params,
                 active,

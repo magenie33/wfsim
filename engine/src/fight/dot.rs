@@ -9,6 +9,13 @@ use super::*;
 /// landed on — a gas cloud is ONE entity and its neighbours take its number.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Dot {
+    /// WHO APPLIED IT. A status pile is the BODY's and its ticks pay out long
+    /// after the shot that seeded them, so without this the damage is credited
+    /// to whoever is firing WHEN IT TICKS — which with one seat is always
+    /// right and with two is a coin toss. `cause` names the shot for a reader;
+    /// this names the seat for the ledger, and it is there in every run rather
+    /// than only the ones being recorded.
+    pub(super) owner: Seat,
     pub(super) next_tick: f64,
     pub(super) ticks_left: u32,
     /// WHICH SHOT SEEDED THIS, by combat-record event id (`record::Event::id`).
@@ -216,6 +223,10 @@ pub(super) struct BlastStack {
 /// from the central enemy" and carries two damage types at once.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct AreaHit {
+    /// WHOSE CLOUD OR ARC IT IS. It is left by a proc and pays out to whoever
+    /// stands near the body, so it carries its applier for the same reason a
+    /// DoT does — by the time it lands, the shot is long gone.
+    pub(super) owner: Seat,
     pub(super) damage: f64,
     pub(super) radius_m: f64,
     /// What it is made of — Blast for a detonation, and Acid Shells' own

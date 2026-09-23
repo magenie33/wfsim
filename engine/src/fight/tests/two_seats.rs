@@ -116,3 +116,36 @@ fn the_roster_names_every_seat() {
         2
     );
 }
+
+/// A STATUS TICK IS CREDITED TO WHOEVER APPLIED IT, not to whoever is firing
+/// when it pays out.
+///
+/// A pile is the BODY's and its ticks land seconds after the shot that seeded
+/// them, so with one seat "whoever is firing now" was always right and with
+/// two it is a coin toss. A DoT carries its applier.
+///
+/// The Cernos Prime opens with a Slash-heavy vector and the Braton Prime does
+/// not, so a fight of the two has both seats bleeding the same body: if the
+/// credit followed the clock rather than the applier, the split would move
+/// with the cadence rather than with the builds.
+#[test]
+fn a_status_tick_belongs_to_whoever_applied_it() {
+    let r = run_once(
+        &fight_for(&["cernos_prime", "braton_prime"]),
+        &mut Rng::new(0x5EED),
+    );
+    let by = r.dealt.by_combatant().0;
+    // Both seats dealt SOMETHING, and the fight ticked statuses at all —
+    // without the second the assertion below would pass on an empty pile.
+    assert!(by[0] > 0.0 && by[1] > 0.0, "a seat dealt nothing: {by:?}");
+    let ticked: f64 = r.sources.status.iter().sum();
+    assert!(ticked > 0.0, "no status ticked, so nothing was attributed");
+    // …and the ledger still balances, which is what would break first if a
+    // tick were credited to a seat that never applied it.
+    let dealt: f64 = by.iter().sum();
+    assert!(
+        (dealt - r.tally.effective()).abs() < 1e-6,
+        "attributed {dealt} against a meter of {}",
+        r.tally.effective()
+    );
+}

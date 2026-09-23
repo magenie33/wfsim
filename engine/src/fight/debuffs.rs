@@ -519,7 +519,14 @@ impl DebuffState {
     /// be restored afterwards, and a field that must be restored is a field
     /// somebody eventually forgets. It also forces a new death site to say
     /// whose death it is, which is the only reason this stays a funnel.
-    pub(super) fn on_death(&mut self, acid: Option<crate::model::AcidShells>, victim: &Foe) {
+    // WHOSE DEATH EXPLOSION. Acid Shells is a mod the KILLER carries, so the
+    // blast belongs to whoever finished the body.
+    pub(super) fn on_death(
+        &mut self,
+        owner: Seat,
+        acid: Option<crate::model::AcidShells>,
+        victim: &Foe,
+    ) {
         let out = std::mem::take(&mut self.area_out);
         let mut hits = std::mem::take(&mut self.area_hit);
         // ACID SHELLS: "enemies killed by the Sobek explode, dealing a flat
@@ -537,6 +544,7 @@ impl DebuffState {
             v.add(DamageType::Blast, a.health_fraction * victim.max_health_before_steel_path());
             if v.total() > 0.0 {
                 hits.push(AreaHit {
+                    owner,
                     damage: v.total(),
                     radius_m: a.radius_m,
                     shares: TypeShares::of(&v),
@@ -553,6 +561,9 @@ impl DebuffState {
         if !self.blast.is_empty() {
             let single: f64 = self.blast.iter().map(|b| b.value).sum();
             hits.push(AreaHit {
+                // Every stack in one event, so there is no one applier to
+                // name — see the Blast branch of `process_ticks`.
+                owner: Seat::WIELDER,
                 damage: single / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
                 radius_m: BLAST_AOE_RADIUS_M,
                 shares: TypeShares::single(DamageType::Blast),

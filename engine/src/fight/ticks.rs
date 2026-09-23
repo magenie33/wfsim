@@ -176,6 +176,12 @@ pub(super) fn process_ticks(
     // `BinaryHeap` allocates nothing.
     // WHICH SHOT THE EVENT BEING SETTLED BELONGS TO — set by each arm below.
     let mut seeded_by;
+    // WHOSE STACK IS PAYING OUT. A pile is the BODY's and its ticks land long
+    // after the shot, so without this the damage goes to whoever happens to be
+    // firing when it ticks. Heat and Blast consolidate every stack into one
+    // event and cannot name one applier, so they answer the wielder and say so
+    // where they set it.
+    let mut dot_owner;
     // …AND THE TWO HALVES OF A DoT TICK, for the ledger alone: the seeds it
     // holds and what the accumulator's own 1 is worth. `None` on every event
     // that is not a DoT tick. Kept here rather than derived at the ledger
@@ -234,6 +240,7 @@ pub(super) fn process_ticks(
                 // the duration of this settlement and put back below, so the
                 // recorder's "current shot" stays the loop's business.
                 seeded_by = debuffs.dots[*i].cause;
+                dot_owner = debuffs.dots[*i].owner;
                 // A CONSOLIDATED FAMILY PAYS ONCE — one damage instance for
                 // every live stack, which is the number the game pops.
                 //
@@ -330,6 +337,11 @@ pub(super) fn process_ticks(
                 // unattributed rather than credited to whichever proc came
                 // first, which would read as a fact and be an arbitrary pick.
                 seeded_by = u32::MAX;
+                // ONE EVENT FOR EVERY STACK, so there is no one applier to
+                // name — the same reason `seeded_by` is unset here. Credited
+                // to the wielder rather than to whoever fired last, which
+                // would read as a fact and be an arbitrary pick.
+                dot_owner = Seat::WIELDER;
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
                 // AT `now`. See `Dot::live` — the same rule, on the one status
@@ -344,6 +356,9 @@ pub(super) fn process_ticks(
             }
             Ev::Blast(i) => {
                 seeded_by = u32::MAX;
+                // Consolidated like Heat, and unattributable for the same
+                // reason.
+                dot_owner = Seat::WIELDER;
                 // ONE MOMENT, HOWEVER MANY STACKS SHARE IT. Two applied by the
                 // same shot carry the same fuse and go off together; an arcane
                 // counting hits sees one, the same way it sees one for a
@@ -408,7 +423,7 @@ pub(super) fn process_ticks(
         r.sources.add_status(src, effective);
         let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
         ledger::settle(
-            r, rec, now, Seat::WIELDER, body, src,
+            r, rec, now, dot_owner, body, src,
             if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
             &breakdown, settled, Some(debuffs),
             ledger::Clock::Dot,
@@ -456,7 +471,7 @@ pub(super) fn process_ticks(
         r.dot_ticks += is_dot_tick as u32;
         r.note_kills(killed as u32, now, params.drop_is_in_reach(target.at));
         if let Some(pool) = broke {
-            push_break_proc(debuffs, params, now, pool);
+            push_break_proc(debuffs, dot_owner, params, now, pool);
         }
         if killed {
             // Status-proc kills grant Galvanized stacks too (GS rules),
@@ -469,7 +484,7 @@ pub(super) fn process_ticks(
             gal.bump_on_kill(params, now);
             arc.on_kill(params, now);
             // Fresh individual: clean DebuffBar.
-            debuffs.on_death(params.acid_shells, &params.foe);
+            debuffs.on_death(dot_owner, params.acid_shells, &params.foe);
             break;
         }
         // …and the detonation's EXTRA HIT, off the value that actually landed —
@@ -477,6 +492,7 @@ pub(super) fn process_ticks(
         // is a percentage of. No body part: a detonation struck none.
         if let Some(bracket) = xh {
             if fire_extra_hits(
+                dot_owner,
                 value,
                 bracket,
                 1.0,

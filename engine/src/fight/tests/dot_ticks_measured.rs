@@ -316,6 +316,7 @@ fn a_heat_pile_reports_its_depth_and_not_just_that_it_is_burning() {
 #[test]
 fn independent_dots_cap_per_type_fifo() {
     let dot = |v: f64, ty| Dot {
+        owner: Seat::WIELDER,
         cause: u32::MAX,
         next_tick: 0.0,
         ticks_left: 6,

@@ -212,6 +212,7 @@ pub(super) fn before_the_shot(
                 syndicate.points = 0.0;
                 syndicate.ready_at = t + sy.cooldown_seconds;
                 fire_syndicate_radial(
+                    Seat::WIELDER,
                     &sy,
                     r,
                     rec,

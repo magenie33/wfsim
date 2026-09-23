@@ -251,7 +251,7 @@ pub(super) fn process_field_ticks(
             // every respawn, which on a fight with instant respawns is most of
             // its uptime. `one_fight`'s three shapes do not see it because
             // their Thrax never dies.
-            debuffs.on_death(params.acid_shells, &params.foe);
+            debuffs.on_death(owner, params.acid_shells, &params.foe);
             return;
         }
     }
@@ -462,7 +462,7 @@ pub(super) fn field_tick(
     r.field_ticks += u32::from(!is_blast);
     r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
     if let Some(pool) = broke {
-        push_break_proc(debuffs, params, at, pool);
+        push_break_proc(debuffs, owner, params, at, pool);
     }
     if killed {
         gal.bump_on_kill(params, at);
@@ -490,6 +490,7 @@ pub(super) fn field_tick(
     );
     settle_procs(
         procs,
+        owner,
         at,
         InstanceScale {
             mb_live,
