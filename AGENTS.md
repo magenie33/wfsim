@@ -43,7 +43,6 @@ code, not after.
 | the update channel, mirrors, shells | `docs/DISTRIBUTION.md` |
 | the Windows client | `docs/DESKTOP.md` |
 | setup, profiling, what has been tried | `docs/DEVELOPMENT.md` |
-| reach — who finds the site | `docs/REACH.md` |
 | how usage would be counted (unimplemented) | `docs/ANALYTICS.md` |
 
 ## Map
