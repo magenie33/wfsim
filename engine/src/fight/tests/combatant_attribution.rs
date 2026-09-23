@@ -40,7 +40,7 @@ fn every_instance_is_credited_to_an_attacker() {
 fn who_dealt_it_and_who_took_it_come_to_the_same_total() {
     let r = one_fight();
     let dealt: f64 = r.dealt.by_combatant().0.iter().sum();
-    let taken: f64 = r.spread.by_body().0.iter().sum();
+    let taken: f64 = r.taken.by_body().0.iter().sum();
     assert!(
         (dealt - taken).abs() < 1e-6,
         "dealt {dealt} but taken {taken}"

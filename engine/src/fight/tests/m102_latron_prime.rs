@@ -277,7 +277,7 @@ fn m104_a_compressed_blast_reaches_fewer_bodies() {
             })
             .collect();
         let p = FightParams::from_panel(&panel, &arena, &fx);
-        run_once(&p, &mut Rng::new(0x5EED)).spread.touched()
+        run_once(&p, &mut Rng::new(0x5EED)).taken.touched()
     };
     let whole = touched(ArcaneFx::none());
     let compressed = touched(

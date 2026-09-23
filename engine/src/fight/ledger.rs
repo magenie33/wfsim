@@ -39,10 +39,15 @@ pub struct Tally {
 /// the status site did not, so a single-target fight credited its DoT ticks
 /// to body 0 and its direct hits to nobody. Two answers to one question,
 /// decided by which site happened to be running.
+///
+/// NOT `Spread`: that word already means the cone a pellet draws inside
+/// (`FightParams::spread`, DE's own word on the card) and a status reaching
+/// the neighbours. The pair this belongs to is [`Dealt`] — who dealt the
+/// run's damage — and the mirror of dealt is taken.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Spread(BodyDamage);
+pub struct Taken(BodyDamage);
 
-impl Spread {
+impl Taken {
     /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
     fn credit(&mut self, body: usize, effective: f64) {
         if let Some(slot) = self.0 .0.get_mut(body) {
@@ -209,7 +214,7 @@ pub(in crate::fight) fn settle(
     r.health_damage += settled.health;
     r.virus_stack_health += settled.virus_stack_health;
     r.armor_left_health += settled.armor_left_health;
-    r.spread.credit(body, settled.effective);
+    r.taken.credit(body, settled.effective);
     r.dealt.credit(who, settled.effective);
     let i = t.max(0.0) as usize;
     r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;

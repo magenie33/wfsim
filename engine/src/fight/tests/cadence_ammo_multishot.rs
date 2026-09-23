@@ -210,7 +210,7 @@ fn a_bounce_needs_a_crowd_and_one_body_bounces_nowhere() {
             p.ricochet = None;
         }
         let out = run_once(&p, &mut Rng::new(0x5EED));
-        (out.spread.touched(), out.effective_damage())
+        (out.taken.touched(), out.effective_damage())
     };
     let (one, dmg_one) = crowd(0, true);
     assert_eq!(one, 1, "a formation of one bounces nowhere — no terrain here");

@@ -376,8 +376,8 @@ pub struct RunResult {
     /// The DPS-over-time curve — booked by [`ledger::settle`] and by nothing
     /// else, for the same reason the totals are.
     pub curve: ledger::Curve,
-    /// Whose damage it was — same door, same reason.
-    pub spread: ledger::Spread,
+    /// WHO TOOK IT, by body — same door, same reason.
+    pub taken: ledger::Taken,
     /// …and WHO DEALT IT, the other half of that question. One fight has one
     /// list of combatants and one list of bodies, and every instance names one
     /// of each.

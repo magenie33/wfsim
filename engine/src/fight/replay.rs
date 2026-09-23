@@ -20,7 +20,7 @@ pub fn replay(params: &FightParams, rng_state: u64, frames: usize) -> Replay {
     // Two runs of one engagement, against 400 series on the wire.
     let scout = run_once(params, &mut Rng::new(rng_state));
     let mut ranked: Vec<(usize, f64)> = (1..=params.others.len())
-        .map(|i| (i, scout.spread.by_body().0[i]))
+        .map(|i| (i, scout.taken.by_body().0[i]))
         .filter(|(_, d)| *d > 0.0)
         .collect();
     ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then(a.0.cmp(&b.0)));

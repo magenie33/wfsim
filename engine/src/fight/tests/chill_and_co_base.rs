@@ -438,7 +438,7 @@ fn a_respawned_body_in_the_formation_starts_with_no_statuses() {
     // Enough to cross both bodies and keep going.
     p.punch_through_m = 4.0;
     let r = run_once(&p, &mut Rng::new(0x5EED));
-    let by = r.spread.by_body().0;
+    let by = r.taken.by_body().0;
     assert!(by[0] > 0.0 && by[1] > 0.0, "both bodies are on the line: {by:?}");
     assert!(
         by[1] <= by[0] * 1.5,

@@ -538,7 +538,7 @@ pub fn shard(
         for (acc, v) in a.by_combatant.iter_mut().zip(r.dealt.by_combatant().0) {
             *acc += v;
         }
-        for (acc, v) in a.by_body.iter_mut().zip(r.spread.by_body().0) {
+        for (acc, v) in a.by_body.iter_mut().zip(r.taken.by_body().0) {
             *acc += v;
         }
     }

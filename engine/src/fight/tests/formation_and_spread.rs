@@ -32,7 +32,7 @@ fn the_damage_meter_accounts_for_the_whole_formation() {
     let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
     let r = run_once(&p, &mut Rng::new(0x5EED));
 
-    let bodies: f64 = r.spread.by_body().0.iter().sum();
+    let bodies: f64 = r.taken.by_body().0.iter().sum();
     let meter = r.sources.direct + r.sources.radial + r.sources.field
         + r.sources.arcane_on_status + r.sources.extra_hit + r.sources.syndicate
         + r.sources.status.iter().sum::<f64>();
@@ -133,7 +133,7 @@ fn a_shot_that_went_wide_does_not_blast_the_bystanders() {
         arena.aim_at = Some(crate::rules::space::Vec2::new(aim_x, 10.0));
         let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         let r = run_once(&p, &mut Rng::new(0x5EED));
-        r.spread.by_body().0.get(1).copied().unwrap_or(0.0)
+        r.taken.by_body().0.get(1).copied().unwrap_or(0.0)
     };
 
     let on_target = bystander_damage(0.0);
@@ -665,7 +665,7 @@ fn an_explosions_falloff_is_read_from_its_epicentre() {
         .collect();
     let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
     let r = run_once(&p, &mut Rng::new(0x5EED));
-    let d = &r.spread.by_body().0;
+    let d = &r.taken.by_body().0;
     assert!(d[1] > 0.0 && d[2] > 0.0, "both are inside the radius: {:?}", &d[..3]);
     assert!(
         d[2] < d[1] * 0.9,
@@ -707,7 +707,7 @@ fn a_simultaneous_blast_detonation_reaches_five_metres() {
         p
     };
     let r = run_once(&build(vec![DamageType::Blast]), &mut Rng::new(0x5EED));
-    let d = &r.spread.by_body().0;
+    let d = &r.taken.by_body().0;
     assert!(d[0] > 0.0, "the host takes the single-target half");
     assert!(d[1] > 0.0, "the body 3 m away takes the detonation: {:?}", &d[..3]);
     assert_eq!(d[2], 0.0, "20 m is outside the 5 m radius: {:?}", &d[..3]);
@@ -715,7 +715,7 @@ fn a_simultaneous_blast_detonation_reaches_five_metres() {
     // THE CONTROL: Impact stacks the same way and reaches nobody, so this
     // is Blast's own mechanic rather than any full stack bar detonating.
     let imp = run_once(&build(vec![DamageType::Impact]), &mut Rng::new(0x5EED));
-    assert_eq!(imp.spread.touched(), 1, "{:?}", &imp.spread.by_body().0[..3]);
+    assert_eq!(imp.taken.touched(), 1, "{:?}", &imp.taken.by_body().0[..3]);
 }
 
 /// A FULL PILE PAYS THE HOST AS TEN NUMBERS, NOT ONE — MEASUREMENTS M91.
@@ -904,7 +904,7 @@ fn a_gas_or_electric_proc_reaches_the_bodies_standing_around_it() {
     };
     for element in ["gas", "electricity"] {
         let r = run_once(&build(element), &mut Rng::new(0x5EED));
-        let d = &r.spread.by_body().0;
+        let d = &r.taken.by_body().0;
         assert!(d[0] > 0.0, "{element}: the aimed body");
         assert!(
             d[1] > 0.0 && d[2] > 0.0,
@@ -921,7 +921,7 @@ fn a_gas_or_electric_proc_reaches_the_bodies_standing_around_it() {
     // says this is the ELEMENT's mechanic and not the engine spreading
     // every DoT it has.
     let r = run_once(&build("toxin"), &mut Rng::new(0x5EED));
-    assert_eq!(r.spread.touched(), 1, "{:?}", &r.spread.by_body().0[..5]);
+    assert_eq!(r.taken.touched(), 1, "{:?}", &r.taken.by_body().0[..5]);
 }
 
 /// WHAT THE WARFRAME BRINGS REACHES THE NUMBER — both halves, and they are
@@ -1048,7 +1048,7 @@ fn a_punched_body_inherits_the_headshot_and_a_bounce_does_not() {
         let r = run_once(&build(head), &mut Rng::new(0x5EED));
         // EVERY BODY BUT THE AIMED ONE: the aimed body's own multiplier is
         // the thing being pinned, so counting it would measure the pin.
-        (r.spread.by_body().0[1..4].iter().sum::<f64>(), r.spread.touched())
+        (r.taken.by_body().0[1..4].iter().sum::<f64>(), r.taken.touched())
     };
     let (body, nb) = dmg(false);
     let (heads, nh) = dmg(true);
@@ -1106,8 +1106,8 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
     for (pt, want) in [(0.0, 1), (0.4, 1), (0.5, 2), (1.0, 3), (2.0, 5)] {
         let r = run_once(&build(4, pt), &mut Rng::new(0x5EED));
         assert_eq!(
-            r.spread.touched(), want,
-            "{pt} m of punch through: {:?}", &r.spread.by_body().0[..5]
+            r.taken.touched(), want,
+            "{pt} m of punch through: {:?}", &r.taken.by_body().0[..5]
         );
     }
     // …AND ONLY ALONG THE LINE. Punch through penetrates what is in FRONT
@@ -1119,7 +1119,7 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
         body_parts: BodyPart::humanoid(),
         at: crate::rules::space::Vec2::new(6.0, 4.0),
     }];
-    assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).spread.touched(), 1);
+    assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).taken.touched(), 1);
 }
 
 /// ARDENT TRIGGER PAYS OFF A COLUMN AND NOTHING OFF A LONE TARGET.
@@ -1213,7 +1213,7 @@ fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
             .collect();
         let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         assert!(p.range_m.is_finite(), "the wall is a number: {}", p.range_m);
-        run_once(&p, &mut Rng::new(0x5EED)).spread.touched()
+        run_once(&p, &mut Rng::new(0x5EED)).taken.touched()
     };
     let bare = touched(&[]);
     assert!(
@@ -1332,7 +1332,7 @@ fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
             crit_bonus: true,
         }];
         let r = run_once(&p, &mut Rng::new(0x5EED));
-        let (aimed, behind) = (r.spread.by_body().0[0], r.spread.by_body().0[1]);
+        let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);
         assert!(behind > 0.0, "{element}: the beam reaches the body behind");
         aimed / behind
     };
@@ -1383,7 +1383,7 @@ fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
     let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
     assert!(p.punch_through_m > 0.0, "the innate punch through reaches it");
     let r = run_once(&p, &mut Rng::new(0x5EED));
-    let (aimed, behind) = (r.spread.by_body().0[0], r.spread.by_body().0[1]);
+    let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);
     assert!(behind > 0.0, "the beam reaches the body behind at all");
     assert!(
         (behind / aimed - 1.0).abs() < 0.15,
@@ -1469,24 +1469,24 @@ fn the_ocucor_reaches_exactly_five_bodies() {
     };
     // EIGHT BODIES ON THE FLOOR, four tendrils up: five take damage.
     let r = run_once(&build(8, 4), &mut Rng::new(0x5EED));
-    assert_eq!(r.spread.touched(), 5, "{:?}", &r.spread.by_body().0[..9]);
+    assert_eq!(r.taken.touched(), 5, "{:?}", &r.taken.by_body().0[..9]);
     // …and it is the AIMED one plus the four nearest the reticle, in order.
-    assert!(r.spread.by_body().0[0] > 0.0, "the beam's own body");
-    assert!(r.spread.by_body().0[1..=4].iter().all(|d| *d > 0.0), "the four tendrils");
-    assert!(r.spread.by_body().0[5..=8].iter().all(|d| *d == 0.0), "and nobody else");
+    assert!(r.taken.by_body().0[0] > 0.0, "the beam's own body");
+    assert!(r.taken.by_body().0[1..=4].iter().all(|d| *d > 0.0), "the four tendrils");
+    assert!(r.taken.by_body().0[5..=8].iter().all(|d| *d == 0.0), "and nobody else");
 
     // FEWER TENDRILS REACH FEWER BODIES, one for one — which is what says
     // the count is the tendrils' and not the formation's.
     for up in 0..=4u32 {
         assert_eq!(
-            run_once(&build(8, up), &mut Rng::new(0x5EED)).spread.touched(),
+            run_once(&build(8, up), &mut Rng::new(0x5EED)).taken.touched(),
             1 + up as usize,
             "{up} tendrils"
         );
     }
     // …AND A SHORT FORMATION IS NOT PADDED: two bodies is two, however many
     // tendrils are up.
-    assert_eq!(run_once(&build(1, 4), &mut Rng::new(0x5EED)).spread.touched(), 2);
+    assert_eq!(run_once(&build(1, 4), &mut Rng::new(0x5EED)).taken.touched(), 2);
 }
 
 /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed
