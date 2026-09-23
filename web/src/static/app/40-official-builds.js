@@ -52,13 +52,17 @@ function defaultWielder(weaponId, v) {
 /// ABSENT FOR A COMPANION HOST TOO, and for the same reason it is a host: it is
 /// not a Warframe, so it seats no mod the engine reads. The server answers a
 /// robotic weapon with the companion floor (`sentinel_wielder`).
-function wielderPayload() {
-  const v = buildWielder;
+/// WHO IS HOLDING A WEAPON, as request fields — from a LINK rather than from
+/// the editor, because a fight holds a seat per build and only one of them is
+/// open (`seatPayload`).
+function wielderPayloadOf(v) {
   if (isHostId(v.frame)) return undefined;
   const b = wielderBuild(v);
   if (b) return wfPayloadOf({ ...b.state, frame: v.frame });
   return v.frame === PROTOTYPE_ID ? undefined : { frame: v.frame };
 }
+
+const wielderPayload = () => wielderPayloadOf(buildWielder);
 
 /// A FRAMED EDITOR PANE, drawn or kept: the module's own page framed as itself
 /// (`?embed`). AN UNCHANGED PANE IS LEFT ALONE — replacing its `src` reloads the

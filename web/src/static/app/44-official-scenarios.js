@@ -71,6 +71,12 @@ function fillSelect(id, items) {
 }
 let currentPool = [];
 const weaponInfo = (id) => META.weapons.find((w) => w.id === id) || META.weapons[0];
+/// …AND WHETHER THERE IS ONE. `weaponInfo` FALLS BACK to the first weapon on
+/// the roster, so it always answers and can never be the test: an id nobody
+/// has resolves to whatever sorts first, silently. Anything validating an id
+/// it was handed — the agent door, a stored link into another weapon's presets
+/// — asks this instead.
+const weaponExists = (id) => !!id && META.weapons.some((w) => w.id === id);
 // Evolutions moved into each weapon's meta entry (they are per transform
 // group); this reads the CURRENT weapon's tiers.
 /// THE TIERS OF A WEAPON — **the one it is ASKED about**, and only the LIVE one

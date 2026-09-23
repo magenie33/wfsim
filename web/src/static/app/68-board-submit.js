@@ -780,7 +780,7 @@ function lockOfficialScenario() {
   // lock exists to stop. An escape hatch is a place to LOOK at the whole
   // document, not a second editor that outranks the rule.
   const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run",
-                 "sim-buffs", "sim-whole-fight-body"]
+                 "sim-buffs", "sim-roster", "sim-whole-fight-body"]
     .map((id) => $(id)).filter(Boolean);
   // The ARENA's bodies are SVG circles and the input sweep below cannot reach
   // them, so the scene is marked here and refuses the gesture itself.

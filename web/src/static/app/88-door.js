@@ -400,6 +400,17 @@ const agentArenaState = () => ({
   gap_m: Math.round((arenaSpan(sim) - CONTACT_M) * 100) / 100, max_bodies: ARENA_MAX_BODIES(),
 });
 
+/// THE ROSTER AS A CALLER READS IT — every seat in the fight, the open build
+/// first. Seat 1 is the one the page is about and the one a board takes; the
+/// rest are links into other weapons' presets.
+const agentRoster = () => ({
+  seats: [
+    { seat: 1, weapon: $("weapon").value, preset: activePreset || null, open: true },
+    ...alsoActing().map((r, i) => ({ seat: i + 2, weapon: r.weapon, preset: r.preset, open: false })),
+  ],
+  max_seats: ROSTER_MAX + 1,
+});
+
 /// THE REACH AS A CALLER READS IT: each point of the curve — what it costs in
 /// Forma and the weakest ruler's share of its leader — and, at the marked
 /// point, each ruler's best build that fits.

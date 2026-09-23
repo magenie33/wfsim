@@ -332,6 +332,20 @@ opens a scenario of its own first and asserts that it did, since the app lands
 a first-time visitor ON the official ruler. The OPTIMIZER draws the same scene
 read-only.
 
+## `check_roster`
+
+A fight is n against m, and the page sets BOTH halves. The enemy half has been
+a list since the formation existed; the roster in block 2 is the other one. A
+seat is a LINK (`{weapon, preset}`), never a copy, so editing that preset moves
+this fight too — and it resolves through the same `seatPayload` the open build
+goes through, which the check proves the only way it can be proved: two seats
+on ONE weapon in two builds deal two numbers. Seat 1 is the open build, has no
+remove and is the only one a board can take. The RECORD is a second reader of
+the same engagement, so `/api/log` wires the roster through the same
+`seat_the_rest` — a record drawn from the wielder alone is a TRUE record of a
+fight nobody ran. Two negative controls: one seat sends no roster at all, and
+an official ruler is one gun whatever the last fight held.
+
 ## `check_formation`
 
 A formation is something you build on the floor, and what

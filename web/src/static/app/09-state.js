@@ -126,6 +126,12 @@ function defaultScenario() {
       enemy: f.enemy || "",
       level: f.level ?? null,
     })),
+    // WHO ELSE IS FIRING — see `28-fight-roster.js`. Empty is the fight this
+    // app has always run, one gun against the formation, and it is what every
+    // official ruler means: a ruler never mentions this, so switching to one
+    // empties the roster rather than carrying the last fight's squad into it.
+    also_acting: (Array.isArray(d.also_acting) ? d.also_acting : [])
+      .map((x) => ({ weapon: x.weapon, preset: x.preset || "" })),
     // WHERE THE WEAPON IS POINTED. `null` means "at the target", which is the
     // fight this app has always run and what keeps every stored scenario
     // meaning what it meant. Drag the marker and it becomes a place of its own.

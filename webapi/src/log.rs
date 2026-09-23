@@ -52,6 +52,13 @@ pub fn log_json(v: &Value) -> Value {
         cycle_from, single_form, infinite_ammo, ammo, frenzy_single, cycle_frenzy_lock,
         &frenzy_locks,
     );
+    // THE WHOLE ROSTER, because this replays the fight `simulate` measured. A
+    // record drawn from the wielder alone is a true record of a different
+    // engagement, which is the one kind of wrong nothing in it contradicts.
+    let seat_weapons = match crate::simulate::seat_the_rest(&mut params, v, &arena, info) {
+        Ok(w) => w,
+        Err(e) => return e,
+    };
     if let Some(cfg) = &buff_cfg {
         params.apply_buff_config(cfg);
     }
@@ -119,7 +126,11 @@ pub fn log_json(v: &Value) -> Value {
             .iter().map(|f| f.name()).collect::<Vec<_>>(),
         // THE COMBATANT ROSTER, once, the way the factor table and the two stack
         // rosters are: a row names its dealer by index into this.
-        "combatants": params.combatant_ids(),
+        // …and what each of them BROUGHT, beside its id — the same shape
+        // `/api/simulate` reports, so one reader names a seat one way.
+        "combatants": params.combatant_ids().iter().enumerate()
+            .map(|(i, id)| json!({ "id": id, "weapon": seat_weapons.get(i).cloned().unwrap_or_default() }))
+            .collect::<Vec<_>>(),
         "buffs": rec.buffs(),
         "debuffs": wfsim_engine::fight::DEBUFF_ROSTER
             .iter().map(|(id, _)| *id).collect::<Vec<_>>(),

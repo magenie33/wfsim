@@ -109,7 +109,13 @@ const dtColor = (ty) => (dtKey(ty) ? `var(--dt-${dtKey(ty)})` : null);
 /// id nobody has a label for prints ITSELF rather than a blank, which is still
 /// a name a reader can act on.
 const COMBATANT_LABEL = { wielder: "You" };
-const combatantName = (id) => (COMBATANT_LABEL[id] ? tr(COMBATANT_LABEL[id]) : String(id || ""));
+/// `seat` is what that seat BROUGHT, as the run reported it — never looked up
+/// in the live roster, which has moved on by the time a saved result is read.
+const combatantName = (id, seat) => {
+  if (COMBATANT_LABEL[id]) return tr(COMBATANT_LABEL[id]);
+  const w = seat && seat.weapon && weaponExists(seat.weapon) && weaponInfo(seat.weapon);
+  return w ? tf(w.name) : String(id || "");
+};
 const dtIcon = (ty) => {
   const k = dtKey(ty);
   if (!k) return "";

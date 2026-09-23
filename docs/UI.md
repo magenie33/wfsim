@@ -574,6 +574,31 @@ switch goes nowhere near it. `scenariosChanged` calls `refreshGains()` — that
 hook rather than the call sites, because it is already the only thing every
 scenario mutation goes through.
 
+## A fight is n against m, and the roster is the other half
+
+**A FIGHT HOLDS MORE THAN ONE GUN.** The enemy half has been a list since the
+formation existed; the roster in block 2 (`28-fight-roster.js`) is the other
+one — a squadmate, a companion or a summon, which are one thing to the engine:
+something with a build that acts on its own clock.
+
+**A SEAT IS A LINK, NEVER A COPY** — `{weapon, preset}`, the same shape the
+wielder's is. The preset IS the build, so editing it moves this fight too; a
+copy stored in the scenario would be a second answer to "what is that build"
+with no rule for which wins. It resolves at send time through `seatPayload`,
+the same function the open build goes through, so an axis added to
+`BUILD_AXES` reaches every seat or none.
+
+**SEAT 1 IS THE OPEN BUILD**, is not in the list, and cannot be removed or
+pointed anywhere: it is the one the page is about, the one the panel resolves
+and the only one a board submission carries. The roster is a declared scenario
+field, so an official ruler — which never mentions one — is one gun.
+
+**EVERY READER OF A FIGHT WIRES IT**, `/api/simulate` and `/api/log` both,
+through `seat_the_rest`. A record drawn from the wielder alone is a TRUE
+record of a fight nobody ran, every row in it correct and the fight wrong.
+`combatants` comes back one row per seat, each naming the WEAPON it brought —
+read from the run rather than looked up in a roster that has moved on.
+
 ## Aim is dragged, and a pick reads nothing
 
 **AIM IS DRAGGED, AND A PICK READS NOTHING.** A bare click clears the

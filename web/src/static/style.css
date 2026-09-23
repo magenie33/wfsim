@@ -2961,3 +2961,26 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .w-notes b{color:var(--text-2);font-weight:600}
 .w-notes ul{margin:5px 0 0;padding-left:18px}
 .w-notes li{margin:3px 0}
+
+/* WHO ELSE IS FIRING — the roster (`28-fight-roster.js`). A LIST of rows for
+   the same reason the squad's shards are one: each seat is a weapon, a preset
+   and a remove, and a field grid would floor every track at min-content and
+   push the remove off a phone (`check_mobile.mjs`). */
+.rs{display:flex; flex-direction:column; gap:8px}
+.rs-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+/* THE WEAPON IS THE ROW and the preset is half of it: both grow, the weapon
+   twice as fast, so a long name is readable before a preset name is squeezed. */
+.rs-row > .dd{flex:2 1 180px; min-width:0}
+.rs-row > .dd[id^="dd-seat-preset"]{flex:1 1 120px}
+/* THE SEAT NUMBER, and it is the ONE thing every row shares with the result
+   panel's per-seat table: the same 1, 2, 3 in the same order, so a reader
+   comparing the two is comparing the same list. */
+.rs-n{display:inline-flex; align-items:center; justify-content:center;
+  min-width:20px; height:20px; border-radius:10px; font-size:11px;
+  background:var(--line); color:var(--muted)}
+.rs-you .rs-n{background:var(--accent); color:var(--surface)}
+.rs-me{font-weight:600}
+.rs-hint{color:var(--muted); font-size:12px; flex:1 1 100%; min-width:0}
+.rs-row .rs-hint{flex:0 1 auto}
+.rs-x{padding:2px 8px; line-height:1}
+.rs-add{display:flex; flex-wrap:wrap; align-items:center; gap:8px}

@@ -270,6 +270,7 @@ function renderSim() {
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
     limits: "sim-limits", extra: "sim-extra", run: "sim-run", squad: "sim-squad" });
+  renderRoster();
   renderSimRuns();
   renderWfBuffs("sim-wfbuffs", false);
   // …AND THE OPTIMIZER'S COPY, from the same call. It shows the SIMULATOR's

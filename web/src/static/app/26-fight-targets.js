@@ -20,7 +20,12 @@
 /// lands LAST, which is the whole of that decoupling.
 function theFight(over) {
   return { ...sim, runs: simRuns(), custom_enemies: customEnemiesFor(sim.enemy),
-    buffs: sim.buffs || {}, ...(over || {}) };
+    buffs: sim.buffs || {},
+    // THE ROSTER, RESOLVED — links in the scenario, whole builds on the wire.
+    // Resolved HERE rather than stored resolved, so a seat's preset edited in
+    // its own weapon page is the build this fight runs on the next Run.
+    also_acting: alsoActingPayload(),
+    ...(over || {}) };
 }
 
 function renderEnemies() {

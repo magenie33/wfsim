@@ -147,38 +147,61 @@ function tennoPayload() {
   return Object.fromEntries(TENNO_KEYS.map((k) => [k, sim[k]]));
 }
 
-function buildPayload() {
+/// ONE SEAT'S HALF OF A REQUEST, from a BUILD STATE rather than from the
+/// editor — the weapon, the mods, the evolutions, the arcanes and who is
+/// holding it.
+///
+/// A FUNCTION OF A STATE BECAUSE A FIGHT HOLDS n OF THEM. The live editor is
+/// one seat; a preset picked in the fight's roster is another, and it has no
+/// editor to read its globals off. Two producers of this object would be two
+/// answers to "what is this build", and it is `buildState`'s axes that say
+/// which fields there are — so a new axis reaches both seats or neither.
+function seatPayload(st) {
   return {
-    ...tennoPayload(),
-    weapon: $("weapon").value,
-    // WHO HOLDS IT — the linked Warframe build, as the Warframe module reads it.
-    // Absent is the Prototype, or a locked weapon's own frame on the server.
-    wielder: wielderPayload(),
-    evolutions: Object.values(evoSel).filter(Boolean),
+    weapon: st.weapon,
+    // WHO HOLDS IT — the linked Warframe build, as the Warframe module reads
+    // it. Absent is the Prototype, or a locked weapon's own frame on the
+    // server.
+    wielder: wielderPayloadOf(st.wielder || { frame: PROTOTYPE_ID, preset: "" }),
+    evolutions: Object.values(st.evoSel || {}).filter(Boolean),
     // One per pool, in the weapon's pool order — the server reads either
     // this or a bare value, so an old saved build still means what it meant.
-    arcane: arcanes,
-    arcane_rank: arcaneRanks,
-    mods: slots.filter((s) => s.mod).map(slotModId),
+    arcane: st.arcane,
+    arcane_rank: st.arcaneRank,
+    mods: (st.slots || []).filter((x) => x.mod).map(slotModId),
     // HOW IT IS PLAYED, from the BUILD. Riding in the scenario as `form` lets
     // the FIGHT decide how a weapon is fired, so the official ruler silently
     // plays every Incarnon weapon through its cycle and "never transmuting"
     // cannot be asked for.
-    mode,
+    mode: st.mode,
     // THE VALENCE, as two flat fields rather than an object: `base_for` reads
     // them off the request the same way it reads the deployment, and every
     // path that builds a weapon for a request goes through it.
-    valence_element: valence.element,
-    valence_bonus: valence.bonus,
+    valence_element: (st.valence || {}).element,
+    valence_bonus: (st.valence || {}).bonus,
     // THE PARTS, as an object, because they are one fact: `assembly_of` reads
     // the pair and repairs it part by part. Omitted entirely on a weapon that
     // has none, so the wire says nothing rather than saying `null`.
-    ...(assembly ? { assembly: { ...assembly } } : {}),
+    ...(st.assembly ? { assembly: { ...st.assembly } } : {}),
+  };
+}
+
+/// THE OPEN BUILD, as a whole request — this seat plus what the READER brings.
+///
+/// The Tenno fields and the riven definitions are the reader's, not a seat's:
+/// every seat in one fight is the same player at the same rank carrying the
+/// same items, so they are stated once for the request and `seat_from` on the
+/// server reads them from it.
+function buildPayload() {
+  return {
+    ...tennoPayload(),
+    ...seatPayload(snapshotState()),
     // A `riven:` id means nothing without the riven itself — it is the
     // visitor's item, not a pool entry, so it rides along with the request.
     rivens: rivenPayload(),
   };
 }
+
 
 /// THE INVERSE OF `buildPayload` — a request back into builder state, and the
 /// ONLY translation left between the two.

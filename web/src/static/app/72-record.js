@@ -723,9 +723,10 @@ function recordRow(e, rosters) {
   // there is more than one thing firing, which is the rule the foe chips
   // already follow: a control with one option is not a control.
   const roster = (recordState && recordState.combatants) || [];
-  const who = roster[(e.combatant || 0)] || "";
+  const seat = roster[(e.combatant || 0)] || {};
+  const who = seat.id || "";
   const whoCell = roster.length > 1
-    ? `<td class="rec-who"${L("who dealt it")}>${escHtml(combatantName(who))}</td>` : "";
+    ? `<td class="rec-who"${L("who dealt it")}>${escHtml(combatantName(who, seat))}</td>` : "";
   return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}" data-combatant="${escHtml(who)}">
     <td class="rec-t"${L("time")}>${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
     ${whoCell}

@@ -345,6 +345,32 @@ fn seat_mods<'a>(
     Ok(refs)
 }
 
+/// PUT THE REST OF THE ROSTER IN THE FIGHT, and say what each seat brought.
+///
+/// BOTH READERS OF A FIGHT CALL THIS. `simulate` reports a number and `log`
+/// replays the same engagement event by event, so a roster wired into one and
+/// not the other is a record of a fight nobody ran — and it reads as a correct
+/// record, because every row in it is true of the fight it DID run.
+///
+/// The weapon ids come back in seat order so a report can name what fired
+/// without the reader looking it up in a roster that has moved on since.
+pub(crate) fn seat_the_rest(
+    params: &mut FightParams,
+    v: &Value,
+    arena: &wfsim_engine::arena::Arena,
+    info: &'static WeaponInfo,
+) -> Result<Vec<String>, Value> {
+    let mut weapons = vec![info.id.to_string()];
+    for extra in v.get("also_acting").and_then(|x| x.as_array()).into_iter().flatten() {
+        let p = seat_from(extra, arena)?;
+        // `and_also` takes the fight by value, so the seat is pushed onto the
+        // one the caller is holding rather than a copy of it.
+        params.also_acting.push(p);
+        weapons.push(extra.get("weapon").and_then(|x| x.as_str()).unwrap_or_default().to_string());
+    }
+    Ok(weapons)
+}
+
 /// ANOTHER THING ACTING IN THIS FIGHT, resolved through the SAME path as the
 /// build the answer is about.
 ///
@@ -358,7 +384,7 @@ fn seat_mods<'a>(
 /// `sim_params` — every one of them the function the reported build uses. A
 /// second resolution path would be a second answer, and the point of the fight
 /// holding n builds is that they are the same kind of thing.
-fn seat_from(v: &Value, arena: &wfsim_engine::arena::Arena) -> Result<FightParams, Value> {
+pub(crate) fn seat_from(v: &Value, arena: &wfsim_engine::arena::Arena) -> Result<FightParams, Value> {
     let fight = parse_fight(v)?;
     let Fight {
         info, policy, evos, cycle_from, single_form, tenno, infinite_ammo,
@@ -488,12 +514,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // EVERYTHING ELSE ACTING IN THIS FIGHT. Each entry is a request of its own
     // and resolves through the same path; the ARENA is this fight's, so no
     // seat can quietly be fighting a different enemy.
-    for extra in v.get("also_acting").and_then(|x| x.as_array()).into_iter().flatten() {
-        match seat_from(extra, &arena) {
-            Ok(p) => params = params.and_also(p),
-            Err(e) => return e,
-        }
-    }
+    let seat_weapons = match seat_the_rest(&mut params, v, &arena, info) {
+        Ok(w) => w,
+        Err(e) => return e,
+    };
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
     // the sim is the one place a visitor is owed a reason.
     for (pool, aid, _) in arcane_choices(v, info) {
@@ -1006,6 +1030,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 let pellets = f64::from(c.pellets.max(1));
                 json!({
                     "id": id,
+                    // WHAT IT BROUGHT. The engine knows no weapon names, so the
+                    // seat's own id stays a slug and this is what a reader is
+                    // shown beside it.
+                    "weapon": seat_weapons.get(i).cloned().unwrap_or_default(),
                     "damage": s.mean_damage_by_combatant.0.get(i).copied().unwrap_or(0.0),
                     // WHAT THIS SEAT DID, and every rate here is ITS OWN — a
                     // crit rate is a seat's or it is nobody's. Means over the

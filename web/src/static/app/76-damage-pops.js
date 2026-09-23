@@ -310,7 +310,7 @@ function renderResults(r, testedAt) {
     const total = list.reduce((a, x) => a + (x.damage || 0), 0) || 1;
     const top = Math.max(...list.map((x) => x.damage || 0)) || 1;
     const rows = list.map((x, i) => `<div class="mrow" data-combatant="${escHtml(x.id)}" data-c="${(i % 8) + 1}">
-      <span class="mname">${escHtml(combatantName(x.id))}</span>
+      <span class="mname">${escHtml(combatantName(x.id, x))}</span>
       ${mbar((x.damage || 0) / top * 100, "", (i % 8) + 1, false)}
       <span class="mval">${n0(x.damage)} · ${pct2((x.damage || 0) / total)}</span>
     </div>`).join("");
@@ -323,7 +323,7 @@ function renderResults(r, testedAt) {
         tr("Crit tier"), tr("Procs"), tr("Reloads"), tr("Finishes")]
         .map((h) => `<span>${escHtml(h)}</span>`).join("")}</div>
       ${list.map((x) => `<div class="seat-r" data-combatant="${escHtml(x.id)}">
-        <span class="nm">${escHtml(combatantName(x.id))}</span>
+        <span class="nm">${escHtml(combatantName(x.id, x))}</span>
         <span>${n0(x.shots)}</span><span>${pc(x.crit_rate)}</span><span>${pc(x.big_crit_rate)}</span>
         <span>${(x.crit_tier || 0).toFixed(2)}</span><span>${n0(x.procs)}</span>
         <span>${n0(x.reloads)}</span><span>${n0(x.finishes)}</span>

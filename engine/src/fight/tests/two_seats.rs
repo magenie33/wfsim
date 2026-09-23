@@ -108,12 +108,13 @@ fn a_kill_is_the_fights_and_a_finish_is_a_seats() {
 /// scored — "it fired nothing" and "it is not there" are different fights.
 #[test]
 fn the_roster_names_every_seat() {
-    assert_eq!(fight_for(&["cernos_prime"]).combatant_ids().len(), 1);
+    assert_eq!(fight_for(&["cernos_prime"]).combatant_ids(), ["wielder"]);
+    // …AND EVERY SEAT HAS ITS OWN NAME. The page files a per-seat figure under
+    // these, so two seats sharing one id are two figures under one heading and
+    // whichever is read second wins.
     assert_eq!(
-        fight_for(&["cernos_prime", "braton_prime"])
-            .combatant_ids()
-            .len(),
-        2
+        fight_for(&["cernos_prime", "braton_prime", "laetum"]).combatant_ids(),
+        ["wielder", "seat2", "seat3"]
     );
 }
 

@@ -19,12 +19,13 @@ impl FightParams {
     ///
     /// Stable English slugs, never translated: the same rule every id in
     /// `data/` follows, and the page resolves them to names of its own.
-    pub fn combatant_ids(&self) -> Vec<&'static str> {
-        let mut out = vec!["wielder"];
+    pub fn combatant_ids(&self) -> Vec<String> {
         // A SEAT IS NAMED BY WHERE IT SITS, because the engine does not know
         // what is in it. The page resolves these to names of its own, exactly
-        // as it does for a body.
-        out.extend(self.also_acting.iter().map(|_| "second"));
+        // as it does for a body — which it can only do while each one is
+        // DISTINCT, so they are numbered rather than sharing a word.
+        let mut out = vec!["wielder".to_string()];
+        out.extend((2..=self.also_acting.len() + 1).map(|n| format!("seat{n}")));
         out.truncate(crate::fight::MAX_COMBATANTS);
         out
     }
