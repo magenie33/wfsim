@@ -133,7 +133,7 @@ pub(super) fn process_ticks(
     until: f64,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
@@ -481,14 +481,14 @@ pub(super) fn process_ticks(
                 bracket,
                 1.0,
                 false,
-                ap.status_chance,
+                active.status_chance,
                 now,
                 debuffs,
                 gal,
                 arc,
                 target,
                 params,
-                ap,
+                active,
                 &mit,
                 r,
                 rec,
@@ -557,8 +557,8 @@ pub(super) fn settle_what_is_in_the_air(
     // See `process_ticks`.
     w: &CardWindows,
     params: &FightParams,
-    ap: &FightParams,
-    field_ap: &FightParams,
+    active: &FightParams,
+    field_active: &FightParams,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     t: &mut f64,
@@ -583,7 +583,7 @@ pub(super) fn settle_what_is_in_the_air(
             *t,
             target,
             params,
-            field_ap,
+            field_active,
             field_ctx,
             r,
             rec,
@@ -601,7 +601,7 @@ pub(super) fn settle_what_is_in_the_air(
         // armour past zero. Two kills at 5% leave 0.9025 of it, not 0.90.
         //
         // NO CLOCK. The card states no duration, so what it takes it keeps.
-        if let Some((share, radius)) = ap.strip_on_kill_in_range {
+        if let Some((share, radius)) = active.strip_on_kill_in_range {
             let fresh = r.kills.saturating_sub(*strip_kills_seen);
             *strip_kills_seen = r.kills;
             if fresh > 0 && share > 0.0 {
@@ -645,8 +645,8 @@ pub(super) fn settle_what_is_in_the_air(
         // looked at. A shot boundary is where every other clock in this loop is
         // read, and the meter is coarse enough not to care: it is 45 seconds
         // long and the fastest thing that fills it is worth one.
-        if let Some(m) = ap.meter {
-            meter.tick(m, ap, params, dropped_secondary, t, orbs);
+        if let Some(m) = active.meter {
+            meter.tick(m, active, params, dropped_secondary, t, orbs);
         }
         // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
         // buff snapshot the field walk takes; an orb's clock is its own and no
@@ -661,7 +661,7 @@ pub(super) fn settle_what_is_in_the_air(
             *t,
             target,
             params,
-            field_ap,
+            field_active,
             field_ctx,
             r,
             rec,

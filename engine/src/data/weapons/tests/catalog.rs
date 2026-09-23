@@ -1445,7 +1445,7 @@ fn an_evolutions_flat_damage_stays_out_of_the_co_term_by_default() {
     }
     // …AND SO DOES PERK 2, WHICH THE CATALOG DOES NOT LIST. Fevered Frenzy
     // also raises base damage (+50), and this assertion read 1.0 until it
-    // was measured: at the 125 panel, Galvanized Shot at 3 stacks against 2
+    // was measured: at the 125 panel, Galvanized Strike at 3 stacks against 2
     // status types gives 305, and a CO term on the full 125 would give 425
     // (MEASUREMENTS M49,).
     //
@@ -1557,7 +1557,7 @@ fn base_panels_match_the_wiki_values() {
     assert_eq!(b.injected_elements, vec![(DamageType::Toxin, 1.0)]);
     // TRIGGER *AND* CLASS. The class half is what makes a
     // `requires: dual_pistols` gate satisfiable at all — without it Akimbo
-    // Slip Shot equipped and did nothing, on every dual pistol.
+    // Slip Strike equipped and did nothing, on every dual pistol.
     assert_eq!(b.traits, &["semi_auto", "dual_pistols"]);
     assert!(b.gauge_form.is_none());
 

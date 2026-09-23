@@ -76,9 +76,9 @@ fn a_valence_bonus_is_base_damage_and_merges_with_the_element_it_matches() {
 /// THE FOUR READINGS, and the only arithmetic that lands on all of them.
 ///
 /// MEASUREMENTS M78: a Kuva Nukor on a 60% Magnetic Lich with +220% base
-/// damage reads **108 / 148 / 188 / 228** across Galvanized Shot's three
+/// damage reads **108 / 148 / 188 / 228** across Galvanized Strike's three
 /// stacks, with TWO statuses on screen. Every number below the weapon comes
-/// from data — the base, Hornet Strike, Galvanized Shot's rate — so the
+/// from data — the base, Hornet Strike, Galvanized Strike's rate — so the
 /// measurement is what this test adds and the rest cannot drift under it.
 ///
 /// It separates two claims at once, and neither alternative is close: the
@@ -92,7 +92,7 @@ fn the_kuva_nukors_measured_condition_overload_ladder() {
     let by = |id: &str| pool.iter().find(|m| m.id == id).expect(id);
     let mods = [by("hornet_strike"), by("galvanized_shot")];
     let r = crate::build::loadout::resolve(&base, &mods, crate::model::StackPolicy::Emergent);
-    let stack = r.co_stack.expect("Galvanized Shot grants CO stacks");
+    let stack = r.co_stack.expect("Galvanized Strike grants CO stacks");
 
     // MICROWAVE IS THE THIRD, and it is the weapon's own: this vector is
     // Radiation plus the Lich's Magnetic and has no other type to offer.

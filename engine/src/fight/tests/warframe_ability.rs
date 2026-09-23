@@ -104,7 +104,7 @@ fn direct(p: &FightParams) -> f64 {
 /// VERBATIM (wiki `Microwave`): *"not listed in the game UI, however is
 /// counted towards the damage calculation bonus with Condition-Overload
 /// type equipment"*, naming Condition Overload, Galvanized Aptitude,
-/// Galvanized Savvy, Galvanized Shot, Secondary Shiver and the Cedo.
+/// Galvanized Savvy, Galvanized Strike, Secondary Shiver and the Cedo.
 ///
 /// Asserted as an EXACT step of one type's worth, not as a direction: at
 /// +50% a type, one more type is x1.5 on the CO bucket, and a fixture that

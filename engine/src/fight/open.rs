@@ -73,7 +73,7 @@ pub(super) struct Fixed<'a> {
     pub(super) base_variants: Vec<(crate::rules::damage::DamageVector, f64, f64)>,
     pub(super) base_variant_rad: Vec<crate::rules::damage::DamageVector>,
     pub(super) status_damage: f64,
-    pub(super) field_ap: &'a FightParams,
+    pub(super) field_active: &'a FightParams,
     pub(super) combo_spec: Option<crate::model::SniperCombo>,
 }
 
@@ -447,13 +447,13 @@ pub(super) fn open<'a>(
     // group has a lingering part (Torid's cloud belongs to the base form; its
     // Incarnon beam leaves none), so this is unambiguous - and it is the right
     // answer even after a transmute, because a cloud outlives one.
-    let field_ap: &FightParams = match &params.cycle {
+    let field_active: &FightParams = match &params.cycle {
         Some(cy) if cy.base_form.lingering.is_some() => &cy.base_form,
         _ => params,
     };
 
     let meter = Meter {
-        seconds: field_ap.meter.map_or(0.0, |m| m.seconds_to_fill),
+        seconds: field_active.meter.map_or(0.0, |m| m.seconds_to_fill),
         clocked: 0.0f64,
     };
     // KILLS JAHU CANTICLE HAS ALREADY STRIPPED FOR, read as a delta off the
@@ -509,7 +509,7 @@ pub(super) fn open<'a>(
     //
     // Zero for every gun but the Grimoire's primary fire, so nothing else moves
     // by so much as a bit.
-    let t = field_ap.windup_seconds;
+    let t = field_active.windup_seconds;
     // GOTVA PRIME'S PASSIVE, armed. Set by a pellet that landed a status, spent
     // by the next pellet that lands. It survives across shots and reloads: the
     // card says the chance "remains until landing another successful shot", and
@@ -557,7 +557,7 @@ pub(super) fn open<'a>(
     // the decay period — comes from whichever form declares one, so a cycle
     // that spends half the engagement in a form with no combo does not lose
     // the count it built. What the form DOES decide is whether a hit in it
-    // counts and whether it pays, which is read off `ap` at the hit itself:
+    // counts and whether it pays, which is read off `active` at the hit itself:
     // the Incarnon forms declare no combo (nothing published says whether it
     // survives the transform — see their `unmodeled:`), so their hits do
     // neither while the two-second clock keeps running.
@@ -660,7 +660,7 @@ pub(super) fn open<'a>(
             base_variants,
             base_variant_rad,
             status_damage,
-            field_ap,
+            field_active,
             combo_spec,
         },
     )

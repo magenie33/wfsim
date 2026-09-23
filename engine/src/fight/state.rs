@@ -540,7 +540,7 @@ impl Meter {
     pub(super) fn tick(
         &mut self,
         m: crate::build::loadout::ResolvedMeter,
-        ap: &FightParams,
+        active: &FightParams,
         params: &FightParams,
         dropped_secondary: u32,
         t: &mut f64,
@@ -566,7 +566,7 @@ impl Meter {
         // spent is the whole thing and what is bought is a single orb.
         if meter.seconds >= m.seconds_to_fill {
             meter.seconds -= m.seconds_to_fill;
-            if let Some(o) = ap.orb {
+            if let Some(o) = active.orb {
                 throw_orb(o, params, *t, orbs);
                 // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
                 // a wind-up and a recovery, and the weapon can do nothing
@@ -577,7 +577,7 @@ impl Meter {
                 // pressing its trigger, and that costs what pressing it
                 // always costs; the interval only "corresponds exactly to
                 // the fire rate" while you are holding it down.
-                *t += o.throw_seconds + o.recovery_seconds + ap.windup_seconds;
+                *t += o.throw_seconds + o.recovery_seconds + active.windup_seconds;
             }
         }
     }
@@ -605,7 +605,7 @@ impl Ammo {
 /// EXACT PENANCE'S ROLL on a weak-point hit: a magazine the weapon actually
 /// has, the head it names, the kill if the card asks for one.
 pub(super) fn roll_instant_reload(
-    ap: &FightParams,
+    active: &FightParams,
     params: &FightParams,
     d: &mut crate::rules::rng::Draws,
     head_direct: bool,
@@ -616,7 +616,7 @@ pub(super) fn roll_instant_reload(
     if let Some(ef) = params.instant_reload {
         let has_magazine = match &params.cycle {
             Some(_) => incarnon.in_base_form,
-            None => ap.ammo_efficiency_applies,
+            None => active.ammo_efficiency_applies,
         };
         if has_magazine
             && head_direct

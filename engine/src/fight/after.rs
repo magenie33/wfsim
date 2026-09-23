@@ -16,7 +16,7 @@ pub(super) fn after_the_shot(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
     flash: bool,
-    ap: &FightParams,
+    active: &FightParams,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     d: &mut crate::rules::rng::Draws,
@@ -64,7 +64,7 @@ pub(super) fn after_the_shot(
         // connected, and a multishot pull that lands one pellet connected.
         // Nothing happens on a weapon with no combo, and nothing happens at
         // point blank — `landed_this_shot` cannot be false there.
-        if ap.sniper_combo.is_some() && !landed_this_shot {
+        if active.sniper_combo.is_some() && !landed_this_shot {
             sniper_combo.count = 0;
         }
 
@@ -82,7 +82,7 @@ pub(super) fn after_the_shot(
         // applied to an enemy runs its own clock. A field the sim never
         // re-pulses and a debuff that survives its field are the same thing
         // from the target's side, which is the only side this arena has.
-        if let Some(secs) = ap.attractor_seconds {
+        if let Some(secs) = active.attractor_seconds {
             DebuffState::push_capped(&mut debuffs.attractor, *t + secs, 1, *t);
         }
 
@@ -99,7 +99,7 @@ pub(super) fn after_the_shot(
         //
         // A weapon with no burst has a count of one, and then every round
         // completes its own burst — which is what the trigger means there.
-        let burst_len = ap.burst.map_or(1, |b| b.count.max(1));
+        let burst_len = active.burst.map_or(1, |b| b.count.max(1));
         if ammo.rounds_this_mag.is_multiple_of(burst_len) {
             bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::FullBurst, *t, rng);
         }
@@ -143,7 +143,7 @@ pub(super) fn after_the_shot(
         // "FROM AMMO POOL", so a dry reserve restores nothing: the round is
         // drawn like any other. And a restore is NOT a reload — nothing that
         // watches reloads sees it, the same rule `magazine_refill_on_kill` follows.
-        if let Some((st, chance, rounds)) = ap.round_restore_on_status {
+        if let Some((st, chance, rounds)) = active.round_restore_on_status {
             if has_status(debuffs, st) && d.extra.chance(chance) {
                 let room = (ammo.cap - ammo.loaded).max(0.0);
                 let want = rounds.min(room);
@@ -185,7 +185,7 @@ pub(super) fn after_the_shot(
         if let Some(en) = enervate.as_mut() {
             en.on_event(&hit, *t, bar);
         }
-        if ap.frenzy {
+        if active.frenzy {
             frenzy.on_event(&hit, *t, bar);
         }
 
@@ -231,7 +231,7 @@ pub(super) fn after_the_shot(
         // award points"*, so a miss neither adds nor refreshes.
         if let Some(h) = &swing {
             after_swing(
-                h, ap, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
+                h, active, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
                 tennokai_heavy, pellets_before, *t,
                 r, melee, incarnon, ammo, arc, target, debuffs,
                 others,
@@ -242,7 +242,7 @@ pub(super) fn after_the_shot(
         // granted/refreshed counts immediately), plus Pressurized
         // Magazine's live on-reload fire-rate buff.
         bar.expire(*t);
-        let mut fr_add = match ap.fire_rate_on_reload {
+        let mut fr_add = match active.fire_rate_on_reload {
             Some(b) if *t < windows.fire_rate_after_reload => b.value,
             _ => 0.0,
         };
@@ -251,7 +251,7 @@ pub(super) fn after_the_shot(
         // already the absolute rate that fraction is worth, so adding it here,
         // inside the bracket rather than outside it, is what keeps it additive
         // with mods instead of multiplicative with them.
-        fr_add += buff_total(ap, crate::model::BuffGrant::FireRate, buff_stacks, *t);
+        fr_add += buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, *t);
         // …AND A WARFRAME ABILITY'S SHARE, into the same sum: Warcry's attack
         // speed is "additive to mods (e.g., Fury)" and its own strength knob has
         // already been spent on it (`data::abilities::resolve`).
@@ -289,9 +289,9 @@ pub(super) fn after_the_shot(
         fr_add += crate::data::abilities::fire_rate_at(
             &params.abilities, *t, melee.ability_extra_seconds);
         let rate = if params.locks("fire_rate") {
-            ap.fire_rate
+            active.fire_rate
         } else {
-            (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
+            (active.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
         };
         // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
         // this loop — a reload, a transform, a dry magazine, a stall on a dry
@@ -312,14 +312,14 @@ pub(super) fn after_the_shot(
         // to: a fire-rate mod raises the ceiling and the floor together, so the
         // Phenmor's Incarnon form still spends most of its 408-round magazine
         // at 60% of whatever it was built to.
-        let rate = rate * spool_factor(ap.sustained_fire_rate, spool.shots);
+        let rate = rate * spool_factor(active.sustained_fire_rate, spool.shots);
         spool.shots += 1.0;
         // On a CHARGE weapon the pull costs a draw, not a rate: divide the
         // modded charge time by whatever the live buffs did to the rate
-        // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
+        // (`rate / active.fire_rate` is exactly that factor, and it is 1.0 when no
         // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
         *t += seconds_to_next_shot(
-            ap, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
+            active, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
         );
         spool.due = *t;
 }

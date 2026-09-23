@@ -377,7 +377,7 @@ pub struct TargetAt {
     pub shield_gate_until: Option<f64>,
 }
 
-/// ONE TERM INSIDE AN ADDITIVE BRACKET — `+0.80 Galvanized Shot`.
+/// ONE TERM INSIDE AN ADDITIVE BRACKET — `+0.80 Galvanized Strike`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Term {
     /// WHAT IT IS, or nothing.
@@ -594,7 +594,7 @@ pub enum Kind {
     /// events should not pay a damage event's size for a reload.
     Damage(Box<Damage>),
     /// A trigger pull: how many pellets it put out and what it cost.
-    Shot {
+    Strike {
         pellets: u32,
     },
     /// A pellet that went nowhere. It pops no number and it is why the pellet
@@ -789,7 +789,7 @@ impl Record {
         // before it, which reads as a chain of shots causing shots (found by
         // looking at a real record).
         self.shot = None;
-        let id = self.push(t, None, Kind::Shot { pellets });
+        let id = self.push(t, None, Kind::Strike { pellets });
         self.shot = id;
         id
     }

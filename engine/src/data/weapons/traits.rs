@@ -7,7 +7,7 @@ use super::*;
 ///
 /// TWO KINDS: the firing TRIGGER (`semi_auto`, `auto`) and the weapon CLASS
 /// (`shotgun`, `bow`, `dual_pistols`, …). With the class missing,
-/// `requires: dual_pistols` can never be satisfied and Akimbo Slip Shot is
+/// `requires: dual_pistols` can never be satisfied and Akimbo Slip Strike is
 /// silently inert — a unit test passing `&["dual_pistols"]` by hand proves the
 /// gate works and never asks whether anything produces the trait.
 ///

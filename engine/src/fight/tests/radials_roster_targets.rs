@@ -829,7 +829,7 @@ fn a_kill_denied_takes_the_galvanized_co_and_leaves_melees() {
     };
     let mut galvanized = FightParams { co_stack: Some(spec(Some("kill"))), ..Default::default() };
     galvanized.deny_buff_triggers(&["kill".to_string()]);
-    assert_eq!(galvanized.co_stack, None, "Galvanized Shot's payload needs a kill");
+    assert_eq!(galvanized.co_stack, None, "Galvanized Strike's payload needs a kill");
 
     let mut melee = FightParams { co_stack: Some(spec(None)), ..Default::default() };
     melee.deny_buff_triggers(&["kill".to_string(), "hit_enemy_with_status".to_string()]);

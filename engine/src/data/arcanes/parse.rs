@@ -6,7 +6,7 @@ pub(super) struct ArcaneFile {
     pub(super) name: String,
     pub(super) rarity: String,
     pub(super) max_rank: u32,
-    /// Weapon trait required for the effects to apply (Akimbo Slip Shot →
+    /// Weapon trait required for the effects to apply (Akimbo Slip Strike →
     /// `dual_pistols`); calc-layer gate like a mod's `requires`.
     #[serde(default)]
     pub(super) requires: Option<String>,

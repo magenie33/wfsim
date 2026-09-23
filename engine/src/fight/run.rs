@@ -442,7 +442,7 @@ pub fn run_once_traced(
         base_variants,
         base_variant_rad,
         status_damage,
-        field_ap,
+        field_active,
         combo_spec,
     } = fixed;
 
@@ -509,7 +509,7 @@ pub fn run_once_traced(
         // Active-phase view: the base form's panel during the rebuild
         // phase, the outer params otherwise. Target/aim/locks are shared
         // from the outer params.
-        let ap: &FightParams = match &params.cycle {
+        let active: &FightParams = match &params.cycle {
             Some(cy) if incarnon.in_base_form => &cy.base_form,
             _ => params,
         };
@@ -549,7 +549,7 @@ pub fn run_once_traced(
         } = swing_this_shot(
             params,
             &apl,
-            ap,
+            active,
             t,
             qvec,
             modded_base,
@@ -580,7 +580,7 @@ pub fn run_once_traced(
             t + 1e-9,
             &mut target,
             params,
-            ap,
+            active,
             &mut r,
             rec,
             &mut d.status,
@@ -608,7 +608,7 @@ pub fn run_once_traced(
             mut beam_merge,
         } = resolve_the_shot(
             params,
-            ap,
+            active,
             rec,
             d,
             t,
@@ -648,7 +648,7 @@ pub fn run_once_traced(
         // a style choice — a `continue` here skips the rest of the shot's own
         // body, which is where the clock, the magazine and the reload live. It
         // hung the engine on the first run.
-        let mut n_pellets = if ap.orb.is_some() && ap.meter.is_none() { 0 } else { n_pellets };
+        let mut n_pellets = if active.orb.is_some() && active.meter.is_none() { 0 } else { n_pellets };
         // A SWING THAT LANDS TWICE IS TWO INSTANCES. `Hits = { 1, 2 }` in the
         // wiki's own module — Crushing Ruin's forward combo lands its second
         // 100% twice and Shattered Village lands two 50% spins per attack — and
@@ -666,12 +666,12 @@ pub fn run_once_traced(
                 n_pellets = n_pellets.saturating_mul(n);
             }
         }
-        if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
+        if active.multishot_ammo_bonus > 0.0 && rolled > 1 {
             // `ammo_efficiency_applies == false` IS the charge-backed marker —
             // such a magazine is "outside the ammo economy entirely", so it has
             // no Capacity behind it and the surcharge comes out of the charge
             // pool itself. That is what shortens the Incarnon window.
-            let charge_backed = !ap.ammo_efficiency_applies;
+            let charge_backed = !active.ammo_efficiency_applies;
             let mut afforded = 0u32;
             for _ in 0..rolled - 1 {
                 let pool = if charge_backed {
@@ -694,10 +694,10 @@ pub fn run_once_traced(
             }
             // A beam merges its multishot into ONE instance, so starvation
             // shows up as a smaller merge multiplier, not as fewer instances.
-            if ap.continuous {
-                let base_ms = ap.base_multishot.max(1.0);
+            if active.continuous {
+                let base_ms = active.base_multishot.max(1.0);
                 let live = (1 + afforded) as f64;
-                beam_merge = base_ms + (live - base_ms) * (1.0 + ap.multishot_ammo_bonus);
+                beam_merge = base_ms + (live - base_ms) * (1.0 + active.multishot_ammo_bonus);
             } else {
                 n_pellets = 1 + afforded;
             }
@@ -708,8 +708,8 @@ pub fn run_once_traced(
         // left out of it. Nothing sources that either way — flagged in
         // MECHANICS — but it is a sub-2% question on sustained fire, unlike the
         // merge above.
-        let beam_ramp = if ap.continuous {
-            beam.tick(t, 1.0 / live_rate.max(1e-9), ap.beam_ramp_floor)
+        let beam_ramp = if active.continuous {
+            beam.tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor)
         } else {
             1.0
         };
@@ -722,12 +722,12 @@ pub fn run_once_traced(
             let streak = match params.headshot_streak {
                 Some(s) if t < windows.streak => s.value,
                 _ => 0.0,
-            } + buff_total(ap, crate::model::BuffGrant::HeadshotDamage, &mut buff_stacks, t);
-            if ap.headshot_bonus_multiplicative {
-                (params.arcane.headshot_multiplier_bonus + streak, ap.headshot_damage_bonus)
+            } + buff_total(active, crate::model::BuffGrant::HeadshotDamage, &mut buff_stacks, t);
+            if active.headshot_bonus_multiplicative {
+                (params.arcane.headshot_multiplier_bonus + streak, active.headshot_damage_bonus)
             } else {
                 (
-                    params.arcane.headshot_multiplier_bonus + streak + ap.headshot_damage_bonus,
+                    params.arcane.headshot_multiplier_bonus + streak + active.headshot_damage_bonus,
                     0.0,
                 )
             }
@@ -739,9 +739,9 @@ pub fn run_once_traced(
             crit_chance_relative_mods: crit_chance_relative - params.arcane.crit_chance_relative,
             base_damage_add_mods: bd_reload_add
                 + bd_eximus_add
-                + ap.compression_base_damage
-                + buff_total(ap, crate::model::BuffGrant::BaseDamage, &mut buff_stacks, t)
-                + buff_total(ap, crate::model::BuffGrant::FlatBaseDamage, &mut buff_stacks, t),
+                + active.compression_base_damage
+                + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut buff_stacks, t)
+                + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut buff_stacks, t),
             // The same ladder the pellet loop builds below, on the aimed body's
             // own head — see the field's note on why it is computed twice
             // rather than shared.
@@ -751,16 +751,16 @@ pub fn run_once_traced(
                     .iter()
                     .find(|p| p.is_head)
                     .map_or(1.0, |p| p.multiplier);
-                let m = ap.headshot_multiplier.unwrap_or(m);
-                (m + 1.5 * ap.weakpoint_damage) * (1.0 + shot_hb) * (1.0 + shot_hi)
+                let m = active.headshot_multiplier.unwrap_or(m);
+                (m + 1.5 * active.weakpoint_damage) * (1.0 + shot_hb) * (1.0 + shot_hi)
             },
             head_landing: shot_head_landing,
         };
         settle_what_is_in_the_air(
             &windows,
             params,
-            ap,
-            field_ap,
+            active,
+            field_active,
             rec,
             d,
             &mut t,
@@ -791,8 +791,8 @@ pub fn run_once_traced(
         let mut landed_this_shot = false;
 
         // THE SHOT'S FACTORS, filled by its first landing pellet — see
-        // `SpreadShot`. `None` when nothing landed, and then nothing spreads.
-        let mut shot_spread: Option<SpreadShot> = None;
+        // `SpreadStrike`. `None` when nothing landed, and then nothing spreads.
+        let mut strike_spread: Option<SpreadStrike> = None;
 
         // A SHOT THAT DEPLOYS RATHER THAN ARRIVES. An orb attack settles no
         // collision and no explosion here: everything it deals is delivered
@@ -808,13 +808,13 @@ pub fn run_once_traced(
         // so — which is the whole weapon: you shoot, and every so often you
         // throw. Without one, the trigger deploys, which is what the form's own
         // `transformed` mode shows.
-        if let Some(o) = ap.orb.filter(|_| ap.meter.is_none()) {
+        if let Some(o) = active.orb.filter(|_| active.meter.is_none()) {
             throw_orb(o, params, t, &mut orbs);
         }
 
         {
-            let shot = Shot {
-                ap,
+            let shot = Strike {
+                active,
                 qvec,
                 direct_pre_snap,
                 variants,
@@ -876,7 +876,7 @@ pub fn run_once_traced(
                 crit_per_hit: &mut crit_per_hit,
                 sniper_combo: &mut sniper_combo,
                 weakpoint_pile: &mut weakpoint_pile,
-                shot_spread: &mut shot_spread,
+                strike_spread: &mut strike_spread,
                 fields: &mut fields,
                 orbs: &mut orbs,
                 any_big: &mut any_big,
@@ -898,11 +898,11 @@ pub fn run_once_traced(
             spread_beyond_the_target(
                 &windows,
                 params,
-                ap,
+                active,
                 rec,
                 d,
                 t,
-                &shot_spread,
+                &strike_spread,
                 &mut others,
                 &mut gal,
                 &mut arc,
@@ -935,7 +935,7 @@ pub fn run_once_traced(
             params,
             &apl,
             flash,
-            ap,
+            active,
             rec,
             rng,
             d,
@@ -980,7 +980,7 @@ pub fn run_once_traced(
     // ammo still recharges, and an orb earned at t = 179 is an orb the fight
     // gets — so the clock is run out to the end and every throw it buys is
     // thrown, before the orbs are drained below.
-    if let (Some(m), Some(o)) = (field_ap.meter, field_ap.orb) {
+    if let (Some(m), Some(o)) = (field_active.meter, field_active.orb) {
         meter.seconds += params.duration_seconds - meter.clocked;
         while meter.seconds >= m.seconds_to_fill {
             meter.seconds -= m.seconds_to_fill;
@@ -997,7 +997,7 @@ pub fn run_once_traced(
             process_orbs(
                 &windows,
                 &mut orbs, &mut debuffs, &mut gal, &mut arc, at, &mut target,
-                params, field_ap, &field_ctx, &mut r, rec, d, &mut others,
+                params, field_active, &field_ctx, &mut r, rec, d, &mut others,
             );
             throw_orb(o, params, at, &mut orbs);
         }
@@ -1015,7 +1015,7 @@ pub fn run_once_traced(
         params.duration_seconds,
         &mut target,
         params,
-        field_ap,
+        field_active,
         &field_ctx,
         &mut r,
         rec,
@@ -1034,7 +1034,7 @@ pub fn run_once_traced(
         params.duration_seconds,
         &mut target,
         params,
-        field_ap,
+        field_active,
         &field_ctx,
         &mut r,
         rec,
@@ -1050,7 +1050,7 @@ pub fn run_once_traced(
         params.duration_seconds,
         &mut target,
         params,
-        field_ap,
+        field_active,
         &mut r,
         rec,
         &mut d.status,

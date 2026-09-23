@@ -13,7 +13,7 @@ pub struct ArcaneDef {
     ///
     /// An EQUIP rule, not a calc-layer gate. `requires` is
     /// the other thing — it lets the arcane equip and go inert, which is right
-    /// for Akimbo Slip Shot and WRONG for these two: the game does not offer
+    /// for Akimbo Slip Strike and WRONG for these two: the game does not offer
     /// them at all. A picker that offers what the arsenal refuses is a worse
     /// way to say the same thing.
     pub equip_classes: Vec<&'static str>,

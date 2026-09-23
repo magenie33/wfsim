@@ -115,7 +115,7 @@ pub struct ArcaneFx {
     /// Secondary Fortifier: total damage multiplier while the target still
     /// has Overguard (x3..x8 in-game → stored as the multiplier). 1.0 = none.
     pub overguard_multiplier: f64,
-    /// Akimbo Slip Shot under assumed-max (sliding/aim-gliding not simmed):
+    /// Akimbo Slip Strike under assumed-max (sliding/aim-gliding not simmed):
     /// added to BuffBar ammo efficiency. Gated on the `dual_pistols` trait.
     pub ammo_efficiency: f64,
     /// Primary Compression's two ramps, PER METRE of blast radius given up.

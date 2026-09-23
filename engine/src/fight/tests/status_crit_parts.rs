@@ -543,7 +543,7 @@ fn bleed_snapshots_the_proccing_hits_multipliers() {
         fire_rate: 0.5,     // single shot at t=0 in a 2 s window
         ..no_status()
     };
-    // Shot at t=0 procs a bleed ticking at t=1 (once before 2 s).
+    // Strike at t=0 procs a bleed ticking at t=1 (once before 2 s).
     let s = monte_carlo(&p, 10, 6);
     assert!(
         (s.mean_dot_damage - 79.1).abs() < 1e-9,

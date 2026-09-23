@@ -226,7 +226,7 @@ fn beam_length_takes_the_flat_metres_after_the_percentage() {
 /// …AND THE METRES REACH THE FIGHT, which is the only assertion here that
 /// could not have passed before 2026-08-19.
 ///
-/// A range is a WALL (`gap_m <= ap.range_m`), so a beam short of its target
+/// A range is a WALL (`gap_m <= active.range_m`), so a beam short of its target
 /// deals literally nothing and the same beam extended past it deals its
 /// whole output. That is the widest a mod's effect gets in this engine, and
 /// it is why beam range stopped being an indirect stat: at 27 m an Ignis is
@@ -757,7 +757,7 @@ fn a_gated_flat_base_damage_folds_exactly_as_an_ungated_one() {
 
 /// THE FURIS'S CO READS ITS OWN BASE IN BOTH FORMS, and both halves of
 /// Haven Foray — the +28 and the overshield's +30 — stay out of it (M101).
-/// +220% base damage, Galvanized Shot, overshields up. The base form's
+/// +220% base damage, Galvanized Strike, overshields up. The base form's
 /// 3 / 14 / 3 lands on whole units and the Incarnon is all Heat, so
 /// quantization is exact here and the bracket IS the reading.
 #[test]
@@ -1562,7 +1562,7 @@ fn a_fire_rate_penalty_leaves_a_burst_weapon_s_own_delay_alone() {
 fn dual_toxocyst_panel_resolves_by_hand() {
     // Hornet +220%, Frostbite (cold 60/SC 60), Jolt (elec 60/SC 60),
     // PPG +187% cc, PTC +110% cd, Lethal Torrent (FR 60/MS 60),
-    // Galvanized Shot (+80% SC, CO 0.4×3), Galvanized Diffusion
+    // Galvanized Strike (+80% SC, CO 0.4×3), Galvanized Diffusion
     // (+110% MS, +30%×4 on kill).
     let mods = [
         m("hornet", vec![ModEffect::BaseDamage(2.20)]),

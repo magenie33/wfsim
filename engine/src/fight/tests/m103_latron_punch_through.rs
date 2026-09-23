@@ -77,7 +77,7 @@ fn m103_a_round_through_two_heads_charges_the_gauge_twice() {
         let mut shots = 0u32;
         for e in rec.events() {
             match &e.kind {
-                crate::record::Kind::Shot { .. } => shots += 1,
+                crate::record::Kind::Strike { .. } => shots += 1,
                 crate::record::Kind::TransformStart { .. } => return shots,
                 _ => {}
             }

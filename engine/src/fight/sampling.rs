@@ -42,7 +42,7 @@ pub(super) fn sample_stacks(
     // 18 s clock a roll opens rather than something a swing keeps up.
     influence_until: f64,
 ) -> Vec<(u16, f64)> {
-    // u16, not u8: the Shot Combo Counter runs into the hundreds and a
+    // u16, not u8: the Strike Combo Counter runs into the hundreds and a
     // capped curve would be a chart that lies about the fight it draws.
     let cap = |n: u32| n.min(u32::from(u16::MAX)) as u16;
     let live = |on: bool| u16::from(on);

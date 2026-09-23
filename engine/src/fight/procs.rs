@@ -6,7 +6,7 @@ use super::*;
 /// radial stage and a lingering-FIELD tick all land here. `at` is the
 /// INSTANCE's own time rather than the shot clock, because a cloud ticks
 /// between shots and its procs' durations run from the tick; `scale` carries
-/// the DoT payloads' scaling (ModifiedBase × crit × body part) and `ap` the
+/// the DoT payloads' scaling (ModifiedBase × crit × body part) and `active` the
 /// ACTIVE form, whose element brackets differ.
 #[allow(clippy::too_many_arguments)]
 /// How many times a FACTION bonus has been applied by the time a payload lands.
@@ -174,7 +174,7 @@ pub(super) fn fire_extra_hits(
     arc: &mut ArcRuntime,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     mit: &Mitigation,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
@@ -295,7 +295,7 @@ pub(super) fn fire_extra_hits(
             arc,
             target,
             params,
-            ap,
+            active,
             mit,
             r,
             rec,
@@ -555,7 +555,7 @@ pub(super) fn settle_procs(
     arc: &mut ArcRuntime,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     mit: &Mitigation,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
@@ -683,7 +683,7 @@ pub(super) fn settle_procs(
     // page), so the only thing this choice can be wrong about is how soon after
     // each respawn it lands: a fraction of a second out of a 180 s engagement.
     // What it is NOT wrong about is the count, which is the whole payload.
-    if ap.applies_microwave && !procs.is_empty() {
+    if active.applies_microwave && !procs.is_empty() {
         debuffs.microwave = true;
     }
     for proc in procs {
@@ -740,7 +740,7 @@ pub(super) fn settle_procs(
                     debuffs,
                     DamageType::Toxin,
                     DOT_COEFFICIENT,
-                    ap.elem_bracket(DamageType::Toxin),
+                    active.elem_bracket(DamageType::Toxin),
                     1.0,
                     delayed_ticks,
                     false,
@@ -755,7 +755,7 @@ pub(super) fn settle_procs(
                     debuffs,
                     DamageType::Electricity,
                     DOT_COEFFICIENT,
-                    ap.elem_bracket(DamageType::Electricity),
+                    active.elem_bracket(DamageType::Electricity),
                     0.0,
                     immediate_ticks,
                     false,
@@ -836,7 +836,7 @@ pub(super) fn settle_procs(
                     expiry,
                     heat_cap,
                     HeatOrigin {
-                        bracket: ap.elem_bracket(DamageType::Heat),
+                        bracket: active.elem_bracket(DamageType::Heat),
                         depth,
                         // The seed taken out of `contrib`, exactly as a Dot's.
                         unit: DOT_COEFFICIENT * sdm * ecl,
@@ -1016,14 +1016,14 @@ pub(super) fn settle_procs(
                             1.0,
                             1.0,
                             false,
-                            ap.status_chance,
+                            active.status_chance,
                             at,
                             debuffs,
                             gal,
                             arc,
                             target,
                             params,
-                            ap,
+                            active,
                             &mit,
                             r,
                             rec,
@@ -1092,7 +1092,7 @@ pub(super) fn settle_procs(
                         // critical" holds whatever the parent did. The literal
                         // `0` is the CLAIM: permanently non-critical, not a
                         // zero rolling crit.
-                        attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng),
+                        attrition: attrition * noncrit_mult(active.noncrit_bonus, 0, rng),
                         // Inherited unchanged: the split is the same weapon's,
                         // so a Blast it splits out detonates behind the same
                         // bracket the parent's would have.
@@ -1103,7 +1103,7 @@ pub(super) fn settle_procs(
                     arc,
                     target,
                     params,
-                    ap,
+                    active,
                     mit,
                     r,
                     rec,
@@ -1171,7 +1171,7 @@ pub(super) fn settle_procs(
 /// because `procs_for_hit` copies the list through and the game applies one.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn forced_procs(
-    ap: &FightParams,
+    active: &FightParams,
     rad: &Option<crate::build::loadout::ResolvedRadial>,
     direct: bool,
     swing: &Option<crate::model::ComboHit>,
@@ -1182,10 +1182,10 @@ pub(super) fn forced_procs(
 ) -> usize {
         let mut n = match (&rad, direct) {
             (None, true) => {
-                for (i, ty) in ap.forced_procs.iter().enumerate() {
+                for (i, ty) in active.forced_procs.iter().enumerate() {
                     buf[i] = *ty;
                 }
-                ap.forced_procs.len()
+                active.forced_procs.len()
             }
             (Some(r), _) => r.forced_procs.fill(buf),
             _ => 0,
@@ -1194,7 +1194,7 @@ pub(super) fn forced_procs(
         // marks them per attack — Crushing Ruin's first swing
         // forces Impact and its last forces Knockdown — so they
         // belong to the swing rather than to the weapon, which is
-        // why `ap.forced_procs` above cannot carry them. `forced_hits`
+        // why `active.forced_procs` above cannot carry them. `forced_hits`
         // is how many of the row's hits carry them, when not all do.
         let swing_forces = direct
             && swing.as_ref().and_then(|h| h.forced_hits).is_none_or(|k| pellet_idx < k);
@@ -1221,12 +1221,12 @@ pub(super) fn forced_procs(
 /// with it, at a chance the card doubles below a fire-rate threshold. The
 /// converted type is never added twice.
 pub(super) fn roll_proc_conversion(
-    ap: &FightParams,
+    active: &FightParams,
     d: &mut crate::rules::rng::Draws,
     live_rate: f64,
     procs: &mut Vec<DamageType>,
 ) {
-    if let Some(pc) = ap.proc_conversion {
+    if let Some(pc) = active.proc_conversion {
         if procs.contains(&pc.from) && !procs.contains(&pc.to) {
             let chance = pc.chance
                 * if live_rate < pc.low_rate_threshold {

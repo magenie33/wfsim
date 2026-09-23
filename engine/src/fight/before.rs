@@ -87,7 +87,7 @@ pub(super) fn before_the_shot(
         }
 
         let next_cost = {
-            let ap: &FightParams = match &params.cycle {
+            let active: &FightParams = match &params.cycle {
                 Some(cy) if incarnon.in_base_form => &cy.base_form,
                 _ => params,
             };
@@ -96,7 +96,7 @@ pub(super) fn before_the_shot(
                 if lock.mode == LockMode::Permanent {
                     match lock.buff {
                         LockedBuff::Frenzy => {
-                            if ap.frenzy {
+                            if active.frenzy {
                                 bar.upsert(Frenzy::permanent_buff());
                             }
                         }
@@ -106,19 +106,19 @@ pub(super) fn before_the_shot(
             // Does the next shot cost anything? Feeds `can_fire` below. Capped
             // at 100%, so this is "exactly free", never "more than free".
             let eff = ammo_efficiency(
-                ap.ammo_efficiency_applies,
+                active.ammo_efficiency_applies,
                 bar.total_contributions().ammo_efficiency
                     + weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t),
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
                 crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
             );
-            // `ap` already picks the form whose magazine is about to be
+            // `active` already picks the form whose magazine is about to be
             // checked, so this is THAT form's cost.
             if eff >= 1.0 - 1e-9 {
                 0.0
             } else {
-                ap.ammo_cost * (1.0 - eff)
+                active.ammo_cost * (1.0 - eff)
             }
         };
 

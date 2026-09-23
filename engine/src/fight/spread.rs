@@ -133,7 +133,7 @@ pub(super) fn spread_from_influence(
     target: &mut TargetState,
     debuffs: &mut DebuffState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     // WHICH BODY IT SPREADS FROM — 0 is the aimed one, `i + 1` is `others[i]`,
     // the numbering `RunResult::damage_by_body` uses.
     from: usize,
@@ -257,7 +257,7 @@ pub(super) fn spread_from_influence(
                 arc,
                 state,
                 params,
-                ap,
+                active,
                 &mit,
                 r,
                 rec,
@@ -308,7 +308,7 @@ pub(super) fn spread_hit(
     forced: &[DamageType],
     vector: &DamageVector,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -319,20 +319,20 @@ pub(super) fn spread_hit(
     // changes is which kills spawn another tendril.
     by: SpreadBy,
 ) -> Landed {
-    let base_damage = ap.base_damage_bonus;
+    let base_damage = active.base_damage_bonus;
     let arcane_base_damage =
-        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) + heavy_attack_base_damage(ap) + arc.rage_bonus(t);
+        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) + heavy_attack_base_damage(active) + arc.rage_bonus(t);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     let half_hp = if spec.params.max_health() > 0.0
         && foe.state.health < 0.5 * spec.params.max_health()
     {
-        ap.base_damage_below_half_health
+        active.base_damage_below_half_health
     } else {
         0.0
     };
     let bucket = gunco_bucket(
         params,
-        ap,
+        active,
         &mut foe.debuffs,
         gal,
         t,
@@ -340,7 +340,7 @@ pub(super) fn spread_hit(
         arcane_base_damage,
         arc_ratio,
         half_hp,
-        ap.co_base,
+        active.co_base,
         crate::model::CoStage::Direct,
     );
     // THE PART FACTOR IS A SEPARATE MULTIPLIER FROM THE SHARE, and the two are
@@ -450,7 +450,7 @@ pub(super) fn spread_hit(
         r.sources.direct += eff;
         add_by_type(&mut r.sources.direct_by_type, vector, eff, &col);
     }
-    if killed && by.is_the_shot_itself() && leaves_one(ap, params.player_at, spec.at) {
+    if killed && by.is_the_shot_itself() && leaves_one(active, params.player_at, spec.at) {
         r.ghost_kills += 1;
     }
     if by.spawns_a_tendril() {
@@ -524,14 +524,14 @@ pub(super) fn spread_hit(
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
             // the same weapon's.
-            xh_bracket: ap.extra_hit_bracket(t, w),
+            xh_bracket: active.extra_hit_bracket(t, w),
         },
         &mut foe.debuffs,
         gal,
         arc,
         &mut foe.state,
         params,
-        ap,
+        active,
         &mit,
         r,
         rec,
@@ -561,7 +561,7 @@ pub(super) fn spread_hit(
 /// a damage total does not. Recorded rather than changed, because re-rolling
 /// moves the seeded draw stream and therefore every golden value after it —
 /// which is the owner's call and needs a measurement, not a wiki line.
-pub(super) struct SpreadShot {
+pub(super) struct SpreadStrike {
     pub(super) raw_per_bucket: f64,
     pub(super) shares: TypeShares,
     pub(super) crit_multiplier: f64,
@@ -597,7 +597,7 @@ pub(super) fn spread_from_follow_through(
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     struck: &[usize],
     // WHAT EACH BODY TOOK, appended. Melee Influence spreads from every body a
     // SWING struck, and these are the ones the aimed path never sees.
@@ -639,7 +639,7 @@ pub(super) fn spread_from_follow_through(
         let landed = spread_hit(
             w,
             &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
-            modded_base, status_chance, forced, vector, params, ap, gal, arc, r, rec, d, t,
+            modded_base, status_chance, forced, vector, params, active, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
         );
         seeds.push((sidx, landed));
@@ -667,7 +667,7 @@ pub(super) fn spread_from_punch_through(
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     struck: &[usize],
     raw_per_bucket: f64,
     shares: TypeShares,
@@ -712,7 +712,7 @@ pub(super) fn spread_from_punch_through(
         // BREAK, NOT CONTINUE: `struck_bodies` is in the order the ray meets
         // them, so the first one out of reach is the end of the line.
         let gap_here = (params.range_to(fs.at) - crate::rules::space::BODY_RADIUS_M).max(0.0);
-        if gap_here > ap.range_m {
+        if gap_here > active.range_m {
             break;
         }
         // ITS OWN DAMAGE FALLOFF, because it is FURTHER. The page names no
@@ -725,7 +725,7 @@ pub(super) fn spread_from_punch_through(
         // 1.0 for the whole roster minus nineteen entries, and 1.0 at contact
         // for all of them — so this moves nothing on a weapon that lists no
         // falloff, and nothing on the first body of any fight.
-        let ratio = match ap.falloff {
+        let ratio = match active.falloff {
             None => 1.0,
             Some(f) => {
                 let here = f.factor(gap_here);
@@ -786,7 +786,7 @@ pub(super) fn spread_from_punch_through(
             forced,
             vector,
             params,
-            ap,
+            active,
             gal,
             arc,
             r,
@@ -825,7 +825,7 @@ pub(super) fn spread_from_ricochet(
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     // Where the projectile went and whether each arrival found a head, decided
     // ONCE for the pellet so the collision and the explosion agree.
     path: &[(usize, bool)],
@@ -883,7 +883,7 @@ pub(super) fn spread_from_ricochet(
             forced,
             vector,
             params,
-            ap,
+            active,
             gal,
             arc,
             r,
@@ -921,7 +921,7 @@ pub(super) fn spread_from_echo(
     // arcane's gate is about the target, not about the shooter.
     hit_radiation_stacks: usize,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
@@ -991,7 +991,7 @@ pub(super) fn spread_from_echo(
             forced,
             vector,
             params,
-            ap,
+            active,
             gal,
             arc,
             r,
@@ -1028,7 +1028,7 @@ pub(super) fn spread_from_tendrils(
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     live: u32,
     raw_per_bucket: f64,
     shares: TypeShares,
@@ -1095,7 +1095,7 @@ pub(super) fn spread_from_tendrils(
             forced,
             vector,
             params,
-            ap,
+            active,
             gal,
             arc,
             r,
@@ -1133,7 +1133,7 @@ pub(super) fn spread_from_blast(
     det: crate::rules::space::Detonation,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     rad: &crate::build::loadout::ResolvedRadial,
     // The aimed hit with its own CO bucket AND its own falloff divided back
     // out, so each body can multiply in its own of both.
@@ -1158,7 +1158,7 @@ pub(super) fn spread_from_blast(
         det,
         others,
         params,
-        ap,
+        active,
         rad,
         raw_per_bucket_per_falloff,
         shares,
@@ -1192,7 +1192,7 @@ pub(super) fn blast_at(
     det: crate::rules::space::Detonation,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     rad: &crate::build::loadout::ResolvedRadial,
     raw_per_bucket_per_falloff: f64,
     shares: TypeShares,
@@ -1247,7 +1247,7 @@ pub(super) fn blast_at(
             forced,
             vector,
             params,
-            ap,
+            active,
             gal,
             arc,
             r,
@@ -1281,7 +1281,7 @@ pub(super) fn spread_from_seeds(
     w: &CardWindows,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     beam: crate::model::BeamGeometry,
     raw_per_bucket: f64,
     shares: TypeShares,
@@ -1361,7 +1361,7 @@ pub(super) fn spread_from_seeds(
             forced,
             vector,
             params,
-            ap,
+            active,
             gal,
             arc,
             r,
@@ -1471,13 +1471,13 @@ pub(super) fn fire_syndicate_radial(
 /// WHAT DISTANCE LEAVES OF THIS INSTANCE — the explosion's own ramp from its
 /// epicentre, or the direct hit's falloff over the gap it flew.
 pub(super) fn falloff_factor(
-    ap: &FightParams,
+    active: &FightParams,
     params: &FightParams,
     rad: Option<&crate::build::loadout::ResolvedRadial>,
     det: crate::rules::space::Detonation,
     gap_m: f64,
 ) -> f64 {
-    match (rad, ap.falloff) {
+    match (rad, active.falloff) {
         // THE EXPLOSION reads the distance from its EPICENTRE to
         // the body's NEAREST POINT, not to its centre — a body
         // standing across a falloff gradient takes the best number
@@ -1510,11 +1510,11 @@ pub(super) fn spread_beyond_the_target(
     // See `process_ticks` — what is already burning reads the live windows.
     w: &CardWindows,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     t: f64,
-    shot_spread: &Option<SpreadShot>,
+    strike_spread: &Option<SpreadStrike>,
     others: &mut [SpreadFoe],
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
@@ -1527,12 +1527,12 @@ pub(super) fn spread_beyond_the_target(
     // than a spread of this one, so they neither take its multishot nor
     // fire per pellet — and they only exist once there is a body that is
     // not the one the main beam is on (`spread_from_tendrils`).
-    if let (Some(s), false) = (&shot_spread, others.is_empty()) {
+    if let (Some(s), false) = (&strike_spread, others.is_empty()) {
         spread_from_tendrils(
             w,
             others,
             params,
-            ap,
+            active,
             tendril_count,
             s.raw_per_bucket,
             s.shares,
@@ -1556,12 +1556,12 @@ pub(super) fn spread_beyond_the_target(
     // the damage radius but not directly struck by the initial beam itself
     // will also not benefit from multishot", so these fire here rather than
     // inside the pellet loop above.
-    if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
+    if let (Some(s), Some(beam), false) = (&strike_spread, params.beam, others.is_empty()) {
         spread_from_seeds(
             w,
             others,
             params,
-            ap,
+            active,
             beam,
             s.raw_per_bucket,
             s.shares,
@@ -1610,7 +1610,7 @@ pub(super) fn spread_beyond_the_target(
             t + 1e-9,
             &mut f.state,
             params,
-            ap,
+            active,
             r,
             rec,
             &mut d.status,

@@ -198,7 +198,7 @@ pub(crate) fn enumerate_buffs(
         if let Some(c) = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.sniper_combo) {
             push(BuffMeta {
                 id: "sniper_combo".into(),
-                name: "Shot Combo Counter".into(),
+                name: "Strike Combo Counter".into(),
                 // The count alone would not say what it buys, and the tiers
                 // are not linear — so the card states the first one and the
                 // rule that generates the rest.
@@ -1065,7 +1065,7 @@ mod buff_event_cards {
     }
 
     /// …AND THE ONE ID THAT ANSWERS TWICE. `condition_overload` is a card on a
-    /// pistol carrying Galvanized Shot and a card on a melee carrying the
+    /// pistol carrying Galvanized Strike and a card on a melee carrying the
     /// original, and the page has to grey the first under a kill-less fight
     /// and never grey the second — which is exactly what the run does.
     #[test]
@@ -1079,7 +1079,7 @@ mod buff_event_cards {
                 &wfsim_engine::data::arcanes::ArcaneFx::none(),
             )
         };
-        assert_eq!(of("lex_prime"), Some(Some("kill")), "Galvanized Shot earns it on a kill");
+        assert_eq!(of("lex_prime"), Some(Some("kill")), "Galvanized Strike earns it on a kill");
         assert_eq!(of("magistar"), Some(None), "melee's Condition Overload earns it by nothing");
     }
 

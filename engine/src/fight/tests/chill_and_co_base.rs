@@ -187,7 +187,7 @@ fn the_dual_toxocysts_co_reads_a_flat_seventy_five_under_either_evolution() {
         "Carnage Reign's +33% pays nothing in game (M49)"
     );
 
-    // EVERY READING IT WAS SOLVED FROM. Galvanized Shot is 40% a stack per
+    // EVERY READING IT WAS SOLVED FROM. Galvanized Strike is 40% a stack per
     // status type, and the whole expression is
     // `panel + 75 x 0.4 x stacks x types` — the CO term added to the panel
     // rather than multiplying it, on a base the evolution never touched.

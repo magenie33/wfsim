@@ -1406,7 +1406,7 @@ fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
         on.mean_damage,
         off.mean_damage
     );
-    // Shot 1 lands before any status exists, so every shot after it doubles
+    // Strike 1 lands before any status exists, so every shot after it doubles
     // under CO — the un-declared explosion stays flat at 100 a shot.
     assert!(
         (off.mean_damage - 100.0 * off.mean_shots).abs() < 1e-9,

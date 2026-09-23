@@ -59,7 +59,7 @@ pub(super) struct DebuffState {
     /// body parts of the enemies that was shot at … not listed in the game UI,
     /// however is counted towards the damage calculation bonus with
     /// Condition-Overload type equipment"* — Condition Overload, Galvanized
-    /// Aptitude, Galvanized Savvy, Galvanized Shot, Secondary Shiver, the Cedo.
+    /// Aptitude, Galvanized Savvy, Galvanized Strike, Secondary Shiver, the Cedo.
     ///
     /// A BOOL, not a stack list, because the Kuva Nukor's page says its procs
     /// have INFINITE duration. So it is on or it is off, and the only thing
@@ -86,7 +86,7 @@ pub(super) struct DebuffState {
     /// KNOCKED DOWN — the third invisible status, and the one melee cannot
     /// avoid: *"Universal: Players and enemies fall to the ground. Counts as
     /// an individual status for Condition Overload, Galvanized Aptitude,
-    /// Galvanized Savvy, and Galvanized Shot"* (wiki, Status Effect
+    /// Galvanized Savvy, and Galvanized Strike"* (wiki, Status Effect
     /// §"Independent from Damage", verbatim).
     ///
     /// EVERY SLAM FORCES IT, so on a slam build it is a permanent Condition

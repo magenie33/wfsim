@@ -13,7 +13,7 @@ use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::CoBehavior;
 
 fn main() {
-    // A REALISTIC MEASURING BUILD: Galvanized Shot / Aptitude at 3 stacks
+    // A REALISTIC MEASURING BUILD: Galvanized Strike / Aptitude at 3 stacks
     // against 2 status types, which is 40% x 3 x 2.
     let k = 0.4 * 3.0 * 2.0;
 

@@ -208,7 +208,7 @@ pub(crate) fn weapons() -> &'static [WeaponInfo] {
                     .into_iter()
                     .map(|f| {
                         // THE GAME'S NAME FOR IT where the entry states one —
-                        // a tapped shot is a "Normal Shot", never a "Base Form".
+                        // a tapped shot is a "Normal Strike", never a "Base Form".
                         let label = wfsim_engine::data::weapons::spec(f.weapon_id)
                             .map_or_else(|| f.kind.label().to_string(),
                                 |x| x.form_label().to_string());

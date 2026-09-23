@@ -343,7 +343,7 @@ pub enum ModEffect {
         max_stacks: u32,
         duration: f64,
     },
-    /// Condition Overload payload (Galvanized Shot): +per_stack per
+    /// Condition Overload payload (Galvanized Strike): +per_stack per
     /// status TYPE on the target, per on-kill stack, direct hits only.
     ConditionOverload {
         per_stack: f64,
@@ -772,7 +772,7 @@ pub enum IndirectStat {
     /// Chance to resist staggers/knockdowns while aiming (Resolute Focus).
     StaggerResist,
     /// Chance to reduce the stagger a SELF-inflicted radial attack causes
-    /// (Cautious Shot) — the self-damage side of an AoE weapon.
+    /// (Cautious Strike) — the self-damage side of an AoE weapon.
     SelfStagger,
     /// Extra double jumps refreshed on kill while airborne (Aerial Ace) — a
     /// COUNT, not a fraction.
@@ -1185,7 +1185,7 @@ pub struct StackSpec {
     /// the same one the card is greyed by, so the page and the run cannot
     /// disagree. It travels on the spec because the data states it and the
     /// engine has no business classifying it a second time: melee's Condition
-    /// Overload and Galvanized Shot share this shape and one is earned on a
+    /// Overload and Galvanized Strike share this shape and one is earned on a
     /// kill while the other is earned by nothing.
     pub earned_on: Option<&'static str>,
 }

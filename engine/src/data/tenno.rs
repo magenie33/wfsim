@@ -15,7 +15,7 @@
 //! reads them, because nothing shoots BACK yet. What is waiting on that, all
 //! currently recorded as unmodelled:
 //! - Secondary Fortifier — Overguard gained per damage dealt to Overguard;
-//! - self-stagger from one's own radial attacks (Cautious Shot);
+//! - self-stagger from one's own radial attacks (Cautious Strike);
 //! - the GunCO "Adding" omission list, which is mostly Warframe abilities
 //!   (Vex Armor, Eclipse, Furious Javelin, Parasitic Link) — MECHANICS §6.
 

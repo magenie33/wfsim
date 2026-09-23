@@ -34,7 +34,7 @@ pub(super) struct Resolved {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn resolve_the_shot(
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     t: f64,
@@ -66,7 +66,7 @@ pub(super) fn resolve_the_shot(
             if lock.mode == LockMode::Permanent {
                 match lock.buff {
                     LockedBuff::Frenzy => {
-                        if ap.frenzy {
+                        if active.frenzy {
                             bar.upsert(Frenzy::permanent_buff());
                         }
                     }
@@ -91,13 +91,13 @@ pub(super) fn resolve_the_shot(
         // (MEASUREMENTS M14): the shot fires at full cost off whatever is left,
         // the counter goes NEGATIVE, and the reload carries that debt into the
         // fresh magazine (see the `+=` above).
-        // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max) +
+        // BuffBar (Frenzy) + static arcane (Akimbo Slip Strike, assumed-max) +
         // live arcane stacks (Primary Crux). Summed and capped by
         // `ammo_efficiency`, which is also what `next_cost` above reads — one
         // definition, so the two cannot drift apart.
         // …AND DEATH KNELL'S: on a one-round magazine, the reload not happening.
         let efficiency = ammo_efficiency(
-            ap.ammo_efficiency_applies,
+            active.ammo_efficiency_applies,
             contribs.ammo_efficiency
                 + weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t),
             params.arcane.ammo_efficiency,
@@ -115,7 +115,7 @@ pub(super) fn resolve_the_shot(
         // literally as one round would have understated a full magazine's
         // pellets by a fifth (42 + 3x6 = 60 real, against 44 + 6 = 50), which
         // is far too big to wave through as a rounding difference.
-        let last_n = ap.burst.map_or(1.0, |b| f64::from(b.count));
+        let last_n = active.burst.map_or(1.0, |b| f64::from(b.count));
         // …AND THE WINDOW IS THE ACTIVE MAGAZINE'S, whichever that is.
         // `in_base_form` is only ever true inside an Incarnon CYCLE, so this
         // branch must not read "the cycle's base phase" against "everything
@@ -139,7 +139,7 @@ pub(super) fn resolve_the_shot(
         // every single shot. That is the wiki's Vulkar example, and it is the
         // reason this cannot be `mag_left == mag_max` at the top of the pull.
         //
-        // The cost is `ap.ammo_cost * (1 - efficiency)`, spelled the same way
+        // The cost is `active.ammo_cost * (1 - efficiency)`, spelled the same way
         // the spend below spells it — one expression, so the reading and the
         // payment cannot drift.
         let mag_max = if incarnon.in_base_form {
@@ -147,8 +147,8 @@ pub(super) fn resolve_the_shot(
         } else {
             ammo.cap
         };
-        let first_round = ap.first_round_damage > 0.0
-            && ((mag_left - ap.ammo_cost * (1.0 - efficiency)) - (mag_max - 1.0)).abs() < 1e-9;
+        let first_round = active.first_round_damage > 0.0
+            && ((mag_left - active.ammo_cost * (1.0 - efficiency)) - (mag_max - 1.0)).abs() < 1e-9;
         // The round itself is spent BELOW, once the multishot roll is known:
         // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
         // draw cannot be settled before the roll.
@@ -201,10 +201,10 @@ pub(super) fn resolve_the_shot(
             // worth everything in the four combo modes and nothing in the two
             // heavy ones: there the counter is emptied by the swing that reads
             // it, so it is standing at the floor when the next one starts.
-            + ap.crit_chance_per_combo * (combo_multiplier - 1.0)
+            + active.crit_chance_per_combo * (combo_multiplier - 1.0)
             // …AND EVERY STACKING GRANT OF IT, the bracket Prolific
             // Perforation's card puts itself in by naming Pistol Gambit.
-            + buff_total(ap, crate::model::BuffGrant::CritChance, buff_stacks, t);
+            + buff_total(active, crate::model::BuffGrant::CritChance, buff_stacks, t);
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -215,7 +215,7 @@ pub(super) fn resolve_the_shot(
         // Read per SHOT beside `effective_cc`, which is where the weapon's crit
         // chance is decided; the grants are already converted by `resolve` into
         // the post-mod numbers the card's "Base" wording earns.
-        let undamaged = (ap.crit_chance_on_undamaged > 0.0 || ap.crit_damage_on_undamaged > 0.0)
+        let undamaged = (active.crit_chance_on_undamaged > 0.0 || active.crit_damage_on_undamaged > 0.0)
             && target_undamaged(target, &params.target);
         // THE ARCANE'S STATUS BONUS, hoisted to SHOT level so a derived stat can
         // read the live status chance the same way it reads the live crit one.
@@ -234,19 +234,19 @@ pub(super) fn resolve_the_shot(
             // Wounds Bonus x (Combo Multi - 1)]`. It rides `sc_arc_shot`
             // because that is this loop's name for "relative status the panel
             // could not fold in", which is exactly what a live counter is.
-            + ap.status_chance_per_combo * (combo_multiplier - 1.0)
+            + active.status_chance_per_combo * (combo_multiplier - 1.0)
             // ENDURING AFFLICTION, whose gate is a status the engine tracks:
             // every heavy slam forces `Lifted`, so from the second slam on the
             // target is carrying it and the card pays.
-            + if debuffs.lifted.is_some_and(|e| e > t) { ap.status_chance_on_lifted } else { 0.0 }
+            + if debuffs.lifted.is_some_and(|e| e > t) { active.status_chance_on_lifted } else { 0.0 }
             // …AND AN ON-KILL STATUS BUFF (Galvanized Elementalist), which is
             // relative like every other card in this bracket.
-            + buff_total(ap, crate::model::BuffGrant::StatusChance, buff_stacks, t)
+            + buff_total(active, crate::model::BuffGrant::StatusChance, buff_stacks, t)
             // …AND LEADED GAS' half of one window, relative like the rest of
             // this bracket. Its other half is an ELEMENT and is added to the
             // vector, not here.
             + if t < windows.weakpoint_buff {
-                ap.on_weakpoint.map_or(0.0, |b| b.bonus)
+                active.on_weakpoint.map_or(0.0, |b| b.bonus)
             } else {
                 0.0
             };
@@ -254,44 +254,44 @@ pub(super) fn resolve_the_shot(
         // in what it could see; this takes that back and pays what the shot
         // actually has, which is the panel's status plus whatever the arcanes
         // are adding right now.
-        let derived_cc = match ap.derived_crit_from_status {
+        let derived_cc = match active.derived_crit_from_status {
             Some((rate, cap, folded)) => {
-                let live_sc = ap.status_chance + ap.base_status_chance * sc_arc_shot;
+                let live_sc = active.status_chance + active.base_status_chance * sc_arc_shot;
                 (rate * live_sc).min(cap) - folded
             }
             None => 0.0,
         };
-        let effective_cc = ap.base_crit_chance
+        let effective_cc = active.base_crit_chance
             + flat_crit
             + weakened_cc
-            + ap.unmodded_crit_chance * crit_chance_relative
+            + active.unmodded_crit_chance * crit_chance_relative
             + derived_cc
-            + if undamaged { ap.crit_chance_on_undamaged } else { 0.0 };
+            + if undamaged { active.crit_chance_on_undamaged } else { 0.0 };
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
         // the BuffBar multiplier) — schedules shots below and gates
         // Hemorrhage's below-2.5 doubled chance.
-        let fr_reload_add = match ap.fire_rate_on_reload {
+        let fr_reload_add = match active.fire_rate_on_reload {
             Some(b) if t < windows.fire_rate_after_reload => b.value,
             _ => 0.0,
         };
         // A LOCKED fire rate is the weapon's default and nothing else: not
         // Pressurized Magazine's on-reload add, not Frenzy's x2.5 in the bar.
         let live_rate = if params.locks("fire_rate") {
-            ap.fire_rate
+            active.fire_rate
         } else {
-            (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier
+            (active.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier
         };
         // Deadly Efficiency's live share of the BASE-DAMAGE bucket. Zero until
         // a reload has finished, and zero again when the window closes.
-        let bd_reload_add = match ap.base_damage_on_reload {
+        let bd_reload_add = match active.base_damage_on_reload {
             Some(b) if t < windows.base_damage_after_reload => b.value,
             _ => 0.0,
         };
         // …and Eximus Advantage's share of the same bucket. "Stacks additively
         // with base damage bonuses like Hornet Strike", so it joins here rather
         // than forming a factor of its own.
-        let bd_eximus_add = match ap.base_damage_on_eximus_weakpoint {
+        let bd_eximus_add = match active.base_damage_on_eximus_weakpoint {
             Some(b) if t < windows.base_damage_eximus => b.value,
             _ => 0.0,
         };
@@ -306,7 +306,7 @@ pub(super) fn resolve_the_shot(
         // are other bonuses. `resolve` has already emptied the panel's own
         // buckets; this is the live half it cannot reach.
         let ms_locked = params.locks("multishot");
-        let ms_eff = ap.multishot
+        let ms_eff = active.multishot
             + params
                 .multishot_stack
                 .as_ref()
@@ -314,13 +314,13 @@ pub(super) fn resolve_the_shot(
             + if ms_locked {
                 0.0
             } else {
-                ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
+                active.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
             }
             // Final Fusillade: a FLAT add on the magazine's last round. It
             // joins `ms_eff` rather than the multishot BUCKET because the
             // evolution grants multishot outright ("+3 Multishot"), not a
             // percentage of the weapon's base.
-            + if last_round { ap.multishot_on_last_round } else { 0.0 }
+            + if last_round { active.multishot_on_last_round } else { 0.0 }
             // FORCEFUL FINALITY IS THE OTHER BRACKET, and the card says which:
             // "+5 BASE Multishot on final magazine burst", with the wiki noting
             // on that same row that it is "added before mods, and is thus
@@ -332,16 +332,16 @@ pub(super) fn resolve_the_shot(
             // ratio the panel already resolved, rather than carried a second
             // time: two copies of one factor is how they come to disagree.
             // `base_multishot` is a weapon stat and never zero.
-            + if last_round && ap.base_multishot_on_last_round > 0.0 && !ms_locked {
-                ap.base_multishot_on_last_round
-                    * (ap.multishot / ap.base_multishot.max(1e-9)
+            + if last_round && active.base_multishot_on_last_round > 0.0 && !ms_locked {
+                active.base_multishot_on_last_round
+                    * (active.multishot / active.base_multishot.max(1e-9)
                         + arc.total(&params.arcane.buffs, ArcGrant::Multishot, t))
             } else {
                 0.0
             }
             // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
             // sits here rather than in the bucket above.
-            + buff_total(ap, crate::model::BuffGrant::FlatMultishot, buff_stacks, t)
+            + buff_total(active, crate::model::BuffGrant::FlatMultishot, buff_stacks, t)
             // BLAZING BARREL, both of its shapes, and they are two brackets.
             //
             // "+0.05 BASE Multishot" is added before mods and is therefore
@@ -355,10 +355,10 @@ pub(super) fn resolve_the_shot(
             + if ms_locked {
                 0.0
             } else {
-                buff_total(ap, crate::model::BuffGrant::BaseMultishot, buff_stacks, t)
-                    * (ap.multishot / ap.base_multishot.max(1e-9))
-                    + buff_total(ap, crate::model::BuffGrant::Multishot, buff_stacks, t)
-                        * ap.base_multishot
+                buff_total(active, crate::model::BuffGrant::BaseMultishot, buff_stacks, t)
+                    * (active.multishot / active.base_multishot.max(1e-9))
+                    + buff_total(active, crate::model::BuffGrant::Multishot, buff_stacks, t)
+                        * active.base_multishot
             };
         let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;
         // DOUBLE TAP, computed ONCE for the whole pull and applied to every
@@ -375,13 +375,13 @@ pub(super) fn resolve_the_shot(
         // SYNTH CHARGE's window, read off the SAME gate Final Fusillade uses —
         // so a burst weapon's "last round" is its last BURST, and a cycle's
         // window is whichever magazine is actually being fired.
-        let sc_mult = if last_round { 1.0 + ap.last_round_damage } else { 1.0 };
+        let sc_mult = if last_round { 1.0 + active.last_round_damage } else { 1.0 };
         // THE CHAMBERS' multiplier, on the magazine's FIRST round only. The two
         // cards are already summed into one number by `resolve` — "stacks
         // additively … for up to 140% bonus damage" — so this is one factor
         // beside Synth Charge's rather than a second bracket.
-        let cc_mult = if first_round { 1.0 + ap.first_round_damage } else { 1.0 };
-        let dt_mult = match ap.consecutive_hit_damage {
+        let cc_mult = if first_round { 1.0 + active.first_round_damage } else { 1.0 };
+        let dt_mult = match active.consecutive_hit_damage {
             Some((per_stack, max_stacks, duration)) => {
                 if t >= double_tap.expiry {
                     double_tap.hits = 0;
@@ -389,7 +389,7 @@ pub(super) fn resolve_the_shot(
                 // AN EXPLODING PROJECTILE IS TWO HITS where the weapon says so
                 // — its collision and its explosion, +40% a projectile at rank
                 // 3 (M102). Only the aimed landing counts; a bounce adds none.
-                let per_projectile = if ap.consecutive_hit_radial_only && ap.radial.is_some() { 2 } else { 1 };
+                let per_projectile = if active.consecutive_hit_radial_only && active.radial.is_some() { 2 } else { 1 };
                 let hits = double_tap.hits + rolled * per_projectile;
                 double_tap.hits = hits;
                 double_tap.expiry = t + duration;
@@ -416,9 +416,9 @@ pub(super) fn resolve_the_shot(
         //   base form   1 + (1+v)(M-1)     [1 original + (M-1) generated]
         //   Incarnon    1 + (1+v)(M-1)     [merged, so damage ∝ multishot]
         // The identity needs base multishot = 1; both Torid forms are.
-        let merge_bonus = if ap.multishot_ammo_bonus > 0.0 {
-            let base_ms = ap.base_multishot.max(1.0);
-            base_ms + (rolled.max(1) as f64 - base_ms) * (1.0 + ap.multishot_ammo_bonus)
+        let merge_bonus = if active.multishot_ammo_bonus > 0.0 {
+            let base_ms = active.base_multishot.max(1.0);
+            base_ms + (rolled.max(1) as f64 - base_ms) * (1.0 + active.multishot_ammo_bonus)
         } else {
             rolled.max(1) as f64
         };
@@ -432,15 +432,15 @@ pub(super) fn resolve_the_shot(
         // weapon pays 1.0 and every multishot source scales it from there. It
         // is applied as its own multiplier and never joins a bucket, which is
         // what "multiplicative to other sources of damage" says.
-        let own_pellets = ap.base_multishot.max(1.0);
-        let ms_damage = if ap.multishot_adds_damage {
+        let own_pellets = active.base_multishot.max(1.0);
+        let ms_damage = if active.multishot_adds_damage {
             (ms_eff / own_pellets).max(1.0)
         } else {
             1.0
         };
-        let (n_pellets, beam_merge) = if ap.continuous {
+        let (n_pellets, beam_merge) = if active.continuous {
             (1, merge_bonus)
-        } else if ap.multishot_adds_damage {
+        } else if active.multishot_adds_damage {
             (own_pellets.round() as u32, 1.0)
         } else {
             (rolled, 1.0)
@@ -465,7 +465,7 @@ pub(super) fn resolve_the_shot(
         // cost, not a separate round. A beam paying 0.5 with 20% efficiency
         // spends 0.4, which is what "0.5 ammo per trace" plus an efficiency
         // mod has to mean.
-        let spend = ap.ammo_cost * (1.0 - efficiency);
+        let spend = active.ammo_cost * (1.0 - efficiency);
         if incarnon.in_base_form {
             incarnon.base_magazine -= spend;
         } else {
@@ -511,7 +511,7 @@ pub(super) fn resolve_the_shot(
         // decided before any reload is. Arming at the reload would have left
         // that transform at the plain speed, which is the case the owner used
         // to state the rule.
-        if !can_fire(if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded }, ap.ammo_cost) {
+        if !can_fire(if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded }, active.ammo_cost) {
             *rs_armed = true;
         }
     Resolved {

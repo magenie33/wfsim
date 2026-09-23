@@ -116,7 +116,7 @@ pub fn panel_json(v: &Value) -> Value {
     // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
     // from the weapon data (data/weapons yamls).
     // Section titles come from the REGISTERED form (`data/weapons` `form:`),
-    // so a bow's first section says "Charged Shot" rather than "Base Form".
+    // so a bow's first section says "Charged Strike" rather than "Base Form".
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
     for f in wfsim_engine::data::weapons::forms_of(&info.id) {
         // A gauge-switched form exists only while its tier-1 unlock is chosen.
@@ -1323,7 +1323,7 @@ fn form_section(
                 bp.chain_hops, num(bp.chain_range_m), num(bp.chain_damage_per_hop)),
             "sources": sources("radius", None) }));
     }
-    // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
+    // PER-WEAPON behavior: GunCO sources (Galvanized Strike, Carnage Reign,
     // Secondary Shiver) combine differently per weapon class, and their base
     // EXCLUDES evolution flat damage — this note states what the model
     // actually computes on THIS weapon, and is shared by every GunCO row.
@@ -1418,7 +1418,7 @@ fn form_section(
     // source, so its row carries the SAME per-weapon caveat as the CO row.
     let tenno = tenno_from(v, info);
     // Cascadia Accuracy's weak-point crit joins Acuity's in the sim
-    // (`ap.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative`), so the row
+    // (`active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative`), so the row
     // below has to add it or it would state less than the sim applies.
     let mut arcane_wp_cc = 0.0;
     for (pool, aid, want_rank) in arcane_choices(v, info) {
@@ -1846,7 +1846,7 @@ fn form_section(
         // had none at all and "no row" reads as "nobody thought about it"
         // rather than as an answer. A field keeps the DIRECT hit's base
         // fraction: the catalog puts the Torid's cloud on the same base as
-        // its main fire (`field_tick` passes `ap.co_base_fraction()`).
+        // its main fire (`field_tick` passes `active.co_base_fraction()`).
         rows.push(json!({ "key": "co", "label": "Condition Overload",
             "base": "—",
             "final": if fb.takes_condition_overload {

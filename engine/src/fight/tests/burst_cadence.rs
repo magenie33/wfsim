@@ -14,7 +14,7 @@ fn trace(mag: f64) -> (Vec<f64>, Vec<f64>) {
     let (mut shots, mut reloads) = (Vec::new(), Vec::new());
     for e in rec.events() {
         match &e.kind {
-            Kind::Shot { .. } => shots.push(e.t),
+            Kind::Strike { .. } => shots.push(e.t),
             Kind::ReloadStart { .. } => reloads.push(e.t),
             _ => {}
         }

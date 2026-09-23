@@ -88,7 +88,7 @@ pub(super) fn eclipse_at(mult: f64, co_share: f64) -> f64 {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn gunco_bucket(
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     at: f64,
@@ -99,7 +99,7 @@ pub(super) fn gunco_bucket(
     // because its bracket is the weapon's CO bracket — see the call site.
     half_hp: f64,
     // What CO reads, PAIRED with the base it is a share of. The direct hit's
-    // lives on `ap`; an explosion carries its own, because an evolution can
+    // lives on `active`; an explosion carries its own, because an evolution can
     // raise what the explosion deals without raising what CO reads — and the
     // pair is what keeps one stage's absolute off another stage's denominator.
     co_base: crate::model::CoBase,
@@ -115,7 +115,7 @@ pub(super) fn gunco_bucket(
         "a {stage:?} stage was handed a {:?} CO base — build its own pair, or say borrowed_for",
         co_base.stage(),
     );
-    let co_rate = ap.co_per_type
+    let co_rate = active.co_per_type
         + params
             .co_stack
             .as_ref()
@@ -147,7 +147,7 @@ pub(super) fn gunco_bucket(
         half_hp,
         co_share: if numerator > 0.0 { (gunco_total / numerator).clamp(0.0, 1.0) } else { 0.0 },
     };
-    match ap.co_behavior {
+    match active.co_behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
         crate::model::CoBehavior::AdditiveWithBaseDamage => {

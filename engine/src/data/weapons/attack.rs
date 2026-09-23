@@ -309,7 +309,7 @@ pub struct AttackSpec {
     /// proc" (Phantasma Prime). Rolled status is unaffected and lands on top.
     ///
     /// DIRECT hits only, which is the engine's existing rule
-    /// (`if direct { &ap.forced_procs }`) and is the wiki's too: the Astilla's
+    /// (`if direct { &active.forced_procs }`) and is the wiki's too: the Astilla's
     /// direct hit forces Impact and its radial does not.
     #[serde(default)]
     pub forced_procs: Vec<String>,

@@ -483,7 +483,7 @@ fn a_weapon_with_no_magazine_never_reloads_so_no_reload_buff_fires() {
 /// at 0.1 from one that starts at 0, and the combat record's whole claim is
 /// that its timestamps can be laid beside a recording.
 ///
-/// Shot `k` lands at `windup + k / rate`, so the two arms are the same
+/// Strike `k` lands at `windup + k / rate`, so the two arms are the same
 /// numbers 0.1 s apart, and the LAST shot of the fight is the one that can
 /// fall off the end.
 #[test]

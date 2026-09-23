@@ -261,7 +261,7 @@ fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
                 m.insert("killed".into(), json!(true));
             }
         }
-        Kind::Shot { pellets } => {
+        Kind::Strike { pellets } => {
             m.insert("kind".into(), json!("shot"));
             m.insert("pellets".into(), json!(pellets));
         }

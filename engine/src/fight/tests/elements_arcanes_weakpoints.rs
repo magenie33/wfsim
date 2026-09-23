@@ -476,7 +476,7 @@ fn galvanized_decay_loses_one_stack_and_resets_duration() {
 #[test]
 fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
     // Cold-start config (initial 0): frail 50 HP target dies to every
-    // pellet; +1.0 pellet per stack, cap 2, long duration. Shot k
+    // pellet; +1.0 pellet per stack, cap 2, long duration. Strike k
     // fires (1 + stacks) pellets and the FIRST pellet's kill bumps
     // the stack: pellets per shot 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27.
     let spec = crate::model::StackSpec {
@@ -696,7 +696,7 @@ fn shiver_adds_damage_per_cold_status_on_the_target() {
 fn shiver_is_scaled_by_the_gunco_base_fraction() {
     // GunCO sources compute on the ORIGINAL base, excluding evolution
     // flat damage (wiki CO catalog) — Shiver is one of them, so its
-    // per-stack bonus scales by co_base_fraction like Galvanized Shot's.
+    // per-stack bonus scales by co_base_fraction like Galvanized Strike's.
     // Same setup as above with fraction 0.5: 75 × Σ(1 + 0.45×0.5×min(k,5))
     // = 75 × (10 + 0.225 × 35) = 1340.625.
     let p = FightParams {

@@ -5,7 +5,7 @@
 //! around it, and what it writes down.
 //!
 //! The shot resolved its numbers once and every pellet reads the same ones
-//! (`Shot`); what a pellet CHANGES is the run's live state (`Live`). The two
+//! (`Strike`); what a pellet CHANGES is the run's live state (`Live`). The two
 //! are destructured at the top, so the pipeline below names each piece the way
 //! the rest of the fight does.
 
@@ -13,8 +13,14 @@ use super::*;
 use super::bumps::{bump_buffs, bump_status_buffs};
 
 /// WHAT THIS PELLET IS, as the shot resolved it.
-pub(super) struct Shot<'a> {
-    pub(super) ap: &'a FightParams,
+/// EVERYTHING ONE ATTACK NEEDS, composed once and resolved through
+/// [`settle_pellet`].
+///
+/// NOT `Shot`: a melee swing, a lingering field's tick and an ability are none
+/// of them a shot, and this is the one path all of them resolve through. A
+/// strike is what a combatant does.
+pub(super) struct Strike<'a> {
+    pub(super) active: &'a FightParams,
     pub(super) qvec: &'a DamageVector,
     pub(super) direct_pre_snap: DamageVector,
     pub(super) variants: &'a [(DamageVector, f64, f64)],
@@ -78,7 +84,7 @@ pub(super) struct Live<'a> {
     pub(super) crit_per_hit: &'a mut CritPerHit,
     pub(super) sniper_combo: &'a mut SniperComboCount,
     pub(super) weakpoint_pile: &'a mut LiveStacks,
-    pub(super) shot_spread: &'a mut Option<SpreadShot>,
+    pub(super) strike_spread: &'a mut Option<SpreadStrike>,
     pub(super) fields: &'a mut Vec<FieldState>,
     pub(super) orbs: &'a mut Vec<OrbState>,
     pub(super) any_big: &'a mut bool,
@@ -127,9 +133,9 @@ fn weakpoint_kill(
 /// — with plain `#[inline]` too. Inlined always, what is left is 1-2%, which
 /// is what moving the pipeline into its own file costs.
 #[inline(always)]
-pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
-    let Shot {
-        ap,
+pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
+    let Strike {
+        active,
         qvec,
         direct_pre_snap,
         variants,
@@ -190,7 +196,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     let crit_per_hit = &mut *live.crit_per_hit;
     let sniper_combo = &mut *live.sniper_combo;
     let weakpoint_pile = &mut *live.weakpoint_pile;
-    let shot_spread = &mut *live.shot_spread;
+    let strike_spread = &mut *live.strike_spread;
     let fields = &mut *live.fields;
     let _orbs = &mut *live.orbs;
     let any_big = &mut *live.any_big;
@@ -209,7 +215,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // instance rather than joining a bucket. With no multishot source
     // there is no pellet 1 and the perk is worth exactly nothing.
     let pm_mult = if pellet_idx > 0 {
-        1.0 + ap.multishot_ammo_bonus
+        1.0 + active.multishot_ammo_bonus
     } else {
         1.0
     };
@@ -238,11 +244,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // stage scales by its OWN base crit damage; `cd_abs` is a flat add
     // every stage takes as-is.
     let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
-        + arc.cd_bonus(ap, t)
-        + buff_total(ap, crate::model::BuffGrant::CritDamage, &mut *buff_stacks, t)
+        + arc.cd_bonus(active, t)
+        + buff_total(active, crate::model::BuffGrant::CritDamage, &mut *buff_stacks, t)
         // DREAMER'S WRATH: `+32% critical damage for Tennokai attacks`
         // — on the one swing the window bought and no other.
-        + if tennokai { ap.tennokai.crit_damage } else { 0.0 }
+        + if tennokai { active.tennokai.crit_damage } else { 0.0 }
         + params.arcane.crit_damage_relative;
     // SPITEFUL DEFILEMENT rides the same after-mods FLAT bucket Cold's
     // received bonus does — "Bonus is added after mods as a flat value"
@@ -284,21 +290,21 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // Nothing to take back when the perk is absent, and nothing to take
     // back when the panel already failed the condition — `resolve` then
     // never granted it and leaves this `None`.
-    let prelude_lost = match ap.crit_multiplier_below_crit_chance {
+    let prelude_lost = match active.crit_multiplier_below_crit_chance {
         Some((granted, below)) if effective_cc >= below => granted,
         _ => 0.0,
     };
-    let cd_total = ap.crit_multiplier - prelude_lost
-        + ap.unmodded_crit_damage * crit_damage_relative
+    let cd_total = active.crit_multiplier - prelude_lost
+        + active.unmodded_crit_damage * crit_damage_relative
         + cd_abs
         // Mauler's Magazine, earned inside the fight — a BASE grant,
         // already multiplied by the crit-damage mods at `resolve`, the
         // same conversion `FlatBaseDamage` takes one bracket over.
-        + buff_total(ap, crate::model::BuffGrant::BaseCritDamage, &mut *buff_stacks, t)
+        + buff_total(active, crate::model::BuffGrant::BaseCritDamage, &mut *buff_stacks, t)
         // …and the other half of the same condition, decided by the
         // same shot: an absolute add, already multiplied by the
         // crit-damage mods at `resolve`.
-        + if undamaged { ap.crit_damage_on_undamaged } else { 0.0 };
+        + if undamaged { active.crit_damage_on_undamaged } else { 0.0 };
     // Live BASE-DAMAGE bucket additions, evaluated per instance:
     //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
     //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -316,16 +322,16 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // Primary Compression's `adds` row: the same bracket a live
         // base-damage buff joins, so Serration dilutes it exactly as
         // the wiki's "additive with damage bonuses" says it should.
-        + ap.compression_base_damage
-        + buff_total(ap, crate::model::BuffGrant::BaseDamage, &mut *buff_stacks, t)
+        + active.compression_base_damage
+        + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut *buff_stacks, t)
         // Striking Succession, already converted by `resolve` into the
         // share of this bucket its flat number is worth — so it lands
         // here and NOT diluted, which is the whole point of the
         // conversion.
-        + buff_total(ap, crate::model::BuffGrant::FlatBaseDamage, &mut *buff_stacks, t)
+        + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut *buff_stacks, t)
         // …AND KILLING BLOW, which is a term in this bucket and not a
         // multiplier — see `heavy_attack_base_damage`.
-        + heavy_attack_base_damage(ap)
+        + heavy_attack_base_damage(active)
         // …AND RAGE: "additive with mods like Pressure Point".
         + arc.rage_bonus(t);
     // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the TARGET,
@@ -340,17 +346,17 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // WHERE IT LANDS IS THE WEAPON'S CO BRACKET, and the Kunai's page
     // is what says so: "additive with Hornet Strike in basic Kunai
     // form, and multiplicative in Incarnon form. It is also additive
-    // with Galvanized Shot in BOTH forms." Galvanized Shot IS the CO
+    // with Galvanized Strike in BOTH forms." Galvanized Strike IS the CO
     // bonus — so the rule is not two rules, it is one: this bonus goes
     // wherever CO goes. `gunco_bucket` routes it.
     let half_hp = if params.target.max_health() > 0.0
         && target.health < 0.5 * params.target.max_health()
     {
-        ap.base_damage_below_half_health
+        active.base_damage_below_half_health
     } else {
         0.0
     };
-    let base_damage = ap.base_damage_bonus;
+    let base_damage = active.base_damage_bonus;
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     let mb_live = modded_base * arc_ratio;
     // GunCO family — ONE machinery (wiki CO catalog; user
@@ -359,11 +365,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // fraction (evolution flat damage excluded), and combines per
     // the weapon's CoBehavior, direct hits only. Sources differ
     // ONLY in their counter:
-    //   Condition Overload (Galvanized Shot + innate, one merged
+    //   Condition Overload (Galvanized Strike + innate, one merged
     //     rate since they share it) → distinct status TYPES;
     //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
     let co_mult = gunco_bucket(
-        params, ap, &mut *debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio,
+        params, active, &mut *debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio,
         half_hp,
         co_base,
         crate::model::CoStage::Direct,
@@ -373,14 +379,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // (the Burston's +42) makes these two numbers diverge. Computed
     // beside the direct hit's so both read the SAME counters at the
     // same instant.
-    // ...off the ACTIVE form. `ap`, not `params`: in a cycle the two
+    // ...off the ACTIVE form. `active`, not `params`: in a cycle the two
     // differ for the whole base phase, and this line reading the outer
     // params gave a base-form shot the Incarnon's explosion (M32).
-    let co_mult_radial = match &ap.radial {
+    let co_mult_radial = match &active.radial {
         // AN EXPLOSION carries no half-health term either — a
         // DIRECT-hit bonus, like the CO it rides beside.
         Some(r) if r.takes_condition_overload => gunco_bucket(
-            params, ap, &mut *debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
+            params, active, &mut *debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
             r.co_base, crate::model::CoStage::Radial,
         ),
         _ => Gunco { bucket: arc_ratio, ..Default::default() },
@@ -402,7 +408,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // flat chance, because `headshot_pct` describes the player and the
     // player is not pointing this one. Same helper the field's ticks
     // use, so the six strikes of one orb cannot answer differently.
-    let part = match ap.unaimed_headshot_chance {
+    let part = match active.unaimed_headshot_chance {
         Some(c) => unaimed_part(&params.body_parts, c, &mut d.spine),
         None => pick_part(&params.body_parts, &mut d.spine),
     };
@@ -410,8 +416,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         + if part.is_head {
             // Weak-point-only crit chance is relative too, and it is
             // DIRECT-only, so the direct part's base is the right one.
-            ap.unmodded_crit_chance
-                * (ap.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative)
+            active.unmodded_crit_chance
+                * (active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative)
         } else {
             0.0
         };
@@ -423,7 +429,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // A bucket term could be cancelled by enough crit chance; a x0 here
     // cannot, which is the whole perk.
     let cc_pellet =
-        if part.is_head { cc_pellet } else { cc_pellet * ap.bodyshot_crit_chance_multiplier };
+        if part.is_head { cc_pellet } else { cc_pellet * active.bodyshot_crit_chance_multiplier };
     // GOTVA PRIME: an armed pellet's crit chance is SET, replacing the
     // modded value and the weak-point bonus alike — "Set Critical
     // Chance ignores all other modifiers, whether from mods or Warframe
@@ -438,7 +444,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         _ => cc_pellet,
     };
     let tier =
-        upgrade_crit_tier(roll_crit_tier(cc_pellet, &mut d.spine), ap.crit_tier_upgrade_chance, &mut d.spine);
+        upgrade_crit_tier(roll_crit_tier(cc_pellet, &mut d.spine), active.crit_tier_upgrade_chance, &mut d.spine);
     // Headshot bonuses form an additive bracket that MULTIPLIES
     // the base multiplier (Enemy_Body_Parts, verbatim template:
     // 3 × (1 + Deadhead 30% + Target Acquired 75%) = 6.15x). A 1x
@@ -462,17 +468,17 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     let streak_bonus = match params.headshot_streak {
         Some(s) if t < windows.streak => s.value,
         _ => 0.0,
-    } + buff_total(ap, crate::model::BuffGrant::HeadshotDamage, &mut *buff_stacks, t);
+    } + buff_total(active, crate::model::BuffGrant::HeadshotDamage, &mut *buff_stacks, t);
     // WHAT A HEAD WOULD BE WORTH, computed whether or not THIS pellet
     // found one: a RICOCHET rolls its own head, on another body, later
     // in the same shot, and it is worth exactly what a head is worth
     // here. Split out rather than duplicated so the two can never say
     // different things.
-    let (hb_head, hi_head) = if ap.headshot_bonus_multiplicative {
-        (params.arcane.headshot_multiplier_bonus + streak_bonus, ap.headshot_damage_bonus)
+    let (hb_head, hi_head) = if active.headshot_bonus_multiplicative {
+        (params.arcane.headshot_multiplier_bonus + streak_bonus, active.headshot_damage_bonus)
     } else {
         (
-            params.arcane.headshot_multiplier_bonus + streak_bonus + ap.headshot_damage_bonus,
+            params.arcane.headshot_multiplier_bonus + streak_bonus + active.headshot_damage_bonus,
             0.0,
         )
     };
@@ -494,12 +500,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // The WEAPON may overrule what a head is worth — Tenet Arca
         // Plasmor, "1x headshot multiplier". Its own value REPLACES the
         // part's, and the additive brackets still pay on top of it.
-        let m = ap.headshot_multiplier.unwrap_or(m);
-        (m + 1.5 * ap.weakpoint_damage) * (1.0 + hb_head) * (1.0 + hi_head)
+        let m = active.headshot_multiplier.unwrap_or(m);
+        (m + 1.5 * active.weakpoint_damage) * (1.0 + hb_head) * (1.0 + hi_head)
     };
-    let head_mult = ap.headshot_multiplier.unwrap_or(part.multiplier);
+    let head_mult = active.headshot_multiplier.unwrap_or(part.multiplier);
     let wp_mult = if part.is_head {
-        head_mult + 1.5 * ap.weakpoint_damage
+        head_mult + 1.5 * active.weakpoint_damage
     } else {
         part.multiplier
     };
@@ -525,7 +531,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // multiplicative with Hornet Strike (wiki notes). Secondary
     // Fortifier: ×overguard_multiplier while the target's Overguard holds.
     // Primary Compression's `multiplies` row rides the same slot, and
-    // it is `ap`'s rather than `params`' — the form being fired owns
+    // it is `active`'s rather than `params`' — the form being fired owns
     // it, because one arcane is worth +240% in the Torid's base form
     // and nothing in its Incarnon.
     // HOISTED so `apply` is handed the SAME number that went in, and
@@ -538,7 +544,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         1.0
     };
     let arc_final =
-        params.arcane.final_multiplier * ap.compression_multiplier * og_mult;
+        params.arcane.final_multiplier * active.compression_multiplier * og_mult;
 
     // ---- ATTACK PARTS (MECHANICS §7) -------------------------
     // A projectile carries TWO instances where the weapon declares a
@@ -566,7 +572,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // one scalar. How far the pellet passed the aimed body is the only
     // thing ONE body can be asked; a crowd asks WHERE, so both survive
     // to build the epicentre below.
-    let (dev, phi) = match ap.spread {
+    let (dev, phi) = match active.spread {
         Some(s) if !s.is_pinpoint() && range > 0.0 => {
             let dev = s.draw(d.aim.next_f64());
             // WHICH WAY IT WENT, drawn whenever the weapon points away
@@ -588,7 +594,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // does not mean no aim.
         _ => (0.0, 0.0),
     };
-    let aim_offset = match ap.spread {
+    let aim_offset = match active.spread {
         Some(s) if !s.is_pinpoint() && range > 0.0 => {
             crate::rules::space::miss_distance_off_axis(range, off_axis, dev, phi)
         }
@@ -616,7 +622,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // MEASURED TO THE SURFACE, like every distance a reader is shown:
     // `gap` is what the shot flies and what the arena prints, so "20 m"
     // is the number on the scene. `INFINITY` where none is declared.
-    let in_range = gap_m <= ap.range_m;
+    let in_range = gap_m <= active.range_m;
     let pellet_lands = aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range;
     // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
     // EXPLOSION.
@@ -702,12 +708,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // 2.5 m a hammer swings has nothing to do with the 10 m the floor
     // does. It is checked FIRST because it does not care whether the
     // pellet landed.
-    let det = if ap.radial.as_ref().map(|r| r.blast_kind)
+    let det = if active.radial.as_ref().map(|r| r.blast_kind)
         == Some(crate::model::BlastKind::Slam)
     {
         crate::rules::space::Detonation { at: params.player_at, height_m: det.height_m }
     } else if pellet_lands
-        && ap.radial.as_ref().map(|r| r.blast_kind)
+        && active.radial.as_ref().map(|r| r.blast_kind)
             == Some(crate::model::BlastKind::Terminal)
     {
         let aim = params.aim_point();
@@ -733,13 +739,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // melee attack has no explosion of its own, so there is never a
     // second one to conflict with, and one radial stage per shot is
     // what the loop is built around.
-    let attack_radial = match (swing.as_ref().and_then(|h| h.slam_multiplier), ap.slam) {
+    let attack_radial = match (swing.as_ref().and_then(|h| h.slam_multiplier), active.slam) {
         (Some(k), Some(slam)) => Some(crate::build::loadout::ResolvedRadial {
             damage: slam.damage.scale(k),
             modified_base: slam.modified_base * k,
             ..slam
         }),
-        _ => ap.radial,
+        _ => active.radial,
     };
     let radial_stage = match attack_radial {
         Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
@@ -758,10 +764,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // Wave, which "also increase[s] the damage dealt by slam attacks
     // performed via Stance Combos" (W`Seismic_Wave`).
     let stance_slam = !tennokai_heavy
-        && ap.slam.is_some()
+        && active.slam.is_some()
         && swing.as_ref().is_some_and(|h| h.slam_multiplier.is_some());
     let radial_mult = if stance_slam {
-        (if ap.spends_combo { combo_multiplier } else { 1.0 }) * (1.0 + ap.slam_damage)
+        (if active.spends_combo { combo_multiplier } else { 1.0 }) * (1.0 + active.slam_damage)
     } else {
         swing_mult
     };
@@ -787,7 +793,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // `Vec` of stages is an allocation every pellet fires — the list is
     // `[direct, radial, (contact, blast) x count]`, which an index
     // answers for free.
-    let cluster = ap
+    let cluster = active
         .cluster
         .filter(|_| pellet_idx == 0 && radial_stage.is_some());
     let bomblets = cluster.map_or(0, |c| c.count.round().max(0.0) as usize);
@@ -819,7 +825,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         let mit = debuffs.amps(
             t,
             status_damage,
-            ap.armor_strip_per_puncture,
+            active.armor_strip_per_puncture,
             params.squad.enemy_armor_multiplier,
         );
         // …AND WHAT THE SHOOTER HAD UP, for THIS instance. The same
@@ -935,7 +941,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 // artifact of where the code was edited, not a rule.
                 let t2 = upgrade_crit_tier(
                     roll_crit_tier(rcc, &mut d.spine),
-                    ap.crit_tier_upgrade_chance,
+                    active.crit_tier_upgrade_chance,
                     &mut d.spine,
                 );
                 (
@@ -1065,7 +1071,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         //
         // The DIRECT part only. An explosion has its own status chance
         // and its own base, and the card is about the weapon's.
-        let derived_sc = match ap.derived_status_from_crit {
+        let derived_sc = match active.derived_status_from_crit {
             Some((rate, cap, folded)) if rad.is_none() => {
                 (rate * effective_cc).min(cap) - folded
             }
@@ -1073,7 +1079,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         };
         let status_chance = *beam_merge
             * (match &rad {
-                None => ap.status_chance + ap.base_status_chance * sc_arc,
+                None => active.status_chance + active.base_status_chance * sc_arc,
                 Some(r) => r.status_chance + r.base_status_chance * sc_arc,
             } + derived_sc)
             // Death Knell's, on the FINISHED number.
@@ -1102,7 +1108,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // can never be longer than the type list itself.
         let mut forced_buf = [DamageType::Impact; DamageType::ALL.len()];
         let forced_len = forced_procs(
-            ap, &rad, direct, swing, swing_forced_types, &ability_forced, pellet_idx,
+            active, &rad, direct, swing, swing_forced_types, &ability_forced, pellet_idx,
             &mut forced_buf,
         );
         let forced: &[DamageType] = &forced_buf[..forced_len];
@@ -1111,7 +1117,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // INSTANCE that did not crit (wiki: "multiplicative to base
         // damage bonuses such as Hornet Strike"; "affects both
         // forms", the explosions included).
-        let attrition = noncrit_mult(ap.noncrit_bonus, tier, &mut d.spine);
+        let attrition = noncrit_mult(active.noncrit_bonus, tier, &mut d.spine);
         // THE SHOT COMBO COUNTER, as the counter stood when this shot
         // was fired. Read BEFORE the hit is counted, because that is
         // the multiplier the player saw under the reticle when they
@@ -1121,11 +1127,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // It multiplies the whole shot, direct and radial alike: the
         // wiki calls it "a bonus to their total damage". Only the
         // DIRECT hit builds it — *"Area-of-effect and damage over time
-        // do not affect the Shot Combo Counter"* — which is counted
+        // do not affect the Strike Combo Counter"* — which is counted
         // below.
         let combo_now =
             combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t);
-        let combo_multiplier = ap.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
+        let combo_multiplier = active.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
         // DAMAGE FALLOFF over the distance this instance travelled.
         //
         // THE DIRECT PART ONLY, and the range is asked of the POINT it
@@ -1140,7 +1146,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // falloff, which is the whole roster minus nineteen entries —
         // so this factor moves no number the engine reported before the
         // arena had a distance in it.
-        let falloff = falloff_factor(ap, params, rad.as_ref(), det, gap_m);
+        let falloff = falloff_factor(active, params, rad.as_ref(), det, gap_m);
         // A SPREAD INSTANCE LANDS ON A BODY, so the pellet's own
         // head factor comes back off before it is handed on.
         //
@@ -1158,7 +1164,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // is the same pellet on the same line, so if it took a head it
         // keeps taking one.
         let body_only = |x: f64| x / part_factor.max(1e-9);
-        let dt_here = if direct && ap.consecutive_hit_radial_only { 1.0 } else { dt_mult };
+        let dt_here = if direct && active.consecutive_hit_radial_only { 1.0 } else { dt_mult };
         let raw = qtotal
             * part_factor
             * crit_multiplier
@@ -1242,7 +1248,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 det,
                 &mut *others,
                 params,
-                ap,
+                active,
                 &rr,
                 if falloff > 0.0 {
                     body_only(raw / bucket / falloff)
@@ -1282,7 +1288,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                     },
                     &mut *others,
                     params,
-                    ap,
+                    active,
                     &rr,
                     if falloff > 0.0 {
                         body_only(raw / bucket / falloff)
@@ -1366,8 +1372,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // once rather than per pellet — recorded on a MISS too, so
             // the sphere that went off on the floor still has a number
             // behind it.
-            if shot_spread.is_none() {
-                *shot_spread = Some(SpreadShot {
+            if strike_spread.is_none() {
+                *strike_spread = Some(SpreadStrike {
                     raw_per_bucket: body_only(raw / bucket),
                     shares,
                     crit_multiplier,
@@ -1387,7 +1393,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 windows,
                     &mut *others,
                     params,
-                    ap,
+                    active,
                     path,
                     body_only(raw / bucket),
                     shares,
@@ -1415,7 +1421,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 &mut *others,
                 debuffs.confusion.len(),
                 params,
-                ap,
+                active,
                 body_only(raw / bucket),
                 shares,
                 crit_multiplier,
@@ -1443,12 +1449,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // swing has no punch-through budget (nothing in the melee
             // pool grants one and the wiki excludes slams and AoE from
             // Follow Through by name), so the two can never both fire.
-            if let Some(ft) = ap.follow_through.filter(|_| direct) {
+            if let Some(ft) = active.follow_through.filter(|_| direct) {
                 spread_from_follow_through(
                 windows,
                     &mut *others,
                     params,
-                    ap,
+                    active,
                     melee_struck,
                     &mut influence_seeds,
                     ft,
@@ -1474,7 +1480,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 windows,
                     &mut *others,
                     params,
-                    ap,
+                    active,
                     struck,
                     raw / bucket,
                     shares,
@@ -1505,7 +1511,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                     windows,
                     &mut *others,
                     params,
-                    ap,
+                    active,
                     beam,
                     body_only(raw / bucket),
                     shares,
@@ -1576,7 +1582,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // which this arena has only one of. Counted here so the
             // NEXT instance sees it, which is the order the previous
             // paragraph reads it in.
-            if ap.sniper_combo.is_some() {
+            if active.sniper_combo.is_some() {
                 sniper_combo.count = combo_now + 1;
                 sniper_combo.last_hit = t;
             }
@@ -1593,7 +1599,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
         // is left by the shot rather than by anything it set off, and
         // the range is the card's own ("within 50 meters of the user").
-        if killed && direct && leaves_one(ap, params.player_at, params.target_at) {
+        if killed && direct && leaves_one(active, params.player_at, params.target_at) {
             r.ghost_kills += 1;
         }
         // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
@@ -1631,11 +1637,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 }
             }
         }
-        roll_instant_reload(ap, params, d, head_direct, killed, incarnon, ammo);
+        roll_instant_reload(active, params, d, head_direct, killed, incarnon, ammo);
         // …AND ONCE PER BODY BEHIND IT. A punched weak point is a weak-point
         // hit, so it rolls; a card that asks for a KILL reads that body's.
         for i in 0..punched.hits {
-            roll_instant_reload(ap, params, d, head_direct, i < punched.kills, incarnon, ammo);
+            roll_instant_reload(active, params, d, head_direct, i < punched.kills, incarnon, ammo);
         }
         // A LANDED grenade leaves its field, whatever it rolled:
         // "Grenades stick to allies, enemies and surfaces", and a stuck
@@ -1651,12 +1657,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // the tick clock; reading it as a delayed first tick cost a
         // tenth of the field's damage.
         if direct {
-            if let Some(fp) = &ap.lingering {
+            if let Some(fp) = &active.lingering {
                 // Renewed Horror doubles THIS field's lifetime, so it
                 // ticks 20 times instead of 10 — ✅ measured (M13): one
                 // direct number plus twenty field numbers.
                 let boost = if *field_duration_boost {
-                    ap.field_duration_on_empty_reload
+                    active.field_duration_on_empty_reload
                 } else {
                     1.0
                 };
@@ -1695,7 +1701,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             // what this branch counts — and *"Radial damage does not
             // count an additional hit"*, which is why it is inside
             // `direct` rather than beside it.
-            if let Some(m) = ap.meter {
+            if let Some(m) = active.meter {
                 meter.seconds += m.seconds_per_hit;
             }
             r.pellets += 1;
@@ -1871,7 +1877,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                         params.headshot_damage_bonus,
                         part.is_head,
                         cd,
-                        ap.unmodded_crit_damage,
+                        active.unmodded_crit_damage,
                         (
                             params.ability_final_at(t) - 1.0,
                             1.0 - co_mult.co_share.clamp(0.0, 1.0),
@@ -1916,7 +1922,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // hit — the ratio is exactly 1 and nothing moves — and differ on
         // an explosion whose damage type is not the gun's.
         let stage_bracket = if stage_mb > 0.0 { qvec.total() / stage_mb } else { 1.0 };
-        let xh_bracket = ap.extra_hit_bracket(t, windows) / stage_bracket.max(1e-12);
+        let xh_bracket = active.extra_hit_bracket(t, windows) / stage_bracket.max(1e-12);
         // …and the BODY PART, a second time, on a direct hit only. DE's
         // CN card, in the same breath as the faction double-dip: "同理，
         // 弱点倍率也会被计算两次". A radial struck no body part, so
@@ -1933,7 +1939,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             &mut *arc,
             &mut *target,
             params,
-            ap,
+            active,
             &mit,
             &mut *r,
             rec,
@@ -1972,14 +1978,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         // weapon-forced Slash is checked here at its source, since
         // `procs` cannot say which Slash came from where; Internal
         // Bleeding's own guard runs after and sees this push.
-        if ap.slash_on_crit > 0.0
+        if active.slash_on_crit > 0.0
             && tier >= 1
             && !params.forced_procs.contains(&DamageType::Slash)
             && !params
                 .target
                 .status_immunities
                 .contains(&DamageType::Slash)
-            && d.extra.chance(ap.slash_on_crit)
+            && d.extra.chance(active.slash_on_crit)
         {
             procs.push(DamageType::Slash);
         }
@@ -2035,7 +2041,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // `forced_procs`. Hunter Munitions pushes above, so it is already
     // in `procs` here and this roll is skipped, which is exactly
     // "if both proc at the same time, only 1 slash proc is applied".
-    roll_proc_conversion(ap, d, live_rate, &mut procs);
+    roll_proc_conversion(active, d, live_rate, &mut procs);
     // Overwhelming Attrition's TRIGGER, evaluated once the proc
     // list is final: "On Hit that is neither Critical nor applies
     // a Status Effect" (wiki). PER DAMAGE INSTANCE — measured
@@ -2092,7 +2098,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
     // Against one target at the centre the direct and the radial of the
     // Mausolon's laser always arrive together, so no distinction is
     // drawn between which of the two lifts.
-    if ap.independent_procs.contains(&"lifted") {
+    if active.independent_procs.contains(&"lifted") {
         // A STATE, so it REFRESHES: the later expiry wins rather than
         // the count going up.
         let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
@@ -2109,7 +2115,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
         let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
         debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
     }
-    if ap.independent_procs.contains(&"knockdown") {
+    if active.independent_procs.contains(&"knockdown") {
         let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
         debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
     }
@@ -2148,14 +2154,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 // The BASE ATTACK's, so a Blast stack this instance applies
                 // remembers the bracket its detonation's extra hit takes —
                 // not this stage's, which the detonation itself never gets.
-                xh_bracket: ap.extra_hit_bracket(t, windows),
+                xh_bracket: active.extra_hit_bracket(t, windows),
             },
             &mut *debuffs,
             &mut *gal,
             &mut *arc,
             &mut *target,
             params,
-            ap,
+            active,
             &mit,
             &mut *r,
             rec,
@@ -2193,7 +2199,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                 part_factor,
                 landing,
                 attrition,
-                xh_bracket: ap.extra_hit_bracket(t, windows),
+                xh_bracket: active.extra_hit_bracket(t, windows),
             };
             if open {
                 for (from, landed) in &influence_seeds {
@@ -2213,7 +2219,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
                         &mut *target,
                         &mut *debuffs,
                         params,
-                        ap,
+                        active,
                         *from,
                         &carried,
                         scale,

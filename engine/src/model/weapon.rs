@@ -314,7 +314,7 @@ impl FormKind {
     pub fn label(self) -> &'static str {
         match self {
             FormKind::Base => "Base Form",
-            FormKind::Charged => "Charged Shot",
+            FormKind::Charged => "Charged Strike",
             FormKind::Incarnon => "Incarnon Form",
             FormKind::AltFire => "Alternate Fire",
             FormKind::SemiAuto => "Semi-Auto",
@@ -563,7 +563,7 @@ pub struct SustainedFireRate {
     /// Where it SETTLES (0.60 on the Phenmor, 1.00 on everything that spools
     /// up). `end < start` is a spool-down; `end > start` a spool-up.
     pub end: f64,
-    /// The span, in held shots. Shot `n` (0-based, counting from the pause)
+    /// The span, in held shots. Strike `n` (0-based, counting from the pause)
     /// sits at `start + (end − start)·min(n, over_shots)/over_shots`, so a
     /// riser is at full from shot `ceil(over_shots) + 1` — which is the number
     /// each page prints.
@@ -616,17 +616,17 @@ impl KillStreakSummonSpec {
 /// THE SHOT COMBO COUNTER — a sniper rifle's own damage multiplier, and the one
 /// mechanic in the game that is a WEAPON's and not a build's.
 ///
-/// VERBATIM (wiki `Sniper Rifle` §Shot Combo Counter): *"Each Sniper Rifle
+/// VERBATIM (wiki `Sniper Rifle` §Strike Combo Counter): *"Each Sniper Rifle
 /// requires a minimum number of shots, referred to as Minimum Combo, before the
-/// Shot Combo Counter activates, starting with a damage bonus of 1.5x. Another
-/// 0.5x damage is added to the counter each time the Shot Combo Counter reaches
+/// Strike Combo Counter activates, starting with a damage bonus of 1.5x. Another
+/// 0.5x damage is added to the counter each time the Strike Combo Counter reaches
 /// a number of hits three times the amount needed for the previous damage bonus
 /// milestone"* — so the thresholds are `min * 3^k` and the multiplier
 /// `1.5 + 0.5k`, which [`SniperCombo::multiplier`] walks rather than computing
 /// through a logarithm: `log3` of an exact power of three is not exactly an
 /// integer in binary.
 ///
-/// *"The Shot Combo Counter will be reduced by 1 after a short period of time
+/// *"The Strike Combo Counter will be reduced by 1 after a short period of time
 /// that no successful hits have been made, or if the player misses a shot. All
 /// sniper rifles have a 2 second combo duration, with the exception of the
 /// Lanka, which has a 6 second combo duration."* It DECAYS one at a time; it
@@ -832,7 +832,7 @@ pub struct WeaponBase {
     /// weapon that has no tendrils.
     pub tendril_range_m: f64,
     pub tendril_acquire_deg: f64,
-    /// The sniper's Shot Combo Counter, before `resolve` asks whether the
+    /// The sniper's Strike Combo Counter, before `resolve` asks whether the
     /// Tenno is aiming — see `data::weapons::SniperCombo`.
     pub sniper_combo: Option<crate::model::SniperCombo>,
     /// ...and the scope's headshot bonus at its top zoom level, likewise

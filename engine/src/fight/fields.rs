@@ -131,7 +131,7 @@ pub(super) fn process_field_ticks(
     until: f64,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     ctx: &FieldCtx,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
@@ -162,7 +162,7 @@ pub(super) fn process_field_ticks(
             at + 1e-9,
             target,
             params,
-            ap,
+            active,
             r,
             rec,
             &mut d.status,
@@ -184,7 +184,7 @@ pub(super) fn process_field_ticks(
             arc,
             target,
             params,
-            ap,
+            active,
             r,
             rec,
             d,
@@ -219,7 +219,7 @@ pub(super) fn process_field_ticks(
                 arc,
                 state,
                 params,
-                ap,
+                active,
                 r,
                 rec,
                 d,
@@ -276,7 +276,7 @@ pub(super) fn field_tick(
     arc: &mut ArcRuntime,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
@@ -320,7 +320,7 @@ pub(super) fn field_tick(
     // can hit weakspots"* — so a strike picks a body part through the same
     // helper an unaimed shot does, and everything below treats it as that part.
     //
-    // THE CHANCE IS AN ARGUMENT, not `ap.unaimed_headshot_chance`, because in a
+    // THE CHANCE IS AN ARGUMENT, not `active.unaimed_headshot_chance`, because in a
     // TOME'S CYCLE the two disagree on purpose: you POINT the primary fire, so
     // its pellets follow the scenario's aim, and the orb you threw picks its
     // own body. One field on the params could hold one of those answers.
@@ -330,9 +330,9 @@ pub(super) fn field_tick(
     // absolute ones land flat (MECHANICS §7).
     let crit_chance_relative = ctx.crit_chance_relative_mods + params.arcane.crit_chance_relative;
     let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * crit_chance_relative;
-    let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), ap.crit_tier_upgrade_chance, &mut d.spine);
+    let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), active.crit_tier_upgrade_chance, &mut d.spine);
     let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
-        + arc.cd_bonus(ap, at)
+        + arc.cd_bonus(active, at)
         + params.arcane.crit_damage_relative;
     let cd = f.crit_damage + f.base_crit_damage * crit_damage_relative + debuffs.cold_cd_bonus(at);
     // …AND THE CRIT-HEADSHOT FOLD-IN, on a tick that found an eligible head.
@@ -347,10 +347,10 @@ pub(super) fn field_tick(
 
     // Damage buckets: the same live base-damage additions the direct hit reads,
     // then the GunCO bracket off the target's CURRENT status count.
-    let base_damage = ap.base_damage_bonus;
+    let base_damage = active.base_damage_bonus;
     let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at)
         + ctx.base_damage_add_mods
-        + heavy_attack_base_damage(ap)
+        + heavy_attack_base_damage(active)
         + arc.rage_bonus(at);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     // CO on an AoE part is the EXCEPTION, not the default. What the mods say is
@@ -364,8 +364,8 @@ pub(super) fn field_tick(
         // the Torid's cloud on the same base as its main fire.
         // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
         // bonus like CO itself, and nothing in the catalog says otherwise.
-        gunco_bucket(params, ap, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0,
-            ap.co_base.borrowed_for(crate::model::CoStage::Field), crate::model::CoStage::Field)
+        gunco_bucket(params, active, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0,
+            active.co_base.borrowed_for(crate::model::CoStage::Field), crate::model::CoStage::Field)
             .bucket
     } else {
         arc_ratio
@@ -496,14 +496,14 @@ pub(super) fn field_tick(
             // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
             // applies still detonates off a gun, and the bracket its extra hit
             // takes is that gun's.
-            xh_bracket: ap.extra_hit_bracket(at, w),
+            xh_bracket: active.extra_hit_bracket(at, w),
         },
         debuffs,
         gal,
         arc,
         target,
         params,
-        ap,
+        active,
         &mit,
         r,
         rec,

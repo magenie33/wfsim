@@ -170,7 +170,7 @@ pub(super) fn process_orbs(
     until: f64,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     ctx: &FieldCtx,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
@@ -200,14 +200,14 @@ pub(super) fn process_orbs(
         // before a field tick.
         process_ticks(
             w,
-            debuffs, gal, arc, at + 1e-9, target, params, ap, r, rec, &mut d.status,
+            debuffs, gal, arc, at + 1e-9, target, params, active, r, rec, &mut d.status,
             &params.target, 0,
         );
         orbs[i].advance(at, &bodies);
         let orb = orbs[i];
         if !is_strike {
             orbs.remove(i);
-            orb_detonation(w, &orb, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d, others, &bodies);
+            orb_detonation(w, &orb, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d, others, &bodies);
             continue;
         }
         orbs[i].next_strike += orb.part.strike_interval_seconds;
@@ -263,7 +263,7 @@ pub(super) fn process_orbs(
                 share *= orb.part.chain_damage_per_hop;
             }
             let killed = orb_strike(
-                w, &orb, share, at, ctx, b, debuffs, gal, arc, target, params, ap, r, rec, d, others,
+                w, &orb, share, at, ctx, b, debuffs, gal, arc, target, params, active, r, rec, d, others,
             );
             aimed_died |= killed && b == 0;
         }
@@ -294,13 +294,13 @@ pub(super) fn orb_strike(
     arc: &mut ArcRuntime,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     others: &mut [SpreadFoe],
 ) -> bool {
-    let Some(mut part) = ap.orb_strike else { return false };
+    let Some(mut part) = active.orb_strike else { return false };
     // A CHAINED BODY TAKES A SMALLER STRIKE, and "smaller" means a smaller BASE
     // — not a multiplier on the finished number. `rules::chain::Instance::share` is
     // explicit about which: *"a beam with a smaller base damage, so it scales
@@ -320,7 +320,7 @@ pub(super) fn orb_strike(
     match b.checked_sub(1) {
         None => field_tick(
             w,
-            &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
+            &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
             &params.target, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
         ),
         Some(bi) => {
@@ -328,7 +328,7 @@ pub(super) fn orb_strike(
             let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
             field_tick(
             w,
-                &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
+                &part, mult, at, ctx, fd, gal, arc, state, params, active, r, rec, d,
                 &spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
             )
         }
@@ -355,14 +355,14 @@ pub(super) fn orb_detonation(
     arc: &mut ArcRuntime,
     target: &mut TargetState,
     params: &FightParams,
-    ap: &FightParams,
+    active: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     others: &mut [SpreadFoe],
     bodies: &[crate::rules::space::Vec2],
 ) {
-    let Some(part) = ap.orb_blast else { return };
+    let Some(part) = active.orb_blast else { return };
     for (b, &pos) in bodies.iter().enumerate() {
         let dist = pos.distance(orb.at);
         if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
@@ -374,7 +374,7 @@ pub(super) fn orb_detonation(
             None => {
                 field_tick(
             w,
-                    &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
+                    &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
                     &params.target, crate::record::Origin::Orb, None, true,
                 );
             }
@@ -384,7 +384,7 @@ pub(super) fn orb_detonation(
                 {
                     field_tick(
             w,
-                        &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
+                        &part, mult, at, ctx, fd, gal, arc, state, params, active, r, rec, d,
                         &spec.params, crate::record::Origin::Orb, None, true,
                     );
                 }

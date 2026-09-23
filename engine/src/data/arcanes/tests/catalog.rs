@@ -193,7 +193,7 @@ fn primary_crux_grants_status_chance_and_ammo_efficiency_on_weakpoint_hits() {
     assert!((fx0.buffs[0].per_stack - 0.05).abs() < 1e-9);
     assert!((fx0.buffs[1].per_stack - 0.01).abs() < 1e-9);
     // The static `ammo_efficiency` field belongs to the assumed-max
-    // conditionals (Akimbo Slip Shot) — Crux's is a live buff, not that.
+    // conditionals (Akimbo Slip Strike) — Crux's is a live buff, not that.
     assert_eq!(fx.ammo_efficiency, 0.0);
     assert_eq!(
         a.desc_at(5),
@@ -370,7 +370,7 @@ fn every_condition_is_honoured_at_resolve_or_at_the_hit() {
             let Some(cond) = arc_condition(e) else { continue };
             let def = secondary(id).expect("a roster arcane");
             // AN ARCANE THAT DEMANDS A WEAPON TRAIT GETS IT. Akimbo Slip
-            // Shot is `requires: dual_pistols` and is inert without it, so
+            // Strike is `requires: dual_pistols` and is inert without it, so
             // asking about its condition on a weapon it cannot go on would
             // compare two zeroes and call the gate broken — which the first
             // run of this test did.

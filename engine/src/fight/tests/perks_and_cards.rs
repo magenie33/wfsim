@@ -1712,9 +1712,9 @@ fn vicious_promise_reads_health_and_shield_and_ignores_overguard() {
 /// VERBATIM (wiki, Kunai Incarnon Genesis, Swift Conclusion): *"Damage
 /// bonus if enemy has less than half health is additive with Hornet Strike
 /// in basic Kunai form, and multiplicative in Incarnon form. It is also
-/// additive with Galvanized Shot in both forms."*
+/// additive with Galvanized Strike in both forms."*
 ///
-/// Galvanized Shot IS the CO bonus, and the Kunai's two forms are exactly
+/// Galvanized Strike IS the CO bonus, and the Kunai's two forms are exactly
 /// the two CO classes — Adding on the base, Multiplying on the Incarnon.
 /// So "additive with Hornet Strike here, multiplicative there, additive
 /// with CO always" is the same sentence as "it lands in the CO bracket".

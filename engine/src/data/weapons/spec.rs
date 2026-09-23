@@ -400,7 +400,7 @@ pub struct WeaponSpec {
     /// Pyrana Prime's second gun — see [`KillStreakSummonSpec`].
     #[serde(default)]
     pub kill_streak_summon: Option<KillStreakSummonSpec>,
-    /// The sniper's Shot Combo Counter — see [`SniperCombo`]. `None` on every
+    /// The sniper's Strike Combo Counter — see [`SniperCombo`]. `None` on every
     /// weapon that is not a sniper rifle, which is what the mechanic is keyed
     /// on in game: it is not a class-wide rule the engine could infer from
     /// `class: sniper`, because the Minimum Combo is per weapon.
