@@ -289,6 +289,7 @@ pub(super) fn sample_frames_up_to(
                 reloads: r.reloads,
                 transforms: r.transforms,
                 sources: r.sources,
+                dealt: *r.dealt.by_attacker(),
                 stacks: stacks.iter().map(|(n, _)| *n).collect(),
                 // ONE SERIES PER FOLLOWED BODY, in `Replay::tracked`'s
                 // order — the aimed one first.

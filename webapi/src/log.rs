@@ -117,6 +117,9 @@ pub fn log_json(v: &Value) -> Value {
         // bytes an event, 17.2 MB for a 20,000-row window.
         "factors": wfsim_engine::record::Factor::ALL
             .iter().map(|f| f.name()).collect::<Vec<_>>(),
+        // THE ATTACKER ROSTER, once, the way the factor table and the two stack
+        // rosters are: a row names its dealer by index into this.
+        "attackers": params.attacker_ids(),
         "buffs": rec.buffs(),
         "debuffs": wfsim_engine::fight::DEBUFF_ROSTER
             .iter().map(|(id, _)| *id).collect::<Vec<_>>(),
@@ -180,6 +183,11 @@ fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
     match &e.kind {
         Kind::Damage(d) => {
             m.insert("kind".into(), json!("damage"));
+            // WHO DEALT IT, beside the `body` that took it. Sent on every row
+            // and not only when a fight has a second attacker: the row is the
+            // ledger, and a ledger that names the dealer only when it is
+            // interesting is one a reader cannot audit.
+            m.insert("attacker".into(), json!(d.attacker.0));
             m.insert("origin".into(), json!(d.origin.name()));
             // WHICH PELLET, and which half of its attack. A pellet with an
             // explosion is TWO rows and one pellet.

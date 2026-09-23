@@ -9,6 +9,20 @@ impl FightParams {
         crate::rules::space::gap(self.player_at, body_at) <= self.pickup_range_m
     }
 
+    /// WHO FIRES IN THIS FIGHT, seat for seat with [`RunResult::dealt`] and
+    /// with the record's `attacker` — the attacker roster, the exact
+    /// counterpart of the body roster a formation names.
+    ///
+    /// ONE WRITER, like [`Self::buff_roster`]. Every reader — the report, the
+    /// replay's frames, the record's rows — joins on these ids, so a seat that
+    /// starts firing and is not named here is damage nobody can attribute.
+    ///
+    /// Stable English slugs, never translated: the same rule every id in
+    /// `data/` follows, and the page resolves them to names of its own.
+    pub fn attacker_ids(&self) -> Vec<&'static str> {
+        vec!["wielder"]
+    }
+
     /// Is this stat LOCKED at the weapon's default by an equipped mod?
     ///
     /// One reader for every live source, so "even negative effects" cannot end

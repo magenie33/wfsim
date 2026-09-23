@@ -57,6 +57,29 @@ impl Spread {
     }
 }
 
+/// WHO DEALT THE RUN'S DAMAGE, index for index with the fight's attacker
+/// roster — 0 is the wielder, the build this panel is about.
+///
+/// The mirror of [`Spread`], through the same door and for the same reason:
+/// a damage site that moved a total without naming who dealt it is exactly
+/// the drift this module exists to make impossible, and with a squad on the
+/// field "whose number is this" stops being answerable by assumption.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Dealt(AttackerDamage);
+
+impl Dealt {
+    /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
+    fn credit(&mut self, who: Attacker, effective: f64) {
+        if let Some(slot) = self.0 .0.get_mut(who.0) {
+            *slot += effective;
+        }
+    }
+
+    pub fn by_attacker(&self) -> &AttackerDamage {
+        &self.0
+    }
+}
+
 /// WHICH CLOCK AN INSTANCE WAS ON. The only thing `settle` cannot work out
 /// for itself: a Heat tick and a Heat hit are the same type on the same
 /// body, and only the caller knows which it just resolved.
@@ -142,6 +165,10 @@ pub(in crate::fight) fn settle(
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     t: f64,
+    // WHO DEALT IT AND WHO TOOK IT, in that order and in two different types.
+    // Both were `usize` in the design that had only one attacker, and two bare
+    // indices side by side transpose without a word from the compiler.
+    who: Attacker,
     body: usize,
     dtype: DamageType,
     kind: PopKind,
@@ -178,9 +205,10 @@ pub(in crate::fight) fn settle(
     r.virus_stack_health += settled.virus_stack_health;
     r.armor_left_health += settled.armor_left_health;
     r.spread.credit(body, settled.effective);
+    r.dealt.credit(who, settled.effective);
     let i = t.max(0.0) as usize;
     r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
     if rec.wants(t) {
-        write_row(rec, t, body, dtype, kind, breakdown, settled, debuffs, inst());
+        write_row(rec, t, who, body, dtype, kind, breakdown, settled, debuffs, inst());
     }
 }

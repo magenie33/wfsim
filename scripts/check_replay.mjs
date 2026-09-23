@@ -101,6 +101,21 @@ const r = await evaluate(`(async () => {
     appearance: getComputedStyle(document.getElementById('rp-scrub')).appearance,
     railBg: getComputedStyle(document.querySelector('.scrub-rail')).backgroundColor,
   };
+  // THE TWO CUTS OF ONE FIGHT: who dealt it and who took it. Both are booked
+  // through one door in the engine (ledger::settle), so they answer with one
+  // number or one of them is counting something the other is not.
+  // (No backticks in this comment: it lives inside a template literal.)
+  const cuts = {
+    attackers: (shownResult.r.attackers || []).map(a => a.id),
+    dealt: (shownResult.r.attackers || []).reduce((a, x) => a + (x.damage || 0), 0),
+    taken: (shownResult.r.bodies || []).reduce((a, x) => a + (x.damage || 0), 0),
+    rows: [...document.querySelectorAll('.mrow[data-attacker]')].map(e => e.dataset.attacker),
+    recRoster: ((recordState || {}).attackers || []).length,
+    tagged: [...document.querySelectorAll('.rec-peek tr[data-attacker]')].length,
+    untagged: [...document.querySelectorAll('.rec-peek tr.rec-dmg')]
+      .filter(e => !e.dataset.attacker).length,
+    whoColumns: document.querySelectorAll('.rec-who').length,
+  };
   const iBar = pos('.rp-bar');
   const iMeter = pos('.meter');
   // THE DPS CURVE, the anchor both order assertions read against: the replay
@@ -145,8 +160,8 @@ const r = await evaluate(`(async () => {
   // check ends with the results block un-laid-out (the on-simulator body class
   // is off), so everything inside it measures zero whatever it is doing.
   // (No backticks in this comment: it lives inside a template literal.)
-  const head0 = document.querySelector('.mrow.exp');
-  const sub0 = document.querySelector('.mrow.sub');
+  const head0 = document.querySelector('.mrow.exp[data-mk]');
+  const sub0 = document.querySelector('.mrow.sub[data-mk]');
   const disp = () => getComputedStyle(sub0).display;
   const collapse = { start: disp() };
   head0.click(); await sleep(350); collapse.toggled = disp();
@@ -156,7 +171,11 @@ const r = await evaluate(`(async () => {
   // the same damage TYPE appears under more than one of them.
   document.querySelectorAll('.mrow.exp').forEach(e => e.click());
   await sleep(700);
-  const meterRows = [...document.querySelectorAll('.mrow')].map(el => {
+  // THE DAMAGE METER'S ROWS, and only those. The zone draws more than one
+  // meter now — the attacker cut is the same component with a roster id
+  // instead of a damage key — so a bare .mrow sweeps in rows that are not
+  // about a damage type and asks them for a damage type's glyph.
+  const meterRows = [...document.querySelectorAll('.mrow[data-mk]')].map(el => {
     const bar = el.querySelector('.mbar i');
     return {
       key: el.getAttribute('data-mk') || '',
@@ -177,7 +196,7 @@ const r = await evaluate(`(async () => {
     .map(e => ({ text: e.textContent.trim(), icon: !!e.querySelector('.dt-ico') }));
   // What the METER says each type totalled, to reconcile against.
   const meterByType = {};
-  for (const el of document.querySelectorAll('.mrow')) {
+  for (const el of document.querySelectorAll('.mrow[data-mk]')) {
     const k = el.getAttribute('data-mk') || '';
     const ty = (k.split('::')[1] || k).toLowerCase();
     if (['direct','radial','field','arcane','syndicate'].includes(ty)) continue;
@@ -185,7 +204,7 @@ const r = await evaluate(`(async () => {
     const v = parseFloat((el.querySelector('.mval')||{}).textContent?.replace(/[^\d.]/g,'') || '0');
     meterByType[ty] = (meterByType[ty] || 0) + v;
   }
-  return { rows, atEnd, atMid, atZero, restored, afterStop, playLabel, rail, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iChart, iRow, kids,
+  return { rows, atEnd, atMid, atZero, restored, afterStop, playLabel, rail, cuts, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iChart, iRow, kids,
            meterRows, segs, legend, collapse, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
@@ -326,6 +345,29 @@ check("the scrubber's thumb is the page's own",
     w(r.atZero.done) === 0 && w(r.atEnd.done) === 100
     && w(r.atMid.done) > 20 && w(r.atMid.done) < 80,
     `${r.atZero.done} -> ${r.atMid.done} -> ${r.atEnd.done}`);
+}
+// ONE FIGHT, TWO CUTS: who DEALT the damage and who TOOK it. Both are booked
+// through the same door in the engine, so they come to one number — any drift
+// at all means a damage site reached a total without naming one of the two.
+{
+  const c = r.cuts;
+  check("the attacker cut and the body cut are the same total",
+    c.dealt > 0 && Math.abs(c.dealt - c.taken) < 1,
+    `dealt ${c.dealt} vs taken ${c.taken}`);
+  // …AND THE PANEL DRAWS THE ROSTER, whatever its length. One attacker is a
+  // list of one, not a hidden block: the markup that draws a squad is the
+  // markup that draws you alone.
+  check("...and the panel draws a row for every seat",
+    c.rows.length === c.attackers.length && c.rows.join() === c.attackers.join(),
+    JSON.stringify([c.rows, c.attackers]));
+  // EVERY ROW NAMES ITS DEALER even where nothing would be drawn from it. The
+  // attribution is the ledger's; the visible column is the page's, and it
+  // follows the same rule the foe chips do — a control with one option is not
+  // a control.
+  check("every record row names who dealt it, and the column waits for a second",
+    c.recRoster > 0 && c.tagged > 0 && c.untagged === 0
+    && c.whoColumns === (c.recRoster > 1 ? c.tagged : 0),
+    JSON.stringify(c));
 }
 check("rewinding empties the KPIs and the meter",
   r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&

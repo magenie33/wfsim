@@ -211,7 +211,7 @@ pub(super) fn spread_from_influence(
             r.sources.extra_hit += eff;
             r.sources.extra_hit_by_type[ty as usize] += eff;
             ledger::settle(
-                r, rec, t, b, ty, PopKind::Extra, &breakdown, settled, Some(dbf),
+                r, rec, t, Attacker::WIELDER, b, ty, PopKind::Extra, &breakdown, settled, Some(dbf),
                 ledger::Clock::Hit,
                 || Instance {
                     origin: crate::record::Origin::Influence,
@@ -383,7 +383,7 @@ pub(super) fn spread_hit(
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
     ledger::settle(
-        r, rec, t, inst.target, shares.dominant(),
+        r, rec, t, Attacker::WIELDER, inst.target, shares.dominant(),
         // WHAT THE GAME DRAWS THIS AS, and the crit half of it is carried the
         // way the headshot is: the crit multiplier is already inside
         // `raw_per_bucket`, so a body a shot punched through takes the crit and
@@ -1416,7 +1416,7 @@ pub(super) fn fire_syndicate_radial(
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     ledger::settle(
-        r, rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
+        r, rec, at, Attacker::WIELDER, 0, sy.element, PopKind::Arcane, &breakdown, settled,
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {

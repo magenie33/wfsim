@@ -30,6 +30,42 @@ impl Default for BodyDamage {
     }
 }
 
+/// WHO DEALT A DAMAGE INSTANCE — the counterpart of the `body` that took it.
+///
+/// The two are ROLES IN ONE INSTANCE, not sides: a unit that deals and takes
+/// is an attacker on one row and a body on another, which is what lets the
+/// enemy side start dealing damage without a word being renamed.
+///
+/// A NEWTYPE, NOT A `usize`. It rides beside `body: usize` through
+/// [`ledger::settle`], and two bare indices next to each other transpose
+/// silently — the same defect `record::Factor` exists to prevent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Attacker(pub usize);
+
+impl Attacker {
+    /// THE BUILD THIS PANEL IS ABOUT, and index 0 for the same reason body 0
+    /// is the aimed one: every fight has it, so it needs no lookup.
+    pub const WIELDER: Attacker = Attacker(0);
+}
+
+/// HOW MANY THINGS MAY FIRE IN ONE FIGHT. A squad of four, each with a
+/// companion. `RunResult` is `Copy`, so this is 64 bytes on the hot path and
+/// the ceiling is stated rather than grown by accident.
+pub const MAX_ATTACKERS: usize = 8;
+
+/// EFFECTIVE DAMAGE PER ATTACKER, index for index with the fight's roster.
+/// Same door and same reason as [`BodyDamage`]: booked only by
+/// [`ledger::settle`], so a damage site cannot move a total without naming
+/// who dealt it.
+#[derive(Debug, Clone, Copy)]
+pub struct AttackerDamage(pub [f64; MAX_ATTACKERS]);
+
+impl Default for AttackerDamage {
+    fn default() -> Self {
+        AttackerDamage([0.0; MAX_ATTACKERS])
+    }
+}
+
 /// Effective damage attributed by SOURCE — the WoW-damage-meter view: direct pellet hits, each status settlement type
 /// (Slash bleed, Heat/Toxin/Gas/Electricity DoTs, Blast detonations —
 /// keyed by the proc's type), and the on-status arcane instance.
@@ -95,6 +131,7 @@ impl SourceDamage {
 pub(super) fn write_row(
     rec: &mut crate::record::Record,
     t: f64,
+    who: Attacker,
     body: usize,
     dtype: DamageType,
     kind: PopKind,
@@ -139,6 +176,7 @@ pub(super) fn write_row(
             t,
             subject,
             crate::record::Kind::Damage(Box::new(crate::record::Damage {
+                attacker: who,
                 origin: inst.origin,
                 pellet: inst.pellet,
                 radial: inst.radial,
@@ -338,6 +376,10 @@ pub struct RunResult {
     pub curve: ledger::Curve,
     /// Whose damage it was — same door, same reason.
     pub spread: ledger::Spread,
+    /// …and WHO DEALT IT, the other half of that question. One fight has one
+    /// list of attackers and one list of bodies, and every instance names one
+    /// of each.
+    pub dealt: ledger::Dealt,
 }
 
 /// The one number of a run a metric reads — here because `RunResult` is.

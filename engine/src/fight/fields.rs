@@ -418,7 +418,7 @@ pub(super) fn field_tick(
         add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     }
     ledger::settle(
-        r, rec, at, 0, DamageType::Cinematic,
+        r, rec, at, Attacker::WIELDER, 0, DamageType::Cinematic,
         // THE NUMBER'S OWN SHAPE ON SCREEN: a blast draws as a blast.
         if is_blast { PopKind::BlastArea } else { PopKind::Field },
         &breakdown, settled,

@@ -292,6 +292,32 @@ function renderResults(r, testedAt) {
     </div>`;
   };
 
+  // ---- WHO DEALT IT ------------------------------------------------------
+  //
+  // The same total as every other cut in this zone, sorted by the thing that
+  // fired it. `attackers` is the engine's roster (`FightParams::attacker_ids`)
+  // and it lists a seat that dealt NOTHING as well as one that did, which is
+  // the opposite of the body roll call and deliberate: "the companion fired
+  // nothing" and "there is no companion" are different fights, and a roster
+  // that shrank to whoever scored would say them the same way.
+  //
+  // ONE ATTACKER IS A LIST OF LENGTH ONE. Not a special case and not hidden:
+  // the block that draws a squad is the block that draws you alone, so nothing
+  // has to be re-laid-out the day a second thing starts firing.
+  const attackerBlock = (r) => {
+    const list = r.attackers || [];
+    if (!list.length) return "";
+    const total = list.reduce((a, x) => a + (x.damage || 0), 0) || 1;
+    const top = Math.max(...list.map((x) => x.damage || 0)) || 1;
+    const rows = list.map((x, i) => `<div class="mrow" data-attacker="${escHtml(x.id)}" data-c="${(i % 8) + 1}">
+      <span class="mname">${escHtml(attackerName(x.id))}</span>
+      ${mbar((x.damage || 0) / top * 100, "", (i % 8) + 1, false)}
+      <span class="mval">${n0(x.damage)} · ${pct2((x.damage || 0) / total)}</span>
+    </div>`).join("");
+    return foldBlock("attackers", tr("Damage by attacker"), tr("what each thing firing in this fight dealt"),
+      `<div class="meter">${rows}</div>`);
+  };
+
   const met = metricOf(sim.metric);
   const heroNum = fmtScore(metricValue(met, r));
   // The UNIT belongs beside the number, not under it: "5.29" on one line and
@@ -534,7 +560,8 @@ function renderResults(r, testedAt) {
         ${benchHead}
         ${replayBar}
         ${sampleKpis ? `<div class="row-label">${escHtml(tr("this one engagement, at the playhead"))} <span class="who-tag gold">${escHtml(tr("this engagement"))}</span></div><div class="kpi-row bench-kpi">${sampleKpis}</div>` : ""}`)}
-      ${zone(4, tr("What it was made of"), tr("four ways to cut one total — each of them comes to it"), `
+      ${zone(4, tr("What it was made of"), tr("ways to cut one total — each of them comes to it"), `
+        ${attackerBlock(r)}
         ${foldBlock("meter", tr("Damage by source"), tr("where it came from"),
           `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
         ${foldBlock("curve", tr("DPS over time"), tr("this engagement, one bucket a second"), chart)}

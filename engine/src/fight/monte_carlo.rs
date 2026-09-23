@@ -11,6 +11,10 @@ pub struct Summary {
     /// five bodies and six bodies can deal the same total, and only one of them
     /// is the weapon.
     pub mean_damage_by_body: BodyDamage,
+    /// …and the same total cut by WHO DEALT IT, seat for seat with
+    /// [`FightParams::attacker_ids`]. Mean over the runs, like everything else
+    /// here.
+    pub mean_damage_by_attacker: AttackerDamage,
     pub runs: u32,
     pub duration_seconds: f64,
     pub mean_damage: f64,
@@ -282,6 +286,7 @@ pub struct Shard {
     pub(super) headshots: u64,
     pub(super) sources: SourceDamage,
     pub(super) by_body: Vec<f64>,
+    pub(super) by_attacker: Vec<f64>,
     /// One per run: what it scored, and the RNG state it started from.
     ///
     /// The benchmark fight is what the replay shows, and finding it
@@ -338,6 +343,7 @@ impl Default for Shard {
             headshots: 0,
             sources: SourceDamage::default(),
             by_body: vec![0.0; crate::formation::MAX_BODIES + 1],
+            by_attacker: vec![0.0; crate::fight::MAX_ATTACKERS],
             index: Vec::new(),
             series: RunSeries::default(),
         }
@@ -389,6 +395,9 @@ impl Shard {
         self.crit_tier_sum += o.crit_tier_sum;
         self.headshots += o.headshots;
         add_sources(&mut self.sources, &o.sources);
+        for (a, b) in self.by_attacker.iter_mut().zip(&o.by_attacker) {
+            *a += *b;
+        }
         for (a, b) in self.by_body.iter_mut().zip(&o.by_body) {
             *a += b;
         }
@@ -526,6 +535,9 @@ pub fn shard(
         a.crit_tier_sum += u64::from(r.crit_tier_sum);
         a.headshots += u64::from(r.headshots);
         add_sources(&mut a.sources, &r.sources);
+        for (acc, v) in a.by_attacker.iter_mut().zip(r.dealt.by_attacker().0) {
+            *acc += v;
+        }
         for (acc, v) in a.by_body.iter_mut().zip(r.spread.by_body().0) {
             *acc += v;
         }
@@ -572,8 +584,12 @@ impl Shard {
         let (crit_tier_sum, headshots) = (self.crit_tier_sum, self.headshots);
         let sources = self.sources;
         let mut mean_damage_by_body = BodyDamage::default();
+        let mut mean_damage_by_attacker = AttackerDamage::default();
         if runs > 0 {
             for (acc, v) in mean_damage_by_body.0.iter_mut().zip(&self.by_body) {
+                *acc = v / f64::from(runs);
+            }
+            for (acc, v) in mean_damage_by_attacker.0.iter_mut().zip(&self.by_attacker) {
                 *acc = v / f64::from(runs);
             }
         }
@@ -585,6 +601,7 @@ impl Shard {
         let total_shots = shots;
     let summary = Summary {
         mean_damage_by_body,
+        mean_damage_by_attacker,
         runs,
         duration_seconds: params.duration_seconds,
         mean_damage: mean,

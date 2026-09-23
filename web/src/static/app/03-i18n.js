@@ -101,6 +101,15 @@ const dtKey = (ty) => {
   return DT_TYPES.has(k) ? k : null;
 };
 const dtColor = (ty) => (dtKey(ty) ? `var(--dt-${dtKey(ty)})` : null);
+
+/// AN ATTACKER'S NAME, from the engine's own id.
+///
+/// The engine ships stable English slugs and knows no weapon names at all, so
+/// the page resolves them — the same division the body roll call runs on. An
+/// id nobody has a label for prints ITSELF rather than a blank, which is still
+/// a name a reader can act on.
+const ATTACKER_LABEL = { wielder: "You" };
+const attackerName = (id) => (ATTACKER_LABEL[id] ? tr(ATTACKER_LABEL[id]) : String(id || ""));
 const dtIcon = (ty) => {
   const k = dtKey(ty);
   if (!k) return "";

@@ -167,6 +167,8 @@ async function loadRecord(r, from, to, limit = RECORD_LIMIT, pages = 1) {
   // the target's debuffs, both positional and both named once rather than per
   // row.
   recordState.rosters = { buffs: (out && out.buffs) || [], debuffs: (out && out.debuffs) || [] };
+  // THE ATTACKER ROSTER, the third of the three a row indexes into.
+  recordState.attackers = (out && out.attackers) || [];
   // THE FACTOR TABLE, sent once. A row names its factors by their index here,
   // because the same thirteen "did nothing" names on every row of a fight were
   // the largest single share of a 17.2 MB window.
@@ -434,7 +436,8 @@ function recordBody(st, peek) {
     if (!few.length) return "";
     return `<div class="rec-peek"><table class="rec-t">
       <thead><tr>
-        <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("damage source"))}</th>
+        <th>${escHtml(tr("time"))}</th>${
+        (st.attackers || []).length > 1 ? `<th>${escHtml(tr("who dealt it"))}</th>` : ""}<th>${escHtml(tr("damage source"))}</th>
         <th>${escHtml(tr("part"))}</th>
         <th class="num">${escHtml(tr("damage"))}</th>
         <th>${escHtml(tr("where the number comes from"))}</th>
@@ -480,7 +483,8 @@ function recordBody(st, peek) {
     ${recordPager(at, shown.length)}
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
-        <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("damage source"))}</th>
+        <th>${escHtml(tr("time"))}</th>${
+        (st.attackers || []).length > 1 ? `<th>${escHtml(tr("who dealt it"))}</th>` : ""}<th>${escHtml(tr("damage source"))}</th>
         <th>${escHtml(tr("part"))}</th>
         <th class="num">${escHtml(tr("damage"))}</th>
         <th>${escHtml(tr("procs"))}</th>
@@ -713,8 +717,18 @@ function recordRow(e, rosters) {
   // edge — and a stacked cell with no heading is a number
   // with nothing to say what it is.
   const L = (k) => ` data-label="${escHtml(tr(k))}"`;
-  return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}">
+  // WHO DEALT IT, on the row itself. The ATTRIBUTION is never omitted — the
+  // row is the ledger, and one that names its dealer only when a reader might
+  // care is one nobody can audit — but the visible COLUMN is drawn only where
+  // there is more than one thing firing, which is the rule the foe chips
+  // already follow: a control with one option is not a control.
+  const roster = (recordState && recordState.attackers) || [];
+  const who = roster[(e.attacker || 0)] || "";
+  const whoCell = roster.length > 1
+    ? `<td class="rec-who"${L("who dealt it")}>${escHtml(attackerName(who))}</td>` : "";
+  return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}" data-attacker="${escHtml(who)}">
     <td class="rec-t"${L("time")}>${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
+    ${whoCell}
     <td${L("damage source")}><span class="rec-org rec-o-${escHtml(e.origin)}" data-origin="${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
     <td${L("part")}>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
     <td class="num"${L("damage")}><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>

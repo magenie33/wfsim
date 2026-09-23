@@ -408,7 +408,7 @@ pub(super) fn process_ticks(
         r.sources.add_status(src, effective);
         let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
         ledger::settle(
-            r, rec, now, body, src,
+            r, rec, now, Attacker::WIELDER, body, src,
             if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
             &breakdown, settled, Some(debuffs),
             ledger::Clock::Dot,
