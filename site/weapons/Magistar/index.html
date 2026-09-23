@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Magistar","description":"Magistar (执法者) — Hammer · Melee · Mastery Rank 1. 210 base damage (impact 168, puncture 31.5, slash 10.5), 20% crit chance, 2x crit multiplier, 10% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Magistar","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Magistar","item":"https://wfsim.app/weapons/Magistar"}]},"dateModified":"2026-09-23","about":{"@type":"Thing","name":"Magistar","alternateName":"执法者"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -172,13 +172,32 @@
     </div>
 
     <div id="doc" class="doc" data-url="/weapons/Magistar">
-    <p>Magistar / 执法者 — Warframe. Hammer · Melee · Mastery Rank 1</p>
-    <p>210 base damage (impact 168, puncture 31.5, slash 10.5), 20% crit chance, 2x crit multiplier, 10% status chance.</p>
-    <p>1.35 riven disposition.</p>
-    <p>As of 2026-09-23, the best riven-free Magistar build on the WFSim board scores 0.6048 under Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM — heavy mode, wearing Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure.</p>
-    <p>As of 2026-09-23, the best riven-free Magistar build on the WFSim board scores 64.8267 under Standard Multi Target · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM — heavy slam mode, wearing Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure.</p>
-    <p>As of 2026-09-23, the best riven-free Magistar build on the WFSim board scores 0.04901 under Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM — heavy mode, wearing Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    <div class="fold sect w-brief" data-fold="w-brief">
+      <div class="fold-h"><b>Magistar</b><span class="w-cn">执法者</span><span class="sim-hint">Hammer · Melee · Mastery Rank 1</span></div>
+      <div class="fold-b">
+      <table class="w-tab w-answers">
+        <caption>Best riven-free build on the WFSim board, as of 2026-09-23</caption>
+        <thead><tr><th>Ruler</th><th>Fight</th><th>Mode</th><th>Score</th><th>Build</th></tr></thead>
+        <tbody>
+          <tr><td>Standard Single Target</td><td>Thrax Centurion Lv 9999 SP · 180 s · KPM</td><td>heavy</td><td class="w-num">0.6048</td><td>Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure</td></tr>
+          <tr><td>Standard Multi Target</td><td>19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM</td><td>heavy slam</td><td class="w-num">64.8267</td><td>Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure</td></tr>
+          <tr><td>Demolisher</td><td>one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM</td><td>heavy</td><td class="w-num">0.04901</td><td>Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure</td></tr>
+        </tbody>
+      </table>
+      <table class="w-tab">
+        <tr><th>Damage</th><td>210 (impact 168, puncture 31.5, slash 10.5)</td></tr>
+        <tr><th>Critical</th><td>20% at 2x</td></tr>
+        <tr><th>Status</th><td>10%</td></tr>
+        <tr><th>Riven disposition</th><td>1.35</td></tr>
+      </table>
+      <div class="w-notes"><b>Not modelled here</b>
+        <ul>
+        <li>one attack input&#x27;s own animation length is not published anywhere: the wiki gives a combo&#x27;s total duration at 1.0x attack speed and one entry per input, so the combo&#x27;s DURATION is exact and the split between its INPUTS is even. It moves a status tick&#x27;s start by fractions of a second inside a combo and moves no total</li>
+        <li>Power Spike&#x27;s partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports</li>
+        </ul>
+      </div>
+      </div>
+    </div>
     </div>
 
     <nav class="module-tabs" id="module-tabs"></nav>
@@ -294,6 +313,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -445,6 +466,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -634,13 +660,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

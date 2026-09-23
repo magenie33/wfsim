@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Enkaus","description":"Enkaus (绘墨) — Rifle · Primary · Mastery Rank 12. 28 base damage (corrosive 20, puncture 8), 16% crit chance, 1.8x crit multiplier, 32% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Enkaus","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Enkaus","item":"https://wfsim.app/weapons/Enkaus"}]},"dateModified":"2026-09-23","about":{"@type":"Thing","name":"Enkaus","alternateName":"绘墨"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -172,11 +172,22 @@
     </div>
 
     <div id="doc" class="doc" data-url="/weapons/Enkaus">
-    <p>Enkaus / 绘墨 — Warframe. Rifle · Primary · Mastery Rank 12</p>
-    <p>28 base damage (corrosive 20, puncture 8), 16% crit chance, 1.8x crit multiplier, 32% status chance.</p>
-    <p>60-round magazine, 2.2 s reload, 60 reserve ammo, 1 accuracy, 0.7 riven disposition.</p>
-    <p>Traits: tenno.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    <div class="fold sect w-brief" data-fold="w-brief">
+      <div class="fold-h"><b>Enkaus</b><span class="w-cn">绘墨</span><span class="sim-hint">Rifle · Primary · Mastery Rank 12</span></div>
+      <div class="fold-b">
+      <table class="w-tab">
+        <tr><th>Damage</th><td>28 (corrosive 20, puncture 8)</td></tr>
+        <tr><th>Critical</th><td>16% at 1.8x</td></tr>
+        <tr><th>Status</th><td>32%</td></tr>
+        <tr><th>Magazine</th><td>60 rounds</td></tr>
+        <tr><th>Reload</th><td>2.2 s</td></tr>
+        <tr><th>Reserve ammo</th><td>60</td></tr>
+        <tr><th>Accuracy</th><td>1</td></tr>
+        <tr><th>Riven disposition</th><td>0.7</td></tr>
+        <tr><th>Traits</th><td>tenno</td></tr>
+      </table>
+      </div>
+    </div>
     </div>
 
     <nav class="module-tabs" id="module-tabs"></nav>
@@ -292,6 +303,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -443,6 +456,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -632,13 +650,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

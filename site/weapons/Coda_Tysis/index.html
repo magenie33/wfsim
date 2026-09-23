@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Coda Tysis","description":"Coda Tysis (终幕·啐沫者) — Pistol · Secondary · Mastery Rank 17. 76 base damage (impact 18, puncture 32, slash 26), 13% crit chance, 2x crit multiplier, 50% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Coda_Tysis","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Coda Tysis","item":"https://wfsim.app/weapons/Coda_Tysis"}]},"dateModified":"2026-09-23","about":{"@type":"Thing","name":"Coda Tysis","alternateName":"终幕·啐沫者"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -172,11 +172,29 @@
     </div>
 
     <div id="doc" class="doc" data-url="/weapons/Coda_Tysis">
-    <p>Coda Tysis / 终幕·啐沫者 — Warframe. Pistol · Secondary · Mastery Rank 17</p>
-    <p>76 base damage (impact 18, puncture 32, slash 26), 13% crit chance, 2x crit multiplier, 50% status chance.</p>
-    <p>18-round magazine, 1.2 s reload, 210 reserve ammo, 100 accuracy, 1 riven disposition.</p>
-    <p>Traits: infested, coda.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    <div class="fold sect w-brief" data-fold="w-brief">
+      <div class="fold-h"><b>Coda Tysis</b><span class="w-cn">终幕·啐沫者</span><span class="sim-hint">Pistol · Secondary · Mastery Rank 17</span></div>
+      <div class="fold-b">
+      <table class="w-tab">
+        <tr><th>Damage</th><td>76 (impact 18, puncture 32, slash 26)</td></tr>
+        <tr><th>Critical</th><td>13% at 2x</td></tr>
+        <tr><th>Status</th><td>50%</td></tr>
+        <tr><th>Magazine</th><td>18 rounds</td></tr>
+        <tr><th>Reload</th><td>1.2 s</td></tr>
+        <tr><th>Reserve ammo</th><td>210</td></tr>
+        <tr><th>Accuracy</th><td>100</td></tr>
+        <tr><th>Riven disposition</th><td>1</td></tr>
+        <tr><th>Traits</th><td>infested, coda</td></tr>
+      </table>
+      <div class="w-notes"><b>Not modelled here</b>
+        <ul>
+        <li>THE INNATE CORROSIVE DoT, which is 177 of this weapon&#x27;s 253 damage a dart — &quot;The 177 Corrosive damage is dealt in 3 ticks of 59 damage over the course of 2 seconds&quot;, with each multishot pellet creating its own. It is a DAMAGE-OVER-TIME ATTACK rather than a status proc or an explosion, and the engine has no shape for one: three attacks in the whole game are typed this way and two of them are this weapon&#x27;s family, so it is recorded rather than built. THE NUMBER ON SCREEN IS THEREFORE ABOUT A THIRD OF THE REAL ONE against a single target</li>
+        <li>the dart carries its DoT THROUGH what it pierces at a reduced rate — &quot;If the dart punches through an enemy, they will instead receive 1 tick&quot; — which is a second rule about the DoT above and equally unmodelled</li>
+        <li>corpses ride the dart: &quot;On kill, bodies will follow the dart that killed them, damaging anyone in their path&quot;, which needs a corpse, a direction and a bystander this arena does not move</li>
+        </ul>
+      </div>
+      </div>
+    </div>
     </div>
 
     <nav class="module-tabs" id="module-tabs"></nav>
@@ -292,6 +310,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -443,6 +463,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -632,13 +657,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

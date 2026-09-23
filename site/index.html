@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/","applicationCategory":"GameApplication","operatingSystem":"Any","browserRequirements":"Requires WebAssembly","description":"A Warframe calculator that simulates the fight instead of estimating it - builder, simulator, optimizer. Every formula cites its source.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","codeRepository":"https://github.com/magenie33/wfsim"}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -286,6 +286,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -437,6 +439,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -626,13 +633,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

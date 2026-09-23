@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Zymos","description":"Zymos (邪莫斯) — Pistol · Secondary · Mastery Rank 11. 23 base damage (impact 9.2, puncture 13.8), 5% crit chance, 2.3x crit multiplier, 30% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Zymos","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Zymos","item":"https://wfsim.app/weapons/Zymos"}]},"dateModified":"2026-09-23","about":{"@type":"Thing","name":"Zymos","alternateName":"邪莫斯"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -172,11 +172,29 @@
     </div>
 
     <div id="doc" class="doc" data-url="/weapons/Zymos">
-    <p>Zymos / 邪莫斯 — Warframe. Pistol · Secondary · Mastery Rank 11</p>
-    <p>23 base damage (impact 9.2, puncture 13.8), 5% crit chance, 2.3x crit multiplier, 30% status chance.</p>
-    <p>17-round magazine, 3.2 s reload, 51 reserve ammo, 9.8 accuracy, 1.2 riven disposition.</p>
-    <p>Traits: infested.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    <div class="fold sect w-brief" data-fold="w-brief">
+      <div class="fold-h"><b>Zymos</b><span class="w-cn">邪莫斯</span><span class="sim-hint">Pistol · Secondary · Mastery Rank 11</span></div>
+      <div class="fold-b">
+      <table class="w-tab">
+        <tr><th>Damage</th><td>23 (impact 9.2, puncture 13.8)</td></tr>
+        <tr><th>Critical</th><td>5% at 2.3x</td></tr>
+        <tr><th>Status</th><td>30%</td></tr>
+        <tr><th>Magazine</th><td>17 rounds</td></tr>
+        <tr><th>Reload</th><td>3.2 s</td></tr>
+        <tr><th>Reserve ammo</th><td>51</td></tr>
+        <tr><th>Accuracy</th><td>9.8</td></tr>
+        <tr><th>Riven disposition</th><td>1.2</td></tr>
+        <tr><th>Traits</th><td>infested</td></tr>
+      </table>
+      <div class="w-notes"><b>Not modelled here</b>
+        <ul>
+        <li>A HEADSHOT SPAWNS SIX HOMING SPORES that seek other enemies and explode in 3.3 metres each, and the headshot itself carries a further explosion (module: three more attacks). This engine carries one explosion per attack and has no shape for a hit spawning projectiles, so none of that is counted — against a headshot-heavy fight this weapon is understated several times over</li>
+        <li>the blast needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover and the perk pays nothing extra</li>
+        <li>the blast staggers the WIELDER in game — this arena gives the player no body, so a build that would be unplayable in a corridor costs nothing here</li>
+        </ul>
+      </div>
+      </div>
+    </div>
     </div>
 
     <nav class="module-tabs" id="module-tabs"></nav>
@@ -292,6 +310,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -443,6 +463,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -632,13 +657,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

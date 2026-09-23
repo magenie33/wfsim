@@ -884,6 +884,16 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   font-size:11.5px;color:var(--text-2)}
 
 /* ---- ZONE 6: THE DOOR OUT --------------------------------------------- */
+/* WHAT EACH SEAT READ. Drawn only where there is more than one — with one
+   combatant it would be a second copy of the KPI tiles above it. */
+.seat-table{margin-top:12px;font-size:11.5px;font-variant-numeric:tabular-nums;overflow-x:auto}
+.seat-h,.seat-r{display:grid;grid-template-columns:minmax(120px,1.4fr) repeat(7,minmax(54px,1fr));
+  gap:8px;padding:4px 0;align-items:baseline}
+.seat-h{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid var(--line)}
+.seat-r{border-bottom:1px solid var(--line)}
+.seat-r .nm{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat-table .fs-n{margin-top:8px}
 .bo-consent{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;
   padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
 .bo-consent span{flex:1 1 320px;line-height:1.6}
@@ -2889,3 +2899,88 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 /* THE ENTRANT CLASS, its own row under the build filters: two answers that are
    never added together read worse side by side with three that are. */
 .bclass{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* ---- PART VALUE ANALYSIS (#shapley-block) ---- */
+.shp-parts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.shp-group{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.shp-group .sb-h{min-width:5em}
+.shp-part{display:inline-flex;flex-direction:row;align-items:center;gap:4px;font-size:13px;color:var(--text);cursor:pointer}
+.shp-part input{width:auto;margin:0}
+.shp-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:8px}
+.shp-controls label{flex-direction:row;align-items:center;gap:8px;color:var(--text)}
+.shp-controls input[type=number]{width:5em}
+.shp-cost{color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
+.shp-over,.shp-note{color:var(--critical);font-size:12px}
+.shp-note{margin:6px 0}
+.shp-stale{margin:6px 0;padding:4px 8px;border-radius:6px;background:var(--panel2);color:var(--gold);font-size:12px}
+.shp-meta{color:var(--text-2);font-size:12px;margin-top:8px}
+.shp-scope{color:var(--muted);font-size:12px}
+.shp-total{margin:6px 0 8px}
+.shp-scroll{overflow-x:auto;max-width:100%}
+.shp-table,.shp-matrix{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+.shp-table th,.shp-table td,.shp-matrix th,.shp-matrix td{padding:3px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.shp-table tbody th,.shp-matrix tbody th{text-align:left;font-weight:500}
+.shp-table thead th,.shp-matrix thead th{color:var(--text-2);font-weight:500;font-size:12px}
+.shp-table td small{color:var(--muted);font-size:10px;margin-left:3px}
+.shp-phi{font-weight:600}
+.shp-dim{opacity:.45}
+.shp-h{margin:14px 0 4px;font-size:13px}
+.shp-matrix td{min-width:4.2em}
+.shp-i.syn{background:color-mix(in srgb,var(--good) var(--a),transparent)}
+.shp-i.dil{background:color-mix(in srgb,var(--critical) var(--a),transparent)}
+.shp-diag{background:var(--panel2)}
+
+/* THE WEAPON'S BRIEF — the only part of a weapon page that is about the
+   weapon, and it ships in the served HTML so a reader that never runs
+   JavaScript still gets every figure. It folds from its own heading like any
+   section; the body stays in the document either way, which is what lets it
+   be closed by default without hiding anything from a machine. */
+.w-brief{margin:0 0 14px}
+.w-brief>.fold-h>.w-cn{color:var(--muted);font-size:12px}
+.w-brief>.fold-h>.sim-hint{color:var(--text-2)}
+.w-tab{border-collapse:collapse;width:100%;font-size:12px;
+  font-variant-numeric:tabular-nums;margin:0 0 10px}
+.w-tab:last-child{margin-bottom:0}
+.w-tab caption{caption-side:top;text-align:left;color:var(--muted);
+  font-size:11px;padding:0 0 6px}
+.w-tab th,.w-tab td{padding:5px 10px 5px 0;vertical-align:top;
+  border-bottom:1px solid var(--line);text-align:left}
+.w-tab tr:last-child>*{border-bottom:0}
+.w-tab th{color:var(--muted);font-weight:500;white-space:nowrap}
+.w-tab td{color:var(--text-2)}
+.w-tab .w-num{color:var(--gold);font-weight:600;text-align:right;
+  white-space:nowrap;padding-right:14px}
+/* THE ANSWER TABLE IS THE WIDE ONE and a build is a long cell, so it scrolls
+   in a box of its own rather than pushing the page sideways. */
+.w-answers{display:block;overflow-x:auto;white-space:normal}
+.w-answers thead th{color:var(--text-2);font-weight:600}
+.w-answers tbody td:first-child{color:var(--text);white-space:nowrap}
+/* WHAT THE NUMBER DOES NOT ACCOUNT FOR. It is absent on a weapon with nothing
+   to admit, so text here is a signal rather than a filled slot. */
+.w-notes{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.w-notes b{color:var(--text-2);font-weight:600}
+.w-notes ul{margin:5px 0 0;padding-left:18px}
+.w-notes li{margin:3px 0}
+
+/* WHO ELSE IS FIRING — the roster (`28-fight-roster.js`). A LIST of rows for
+   the same reason the squad's shards are one: each seat is a weapon, a preset
+   and a remove, and a field grid would floor every track at min-content and
+   push the remove off a phone (`check_mobile.mjs`). */
+.rs{display:flex; flex-direction:column; gap:8px}
+.rs-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+/* THE WEAPON IS THE ROW and the preset is half of it: both grow, the weapon
+   twice as fast, so a long name is readable before a preset name is squeezed. */
+.rs-row > .dd{flex:2 1 180px; min-width:0}
+.rs-row > .dd[id^="dd-seat-preset"]{flex:1 1 120px}
+/* THE SEAT NUMBER, and it is the ONE thing every row shares with the result
+   panel's per-seat table: the same 1, 2, 3 in the same order, so a reader
+   comparing the two is comparing the same list. */
+.rs-n{display:inline-flex; align-items:center; justify-content:center;
+  min-width:20px; height:20px; border-radius:10px; font-size:11px;
+  background:var(--line); color:var(--muted)}
+.rs-you .rs-n{background:var(--accent); color:var(--surface)}
+.rs-me{font-weight:600}
+.rs-hint{color:var(--muted); font-size:12px; flex:1 1 100%; min-width:0}
+.rs-row .rs-hint{flex:0 1 auto}
+.rs-x{padding:2px 8px; line-height:1}
+.rs-add{display:flex; flex-wrap:wrap; align-items:center; gap:8px}

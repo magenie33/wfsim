@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Deconstructor Prime","description":"Deconstructor Prime (分离 Prime) — Sentinel Weapon · Sentinel · Mastery Rank 0. 160 base damage (impact 53.3333, puncture 53.3333, slash 53.3333), 0% crit chance, 1x crit multiplier, 25% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Deconstructor_Prime","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Deconstructor Prime","item":"https://wfsim.app/weapons/Deconstructor_Prime"}]},"dateModified":"2026-09-23","about":{"@type":"Thing","name":"Deconstructor Prime","alternateName":"分离 Prime"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -172,11 +172,30 @@
     </div>
 
     <div id="doc" class="doc" data-url="/weapons/Deconstructor_Prime">
-    <p>Deconstructor Prime / 分离 Prime — Warframe. Sentinel Weapon · Sentinel · Mastery Rank 0</p>
-    <p>160 base damage (impact 53.3333, puncture 53.3333, slash 53.3333), 0% crit chance, 1x crit multiplier, 25% status chance.</p>
-    <p>6-round magazine, 3 s reload, 100 accuracy, 1.25 riven disposition.</p>
-    <p>Traits: prime.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    <div class="fold sect w-brief" data-fold="w-brief">
+      <div class="fold-h"><b>Deconstructor Prime</b><span class="w-cn">分离 Prime</span><span class="sim-hint">Sentinel Weapon · Sentinel · Mastery Rank 0</span></div>
+      <div class="fold-b">
+      <table class="w-tab">
+        <tr><th>Damage</th><td>160 (impact 53.3333, puncture 53.3333, slash 53.3333)</td></tr>
+        <tr><th>Critical</th><td>0% at 1x</td></tr>
+        <tr><th>Status</th><td>25%</td></tr>
+        <tr><th>Magazine</th><td>6 rounds</td></tr>
+        <tr><th>Reload</th><td>3 s</td></tr>
+        <tr><th>Accuracy</th><td>100</td></tr>
+        <tr><th>Riven disposition</th><td>1.25</td></tr>
+        <tr><th>Traits</th><td>prime</td></tr>
+      </table>
+      <div class="w-notes"><b>Not modelled here</b>
+        <ul>
+        <li>this weapon CANNOT BE MODDED here — it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw) and this app models guns, so it has no pool to draw from. Its base numbers are real; a build is not</li>
+        <li>the damage TYPE ROTATION is averaged — the weapon throws 160 of one type at a time, cycling Impact then Puncture then Slash, and this entry carries an equal three-way split instead. Total damage and status mix come out exact; ARMOUR does not, because mitigation is applied per instance and a blended hit is not the average of three pure ones</li>
+        <li>the projectiles BOUNCE OFF WALLS like a thrown glaive, and this arena has no walls to bounce off</li>
+        <li>the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average</li>
+        <li>this attack&#x27;s SPREAD is not in the data, so none of its shots can miss — the wiki&#x27;s weapon module publishes a cone for it and the intake could not identify which of that weapon&#x27;s attacks this entry is, so it took nothing rather than the wrong one. At a range every pellet lands here, which is the ceiling; at point blank it costs nothing, because nothing misses there anyway</li>
+        </ul>
+      </div>
+      </div>
+    </div>
     </div>
 
     <nav class="module-tabs" id="module-tabs"></nav>
@@ -292,6 +311,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -443,6 +464,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -632,13 +658,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

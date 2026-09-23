@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Fulmin Prime","description":"Fulmin Prime (雷霆 Prime) — Rifle · Primary · Mastery Rank 12. 33 base damage (electricity 25, puncture 8), 34% crit chance, 2.4x crit multiplier, 10% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Fulmin_Prime","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Fulmin Prime","item":"https://wfsim.app/weapons/Fulmin_Prime"}]},"dateModified":"2026-09-23","about":{"@type":"Thing","name":"Fulmin Prime","alternateName":"雷霆 Prime"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.9ccce0006844.css" />
+  <link rel="stylesheet" href="/asset/style.fd97737c6157.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -172,14 +172,35 @@
     </div>
 
     <div id="doc" class="doc" data-url="/weapons/Fulmin_Prime">
-    <p>Fulmin Prime / 雷霆 Prime — Warframe. Rifle · Primary · Mastery Rank 12</p>
-    <p>33 base damage (electricity 25, puncture 8), 34% crit chance, 2.4x crit multiplier, 10% status chance.</p>
-    <p>80-round magazine, 2.7 s reload, 9.1 accuracy, 0.75 riven disposition.</p>
-    <p>Traits: prime.</p>
-    <p>As of 2026-09-23, the best riven-free Fulmin Prime build on the WFSim board scores 4.2853 under Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM — base mode, wearing Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Deadhead.</p>
-    <p>As of 2026-09-23, the best riven-free Fulmin Prime build on the WFSim board scores 4.2853 under Standard Multi Target · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM — base mode, wearing Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Deadhead.</p>
-    <p>As of 2026-09-23, the best riven-free Fulmin Prime build on the WFSim board scores 0.2555 under Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM — base mode, wearing Infected Clip, Stormbringer, Hellfire, Primary Acuity, Serration, Hammer Shot, Vile Acceleration, Vital Sense, Primary Deadhead.</p>
-    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>, or browse <a href="https://wfsim.app/weapons">every weapon</a>.</p>
+    <div class="fold sect w-brief" data-fold="w-brief">
+      <div class="fold-h"><b>Fulmin Prime</b><span class="w-cn">雷霆 Prime</span><span class="sim-hint">Rifle · Primary · Mastery Rank 12</span></div>
+      <div class="fold-b">
+      <table class="w-tab w-answers">
+        <caption>Best riven-free build on the WFSim board, as of 2026-09-23</caption>
+        <thead><tr><th>Ruler</th><th>Fight</th><th>Mode</th><th>Score</th><th>Build</th></tr></thead>
+        <tbody>
+          <tr><td>Standard Single Target</td><td>Thrax Centurion Lv 9999 SP · 180 s · KPM</td><td>base</td><td class="w-num">4.2853</td><td>Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Deadhead</td></tr>
+          <tr><td>Standard Multi Target</td><td>19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM</td><td>base</td><td class="w-num">4.2853</td><td>Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Deadhead</td></tr>
+          <tr><td>Demolisher</td><td>one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM</td><td>base</td><td class="w-num">0.2555</td><td>Infected Clip, Stormbringer, Hellfire, Primary Acuity, Serration, Hammer Shot, Vile Acceleration, Vital Sense, Primary Deadhead</td></tr>
+        </tbody>
+      </table>
+      <table class="w-tab">
+        <tr><th>Damage</th><td>33 (electricity 25, puncture 8)</td></tr>
+        <tr><th>Critical</th><td>34% at 2.4x</td></tr>
+        <tr><th>Status</th><td>10%</td></tr>
+        <tr><th>Magazine</th><td>80 rounds</td></tr>
+        <tr><th>Reload</th><td>2.7 s</td></tr>
+        <tr><th>Accuracy</th><td>9.1</td></tr>
+        <tr><th>Riven disposition</th><td>0.75</td></tr>
+        <tr><th>Traits</th><td>prime</td></tr>
+      </table>
+      <div class="w-notes"><b>Not modelled here</b>
+        <ul>
+        <li>switching modes takes ONE SECOND of animation (0.5 s on Wisp) and this sim never switches — each mode is measured as if it were the whole weapon</li>
+        </ul>
+      </div>
+      </div>
+    </div>
     </div>
 
     <nav class="module-tabs" id="module-tabs"></nav>
@@ -295,6 +316,8 @@
           <div id="sim-technique" class="field-grid"></div>
           
           <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
         </div>
         
         <div class="fold sect" data-fold="sim-limits">
@@ -446,6 +469,11 @@
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
             <div id="opt-technique" class="field-grid"></div>
             <div id="opt-squad" class="sub-block"></div>
+          </div>
+          
+          <div class="fold sect" data-fold="opt-roster">
+            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
+            <div id="opt-roster" class="sub-block"></div>
           </div>
           <div class="fold sect" data-fold="opt-wfbuffs">
             <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
@@ -635,13 +663,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">a6537ed5</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">89051b44</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.8fa8a53efe9a.js"></script>
+  <script src="/asset/app.116221e25b2b.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>
