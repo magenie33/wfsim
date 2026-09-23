@@ -400,59 +400,17 @@ pub fn run_once_traced(
         bounce_bodies,
         frame_seconds,
     } = fight;
-    let Combatant {
-        mut d,
-        mut bar,
-        mut enervate,
-        mut frenzy,
-        mut gal,
-        mut buff_stacks,
-        mut rs_armed,
-        mut opening_closed,
-        mut ammo,
-        mut kill_buff_mark,
-        mut double_tap,
-        mut arc,
-        mut windows,
-        mut weakpoint_pile,
-        mut beam,
-        mut field_duration_boost,
-        mut field_ctx,
-        mut meter,
-        mut strip_kills_seen,
-        mut super_crit_armed,
-        mut incarnon,
-        mut syndicate,
-        mut crit_per_hit,
-        mut sniper_combo,
-        mut tendril,
-        mut spool,
-        mut melee,
-        mut influence_until,
-        mut last_shot_t,
-        fixed,
-    } = me;
+    // NOT FLATTENED. The loop named this seat's thirty-eight pieces as locals,
+    // which is the one shape that cannot hold a SECOND seat: you cannot flatten
+    // two magazines into one `ammo`. They are read off the combatant now, and
+    // what that costs is measured rather than assumed — `one_fight`.
+    let mut me = me;
     // The streams are threaded on as `&mut` from here: every function the
     // loop calls rolls off this one `Draws`.
-    let d = &mut d;
-    let Fixed {
-        aim_off_axis,
-        ricochet_layout,
-        chain_layout,
-        struck,
-        base_struck,
-        rec_roster,
-        rec_buff_index,
-        main_variants,
-        main_variant_rad,
-        main_pre,
-        base_pre,
-        base_variants,
-        base_variant_rad,
-        status_damage,
-        field_active,
-        combo_spec,
-    } = fixed;
+    let d = &mut me.d;
+    // …AND ITS CONSTANTS STAY ON IT TOO. Binding them as locals would hold a
+    // shared borrow of the whole combatant for the length of the loop, which is
+    // the one thing that stops the mutable halves being reached at all.
 
     // **THE LIST THIS RUN EXECUTES**, composed once rather than per decision:
     // it is the same list for the whole engagement, and building it inside the
@@ -471,7 +429,7 @@ pub fn run_once_traced(
         // nobody is replaying should not pay for passing them.
         // THE FLASH, READ ONCE FOR THIS SCAN. Melee state, and the one fact in
         // `Now` no other part of the fight can answer.
-        let flash = params.tennokai.enabled && t < melee.tennokai_until;
+        let flash = params.tennokai.enabled && t < me.melee.tennokai_until;
         match before_the_shot(
             params,
             &apl,
@@ -483,31 +441,31 @@ pub fn run_once_traced(
             &mut t,
             &mut next_frame,
             frame_seconds,
-            &mut arc,
-            &mut gal,
-            &mut buff_stacks,
-            &mut bar,
-            &mut windows,
-            &mut tendril,
-            &mut crit_per_hit,
-            &sniper_combo,
-            combo_spec,
-            &mut incarnon,
-            influence_until,
+            &mut me.arc,
+            &mut me.gal,
+            &mut me.buff_stacks,
+            &mut me.bar,
+            &mut me.windows,
+            &mut me.tendril,
+            &mut me.crit_per_hit,
+            &me.sniper_combo,
+            me.fixed.combo_spec,
+            &mut me.incarnon,
+            me.influence_until,
             &mut target,
             &mut r,
             &mut debuffs,
             &others,
-            &mut ammo,
-            last_shot_t,
-            &mut weakpoint_pile,
-            &mut kill_buff_mark,
-            &mut syndicate,
+            &mut me.ammo,
+            me.last_shot_t,
+            &mut me.weakpoint_pile,
+            &mut me.kill_buff_mark,
+            &mut me.syndicate,
             &mut ghost_pile,
-            &mut double_tap,
-            &mut rs_armed,
-            &mut opening_closed,
-            &mut field_duration_boost,
+            &mut me.double_tap,
+            &mut me.rs_armed,
+            &mut me.opening_closed,
+            &mut me.field_duration_boost,
         ) {
             Flow::Continue => continue,
             Flow::Break => break,
@@ -518,24 +476,24 @@ pub fn run_once_traced(
         // phase, the outer params otherwise. Target/aim/locks are shared
         // from the outer params.
         let active: &FightParams = match &params.cycle {
-            Some(cy) if incarnon.in_base_form => &cy.base_form,
+            Some(cy) if me.incarnon.in_base_form => &cy.base_form,
             _ => params,
         };
         // …AND WHO IS ON THE LINE IS THE ACTIVE FORM'S ANSWER TOO, for the same
         // reason: a form's punch through is its own (`open`).
-        let struck: &[usize] = match &base_struck {
-            Some(b) if incarnon.in_base_form => b,
-            _ => &struck,
+        let struck: &[usize] = match &me.fixed.base_struck {
+            Some(b) if me.incarnon.in_base_form => b,
+            _ => &me.fixed.struck,
         };
         // The instance total and its SHAPE (Toxin's shield bypass, the
         // vulnerability column) are derived PER STAGE now — each attack part
         // has its own vector — so only the vector and ModifiedBase survive at
         // pellet scope.
-        let (qvec, modded_base) = if incarnon.in_base_form {
-            let p = base_pre.as_ref().expect("cycle state needs base pre");
+        let (qvec, modded_base) = if me.incarnon.in_base_form {
+            let p = me.fixed.base_pre.as_ref().expect("cycle state needs base pre");
             (&p.0, p.2)
         } else {
-            (&main_pre.0, main_pre.2)
+            (&me.fixed.main_pre.0, me.fixed.main_pre.2)
         };
         // ---- THE MELEE SWING THIS SHOT IS — see [`swing_this_shot`] ------
         let Swung {
@@ -561,8 +519,8 @@ pub fn run_once_traced(
             t,
             qvec,
             modded_base,
-            &mut buff_stacks,
-            &mut melee,
+            &mut me.buff_stacks,
+            &mut me.melee,
             &r,
         );
         // …and the instances read it where they always did.
@@ -570,21 +528,21 @@ pub fn run_once_traced(
         // The per-projectile vectors belong to the FORM that is firing, like
         // everything else at this scope. A cycle whose base form has them and
         // whose Incarnon form does not simply reads an empty slice there.
-        let (variants, variant_rad): (&[_], &[_]) = if incarnon.in_base_form {
+        let (variants, variant_rad): (&[_], &[_]) = if me.incarnon.in_base_form {
             match params.cycle.as_ref() {
-                Some(_) => (&base_variants, &base_variant_rad),
-                None => (&main_variants, &main_variant_rad),
+                Some(_) => (&me.fixed.base_variants, &me.fixed.base_variant_rad),
+                None => (&me.fixed.main_variants, &me.fixed.main_variant_rad),
             }
         } else {
-            (&main_variants, &main_variant_rad)
+            (&me.fixed.main_variants, &me.fixed.main_variant_rad)
         };
 
         // Status events scheduled before this shot land first.
         process_ticks(
-            &windows,
+            &me.windows,
             &mut debuffs,
-            &mut gal,
-            &mut arc,
+            &mut me.gal,
+            &mut me.arc,
             t + 1e-9,
             &mut target,
             params,
@@ -621,25 +579,25 @@ pub fn run_once_traced(
             d,
             t,
             combo_multiplier,
-            &mut bar,
-            &mut arc,
-            &mut gal,
-            &mut buff_stacks,
-            &rec_roster,
-            &rec_buff_index,
-            &mut windows,
-            &tendril,
-            &crit_per_hit,
-            &sniper_combo,
-            combo_spec,
-            influence_until,
-            &mut incarnon,
-            &mut ammo,
+            &mut me.bar,
+            &mut me.arc,
+            &mut me.gal,
+            &mut me.buff_stacks,
+            &me.fixed.rec_roster,
+            &me.fixed.rec_buff_index,
+            &mut me.windows,
+            &me.tendril,
+            &me.crit_per_hit,
+            &me.sniper_combo,
+            me.fixed.combo_spec,
+            me.influence_until,
+            &mut me.incarnon,
+            &mut me.ammo,
             &mut debuffs,
             &target,
-            &mut weakpoint_pile,
-            &mut double_tap,
-            &mut rs_armed,
+            &mut me.weakpoint_pile,
+            &mut me.double_tap,
+            &mut me.rs_armed,
         );
         // AN ORB ATTACK FIRES NO PELLETS — when the TRIGGER is what deploys it.
         // The shot settles no collision and no explosion, because everything it
@@ -683,7 +641,7 @@ pub fn run_once_traced(
             let mut afforded = 0u32;
             for _ in 0..rolled - 1 {
                 let pool = if charge_backed {
-                    if incarnon.in_base_form { &mut incarnon.base_magazine } else { &mut ammo.loaded }
+                    if me.incarnon.in_base_form { &mut me.incarnon.base_magazine } else { &mut me.ammo.loaded }
                 } else {
                     // From CAPACITY. With infinite reserves — which the Incarnon
                     // cycle's base phase always assumes — nothing can starve,
@@ -692,7 +650,7 @@ pub fn run_once_traced(
                         afforded += 1;
                         continue;
                     }
-                    &mut ammo.reserve
+                    &mut me.ammo.reserve
                 };
                 if *pool < 1.0 - 1e-9 {
                     break;
@@ -717,7 +675,7 @@ pub fn run_once_traced(
         // MECHANICS — but it is a sub-2% question on sustained fire, unlike the
         // merge above.
         let beam_ramp = if active.continuous {
-            beam.tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor)
+            me.beam.tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor)
         } else {
             1.0
         };
@@ -728,9 +686,9 @@ pub fn run_once_traced(
         // below, and what a Tesla arc is worth on a neighbour's head.
         let (shot_hb, shot_hi) = {
             let streak = match params.headshot_streak {
-                Some(s) if t < windows.streak => s.value,
+                Some(s) if t < me.windows.streak => s.value,
                 _ => 0.0,
-            } + buff_total(active, crate::model::BuffGrant::HeadshotDamage, &mut buff_stacks, t);
+            } + buff_total(active, crate::model::BuffGrant::HeadshotDamage, &mut me.buff_stacks, t);
             if active.headshot_bonus_multiplicative {
                 (params.arcane.headshot_multiplier_bonus + streak, active.headshot_damage_bonus)
             } else {
@@ -742,14 +700,14 @@ pub fn run_once_traced(
         };
         let shot_head_landing = (1.0 + shot_hb) * (1.0 + shot_hi);
         // Field ticks due before this shot, with the buff state as of now.
-        field_ctx = FieldCtx {
+        me.field_ctx = FieldCtx {
             flat_crit,
             crit_chance_relative_mods: crit_chance_relative - params.arcane.crit_chance_relative,
             base_damage_add_mods: bd_reload_add
                 + bd_eximus_add
                 + active.compression_base_damage
-                + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut buff_stacks, t)
-                + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut buff_stacks, t),
+                + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut me.buff_stacks, t)
+                + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut me.buff_stacks, t),
             // The same ladder the pellet loop builds below, on the aimed body's
             // own head — see the field's note on why it is computed twice
             // rather than shared.
@@ -765,25 +723,25 @@ pub fn run_once_traced(
             head_landing: shot_head_landing,
         };
         settle_what_is_in_the_air(
-            &windows,
+            &me.windows,
             params,
             active,
-            field_active,
+            me.fixed.field_active,
             rec,
             d,
             &mut t,
-            &field_ctx,
+            &me.field_ctx,
             &mut fields,
             &mut orbs,
-            &mut meter,
-            &mut ammo,
+            &mut me.meter,
+            &mut me.ammo,
             &mut target,
             &mut debuffs,
             &mut others,
-            &mut gal,
-            &mut arc,
+            &mut me.gal,
+            &mut me.arc,
             &mut r,
-            &mut strip_kills_seen,
+            &mut me.strip_kills_seen,
         );
         // Secondary Encumber: at most ONE extra proc per instant — pellets
         // of one pull land simultaneously, so one roll per pull.
@@ -791,7 +749,7 @@ pub fn run_once_traced(
         r.shots += 1;
         // ...and the same boundary for a per-instance arcane cap: the whole
         // pull is ONE damage instance, pellets and radial included.
-        arc.next_instance();
+        me.arc.next_instance();
 
         // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO
         // COUNTER asks, and it is the shot's rather than the pellet's: a
@@ -830,7 +788,7 @@ pub fn run_once_traced(
                 modded_base,
                 co_base,
                 combo_multiplier,
-                combo_spec,
+                combo_spec: me.fixed.combo_spec,
                 swing: &swing,
                 swing_mult,
                 swing_forced_types: &swing_forced_types,
@@ -841,9 +799,9 @@ pub fn run_once_traced(
                 struck,
                 body_at: &body_at,
                 bounce_bodies: &bounce_bodies,
-                chain_layout: &chain_layout,
-                ricochet_layout: &ricochet_layout,
-                aim_off_axis,
+                chain_layout: &me.fixed.chain_layout,
+                ricochet_layout: &me.fixed.ricochet_layout,
+                aim_off_axis: me.fixed.aim_off_axis,
                 effective_cc,
                 crit_chance_relative,
                 flat_crit,
@@ -856,14 +814,14 @@ pub fn run_once_traced(
                 bd_eximus_add,
                 dt_mult,
                 ms_damage,
-                status_damage,
+                status_damage: me.fixed.status_damage,
                 live_rate,
                 beam_ramp,
                 undamaged,
                 t,
-                bar: &bar,
-                rec_roster: &rec_roster,
-                rec_buff_index: &rec_buff_index,
+                bar: &me.bar,
+                rec_roster: &me.fixed.rec_roster,
+                rec_buff_index: &me.fixed.rec_buff_index,
                 params,
             };
             let mut live = Live {
@@ -873,17 +831,17 @@ pub fn run_once_traced(
                 target: &mut target,
                 others: &mut others,
                 debuffs: &mut debuffs,
-                gal: &mut gal,
-                arc: &mut arc,
-                buff_stacks: &mut buff_stacks,
-                windows: &mut windows,
-                ammo: &mut ammo,
-                incarnon: &mut incarnon,
-                meter: &mut meter,
-                tendril: &mut tendril,
-                crit_per_hit: &mut crit_per_hit,
-                sniper_combo: &mut sniper_combo,
-                weakpoint_pile: &mut weakpoint_pile,
+                gal: &mut me.gal,
+                arc: &mut me.arc,
+                buff_stacks: &mut me.buff_stacks,
+                windows: &mut me.windows,
+                ammo: &mut me.ammo,
+                incarnon: &mut me.incarnon,
+                meter: &mut me.meter,
+                tendril: &mut me.tendril,
+                crit_per_hit: &mut me.crit_per_hit,
+                sniper_combo: &mut me.sniper_combo,
+                weakpoint_pile: &mut me.weakpoint_pile,
                 strike_spread: &mut strike_spread,
                 fields: &mut fields,
                 orbs: &mut orbs,
@@ -891,10 +849,10 @@ pub fn run_once_traced(
                 any_head: &mut any_head,
                 beam_merge: &mut beam_merge,
                 encumber_done: &mut encumber_done,
-                field_duration_boost: &mut field_duration_boost,
-                influence_until: &mut influence_until,
+                field_duration_boost: &mut me.field_duration_boost,
+                influence_until: &mut me.influence_until,
                 landed_this_shot: &mut landed_this_shot,
-                super_crit_armed: &mut super_crit_armed,
+                super_crit_armed: &mut me.super_crit_armed,
             };
             for pellet_idx in 0..n_pellets {
                 settle_pellet(pellet_idx, &shot, &mut live);
@@ -904,7 +862,7 @@ pub fn run_once_traced(
         // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
         if !others.is_empty() {
             spread_beyond_the_target(
-                &windows,
+                &me.windows,
                 params,
                 active,
                 rec,
@@ -912,11 +870,11 @@ pub fn run_once_traced(
                 t,
                 &strike_spread,
                 &mut others,
-                &mut gal,
-                &mut arc,
+                &mut me.gal,
+                &mut me.arc,
                 &mut r,
-                tendril.count,
-                chain_layout.as_ref(),
+                me.tendril.count,
+                me.fixed.chain_layout.as_ref(),
                 struck,
             );
         }
@@ -961,26 +919,26 @@ pub fn run_once_traced(
             tennokai_heavy,
             tennokai_kill_mark,
             &mut r,
-            &mut bar,
-            &mut arc,
-            &mut enervate,
-            &mut frenzy,
-            &mut buff_stacks,
-            &rec_buff_index,
+            &mut me.bar,
+            &mut me.arc,
+            &mut me.enervate,
+            &mut me.frenzy,
+            &mut me.buff_stacks,
+            &me.fixed.rec_buff_index,
             &mut target,
             &mut debuffs,
             &mut others,
-            &mut ammo,
-            &mut incarnon,
-            &mut double_tap,
-            &mut melee,
-            &mut sniper_combo,
-            &mut spool,
-            &windows,
-            &mut rs_armed,
-            &mut opening_closed,
-            &mut field_duration_boost,
-            &mut last_shot_t,
+            &mut me.ammo,
+            &mut me.incarnon,
+            &mut me.double_tap,
+            &mut me.melee,
+            &mut me.sniper_combo,
+            &mut me.spool,
+            &me.windows,
+            &mut me.rs_armed,
+            &mut me.opening_closed,
+            &mut me.field_duration_boost,
+            &mut me.last_shot_t,
         );
     }
 
@@ -988,14 +946,14 @@ pub fn run_once_traced(
     // ammo still recharges, and an orb earned at t = 179 is an orb the fight
     // gets — so the clock is run out to the end and every throw it buys is
     // thrown, before the orbs are drained below.
-    if let (Some(m), Some(o)) = (field_active.meter, field_active.orb) {
-        meter.seconds += params.duration_seconds - meter.clocked;
-        while meter.seconds >= m.seconds_to_fill {
-            meter.seconds -= m.seconds_to_fill;
+    if let (Some(m), Some(o)) = (me.fixed.field_active.meter, me.fixed.field_active.orb) {
+        me.meter.seconds += params.duration_seconds - me.meter.clocked;
+        while me.meter.seconds >= m.seconds_to_fill {
+            me.meter.seconds -= m.seconds_to_fill;
             // AT THE INSTANT IT FILLED, not at the end: the orb has a six
             // second fuse and the difference is whether its strikes land inside
             // the engagement at all.
-            let at = params.duration_seconds - meter.seconds;
+            let at = params.duration_seconds - me.meter.seconds;
             // WHAT IS ALREADY IN THE AIR GETS TO LIVE UNTIL IT IS REPLACED.
             // Only one orb exists at a time, so throwing them all and walking
             // the list afterwards would leave the LAST one and silently drop
@@ -1003,9 +961,9 @@ pub fn run_once_traced(
             // landed. Settling up to the throw is the same order
             // the shot loop settles them in.
             process_orbs(
-                &windows,
-                &mut orbs, &mut debuffs, &mut gal, &mut arc, at, &mut target,
-                params, field_active, &field_ctx, &mut r, rec, d, &mut others,
+                &me.windows,
+                &mut orbs, &mut debuffs, &mut me.gal, &mut me.arc, at, &mut target,
+                params, me.fixed.field_active, &me.field_ctx, &mut r, rec, d, &mut others,
             );
             throw_orb(o, params, at, &mut orbs);
         }
@@ -1015,16 +973,16 @@ pub fn run_once_traced(
     // reason the clouds come before the status drain: each event settles what
     // preceded it and pushes procs of its own.
     process_orbs(
-        &windows,
+        &me.windows,
         &mut orbs,
         &mut debuffs,
-        &mut gal,
-        &mut arc,
+        &mut me.gal,
+        &mut me.arc,
         params.duration_seconds,
         &mut target,
         params,
-        field_active,
-        &field_ctx,
+        me.fixed.field_active,
+        &me.field_ctx,
         &mut r,
         rec,
         d,
@@ -1034,16 +992,16 @@ pub fn run_once_traced(
     // that shot (nothing refreshes it once firing stops). FIRST, because each
     // tick settles the status events before it and pushes procs of its own…
     process_field_ticks(
-        &windows,
+        &me.windows,
         &mut fields,
         &mut debuffs,
-        &mut gal,
-        &mut arc,
+        &mut me.gal,
+        &mut me.arc,
         params.duration_seconds,
         &mut target,
         params,
-        field_active,
-        &field_ctx,
+        me.fixed.field_active,
+        &me.field_ctx,
         &mut r,
         rec,
         d,
@@ -1051,14 +1009,14 @@ pub fn run_once_traced(
     );
     // …then drain what is left up to the end of the engagement.
     process_ticks(
-        &windows,
+        &me.windows,
         &mut debuffs,
-        &mut gal,
-        &mut arc,
+        &mut me.gal,
+        &mut me.arc,
         params.duration_seconds,
         &mut target,
         params,
-        field_active,
+        me.fixed.field_active,
         &mut r,
         rec,
         &mut d.status,
@@ -1084,8 +1042,8 @@ pub fn run_once_traced(
     // calls a frame at a time, which reorders how status settles — a
     // golden-value change rather than a rendering one.
     sample_frames_up_to(
-        params.duration_seconds, params, &mut trace, &mut next_frame, frame_seconds, &mut arc, &mut gal, &mut buff_stacks,
-        &bar, &windows, &tendril, &crit_per_hit, &sniper_combo, combo_spec, &incarnon, influence_until,
+        params.duration_seconds, params, &mut trace, &mut next_frame, frame_seconds, &mut me.arc, &mut me.gal, &mut me.buff_stacks,
+        &me.bar, &me.windows, &me.tendril, &me.crit_per_hit, &me.sniper_combo, me.fixed.combo_spec, &me.incarnon, me.influence_until,
         &target, &r, &debuffs, &others,
     );
 
