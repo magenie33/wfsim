@@ -207,7 +207,7 @@ async function agentDo(id, args = {}, opts = {}) {
 /// `check_agent_door`.
 const AGENT_SKILLS = {
   builder: "the build on screen: weapon, mods, arcanes, evolutions, mode, valence, Forma, the stats panel, finders and the leaderboard",
-  simulator: "the fight: the scenario, enemy and level, buffs, abilities, auras, the arena, and running it",
+  simulator: "the fight: the scenario, enemy and level, buffs, abilities, auras, the arena, who else is firing, and running it",
   optimizer: "the build search: its scope, starting it, reading it, stopping it, saving a result",
   rivens: "riven cards: listing, making, copying, opening and writing one",
   enemies: "custom targets: listing, making, copying, opening and editing one",
@@ -408,7 +408,7 @@ const agentRoster = () => ({
     { seat: 1, weapon: $("weapon").value, preset: activePreset || null, open: true },
     ...alsoActing().map((r, i) => ({ seat: i + 2, weapon: r.weapon, preset: r.preset, open: false })),
   ],
-  max_seats: ROSTER_MAX + 1,
+  max_seats: ROSTER_MAX() + 1,
 });
 
 /// THE REACH AS A CALLER READS IT: each point of the curve — what it costs in

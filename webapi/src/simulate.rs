@@ -345,29 +345,41 @@ fn seat_mods<'a>(
     Ok(refs)
 }
 
-/// PUT THE REST OF THE ROSTER IN THE FIGHT, and say what each seat brought.
+/// THE REST OF THE ROSTER — every seat beside the one being reported on, and
+/// the weapon each of them brought.
 ///
-/// BOTH READERS OF A FIGHT CALL THIS. `simulate` reports a number and `log`
-/// replays the same engagement event by event, so a roster wired into one and
-/// not the other is a record of a fight nobody ran — and it reads as a correct
-/// record, because every row in it is true of the fight it DID run.
+/// EVERY READER OF A FIGHT RESOLVES IT HERE. `simulate` reports a number,
+/// `log` replays the same engagement event by event and `optimize` ranks
+/// builds inside it; a roster wired into one of the three and not the others
+/// is a second fight that reads as the first — every row of that record true,
+/// every rank in that search honest, and neither about the engagement the
+/// reader asked for.
 ///
 /// The weapon ids come back in seat order so a report can name what fired
 /// without the reader looking it up in a roster that has moved on since.
+pub(crate) fn seats_beside(
+    v: &Value,
+    arena: &wfsim_engine::arena::Arena,
+    info: &'static WeaponInfo,
+) -> Result<(Vec<FightParams>, Vec<String>), Value> {
+    let mut seats = Vec::new();
+    let mut weapons = vec![info.id.to_string()];
+    for extra in v.get("also_acting").and_then(|x| x.as_array()).into_iter().flatten() {
+        seats.push(seat_from(extra, arena)?);
+        weapons.push(extra.get("weapon").and_then(|x| x.as_str()).unwrap_or_default().to_string());
+    }
+    Ok((seats, weapons))
+}
+
+/// [`seats_beside`], put straight into a fight the caller is holding.
 pub(crate) fn seat_the_rest(
     params: &mut FightParams,
     v: &Value,
     arena: &wfsim_engine::arena::Arena,
     info: &'static WeaponInfo,
 ) -> Result<Vec<String>, Value> {
-    let mut weapons = vec![info.id.to_string()];
-    for extra in v.get("also_acting").and_then(|x| x.as_array()).into_iter().flatten() {
-        let p = seat_from(extra, arena)?;
-        // `and_also` takes the fight by value, so the seat is pushed onto the
-        // one the caller is holding rather than a copy of it.
-        params.also_acting.push(p);
-        weapons.push(extra.get("weapon").and_then(|x| x.as_str()).unwrap_or_default().to_string());
-    }
+    let (seats, weapons) = seats_beside(v, arena, info)?;
+    params.also_acting.extend(seats);
     Ok(weapons)
 }
 
@@ -2107,9 +2119,6 @@ mod valence_formation_blocks_attrition {
 mod wide_beam {
     use super::*;
 
-    /// THE FURIS INCARNON BEAM IS 2 M WIDE and pierces only on a modded punch
-    /// through: a body a metre off the line, behind the target, is reached with
-    /// Seeker and not without it.
     /// A SECOND THING ACTING, THROUGH THE WIRE.
     ///
     /// `also_acting` carries whole requests, so a seat brings its own weapon,
@@ -2167,6 +2176,45 @@ mod wide_beam {
         }
     }
 
+    /// …AND EVERY READER OF THE FIGHT SEES IT — the rule `seats_beside` states,
+    /// asserted on the other two readers.
+    ///
+    /// The SEARCH is asserted on its PLAN rather than on a run: what has to
+    /// hold is that the scenario handed to it carries the roster, and running
+    /// one to find that out costs minutes to learn the same thing.
+    #[test]
+    fn the_roster_reaches_the_record_and_the_search_as_well_as_the_answer() {
+        let req = json!({
+            "weapon": "cernos_prime", "mods": [],
+            "enemy": "corrupted_heavy_gunner", "level": 100,
+            "runs": 2, "seed": 7, "duration": 6,
+            "also_acting": [{ "weapon": "braton_prime", "mods": [] }],
+        });
+
+        // THE RECORD names the same seats, so its rows are about this fight.
+        let mut log_req = req.clone();
+        log_req["from"] = json!(0.0);
+        log_req["to"] = json!(2.0);
+        let rec = crate::log::log_json(&log_req);
+        let seats: Vec<String> = rec["combatants"].as_array().cloned().unwrap_or_default()
+            .iter().map(|c| c["weapon"].as_str().unwrap_or_default().to_string()).collect();
+        assert_eq!(seats, ["cernos_prime", "braton_prime"], "{rec}");
+
+        // THE SEARCH is handed the same roster before a candidate is scored.
+        let mut plan_req = req.clone();
+        plan_req["mods"] = json!({ "serration": "search" });
+        match crate::optimize::parse_optimize(&plan_req) {
+            Ok(plan) => assert_eq!(
+                plan.scenario.also_acting.len(), 1,
+                "the search was handed a fight with nobody else in it"
+            ),
+            Err(e) => panic!("the plan was refused: {e}"),
+        }
+    }
+
+    /// THE FURIS INCARNON BEAM IS 2 M WIDE and pierces only on a modded punch
+    /// through: a body a metre off the line, behind the target, is reached with
+    /// Seeker and not without it.
     #[test]
     fn a_wide_beam_reaches_off_the_line_only_through_punch_through() {
         // The bodies a fight reports are the ones it damaged, by position.

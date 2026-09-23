@@ -219,7 +219,7 @@ pub struct OptimizePlan {
     /// builds its bases in a worker that never sees the request.
     valences: Vec<String>,
     valence_bonus: f64,
-    scenario: Scenario,
+    pub(crate) scenario: Scenario,
     final_runs: u32,
     finalists: usize,
     headshot_pct: f64,
@@ -853,12 +853,18 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let (headshot_pct, duration, level, steel_path) =
         (fight.headshot_pct, fight.duration, fight.level, fight.steel_path);
     let fight_enemy_name = fight.enemy_name.clone();
+    // THE REST OF THE ROSTER, resolved once for the search — see `seats_beside`.
+    let (roster, _) = crate::simulate::seats_beside(v, &fight.arena, info)?;
 
 
     // Assembled ENTIRELY from the fight — no field is re-read from the request
     // here, which is what makes "the search and the replay run the same fight"
     // structural rather than a thing to keep checking.
     let scenario = Scenario {
+        // THE FIGHT'S OWN ROSTER, resolved through `seat_the_rest` — the same
+        // function `simulate` and the combat record go through, so a search
+        // ranks builds in the fight its winner will be replayed in.
+        also_acting: roster,
         arena: fight.arena,
         denied_buff_triggers: fight.denied_buff_triggers.clone(),
         frenzy: fight.has_frenzy,

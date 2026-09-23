@@ -49,6 +49,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
     let bodies: Vec<_> = spec.body_parts.iter().filter(|p| !p.is_head).collect();
     let w = 1.0 / bodies.len().max(1) as f64;
     Scenario {
+        also_acting: Vec::new(),
         arena: Arena {
             cast_interrupts: Vec::new(),
             apl: Default::default(),

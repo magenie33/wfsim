@@ -82,6 +82,8 @@ fn main() {
     }
 
     let scenario = Scenario {
+        // ONE GUN. The CLI has no scenario UI to put a squad in.
+        also_acting: Vec::new(),
         arena: wfsim_engine::arena::Arena {
             cast_interrupts: Vec::new(),
             apl: Default::default(),

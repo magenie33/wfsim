@@ -86,6 +86,24 @@ const r = await evaluate(`(async () => {
   out.logSeats = (log.combatants || []).map(c => [c.id, c.weapon]);
   out.logDealers = [...new Set((log.events || []).map(e => e.combatant || 0))].sort();
 
+  // ---- …AND THE READER SEES IT -------------------------------------------
+  //
+  // Through the page's own Run, not a call beside it: the per-seat table is
+  // drawn only where there is more than one seat, so until now it had never
+  // been on screen at all.
+  setSimRuns(3);
+  document.getElementById('run-sim').click();
+  for (let k = 0; k < 40 && !document.querySelector('#sim-results .seat-r'); k++) await sleep(1000);
+  out.seatRows = [...document.querySelectorAll('#sim-results .seat-r')]
+    .map(e => [e.dataset.combatant, e.querySelector('.nm').textContent.trim()]);
+  // THE NAMES THE PAGE ITSELF GIVES THOSE WEAPONS, so the assertion is about
+  // the seat being named by what it brought rather than about a locale.
+  // WHICH ONE IS YOURS IS SAID IN FRONT OF IT, and every row still names a gun.
+  out.want = [['wielder', 'cernos_prime'], ['seat2', 'braton_prime'], ['seat3', 'braton_prime']]
+    .map(([id, w]) => [id, (id === 'wielder' ? tr('You') + ' · ' : '') + tf(weaponInfo(w).name)]);
+  out.meterRows = [...document.querySelectorAll('#sim-results .mrow[data-combatant]')]
+    .map(e => e.dataset.combatant);
+
   // ---- A RULER IS ONE GUN -------------------------------------------------
   const rows = await window.wfsim.do('shell.presets.list', { bar: 'scenario' });
   const ruler = ((rows || {}).rows || []).find(x => x.read_only || x.builtin);
@@ -133,6 +151,13 @@ check("the record names the same seats the answer does",
   JSON.stringify(r.logSeats));
 check("...and replays the fight all of them were in",
   JSON.stringify(r.logDealers) === JSON.stringify([0, 1, 2]), JSON.stringify(r.logDealers));
+
+check("the panel draws a row per seat, named by the weapon it brought",
+  r.want.length === 3 && JSON.stringify(r.seatRows) === JSON.stringify(r.want),
+  `${JSON.stringify(r.seatRows)} against ${JSON.stringify(r.want)}`);
+check("...and the damage cut names the same three",
+  JSON.stringify(r.meterRows) === JSON.stringify(["wielder", "seat2", "seat3"]),
+  JSON.stringify(r.meterRows));
 
 check("an official ruler is the active scenario for this part", r.onRuler === true);
 check("...and a ruler is ONE gun, whatever the last fight held",

@@ -24,6 +24,18 @@ pub struct Scenario {
     /// simulator will replay it in, and a lookalike of the four fields is how
     /// the two drift a field at a time.
     pub arena: Arena,
+    /// EVERYTHING ELSE FIRING IN THAT FIGHT, resolved once — the scenario's
+    /// roster, exactly as `simulate` resolves it.
+    ///
+    /// THE SEARCH ANSWERS THE FIGHT THE SIMULATOR REPORTS. A squad kills
+    /// faster, so what an uptime mod is worth moves with it; a search that
+    /// dropped these would rank builds under a fight nobody asked for and the
+    /// replay of its own winner would disagree with it.
+    ///
+    /// Resolved ONCE and cloned per candidate: a seat is not a search
+    /// dimension — only the open build is — so every candidate faces the same
+    /// squad and the resolution is not repeated per evaluation.
+    pub also_acting: Vec<FightParams>,
     /// Run the REAL Incarnon two-form cycle (full gauge start → dump →
     /// revert → rebuild 9 weakpoint charges → transmute → …) instead of
     /// the locked-gauge pseudo-reload model. Needs candidates enumerated
@@ -98,6 +110,9 @@ pub fn evaluate(
             d
         }
     };
+    // …AND THE REST OF THE ROSTER, on both arms: a candidate is scored in the
+    // fight the simulator will replay it in, squad included.
+    params.also_acting.clone_from(&s.also_acting);
     // NOT `params.arcane = arcane` any more: `from_panel` took the arcane
     // above, because a build and an arcane meet in exactly one place — this is
     // where Primary Compression learns which radius it is compressing and where

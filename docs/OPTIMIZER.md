@@ -320,6 +320,12 @@ unlock, no transformation, whoever is asking.
 simulator applies has a field the optimizer applies it from — the two cannot
 drift by omission again.
 
+It carries `also_acting` for the same reason: a fight holds n guns, and a
+squad kills faster, so what an uptime mod is worth moves with it. The roster
+is resolved ONCE per plan (`seats_beside`, the same function `/api/simulate`
+and `/api/log` go through) and cloned onto every candidate — a seat is not a
+search dimension, only the open build is.
+
 ## …AND SO MUST THE BUILD
 
 The section above is about the FIGHT, and it fixed the fight. The build had the

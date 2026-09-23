@@ -111,10 +111,15 @@ const dtColor = (ty) => (dtKey(ty) ? `var(--dt-${dtKey(ty)})` : null);
 const COMBATANT_LABEL = { wielder: "You" };
 /// `seat` is what that seat BROUGHT, as the run reported it — never looked up
 /// in the live roster, which has moved on by the time a saved result is read.
+///
+/// A SEAT IS NAMED BY ITS WEAPON, and the wielder's is named by its weapon
+/// too: with a squad on the page, "You" beside two weapon names is the one row
+/// a reader cannot place. Which one is yours is said in front of it.
 const combatantName = (id, seat) => {
-  if (COMBATANT_LABEL[id]) return tr(COMBATANT_LABEL[id]);
   const w = seat && seat.weapon && weaponExists(seat.weapon) && weaponInfo(seat.weapon);
-  return w ? tf(w.name) : String(id || "");
+  const label = COMBATANT_LABEL[id] ? tr(COMBATANT_LABEL[id]) : null;
+  if (!w) return label || String(id || "");
+  return label ? `${label} · ${tf(w.name)}` : tf(w.name);
 };
 const dtIcon = (ty) => {
   const k = dtKey(ty);

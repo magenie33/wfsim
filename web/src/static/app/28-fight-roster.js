@@ -11,20 +11,24 @@
 /// it moves this fight too. A copy stored here would be a second answer to
 /// "what is that build" with no rule for which wins.
 ///
-/// THE OPEN BUILD IS SEAT 0 and is not in this list. It is the one the page is
-/// about, the one the panel resolves and the only one a board submission can
-/// carry — so it cannot be removed, reordered or pointed somewhere else.
+/// THE OPEN BUILD IS THE FIRST SEAT and is not in this list, so an entry `i`
+/// here is seat `i + 2` to a reader and `wielder`'s neighbour on the wire. It
+/// is the one the page is about, the one the panel resolves and the only one a
+/// board submission can carry — so it cannot be removed or pointed elsewhere.
 
 /// The roster as stored, repaired: a list of `{weapon, preset}`.
 const alsoActing = () => (Array.isArray(sim.also_acting) ? sim.also_acting : [])
   .filter((x) => x && weaponExists(x.weapon))
   .map((x) => ({ weapon: x.weapon, preset: x.preset || DEFAULT_PRESET_ID }));
 
-/// HOW MANY SEATS A FIGHT MAY HOLD. The engine's own ceiling is
-/// `MAX_COMBATANTS`; this is the page's, and it is lower on purpose — every
-/// seat is a whole build resolved and a whole actor simulated, so a roster
-/// nobody meant to fill is a fight nobody meant to wait for.
-const ROSTER_MAX = 4;
+/// HOW MANY SEATS A FIGHT MAY HOLD BESIDE THE OPEN BUILD — the engine's own
+/// ceiling (`fight::MAX_COMBATANTS`, served at `/api/meta`), less the one the
+/// page is about. Read rather than written down: a number copied here is two
+/// declarations of one fact, and the day one moves the other is silently
+/// wrong — the same rule `ARENA_MAX_BODIES` follows for the floor.
+///
+/// EIGHT IS A SQUAD WITH ITS COMPANIONS, which is what the ceiling is for.
+const ROSTER_MAX = () => ((META && META.max_combatants) || 8) - 1;
 
 /// ONE SEAT'S BUILD STATE, from the preset it names. The blank (`default`) is a
 /// state of its own rather than a missing one: an unmodded weapon is a build,
@@ -58,9 +62,7 @@ function renderRoster() {
   const list = alsoActing();
   const weapons = oneCardPerChamber(META.weapons || [])
     .map((w) => ({ value: w.id, label: w.name, image: w.image }));
-  const rows = list.map((ref, i) => {
-    const w = weaponInfo(ref.weapon) || {};
-    return `<div class="rs-row" data-seat="${i}">
+  const rows = list.map((ref, i) => `<div class="rs-row" data-seat="${i}">
       <span class="rs-n">${i + 2}</span>
       ${ddButton(`dd-seat-${i}`, {
     value: ref.weapon, search: true, items: weapons,
@@ -83,10 +85,8 @@ function renderRoster() {
   })}
       <button class="ghost-btn small rs-x" data-drop="${i}"
         title="${escHtml(tr("take this one out of the fight"))}">×</button>
-      <span class="rs-hint">${escHtml(w.name || ref.weapon)}</span>
-    </div>`;
-  }).join("");
-  const full = list.length >= ROSTER_MAX;
+    </div>`).join("");
+  const full = list.length >= ROSTER_MAX();
   host.innerHTML = `<div class="rs">
     <div class="rs-row rs-you">
       <span class="rs-n">1</span>
@@ -145,7 +145,7 @@ const ROSTER_ACTIONS = [
     run({ weapon, preset }) {
       if (!weaponExists(weapon)) return agentNo("bad_argument", { argument: "weapon", because: "no weapon with that id" });
       const seats = alsoActing();
-      if (seats.length >= ROSTER_MAX) return agentNo("roster_full", { because: `a fight holds ${ROSTER_MAX + 1} seats`, max_seats: ROSTER_MAX + 1 });
+      if (seats.length >= ROSTER_MAX()) return agentNo("roster_full", { because: `a fight holds ${ROSTER_MAX() + 1} seats`, max_seats: ROSTER_MAX() + 1 });
       const own = presetListWithIds(BUILDS, weapon);
       const p = preset ? own.find((x) => x.id === preset || x.name === preset) : null;
       if (preset && !p) return agentNo("bad_argument", { argument: "preset", alternatives: own.map((x) => x.name).slice(0, 20) });

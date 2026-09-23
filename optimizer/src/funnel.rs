@@ -498,6 +498,7 @@ mod tests {
         assert!(cands.len() > 40, "need a field to cut, got {}", cands.len());
         let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
         let scenario = Scenario {
+            also_acting: Vec::new(),
             arena: Arena {
                 body_parts: vec![BodyPart {
                     name: "body".into(), aim_weight: 1.0, multiplier: 1.0,

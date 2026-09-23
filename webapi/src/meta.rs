@@ -1123,6 +1123,10 @@ pub fn meta_json() -> Value {
         // axis-list bug this file guards against: two declarations of one fact,
         // and the day one moves the other is silently wrong.
         "max_bodies": wfsim_engine::formation::MAX_BODIES,
+        // …AND HOW MANY GUNS, for the same reason and out of the same rule.
+        // The roster is a list on the page and a `Vec` in the fight, and the
+        // ceiling on it is the engine's (`fight::MAX_COMBATANTS`).
+        "max_combatants": wfsim_engine::fight::MAX_COMBATANTS,
         // WHICH TRIGGERS A FIGHT CAN SWITCH OFF (`engine::buff_events`), in the
         // order the panel draws them and with the group each sits under — a
         // vocabulary rather than a list on the page, because two declarations
