@@ -229,8 +229,8 @@ pub(super) fn record_weapon(
 }
 
 /// SAMPLING HAPPENS TWICE, and the second time is
-/// body mutably borrows `arc`, `gal`, `buff_stacks`, `target`, `r`,
-/// `debuffs`, `others` and `trace` at once, which a closure cannot hold
+/// body mutably borrows `arc`, `gal`, `buff_stacks`, `bodies`, `r`
+/// and `trace` at once, which a closure cannot hold
 /// together.
 ///
 /// It takes the run's state by reference rather than closing over it: the
@@ -254,10 +254,8 @@ pub(super) fn sample_frames_up_to(
     combo_spec: Option<crate::model::SniperCombo>,
     incarnon: &IncarnonState,
     influence_until: f64,
-    target: &TargetState,
     r: &RunResult,
-    debuffs: &DebuffState,
-    others: &[SpreadFoe],
+    bodies: &[Body],
 ) {
     if let Some(rep) = trace.as_deref_mut() {
         while *next_frame <= until && *next_frame < params.duration_seconds {
@@ -273,9 +271,9 @@ pub(super) fn sample_frames_up_to(
             );
             rep.frames.push(Frame {
                 t: *next_frame,
-                overguard: target.overguard,
-                shield: target.shield,
-                health: target.health,
+                overguard: bodies[0].state.overguard,
+                shield: bodies[0].state.shield,
+                health: bodies[0].state.health,
                 damage: r.effective_damage(),
                 kills: r.kills,
                 shots: r.shots,
@@ -300,12 +298,12 @@ pub(super) fn sample_frames_up_to(
                         // THE CURVES WANT COUNTS. The expiry beside
                         // each one is the RECORD's — a chart of a
                         // stack count has no use for it.
-                        let one = if bi == 0 {
-                            debuffs.sample(*next_frame)
-                        } else {
-                            others[bi - 1].debuffs.sample(*next_frame)
-                        };
-                        one.into_iter().map(|(n, _)| n).collect::<Vec<u16>>()
+                        bodies[bi]
+                            .debuffs
+                            .sample(*next_frame)
+                            .into_iter()
+                            .map(|(n, _)| n)
+                            .collect::<Vec<u16>>()
                     })
                     .collect(),
             });
@@ -387,9 +385,7 @@ pub fn run_once_traced(
     // combatant share with you" now has an answer a type gives.
     let Fight {
         mut next_frame,
-        mut target,
-        mut debuffs,
-        mut others,
+        mut bodies,
         mut r,
         mut fields,
         mut orbs,
@@ -501,10 +497,8 @@ pub fn run_once_traced(
             me.fixed.combo_spec,
             &mut me.incarnon,
             me.influence_until,
-            &mut target,
             &mut r,
-            &mut debuffs,
-            &others,
+            &mut bodies,
             &mut me.ammo,
             me.last_shot_t,
             &mut me.weakpoint_pile,
@@ -605,11 +599,10 @@ pub fn run_once_traced(
         // Status events scheduled before this shot land first.
         process_ticks(
             &me.windows,
-            &mut debuffs,
+            &mut bodies[0],
             &mut me.gal,
             &mut me.arc,
             t + 1e-9,
-            &mut target,
             me.params,
             active,
             &mut r,
@@ -658,8 +651,7 @@ pub fn run_once_traced(
             me.influence_until,
             &mut me.incarnon,
             &mut me.ammo,
-            &mut debuffs,
-            &target,
+            &mut bodies[0],
             &mut me.weakpoint_pile,
             &mut me.double_tap,
             &mut me.rs_armed,
@@ -801,9 +793,7 @@ pub fn run_once_traced(
             &mut me.meter,
             me.seat,
             &mut me.ammo,
-            &mut target,
-            &mut debuffs,
-            &mut others,
+            &mut bodies,
             &mut me.gal,
             &mut me.arc,
             &mut r,
@@ -895,9 +885,7 @@ pub fn run_once_traced(
                 r: &mut r,
                 rec,
                 d,
-                target: &mut target,
-                others: &mut others,
-                debuffs: &mut debuffs,
+                bodies: &mut bodies,
                 gal: &mut me.gal,
                 arc: &mut me.arc,
                 buff_stacks: &mut me.buff_stacks,
@@ -927,7 +915,7 @@ pub fn run_once_traced(
         }
 
         // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
-        if !others.is_empty() {
+        if bodies.len() > 1 {
             spread_beyond_the_target(
                 me.seat,
                 &me.windows,
@@ -937,7 +925,7 @@ pub fn run_once_traced(
                 d,
                 t,
                 &strike_spread,
-                &mut others,
+                &mut bodies,
                 &mut me.gal,
                 &mut me.arc,
                 &mut r,
@@ -953,9 +941,7 @@ pub fn run_once_traced(
         // same instant, and the drain is where a body's outbox becomes its
         // neighbours' DoTs (`DebuffState::area_out`).
         drain_area_procs(
-            &mut debuffs,
-            &mut target,
-            &mut others,
+            &mut bodies,
             me.params,
             &area_near,
             &mut r,
@@ -993,9 +979,7 @@ pub fn run_once_traced(
             &mut me.frenzy,
             &mut me.buff_stacks,
             &me.fixed.rec_buff_index,
-            &mut target,
-            &mut debuffs,
-            &mut others,
+            &mut bodies,
             &mut me.ammo,
             &mut me.incarnon,
             &mut me.double_tap,
@@ -1039,8 +1023,8 @@ pub fn run_once_traced(
             // the shot loop settles them in.
             process_orbs(
                 &me.windows,
-                &mut orbs, &mut debuffs, &mut me.gal, &mut me.arc, at, &mut target,
-                params, me.fixed.field_active, &me.field_ctx, &mut r, rec, d, &mut others,
+                &mut orbs, &mut me.gal, &mut me.arc, at,
+                params, me.fixed.field_active, &me.field_ctx, &mut r, rec, d, &mut bodies,
             );
             throw_orb(o, me.seat, params, at, &mut orbs);
         }
@@ -1061,18 +1045,16 @@ pub fn run_once_traced(
     process_orbs(
         &me.windows,
         &mut orbs,
-        &mut debuffs,
         &mut me.gal,
         &mut me.arc,
         params.duration_seconds,
-        &mut target,
         params,
         me.fixed.field_active,
         &me.field_ctx,
         &mut r,
         rec,
         d,
-        &mut others,
+        &mut bodies,
     );
     // The clouds still burning after the last shot, with the buff snapshot from
     // that shot (nothing refreshes it once firing stops). FIRST, because each
@@ -1080,27 +1062,24 @@ pub fn run_once_traced(
     process_field_ticks(
         &me.windows,
         &mut fields,
-        &mut debuffs,
         &mut me.gal,
         &mut me.arc,
         params.duration_seconds,
-        &mut target,
         params,
         me.fixed.field_active,
         &me.field_ctx,
         &mut r,
         rec,
         d,
-        &mut others,
+        &mut bodies,
     );
     // …then drain what is left up to the end of the engagement.
     process_ticks(
         &me.windows,
-        &mut debuffs,
+        &mut bodies[0],
         &mut me.gal,
         &mut me.arc,
         params.duration_seconds,
-        &mut target,
         params,
         me.fixed.field_active,
         &mut r,
@@ -1130,7 +1109,7 @@ pub fn run_once_traced(
     sample_frames_up_to(
         params.duration_seconds, params, &mut trace, &mut next_frame, frame_seconds, &mut me.arc, &mut me.gal, &mut me.buff_stacks,
         &me.bar, &me.windows, &me.tendril, &me.crit_per_hit, &me.sniper_combo, me.fixed.combo_spec, &me.incarnon, me.influence_until,
-        &target, &r, &debuffs, &others,
+        &r, &bodies,
     );
 
     // Partial credit: the fraction of the current individual's TOTAL bar
@@ -1151,10 +1130,11 @@ pub fn run_once_traced(
         + params.foe.max_shield()
         + params.foe.max_health()
         + spectral_health;
-    let remaining = if target.health <= 0.0 {
+    let aimed = &bodies[0].state;
+    let remaining = if aimed.health <= 0.0 {
         0.0
     } else {
-        target.overguard + target.shield + target.health
+        aimed.overguard + aimed.shield + aimed.health
     };
     let partial = if pool > 0.0 {
         (1.0 - remaining / pool).clamp(0.0, 1.0)

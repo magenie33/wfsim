@@ -19,7 +19,7 @@ pub fn replay(params: &FightParams, rng_state: u64, frames: usize) -> Replay {
     // — and it is the only way to rank bodies before the frames are recorded.
     // Two runs of one engagement, against 400 series on the wire.
     let scout = run_once(params, &mut Rng::new(rng_state));
-    let mut ranked: Vec<(usize, f64)> = (1..=params.others.len())
+    let mut ranked: Vec<(usize, f64)> = (1..params.body_count())
         .map(|i| (i, scout.taken.by_body().0[i]))
         .filter(|(_, d)| *d > 0.0)
         .collect();
@@ -53,7 +53,7 @@ pub fn replay_following(
 ) -> Replay {
     let mut follow: Vec<usize> = vec![0];
     for &i in want {
-        if i != 0 && i <= params.others.len() && !follow.contains(&i) {
+        if i != 0 && i < params.body_count() && !follow.contains(&i) {
             follow.push(i);
         }
     }
@@ -63,13 +63,7 @@ pub fn replay_following(
     let mut rep = Replay {
         tracked: follow
             .iter()
-            .map(|&i| {
-                if i == 0 {
-                    params.target_id.clone()
-                } else {
-                    params.others[i - 1].id.clone()
-                }
-            })
+            .map(|&i| params.body(i).map_or_else(String::new, |b| b.id.to_string()))
             .collect(),
         follow,
         frame_seconds: (params.duration_seconds / frames as f64).max(1e-6),

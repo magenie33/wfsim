@@ -34,10 +34,8 @@ pub(super) fn before_the_shot(
     combo_spec: Option<crate::model::SniperCombo>,
     incarnon: &mut IncarnonState,
     influence_until: f64,
-    target: &mut TargetState,
     r: &mut RunResult,
-    debuffs: &mut DebuffState,
-    others: &[SpreadFoe],
+    bodies: &mut [Body],
     ammo: &mut Ammo,
     last_shot_t: f64,
     weakpoint_pile: &mut LiveStacks,
@@ -53,7 +51,7 @@ pub(super) fn before_the_shot(
             sample_frames_up_to(
                 t, params, trace, next_frame, frame_seconds, arc, gal, buff_stacks,
                 bar, windows, tendril, crit_per_hit, sniper_combo, combo_spec, incarnon,
-                influence_until, target, r, debuffs, others,
+                influence_until, r, bodies,
             );
         }
         if t >= params.duration_seconds {
@@ -216,8 +214,7 @@ pub(super) fn before_the_shot(
                     &sy,
                     r,
                     rec,
-                    target,
-                    debuffs,
+                    &mut bodies[0],
                     gal,
                     arc,
                     params,

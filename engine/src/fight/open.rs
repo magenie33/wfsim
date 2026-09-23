@@ -27,9 +27,16 @@ pub(super) struct Fight {
     // so the clock lives on the seats and the world reads it from whoever is
     // acting. One field fewer to keep in step with them.
     pub(super) next_frame: f64,
-    pub(super) target: TargetState,
-    pub(super) debuffs: DebuffState,
-    pub(super) others: Vec<SpreadFoe>,
+    /// EVERY ENEMY, IN ONE LIST — `bodies[0]` is the aimed one and the rest
+    /// are the formation, the numbering `FightParams::body` and
+    /// `RunResult::damage_by_body` both use.
+    ///
+    /// ONE LIST BECAUSE A MECHANISM DOES NOT KNOW WHICH IT REACHED. A chain
+    /// hop, an explosion, a cloud and a tendril each land on "body `i`", and
+    /// the aimed one is a value of `i` rather than a case — so `FightParams`
+    /// owns that arithmetic once (`FightParams::body`) and nothing here writes
+    /// it a second time.
+    pub(super) bodies: Vec<Body>,
     pub(super) r: RunResult,
     /// THINGS STANDING IN THE WORLD rather than carried by a shooter: a cloud
     /// burns whoever walks into it, and it outlives the trigger pull that left
@@ -182,9 +189,7 @@ pub(super) fn open<'a>(
     // and hoisted because MELEE INFLUENCE rebuilt this list on every landed hit
     // — a 361-element allocation per proc per swing, in the mechanic this
     // engine is least willing to be slow at.
-    let body_at: Vec<crate::rules::space::Vec2> = std::iter::once(params.target_at)
-        .chain(params.others.iter().map(|f| f.at))
-        .collect();
+    let body_at = params.body_positions();
     let area_near = if params.others.is_empty() {
         crate::rules::space::Neighbours::default()
     } else {
@@ -199,20 +204,15 @@ pub(super) fn open<'a>(
     // layout below; the REFLECTING one reads these positions, because a bounce
     // is geometry and a neighbour list has thrown the geometry away.
     let bounce_bodies: Vec<crate::rules::space::Vec2> = if params.ricochet.is_some() {
-        let mut v = Vec::with_capacity(params.others.len() + 1);
-        v.push(params.target_at);
-        v.extend(params.others.iter().map(|f| f.at));
-        v
+        body_at.clone()
     } else {
         Vec::new()
     };
     let ricochet_layout = match (params.ricochet, params.others.is_empty()) {
         (Some(rc), false) => {
-            let mut bodies = Vec::with_capacity(params.others.len() + 1);
-            bodies.push(params.target_at);
-            bodies.extend(params.others.iter().map(|f| f.at));
+            let bodies = &body_at;
             Some(crate::rules::chain::Layout::build(
-                &bodies,
+                bodies,
                 // NO SPLASH SEEDS. A bounce starts from the body the projectile
                 // struck and from nowhere else, so the sphere here is empty —
                 // the explosion each bounce sets off is fired separately, by
@@ -230,14 +230,12 @@ pub(super) fn open<'a>(
     };
     let chain_layout = match (params.beam, params.others.is_empty()) {
         (Some(b), false) => {
-            let mut bodies = Vec::with_capacity(params.others.len() + 1);
-            bodies.push(params.target_at);
-            bodies.extend(params.others.iter().map(|f| f.at));
+            let bodies = &body_at;
             // THE SPLASH CENTRE IS STATIC TOO: the round goes off on the aimed
             // body's surface facing the shooter, and neither of them moves.
             let at = crate::rules::space::detonation_point(params.target_at, params.player_at);
             let layout = crate::rules::chain::Layout::build(
-                &bodies,
+                bodies,
                 crate::rules::chain::Splash { at, radius_m: b.damage_radius_m },
                 crate::rules::chain::Spec {
                     hops: b.chain_hops,
@@ -249,7 +247,7 @@ pub(super) fn open<'a>(
             // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `rules::chain::acquired`, the
             // same rule the Ocucor's tendrils are picked by.
             Some(layout.acquiring(
-                &bodies,
+                bodies,
                 params.player_at,
                 params.aim_at.unwrap_or(params.target_at),
                 crate::rules::chain::Acquire {
@@ -283,21 +281,13 @@ pub(super) fn open<'a>(
         en.seed(params.enervate_stacks, &mut bar);
     }
     let mut frenzy = Frenzy::new();
-    let target = TargetState::spawn(&params.foe, params.target_at);
-    let debuffs = DebuffState::default();
-    // THE REST OF THE FORMATION — empty for every fight this engine has run,
-    // and every line that reads it below is behind that check.
-    //
-    // BESIDE the aimed body's state rather than holding it too, which is the
-    // aim policy showing through: the beam is on ONE body and every other is
-    // reached only by what spreads (`formation`,). When the
-    // aimed one dies the nearest of these takes its place, so `target` and
-    // `debuffs` above stay what the whole loop already reads.
-    let others: Vec<SpreadFoe> = params
-        .others
-        .iter()
-        .map(|f| SpreadFoe {
-            state: TargetState::spawn(&f.params, f.at),
+    // EVERY BODY, THE AIMED ONE FIRST — see `Fight::bodies`. Built from
+    // `FightParams::body` so the numbering here is the numbering every
+    // mechanism reads back, rather than two lists that agree by convention.
+    let bodies: Vec<Body> = (0..params.body_count())
+        .filter_map(|i| params.body(i))
+        .map(|b| Body {
+            state: TargetState::spawn(b.params, b.at),
             debuffs: DebuffState::default(),
         })
         .collect();
@@ -654,9 +644,7 @@ pub(super) fn open<'a>(
     (
         Fight {
             next_frame,
-            target,
-            debuffs,
-            others,
+            bodies,
             r,
             fields,
             orbs,

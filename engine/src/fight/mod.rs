@@ -21,6 +21,7 @@ use crate::rules::scaling;
 use crate::rules::sim::{Event, Hit};
 use crate::rules::status;
 use crate::target::*;
+use crate::formation::BodySpec;
 use crate::rules::metrics::RunStat;
 use crate::record::PopKind;
 

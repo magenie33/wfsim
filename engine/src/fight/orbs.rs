@@ -169,27 +169,23 @@ pub(super) fn process_orbs(
     // See `process_ticks`.
     w: &CardWindows,
     orbs: &mut Vec<OrbState>,
-    debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     until: f64,
-    target: &mut TargetState,
     params: &FightParams,
     active: &FightParams,
     ctx: &FieldCtx,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
 ) {
     if orbs.is_empty() {
         return;
     }
-    // WHERE EVERY BODY STANDS, the aimed one first — the same numbering
-    // `RunResult::damage_by_body` uses, so an index here is an index there.
-    let mut bodies = Vec::with_capacity(params.others.len() + 1);
-    bodies.push(params.target_at);
-    bodies.extend(params.others.iter().map(|f| f.at));
+    // WHERE EVERY BODY STANDS, hoisted: an orb drifts every strike and asks
+    // this of the whole formation each time.
+    let body_at = params.body_positions();
 
     while let Some((i, at, is_strike)) = orbs
         .iter()
@@ -205,14 +201,14 @@ pub(super) fn process_orbs(
         // before a field tick.
         process_ticks(
             w,
-            debuffs, gal, arc, at + 1e-9, target, params, active, r, rec, &mut d.status,
+            &mut bodies[0], gal, arc, at + 1e-9, params, active, r, rec, &mut d.status,
             &params.foe, 0,
         );
-        orbs[i].advance(at, &bodies);
+        orbs[i].advance(at, &body_at);
         let orb = orbs[i];
         if !is_strike {
             orbs.remove(i);
-            orb_detonation(w, &orb, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d, others, &bodies);
+            orb_detonation(w, &orb, at, ctx, gal, arc, params, active, r, rec, d, bodies, &body_at);
             continue;
         }
         orbs[i].next_strike += orb.part.strike_interval_seconds;
@@ -220,9 +216,9 @@ pub(super) fn process_orbs(
 
         // WHO IS IN REACH. Any part of a body touching is enough — the rule
         // every sphere in this engine uses.
-        let in_reach: Vec<usize> = (0..bodies.len())
+        let in_reach: Vec<usize> = (0..body_at.len())
             .filter(|&b| {
-                crate::rules::space::caught_by_blast(bodies[b].distance(orb.at), orb.part.strike_radius_m)
+                crate::rules::space::caught_by_blast(body_at[b].distance(orb.at), orb.part.strike_radius_m)
             })
             .collect();
         if in_reach.is_empty() {
@@ -251,7 +247,7 @@ pub(super) fn process_orbs(
                 let Some((k, _)) = rest
                     .iter()
                     .enumerate()
-                    .map(|(k, &b)| (k, bodies[from].distance(bodies[b])))
+                    .map(|(k, &b)| (k, body_at[from].distance(body_at[b])))
                     .filter(|(_, dist)| *dist <= orb.part.chain_range_m + 1e-9)
                     .min_by(|a, b| a.1.total_cmp(&b.1))
                 else {
@@ -268,12 +264,12 @@ pub(super) fn process_orbs(
                 share *= orb.part.chain_damage_per_hop;
             }
             let killed = orb_strike(
-                w, &orb, share, at, ctx, b, debuffs, gal, arc, target, params, active, r, rec, d, others,
+                w, &orb, share, at, ctx, b, gal, arc, params, active, r, rec, d, bodies,
             );
             aimed_died |= killed && b == 0;
         }
         if aimed_died {
-            debuffs.on_death(orb.owner, params.acid_shells, &params.foe);
+            bodies[0].debuffs.on_death(orb.owner, params.acid_shells, &params.foe);
             return;
         }
     }
@@ -294,16 +290,14 @@ pub(super) fn orb_strike(
     at: f64,
     ctx: &FieldCtx,
     b: usize,
-    debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
-    target: &mut TargetState,
     params: &FightParams,
     active: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
 ) -> bool {
     let Some(mut part) = active.orb_strike else { return false };
     // A CHAINED BODY TAKES A SMALLER STRIKE, and "smaller" means a smaller BASE
@@ -322,24 +316,13 @@ pub(super) fn orb_strike(
         part.modified_base *= share;
     }
     let mult = orb.damage_multiplier;
-    match b.checked_sub(1) {
-        None => field_tick(
-            w,
-            orb.owner,
-            &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
-            &params.foe, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
-        ),
-        Some(bi) => {
-            let Some(spec) = params.others.get(bi) else { return false };
-            let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
-            field_tick(
-            w,
-                orb.owner,
-                &part, mult, at, ctx, fd, gal, arc, state, params, active, r, rec, d,
-                &spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
-            )
-        }
-    }
+    let (Some(spec), Some(here)) = (params.body(b), bodies.get_mut(b)) else { return false };
+    field_tick(
+        w,
+        orb.owner,
+        &part, mult, at, ctx, here, gal, arc, params, active, r, rec, d,
+        spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
+    )
 }
 
 /// THE FUSE RUNNING OUT — the attack's own explosion, fired from wherever the
@@ -357,47 +340,31 @@ pub(super) fn orb_detonation(
     orb: &OrbState,
     at: f64,
     ctx: &FieldCtx,
-    debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
-    target: &mut TargetState,
     params: &FightParams,
     active: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
-    others: &mut [SpreadFoe],
-    bodies: &[crate::rules::space::Vec2],
+    bodies: &mut [Body],
+    body_at: &[crate::rules::space::Vec2],
 ) {
     let Some(part) = active.orb_blast else { return };
-    for (b, &pos) in bodies.iter().enumerate() {
+    for (b, &pos) in body_at.iter().enumerate() {
         let dist = pos.distance(orb.at);
         if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
             continue;
         }
         // LINEAR FALLOFF MEASURED FROM THE ORB rather than from a body.
         let mult = orb.damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist));
-        match b.checked_sub(1) {
-            None => {
-                field_tick(
-            w,
-                    orb.owner,
-                    &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
-                    &params.foe, crate::record::Origin::Orb, None, true,
-                );
-            }
-            Some(bi) => {
-                if let (Some(spec), Some(SpreadFoe { state, debuffs: fd })) =
-                    (params.others.get(bi), others.get_mut(bi))
-                {
-                    field_tick(
-            w,
-                        orb.owner,
-                        &part, mult, at, ctx, fd, gal, arc, state, params, active, r, rec, d,
-                        &spec.params, crate::record::Origin::Orb, None, true,
-                    );
-                }
-            }
+        if let (Some(spec), Some(here)) = (params.body(b), bodies.get_mut(b)) {
+            field_tick(
+                w,
+                orb.owner,
+                &part, mult, at, ctx, here, gal, arc, params, active, r, rec, d,
+                spec.params, crate::record::Origin::Orb, None, true,
+            );
         }
     }
 }

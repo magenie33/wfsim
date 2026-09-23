@@ -127,11 +127,12 @@ pub(super) fn process_ticks(
     // lapses (`FightParams::element_at`). A tick loop that could not see them
     // would have to freeze the answer at the proc, which is a different number.
     w: &CardWindows,
-    debuffs: &mut DebuffState,
+    // THE BODY THIS LANDS ON. Its pools and the statuses on them are
+    // one thing, so they arrive as one.
+    body: &mut Body,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     until: f64,
-    target: &mut TargetState,
     params: &FightParams,
     active: &FightParams,
     r: &mut RunResult,
@@ -140,16 +141,16 @@ pub(super) fn process_ticks(
     // WHICH BODY'S ticks these are — see `settle_procs`'s parameter of the
     // same name.
     foe: &Foe,
-    // WHICH BODY IS TICKING — 0 is the aimed one, `i + 1` is `others[i]`, the
-    // same numbering `RunResult::damage_by_body` uses.
+    // WHICH BODY IS TICKING, in the fight's numbering — `FightParams::body`.
     //
     // A FORMATION BODY NEVER TICKED AT ALL until 2026-08-17: this was called
     // for the aimed body and for nothing else, so every status a chain hop, a
     // splash, a tendril or an echo applied to a neighbour was recorded and
     // never paid out. Gas and Electricity are the two elements whose PROC is an
     // area, and they cannot work at all without it.
-    body: usize,
+    body_index: usize,
 ) {
+    let Body { state: target, debuffs } = body;
     enum Ev {
         Dot(usize),
         Heat,
@@ -423,7 +424,7 @@ pub(super) fn process_ticks(
         r.sources.add_status(src, effective);
         let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
         ledger::settle(
-            r, rec, now, dot_owner, body, src,
+            r, rec, now, dot_owner, body_index, src,
             if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
             &breakdown, settled, Some(debuffs),
             ledger::Clock::Dot,
@@ -586,9 +587,7 @@ pub(super) fn settle_what_is_in_the_air(
     // ticks of a cloud it already left.
     owner: Seat,
     ammo: &mut Ammo,
-    target: &mut TargetState,
-    debuffs: &mut DebuffState,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -596,18 +595,16 @@ pub(super) fn settle_what_is_in_the_air(
         process_field_ticks(
             w,
             fields,
-            debuffs,
             gal,
             arc,
             *t,
-            target,
             params,
             field_active,
             field_ctx,
             r,
             rec,
             d,
-            others,
+            bodies,
         );
         // JAHU CANTICLE. Every kill takes a share off the armour of every enemy
         // inside Affinity Range — which is measured from the PLAYER, not from
@@ -625,18 +622,13 @@ pub(super) fn settle_what_is_in_the_air(
             *strip_kills_seen = r.kills;
             if fresh > 0 && share > 0.0 {
                 let keep = (1.0 - share).powi(fresh as i32);
-                if crate::rules::space::gap(params.player_at, params.target_at) <= radius {
-                    debuffs.canticle_armor_strip =
-                        1.0 - (1.0 - debuffs.canticle_armor_strip) * keep;
-                }
-                for (bi, spec) in params.others.iter().enumerate() {
+                for (b, foe) in bodies.iter_mut().enumerate() {
+                    let Some(spec) = params.body(b) else { continue };
                     if crate::rules::space::gap(params.player_at, spec.at) > radius {
                         continue;
                     }
-                    if let Some(SpreadFoe { debuffs: fd, .. }) = others.get_mut(bi) {
-                        fd.canticle_armor_strip =
-                            1.0 - (1.0 - fd.canticle_armor_strip) * keep;
-                    }
+                    let fd = &mut foe.debuffs;
+                    fd.canticle_armor_strip = 1.0 - (1.0 - fd.canticle_armor_strip) * keep;
                 }
             }
         }
@@ -674,17 +666,15 @@ pub(super) fn settle_what_is_in_the_air(
         process_orbs(
             w,
             orbs,
-            debuffs,
             gal,
             arc,
             *t,
-            target,
             params,
             field_active,
             field_ctx,
             r,
             rec,
             d,
-            others,
+            bodies,
         );
 }

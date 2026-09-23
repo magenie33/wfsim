@@ -1,22 +1,5 @@
 use super::*;
 
-/// A BODY IN THE FORMATION THAT IS NOT BEING AIMED AT — its own state, and
-/// nothing else.
-///
-/// WHERE THE LINE IS: a counter belongs to whoever it counts
-/// on. The pools, the procs, the DoTs and the armour a hit strips are the
-/// BODY's, so they are here; the buff bar, the Galvanized stacks, the arcane
-/// runtime and the damage-instance number are the SHOOTER's and stay in the run
-/// loop, shared by every body because one weapon is firing at all of them.
-///
-/// That split is also the shape a second TENNO slots into: the loop's own
-/// player-side locals become one source's, a `Vec` of them, and nothing on this
-/// side of the line has to change.
-pub(super) struct SpreadFoe {
-    pub(super) state: TargetState,
-    pub(super) debuffs: DebuffState,
-}
-
 /// WHICH MECHANISM PUT AN INSTANCE ON A BODY — one of the five in
 /// MECHANICS §12.
 ///
@@ -128,19 +111,15 @@ pub(super) fn spread_from_influence(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
     seat: Seat,
-    // WHOSE ATTACK THIS IS SPREADING. Carried rather than assumed: the body it
-    // reaches is not the one aimed at, and the seat is the same either way.
     // WHERE EVERY BODY STANDS, built once for the fight rather than per landed
     // hit — Influence spreads 20 m across a 361-body formation, so that was the
     // allocation this engine could least afford.
-    bodies: &[crate::rules::space::Vec2],
-    others: &mut [SpreadFoe],
-    target: &mut TargetState,
-    debuffs: &mut DebuffState,
+    body_at: &[crate::rules::space::Vec2],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
-    // WHICH BODY IT SPREADS FROM — 0 is the aimed one, `i + 1` is `others[i]`,
-    // the numbering `RunResult::damage_by_body` uses.
+    // WHICH BODY IT SPREADS FROM — the fight's numbering, where 0 is the aimed
+    // one (`FightParams::body`).
     from: usize,
     // WHAT THAT BODY TOOK, per spreadable element: the element's share of the
     // instance's damage, with the struck body's own Condition Overload and
@@ -159,7 +138,7 @@ pub(super) fn spread_from_influence(
     if landed.is_empty() || radius_m <= 0.0 {
         return;
     }
-    let Some(&epicentre) = bodies.get(from) else { return };
+    let Some(&epicentre) = body_at.get(from) else { return };
     // ONE MORE RUNG THAN THE HIT ALREADY CARRIES. `raw` came out of an
     // instance that was multiplied by `f` once, so this takes it to `f^2` —
     // `faction_at(f, DEPTH_PROC) / faction_at(f, DEPTH_HIT)`, said as the one
@@ -174,19 +153,14 @@ pub(super) fn spread_from_influence(
     // enemy" because that is what its sentence is about, not because the host
     // is excluded. Measured by the owner: the number lands on the host as well,
     // and it force-procs there like everywhere else.
-    for (b, at) in bodies.iter().copied().enumerate() {
+    for (b, at) in body_at.iter().copied().enumerate() {
         // ANY PART OF A BODY TOUCHING IS ENOUGH — the rule every sphere in
         // this engine uses.
         if !crate::rules::space::caught_by_blast(epicentre.distance(at), radius_m) {
             continue;
         }
-        let (state, dbf, tparams) = match b.checked_sub(1) {
-            None => (&mut *target, &mut *debuffs, &params.foe),
-            Some(i) => match (others.get_mut(i), params.others.get(i)) {
-                (Some(foe), Some(spec)) => (&mut foe.state, &mut foe.debuffs, &spec.params),
-                _ => continue,
-            },
-        };
+        let (Some(spec), Some(here)) = (params.body(b), bodies.get_mut(b)) else { continue };
+        let (state, dbf, tparams) = (&mut here.state, &mut here.debuffs, spec.params);
         for &(ty, elem_raw) in landed {
             let raw = elem_raw * f;
             if raw <= 0.0 {
@@ -303,8 +277,8 @@ pub(super) fn spread_hit(
     // See `process_ticks` — an instance's statuses are settled here.
     w: &CardWindows,
     inst: &crate::rules::chain::Instance,
-    foe: &mut SpreadFoe,
-    spec: &crate::formation::FoeSpec,
+    foe: &mut Body,
+    spec: &BodySpec<'_>,
     // The aimed hit with its OWN CO bucket divided back out, so this body can
     // multiply its own in.
     raw_per_bucket: f64,
@@ -365,7 +339,7 @@ pub(super) fn spread_hit(
     // BEFORE `apply`, like the aimed path: breaking overguard changes which
     // column the next read returns, and the split belongs to the hit that
     // broke it rather than to the state it left behind.
-    let col = foe.state.incoming_column(&spec.params);
+    let col = foe.state.incoming_column(spec.params);
     let mut breakdown = Breakdown::default();
     let settled = foe.state.apply(
         raw,
@@ -382,7 +356,7 @@ pub(super) fn spread_hit(
         // shot THROUGH a shield gate.
         inst.headshot,
         t,
-        &spec.params,
+        spec.params,
         false,
         &mit,
         1.0,
@@ -486,7 +460,7 @@ pub(super) fn spread_hit(
         // once-per-corpse guard (`exploded`); this path has none, so passing
         // them would detonate a Sobek's corpse once per spread instance. It
         // does not fire them today and this does not start.
-        foe.debuffs.on_death(seat, None, &spec.params);
+        foe.debuffs.on_death(seat, None, spec.params);
         // A FRESH INDIVIDUAL TAKES NO STATUS FROM THE HIT THAT KILLED THE LAST
         // ONE — the aimed path returns here for the same reason.
         return Landed { procs: Vec::new(), raw, killed };
@@ -546,7 +520,7 @@ pub(super) fn spread_hit(
         r,
         rec,
         &mut d.status,
-        &spec.params,
+        spec.params,
         DEPTH_PROC,
     );
     landed
@@ -607,9 +581,8 @@ pub(super) fn spread_from_follow_through(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     struck: &[usize],
@@ -638,8 +611,7 @@ pub(super) fn spread_from_follow_through(
         if share <= 0.0 {
             break;
         }
-        let Some(idx) = sidx.checked_sub(1) else { continue };
-        let Some(fs) = params.others.get(idx) else { continue };
+        let Some(spec) = params.body(sidx) else { continue };
         let inst = crate::rules::chain::Instance {
             target: sidx,
             share,
@@ -649,11 +621,11 @@ pub(super) fn spread_from_follow_through(
             status_part_factor: 1.0,
             status_landing: 1.0,
         };
-        let foe = &mut others[idx];
+        let foe = &mut bodies[sidx];
         let landed = spread_hit(
             seat,
             w,
-            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
+            &inst, foe, &spec, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
             modded_base, status_chance, forced, vector, params, active, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
         );
@@ -682,9 +654,8 @@ pub(super) fn spread_from_punch_through(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     struck: &[usize],
@@ -717,8 +688,7 @@ pub(super) fn spread_from_punch_through(
     // The FIRST is the body the rest of the engagement is already scored
     // against; everything behind it is what this function is for.
     for &s in struck.iter().skip(1) {
-        let Some(idx) = s.checked_sub(1) else { continue };
-        let Some(fs) = params.others.get(idx) else { continue };
+        let Some(spec) = params.body(s) else { continue };
         // …AND IT HAS TO BE INSIDE THE WEAPON'S RANGE. A range is a WALL, not a
         // ramp — the aimed path has said so since ranges were modelled, and
         // this path never asked at all: the gate was computed once off the
@@ -730,7 +700,7 @@ pub(super) fn spread_from_punch_through(
         //
         // BREAK, NOT CONTINUE: `struck_bodies` is in the order the ray meets
         // them, so the first one out of reach is the end of the line.
-        let gap_here = (params.range_to(fs.at) - crate::rules::space::BODY_RADIUS_M).max(0.0);
+        let gap_here = (params.range_to(spec.at) - crate::rules::space::BODY_RADIUS_M).max(0.0);
         if gap_here > active.range_m {
             break;
         }
@@ -789,13 +759,13 @@ pub(super) fn spread_from_punch_through(
             status_part_factor: head_part_factor,
             status_landing: head_status_landing,
         };
-        let foe = &mut others[idx];
+        let foe = &mut bodies[s];
         let landed = spread_hit(
             seat,
             w,
             &inst,
             foe,
-            fs,
+            &spec,
             raw_per_bucket,
             shares,
             crit_multiplier,
@@ -845,9 +815,8 @@ pub(super) fn spread_from_ricochet(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     // Where the projectile went and whether each arrival found a head, decided
@@ -862,7 +831,7 @@ pub(super) fn spread_from_ricochet(
     status_chance: f64,
     forced: &[DamageType],
     vector: &DamageVector,
-    head_factor: &dyn Fn(&crate::formation::FoeSpec) -> f64,
+    head_factor: &dyn Fn(&BodySpec<'_>) -> f64,
     // What an Electricity or Gas tick is worth on a head (`Dot::landing`).
     head_landing: f64,
     gal: &mut GalStacks,
@@ -875,8 +844,10 @@ pub(super) fn spread_from_ricochet(
     for &(body, head) in path {
         // THE AIMED BODY IS NEVER A BOUNCE TARGET — it is where the projectile
         // came from, and `bounce_path` has it visited before the walk starts.
-        let Some(idx) = body.checked_sub(1) else { continue };
-        let Some(fs) = params.others.get(idx) else { continue };
+        if body == 0 {
+            continue;
+        }
+        let Some(spec) = params.body(body) else { continue };
         let inst = crate::rules::chain::Instance {
             target: body,
             // THE WHOLE COLLISION, undiminished.
@@ -886,18 +857,18 @@ pub(super) fn spread_from_ricochet(
             // pellet, so the count is already there.
             multishot: false,
             headshot: head,
-            part_factor: if head { head_factor(fs) } else { 1.0 },
+            part_factor: if head { head_factor(&spec) } else { 1.0 },
             // A RICOCHET ROLLS ITS OWN, so the hit and its statuses read the
             // same answer — `raw_per_bucket` is handed to it body-only.
-            status_part_factor: if head { head_factor(fs) } else { 1.0 },
+            status_part_factor: if head { head_factor(&spec) } else { 1.0 },
             status_landing: if head { head_landing } else { 1.0 },
         };
         spread_hit(
             seat,
             w,
             &inst,
-            &mut others[idx],
-            fs,
+            &mut bodies[body],
+            &spec,
             raw_per_bucket,
             shares,
             crit_multiplier,
@@ -943,9 +914,8 @@ pub(super) fn spread_from_echo(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     // STACKS ON THE BODY THAT WAS HIT, read at the moment of the hit — the
     // arcane's gate is about the target, not about the shooter.
     hit_radiation_stacks: usize,
@@ -991,12 +961,15 @@ pub(super) fn spread_from_echo(
     // FROM THE BODY THAT WAS HIT, at the surface the round met — the same
     // epicentre every other sphere in this engine uses.
     let at = crate::rules::space::detonation_point(params.target_at, params.player_at);
-    for (i, spec) in params.others.iter().enumerate() {
+    // FROM BODY 1: the aimed one takes the Echo on the aimed path, with the
+    // hit that set it off.
+    for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
+        let Some(spec) = params.body(b) else { continue };
         if !crate::rules::space::caught_by_blast(spec.at.distance(at), radius) {
             continue;
         }
         let inst = crate::rules::chain::Instance {
-            target: i + 1,
+            target: b,
             share,
             multishot: false,
             headshot: false,
@@ -1004,13 +977,12 @@ pub(super) fn spread_from_echo(
             status_part_factor: 1.0,
             status_landing: 1.0,
         };
-        let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
             seat,
             w,
             &inst,
             foe,
-            fs,
+            &spec,
             raw_per_bucket,
             shares,
             crit_multiplier,
@@ -1058,9 +1030,8 @@ pub(super) fn spread_from_tendrils(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     live: u32,
@@ -1087,10 +1058,9 @@ pub(super) fn spread_from_tendrils(
     // EVERY BODY A TENDRIL COULD TAKE, nearest to the RETICLE first —
     // `rules::chain::acquired`, which is also how the Boar Incarnon's three beams pick
     // theirs. Two weapons, two pages saying the same thing, one rule.
-    let bodies: Vec<crate::rules::space::Vec2> =
-        std::iter::once(params.target_at).chain(params.others.iter().map(|f| f.at)).collect();
+    let body_at = params.body_positions();
     let cand = crate::rules::chain::acquired(
-        &bodies,
+        &body_at,
         params.player_at,
         aim,
         params.tendril_acquire_deg,
@@ -1100,9 +1070,10 @@ pub(super) fn spread_from_tendrils(
     // …AND THE BEAM'S OWN TARGET IS NOT ONE OF THEM: "Tendrils homing in on the
     // main beam's target are only COSMETIC, and don't deal any additional
     // damage or status effects". Index 0 is that body.
-    for i in cand.into_iter().filter(|&i| i != 0).map(|i| i as usize - 1).take(live as usize) {
+    for b in cand.into_iter().map(|i| i as usize).filter(|&b| b != 0).take(live as usize) {
+        let Some(spec) = params.body(b) else { continue };
         let inst = crate::rules::chain::Instance {
-            target: i + 1,
+            target: b,
             // A WHOLE BEAM, not a share of one.
             share: 1.0,
             // Its own beam, so the main one's multishot is not its.
@@ -1113,13 +1084,13 @@ pub(super) fn spread_from_tendrils(
             status_part_factor: 1.0,
             status_landing: 1.0,
         };
-        let (foe, fs) = (&mut others[i], &params.others[i]);
+        let foe = &mut bodies[b];
         spread_hit(
             seat,
             w,
             &inst,
             foe,
-            fs,
+            &spec,
             raw_per_bucket,
             shares,
             crit_multiplier,
@@ -1169,7 +1140,7 @@ pub(super) fn spread_from_blast(
     // deviation — not assumed to be the aimed body's surface, which is what it
     // was until 2026-08-19 and the whole of the bug this signature ends.
     det: crate::rules::space::Detonation,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     rad: &crate::build::loadout::ResolvedRadial,
@@ -1195,7 +1166,7 @@ pub(super) fn spread_from_blast(
         seat,
         w,
         det,
-        others,
+        bodies,
         params,
         active,
         rad,
@@ -1233,7 +1204,7 @@ pub(super) fn blast_at(
     // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
     det: crate::rules::space::Detonation,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     rad: &crate::build::loadout::ResolvedRadial,
@@ -1254,7 +1225,10 @@ pub(super) fn blast_at(
     t: f64,
     by: SpreadBy,
 ) {
-    for (i, spec) in params.others.iter().enumerate() {
+    // FROM BODY 1: the aimed one takes the explosion on the aimed path, which
+    // is where the round's own falloff and its weak point are already known.
+    for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
+        let Some(spec) = params.body(b) else { continue };
         // THREE DIMENSIONS: the floor gap and how far over or under the shot
         // went are legs of the same triangle, and a pellet that sailed above
         // the crowd is genuinely farther from every one of them.
@@ -1267,7 +1241,7 @@ pub(super) fn blast_at(
             continue;
         }
         let inst = crate::rules::chain::Instance {
-            target: i + 1,
+            target: b,
             share,
             multishot: false,
             headshot: false,
@@ -1279,8 +1253,8 @@ pub(super) fn blast_at(
             seat,
             w,
             &inst,
-            &mut others[i],
-            spec,
+            foe,
+            &spec,
             raw_per_bucket_per_falloff,
             shares,
             crit_multiplier,
@@ -1325,9 +1299,8 @@ pub(super) fn spread_from_seeds(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
     w: &CardWindows,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
     beam: crate::model::BeamGeometry,
@@ -1367,15 +1340,13 @@ pub(super) fn spread_from_seeds(
     // instance what `resolve` does (`a_layout_answers_exactly_what_the_scan_does`),
     // which is what makes this an optimisation rather than a model change.
     let landed = match layout {
-        Some(layout) => crate::rules::chain::resolve_in(layout, params.others.len() + 1, struck, spec),
+        Some(layout) => crate::rules::chain::resolve_in(layout, params.body_count(), struck, spec),
         // No layout means no formation — the one-body fight, where the chain
         // has nowhere to go and the old path is as cheap as anything.
         None => {
-            let mut bodies = Vec::with_capacity(others.len() + 1);
-            bodies.push(params.target_at);
-            bodies.extend(params.others.iter().map(|f| f.at));
+            let body_at = params.body_positions();
             crate::rules::chain::resolve(
-                &bodies,
+                &body_at,
                 struck,
                 crate::rules::chain::Splash {
                     at: match (struck.first(), params.aim_at) {
@@ -1392,14 +1363,14 @@ pub(super) fn spread_from_seeds(
         }
     };
     for inst in landed.iter().filter(|i| i.multishot == multishot_half && i.target != 0) {
-        let idx = inst.target - 1;
-        let (foe, fs) = (&mut others[idx], &params.others[idx]);
+        let Some(spec) = params.body(inst.target) else { continue };
+        let foe = &mut bodies[inst.target];
         spread_hit(
             seat,
             w,
             inst,
             foe,
-            fs,
+            &spec,
             raw_per_bucket,
             shares,
             crit_multiplier,
@@ -1442,14 +1413,16 @@ pub(super) fn fire_syndicate_radial(
     sy: &crate::data::syndicates::SyndicateDef,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    target: &mut TargetState,
-    debuffs: &mut DebuffState,
+    // THE BODY THIS LANDS ON. Its pools and the statuses on them are
+    // one thing, so they arrive as one.
+    body: &mut Body,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     params: &FightParams,
     rng: &mut Rng,
     at: f64,
 ) {
+    let Body { state: target, debuffs } = body;
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let amt = sy.damage * params.faction_at_time(at);
@@ -1572,7 +1545,7 @@ pub(super) fn spread_beyond_the_target(
     d: &mut crate::rules::rng::Draws,
     t: f64,
     strike_spread: &Option<SpreadStrike>,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1584,11 +1557,11 @@ pub(super) fn spread_beyond_the_target(
     // than a spread of this one, so they neither take its multishot nor
     // fire per pellet — and they only exist once there is a body that is
     // not the one the main beam is on (`spread_from_tendrils`).
-    if let (Some(s), false) = (&strike_spread, others.is_empty()) {
+    if let (Some(s), false) = (&strike_spread, bodies.len() < 2) {
         spread_from_tendrils(
             seat,
             w,
-            others,
+            bodies,
             params,
             active,
             tendril_count,
@@ -1614,11 +1587,11 @@ pub(super) fn spread_beyond_the_target(
     // the damage radius but not directly struck by the initial beam itself
     // will also not benefit from multishot", so these fire here rather than
     // inside the pellet loop above.
-    if let (Some(s), Some(beam), false) = (&strike_spread, params.beam, others.is_empty()) {
+    if let (Some(s), Some(beam), false) = (&strike_spread, params.beam, bodies.len() < 2) {
         spread_from_seeds(
             seat,
             w,
-            others,
+            bodies,
             params,
             active,
             beam,
@@ -1654,27 +1627,29 @@ pub(super) fn spread_beyond_the_target(
     //
     // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
     // kill is a kill whichever body it was.
-    for (bi, f) in others.iter_mut().enumerate() {
+    // FROM BODY 1: the aimed one's ticks are the run loop's, settled with the
+    // rest of its clock rather than off the back of a shot.
+    for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
         // NOTHING TO BURN, NOTHING TO DO. A formation is up to 400 bodies
         // and a shot reaches a handful; walking the rest once per shot is
         // the whole difference between a crowd being affordable and not.
-        if f.debuffs.idle() {
+        if foe.debuffs.idle() {
             continue;
         }
+        let Some(spec) = params.body(b) else { continue };
         process_ticks(
             w,
-            &mut f.debuffs,
+            foe,
             gal,
             arc,
             t + 1e-9,
-            &mut f.state,
             params,
             active,
             r,
             rec,
             &mut d.status,
-            &params.others[bi].params,
-            bi + 1,
+            spec.params,
+            b,
         );
     }
 }

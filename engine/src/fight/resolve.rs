@@ -53,11 +53,13 @@ pub(super) fn resolve_the_shot(
     influence_until: f64,
     incarnon: &mut IncarnonState,
     ammo: &mut Ammo,
-    debuffs: &mut DebuffState,
-    target: &TargetState,
+    // THE BODY THIS SHOT IS AIMED AT. Its pools and the statuses on them are
+    // one thing, so they arrive as one.
+    body: &mut Body,
     weakpoint_pile: &mut LiveStacks,
     double_tap: &mut DoubleTap,
     rs_armed: &mut bool,) -> Resolved {
+    let Body { state: target, debuffs } = body;
         // Timed buffs (Frenzy) lapse before this shot reads the bar;
         // Permanent locks re-assert — only in phases where the perk exists
         // (Frenzy belongs to the base form).

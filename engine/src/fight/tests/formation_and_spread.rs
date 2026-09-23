@@ -50,6 +50,62 @@ fn the_damage_meter_accounts_for_the_whole_formation() {
     );
 }
 
+/// ONE NUMBERING, AND THE AIMED BODY IS IN IT.
+///
+/// Every mechanism that reaches a body reaches it by an INDEX, and four
+/// things have to agree about what that index means: `FightParams::body`,
+/// `Fight::bodies`, `RunResult::damage_by_body` and `Replay::tracked`. A
+/// mechanism that reaches the wrong one of them deals its damage to another
+/// body's armour and fails nothing else, so the agreement is asserted here
+/// rather than left to each of them to keep.
+///
+/// SAID AS AN IDENTITY, not as a damage figure: the body at index `i` is the
+/// body `FightParams::body(i)` names, at the place it says it stands, and
+/// `body_count` covers every one of them.
+#[test]
+fn one_numbering_runs_from_the_aimed_body_through_the_whole_formation() {
+    let base = crate::model::WeaponBase::from_data("akarius", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let mut arena = crate::arena::Arena::training(3.0);
+    arena.target_id = "aimed".into();
+    arena.target_at = crate::rules::space::Vec2::new(0.0, 5.4);
+    let at = |id: &str, x: f64, y: f64| crate::formation::FoeSpec {
+        id: id.into(),
+        params: Foe::training_dummy(),
+        body_parts: BodyPart::humanoid(),
+        at: crate::rules::space::Vec2::new(x, y),
+    };
+    arena.others = vec![at("left", -2.0, 5.2), at("right", 2.0, 5.2), at("back", 0.0, 7.2)];
+    let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+
+    // 0 IS THE AIMED ONE, and the formation follows it in its own order.
+    assert_eq!(p.body_count(), 4);
+    let names: Vec<&str> = (0..p.body_count())
+        .map(|i| p.body(i).expect("every index under the count is a body").id)
+        .collect();
+    assert_eq!(names, ["aimed", "left", "right", "back"]);
+    let places: Vec<f64> = (0..p.body_count()).map(|i| p.body(i).expect("named").at.y).collect();
+    assert_eq!(places, [5.4, 5.2, 5.2, 7.2]);
+    assert!(p.body(p.body_count()).is_none(), "the count is the end of the list");
+
+    // …AND THE RUN FILES DAMAGE UNDER IT. The replay ranks by these indices
+    // and names each series through the same lookup, so a body that took
+    // something is a body the reader can be shown.
+    let r = run_once(&p, &mut Rng::new(0x5EED));
+    let taken = r.taken.by_body().0;
+    assert!(taken[0] > 0.0, "the aimed body is index 0 and it was shot");
+    let rep = crate::fight::replay::replay(&p, 0x5EED, 8);
+    assert_eq!(rep.tracked.first().map(String::as_str), Some("aimed"));
+    for (slot, &bi) in rep.follow.iter().enumerate() {
+        assert_eq!(
+            rep.tracked[slot].as_str(),
+            p.body(bi).expect("a followed body is a body").id,
+            "the replay's name for slot {slot} must be body {bi}'s own"
+        );
+    }
+}
+
 /// A RANGE IS A WALL, NOT A RAMP.
 ///
 /// The Phantasma's page states the two facts side by side — *"Limited range

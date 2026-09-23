@@ -746,6 +746,46 @@ impl FightParams {
     ///
     /// STATIC FOR THE ENGAGEMENT: nothing moves, so this is computed once and
     /// hoisted out of the pellet loop rather than asked per shot.
+    /// THE FORMATION, IN THE FIGHT'S NUMBERING — 0 is the aimed body and `i`
+    /// is `others[i - 1]`, which is the numbering `RunResult::damage_by_body`,
+    /// `Fight::bodies` and every spread mechanism already use.
+    ///
+    /// THE ONLY PLACE THAT ARITHMETIC IS WRITTEN. It was at a dozen call sites,
+    /// each pairing a runtime body with the spec beside it by hand, and a
+    /// mechanism that reached body 0 through the wrong arm dealt its damage to
+    /// the wrong enemy's armour without failing anything.
+    pub(crate) fn body(&self, i: usize) -> Option<BodySpec<'_>> {
+        match i.checked_sub(1) {
+            None => Some(BodySpec {
+                id: &self.target_id,
+                params: &self.foe,
+                body_parts: &self.body_parts,
+                at: self.target_at,
+            }),
+            Some(j) => self.others.get(j).map(|f| BodySpec {
+                id: &f.id,
+                params: &f.params,
+                body_parts: &f.body_parts,
+                at: f.at,
+            }),
+        }
+    }
+
+    /// How many bodies the formation holds — never zero.
+    pub(crate) fn body_count(&self) -> usize {
+        self.others.len() + 1
+    }
+
+    /// WHERE THEY ALL STAND, in that same numbering. Built rather than
+    /// borrowed because the aimed body's position is a field and the rest live
+    /// in a `Vec`; every caller hoists it out of its hot loop.
+    pub(crate) fn body_positions(&self) -> Vec<crate::rules::space::Vec2> {
+        let mut v = Vec::with_capacity(self.body_count());
+        v.push(self.target_at);
+        v.extend(self.others.iter().map(|f| f.at));
+        v
+    }
+
     pub fn struck_bodies(&self) -> Vec<usize> {
         if self.punch_through_m <= 0.0 || self.others.is_empty() {
             return vec![0];

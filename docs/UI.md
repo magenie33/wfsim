@@ -514,11 +514,12 @@ so a `pointer: coarse` query is the wrong test). `touch-action` follows it:
 
 ## Every enemy has a name, and the page can ask about one
 
-**EVERY ENEMY HAS A NAME, AND THE PAGE CAN ASK ABOUT ONE.** `SpreadFoe` is
+**EVERY ENEMY HAS A NAME, AND THE PAGE CAN ASK ABOUT ONE.** `fight::Body` is
 `{state, debuffs}` per body; `formation::FoeSpec::id` names it, stable across
 edits because it travels in the scenario and is filled in BY POSITION when
-blank. The aimed body is `e1` and lives on the `Arena` — it is not in the
-formation list, it is the fight's own target — so the crowd reads as one list.
+blank. The aimed body is `e1`, and on the wire it lives on the `Arena` rather
+than in the formation list; INSIDE the fight it is `bodies[0]` like any other,
+which is the numbering `FightParams::body` and `damage_by_body` share.
 `/api/simulate` returns a ROLL CALL (`bodies: [{id, aimed, at, damage}]`) of
 the ones that took something, because a per-BODY figure is the only thing that
 can say a crowd was REACHED rather than a big number produced.

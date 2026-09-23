@@ -1,5 +1,23 @@
 use super::*;
 
+/// ONE ENEMY IN THE FORMATION — everything the fight does TO it, and nothing
+/// it does back.
+///
+/// WHERE THE LINE IS: a counter belongs to whoever it counts on. The pools, the
+/// procs, the DoTs and the armour a hit strips are the BODY's, so they are
+/// here; the buff bar, the Galvanized stacks, the arcane runtime and the
+/// damage-instance number are a COMBATANT's and live on the seat.
+///
+/// THE AIMED BODY IS ONE OF THESE — `Fight::bodies[0]`, and nothing else
+/// distinguishes it. Anything the fight holds ABOUT a body belongs here rather
+/// than beside the list, because a mechanism that reaches a body does not know
+/// which one it reached, and a rule it has to ask `if 0` about is a rule that
+/// can be added to one arm and not the other.
+pub(super) struct Body {
+    pub(super) state: TargetState,
+    pub(super) debuffs: DebuffState,
+}
+
 /// WHICH HALF OF ITS DEATH A BODY IS IN. Only a Thrax has a second half, and
 /// only when the fight asked for it (`Foe::spectral`).
 #[derive(Debug, Clone, Copy, PartialEq)]

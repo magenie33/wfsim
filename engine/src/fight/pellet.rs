@@ -74,9 +74,10 @@ pub(super) struct Live<'a> {
     pub(super) r: &'a mut RunResult,
     pub(super) rec: &'a mut crate::record::Record,
     pub(super) d: &'a mut crate::rules::rng::Draws,
-    pub(super) target: &'a mut TargetState,
-    pub(super) others: &'a mut Vec<SpreadFoe>,
-    pub(super) debuffs: &'a mut DebuffState,
+    /// EVERY BODY, THE AIMED ONE FIRST — see `Fight::bodies`. One list rather
+    /// than the aimed body beside the rest, because a pellet's five spread
+    /// mechanisms do not know which one they reached.
+    pub(super) bodies: &'a mut [Body],
     pub(super) gal: &'a mut GalStacks,
     pub(super) arc: &'a mut ArcRuntime,
     pub(super) buff_stacks: &'a mut Vec<LiveStacks>,
@@ -187,9 +188,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     let r = &mut *live.r;
     let rec = &mut *live.rec;
     let d = &mut *live.d;
-    let target = &mut *live.target;
-    let others = &mut *live.others;
-    let debuffs = &mut *live.debuffs;
+    let bodies = &mut *live.bodies;
     let gal = &mut *live.gal;
     let arc = &mut *live.arc;
     let buff_stacks = &mut *live.buff_stacks;
@@ -233,7 +232,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // expired. `mitigation` still
     // prunes and pruning is idempotent, so this is the one call that
     // decides WHEN, rather than a second copy of the rule.
-    debuffs.prune(t, status_damage);
+    bodies[0].debuffs.prune(t, status_damage);
     // Live target-side state for THIS pellet (earlier pellets' procs
     // already count): Cold's flat crit damage received, and Condition
     // Overload's type count. The MITIGATION amps are read one level
@@ -268,13 +267,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // they are both reading.
     let spiteful = match params.crit_damage_below_status_count {
         Some((threshold, bonus))
-            if (debuffs.distinct_statuses() as u32) < threshold =>
+            if (bodies[0].debuffs.distinct_statuses() as u32) < threshold =>
         {
             bonus
         }
         _ => 0.0,
     };
-    let cd_abs = debuffs.cold_cd_bonus(t) + spiteful + weakpoint_cd;
+    let cd_abs = bodies[0].debuffs.cold_cd_bonus(t) + spiteful + weakpoint_cd;
     // PRELUDE OF MIGHT is the one perk whose condition is read at the
     // MOMENT OF THE HIT rather than off the arsenal: "With Critical
     // Chance below 40%", plus the wiki's note on the same row —
@@ -355,7 +354,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // bonus — so the rule is not two rules, it is one: this bonus goes
     // wherever CO goes. `gunco_bucket` routes it.
     let half_hp = if params.foe.max_health() > 0.0
-        && target.health < 0.5 * params.foe.max_health()
+        && bodies[0].state.health < 0.5 * params.foe.max_health()
     {
         active.base_damage_below_half_health
     } else {
@@ -374,7 +373,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     //     rate since they share it) → distinct status TYPES;
     //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
     let co_mult = gunco_bucket(
-        params, active, &mut *debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio,
+        params, active, &mut bodies[0].debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio,
         half_hp,
         co_base,
         crate::model::CoStage::Direct,
@@ -391,7 +390,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // AN EXPLOSION carries no half-health term either — a
         // DIRECT-hit bonus, like the CO it rides beside.
         Some(r) if r.takes_condition_overload => gunco_bucket(
-            params, active, &mut *debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
+            params, active, &mut bodies[0].debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
             r.co_base, crate::model::CoStage::Radial,
         ),
         _ => Gunco { bucket: arc_ratio, ..Default::default() },
@@ -496,7 +495,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // flight. Filled on the first attack part that needs it and read by
     // the second, so the collision and the explosion are one flight.
     let mut ric_path: Option<Vec<(usize, bool)>> = None;
-    let head_factor = |fs: &crate::formation::FoeSpec| -> f64 {
+    let head_factor = |fs: &BodySpec<'_>| -> f64 {
         let m = fs
             .body_parts
             .iter()
@@ -543,7 +542,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // can take it back off the share that carries past a depleted
     // Overguard rather than re-deriving it from a pool it has already
     // spent.
-    let og_mult = if target.overguard > 0.0 {
+    let og_mult = if bodies[0].state.overguard > 0.0 {
         params.arcane.overguard_multiplier
     } else {
         1.0
@@ -722,9 +721,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             == Some(crate::model::BlastKind::Terminal)
     {
         let aim = params.aim_point();
-        let mut bodies = Vec::with_capacity(params.others.len() + 1);
-        bodies.push(params.target_at);
-        bodies.extend(params.others.iter().map(|f| f.at));
+        let bodies = params.body_positions();
         crate::rules::space::Detonation {
             at: crate::rules::space::dissipation_point(
                 det.at,
@@ -827,7 +824,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // `a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target`
         // is the golden test.
         rec.begin_instance();
-        let mit = debuffs.amps(
+        let mit = bodies[0].debuffs.amps(
             t,
             status_damage,
             active.armor_strip_per_puncture,
@@ -1216,13 +1213,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             * pm_mult
             * falloff;
         let head_direct = direct && part.is_head;
-        let col = target.incoming_column(&params.foe);
+        let col = bodies[0].state.incoming_column(&params.foe);
         // THE TARGET AS IT STOOD, before this instance touched it. Read
         // HERE and not afterwards: `apply` spends the pools and, on a
         // kill, respawns the body outright, so a snapshot taken on the
         // next line would be a snapshot of a different fight.
         let mut breakdown = Breakdown::default();
-        let settled = target.apply(
+        let settled = bodies[0].state.apply(
             raw,
             shares,
             head_direct,
@@ -1247,12 +1244,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // lives on. Its own stage, because a blast has no path: every
         // body the sphere touches takes one instance at its own
         // falloff.
-        if let (Some(rr), false) = (rad, others.is_empty()) {
+        if let (Some(rr), false) = (rad, bodies.len() < 2) {
             spread_from_blast(
                 seat,
                 windows,
                 det,
-                &mut *others,
+                bodies,
                 params,
                 active,
                 &rr,
@@ -1284,8 +1281,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // is the larger half on this family: 140 to the collision's 50.
         if let (Some(rr), Some(path)) = (rad, ric_path.as_deref()) {
             for &(body, _) in path {
-                let Some(idx) = body.checked_sub(1) else { continue };
-                let Some(fs) = params.others.get(idx) else { continue };
+                // NOT THE AIMED ONE: it is where the projectile came FROM, and
+                // its own explosion went off on the aimed path.
+                if body == 0 {
+                    continue;
+                }
+                let Some(fs) = params.body(body) else { continue };
                 blast_at(
                 seat,
                 windows,
@@ -1293,7 +1294,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                         at: fs.at,
                         height_m: 0.0,
                     },
-                    &mut *others,
+                    bodies,
                     params,
                     active,
                     &rr,
@@ -1327,7 +1328,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         if direct && ric_path.is_none() {
             if let Some(rc) = params.ricochet {
                 let from = struck.first().copied().unwrap_or(0);
-                let n = params.others.len() + 1;
+                let n = params.body_count();
                 // TWO MECHANICS, and the field each wiki page publishes
                 // is what tells them apart (MECHANICS §Bounce).
                 //
@@ -1374,7 +1375,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // WHAT THE ROUND DID BEHIND THE FIRST BODY — read below, where a
         // weak point's triggers are fired.
         let mut punched = PunchedWeakPoints::default();
-        if direct && !others.is_empty() {
+        if direct && bodies.len() > 1 {
             // …and the SHOT's own factors, kept for the half that fires
             // once rather than per pellet — recorded on a MISS too, so
             // the sphere that went off on the floor still has a number
@@ -1399,7 +1400,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 spread_from_ricochet(
                 seat,
                 windows,
-                    &mut *others,
+                    bodies,
                     params,
                     active,
                     path,
@@ -1427,8 +1428,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             spread_from_echo(
                 seat,
                 windows,
-                &mut *others,
-                debuffs.confusion.len(),
+                bodies,
+                bodies[0].debuffs.confusion.len(),
                 params,
                 active,
                 body_only(raw / bucket),
@@ -1462,7 +1463,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 spread_from_follow_through(
                 seat,
                 windows,
-                    &mut *others,
+                    bodies,
                     params,
                     active,
                     melee_struck,
@@ -1489,7 +1490,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 punched = spread_from_punch_through(
                 seat,
                 windows,
-                    &mut *others,
+                    bodies,
                     params,
                     active,
                     struck,
@@ -1521,7 +1522,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 spread_from_seeds(
                     seat,
                     windows,
-                    &mut *others,
+                    bodies,
                     params,
                     active,
                     beam,
@@ -1607,7 +1608,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
         // crit, a weak point, or both — and "both" is its own number in
         // game, not a crit with a multiplier on it.
-        r.note_kills(killed as u32, t, params.drop_is_in_reach(target.at));
+        r.note_kills(killed as u32, t, params.drop_is_in_reach(bodies[0].state.at));
         // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
         // is left by the shot rather than by anything it set off, and
         // the range is the card's own ("within 50 meters of the user").
@@ -1800,7 +1801,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         }
 
         if let Some(pool) = broke {
-            push_break_proc(&mut *debuffs, seat, params, t, pool);
+            push_break_proc(&mut bodies[0].debuffs, seat, params, t, pool);
         }
         // THE ROW FOR THIS PELLET — a MACRO with two call sites,
         // because a pellet has two ways of ending and the row has to
@@ -1838,7 +1839,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     (false, false) => PopKind::Direct,
                 },
                 &breakdown, settled,
-                Some(&debuffs),
+                Some(&bodies[0].debuffs),
                 ledger::Clock::Hit,
                 || Instance {
                     // WHICH PELLET OF THE PULL THIS WAS. The first is the one
@@ -1915,7 +1916,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // individual; the CLOUDS do not — see the note in
             // `field_tick`. What follows hits the fresh spawn, standing
             // in whatever is still burning where it spawned.
-            debuffs.on_death(seat, params.acid_shells, &params.foe);
+            bodies[0].debuffs.on_death(seat, params.acid_shells, &params.foe);
             log_this_pellet!(Vec::new());
             continue;
         }
@@ -1948,10 +1949,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             head_direct,
             status_chance,
             t,
-            &mut *debuffs,
+            &mut bodies[0].debuffs,
             &mut *gal,
             &mut *arc,
-            &mut *target,
+            &mut bodies[0].state,
             params,
             active,
             &mit,
@@ -2077,7 +2078,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // debuffs are in hand. Bumped AFTER this pull's multishot was
     // rolled, so the hit that earns a stack does not fire it — the same
     // rule every other stacking buff in this loop follows.
-    bump_status_buffs!(params, buff_stacks, &*debuffs, t, d.extra);
+    bump_status_buffs!(params, buff_stacks, &bodies[0].debuffs, t, d.extra);
     // ...and ARM it for the next pellet. ONE roll per pellet that
     // landed at least one status — "Applying multiple status effects in
     // a single hit does not increase the chance for the effect" — and
@@ -2116,22 +2117,22 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // A STATE, so it REFRESHES: the later expiry wins rather than
         // the count going up.
         let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
-        debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
+        bodies[0].debuffs.lifted = Some(bodies[0].debuffs.lifted.map_or(until, |e| e.max(until)));
     }
     // …AND THE SWING'S OWN, which a stance marks per attack. Same rule
     // as the weapon-level pair one line up: applied on the HIT rather
     // than through the roll, and refreshed rather than stacked.
     if swing_forced_independent.contains(&"lifted") {
         let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
-        debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
+        bodies[0].debuffs.lifted = Some(bodies[0].debuffs.lifted.map_or(until, |e| e.max(until)));
     }
     if swing_forced_independent.contains(&"knockdown") {
         let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
-        debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
+        bodies[0].debuffs.knockdown = Some(bodies[0].debuffs.knockdown.map_or(until, |e| e.max(until)));
     }
     if active.independent_procs.contains(&"knockdown") {
         let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
-        debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
+        bodies[0].debuffs.knockdown = Some(bodies[0].debuffs.knockdown.map_or(until, |e| e.max(until)));
     }
         // …AND THE ORDINARY END OF A PELLET, which does get to name
         // what it applied.
@@ -2171,10 +2172,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 // not this stage's, which the detonation itself never gets.
                 xh_bracket: active.extra_hit_bracket(t, windows),
             },
-            &mut *debuffs,
+            &mut bodies[0].debuffs,
             &mut *gal,
             &mut *arc,
-            &mut *target,
+            &mut bodies[0].state,
             params,
             active,
             &mit,
@@ -2231,9 +2232,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     spread_from_influence(
                         seat,
                         body_at,
-                        &mut *others,
-                        &mut *target,
-                        &mut *debuffs,
+                        bodies,
                         params,
                         active,
                         *from,

@@ -40,9 +40,7 @@ pub(super) fn after_the_shot(
     frenzy: &mut Frenzy,
     buff_stacks: &mut [LiveStacks],
     rec_buff_index: &[Option<usize>],
-    target: &mut TargetState,
-    debuffs: &mut DebuffState,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     ammo: &mut Ammo,
     incarnon: &mut IncarnonState,
     double_tap: &mut DoubleTap,
@@ -83,7 +81,7 @@ pub(super) fn after_the_shot(
         // re-pulses and a debuff that survives its field are the same thing
         // from the target's side, which is the only side this arena has.
         if let Some(secs) = active.attractor_seconds {
-            DebuffState::push_capped(&mut debuffs.attractor, *t + secs, 1, *t);
+            DebuffState::push_capped(&mut bodies[0].debuffs.attractor, *t + secs, 1, *t);
         }
 
         // REAVER'S RAPTURE: THE ROUND THAT COMPLETED A BURST, counted here —
@@ -144,7 +142,7 @@ pub(super) fn after_the_shot(
         // drawn like any other. And a restore is NOT a reload — nothing that
         // watches reloads sees it, the same rule `magazine_refill_on_kill` follows.
         if let Some((st, chance, rounds)) = active.round_restore_on_status {
-            if has_status(debuffs, st) && d.extra.chance(chance) {
+            if has_status(&bodies[0].debuffs, st) && d.extra.chance(chance) {
                 let room = (ammo.cap - ammo.loaded).max(0.0);
                 let want = rounds.min(room);
                 if want > 0.0 {
@@ -233,8 +231,7 @@ pub(super) fn after_the_shot(
             after_swing(
                 h, active, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
                 tennokai_heavy, pellets_before, *t,
-                r, melee, incarnon, ammo, arc, target, debuffs,
-                others,
+                r, melee, incarnon, ammo, arc, bodies,
             );
         }
 

@@ -50,7 +50,7 @@ pub struct FoeSpec {
     /// 2026-08-17, which is enough for the ENGINE — it reads bodies by index
     /// and always will — and not enough for anything that has to talk ABOUT
     /// one. Every debuff, every pool and every DoT is already this body's own
-    /// (`fight::SpreadFoe`); what was missing was a way to say WHOSE, so a
+    /// (`fight::Body`); what was missing was a way to say WHOSE, so a
     /// damage figure, a canvas label and a replay could name the same enemy.
     ///
     /// STABLE ACROSS EDITS: it travels in the scenario, so deleting the body in
@@ -62,6 +62,19 @@ pub struct FoeSpec {
     /// Where a pellet can land on it and what each spot multiplies.
     pub body_parts: Vec<crate::target::BodyPart>,
     pub at: Vec2,
+}
+
+/// ONE BODY'S SPEC, however it is stored — a borrowed view, because the aimed
+/// body's fields sit directly on `FightParams` and the rest sit in a `FoeSpec`.
+///
+/// It exists so that a mechanism reaching body `i` asks ONE question and gets
+/// the same shape back whichever of those two it was.
+pub(crate) struct BodySpec<'a> {
+    /// Who this one is — `FoeSpec::id`, and the aimed body's own name.
+    pub(crate) id: &'a str,
+    pub(crate) params: &'a crate::target::Foe,
+    pub(crate) body_parts: &'a [crate::target::BodyPart],
+    pub(crate) at: Vec2,
 }
 
 /// The formation as the sim holds it: who is where, and who is being shot.

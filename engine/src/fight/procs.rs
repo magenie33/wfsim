@@ -369,9 +369,7 @@ pub(super) fn dot_family_cap(dtype: DamageType) -> Option<usize> {
 // WHOSE AREAS THESE ARE — each `AreaHit` carries it, because a cloud pays out
 // to whoever stands near the body long after the proc that left it.
 pub(super) fn drain_area_procs(
-    debuffs: &mut DebuffState,
-    target: &mut TargetState,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
     params: &FightParams,
     // WHO IS NEAR WHOM, built once per run — see `rules::space::Neighbours`. Asking
     // per proc is `O(bodies)` and a dense grid produces thousands of procs a
@@ -387,27 +385,22 @@ pub(super) fn drain_area_procs(
     head_landing: f64,
     arc_landing: &mut Rng,
 ) {
-    if params.others.is_empty() {
+    if bodies.len() < 2 {
         // ONE BODY, so a cloud has nobody to reach and the queue is dropped
         // rather than walked. This is what keeps every single-target fight
         // byte-identical.
-        debuffs.area_out.clear();
-        debuffs.area_hit.clear();
-        others.iter_mut().for_each(|f| {
+        bodies.iter_mut().for_each(|f| {
             f.debuffs.area_out.clear();
             f.debuffs.area_hit.clear();
         });
         return;
     }
-    // Collected first: handing a Dot from body i to body j needs both, and one
-    // of them may be the aimed body, which is not in `others` at all.
+    // Collected first: handing a Dot from body i to body j needs both of them
+    // borrowed at once.
     let mut pending: Vec<(usize, Dot, f64, u16)> = Vec::new();
-    for (dot, r, n) in debuffs.area_out.drain(..) {
-        pending.push((0, dot, r, n));
-    }
-    for (i, f) in others.iter_mut().enumerate() {
+    for (b, f) in bodies.iter_mut().enumerate() {
         for (dot, r, n) in f.debuffs.area_out.drain(..) {
-            pending.push((i + 1, dot, r, n));
+            pending.push((b, dot, r, n));
         }
     }
     // ONE BODY, ONE CORPSE, ONE EXPLOSION PER INSTANT. A cascade terminates in
@@ -419,16 +412,13 @@ pub(super) fn drain_area_procs(
     // The bound is the game's own sentence rather than a cap somebody picked: a
     // body can only die once at one instant, so it can only explode once. Later
     // instants are later deaths and chain normally.
-    let mut exploded = vec![false; others.len() + 1];
+    let mut exploded = vec![false; bodies.len()];
     // …AND THE INSTANT ONES: a simultaneous Blast detonation, and the corpse
     // explosion Acid Shells turns a kill into.
     let mut blows: Vec<(usize, AreaHit)> = Vec::new();
-    for h in debuffs.area_hit.drain(..) {
-        blows.push((0, h));
-    }
-    for (i, f) in others.iter_mut().enumerate() {
+    for (b, f) in bodies.iter_mut().enumerate() {
         for h in f.debuffs.area_hit.drain(..) {
-            blows.push((i + 1, h));
+            blows.push((b, h));
         }
     }
     for (from, dot, radius_m, count) in pending {
@@ -438,17 +428,8 @@ pub(super) fn drain_area_procs(
             if j == from {
                 continue;
             }
-            let (dbf, fp, parts) = if j == 0 {
-                (&mut *debuffs, &params.foe, &params.body_parts)
-            } else {
-                match others.get_mut(j - 1) {
-                    Some(f) => {
-                        let fs = &params.others[j - 1];
-                        (&mut f.debuffs, &fs.params, &fs.body_parts)
-                    }
-                    None => continue,
-                }
-            };
+            let (Some(spec), Some(here)) = (params.body(j), bodies.get_mut(j)) else { continue };
+            let (dbf, fp, parts) = (&mut here.debuffs, spec.params, spec.body_parts);
             let cap = dot_cap_for(fp, dot.dtype);
             // ONE LANDING PER BODY PER ARC, drawn only where a head pays more.
             let dot = if dot.dtype == DamageType::Electricity
@@ -476,14 +457,8 @@ pub(super) fn drain_area_procs(
             if j == from {
                 continue;
             }
-            let (state, dbf, fp) = if j == 0 {
-                (&mut *target, &mut *debuffs, &params.foe)
-            } else {
-                match others.get_mut(j - 1) {
-                    Some(f) => (&mut f.state, &mut f.debuffs, &params.others[j - 1].params),
-                    None => continue,
-                }
-            };
+            let (Some(spec), Some(here)) = (params.body(j), bodies.get_mut(j)) else { continue };
+            let (state, dbf, fp) = (&mut here.state, &mut here.debuffs, spec.params);
             // LINEAR TO NOTHING AT THE RIM where the mechanic says so, and
             // flat where it does not — a Blast detonation reaches everyone
             // inside its sphere for the same number.
@@ -528,7 +503,11 @@ pub(super) fn drain_area_procs(
                     ..Instance::default()
                 },
             );
-            r.note_kills(u32::from(killed), at_now, params.drop_is_in_reach(target.at));
+            // WHERE THE CORPSE FELL, which is the body that DIED and not the
+            // one being aimed at: a kill across the room drops its ammo across
+            // the room. Only a formation reaches here, and the single-target
+            // fight returns above.
+            r.note_kills(u32::from(killed), at_now, params.drop_is_in_reach(spec.at));
             if killed {
                 // A CHAIN, and it needs no arranging: this body's own corpse
                 // explosion is queued here and drained on the next pass, which

@@ -128,11 +128,9 @@ pub(super) fn process_field_ticks(
     // See `process_ticks` — a cloud reads the shooter's live windows.
     w: &CardWindows,
     fields: &mut Vec<FieldState>,
-    debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     until: f64,
-    target: &mut TargetState,
     params: &FightParams,
     active: &FightParams,
     ctx: &FieldCtx,
@@ -141,11 +139,10 @@ pub(super) fn process_field_ticks(
     // A field tick decides BOTH a crit and its procs, so it takes the whole
     // set of streams rather than one of them.
     d: &mut crate::rules::rng::Draws,
-    // THE REST OF THE FORMATION. A cloud is an AREA, so everyone standing in
-    // it burns — which is the base form's half of what a radius mod buys, and
-    // the half a grenade lives on. Empty for every fight
-    // this engine ran before a formation existed.
-    others: &mut [SpreadFoe],
+    // EVERY BODY. A cloud is an AREA, so everyone standing in it burns — which
+    // is the base form's half of what a radius mod buys, and the half a grenade
+    // lives on.
+    bodies: &mut [Body],
 ) {
     // Oldest due tick first, re-scanned each time: a tick's own procs change
     // what the NEXT tick sees, so the order has to be resolved live.
@@ -159,11 +156,10 @@ pub(super) fn process_field_ticks(
         // Status events strictly before this tick land first.
         process_ticks(
             w,
-            debuffs,
+            &mut bodies[0],
             gal,
             arc,
             at + 1e-9,
-            target,
             params,
             active,
             r,
@@ -184,10 +180,9 @@ pub(super) fn process_field_ticks(
             damage_multiplier,
             at,
             ctx,
-            debuffs,
+            &mut bodies[0],
             gal,
             arc,
-            target,
             params,
             active,
             r,
@@ -207,29 +202,29 @@ pub(super) fn process_field_ticks(
         // clouds belong to the body they are stuck to, so only THAT one dying
         // takes them with it. Another body dying inside one is just a body
         // dying inside it.
-        for (bi, spec) in params.others.iter().enumerate() {
+        // FROM BODY 1: the one the cloud is stuck to took its tick above.
+        for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
+            let Some(spec) = params.body(b) else { continue };
             let dist = spec.at.distance(params.target_at);
             if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
                 continue;
             }
-            let SpreadFoe { state, debuffs: fd } = &mut others[bi];
             field_tick(
-            w,
+                w,
                 owner,
                 &part,
                 damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist)),
                 at,
                 ctx,
-                fd,
+                foe,
                 gal,
                 arc,
-                state,
                 params,
                 active,
                 r,
                 rec,
                 d,
-                &spec.params,
+                spec.params,
                 crate::record::Origin::Field,
                 None,
                 false,
@@ -251,7 +246,7 @@ pub(super) fn process_field_ticks(
             // every respawn, which on a fight with instant respawns is most of
             // its uptime. `one_fight`'s three shapes do not see it because
             // their Thrax never dies.
-            debuffs.on_death(owner, params.acid_shells, &params.foe);
+            bodies[0].debuffs.on_death(owner, params.acid_shells, &params.foe);
             return;
         }
     }
@@ -281,10 +276,11 @@ pub(super) fn field_tick(
     damage_multiplier: f64,
     at: f64,
     ctx: &FieldCtx,
-    debuffs: &mut DebuffState,
+    // THE BODY THIS LANDS ON. Its pools and the statuses on them are
+    // one thing, so they arrive as one.
+    body: &mut Body,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
-    target: &mut TargetState,
     params: &FightParams,
     active: &FightParams,
     r: &mut RunResult,
@@ -311,6 +307,7 @@ pub(super) fn field_tick(
     // goes through.
     is_blast: bool,
 ) -> bool {
+    let Body { state: target, debuffs } = body;
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     // The field is its own attack part, so the ability elements are sized off

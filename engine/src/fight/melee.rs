@@ -264,9 +264,7 @@ pub(super) fn after_swing(
     incarnon: &mut IncarnonState,
     ammo: &Ammo,
     arc: &mut ArcRuntime,
-    target: &mut TargetState,
-    debuffs: &mut DebuffState,
-    others: &mut [SpreadFoe],
+    bodies: &mut [Body],
 ) {
         let landed = (r.pellets - pellets_before) as f64;
         // RAGE BUILDS ON EVERY BODY A HIT LANDED ON AND EVERY KILL SINCE THE
@@ -343,7 +341,7 @@ pub(super) fn after_swing(
             // while the target is LIFTED, a status this engine tracks rather
             // than a state it has to assume.
             let chance_now = active.combo_count_chance
-                + if debuffs.lifted.is_some_and(|e| e > t) {
+                + if bodies[0].debuffs.lifted.is_some_and(|e| e > t) {
                     active.combo_count_chance_on_lifted
                 } else {
                     0.0
@@ -446,23 +444,17 @@ pub(super) fn after_swing(
                     at: params.player_at,
                     height_m: 0.0,
                 };
-                let reached = (target.health > 0.0
-                    && crate::rules::space::caught_by_blast(
-                        det.distance_to(params.target_at),
-                        rad.radius_m,
-                    )) as u32
-                    + params
-                        .others
-                        .iter()
-                        .enumerate()
-                        .filter(|(i, spec)| {
-                            others[*i].state.health > 0.0
+                let reached = (0..bodies.len())
+                    .filter(|&b| {
+                        params.body(b).is_some_and(|spec| {
+                            bodies[b].state.health > 0.0
                                 && crate::rules::space::caught_by_blast(
                                     det.distance_to(spec.at),
                                     rad.radius_m,
                                 )
                         })
-                        .count() as u32;
+                    })
+                    .count() as u32;
                 if reached > 0 {
                     melee.combo_points += active.combo_count_on_slam_hit
                         * f64::from(reached)
