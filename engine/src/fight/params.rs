@@ -83,6 +83,24 @@ pub struct IncarnonCycle {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
+    /// EVERYTHING ELSE THAT ACTS IN THIS FIGHT, each one a whole build of its
+    /// own resolved against the SAME arena.
+    ///
+    /// NOT "the companion". The engine does not know what a companion is, the
+    /// way it does not know what a Torid is: a seat is a build and a clock,
+    /// and whether the thing in it is a sentinel, a summon, a second sentinel
+    /// or another Tenno is a label `data/` carries and this never asks.
+    ///
+    /// A WHOLE `FightParams` EACH, not a handful of numbers. The hit path
+    /// reads a hundred and thirty things off `params`, and a seat that
+    /// carried some of them and borrowed the rest would be firing a build
+    /// nobody made. Their fight-level terms agree by construction because
+    /// `from_panel` was handed the same arena.
+    ///
+    /// What a seat does NOT own is the fight: the pools, the status piles and
+    /// the ledger are the world's, shared. That sharing is the point — a
+    /// second seat's Viral is on the body your hit lands on.
+    pub also_acting: Vec<FightParams>,
     /// WHICH RUN IS THE BENCHMARK FIGHT: runs are ranked by this and the one at
     /// `len / 2` is replayed. The scenario's metric decides it.
     pub sample_by: crate::rules::metrics::RunStat,

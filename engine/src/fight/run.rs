@@ -379,7 +379,7 @@ pub fn run_once_traced(
 ) -> RunResult {
     // THE ENGAGEMENT AS IT OPENS — see [`open`]. Destructured by value, so
     // every name below is the one the setup gave it.
-    let (fight, me) = open(params, rng, rec, &trace);
+    let (fight, me) = open(params, Seat::WIELDER, rng, rec, &trace);
     // FLATTENED BACK INTO LOCALS, deliberately. The loop names these thirty-eight
     // pieces directly on the hottest path this engine has, and `open`'s own note
     // measures 2.7% a shot for handing them over any other way. What the split
@@ -407,6 +407,22 @@ pub fn run_once_traced(
     // whichever is due next, which is the whole difference between a fight
     // with a combatant in it and a fight built around one.
     let mut seats: Vec<Combatant> = vec![me];
+    // …AND ONE PER BUILD BESIDE IT. Each opens exactly the way the first did,
+    // so a second seat is not a second code path — it is the same setup run
+    // again for another build against the same arena. The world it opens is
+    // thrown away: there is one fight and the first seat's copy is it.
+    //
+    // ITS OWN `Draws` COMES WITH IT. `open` derives the streams from the seed
+    // it advances, so two seats do not share a stream and neither re-rolls the
+    // other's crits — which is the property that keeps every measured number
+    // where it was when a seat is added.
+    for (i, also) in params.also_acting.iter().enumerate() {
+        if seats.len() >= crate::fight::MAX_COMBATANTS {
+            break;
+        }
+        let (_, other) = open(also, Seat(i + 1), rng, rec, &None);
+        seats.push(other);
+    }
 
     /// WHO ACTS NEXT — the earliest `next_t`, and a TIE GOES TO THE LOWER
     /// SEAT. Ties are not rare: two weapons on the same cadence share every

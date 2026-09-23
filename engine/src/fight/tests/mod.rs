@@ -4,6 +4,7 @@
 use super::*;
 
 mod combatant_attribution;
+mod two_seats;
 mod attrition_times_co;
 mod buff_decay_family;
 mod burst_cadence;
@@ -43,6 +44,7 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            also_acting: Vec::new(),
             sample_by: crate::rules::metrics::RunStat::KillProgress,
             // A FIXTURE ASSUMES ITS ABILITIES UP, which is the fight's default.
             cast_interrupts: Vec::new(),

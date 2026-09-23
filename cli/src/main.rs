@@ -23,6 +23,7 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        also_acting: Vec::new(),
         cast_interrupts: Vec::new(),
         apl_inserted: Default::default(),
         form: wfsim_engine::model::FormKind::Base,

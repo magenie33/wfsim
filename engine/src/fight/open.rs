@@ -134,6 +134,9 @@ pub(super) struct Fixed<'a> {
 #[inline(always)]
 pub(super) fn open<'a>(
     params: &'a FightParams,
+    // WHICH SEAT THIS IS OPENING. A fight opens one per build it was given,
+    // and every instance the seat settles carries this.
+    seat: Seat,
     rng: &mut Rng,
     rec: &crate::record::Record,
     trace: &Option<&mut Replay>,
@@ -664,7 +667,7 @@ pub(super) fn open<'a>(
             frame_seconds,
         },
         Combatant {
-            seat: Seat::WIELDER,
+            seat,
             params,
             apl: params.apl(),
             // WHEN IT FIRST ACTS, which is not zero: a weapon with a wind-up

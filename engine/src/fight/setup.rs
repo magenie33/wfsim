@@ -20,7 +20,22 @@ impl FightParams {
     /// Stable English slugs, never translated: the same rule every id in
     /// `data/` follows, and the page resolves them to names of its own.
     pub fn combatant_ids(&self) -> Vec<&'static str> {
-        vec!["wielder"]
+        let mut out = vec!["wielder"];
+        // A SEAT IS NAMED BY WHERE IT SITS, because the engine does not know
+        // what is in it. The page resolves these to names of its own, exactly
+        // as it does for a body.
+        out.extend(self.also_acting.iter().map(|_| "second"));
+        out.truncate(crate::fight::MAX_COMBATANTS);
+        out
+    }
+
+    /// THE SAME FIGHT WITH ONE MORE THING ACTING IN IT. Its params are
+    /// resolved from the SAME arena, so every fight-level term — the foe, the
+    /// level, the duration, the faction clock — agrees by construction rather
+    /// than by a caller remembering to copy it.
+    pub fn and_also(mut self, other: FightParams) -> Self {
+        self.also_acting.push(other);
+        self
     }
 
     /// Is this stat LOCKED at the weapon's default by an equipped mod?
@@ -975,6 +990,9 @@ impl FightParams {
                 .map(|(_, v)| v)
                 .sum::<f64>();
         Self {
+            // NOBODY ELSE ACTS UNLESS A CALLER SAYS SO. Another seat is another
+            // BUILD, and this constructor was handed one.
+            also_acting: Vec::new(),
             sample_by: crate::rules::metrics::RunStat::KillProgress,
             faction_multiplier,
             // RESOLVED ONCE. The picks are the state and this is a view of them,
