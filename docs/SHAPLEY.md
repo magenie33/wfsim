@@ -68,9 +68,22 @@ A part is anything on the build that has an OFF state:
   the builder would combine them. Cold, Toxin, Heat with the Cold taken out is
   Toxin + Heat, which is Gas. No other rule is needed.
 - **an arcane seat**, which becomes `none`.
-- **an evolution tier**. The ladder is the engine's own: a tier with the tier
-  below it removed is dropped too (`ladder_prefix`). So a lower tier is
-  credited with what it opens.
+- **the Incarnon form**, when the build's mode transforms. It is the tier-1
+  unlock (`unlock_evo`), and OFF means that evolution is not installed. The
+  mode stays what it is: a mode is an APL, and a fight with nothing to
+  transform into builds its list without a transmute (`apl::for_fight`), so
+  the weapon fires the form the cycle returns to.
+- **each later evolution tier**. Taking one out takes out that perk ALONE.
+
+Every subset is sent with `evolutions_as_given: true`, which means the list is
+exactly what is installed. The ladder does not trim it (`ladder_prefix`), and
+a transforming mode does not imply its unlock. Under the ordinary rules,
+taking tier 2 out would take tiers 3 and 4 with it, and the tier-1 unlock
+would be put back by the mode. The lower tier would then carry every perk it
+opens, and the form would carry nothing. So the page names the unlock itself
+in every subset where the form is on. No build, share link or board row
+carries this field. A subset with tier 2 empty and tier 3 on cannot be built
+in game, but neither can "this mod and no other": both are counterfactuals.
 
 Mode, assembly and valence have no off state, only another choice, so they
 are never parts. The wielder and the fight's buffs are not parts yet.

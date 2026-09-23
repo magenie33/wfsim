@@ -197,6 +197,12 @@ pub(crate) fn ladder_prefix(ids: Vec<String>) -> Vec<String> {
         .collect()
 }
 
+/// THE EVOLUTIONS ARE EXACTLY THE LIST: no ladder trims it and no form implies
+/// its unlock. The Shapley analysis's subsets are built this way.
+fn evolutions_as_given(v: &Value) -> bool {
+    v.get("evolutions_as_given").and_then(Value::as_bool).unwrap_or(false)
+}
+
 /// The chosen evolution set: `evolutions` (an array of data ids; ABSENT
 /// entries = empty tier — nothing installed) wins; a legacy `evo2` string
 /// (short names accepted) maps to the historical default trio.
@@ -210,16 +216,19 @@ pub(crate) fn ladder_prefix(ids: Vec<String>) -> Vec<String> {
 /// damage, +20% crit and +100% multishot), and a preset copied across weapons
 /// by the builder's "⇤ import". Both are dropped here rather than refused: a
 /// build is still a legal build without another weapon's perks.
+///
+/// `evolutions_as_given: true` SKIPS THE LADDER, and only the Shapley analysis
+/// sends it (docs/SHAPLEY.md): taking tier 2 out must take out tier 2's perk,
+/// not tiers 3 and 4 with it. No build, share link or board row carries it.
 pub(crate) fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String> {
+    let ladder = !evolutions_as_given(v);
     let mine = |ids: Vec<String>| -> Vec<String> {
         let group = evo_group(info);
-        ladder_prefix(
-            ids.into_iter()
-                .filter(|id| {
-                    wfsim_engine::data::evolutions::get(id).is_some_and(|e| e.weapon == group)
-                })
-                .collect(),
-        )
+        let ids: Vec<String> = ids
+            .into_iter()
+            .filter(|id| wfsim_engine::data::evolutions::get(id).is_some_and(|e| e.weapon == group))
+            .collect();
+        if ladder { ladder_prefix(ids) } else { ids }
     };
     if let Some(arr) = v.get("evolutions").and_then(|x| x.as_array()) {
         let ids: Vec<String> = arr
@@ -843,7 +852,7 @@ fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value
     // controls for ONE fact, and this is which of them decides.
     let unlock = form_unlock_evo(info);
     let mut evos = evos;
-    if form != "base" {
+    if form != "base" && !evolutions_as_given(v) {
         if let Some(u) = unlock {
             if !evos.iter().any(|e| e == u) {
                 evos.push(u.to_string());
@@ -872,8 +881,13 @@ fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value
     // THE HALF THE CYCLE RETURNS TO, off the mode that asked for it — and a
     // request naming no mode gets the default form, which is what
     // `form: gauge_cycle` has always meant.
+    // NO UNLOCK, NO FORM TO TRANSFORM INTO — so no cycle, and the list the
+    // fight runs has no transmute in it. Only an `evolutions_as_given` request
+    // gets here without one; everything else had it implied above.
+    let unlocked = unlock.is_none_or(|u| evos.iter().any(|e| e == u));
     let cycle_from = ((form == "gauge_cycle" || form == "incarnon_cycle")
         && info.has_cycle
+        && unlocked
         && incarnon_id(info).is_some())
     .then(|| {
         modes
@@ -883,12 +897,26 @@ fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value
     });
     // The single form to fire: the requested kind if this weapon registers it,
     // else its default (which is what an unknown or stale preset value gets).
+    let has_gauge =
+        |id: &str| wfsim_engine::data::weapons::spec(id).is_some_and(|s| s.has_gauge());
     let single_form = registered
         .iter()
         .find(|f| f.kind.id() == form)
         .or_else(|| registered.iter().find(|f| f.is_default))
         .map(|f| f.weapon_id)
         .unwrap_or(&info.id);
+    // …and the form it fires is the one the mode RETURNS to, never the locked one.
+    let single_form = if unlocked {
+        single_form
+    } else {
+        modes
+            .iter()
+            .find(|m| Some(m.id) == asked)
+            .map(|m| m.weapon_id)
+            .filter(|id| !has_gauge(id))
+            .or_else(|| registered.iter().find(|f| f.is_default).map(|f| f.weapon_id))
+            .unwrap_or(&info.id)
+    };
     Ok(PlayedMode { mode_id, evos, cycle_from, single_form })
 }
 

@@ -24,8 +24,21 @@ let shapleyChoice = {};
 let shapleyGen = 0;
 let shapleyJob = { running: false, done: 0, total: 0, note: "", result: null };
 
+/// THE EVOLUTION THAT UNLOCKS THIS BUILD'S INCARNON FORM, when the build plays
+/// one — its mode transforms — or null. Off, the mode stays what it is: with
+/// nothing to transform into, the fight's own list has no transmute in it.
+function shapleyFormUnlock() {
+  const w = weaponInfo($("weapon").value) || {};
+  const m = mode || defaultMode(w.id);
+  return w.unlock_evo && (m === "transformed" || isCycleMode(m)) ? w.unlock_evo : null;
+}
+
 /// EVERY PART OF THE OPEN BUILD THAT CAN BE SWITCHED OFF. Mode, assembly and
 /// valence are not here: none of them has an "off", only another choice.
+///
+/// THE INCARNON FORM IS ONE PART, its tier-1 unlock, and its off is the real
+/// one: the weapon fired without transforming. Each later tier is a part too,
+/// and taking one out takes out that perk alone (`evolutions_as_given`).
 function shapleyParts() {
   const out = [];
   slots.forEach((s, i) => {
@@ -36,9 +49,11 @@ function shapleyParts() {
     const a = id !== "none" && arcaneById(id);
     if (a) out.push({ key: "arcane:" + i, kind: "arcane", label: a.name });
   });
+  const unlock = (weaponInfo($("weapon").value) || {}).unlock_evo;
+  if (shapleyFormUnlock()) out.push({ key: "form", kind: "evo", label: evoName(unlock) });
   weaponEvos().forEach((t) => {
     const id = evoSel[t.tier];
-    if (id) out.push({ key: "evo:" + t.tier, kind: "evo", label: `${t.tier} · ${evoName(id)}` });
+    if (id && id !== unlock) out.push({ key: "evo:" + t.tier, kind: "evo", label: `${t.tier} · ${evoName(id)}` });
   });
   return out;
 }
@@ -50,11 +65,17 @@ const shapleyChosen = () => shapleyParts().filter(shapleyPicked);
 /// elements recombine exactly as the builder would combine them.
 function shapleyPayload(parts, mask) {
   const off = new Set(parts.filter((_, i) => !(mask >> i & 1)).map((p) => p.key));
+  // AS GIVEN, NOTHING IS IMPLIED: a build that transforms names its unlock
+  // itself, or the form would be off in every subset rather than in half.
+  const unlock = (weaponInfo($("weapon").value) || {}).unlock_evo;
+  const form = shapleyFormUnlock() && !off.has("form") ? [unlock] : [];
+  const tiers = weaponEvos().map((t) => evoSel[t.tier])
+    .filter((id, i) => id && id !== unlock && !off.has("evo:" + weaponEvos()[i].tier));
   return {
     mods: slots.map((s, i) => (s.mod && !off.has("mod:" + i) ? slotModId(s) : null)).filter(Boolean),
     arcane: arcanes.map((id, i) => (off.has("arcane:" + i) ? "none" : id)),
-    evolutions: weaponEvos().filter((t) => evoSel[t.tier] && !off.has("evo:" + t.tier))
-      .map((t) => evoSel[t.tier]),
+    evolutions: [...form, ...tiers],
+    evolutions_as_given: true,
   };
 }
 

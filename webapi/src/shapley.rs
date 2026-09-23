@@ -280,6 +280,47 @@ mod tests {
         assert!((phi[0] - alone[0]).abs() < 1e-3 && (phi[1] - alone[1]).abs() < 1e-3, "{r}");
     }
 
+    /// TAKING TIER 2 OUT TAKES OUT TIER 2's PERK, not the tiers above it. The
+    /// ladder truncates a build at its first empty rung, and under it a part's
+    /// value would carry every perk it opens; `evolutions_as_given` skips it.
+    #[test]
+    fn a_tier_taken_out_leaves_the_tiers_above_it() {
+        let score = |evos: &[&str], ladder: bool| {
+            let r = simulate_json(&json!({
+                "weapon": "torid", "mode": "cycle", "mods": ["serration"], "evolutions": evos,
+                "evolutions_as_given": !ladder, "enemy": "corrupted_heavy_gunner", "level": 40,
+                "runs": 4, "seed": 1, "duration": 20,
+            }));
+            r["score"].as_f64().unwrap_or(f64::NAN)
+        };
+        let (t1, t3, t4) =
+            ("torid_evo1_incarnon_form", "torid_extended_volley", "torid_survivors_edge");
+        let only_form = score(&[t1], true);
+        assert_eq!(score(&[t1, t3, t4], true), only_form, "the ladder stops at the empty rung");
+        assert!(score(&[t1, t3, t4], false) > only_form * 1.05, "tiers 3 and 4 must still apply");
+    }
+
+    /// THE FORM IS OFF WHEN ITS UNLOCK IS NOT INSTALLED, and the mode stays what
+    /// it is: a cycle with nothing to transform into fires the form it returns
+    /// to, and its list has no transmute in it.
+    #[test]
+    fn a_cycle_without_its_unlock_fires_the_form_it_returns_to() {
+        let run = |mode: &str, evos: &[&str]| {
+            simulate_json(&json!({
+                "weapon": "torid", "mode": mode, "mods": ["serration"], "evolutions": evos,
+                "evolutions_as_given": true, "enemy": "corrupted_heavy_gunner", "level": 40,
+                "runs": 4, "seed": 1, "duration": 20,
+            }))
+        };
+        let off = run("cycle", &[]);
+        let base = run("base", &[]);
+        assert_eq!(off["score"], base["score"], "{off}");
+        assert!(!off["apl"].to_string().contains("transform"), "{}", off["apl"]);
+        let on = run("cycle", &["torid_evo1_incarnon_form"]);
+        assert!(on["apl"].to_string().contains("transform"), "{}", on["apl"]);
+        assert_ne!(on["score"], base["score"]);
+    }
+
     /// Serration and Heavy Caliber add into ONE base-damage bucket, so each
     /// is worth less beside the other: a negative interaction.
     #[test]
