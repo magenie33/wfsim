@@ -7,18 +7,40 @@ use serde_json::{json, Value};
 use super::entry::{park_under_entry_line, Who};
 use super::facts::CrossFact;
 
-/// WHAT A ROW IS ASSUMED TO COST when nothing has measured it — a new build, or
-/// a board written before costs were recorded.
+/// WHAT A ROW COSTS WHEN NOTHING HAS MEASURED IT — THIS RULER'S OWN MEAN.
 ///
-/// THE MEDIAN ROW, counted on a published board: 3.6 s across 7,659 of them,
-/// against 16.9 at the ninetieth percentile, 65.4 at the ninety-ninth and 281
-/// for the worst — a spread of 79x, which is why the packing only has to keep
-/// the monsters apart and a monster is measured the first time it runs.
+/// PRICED FROM THE RULER AND NOT FROM THE BOARD. A ruler is its own
+/// environment and its rows cost what its fight costs: on one published board
+/// the mean row ran 5.8 s under `demolisher` against 25.3 s under
+/// `standard_multi_target`. One figure across all of them prices the expensive
+/// ruler at a quarter, so a backlog that tilts onto it is provisioned a quarter
+/// of the shards it needs and every one of them runs out of clock with the
+/// queue still full.
 ///
-/// IT IS THE MEDIAN AND NOT A ROUND NUMBER because it is charged to every row
-/// nobody has scored, and a run takes ~450 of those: guessing one second
-/// under-charges the whole backlog fourfold and hands one shard the tail.
-pub(crate) const DEFAULT_ROW_SECONDS: f64 = 3.6;
+/// THE MEAN AND NOT THE MEDIAN, because what is being sized is a SUM. These
+/// distributions are right-skewed — a 3.8 s median against a 6.1 s mean — so
+/// summing medians under-counts a slice by a third before any ruler is
+/// mispriced at all.
+pub(crate) fn unmeasured_row_seconds(facts: &super::facts::Facts) -> f64 {
+    let paid: Vec<f64> = facts
+        .values()
+        .map(|f| f.cost_seconds)
+        .filter(|c| *c > 0.0)
+        .collect();
+    if paid.is_empty() {
+        return NO_HISTORY_ROW_SECONDS;
+    }
+    paid.iter().sum::<f64>() / paid.len() as f64
+}
+
+/// WHAT A RULER NOBODY HAS RUN CHARGES — the mean row across every ruler that
+/// HAS been run: 10.07 s over 70,840 of them on a published board.
+///
+/// IT IS CHARGED TO A RULER'S FIRST RUN AND NEVER AGAIN, because that run
+/// measures every row it takes and the next one prices from those. So what it
+/// has to be is the best figure available with nothing measured, which is the
+/// board's own mean and not a round number chosen to look like one.
+const NO_HISTORY_ROW_SECONDS: f64 = 10.07;
 
 /// WHICH SHARD PAYS FOR THIS ROW — the least loaded one — and the load is
 /// charged to it.
@@ -142,6 +164,52 @@ pub(crate) fn write_missing(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **AN UNMEASURED ROW IS PRICED BY ITS OWN RULER.** A figure carried over
+    /// from a cheaper ruler under-charges the whole backlog, and the run is
+    /// sized from that total: the split then provisions a fraction of the
+    /// shards the work needs and every one of them runs out of clock.
+    ///
+    /// THE NUMBERS ARE A PUBLISHED BOARD'S, one ruler each — a `demolisher`
+    /// row against a `standard_multi_target` row. What the test denies is any
+    /// price between them, which is what one figure for both must produce.
+    #[test]
+    fn an_unmeasured_row_is_priced_by_its_own_ruler() {
+        let facts = |costs: &[f64]| -> super::super::facts::Facts {
+            costs
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    (
+                        format!("row{i}"),
+                        super::super::facts::Fact {
+                            score: 1.0,
+                            cost_seconds: *c,
+                            started_at: String::new(),
+                            finished_at: String::new(),
+                        },
+                    )
+                })
+                .collect()
+        };
+
+        let cheap = unmeasured_row_seconds(&facts(&[4.0, 6.0, 8.0, 5.0]));
+        let dear = unmeasured_row_seconds(&facts(&[10.0, 25.0, 60.0, 6.0]));
+        assert!((cheap - 5.75).abs() < 1e-9, "{cheap}");
+        assert!((dear - 25.25).abs() < 1e-9, "{dear}");
+
+        // A ruler nobody has run is the ONE case with no measurement to read,
+        // and it must not silently borrow the other ruler's.
+        assert_eq!(
+            unmeasured_row_seconds(&Default::default()),
+            NO_HISTORY_ROW_SECONDS
+        );
+
+        // A ROW BANKED WITH NO COST IS NOT A FREE ROW. Every board written
+        // before costs were recorded holds zeroes, and averaging them in
+        // prices the backlog at a fraction of what it takes.
+        assert!((unmeasured_row_seconds(&facts(&[0.0, 0.0, 4.0, 6.0])) - 5.0).abs() < 1e-9);
+    }
 
     /// **THE SPLIT IS BY WORK, NOT BY COUNT**, and the case that says so is the
     /// one the board actually has: a few monster rows among many cheap ones.

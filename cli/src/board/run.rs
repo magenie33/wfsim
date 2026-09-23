@@ -13,7 +13,7 @@ use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactL
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
 use super::publish::{write_pages, Row, RowRiven};
 use super::queue::{
-    builds_with_a_row_owed, charge, load_queue, write_missing, DEFAULT_ROW_SECONDS,
+    builds_with_a_row_owed, charge, load_queue, unmeasured_row_seconds, write_missing,
 };
 use super::state::record_state;
 
@@ -48,6 +48,9 @@ pub fn run() {
     // directory of this run's own artifacts — three sources that could
     // disagree, and a rule about which of them won.
     let facts = load_facts(flag("--facts-in"), &bench_id);
+    // WHAT A NEVER-SCORED ROW IS CHARGED, read off this ruler's own
+    // measurements once, beside the facts it is derived from.
+    let unmeasured = unmeasured_row_seconds(&facts);
     let mut reused = 0usize;
 
     // ---- WHAT THIS RUN IS ALLOWED TO FIGHT ----------------------------
@@ -147,7 +150,7 @@ pub fn run() {
     // from. A count cannot answer that: rows differ by 79x, so 3,000 of them is
     // nine minutes or fifty depending on which builds arrived. Each row is
     // charged what whoever last measured it paid, and a row nobody has measured
-    // takes the median.
+    // takes what THIS RULER'S measured rows averaged.
     let mut work_seconds = 0.0f64;
     let mut fresh_seen = 0usize;
     let mut fresh_left = 0usize;
@@ -544,8 +547,9 @@ pub fn run() {
                     // the cost whoever last measured it paid. It survives a
                     // stale fact: the fight has to be redone, but how long it
                     // takes is a property of the build and the ruler, and those
-                    // did not move. A row nobody has measured takes the neutral
-                    // default, which degrades to round-robin and no worse.
+                    // did not move. A row nobody has measured takes what this
+                    // ruler's measured rows averaged, which degrades to
+                    // round-robin and no worse.
                     //
                     // DECIDED INSIDE THE `None` ARM, because a row whose score
                     // is already known costs nothing to publish and must not be
@@ -554,7 +558,7 @@ pub fn run() {
                         .get(&key)
                         .map(|f| f.cost_seconds)
                         .filter(|c| *c > 0.0)
-                        .unwrap_or(DEFAULT_ROW_SECONDS);
+                        .unwrap_or(unmeasured);
                     let mine = charge(&mut load, cost);
                     // Not this shard's slice: another one is simulating it right
                     // now, and publishing a row for it here would mean scoring it
@@ -827,7 +831,7 @@ pub fn run() {
     }
     if dry {
         eprintln!(
-            "dry-run: todo={todo} work={work_seconds:.0} reused={reused} seen={seen}"
+            "dry-run: todo={todo} work={work_seconds:.0} reused={reused} seen={seen} unmeasured={unmeasured:.1}s"
         );
         return;
     }

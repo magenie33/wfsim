@@ -230,9 +230,10 @@ second; the rows it would have taken are the rows the next one takes.
 That is what the cadence rests on, rather than on any run being long enough.
 How many hours it takes to drain a deep queue is a question about the WORK — the
 clock does not have to answer it. The budget still bounds a shard at
-`SCORE_DEADLINE_MINUTES` whatever the depth — shared out across the rulers,
-because the binary runs once each — and an hour with nothing owed costs ONE job,
-because the gate answers `todo=0` and the fan-out never happens.
+`SCORE_DEADLINE_MINUTES` whatever the depth — shared out across the rulers by
+WHERE THE WORK IS, because the binary runs once each — and an hour with nothing
+owed costs ONE job, because the gate answers `todo=0` and the fan-out never
+happens.
 
 **AND NOTHING ELSE BOUNDS THE CADENCE.** The repository is public, so Actions
 minutes are unlimited. One run reads about 40,000 rows of D1 against a free five
@@ -377,6 +378,26 @@ point the split buys startup rather than parallelism: 128 shards pay 333 minutes
 of it, 32 pay 83. `MAX_SHARDS` is the ceiling; how many a run actually takes is
 computed from the work in front of it, because rows differ by 79x and a count
 cannot tell a two-hour slice from a two-minute one.
+
+**AND THE WORK IS PRICED PER RULER.** A row with a fact costs what it last cost;
+a row with none is charged what THIS RULER'S measured rows averaged, which is
+`unmeasured_row_seconds`. One figure across all of them is the same error as a
+count: the mean row is 5.8 s under `demolisher` and 25.3 s under
+`standard_multi_target`, so a backlog tilted onto the expensive ruler is
+provisioned a quarter of the shards it needs and every one of them runs out of
+clock with the queue still full. **The mean and not the median**, because what
+is being sized is a sum and these distributions are skewed — 3.8 s median
+against 6.1 s mean — so summing medians under-counts a slice by a third before
+any ruler is mispriced at all.
+
+**THE SHARD'S CLOCK IS SPLIT THE SAME WAY.** The binary runs once per ruler, so
+each gets its share of `SCORE_DEADLINE_MINUTES` by that same measured work,
+floored at a minute. Split EVENLY instead and a backlog sitting on one ruler —
+which is the usual shape, since a rescore names one and a new ruler starts empty
+— gets a third of the clock while the other two return in seconds. The floor is
+what may carry a shard a minute per idle ruler past the budget, and it stays:
+a ruler whose dry-run gives no answer reports no work, and a share with no floor
+under it would hand that one zero seconds and stop scoring it silently.
 
 **THE CEILING IS NOT FORTY IN PRACTICE.** Counted on live runs, GitHub granted
 12 to 26 concurrent jobs, so `max-parallel` is an upper bound the account
@@ -1567,36 +1588,42 @@ free 5M/day, and 107k writes against a free 100k/day.
    every number (§"When the code moved"), and what a full rescore does pay for
    is bounded by the screen below.
 
-### Where the 132 hours go, measured
+### Where the 179 hours go, measured
 
-Every row records what it cost, so the bill can be read straight off the boards
-rather than estimated. READ AT 7,493 ROWS A RULER, across the three the board
-held then — `single_target_no_aim` has since been retired and
-`demolisher` has taken its place, and neither the row counts nor
-the totals below have been re-read since:
+Every row records what it cost, so the bill can be read straight off the
+`scores` table rather than estimated. Read there, over every row that carries a
+cost — `single_target_no_aim` is retired and `demolisher` has taken its place,
+and the retired ruler's 12,052 rows are kept because a fact is not wrong for
+being old:
 
-| ruler | rows | total | median row | worst row |
-| --- | --- | --- | --- | --- |
-| `standard_multi_target` | 7,493 | **6,153 min** | 20.0 s | **121 min** |
-| `standard_single_target` | 7,493 | 999 min | 3.6 s | 4.2 min |
-| `single_target_no_aim` | 7,493 | 759 min | 2.6 s | 1.7 min |
+| ruler | rows | total | mean row | median row | p99 row | worst row |
+| --- | --- | --- | --- | --- | --- | --- |
+| `standard_multi_target` | 15,225 | **6,413 min** | **25.3 s** | 14.9 s | 217 s | **9.9 min** |
+| `standard_single_target` | 21,778 | 2,194 min | 6.1 s | 3.8 s | 30 s | 4.2 min |
+| `demolisher` | 21,767 | 2,096 min | 5.8 s | 3.7 s | 29 s | 4.7 min |
+| `single_target_no_aim` | 12,052 | 1,181 min | 5.9 s | 2.9 s | 54 s | 1.8 min |
+
+**THE MEAN IS THE COLUMN THE SCHEDULER READS**, and the gap between it and the
+median is the whole reason: every one of these rulers costs half again what its
+median row says, so a slice priced from medians is a slice sized at two thirds.
 
 WHAT CARRIES IS THE SHAPE, not the figures: the bill is dominated by the ruler
 with the most bodies in it, and a single-target ruler costs an order of
 magnitude less however many of them there are. That is a fact about 361 bodies
 against one, and it does not depend on which single-target rulers exist.
 
-**`standard_multi_target` is 78% of it**, and inside that a handful of rows are the tail:
-the top 100 rows of 7,493 are 31% of that ruler's bill, and thirteen of the
-top fifteen are one weapon (Phantasma, a status beam against 361 bodies for
-180 s). That is not a pathology to hunt — the cost of a row is how much the
+**`standard_multi_target` is 60% of the live bill** on 26% of its rows, and
+inside that a handful are the tail: the top 100 rows of 15,225 are 11% of that
+ruler's bill. That is not a pathology to hunt — the cost of a row is how much the
 build actually DOES, so the most expensive rows are the strongest builds on the
 biggest ruler. It is the makespan floor: one row is one indivisible unit, so no
 row-wise fan-out goes below the biggest row.
 
-**RIVEN ROWS ARE 58% of the `standard_multi_target` bill on 33% of its rows** (mean 86 s
-against 31 s), which is the corner search: sixteen probes at `PROBE_RUNS` plus
-one real measurement, ~2.6x a plain row.
+**RIVEN ROWS ARE 57% of the `standard_multi_target` bill on 54% of its rows**, at
+26.7 s against a plain row's 23.5 s. The corner search is not in that figure:
+`wfsim-intake` resolves a shape into its corners before anything is queued, so
+the scorer fights a corner like any other build and a riven row costs what its
+build does.
 
 ### Two ceilings, and neither is the shard count
 
@@ -1653,7 +1680,7 @@ Six properties decide everything downstream:
    same number for ever.
 2. **`f` is expensive** — 21.4 seconds per `(build, ruler)` on average, 8,071
    CPU minutes over 22,656 pairs, and the spread is four orders of magnitude
-   wide (§"Where the 132 hours go").
+   wide (§"Where the 179 hours go").
 3. **The input set only grows**, apart from the one-year expiry.
 4. **The output is a projection** — top N per (weapon, mode, ruler).
 5. **A ROW IS `(build, ruler, mode)`, and a mode is a property of the WEAPON.**
@@ -1770,9 +1797,9 @@ times 24 hours is **960 CPU hours a day, free**. Steady state is nowhere near
 it — about 365 new builds a day across three rulers is ~160 CPU minutes at the
 median row, a quarter of one percent of the budget.
 
-**WHAT EXCEEDS IT IS RESCORES, AND THEY ARE NOT RARE.** A full rescore is 134
+**WHAT EXCEEDS IT IS RESCORES, AND THEY ARE NOT RARE.** A full rescore is 179
 CPU hours, and every push touching `engine`, `webapi` or `cli` asks for one. A
-working day of thirteen such pushes asks for **1,742 CPU hours against 960
+working day of thirteen such pushes asks for **2,327 CPU hours against 960
 available** — nearly twice what exists, which no scheduling policy can absorb
 and no shard count can compress. A board hours behind on such a day is not a
 starved queue; it is an oversubscribed one.
@@ -2164,7 +2191,7 @@ The division is decided by two questions, asked of each piece of data:
 | | question asked of it | if lost | where |
 | --- | --- | --- | --- |
 | the library | constantly | **gone for ever** | D1 `builds` |
-| the facts | every operational one | recomputed, at 134 CPU hours | D1 `scores` |
+| the facts | every operational one | recomputed, at 179 CPU hours | D1 `scores` |
 | the published board | none — it is read | regenerated from the facts | git, served from the CDN |
 | the snapshots | none | it IS the last copy | a git branch, at another vendor |
 

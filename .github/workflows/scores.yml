@@ -131,6 +131,7 @@ jobs:
       shards: ${{ steps.shards.outputs.list }}
       shard_count: ${{ steps.shards.outputs.count }}
       work: ${{ steps.work.outputs.yes }}
+      byruler: ${{ steps.work.outputs.byruler }}
     steps:
       - uses: actions/checkout@v4
 
@@ -344,7 +345,7 @@ jobs:
           # going to do, and the gate below would read it as busy.
           rulers=$(ls data/benchmarks/*.yaml | wc -l)
           SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 / rulers ))"
-          todo=0 work=0
+          todo=0 work=0 byruler=""
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
@@ -358,9 +359,16 @@ jobs:
             w=$(printf '%s' "$line" | grep -o 'work=[0-9]*' | cut -d= -f2 || echo 0)
             todo=$(( todo + ${n:-1} ))
             work=$(( work + ${w:-0} ))
+            byruler="$byruler $id:${w:-0}"
           done
           echo "todo=$todo" >> "$GITHUB_OUTPUT"
           echo "work=$work" >> "$GITHUB_OUTPUT"
+          # …AND WHERE IT IS, because the shard's clock is shared out by
+          # the same measurement the split is sized from. A backlog sits on
+          # ONE ruler for weeks — a rescore names one, a new ruler starts
+          # empty — and an even split caps the only ruler with work at its
+          # share of the clock while the others return in seconds.
+          echo "byruler=$(echo $byruler)" >> "$GITHUB_OUTPUT"
           if [ "$todo" -gt 0 ]; then
             echo "yes=true" >> "$GITHUB_OUTPUT"
             echo "$todo rows to score, about $(( work / 60 )) CPU-minutes of fight"
@@ -492,16 +500,33 @@ jobs:
           # THE SAME BOUNDS THE PLAN COUNTED WITH. A shard that took on a
           # different set from the one the split was sized for is a shard doing
           # somebody else's slice.
-          # THE BUDGET IS THE SHARD'S, SHARED OUT ACROSS THE RULERS. The
+          # THE BUDGET IS THE SHARD'S, SHARED OUT BY WHERE THE WORK IS. The
           # binary runs once per ruler, so handing each the whole figure
-          # makes a shard take THREE times as long as the number says — and
-          # a run longer than the cadence is a tick cancelled every hour.
-          rulers=$(ls data/benchmarks/*.yaml | wc -l)
-          slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 / rulers ))"
+          # makes a shard take as many times as long as there are rulers,
+          # and a run longer than the cadence is a tick cancelled every
+          # hour. Splitting it EVENLY instead caps a backlog that sits on
+          # one ruler at its share of the clock while the other three
+          # return in seconds — the same shortfall the other way round. So
+          # it is split by the work the plan measured.
+          #
+          # THE FLOOR IS WHY A SHARD MAY RUN ONE MINUTE PER IDLE RULER LONG.
+          # A ruler whose dry-run gave no answer reports no work, so a share
+          # with no floor under it hands that one zero seconds and it is never
+          # scored again, silently. The overshoot is bounded and the job's own
+          # cap absorbs it; the other error has no bottom.
+          budget=$(( SCORE_DEADLINE_MINUTES * 60 ))
+          total=0
+          for kv in $BYRULER; do total=$(( total + ${kv#*:} )); done
+          [ "$total" -lt 1 ] && total=1
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
+            w=0
+            for kv in $BYRULER; do [ "${kv%%:*}" = "$id" ] && w=${kv#*:}; done
+            d=$(( budget * w / total ))
+            [ "$d" -lt 60 ] && d=60
+            echo "$id: ${d}s of $budget"
             ./target/release/wfsim-board "$id" \
-              $slice \
+              --new-limit "$NEW_ROWS" --deadline "$d" \
               --facts-in facts-known.ndjson \
               --queue-in queue.ndjson \
               --facts facts.ndjson \
@@ -515,3 +540,4 @@ jobs:
           # and green, which is how a whole shard's rows went nowhere.
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          BYRULER: ${{ needs.submissions.outputs.byruler }}
