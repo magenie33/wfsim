@@ -160,6 +160,23 @@ answer moved**. A moved answer exits non-zero: an optimisation that changes a
 number is not an optimisation, it is a bug, and that is the one thing this must
 never let you scroll past. It catches a change of one part in 10¹².
 
+**THE COST COLUMN COMPARES TWO BINARIES IN ONE SESSION, NOT TWO MOMENTS.**
+`save` keeps the executable beside its numbers, and a comparison runs the saved
+one, then the new one, then the saved one again, against the mean of the two
+outer readings. That is not belt and braces: this machine holds a performance
+state for minutes, and the SAME binary measured 2.4x apart between states —
+three rebuilds of identical source read 890 / 2107 / 2125 ns a shot, and
+running those three alternately read 2126 / 2147 / 2136, the fast one no longer
+fast. A full workspace build leaves the machine about 40% quicker for the next
+few minutes, which is exactly when anybody measures.
+
+Straight after a build the old method said −40% and the interleaved one says
++1.1% and calls it noise. What is left is the decay not being linear across
+three suites, so **a delta under about 10% taken immediately after a build is
+still not a result** — let it settle, or run it twice. A machine reference is
+timed in the same process and printed when it moves; it is evidence that the
+moment was bad, never a scale factor, because it caught only 9% of that 40%.
+
 **IT ALSO GRADES ITS OWN COVERAGE**, and it has to, because the answer column
 can only catch a change in something the suite actually does. For as long as
 this tool existed its default build combined every element away — Hellfire +
