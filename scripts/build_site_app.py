@@ -953,6 +953,32 @@ def page_ld(name: str, desc: str, url: str, cn: str | None = None) -> dict:
     return ld
 
 
+def strip_comments(html: str) -> str:
+    """One page's markup with the source's comments left behind.
+
+    HALF OF `index.html` IS COMMENT and not one byte of it reaches a reader: a
+    crawler does not index a comment and a browser does not render one. The
+    shell is written once and served ~400 times, once per prerendered page, so
+    it is transfer paid four hundred times for nothing — and again over the
+    desktop channel, which is the one surface billed by volume.
+
+    SCRIPT AND STYLE ARE CUT OUT FIRST and put back untouched. `<!--` inside
+    them is JavaScript, and a search that runs across one pairs that with a
+    `-->` in the markup after it — which either takes live code out or, on the
+    safe side of the same bug, leaves the real comment behind.
+    """
+    keep = [(m.start(), m.end()) for m in
+            re.finditer(r"<script\b.*?</script>|<style\b.*?</style>", html, re.S)]
+    out, at = [], 0
+    for a, b in keep + [(len(html), len(html))]:
+        out.append(re.sub(r"<!--.*?-->", "", html[at:a], flags=re.S))
+        out.append(html[a:b])
+        at = b
+    # …AND THE BLANK LINES THEY STOOD ON, which is most of the saving after the
+    # comment itself: a block comment owns its own lines and leaves them.
+    return re.sub(r"\n[ \t]*(?:\n[ \t]*)+\n", "\n\n", "".join(out))
+
+
 def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
           keep_h1: str | None = None, name: str | None = None,
           cn: str | None = None) -> str:
@@ -1566,6 +1592,16 @@ def main() -> None:
     (APP / "worker.js").write_text(named, encoding="utf-8", newline=chr(10))
 
     html = (STATIC / "index.html").read_text(encoding="utf-8")
+    # BEFORE ANYTHING READS IT, because every page below is this string.
+    # The anchors the steps after this look for are TAGS, and each one
+    # exits on not finding its own — so a strip that ate one is caught here
+    # rather than published.
+    lean = strip_comments(html)
+    if len(lean) == len(html):
+        sys.exit("index.html: no comment stripped — the shell ships them to every page")
+    print(f"shell: {(len(html) - len(lean)) // 1024} KB of comment stripped, "
+          f"per page, over {len(html) // 1024} KB")
+    html = lean
     flagged = re.sub(
         r"(\s*)(<script src=\"/app\.js\"></script>)",
         r"\1<script>window.WFSIM_WASM = true;</script>\1\2",
