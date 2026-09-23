@@ -13,6 +13,12 @@
 //! cargo run --release --bin one_fight -- enemy=training   # no mitigation
 //! ```
 //!
+//! `save` keeps the BINARY as well as its numbers, and a later run measures
+//! both in one session — the saved one, this one, the saved one again. That is
+//! the only method that survives a machine which holds a performance state for
+//! minutes, and this one does: the same binary measured 2.4x apart between
+//! states, and measuring straight after a build is always the fast one.
+//!
 //! It prints a delta against the saved baseline AND whether the answer moved.
 //! **An optimisation that changes a number is not an optimisation, it is a
 //! bug**, so a moved answer is a non-zero exit code.
@@ -86,6 +92,26 @@ const SUITE: &[(&str, &str)] = &[
 /// ignored. A baseline is a property of THIS machine on THIS day — committing
 /// one would be publishing somebody else's CPU.
 const BASELINE: &str = "target/one_fight.baseline";
+
+/// …AND THE BINARY THAT PRODUCED THEM.
+///
+/// THE NUMBERS ALONE CANNOT BE COMPARED ACROSS SESSIONS on a machine that
+/// holds a performance state for minutes, and this one does: the suite
+/// measured 2.4x apart with the SAME binary, proven by interleaving two of
+/// them. Measuring right after a build is the fast state, which is exactly
+/// when anybody measures.
+///
+/// So `save` keeps the executable, and a later run measures BOTH — the saved
+/// one, then this one, then the saved one again — and compares against the
+/// mean of the two outer readings. A drift that runs one way through the
+/// session cancels; nothing else does.
+///
+/// WHAT IT LEAVES. Measured by heating the machine with a full build and
+/// reading immediately: the across-session method said −40%, this says −7.8%,
+/// and a minute later both say the same. The residual is the decay not being
+/// linear across the three suites, so a delta under about 10% taken straight
+/// after a build is still not a result — let it settle, or run it twice.
+const BASELINE_EXE: &str = "target/one_fight.baseline.exe";
 
 struct Shape {
     weapon: String,
@@ -441,11 +467,66 @@ fn ablate(weapon: &str, c: &Cfg) {
     );
 }
 
+/// RUN THE SAVED BINARY, once, and read its costs back.
+///
+/// It is an OLDER BUILD OF THIS FILE, so the only thing that may be assumed
+/// about it is the `raw` contract — one `RAW` line a shape. A build from
+/// before `raw` existed prints its ordinary table instead and parses to
+/// nothing, which is the honest answer: no interleaved comparison, and the
+/// caller says so rather than mixing the two methods.
+fn run_baseline_exe(args: &[String]) -> Vec<(String, f64)> {
+    let mut cmd = std::process::Command::new(BASELINE_EXE);
+    cmd.arg("raw");
+    for a in args {
+        if a != "save" && a != "raw" {
+            cmd.arg(a);
+        }
+    }
+    let Ok(out) = cmd.output() else { return Vec::new() };
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|l| l.strip_prefix("RAW\t"))
+        .filter_map(|l| {
+            let f: Vec<&str> = l.split('\t').collect();
+            Some((f.first()?.to_string(), f.get(1)?.parse().ok()?))
+        })
+        .collect()
+}
+
+/// HOW FAST THIS MACHINE IS RIGHT NOW, in nanoseconds an iteration.
+///
+/// EVIDENCE, NOT A CORRECTION. Dividing the costs by it was tried and
+/// measured: a full build left the suite 40% faster and this 9%, so the
+/// division took a tenth of the error out and left a number that READ as
+/// corrected. It is printed when it moves, and the interleaved comparison
+/// (`BASELINE_EXE`) is what the delta actually rests on.
+///
+/// A dependency chain rather than a throughput loop, so it tracks the clock
+/// rather than how wide the machine can run.
+fn reference_ns() -> f64 {
+    const ITERS: u64 = 20_000_000;
+    let mut best = f64::INFINITY;
+    for _ in 0..3 {
+        let t0 = Instant::now();
+        let mut x = 1.000_000_1f64;
+        for _ in 0..ITERS {
+            x = x * 1.000_000_000_1 + 1e-12;
+        }
+        let ns = t0.elapsed().as_secs_f64() * 1e9 / ITERS as f64;
+        // Keep the result alive so the chain cannot be folded away.
+        if x == 0.0 {
+            println!("unreachable");
+        }
+        best = best.min(ns);
+    }
+    best
+}
+
 /// A baseline is a CONFIG line and then four numbers a shape: the two costs
 /// and the two answers. Plain text on purpose — the workspace has no JSON
 /// dependency and this file is meant to be readable when it disagrees with you.
-fn write_baseline(cfg: &str, shapes: &[Shape]) -> std::io::Result<()> {
-    let mut body = format!("#{cfg}\n");
+fn write_baseline(cfg: &str, shapes: &[Shape], reference: f64) -> std::io::Result<()> {
+    let mut body = format!("#{cfg}\n#reference\t{reference:?}\n");
     for s in shapes {
         // `{:?}` on an f64 is Rust's shortest ROUND-TRIPPING form; `{:.6}` was
         // not, so the baseline lost the last digits of the damage and the
@@ -464,13 +545,21 @@ fn write_baseline(cfg: &str, shapes: &[Shape]) -> std::io::Result<()> {
 /// win and is nothing of the kind. The tool caught its own author out that way
 /// within an hour of being written, so the guard is not hypothetical — and a
 /// contributor comparing two engines is exactly who would hit it.
-fn read_baseline() -> (String, Vec<BaseRow>) {
+fn read_baseline() -> (String, f64, Vec<BaseRow>) {
     let text = std::fs::read_to_string(BASELINE).unwrap_or_default();
     let cfg = text
         .lines()
         .find_map(|l| l.strip_prefix('#'))
+        .filter(|l| !l.starts_with("reference"))
         .unwrap_or_default()
         .to_string();
+    // A BASELINE FROM BEFORE THIS EXISTED has no reference, and 0 says so: the
+    // comparison falls back to raw costs and the drift line states that it did.
+    let reference = text
+        .lines()
+        .find_map(|l| l.strip_prefix("#reference	"))
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0.0);
     let rows = text
         .lines()
         .filter(|l| !l.starts_with('#'))
@@ -488,7 +577,7 @@ fn read_baseline() -> (String, Vec<BaseRow>) {
             ))
         })
         .collect();
-    (cfg, rows)
+    (cfg, reference, rows)
 }
 
 
@@ -513,6 +602,11 @@ fn main() -> std::process::ExitCode {
         );
         return std::process::ExitCode::SUCCESS;
     }
+    // ONE LINE A SHAPE AND NOTHING ELSE, for the parent that spawned this: an
+    // interleaved comparison runs the SAVED binary, and the saved binary is an
+    // older build of this file, so the format it prints has to be one the
+    // parent can read without knowing which version wrote it.
+    let raw = args.iter().any(|a| a == "raw");
     let save = args.iter().any(|a| a == "save");
     let ablate_mode = args.iter().any(|a| a == "ablate");
     let verbose = args.iter().any(|a| a == "-v");
@@ -568,14 +662,39 @@ fn main() -> std::process::ExitCode {
         })
         .collect();
 
+    if raw {
+        for s in &measured {
+            println!("RAW\t{}\t{:?}\t{:?}", s.weapon, s.milliseconds_per_run, s.ns_per_shot);
+        }
+        return std::process::ExitCode::SUCCESS;
+    }
+
+    // HOW FAST THE MACHINE IS RIGHT NOW, measured beside the suite rather than
+    // assumed constant — see `reference_ns`.
+    let reference = reference_ns();
+
     if save {
-        match write_baseline(&cfg, &measured) {
-            Ok(()) => println!("baseline saved to {BASELINE} — edit the engine, then run again"),
+        match write_baseline(&cfg, &measured, reference) {
+            Ok(()) => {
+                // THE BINARY, NOT ONLY ITS NUMBERS. Copy failing is not fatal:
+                // the numbers still compare, and the run says the cost column
+                // fell back to the weaker method.
+                let exe = std::env::current_exe().ok();
+                let copied = exe
+                    .as_ref()
+                    .and_then(|e| std::fs::copy(e, BASELINE_EXE).ok())
+                    .is_some();
+                println!("baseline saved to {BASELINE} — edit the engine, then run again");
+                if !copied {
+                    println!("  ! the binary could not be kept, so a later cost delta is the");
+                    println!("    across-session kind this machine cannot support");
+                }
+            }
             Err(e) => println!("could not save the baseline: {e}"),
         }
     }
 
-    let (base_cfg, base) = read_baseline();
+    let (base_cfg, base_reference, base) = read_baseline();
     // A DIFFERENT FIGHT IS NOT A COMPARISON. Refused rather than silently
     // diffed, and it says what to do about it.
     let same_fight = base_cfg == cfg;
@@ -587,7 +706,49 @@ fn main() -> std::process::ExitCode {
 ");
     }
     let has_base = !base.is_empty() && !save && same_fight;
-    let col = if has_base { "vs base" } else { "noise" };
+    // THE SAVED BINARY, MEASURED IN THIS SESSION AND AROUND OURS. `measured`
+    // was taken between these two, so a drift that runs one way through the
+    // session sits on both sides of the comparison and cancels. This is the
+    // only method that survived the 2.4x — see `BASELINE_EXE`.
+    let interleaved: Vec<(String, f64)> = if has_base && std::path::Path::new(BASELINE_EXE).exists()
+    {
+        let before = run_baseline_exe(&args);
+        let after = run_baseline_exe(&args);
+        before
+            .iter()
+            .filter_map(|(w, b)| {
+                let a = after.iter().find(|(w2, _)| w2 == w)?.1;
+                Some((w.clone(), (b + a) / 2.0))
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    // DID THE MACHINE HOLD STILL? Anything past a few per cent and the cost
+    // column is comparing two machines, not two engines — so it is refused,
+    // exactly as a different fight is. The answer column is unaffected and
+    // still prints: a moved answer is a bug whatever the clock was doing.
+    let machine_moved = has_base
+        && interleaved.is_empty()
+        && base_reference > 0.0
+        && (reference / base_reference - 1.0).abs() > 0.03;
+    if has_base && base_reference <= 0.0 {
+        println!("  ! this baseline predates the machine check — `save` a new one.
+");
+    }
+    if machine_moved {
+        println!("  ! THE MACHINE MOVED {:+.0}% between the two measurements ({:.3} → {:.3} ns",
+            (reference / base_reference - 1.0) * 100.0, base_reference, reference);
+        println!("    an iteration), so no cost delta is shown: it would be the difference");
+        println!("    between two machines. Measured here: a full build leaves this one 40%");
+        println!("    faster for minutes, and the reference catches a tenth of that — enough");
+        println!("    to KNOW, not enough to correct. `save` a fresh baseline in this session");
+        println!("    and re-run, or compare the two binaries interleaved.
+");
+    }
+    let has_cost_base = has_base && !machine_moved;
+    let col = if has_cost_base { "vs base" } else { "noise" };
     // WHAT THE COLUMN IS. It prints `milliseconds_per_run` and said
     // "multishot/run", which is a different quantity entirely — a header that
     // names the wrong thing in the tool that decides whether a change is a
@@ -623,10 +784,20 @@ fn main() -> std::process::ExitCode {
             }
         };
         let delta = match prior {
-            Some(b) if has_base => {
+            Some(b) if has_cost_base => {
                 sum_now += s.milliseconds_per_run;
-                sum_was += b.1;
-                let d = (s.milliseconds_per_run - b.1) / b.1;
+                sum_was += interleaved
+                    .iter()
+                    .find(|(w, _)| *w == s.weapon)
+                    .map_or(b.1, |(_, v)| *v);
+                // THE INTERLEAVED READING FIRST, because it was taken in
+                // this session; the saved number is the fallback and it is the
+                // one the machine can defeat.
+                let was = interleaved
+                    .iter()
+                    .find(|(w, _)| *w == s.weapon)
+                    .map_or(b.1, |(_, v)| *v);
+                let d = (s.milliseconds_per_run - was) / was;
                 // A DELTA UNDER THE MACHINE'S OWN SPREAD IS NOT A RESULT, and
                 // saying "−1.8%" for it invites a conclusion the measurement
                 // cannot support.
@@ -692,6 +863,8 @@ fn main() -> std::process::ExitCode {
             d * 100.0,
             if d.abs() < 0.02 { "  (inside the noise — not a result)" } else { "" }
         );
+    } else if machine_moved {
+        println!("every answer unchanged · no cost delta: the machine moved between the two");
     } else if !save {
         println!("no baseline yet — `cargo run --release --bin one_fight -- save` to make one");
     }
