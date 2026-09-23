@@ -2919,3 +2919,35 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .shp-i.syn{background:color-mix(in srgb,var(--good) var(--a),transparent)}
 .shp-i.dil{background:color-mix(in srgb,var(--critical) var(--a),transparent)}
 .shp-diag{background:var(--panel2)}
+
+/* THE WEAPON'S BRIEF — the only part of a weapon page that is about the
+   weapon, and it ships in the served HTML so a reader that never runs
+   JavaScript still gets every figure. It folds from its own heading like any
+   section; the body stays in the document either way, which is what lets it
+   be closed by default without hiding anything from a machine. */
+.w-brief{margin:0 0 14px}
+.w-brief>.fold-h>.w-cn{color:var(--muted);font-size:12px}
+.w-brief>.fold-h>.sim-hint{color:var(--text-2)}
+.w-tab{border-collapse:collapse;width:100%;font-size:12px;
+  font-variant-numeric:tabular-nums;margin:0 0 10px}
+.w-tab:last-child{margin-bottom:0}
+.w-tab caption{caption-side:top;text-align:left;color:var(--muted);
+  font-size:11px;padding:0 0 6px}
+.w-tab th,.w-tab td{padding:5px 10px 5px 0;vertical-align:top;
+  border-bottom:1px solid var(--line);text-align:left}
+.w-tab tr:last-child>*{border-bottom:0}
+.w-tab th{color:var(--muted);font-weight:500;white-space:nowrap}
+.w-tab td{color:var(--text-2)}
+.w-tab .w-num{color:var(--gold);font-weight:600;text-align:right;
+  white-space:nowrap;padding-right:14px}
+/* THE ANSWER TABLE IS THE WIDE ONE and a build is a long cell, so it scrolls
+   in a box of its own rather than pushing the page sideways. */
+.w-answers{display:block;overflow-x:auto;white-space:normal}
+.w-answers thead th{color:var(--text-2);font-weight:600}
+.w-answers tbody td:first-child{color:var(--text);white-space:nowrap}
+/* WHAT THE NUMBER DOES NOT ACCOUNT FOR. It is absent on a weapon with nothing
+   to admit, so text here is a signal rather than a filled slot. */
+.w-notes{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.w-notes b{color:var(--text-2);font-weight:600}
+.w-notes ul{margin:5px 0 0;padding-left:18px}
+.w-notes li{margin:3px 0}

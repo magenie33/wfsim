@@ -86,9 +86,10 @@ function renderWeaponDoc() {
   const cells = wbenchCells(w.id);
   box.hidden = !cells.length;
   if (!cells.length) { box.innerHTML = ""; return; }
-  const nameOf = (id) => {
+  const split = (id) => {
     const b = (META.benchmarks || []).find((x) => x.id === id);
-    return b ? tr(b.name).split(" · ")[0] : id;
+    const parts = b ? tr(b.name).split(" · ") : [id];
+    return [parts[0], parts.slice(1).join(" · ")];
   };
   // ONE LINE PER RULER, not per cell: a weapon played seven ways has seven
   // rows under one ruler and they are the TAB's subject, not the summary's.
@@ -97,9 +98,35 @@ function renderWeaponDoc() {
     const had = lead.get(c.benchmark);
     if (!had || c.best.score > had.best.score) lead.set(c.benchmark, c);
   }
-  box.innerHTML = [...lead.values()].map((c) => `<p>${escHtml(
-    `${nameOf(c.benchmark)} · ${modeLabel(w, c.mode)} — `
-    + `${tr("The best riven-free build")} ${c.best.shown != null ? c.best.shown : c.best.score.toFixed(4)}`)}</p>`).join("");
+  // THE SAME SHAPE THE PRERENDER WROTE, because this replaces it in place: a
+  // block that turned from a table into a list of sentences the first time the
+  // reader changed weapon would be two designs for one thing.
+  const rows = [...lead.values()].map((c) => {
+    const [ruler, fight] = split(c.benchmark);
+    const gear = wbenchGear(c.best).map((g) => {
+      const m = g.kind === "arcane" ? arcaneById(g.id) : modById(g.id);
+      return m ? m.name : g.id;
+    }).join(", ");
+    return `<tr><td>${escHtml(ruler)}</td><td>${escHtml(fight)}</td>`
+      + `<td>${escHtml(modeLabel(w, c.mode))}</td>`
+      + `<td class="w-num">${escHtml(String(
+        c.best.shown != null ? c.best.shown : c.best.score.toFixed(4)))}</td>`
+      + `<td>${escHtml(gear)}</td></tr>`;
+  }).join("");
+  const gaps = gapsOf(w).map(trGap).filter(Boolean);
+  box.innerHTML = `<div class="fold sect w-brief" data-fold="w-brief">`
+    + `<div class="fold-h"><b>${escHtml(weaponDisplayName(w))}</b></div>`
+    + `<div class="fold-b">`
+    + `<table class="w-tab w-answers"><caption>${escHtml(tr("The best riven-free build"))}`
+    + `</caption><thead><tr><th>${escHtml(tr("Ruler"))}</th><th>${escHtml(tr("Fight"))}</th>`
+    + `<th>${escHtml(tr("Mode"))}</th><th>${escHtml(tr("Score"))}</th>`
+    + `<th>${escHtml(tr("Build"))}</th></tr></thead><tbody>${rows}</tbody></table>`
+    + (gaps.length
+      ? `<div class="w-notes"><b>${escHtml(tr("Not modelled here"))}</b><ul>`
+        + gaps.map((g) => `<li>${escHtml(g)}</li>`).join("") + `</ul></div>`
+      : "")
+    + `</div></div>`;
+  wireFolds(box);
 }
 
 function renderWeaponBench() {

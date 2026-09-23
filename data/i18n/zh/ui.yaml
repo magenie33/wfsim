@@ -409,6 +409,8 @@ ui:
   "Open build": "打开"
   "Parts": "配件"
   "Ruler": "基准"
+  "Fight": "战斗"
+  "Not modelled here": "这里没有建模的部分"
   "Score": "分数"
   "search mods, arcanes, evolutions or riven stats": "搜索 MOD、赋能、进化或裂罅词条"
   "Show {k} more of {n}": "再显示 {k} 个（共 {n} 个）"

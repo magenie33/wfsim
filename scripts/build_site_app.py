@@ -905,6 +905,85 @@ def board_best() -> dict:
     return out
 
 
+def unmodelled_reasons() -> dict:
+    """The shared admissions by id — `data/unmodelled/reasons.yaml`."""
+    y = yload((ROOT / "data" / "unmodelled" / "reasons.yaml").read_text(encoding="utf-8"))
+    return {k: (v or {}).get("text", "") for k, v in (y.get("reasons") or {}).items()}
+
+
+def caveats_of(spec: dict, reasons: dict) -> list[str]:
+    """WHAT THIS WEAPON'S NUMBER DOES NOT ACCOUNT FOR, in the weapon's own words.
+
+    A reference carries its parameters and the reason carries the template, so
+    the sentence is assembled the way the app assembles it — one spelling of
+    each admission, not one per weapon (`data/unmodelled/reasons.yaml`).
+    """
+    out = []
+    for item in spec.get("unmodeled") or ():
+        if isinstance(item, str):
+            out.append(item)
+            continue
+        text = reasons.get((item or {}).get("reason"), "")
+        if not text:
+            continue
+        for k, v in (item or {}).items():
+            if k == "reason":
+                continue
+            shown = f"{v:g}" if isinstance(v, (int, float)) and not isinstance(v, bool) else str(v)
+            text = text.replace("{" + k + "}", shown)
+        out.append(text)
+    return out
+
+
+def brief_block(name, cn, facts, stat_rows, board_rows, caveats) -> str:
+    """THE WEAPON'S OWN CONTENT, as data rather than as sentences.
+
+    A build is tabular and a ruler's answer is tabular; rendering either as
+    English prose is what made three near-identical paragraphs out of three
+    answers that differ by 13x. A table says the same thing in the same tokens
+    and shows the difference at a glance.
+
+    IT SHIPS IN THE SERVED HTML AND IT FOLDS. A fold is CSS — the body stays in
+    the document whether it is open or shut — so a reader that never runs
+    JavaScript, which is most of what reads a page on a machine's behalf, still
+    reads every figure here. Anything drawn after boot is invisible to them.
+    """
+    e = html_mod.escape
+    head = (f'      <div class="fold-h"><b>{e(name)}</b>'
+            + (f'<span class="w-cn">{e(cn)}</span>' if cn else "")
+            + f'<span class="sim-hint">{e(facts)}</span></div>\n')
+    rows = "".join(f"        <tr><th>{e(k)}</th><td>{e(v)}</td></tr>\n" for k, v in stat_rows)
+    stats = f'      <table class="w-tab">\n{rows}      </table>\n'
+    answers = ""
+    if board_rows:
+        cap = f"Best riven-free build on the WFSim board{f', as of {board_asof()}' if board_asof() else ''}"
+        body = ""
+        for ruler, fight, mode, score, gear in board_rows:
+            body += (f"          <tr><td>{e(ruler)}</td><td>{e(fight)}</td><td>{e(mode)}</td>"
+                     f"<td class=\"w-num\">{e(score)}</td><td>{e(gear)}</td></tr>\n")
+        answers = (
+            f'      <table class="w-tab w-answers">\n'
+            f"        <caption>{e(cap)}</caption>\n"
+            "        <thead><tr><th>Ruler</th><th>Fight</th><th>Mode</th>"
+            "<th>Score</th><th>Build</th></tr></thead>\n"
+            f"        <tbody>\n{body}        </tbody>\n      </table>\n"
+        )
+    # NOTHING IS SAID WHERE THERE IS NOTHING TO SAY. The slot carries what this
+    # weapon's number does not account for and nothing else, so text here is a
+    # signal rather than filler — and a weapon with no admission shows none.
+    notes = ""
+    if caveats:
+        items = "".join(f"        <li>{e(c)}</li>\n" for c in caveats)
+        notes = f'      <div class="w-notes"><b>Not modelled here</b>\n        <ul>\n{items}        </ul>\n      </div>\n'
+    return (
+        '    <div class="fold sect w-brief" data-fold="w-brief">\n'
+        + head
+        + '      <div class="fold-b">\n'
+        + answers + stats + notes
+        + "      </div>\n    </div>\n"
+    )
+
+
 def board_sentence(ruler_name: str, row: dict, weapon: str) -> str:
     """One board row as a sentence that carries everything it depends on."""
     names = gear_names()
@@ -1088,6 +1167,7 @@ def prerender(flagged: str) -> None:
     zh = yload((ROOT / "data" / "i18n" / "zh" / "names.yaml").read_text(encoding="utf-8"))
     zh_names = zh.get("weapons", {})
 
+    REASONS = unmodelled_reasons()
     for spec in roster():
         wid, name = spec["id"], spec["name"]
         cn = zh_names.get(wid)
@@ -1133,20 +1213,36 @@ def prerender(flagged: str) -> None:
         detail = ", ".join(x for x in gear if x)
         traits = ", ".join(t.replace("_", " ") for t in (spec.get("traits") or ()))
 
-        # The crawler-visible body, removed as soon as the app takes over.
-        seo = (
-            f"    <p>{html_mod.escape(name)}"
-            f"{f' / {html_mod.escape(cn)}' if cn else ''} — Warframe. "
-            f"{html_mod.escape(facts)}</p>\n"
-            f"    <p>{html_mod.escape(stats)}.</p>\n"
-            + (f"    <p>{html_mod.escape(detail)}.</p>\n" if detail else "")
-            + (f"    <p>Traits: {html_mod.escape(traits)}.</p>\n" if traits else "")
-            + "".join(f"    <p>{html_mod.escape(board_sentence(rn, row, name))}</p>\n"
-                      for rn, row in board_best().get(wid, ()))
-            + "    <p>Build, simulate and optimize this weapon at "
-            f'<a href="{SITE}/">wfsim.app</a>, or browse '
-            f'<a href="{SITE}/weapons">every weapon</a>.</p>\n'
-        )
+        # THE WEAPON'S OWN CONTENT, and it is the only part of this page that
+        # is not the shell. As sentences it was 6% of the page's words; as
+        # tables it is the same figures in a shape a reader and a machine can
+        # both take apart.
+        stat_rows = [("Damage", f"{total:g}"
+                      + (f" x{ms:g} multishot" if ms != 1.0 else "")
+                      + f" ({', '.join(f'{k} {v:g}' for k, v in sorted(dmg.items()))})"),
+                     ("Critical", f"{atk['crit_chance'] * 100:g}% at {atk['crit_multiplier']:g}x"),
+                     ("Status", f"{atk['status_chance'] * 100:g}%")]
+        for label, key, unit in (("Magazine", "magazine", " rounds"),
+                                 ("Reload", "reload_seconds", " s"),
+                                 ("Reserve ammo", "ammo_max", ""),
+                                 ("Accuracy", "accuracy", ""),
+                                 ("Riven disposition", "disposition", "")):
+            if spec.get(key):
+                stat_rows.append((label, f"{spec[key]:g}{unit}"))
+        if traits:
+            stat_rows.append(("Traits", traits))
+        names_of = gear_names()
+        board_rows = []
+        for rn, row in board_best().get(wid, ()):
+            ruler, _, fight = rn.partition(" \u00b7 ")
+            gear = [names_of.get(m, m) for m in (row.get("mods") or ())]
+            if row.get("exilus"):
+                gear.append(names_of.get(row["exilus"], row["exilus"]))
+            gear += [names_of.get(a, a) for a in (row.get("arcanes") or ())]
+            board_rows.append((ruler, fight, row.get("mode", "base").replace("_", " "),
+                               row.get("shown") or f"{row['score']:.4g}", ", ".join(gear)))
+        seo = brief_block(name, cn, facts, stat_rows, board_rows,
+                          caveats_of(spec, REASONS))
         out = APP / wiki_path(spec).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)
