@@ -314,8 +314,24 @@ function renderResults(r, testedAt) {
       ${mbar((x.damage || 0) / top * 100, "", (i % 8) + 1, false)}
       <span class="mval">${n0(x.damage)} · ${pct2((x.damage || 0) / total)}</span>
     </div>`).join("");
+    // …AND WHAT EACH OF THEM READS. A crit rate is a seat's or it is nobody's,
+    // so these are per seat and the fight has no such figure at all. Drawn
+    // only where there is more than one: a table of one row repeating the
+    // KPI tiles above it is a second copy of one fact.
+    const each = list.length < 2 ? "" : `<div class="seat-table">
+      <div class="seat-h">${["", tr("Shots"), tr("Pellets crit"), tr("Orange+"),
+        tr("Crit tier"), tr("Procs"), tr("Reloads"), tr("Finishes")]
+        .map((h) => `<span>${escHtml(h)}</span>`).join("")}</div>
+      ${list.map((x) => `<div class="seat-r" data-combatant="${escHtml(x.id)}">
+        <span class="nm">${escHtml(combatantName(x.id))}</span>
+        <span>${n0(x.shots)}</span><span>${pc(x.crit_rate)}</span><span>${pc(x.big_crit_rate)}</span>
+        <span>${(x.crit_tier || 0).toFixed(2)}</span><span>${n0(x.procs)}</span>
+        <span>${n0(x.reloads)}</span><span>${n0(x.finishes)}</span>
+      </div>`).join("")}
+      <p class="fs-n">${escHtml(tr("a kill is the fight's and a finish is one seat's — without that split every seat claims them all"))}</p>
+    </div>`;
     return foldBlock("combatants", tr("Damage by combatant"), tr("what each thing acting in this fight dealt"),
-      `<div class="meter">${rows}</div>`);
+      `<div class="meter">${rows}</div>${each}`);
   };
 
   const met = metricOf(sim.metric);

@@ -15,6 +15,11 @@ pub struct Summary {
     /// [`FightParams::combatant_ids`]. Mean over the runs, like everything else
     /// here.
     pub mean_damage_by_combatant: CombatantDamage,
+    /// WHAT EACH SEAT DID, summed over the runs — the counters divided by run
+    /// count where the panel wants a mean, and left whole where it wants a
+    /// count. Reported alongside the fight's own for the same reason the
+    /// damage is: neither answers the other's question.
+    pub by_seat: [SeatCounters; MAX_COMBATANTS],
     pub runs: u32,
     pub duration_seconds: f64,
     pub mean_damage: f64,
@@ -287,6 +292,7 @@ pub struct Shard {
     pub(super) sources: SourceDamage,
     pub(super) by_body: Vec<f64>,
     pub(super) by_combatant: Vec<f64>,
+    pub(super) seat_counters: [SeatCounters; MAX_COMBATANTS],
     /// One per run: what it scored, and the RNG state it started from.
     ///
     /// The benchmark fight is what the replay shows, and finding it
@@ -344,6 +350,7 @@ impl Default for Shard {
             sources: SourceDamage::default(),
             by_body: vec![0.0; crate::formation::MAX_BODIES + 1],
             by_combatant: vec![0.0; crate::fight::MAX_COMBATANTS],
+            seat_counters: [SeatCounters::default(); MAX_COMBATANTS],
             index: Vec::new(),
             series: RunSeries::default(),
         }
@@ -395,6 +402,9 @@ impl Shard {
         self.crit_tier_sum += o.crit_tier_sum;
         self.headshots += o.headshots;
         add_sources(&mut self.sources, &o.sources);
+        for (a, b) in self.seat_counters.iter_mut().zip(&o.seat_counters) {
+            a.add(*b);
+        }
         for (a, b) in self.by_combatant.iter_mut().zip(&o.by_combatant) {
             *a += *b;
         }
@@ -535,6 +545,9 @@ pub fn shard(
         a.crit_tier_sum += u64::from(r.crit_tier_sum);
         a.headshots += u64::from(r.headshots);
         add_sources(&mut a.sources, &r.sources);
+        for (acc, v) in a.seat_counters.iter_mut().zip(r.per_seat) {
+            acc.add(v);
+        }
         for (acc, v) in a.by_combatant.iter_mut().zip(r.dealt.by_combatant().0) {
             *acc += v;
         }
@@ -602,6 +615,7 @@ impl Shard {
     let summary = Summary {
         mean_damage_by_body,
         mean_damage_by_combatant,
+        by_seat: self.seat_counters,
         runs,
         duration_seconds: params.duration_seconds,
         mean_damage: mean,

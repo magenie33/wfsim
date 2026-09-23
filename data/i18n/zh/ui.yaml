@@ -1116,6 +1116,8 @@ ui:
   "stop": 停止
   "back to the finished fight": 回到打完的那一刻
   "a kill": 一次击杀
+  "Finishes": 收尾
+  "a kill is the fight's and a finish is one seat's — without that split every seat claims them all": 击杀是整场的，收尾才是某一个座位的——不分开的话，每个座位都会声称杀了同样多
   "Damage by combatant": 按参战单位
   "what each thing acting in this fight dealt": 这场仗里每一个会行动的单位各打出多少
   "You": 你

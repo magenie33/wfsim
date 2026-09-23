@@ -65,27 +65,42 @@ fn both_seats_book_through_the_same_door() {
     );
 }
 
-/// THE RUN'S COUNTERS ARE THE FIGHT'S, AND WITH TWO SEATS THEY ARE A MIXTURE.
+/// A SEAT'S COUNTERS ARE ITS OWN, AND THEY COME TO THE FIGHT'S.
 ///
-/// `shots`, `crits`, `procs` and the rest sit on `RunResult`, so a fight with
-/// two things firing reports their sum — and a sum of two weapons' shots is
-/// nobody's shot count. The panel already knows this is wrong for it: there is
-/// no such thing as the fight's crit rate.
-///
-/// Pinned rather than left to be discovered. It fails the day the counters go
-/// per seat, which is the day it should.
+/// `shots` and `crits` on the run are the FIGHT's — a real question with a
+/// real answer — and `per_seat` is the other one. Both are reported because
+/// neither is the other: there is no such thing as the fight's crit rate, and
+/// "how many shots were fired here" is not a seat's to answer.
 #[test]
-fn the_runs_counters_are_the_fights_not_a_seats() {
-    let solo = run_once(&fight_for(&["cernos_prime"]), &mut Rng::new(0x5EED));
-    let pair = run_once(
+fn each_seat_counts_its_own_and_they_sum_to_the_fights() {
+    let r = run_once(
         &fight_for(&["cernos_prime", "braton_prime"]),
         &mut Rng::new(0x5EED),
     );
+    let shots: u32 = r.per_seat.iter().map(|c| c.shots).sum();
+    let crits: u32 = r.per_seat.iter().map(|c| c.crits).sum();
+    assert_eq!(shots, r.shots, "seats fired {shots} of the fight's {}", r.shots);
+    assert_eq!(crits, r.crits, "seats crit {crits} of the fight's {}", r.crits);
     assert!(
-        pair.shots > solo.shots,
-        "two seats fired {} shots against one seat's {}",
-        pair.shots,
-        solo.shots
+        r.per_seat[0].shots > 0 && r.per_seat[1].shots > 0,
+        "one of the seats fired nothing: {:?}",
+        &r.per_seat[..2]
+    );
+}
+
+/// …AND A KILL IS THE FIGHT'S WHILE A FINISH IS A SEAT'S. Without that split
+/// every seat claims the same kills and n seats report n times the fight.
+#[test]
+fn a_kill_is_the_fights_and_a_finish_is_a_seats() {
+    let r = run_once(
+        &fight_for(&["cernos_prime", "braton_prime"]),
+        &mut Rng::new(0x5EED),
+    );
+    let finishes: u32 = r.per_seat.iter().map(|c| c.finishes).sum();
+    assert_eq!(
+        finishes, r.kills,
+        "the seats finished {finishes} of the fight's {} kills",
+        r.kills
     );
 }
 

@@ -50,6 +50,83 @@ impl Seat {
     pub const WIELDER: Seat = Seat(0);
 }
 
+/// WHAT ONE SEAT DID, as against what the fight did.
+///
+/// `shots`, `crits` and the rest sat only on the run, so two things firing
+/// reported their sum — and a sum of two weapons' shot counts is nobody's shot
+/// count. There is no such thing as the fight's crit rate.
+///
+/// TAKEN AS A DELTA, NOT BOOKED AT EACH SITE. The counters are bumped in
+/// dozens of places and a seat handed in at each of them is a seat somebody
+/// forgets; the loop knows whose turn it is, so it reads the run's counters
+/// before and after that turn and credits the difference. A counter added
+/// later is attributed without being told about this at all.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct SeatCounters {
+    pub shots: u32,
+    pub pellets: u32,
+    pub crits: u32,
+    pub big_crits: u32,
+    pub crit_tier_sum: u32,
+    pub headshots: u32,
+    pub procs: u32,
+    pub reloads: u32,
+    pub transforms: u32,
+    /// Kills this seat FINISHED. A kill is the fight's — the pool ran out —
+    /// and the finish is one seat's, which is why both are reported: without
+    /// the split, n seats each claim the same n kills.
+    pub finishes: u32,
+}
+
+impl SeatCounters {
+    /// The run's counters as they stand, for the before-and-after a turn is
+    /// credited by. Every field here is one the loop can attribute.
+    pub(super) fn of(r: &RunResult) -> Self {
+        Self {
+            shots: r.shots,
+            pellets: r.pellets,
+            crits: r.crits,
+            big_crits: r.big_crits,
+            crit_tier_sum: r.crit_tier_sum,
+            headshots: r.headshots + r.headshots_on_others,
+            procs: r.procs,
+            reloads: r.reloads,
+            transforms: r.transforms,
+            finishes: r.kills,
+        }
+    }
+
+    /// What happened between two readings — one seat's turn.
+    pub(super) fn since(&self, before: Self) -> Self {
+        Self {
+            shots: self.shots - before.shots,
+            pellets: self.pellets - before.pellets,
+            crits: self.crits - before.crits,
+            big_crits: self.big_crits - before.big_crits,
+            crit_tier_sum: self.crit_tier_sum - before.crit_tier_sum,
+            headshots: self.headshots - before.headshots,
+            procs: self.procs - before.procs,
+            reloads: self.reloads - before.reloads,
+            transforms: self.transforms - before.transforms,
+            finishes: self.finishes - before.finishes,
+        }
+    }
+
+    /// Add one turn's worth.
+    pub(super) fn add(&mut self, d: Self) {
+        self.shots += d.shots;
+        self.pellets += d.pellets;
+        self.crits += d.crits;
+        self.big_crits += d.big_crits;
+        self.crit_tier_sum += d.crit_tier_sum;
+        self.headshots += d.headshots;
+        self.procs += d.procs;
+        self.reloads += d.reloads;
+        self.transforms += d.transforms;
+        self.finishes += d.finishes;
+    }
+}
+
 /// HOW MANY THINGS MAY ACT IN ONE FIGHT. A squad of four, each with a
 /// companion. `RunResult` is `Copy`, so this is 64 bytes on the hot path and
 /// the ceiling is stated rather than grown by accident.
@@ -382,6 +459,10 @@ pub struct RunResult {
     /// list of combatants and one list of bodies, and every instance names one
     /// of each.
     pub dealt: ledger::Dealt,
+    /// WHAT EACH SEAT DID — see [`SeatCounters`]. The run's own counters above
+    /// stay the FIGHT's, because "how many shots were fired in this fight" is
+    /// a real question with a real answer; this is the other one.
+    pub per_seat: [SeatCounters; MAX_COMBATANTS],
 }
 
 /// The one number of a run a metric reads — here because `RunResult` is.

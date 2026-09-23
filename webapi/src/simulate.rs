@@ -935,10 +935,29 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // "the companion fired nothing" and "there is no companion" the same
         // way, and those are different fights.
         "combatants": params.combatant_ids().iter().enumerate()
-            .map(|(i, id)| json!({
-                "id": id,
-                "damage": s.mean_damage_by_combatant.0.get(i).copied().unwrap_or(0.0),
-            }))
+            .map(|(i, id)| {
+                let c = s.by_seat.get(i).copied().unwrap_or_default();
+                let runs = f64::from(s.runs.max(1));
+                let pellets = f64::from(c.pellets.max(1));
+                json!({
+                    "id": id,
+                    "damage": s.mean_damage_by_combatant.0.get(i).copied().unwrap_or(0.0),
+                    // WHAT THIS SEAT DID, and every rate here is ITS OWN — a
+                    // crit rate is a seat's or it is nobody's. Means over the
+                    // runs, like every other figure in this report.
+                    "shots": f64::from(c.shots) / runs,
+                    "pellets": f64::from(c.pellets) / runs,
+                    "crit_rate": f64::from(c.crits) / pellets,
+                    "big_crit_rate": f64::from(c.big_crits) / pellets,
+                    "crit_tier": f64::from(c.crit_tier_sum) / f64::from(c.crits.max(1)),
+                    "procs": f64::from(c.procs) / runs,
+                    "reloads": f64::from(c.reloads) / runs,
+                    "transforms": f64::from(c.transforms) / runs,
+                    // THE FIGHT'S KILLS ARE THE FIGHT'S; this is what this seat
+                    // finished. Without the split every seat claims them all.
+                    "finishes": f64::from(c.finishes) / runs,
+                })
+            })
             .collect::<Vec<_>>(),
         "bodies": std::iter::once((
             arena.target_id.clone(),

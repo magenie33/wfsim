@@ -458,6 +458,10 @@ pub fn run_once_traced(
     while let Some(seat_index) = next_seat(&seats) {
         let me = &mut seats[seat_index];
         t = me.next_t;
+        // WHOSE TURN THIS IS, for the counters. Read before and credited after
+        // — see `SeatCounters`: the bumps are scattered and this is the one
+        // place that knows whose they are.
+        let counters_before = SeatCounters::of(&r);
         // The streams are threaded on as `&mut` from here: every function this
         // turn calls rolls off the ACTING SEAT'S own `Draws`, which is what
         // keeps a second combatant from re-rolling the first one's crits.
@@ -518,6 +522,7 @@ pub fn run_once_traced(
             // seat has.
             Flow::Break => {
                 me.next_t = f64::INFINITY;
+                r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
                 continue;
             }
             // …AND ONE THAT IS WAITING GIVES THE TURN BACK. `before_the_shot`
@@ -526,6 +531,7 @@ pub fn run_once_traced(
             // reload rather than after it.
             Flow::Continue => {
                 me.next_t = t;
+                r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
                 continue;
             }
             Flow::Go => {}
@@ -1004,6 +1010,7 @@ pub fn run_once_traced(
         // WHERE THIS SEAT IS DUE NEXT. `after_the_shot` advanced `t` by this
         // weapon's cadence, which is this seat's clock and nobody else's.
         me.next_t = t;
+        r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
     }
 
     // THE METER'S LAST FILLS, after the trigger stops. A weapon that is out of

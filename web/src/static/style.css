@@ -884,6 +884,16 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   font-size:11.5px;color:var(--text-2)}
 
 /* ---- ZONE 6: THE DOOR OUT --------------------------------------------- */
+/* WHAT EACH SEAT READ. Drawn only where there is more than one — with one
+   combatant it would be a second copy of the KPI tiles above it. */
+.seat-table{margin-top:12px;font-size:11.5px;font-variant-numeric:tabular-nums;overflow-x:auto}
+.seat-h,.seat-r{display:grid;grid-template-columns:minmax(120px,1.4fr) repeat(7,minmax(54px,1fr));
+  gap:8px;padding:4px 0;align-items:baseline}
+.seat-h{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid var(--line)}
+.seat-r{border-bottom:1px solid var(--line)}
+.seat-r .nm{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat-table .fs-n{margin-top:8px}
 .bo-consent{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;
   padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
 .bo-consent span{flex:1 1 320px;line-height:1.6}
