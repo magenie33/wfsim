@@ -13,6 +13,8 @@ use super::*;
 /// the orb's reach is measured from somewhere real rather than from the target. A degenerate aim (nowhere to face) throws along +x.
 pub(super) fn throw_orb(
     o: crate::build::loadout::ResolvedOrb,
+    // Whose orb it is, for the same reason a field carries it.
+    owner: Seat,
     params: &FightParams,
     t: f64,
     live: &mut Vec<OrbState>,
@@ -42,6 +44,7 @@ pub(super) fn throw_orb(
     // starts there.
     let t = t + o.throw_seconds;
     live.push(OrbState {
+        owner,
         part: o,
         at: muzzle,
         dir,
@@ -68,6 +71,8 @@ pub(super) fn throw_orb(
 /// arithmetic of settling a damage instance and nothing else.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct OrbState {
+    /// WHOSE ORB IT IS — the same rule a field follows: it outlives the throw.
+    pub(super) owner: Seat,
     pub(super) part: crate::build::loadout::ResolvedOrb,
     /// Where it is. Advanced to each event's time as that event is settled,
     /// which is all the resolution this needs — nothing between two strikes
@@ -320,6 +325,7 @@ pub(super) fn orb_strike(
     match b.checked_sub(1) {
         None => field_tick(
             w,
+            orb.owner,
             &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
             &params.foe, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
         ),
@@ -328,6 +334,7 @@ pub(super) fn orb_strike(
             let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
             field_tick(
             w,
+                orb.owner,
                 &part, mult, at, ctx, fd, gal, arc, state, params, active, r, rec, d,
                 &spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
             )
@@ -374,6 +381,7 @@ pub(super) fn orb_detonation(
             None => {
                 field_tick(
             w,
+                    orb.owner,
                     &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
                     &params.foe, crate::record::Origin::Orb, None, true,
                 );
@@ -384,6 +392,7 @@ pub(super) fn orb_detonation(
                 {
                     field_tick(
             w,
+                        orb.owner,
                         &part, mult, at, ctx, fd, gal, arc, state, params, active, r, rec, d,
                         &spec.params, crate::record::Origin::Orb, None, true,
                     );

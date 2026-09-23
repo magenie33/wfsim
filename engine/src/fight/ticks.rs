@@ -566,6 +566,9 @@ pub(super) fn settle_what_is_in_the_air(
     fields: &mut Vec<FieldState>,
     orbs: &mut Vec<OrbState>,
     meter: &mut Meter,
+    // Whose seat all of this belongs to — the orb its meter throws, and the
+    // ticks of a cloud it already left.
+    owner: Seat,
     ammo: &mut Ammo,
     target: &mut TargetState,
     debuffs: &mut DebuffState,
@@ -646,7 +649,7 @@ pub(super) fn settle_what_is_in_the_air(
         // read, and the meter is coarse enough not to care: it is 45 seconds
         // long and the fastest thing that fills it is worth one.
         if let Some(m) = active.meter {
-            meter.tick(m, active, params, dropped_secondary, t, orbs);
+            meter.tick(m, owner, active, params, dropped_secondary, t, orbs);
         }
         // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
         // buff snapshot the field walk takes; an orb's clock is its own and no

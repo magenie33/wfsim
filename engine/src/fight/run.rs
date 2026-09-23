@@ -734,6 +734,7 @@ pub fn run_once_traced(
             &mut fields,
             &mut orbs,
             &mut me.meter,
+            me.seat,
             &mut me.ammo,
             &mut target,
             &mut debuffs,
@@ -775,11 +776,12 @@ pub fn run_once_traced(
         // throw. Without one, the trigger deploys, which is what the form's own
         // `transformed` mode shows.
         if let Some(o) = active.orb.filter(|_| active.meter.is_none()) {
-            throw_orb(o, params, t, &mut orbs);
+            throw_orb(o, me.seat, params, t, &mut orbs);
         }
 
         {
             let shot = Strike {
+                seat: me.seat,
                 active,
                 qvec,
                 direct_pre_snap,
@@ -965,7 +967,7 @@ pub fn run_once_traced(
                 &mut orbs, &mut debuffs, &mut me.gal, &mut me.arc, at, &mut target,
                 params, me.fixed.field_active, &me.field_ctx, &mut r, rec, d, &mut others,
             );
-            throw_orb(o, params, at, &mut orbs);
+            throw_orb(o, me.seat, params, at, &mut orbs);
         }
     }
     // The orbs still in the air after the last shot — every strike they have

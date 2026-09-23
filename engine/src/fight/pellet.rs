@@ -20,6 +20,10 @@ use super::bumps::{bump_buffs, bump_status_buffs};
 /// of them a shot, and this is the one path all of them resolve through. A
 /// strike is what a combatant does.
 pub(super) struct Strike<'a> {
+    /// WHO THREW IT. Every instance this strike settles is credited here, so
+    /// the seat travels with the attack rather than being named again at each
+    /// of the places one lands.
+    pub(super) seat: Seat,
     pub(super) active: &'a FightParams,
     pub(super) qvec: &'a DamageVector,
     pub(super) direct_pre_snap: DamageVector,
@@ -135,6 +139,7 @@ fn weakpoint_kill(
 #[inline(always)]
 pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     let Strike {
+        seat,
         active,
         qvec,
         direct_pre_snap,
@@ -1669,6 +1674,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 let mut part = *fp;
                 part.duration_seconds *= boost;
                 let fresh = FieldState {
+                    owner: seat,
                     // …AND THE GRIMOIRE'S ORB IS THE OTHER SHAPE. Its
                     // contact is the direct hit this pellet already
                     // settled, and its pulses run on a one second clock
@@ -1815,7 +1821,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             ledger::settle(
                 &mut *r, rec,
                 t,
-                Seat::WIELDER,
+                seat,
                 0,
                 qvec.dominant(),
                 match (part.is_head, tier > 0) {

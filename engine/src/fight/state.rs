@@ -537,9 +537,15 @@ impl Meter {
     /// at. A shot boundary is where every other clock in this loop is read,
     /// and the meter is coarse enough not to care: it is 45 seconds long and
     /// the fastest thing that fills it is worth one.
+    // THE SEAT IS THE EIGHTH ARGUMENT and the reason the list is over the
+    // lint's line: every one of the seven was already the fight's, and whose
+    // the orb it throws is cannot be inferred from any of them.
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn tick(
         &mut self,
         m: crate::build::loadout::ResolvedMeter,
+        // Whose meter it is: the orb it throws is that seat's.
+        owner: Seat,
         active: &FightParams,
         params: &FightParams,
         dropped_secondary: u32,
@@ -567,7 +573,7 @@ impl Meter {
         if meter.seconds >= m.seconds_to_fill {
             meter.seconds -= m.seconds_to_fill;
             if let Some(o) = active.orb {
-                throw_orb(o, params, *t, orbs);
+                throw_orb(o, owner, params, *t, orbs);
                 // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
                 // a wind-up and a recovery, and the weapon can do nothing
                 // else until both are over — which is the cycle's whole

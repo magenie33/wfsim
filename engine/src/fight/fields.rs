@@ -5,6 +5,9 @@ use super::*;
 /// cloud. `FieldStacking::Refresh` keeps this list at length 1.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct FieldState {
+    /// WHOSE CLOUD IT IS. A field outlives the pull that left it and burns
+    /// whoever walks in, so it cannot ask who is firing now — it remembers.
+    pub(super) owner: Seat,
     pub(super) next_tick: f64,
     pub(super) ticks_left: u32,
     /// The part AS RESOLVED BY THE FORM THAT SPAWNED IT. A cloud outlives a
@@ -171,10 +174,12 @@ pub(super) fn process_field_ticks(
         );
         let part = fields[i].part;
         let damage_multiplier = fields[i].damage_multiplier;
+        let owner = fields[i].owner;
         fields[i].next_tick += 1.0 / part.tick_rate;
         fields[i].ticks_left -= 1;
         let killed = field_tick(
             w,
+            owner,
             &part,
             damage_multiplier,
             at,
@@ -210,6 +215,7 @@ pub(super) fn process_field_ticks(
             let SpreadFoe { state, debuffs: fd } = &mut others[bi];
             field_tick(
             w,
+                owner,
                 &part,
                 damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist)),
                 at,
@@ -265,6 +271,10 @@ pub(super) fn process_field_ticks(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn field_tick(
     w: &CardWindows,
+    // WHOSE CLOUD — carried from the [`FieldState`] rather than assumed, for
+    // the same reason the state holds it: this tick can be long after the
+    // pull that left it, and long after whoever left it stopped firing.
+    owner: Seat,
     f: &crate::build::loadout::ResolvedLingering,
     // Plentiful Mayhem's independent multiplier, carried from the grenade that
     // left this cloud (1.0 = the weapon's own projectile, or no such perk).
@@ -418,7 +428,7 @@ pub(super) fn field_tick(
         add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     }
     ledger::settle(
-        r, rec, at, Seat::WIELDER, 0, DamageType::Cinematic,
+        r, rec, at, owner, 0, DamageType::Cinematic,
         // THE NUMBER'S OWN SHAPE ON SCREEN: a blast draws as a blast.
         if is_blast { PopKind::BlastArea } else { PopKind::Field },
         &breakdown, settled,

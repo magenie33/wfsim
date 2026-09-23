@@ -52,6 +52,10 @@ pub(super) struct Fight {
 /// crits; a second combatant sharing them would re-roll YOURS the moment it
 /// existed, and every measured number would move.
 pub(super) struct Combatant<'a> {
+    /// WHICH SEAT THIS IS, and every damage instance it settles carries it.
+    /// On the combatant rather than passed beside it: a seat handed in at the
+    /// call site is one a caller can get wrong, and there are nine call sites.
+    pub(super) seat: Seat,
     pub(super) d: crate::rules::rng::Draws,
     pub(super) bar: BuffBar,
     pub(super) enervate: Option<SecondaryEnervate>,
@@ -649,6 +653,7 @@ pub(super) fn open<'a>(
             frame_seconds,
         },
         Combatant {
+            seat: Seat::WIELDER,
             d,
             bar,
             enervate,
