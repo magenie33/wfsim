@@ -293,22 +293,26 @@ pub(crate) fn sim_params(
     }
 }
 
-fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
-    // THE FIGHT, parsed by the ONE function that parses it. The optimizer
-    // calls the same one — see `parse_fight`.
-    let fight = match parse_fight(v) {
-        Ok(f) => f,
-        Err(e) => return e,
-    };
-    let Fight {
-        info, policy, buff_cfg, denied_buff_triggers, arena, evos, cycle_from, single_form,
-        enemy_name, metric, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
-        ammo_drops, pickup_range_m, landscape,
-        frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
-    } = fight;
-    let ammo = AmmoEconomy { drops: ammo_drops, pickup_range_m, landscape };
-    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
-
+/// THE MODS A REQUEST NAMES, resolved against the weapon's own pool.
+///
+/// A FUNCTION BECAUSE EVERY SEAT DOES IT. The fight can hold more than one
+/// build now, and a second one resolving its mods through a second copy of
+/// this would be a second answer to "is this mod on this weapon" — which is
+/// the class of defect this repo keeps closing, not opening.
+///
+/// `Err` is the answer already shaped for the wire, so a caller returns it.
+fn seat_mods<'a>(
+    v: &Value,
+    info: &'static WeaponInfo,
+    evo_refs: &[&str],
+    pool: &'a [ModDef],
+) -> Result<Vec<&'a ModDef>, Value> {
+    // No count validation here: the sim runs whatever it is given — slot
+    // legality (8 main + 1 exilus) is the UI's job, and the engine resolves any
+    // mod list honestly.
+    if let Err(e) = riven_stat_ids_ok(v, info) {
+        return Err(err_json(e));
+    }
     let mod_ids: Vec<String> = v
         .get("mods")
         .and_then(|x| x.as_array())
@@ -318,26 +322,11 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 .collect()
         })
         .unwrap_or_default();
-
-    // No count validation here: the sim runs whatever it
-    // is given — slot legality (8 main + 1 exilus) is the UI's job, and the
-    // engine resolves any mod list honestly.
-
-    // ---- resolve mods against the weapon's pool (honoring the given order) ----
-    if let Err(e) = riven_stat_ids_ok(v, info) {
-        return err_json(e);
-    }
-    // THE FIGHT'S evolutions, which is what decides the pool: asking to fire the
-    // Incarnon form implies its unlock (see `parse_fight`), and a weapon with
-    // that form installed has a second firing mode — so a Cannonade equipped
-    // beside it is a build the game refuses, and the sim must say so rather than
-    // report a number nobody can reproduce.
-    let p = mod_pool_with_rivens(v, info, &evo_refs);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
-        match p.iter().find(|m| m.id == id) {
+        match pool.iter().find(|m| m.id == id) {
             Some(m) => refs.push(m),
-            None => return err_json(mod_not_here(id, info, &evo_refs)),
+            None => return Err(err_json(mod_not_here(id, info, evo_refs))),
         }
     }
     // Reject family collisions (wiki Incompatible mods).
@@ -345,25 +334,53 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         for j in (i + 1)..refs.len() {
             if let (Some(fi), Some(fj)) = (refs[i].family, refs[j].family) {
                 if fi == fj {
-                    return err_json(format!(
+                    return Err(err_json(format!(
                         "{} and {} are incompatible (both in the {fi} family)",
                         refs[i].id, refs[j].id
-                    ));
+                    )));
                 }
             }
         }
     }
+    Ok(refs)
+}
 
-    // ---- enemy / target ----
-    // The target's pools, for the report. Read off the arena rather than kept
-    // beside it: one target, one place it lives.
-    let (og, sh, hp, ar) = (
-        arena.target.overguard(),
-        arena.target.max_shield(),
-        arena.target.max_health(),
-        arena.target.armor(),
+/// ANOTHER THING ACTING IN THIS FIGHT, resolved through the SAME path as the
+/// build the answer is about.
+///
+/// A seat is described by a whole request of its own — its weapon, its mods,
+/// its evolutions, its arcanes — and what it does NOT get to describe is the
+/// FIGHT: the arena is handed in, so a second seat cannot be fighting a
+/// different enemy at a different level than the first. That is the one thing
+/// a caller could otherwise get wrong and nothing would say so.
+///
+/// It resolves through `parse_fight`, `mod_pool_with_rivens`, `seat_mods` and
+/// `sim_params` — every one of them the function the reported build uses. A
+/// second resolution path would be a second answer, and the point of the fight
+/// holding n builds is that they are the same kind of thing.
+fn seat_from(v: &Value, arena: &wfsim_engine::arena::Arena) -> Result<FightParams, Value> {
+    let fight = parse_fight(v)?;
+    let Fight {
+        info, policy, evos, cycle_from, single_form, tenno, infinite_ammo,
+        ammo_drops, pickup_range_m, landscape,
+        frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
+    } = fight;
+    let ammo = AmmoEconomy { drops: ammo_drops, pickup_range_m, landscape };
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
+    let pool = mod_pool_with_rivens(v, info, &evo_refs);
+    let refs = seat_mods(v, info, &evo_refs, &pool)?;
+    let (_panel, params) = sim_params(
+        v, info, policy, &evo_refs, &refs, &tenno, arena,
+        cycle_from, single_form, infinite_ammo, ammo, frenzy_single, cycle_frenzy_lock,
+        &frenzy_locks,
     );
+    Ok(params)
+}
 
+/// WHAT THE BUILD COSTS IN CAPACITY AND FORMA — a report about the build, and
+/// nothing the fight reads. Separated from the resolution above so a seat the
+/// answer is not about does not compute it.
+fn forma_of(info: &'static WeaponInfo, refs: &[&ModDef]) -> Value {
     // ---- forma legality (order-independent; needs only the mod multiset) ----
     // THE STANCE IS NOT ONE OF THE NINE. It has a slot of its own — that is the
     // whole reason it hands capacity back rather than taking it — so counting
@@ -394,7 +411,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             slot_polarity: wfsim_engine::data::weapons::stance_polarity(&info.id),
         }
     });
-    let forma = match wfsim_engine::rules::capacity::fit(
+    match wfsim_engine::rules::capacity::fit(
         wspec(&info.id).max_rank,
         &innate_slots_for(&info.id),
         &planned,
@@ -412,7 +429,46 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             "cap": f.capacity,
         }),
         Err(e) => json!({ "legal": false, "error": e }),
+    }
+
+}
+
+fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
+    // THE FIGHT, parsed by the ONE function that parses it. The optimizer
+    // calls the same one — see `parse_fight`.
+    let fight = match parse_fight(v) {
+        Ok(f) => f,
+        Err(e) => return e,
     };
+    let Fight {
+        info, policy, buff_cfg, denied_buff_triggers, arena, evos, cycle_from, single_form,
+        enemy_name, metric, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
+        ammo_drops, pickup_range_m, landscape,
+        frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
+    } = fight;
+    let ammo = AmmoEconomy { drops: ammo_drops, pickup_range_m, landscape };
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
+
+    let p = mod_pool_with_rivens(v, info, &evo_refs);
+    let refs = match seat_mods(v, info, &evo_refs, &p) {
+        Ok(r) => r,
+        Err(e) => return e,
+    };
+
+    // ---- enemy / target ----
+    // The target's pools, for the report. Read off the arena rather than kept
+    // beside it: one target, one place it lives.
+    let (og, sh, hp, ar) = (
+        arena.target.overguard(),
+        arena.target.max_shield(),
+        arena.target.max_health(),
+        arena.target.armor(),
+    );
+
+    // WHAT THE BUILD COSTS — a REPORT, not a resolution. Nothing the fight does
+    // depends on it, which is why it is a function of its own: a seat that is
+    // not the one being reported on resolves without ever asking.
+    let forma = forma_of(info, &refs);
 
     // ---- resolve panel(s) and build sim params, per weapon ----
     // Either ONE registered form, or the real two-form cycle (which needs the
@@ -429,6 +485,15 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         &frenzy_locks,
     );
     params.sample_by = metric.run;
+    // EVERYTHING ELSE ACTING IN THIS FIGHT. Each entry is a request of its own
+    // and resolves through the same path; the ARENA is this fight's, so no
+    // seat can quietly be fighting a different enemy.
+    for extra in v.get("also_acting").and_then(|x| x.as_array()).into_iter().flatten() {
+        match seat_from(extra, &arena) {
+            Ok(p) => params = params.and_also(p),
+            Err(e) => return e,
+        }
+    }
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
     // the sim is the one place a visitor is owed a reason.
     for (pool, aid, _) in arcane_choices(v, info) {
@@ -2017,6 +2082,63 @@ mod wide_beam {
     /// THE FURIS INCARNON BEAM IS 2 M WIDE and pierces only on a modded punch
     /// through: a body a metre off the line, behind the target, is reached with
     /// Seeker and not without it.
+    /// A SECOND THING ACTING, THROUGH THE WIRE.
+    ///
+    /// `also_acting` carries whole requests, so a seat brings its own weapon,
+    /// its own mods and its own evolutions — and NOT its own fight: the arena
+    /// is the reported build's, which is the one thing a caller could get
+    /// wrong in a way nothing would report.
+    #[test]
+    fn a_second_seat_arrives_through_the_request_and_is_reported_as_one() {
+        let fight = |also: Value| {
+            let mut req = json!({
+                "weapon": "cernos_prime", "mods": [],
+                "enemy": "corrupted_heavy_gunner", "level": 100,
+                "runs": 3, "seed": 7, "duration": 8,
+            });
+            if !also.is_null() {
+                req["also_acting"] = json!([also]);
+            }
+            simulate_json(&req)
+        };
+
+        let solo = fight(Value::Null);
+        let pair = fight(json!({
+            "weapon": "braton_prime", "mods": [],
+            "enemy": "corrupted_heavy_gunner", "level": 100,
+            "runs": 3, "seed": 7, "duration": 8,
+        }));
+
+        let seats = |r: &Value| r["combatants"].as_array().cloned().unwrap_or_default();
+        assert_eq!(seats(&solo).len(), 1, "{solo}");
+        assert_eq!(seats(&pair).len(), 2, "{pair}");
+
+        // IT FIRED. A seat that arrived and never acted would leave this equal
+        // to the solo fight, which is exactly what a roster listing an idle
+        // seat is there to make visible.
+        let dealt = |r: &Value| -> f64 {
+            seats(r).iter().map(|c| c["damage"].as_f64().unwrap_or(0.0)).sum()
+        };
+        assert!(
+            seats(&pair)[1]["damage"].as_f64().unwrap_or(0.0) > 0.0,
+            "the second seat dealt nothing: {pair}"
+        );
+        assert!(
+            dealt(&pair) > dealt(&solo),
+            "two seats dealt {} where one dealt {}",
+            dealt(&pair),
+            dealt(&solo)
+        );
+
+        // …AND ITS READINGS ARE ITS OWN. A crit rate is a seat's or nobody's.
+        for i in 0..2 {
+            assert!(
+                seats(&pair)[i]["shots"].as_f64().unwrap_or(0.0) > 0.0,
+                "seat {i} reported no shots: {pair}"
+            );
+        }
+    }
+
     #[test]
     fn a_wide_beam_reaches_off_the_line_only_through_punch_through() {
         // The bodies a fight reports are the ones it damaged, by position.
