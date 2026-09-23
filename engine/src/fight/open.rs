@@ -232,7 +232,7 @@ pub(super) fn open<'a>(
         en.seed(params.enervate_stacks, &mut bar);
     }
     let mut frenzy = Frenzy::new();
-    let target = TargetState::spawn(&params.target, params.target_at);
+    let target = TargetState::spawn(&params.foe, params.target_at);
     let debuffs = DebuffState::default();
     // THE REST OF THE FORMATION — empty for every fight this engine has run,
     // and every line that reads it below is behind that check.

@@ -1,7 +1,7 @@
 use super::*;
 
 /// WHICH HALF OF ITS DEATH A BODY IS IN. Only a Thrax has a second half, and
-/// only when the fight asked for it (`TargetParams::spectral`).
+/// only when the fight asked for it (`Foe::spectral`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(super) enum Phase {
     Physical,
@@ -47,16 +47,16 @@ pub(super) struct TargetState {
 /// DIRECTLY: no sim can catch it, since every fixture that keeps health intact
 /// long enough freezes all three pools at once (`TargetMode::InfiniteHealth`),
 /// and there a wrong implementation reads the same "undamaged" a right one does.
-pub(super) fn target_undamaged(t: &TargetState, p: &TargetParams) -> bool {
+pub(super) fn target_undamaged(t: &TargetState, p: &Foe) -> bool {
     t.health >= p.max_health() - 1e-9 && t.shield >= p.max_shield() - 1e-9
 }
 
 impl TargetState {
-    pub(super) fn spawn(p: &TargetParams, at: crate::rules::space::Vec2) -> Self {
+    pub(super) fn spawn(p: &Foe, at: crate::rules::space::Vec2) -> Self {
         Self::spawn_at(p, 0.0, at)
     }
 
-    pub(super) fn spawn_at(p: &TargetParams, now: f64, at: crate::rules::space::Vec2) -> Self {
+    pub(super) fn spawn_at(p: &Foe, now: f64, at: crate::rules::space::Vec2) -> Self {
         if let Err(e) = p.validate() {
             panic!("invalid target: {e}");
         }
@@ -78,12 +78,12 @@ impl TargetState {
     /// a reader can walk: row `n`'s pools are row `n−1`'s minus what row `n−1`
     /// took out of them, so damage counted twice or never recorded breaks the
     /// chain where it happened (see [`crate::record::TargetAt`]).
-    pub(super) fn snapshot(&self, p: &TargetParams, mit: &Mitigation, now: f64) -> crate::record::TargetAt {
+    pub(super) fn snapshot(&self, p: &Foe, mit: &Mitigation, now: f64) -> crate::record::TargetAt {
         crate::record::TargetAt {
             overguard: self.overguard,
             shield: self.shield,
             health: self.health,
-            // `TargetParams::armor` re-runs the level-scaling curve on every
+            // `Foe::armor` re-runs the level-scaling curve on every
             // call, so this is not the free field read it looks like — which is
             // why every caller takes the snapshot behind `watching`.
             armor: p.armor() * mit.armor_multiplier,
@@ -96,7 +96,7 @@ impl TargetState {
     /// own table — exposed so a caller can split the reported damage by type
     /// the way the target actually took it. Call it BEFORE `apply`: the pool
     /// it answers for is the one that is still standing.
-    pub(super) fn incoming_column(&self, p: &TargetParams) -> crate::data::factions::Column {
+    pub(super) fn incoming_column(&self, p: &Foe) -> crate::data::factions::Column {
         if self.overguard > 0.0 {
             p.type_mods.overguard
         } else {
@@ -129,7 +129,7 @@ impl TargetState {
         shares: TypeShares,
         head_direct: bool,
         now: f64,
-        p: &TargetParams,
+        p: &Foe,
         ignores_armor: bool,
         mit: &Mitigation,
         // WHAT THE CALLER ALREADY MULTIPLIED INTO `raw` FOR OVERGUARD'S SAKE
@@ -504,7 +504,7 @@ impl TargetState {
     /// watching would be the one bug this whole feature exists to prevent.
     pub(super) fn finish(
         &mut self,
-        p: &TargetParams,
+        p: &Foe,
         now: f64,
         og_part: f64,
         shield_part: f64,

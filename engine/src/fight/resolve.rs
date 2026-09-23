@@ -216,7 +216,7 @@ pub(super) fn resolve_the_shot(
         // chance is decided; the grants are already converted by `resolve` into
         // the post-mod numbers the card's "Base" wording earns.
         let undamaged = (active.crit_chance_on_undamaged > 0.0 || active.crit_damage_on_undamaged > 0.0)
-            && target_undamaged(target, &params.target);
+            && target_undamaged(target, &params.foe);
         // THE ARCANE'S STATUS BONUS, hoisted to SHOT level so a derived stat can
         // read the live status chance the same way it reads the live crit one.
         // The pellet loop below re-reads it for its own roll; this is the same

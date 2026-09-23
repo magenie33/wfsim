@@ -129,7 +129,7 @@ fn a_locked_buff_still_earns_stacks() {
             damage,
             // Dies to every shot and comes straight back, so the on-kill
             // trigger fires on a schedule instead of by luck.
-            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             arcane: ArcaneFx {
                 buffs: vec![ArcBuffSpec {
                     owner: "test".into(),
@@ -354,7 +354,7 @@ fn a_body_followed_on_asking_gets_the_series_it_would_have_had() {
     p.others = (1..=12)
         .map(|i| crate::formation::FoeSpec {
             id: format!("e{}", i + 1),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(x, y + f64::from(i) * 0.6),
         })
@@ -385,7 +385,7 @@ fn asking_never_drops_the_aimed_body_or_repeats_one() {
     p.others = (1..=3)
         .map(|i| crate::formation::FoeSpec {
             id: format!("e{}", i + 1),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(f64::from(i) * 0.6, p.target_at.y),
         })
@@ -545,7 +545,7 @@ fn the_tenth_application_is_the_one_that_splits() {
             reserve_ammo: 0.0,
             base_crit_chance: 0.0,
             unmodded_crit_chance: 0.0,
-            target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+            foe: Foe { base_health: 1e15, ..FightParams::default().foe },
             // Viral splits into Cold and Toxin; only Toxin ticks, so a
             // split that lands shows up as DoT damage and nothing else can
             // put damage in that bucket.
@@ -849,7 +849,7 @@ fn a_kill_leaves_a_ghost_standing_where_the_weapon_says_so() {
         infinite_reserve: true,
         duration_seconds: 30.0,
         arcane: crate::data::arcanes::ArcaneFx::none(),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         body_parts: mono_body(1.0),
         spawn_on_kill: declared.then_some(spec),
         ..FightParams::default()
@@ -897,7 +897,7 @@ fn a_kill_streak_summons_a_second_gun_and_only_a_streak_does() {
         infinite_reserve: true,
         duration_seconds: 30.0,
         arcane: crate::data::arcanes::ArcaneFx::none(),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         body_parts: mono_body(1.0),
         kill_streak_summon: summon,
         ..FightParams::default()

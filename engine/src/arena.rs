@@ -16,7 +16,7 @@
 //! two lookalike shapes is how they drift a field at a time.
 
 use crate::target::BodyPart;
-use crate::target::TargetParams;
+use crate::target::Foe;
 use crate::rules::space::Vec2;
 use crate::data::tenno::Tenno;
 
@@ -54,7 +54,7 @@ pub struct Arena {
     /// value and both boards describe a fight with a target in it — and because
     /// the aim policy means this really is a distinguished body: the beam is on
     /// it and everything else is reached only by what SPREADS.
-    pub target: TargetParams,
+    pub target: Foe,
     /// THE REST OF THE FORMATION — empty for every fight this engine has run.
     ///
     /// Bodies that are not being aimed at, each with its own pools, its own
@@ -165,7 +165,7 @@ impl Arena {
             tenno: crate::data::tenno::default_tenno().clone(),
             // SOLO, like every fight that does not say otherwise.
             squad_size: 1,
-            target: TargetParams::training_dummy(),
+            target: Foe::training_dummy(),
             body_parts: crate::target::BodyPart::humanoid(),
             // CONTACT — as close as two bodies can stand (`space`), which is
             // what point blank means once they have a size at all. The fixture

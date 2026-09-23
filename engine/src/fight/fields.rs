@@ -166,7 +166,7 @@ pub(super) fn process_field_ticks(
             r,
             rec,
             &mut d.status,
-            &params.target,
+            &params.foe,
             0,
         );
         let part = fields[i].part;
@@ -188,7 +188,7 @@ pub(super) fn process_field_ticks(
             r,
             rec,
             d,
-            &params.target,
+            &params.foe,
             crate::record::Origin::Field,
             None,
             false,
@@ -245,7 +245,7 @@ pub(super) fn process_field_ticks(
             // every respawn, which on a fight with instant respawns is most of
             // its uptime. `one_fight`'s three shapes do not see it because
             // their Thrax never dies.
-            debuffs.on_death(params.acid_shells, &params.target);
+            debuffs.on_death(params.acid_shells, &params.foe);
             return;
         }
     }
@@ -280,9 +280,9 @@ pub(super) fn field_tick(
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
-    // WHICH BODY THIS BURNS — `params.target` until a cloud could stand over
+    // WHICH BODY THIS BURNS — `params.foe` until a cloud could stand over
     // more than one. Its pools, its stack caps, its immunities.
-    foe: &TargetParams,
+    foe: &Foe,
     // WHICH MECHANISM PRODUCED IT. The arithmetic of a damage instance on a
     // clock of its own is the same for a cloud's tick and a deployed orb's
     // strike, so the two share this function; the RECORD must still say which,

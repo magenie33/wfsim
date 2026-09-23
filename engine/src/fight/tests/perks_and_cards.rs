@@ -300,7 +300,7 @@ fn executioners_fortune_needs_the_kill_when_the_card_says_so() {
     // A target that cannot die — `InfiniteHealth` says so outright, which
     // is stronger than a large number and is what the default fixture is.
     let unkillable = |p: FightParams| FightParams {
-        target: frail_target(TargetMode::InfiniteHealth, 0.0, 0.0),
+        foe: frail_target(TargetMode::InfiniteHealth, 0.0, 0.0),
         ..p
     };
 
@@ -357,7 +357,7 @@ fn lingering_judgement_adds_to_deadheads_bracket_instead_of_multiplying_it() {
             headshot_multiplier_bonus: deadhead,
             ..crate::data::arcanes::ArcaneFx::none()
         },
-        target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+        foe: Foe { base_health: 1e15, ..FightParams::default().foe },
         ..no_status()
     };
     let dmg = |p: &FightParams| {
@@ -401,7 +401,7 @@ fn lingering_judgement_needs_two_headshots_inside_the_window() {
         unmodded_crit_chance: 0.0,
         body_parts: all_head(),
         headshot_streak: Some(streak),
-        target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+        foe: Foe { base_health: 1e15, ..FightParams::default().foe },
         ..no_status()
     };
     let per_shot = |p: &FightParams| {
@@ -450,7 +450,7 @@ fn spiteful_defilement_counts_types_not_stacks() {
         // "+1.0 flat" unmeasurable. Neutralised so the only crit-damage
         // sources are the weapon's 2.0 and the perk's flat add.
         arcane: crate::data::arcanes::ArcaneFx::none(),
-        target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+        foe: Foe { base_health: 1e15, ..FightParams::default().foe },
         ..no_status()
     };
     let dmg = |p: &FightParams| {
@@ -491,7 +491,7 @@ fn executioners_fortune_does_not_touch_an_incarnon_charge_pool() {
         duration_seconds: 30.0,
         body_parts: all_head(),
         ammo_efficiency_applies: false, // charge-backed
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         instant_reload: (chance > 0.0)
             .then_some(crate::model::InstantReload { chance, needs_kill: false }),
         ..no_status()
@@ -531,7 +531,7 @@ fn a_killing_headshot_fills_the_magazine() {
         // frailty: the DEFAULT fixture target is `InfiniteHealth`, so a
         // 1 HP version of it still never dies and a kill-gated perk reads
         // as broken. That is what the first draft of this test did.
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..no_status()
     };
     let without = run_once(&p, &mut Rng::new(11)).shots;
@@ -1102,7 +1102,7 @@ fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
         stacking_buffs: vec![buff],
         duration_seconds: 10.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..flat_base()
     };
     let trace = replay(&p, Rng::new(4).state(), 600);
@@ -1126,15 +1126,15 @@ fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
         stacking_buffs: p.stacking_buffs.clone(),
         duration_seconds: 30.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..flat_base()
     };
     // The claim rests on the SHOT being harmless, so it is asserted rather
     // than reasoned about: 1 damage against 50 health, so no direct hit can
     // ever be the killing blow and every kill in this run is a DoT's.
-    assert!(dot.damage.total() < dot.target.base_health,
+    assert!(dot.damage.total() < dot.foe.base_health,
         "the shot must not be able to kill: {} damage against {} health",
-        dot.damage.total(), dot.target.base_health);
+        dot.damage.total(), dot.foe.base_health);
     let s = monte_carlo(&dot, 4, 11);
     assert!(s.mean_kills > 0.0, "the fixture has to kill something: {}", s.mean_kills);
     let trace = replay(&dot, Rng::new(11).state(), 1200);
@@ -1175,7 +1175,7 @@ fn exact_penance_reloads_on_a_kill_the_gun_did_not_land() {
         duration_seconds: 60.0,
         instant_reload_on_kill: chance,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..flat_base()
     };
 
@@ -1191,9 +1191,9 @@ fn exact_penance_reloads_on_a_kill_the_gun_did_not_land() {
     // …AND A KILL THE GUN DID NOT LAND COUNTS. 1 damage against 50 health,
     // asserted rather than assumed, so every kill here is a Slash DoT's.
     let dot = build(None, true);
-    assert!(dot.damage.total() < dot.target.base_health,
+    assert!(dot.damage.total() < dot.foe.base_health,
         "the shot must not be able to kill: {} against {}",
-        dot.damage.total(), dot.target.base_health);
+        dot.damage.total(), dot.foe.base_health);
     let dot_bare = monte_carlo(&dot, 6, 7);
     assert!(dot_bare.mean_kills > 0.0, "the DoT has to kill: {}", dot_bare.mean_kills);
     let dot_with = monte_carlo(&build(Some(1.0), true), 6, 7);
@@ -1232,7 +1232,7 @@ fn a_gas_cloud_kill_earns_the_on_kill_stacks() {
         fire_rate: 1.0,
         duration_seconds: 30.0,
         multishot_stack: Some(spec),
-        target: TargetParams {
+        foe: Foe {
             base_health: 10.0,
             ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
         },
@@ -1244,9 +1244,9 @@ fn a_gas_cloud_kill_earns_the_on_kill_stacks() {
         s.mean_shots);
     assert!(
         p.damage.total() * (1.0 + spec.per_stack * f64::from(spec.max_stacks))
-            < p.target.base_health,
+            < p.foe.base_health,
         "and that one shot cannot kill: {} against {}",
-        p.damage.total(), p.target.base_health);
+        p.damage.total(), p.foe.base_health);
     assert!(s.mean_kills > 0.0, "the cloud has to kill something: {}", s.mean_kills);
     let trace = replay(&p, Rng::new(11).state(), 1200);
     let i = trace.buffs.iter().position(|x| x.id == "on_kill_multishot").expect("roster");
@@ -1270,7 +1270,7 @@ fn a_spectral_thrax_cannot_be_finished_by_a_weapon() {
         fire_rate: 10.0,
         duration_seconds: 30.0,
         body_parts: mono_body(1.0),
-        target: TargetParams {
+        foe: Foe {
             base_health: 10.0,
             spectral: spectral.then_some(crate::model::SpectralForm {
                 health_share: 0.40,
@@ -1326,7 +1326,7 @@ fn a_kill_resupplies_the_reserve_and_a_mutation_mod_pays_for_the_other_half() {
         pickup_range_m: reach,
         squad_size: 1,
         body_parts: mono_body(1.0),
-        target: TargetParams {
+        foe: Foe {
             base_health: 1.0,
             ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
         },
@@ -1687,7 +1687,7 @@ fn vicious_promise_reads_health_and_shield_and_ignores_overguard() {
     // THE OVERGUARD EXCLUSION, asserted on the predicate itself. Three
     // states of one target: whole, chewed through the overguard, and hit
     // for real. Only the last one ends the perk.
-    let tp = TargetParams { base_overguard: 5_000.0, ..TargetParams::training_dummy() };
+    let tp = Foe { base_overguard: 5_000.0, ..Foe::training_dummy() };
     let whole = TargetState::spawn(&tp, crate::rules::space::Vec2::ORIGIN);
     assert!(target_undamaged(&whole, &tp), "a fresh target is undamaged");
 
@@ -1750,10 +1750,10 @@ fn the_half_health_bonus_lands_in_the_weapons_own_co_bracket() {
         // — health below half — so the fixture has to actually get there:
         // spawning at full and dying instantly would leave it never true,
         // and an unkillable target would leave it never true either.
-        p.target.mode = crate::target::TargetMode::InstantRespawn;
-        p.target.base_health = 40_000.0;
-        p.target.base_armor = 0.0;
-        p.target.base_shield = 0.0;
+        p.foe.mode = crate::target::TargetMode::InstantRespawn;
+        p.foe.base_health = 40_000.0;
+        p.foe.base_armor = 0.0;
+        p.foe.base_shield = 0.0;
         monte_carlo(&p, 8, 0x4A1F).mean_damage
     };
     let perk = ["kunai_swift_conclusion"];

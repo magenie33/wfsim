@@ -230,14 +230,14 @@ fn a_targets_multiplier_rides_the_faction_bracket_with_roar_inside_it() {
 
     let cut = direct(&{
         let mut p = params(&[], 1.0);
-        p.target.faction_bracket_multiplier = 0.8;
+        p.foe.faction_bracket_multiplier = 0.8;
         p
     });
     assert!((cut / plain - 0.8).abs() < 1e-9, "x{:.4}", cut / plain);
 
     let roared = direct(&{
         let mut p = params(&[("roar", None)], 1.0);
-        p.target.faction_bracket_multiplier = 0.8;
+        p.foe.faction_bracket_multiplier = 0.8;
         p
     });
     assert!(
@@ -287,7 +287,7 @@ fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
         p.damage = DamageVector::new().with(DamageType::Slash, 100.0);
         p.status_chance = 1.0;
         p.base_status_chance = 1.0;
-        p.target.base_health = 1e15;
+        p.foe.base_health = 1e15;
         // ONE SHOT, so every tick after it belongs to one burn and there is
         // no second proc landing under a different buff state to confuse
         // the reading.
@@ -325,7 +325,7 @@ fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
         p.damage = DamageVector::new().with(DamageType::Slash, 100.0);
         p.status_chance = 1.0;
         p.base_status_chance = 1.0;
-        p.target.base_health = 1e15;
+        p.foe.base_health = 1e15;
         p.fire_rate = 0.02;
         p.duration_seconds = 30.0;
         run_once(&p, &mut crate::rules::rng::Rng::new(3)).tally.dot()
@@ -363,7 +363,7 @@ fn roar_is_used_twice_on_a_status_tick_and_eclipse_once() {
         p.dot_modified_base = Some(base);
         p.status_chance = 1.0;
         p.base_status_chance = 1.0;
-        p.target.base_health = 1e15;
+        p.foe.base_health = 1e15;
         run_once(&p, &mut crate::rules::rng::Rng::new(3)).tally.dot()
     };
     // A base large enough that the accumulator is below the tolerance.
@@ -446,7 +446,7 @@ fn measured() -> FightParams {
     p.forced_procs = Vec::new();
     // Nothing may die: these are per-instance numbers, and a respawn would
     // put a fresh bar under half of them.
-    p.target.base_health = 1e15;
+    p.foe.base_health = 1e15;
     p
 }
 
@@ -484,7 +484,7 @@ fn wiki_example() -> FightParams {
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
     p.forced_procs = Vec::new();
-    p.target.base_health = 1e15;
+    p.foe.base_health = 1e15;
     p
 }
 
@@ -790,7 +790,7 @@ fn eternal_war_extends_warcry_while_melee_kills_land() {
         // swing rate. The default fixture target is `InfiniteHealth` and a 1 HP
         // version of it still never dies — which is what a kill-gated mechanic
         // reads as broken.
-        p.target = super::frail_target(super::TargetMode::InstantRespawn, 0.0, 0.0);
+        p.foe = super::frail_target(super::TargetMode::InstantRespawn, 0.0, 0.0);
         run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots
     };
     // A SHORT WARCRY, with and without the card: the augment can only add.

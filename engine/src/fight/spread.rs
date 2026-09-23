@@ -176,7 +176,7 @@ pub(super) fn spread_from_influence(
             continue;
         }
         let (state, dbf, tparams) = match b.checked_sub(1) {
-            None => (&mut *target, &mut *debuffs, &params.target),
+            None => (&mut *target, &mut *debuffs, &params.foe),
             Some(i) => match (others.get_mut(i), params.others.get(i)) {
                 (Some(foe), Some(spec)) => (&mut foe.state, &mut foe.debuffs, &spec.params),
                 _ => continue,
@@ -1406,7 +1406,7 @@ pub(super) fn fire_syndicate_radial(
         TypeShares::single(sy.element),
         false,
         at,
-        &params.target,
+        &params.foe,
         false,
         &mit,
         1.0,
@@ -1462,7 +1462,7 @@ pub(super) fn fire_syndicate_radial(
             r,
             rec,
             rng,
-            &params.target,
+            &params.foe,
             DEPTH_PROC,
         );
     }

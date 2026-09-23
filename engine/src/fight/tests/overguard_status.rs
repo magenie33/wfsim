@@ -32,9 +32,9 @@ fn a_dot_ticks_into_a_full_overguard_bar() {
     // A pool deep enough to survive the run, and ARMOR under it — so a tick
     // that waited for the Overguard would be worth a tenth of one that did
     // not, and the two readings could never be confused.
-    p.target.base_overguard = 1e15;
-    p.target.base_armor = 2700.0;
-    p.target.base_health = 1e15;
+    p.foe.base_overguard = 1e15;
+    p.foe.base_armor = 2700.0;
+    p.foe.base_health = 1e15;
     let r = run_once(&p, &mut crate::rules::rng::Rng::new(7));
     assert!(r.procs > 0, "the status has to land at all");
     assert!(r.tally.dot() > 0.0, "and its ticks have to do damage");

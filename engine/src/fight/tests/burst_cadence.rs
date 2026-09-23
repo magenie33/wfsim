@@ -9,7 +9,7 @@ fn trace(mag: f64) -> (Vec<f64>, Vec<f64>) {
     let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(4.0), &ArcaneFx::none());
     p.magazine_size = mag;
-    p.target.base_health = 1e15;
+    p.foe.base_health = 1e15;
     let rec = record(&p, 1, 0.0, 4.0, 10_000, 0);
     let (mut shots, mut reloads) = (Vec::new(), Vec::new());
     for e in rec.events() {

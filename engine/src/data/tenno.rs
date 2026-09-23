@@ -25,7 +25,7 @@ use serde::Deserialize;
 use crate::model::{TennoCondition, TennoScaledTerm, TennoStat};
 
 /// The player's stat block plus what the player is doing — the fight's second
-/// actor, and the counterpart of [`crate::target::TargetParams`].
+/// actor, and the counterpart of [`crate::target::Foe`].
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Tenno {
     pub id: String,

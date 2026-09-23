@@ -15,8 +15,18 @@ use crate::rules::scaling;
 /// Prefer building this through `data::enemies::EnemySpec::target_params`, which
 /// rejects combinations that do not exist in-game (e.g. an Eximus of a unit
 /// with no Eximus variant). Hand-built values are re-checked at spawn.
+///
+/// NOT `TargetParams`: `target` meant two things — this, and the BODY being
+/// aimed at (`Run::target`, `Arena::target_at`) — and only one of them can
+/// keep the word. `foe` is what thirty-six call sites already named their
+/// parameter, so the type is catching up with them rather than inventing a
+/// fourth word for an enemy.
+///
+/// The pair is `data::enemies::EnemySpec` — what the roster file says — and
+/// this, the same shape as `WeaponBase` against a resolved panel: the spec,
+/// and the spec brought to a level and ready to be fought.
 #[derive(Debug, Clone)]
-pub struct TargetParams {
+pub struct Foe {
     pub name: String,
     pub base_level: u32,
     pub level: u32,
@@ -239,7 +249,7 @@ impl TypeShares {
     }
 }
 
-impl TargetParams {
+impl Foe {
     /// A plain training dummy: no defenses, never dies. Damage passes through
     /// unmitigated, which keeps raw-damage calibration runs simple.
     pub fn training_dummy() -> Self {
@@ -462,7 +472,7 @@ impl BodyPart {
 }
 
 /// A CATALOG ENTRY BECOMES A TARGET here, not in the catalog: the enemy file
-/// says what a unit is, and only the layer that holds `TargetParams` says what
+/// says what a unit is, and only the layer that holds `Foe` says what
 /// the fight makes of it.
 impl crate::data::enemies::EnemySpec {
     /// Build the simulation target. Fails on combinations that do not exist
@@ -473,7 +483,7 @@ impl crate::data::enemies::EnemySpec {
         steel_path: bool,
         eximus: bool,
         mode: TargetMode,
-    ) -> Result<TargetParams, String> {
+    ) -> Result<Foe, String> {
         if eximus && !self.can_be_eximus {
             return Err(format!(
                 "{} cannot be an Eximus: no such unit exists in-game \
@@ -496,7 +506,7 @@ impl crate::data::enemies::EnemySpec {
         } else {
             crate::data::factions::columns_for(self.damage_column_key())
         };
-        Ok(TargetParams {
+        Ok(Foe {
             name: self.name.clone(),
             base_level: self.stats.base_level,
             level,

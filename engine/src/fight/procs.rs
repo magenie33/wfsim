@@ -42,7 +42,7 @@ pub(super) fn faction_layers(params: &FightParams, t: f64, depth: u32) -> [(crat
         (crate::record::Factor::Faction, faction_at(params.faction_bracket_at(t), depth)),
         (
             crate::record::Factor::TargetMultiplier,
-            faction_at(params.target.faction_bracket_multiplier, depth),
+            faction_at(params.foe.faction_bracket_multiplier, depth),
         ),
     ]
 }
@@ -193,7 +193,7 @@ pub(super) fn fire_extra_hits(
             TypeShares::single(ty),
             head_direct,
             at,
-            &params.target,
+            &params.foe,
             false,
             mit,
             1.0,
@@ -228,7 +228,7 @@ pub(super) fn fire_extra_hits(
         if killed {
             gal.bump_on_kill(params, at);
             arc.on_kill(params, at);
-            debuffs.on_death(params.acid_shells, &params.target);
+            debuffs.on_death(params.acid_shells, &params.foe);
             // A fresh individual, so the remaining extra hits of this trigger
             // are gone with the one that earned them — the same rule the wiki
             // states for the trigger itself ("If a hit that would trigger an
@@ -251,7 +251,7 @@ pub(super) fn fire_extra_hits(
             forced,
             if forced_status { 0.0 } else { status_chance },
             &DamageVector::new().with(ty, raw),
-            &params.target.status_immunities,
+            &params.foe.status_immunities,
             rng,
         );
         settle_procs(
@@ -304,7 +304,7 @@ pub(super) fn fire_extra_hits(
             // applies is one past that. Void applies none that pay damage, so
             // this is a claim nothing collects on yet — written as the ladder
             // rather than as a number so the first one that does is right.
-            &params.target,
+            &params.foe,
             DEPTH_DERIVED_PROC,
         );
     }
@@ -328,7 +328,7 @@ pub(super) fn fire_extra_hits(
 /// IT IS ALSO WHAT BOUNDS THE WORK: an uncapped list grows with every proc and
 /// `process_ticks` walks it per body per shot, so a spread reaching a dozen
 /// neighbours turns a linear cost quadratic.
-pub(super) fn dot_cap_for(p: &TargetParams, dtype: DamageType) -> Option<usize> {
+pub(super) fn dot_cap_for(p: &Foe, dtype: DamageType) -> Option<usize> {
     // THE UNIT'S OWN CAP, where it declares one — that is a property of the
     // enemy and applies to everything it carries.
     let unit = p.stack_caps.map(|c| c.general);
@@ -434,7 +434,7 @@ pub(super) fn drain_area_procs(
                 continue;
             }
             let (dbf, fp, parts) = if j == 0 {
-                (&mut *debuffs, &params.target, &params.body_parts)
+                (&mut *debuffs, &params.foe, &params.body_parts)
             } else {
                 match others.get_mut(j - 1) {
                     Some(f) => {
@@ -472,7 +472,7 @@ pub(super) fn drain_area_procs(
                 continue;
             }
             let (state, dbf, fp) = if j == 0 {
-                (&mut *target, &mut *debuffs, &params.target)
+                (&mut *target, &mut *debuffs, &params.foe)
             } else {
                 match others.get_mut(j - 1) {
                     Some(f) => (&mut f.state, &mut f.debuffs, &params.others[j - 1].params),
@@ -560,11 +560,11 @@ pub(super) fn settle_procs(
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
-    // WHICH BODY THIS LANDS ON — `params.target` until a formation could hold
+    // WHICH BODY THIS LANDS ON — `params.foe` until a formation could hold
     // more than one. Its stack caps and its status immunities are
     // its own; the weapon-side half stays on `params`, shared by every body in
     // the fight because the weapon is.
-    foe: &TargetParams,
+    foe: &Foe,
     // How far this batch of procs is from the hit that started it — see
     // `faction_at`. A hit's own procs are DEPTH_PROC; a proc that Primary
     // Debilitate split out of one is DEPTH_DERIVED_PROC, because it came
@@ -1006,7 +1006,7 @@ pub(super) fn settle_procs(
                     if killed {
                         gal.bump_on_kill(params, at);
                         arc.on_kill(params, at);
-                        debuffs.on_death(params.acid_shells, &params.target);
+                        debuffs.on_death(params.acid_shells, &params.foe);
                     } else {
                         // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT.
                         // The bracket is already folded into `xh_total`, and no
@@ -1108,7 +1108,7 @@ pub(super) fn settle_procs(
                     r,
                     rec,
                     rng,
-                    &params.target,
+                    &params.foe,
                     DEPTH_DERIVED_PROC,
                 );
             }
@@ -1159,7 +1159,7 @@ pub(super) fn settle_procs(
             if killed {
                 gal.bump_on_kill(params, at);
                 arc.on_kill(params, at);
-                debuffs.on_death(params.acid_shells, &params.target);
+                debuffs.on_death(params.acid_shells, &params.foe);
             }
         }
     }

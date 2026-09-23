@@ -125,8 +125,8 @@ fn a_status_tick_is_drawn_as_its_two_halves() {
         body_parts: mono_body(1.0),
         ..no_status()
     };
-    p.target.faction_bracket_multiplier = 0.8;
-    p.target.base_health = 1e15;
+    p.foe.faction_bracket_multiplier = 0.8;
+    p.foe.base_health = 1e15;
     let rec = record(&p, 0, 0.0, f64::INFINITY, 10_000, 0);
     let tick = rec
         .events()
@@ -606,7 +606,7 @@ fn weakened_takes_prelude_of_might_away() {
         fire_rate: 1.0,
         duration_seconds: 5.0,
         arcane: crate::data::arcanes::ArcaneFx::none(),
-        target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+        foe: Foe { base_health: 1e15, ..FightParams::default().foe },
         ..no_status()
     };
     let lost = monte_carlo(&build(), 4000, 91).mean_damage;
@@ -640,7 +640,7 @@ fn prelude_of_might_is_off_exactly_at_its_threshold() {
         fire_rate: 1.0,
         duration_seconds: 5.0,
         arcane: crate::data::arcanes::ArcaneFx::none(),
-        target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+        foe: Foe { base_health: 1e15, ..FightParams::default().foe },
         ..no_status()
     };
     let s = monte_carlo(&p, 4000, 91).mean_damage;
@@ -731,7 +731,7 @@ fn status_immunities_renormalize_toward_other_procs() {
     // Slash-immune target: no bleeds ever, but procs still occur at the
     // full 37% rate (renormalized onto Impact/Puncture).
     let mut p = FightParams::default();
-    p.target.status_immunities = vec![DamageType::Slash];
+    p.foe.status_immunities = vec![DamageType::Slash];
     let s = monte_carlo(&p, 1000, 15);
     assert_eq!(s.mean_dot_damage, 0.0);
     let per_shot = s.mean_procs / s.mean_shots;
@@ -828,7 +828,7 @@ fn tendrils_buy_crit_chance_and_a_reload_takes_it_back() {
         fire_rate: 10.0,
         duration_seconds: 60.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         // flat_base(), not no_status(): the default fixture carries an
         // arcane that crits on its own, which would supply the very thing
         // this test is trying to attribute to tendrils.
@@ -964,7 +964,7 @@ fn hata_satya_builds_on_hits_and_a_reload_takes_it_back() {
         fire_rate: 10.0,
         duration_seconds: 60.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..flat_base()
     };
     let crit_rate = |p: &FightParams| {

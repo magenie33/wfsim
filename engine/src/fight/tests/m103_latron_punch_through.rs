@@ -42,7 +42,7 @@ fn a_line_of_heads(mods: &[&str], n: usize) -> FightParams {
     arena.others = (1..=n)
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: head(),
             at: crate::rules::space::Vec2::new(
                 0.0,
@@ -160,7 +160,7 @@ fn galvanized_scopes_kill_stacks_each_run_their_own_clock() {
         fire_rate: 1.0,
         magazine_size: 1e9,          // no reload: downtime is a different test
         body_parts: all_head(),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         crit_chance_stack: Some(crate::model::StackSpec {
             per_stack: 0.04,
             max_stacks: 5,
@@ -201,7 +201,7 @@ fn a_bleed_that_finishes_a_headshot_target_is_not_a_headshot_kill() {
         base_crit_chance: 0.0,
         forced_procs: vec![DamageType::Slash],
         body_parts: all_head(),
-        target,
+        foe: target,
         crit_chance_stack: Some(crate::model::StackSpec {
             per_stack: 0.04,
             max_stacks: 5,
@@ -240,7 +240,7 @@ fn m103_a_punched_headshot_kill_pays_what_the_aimed_one_pays() {
             fire_rate: 1.0,
             ..p
         };
-        p.target = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        p.foe = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
         for f in p.others.iter_mut() {
             f.params = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
         }

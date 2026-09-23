@@ -201,7 +201,7 @@ pub(super) fn process_orbs(
         process_ticks(
             w,
             debuffs, gal, arc, at + 1e-9, target, params, active, r, rec, &mut d.status,
-            &params.target, 0,
+            &params.foe, 0,
         );
         orbs[i].advance(at, &bodies);
         let orb = orbs[i];
@@ -268,7 +268,7 @@ pub(super) fn process_orbs(
             aimed_died |= killed && b == 0;
         }
         if aimed_died {
-            debuffs.on_death(params.acid_shells, &params.target);
+            debuffs.on_death(params.acid_shells, &params.foe);
             return;
         }
     }
@@ -321,7 +321,7 @@ pub(super) fn orb_strike(
         None => field_tick(
             w,
             &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
-            &params.target, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
+            &params.foe, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
         ),
         Some(bi) => {
             let Some(spec) = params.others.get(bi) else { return false };
@@ -375,7 +375,7 @@ pub(super) fn orb_detonation(
                 field_tick(
             w,
                     &part, mult, at, ctx, debuffs, gal, arc, target, params, active, r, rec, d,
-                    &params.target, crate::record::Origin::Orb, None, true,
+                    &params.foe, crate::record::Origin::Orb, None, true,
                 );
             }
             Some(bi) => {

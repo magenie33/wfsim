@@ -58,7 +58,7 @@ fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
         fire_rate: 10.0,
         duration_seconds: 6.5,
         body_parts: head.clone(),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         cycle: Some(IncarnonCycle {
             starts_primed: true,        // open IN the form…
             base_form: Box::new(base_form.clone()),
@@ -135,7 +135,7 @@ fn hata_satyas_pile_stops_at_its_published_ceiling() {
         fire_rate: 10.0,
         duration_seconds: 60.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..flat_base()
     };
     let rate = |max_bonus: f64| {
@@ -189,11 +189,11 @@ fn eximus_advantage_needs_an_eximus_and_a_weak_point() {
                     crit_bonus: false,
                 },
             ],
-            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
         };
-        p.target.can_be_eximus = eximus;
-        p.target.eximus = eximus;
+        p.foe.can_be_eximus = eximus;
+        p.foe.eximus = eximus;
         p
     };
     let dmg = |p: &FightParams| run_once(p, &mut Rng::new(21)).effective_damage();
@@ -237,7 +237,7 @@ fn the_tendril_card_seeds_the_count_and_the_lock_holds_it() {
         fire_rate: 10.0,
         duration_seconds: 60.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
+        foe: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
         ..flat_base()
     };
     let crit_rate = |p: &FightParams| {
@@ -292,7 +292,7 @@ fn the_magazine_refill_pays_each_kill_once() {
         duration_seconds: 120.0,
         magazine_refill_on_kill: refill,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..flat_base()
     };
     let run = |refill: f64| {
@@ -362,7 +362,7 @@ fn a_syndicate_radial_arms_on_affinity_and_is_capped_by_its_cooldown() {
         fire_rate: 10.0,
         duration_seconds: secs,
         body_parts: mono_body(1.0),
-        target: t.clone(),
+        foe: t.clone(),
         ..flat_base()
     };
     let blasts = |p: &FightParams| {
@@ -389,7 +389,7 @@ fn a_syndicate_radial_arms_on_affinity_and_is_capped_by_its_cooldown() {
     // and at this fire rate that is slow enough to miss cooldowns.
     let mut poor = t.clone();
     poor.base_affinity = 2.0;
-    let starved = blasts(&FightParams { target: poor, ..build(300.0, Some(truth)) });
+    let starved = blasts(&FightParams { foe: poor, ..build(300.0, Some(truth)) });
     assert!(
         starved < 10,
         "a low-affinity target must fill the gauge more slowly, got {starved} blasts"
@@ -481,7 +481,7 @@ fn a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target() {
         // NOTHING IN THE WAY — no shield, no armour, no overguard, no
         // vulnerability column — so each number is its base times Viral and
         // the arithmetic above is the whole of it.
-        target: frail_target(TargetMode::InfiniteHealth, 0.0, 0.0),
+        foe: frail_target(TargetMode::InfiniteHealth, 0.0, 0.0),
         // ONE TRIGGER PULL inside the window: a second volley would start
         // from the stacks the first one left.
         fire_rate: 1.0,
@@ -943,7 +943,7 @@ fn impossible_eximus_combination_panics_at_spawn() {
     let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
     t.eximus = true; // can_be_eximus is false -> impossible in-game
     let p = FightParams {
-        target: t,
+        foe: t,
         ..FightParams::default()
     };
     let _ = run_once(&p, &mut Rng::new(1));
@@ -966,7 +966,7 @@ fn eximus_boosts_health_and_grants_overguard() {
 #[test]
 fn instant_respawn_kills_every_shot_on_a_frail_target() {
     let p = FightParams {
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         ..FightParams::default()
     };
     let s = monte_carlo(&p, 200, 5);
@@ -988,7 +988,7 @@ fn infinite_health_never_dies_and_applies_armor_dr() {
     // = 0.9 * sqrt(300/2700) = 30%: effective is exactly 70% of raw,
     // and no kills. Status off so no armor-ignoring Cinematic ticks mix in.
     let p = FightParams {
-        target: frail_target(TargetMode::InfiniteHealth, 300.0, 0.0),
+        foe: frail_target(TargetMode::InfiniteHealth, 300.0, 0.0),
         ..no_status()
     };
     let s = monte_carlo(&p, 200, 5);
@@ -1010,7 +1010,7 @@ fn bleed_ticks_ignore_armor_entirely() {
         crit_multiplier: 1.0,
         forced_procs: vec![DamageType::Slash],
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
+        foe: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
         ..no_status()
     };
     let s = monte_carlo(&p, 50, 5);
@@ -1036,7 +1036,7 @@ fn armor_reduced_damage_floors_at_one_per_type() {
         damage: DamageVector::new().with(DamageType::Impact, 5.0),
         crit_multiplier: 1.0,
         body_parts: mono_body(1.0),
-        target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
+        foe: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
         ..FightParams::default()
     };
     let s = monte_carlo(&p, 100, 3);
@@ -1097,7 +1097,7 @@ fn overguard_ignores_armor_while_it_holds() {
     let mut t = frail_target(TargetMode::InfiniteHealth, 2700.0, 1e12);
     t.base_health = 1.0;
     let p = FightParams {
-        target: t,
+        foe: t,
         ..FightParams::default()
     };
     let s = monte_carlo(&p, 100, 9);

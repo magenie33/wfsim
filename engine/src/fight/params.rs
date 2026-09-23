@@ -687,7 +687,7 @@ pub struct FightParams {
     pub rage_open: Option<(f64, bool)>,
     pub body_parts: Vec<BodyPart>,
     /// The TARGET — one of the fight's two actors.
-    pub target: TargetParams,
+    pub foe: Foe,
     /// THE REST OF THE FORMATION — see [`crate::arena::Arena::others`]. Empty
     /// for every fight this engine has run, and nothing below reads it when it
     /// is.

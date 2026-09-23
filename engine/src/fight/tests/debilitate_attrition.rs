@@ -29,7 +29,7 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
         (0..200u64)
             .map(|seed| {
                 let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
-                p.target.base_health = 1e15;
+                p.foe.base_health = 1e15;
                 p.crit_tier_upgrade_chance = 0.0;
                 p.super_crit_on_status = None;
                 p.base_crit_chance = if crit { 1.0 } else { 0.0 };
@@ -39,7 +39,7 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
                 // a saturating status build keeps it up — a critical instance
                 // is not eligible for Attrition, so leaving it in would mix
                 // untouched instances into every ratio below.
-                p.target.status_immunities = vec![DamageType::Puncture];
+                p.foe.status_immunities = vec![DamageType::Puncture];
                 p.status_chance = 4.0;
                 p.arcane.debilitate_chance = debilitate;
                 if debilitate > 0.0 {
@@ -94,12 +94,12 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
         (0..200u64)
             .map(|k| {
                 let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
-                p.target.base_health = 1e15;
+                p.foe.base_health = 1e15;
                 p.crit_tier_upgrade_chance = 0.0;
                 p.super_crit_on_status = None;
                 p.base_crit_chance = 0.0;
                 p.unmodded_crit_chance = 0.0;
-                p.target.status_immunities = vec![DamageType::Puncture];
+                p.foe.status_immunities = vec![DamageType::Puncture];
                 p.status_chance = 4.0;
                 p.arcane.debilitate_chance = 1.0;
                 let total = p.damage.total();
@@ -154,13 +154,13 @@ fn a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier() {
         (0..200u64)
             .map(|seed| {
                 let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
-                p.target.base_health = 1e15;
+                p.foe.base_health = 1e15;
                 p.crit_tier_upgrade_chance = 0.0;
                 p.super_crit_on_status = None;
                 p.base_crit_chance = cc;
                 p.unmodded_crit_chance = 0.0;
                 p.crit_multiplier = cd;
-                p.target.status_immunities = vec![DamageType::Puncture];
+                p.foe.status_immunities = vec![DamageType::Puncture];
                 p.status_chance = 4.0;
                 p.arcane.debilitate_chance = 1.0;
                 let tot = p.damage.total();

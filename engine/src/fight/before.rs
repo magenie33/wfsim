@@ -200,8 +200,8 @@ pub(super) fn before_the_shot(
                 // Per kill: base affinity x the level multiplier, FLOORED to a
                 // whole number ("the base affinity multiplied by the Affinity
                 // Multiplier value is also rounded down"), then halved.
-                let per_kill = (params.target.base_affinity
-                    * scaling::affinity_multiplier(params.target.level, params.target.eximus))
+                let per_kill = (params.foe.base_affinity
+                    * scaling::affinity_multiplier(params.foe.level, params.foe.eximus))
                 .floor()
                     * WEAPON_AFFINITY_SHARE;
                 syndicate.points += f64::from(fresh) * per_kill;

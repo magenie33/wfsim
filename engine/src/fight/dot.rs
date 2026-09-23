@@ -122,7 +122,7 @@ impl Dot {
         use crate::record::{Factor, Scale};
         let elem = self.bracket + params.element_at(self.dtype, now, w);
         let f = params.faction_bracket_at(now);
-        let m = params.target.faction_bracket_multiplier;
+        let m = params.foe.faction_bracket_multiplier;
         let at = |depth: u32| {
             vec![
                 Scale { factor: Factor::ElementBracket, value: elem },

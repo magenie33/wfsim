@@ -343,7 +343,7 @@ fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
     let mut damage = DamageVector::default();
     damage.set(DamageType::Impact, 400.0);
     let armoured = |at: crate::rules::space::Vec2| {
-        let mut params = FightParams::default().target.clone();
+        let mut params = FightParams::default().foe.clone();
         params.base_health = 400.0;
         params.base_armor = 600.0;
         params.base_shield = 0.0;
@@ -382,12 +382,12 @@ fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
         };
         // THE AIMED BODY DIES AND COMES BACK, which is what produces the
         // kills; the CROWD body is what the strip is measured on.
-        p.target.mode = TargetMode::InstantRespawn;
-        p.target.base_health = 1.0;
-        p.target.base_shield = 0.0;
-        p.target.base_armor = 0.0;
-        p.target.level = 1;
-        p.target.base_level = 1;
+        p.foe.mode = TargetMode::InstantRespawn;
+        p.foe.base_health = 1.0;
+        p.foe.base_shield = 0.0;
+        p.foe.base_armor = 0.0;
+        p.foe.level = 1;
+        p.foe.base_level = 1;
         let s = monte_carlo(&p, 8, 3);
         s.mean_damage_by_body.0[1]
     };
@@ -644,12 +644,12 @@ fn a_kill_that_drops_secondary_ammo_fills_the_meter() {
         // whose drops are the thing under test. Its death ends the orb that
         // killed it — which costs both arms the same strikes and leaves the
         // difference to the ammo.
-        p.target.mode = TargetMode::InstantRespawn;
-        p.target.base_health = 1.0;
-        p.target.base_shield = 0.0;
-        p.target.base_armor = 0.0;
-        p.target.level = 1;
-        p.target.base_level = 1;
+        p.foe.mode = TargetMode::InstantRespawn;
+        p.foe.base_health = 1.0;
+        p.foe.base_shield = 0.0;
+        p.foe.base_armor = 0.0;
+        p.foe.level = 1;
+        p.foe.base_level = 1;
         // A WEAPON THAT KEEPS FIRING, so the orb walk is settled shot by
         // shot rather than in one block at the end. A kill ends the walk
         // for that call — the rule `process_field_ticks` has always had —
@@ -923,10 +923,10 @@ fn a_beams_dot_scales_with_multishot_squared() {
         // the run, and the fixture's default arcane is Secondary Enervate,
         // whose crit ramps with the number of instances a shot makes — which
         // is the very thing multishot changes.
-        p.target.base_health = 1e12;
-        p.target.base_armor = 0.0;
-        p.target.base_shield = 0.0;
-        p.target.base_overguard = 0.0;
+        p.foe.base_health = 1e12;
+        p.foe.base_armor = 0.0;
+        p.foe.base_shield = 0.0;
+        p.foe.base_overguard = 0.0;
         p.arcane = ArcaneFx::none();
         // ONE body part at 1x. A proc's payload carries the procing hit's
         // part multiplier, so the fixture's 50/50 body/3x-head draw is

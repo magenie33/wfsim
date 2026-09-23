@@ -220,7 +220,7 @@ impl Default for FightParams {
                 ..ArcaneFx::none()
             },
             body_parts: BodyPart::humanoid(),
-            target: TargetParams::training_dummy(),
+            foe: Foe::training_dummy(),
             tenno: crate::data::tenno::default_tenno().clone(),
             duration_seconds: 10.0,
             // ONE BODY — a fixture, not a formation.
@@ -342,7 +342,7 @@ fn a_bouncing_projectile_in_a_crowd(n: usize, head_chance: f64) -> FightParams {
         .into_iter()
         .map(|p| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: p,
         })
@@ -551,8 +551,8 @@ fn metered() -> FightParams {
     }
 }
 
-fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
-    TargetParams {
+fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
+    Foe {
         name: "test target".into(),
         spectral: None,
         base_level: 1,
@@ -720,8 +720,8 @@ fn bare(forced: DamageType) -> FightParams {
 // by the POOL the damage lands on (docs/MECHANICS.md §8).
 
 /// The infinite dummy, wearing one faction's column.
-fn column_dummy(key: &str, overguard: f64) -> TargetParams {
-    TargetParams {
+fn column_dummy(key: &str, overguard: f64) -> Foe {
+    Foe {
         type_mods: crate::data::factions::columns_for(key),
         ..frail_target(TargetMode::InfiniteHealth, 0.0, overguard)
     }
@@ -735,14 +735,14 @@ fn eff_vs(key: &str, v: DamageVector) -> f64 {
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),
         body_parts: mono_body(1.0),
-        target: column_dummy(key, 0.0),
+        foe: column_dummy(key, 0.0),
         ..no_status()
     };
     monte_carlo(&p, 20, 3).mean_effective_damage
 }
 
-fn shielded_target(shield: f64, health: f64) -> TargetParams {
-    TargetParams {
+fn shielded_target(shield: f64, health: f64) -> Foe {
+    Foe {
         base_shield: shield,
         base_health: health,
         ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
@@ -777,7 +777,7 @@ fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> FightPara
         })
         .collect();
     FightParams {
-        target,
+        foe: target,
         others,
         body_parts: parts,
         damage: DamageVector::new()

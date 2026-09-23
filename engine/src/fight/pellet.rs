@@ -349,8 +349,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // with Galvanized Strike in BOTH forms." Galvanized Strike IS the CO
     // bonus — so the rule is not two rules, it is one: this bonus goes
     // wherever CO goes. `gunco_bucket` routes it.
-    let half_hp = if params.target.max_health() > 0.0
-        && target.health < 0.5 * params.target.max_health()
+    let half_hp = if params.foe.max_health() > 0.0
+        && target.health < 0.5 * params.foe.max_health()
     {
         active.base_damage_below_half_health
     } else {
@@ -1211,7 +1211,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             * pm_mult
             * falloff;
         let head_direct = direct && part.is_head;
-        let col = target.incoming_column(&params.target);
+        let col = target.incoming_column(&params.foe);
         // THE TARGET AS IT STOOD, before this instance touched it. Read
         // HERE and not afterwards: `apply` spends the pools and, on a
         // kill, respawns the body outright, so a snapshot taken on the
@@ -1222,7 +1222,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             shares,
             head_direct,
             t,
-            &params.target,
+            &params.foe,
             false,
             &mit,
             og_mult,
@@ -1735,7 +1735,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 // that is not an Eximus this line never runs, which is
                 // the whole reason the mod is not a plain on-headshot
                 // buff. It REFRESHES rather than stacking.
-                if params.target.eximus {
+                if params.foe.eximus {
                     if let Some(b) = params.base_damage_on_eximus_weakpoint {
                         windows.base_damage_eximus = t + b.duration;
                     }
@@ -1902,7 +1902,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // individual; the CLOUDS do not — see the note in
             // `field_tick`. What follows hits the fresh spawn, standing
             // in whatever is still burning where it spawned.
-            debuffs.on_death(params.acid_shells, &params.target);
+            debuffs.on_death(params.acid_shells, &params.foe);
             log_this_pellet!(Vec::new());
             continue;
         }
@@ -1955,7 +1955,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             forced,
             status_chance,
             &qvec,
-            &params.target.status_immunities,
+            &params.foe.status_immunities,
             &mut d.status,
         );
         // HUNTER MUNITIONS: a critical hit rolls its OWN Slash status,
@@ -1982,7 +1982,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             && tier >= 1
             && !params.forced_procs.contains(&DamageType::Slash)
             && !params
-                .target
+                .foe
                 .status_immunities
                 .contains(&DamageType::Slash)
             && d.extra.chance(active.slash_on_crit)
@@ -2166,7 +2166,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             &mut *r,
             rec,
             &mut d.status,
-            &params.target,
+            &params.foe,
             DEPTH_PROC,
         );
         // MELEE INFLUENCE — every eligible status this swing applied,

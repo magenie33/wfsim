@@ -139,7 +139,7 @@ pub(super) fn process_ticks(
     rng: &mut Rng,
     // WHICH BODY'S ticks these are — see `settle_procs`'s parameter of the
     // same name.
-    foe: &TargetParams,
+    foe: &Foe,
     // WHICH BODY IS TICKING — 0 is the aimed one, `i + 1` is `others[i]`, the
     // same numbering `RunResult::damage_by_body` uses.
     //
@@ -469,7 +469,7 @@ pub(super) fn process_ticks(
             gal.bump_on_kill(params, now);
             arc.on_kill(params, now);
             // Fresh individual: clean DebuffBar.
-            debuffs.on_death(params.acid_shells, &params.target);
+            debuffs.on_death(params.acid_shells, &params.foe);
             break;
         }
         // …and the detonation's EXTRA HIT, off the value that actually landed —
@@ -630,7 +630,7 @@ pub(super) fn settle_what_is_in_the_air(
             let (p, s) = crate::rules::ammo::on_kill(
                 params.squad_size,
                 params.landscape,
-                params.target.eximus,
+                params.foe.eximus,
                 &mut d.drops,
             );
             dropped_primary += p;

@@ -584,7 +584,7 @@ pub fn run_once_traced(
             &mut r,
             rec,
             &mut d.status,
-            &params.target,
+            &params.foe,
             0,
         );
 
@@ -1054,7 +1054,7 @@ pub fn run_once_traced(
         &mut r,
         rec,
         &mut d.status,
-        &params.target,
+        &params.foe,
         0,
     );
 
@@ -1094,10 +1094,10 @@ pub fn run_once_traced(
     // health joins the denominator: a gun that cannot touch it stalls at the
     // physical form's share of the individual instead of scoring a kill.
     let spectral_health =
-        params.target.spectral.map_or(0.0, |sp| params.target.max_health() * sp.health_share);
-    let pool = params.target.overguard()
-        + params.target.max_shield()
-        + params.target.max_health()
+        params.foe.spectral.map_or(0.0, |sp| params.foe.max_health() * sp.health_share);
+    let pool = params.foe.overguard()
+        + params.foe.max_shield()
+        + params.foe.max_health()
         + spectral_health;
     let remaining = if target.health <= 0.0 {
         0.0

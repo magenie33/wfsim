@@ -445,7 +445,7 @@ fn a_punch_through_mod_reaches_the_panel() {
             .iter()
             .map(|y| crate::formation::FoeSpec {
                 id: String::new(),
-                params: crate::target::TargetParams::training_dummy(),
+                params: crate::target::Foe::training_dummy(),
                 body_parts: crate::target::BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(0.0, *y),
             })
@@ -470,7 +470,7 @@ fn a_punch_through_mod_reaches_the_panel() {
             .iter()
             .map(|y| crate::formation::FoeSpec {
                 id: String::new(),
-                params: crate::target::TargetParams::training_dummy(),
+                params: crate::target::Foe::training_dummy(),
                 body_parts: crate::target::BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(0.0, *y),
             })

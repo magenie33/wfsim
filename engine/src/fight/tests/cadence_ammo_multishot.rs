@@ -151,8 +151,8 @@ fn the_latrons_puncture_perks_read_the_status_they_name() {
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         // ARMOUR, and a target that survives long enough to carry five
         // Puncture stacks. The training dummy has none of either.
-        p.target.base_armor = 500.0;
-        p.target.base_health = 2_000_000.0;
+        p.foe.base_armor = 500.0;
+        p.foe.base_health = 2_000_000.0;
         monte_carlo(&p, 20, 0x1A7)
     };
     let off = run(&[]);
@@ -184,8 +184,8 @@ fn the_latrons_puncture_perks_read_the_status_they_name() {
         let base = crate::model::WeaponBase::from_data("latron_prime", true, evo);
         let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
-        p.target.base_armor = 0.0;
-        p.target.base_health = 2_000_000.0;
+        p.foe.base_armor = 0.0;
+        p.foe.base_health = 2_000_000.0;
         monte_carlo(&p, 20, 0x1A7).mean_effective_damage
     };
     let (a, b) = (bare(&[]), bare(&["latron_prime_flensing_spikes"]));
@@ -671,7 +671,7 @@ fn faction_bonus_applies_only_vs_matching_target_faction() {
     let panel = resolve(&base, &[&expel], StackPolicy::AssumedMax);
     let parts = mono_body(1.0);
     let grineer_target = {
-        let mut t = TargetParams::training_dummy();
+        let mut t = Foe::training_dummy();
         t.faction = Faction::Grineer;
         t
     };
@@ -681,7 +681,7 @@ fn faction_bonus_applies_only_vs_matching_target_faction() {
         ..crate::arena::Arena::training(10.0)
     };
     let vs_grineer = FightParams::from_panel(&panel, &arena(grineer_target, parts.clone()), &ArcaneFx::none());
-    let vs_other = FightParams::from_panel(&panel, &arena(TargetParams::training_dummy(), parts), &ArcaneFx::none());
+    let vs_other = FightParams::from_panel(&panel, &arena(Foe::training_dummy(), parts), &ArcaneFx::none());
     assert!(
         (vs_grineer.faction_multiplier - 1.30).abs() < 1e-9,
         "grineer {}",

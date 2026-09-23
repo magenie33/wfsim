@@ -575,7 +575,7 @@ impl FightParams {
     /// raised with the bracket, which is what was measured
     /// (`faction_bracket_multiplier`).
     pub fn faction_at_time(&self, t: f64) -> f64 {
-        self.faction_bracket_at(t) * self.target.faction_bracket_multiplier
+        self.faction_bracket_at(t) * self.foe.faction_bracket_multiplier
     }
 
     /// …AND THE SHOOTER'S HALF OF IT ALONE, which is what a Bane's card says.
@@ -1278,7 +1278,7 @@ impl FightParams {
             influence_open: None,
             rage_open: None,
             body_parts,
-            target,
+            foe: target,
             duration_seconds,
             locked_stats: panel.locked.clone(),
             locked_buffs: Vec::new(),

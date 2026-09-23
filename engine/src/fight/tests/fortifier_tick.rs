@@ -24,8 +24,8 @@ fn bleeder(og: f64, mult: f64) -> FightParams {
     p.status_chance = 1.0;
     p.base_status_chance = 1.0;
     p.arcane.overguard_multiplier = mult;
-    p.target.base_overguard = og;
-    p.target.base_health = 1e15;
+    p.foe.base_overguard = og;
+    p.foe.base_health = 1e15;
     p
 }
 

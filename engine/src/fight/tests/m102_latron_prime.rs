@@ -81,7 +81,7 @@ fn m102_double_tap_on_the_incarnon_is_the_explosions_and_climbs_forty_a_shot() {
     let panel = with_double_tap("latron_prime_incarnon");
     assert!(panel.consecutive_hit_radial_only);
     let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(4.0), &ArcaneFx::none());
-    p.target.base_health = 1e15;
+    p.foe.base_health = 1e15;
     let rec = record(&p, 3, 0.0, f64::INFINITY, 10_000, 0);
     let mut radial = Vec::new();
     for e in rec.events() {
@@ -118,7 +118,7 @@ fn m102_double_tap_snapshots_each_form_at_the_swap() {
         &crate::arena::Arena::training(60.0), &ArcaneFx::none(),
     );
     p.body_parts = head_only();
-    p.target.base_health = 1e15;
+    p.foe.base_health = 1e15;
     let rec = record(&p, 5, 0.0, f64::INFINITY, 200_000, 0);
     let (mut transmuted, mut fresh, mut firsts) = (false, false, Vec::new());
     for e in rec.events() {
@@ -266,7 +266,7 @@ fn m104_a_compressed_blast_reaches_fewer_bodies() {
         arena.others = (1..=3)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(
                     // 2, 3 and 4 m out: inside the whole sphere, outside the

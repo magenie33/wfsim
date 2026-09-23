@@ -144,8 +144,8 @@ pub(super) fn push_break_proc(debuffs: &mut DebuffState, params: &FightParams, n
         return;
     }
     let pool_max = match pool {
-        BrokenPool::Overguard => params.target.overguard(),
-        BrokenPool::Shield => params.target.max_shield(),
+        BrokenPool::Overguard => params.foe.overguard(),
+        BrokenPool::Shield => params.foe.max_shield(),
     };
     let fraction = (0.03 * stacks as f64).min(0.30);
     let total = fraction * pool_max * params.status_damage_multiplier.powi(2);

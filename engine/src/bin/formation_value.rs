@@ -29,7 +29,7 @@ fn main() {
     let spacing: f64 = a.get(2).and_then(|s| s.parse().ok()).unwrap_or(3.0);
 
     let f = Formation::grid(
-        wfsim_engine::target::TargetParams::training_dummy(),
+        wfsim_engine::target::Foe::training_dummy(),
         wfsim_engine::target::BodyPart::humanoid(),
         cols,
         rows,
@@ -80,7 +80,7 @@ fn main() {
     println!("{:<10}{:>8}{:>9}{:>11}", "spacing", "bare", "primed", "worth");
     for s in [1.0, 1.5, 2.0, 2.34, 2.5, 3.0, 3.31, 3.5, 4.0, 5.0] {
         let g = Formation::grid(
-            wfsim_engine::target::TargetParams::training_dummy(),
+            wfsim_engine::target::Foe::training_dummy(),
             wfsim_engine::target::BodyPart::humanoid(),
             cols,
             rows,

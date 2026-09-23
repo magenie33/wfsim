@@ -10,7 +10,7 @@ use wfsim_engine::data::arcanes::ArcaneFx;
 use wfsim_engine::rules::damage::{DamageType, DamageVector};
 use wfsim_engine::fight::{monte_carlo, BuffLock, FightParams, LockedBuff};
 use wfsim_engine::target::TargetMode;
-use wfsim_engine::target::{BodyPart, TargetParams};
+use wfsim_engine::target::{BodyPart, Foe};
 use wfsim_engine::data::enemies::EnemySpec;
 use wfsim_engine::model::CoBehavior;
 use wfsim_engine::rules::scaling;
@@ -215,7 +215,7 @@ fn dual_toxocyst_baseline() -> FightParams {
             ..ArcaneFx::none()
         },
         body_parts: BodyPart::humanoid(),
-        target: TargetParams::training_dummy(),
+        foe: Foe::training_dummy(),
         duration_seconds: 10.0,
         // ONE BODY — a fixture, not a formation.
         others: Vec::new(),
@@ -401,7 +401,7 @@ fn main() {
     // respawn, Secondary Enervate equipped (always on in this sim).
     // 9.67M health behind 15.5M neutral Overguard.
     let inc2 = FightParams {
-        target: thrax
+        foe: thrax
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid thrax target"),
         duration_seconds: 60.0,

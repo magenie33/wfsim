@@ -24,7 +24,7 @@ fn the_damage_meter_accounts_for_the_whole_formation() {
     arena.target_at = crate::rules::space::Vec2::new(0.0, 5.4);
     let at = |x: f64, y: f64| crate::formation::FoeSpec {
         id: String::new(),
-        params: TargetParams::training_dummy(),
+        params: Foe::training_dummy(),
         body_parts: BodyPart::humanoid(),
         at: crate::rules::space::Vec2::new(x, y),
     };
@@ -126,7 +126,7 @@ fn a_shot_that_went_wide_does_not_blast_the_bystanders() {
         arena.target_at = target_at;
         arena.others = vec![crate::formation::FoeSpec {
             id: "e2".into(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: bystander,
         }];
@@ -169,7 +169,7 @@ fn a_formation_takes_the_damage_a_chain_spreads_into_it() {
     // the aimed body already stands, so the fight it opens with is the one
     // every golden value uses and only the neighbours are new.
     let grid = crate::formation::Formation::grid(
-        TargetParams::training_dummy(),
+        Foe::training_dummy(),
         BodyPart::humanoid(),
         3,
         3,
@@ -252,7 +252,7 @@ fn a_lingering_cloud_burns_everyone_standing_in_it() {
     let others: Vec<crate::formation::FoeSpec> = (1..=4)
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(i as f64 * 1.5, alone.target_at.y),
         })
@@ -312,7 +312,7 @@ fn ocucor_tendrils_pay_only_once_there_is_a_second_body() {
     let others: Vec<crate::formation::FoeSpec> = (1..=4)
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(i as f64 * 0.6, 4.0),
         })
@@ -411,7 +411,7 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
     let others: Vec<crate::formation::FoeSpec> = (1..=4)
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(i as f64 * 0.9, 0.4),
         })
@@ -658,7 +658,7 @@ fn an_explosions_falloff_is_read_from_its_epicentre() {
         .into_iter()
         .map(|d| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(0.0, arena.target_at.y + d),
         })
@@ -695,7 +695,7 @@ fn a_simultaneous_blast_detonation_reaches_five_metres() {
             .into_iter()
             .map(|x| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(x, arena.target_at.y),
             })
@@ -742,7 +742,7 @@ fn a_full_blast_pile_pays_the_host_as_ten_numbers_and_the_arcane_as_one() {
         magazine_size: 1e9,
         ..no_status()
     };
-    p.target.base_health = 1e15;
+    p.foe.base_health = 1e15;
     let rec = record(&p, 0, 0.0, f64::INFINITY, 10_000, 0);
     // THE DETONATION IS THE INSTANT THAT HOLDS MORE THAN ONE BLAST NUMBER.
     let mut by_t: std::collections::BTreeMap<u64, Vec<f64>> = Default::default();
@@ -887,7 +887,7 @@ fn a_gas_or_electric_proc_reaches_the_bodies_standing_around_it() {
         .into_iter()
         .map(|at| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at,
         })
@@ -1022,7 +1022,7 @@ fn a_punched_body_inherits_the_headshot_and_a_bounce_does_not() {
         arena.others = (1..=3)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(
                     0.0,
@@ -1088,7 +1088,7 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
         arena.others = (1..=n)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(
                     0.0,
@@ -1115,7 +1115,7 @@ fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
     let mut side = build(0, 9.0);
     side.others = vec![crate::formation::FoeSpec {
         id: String::new(),
-        params: TargetParams::training_dummy(),
+        params: Foe::training_dummy(),
         body_parts: BodyPart::humanoid(),
         at: crate::rules::space::Vec2::new(6.0, 4.0),
     }];
@@ -1145,7 +1145,7 @@ fn ardent_trigger_buys_draw_speed_and_only_against_a_column() {
         arena.others = (1..=behind)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(
                     0.0,
@@ -1206,7 +1206,7 @@ fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
         arena.others = (1..=12)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(0.0, 3.0 * f64::from(i)),
             })
@@ -1250,7 +1250,7 @@ fn one_round_pops_the_same_kind_of_number_on_every_body_it_crosses() {
     arena.others = (1..=4)
         .map(|i| crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(0.0, 3.0 * f64::from(i)),
         })
@@ -1316,7 +1316,7 @@ fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
         let mut arena = crate::arena::Arena::training(10.0);
         arena.others = vec![crate::formation::FoeSpec {
             id: String::new(),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             at: crate::rules::space::Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M * 2.0),
         }];
@@ -1376,7 +1376,7 @@ fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
     let mut arena = crate::arena::Arena::training(10.0);
     arena.others = vec![crate::formation::FoeSpec {
         id: String::new(),
-        params: TargetParams::training_dummy(),
+        params: Foe::training_dummy(),
         body_parts: BodyPart::humanoid(),
         at: crate::rules::space::Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M * 2.0),
     }];
@@ -1456,7 +1456,7 @@ fn the_ocucor_reaches_exactly_five_bodies() {
         arena.others = (1..=n)
             .map(|i| crate::formation::FoeSpec {
                 id: String::new(),
-                params: TargetParams::training_dummy(),
+                params: Foe::training_dummy(),
                 body_parts: BodyPart::humanoid(),
                 at: crate::rules::space::Vec2::new(i as f64 * 0.7, 4.0),
             })

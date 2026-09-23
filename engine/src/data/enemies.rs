@@ -269,7 +269,7 @@ pub struct EnemySpec {
     #[serde(default)]
     pub attenuation: Option<AttenuationSpec>,
     /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET — see
-    /// [`crate::target::TargetParams::faction_bracket_multiplier`]. Absent = 1.0,
+    /// [`crate::target::Foe::faction_bracket_multiplier`]. Absent = 1.0,
     /// which is every unit but the one it was measured on. It is written as the
     /// per-HIT figure and the engine raises it per derivation step, so a file
     /// states 0.8 and never 0.64: a file that stated the squared number would be

@@ -1091,7 +1091,7 @@ fn melee_fight(
                 let a = std::f64::consts::TAU * f64::from(i) / 8.0;
                 crate::formation::FoeSpec {
                     id: format!("e{}", i + 1),
-                    params: crate::target::TargetParams::training_dummy(),
+                    params: crate::target::Foe::training_dummy(),
                     body_parts: crate::target::BodyPart::humanoid(),
                     at: crate::rules::space::Vec2::new(gap * a.cos(), gap * a.sin()),
                 }
@@ -1155,7 +1155,7 @@ fn swings_only(form: &str, mods: &[&str], spacing: Option<f64>) -> Summary {
                 let a = std::f64::consts::TAU * f64::from(i) / 8.0;
                 crate::formation::FoeSpec {
                     id: format!("e{}", i + 1),
-                    params: crate::target::TargetParams::training_dummy(),
+                    params: crate::target::Foe::training_dummy(),
                     body_parts: crate::target::BodyPart::humanoid(),
                     at: crate::rules::space::Vec2::new(gap * a.cos(), gap * a.sin()),
                 }
@@ -1967,7 +1967,7 @@ fn a_swing_sweeps_an_arc_rather_than_everything_in_front() {
         let a = (90.0 - off_deg).to_radians();
         crate::formation::FoeSpec {
             id: format!("e{off_deg}"),
-            params: TargetParams::training_dummy(),
+            params: Foe::training_dummy(),
             body_parts: BodyPart::humanoid(),
             // 2.8 m centre to centre is a 2.3 m gap against a 2.5 m reach:
             // comfortably inside, and not the knife edge 3.0 would be.

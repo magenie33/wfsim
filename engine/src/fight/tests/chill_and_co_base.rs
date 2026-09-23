@@ -434,7 +434,7 @@ fn a_respawned_body_in_the_formation_starts_with_no_statuses() {
     let mut p = FightParams::from_panel(
         &panel, &arena, &crate::data::arcanes::ArcaneFx::none(),
     );
-    p.target = frail;
+    p.foe = frail;
     // Enough to cross both bodies and keep going.
     p.punch_through_m = 4.0;
     let r = run_once(&p, &mut Rng::new(0x5EED));

@@ -108,7 +108,7 @@ fn the_gauge_overshoots_and_transforms_at_the_end_of_the_shot() {
         fire_rate: 1.0,
         // Long enough for exactly one fill-and-transform, and no more.
         duration_seconds: 5.5,
-        target: TargetParams { base_health: 1e15, ..FightParams::default().target },
+        foe: Foe { base_health: 1e15, ..FightParams::default().foe },
         cycle: Some(IncarnonCycle {
             starts_primed: false,
             base_form: Box::new(base_form),

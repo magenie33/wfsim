@@ -519,7 +519,7 @@ impl DebuffState {
     /// be restored afterwards, and a field that must be restored is a field
     /// somebody eventually forgets. It also forces a new death site to say
     /// whose death it is, which is the only reason this stays a funnel.
-    pub(super) fn on_death(&mut self, acid: Option<crate::model::AcidShells>, victim: &TargetParams) {
+    pub(super) fn on_death(&mut self, acid: Option<crate::model::AcidShells>, victim: &Foe) {
         let out = std::mem::take(&mut self.area_out);
         let mut hits = std::mem::take(&mut self.area_hit);
         // ACID SHELLS: "enemies killed by the Sobek explode, dealing a flat
@@ -530,7 +530,7 @@ impl DebuffState {
         // account for the bonus Health given to enemies in The Steel Path,
         // Archon Hunt, Deep Archimedea, and similar modes" — so it is the
         // unit's own maximum before the mode's multiplier, which is exactly
-        // what `TargetParams::base_max_health` holds.
+        // what `Foe::base_max_health` holds.
         if let Some(a) = acid {
             let mut v = DamageVector::new();
             v.add(DamageType::Corrosive, a.flat_damage);

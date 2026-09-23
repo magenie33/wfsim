@@ -199,7 +199,7 @@ fn overguard_break_with_disrupt_fires_the_tesla_payload() {
     let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 100.0);
     t.base_health = 10_000.0;
     let p = FightParams {
-        target: t,
+        foe: t,
         ..bare(DamageType::Magnetic)
     };
     let s = monte_carlo(&p, 20, 5);
@@ -488,7 +488,7 @@ fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
     };
     let p = FightParams {
         multishot_stack: Some(spec),
-        target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+        foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         arcane: ArcaneFx::none(),
         crit_multiplier: 1.0,
         body_parts: mono_body(1.0),
@@ -718,11 +718,11 @@ fn fortifier_multiplies_damage_while_overguard_holds() {
     // ×9 on every direct hit while the (infinite) overguard is up:
     // 10 × 75 × 9 = 6750. NINE, not eight — the card's "x8" is the EXTRA
     // (MEASUREMENTS M38,).
-    let mut t = TargetParams::training_dummy();
+    let mut t = Foe::training_dummy();
     t.base_overguard = 1e9;
     let p = FightParams {
         arcane: arc("secondary_fortifier"),
-        target: t,
+        foe: t,
         ..flat_base()
     };
     let s = monte_carlo(&p, 20, 5);
@@ -1079,7 +1079,7 @@ fn weakpoint_crit_chance_applies_on_weakpoint_pellets_only() {
 fn sharpened_bullets_cd_buff_refreshes_on_kills() {
     // Frail 50 HP respawning targets: kills keep the +100%-absolute cd
     // buff up; guaranteed crits make the buff visible in raw damage.
-    let mut frail = TargetParams::training_dummy();
+    let mut frail = Foe::training_dummy();
     frail.base_health = 50.0;
     frail.mode = TargetMode::InstantRespawn;
     let base = FightParams {
@@ -1087,7 +1087,7 @@ fn sharpened_bullets_cd_buff_refreshes_on_kills() {
         crit_multiplier: 2.0,
         arcane: ArcaneFx::none(),
         body_parts: mono_body(1.0),
-        target: frail,
+        foe: frail,
         ..no_status()
     };
     let with = FightParams {
@@ -1148,7 +1148,7 @@ fn shield_depletion_counts_toward_kill_progress() {
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),
         body_parts: mono_body(1.0),
-        target: shielded_target(1000.0, 1000.0),
+        foe: shielded_target(1000.0, 1000.0),
         duration_seconds: 1.0,
         ..no_status()
     };
@@ -1174,7 +1174,7 @@ fn toxin_share_bypasses_shields_into_health() {
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),
         body_parts: mono_body(1.0),
-        target: shielded_target(1000.0, 160.0),
+        foe: shielded_target(1000.0, 160.0),
         ..no_status()
     };
     let s = monte_carlo(&p, 20, 5);
@@ -1218,7 +1218,7 @@ fn a_broken_shield_leaks_and_the_window_costs_gunfire_nothing() {
         duration_seconds: 0.2,
         magazine_size: 100.0,
         body_parts: mono_body(1.0),
-        target: shielded_target(100.0, 1e9),
+        foe: shielded_target(100.0, 1e9),
         ..no_status()
     };
     let s = monte_carlo(&p, 20, 5);
@@ -1280,7 +1280,7 @@ fn attenuation_caps_damage_per_instance_and_per_second() {
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),
         body_parts: mono_body(1.0),
-        target: t,
+        foe: t,
         ..no_status()
     };
     let s = monte_carlo(&p, 20, 5);
@@ -1384,7 +1384,7 @@ fn kill_progress_gives_partial_credit_for_depleted_pools() {
     let p = FightParams {
         crit_multiplier: 1.0,
         body_parts: mono_body(1.0),
-        target: t,
+        foe: t,
         duration_seconds: 1.0,
         ..no_status()
     };

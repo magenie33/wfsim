@@ -12,7 +12,7 @@ fn thrax_9999_takes_everything_on_overguard_neutrally() {
     )))
     .unwrap();
     let p = FightParams {
-        target: spec
+        foe: spec
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .unwrap(),
         duration_seconds: 60.0,
@@ -51,7 +51,7 @@ fn viral_amps_health_damage_live() {
 fn magnetic_amps_overguard_damage_live() {
     // Same amp curve, but on the overguard pool.
     let p = FightParams {
-        target: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
+        foe: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
         ..bare(DamageType::Magnetic)
     };
     let s = monte_carlo(&p, 20, 3);
@@ -125,7 +125,7 @@ fn overguard_reads_its_own_column_not_the_units() {
             base_crit_chance: 0.0,
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
-            target: column_dummy(key, 1e12),
+            foe: column_dummy(key, 1e12),
             ..no_status()
         };
         monte_carlo(&p, 20, 3).mean_effective_damage
@@ -146,7 +146,7 @@ fn bleed_takes_no_faction_modifier_though_it_is_filed_under_slash() {
     let run = |key: &str| {
         let p = FightParams {
             damage: DamageVector::new().with(DamageType::Slash, 100.0),
-            target: column_dummy(key, 0.0),
+            foe: column_dummy(key, 0.0),
             ..bare(DamageType::Slash)
         };
         let s = monte_carlo(&p, 20, 3);
@@ -186,7 +186,7 @@ fn the_column_follows_each_component_into_the_pool_it_lands_in() {
             fire_rate: 10.0,
             duration_seconds: 0.65,
             magazine_size: 100.0,
-            target: TargetParams {
+            foe: Foe {
                 type_mods: crate::data::factions::columns_for(key),
                 base_shield: 10_000.0,
                 base_health: 160.0,
@@ -547,7 +547,7 @@ fn the_record_adds_up_to_the_damage_total() {
 fn a_hit_that_breaks_a_shield_leaks_five_per_cent_to_health() {
     // The measurement's target, as the pop-ups describe it: 120 shield,
     // enough health to survive so the leak can be read off the pool.
-    let target = TargetParams {
+    let target = Foe {
         base_shield: 120.0,
         base_armor: 0.0,
         base_health: 1e9,
@@ -621,7 +621,7 @@ fn a_hit_that_breaks_a_shield_leaks_five_per_cent_to_health() {
 /// than one number written twice.
 #[test]
 fn a_hit_on_a_shielded_body_pops_the_toxin_half_separately() {
-    let target = TargetParams {
+    let target = Foe {
         base_shield: 400.0,
         base_armor: 300.0,
         base_health: 1e12,
@@ -636,7 +636,7 @@ fn a_hit_on_a_shielded_body_pops_the_toxin_half_separately() {
         base_crit_chance: 0.0,
         arcane: ArcaneFx::none(),
         body_parts: mono_body(1.0),
-        target,
+        foe: target,
         ..no_status()
     };
     let s = monte_carlo(&p, 4, 11);

@@ -42,7 +42,7 @@ fn m99_heat_strip_climbs_without_a_tick_on_capped_armour() {
         .expect("a level 210 Steel Path unit is legal");
     let mb = 35.0 * 2.65;
     let p = FightParams {
-        target,
+        foe: target,
         damage: DamageVector::new()
             .with(DamageType::Impact, 1.75 * 2.65)
             .with(DamageType::Puncture, 12.25 * 2.65)
@@ -101,7 +101,7 @@ fn m99_a_refreshed_short_burn_ticks_every_second() {
         .expect("a level 210 Steel Path unit is legal");
     let mb = 35.0 * 2.65;
     let p = FightParams {
-        target,
+        foe: target,
         damage: DamageVector::new()
             .with(DamageType::Impact, 1.75 * 2.65)
             .with(DamageType::Puncture, 12.25 * 2.65)
@@ -357,7 +357,7 @@ fn corrosion_strips_armor_multiplicatively() {
     // strip, so later shots take less DR than the first. Exact: shot k
     // has n = k−1 stacks; strip(0)=0, strip(n)=0.20+0.06n.
     let p = FightParams {
-        target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
+        foe: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
         ..bare(DamageType::Corrosive)
     };
     let s = monte_carlo(&p, 20, 5);
