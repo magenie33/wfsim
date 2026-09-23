@@ -386,7 +386,6 @@ pub fn run_once_traced(
     // buys is not how the loop reads it — it is that "what does a second
     // combatant share with you" now has an answer a type gives.
     let Fight {
-        mut t,
         mut next_frame,
         mut target,
         mut debuffs,
@@ -404,10 +403,31 @@ pub fn run_once_traced(
     // which is the one shape that cannot hold a SECOND seat: you cannot flatten
     // two magazines into one `ammo`. They are read off the combatant now, and
     // what that costs is measured rather than assumed — `one_fight`.
-    let mut me = me;
-    // The streams are threaded on as `&mut` from here: every function the
-    // loop calls rolls off this one `Draws`.
-    let d = &mut me.d;
+    // THE SEATS. One today, and the loop below no longer knows that: it takes
+    // whichever is due next, which is the whole difference between a fight
+    // with a combatant in it and a fight built around one.
+    let mut seats: Vec<Combatant> = vec![me];
+
+    /// WHO ACTS NEXT — the earliest `next_t`, and a TIE GOES TO THE LOWER
+    /// SEAT. Ties are not rare: two weapons on the same cadence share every
+    /// instant, and without a stated order the replay would settle them in
+    /// whatever order the scheduler happened to visit, which is a different
+    /// fight each run.
+    ///
+    /// A seat that is finished parks at infinity and is never picked again.
+    fn next_seat(seats: &[Combatant]) -> Option<usize> {
+        seats
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| c.next_t.is_finite())
+            .min_by(|(ia, a), (ib, b)| {
+                a.next_t
+                    .total_cmp(&b.next_t)
+                    .then_with(|| ia.cmp(ib))
+            })
+            .map(|(i, _)| i)
+    }
+
     // …AND ITS CONSTANTS STAY ON IT TOO. Binding them as locals would hold a
     // shared borrow of the whole combatant for the length of the loop, which is
     // the one thing that stops the mutable halves being reached at all.
@@ -415,8 +435,17 @@ pub fn run_once_traced(
     // **THE LIST THIS RUN EXECUTES**, composed once rather than per decision:
     // it is the same list for the whole engagement, and building it inside the
     // loop would allocate on every shot.
-    let apl = params.apl();
-    loop {
+    let mut t;
+    // WHOSE TURN, AND WHEN. The fight's clock is whatever the next seat is due
+    // at; the body then reads `t` as "now" exactly as it did when there was
+    // only ever one seat to be due. It ends when every seat has parked.
+    while let Some(seat_index) = next_seat(&seats) {
+        let me = &mut seats[seat_index];
+        t = me.next_t;
+        // The streams are threaded on as `&mut` from here: every function this
+        // turn calls rolls off the ACTING SEAT'S own `Draws`, which is what
+        // keeps a second combatant from re-rolling the first one's crits.
+        let d = &mut me.d;
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
         // Sampling here rather than on a fixed clock is deliberate: this loop
@@ -429,10 +458,10 @@ pub fn run_once_traced(
         // nobody is replaying should not pay for passing them.
         // THE FLASH, READ ONCE FOR THIS SCAN. Melee state, and the one fact in
         // `Now` no other part of the fight can answer.
-        let flash = params.tennokai.enabled && t < me.melee.tennokai_until;
+        let flash = me.params.tennokai.enabled && t < me.melee.tennokai_until;
         match before_the_shot(
-            params,
-            &apl,
+            me.params,
+            &me.apl,
             flash,
             rec,
             rng,
@@ -467,17 +496,31 @@ pub fn run_once_traced(
             &mut me.opening_closed,
             &mut me.field_duration_boost,
         ) {
-            Flow::Continue => continue,
-            Flow::Break => break,
+            // A SEAT THAT CANNOT ACT AGAIN IS DONE, and the FIGHT is not:
+            // your magazine running out at second 40 does not stop a companion
+            // that fires until 180. It parks, and the loop ends when every
+            // seat has.
+            Flow::Break => {
+                me.next_t = f64::INFINITY;
+                continue;
+            }
+            // …AND ONE THAT IS WAITING GIVES THE TURN BACK. `before_the_shot`
+            // has already moved `t` to whenever it can act next, so writing it
+            // down and re-picking is what lets another seat fire during a
+            // reload rather than after it.
+            Flow::Continue => {
+                me.next_t = t;
+                continue;
+            }
             Flow::Go => {}
         }
 
         // Active-phase view: the base form's panel during the rebuild
-        // phase, the outer params otherwise. Target/aim/locks are shared
-        // from the outer params.
-        let active: &FightParams = match &params.cycle {
+        // phase, the outer me.params otherwise. Target/aim/locks are shared
+        // from the outer me.params.
+        let active: &FightParams = match &me.params.cycle {
             Some(cy) if me.incarnon.in_base_form => &cy.base_form,
-            _ => params,
+            _ => me.params,
         };
         // …AND WHO IS ON THE LINE IS THE ACTIVE FORM'S ANSWER TOO, for the same
         // reason: a form's punch through is its own (`open`).
@@ -513,8 +556,8 @@ pub fn run_once_traced(
             direct_pre_snap,
             co_base,
         } = swing_this_shot(
-            params,
-            &apl,
+            me.params,
+            &me.apl,
             active,
             t,
             qvec,
@@ -529,7 +572,7 @@ pub fn run_once_traced(
         // everything else at this scope. A cycle whose base form has them and
         // whose Incarnon form does not simply reads an empty slice there.
         let (variants, variant_rad): (&[_], &[_]) = if me.incarnon.in_base_form {
-            match params.cycle.as_ref() {
+            match me.params.cycle.as_ref() {
                 Some(_) => (&me.fixed.base_variants, &me.fixed.base_variant_rad),
                 None => (&me.fixed.main_variants, &me.fixed.main_variant_rad),
             }
@@ -545,12 +588,12 @@ pub fn run_once_traced(
             &mut me.arc,
             t + 1e-9,
             &mut target,
-            params,
+            me.params,
             active,
             &mut r,
             rec,
             &mut d.status,
-            &params.foe,
+            &me.params.foe,
             0,
         );
 
@@ -573,7 +616,7 @@ pub fn run_once_traced(
             n_pellets,
             mut beam_merge,
         } = resolve_the_shot(
-            params,
+            me.params,
             active,
             rec,
             d,
@@ -646,7 +689,7 @@ pub fn run_once_traced(
                     // From CAPACITY. With infinite reserves — which the Incarnon
                     // cycle's base phase always assumes — nothing can starve,
                     // which is correct rather than missing.
-                    if params.infinite_reserve {
+                    if me.params.infinite_reserve {
                         afforded += 1;
                         continue;
                     }
@@ -685,15 +728,15 @@ pub fn run_once_traced(
         // THE HEADSHOT-DAMAGE BRACKETS as of this shot: the field's head ladder
         // below, and what a Tesla arc is worth on a neighbour's head.
         let (shot_hb, shot_hi) = {
-            let streak = match params.headshot_streak {
+            let streak = match me.params.headshot_streak {
                 Some(s) if t < me.windows.streak => s.value,
                 _ => 0.0,
             } + buff_total(active, crate::model::BuffGrant::HeadshotDamage, &mut me.buff_stacks, t);
             if active.headshot_bonus_multiplicative {
-                (params.arcane.headshot_multiplier_bonus + streak, active.headshot_damage_bonus)
+                (me.params.arcane.headshot_multiplier_bonus + streak, active.headshot_damage_bonus)
             } else {
                 (
-                    params.arcane.headshot_multiplier_bonus + streak + active.headshot_damage_bonus,
+                    me.params.arcane.headshot_multiplier_bonus + streak + active.headshot_damage_bonus,
                     0.0,
                 )
             }
@@ -702,7 +745,7 @@ pub fn run_once_traced(
         // Field ticks due before this shot, with the buff state as of now.
         me.field_ctx = FieldCtx {
             flat_crit,
-            crit_chance_relative_mods: crit_chance_relative - params.arcane.crit_chance_relative,
+            crit_chance_relative_mods: crit_chance_relative - me.params.arcane.crit_chance_relative,
             base_damage_add_mods: bd_reload_add
                 + bd_eximus_add
                 + active.compression_base_damage
@@ -712,7 +755,7 @@ pub fn run_once_traced(
             // own head — see the field's note on why it is computed twice
             // rather than shared.
             head_factor: {
-                let m = params
+                let m = me.params
                     .body_parts
                     .iter()
                     .find(|p| p.is_head)
@@ -724,7 +767,7 @@ pub fn run_once_traced(
         };
         settle_what_is_in_the_air(
             &me.windows,
-            params,
+            me.params,
             active,
             me.fixed.field_active,
             rec,
@@ -776,7 +819,7 @@ pub fn run_once_traced(
         // throw. Without one, the trigger deploys, which is what the form's own
         // `transformed` mode shows.
         if let Some(o) = active.orb.filter(|_| active.meter.is_none()) {
-            throw_orb(o, me.seat, params, t, &mut orbs);
+            throw_orb(o, me.seat, me.params, t, &mut orbs);
         }
 
         {
@@ -824,7 +867,7 @@ pub fn run_once_traced(
                 bar: &me.bar,
                 rec_roster: &me.fixed.rec_roster,
                 rec_buff_index: &me.fixed.rec_buff_index,
-                params,
+                params: me.params,
             };
             let mut live = Live {
                 r: &mut r,
@@ -865,7 +908,7 @@ pub fn run_once_traced(
         if !others.is_empty() {
             spread_beyond_the_target(
                 &me.windows,
-                params,
+                me.params,
                 active,
                 rec,
                 d,
@@ -890,7 +933,7 @@ pub fn run_once_traced(
             &mut debuffs,
             &mut target,
             &mut others,
-            params,
+            me.params,
             &area_near,
             &mut r,
             rec,
@@ -900,8 +943,8 @@ pub fn run_once_traced(
         );
 
         after_the_shot(
-            params,
-            &apl,
+            me.params,
+            &me.apl,
             flash,
             active,
             rec,
@@ -942,12 +985,20 @@ pub fn run_once_traced(
             &mut me.field_duration_boost,
             &mut me.last_shot_t,
         );
+        // WHERE THIS SEAT IS DUE NEXT. `after_the_shot` advanced `t` by this
+        // weapon's cadence, which is this seat's clock and nobody else's.
+        me.next_t = t;
     }
 
     // THE METER'S LAST FILLS, after the trigger stops. A weapon that is out of
     // ammo still recharges, and an orb earned at t = 179 is an orb the fight
     // gets — so the clock is run out to the end and every throw it buys is
     // thrown, before the orbs are drained below.
+    // EVERY SEAT'S METER, not one seat's. A combatant that carries a tome
+    // earns its last orbs whoever else is in the fight.
+    for me in seats.iter_mut() {
+    let d = &mut me.d;
+    let _ = &d;
     if let (Some(m), Some(o)) = (me.fixed.field_active.meter, me.fixed.field_active.orb) {
         me.meter.seconds += params.duration_seconds - me.meter.clocked;
         while me.meter.seconds >= m.seconds_to_fill {
@@ -970,6 +1021,15 @@ pub fn run_once_traced(
             throw_orb(o, me.seat, params, at, &mut orbs);
         }
     }
+    }
+
+    // WHOSE BUFFS THE DRAINING ORBS READ. An orb carries its owner, but this
+    // drain takes one set of windows for all of them — so with a second seat
+    // leaving orbs it would read the wielder's. Named here rather than left to
+    // be discovered: it is the same gap the four status sites have, and it
+    // closes the same way, by the settling reading the owner's state.
+    let me = &mut seats[Seat::WIELDER.0];
+    let d = &mut me.d;
     // The orbs still in the air after the last shot — every strike they have
     // left and the detonation that ends them. Before the clouds for the same
     // reason the clouds come before the status drain: each event settles what

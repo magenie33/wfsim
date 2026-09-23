@@ -23,7 +23,9 @@ use super::*;
 /// Until this split there was one struct, so "what does a companion share with
 /// you" had no answer a type could give.
 pub(super) struct Fight {
-    pub(super) t: f64,
+    // NO CLOCK OF ITS OWN. A fight is at whatever time the next seat is due,
+    // so the clock lives on the seats and the world reads it from whoever is
+    // acting. One field fewer to keep in step with them.
     pub(super) next_frame: f64,
     pub(super) target: TargetState,
     pub(super) debuffs: DebuffState,
@@ -52,6 +54,16 @@ pub(super) struct Fight {
 /// crits; a second combatant sharing them would re-roll YOURS the moment it
 /// existed, and every measured number would move.
 pub(super) struct Combatant<'a> {
+    /// WHAT IT BRINGS. Every number the hit path reads off `params` is THIS
+    /// seat's answer: two seats in one fight are two builds, and the loop that
+    /// read one outer `params` could only ever be firing one of them.
+    pub(super) params: &'a FightParams,
+    /// THE LIST IT EXECUTES, composed once. Per seat because it is what that
+    /// combatant DOES, and a companion does not run your rotation.
+    pub(super) apl: crate::data::apl::Apl,
+    /// WHEN IT ACTS NEXT. The fight goes to the earliest of these; a tie is
+    /// broken by seat, so a replay is the same fight every time.
+    pub(super) next_t: f64,
     /// WHICH SEAT THIS IS, and every damage instance it settles carries it.
     /// On the combatant rather than passed beside it: a seat handed in at the
     /// call site is one a caller can get wrong, and there are nine call sites.
@@ -638,7 +650,6 @@ pub(super) fn open<'a>(
     let last_shot_t = f64::NEG_INFINITY;
     (
         Fight {
-            t,
             next_frame,
             target,
             debuffs,
@@ -654,6 +665,12 @@ pub(super) fn open<'a>(
         },
         Combatant {
             seat: Seat::WIELDER,
+            params,
+            apl: params.apl(),
+            // WHEN IT FIRST ACTS, which is not zero: a weapon with a wind-up
+            // does not fire at the buzzer, and the engagement's own opening
+            // time is what `t` was set to here.
+            next_t: t,
             d,
             bar,
             enervate,
