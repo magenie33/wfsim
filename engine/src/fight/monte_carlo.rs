@@ -500,7 +500,7 @@ pub fn shard(
         a.max = a.max.max(r.total_damage());
         a.effective += r.effective_damage();
         a.effective_sq += r.effective_damage() * r.effective_damage();
-        a.dot += r.meter.dot();
+        a.dot += r.tally.dot();
         a.overkill += r.overkill;
         a.spilled += r.spilled;
         a.health_damage += r.health_damage;
@@ -522,8 +522,8 @@ pub fn shard(
         a.max_kills = a.max_kills.max(r.kills);
         a.downtime += r.downtime_seconds;
         a.first_magazine += r.first_magazine_damage;
-        a.max_hit_sum += r.meter.max_hit();
-        a.biggest = a.biggest.max(r.meter.max_hit());
+        a.max_hit_sum += r.tally.max_hit();
+        a.biggest = a.biggest.max(r.tally.max_hit());
         if let Some(at) = r.first_kill_at {
             a.ttks.push(at);
         }

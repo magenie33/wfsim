@@ -410,7 +410,7 @@ fn the_explosion_rolls_its_own_status_apart_from_the_direct_hit() {
         "100% radial SC = exactly one proc per landed explosion"
     );
     assert!(
-        loud.meter.dot() > 0.0,
+        loud.tally.dot() > 0.0,
         "the explosion's Heat procs must burn on their own"
     );
     assert_eq!(quiet.shots, loud.shots, "status does not change the cadence");

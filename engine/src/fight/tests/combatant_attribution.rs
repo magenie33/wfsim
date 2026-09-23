@@ -27,9 +27,9 @@ fn every_instance_is_credited_to_an_attacker() {
     let dealt: f64 = r.dealt.by_combatant().0.iter().sum();
     assert!(dealt > 0.0, "the fight dealt nothing at all");
     assert!(
-        (dealt - r.meter.effective()).abs() < 1e-6,
+        (dealt - r.tally.effective()).abs() < 1e-6,
         "attributed {dealt} against a meter of {}",
-        r.meter.effective()
+        r.tally.effective()
     );
 }
 

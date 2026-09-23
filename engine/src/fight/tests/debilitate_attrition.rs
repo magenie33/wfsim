@@ -56,7 +56,7 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
                 }
                 p.noncrit_bonus = attrition.then_some((1.0, 20.0));
                 let mut rng = crate::rules::rng::Rng::new(seed);
-                run_once(&p, &mut rng).meter.dot()
+                run_once(&p, &mut rng).tally.dot()
             })
             .sum::<f64>()
     };
@@ -107,7 +107,7 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
                     .with(DamageType::Corrosive, total);
                 p.noncrit_bonus = Some((0.5, 20.0));
                 let mut rng = crate::rules::rng::Rng::new(seed + k);
-                run_once(&p, &mut rng).meter.dot()
+                run_once(&p, &mut rng).tally.dot()
             })
             .sum::<f64>()
     };
@@ -168,7 +168,7 @@ fn a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier() {
                     .with(DamageType::Corrosive, tot);
                 p.noncrit_bonus = attrition.then_some((0.5, 20.0));
                 let mut rng = crate::rules::rng::Rng::new(seed);
-                run_once(&p, &mut rng).meter.dot()
+                run_once(&p, &mut rng).tally.dot()
             })
             .sum::<f64>()
     };

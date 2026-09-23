@@ -37,9 +37,9 @@ fn a_dot_ticks_into_a_full_overguard_bar() {
     p.target.base_health = 1e15;
     let r = run_once(&p, &mut crate::rules::rng::Rng::new(7));
     assert!(r.procs > 0, "the status has to land at all");
-    assert!(r.meter.dot() > 0.0, "and its ticks have to do damage");
+    assert!(r.tally.dot() > 0.0, "and its ticks have to do damage");
     // UNMITIGATED: Overguard has no armor, so the tick keeps its full
     // value. At 2700 armor a tick that had landed on health would keep 10%.
-    let ticks = r.meter.dot() / 35.0; // Slash is 35% of ModifiedBase (100)
+    let ticks = r.tally.dot() / 35.0; // Slash is 35% of ModifiedBase (100)
     assert!(ticks > 5.0, "ticks came out mitigated: {:.1}", ticks);
 }

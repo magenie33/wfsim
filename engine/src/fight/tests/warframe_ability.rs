@@ -293,7 +293,7 @@ fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
         // the reading.
         p.fire_rate = 0.02;
         p.duration_seconds = 30.0;
-        run_once(&p, &mut crate::rules::rng::Rng::new(3)).meter.dot()
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).tally.dot()
     };
     let none = bleed(Some(0.0));
     let whole = bleed(None);
@@ -328,7 +328,7 @@ fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
         p.target.base_health = 1e15;
         p.fire_rate = 0.02;
         p.duration_seconds = 30.0;
-        run_once(&p, &mut crate::rules::rng::Rng::new(3)).meter.dot()
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).tally.dot()
     };
     let e_whole = ebleed(None);
     let e_brief = ebleed(Some(2.0));
@@ -364,7 +364,7 @@ fn roar_is_used_twice_on_a_status_tick_and_eclipse_once() {
         p.status_chance = 1.0;
         p.base_status_chance = 1.0;
         p.target.base_health = 1e15;
-        run_once(&p, &mut crate::rules::rng::Rng::new(3)).meter.dot()
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).tally.dot()
     };
     // A base large enough that the accumulator is below the tolerance.
     let big = 1e9;
@@ -694,7 +694,7 @@ fn a_dot_tick_triggers_no_extra_hit() {
     p.status_chance = 0.0;
     p.forced_procs = vec![DamageType::Slash];
     let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
-    assert!(r.meter.dot() > 0.0, "the bleed has to be ticking for this to mean anything");
+    assert!(r.tally.dot() > 0.0, "the bleed has to be ticking for this to mean anything");
     // Only the hits paid one, so the ratio is the plain 0.26 x faction —
     // exactly as if the DoT were not there.
     let ratio = r.sources.extra_hit / r.sources.direct;

@@ -235,13 +235,13 @@ impl RunResult {
     /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     #[inline]
     pub fn total_damage(&self) -> f64 {
-        self.meter.raw()
+        self.tally.raw()
     }
 
     /// Damage after target mitigation (overguard neutrality / armour DR).
     #[inline]
     pub fn effective_damage(&self) -> f64 {
-        self.meter.effective()
+        self.tally.effective()
     }
 }
 
@@ -372,7 +372,7 @@ pub struct RunResult {
     /// beside a `log_damage` call are kept in step by whoever remembers, with a
     /// test comparing the sum against the meter as the only guard — a guard
     /// rather than a guarantee.
-    pub meter: ledger::Meter,
+    pub tally: ledger::Tally,
     /// The DPS-over-time curve — booked by [`ledger::settle`] and by nothing
     /// else, for the same reason the totals are.
     pub curve: ledger::Curve,

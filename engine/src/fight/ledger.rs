@@ -1,6 +1,6 @@
 //! THE ONLY DOOR DAMAGE COMES THROUGH.
 //!
-//! A module rather than a convention. `Meter`'s fields are private to it, so
+//! A module rather than a convention. `Tally`'s fields are private to it, so
 //! the ONLY thing in this crate that can move a run's damage totals is
 //! [`ledger::settle`] — which books the number and writes the row that
 //! explains it in the same call. Adding a tenth damage site that moves every
@@ -13,8 +13,13 @@
 use super::*;
 
 /// A run's damage, raw and after mitigation.
+///
+/// NOT `Meter`: the Grimoire's charge is a meter and DE calls it one, on the
+/// card and in `data/` — and a word the game owns wins. Two structs of that
+/// name stood in this module tree, told apart by nothing but which import was
+/// nearer, which is the defect that cost this repo `ms` and `cc`.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Meter {
+pub struct Tally {
     raw: f64,
     effective: f64,
     dot: f64,
@@ -91,7 +96,7 @@ pub enum Clock {
     Dot,
 }
 
-/// A TYPE OF ITS OWN rather than a third field on `Meter`, for a measured
+/// A TYPE OF ITS OWN rather than a third field on `Tally`, for a measured
 /// reason: it is a 600-slot array and `RunResult` is `Copy`, so grouping
 /// 4.8 KB with the two hot scalars cost 2.4% on `one_fight` — the totals
 /// want to sit near the run's other counters and the curve does not.
@@ -105,7 +110,7 @@ impl Curve {
     }
 }
 
-impl Meter {
+impl Tally {
     /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     #[inline]
     pub fn raw(&self) -> f64 {
@@ -191,7 +196,7 @@ pub(in crate::fight) fn settle(
     // measures +4.0% on `one_fight`. As an `if recording(rec)` at each
     // call site the gate is a second thing a new site has to remember; as a
     // closure, forgetting it is not something the language allows.
-        r.meter.book(settled.raw, settled.effective, clock);
+        r.tally.book(settled.raw, settled.effective, clock);
     // THE WASTE, through the same door as the damage. Booking it at the
     // call sites instead would be the exact split this function exists to
     // close: a tenth site could move the rate and appear in no ledger.

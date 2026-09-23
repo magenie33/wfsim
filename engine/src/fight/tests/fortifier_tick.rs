@@ -33,7 +33,7 @@ fn bleeder(og: f64, mult: f64) -> FightParams {
 fn the_arcane_multiplies_a_status_tick_exactly_once() {
     let dot = |og: f64, mult: f64| {
         let mut rng = crate::rules::rng::Rng::new(4);
-        run_once(&bleeder(og, mult), &mut rng).meter.dot()
+        run_once(&bleeder(og, mult), &mut rng).tally.dot()
     };
     // A pool deep enough that it survives the run, so every tick lands on
     // Overguard and the ratio is the multiplier itself.
