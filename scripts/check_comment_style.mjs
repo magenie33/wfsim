@@ -44,7 +44,11 @@ const ATTRIBUTION = [
   // follows it, so this is not bounded by a length or a date.
   // `\s` and not a literal space: the attribution is just as much one when
   // the name ends a comment line and the date opens the next.
-  new RegExp(String.raw`[ 	]*\((owner|user),\s`, "g"),
+  //
+  // THE SAME LOOKBEHIND THE THIRD PATTERN CARRIES, for the same reason and it
+  // was missing here: `on_death(owner, …)` is a call passing a seat, and prose
+  // never runs a word straight into the parenthesis.
+  new RegExp(String.raw`(?<![A-Za-z0-9_])[ 	]*\((owner|user),\s`, "g"),
   new RegExp(String.raw`\((owner|user)[^()]{0,90}${DATE}[^()]{0,40}\)`, "g"),
   // The lookbehind is what keeps this off CODE: `Some(owner)` is a match
   // binding, and prose never runs a word straight into the parenthesis.
