@@ -80,7 +80,9 @@ is fetched locally rather than redistributed here.
 Unofficial fan project, not affiliated with Digital Extremes; Warframe
 is a trademark of Digital Extremes Ltd.
 
-As the copyright holder, the maintainer reserves the right to offer WFSim,
-and components built alongside it, under separate terms including commercial
-licences. Every version published under AGPL-3.0-or-later stays available
-under it.
+As the copyright holder, the maintainer also offers WFSim, and components
+built alongside it, under separate terms. A **commercial licence** covers use
+AGPL-3.0 does not permit — a closed-source product, a network service whose
+modifications are not published, or redistribution inside a proprietary
+application. Ask at <magenie33@moginlabs.com>. Every version published under
+AGPL-3.0-or-later stays available under it.
