@@ -1809,7 +1809,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Shot, live: &mut Live) {
             ledger::settle(
                 &mut *r, rec,
                 t,
-                Attacker::WIELDER,
+                Combatant::WIELDER,
                 0,
                 qvec.dominant(),
                 match (part.is_head, tier > 0) {

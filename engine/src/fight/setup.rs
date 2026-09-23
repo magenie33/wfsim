@@ -10,7 +10,7 @@ impl FightParams {
     }
 
     /// WHO FIRES IN THIS FIGHT, seat for seat with [`RunResult::dealt`] and
-    /// with the record's `attacker` — the attacker roster, the exact
+    /// with the record's `combatant` — the combatant roster, the exact
     /// counterpart of the body roster a formation names.
     ///
     /// ONE WRITER, like [`Self::buff_roster`]. Every reader — the report, the
@@ -19,7 +19,7 @@ impl FightParams {
     ///
     /// Stable English slugs, never translated: the same rule every id in
     /// `data/` follows, and the page resolves them to names of its own.
-    pub fn attacker_ids(&self) -> Vec<&'static str> {
+    pub fn combatant_ids(&self) -> Vec<&'static str> {
         vec!["wielder"]
     }
 

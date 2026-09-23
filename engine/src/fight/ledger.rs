@@ -57,7 +57,7 @@ impl Spread {
     }
 }
 
-/// WHO DEALT THE RUN'S DAMAGE, index for index with the fight's attacker
+/// WHO DEALT THE RUN'S DAMAGE, index for index with the fight's combatant
 /// roster — 0 is the wielder, the build this panel is about.
 ///
 /// The mirror of [`Spread`], through the same door and for the same reason:
@@ -65,17 +65,17 @@ impl Spread {
 /// the drift this module exists to make impossible, and with a squad on the
 /// field "whose number is this" stops being answerable by assumption.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Dealt(AttackerDamage);
+pub struct Dealt(CombatantDamage);
 
 impl Dealt {
     /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
-    fn credit(&mut self, who: Attacker, effective: f64) {
+    fn credit(&mut self, who: Combatant, effective: f64) {
         if let Some(slot) = self.0 .0.get_mut(who.0) {
             *slot += effective;
         }
     }
 
-    pub fn by_attacker(&self) -> &AttackerDamage {
+    pub fn by_combatant(&self) -> &CombatantDamage {
         &self.0
     }
 }
@@ -166,9 +166,9 @@ pub(in crate::fight) fn settle(
     rec: &mut crate::record::Record,
     t: f64,
     // WHO DEALT IT AND WHO TOOK IT, in that order and in two different types.
-    // Both were `usize` in the design that had only one attacker, and two bare
+    // Both were `usize` in the design that had only one combatant, and two bare
     // indices side by side transpose without a word from the compiler.
-    who: Attacker,
+    who: Combatant,
     body: usize,
     dtype: DamageType,
     kind: PopKind,

@@ -752,14 +752,14 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             "run": [(state >> 32) as u32, (state & 0xffff_ffff) as u32],
             // …AND WHO DEALT IT, frame by frame. The meter's series says what
             // KIND each instance was; this says WHOSE it was, and a replay
-            // that carried only the first cannot follow one attacker's
+            // that carried only the first cannot follow one combatant's
             // contribution through a fight that has more than one.
-            "dealt": params.attacker_ids().iter().enumerate()
+            "dealt": params.combatant_ids().iter().enumerate()
                 .map(|(i, _)| rep.frames.iter()
                     .map(|f| r1(f.dealt.0.get(i).copied().unwrap_or(0.0)))
                     .collect::<Vec<_>>())
                 .collect::<Vec<_>>(),
-            "attackers": params.attacker_ids(),
+            "combatants": params.combatant_ids(),
             "tracked": rep.tracked,
             "dstacks": (0..rep.tracked.len())
                 .map(|b| {
@@ -934,10 +934,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // `bodies`: a roster that shrank to whoever dealt damage would read
         // "the companion fired nothing" and "there is no companion" the same
         // way, and those are different fights.
-        "attackers": params.attacker_ids().iter().enumerate()
+        "combatants": params.combatant_ids().iter().enumerate()
             .map(|(i, id)| json!({
                 "id": id,
-                "damage": s.mean_damage_by_attacker.0.get(i).copied().unwrap_or(0.0),
+                "damage": s.mean_damage_by_combatant.0.get(i).copied().unwrap_or(0.0),
             }))
             .collect::<Vec<_>>(),
         "bodies": std::iter::once((

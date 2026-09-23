@@ -203,7 +203,7 @@ pub(super) fn fire_extra_hits(
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         ledger::settle(
-            r, rec, at, Attacker::WIELDER, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            r, rec, at, Combatant::WIELDER, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
             ledger::Clock::Hit,
             || Instance {
                 origin: crate::record::Origin::ExtraHit,
@@ -508,7 +508,7 @@ pub(super) fn drain_area_procs(
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
             r.sources.add_status(hit.shares.dominant(), eff);
             ledger::settle(
-                r, rec, at_now, Attacker::WIELDER, j, hit.shares.dominant(), PopKind::BlastArea,
+                r, rec, at_now, Combatant::WIELDER, j, hit.shares.dominant(), PopKind::BlastArea,
                 &breakdown, settled, Some(dbf),
                 ledger::Clock::Dot,
                 || Instance {
@@ -975,7 +975,7 @@ pub(super) fn settle_procs(
                         r.sources.add_status(DamageType::Blast, eff);
                         let stack = b.value;
                         ledger::settle(
-                            r, rec, at, Attacker::WIELDER, 0, DamageType::Blast, PopKind::Blast,
+                            r, rec, at, Combatant::WIELDER, 0, DamageType::Blast, PopKind::Blast,
                             &breakdown, settled, Some(debuffs),
                             ledger::Clock::Dot,
                             || Instance {
@@ -1139,7 +1139,7 @@ pub(super) fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             ledger::settle(
-                r, rec, at, Attacker::WIELDER, 0, proc, PopKind::Arcane, &breakdown, settled,
+                r, rec, at, Combatant::WIELDER, 0, proc, PopKind::Arcane, &breakdown, settled,
                 Some(debuffs),
                 ledger::Clock::Hit,
                 || Instance {

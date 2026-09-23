@@ -32,37 +32,39 @@ impl Default for BodyDamage {
 
 /// WHO DEALT A DAMAGE INSTANCE — the counterpart of the `body` that took it.
 ///
-/// The two are ROLES IN ONE INSTANCE, not sides: a unit that deals and takes
-/// is an attacker on one row and a body on another, which is what lets the
-/// enemy side start dealing damage without a word being renamed.
+/// A COMBATANT ACTS; A BODY IS HIT, and they are ROLES rather than sides: a
+/// unit that does both is a combatant on one row and a body on another, which
+/// is what lets the enemy side start dealing damage without a word being
+/// renamed. Not "shooter", because a melee swing, a lingering field and an
+/// ability are none of them a shot.
 ///
 /// A NEWTYPE, NOT A `usize`. It rides beside `body: usize` through
 /// [`ledger::settle`], and two bare indices next to each other transpose
 /// silently — the same defect `record::Factor` exists to prevent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Attacker(pub usize);
+pub struct Combatant(pub usize);
 
-impl Attacker {
+impl Combatant {
     /// THE BUILD THIS PANEL IS ABOUT, and index 0 for the same reason body 0
     /// is the aimed one: every fight has it, so it needs no lookup.
-    pub const WIELDER: Attacker = Attacker(0);
+    pub const WIELDER: Combatant = Combatant(0);
 }
 
-/// HOW MANY THINGS MAY FIRE IN ONE FIGHT. A squad of four, each with a
+/// HOW MANY THINGS MAY ACT IN ONE FIGHT. A squad of four, each with a
 /// companion. `RunResult` is `Copy`, so this is 64 bytes on the hot path and
 /// the ceiling is stated rather than grown by accident.
-pub const MAX_ATTACKERS: usize = 8;
+pub const MAX_COMBATANTS: usize = 8;
 
-/// EFFECTIVE DAMAGE PER ATTACKER, index for index with the fight's roster.
+/// EFFECTIVE DAMAGE PER COMBATANT, index for index with the fight's roster.
 /// Same door and same reason as [`BodyDamage`]: booked only by
 /// [`ledger::settle`], so a damage site cannot move a total without naming
 /// who dealt it.
 #[derive(Debug, Clone, Copy)]
-pub struct AttackerDamage(pub [f64; MAX_ATTACKERS]);
+pub struct CombatantDamage(pub [f64; MAX_COMBATANTS]);
 
-impl Default for AttackerDamage {
+impl Default for CombatantDamage {
     fn default() -> Self {
-        AttackerDamage([0.0; MAX_ATTACKERS])
+        CombatantDamage([0.0; MAX_COMBATANTS])
     }
 }
 
@@ -131,7 +133,7 @@ impl SourceDamage {
 pub(super) fn write_row(
     rec: &mut crate::record::Record,
     t: f64,
-    who: Attacker,
+    who: Combatant,
     body: usize,
     dtype: DamageType,
     kind: PopKind,
@@ -176,7 +178,7 @@ pub(super) fn write_row(
             t,
             subject,
             crate::record::Kind::Damage(Box::new(crate::record::Damage {
-                attacker: who,
+                combatant: who,
                 origin: inst.origin,
                 pellet: inst.pellet,
                 radial: inst.radial,
@@ -377,7 +379,7 @@ pub struct RunResult {
     /// Whose damage it was — same door, same reason.
     pub spread: ledger::Spread,
     /// …and WHO DEALT IT, the other half of that question. One fight has one
-    /// list of attackers and one list of bodies, and every instance names one
+    /// list of combatants and one list of bodies, and every instance names one
     /// of each.
     pub dealt: ledger::Dealt,
 }

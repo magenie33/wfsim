@@ -33,11 +33,11 @@ pub struct Frame {
     /// Effective damage by source, cumulative — the damage meter's own shape.
     pub sources: SourceDamage,
     /// …and by ATTACKER, cumulative, seat for seat with
-    /// [`FightParams::attacker_ids`]. The meter cuts one total by what KIND of
+    /// [`FightParams::combatant_ids`]. The meter cuts one total by what KIND of
     /// damage it was; this cuts the same total by WHO DEALT IT, and a replay
     /// that carried only the first cannot answer "whose damage was that" at
     /// any instant of a fight with more than one thing firing.
-    pub dealt: AttackerDamage,
+    pub dealt: CombatantDamage,
     /// Live stacks per buff, positionally matching [`Replay::buffs`].
     pub stacks: Vec<u16>,
     /// …and the same for the TARGETS, one series per body in

@@ -106,14 +106,14 @@ const r = await evaluate(`(async () => {
   // number or one of them is counting something the other is not.
   // (No backticks in this comment: it lives inside a template literal.)
   const cuts = {
-    attackers: (shownResult.r.attackers || []).map(a => a.id),
-    dealt: (shownResult.r.attackers || []).reduce((a, x) => a + (x.damage || 0), 0),
+    combatants: (shownResult.r.combatants || []).map(a => a.id),
+    dealt: (shownResult.r.combatants || []).reduce((a, x) => a + (x.damage || 0), 0),
     taken: (shownResult.r.bodies || []).reduce((a, x) => a + (x.damage || 0), 0),
-    rows: [...document.querySelectorAll('.mrow[data-attacker]')].map(e => e.dataset.attacker),
-    recRoster: ((recordState || {}).attackers || []).length,
-    tagged: [...document.querySelectorAll('.rec-peek tr[data-attacker]')].length,
+    rows: [...document.querySelectorAll('.mrow[data-combatant]')].map(e => e.dataset.combatant),
+    recRoster: ((recordState || {}).combatants || []).length,
+    tagged: [...document.querySelectorAll('.rec-peek tr[data-combatant]')].length,
     untagged: [...document.querySelectorAll('.rec-peek tr.rec-dmg')]
-      .filter(e => !e.dataset.attacker).length,
+      .filter(e => !e.dataset.combatant).length,
     whoColumns: document.querySelectorAll('.rec-who').length,
   };
   const iBar = pos('.rp-bar');
@@ -172,7 +172,7 @@ const r = await evaluate(`(async () => {
   document.querySelectorAll('.mrow.exp').forEach(e => e.click());
   await sleep(700);
   // THE DAMAGE METER'S ROWS, and only those. The zone draws more than one
-  // meter now — the attacker cut is the same component with a roster id
+  // meter now — the combatant cut is the same component with a roster id
   // instead of a damage key — so a bare .mrow sweeps in rows that are not
   // about a damage type and asks them for a damage type's glyph.
   const meterRows = [...document.querySelectorAll('.mrow[data-mk]')].map(el => {
@@ -351,15 +351,15 @@ check("the scrubber's thumb is the page's own",
 // at all means a damage site reached a total without naming one of the two.
 {
   const c = r.cuts;
-  check("the attacker cut and the body cut are the same total",
+  check("the combatant cut and the body cut are the same total",
     c.dealt > 0 && Math.abs(c.dealt - c.taken) < 1,
     `dealt ${c.dealt} vs taken ${c.taken}`);
-  // …AND THE PANEL DRAWS THE ROSTER, whatever its length. One attacker is a
+  // …AND THE PANEL DRAWS THE ROSTER, whatever its length. One combatant is a
   // list of one, not a hidden block: the markup that draws a squad is the
   // markup that draws you alone.
   check("...and the panel draws a row for every seat",
-    c.rows.length === c.attackers.length && c.rows.join() === c.attackers.join(),
-    JSON.stringify([c.rows, c.attackers]));
+    c.rows.length === c.combatants.length && c.rows.join() === c.combatants.join(),
+    JSON.stringify([c.rows, c.combatants]));
   // EVERY ROW NAMES ITS DEALER even where nothing would be drawn from it. The
   // attribution is the ledger's; the visible column is the page's, and it
   // follows the same rule the foe chips do — a control with one option is not
