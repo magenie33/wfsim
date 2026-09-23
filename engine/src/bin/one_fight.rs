@@ -588,7 +588,11 @@ fn main() -> std::process::ExitCode {
     }
     let has_base = !base.is_empty() && !save && same_fight;
     let col = if has_base { "vs base" } else { "noise" };
-    println!("{:<14} {:>9} {:>10} {col:>9}  answer", "shape", "multishot/run", "ns/shot");
+    // WHAT THE COLUMN IS. It prints `milliseconds_per_run` and said
+    // "multishot/run", which is a different quantity entirely — a header that
+    // names the wrong thing in the tool that decides whether a change is a
+    // regression is the one place a label costs something.
+    println!("{:<14} {:>9} {:>10} {col:>9}  answer", "shape", "ms/run", "ns/shot");
 
     let mut moved = 0usize;
     let (mut sum_now, mut sum_was) = (0.0f64, 0.0f64);
