@@ -505,7 +505,7 @@ pub struct Damage {
     /// WHO DEALT IT. The row already says who TOOK it (`Event::subject`), and
     /// with anything but the wielder on the field that half alone leaves every
     /// number unattributed — a companion's tick and your own hit read the same.
-    pub combatant: crate::fight::Combatant,
+    pub combatant: crate::fight::Seat,
     pub origin: Origin,
     /// WHICH PELLET OF THE TRIGGER PULL, counting from 1 — `None` for anything
     /// a pellet did not fire (a status tick, a field's clock).

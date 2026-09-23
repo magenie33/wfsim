@@ -379,21 +379,36 @@ pub fn run_once_traced(
 ) -> RunResult {
     // THE ENGAGEMENT AS IT OPENS — see [`open`]. Destructured by value, so
     // every name below is the one the setup gave it.
-    let (run, fixed) = open(params, rng, rec, &trace);
-    let Run {
-        mut d,
+    let (fight, me) = open(params, rng, rec, &trace);
+    // FLATTENED BACK INTO LOCALS, deliberately. The loop names these thirty-eight
+    // pieces directly on the hottest path this engine has, and `open`'s own note
+    // measures 2.7% a shot for handing them over any other way. What the split
+    // buys is not how the loop reads it — it is that "what does a second
+    // combatant share with you" now has an answer a type gives.
+    let Fight {
+        mut t,
         mut next_frame,
-        mut bar,
-        mut enervate,
-        mut frenzy,
         mut target,
         mut debuffs,
         mut others,
+        mut r,
+        mut fields,
+        mut orbs,
+        mut ghost_pile,
+        body_at,
+        area_near,
+        bounce_bodies,
+        frame_seconds,
+    } = fight;
+    let Combatant {
+        mut d,
+        mut bar,
+        mut enervate,
+        mut frenzy,
         mut gal,
         mut buff_stacks,
         mut rs_armed,
         mut opening_closed,
-        mut r,
         mut ammo,
         mut kill_buff_mark,
         mut double_tap,
@@ -402,15 +417,11 @@ pub fn run_once_traced(
         mut weakpoint_pile,
         mut beam,
         mut field_duration_boost,
-        mut fields,
-        mut orbs,
         mut field_ctx,
         mut meter,
         mut strip_kills_seen,
-        mut t,
         mut super_crit_armed,
         mut incarnon,
-        mut ghost_pile,
         mut syndicate,
         mut crit_per_hit,
         mut sniper_combo,
@@ -419,20 +430,17 @@ pub fn run_once_traced(
         mut melee,
         mut influence_until,
         mut last_shot_t,
-    } = run;
+        fixed,
+    } = me;
     // The streams are threaded on as `&mut` from here: every function the
     // loop calls rolls off this one `Draws`.
     let d = &mut d;
     let Fixed {
         aim_off_axis,
-        body_at,
-        area_near,
-        bounce_bodies,
         ricochet_layout,
         chain_layout,
         struck,
         base_struck,
-        frame_seconds,
         rec_roster,
         rec_buff_index,
         main_variants,

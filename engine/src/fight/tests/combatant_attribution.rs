@@ -1,6 +1,6 @@
 //! EVERY NUMBER NAMES WHO DEALT IT, and the names add up to the total.
 //!
-//! `body` answers who took a damage instance and `Combatant` answers who dealt
+//! `body` answers who took a damage instance and `Seat` answers who dealt
 //! it. The second half is new, so what has to hold is the same thing the first
 //! half holds: the per-attacker figures are the run's damage sorted, not a
 //! second account of it, and nothing reaches a total without going through
@@ -55,7 +55,7 @@ fn who_dealt_it_and_who_took_it_come_to_the_same_total() {
 fn a_solo_fight_credits_the_wielder_and_nobody_else() {
     let r = one_fight();
     let by = r.dealt.by_combatant().0;
-    assert!(by[Combatant::WIELDER.0] > 0.0, "the wielder dealt nothing");
+    assert!(by[Seat::WIELDER.0] > 0.0, "the wielder dealt nothing");
     assert!(
         by.iter().skip(1).all(|d| *d == 0.0),
         "a seat nobody is in was credited: {by:?}"

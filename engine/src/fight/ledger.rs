@@ -79,7 +79,7 @@ pub struct Dealt(CombatantDamage);
 
 impl Dealt {
     /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
-    fn credit(&mut self, who: Combatant, effective: f64) {
+    fn credit(&mut self, who: Seat, effective: f64) {
         if let Some(slot) = self.0 .0.get_mut(who.0) {
             *slot += effective;
         }
@@ -178,7 +178,7 @@ pub(in crate::fight) fn settle(
     // WHO DEALT IT AND WHO TOOK IT, in that order and in two different types.
     // Both were `usize` in the design that had only one combatant, and two bare
     // indices side by side transpose without a word from the compiler.
-    who: Combatant,
+    who: Seat,
     body: usize,
     dtype: DamageType,
     kind: PopKind,

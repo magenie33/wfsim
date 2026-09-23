@@ -11,20 +11,55 @@
 use super::*;
 
 /// WHAT THE FIGHT CHANGES.
-pub(super) struct Run {
-    pub(super) d: crate::rules::rng::Draws,
+/// THE WORLD ONE ENGAGEMENT HAPPENS IN — what every combatant in it shares.
+///
+/// THE LINE IS WHOSE A PIECE OF STATE IS. The pools, the statuses on them, the
+/// clock and the ledger belong to the FIGHT and one copy is the only honest
+/// number; the magazine, the buff bar, the combo and the gauge belong to
+/// whoever is firing, and a second thing firing needs a second set of them.
+/// `spread`'s own doc drew that line for the bodies before there was anywhere
+/// to put it.
+///
+/// Until this split there was one struct, so "what does a companion share with
+/// you" had no answer a type could give.
+pub(super) struct Fight {
+    pub(super) t: f64,
     pub(super) next_frame: f64,
-    pub(super) bar: BuffBar,
-    pub(super) enervate: Option<SecondaryEnervate>,
-    pub(super) frenzy: Frenzy,
     pub(super) target: TargetState,
     pub(super) debuffs: DebuffState,
     pub(super) others: Vec<SpreadFoe>,
+    pub(super) r: RunResult,
+    /// THINGS STANDING IN THE WORLD rather than carried by a shooter: a cloud
+    /// burns whoever walks into it, and it outlives the trigger pull that left
+    /// it. Each one will name its owner when a second combatant can leave one.
+    pub(super) fields: Vec<FieldState>,
+    pub(super) orbs: Vec<OrbState>,
+    /// What the fight LEFT STANDING — the fight's, not any one shooter's.
+    pub(super) ghost_pile: Ghosts,
+    /// WHERE EVERYTHING STANDS, constant for the engagement. In the world
+    /// rather than on a combatant because the arena is what they share.
+    pub(super) body_at: Vec<crate::rules::space::Vec2>,
+    pub(super) area_near: crate::rules::space::Neighbours,
+    pub(super) bounce_bodies: Vec<crate::rules::space::Vec2>,
+    pub(super) frame_seconds: f64,
+}
+
+/// ONE THING ACTING IN THAT WORLD — its own build, its own clocks, its own
+/// live state, and its own RNG streams.
+///
+/// ITS OWN `Draws` IS NOT AN ACCIDENT. The streams are split so that a build
+/// which changes only its status chance does not re-roll this engagement's
+/// crits; a second combatant sharing them would re-roll YOURS the moment it
+/// existed, and every measured number would move.
+pub(super) struct Combatant<'a> {
+    pub(super) d: crate::rules::rng::Draws,
+    pub(super) bar: BuffBar,
+    pub(super) enervate: Option<SecondaryEnervate>,
+    pub(super) frenzy: Frenzy,
     pub(super) gal: GalStacks,
     pub(super) buff_stacks: Vec<LiveStacks>,
     pub(super) rs_armed: bool,
     pub(super) opening_closed: bool,
-    pub(super) r: RunResult,
     pub(super) ammo: Ammo,
     pub(super) kill_buff_mark: u32,
     pub(super) double_tap: DoubleTap,
@@ -33,15 +68,11 @@ pub(super) struct Run {
     pub(super) weakpoint_pile: LiveStacks,
     pub(super) beam: BeamRamp,
     pub(super) field_duration_boost: bool,
-    pub(super) fields: Vec<FieldState>,
-    pub(super) orbs: Vec<OrbState>,
     pub(super) field_ctx: FieldCtx,
     pub(super) meter: Meter,
     pub(super) strip_kills_seen: u32,
-    pub(super) t: f64,
     pub(super) super_crit_armed: bool,
     pub(super) incarnon: IncarnonState,
-    pub(super) ghost_pile: Ghosts,
     pub(super) syndicate: Syndicate,
     pub(super) crit_per_hit: CritPerHit,
     pub(super) sniper_combo: SniperComboCount,
@@ -50,20 +81,21 @@ pub(super) struct Run {
     pub(super) melee: MeleeState,
     pub(super) influence_until: f64,
     pub(super) last_shot_t: f64,
+    /// WHAT IT ONLY READS — resolved once from its own build, constant for the
+    /// whole engagement.
+    pub(super) fixed: Fixed<'a>,
 }
 
-/// WHAT IT ONLY READS — resolved once, constant for the whole engagement.
+/// WHAT A COMBATANT ONLY READS — resolved once, constant for the whole
+/// engagement. On the combatant rather than in the world because every one of
+/// these is its BUILD's answer: a second one resolves its own.
 pub(super) struct Fixed<'a> {
     pub(super) aim_off_axis: f64,
-    pub(super) body_at: Vec<crate::rules::space::Vec2>,
-    pub(super) area_near: crate::rules::space::Neighbours,
-    pub(super) bounce_bodies: Vec<crate::rules::space::Vec2>,
     pub(super) ricochet_layout: Option<crate::rules::chain::Layout>,
     pub(super) chain_layout: Option<crate::rules::chain::Layout>,
     pub(super) struck: Vec<usize>,
     /// The same, for the cycle's base form — see `open`.
     pub(super) base_struck: Option<Vec<usize>>,
-    pub(super) frame_seconds: f64,
     pub(super) rec_roster: Vec<BuffSeries>,
     pub(super) rec_buff_index: Vec<Option<usize>>,
     pub(super) main_variants: Vec<(crate::rules::damage::DamageVector, f64, f64)>,
@@ -89,7 +121,7 @@ pub(super) fn open<'a>(
     rng: &mut Rng,
     rec: &crate::record::Record,
     trace: &Option<&mut Replay>,
-) -> (Run, Fixed<'a>) {
+) -> (Fight, Combatant<'a>) {
     // THE ENGAGEMENT'S SEED, and the three streams derived from it. The master
     // `rng` is only a seed source from here on: it is advanced once so the next
     // run in a `monte_carlo` differs, and every roll below comes off `d`. See
@@ -601,20 +633,30 @@ pub(super) fn open<'a>(
     // long the weapon spent not firing.
     let last_shot_t = f64::NEG_INFINITY;
     (
-        Run {
-            d,
+        Fight {
+            t,
             next_frame,
-            bar,
-            enervate,
-            frenzy,
             target,
             debuffs,
             others,
+            r,
+            fields,
+            orbs,
+            ghost_pile,
+            body_at,
+            area_near,
+            bounce_bodies,
+            frame_seconds,
+        },
+        Combatant {
+            d,
+            bar,
+            enervate,
+            frenzy,
             gal,
             buff_stacks,
             rs_armed,
             opening_closed,
-            r,
             ammo,
             kill_buff_mark,
             double_tap,
@@ -623,15 +665,11 @@ pub(super) fn open<'a>(
             weakpoint_pile,
             beam,
             field_duration_boost,
-            fields,
-            orbs,
             field_ctx,
             meter,
             strip_kills_seen,
-            t,
             super_crit_armed,
             incarnon,
-            ghost_pile,
             syndicate,
             crit_per_hit,
             sniper_combo,
@@ -640,28 +678,24 @@ pub(super) fn open<'a>(
             melee,
             influence_until,
             last_shot_t,
-        },
-        Fixed {
-            aim_off_axis,
-            body_at,
-            area_near,
-            bounce_bodies,
-            ricochet_layout,
-            chain_layout,
-            struck,
-            base_struck,
-            frame_seconds,
-            rec_roster,
-            rec_buff_index,
-            main_variants,
-            main_variant_rad,
-            main_pre,
-            base_pre,
-            base_variants,
-            base_variant_rad,
-            status_damage,
-            field_active,
-            combo_spec,
+            fixed: Fixed {
+                aim_off_axis,
+                ricochet_layout,
+                chain_layout,
+                struck,
+                base_struck,
+                rec_roster,
+                rec_buff_index,
+                main_variants,
+                main_variant_rad,
+                main_pre,
+                base_pre,
+                base_variants,
+                base_variant_rad,
+                status_damage,
+                field_active,
+                combo_spec,
+            },
         },
     )
 }

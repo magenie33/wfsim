@@ -42,12 +42,12 @@ impl Default for BodyDamage {
 /// [`ledger::settle`], and two bare indices next to each other transpose
 /// silently — the same defect `record::Factor` exists to prevent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Combatant(pub usize);
+pub struct Seat(pub usize);
 
-impl Combatant {
+impl Seat {
     /// THE BUILD THIS PANEL IS ABOUT, and index 0 for the same reason body 0
     /// is the aimed one: every fight has it, so it needs no lookup.
-    pub const WIELDER: Combatant = Combatant(0);
+    pub const WIELDER: Seat = Seat(0);
 }
 
 /// HOW MANY THINGS MAY ACT IN ONE FIGHT. A squad of four, each with a
@@ -133,7 +133,7 @@ impl SourceDamage {
 pub(super) fn write_row(
     rec: &mut crate::record::Record,
     t: f64,
-    who: Combatant,
+    who: Seat,
     body: usize,
     dtype: DamageType,
     kind: PopKind,
