@@ -1237,7 +1237,7 @@ const AGENT_ACTIONS = [
       return r ? { result: r, text: `${sig2(r.value)} ${r.unit}` } : agentNo("nothing_measured");
     },
   },
-];
+  ...SHAPLEY_ACTIONS]; // the Shapley analysis's two, declared beside it in 71-shapley.js
 
 /// THE PUBLIC NAME. Everything an outside caller may touch, and nothing else:
 /// `observe` to see, `do` to act, `tools` to learn the table, `actions` to

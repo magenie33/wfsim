@@ -2071,6 +2071,35 @@ ui:
   "seated in another slot — picking it swaps the two": 已装在别的槽位 —— 选它会和这个槽位对调
   "Nothing a companion seats moves a weapon's numbers yet: no robotic weapon reads its wielder's stats, and no precept is run. What this answers is capacity and Forma.": 守护装上的任何 MOD 目前都不会改变武器的数字：机械武器不读持有者的属性，指令也不会运行。这里能算的是容量和 Forma。
 
+  # PART VALUE ANALYSIS (docs/SHAPLEY.md). Never 贡献: that word is the open-
+  # source contribution and the damage meter's share, and this is a multiplier.
+  "Shapley analysis": 部件价值分析
+  "what each part multiplies the result by": 每个部件让结果变成几倍
+  "With the rest of the build kept on, what each chosen part multiplies the result by.": 在其余部件保持装配的前提下，每个选中的部件让结果变成几倍。
+  "Runs per subset": 每个子集的次数
+  "Analyse": 分析
+  "{k} parts → {s} subsets × {n} runs = {f} fights": "{k} 个部件 → {s} 个子集 × {n} 次 = {f} 场"
+  "{s} subsets × {n} runs": "{s} 个子集 × {n} 次"
+  "at most {n} parts are analysed exactly": "最多精确分析 {n} 个部件"
+  "choose at least one part": 至少选一个部件
+  "nothing on this build can be switched off": 这套配装没有可以拿掉的部件
+  "subsets": 子集
+  "none of them": 一个都不装
+  "the build with only these parts did not run": 只装这些部件的配装跑不起来
+  "the analysis failed": 分析失败
+  "this analysis is of another build or fight — analyse again to update it": 这份分析对应的是另一套配装或另一场战斗 —— 重新分析才会更新
+  "all chosen parts together": 选中的部件全部装上
+  "the multipliers below multiply to": 下面的倍率连乘等于
+  "Part": 部件
+  "Equivalent multiplier": 等效倍率
+  "its Shapley value: its average marginal effect over every order the parts could be added in": 它的 Shapley 值：按所有可能的装配顺序，它加进来时的平均边际效果
+  "Take it out": 拿掉
+  "the full build against the full build without this part": 全装对比全装但拿掉这一个
+  "Alone": 单装
+  "this part alone against none of the chosen parts": 只装这一个对比选中的部件一个都不装
+  "Pairs": 两两交互
+  "above zero the two are worth more together than apart; below zero one dilutes the other": 大于零是协同：一起装比分开更值；小于零是稀释：一个削弱了另一个
+
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']

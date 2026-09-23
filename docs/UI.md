@@ -723,6 +723,11 @@ page and two roster entries, so the lowest id keeps the wiki name and the other
 lives at its id rather than at nothing (`urlSlug`, and `url_slug` in
 `build_site_app.py`, which must stay the same rule).
 
+**A REPORT OF A MODULE IS A BLOCK OF THAT MODULE.** The Shapley analysis
+(部件价值分析) reads the build and the fight and produces a report, which is
+the opposite of an editor. So it is a block of the Simulator tab, shut until
+opened, and never a tab of its own. `docs/SHAPLEY.md`.
+
 ---
 
 ## The wielder is the build's; external bonuses are the fight's

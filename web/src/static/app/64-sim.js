@@ -32,6 +32,8 @@ function renderSimBuild() {
     valence: valenceSpec(w.id) ? `${DT(valence.element)} +${Math.round(valence.bonus * 1000) / 10}%` : null,
   }) + aplHtml(w) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
   renderSimWielder(box.querySelector(".sb-wielder"));
+  // The part value analysis lists THIS build's parts, so it follows the card.
+  renderShapley();
 }
 
 /// **THE LIST THE FIGHT RAN**, in the order it is scanned.

@@ -28,6 +28,7 @@ mod panel;
 mod registry;
 mod request;
 mod rivens;
+mod shapley;
 mod simulate;
 mod tenno;
 mod warframe;
@@ -45,6 +46,7 @@ pub use optimize::{
 pub use panel::panel_json;
 pub use request::err_json;
 pub use rivens::riven_json;
+pub use shapley::{shapley_json, MAX_PARTICIPANTS as SHAPLEY_MAX_PARTICIPANTS};
 pub use simulate::{
     riven_request, simulate_json, simulate_json_reporting, simulate_merged_json,
     simulate_request, simulate_shard_json, RIVEN_ITEM,
@@ -66,6 +68,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/panel", panel_json),
     ("/api/pairings", pairings_json),
     ("/api/simulate", simulate_json),
+    ("/api/shapley", shapley_json),
     ("/api/log", log_json),
     ("/api/opt-buffs", opt_buffs_json),
     ("/api/riven", riven_json),

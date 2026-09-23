@@ -1137,6 +1137,9 @@ pub fn meta_json() -> Value {
         // surface without any of them naming it.
         "metrics": wfsim_engine::rules::metrics::ALL,
         "metric_default": wfsim_engine::rules::metrics::DEFAULT,
+        // THE PART VALUE ANALYSIS'S CEILING, so the page refuses a selection
+        // before it simulates 2^k subsets the endpoint would then reject.
+        "shapley_max_participants": crate::shapley::MAX_PARTICIPANTS,
         // HOW BIG A BODY IS, because the PAGE draws the same floor the engine
         // fights on: the muzzle sits one radius forward, two circles touch at
         // two radii, and the distance a reader is shown is the gap between

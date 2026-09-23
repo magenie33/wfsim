@@ -2889,3 +2889,33 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 /* THE ENTRANT CLASS, its own row under the build filters: two answers that are
    never added together read worse side by side with three that are. */
 .bclass{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* ---- PART VALUE ANALYSIS (#shapley-block) ---- */
+.shp-parts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.shp-group{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.shp-group .sb-h{min-width:5em}
+.shp-part{display:inline-flex;flex-direction:row;align-items:center;gap:4px;font-size:13px;color:var(--text);cursor:pointer}
+.shp-part input{width:auto;margin:0}
+.shp-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:8px}
+.shp-controls label{flex-direction:row;align-items:center;gap:8px;color:var(--text)}
+.shp-controls input[type=number]{width:5em}
+.shp-cost{color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
+.shp-over,.shp-note{color:var(--critical);font-size:12px}
+.shp-note{margin:6px 0}
+.shp-stale{margin:6px 0;padding:4px 8px;border-radius:6px;background:var(--panel2);color:var(--gold);font-size:12px}
+.shp-meta{color:var(--text-2);font-size:12px;margin-top:8px}
+.shp-scope{color:var(--muted);font-size:12px}
+.shp-total{margin:6px 0 8px}
+.shp-scroll{overflow-x:auto;max-width:100%}
+.shp-table,.shp-matrix{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+.shp-table th,.shp-table td,.shp-matrix th,.shp-matrix td{padding:3px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.shp-table tbody th,.shp-matrix tbody th{text-align:left;font-weight:500}
+.shp-table thead th,.shp-matrix thead th{color:var(--text-2);font-weight:500;font-size:12px}
+.shp-table td small{color:var(--muted);font-size:10px;margin-left:3px}
+.shp-phi{font-weight:600}
+.shp-dim{opacity:.45}
+.shp-h{margin:14px 0 4px;font-size:13px}
+.shp-matrix td{min-width:4.2em}
+.shp-i.syn{background:color-mix(in srgb,var(--good) var(--a),transparent)}
+.shp-i.dil{background:color-mix(in srgb,var(--critical) var(--a),transparent)}
+.shp-diag{background:var(--panel2)}
