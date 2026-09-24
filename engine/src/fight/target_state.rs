@@ -266,6 +266,14 @@ impl TargetState {
                 led_og_column = whole;
             }
         }
+        // A GUARDIAN'S AURA, AND IT STARTS HERE ON PURPOSE. wiki `Eximus`
+        // §Guardian: *"Damage reduction does not apply to Overguard of nearby
+        // units"* — so it comes off what is LEFT once overguard has had its
+        // share, not off the instance. Taken at the one door every damage site
+        // passes through, so a DoT tick, an explosion and a chain hop are all
+        // reduced by it without knowing it exists.
+        let led_guardian = if p.guardian_aura { 1.0 - crate::target::GUARDIAN_AURA_DR } else { 1.0 };
+        passed *= led_guardian;
         if passed > 0.0 {
             let col = &p.type_mods.faction;
             let toxin = passed * shares.toxin_portion(col);
@@ -445,6 +453,8 @@ impl TargetState {
             share: 1.0,
             column: led_og_column,
             disrupt_amp: mit.disrupt_amp,
+            // SPARED BY NAME — wiki `Eximus` §Guardian.
+            guardian: 1.0,
             past_shield: 1.0,
             shield_gate: 1.0,
             virus_amp: 1.0,
@@ -460,6 +470,7 @@ impl TargetState {
             share: led_sh.0,
             column: led_sh.1,
             disrupt_amp: mit.disrupt_amp,
+            guardian: led_guardian,
             past_shield: 1.0,
             shield_gate: 1.0,
             virus_amp: 1.0,
@@ -479,6 +490,7 @@ impl TargetState {
             share: led_hp.0,
             column: led_hp.1,
             disrupt_amp: 1.0,
+            guardian: led_guardian,
             past_shield: 1.0,
             shield_gate: 1.0,
             virus_amp: mit.virus_amp,
@@ -498,6 +510,7 @@ impl TargetState {
             // disrupt_amp`, so what got past it carries that factor whether or
             // not Disrupt does anything to health.
             disrupt_amp: mit.disrupt_amp,
+            guardian: led_guardian,
             past_shield: led_past_shield,
             // THE GATE, on the portion it actually multiplied. A field of its
             // own rather than folded into a neighbour, because a ledger whose

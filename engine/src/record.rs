@@ -225,6 +225,8 @@ pub enum Factor {
     DamageTypeColumn,
     /// `Disrupt amp`
     DisruptAmp,
+    /// `Guardian aura`
+    GuardianAura,
     /// `past the shield`
     PastTheShield,
     /// `shield gate`
@@ -250,7 +252,7 @@ impl Factor {
     /// for as long as a client older than the server can exist — which for a
     /// page served from the same deploy is never, so this is a convention
     /// rather than a ratchet.
-    pub const ALL: [Factor; 41] = [
+    pub const ALL: [Factor; 42] = [
         Factor::BaseDamageBracket,
         Factor::BaseDamageMods,
         Factor::HalfHealth,
@@ -283,6 +285,7 @@ impl Factor {
         Factor::PoolShare,
         Factor::DamageTypeColumn,
         Factor::DisruptAmp,
+        Factor::GuardianAura,
         Factor::PastTheShield,
         Factor::ShieldGate,
         Factor::ViralAmp,
@@ -329,6 +332,7 @@ impl Factor {
             Factor::PoolShare => "pool share",
             Factor::DamageTypeColumn => "damage type column",
             Factor::DisruptAmp => "Disrupt amp",
+            Factor::GuardianAura => "Guardian aura",
             Factor::PastTheShield => "past the shield",
             Factor::ShieldGate => "shield gate",
             Factor::ViralAmp => "Viral amp",

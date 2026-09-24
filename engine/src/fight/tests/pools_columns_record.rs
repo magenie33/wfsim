@@ -776,3 +776,52 @@ fn a_dense_electricity_fight_pays_each_stack_once() {
         s.mean_dot_damage
     );
 }
+
+/// A GUARDIAN EXIMUS'S AURA TAKES NINE TENTHS, AND NOT OFF OVERGUARD.
+///
+/// The first effect this engine models that a body's own side gave it. wiki
+/// `Eximus` §Guardian: the shields *"provide '''90%''' damage reduction to all
+/// attacks to their allies in range"*, and *"Damage reduction does not apply to
+/// {{D|Overguard}} of nearby units"* — two claims, and the second is the one a
+/// single multiplier on the instance would get wrong.
+///
+/// So this measures BOTH: a body with no overguard takes a tenth, and a body
+/// with one loses that pool at full speed. A target that is pure overguard is
+/// the sharpest form of the second claim — its whole bar is the pool the aura
+/// cannot touch, so its damage must not move at all.
+#[test]
+fn a_guardian_aura_spares_overguard_and_takes_nine_tenths_of_the_rest() {
+    let run = |overguard: f64, aura: bool| {
+        let mut p = FightParams {
+            duration_seconds: 20.0,
+            ..FightParams::dual_toxocyst_incarnon()
+        };
+        p.foe.base_overguard = overguard;
+        p.foe.base_health = 1.0e9;
+        p.foe.base_armor = 0.0;
+        p.foe.base_shield = 0.0;
+        p.foe.guardian_aura = aura;
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+        r.taken.by_body().0[0]
+    };
+
+    // NO POOL IN FRONT OF IT: the aura is the only thing between the shot and
+    // health, so a tenth lands.
+    let (bare, shielded) = (run(0.0, false), run(0.0, true));
+    assert!(bare > 0.0, "the fixture landed nothing");
+    let share = shielded / bare;
+    assert!(
+        (share - 0.10).abs() < 0.005,
+        "90% off what reaches health: {shielded} of {bare} is {share}",
+    );
+
+    // A BAR THAT IS ENTIRELY THE POOL THE AURA CANNOT REACH. Big enough that
+    // the engagement never empties it, so every instance in the fight is
+    // settled against overguard and nothing else.
+    let (og_bare, og_aura) = (run(1.0e9, false), run(1.0e9, true));
+    assert!(og_bare > 0.0, "the overguard fixture landed nothing");
+    assert!(
+        (og_aura - og_bare).abs() < 1e-6,
+        "the aura does not apply to Overguard: {og_aura} against {og_bare}",
+    );
+}

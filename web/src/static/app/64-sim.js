@@ -427,6 +427,7 @@ function renderScenarioFields(ids, opts = {}) {
             <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
             ${eximusField(en)}
             ${spectralField(en)}
+            ${guardianField()}
             ${squadField(en)}
           </div>
           ${brushNote(sim)}

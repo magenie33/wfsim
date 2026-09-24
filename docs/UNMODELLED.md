@@ -280,6 +280,40 @@ When it lands, `data::abilities::resolve`'s two inputs (strength, duration) come
 from the frame and nothing about the buff definitions changes — that is why they
 are arguments.
 
+### 8. THE ENEMY'S OWN SIDE HELPS IT — ONE MEMBER MODELLED
+
+A body carries pools and a pile of statuses the Tenno put there. What its OWN
+side gave it is a third thing, and until the Guardian aura below there was
+nowhere for it to live.
+
+**Modelled.** A **Guardian Eximus's aura**: 90% damage reduction to every ally
+in range, and it does not reach Overguard (wiki `Eximus` §Guardian, quoted at
+`target::GUARDIAN_AURA_DR`). `guardian_aura` on the scenario — a fact about the
+FIGHT, not about the unit, because the wiki names no radius and the engine does
+not invent one. It does not stack, so the flag is a boolean.
+
+**Not modelled, and each is a different shape:**
+
+- **Ancient Healer's Overguard** — *"Overguard that is applied at 9x their
+  overall Health"*, once per body, and it *"will not apply and stack with
+  innate Eximus Overguard"*. A POOL granted mid-fight rather than a
+  multiplier, which is the part this engine has no seam for: `base_overguard`
+  is read at spawn.
+- **Arctic / Cryonic / Frozen Eximus's barrier** — 10,000 object-based health
+  for 20 s, not level-scaled, and *"not affected by critical damage"*. A
+  SECOND ENTITY between the shot and the body, which is §1's gap.
+- **The Guardian's own AoE reduction** — the same 90%, against area attacks
+  only, and unlike the ally aura it *does* apply to the Guardian's own
+  Overguard. It needs the engine to tell an area instance from a direct one at
+  the pool, which it does not today.
+- **Eximus auras that act on the TENNO** — Arson's 30 m Fire Blast, Venomous's
+  3.5 m Toxin aura, Surge's lightning. Those are §6, not this: they are the
+  target attacking.
+
+**What would have to exist first** for the first two: a pool a body GAINS
+during the fight, and a second entity in front of it. Neither is deep — the
+first is a seam on `TargetState`, the second is the same one §1 wants.
+
 ## What the ratchet has left
 
 **Five inert evolution clauses**, down from 226 in early August and 51 at the

@@ -561,6 +561,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
     Foe {
         name: "test target".into(),
         spectral: None,
+        guardian_aura: false,
         base_level: 1,
         level: 1,
         base_health: 50.0, // below the weakest possible shot (75)

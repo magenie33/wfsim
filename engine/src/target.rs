@@ -10,6 +10,18 @@
 use crate::rules::damage::{DamageType, DamageVector};
 use crate::rules::scaling;
 
+/// WHAT A GUARDIAN EXIMUS'S AURA TAKES OFF.
+///
+/// wiki `Eximus` §Guardian, of the three rotating shields: they *"provide
+/// '''90%''' damage reduction to all attacks to their allies in range, but not
+/// for themselves or special units such as Demolishers, Capture targets, and
+/// Bosses, and the damage reduction does not stack with other nearby Guardian
+/// Eximus"*.
+///
+/// IT DOES NOT REACH OVERGUARD: *"Damage reduction does not apply to Overguard
+/// of nearby units"* — so it is taken off what is LEFT once overguard has had
+/// its share, never off the instance.
+pub const GUARDIAN_AURA_DR: f64 = 0.90;
 /// The simulated target: base stats + level, scaled via [`scaling`].
 ///
 /// Prefer building this through `data::enemies::EnemySpec::target_params`, which
@@ -63,6 +75,18 @@ pub struct Foe {
     /// Whether this unit has an Eximus variant in-game (wiki
     /// `Eximus/Compatibilities`; Thrax units do not).
     pub can_be_eximus: bool,
+    /// IS THIS BODY STANDING IN A GUARDIAN EXIMUS'S AURA?
+    ///
+    /// The first effect this engine models that a body's OWN side gave it. A
+    /// status is something a shot did to a body; this is the other direction,
+    /// and it had nowhere to live: a body carried pools and a debuff pile and
+    /// nothing else. `docs/UNMODELLED.md` names the rest of the class.
+    ///
+    /// WHO IS IN RANGE IS TOLD, NOT DERIVED. The wiki states no radius for the
+    /// aura, so the scenario says which bodies stand in one rather than the
+    /// engine inventing a distance. It does not stack, so a boolean says all
+    /// there is — see [`GUARDIAN_AURA_DR`].
+    pub guardian_aura: bool,
     /// Unit-level status immunities: these types are EXCLUDED from the proc
     /// draw (weights renormalize — wiki `Status_Effect` §Immunity
     /// Interactions). Mechanic states (Frozen, Overguard suppression) are NOT
@@ -272,6 +296,7 @@ impl Foe {
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
+            guardian_aura: false,
             status_immunities: Vec::new(),
             faction: crate::model::Faction::Unknown,
             // A training dummy has no faction and takes damage as written.
@@ -569,6 +594,10 @@ impl crate::data::enemies::EnemySpec {
             steel_path,
             eximus,
             can_be_eximus: self.can_be_eximus,
+            // OFF UNLESS THE FIGHT ASKS, the same way `spectral` is: whether a
+            // body stands in a Guardian's aura is a fact about the FIGHT, not
+            // about the unit, so the scenario fills it and the spec cannot.
+            guardian_aura: false,
             type_mods,
             status_immunities: self
                 .status_immunities

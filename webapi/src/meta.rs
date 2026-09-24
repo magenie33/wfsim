@@ -1281,6 +1281,9 @@ pub fn meta_json() -> Value {
             "landscape": false,
             // A THRAX'S SECOND HALF, off — see `parse_fight`.
             "spectral_form": false,
+            // A GUARDIAN EXIMUS'S 90% aura, off — every number this app has
+            // published assumes nobody is shielding the target.
+            "guardian_aura": false,
             // Test precision, and the optimizer's last
             // round is the run count on the top 10. Kept in step with
             // `simulate_json` / `parse_optimize`, whose own fallbacks are what

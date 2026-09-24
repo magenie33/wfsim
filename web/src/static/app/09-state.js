@@ -103,6 +103,10 @@ function defaultScenario() {
   const d = META.defaults || {};
   return {
     enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+    // A GUARDIAN EXIMUS'S AURA over the target. OFF, and that is the honest
+    // default rather than a convenience: every number this app has published
+    // assumes nobody is shielding it.
+    guardian_aura: d.guardian_aura === true,
     // NULL means "whatever this unit is by default", which the server resolves
     // to its `can_be_eximus`. Only an explicit choice is stored, so switching
     // targets keeps giving you the elite unit wherever one exists rather than
@@ -184,7 +188,8 @@ function defaultScenario() {
 // where they become a Tenno (`data/tenno/default.yaml` + these overrides).
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
-let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
+let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, guardian_aura: false,
+  headshot_pct: 100, aiming: true,
   // THE FIGHT'S GEOMETRY: where the two of them stand, in metres. CONTACT by
   // default (0.5 m, twice a body's radius) — the closest they can be, which is
   // what point blank means once a body has a size, and what both official

@@ -1283,6 +1283,8 @@ ui:
   "another build acting in this fight": 这场战斗里另一套正在出手的配装
   "the whole squad — {n} builds acting together, so it is not a board figure": 整队合计 —— {n} 套配装一起出手，所以这个数不是榜单口径
   "every figure but DPS is {who}'s — DPS is the whole fight's": 除 DPS 外每一项都是 {who} 的；DPS 是整场的
+  "a Guardian Eximus nearby gives its allies 90% damage reduction. It does NOT reach Overguard, so a target with a pool in front of it loses that pool at full speed and then takes a tenth": 附近有守护者 Eximus 时，它的同伴获得 90% 伤害减免。这个减免不作用于超卫，所以带超卫的目标会先按原速掉完超卫，之后才只吃十分之一
+  "Guardian aura": 守护者光环
   "the body the weapon was on": 武器瞄准的那一具
   "the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it": 这把枪从它的 Lich 那里带出来的加成——作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大
   "the bow-exclusive Thunderbolt mod is outside the pools this roster loads — on this weapon it turns every bolt into a grenade, which is a whole second damage source": "弓专属的「Thunderbolt」MOD 不在本武器库载入的卡池里 —— 装在这把武器上它会把每一发弩箭变成一颗手雷，那是一整个第二伤害来源"

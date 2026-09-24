@@ -226,6 +226,17 @@ const spectralField = (en) => {
   return `<label class="check" title="${escHtml(tr("destroying the physical form leaves a spectre with 40% of its health that only the Operator can damage. Ticked, the kill — and every on-kill buff and ammo drop with it — waits for that spectre, so no weapon can finish this fight"))}"><input type="checkbox" data-k="spectral_form"${sim.spectral_form ? " checked" : ""}> ${escHtml(tr("Spectral form"))}</label>`;
 };
 
+/// SOMEBODY ELSE IS SHIELDING IT — a Guardian Eximus's three rotating shields
+/// give 90% damage reduction to every ally in range.
+///
+/// OFFERED ON EVERY UNIT, because this is a fact about the FIGHT and not about
+/// the target: anything can be standing next to a Guardian. The wiki names no
+/// radius for the aura, so the reader says whether the target is in one rather
+/// than the engine inventing a distance — and it does not stack, so one box
+/// says all there is.
+const guardianField = () =>
+  `<label class="check" title="${escHtml(tr("a Guardian Eximus nearby gives its allies 90% damage reduction. It does NOT reach Overguard, so a target with a pool in front of it loses that pool at full speed and then takes a tenth"))}"><input type="checkbox" data-k="guardian_aura"${sim.guardian_aura ? " checked" : ""}> ${escHtml(tr("Guardian aura"))}</label>`;
+
 /// HOW MANY PEOPLE THE TARGET WAS BROUGHT FOR — offered only where the unit's
 /// health reads it, which today is a Demolisher and nothing else.
 ///

@@ -673,6 +673,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     if get_bool(v, "spectral_form", false) {
         target.spectral = spec.spectral_form;
     }
+    // …AND WHETHER IT IS STANDING IN A GUARDIAN'S AURA. OFF by default, which
+    // is what every number this app has published assumes. It is a fact about
+    // the FIGHT rather than about the unit — the wiki names no radius, so a
+    // reader says who is in one rather than the engine inventing a distance.
+    target.guardian_aura = get_bool(v, "guardian_aura", false);
     // (The target's pools are read off the ARENA by whoever reports them —
     // one target, one place it lives.)
     let body_parts = build_body_parts(spec, headshot_pct);

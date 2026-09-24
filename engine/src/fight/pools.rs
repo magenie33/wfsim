@@ -35,6 +35,11 @@ pub struct Portion {
     /// portion rather than per instance.
     pub column: f64,
     pub disrupt_amp: f64,
+    /// WHAT A GUARDIAN EXIMUS'S AURA TOOK OFF — `1 - GUARDIAN_AURA_DR` on the
+    /// portions it reaches, and 1.0 on Overguard, which the wiki excludes by
+    /// name. Per portion for exactly that reason: one factor on the instance
+    /// could not say that one pool was spared.
+    pub guardian: f64,
     /// HOW MUCH OF THE INSTANCE THE SHIELD DID NOT ABSORB — the overflow as a
     /// fraction of what arrived, or 1.0 where no shield stood in the way.
     ///
@@ -90,6 +95,7 @@ impl Default for Portion {
             share: 0.0,
             column: 1.0,
             disrupt_amp: 1.0,
+            guardian: 1.0,
             past_shield: 1.0,
             shield_gate: 1.0,
             virus_amp: 1.0,

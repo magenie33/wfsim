@@ -253,6 +253,10 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     // the page offers it only where the enemy has one, exactly as Eximus is
     // offered only where `can_be_eximus`.
     ScenarioAxis { id: "spectral_form", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
+    // IS THIS BODY STANDING IN A GUARDIAN EXIMUS'S AURA? FREE, and a fact about
+    // the FIGHT rather than about the unit: the wiki names no radius, so the
+    // reader says who is in one rather than the engine inventing a distance.
+    ScenarioAxis { id: "guardian_aura", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "custom_enemies", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "formation", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "player_at", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
