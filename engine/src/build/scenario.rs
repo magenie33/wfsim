@@ -257,6 +257,9 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     // the FIGHT rather than about the unit: the wiki names no radius, so the
     // reader says who is in one rather than the engine inventing a distance.
     ScenarioAxis { id: "guardian_aura", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
+    // …AND A POOL SOMEBODY ELSE'S ALLY PUT IN FRONT OF IT. Same class, other
+    // shape: one takes damage off, this one adds a bar.
+    ScenarioAxis { id: "ancient_protector_aura", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "custom_enemies", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "formation", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "player_at", kind: AxisKind::Structured, group: Group::Target, requires: FREE },

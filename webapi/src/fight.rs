@@ -678,6 +678,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // the FIGHT rather than about the unit — the wiki names no radius, so a
     // reader says who is in one rather than the engine inventing a distance.
     target.guardian_aura = get_bool(v, "guardian_aura", false);
+    // …AND WHETHER AN ANCIENT PROTECTOR IS HOLDING A BAR IN FRONT OF IT. Set
+    // before anything reads the pools, because it IS one of them.
+    target.ancient_protector_aura = get_bool(v, "ancient_protector_aura", false);
     // (The target's pools are read off the ARENA by whoever reports them —
     // one target, one place it lives.)
     let body_parts = build_body_parts(spec, headshot_pct);

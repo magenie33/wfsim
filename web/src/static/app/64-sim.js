@@ -428,6 +428,7 @@ function renderScenarioFields(ids, opts = {}) {
             ${eximusField(en)}
             ${spectralField(en)}
             ${guardianField()}
+            ${protectorField()}
             ${squadField(en)}
           </div>
           ${brushNote(sim)}

@@ -825,3 +825,52 @@ fn a_guardian_aura_spares_overguard_and_takes_nine_tenths_of_the_rest() {
         "the aura does not apply to Overguard: {og_aura} against {og_bare}",
     );
 }
+
+/// AN ANCIENT PROTECTOR PUTS A BAR IN FRONT OF THE BODY, and not in front of
+/// one that brought its own.
+///
+/// The other shape in the class the Guardian aura opened: that one takes damage
+/// off, this one adds a pool. wiki `Ancient Protector`: four pulses of *"'''200%'''
+/// of their maximum health as Overguard"*, *"capped at '''800%''' of a unit's
+/// maximum health"*, and it *"Cannot grant Overguard to ... any enemy with innate
+/// Overguard"* — which is the half a bare addition would get wrong.
+#[test]
+fn an_ancient_protectors_aura_is_eight_times_health_and_skips_a_body_with_its_own() {
+    let foe = |protector: bool, eximus: bool| {
+        let spec = crate::data::enemies::EnemySpec::load(std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../data/enemies/crewman.yaml"
+        )))
+        .unwrap();
+        let mut f = spec
+            .target_params(150, false, eximus, TargetMode::InstantRespawn)
+            .unwrap();
+        f.ancient_protector_aura = protector;
+        f
+    };
+
+    // A UNIT WITH NO OVERGUARD OF ITS OWN takes the whole grant, and it is a
+    // multiple of its OWN health — so it scales exactly as that does.
+    let bare = foe(false, false);
+    assert_eq!(bare.overguard(), 0.0, "the fixture has none of its own");
+    let held = foe(true, false);
+    let want = held.max_health() * crate::target::ANCIENT_PROTECTOR_OVERGUARD;
+    assert!(
+        (held.overguard() - want).abs() < 1e-6,
+        "800% of {} is {want}, got {}",
+        held.max_health(),
+        held.overguard(),
+    );
+
+    // …AND A BODY THAT BROUGHT ITS OWN IS EXCLUDED BY NAME, so an Eximus is
+    // unchanged rather than stacked.
+    let elite = foe(false, true);
+    let elite_in_aura = foe(true, true);
+    assert!(elite.overguard() > 0.0, "an Eximus has its own");
+    assert!(
+        (elite_in_aura.overguard() - elite.overguard()).abs() < 1e-6,
+        "the aura is refused: {} against {}",
+        elite_in_aura.overguard(),
+        elite.overguard(),
+    );
+}

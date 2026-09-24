@@ -280,11 +280,12 @@ When it lands, `data::abilities::resolve`'s two inputs (strength, duration) come
 from the frame and nothing about the buff definitions changes — that is why they
 are arguments.
 
-### 8. THE ENEMY'S OWN SIDE HELPS IT — ONE MEMBER MODELLED
+### 8. THE ENEMY'S OWN SIDE HELPS IT — TWO MEMBERS MODELLED
 
 A body carries pools and a pile of statuses the Tenno put there. What its OWN
 side gave it is a third thing, and until the Guardian aura below there was
-nowhere for it to live.
+nowhere for it to live. The two below are the two shapes it comes in: one
+takes damage off, the other puts a pool in front.
 
 **Modelled.** A **Guardian Eximus's aura**: 90% damage reduction to every ally
 in range, and it does not reach Overguard (wiki `Eximus` §Guardian, quoted at
@@ -292,13 +293,24 @@ in range, and it does not reach Overguard (wiki `Eximus` §Guardian, quoted at
 FIGHT, not about the unit, because the wiki names no radius and the engine does
 not invent one. It does not stack, so the flag is a boolean.
 
+**Modelled.** An **Ancient Protector's aura**: Overguard worth 800% of the
+body's own maximum health — four pulses of 200%, which is the published cap
+(wiki `Ancient Protector`, quoted at `target::ANCIENT_PROTECTOR_OVERGUARD`).
+`ancient_protector_aura` on the scenario, and refused to a body that has
+Overguard of its own, which the wiki excludes by name — so it does nothing to
+an Eximus. NOT the Ancient Healer: U38 moved this ability to the Protector and
+the Healer now heals instead, so a source quoting the Healer's 9x is describing
+a game that no longer exists.
+
 **Not modelled, and each is a different shape:**
 
-- **Ancient Healer's Overguard** — *"Overguard that is applied at 9x their
-  overall Health"*, once per body, and it *"will not apply and stack with
-  innate Eximus Overguard"*. A POOL granted mid-fight rather than a
-  multiplier, which is the part this engine has no seam for: `base_overguard`
-  is read at spawn.
+- **The Protector's pool decaying, or coming back** — 6.67% a second, 33.33%
+  once the Protector dies, and topped back up to the cap while it lives. The
+  modelled case is a body standing in a LIVE aura, which is the cap; the pulse
+  period is not published, so a ramp or a sawtooth would be invented rather
+  than read. A fight that breaks the pool keeps it broken, which is the
+  player's side of the omission. All three need a Protector that is somewhere
+  and can be shot.
 - **Arctic / Cryonic / Frozen Eximus's barrier** — 10,000 object-based health
   for 20 s, not level-scaled, and *"not affected by critical damage"*. A
   SECOND ENTITY between the shot and the body, which is §1's gap.
@@ -310,9 +322,9 @@ not invent one. It does not stack, so the flag is a boolean.
   3.5 m Toxin aura, Surge's lightning. Those are §6, not this: they are the
   target attacking.
 
-**What would have to exist first** for the first two: a pool a body GAINS
-during the fight, and a second entity in front of it. Neither is deep — the
-first is a seam on `TargetState`, the second is the same one §1 wants.
+**What would have to exist first** for the rest: the enemy's own side as
+ACTORS — a Protector that stands somewhere, pulses and can be killed, and a
+barrier entity in front of a body. The second is the same gap §1 wants.
 
 ## What the ratchet has left
 

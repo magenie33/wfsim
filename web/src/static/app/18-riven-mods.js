@@ -237,6 +237,15 @@ const spectralField = (en) => {
 const guardianField = () =>
   `<label class="check" title="${escHtml(tr("a Guardian Eximus nearby gives its allies 90% damage reduction. It does NOT reach Overguard, so a target with a pool in front of it loses that pool at full speed and then takes a tenth"))}"><input type="checkbox" data-k="guardian_aura"${sim.guardian_aura ? " checked" : ""}> ${escHtml(tr("Guardian aura"))}</label>`;
 
+/// AN ANCIENT PROTECTOR IS HOLDING A BAR IN FRONT OF IT — 800% of the body's
+/// maximum health, as Overguard.
+///
+/// The other shape in the same class as the Guardian box above: that one takes
+/// damage off, this one puts a pool there. Refused to a body that has its own,
+/// which the wiki excludes by name, so ticking it on an Eximus changes nothing.
+const protectorField = () =>
+  `<label class="check" title="${escHtml(tr("an Ancient Protector nearby covers its allies in Overguard worth 800% of their maximum health. A body with Overguard of its own is excluded by name, so this does nothing to an Eximus"))}"><input type="checkbox" data-k="ancient_protector_aura"${sim.ancient_protector_aura ? " checked" : ""}> ${escHtml(tr("Ancient Protector aura"))}</label>`;
+
 /// HOW MANY PEOPLE THE TARGET WAS BROUGHT FOR — offered only where the unit's
 /// health reads it, which today is a Demolisher and nothing else.
 ///

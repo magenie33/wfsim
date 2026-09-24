@@ -1284,6 +1284,8 @@ ui:
   "the whole squad — {n} builds acting together, so it is not a board figure": 整队合计 —— {n} 套配装一起出手，所以这个数不是榜单口径
   "every figure but DPS is {who}'s — DPS is the whole fight's": 除 DPS 外每一项都是 {who} 的；DPS 是整场的
   "a Guardian Eximus nearby gives its allies 90% damage reduction. It does NOT reach Overguard, so a target with a pool in front of it loses that pool at full speed and then takes a tenth": 附近有守护者 Eximus 时，它的同伴获得 90% 伤害减免。这个减免不作用于超卫，所以带超卫的目标会先按原速掉完超卫，之后才只吃十分之一
+  "Ancient Protector aura": 远古守护者光环
+  "an Ancient Protector nearby covers its allies in Overguard worth 800% of their maximum health. A body with Overguard of its own is excluded by name, so this does nothing to an Eximus": 附近有远古守护者时，它的同伴会获得相当于自身最大生命 800% 的超卫。维基点名排除了本来就自带超卫的单位，所以对 Eximus 无效
   "Guardian aura": 守护者光环
   "the body the weapon was on": 武器瞄准的那一具
   "the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it": 这把枪从它的 Lich 那里带出来的加成——作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大

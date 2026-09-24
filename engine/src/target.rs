@@ -22,6 +22,28 @@ use crate::rules::scaling;
 /// of nearby units"* — so it is taken off what is LEFT once overguard has had
 /// its share, never off the instance.
 pub const GUARDIAN_AURA_DR: f64 = 0.90;
+
+/// WHAT AN ANCIENT PROTECTOR'S AURA IS WORTH, as a multiple of the recipient's
+/// maximum health.
+///
+/// wiki `Ancient Protector`: it *"Periodically emits '''4''' pulses, granting
+/// each allied enemy within '''10''' meters '''200%''' of their maximum health
+/// as Overguard per pulse"*, and *"Overguard granted by the Ancient is capped
+/// at '''800%''' of a unit's maximum health"* — four pulses of 200% IS the cap,
+/// so a body that has been in the aura is at it.
+///
+/// THE STEADY STATE, AND THAT IS THE MODELLED CASE. The pool decays at 6.67% a
+/// second, but *"Multiple Ancients cannot increase the total, but rather
+/// regenerates it up to the total"* — a living Protector tops it back up, and
+/// the pulse PERIOD is not published, so a ramp or a sawtooth would be invented
+/// rather than read. A fight against a body standing in a live aura is a fight
+/// against the cap; `docs/UNMODELLED.md` §8 states what that leaves out.
+///
+/// NOT GRANTED TO A BODY THAT HAS ITS OWN: *"Cannot grant Overguard to itself,
+/// other Ancients, the spectral forms of Thrax Centurion and Thrax Legatus, or
+/// any enemy with innate Overguard"* — which is why this is a branch on the
+/// innate pool rather than an addition to it.
+pub const ANCIENT_PROTECTOR_OVERGUARD: f64 = 8.0;
 /// The simulated target: base stats + level, scaled via [`scaling`].
 ///
 /// Prefer building this through `data::enemies::EnemySpec::target_params`, which
@@ -87,6 +109,14 @@ pub struct Foe {
     /// engine inventing a distance. It does not stack, so a boolean says all
     /// there is — see [`GUARDIAN_AURA_DR`].
     pub guardian_aura: bool,
+    /// IS THIS BODY STANDING IN AN ANCIENT PROTECTOR'S AURA?
+    ///
+    /// The second member of the class `guardian_aura` opened, and a different
+    /// shape: that one takes damage off, this one puts a POOL in front of the
+    /// body. See [`ANCIENT_PROTECTOR_OVERGUARD`] — the aura has a published
+    /// radius (10 m), but the engine has no Protector standing anywhere, so
+    /// this is told the same way.
+    pub ancient_protector_aura: bool,
     /// Unit-level status immunities: these types are EXCLUDED from the proc
     /// draw (weights renormalize — wiki `Status_Effect` §Immunity
     /// Interactions). Mechanic states (Frozen, Overguard suppression) are NOT
@@ -297,6 +327,7 @@ impl Foe {
             eximus: false,
             can_be_eximus: false,
             guardian_aura: false,
+            ancient_protector_aura: false,
             status_immunities: Vec::new(),
             faction: crate::model::Faction::Unknown,
             // A training dummy has no faction and takes damage as written.
@@ -378,7 +409,16 @@ impl Foe {
         } else {
             self.base_overguard
         };
-        scaling::overguard_at(base, self.level)
+        let innate = scaling::overguard_at(base, self.level);
+        // …AND WHAT AN ALLY PUT THERE, which a body with its own is refused by
+        // name — see [`ANCIENT_PROTECTOR_OVERGUARD`]. A MULTIPLE OF HEALTH
+        // rather than a level curve of its own: the wiki states it against the
+        // recipient's maximum health, so it scales exactly as that does and
+        // Steel Path carries into it without being mentioned.
+        if self.ancient_protector_aura && innate <= 0.0 {
+            return self.max_health() * ANCIENT_PROTECTOR_OVERGUARD;
+        }
+        innate
     }
 }
 
@@ -598,6 +638,7 @@ impl crate::data::enemies::EnemySpec {
             // body stands in a Guardian's aura is a fact about the FIGHT, not
             // about the unit, so the scenario fills it and the spec cannot.
             guardian_aura: false,
+            ancient_protector_aura: false,
             type_mods,
             status_immunities: self
                 .status_immunities
