@@ -344,7 +344,15 @@ function paintRecord(r) {
     // same rows from the same renderer, with the wide columns dropped by CSS,
     // so there is one implementation and two widths rather than two tables that
     // have to be kept agreeing.
-    const draw = st && (!mine || recPopupBlocked);
+    // …AND A PEEK IS NOT A READ. A blocked popup sends the table into the
+    // panel, and this slot drops `recordIdle()` with it — so a PEEK landing
+    // here drew 300 rows where the record belongs and took away the button
+    // that would fetch the rest: a truncated record presenting itself as the
+    // whole one, with no way left to ask again. A read supersedes a peek and
+    // a fresh result peeks again, so the two land in this slot in either
+    // order; `limit` is what tells them apart.
+    const read = st && (st.limit || 0) > RECORD_PEEK;
+    const draw = read && (!mine || recPopupBlocked);
     host.innerHTML = draw ? recordBody(st)
       : (mine && st ? recordBody(st, true) : "") + recordIdle();
     wireRecord(recordResult, host);

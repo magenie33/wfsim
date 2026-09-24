@@ -518,25 +518,45 @@ check(`${tag} ...drawn as a countdown beside the count`,
 // THE WINDOW NEEDS A GESTURE. `window.open` outside one is blocked, so the
 // click is evaluated as the reader's — without it the button would look broken
 // for a reason nobody using the app would ever hit.
-const paged = await evaluate(`(() => ({
-  rows: document.querySelectorAll('#rec-host > .rec-scroll > table.rec-t > tbody > tr').length,
-  total: (recordState && recordState.events || []).length,
-  pager: !!document.querySelector('.rec-pager'),
-  page: REC_PAGE,
-}))()`);
+const paged = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // A PEEK IS NOT A READ. The panel draws a 300-row preview of its own accord
+  // the moment a result lands, and that preview is a table.rec-t too - so
+  // every wait that asked for the selector returned on it and these two
+  // assertions measured 300 rows of 300, reporting a pager missing from a
+  // record that never needed one.
+  //
+  // AND THE READ IS ASKED FOR HERE, in a retry. A run renders more than once
+  // and each fresh result supersedes the read in flight and peeks again, so a
+  // single click landing on an intermediate render leaves the panel back at a
+  // peek. Asking again until the stream settles above RECORD_PEEK makes these
+  // two depend on nothing but paging.
+  const peekOnly = () => {
+    const st = recordState;
+    return !st || (st.events || []).length <= RECORD_PEEK;
+  };
+  for (let attempt = 0; attempt < 6; attempt++) {
+    if (!peekOnly()) break;
+    const b = document.getElementById('rec-load');
+    if (b) b.click();
+    for (let i = 0; i < 20; i++) {
+      await sleep(500);
+      if (recordState && !recordState.loading && !peekOnly()) break;
+    }
+  }
+  return {
+    rows: document.querySelectorAll('#rec-host > .rec-scroll > table.rec-t > tbody > tr').length,
+    total: (recordState && recordState.events || []).length,
+    loading: !!(recordState && recordState.loading),
+    limit: recordState && recordState.limit,
+    pager: !!document.querySelector('.rec-pager'),
+    page: REC_PAGE,
+    button: !!document.getElementById('rec-load'),
+    host: !!document.getElementById('rec-host'),
+    result: !!(typeof recordResult !== 'undefined' && recordResult && recordResult.run),
+  };
+})()`);
 
-// THESE TWO MEASURE THE PEEK, NOT THE RECORD, AND FAIL ON IT.
-//
-// `paged.total` comes back 300 — exactly RECORD_PEEK — against a REC_PAGE of
-// 500, so the pager is correctly absent and the premise never holds. The
-// panel draws a 300-row preview of its own accord and the wait above returns
-// on it, because that preview is a .rec-t too; waiting on the STREAM instead
-// (`recordState.limit > RECORD_PEEK`) was tried and did not move it, so
-// something else here is still handing these two the preview.
-//
-// THE PRODUCT IS NOT WHAT IS WRONG, measured by hand on the same build:
-// the auto-peek loads 300, `#rec-load` then loads 4,015, the pager appears
-// and the table draws 500 — one screenful, as claimed.
 check(`${tag} the table draws one screenful, however long the fight is`,
   paged.total > paged.page && paged.rows <= paged.page,
   `${paged.rows} rows of ${paged.total}`);
