@@ -961,10 +961,19 @@ def brief_block(board_rows, caveats) -> str:
     # …AND THE ONE LINE A SHUT FOLD SHOWS EARNS ITS PLACE: what is behind it,
     # and that an admission is behind it when there is one. Hidden is not the
     # same as unsaid, and this is the only place a weapon page admits a gap.
-    hint = "the board's best riven-free build for each ruler"
-    if caveats:
-        hint += ", and what this weapon's number does not account for"
-    head = ('      <div class="fold-h"><b>Measured builds</b>'
+    #
+    # AND IT NAMES WHAT IS ACTUALLY BEHIND IT. A weapon nobody has measured has
+    # no board half, and a header promising one is the fold lying about its own
+    # contents to the one reader who cannot check without opening it.
+    if board_rows:
+        hint = "the board's best riven-free build for each ruler"
+        if caveats:
+            hint += ", and what this weapon's number does not account for"
+        title = "Measured builds"
+    else:
+        hint = "what this weapon's number does not account for"
+        title = "Not modelled here"
+    head = ('      <div class="fold-h"><b>' + e(title) + '</b>'
             '<span class="sim-hint">' + e(hint) + '</span></div>\n')
     answers = ""
     if board_rows:
@@ -989,7 +998,9 @@ def brief_block(board_rows, caveats) -> str:
     notes = ""
     if caveats:
         items = "".join("        <li>" + e(c) + "</li>\n" for c in caveats)
-        notes = ('      <div class="w-notes"><b>Not modelled here</b>\n        <ul>\n'
+        # The label only where the header does not already carry it.
+        label = "<b>Not modelled here</b>\n        " if board_rows else ""
+        notes = ('      <div class="w-notes">' + label + "<ul>\n"
                  + items + "        </ul>\n      </div>\n")
     return (
         '    <div class="fold sect w-brief shut" data-fold="w-brief">\n'

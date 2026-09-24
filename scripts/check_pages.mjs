@@ -65,7 +65,13 @@ for (const lang of ["en", "zh"]) {
       const v = await evaluate(`(async () => { try {
         history.pushState({}, '', ${JSON.stringify(url)}); route();
         await new Promise((r) => setTimeout(r, 1400));
-        const panel = document.querySelector('#panel, #sim, #opt, main');
+        // THE PAGE THAT IS SHOWING, and nothing else. A comma list returns the
+        // first match in DOCUMENT ORDER rather than the first selector that
+        // matches, so \`#panel, #sim, #opt, main\` resolved to the first
+        // <main> in the file — \`#download-page\`, which is hidden and empty —
+        // and reported BLANK for every weapon, tab and language ever swept.
+        // None of those three ids exists at all.
+        const panel = document.querySelector('main:not([hidden])');
         const on = document.getElementById('weapon');
         return {
           drew: !!panel && panel.textContent.trim().length > 40,

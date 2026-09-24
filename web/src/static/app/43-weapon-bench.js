@@ -84,8 +84,13 @@ function renderWeaponDoc() {
     /^\/(simulator|optimizer|rivens|enemies|benchmark)\/?$/.test(m) ? "" : m);
   if (box.dataset.url && box.dataset.url === here) { box.hidden = false; return; }
   const cells = wbenchCells(w.id);
-  box.hidden = !cells.length;
-  if (!cells.length) { box.innerHTML = ""; return; }
+  const gaps = gapsOf(w).map(trGap).filter(Boolean);
+  // A BOARD ROW IS NOT WHAT MAKES THIS BLOCK WORTH DRAWING. It is the only
+  // place a weapon page admits a gap, and a weapon nobody has measured yet is
+  // exactly the one whose gaps a reader has no other way to learn — so it is
+  // drawn for an admission alone, and hidden only when there is neither.
+  box.hidden = !cells.length && !gaps.length;
+  if (box.hidden) { box.innerHTML = ""; return; }
   const split = (id) => {
     const b = (META.benchmarks || []).find((x) => x.id === id);
     const parts = b ? tr(b.name).split(" · ") : [id];
@@ -113,23 +118,32 @@ function renderWeaponDoc() {
         c.best.shown != null ? c.best.shown : c.best.score.toFixed(4)))}</td>`
       + `<td>${escHtml(gear)}</td></tr>`;
   }).join("");
-  const gaps = gapsOf(w).map(trGap).filter(Boolean);
   // THE SAME SHAPE THE PRERENDER WROTE, down to the `shut` and the header: the
   // two write one block, and a reader who changes weapon must not find the
   // default flipped under them. `wireFolds` lets a stored answer outrank it,
   // so somebody who opened it keeps it open on every weapon after.
-  const hint = tr("the board's best riven-free build for each ruler")
-    + (gaps.length ? tr(", and what this weapon's number does not account for") : "");
+  //
+  // AND IT NAMES WHAT IS ACTUALLY BEHIND IT. A weapon nobody has measured has
+  // no board half, and a header promising one is the fold lying about its own
+  // contents to the one reader who cannot check without opening it.
+  const hint = cells.length
+    ? tr("the board's best riven-free build for each ruler")
+      + (gaps.length ? tr(", and what this weapon's number does not account for") : "")
+    : tr("what this weapon's number does not account for");
   box.innerHTML = `<div class="fold sect w-brief shut" data-fold="w-brief">`
-    + `<div class="fold-h"><b>${escHtml(tr("Measured builds"))}</b>`
+    + `<div class="fold-h"><b>${escHtml(
+      cells.length ? tr("Measured builds") : tr("Not modelled here"))}</b>`
     + `<span class="sim-hint">${escHtml(hint)}</span></div>`
     + `<div class="fold-b">`
-    + `<table class="w-tab w-answers"><caption>${escHtml(tr("The best riven-free build"))}`
-    + `</caption><thead><tr><th>${escHtml(tr("Ruler"))}</th><th>${escHtml(tr("Fight"))}</th>`
-    + `<th>${escHtml(tr("Mode"))}</th><th>${escHtml(tr("Score"))}</th>`
-    + `<th>${escHtml(tr("Build"))}</th></tr></thead><tbody>${rows}</tbody></table>`
+    + (cells.length
+      ? `<table class="w-tab w-answers"><caption>${escHtml(tr("The best riven-free build"))}`
+        + `</caption><thead><tr><th>${escHtml(tr("Ruler"))}</th><th>${escHtml(tr("Fight"))}</th>`
+        + `<th>${escHtml(tr("Mode"))}</th><th>${escHtml(tr("Score"))}</th>`
+        + `<th>${escHtml(tr("Build"))}</th></tr></thead><tbody>${rows}</tbody></table>`
+      : "")
     + (gaps.length
-      ? `<div class="w-notes"><b>${escHtml(tr("Not modelled here"))}</b><ul>`
+      ? `<div class="w-notes">${cells.length
+        ? `<b>${escHtml(tr("Not modelled here"))}</b>` : ""}<ul>`
         + gaps.map((g) => `<li>${escHtml(g)}</li>`).join("") + `</ul></div>`
       : "")
     + `</div></div>`;
