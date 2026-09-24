@@ -425,6 +425,26 @@ pub fn run_once_traced(
         seats.push(other);
     }
 
+    /// THE ENTRIES ONE SEAT LEFT BEHIND, taken out of the list IN ORDER.
+    ///
+    /// In order because the list is settled in it: two orbs of the same seat
+    /// strike in the sequence they were thrown, and a filter that reversed them
+    /// would roll their crits the other way round. What is left behind keeps
+    /// its own order too, so the next seat's share is the one it would have had.
+    fn owned_by<T>(list: &mut Vec<T>, seat: Seat, owner: impl Fn(&T) -> Seat) -> Vec<T> {
+        let mut mine = Vec::new();
+        let mut rest = Vec::with_capacity(list.len());
+        for x in list.drain(..) {
+            if owner(&x) == seat {
+                mine.push(x);
+            } else {
+                rest.push(x);
+            }
+        }
+        *list = rest;
+        mine
+    }
+
     /// WHO ACTS NEXT — the earliest `next_t`, and a TIE GOES TO THE LOWER
     /// SEAT. Ties are not rare: two weapons on the same cadence share every
     /// instant, and without a stated order the replay would settle them in
@@ -1037,62 +1057,66 @@ pub fn run_once_traced(
     }
     }
 
-    // WHOSE BUFFS THE DRAINING ORBS READ. An orb carries its owner, but this
-    // drain takes one set of windows for all of them — so with a second seat
-    // leaving orbs it would read the wielder's. Named here rather than left to
-    // be discovered: it is the same gap the four status sites have, and it
-    // closes the same way, by the settling reading the owner's state.
-    let me = &mut seats[Seat::WIELDER.0];
-    let d = &mut me.d;
-    // The orbs still in the air after the last shot — every strike they have
-    // left and the detonation that ends them. Before the clouds for the same
-    // reason the clouds come before the status drain: each event settles what
-    // preceded it and pushes procs of its own.
-    process_orbs(
-        &me.windows,
-        &mut orbs,
-        &mut me.gal,
-        &mut me.arc,
-        params.duration_seconds,
-        params,
-        me.fixed.field_active,
-        &me.field_ctx,
-        &mut r,
-        rec,
-        d,
-        &mut bodies,
-    );
+    // EACH OWNER SETTLES ITS OWN. An orb and a cloud each carry the seat that
+    // left it, and each reads the SHOOTER's live windows — so draining the
+    // whole list under one seat's cards pays a second seat's leavings out of
+    // the wielder's build. `owned_by` takes one seat's share in order, so a
+    // fight with one seat hands the same list to the same call it always did.
+    //
+    // THE ORDER IS THE FIGHT'S, NOT THE ROSTER'S: every orb, then every cloud,
+    // then the drain. Each settles what preceded it and pushes procs of its
+    // own, so looping a seat through all three would reorder how status
+    // settles — a golden-value change rather than an attribution one.
+    let end = params.duration_seconds;
+    for (si, me) in seats.iter_mut().enumerate() {
+        let mut mine = owned_by(&mut orbs, Seat(si), |o| o.owner);
+        process_orbs(
+            &me.windows, &mut mine, &mut me.gal, &mut me.arc, end,
+            params, me.fixed.field_active, &me.field_ctx, &mut r, rec, &mut me.d,
+            &mut bodies,
+        );
+        orbs.append(&mut mine);
+    }
     // The clouds still burning after the last shot, with the buff snapshot from
-    // that shot (nothing refreshes it once firing stops). FIRST, because each
-    // tick settles the status events before it and pushes procs of its own…
-    process_field_ticks(
-        &me.windows,
-        &mut fields,
-        &mut me.gal,
-        &mut me.arc,
-        params.duration_seconds,
-        params,
-        me.fixed.field_active,
-        &me.field_ctx,
-        &mut r,
-        rec,
-        d,
-        &mut bodies,
-    );
-    // …then drain what is left up to the end of the engagement.
+    // that shot (nothing refreshes it once firing stops).
+    for (si, me) in seats.iter_mut().enumerate() {
+        let mut mine = owned_by(&mut fields, Seat(si), |f| f.owner);
+        process_field_ticks(
+            &me.windows, &mut mine, &mut me.gal, &mut me.arc, end,
+            params, me.fixed.field_active, &me.field_ctx, &mut r, rec, &mut me.d,
+            &mut bodies,
+        );
+        fields.append(&mut mine);
+    }
+    // …then drain what is left up to the end of the engagement — EVERY BODY,
+    // not just the aimed one. A neighbour a chain hop or a splash set burning
+    // was drained once per shot and then abandoned at the last one, so whatever
+    // was still on it when firing stopped was recorded and never paid.
+    //
+    // WHOSE WINDOWS A DoT IS DRAINED UNDER IS STILL THE WIELDER'S. A tick reads
+    // live element buffs (`FightParams::element_at`) and takes one set for the
+    // whole body, while the damage it books already carries its own `dot_owner`
+    // — so with a second seat the credit is right and the size is the
+    // wielder's. It closes inside `process_ticks`, by the tick reading the
+    // state of the seat that seeded it.
+    let me = &mut seats[Seat::WIELDER.0];
     process_ticks(
         &me.windows,
         &mut bodies[0],
         &mut me.gal,
         &mut me.arc,
-        params.duration_seconds,
+        end,
         params,
         me.fixed.field_active,
         &mut r,
         rec,
-        &mut d.status,
+        &mut me.d.status,
         &params.foe,
         0,
+    );
+    settle_crowd_ticks(
+        &me.windows, &mut bodies, &mut me.gal, &mut me.arc, end,
+        params, me.fixed.field_active, &mut r, rec, &mut me.d.status,
     );
 
     // THE REPLAY COVERS THE WHOLE FIGHT, INCLUDING THE PART WITH NO SHOOTING

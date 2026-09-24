@@ -1627,3 +1627,59 @@ fn a_hit_reads_the_stacks_that_were_already_on_the_target() {
     assert!((before - 0.00).abs() < 1e-9, "the 0 -> 1 shot sees nothing");
     assert!((after - 0.10).abs() < 1e-9, "and the NEXT one sees one stack");
 }
+
+/// THE END OF THE ENGAGEMENT DRAINS EVERY BODY, not just the aimed one.
+///
+/// Firing stops the moment a finite reserve runs dry, and the engagement runs
+/// on to its clock — the tail. The aimed body was drained over it and nobody
+/// else was, so a neighbour a beam punched through kept whatever was burning on
+/// it at the last shot: pushed, recorded, and never paid.
+///
+/// A DRY RESERVE IS WHAT MAKES IT MEASURABLE. Between the last shot and the end
+/// of a normal fight there is one shot's gap, and a DoT's share of it is inside
+/// the noise; out of ammo at a fraction of the clock, the tail is most of the
+/// engagement and the shortfall is the whole burn.
+///
+/// The ratio is the ruler `a_punched_bodys_burn_is_the_size_the_aimed_bodys_is`
+/// already uses: a training dummy on both, so the two bodies differ in nothing
+/// but which of them the shot was aimed at.
+#[test]
+fn the_tail_drains_the_crowd_and_not_only_the_aimed_body() {
+    let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
+    let pool = crate::data::mods::pool_for_weapon("phantasma_prime");
+    let refs: Vec<&crate::model::ModDef> = ["incendiary_coat"]
+        .iter()
+        .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
+        .collect();
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let mut arena = crate::arena::Arena::training(10.0);
+    arena.others = vec![crate::formation::FoeSpec {
+        id: String::new(),
+        params: Foe::training_dummy(),
+        body_parts: BodyPart::humanoid(),
+        at: crate::rules::space::Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M * 2.0),
+    }];
+    let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    p.body_parts = vec![BodyPart {
+        name: "head".into(),
+        aim_weight: 1.0,
+        multiplier: 3.0,
+        is_head: true,
+        is_weak_point: true,
+        crit_bonus: true,
+    }];
+    // OUT OF AMMO EARLY, AND A LONG CLOCK AFTER IT.
+    p.infinite_reserve = false;
+    p.reserve_ammo = 60.0;
+    p.duration_seconds = 30.0;
+
+    let r = run_once(&p, &mut Rng::new(0x5EED));
+    let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);
+    assert!(behind > 0.0, "the beam reaches the body behind");
+    let ratio = aimed / behind;
+    assert!(
+        (ratio - 1.0).abs() < 0.15,
+        "the same round leaves the same burn, and the tail owes both of them: \
+         aimed {aimed} against {behind} behind (ratio {ratio})",
+    );
+}

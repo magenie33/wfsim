@@ -120,6 +120,39 @@ impl DebuffState {
     }
 }
 
+/// EVERY BODY BUT THE AIMED ONE, drained to `until`.
+///
+/// The aimed body's clock is the run loop's own and is settled with the rest of
+/// it; these are the neighbours a chain hop, a splash, a tendril or an echo
+/// reached. The shot path and the END of the engagement share this because they
+/// share the DECISION — a status on a neighbour is paid out, or it was never
+/// applied at all — and the tail drained only the aimed body, so whatever was
+/// still burning on a neighbour when firing stopped was recorded and never paid.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn settle_crowd_ticks(
+    w: &CardWindows,
+    bodies: &mut [Body],
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    until: f64,
+    params: &FightParams,
+    active: &FightParams,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    rng: &mut Rng,
+) {
+    for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
+        // NOTHING TO BURN, NOTHING TO DO. A formation is up to 400 bodies
+        // and a shot reaches a handful; walking the rest once per shot is
+        // the whole difference between a crowd being affordable and not.
+        if foe.debuffs.idle() {
+            continue;
+        }
+        let Some(spec) = params.body(b) else { continue };
+        process_ticks(w, foe, gal, arc, until, params, active, r, rec, rng, spec.params, b);
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn process_ticks(
     // THE SHOOTER'S LIVE WINDOWS, because a burning cloud reads them: an

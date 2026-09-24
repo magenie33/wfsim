@@ -1620,36 +1620,10 @@ pub(super) fn spread_beyond_the_target(
         );
     }
 
-    // EVERY BODY'S STATUS BURNS, not just the aimed one's. A formation
-    // body's DoTs were pushed and never ticked until 2026-08-17 — recorded
-    // and never paid — so a chain hop's Slash, a splash's Heat and a gas
-    // cloud all landed on a ledger nobody read.
+    // EVERY BODY'S STATUS BURNS, not just the aimed one's — see
+    // `settle_crowd_ticks`, which the end of the engagement runs too.
     //
     // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
     // kill is a kill whichever body it was.
-    // FROM BODY 1: the aimed one's ticks are the run loop's, settled with the
-    // rest of its clock rather than off the back of a shot.
-    for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
-        // NOTHING TO BURN, NOTHING TO DO. A formation is up to 400 bodies
-        // and a shot reaches a handful; walking the rest once per shot is
-        // the whole difference between a crowd being affordable and not.
-        if foe.debuffs.idle() {
-            continue;
-        }
-        let Some(spec) = params.body(b) else { continue };
-        process_ticks(
-            w,
-            foe,
-            gal,
-            arc,
-            t + 1e-9,
-            params,
-            active,
-            r,
-            rec,
-            &mut d.status,
-            spec.params,
-            b,
-        );
-    }
+    settle_crowd_ticks(w, bodies, gal, arc, t + 1e-9, params, active, r, rec, &mut d.status);
 }
