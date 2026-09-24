@@ -935,68 +935,69 @@ def caveats_of(spec: dict, reasons: dict) -> list[str]:
     return out
 
 
-def brief_block(name, cn, facts, stat_rows, board_rows, caveats) -> str:
+def brief_block(board_rows, caveats) -> str:
     """THE WEAPON'S OWN CONTENT, as data rather than as sentences.
 
-    A build is tabular and a ruler's answer is tabular; rendering either as
-    English prose is what made three near-identical paragraphs out of three
-    answers that differ by 13x. A table says the same thing in the same tokens
-    and shows the difference at a glance.
+    A ruler's answer is tabular; as English prose it was three near-identical
+    paragraphs for three answers that differ by 13x. A table says the same
+    thing in the same tokens and shows the difference at a glance.
 
     IT SHIPS IN THE SERVED HTML AND IT FOLDS. A fold is CSS — the body stays in
     the document whether it is open or shut — so a reader that never runs
     JavaScript, which is most of what reads a page on a machine's behalf, still
     reads every figure here. Anything drawn after boot is invisible to them.
+
+    IT SHIPS SHUT. The page is a TOOL before it is an answer: whoever opens it
+    every day came for the builder, and the reader this block is for arrives
+    once, from a search, and opens it. The stored answer outranks the default
+    forever after (`folded`), so opening it once opens it for good.
+
+    IT SAYS ONLY WHAT THE PAGE DOES NOT. The weapon's name is the h1 directly
+    above, its class and rank are the tags beside that, and every stat is in
+    the panel the app draws — so the block carries the BOARD's answer and the
+    admissions, which nothing else on a weapon page says.
     """
     e = html_mod.escape
-    head = (f'      <div class="fold-h"><b>{e(name)}</b>'
-            + (f'<span class="w-cn">{e(cn)}</span>' if cn else "")
-            + f'<span class="sim-hint">{e(facts)}</span></div>\n')
-    rows = "".join(f"        <tr><th>{e(k)}</th><td>{e(v)}</td></tr>\n" for k, v in stat_rows)
-    stats = f'      <table class="w-tab">\n{rows}      </table>\n'
+    # …AND THE ONE LINE A SHUT FOLD SHOWS EARNS ITS PLACE: what is behind it,
+    # and that an admission is behind it when there is one. Hidden is not the
+    # same as unsaid, and this is the only place a weapon page admits a gap.
+    hint = "the board's best riven-free build for each ruler"
+    if caveats:
+        hint += ", and what this weapon's number does not account for"
+    head = ('      <div class="fold-h"><b>Measured builds</b>'
+            '<span class="sim-hint">' + e(hint) + '</span></div>\n')
     answers = ""
     if board_rows:
-        cap = f"Best riven-free build on the WFSim board{f', as of {board_asof()}' if board_asof() else ''}"
+        cap = "Best riven-free build on the WFSim board"
+        if board_asof():
+            cap += ", as of " + board_asof()
         body = ""
         for ruler, fight, mode, score, gear in board_rows:
-            body += (f"          <tr><td>{e(ruler)}</td><td>{e(fight)}</td><td>{e(mode)}</td>"
-                     f"<td class=\"w-num\">{e(score)}</td><td>{e(gear)}</td></tr>\n")
+            body += ("          <tr><td>" + e(ruler) + "</td><td>" + e(fight) + "</td><td>"
+                     + e(mode) + '</td><td class="w-num">' + e(score) + "</td><td>"
+                     + e(gear) + "</td></tr>\n")
         answers = (
-            f'      <table class="w-tab w-answers">\n'
-            f"        <caption>{e(cap)}</caption>\n"
+            '      <table class="w-tab w-answers">\n'
+            "        <caption>" + e(cap) + "</caption>\n"
             "        <thead><tr><th>Ruler</th><th>Fight</th><th>Mode</th>"
             "<th>Score</th><th>Build</th></tr></thead>\n"
-            f"        <tbody>\n{body}        </tbody>\n      </table>\n"
+            "        <tbody>\n" + body + "        </tbody>\n      </table>\n"
         )
     # NOTHING IS SAID WHERE THERE IS NOTHING TO SAY. The slot carries what this
     # weapon's number does not account for and nothing else, so text here is a
     # signal rather than filler — and a weapon with no admission shows none.
     notes = ""
     if caveats:
-        items = "".join(f"        <li>{e(c)}</li>\n" for c in caveats)
-        notes = f'      <div class="w-notes"><b>Not modelled here</b>\n        <ul>\n{items}        </ul>\n      </div>\n'
+        items = "".join("        <li>" + e(c) + "</li>\n" for c in caveats)
+        notes = ('      <div class="w-notes"><b>Not modelled here</b>\n        <ul>\n'
+                 + items + "        </ul>\n      </div>\n")
     return (
-        '    <div class="fold sect w-brief" data-fold="w-brief">\n'
+        '    <div class="fold sect w-brief shut" data-fold="w-brief">\n'
         + head
         + '      <div class="fold-b">\n'
-        + answers + stats + notes
+        + answers + notes
         + "      </div>\n    </div>\n"
     )
-
-
-def board_sentence(ruler_name: str, row: dict, weapon: str) -> str:
-    """One board row as a sentence that carries everything it depends on."""
-    names = gear_names()
-    gear = [names.get(m, m) for m in (row.get("mods") or ())]
-    if row.get("exilus"):
-        gear.append(names.get(row["exilus"], row["exilus"]))
-    gear += [names.get(a, a) for a in (row.get("arcanes") or ())]
-    score = row.get("shown") or f"{row['score']:.4g}"
-    asof = f"As of {board_asof()}, t" if board_asof() else "T"
-    mode = row.get("mode", "base").replace("_", " ")
-    return (f"{asof}he best riven-free {weapon} build on the WFSim board scores "
-            f"{score} under {ruler_name} — {mode} mode, wearing "
-            f"{', '.join(gear)}.")
 
 
 def page_ld(name: str, desc: str, url: str, cn: str | None = None) -> dict:
@@ -1189,48 +1190,28 @@ def prerender(flagged: str) -> None:
             f"multiplier, {atk['status_chance'] * 100:g}% status chance"
         )
         title = f"{name} — Warframe build, damage & DPS | WFSim"
+        # THE ANSWER GOES IN THE DESCRIPTION, because that is the one place
+        # nothing can hide it: the `w-brief` fold ships SHUT for the reader who
+        # opens this page every day, and a result page shows this line whether
+        # or not anything on the page is open. It is also what the searcher came
+        # for — a measured build under a named fight, which is the one thing
+        # about this weapon no other site can state.
+        best = board_best().get(wid) or ()
+        answer = ""
+        if best:
+            rn, row = best[0]
+            score = row.get("shown") or f"{row['score']:.4g}"
+            answer = (f" Best riven-free build on the board: {score} under {rn}"
+                      + (f", as of {board_asof()}" if board_asof() else "") + ".")
         desc = (
-            f"{name}{f' ({cn})' if cn else ''} — {facts}. {stats}. "
-            "Build it, simulate the fight, and optimize the mods — "
-            "true to in-game numbers."
+            f"{name}{f' ({cn})' if cn else ''} — {facts}. {stats}."
+            + (answer or " Build it, simulate the fight, and optimize the mods.")
         )
         card = f"/og/{url_slug(spec)}.png"
         drew = og_card(APP / card.lstrip("/"), name, cn, facts, stats)
         og_img = SITE + card if drew else f"{SITE}/logo.svg"
         url = SITE + wiki_path(spec)
 
-        # THE REST OF WHAT THE ARSENAL SHOWS. The block below is this page's
-        # only content that is not the shell, and four numbers of it left the
-        # other 99% of the page to speak for the weapon. Everything here is
-        # drawn by the app on this same page — the rule this block lives under.
-        gear = [
-            f"{spec['magazine']:g}-round magazine" if spec.get("magazine") else "",
-            f"{spec['reload_seconds']:g} s reload" if spec.get("reload_seconds") else "",
-            f"{spec['ammo_max']:g} reserve ammo" if spec.get("ammo_max") else "",
-            f"{spec['accuracy']:g} accuracy" if spec.get("accuracy") else "",
-            f"{spec['disposition']:g} riven disposition" if spec.get("disposition") else "",
-        ]
-        detail = ", ".join(x for x in gear if x)
-        traits = ", ".join(t.replace("_", " ") for t in (spec.get("traits") or ()))
-
-        # THE WEAPON'S OWN CONTENT, and it is the only part of this page that
-        # is not the shell. As sentences it was 6% of the page's words; as
-        # tables it is the same figures in a shape a reader and a machine can
-        # both take apart.
-        stat_rows = [("Damage", f"{total:g}"
-                      + (f" x{ms:g} multishot" if ms != 1.0 else "")
-                      + f" ({', '.join(f'{k} {v:g}' for k, v in sorted(dmg.items()))})"),
-                     ("Critical", f"{atk['crit_chance'] * 100:g}% at {atk['crit_multiplier']:g}x"),
-                     ("Status", f"{atk['status_chance'] * 100:g}%")]
-        for label, key, unit in (("Magazine", "magazine", " rounds"),
-                                 ("Reload", "reload_seconds", " s"),
-                                 ("Reserve ammo", "ammo_max", ""),
-                                 ("Accuracy", "accuracy", ""),
-                                 ("Riven disposition", "disposition", "")):
-            if spec.get(key):
-                stat_rows.append((label, f"{spec[key]:g}{unit}"))
-        if traits:
-            stat_rows.append(("Traits", traits))
         names_of = gear_names()
         board_rows = []
         for rn, row in board_best().get(wid, ()):
@@ -1241,8 +1222,7 @@ def prerender(flagged: str) -> None:
             gear += [names_of.get(a, a) for a in (row.get("arcanes") or ())]
             board_rows.append((ruler, fight, row.get("mode", "base").replace("_", " "),
                                row.get("shown") or f"{row['score']:.4g}", ", ".join(gear)))
-        seo = brief_block(name, cn, facts, stat_rows, board_rows,
-                          caveats_of(spec, REASONS))
+        seo = brief_block(board_rows, caveats_of(spec, REASONS))
         out = APP / wiki_path(spec).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)

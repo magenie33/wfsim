@@ -114,8 +114,15 @@ function renderWeaponDoc() {
       + `<td>${escHtml(gear)}</td></tr>`;
   }).join("");
   const gaps = gapsOf(w).map(trGap).filter(Boolean);
-  box.innerHTML = `<div class="fold sect w-brief" data-fold="w-brief">`
-    + `<div class="fold-h"><b>${escHtml(weaponDisplayName(w))}</b></div>`
+  // THE SAME SHAPE THE PRERENDER WROTE, down to the `shut` and the header: the
+  // two write one block, and a reader who changes weapon must not find the
+  // default flipped under them. `wireFolds` lets a stored answer outrank it,
+  // so somebody who opened it keeps it open on every weapon after.
+  const hint = tr("the board's best riven-free build for each ruler")
+    + (gaps.length ? tr(", and what this weapon's number does not account for") : "");
+  box.innerHTML = `<div class="fold sect w-brief shut" data-fold="w-brief">`
+    + `<div class="fold-h"><b>${escHtml(tr("Measured builds"))}</b>`
+    + `<span class="sim-hint">${escHtml(hint)}</span></div>`
     + `<div class="fold-b">`
     + `<table class="w-tab w-answers"><caption>${escHtml(tr("The best riven-free build"))}`
     + `</caption><thead><tr><th>${escHtml(tr("Ruler"))}</th><th>${escHtml(tr("Fight"))}</th>`
