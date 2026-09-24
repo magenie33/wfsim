@@ -44,12 +44,14 @@ await app.load("/", 13000);
 // display name is Chinese in the second pass (docs/DATA_SOURCES: a localized
 // name in a wiki URL lands on garbage — the same is true of our own routes).
 const weapons = await evaluate(
-  `META.weapons.map((w) => ({ id: w.id, slug: (w.name_en || w.wiki_name || w.name).replace(/ /g, "_") }))`,
+  `META.weapons.map((w) => ({ id: w.id, slug: (w.name_en || w.wiki_name || w.name).replace(/ /g, "_"),
+    chamber: (w.assembly || {}).chamber || null }))`,
 );
 // EVERY PAGE WAITS 1400 ms, so the sweep costs `weapons x 6 x 1.4 s` and that
 // grew with the roster: 130 entries was 18 minutes and 382 is over an hour. A
 // check that prints nothing for an hour reads as HUNG, and on 2026-08-20 it was
 // read as one — so it says where it is and what it has left.
+const byId = new Map(weapons.map((w) => [w.id, w]));
 const total = weapons.length * 6;
 const began = Date.now();
 let done = 0;
@@ -83,7 +85,17 @@ for (const lang of ["en", "zh"]) {
       else if (v.threw) problems.push(`${current} THREW ${v.threw}`);
       else if (v.home) problems.push(`${current} FELL HOME — ${url} resolved to no weapon`);
       else if (!v.drew) problems.push(`${current} BLANK`);
-      else if (v.weapon !== w.id) problems.push(`${current} WRONG WEAPON ${v.weapon}`);
+      // A KITGUN IS ONE PAGE AND TWO ENTRIES. One mastery track, one riven,
+      // one wiki page and therefore ONE URL — and two roster entries, because
+      // the SLOT decides which mods it may hold. `/weapons/Tombfinger` opens
+      // one of them and the Slot control moves to the other without changing
+      // the address, so the second entry's own address resolves to its
+      // sibling BY DESIGN (`slotSibling`). Landing on a chamber's other slot
+      // is that rule; landing on any other weapon is still a bug.
+      else if (v.weapon !== w.id
+        && !(w.chamber && byId.get(v.weapon) && byId.get(v.weapon).chamber === w.chamber)) {
+        problems.push(`${current} WRONG WEAPON ${v.weapon}`);
+      }
       done += 1;
       if (done % 120 === 0) {
         const secs = (Date.now() - began) / 1000;
