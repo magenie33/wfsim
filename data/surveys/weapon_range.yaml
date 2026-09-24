@@ -115,6 +115,7 @@ checked:
   carmine_penta:               { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 20 m/s. Its 4.0 m is the explosion RADIUS, not a reach' }
   cedo_alt:                    { range: null, type: projectile, note: 'this form’s own attack block states no Range; its 6.0 m is the explosion RADIUS, not a reach; Projectile at 60 m/s' }
   cedo_prime_alt:              { range: null, type: projectile, note: 'this form’s own attack block states no Range; its 6.0 m is the explosion RADIUS, not a reach; Projectile at 75 m/s' }
+  nunchasa:                    { range: null, type: projectile, note: 'no Range row on either attack; Projectile at 70 m/s — the bows state none' }
   cernos:                      { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 90 m/s — the bows state none' }
   cernos_prime:                { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
   cernos_prime_uncharged:      { range: null, type: read, note: 'no Range row; Projectile' }

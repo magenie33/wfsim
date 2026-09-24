@@ -139,7 +139,7 @@ fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
     // last run can only ever be absent — so raising this line is a
     // deliberate edit whose reason goes in the commit, never the way to
     // make a red run green.
-    const OWED: usize = 101;
+    const OWED: usize = 100;
     let text = crate::data::file("surveys/weapon_exclusive_mods.yaml")
         .expect("data/surveys/weapon_exclusive_mods.yaml — run scripts/survey_weapon_mods.py");
     let mut total = 0usize;

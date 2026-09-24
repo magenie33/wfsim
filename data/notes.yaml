@@ -1142,6 +1142,11 @@ notes:
   weapon_level_metadata_wiki_2: |
     Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
     against WFCD warframe-items — 0 disagreements).
+  weapon_level_metadata_wiki_uncrosschecked: |
+    Weapon-level metadata (wiki Module:Weapons/data). NOT cross-checked: the
+    WFCD export does not hold this weapon, and the wiki's own `InternalName`
+    for it is the placeholder `[PH]` — so there is no join key to check it by
+    (`internal_name`, never the display name). The wiki stands alone here.
   weapon_level_metadata_wiki_3: |
     Weapon-level metadata (wiki infobox, cross-checked against WFCD
     warframe-items — 0 disagreements).

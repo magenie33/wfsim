@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: ed1a7086e371807d
-count: 1769
+digest: 4671839d8ea7d5e1
+count: 1771
 ids:
   - acceltra
   - acceltra_prime
@@ -1779,3 +1779,5 @@ ids:
   - valkyr_talons_slide
   - hysteria
   - leaded_gas
+  - aksondol
+  - nunchasa

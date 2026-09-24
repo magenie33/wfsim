@@ -51,6 +51,9 @@ weapons:
   aksomati_prime: AksomatiPrime.png
   akstiletto: Akstileto.png
   akstiletto_prime: AkstiletoPrime.png
+  # NOT ON THE CDN: WFCD has no record of either of Narin's signature
+  # weapons yet, so the art comes off the wiki like an evolution icon.
+  aksondol: "wiki:Aksondol.png"
   akvasto: Akvasto.png
   akvasto_prime: AkvastoPrime.png
   akzani: Akzani.png
@@ -331,6 +334,8 @@ weapons:
   nagantaka_prime_burst: NagantakaPrime.png
   nataruk: OmicrusBow.png
   nataruk_perfect: OmicrusBow.png
+  # See `aksondol` — not on the CDN either.
+  nunchasa: "wiki:Nunchasa.png"
   nukor: Nukor.png
   ogris: Ogris.png
   opticor: Opticor.png
