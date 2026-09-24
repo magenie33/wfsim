@@ -119,9 +119,9 @@ Each of these fails silently. That is why it is here and not in a document.
   the reason a data file gives for a number. Join to it by `internal_name` ==
   `uniqueName`, **never by name**. The ONE standing exception is
   `base_drain`/`max_rank` on MODS (`docs/DATA_SOURCES.md`).
-- **A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED.**
-  A data file stating a rule the engine does not apply is worse than one that
-  omits it: to anyone auditing, it reads as if the rule were being applied.
+- **A DATA FILE STATES ONLY RULES THE ENGINE APPLIES.** Stating one it does not
+  is worse than omitting it: to anyone auditing it reads as applied. WHOSE
+  condition it is decides nothing — `docs/UNMODELLED.md` is the register.
 - **A BUILD'S AXES ARE DECLARED ONCE**, in `engine::board::builds::BUILD_AXES`, served
   at `/api/meta.build_axes`. Every surface declares which axis its own fields
   cover; `buildState()` REQUIRES a value for every state key.
