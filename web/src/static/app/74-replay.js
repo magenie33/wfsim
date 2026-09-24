@@ -73,11 +73,16 @@ function replayMarkup(r) {
   // OUTSIDE the render (`replayFoe`) so picking an enemy survives a scrub and
   // a re-run, which is the same rule every fold on this panel follows.
   const dBody = replayFoeIdx(rp);
-  // WHICH ENEMY, as chips. Drawn only when there is a choice — one body is the
-  // fight this app has always run and needs no control.
+  // WHICH ENEMY, as chips — and one chip is still the answer to "whose".
+  //
+  // ONE TEMPLATE, WHATEVER n AND m ARE. A fight of one against one draws the
+  // same block as three against nine: the list is simply one row long. Every
+  // `if there is more than one` was a SECOND SHAPE to keep true, and the
+  // shapes drift — a rule added to the crowded one and not to the lone one is
+  // invisible until somebody fights a crowd.
   const foeChips = (rp, sel) => {
     const ids = rp.tracked || [];
-    if (ids.length < 2) return "";
+    if (!ids.length) return "";
     const hit = (r.bodies || []).length;
     const more = Math.max(0, hit - ids.length);
     // BY DAMAGE, HARDEST HIT FIRST. The engine follows the
@@ -159,12 +164,16 @@ function replayMarkup(r) {
       while (j + 1 < s.length && s[j + 1] === 0) j++;
       dead.push(`<rect class="rp-dead" x="${px(from).toFixed(1)}" y="0" width="${Math.max(1, px(j) - px(from)).toFixed(1)}" height="${H}"/>`);
     }
+    // THE LIVE READOUT ON THE RIGHT CARRIES THE VALUE AND NOT THE CEILING
+    // AGAIN. The stat line beside it already prints the cap once, in
+    // "avg 3.44/4"; repeating it spends the row's last inch on a constant,
+    // and that readout is the one thing on the row the scrubber MOVES.
     return `<div class="rp-row" data-${kind}="${i}">
       <div class="rp-head">
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(name(b.id))}</span>
         <span class="rp-stat">${escHtml(tr("avg"))} ${b && b.value ? rpFmtVal(b, mean) : mean.toFixed(2)}/${rpCap(b)} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
-        <span class="rp-now" data-now="${i}" data-series="${kind}">${b && b.value ? rpFmtVal(b, s[s.length - 1]) : s[s.length - 1]}/${rpCap(b)}</span>
+        <span class="rp-now" data-now="${i}" data-series="${kind}">${b && b.value ? rpFmtVal(b, s[s.length - 1]) : s[s.length - 1]}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
@@ -527,12 +536,12 @@ function replayApply(rp, i) {
     const j = Number(el.dataset.now);
     if (el.dataset.series === "debuff") {
       const [b, s] = dLive[j] || [];
-      if (b) el.textContent = `${rpFmt(b, s[i])}/${rpCap(b)}`;
+      if (b) el.textContent = rpFmt(b, s[i]);
       return;
     }
     // THE SAME QUANTITY THE ROW WAS DRAWN IN — a header that scrubs from a
     // percentage to a stack count would be two charts wearing one label.
-    el.textContent = `${rpFmt(rp.buffs[j], rp.stacks[j][i])}/${rpCap(rp.buffs[j])}`;
+    el.textContent = rpFmt(rp.buffs[j], rp.stacks[j][i]);
   });
 }
 

@@ -442,7 +442,7 @@ function recordBody(st, peek) {
     return `${sheet}<div class="rec-peek"><table class="rec-t">
       <thead><tr>
         <th>${escHtml(tr("time"))}</th>${
-        (st.combatants || []).length > 1 ? `<th>${escHtml(tr("who dealt it"))}</th>` : ""}<th>${escHtml(tr("damage source"))}</th>
+        `<th>${escHtml(tr("who dealt it"))}</th>`}<th>${escHtml(tr("damage source"))}</th>
         <th>${escHtml(tr("part"))}</th>
         <th class="num">${escHtml(tr("damage"))}</th>
         <th>${escHtml(tr("where the number comes from"))}</th>
@@ -460,7 +460,7 @@ function recordBody(st, peek) {
   const window1 = cut ? events[events.length - 1].t : null;
   return `${sheet}
     <div class="rec-tools">
-      ${bodies.length > 1 ? `<span class="tlabel">${escHtml(tr("whose"))}</span>${chips}<span class="rec-sep"></span>` : ""}
+      <span class="tlabel">${escHtml(tr("whose"))}</span>${chips}<span class="rec-sep"></span>
       <span class="tlabel">${escHtml(tr("only"))}</span>${kinds}
       <span class="rec-sep"></span>
       <button class="ghost-btn small" id="rec-copy">${escHtml(tr("Copy as text"))}</button>${
@@ -490,7 +490,7 @@ function recordBody(st, peek) {
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
         <th>${escHtml(tr("time"))}</th>${
-        (st.combatants || []).length > 1 ? `<th>${escHtml(tr("who dealt it"))}</th>` : ""}<th>${escHtml(tr("damage source"))}</th>
+        `<th>${escHtml(tr("who dealt it"))}</th>`}<th>${escHtml(tr("damage source"))}</th>
         <th>${escHtml(tr("part"))}</th>
         <th class="num">${escHtml(tr("damage"))}</th>
         <th>${escHtml(tr("procs"))}</th>
@@ -830,8 +830,10 @@ function recordRow(e, rosters) {
   const roster = (recordState && recordState.combatants) || [];
   const seat = roster[(e.combatant || 0)] || {};
   const who = seat.id || "";
-  const whoCell = roster.length > 1
-    ? `<td class="rec-who"${L("who dealt it")}>${escHtml(combatantName(who, seat))}</td>` : "";
+  // THE COLUMN IS ALWAYS THERE — see the rule on `foeChips`. A ledger that
+  // names its dealer only when a reader might care is one nobody can audit,
+  // and the header beside it is drawn unconditionally for the same reason.
+  const whoCell = `<td class="rec-who"${L("who dealt it")}>${escHtml(combatantName(who, seat))}</td>`;
   return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}" data-combatant="${escHtml(who)}">
     <td class="rec-t"${L("time")}>${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
     ${whoCell}

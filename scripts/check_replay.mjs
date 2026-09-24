@@ -360,13 +360,14 @@ check("the scrubber's thumb is the page's own",
   check("...and the panel draws a row for every seat",
     c.rows.length === c.combatants.length && c.rows.join() === c.combatants.join(),
     JSON.stringify([c.rows, c.combatants]));
-  // EVERY ROW NAMES ITS DEALER even where nothing would be drawn from it. The
-  // attribution is the ledger's; the visible column is the page's, and it
-  // follows the same rule the foe chips do — a control with one option is not
-  // a control.
-  check("every record row names who dealt it, and the column waits for a second",
+  // EVERY ROW NAMES ITS DEALER, AND THE COLUMN IS ALWAYS DRAWN. One template,
+  // whatever n and m are: a fight of one against one draws the same ledger as
+  // three against nine, one row long. Hiding the column on a lone wielder was
+  // a SECOND SHAPE to keep true, and a rule added to the crowded one and not
+  // to the lone one is invisible until somebody fights a crowd.
+  check("every record row names who dealt it, in a column always drawn",
     c.recRoster > 0 && c.tagged > 0 && c.untagged === 0
-    && c.whoColumns === (c.recRoster > 1 ? c.tagged : 0),
+    && c.whoColumns === c.tagged,
     JSON.stringify(c));
 }
 check("rewinding empties the KPIs and the meter",

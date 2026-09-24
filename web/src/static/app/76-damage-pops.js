@@ -335,10 +335,14 @@ function renderResults(r, testedAt) {
       <span class="mval">${n0(x.damage)} · ${pct2((x.damage || 0) / total)}</span>
     </div>`).join("");
     // …AND WHAT EACH OF THEM READS. A crit rate is a seat's or it is nobody's,
-    // so these are per seat and the fight has no such figure at all. Drawn
-    // only where there is more than one: a table of one row repeating the
-    // KPI tiles above it is a second copy of one fact.
-    const each = list.length < 2 ? "" : `<div class="seat-table">
+    // so these are per seat and the fight has no such figure at all.
+    //
+    // ONE TEMPLATE, WHATEVER n AND m ARE. A fight of one against one draws the
+  // same block as three against nine: the list is simply one row long. Every
+  // `if there is more than one` was a SECOND SHAPE to keep true, and the
+  // shapes drift — a rule added to the crowded one and not to the lone one is
+  // invisible until somebody fights a crowd.
+    const each = `<div class="seat-table">
       <div class="seat-h">${["", tr("Shots"), tr("Pellets crit"), tr("Orange+"),
         tr("Crit tier"), tr("Procs"), tr("Reloads"), tr("Finishes")]
         .map((h) => `<span>${escHtml(h)}</span>`).join("")}</div>
