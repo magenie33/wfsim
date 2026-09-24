@@ -827,6 +827,48 @@ second is that message.
 **Resume is unsharded.** A checkpoint is one worker's field, so resuming a run
 starts a single worker rather than a fraction of a fleet.
 
+## The descent — the axes ADD
+
+The sampler pays for every subset under every arcane and every variant (mode ×
+evolution set × valence), so its cost is their PRODUCT. On Boar Prime with two
+arcanes and eight evolution sets one subset costs ~46 evaluations, and the
+first batch alone spent 4,768 against a budget of 1,000.
+`optimizer/src/descent.rs` holds one build and sweeps one position at a time,
+so a sweep costs the SUM of the option counts. It is opt-in per request
+(`"strategy": "descent"`); the sampler stays the default.
+
+1. **Starts** are the player's partial builds (`"starts": [["cryo_rounds"],
+   ["hellfire", "serration"]]`). A start is where the descent begins, not a
+   constraint — a card that must stay is the `fixed` mark. Without any, the
+   starts are every pair of primary elements, one card each; which card does
+   not matter, because the sweep upgrades it.
+2. **Fill**: add the best card until the build is full.
+3. **Sweep**: arcane → each mod → an empty slot → the variant. ANY accepted
+   move restarts at the arcane, because a change anywhere moves what every
+   other position wants. A sweep with no move is that start's answer.
+
+Slot POSITION is not part of a start: element order inside a subset is still
+enumerated exhaustively, so "Cold in slot 1" and "Cold somewhere" are one
+start. Every build is scored on ONE random stream, so a comparison is paired
+and the score is a fixed function of the build — each accepted move strictly
+raises it over a finite set, which is why the loop ends. What it returns is
+the sampler's shape (every scored job), so the funnel, the replay and the
+grader do not know which one ran. It never reports itself exhaustive.
+
+**Measured** (`wfsim-truth`, 60 s, Thrax Lv 9999 SP, reference 100 runs):
+
+| scope | strategy | screen evals | rank | within noise | top-10 recall |
+|---|---|---|---|---|---|
+| Verglas Prime, 14 mods, 30,288 jobs | descent, element pairs | 1,535 | 1 | yes | 100% |
+| | descent, Serration alone | 361 | 1 | yes | 80% |
+| | sampler, 1,500 | 1,505 | 1 | yes | 90% |
+| Boar Prime, 11 mods × 2 arcanes × 8 evolution sets, 7,504 jobs, answer set 4 | descent, element pairs | 971 | 3 | yes | 80% |
+| | descent, Primed Point Blank alone | 273 | 3 | yes | 40% |
+| | sampler, budget 1,000 | 4,768 | 5 | **no** (1.6%) | 40% |
+
+`the_descent_reaches_the_answer_set_from_any_start` is the CI guard; with
+moves never accepted it fails at rank 440.
+
 ## FILLING A SCOPE IS THE UNSOLVED HALF
 
 A search preset is a **way of looking for a build on this weapon** — the
