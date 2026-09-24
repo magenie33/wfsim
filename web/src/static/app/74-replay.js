@@ -24,7 +24,7 @@ function scrubMarks(rp) {
   const last = rp.t.length - 1;
   if (last < 1) return "";
   const kills = risesIn(rp.kills || [], last);
-  const reloads = risesIn((rp.kpi || {}).reloads || [], last);
+  const reloads = risesIn(kpiOf(rp, "reloads"), last);
   return kills.map((p) => `<i class="scrub-kill" style="left:${p.toFixed(2)}%"></i>`).join("")
     + reloads.map((p) => `<i class="scrub-reload" style="left:${p.toFixed(2)}%"></i>`).join("");
 }
@@ -38,7 +38,7 @@ function scrubLegend(rp) {
   if (last >= 1 && has(rp.kills)) {
     items.push(`<span class="sl"><i class="sl-kill"></i>${escHtml(tr("a kill"))}</span>`);
   }
-  if (last >= 1 && has((rp.kpi || {}).reloads)) {
+  if (last >= 1 && has(kpiOf(rp, "reloads"))) {
     items.push(`<span class="sl"><i class="sl-reload"></i>${escHtml(tr("a reload"))}</span>`);
   }
   if (!items.length) return "";
@@ -415,6 +415,11 @@ function replayMarkup(r) {
 // the panel would show with no replay at all. Playing rewinds to 0 and walks
 // forward; stopping anywhere leaves the panel reading that instant.
 function replayApply(rp, i) {
+  // WHOSE, ONCE FOR THE WHOLE RE-READ. Every per-body thing this function
+  // touches — the bars, the live debuff counts — has to pick the same body
+  // the panel was DRAWN for, and a second binding further down is one the
+  // lines above it cannot reach.
+  const aBody = replayFoeIdx(rp);
   const n = (x) => Math.round(x || 0).toLocaleString();
   const pc = (x) => `${((x || 0) * 100).toFixed(1)}%`;
   const last = rp.t.length - 1;
@@ -439,13 +444,17 @@ function replayApply(rp, i) {
   $("rp-pools").innerHTML =
     cell(tr("Damage"), n(rp.dmg[i])) +
     cell(tr("Kills"), rp.kills[i]);
-  // …AND THE POOLS WHERE THE BODIES ARE, under the heading that names whose.
+  // …AND THE POOLS WHERE THE BODIES ARE, under the heading that names whose —
+  // and they are ONE BODY'S, the one the chips have selected. A pool belongs to
+  // a body, so `og`/`sh`/`hp` are per followed body exactly as `dstacks` is,
+  // and the same `replayFoeIdx` picks all four.
   const foePools = $("rp-foe-pools");
   if (foePools) {
+    const at = (s) => ((s || [])[aBody] || [])[i] || 0;
     foePools.innerHTML =
-      cell(tr("Overguard"), n(rp.og[i])) +
-      cell(tr("Shield"), n(rp.sh[i])) +
-      cell(tr("Health"), n(rp.hp[i]));
+      cell(tr("Overguard"), n(at(rp.og))) +
+      cell(tr("Shield"), n(at(rp.sh))) +
+      cell(tr("Health"), n(at(rp.hp)));
   }
 
   // The headline. KPM is `kill_progress / minutes`, and `kill_progress` is
@@ -454,8 +463,12 @@ function replayApply(rp, i) {
   // fourth series that could disagree with them.
   const hero = document.querySelector("[data-hero]");
   if (hero) {
-    const pool0 = (rp.og[0] || 0) + (rp.hp[0] || 0) + (rp.sh[0] || 0);
-    const left = (rp.og[i] || 0) + (rp.hp[i] || 0) + (rp.sh[i] || 0);
+    // THE AIMED BODY'S, whatever the chips have selected. Partial credit is
+    // the fraction of the CURRENT target's bar already gone, and the current
+    // target is the one being shot at — not the one a reader is inspecting.
+    const bar = (k) => ((rp[k] || [])[0] || []);
+    const pool0 = (bar("og")[0] || 0) + (bar("hp")[0] || 0) + (bar("sh")[0] || 0);
+    const left = (bar("og")[i] || 0) + (bar("hp")[i] || 0) + (bar("sh")[i] || 0);
     const progress = (rp.kills[i] || 0) + (pool0 > 0 ? 1 - left / pool0 : 0);
     const mins = rp.t[i] / 60;
     // THE SAME METRIC THE HEADLINE WAS DRAWN IN, read back by id rather than
@@ -464,7 +477,7 @@ function replayApply(rp, i) {
     const hm = metricOf(hero.dataset.hero);
     const v = hm.per_minute
       ? fmtScore(mins > 0 ? progress / mins : 0)
-      : fmtScore(rp.kpi && rp.kpi[hm.field] ? rp.kpi[hm.field][i] : 0);
+      : fmtScore(kpiOf(rp, hm.field)[i] || 0);
     const unit = hero.querySelector(".hero-unit");
     hero.textContent = v;
     if (unit) hero.appendChild(unit);
@@ -472,10 +485,9 @@ function replayApply(rp, i) {
 
   // KPIs. Rates are fractions, counters are counts, DPS is a number — the
   // key says which, so a new KPI needs no new branch here.
-  const k = rp.kpi || {};
   document.querySelectorAll("[data-kpi]").forEach((el) => {
-    const key = el.dataset.kpi, s = k[key];
-    if (!s) return;
+    const key = el.dataset.kpi, s = kpiOf(rp, key);
+    if (!s.length) return;
     el.textContent = key === "crit_tier" ? (s[i] || 0).toFixed(2)
       : /_rate$/.test(key) ? pc(s[i])
       : n(s[i]);
@@ -565,10 +577,6 @@ function replayApply(rp, i) {
   // belongs to. The DEBUFF rows index a FILTERED roster — the statuses this run
   // never applied are not drawn — so the row rebuilds the same filter rather
   // than indexing the full one and reading somebody else's series.
-  // WHOSE, again — this re-reads the panel at a frame and has to pick the same
-  // body the table was DRAWN for, or the live count in each header would belong
-  // to somebody else.
-  const aBody = replayFoeIdx(rp);
   const dLive = (rp.debuffs || [])
     .map((b, k) => [b, ((rp.dstacks || [])[aBody] || [])[k] || []])
     .filter(([, s]) => s.some((v) => v > 0));

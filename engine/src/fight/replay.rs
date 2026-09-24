@@ -108,8 +108,16 @@ pub fn record(
 ) -> crate::record::Record {
     let mut rec = crate::record::Record::window(from, to, limit, skip);
     // WHAT THE ROWS' STACK LISTS ARE CALLED — the buff cards' own ids, because
-    // they come from one place.
-    rec.set_buffs(params.buff_roster().into_iter().map(|b| b.id).collect());
+    // they come from one place, and ONE LIST PER SEAT for the reason the
+    // replay's rosters are: a row names the seat that dealt it, and that
+    // seat's counts are against that seat's build.
+    rec.set_buffs(
+        std::iter::once(params)
+            .chain(params.also_acting.iter())
+            .take(crate::fight::MAX_COMBATANTS)
+            .map(|p| p.buff_roster().into_iter().map(|b| b.id).collect())
+            .collect(),
+    );
     run_once_traced(params, &mut Rng::new(rng_state), None, &mut rec);
     rec
 }

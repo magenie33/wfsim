@@ -8,28 +8,30 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
     pub t: f64,
-    /// The target's pools as they stood. A respawn (InstantRespawn) shows as
-    /// them jumping back up, which is the truth of that scenario.
-    pub overguard: f64,
-    pub shield: f64,
-    pub health: f64,
+    /// The pools of each FOLLOWED body as they stood, in [`Replay::tracked`]'s
+    /// order — the aimed one first. A respawn (InstantRespawn) shows as them
+    /// jumping back up, which is the truth of that scenario.
+    ///
+    /// PER BODY for the reason the debuffs below are: a pool belongs to one
+    /// body, and one body's numbers under a heading that names a crowd read as
+    /// the crowd's.
+    pub pools: Vec<Pools>,
     /// Cumulative EFFECTIVE damage dealt by `t`, and kills completed.
     pub damage: f64,
     pub kills: u32,
-    /// Every counter the RESULT panel reports, as it stood at `t`. A replay
-    /// that only moved a cursor would be a decoration; these are what let the
-    /// whole panel — KPIs, the damage meter, the curves — be re-read at any
-    /// instant of the fight.
-    pub shots: u32,
-    pub pellets: u32,
-    pub crits: u32,
-    pub big_crits: u32,
-    pub crit_tier_sum: u32,
-    pub headshots: u32,
-    pub procs: u32,
+    /// Every counter the RESULT panel reports, as it stood at `t`, PER SEAT
+    /// and in [`Replay::seats`]' order. A replay that only moved a cursor
+    /// would be a decoration; these are what let the whole panel — KPIs, the
+    /// damage meter, the curves — be re-read at any instant of the fight.
+    ///
+    /// A RATE IS A SEAT'S OR IT IS NOBODY'S. A fight-wide crit rate over two
+    /// different weapons is a ratio of one build's crits to another build's
+    /// pellets, which is a number about nothing. The fight's own figure, where
+    /// there is one, is the sum of these — derived, so the two cannot disagree.
+    pub per_seat: Vec<SeatCounters>,
+    /// …and the one counter no seat owns: a cloud burns whoever walks into it
+    /// and the fight is what has clouds in it.
     pub field_ticks: u32,
-    pub reloads: u32,
-    pub transforms: u32,
     /// Effective damage by source, cumulative — the damage meter's own shape.
     pub sources: SourceDamage,
     /// …and by ATTACKER, cumulative, seat for seat with
@@ -55,6 +57,16 @@ pub struct Frame {
     /// one carries its own debuffs. Which of them are here is
     /// `Replay::tracked`'s decision, not this struct's.
     pub debuffs: Vec<Vec<u16>>,
+}
+
+/// ONE BODY'S BARS at an instant. Together because they are read together:
+/// what is left of a body is their sum, and a reader asking "is it nearly
+/// dead" is asking about all three.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Pools {
+    pub overguard: f64,
+    pub shield: f64,
+    pub health: f64,
 }
 
 /// HOW A STACK COUNT READS AS THE NUMBER IT BUYS.

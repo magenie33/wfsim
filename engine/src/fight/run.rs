@@ -276,21 +276,24 @@ pub(super) fn sample_frames_up_to(
                 .collect();
             rep.frames.push(Frame {
                 t: *next_frame,
-                overguard: bodies[0].state.overguard,
-                shield: bodies[0].state.shield,
-                health: bodies[0].state.health,
+                // ONE SET PER FOLLOWED BODY, in the same order and from the
+                // same list as the debuffs below.
+                pools: rep
+                    .follow
+                    .iter()
+                    .map(|&bi| Pools {
+                        overguard: bodies[bi].state.overguard,
+                        shield: bodies[bi].state.shield,
+                        health: bodies[bi].state.health,
+                    })
+                    .collect(),
                 damage: r.effective_damage(),
                 kills: r.kills,
-                shots: r.shots,
-                pellets: r.pellets,
-                crits: r.crits,
-                big_crits: r.big_crits,
-                crit_tier_sum: r.crit_tier_sum,
-                headshots: r.headshots,
-                procs: r.procs,
+                // AS THEY STAND, SEAT BY SEAT. `RunResult::per_seat` is a
+                // running total credited turn by turn, so a frame is a read of
+                // it rather than a second place counters are kept.
+                per_seat: r.per_seat[..seats.len()].to_vec(),
                 field_ticks: r.field_ticks,
-                reloads: r.reloads,
-                transforms: r.transforms,
                 sources: r.sources,
                 dealt: *r.dealt.by_combatant(),
                 stacks,

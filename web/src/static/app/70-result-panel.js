@@ -104,6 +104,17 @@ const REPLAY_SPEEDS = [1, 2, 5, 20];
 // way. Reading only the flag printed a bare "0" for every uncapped BUFF and
 // scaled its chart to 1 — an uncapped row drawn as though it were full from
 // the first stack.
+// ONE SEAT'S KPI SERIES. `kpi` is per seat, in `combatants`' order, because a
+// rate is a seat's or it is nobody's — a crit rate over two different weapons
+// divides one build's crits by another build's pellets.
+//
+// `dps` IS THE ONE EXCEPTION and stays the fight's: damage is the fight's
+// total, and the per-seat cut of it is `dealt`, which the meter already draws.
+const kpiOf = (rp, key) => {
+  const s = ((rp && rp.kpi) || {})[key];
+  if (!s) return [];
+  return key === "dps" ? s : (s[replaySeatIdx(rp)] || []);
+};
 const rpUncapped = (b) => !!b.uncapped || Number(b.max) === 0;
 // A ROW IS A COUNT OR IT IS A NUMBER, and the roster says which. Almost every buff is capped by a stack count and DE publishes
 // that count, so `3/4` is the honest reading. A few publish the NUMBER the pile

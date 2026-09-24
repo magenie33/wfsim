@@ -730,9 +730,41 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // A frame is not a separate format: `kpi` mirrors the KPI row and
         // `sources` mirrors `damage_sources` key for key, so the client draws
         // an instant of the fight with the same code that draws the end of it.
-        let pel = |f: &wfsim_engine::fight::Frame| f.pellets.max(1) as f64;
+        // ONE SEAT'S COUNTERS AT A FRAME. A rate is a seat's or it is
+        // nobody's — a crit rate over two different weapons divides one
+        // build's crits by another build's pellets — so every KPI series below
+        // is per seat, in `combatants`' order, and the page picks whose.
+        let seat_n = rep.seats.len().max(1);
+        let cn = |f: &wfsim_engine::fight::Frame, si: usize| {
+            f.per_seat.get(si).copied().unwrap_or_default()
+        };
+        let pel = |c: &wfsim_engine::fight::SeatCounters| c.pellets.max(1) as f64;
+        // Per seat, then per frame — the shape `stacks` and `dstacks` have.
+        let by_seat = |g: fn(&wfsim_engine::fight::SeatCounters) -> f64| {
+            (0..seat_n)
+                .map(|si| rep.frames.iter().map(|f| g(&cn(f, si))).collect::<Vec<_>>())
+                .collect::<Vec<_>>()
+        };
+        let rate_by_seat = |g: fn(&wfsim_engine::fight::SeatCounters) -> f64| {
+            (0..seat_n)
+                .map(|si| rep.frames.iter()
+                    .map(|f| { let c = cn(f, si); r3(g(&c) / pel(&c)) })
+                    .collect::<Vec<_>>())
+                .collect::<Vec<_>>()
+        };
         let series = |g: fn(&wfsim_engine::fight::Frame) -> f64| {
             rep.frames.iter().map(&g).map(r1).collect::<Vec<_>>()
+        };
+        // THE SAME, ONE BAR AT A TIME, FOR EACH FOLLOWED BODY. A pool belongs
+        // to a body, so it is shaped like `dstacks` rather than like the
+        // fight-wide series above: `og[body][frame]`, `tracked` saying whose.
+        let pools = |g: fn(&wfsim_engine::fight::Pools) -> f64| {
+            (0..rep.tracked.len())
+                .map(|b| rep.frames.iter()
+                    .map(|f| f.pools.get(b).map_or(0.0, &g))
+                    .map(r1)
+                    .collect::<Vec<_>>())
+                .collect::<Vec<_>>()
         };
         // Every (source, type) pair that carries damage BY THE END — the set
         // only ever grows, so the last frame names all of them and an earlier
@@ -802,26 +834,29 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                     .collect::<Vec<_>>())
                 .collect::<Vec<_>>(),
             "t": rep.frames.iter().map(|f| (f.t * 100.0).round() / 100.0).collect::<Vec<_>>(),
-            "og": series(|f| f.overguard),
-            "sh": series(|f| f.shield),
-            "hp": series(|f| f.health),
+            // PER FOLLOWED BODY then per frame, the shape `dstacks` has —
+            // `tracked` says whose, and `[0]` is the aimed one.
+            "og": pools(|p| p.overguard),
+            "sh": pools(|p| p.shield),
+            "hp": pools(|p| p.health),
             "dmg": series(|f| f.damage),
             "kills": rep.frames.iter().map(|f| f.kills).collect::<Vec<_>>(),
             "kpi": {
                 "dps": rep.frames.iter()
                     .map(|f| if f.t > 0.0 { (f.damage / f.t).round() } else { 0.0 })
                     .collect::<Vec<_>>(),
-                "procs": rep.frames.iter().map(|f| f.procs).collect::<Vec<_>>(),
-                "shots": rep.frames.iter().map(|f| f.shots).collect::<Vec<_>>(),
-                "reloads": rep.frames.iter().map(|f| f.reloads).collect::<Vec<_>>(),
-                "transforms": rep.frames.iter().map(|f| f.transforms).collect::<Vec<_>>(),
-                "crit_tier": series(|f| f.crit_tier_sum as f64 / f.pellets.max(1) as f64),
-                "crit_rate": rep.frames.iter()
-                    .map(|f| r3(f.crits as f64 / pel(f))).collect::<Vec<_>>(),
-                "big_crit_rate": rep.frames.iter()
-                    .map(|f| r3(f.big_crits as f64 / pel(f))).collect::<Vec<_>>(),
-                "headshot_rate": rep.frames.iter()
-                    .map(|f| r3(f.headshots as f64 / pel(f))).collect::<Vec<_>>(),
+                "procs": by_seat(|c| f64::from(c.procs)),
+                "shots": by_seat(|c| f64::from(c.shots)),
+                "reloads": by_seat(|c| f64::from(c.reloads)),
+                "transforms": by_seat(|c| f64::from(c.transforms)),
+                "crit_tier": (0..seat_n)
+                    .map(|si| rep.frames.iter()
+                        .map(|f| { let c = cn(f, si); r1(f64::from(c.crit_tier_sum) / pel(&c)) })
+                        .collect::<Vec<_>>())
+                    .collect::<Vec<_>>(),
+                "crit_rate": rate_by_seat(|c| f64::from(c.crits)),
+                "big_crit_rate": rate_by_seat(|c| f64::from(c.big_crits)),
+                "headshot_rate": rate_by_seat(|c| f64::from(c.headshots)),
             },
             "sources": rp_sources,
             // Per SEAT then per BUFF, the exact shape `dstacks` has on the

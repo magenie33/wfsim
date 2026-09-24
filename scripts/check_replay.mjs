@@ -94,7 +94,10 @@ const r = await evaluate(`(async () => {
     killMarks: document.querySelectorAll('.scrub-kill').length,
     reloadMarks: document.querySelectorAll('.scrub-reload').length,
     killRises: rises(rp0.kills || []),
-    reloadRises: rises((rp0.kpi || {}).reloads || []),
+    // RELOADS ARE ONE SEAT'S, so the rail's marks are the seat the panel is
+    // drawn for. A rate or a count is a seat's or it is nobody's, so every
+    // kpi series but dps is per seat in combatants order.
+    reloadRises: rises(kpiOf(rp0, 'reloads')),
     legend: document.querySelectorAll('.scrub-legend .sl').length,
     // The PLATFORM thumb switched off is what lets the page draw its own;
     // a pseudo-element's computed style is not readable, but this is.

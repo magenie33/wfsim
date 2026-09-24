@@ -551,23 +551,48 @@ function renderResults(r, testedAt) {
   // everything in its block is that one run and replays. Its figures differ
   // from the means, so the block states both numbers side by side.
   const sm = r.sample;
+  // WHOSE THESE ARE. Every tile but DPS is one SEAT's — a rate is a seat's or
+  // it is nobody's — and it is the same seat the buff curves are drawn for, so
+  // one selection governs the whole per-seat half of this panel.
   const rpk = (r.replay && r.replay.kpi) || null;
   const lastOf = (s) => (s && s.length ? s[s.length - 1] : 0);
+  const K = (key) => lastOf(kpiOf(r.replay, key));
   const sampleKpis = rpk ? [
-    kpi("DPS", n0(lastOf(rpk.dps)), "dps", true),
-    kpi("Crit tier", lastOf(rpk.crit_tier).toFixed(2), "crit_tier", true),
-    kpi("Pellets crit", pc(lastOf(rpk.crit_rate)), "crit_rate", true),
-    kpi("Orange+", pc(lastOf(rpk.big_crit_rate)), "big_crit_rate", true),
-    kpi("Procs", n0(lastOf(rpk.procs)), "procs", true),
-    kpi("Shots", n0(lastOf(rpk.shots)), "shots", true),
-    kpi("Reloads", n0(lastOf(rpk.reloads)), "reloads", true),
-    kpi("Transforms", n0(lastOf(rpk.transforms)), "transforms", true),
+    kpi("DPS", n0(K("dps")), "dps", true),
+    kpi("Crit tier", K("crit_tier").toFixed(2), "crit_tier", true),
+    kpi("Pellets crit", pc(K("crit_rate")), "crit_rate", true),
+    kpi("Orange+", pc(K("big_crit_rate")), "big_crit_rate", true),
+    kpi("Procs", n0(K("procs")), "procs", true),
+    kpi("Shots", n0(K("shots")), "shots", true),
+    kpi("Reloads", n0(K("reloads")), "reloads", true),
+    kpi("Transforms", n0(K("transforms")), "transforms", true),
   ].join("") : "";
+  // …SAID OUT LOUD, whatever the roster's length. Naming the one seat a solo
+  // fight has is not noise: it is the answer to "whose crit rate is that",
+  // which is the same question either way.
+  const kpiWhose = rpk && (r.combatants || []).length
+    ? `<div class="sim-hint kpi-whose">${escHtml(trF(
+        "every figure but DPS is {who}'s — DPS is the whole fight's",
+        { who: combatantName(
+            (r.combatants[replaySeatIdx(r.replay)] || r.combatants[0]).id,
+            r.combatants[replaySeatIdx(r.replay)] || r.combatants[0]) }))}</div>`
+    : "";
   const benchHead = sm ? `<div class="bench-head">
       <h3>${escHtml(tr("Benchmark fight"))}</h3>
       <div class="bench-num"><span data-hero="${met.id}">${fmtScore(metricValue(met, { ...sm, duration: r.duration }))}<span class="hero-unit">${heroUnit}</span></span>
         <span class="sim-hint">${escHtml(trF("average {v}", { v: `${heroNum} ${heroUnit}` }))}</span></div>
       <div class="sim-hint">${escHtml(trF("one of the {runs} runs, the middle one when ranked by {unit} — its numbers differ from the average", { runs: n0(r.runs), unit: heroUnit }))}</div>
+      <!-- WHOSE NUMBER IT IS, said out loud the moment it stops being one
+           build's. A fight with a second seat in it scores the SQUAD, and the
+           board takes one weapon — so a reader comparing this figure to a
+           board row would be comparing a squad to a solo. The line is drawn
+           only when there is a second seat, because with one it would be
+           saying that a fight of one is a fight of one. -->
+      ${(r.combatants || []).length > 1
+        ? `<div class="sim-hint squad-note">${escHtml(trF(
+            "the whole squad — {n} builds acting together, so it is not a board figure",
+            { n: n0((r.combatants || []).length) }))}</div>`
+        : ""}
     </div>` : "";
   // THE `Detail` TABLE IS GONE. Five of its six rows were the fight restated —
   // the target, its pools, its armour, the shot count — each of which the
@@ -599,7 +624,7 @@ function renderResults(r, testedAt) {
       ${zone(3, tr("The benchmark engagement"), tr("from here down it is one engagement, and it follows the playhead"), `
         ${benchHead}
         ${replayBar}
-        ${sampleKpis ? `<div class="row-label">${escHtml(tr("this one engagement, at the playhead"))} <span class="who-tag gold">${escHtml(tr("this engagement"))}</span></div><div class="kpi-row bench-kpi">${sampleKpis}</div>` : ""}`)}
+        ${sampleKpis ? `<div class="row-label">${escHtml(tr("this one engagement, at the playhead"))} <span class="who-tag gold">${escHtml(tr("this engagement"))}</span></div><div class="kpi-row bench-kpi">${sampleKpis}</div>${kpiWhose}` : ""}`)}
       ${zone(4, tr("What it was made of"), tr("ways to cut one total — each of them comes to it"), `
         ${combatantBlock(r)}
         ${foldBlock("meter", tr("Damage by source"), tr("where it came from"),

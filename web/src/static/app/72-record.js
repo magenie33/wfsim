@@ -829,6 +829,10 @@ function recordRow(e, rosters) {
   // already follow: a control with one option is not a control.
   const roster = (recordState && recordState.combatants) || [];
   const seat = roster[(e.combatant || 0)] || {};
+  // THE STACK NAMES OF THE SEAT THAT DEALT IT. `rosters.buffs` is one list
+  // per seat, because two seats are two builds — labelling this row's counts
+  // with the wielder's cards would name a buff the dealer never carried.
+  const myBuffs = ((rosters.buffs || [])[(e.combatant || 0)]) || [];
   const who = seat.id || "";
   // THE COLUMN IS ALWAYS THERE — see the rule on `foeChips`. A ledger that
   // names its dealer only when a reader might care is one nobody can audit,
@@ -847,7 +851,7 @@ function recordRow(e, rosters) {
       // state plus these.
       (e.procs || []).map((p) => `<span class="rec-p on">${escHtml(DT(p))}</span>`).join("")
       + (e.triggered || []).map((i) => `<span class="rec-p up">${
-          escHtml(buffRosterName(((rosters.buffs || [])[i]) || String(i)))}</span>`).join("")
+          escHtml(buffRosterName(myBuffs[i] || String(i)))}</span>`).join("")
       || "<span class=\"z\">—</span>"}</td>
     <td class="rec-calc"${L("where the number comes from")}><div class="lg lg-base"><span class="lg-lbl">${
       escHtml(tr("base damage"))}</span><span class="lg-body"><span class="lg-out">${n(e.base)}</span></span></div>${
@@ -856,7 +860,7 @@ function recordRow(e, rosters) {
       escHtml(tr("pool lost"))} ${e.effective.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span><span class="lg-out">${
       n(e.effective)}</span></span></div></td>
     <td class="rec-wep"${L("weapon")}>${wep}</td>
-    <td class="rec-buff"${L("buffs up")}>${recStacks(e.buffs, rosters.buffs, "up", e.t)}</td>
+    <td class="rec-buff"${L("buffs up")}>${recStacks(e.buffs, myBuffs, "up", e.t)}</td>
     <td class="rec-state"${L("before · target")}>${
       b.overguard > 0 ? `<span data-pool="overguard"><i>${escHtml(tr("overguard"))}</i>${n(b.overguard)}</span>` : ""}<span data-pool="shield"><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span data-pool="health"><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
       b.armor > 0 ? `<span data-pool="armour"><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${

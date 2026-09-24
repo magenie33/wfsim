@@ -710,10 +710,15 @@ pub struct Record {
     /// The shot currently being resolved, so what it spawns can point back at
     /// it. Set by [`Self::begin_shot`].
     shot: Option<u32>,
-    /// WHAT THE BUFF STACKS ON EACH ROW ARE CALLED, in the order they are held.
-    /// The same vocabulary the buff cards use, because they come from one place
-    /// (`FightParams::buff_roster`).
-    buffs: Vec<String>,
+    /// WHAT THE BUFF STACKS ON EACH ROW ARE CALLED, in the order they are
+    /// held, ONE ROSTER PER SEAT. The same vocabulary the buff cards use,
+    /// because they come from one place (`FightParams::buff_roster`), asked of
+    /// each seat's own build.
+    ///
+    /// Per seat because a row already says who dealt it and the stacks on it
+    /// are that seat's pile: two seats are two builds, so one name list would
+    /// label the second seat's counts with the wielder's cards.
+    buffs: Vec<Vec<String>>,
     /// WHAT THE SHOOTER HAS UP, as `(stacks, expires at)`.
     ///
     /// An ABSOLUTE expiry rather than a countdown: it only moves when the buff
@@ -758,12 +763,12 @@ impl Record {
         self.on
     }
 
-    /// Name the buff roster the rows' stack lists index into.
-    pub fn set_buffs(&mut self, ids: Vec<String>) {
-        self.buffs = ids;
+    /// Name the buff roster each seat's rows index into, in seat order.
+    pub fn set_buffs(&mut self, per_seat: Vec<Vec<String>>) {
+        self.buffs = per_seat;
     }
 
-    pub fn buffs(&self) -> &[String] {
+    pub fn buffs(&self) -> &[Vec<String>] {
         &self.buffs
     }
 
