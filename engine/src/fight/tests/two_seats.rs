@@ -150,3 +150,79 @@ fn a_status_tick_belongs_to_whoever_applied_it() {
         r.tally.effective()
     );
 }
+
+/// …AND ITS BUFFS ARE ITS OWN. A buff is a SEAT'S: two seats are two builds,
+/// so they carry two rosters and two piles, and a replay that held one flat
+/// list could only ever carry whichever seat last took a turn — a curve that
+/// belonged to neither of them, drawn under the wielder's names.
+///
+/// The rosters are made to DIFFER on purpose. Equal rosters would pass this
+/// while the frames still carried one seat's pile twice, which is precisely
+/// the bug: the shape has to be per seat and the CONTENT has to be too.
+#[test]
+fn each_seat_s_buff_series_is_read_off_its_own_build() {
+    let stack = |per_stack: f64| crate::model::StackSpec {
+        per_stack,
+        max_stacks: 3,
+        duration: 6.0,
+        initial_stacks: 1,
+        earned_on: Some("kill"),
+    };
+    let mut p = fight_for(&["cernos_prime", "braton_prime"]);
+    p.duration_seconds = 8.0;
+    // ONE BUFF EACH, and not the same one.
+    p.co_stack = Some(stack(0.2));
+    p.multishot_stack = None;
+    p.also_acting[0].co_stack = None;
+    p.also_acting[0].multishot_stack = Some(stack(0.3));
+
+    let rep = crate::fight::replay_following(&p, 0x5EED, 120, &[]);
+    assert_eq!(rep.seats, vec!["wielder".to_string(), "seat2".to_string()]);
+    let ids = |k: usize| {
+        rep.buffs_of(k).iter().map(|b| b.id.clone()).collect::<Vec<_>>()
+    };
+    assert!(
+        ids(0).contains(&"condition_overload".to_string()),
+        "the wielder's own roster: {:?}",
+        ids(0),
+    );
+    assert!(
+        !ids(0).contains(&"on_kill_multishot".to_string()),
+        "it took the second seat's buff: {:?}",
+        ids(0),
+    );
+    assert!(
+        ids(1).contains(&"on_kill_multishot".to_string()),
+        "the second seat's own roster: {:?}",
+        ids(1),
+    );
+    assert!(
+        !ids(1).contains(&"condition_overload".to_string()),
+        "it took the wielder's buff: {:?}",
+        ids(1),
+    );
+
+    // EVERY FRAME CARRIES BOTH, each as long as its own seat's roster. A
+    // frame short of a seat is a chart with nothing to draw; a frame whose
+    // series is the other seat's length is one drawing the wrong build.
+    assert!(!rep.frames.is_empty(), "no frames");
+    for f in &rep.frames {
+        assert_eq!(f.stacks.len(), 2, "one series set per seat");
+        for k in 0..2 {
+            assert_eq!(
+                f.stacks_of(k).len(),
+                rep.buffs_of(k).len(),
+                "seat {k} samples its own roster",
+            );
+        }
+    }
+
+    // …AND THEY ARE LIVE, not a shape full of zeroes: each buff opens with a
+    // stack, so a seat whose pile was never read would draw the flat zero
+    // this file exists to rule out.
+    let peak = |k: usize| {
+        rep.frames.iter().filter_map(|f| f.stacks_of(k).first().copied()).max().unwrap_or(0)
+    };
+    assert!(peak(0) > 0, "the wielder's series never moved");
+    assert!(peak(1) > 0, "the second seat's series never moved");
+}

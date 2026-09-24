@@ -785,6 +785,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             .collect();
         json!({
             "frame_seconds": rep.frame_seconds,
+            // ONE ROSTER PER SEAT, in `combatants`' order — a buff is a seat's
+            // and two seats are two builds, so the second one's rows are its
+            // own rather than the wielder's names over its numbers.
+            //
             // Ids are the buff cards' own — the client joins on them for names.
             // (id, stack ceiling, how the stacks read as a NUMBER where the
             // ceiling is one). `value` is null on every ordinary buff, which is
@@ -793,7 +797,9 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // drawn by the same component and `check_debuff_coverage` asserts
             // the two shapes match.
             "buffs": rep.buffs.iter()
-                .map(|b| json!({ "id": b.id, "max": b.max_stacks, "value": value_json(b.value) }))
+                .map(|seat| seat.iter()
+                    .map(|b| json!({ "id": b.id, "max": b.max_stacks, "value": value_json(b.value) }))
+                    .collect::<Vec<_>>())
                 .collect::<Vec<_>>(),
             "t": rep.frames.iter().map(|f| (f.t * 100.0).round() / 100.0).collect::<Vec<_>>(),
             "og": series(|f| f.overguard),
@@ -818,10 +824,15 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                     .map(|f| r3(f.headshots as f64 / pel(f))).collect::<Vec<_>>(),
             },
             "sources": rp_sources,
-            // Per BUFF, not per frame: a flat array per series is what a chart
+            // Per SEAT then per BUFF, the exact shape `dstacks` has on the
+            // other side of the fight. A flat array per series is what a chart
             // wants, and it compresses far better than 600 tiny objects.
             "stacks": (0..rep.buffs.len())
-                .map(|i| rep.frames.iter().map(|f| f.stacks[i]).collect::<Vec<_>>())
+                .map(|si| (0..rep.buffs[si].len())
+                    .map(|i| rep.frames.iter()
+                        .map(|f| f.stacks.get(si).and_then(|s| s.get(i)).copied().unwrap_or(0))
+                        .collect::<Vec<_>>())
+                    .collect::<Vec<_>>())
                 .collect::<Vec<_>>(),
             // THE SAME TWO FIELDS FOR THE TARGET. The roster is a constant of
             // the engine rather than a property of the build — a debuff is the
@@ -1429,11 +1440,14 @@ mod asset_tests {
         // question a reader brings to it — and a series nothing samples reads
         // as an arcane that never fired.
         let coverage = |v: &Value| {
+            // SEAT 0 IS THE WIELDER, on both keys — `buffs` and `stacks` are
+            // per seat, and this fight has only the one.
             let rp = v.get("replay")?;
-            let i = rp.get("buffs")?.as_array()?.iter().position(|b| {
+            let roster = rp.get("buffs")?.as_array()?.first()?.as_array()?;
+            let i = roster.iter().position(|b| {
                 b.get("id").and_then(Value::as_str) == Some("arcane:melee_influence")
             })?;
-            let frames = rp.get("stacks")?.as_array()?.get(i)?.as_array()?;
+            let frames = rp.get("stacks")?.as_array()?.first()?.as_array()?.get(i)?.as_array()?;
             let live = frames.iter().filter(|f| f.as_u64().unwrap_or(0) > 0).count();
             Some(100.0 * live as f64 / frames.len().max(1) as f64)
         };

@@ -644,11 +644,11 @@ fn reavers_rapture_counts_bursts_and_resets_on_the_refill() {
     // would carry no stacks to read.
     let trace = replay(&p, Rng::new(7).state(), 600);
     let i = trace
-        .buffs
+        .buffs_of(0)
         .iter()
         .position(|x| x.id == "full_burst_damage")
         .expect("the buff is on the roster");
-    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
     assert!(series.contains(&5), "it reaches the cap: {series:?}");
     assert!(series.iter().all(|&v| v <= 5), "and never passes it: {series:?}");
     // RESET: the pile comes back DOWN to zero, which only the refill can do
@@ -789,9 +789,9 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
             ..no_status()
         };
         let trace = replay(&p, Rng::new(7).state(), 600);
-        let i = trace.buffs.iter().position(|x| x.id == "on_empty_reload_damage")
+        let i = trace.buffs_of(0).iter().position(|x| x.id == "on_empty_reload_damage")
             .expect("on the roster");
-        let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
         let r = run_once(&p, &mut Rng::new(7));
         assert_eq!(r.reloads, 0, "neither form reloads in this fixture");
         assert!(
@@ -812,9 +812,9 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
         ..no_status()
     };
     let trace = replay(&p, Rng::new(7).state(), 600);
-    let i = trace.buffs.iter().position(|x| x.id == "on_empty_reload_damage")
+    let i = trace.buffs_of(0).iter().position(|x| x.id == "on_empty_reload_damage")
         .expect("on the roster");
-    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
     assert_eq!(series[0], 0, "it opens empty — the fight earns it");
     assert!(series.contains(&2), "two reloads reach the cap: {series:?}");
     assert!(series.iter().all(|&v| v <= 2), "and never pass it");
@@ -907,8 +907,8 @@ fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
     };
     let trace = replay(&p, Rng::new(9).state(), 900);
     let peak = |id: &str| {
-        let i = trace.buffs.iter().position(|x| x.id == id).expect(id);
-        trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0)
+        let i = trace.buffs_of(0).iter().position(|x| x.id == id).expect(id);
+        trace.frames.iter().map(|f| f.stacks_of(0)[i]).max().unwrap_or(0)
     };
     let (from_empty, on_reload) = (peak("on_empty_reload_damage"), peak("on_reload_damage"));
     assert!(on_reload > 0, "the fixture has to transform at all: {on_reload}");
@@ -1109,9 +1109,9 @@ fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
         ..flat_base()
     };
     let trace = replay(&p, Rng::new(4).state(), 600);
-    let i = trace.buffs.iter().position(|x| x.id == "on_kill_damage")
+    let i = trace.buffs_of(0).iter().position(|x| x.id == "on_kill_damage")
         .expect("on the roster");
-    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
     assert_eq!(series[0], 0, "it opens empty — the fight earns it");
     assert!(series.contains(&4), "four kills reach the cap: {series:?}");
     assert!(series.iter().all(|&v| v <= 4), "and never pass it");
@@ -1141,8 +1141,8 @@ fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
     let s = monte_carlo(&dot, 4, 11);
     assert!(s.mean_kills > 0.0, "the fixture has to kill something: {}", s.mean_kills);
     let trace = replay(&dot, Rng::new(11).state(), 1200);
-    let i = trace.buffs.iter().position(|x| x.id == "on_kill_damage").expect("roster");
-    let peak = trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0);
+    let i = trace.buffs_of(0).iter().position(|x| x.id == "on_kill_damage").expect("roster");
+    let peak = trace.frames.iter().map(|f| f.stacks_of(0)[i]).max().unwrap_or(0);
     assert!(peak > 0,
         "a kill counts wherever it came from — {} kills and the pile never moved",
         s.mean_kills);
@@ -1252,8 +1252,8 @@ fn a_gas_cloud_kill_earns_the_on_kill_stacks() {
         p.damage.total(), p.foe.base_health);
     assert!(s.mean_kills > 0.0, "the cloud has to kill something: {}", s.mean_kills);
     let trace = replay(&p, Rng::new(11).state(), 1200);
-    let i = trace.buffs.iter().position(|x| x.id == "on_kill_multishot").expect("roster");
-    let peak = trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0);
+    let i = trace.buffs_of(0).iter().position(|x| x.id == "on_kill_multishot").expect("roster");
+    let peak = trace.frames.iter().map(|f| f.stacks_of(0)[i]).max().unwrap_or(0);
     assert!(peak > 0,
         "a gas kill is the weapon's — {} kills and the pile never moved",
         s.mean_kills);
@@ -1484,10 +1484,10 @@ fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
         ..flat_base()
     };
     let trace = replay(&all_head, Rng::new(5).state(), 300);
-    let i = trace.buffs.iter()
+    let i = trace.buffs_of(0).iter()
         .position(|x| x.id == "on_weakpoint_streak_headshot_damage")
         .expect("on the roster");
-    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
     assert_eq!(series[0], 0, "it opens empty");
     assert!(series.contains(&4), "four weak-point hits reach the cap: {series:?}");
     assert!(series.iter().all(|&v| v <= 4), "and never pass it");
@@ -1507,9 +1507,9 @@ fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
         ..all_head.clone()
     };
     let mtrace = replay(&mixed, Rng::new(5).state(), 300);
-    let j = mtrace.buffs.iter()
+    let j = mtrace.buffs_of(0).iter()
         .position(|x| x.id == "on_weakpoint_streak_headshot_damage").expect("roster");
-    let mseries: Vec<u16> = mtrace.frames.iter().map(|f| f.stacks[j]).collect();
+    let mseries: Vec<u16> = mtrace.frames.iter().map(|f| f.stacks_of(0)[j]).collect();
     assert!(mseries.iter().any(|&v| v > 0), "it still climbs sometimes: {mseries:?}");
     assert!(mseries.windows(2).any(|w| w[0] > 1 && w[1] == 0),
         "a body shot takes the WHOLE pile, not one stack: {mseries:?}");

@@ -75,13 +75,13 @@ fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
     let first = &rep.frames[0];
     // The weapon passive is applied by the api, not by these params — the
     // same exemption `every_buff_the_roster_offers_is_actually_read` makes.
-    for (i, b) in rep.buffs.iter().enumerate() {
+    for (i, b) in rep.buffs_of(0).iter().enumerate() {
         let id = &b.id;
         if id == "frenzy" {
             continue;
         }
         assert!(
-            first.stacks[i] > 0,
+            first.stacks_of(0)[i] > 0,
             "`{id}` is offered and configured to its cap, and the replay reads 0 — \
                  nothing in `sample_stacks` answers for it, so its curve is a flat line"
         );

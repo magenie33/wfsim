@@ -92,6 +92,7 @@ const r = await evaluate(`(async () => {
   for (let k=0;k<40 && !document.querySelector('.rp-row'); k++) await sleep(1000);
   const tendRows = [...document.querySelectorAll('.rp-row')].map(e=>({
     name: e.querySelector('.rp-name').textContent.trim(),
+    stat: e.querySelector('.rp-stat').textContent.split(/\\s+/).join(' ').trim(),
     now: e.querySelector('.rp-now').textContent.trim(),
   }));
   // THE SHOT COMBO COUNTER — the second weapon-passive card, and the one the
@@ -229,7 +230,11 @@ check("every figure carries two decimals",
 check("uptime is never a flat 100%", r.rows.every(x => !/(^|[^.\d])100%/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
 check("the average is drawn on the curve", r.rows.every(x => x.mean));
 check("the inactive stretches are banded", r.rows.every(x => x.dead > 0), r.rows.map(x=>x.dead).join(","));
-check("at t=0 every buff reads zero", r.atZero.every(x => /^0\//.test(x)), r.atZero.join(" | "));
+// THE LIVE READOUT IS THE VALUE ALONE. The ceiling is printed once, by the
+// stat line beside it, so every assertion below reads the quantity from `now`
+// and the cap it is measured against from `stat`.
+check("at t=0 every buff reads zero",
+  r.atZero.every(x => Number.parseFloat(x) === 0), r.atZero.join(" | "));
 check("Secondary Enervate has a card of its own", r.un.length === 1, JSON.stringify(r.un));
 check("...uncapped, shown as infinity", r.un[0] && /∞/.test(r.un[0].cap), r.un[0] && r.un[0].cap);
 check("...starting at 0, with no invented maximum",
@@ -242,7 +247,8 @@ check("...named in Chinese, saying what a stack IS",
 check("...capped at the WEAPON's tendril limit, and earned from zero",
   td && td.cap === "/ 4" && td.stacks === "0", JSON.stringify(td));
 check("...and the count reaches the fight",
-  (r.tendRows || []).some((x) => x.now === "4/4"), JSON.stringify(r.tendRows));
+  (r.tendRows || []).some((x) => x.now === "4" && /\/4( |$)/.test(x.stat)),
+  JSON.stringify(r.tendRows));
 console.log("combo:", JSON.stringify(r.combo), "hip:", JSON.stringify(r.hipCombo),
   "dps", r.dpsCold, "->", r.dpsHeld);
 check("the sniper's Shot Combo Counter has a card", !!r.combo, JSON.stringify(r.combo));
@@ -275,7 +281,7 @@ check("a sniper fired from the HIP is offered no counter at all",
 // never printed — the row draws the per cent instead, and the ceiling it is
 // drawn against is the card's own.
 console.log("hata-satya:", JSON.stringify(r.hsCard), JSON.stringify(r.hsRows));
-const hs = (r.hsRows || []).find((x) => /%\/500%$/.test(x.now));
+const hs = (r.hsRows || []).find((x) => /^\d+(\.\d+)?%$/.test(x.now) && /%\/500%/.test(x.stat));
 check("the crit-per-hit row is drawn as a PER CENT against the published cap",
   !!hs, JSON.stringify(r.hsRows));
 check("...and its average is the same quantity, not a stack count",
@@ -289,7 +295,8 @@ check("...while the card that seeds it counts HITS, to the 417th",
 // still a count out of a count. A page that had simply started formatting
 // every row as a percentage would pass everything above and fail here.
 check("...and an ordinary buff beside it still reads a count",
-  (r.hsRows || []).some((x) => /^\d+\/\d+$/.test(x.now)), JSON.stringify(r.hsRows));
+  (r.hsRows || []).some((x) => /^\d+$/.test(x.now) && /\d+\.\d\d\/\d+( |$)/.test(x.stat)),
+  JSON.stringify(r.hsRows));
 
 // A BUFF THE MISSION NEVER TAKES OPENS FULL — and it is a
 // claim off DE's card, not a shape: twenty evolution buffs reach the engine with

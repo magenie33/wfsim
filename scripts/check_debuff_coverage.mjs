@@ -75,8 +75,11 @@ const r = await evaluate(`(async () => {
   out.rosterShape = rp && rp.debuffs[0] ? Object.keys(rp.debuffs[0]).sort().join(",") : "";
   // The buff roster of an unmodded build is EMPTY, so the shape is compared
   // against the literal the two share rather than against a row that may not
-  // exist.
-  out.buffShape = rp && rp.buffs[0] ? Object.keys(rp.buffs[0]).sort().join(",") : "id,max,value";
+  // exist. The buffs key is one roster PER SEAT — a buff is a seat's and two
+  // seats are two builds — so the row sits two levels down where a debuff's
+  // sits one.
+  const b0 = rp && (rp.buffs[0] || [])[0];
+  out.buffShape = b0 ? Object.keys(b0).sort().join(",") : "id,max,value";
 
   // POISON is the one this weapon guarantees, and it must actually move.
   const iPoison = rp ? rp.debuffs.findIndex((d) => d.id === 'poison') : -1;

@@ -130,6 +130,6 @@ fn the_counter_is_on_the_roster_and_in_the_replay() {
     assert_eq!(roster[at].max_stacks, 0, "uncapped: the tiers do not stop");
 
     let rep = replay(&p, 12345, 60);
-    let peak = rep.frames.iter().map(|f| f.stacks[at]).max().unwrap_or(0);
+    let peak = rep.frames.iter().map(|f| f.stacks_of(0)[at]).max().unwrap_or(0);
     assert!(peak >= 5, "the curve shows the counter climbing past the minimum: {peak}");
 }

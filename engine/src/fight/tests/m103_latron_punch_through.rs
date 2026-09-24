@@ -173,8 +173,8 @@ fn galvanized_scopes_kill_stacks_each_run_their_own_clock() {
         ..no_status()
     };
     let trace = replay(&p, Rng::new(7).state(), 400);
-    let i = trace.buffs.iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
-    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    let i = trace.buffs_of(0).iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
     assert_eq!(series[0], 0, "the pile is earned, not given");
     assert_eq!(
         *series.iter().max().expect("frames"), 4,
@@ -218,8 +218,8 @@ fn a_bleed_that_finishes_a_headshot_target_is_not_a_headshot_kill() {
     assert_eq!(r.headshots, 1, "the fixture lands one weak-point hit");
     assert!(r.kills >= 1, "…and the bleed finishes the target: {} kills", r.kills);
     let trace = replay(&p, Rng::new(7).state(), 400);
-    let i = trace.buffs.iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
-    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+    let i = trace.buffs_of(0).iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+    let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
     assert!(series.iter().all(|&v| v == 0), "a bleed's kill earns no stack: {series:?}");
 }
 
@@ -254,8 +254,8 @@ fn m103_a_punched_headshot_kill_pays_what_the_aimed_one_pays() {
             earned_on: Some("headshot_kill"),
         });
         let trace = replay(&p, Rng::new(7).state(), 200);
-        let i = trace.buffs.iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
-        let s: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        let i = trace.buffs_of(0).iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+        let s: Vec<u16> = trace.frames.iter().map(|f| f.stacks_of(0)[i]).collect();
         (*s.iter().max().unwrap_or(&0), run_once(&p, &mut Rng::new(7)))
     };
     let (alone, ra) = stacks(&[]);

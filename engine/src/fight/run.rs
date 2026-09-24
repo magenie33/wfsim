@@ -228,14 +228,14 @@ pub(super) fn record_weapon(
     }
 }
 
-/// SAMPLING HAPPENS TWICE, and the second time is
-/// body mutably borrows `arc`, `gal`, `buff_stacks`, `bodies`, `r`
-/// and `trace` at once, which a closure cannot hold
-/// together.
+/// SAMPLING HAPPENS TWICE — once before each turn and once over the tail —
+/// and it takes the whole cast because a frame is the whole fight at an
+/// instant: every seat's buffs and every followed body's debuffs, not the
+/// acting seat's alone.
 ///
-/// It takes the run's state by reference rather than closing over it: the
-/// sampler reads nine pieces at once and writes one frame, which is the whole
-/// reason it was a macro.
+/// It takes the run's state by reference rather than closing over it: the body
+/// mutably borrows the seats, `bodies`, `r` and `trace` at once, which a
+/// closure cannot hold together.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn sample_frames_up_to(
     until: f64,
@@ -243,32 +243,37 @@ pub(super) fn sample_frames_up_to(
     trace: &mut Option<&mut Replay>,
     next_frame: &mut f64,
     frame_seconds: f64,
-    arc: &mut ArcRuntime,
-    gal: &mut GalStacks,
-    buff_stacks: &mut [LiveStacks],
-    bar: &BuffBar,
-    windows: &CardWindows,
-    tendril: &Tendrils,
-    crit_per_hit: &CritPerHit,
-    sniper_combo: &SniperComboCount,
-    combo_spec: Option<crate::model::SniperCombo>,
-    incarnon: &IncarnonState,
-    influence_until: f64,
+    seats: &mut [Combatant],
     r: &RunResult,
     bodies: &[Body],
 ) {
     if let Some(rep) = trace.as_deref_mut() {
         while *next_frame <= until && *next_frame < params.duration_seconds {
-            let stacks = sample_stacks(
-                params, &rep.buffs, *next_frame, arc, gal, buff_stacks,
-                &windows.crit_on_headshot_stacks, windows.crit_on_headshot, windows.weakpoint_buff,
-                windows.fire_rate_after_reload, windows.base_damage_after_reload,
-                windows.base_damage_eximus, windows.streak, tendril.count, crit_per_hit.stacks, bar,
-                combo_at(combo_spec, params.combo_held, sniper_combo.count,
-                    sniper_combo.last_hit, *next_frame),
-                incarnon.incarnon_until,
-        influence_until,
-            );
+            // ONE SERIES SET PER SEAT, each read off ITS OWN build and its own
+            // pile. Sampling only whoever was about to act spliced every
+            // seat's state into one curve that belonged to none of them.
+            let stacks: Vec<Vec<u16>> = seats
+                .iter_mut()
+                .enumerate()
+                .map(|(si, me)| {
+                    let roster = rep.buffs.get(si).map_or(&[][..], Vec::as_slice);
+                    sample_stacks(
+                        me.params, roster, *next_frame, &mut me.arc, &mut me.gal,
+                        &mut me.buff_stacks,
+                        &me.windows.crit_on_headshot_stacks, me.windows.crit_on_headshot,
+                        me.windows.weakpoint_buff, me.windows.fire_rate_after_reload,
+                        me.windows.base_damage_after_reload, me.windows.base_damage_eximus,
+                        me.windows.streak, me.tendril.count, me.crit_per_hit.stacks, &me.bar,
+                        combo_at(me.fixed.combo_spec, me.params.combo_held,
+                            me.sniper_combo.count, me.sniper_combo.last_hit, *next_frame),
+                        me.incarnon.incarnon_until,
+                        me.influence_until,
+                    )
+                    .iter()
+                    .map(|(n, _)| *n)
+                    .collect()
+                })
+                .collect();
             rep.frames.push(Frame {
                 t: *next_frame,
                 overguard: bodies[0].state.overguard,
@@ -288,7 +293,7 @@ pub(super) fn sample_frames_up_to(
                 transforms: r.transforms,
                 sources: r.sources,
                 dealt: *r.dealt.by_combatant(),
-                stacks: stacks.iter().map(|(n, _)| *n).collect(),
+                stacks,
                 // ONE SERIES PER FOLLOWED BODY, in `Replay::tracked`'s
                 // order — the aimed one first.
                 debuffs: rep
@@ -452,8 +457,23 @@ pub fn run_once_traced(
     // at; the body then reads `t` as "now" exactly as it did when there was
     // only ever one seat to be due. It ends when every seat has parked.
     while let Some(seat_index) = next_seat(&seats) {
+        t = seats[seat_index].next_t;
+        // SAMPLE first, so a frame shows the fight as it stood BEFORE the shot
+        // at `t` — the same convention the timeline buckets use. Sampling here
+        // rather than on a fixed clock is deliberate: this loop is the only
+        // place that advances time, and a buff can only change on an event it
+        // drives. A gap between shots emits repeated frames, which is exactly
+        // what a fight with nothing happening in it looks like.
+        //
+        // AND BEFORE THE ACTING SEAT IS TAKEN, because a frame carries every
+        // seat's buffs and the borrow below would leave it holding one.
+        if trace.is_some() {
+            sample_frames_up_to(
+                t, params, &mut trace, &mut next_frame, frame_seconds,
+                &mut seats, &r, &bodies,
+            );
+        }
         let me = &mut seats[seat_index];
-        t = me.next_t;
         // WHOSE TURN THIS IS, for the counters. Read before and credited after
         // — see `SeatCounters`: the bumps are scattered and this is the one
         // place that knows whose they are.
@@ -462,16 +482,6 @@ pub fn run_once_traced(
         // turn calls rolls off the ACTING SEAT'S own `Draws`, which is what
         // keeps a second combatant from re-rolling the first one's crits.
         let d = &mut me.d;
-        // SAMPLE first, so a frame shows the fight as it stood BEFORE the
-        // shot at `t` — the same convention the timeline buckets use.
-        // Sampling here rather than on a fixed clock is deliberate: this loop
-        // is the only place that advances time, and a buff can only change on
-        // an event this loop drives. A gap between shots emits repeated
-        // frames, which is exactly what a fight with nothing happening in it
-        // looks like.
-            // NOTHING TO SAMPLE WITHOUT A TRACE, and the check is HERE rather than
-        // only inside: the sampler reads twenty pieces of the run, and a fight
-        // nobody is replaying should not pay for passing them.
         // THE FLASH, READ ONCE FOR THIS SCAN. Melee state, and the one fact in
         // `Now` no other part of the fight can answer.
         let flash = me.params.tennokai.enabled && t < me.melee.tennokai_until;
@@ -481,11 +491,8 @@ pub fn run_once_traced(
             flash,
             rec,
             rng,
-            &mut trace,
             d,
             &mut t,
-            &mut next_frame,
-            frame_seconds,
             &mut me.arc,
             &mut me.gal,
             &mut me.buff_stacks,
@@ -493,10 +500,7 @@ pub fn run_once_traced(
             &mut me.windows,
             &mut me.tendril,
             &mut me.crit_per_hit,
-            &me.sniper_combo,
-            me.fixed.combo_spec,
             &mut me.incarnon,
-            me.influence_until,
             &mut r,
             &mut bodies,
             &mut me.ammo,
@@ -1109,9 +1113,8 @@ pub fn run_once_traced(
     // calls a frame at a time, which reorders how status settles — a
     // golden-value change rather than a rendering one.
     sample_frames_up_to(
-        params.duration_seconds, params, &mut trace, &mut next_frame, frame_seconds, &mut me.arc, &mut me.gal, &mut me.buff_stacks,
-        &me.bar, &me.windows, &me.tendril, &me.crit_per_hit, &me.sniper_combo, me.fixed.combo_spec, &me.incarnon, me.influence_until,
-        &r, &bodies,
+        params.duration_seconds, params, &mut trace, &mut next_frame, frame_seconds,
+        &mut seats, &r, &bodies,
     );
 
     // Partial credit: the fraction of the current individual's TOTAL bar

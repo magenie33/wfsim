@@ -18,11 +18,8 @@ pub(super) fn before_the_shot(
     tennokai: bool,
     rec: &mut crate::record::Record,
     rng: &mut Rng,
-    trace: &mut Option<&mut Replay>,
     d: &mut crate::rules::rng::Draws,
     t_at: &mut f64,
-    next_frame: &mut f64,
-    frame_seconds: f64,
     arc: &mut ArcRuntime,
     gal: &mut GalStacks,
     buff_stacks: &mut [LiveStacks],
@@ -30,10 +27,7 @@ pub(super) fn before_the_shot(
     windows: &mut CardWindows,
     tendril: &mut Tendrils,
     crit_per_hit: &mut CritPerHit,
-    sniper_combo: &SniperComboCount,
-    combo_spec: Option<crate::model::SniperCombo>,
     incarnon: &mut IncarnonState,
-    influence_until: f64,
     r: &mut RunResult,
     bodies: &mut [Body],
     ammo: &mut Ammo,
@@ -47,13 +41,11 @@ pub(super) fn before_the_shot(
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,) -> Flow {
     let t = *t_at;
-        if trace.is_some() {
-            sample_frames_up_to(
-                t, params, trace, next_frame, frame_seconds, arc, gal, buff_stacks,
-                bar, windows, tendril, crit_per_hit, sniper_combo, combo_spec, incarnon,
-                influence_until, r, bodies,
-            );
-        }
+        // THE FRAME FOR THIS INSTANT IS ALREADY DRAWN, by the scan loop just
+        // before it chose whose turn this is. It has to be sampled there: a
+        // frame carries EVERY seat's buffs and this function holds only the
+        // acting one, so sampling here could report no seat's fight but the
+        // one that happened to move.
         if t >= params.duration_seconds {
             return Flow::Break;
         }

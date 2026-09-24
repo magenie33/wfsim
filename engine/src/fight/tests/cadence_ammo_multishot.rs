@@ -1542,8 +1542,8 @@ fn a_per_instance_arcane_gains_one_stack_a_pull_not_one_a_pellet() {
         // 20 frames over 10 s, so the LAST frame sits at t = 9.5 — after
         // the t = 9 pull rather than on top of it.
         let rep = replay(&params, s.median_run.rng_state, 20);
-        let i = rep.buffs.iter().position(|x| x.id == "arcane:test").expect("buff in roster");
-        *rep.frames.last().expect("frames").stacks.get(i).expect("stack series")
+        let i = rep.buffs_of(0).iter().position(|x| x.id == "arcane:test").expect("buff in roster");
+        *rep.frames.last().expect("frames").stacks_of(0).get(i).expect("stack series")
     };
     // 10 pulls, 5 pellets each. Capped: one a pull -> 10. Uncapped: one a
     // pellet -> 40, the ceiling, reached in the first two pulls.

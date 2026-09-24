@@ -111,6 +111,34 @@ function replayMarkup(r) {
           tr("+{n} more took damage and are not followed").replace("{n}", more))}</span>`
       : ""}</div>`;
   };
+  // WHOSE BUFFS, the same way and for the same reason. `rp.buffs` is one
+  // roster per seat and `rp.stacks` one series set per seat, in
+  // `rp.combatants`' order.
+  const aSeat = replaySeatIdx(rp);
+  const seatChips = (rp, sel) => {
+    // THE RESULT'S ROSTER, not the replay's. Both are
+    // `FightParams::combatant_ids` and agree index for index, but the result's
+    // entries carry the WEAPON each seat brought and a seat named by where it
+    // sits is a seat nobody recognises.
+    const seats = r.combatants || [];
+    if (!seats.length) return "";
+    // BY DAMAGE, HARDEST HITTER FIRST — the foe chips' rule read from this
+    // side of the fight. `dealt[k]` is seat k's cumulative damage, so its last
+    // frame is what that seat finished the engagement with.
+    const last = (k) => {
+      const s = (rp.dealt || [])[k] || [];
+      return s[s.length - 1] || 0;
+    };
+    const order = seats.map((_, k) => k).sort((a, b) => last(b) - last(a));
+    return `<div class="rp-foes">${
+      order.map((k) => `<button type="button" class="rp-foe${k === sel ? " sel" : ""}" data-rpseat="${
+        k}" title="${escHtml(k === 0
+          ? tr("the seat the open build sits in")
+          : tr("another build acting in this fight"))}">${
+        escHtml(combatantName(seats[k].id, seats[k]))} <span class="sm">${
+        escHtml(sig2(last(k)))}</span></button>`).join("")
+    }</div>`;
+  };
   const dRoster = rp.debuffs || [];
   const dSeries = (rp.dstacks || [])[dBody] || [];
   // THE CHART IS 120 UNITS TALL, not 28.
@@ -190,7 +218,16 @@ function replayMarkup(r) {
       <div class="rp-x"><span>0s</span><span>${(rp.t[rp.t.length - 1] || 0).toFixed(0)}s</span></div>
     </div>`;
   }).join("");
-  const rows = curveRows(rp.buffs, rp.stacks, named, "buff");
+  // ONE SEAT'S ROSTER AND ONE SEAT'S SERIES — see `seatChips`. A STORED
+  // RESULT PREDATES THE SEAT DIMENSION and carries the wielder's roster flat,
+  // so a payload whose first entry is not itself a list is read as no buff
+  // table at all rather than as a roster of one buff called `undefined`; the
+  // next run writes the current shape. Same guard, same reason, as the debuff
+  // series below.
+  const perSeat = Array.isArray((rp.buffs || [])[0]);
+  const rows = perSeat
+    ? curveRows(rp.buffs[aSeat] || [], (rp.stacks || [])[aSeat] || [], named, "buff")
+    : "";
   // THE TARGET'S SIDE OF THE SAME FIGHT. Symmetric with the buff table on
   // purpose — same rows, same uptime, same dead bands. A
   // DEATH IS NOT A NEW SERIES: the arena replaces the body it kills and every
@@ -340,7 +377,10 @@ function replayMarkup(r) {
         crowd)
     : "";
   const curves =
-    foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"), rows)
+    (rows
+      ? foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"),
+          seatChips(rp, aSeat) + rows)
+      : "")
     + (dRows
       ? foldBlock("debuffs", tr("Debuff coverage"),
           tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"),
@@ -540,8 +580,13 @@ function replayApply(rp, i) {
       return;
     }
     // THE SAME QUANTITY THE ROW WAS DRAWN IN — a header that scrubs from a
-    // percentage to a stack count would be two charts wearing one label.
-    el.textContent = rpFmt(rp.buffs[j], rp.stacks[j][i]);
+    // percentage to a stack count would be two charts wearing one label. And
+    // the same SEAT the table was drawn for, or the live count in each header
+    // would belong to somebody else's build.
+    const aSeat = replaySeatIdx(rp);
+    const roster = (rp.buffs || [])[aSeat] || [];
+    const series = ((rp.stacks || [])[aSeat] || [])[j] || [];
+    el.textContent = rpFmt(roster[j], series[i]);
   });
 }
 
@@ -683,6 +728,13 @@ function wireReplay(r) {
   };
   document.querySelectorAll("[data-rpfoe]").forEach((el) => {
     el.onclick = () => pickFoe(Number(el.dataset.rpfoe));
+  });
+  document.querySelectorAll("[data-rpseat]").forEach((el) => {
+    el.onclick = () => {
+      replaySeat = Number(el.dataset.rpseat);
+      if (shownResult) renderResults(shownResult.r, shownResult.at);
+      else renderStoredSimResult();
+    };
   });
   document.querySelectorAll("[data-rpask]").forEach((el) => {
     el.onclick = () => askFoe(el.dataset.rpask, el);

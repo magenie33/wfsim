@@ -54,6 +54,15 @@ let replayFoe = 0;
 /// defined" rather than drawing a wrong number: it announced itself.
 const replayFoeIdx = (rp) =>
   Math.min(replayFoe, Math.max(0, ((rp && rp.tracked) || [""]).length - 1));
+// WHOSE BUFFS THE BUFF TABLE IS ABOUT — an index into `replay.combatants`, 0
+// being the wielder. The mirror of `replayFoe` on the other side of the fight,
+// and outside the render for the same reason.
+//
+// A BUFF IS A SEAT'S OR IT IS NOBODY'S: two seats are two builds, so they have
+// two rosters and two piles, and one table can only ever be one of them.
+let replaySeat = 0;
+const replaySeatIdx = (rp) =>
+  Math.min(replaySeat, Math.max(0, ((rp && rp.buffs) || [[]]).length - 1));
 
 let gainGen = 0;
 // An axis whose scan was dropped because another axis was mid-flight. One slot:

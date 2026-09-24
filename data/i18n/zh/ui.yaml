@@ -1279,6 +1279,8 @@ ui:
   "the blades RICOCHET off surfaces (wiki) and this arena has no walls to bounce off": "锯片会从表面上反弹（维基），而这个战场没有墙可以反弹"
   "the blob economy is not modelled — a shot EMBEDS and only explodes after a delay or at max stacks, and the sim fires the embed as an ordinary hit": 粘液机制尚未建模 —— 射出的粘液会先附着，延迟后或叠满层数才爆炸，而模拟把附着当成一次普通命中
   "the board would not take this build, so nothing was sent": 榜单不会收这套配装，所以没有提交
+  "the seat the open build sits in": 当前打开的这套配装所在的位置
+  "another build acting in this fight": 这场战斗里另一套正在出手的配装
   "the body the weapon was on": 武器瞄准的那一具
   "the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it": 这把枪从它的 Lich 那里带出来的加成——作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大
   "the bow-exclusive Thunderbolt mod is outside the pools this roster loads — on this weapon it turns every bolt into a grenade, which is a whole second damage source": "弓专属的「Thunderbolt」MOD 不在本武器库载入的卡池里 —— 装在这把武器上它会把每一发弩箭变成一颗手雷，那是一整个第二伤害来源"

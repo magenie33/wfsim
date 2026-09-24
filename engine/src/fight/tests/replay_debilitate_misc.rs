@@ -437,14 +437,14 @@ fn every_rostered_buff_is_sampled() {
     let roster = p.buff_roster();
     assert!(!roster.is_empty(), "this fixture carries buffs");
     let rep = replay(&p, 12345, 20);
-    assert_eq!(rep.buffs, roster);
+    assert_eq!(rep.buffs_of(0), roster);
     for f in &rep.frames {
-        assert_eq!(f.stacks.len(), roster.len(), "one sample per rostered buff");
+        assert_eq!(f.stacks_of(0).len(), roster.len(), "one sample per rostered buff");
     }
     // Merciless was seeded full, so its series starts at its cap rather
     // than at the zero an unknown id would produce.
     let at = roster.iter().position(|b| b.id.starts_with("arcane:")).expect("an arcane");
-    assert_eq!(u32::from(rep.frames[0].stacks[at]), roster[at].max_stacks);
+    assert_eq!(u32::from(rep.frames[0].stacks_of(0)[at]), roster[at].max_stacks);
 }
 
 /// THE FACTION LADDER, which is the whole reason Primary Debilitate is

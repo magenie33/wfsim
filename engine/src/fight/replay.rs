@@ -67,7 +67,15 @@ pub fn replay_following(
             .collect(),
         follow,
         frame_seconds: (params.duration_seconds / frames as f64).max(1e-6),
-        buffs: params.buff_roster(),
+        // ONE ROSTER PER SEAT, asked of that seat's own build. The wielder's
+        // roster applied to a squad would name a second seat's curves after
+        // buffs its build never carried.
+        seats: params.combatant_ids(),
+        buffs: std::iter::once(params)
+            .chain(params.also_acting.iter())
+            .take(crate::fight::MAX_COMBATANTS)
+            .map(FightParams::buff_roster)
+            .collect(),
         frames: Vec::with_capacity(frames),
     };
     run_once_traced(

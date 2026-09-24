@@ -38,8 +38,14 @@ pub struct Frame {
     /// that carried only the first cannot answer "whose damage was that" at
     /// any instant of a fight with more than one thing firing.
     pub dealt: CombatantDamage,
-    /// Live stacks per buff, positionally matching [`Replay::buffs`].
-    pub stacks: Vec<u16>,
+    /// Live stacks per buff PER SEAT, positionally matching [`Replay::buffs`]
+    /// — one series set per seat, in [`Replay::seats`]' order.
+    ///
+    /// A BUFF IS A SEAT'S OR IT IS NOBODY'S. Two seats in one fight are two
+    /// builds, so they carry two rosters and two piles; a single flat list
+    /// could only ever hold whichever seat last took a turn, which is a curve
+    /// that belongs to neither of them.
+    pub stacks: Vec<Vec<u16>>,
     /// …and the same for the TARGETS, one series per body in
     /// [`Replay::tracked`], each positionally matching [`DEBUFF_ROSTER`].
     ///
@@ -119,11 +125,39 @@ pub struct Replay {
     pub(crate) follow: Vec<usize>,
     /// Seconds between frames.
     pub frame_seconds: f64,
-    /// The rostered buffs, in the order [`Frame::stacks`] holds them — ids are
-    /// the SAME vocabulary as [`BuffConfig`] and the web's buff cards, because
-    /// they come from one place: [`FightParams::buff_roster`].
-    pub buffs: Vec<BuffSeries>,
+    /// WHOSE BUFFS THE FRAMES CARRY, by seat, in the order [`Frame::stacks`]
+    /// holds them — the same list and the same order as
+    /// [`FightParams::combatant_ids`], so `seats[0]` is the wielder.
+    ///
+    /// The mirror of [`Replay::tracked`] on the other side of the fight, and
+    /// uncapped for the same reason it does not need to be: seats are capped
+    /// at [`MAX_COMBATANTS`] before a fight opens.
+    pub seats: Vec<String>,
+    /// The rostered buffs OF EACH SEAT, in `seats`' order and then in the
+    /// order [`Frame::stacks`] holds them — ids are the SAME vocabulary as
+    /// [`BuffConfig`] and the web's buff cards, because they come from one
+    /// place: [`FightParams::buff_roster`], asked of each seat's own build.
+    pub buffs: Vec<Vec<BuffSeries>>,
     pub frames: Vec<Frame>,
+}
+
+impl Replay {
+    /// One seat's roster. A CALLER NAMES THE SEAT IT MEANS — there is no
+    /// "the buffs" on a fight with more than one thing acting in it, and a
+    /// default would quietly hand back the wielder's to a question about
+    /// somebody else. Out of range is empty, never a panic: the seat list is
+    /// the caller's to check.
+    pub fn buffs_of(&self, seat: usize) -> &[BuffSeries] {
+        self.buffs.get(seat).map_or(&[], Vec::as_slice)
+    }
+}
+
+impl Frame {
+    /// One seat's live stacks at this instant, in [`Replay::buffs_of`]'s
+    /// order for the same seat.
+    pub fn stacks_of(&self, seat: usize) -> &[u16] {
+        self.stacks.get(seat).map_or(&[], Vec::as_slice)
+    }
 }
 
 /// Frames in a replay, whatever the engagement length. 600 over 300 s is one
