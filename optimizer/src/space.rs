@@ -147,7 +147,13 @@ impl SubsetSpace {
     /// builds subsets directly rather than through an index, so it needs the
     /// same verdict `nth` reaches on the way.
     pub fn legal(&self, subset: &[usize]) -> bool {
-        if !self.sizes().contains(&subset.len()) {
+        self.sizes().contains(&subset.len()) && self.legal_upto(subset)
+    }
+
+    /// [`legal`](Self::legal) without the LOWER size bound: a build still
+    /// being filled, which may stand below the minimum on its way up to it.
+    pub fn legal_upto(&self, subset: &[usize]) -> bool {
+        if subset.len() > *self.sizes().end() {
             return false;
         }
         if !self.required.iter().all(|r| subset.contains(r)) {

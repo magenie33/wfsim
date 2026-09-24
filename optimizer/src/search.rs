@@ -135,7 +135,7 @@ struct Proposal {
     seq: usize,
 }
 
-fn key_of(subset: &[usize]) -> u64 {
+pub(crate) fn key_of(subset: &[usize]) -> u64 {
     let mut v = subset.to_vec();
     v.sort_unstable();
     // FNV-1a over the sorted members: a subset is a SET, so its identity must
@@ -341,7 +341,7 @@ pub fn search(
     )
 }
 
-fn push_elite(
+pub(crate) fn push_elite(
     top: &mut std::collections::BinaryHeap<std::cmp::Reverse<Scored>>,
     item: Scored,
     keep: usize,
@@ -355,7 +355,7 @@ fn push_elite(
     }
 }
 
-fn snapshot(
+pub(crate) fn snapshot(
     top: &std::collections::BinaryHeap<std::cmp::Reverse<Scored>>,
     n: usize,
 ) -> Vec<ScreenedJob> {

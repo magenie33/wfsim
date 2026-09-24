@@ -1,0 +1,473 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! COORDINATE DESCENT — the search that starts from the element rules.
+//!
+//! [`crate::search::search`] samples the subset space and climbs from what it
+//! drew, and every subset it looks at is paid for under EVERY arcane: the axes
+//! multiply. Here they add. One build is held, and each position — a mod slot,
+//! an empty slot, the arcane — is swept against every legal alternative with
+//! the rest held still, so one sweep costs the SUM of the option counts and the
+//! whole pool stays searchable.
+//!
+//! 1. STARTS: the player's own, each a partial build. Without any, every pair
+//!    of the four primary elements, one card each — which card does not
+//!    matter, the sweep upgrades it and adds a third element if one pays. A
+//!    start is where the descent begins, not a constraint: it may swap any of
+//!    it out (a card that must stay is the scope's `fixed` mark).
+//! 2. FILL: from the start, add the best card until the build is full.
+//! 3. SWEEP, arcane → each mod → an empty slot → the variant (evolution set,
+//!    mode, valence). Any accepted change restarts at the arcane, because a
+//!    change anywhere moves what every other position wants. A full sweep with
+//!    no change is that start's answer.
+//!
+//! Every build is scored on the SAME random stream, so two builds are compared
+//! on paired runs and a score is a deterministic function of the build. That
+//! is also what makes the loop terminate: each accepted move strictly raises a
+//! fixed score over a finite set.
+//!
+//! What it returns is the same as the sampler's — every job it scored, best
+//! first — so the funnel, the replay and the grader cannot tell them apart.
+
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+
+use wfsim_engine::fight::Summary;
+use wfsim_engine::model::{ModDef, ModEffect};
+use wfsim_engine::rules::damage::DamageType;
+
+use crate::search::{key_of, push_elite, snapshot, Expand, SearchConfig, SearchStats};
+use crate::space::SubsetSpace;
+use crate::{evaluate, job_seed, Candidate, FunnelState, Scenario, ScreenedJob, Scored};
+
+const PRIMARY: [DamageType; 4] =
+    [DamageType::Cold, DamageType::Electricity, DamageType::Heat, DamageType::Toxin];
+
+/// A build's score: the best of the candidates its point expands to, and the
+/// variant that candidate fires. `None` = it expands to nothing (Forma cannot
+/// fit it, or the variant cannot equip a card).
+type Score = Option<(f64, f64, u32)>;
+
+fn better(a: Score, b: Score) -> bool {
+    match (a, b) {
+        (Some(_), None) => true,
+        (Some((ak, ae, _)), Some((bk, be, _))) => {
+            ak.total_cmp(&bk).then(ae.total_cmp(&be)).is_gt()
+        }
+        _ => false,
+    }
+}
+
+/// One build under evaluation: a canonical (ascending) subset, an arcane, and
+/// the variant — `None` only while a start is being scored, which asks every
+/// variant at once so the fill begins under the one that suits it.
+#[derive(Clone)]
+struct Point {
+    subset: Vec<usize>,
+    ai: usize,
+    vi: Option<u32>,
+}
+
+impl Point {
+    fn key(&self) -> (u64, usize, Option<u32>) {
+        (key_of(&self.subset), self.ai, self.vi)
+    }
+}
+
+struct Run<'a> {
+    space: &'a SubsetSpace,
+    expand: &'a Expand<'a>,
+    arcanes: &'a [wfsim_engine::data::arcanes::ArcaneFx],
+    scenario: &'a Scenario,
+    cfg: &'a SearchConfig,
+    state: Option<&'a FunnelState>,
+    on_board: Option<&'a crate::ScreenBoardFn<'a>>,
+    cache: HashMap<(u64, usize, Option<u32>), Score>,
+    top: BinaryHeap<Reverse<Scored>>,
+    stats: SearchStats,
+    seq: usize,
+}
+
+impl Run<'_> {
+    fn out_of_budget(&self) -> bool {
+        (self.cfg.max_evals > 0 && self.stats.evals >= self.cfg.max_evals)
+            || self.state.is_some_and(|s| {
+                s.cancel.load(Ordering::Relaxed) || s.stop_enumeration.load(Ordering::Relaxed)
+            })
+    }
+
+    /// Score every point, evaluating only the ones not seen before. `None` =
+    /// the budget ran out before the batch could run; the caller stops.
+    fn score(&mut self, points: &[Point]) -> Option<Vec<Score>> {
+        let fresh: Vec<&Point> = {
+            let mut seen = std::collections::HashSet::new();
+            points
+                .iter()
+                .filter(|p| {
+                    let k = p.key();
+                    !self.cache.contains_key(&k) && seen.insert(k)
+                })
+                .collect()
+        };
+        if !fresh.is_empty() {
+            if self.out_of_budget() {
+                return None;
+            }
+            let (expand, arcanes, scenario, cfg, state) =
+                (self.expand, self.arcanes, self.scenario, self.cfg, self.state);
+            let results = par_map(&fresh, |p| eval_point(p, expand, arcanes, scenario, cfg, state));
+            for (p, res) in fresh.iter().zip(results) {
+                self.stats.subsets += 1;
+                self.stats.neighbours += 1;
+                self.stats.candidates += res.len() as u64;
+                self.stats.evals += res.len() as u64;
+                let mut best: Score = None;
+                for (cand, s) in res {
+                    let sc =
+                        Some((s.mean_kill_progress.max(0.0), s.mean_effective_damage, cand.variant));
+                    if better(sc, best) {
+                        best = sc;
+                    }
+                    push_elite(
+                        &mut self.top,
+                        Scored {
+                            kp: s.mean_kill_progress.max(0.0),
+                            eff: s.mean_effective_damage,
+                            seq: self.seq,
+                            ai: p.ai,
+                            cand,
+                            summary: s,
+                        },
+                        self.cfg.keep,
+                    );
+                    self.seq += 1;
+                }
+                self.cache.insert(p.key(), best);
+            }
+            self.stats.sampled = u128::from(self.stats.subsets);
+            if let Some(st) = self.state {
+                st.enumerated.store(self.stats.subsets, Ordering::Relaxed);
+                st.sims_done.store(self.stats.evals, Ordering::Relaxed);
+            }
+            if let Some(b) = self.on_board {
+                b(&snapshot(&self.top, crate::BOARD_TOP));
+            }
+        }
+        Some(points.iter().map(|p| self.cache[&p.key()]).collect())
+    }
+
+    /// The best of `alts`, if it beats `cur`.
+    fn best_move(&mut self, cur: Score, alts: Vec<Point>) -> Option<Option<(Point, Score)>> {
+        if alts.is_empty() {
+            return Some(None);
+        }
+        let scores = self.score(&alts)?;
+        let mut best: Option<(Point, Score)> = None;
+        for (p, s) in alts.into_iter().zip(scores) {
+            if best.as_ref().is_none_or(|(_, b)| better(s, *b)) {
+                best = Some((p, s));
+            }
+        }
+        Some(best.filter(|(_, s)| better(*s, cur)))
+    }
+
+    /// Fill a seed to size, then sweep it to a fixed point. Returns early when
+    /// the budget runs out; everything scored so far is already in `top`.
+    fn descend(&mut self, seed: Vec<usize>) {
+        let space = self.space;
+        let sizes = space.sizes();
+        let with = |sub: &[usize], add: usize, drop: Option<usize>| -> Vec<usize> {
+            let mut v: Vec<usize> = sub.iter().copied().filter(|&x| Some(x) != drop).collect();
+            v.push(add);
+            v.sort_unstable();
+            v
+        };
+
+        // The arcane and variant the start wants. The sweep revisits both once
+        // the build is full; this only keeps the fill from being chosen under
+        // a bad pair.
+        let all_arcanes: Vec<Point> = (0..self.arcanes.len())
+            .map(|ai| Point { subset: seed.clone(), ai, vi: None })
+            .collect();
+        let Some(scores) = self.score(&all_arcanes) else { return };
+        let mut cur = Point { subset: seed, ai: 0, vi: None };
+        let mut cur_score = None;
+        for (ai, s) in scores.into_iter().enumerate() {
+            if better(s, cur_score) {
+                cur_score = s;
+                cur.ai = ai;
+            }
+        }
+        let Some((_, _, vi)) = cur_score else { return };
+        cur.vi = Some(vi);
+        let Some(s) = self.score(std::slice::from_ref(&cur)) else { return };
+        cur_score = s[0];
+
+        // FILL. Below the minimum a card is added even if it costs; above it,
+        // only while one pays.
+        while cur.subset.len() < *sizes.end() {
+            let alts: Vec<Point> = space
+                .choosable()
+                .iter()
+                .filter(|i| !cur.subset.contains(i))
+                .map(|&i| with(&cur.subset, i, None))
+                .filter(|v| space.legal_upto(v))
+                .map(|subset| Point { subset, ai: cur.ai, vi: cur.vi })
+                .collect();
+            let floor = if cur.subset.len() < *sizes.start() { None } else { cur_score };
+            match self.best_move(floor, alts) {
+                None => return,
+                Some(Some((p, s))) => {
+                    cur = p;
+                    cur_score = s;
+                }
+                Some(None) => break,
+            }
+        }
+        if !space.legal(&cur.subset) {
+            return; // the pool cannot reach the minimum from this seed
+        }
+
+        // SWEEP. Positions in a fixed order — the arcane, each mod the build
+        // holds, an empty slot, the variant — restarting at the first after
+        // any accepted move.
+        'sweep: loop {
+            let held: Vec<usize> = cur
+                .subset
+                .iter()
+                .copied()
+                .filter(|i| !space.required().contains(i))
+                .collect();
+            let mut positions: Vec<Vec<Point>> = vec![(0..self.arcanes.len())
+                .filter(|&ai| ai != cur.ai)
+                .map(|ai| Point { subset: cur.subset.clone(), ai, vi: cur.vi })
+                .collect()];
+            for &m in &held {
+                let mut alts: Vec<Point> = space
+                    .choosable()
+                    .iter()
+                    .filter(|i| !cur.subset.contains(i))
+                    .map(|&i| with(&cur.subset, i, Some(m)))
+                    .filter(|v| space.legal(v))
+                    .map(|subset| Point { subset, ai: cur.ai, vi: cur.vi })
+                    .collect();
+                let dropped: Vec<usize> = cur.subset.iter().copied().filter(|&x| x != m).collect();
+                if space.legal(&dropped) {
+                    alts.push(Point { subset: dropped, ai: cur.ai, vi: cur.vi });
+                }
+                positions.push(alts);
+            }
+            if cur.subset.len() < *sizes.end() {
+                positions.push(
+                    space
+                        .choosable()
+                        .iter()
+                        .filter(|i| !cur.subset.contains(i))
+                        .map(|&i| with(&cur.subset, i, None))
+                        .filter(|v| space.legal(v))
+                        .map(|subset| Point { subset, ai: cur.ai, vi: cur.vi })
+                        .collect(),
+                );
+            }
+            let mut variants: Vec<u32> =
+                (self.expand)(&cur.subset).iter().map(|c| c.variant).collect();
+            variants.sort_unstable();
+            variants.dedup();
+            positions.push(
+                variants
+                    .into_iter()
+                    .filter(|&v| Some(v) != cur.vi)
+                    .map(|v| Point { subset: cur.subset.clone(), ai: cur.ai, vi: Some(v) })
+                    .collect(),
+            );
+            for alts in positions {
+                match self.best_move(cur_score, alts) {
+                    None => return,
+                    Some(Some((p, s))) => {
+                        cur = p;
+                        cur_score = s;
+                        continue 'sweep;
+                    }
+                    Some(None) => {}
+                }
+            }
+            return;
+        }
+    }
+}
+
+/// The seeds: every pair of primary elements the scope can field, one card
+/// each — the strongest carrier of that element, ties to pool order. Required
+/// mods ride in every seed, and an element one of them already carries is not
+/// added twice.
+pub fn seeds(space: &SubsetSpace, pool: &[ModDef]) -> Vec<Vec<usize>> {
+    let strength = |i: usize, t: DamageType| -> Option<f64> {
+        pool[i].effects.iter().find_map(|e| match e {
+            ModEffect::Element(et, v) if *et == t => Some(*v),
+            _ => None,
+        })
+    };
+    let carrier = |t: DamageType| -> Option<usize> {
+        if let Some(&r) = space.required().iter().find(|&&r| strength(r, t).is_some()) {
+            return Some(r);
+        }
+        let mut best: Option<(usize, f64)> = None;
+        for &i in space.choosable() {
+            if let Some(v) = strength(i, t) {
+                if best.is_none_or(|(_, b)| v > b) {
+                    best = Some((i, v));
+                }
+            }
+        }
+        best.map(|(i, _)| i)
+    };
+    let mut out: Vec<Vec<usize>> = Vec::new();
+    for (a, &ea) in PRIMARY.iter().enumerate() {
+        for &eb in &PRIMARY[a + 1..] {
+            let (Some(x), Some(y)) = (carrier(ea), carrier(eb)) else { continue };
+            let mut v = space.required().to_vec();
+            for m in [x, y] {
+                if !v.contains(&m) {
+                    v.push(m);
+                }
+            }
+            v.sort_unstable();
+            if space.legal_upto(&v) && !out.contains(&v) {
+                out.push(v);
+            }
+        }
+    }
+    if out.is_empty() {
+        // No element pair in the scope: start from what is required.
+        let mut v = space.required().to_vec();
+        v.sort_unstable();
+        out.push(v);
+    }
+    out
+}
+
+/// The player's starts as canonical subsets: required mods added, and a start
+/// outside the scope or colliding in a family dropped rather than guessed at.
+pub fn starts_in(space: &SubsetSpace, starts: &[Vec<usize>]) -> Vec<Vec<usize>> {
+    let mut out: Vec<Vec<usize>> = Vec::new();
+    for s in starts {
+        let mut v = space.required().to_vec();
+        for &i in s {
+            if !v.contains(&i) {
+                v.push(i);
+            }
+        }
+        v.sort_unstable();
+        if space.legal_upto(&v) && !out.contains(&v) {
+            out.push(v);
+        }
+    }
+    out
+}
+
+/// Run the descent from every start this shard owns (`index % shards ==
+/// shard`) — the player's `starts` (pool indices), or the element pairs when
+/// there are none. Returns every scored job, best first, and what it spent.
+#[allow(clippy::too_many_arguments)]
+pub fn descent(
+    space: &SubsetSpace,
+    pool: &[ModDef],
+    starts: &[Vec<usize>],
+    expand: &Expand<'_>,
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
+    scenario: &Scenario,
+    cfg: &SearchConfig,
+    state: Option<&FunnelState>,
+    on_board: Option<&crate::ScreenBoardFn<'_>>,
+) -> (Vec<ScreenedJob>, SearchStats) {
+    let mut run = Run {
+        space,
+        expand,
+        arcanes,
+        scenario,
+        cfg,
+        state,
+        on_board,
+        cache: HashMap::new(),
+        top: BinaryHeap::new(),
+        stats: SearchStats { space: space.len(), ..Default::default() },
+        seq: 0,
+    };
+    let shards = cfg.shards.max(1) as usize;
+    let shard = cfg.shard as usize % shards;
+    let starts = if starts.is_empty() { seeds(space, pool) } else { starts_in(space, starts) };
+    for (i, seed) in starts.into_iter().enumerate() {
+        if i % shards != shard {
+            continue;
+        }
+        if run.out_of_budget() {
+            break;
+        }
+        run.descend(seed);
+    }
+    run.stats.exhaustive = false;
+    let mut out: Vec<Scored> = run.top.into_iter().map(|r| r.0).collect();
+    out.sort_by(|a, b| b.cmp(a));
+    (
+        out.into_iter()
+            .map(|s| ScreenedJob { cand: s.cand, ai: s.ai, summary: s.summary })
+            .collect(),
+        run.stats,
+    )
+}
+
+/// Every candidate one point expands to, scored under its arcane. The seed is
+/// the candidate's position within its subset and nothing else, so every build
+/// runs on the same random stream as every other.
+fn eval_point(
+    p: &Point,
+    expand: &Expand<'_>,
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
+    scenario: &Scenario,
+    cfg: &SearchConfig,
+    state: Option<&FunnelState>,
+) -> Vec<(Arc<Candidate>, Summary)> {
+    let mut out = Vec::new();
+    let cands = expand(&p.subset).into_iter().filter(|c| p.vi.is_none_or(|v| c.variant == v));
+    for (ci, c) in cands.enumerate() {
+        if state.is_some_and(|s| s.cancel.load(Ordering::Relaxed)) {
+            break;
+        }
+        let s = evaluate(&c, &arcanes[p.ai], scenario, cfg.runs, job_seed(cfg.seed, ci, 0));
+        out.push((Arc::new(c), s));
+    }
+    out
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn par_map<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    let threads = crate::worker_threads().min(items.len()).max(1);
+    let chunk = items.len().div_ceil(threads).max(1);
+    let mut parts: Vec<Vec<R>> = Vec::new();
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = items
+            .chunks(chunk)
+            .map(|part| {
+                let f = &f;
+                scope.spawn(move || {
+                    crate::deprioritize_current_thread();
+                    part.iter().map(f).collect::<Vec<R>>()
+                })
+            })
+            .collect();
+        parts = handles.into_iter().map(|h| h.join().expect("descent worker")).collect();
+    });
+    parts.into_iter().flatten().collect()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn par_map<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    items
+        .iter()
+        .map(|x| {
+            let r = f(x);
+            crate::tick();
+            r
+        })
+        .collect()
+}

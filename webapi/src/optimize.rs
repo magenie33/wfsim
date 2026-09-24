@@ -249,6 +249,13 @@ pub struct OptimizePlan {
     /// the funnel. 0 = uncapped, and then the host's clock is the only bound
     /// (the browser sets one; a native run has a Cancel button instead).
     max_evals: u64,
+    /// WHICH SEARCH picks the builds the funnel ranks: the sampler, or the
+    /// descent (`"strategy": "descent"`).
+    descent: bool,
+    /// Where the descent begins: the player's partial builds, as mod ids
+    /// (`"starts": [["cryo_rounds"], ["hellfire", "serration"]]`). Empty = the
+    /// element pairs.
+    starts: Vec<Vec<String>>,
     /// This run's STRIDE of the search space, of `shards` total. The browser
     /// buys coverage by running several Web Workers over disjoint strides and
     /// merging their leaderboards; a native run is one shard of one.
@@ -913,6 +920,17 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .unwrap_or(0)
             .min(256) as usize,
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
+        descent: v.get("strategy").and_then(|x| x.as_str()) == Some("descent"),
+        starts: v
+            .get("starts")
+            .and_then(|x| x.as_array())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|s| s.as_array())
+                    .map(|s| s.iter().filter_map(|id| id.as_str().map(str::to_string)).collect())
+                    .collect()
+            })
+            .unwrap_or_default(),
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
         replay_base: {
@@ -974,6 +992,15 @@ pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
 /// resume point — continuing from one would silently drop the unwalked part.
 pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
 
+/// The player's starts as pool indices. A card the scope does not hold is
+/// left out of its start rather than failing the run.
+fn start_indices(pool: &[ModDef], starts: &[Vec<String>]) -> Vec<Vec<usize>> {
+    starts
+        .iter()
+        .map(|s| s.iter().filter_map(|id| pool.iter().position(|m| m.id == *id)).collect())
+        .collect()
+}
+
 /// GRADE the search against ground truth — the same request, the same plan,
 /// the same fight, answered twice: once by the production search and once by
 /// exhausting the scope and evaluating every job flat.
@@ -1018,6 +1045,8 @@ pub fn grade_optimize(
         variants,
         weapon_id,
         threads,
+        descent: plan_descent,
+        starts,
         ..
     } = plan;
     wfsim_optimizer::set_worker_threads(threads);
@@ -1198,8 +1227,14 @@ pub fn grade_optimize(
         seed: 0xDEAD_BEEF,
         ..Default::default()
     };
-    let (screened, sstats) =
-        wfsim_optimizer::search::search(&space, &expand, &arcanes, &scenario, &cfg, None, None);
+    let (screened, sstats) = if plan_descent {
+        let starts = start_indices(&pool, &starts);
+        wfsim_optimizer::descent::descent(
+            &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, None, None,
+        )
+    } else {
+        wfsim_optimizer::search::search(&space, &expand, &arcanes, &scenario, &cfg, None, None)
+    };
     let mut sc: Vec<Candidate> = Vec::new();
     let mut by_ptr: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
     let mut sjobs: Vec<Job> = Vec::new();
@@ -1358,6 +1393,8 @@ pub fn run_optimize_resumable(
         variants,
         threads,
         max_evals,
+        descent,
+        starts,
         shard,
         shards,
         replay_base,
@@ -1720,15 +1757,15 @@ pub fn run_optimize_resumable(
             shards,
             ..Default::default()
         };
-        let (screened, stats) = wfsim_optimizer::search::search(
-            &space,
-            &expand,
-            &arcanes,
-            &scenario,
-            &cfg,
-            Some(state),
-            board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>),
-        );
+        let board = board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>);
+        let (screened, stats) = if descent {
+            let starts = start_indices(&pool, &starts);
+            wfsim_optimizer::descent::descent(
+                &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, Some(state), board,
+            )
+        } else {
+            wfsim_optimizer::search::search(&space, &expand, &arcanes, &scenario, &cfg, Some(state), board)
+        };
         search_stats = Some(stats);
         if screened.is_empty() {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
