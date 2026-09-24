@@ -1139,7 +1139,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // It multiplies the whole shot, direct and radial alike: the
         // wiki calls it "a bonus to their total damage". Only the
         // DIRECT hit builds it — *"Area-of-effect and damage over time
-        // do not affect the Strike Combo Counter"* — which is counted
+        // do not affect the Shot Combo Counter"* — which is counted
         // below.
         let combo_now =
             combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t);

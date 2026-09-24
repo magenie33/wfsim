@@ -198,7 +198,7 @@ pub(crate) fn enumerate_buffs(
         if let Some(c) = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.sniper_combo) {
             push(BuffMeta {
                 id: "sniper_combo".into(),
-                name: "Strike Combo Counter".into(),
+                name: "Shot Combo Counter".into(),
                 // The count alone would not say what it buys, and the tiers
                 // are not linear — so the card states the first one and the
                 // rule that generates the rest.

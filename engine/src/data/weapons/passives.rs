@@ -99,7 +99,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     // factors are the weapon's own.
     if let Some(c) = s.sniper_combo {
         out.push(format!(
-            "Scoped in, consecutive hits build a Strike Combo Counter: {} landing {} multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every {:.0} s without a hit, and it pays nothing at all from the hip.",
+            "Scoped in, consecutive hits build a Shot Combo Counter: {} landing {} multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every {:.0} s without a hit, and it pays nothing at all from the hip.",
             c.min,
             if c.min == 1 { "hit" } else { "hits" },
             c.seconds

@@ -64,7 +64,7 @@ fn the_roster_declares_them_where_the_wiki_does() {
     let scope = |id: &str| spec(id).and_then(|w| w.scope);
     assert_eq!(scope("vectis").map(|z| z.headshot_damage), Some(0.5));
     assert_eq!(scope("vectis_prime").map(|z| z.headshot_damage), Some(0.6));
-    // THE COMBO IS THE SNIPER'S; THE SCOPE IS NOT. A Strike Combo Counter is
+    // THE COMBO IS THE SNIPER'S; THE SCOPE IS NOT. A Shot Combo Counter is
     // keyed on the class in game — the wiki's rule opens "Scoped in" and
     // the mechanic exists on no other family — so a combo outside the class
     // is a leak. A `scope:` is keyed on the fight's AIMING state and on
