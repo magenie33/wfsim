@@ -1138,7 +1138,19 @@ ui:
   "what conditions was that measured under?": 上面那个数是在什么条件下量出来的？
   "Being fought — simulated": 被打的 —— 模拟出来的
   "Doing the fighting — assumed": 打人的 —— 假设成立的
-  "armour, resistances, overguard and every status pile are what this fight arrived at, not numbers typed in": 护甲、抗性、超量护甲和每一摞状态层，都是这场仗自己走到的，不是填进去的
+  "what it came from": "伤害来自"
+  "rows": "行数"
+  "biggest": "最大一次"
+  "another gun in this fight": "这场仗里的另一把枪"
+  "the build this page is about": "这个页面说的那套配装"
+  "nothing in this window": "这个窗口里什么都没有"
+  "{n} rows of this engagement's own ledger — every figure above is their sum, and each one opens": "这一场交战自己的账本里的 {n} 行——上面每个数都是它们加起来的，而且每一行都能展开"
+  "on death": "死后"
+  "replaced at once": "立刻补一具"
+  "one gun": "就一把枪"
+  "the floor — {n} on it, as the fight opened": "场地 —— 开打时站了 {n} 具"
+  "how dark a body is drawn is what it actually took — where the damage went is the one thing a total cannot say": "点的深浅就是它实际吃到的伤害——伤害落在哪里，是一个总数永远说不出来的事"
+  "armour, resistances, overguard and every status pile are what this fight arrived at, not numbers typed in": 护甲、抗性、超宏防护和每一摞状态层，都是这场仗自己走到的，不是填进去的
   "these are granted, not found: this engine models no movement, no survival and no missed shot you would have missed": 这些是直接给定的，不是算出来的：本引擎不模拟走位、不模拟生存，也不会替你打空一枪
   "what is not modelled ↗": 哪些东西没有建模 ↗
   "one body": 单体

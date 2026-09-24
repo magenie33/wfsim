@@ -229,34 +229,31 @@ function renderResults(r, testedAt) {
   // run and a 120-second one produce comparable numbers.
   // The score itself is the total over the engagement and stays beside it,
   // the same way total damage sits beside DPS.
-  // ---- ZONE 2: THE FIGHT, RESTATED ---------------------------------------
+  // ---- ZONE 2: THE FIGHT, DRAWN ------------------------------------------
   //
-  // THE NUMBER IS WORTHLESS WITHOUT THE FIGHT IT CAME FROM, and the fight was
-  // stated only in the scenario controls — which are editable, so a reader
-  // coming back to a stored result, or opening a share link, was looking at a
-  // figure with nothing on screen saying what it was measured against.
+  // TWO SIDES AND THE FLOOR BETWEEN THEM, so the LAYOUT is the claim this zone
+  // makes — assumed on the left, simulated on the right (`docs/UI.md`
+  // §"A fight is n against m, and zone 2 draws it").
   //
-  // TWO COLUMNS, AND THE SPLIT IS THE RULE: a condition about the TARGET is
-  // simulated, a condition about the TENNO is assumed (AGENTS.md). The page
-  // has followed that rule for ever and never showed it. Shown, it stops being
-  // an internal convention and becomes the honest sentence this panel needs.
+  // THE FLOOR IS THE FIGHT AS IT OPENED and never takes a clock: where
+  // everyone started is a CONDITION, which is all this zone answers. Where
+  // they got to belongs to the replay.
   const fightMarkup = (r) => {
     const t = r.target || {};
     const n0 = (x) => Math.round(x || 0).toLocaleString();
-    const chip = (s) => `<span class="fc">${escHtml(s)}</span>`;
-    const bodies = (r.bodies || []).length;
-    const sim_ = [
-      t.name ? chip(t.name) : "",
-      chip(`${tr("Level")} ${t.level ?? sim.level}`),
-      t.steel_path ? chip("Steel Path") : "",
-      t.eximus ? chip(tr("Eximus")) : "",
-      t.overguard > 0 ? chip(`${tr("Overguard")} ${n0(t.overguard)}`) : "",
-      t.shield > 0 ? chip(`${tr("Shield")} ${n0(t.shield)}`) : "",
-      t.health > 0 ? chip(`${tr("Health")} ${n0(t.health)}`) : "",
-      t.armor > 0 ? chip(`${tr("Armour")} ${n0(t.armor)}`) : "",
-      chip(bodies > 1 ? trF("{n} bodies", { n: bodies }) : tr("one body")),
-      chip(tr("a kill is replaced at once")),
-    ].join("");
+    const chip = (x) => `<span class="fc">${escHtml(x)}</span>`;
+    const seats = r.combatants || [];
+    const most = Math.max(...seats.map((c) => c.damage || 0), 1);
+    // WHO IS FIRING — one row per seat, the open build first. Its share of the
+    // total is the bar, because "who did the work" is the first thing a reader
+    // of a squad's number asks and the answer is otherwise four zones down.
+    const seatRows = seats.map((c, i) => `<button type="button" class="fs-seat${
+      i === 0 ? " you" : ""}" data-fseat="${escHtml(c.id)}">
+        <span class="fs-n">${i + 1}</span>
+        <span class="fs-w">${escHtml(combatantName(c.id, c))}</span>
+        <span class="fs-bar"><i style="width:${((c.damage || 0) / most * 100).toFixed(1)}%"></i></span>
+        <span class="fs-d">${n0(c.damage)}</span>
+      </button>`).join("");
     // WHAT THE TENNO IS DOING, which nothing simulates: it is granted. Each of
     // these is a knob in the scenario, and every one of them is the reader's
     // claim about their own play rather than this engine's finding.
@@ -271,16 +268,39 @@ function renderResults(r, testedAt) {
       (sim.abilities || []).length ? chip(trF("{n} abilities held up", { n: sim.abilities.length })) : "",
       (sim.auras || []).length ? chip(trF("{n} squad auras", { n: sim.auras.length })) : "",
     ].join("");
-    return `<div class="fight-two">
-      <div class="fight-side">
-        <div class="fs-h">${escHtml(tr("Being fought — simulated"))}</div>
-        <div class="fc-row">${sim_}</div>
-        <p class="fs-n">${escHtml(tr("armour, resistances, overguard and every status pile are what this fight arrived at, not numbers typed in"))}</p>
-      </div>
-      <div class="fight-side">
+    const bodies = (r.bodies || []).length || 1;
+    const pool = (label, v) => (v > 0
+      ? `<div class="fs-stat"><span>${escHtml(label)}</span><b>${n0(v)}</b></div>` : "");
+    return `<div class="fight-three">
+      <div class="fight-side fs-them">
         <div class="fs-h">${escHtml(tr("Doing the fighting — assumed"))}</div>
-        <div class="fc-row">${assumed}</div>
+        <div class="fs-card">${seatRows || `<div class="fs-none">${escHtml(tr("one gun"))}</div>`}</div>
+        <div class="fs-card"><div class="fc-row">${assumed}</div></div>
         <p class="fs-n">${escHtml(tr("these are granted, not found: this engine models no movement, no survival and no missed shot you would have missed"))} <a href="/support">${escHtml(tr("what is not modelled ↗"))}</a></p>
+      </div>
+      <div class="fight-floor">
+        <div class="fs-h fs-h-mid">${escHtml(trF("the floor — {n} on it, as the fight opened", { n: bodies }))}</div>
+        <div class="fight-scene" id="fight-scene"></div>
+        <p class="fs-n fs-mid">${escHtml(tr("how dark a body is drawn is what it actually took — where the damage went is the one thing a total cannot say"))}</p>
+      </div>
+      <div class="fight-side fs-us">
+        <div class="fs-h">${escHtml(tr("Being fought — simulated"))}</div>
+        <div class="fs-card">
+          <div class="fs-who">
+            <div class="fs-wn">${escHtml(t.name || sim.enemy || "")}</div>
+            <div class="fs-wb">${escHtml([
+              `${tr("Level")} ${t.level ?? sim.level}`,
+              t.steel_path ? "Steel Path" : "",
+              t.eximus ? tr("Eximus") : "",
+            ].filter(Boolean).join(" · "))}</div>
+          </div>
+          ${pool(tr("Overguard"), t.overguard)}
+          ${pool(tr("Shield"), t.shield)}
+          ${pool(tr("Health"), t.health)}
+          ${pool(tr("Armour"), t.armor)}
+          <div class="fs-stat"><span>${escHtml(tr("on death"))}</span><b>${escHtml(tr("replaced at once"))}</b></div>
+        </div>
+        <p class="fs-n">${escHtml(tr("armour, resistances, overguard and every status pile are what this fight arrived at, not numbers typed in"))}</p>
       </div>
     </div>
     <div class="fight-foot">
@@ -603,6 +623,14 @@ function renderResults(r, testedAt) {
   // an answer and nowhere to take it. Neither of these is new machinery — the
   // optimizer is a module of this page and the link is `shareUrl` — they are
   // the door out standing where the reading finishes.
+  // EVERY SEAT IN ZONE 2 OPENS ITS OWN SHEET — the same gesture a body on the
+  // floor beside it uses, because "tell me about that one" is one question
+  // whichever side of the fight it is asked about.
+  document.querySelectorAll("[data-fseat]").forEach((b, i) => {
+    const c = (r.combatants || [])[i] || {};
+    b.onclick = () => openActor("ally", i, combatantName(c.id, c),
+      i === 0 ? tr("the build this page is about") : tr("another gun in this fight"));
+  });
   const toOpt = $("exit-optimize");
   if (toOpt) {
     toOpt.onclick = () => {
@@ -643,6 +671,25 @@ function renderResults(r, testedAt) {
   // WHICH body and WHICH filter lives outside the markup, the same rule the
   // fold state follows one function over.
   paintRecord(r);
+  // THIS FIGHT'S OWN FLOOR — zone 2's, read-only and shaded by what each body
+  // took. Mounted here because `mountArena` measures the box it is handed, so
+  // it has to run after the markup is in the document.
+  //
+  // IT TAKES NO PLAYHEAD. It is the arrangement the engagement OPENED with;
+  // the replay's copy is the one that follows a clock (and the one that will
+  // animate when bodies can move).
+  const fightScene = $("fight-scene");
+  if (fightScene && (r.bodies || []).length) {
+    const { heat, idAt } = bodyHeat(r);
+    mountArena(fightScene, sim, allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0], {
+      readonly: true,
+      heat,
+      // PICKING HERE OPENS THAT BODY, the same gesture the roll call below
+      // uses — one way to ask about one enemy, wherever the reader is looking.
+      onPick: (i) => openActor("foe", i, idAt(i) || `e${i + 1}`,
+        i === 0 ? tr("the body the weapon was on") : tr("an enemy the shot reached")),
+    });
+  }
   wireReplay(r);
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");

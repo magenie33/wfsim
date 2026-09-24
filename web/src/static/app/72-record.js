@@ -407,6 +407,11 @@ function recordBody(st, peek) {
   if (!events.length) {
     return `<div class="rec-idle"><span class="sim-hint">${escHtml(tr("nothing happened in this window"))}</span></div>`;
   }
+  // THE SHEET GOES ABOVE EITHER VIEW. The panel shows a PEEK of six rows and
+  // the full table lives in its own window, but the fold is over every row
+  // LOADED — so the sheet is the same answer in both places, and it is the one
+  // thing a reader who never opens the window still gets.
+  const sheet = st.actor ? actorSheet(st.actor) : "";
   const bodies = recordBodies(events);
   const pick = st.body == null ? (bodies.length ? bodies[0][0] : null) : st.body;
   const rows = events.filter((e) => e.body == null || e.body === pick);
@@ -433,8 +438,8 @@ function recordBody(st, peek) {
   // second markup path, so the two views cannot drift apart.
   if (peek) {
     const few = shown.filter((e) => e.kind === "damage").slice(0, RECORD_PEEK_ROWS);
-    if (!few.length) return "";
-    return `<div class="rec-peek"><table class="rec-t">
+    if (!few.length) return sheet;
+    return `${sheet}<div class="rec-peek"><table class="rec-t">
       <thead><tr>
         <th>${escHtml(tr("time"))}</th>${
         (st.combatants || []).length > 1 ? `<th>${escHtml(tr("who dealt it"))}</th>` : ""}<th>${escHtml(tr("damage source"))}</th>
@@ -453,7 +458,8 @@ function recordBody(st, peek) {
   const cut = st.dropped > 0 || (st.from || 0) > 0;
   const window0 = cut ? (st.from || 0) : null;
   const window1 = cut ? events[events.length - 1].t : null;
-  return `<div class="rec-tools">
+  return `${sheet}
+    <div class="rec-tools">
       ${bodies.length > 1 ? `<span class="tlabel">${escHtml(tr("whose"))}</span>${chips}<span class="rec-sep"></span>` : ""}
       <span class="tlabel">${escHtml(tr("only"))}</span>${kinds}
       <span class="rec-sep"></span>
@@ -642,6 +648,105 @@ function ledgerRows(e) {
         F(l.f) === "critical" && e.crit_damage
           ? `<span class="lg-of">1 + ${e.crit} × (${e.crit_damage} − 1)</span>` : ""}<span class="lg-out">${n(l.o)}</span></span></div>`;
   }).join("");
+}
+
+/// ASK ABOUT ONE ACTOR, from wherever the reader is looking — a seat or a
+/// body on the fight's own floor in zone 2, a chip in the roll call, a row in
+/// the record itself.
+///
+/// IT LANDS ON THE RECORD, because that is what the answer is made of: the
+/// sheet is a fold of these rows, so putting it anywhere else would be a
+/// summary standing apart from the thing it summarises. Selecting a BODY also
+/// filters the rows to it, which the roll call already did; selecting a SEAT
+/// leaves the rows alone, because "what did this gun do" is a cut of the whole
+/// engagement rather than a slice of it.
+function openActor(side, i, name, sub) {
+  if (!recordState) return;
+  recordState.actor = { side, i: Number(i), name, sub };
+  if (side === "foe") { recordState.body = Number(i); recordState.at = 0; }
+  paintRecord(recordResult);
+  const host = recordHostEl();
+  if (host) host.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+/// ONE ACTOR'S OWN SHEET, folded out of the combat record.
+///
+/// WCL GIVES YOU A PAGE PER ACTOR; SimC GIVES YOU A LINE PER ACTION. This is
+/// both, and it is built from the RECORD rather than from a second set of
+/// counters — so every figure on it is a sum of rows the reader can open, and
+/// the sheet cannot disagree with the ledger it is made of. A per-actor
+/// accumulator in `RunResult` would be 25 KB an engagement (`MAX_BODIES` is
+/// 400) and a second answer to every question this already answers.
+///
+/// IT IS ONE ENGAGEMENT, not the mean, and it says so: the record is the
+/// sampled run, which is what everything below the replay bar already is.
+/// The means live in zone 1 and in the per-seat table.
+///
+/// SIDE DECIDES THE QUESTION. An ALLY is asked what it DEALT and by what; an
+/// ENEMY is asked what it TOOK and from whom. They are the same fold read
+/// along its two axes, which is why one function draws both.
+function actorSheet(who) {
+  const st = recordState;
+  const rows = (st && st.events) || [];
+  const dmg = rows.filter((e) => e.kind === "damage");
+  const seats = (st && st.combatants) || [];
+  const ally = who.side === "ally";
+  // THE ROWS THAT ARE THIS ACTOR'S, and the axis the other side is cut by.
+  const mine = dmg.filter((e) => (ally ? (e.combatant || 0) === who.i : (e.body || 0) === who.i));
+  const total = mine.reduce((a, e) => a + (e.effective || 0), 0);
+  // …AND THE CUT. An ally is cut by WHERE THE DAMAGE CAME FROM (its own
+  // sources, SimC's action list); an enemy by WHO DEALT IT (WCL's, and the
+  // one thing a single-dummy simulator cannot answer at all).
+  const bucket = new Map();
+  for (const e of mine) {
+    const k = ally ? (e.origin || "?") : String(e.combatant || 0);
+    const b = bucket.get(k) || { k, sum: 0, n: 0, top: 0, crit: 0, crits: 0 };
+    b.sum += e.effective || 0;
+    b.n += 1;
+    b.top = Math.max(b.top, e.effective || 0);
+    if ((e.crit || 0) > 0) b.crits += 1;
+    bucket.set(k, b);
+  }
+  const cuts = [...bucket.values()].sort((a, b) => b.sum - a.sum);
+  const most = cuts.length ? cuts[0].sum : 1;
+  const n0 = (x) => Math.round(x || 0).toLocaleString();
+  const pc = (x) => `${(x * 100).toFixed(1)}%`;
+  // THE SAME NAME THE ROWS BELOW USE. A second table for origin names is a
+  // second spelling of one word, and the row already has one.
+  const label = (k) => (ally
+    ? tr(String(k).replace(/_/g, " "))
+    : combatantName((seats[Number(k)] || {}).id || k, seats[Number(k)]));
+  const head = ally ? tr("what it came from") : tr("who dealt it");
+  return `<div class="ac-sheet">
+    <div class="ac-h">
+      <span class="ac-side ${ally ? "ac-ally" : "ac-foe"}">${escHtml(ally ? tr("dealt") : tr("taken"))}</span>
+      <span class="ac-name">${escHtml(who.name)}</span>
+      <span class="ac-sub">${escHtml(who.sub || "")}</span>
+      <span class="ac-tot">${n0(total)}</span>
+    </div>
+    <table class="ac-tab"><thead><tr>
+      <th>${escHtml(head)}</th><th class="num">${escHtml(tr("total"))}</th>
+      <th class="num">${escHtml(tr("share"))}</th><th class="num">${escHtml(tr("rows"))}</th>
+      <th class="num">${escHtml(tr("biggest"))}</th><th class="num">${escHtml(tr("crit"))}</th>
+    </tr></thead><tbody>${cuts.map((c) => `<tr>
+      <td class="ac-bar"><i style="width:${(c.sum / most * 100).toFixed(1)}%"></i><span>${escHtml(label(c.k))}</span></td>
+      <td class="num">${n0(c.sum)}</td>
+      <td class="num">${total > 0 ? pc(c.sum / total) : "—"}</td>
+      <td class="num">${n0(c.n)}</td>
+      <td class="num">${n0(c.top)}</td>
+      <td class="num">${c.n ? pc(c.crits / c.n) : "—"}</td>
+    </tr>`).join("") || `<tr><td colspan="6" class="ac-none">${escHtml(tr("nothing in this window"))}</td></tr>`}</tbody></table>
+    <p class="ac-n">${escHtml(trF(
+      "{n} rows of this engagement's own ledger — every figure above is their sum, and each one opens",
+      { n: n0(mine.length) }))}${
+      // THE SLICE, AND ONLY WHERE THERE IS ONE. `st.to` is the window that was
+      // ASKED for and is unset on a full read, so printing it unconditionally
+      // said "between 0s and 0s" about a record covering the whole fight.
+      (st && (st.dropped > 0 || (st.from || 0) > 0))
+        ? ` ${escHtml(trF("{a}s to {b}s of the fight", {
+          a: st.from || 0, b: (rows[rows.length - 1] || {}).t || 0 }))}`
+        : ""}</p>
+  </div>`;
 }
 
 function recordRow(e, rosters) {

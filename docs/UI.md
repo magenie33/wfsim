@@ -574,6 +574,35 @@ switch goes nowhere near it. `scenariosChanged` calls `refreshGains()` — that
 hook rather than the call sites, because it is already the only thing every
 scenario mutation goes through.
 
+## A fight is n against m, and zone 2 draws it
+
+**THE ZONE IS TWO SIDES AND THE FLOOR BETWEEN THEM.** Left is what the reader
+DECLARED about their own play, right is what the engine FOUND about the enemy,
+and the arena in the middle is where both of them stood — so the layout IS the
+claim this zone exists to make rather than two headings over two lists of
+chips. A condition about the TARGET is simulated; one about the TENNO is
+assumed, and now a reader can see which is which without being told.
+
+**IT SCALES BECAUSE THE PICTURE DOES.** Nine bodies were a chip reading "9
+bodies" and three seats were not on the page at all; a dot per body and a row
+per seat is the same block at 1 against 1 and at 3 against 361.
+
+**THE FLOOR IS THE FIGHT AS IT OPENED**, and it stays that way when the arena
+learns to MOVE. Where everyone started is a CONDITION — the only question this
+zone answers — and where they got to is what happened, which belongs to the
+replay and follows its playhead. The two scenes are two questions rather than
+one drawn twice, so the day positions become time-varying only the replay's
+mount takes a clock.
+
+**ONE ACTOR'S SHEET IS A FOLD OF THE RECORD**, not a second set of counters:
+`actorSheet` groups the rows the ledger already wrote, an ALLY by where its
+damage came from and an ENEMY by who dealt it. Every figure on it is a sum of
+rows the reader can open, so the summary cannot disagree with the thing it
+summarises — and it costs the engine nothing, where a per-actor accumulator in
+`RunResult` would be 25 KB an engagement (`MAX_BODIES` is 400). It is ONE
+engagement, like everything else below the replay bar; the means live in zone
+1 and in the per-seat table.
+
 ## A fight is n against m, and the roster is the other half
 
 **A FIGHT HOLDS MORE THAN ONE GUN.** The enemy half has been a list since the

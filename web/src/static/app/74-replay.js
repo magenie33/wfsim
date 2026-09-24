@@ -46,6 +46,23 @@ function scrubLegend(rp) {
   return `<div class="scrub-legend">${items.join("")}</div>`;
 }
 
+/// HOW HARD EACH BODY WAS HIT, 0..1, in the ARENA's own numbering.
+///
+/// TWO SCENES SHADE BY THIS — the fight's picture in zone 2 and the replay's
+/// in zone 3 — and a second copy of the join is a second answer to "which dot
+/// is this row". The arena draws body 0 as the aimed one and `i + 1` as
+/// `formation[i]`; the result names bodies by ID, so the two are joined on the
+/// name the page itself gave them.
+function bodyHeat(r) {
+  const idAt = (i) => (i === 0
+    ? (((r.replay || {}).tracked || [])[0] || (r.bodies || [])[0] && r.bodies[0].id)
+    : ((sim.formation || [])[i - 1] || {}).id || `e${i + 1}`);
+  const top = Math.max(...(r.bodies || []).map((b) => b.damage)) || 1;
+  const byId = Object.fromEntries((r.bodies || []).map((b) => [b.id, b.damage / top]));
+  const n = 1 + (sim.formation || []).length;
+  return { idAt, n, heat: Array.from({ length: n }, (_, i) => byId[idAt(i)] || 0) };
+}
+
 function replayMarkup(r) {
   const rp = r && r.replay;
   if (!rp || !rp.t || rp.t.length < 2) return { bar: "", where: "", curves: "" };
@@ -666,16 +683,7 @@ function wireReplay(r) {
   // it picks rather than drags (`mountArena`'s analysis mount).
   const sceneEl = $("rp-scene");
   if (sceneEl && (r.bodies || []).length) {
-    // BY ARENA INDEX, which is what the scene draws: 0 is the aimed body and
-    // `i + 1` is `formation[i]`. The result names bodies by ID, so the two are
-    // joined on the name the page itself gave them.
-    const idAt = (i) => (i === 0
-      ? (rp.tracked || [])[0]
-      : ((sim.formation || [])[i - 1] || {}).id || `e${i + 1}`);
-    const top = Math.max(...r.bodies.map((b) => b.damage)) || 1;
-    const byId = Object.fromEntries(r.bodies.map((b) => [b.id, b.damage / top]));
-    const n = 1 + (sim.formation || []).length;
-    const heat = Array.from({ length: n }, (_, i) => byId[idAt(i)] || 0);
+    const { idAt, heat, n } = bodyHeat(r);
     const selIdx = Array.from({ length: n }, (_, i) => i)
       .find((i) => idAt(i) === (rp.tracked || [])[replayFoeIdx(rp)]);
     mountArena(sceneEl, sim, (allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0]), {
