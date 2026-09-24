@@ -243,6 +243,7 @@ fn incarnon_cycle_alternates_forms_deterministically() {
         aim_weight: 1.0,
         multiplier: 1.0, // 1x so no crit-location bonus, pure counts
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }];
     let base_form = FightParams {
@@ -551,6 +552,7 @@ fn deadhead_adds_base_damage_stacks_and_headshot_bonus() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         ..no_status()
@@ -957,6 +959,7 @@ fn weakpoint_damage_adds_into_the_part_multiplier_at_1_5x() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         ..flat_base()
@@ -991,6 +994,7 @@ fn a_weapon_may_overrule_what_a_head_is_worth() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: true,
         }],
         ..flat_base()
@@ -1023,6 +1027,7 @@ fn a_weapon_may_overrule_what_a_head_is_worth() {
                 aim_weight: 1.0,
                 multiplier: 1.0,
                 is_head: false,
+                is_weak_point: false,
                 crit_bonus: false,
             }],
             ..head3x(m, 0.0)
@@ -1053,6 +1058,7 @@ fn weakpoint_crit_chance_applies_on_weakpoint_pellets_only() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         ..no_status()
@@ -1253,6 +1259,7 @@ fn a_broken_shield_leaks_and_the_window_costs_gunfire_nothing() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         ..p
@@ -1327,6 +1334,7 @@ fn crosshairs_buff_is_refreshed_by_headshot_hits() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         duration_seconds: 20.0,

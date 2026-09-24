@@ -359,6 +359,7 @@ fn a_bouncing_projectile_in_a_crowd(n: usize, head_chance: f64) -> FightParams {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     }];
     p.ricochet = Some(crate::model::Ricochet {
@@ -398,6 +399,7 @@ pub(super) fn all_head() -> Vec<BodyPart> {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }]
 }
@@ -408,6 +410,7 @@ pub(super) fn mono_body(multiplier: f64) -> Vec<BodyPart> {
         aim_weight: 1.0,
         multiplier,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     }]
 }
@@ -523,6 +526,7 @@ fn orb_thrower() -> FightParams {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
+            is_weak_point: false,
             crit_bonus: false,
         }],
         magazine_size: 1.0,

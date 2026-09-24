@@ -737,7 +737,9 @@ pub fn run_once_traced(
             1.0
         };
         let (mut any_head, mut any_big) = (false, false);
-        let headshots_before = r.headshots + r.headshots_on_others;
+        // THE GAUGE'S OWN MARK, and it counts what the gauge counts —
+        // `RunResult::weakpoint_hits`, not the reported headshot rate.
+        let headshots_before = r.weakpoint_hits + r.headshots_on_others;
         let pellets_before = r.pellets;
         // THE HEADSHOT-DAMAGE BRACKETS as of this shot: the field's head ladder
         // below, and what a Tesla arc is worth on a neighbour's head.

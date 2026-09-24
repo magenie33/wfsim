@@ -417,7 +417,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         None => pick_part(&params.body_parts, &mut d.spine),
     };
     let cc_pellet = effective_cc
-        + if part.is_head {
+        + if part.is_weak_point {
+            // THE WEAK POINT, NOT THE HEAD. The wiki lists the weak-point
+            // critical-chance bracket under BOTH categories, so a Bursa's rear
+            // takes it and the Ropalolyst's head does not.
+            //
             // Weak-point-only crit chance is relative too, and it is
             // DIRECT-only, so the direct part's base is the right one.
             active.unmodded_crit_chance
@@ -505,14 +509,20 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // Plasmor, "1x headshot multiplier". Its own value REPLACES the
         // part's, and the additive brackets still pay on top of it.
         let m = active.headshot_multiplier.unwrap_or(m);
+        // A HEAD FOUND BY SEARCHING FOR ONE is a head, so its rate is a head's.
         (m + 1.5 * active.weakpoint_damage) * (1.0 + hb_head) * (1.0 + hi_head)
     };
     let head_mult = active.headshot_multiplier.unwrap_or(part.multiplier);
-    let wp_mult = if part.is_head {
-        head_mult + 1.5 * active.weakpoint_damage
-    } else {
-        part.multiplier
-    };
+    // WEAK POINT DAMAGE IS ADDED AT A RATE THE TWO FLAGS DECIDE, verbatim from
+    // the wiki (Enemy Body Parts): a weak point that is ALSO a head takes it at
+    // 1.5x, one that is not takes it at 1.0x, and a part that is no weak point
+    // takes none of it however big its own multiplier.
+    //
+    //   (3 + 1.5 * (3.5 + 0.75)) = 9.375x   head weak point
+    //   (3 + 1.0 * (3.5 + 0.75)) = 7.25x    weak point, not a head
+    let wp_rate = weak_point_damage_rate(part);
+    let wp_mult =
+        if part.is_head { head_mult } else { part.multiplier } + wp_rate * active.weakpoint_damage;
     let part_factor = wp_mult * (1.0 + head_bonus) * (1.0 + head_innate);
     // …AND WHAT AN ELECTRICITY OR GAS TICK IS WORTH WHERE IT LANDS: the
     // same brackets over a 1x base, acuity left out (`lands_on_a_part`).
@@ -1728,13 +1738,25 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             r.big_crits += (tier >= 2) as u32;
             r.crit_tier_sum += tier;
             r.headshots += part.is_head as u32;
+            r.weakpoint_hits += part.is_weak_point as u32;
             r.headshots_on_others += punched.hits;
             *any_head |= part.is_head;
             *any_big |= tier >= 2;
 
-            // Crosshairs' on-HEADSHOT buff refreshes on every head
-            // hit (kills only matter for its stacks).
-            if part.is_head {
+            // EVERY TRIGGER BELOW READS THE WEAK POINT, NOT THE HEAD, and
+            // the cards' own wording is why: *"Despite the description
+            // specifying headshots, the effect can be trigger on weak-point
+            // hits"* — the reading `BuffTrigger::Headshot` has always carried
+            // and could not reach, because the gate was the head.
+            //
+            // The two are *"distinct, but mostly overlapping"* (wiki, Enemy
+            // Body Parts) and Update 44 made the overlap smaller. What stays a
+            // HEAD's is what a hit is WORTH: the multiplier, the additive
+            // headshot-damage bracket, and the 1.5x rate above.
+            //
+            // Crosshairs' buff refreshes on every one of them (kills only
+            // matter for its stacks).
+            if part.is_weak_point {
                 if let Some(b) = params.crit_chance_on_headshot {
                     windows.crit_on_headshot = t + b.duration;
                 }
@@ -1788,10 +1810,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
                 }
             } else {
-                // …AND A BODY HIT TAKES THE PILE. The only trigger in
-                // this sim that the next shot can undo, and the reason
-                // it is not `Headshot` with a clock: what ends it is
-                // what you hit, not how long you waited.
+                // …AND ANYTHING THAT IS NOT A WEAK POINT TAKES THE PILE. The
+                // only trigger in this sim that the next shot can undo, and
+                // the reason it is not `Headshot` with a clock: what ends it
+                // is what you hit, not how long you waited.
                 for (i, b) in params.stacking_buffs.iter().enumerate() {
                     if b.trigger == crate::model::BuffTrigger::ConsecutiveHeadshot {
                         buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);

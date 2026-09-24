@@ -41,6 +41,7 @@ fn cernos_primes_innate_headshot_bonus_multiplies_instead_of_adding() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         ..no_status()
@@ -350,6 +351,7 @@ fn lingering_judgement_adds_to_deadheads_bracket_instead_of_multiplying_it() {
             aim_weight: 1.0,
             multiplier: 2.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }],
         headshot_streak: perk.then_some(streak),
@@ -857,7 +859,8 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
 fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
     let head = vec![BodyPart {
         name: "head".into(), aim_weight: 1.0, multiplier: 1.0,
-        is_head: true, crit_bonus: false,
+        is_head: true,
+        is_weak_point: true, crit_bonus: false,
     }];
     let buff = |id: &'static str, trigger| crate::model::StackingBuff {
         id,
@@ -969,7 +972,7 @@ fn kings_gambit_kills_body_crits_and_pays_the_weak_point_additively() {
             &panel, &crate::arena::Arena::training(20.0), &ArcaneFx::none());
         p.body_parts = vec![BodyPart {
             name: (if head { "head" } else { "body" }).into(),
-            aim_weight: 1.0, multiplier: 1.0, is_head: head, crit_bonus: false,
+            aim_weight: 1.0, multiplier: 1.0, is_head: head, is_weak_point: head, crit_bonus: false,
         }];
         p.duration_seconds = 20.0;
         let s = monte_carlo(&p, 8, 5);
@@ -1475,7 +1478,8 @@ fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
         duration_seconds: 5.0,
         body_parts: vec![BodyPart {
             name: "head".into(), aim_weight: 1.0, multiplier: 2.0,
-            is_head: true, crit_bonus: false,
+            is_head: true,
+            is_weak_point: true, crit_bonus: false,
         }],
         ..flat_base()
     };
@@ -1494,9 +1498,11 @@ fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
     let mixed = FightParams {
         body_parts: vec![
             BodyPart { name: "head".into(), aim_weight: 1.0, multiplier: 2.0,
-                       is_head: true, crit_bonus: false },
+                       is_head: true,
+                       is_weak_point: true, crit_bonus: false },
             BodyPart { name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
-                       is_head: false, crit_bonus: false },
+                       is_head: false,
+                       is_weak_point: false, crit_bonus: false },
         ],
         ..all_head.clone()
     };
@@ -1947,9 +1953,11 @@ fn a_consecutive_weakpoint_buff_is_undone_by_a_body_shot() {
         // changes is which trigger fires — not how hard the hit lands.
         p.body_parts = vec![
             BodyPart { name: "head".into(), aim_weight: head_share, multiplier: 1.0,
-                       is_head: true, crit_bonus: false },
+                       is_head: true,
+                       is_weak_point: true, crit_bonus: false },
             BodyPart { name: "body".into(), aim_weight: 1.0 - head_share, multiplier: 1.0,
-                       is_head: false, crit_bonus: false },
+                       is_head: false,
+                       is_weak_point: false, crit_bonus: false },
         ];
         let s = monte_carlo(&p, 16, 0x5B15);
         s.mean_damage / s.mean_pellets.max(1e-9)

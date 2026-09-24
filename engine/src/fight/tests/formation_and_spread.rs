@@ -1097,6 +1097,7 @@ fn a_punched_body_inherits_the_headshot_and_a_bounce_does_not() {
             aim_weight: 1.0,
             multiplier: if head { 3.0 } else { 1.0 },
             is_head: head,
+            is_weak_point: head,
             crit_bonus: false,
         }];
         p
@@ -1386,6 +1387,7 @@ fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: true,
         }];
         let r = run_once(&p, &mut Rng::new(0x5EED));

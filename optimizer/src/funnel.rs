@@ -502,7 +502,8 @@ mod tests {
             arena: Arena {
                 body_parts: vec![BodyPart {
                     name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
-                    is_head: false, crit_bonus: false,
+                    is_head: false,
+                    is_weak_point: false, crit_bonus: false,
                 }],
                 duration_seconds: 2.0,
                 ..Arena::training(2.0)

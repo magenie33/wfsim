@@ -101,8 +101,21 @@ pub struct BodyPartSpec {
     pub multiplier: f64,
     #[serde(default)]
     pub is_head: bool,
+    /// See [`crate::target::BodyPart::is_weak_point`]. ABSENT MEANS "the same
+    /// as `is_head`", which is what every file written before the two were
+    /// told apart meant — heads were the only weak points this engine had. A
+    /// part that is one and not the other says so.
+    #[serde(default)]
+    pub weak_point: Option<bool>,
     #[serde(default)]
     pub crit_bonus: bool,
+}
+
+impl BodyPartSpec {
+    /// Does a hit here fire the weak-point triggers? See `weak_point`.
+    pub fn is_weak_point(&self) -> bool {
+        self.weak_point.unwrap_or(self.is_head)
+    }
 }
 
 /// The serde default for a multiplier a file leaves out: change nothing.

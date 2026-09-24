@@ -401,9 +401,25 @@ pub struct BodyPart {
     pub aim_weight: f64,
     /// Location damage multiplier.
     pub multiplier: f64,
-    /// True head: fires on-headshot effects (`Hit::headshot`). Other weak
-    /// spots never trigger headshot conditions.
+    /// A HEAD: what the shot is WORTH. The part's own multiplier, the additive
+    /// headshot-damage bracket (Deadhead, Prowl, a sniper's zoom) and the 1.5x
+    /// rate a head takes Weak Point Damage at, all hang off this — and so does
+    /// Incarnon charge, which the wiki lists under Heads.
     pub is_head: bool,
+    /// A WEAK POINT: what the shot TRIGGERS. "On weak point hit" and "on weak
+    /// point kill" effects, the weak-point critical-chance bracket, and Weak
+    /// Point Damage itself.
+    ///
+    /// NOT A SYNONYM FOR A HEAD, and that is the whole reason it exists: the
+    /// wiki calls them *"distinct, but mostly overlapping categories"*, and
+    /// Update 44 made the overlap smaller — every Bursa's and MOA's rear is a
+    /// weak point that is not a head. It runs the other way too: the
+    /// Ropalolyst's head and the H-09 Efervon Tank's proboscises are heads that
+    /// are not weak points, so they pay the multiplier and fire none of the
+    /// triggers.
+    ///
+    /// A part that states neither is a bodyshot.
+    pub is_weak_point: bool,
     /// Eligible for the critical-location bonus (the `2*cd` fold-in). False
     /// for e.g. MOA fanny packs and helmeted Corpus heads; locations at 1x
     /// never get the bonus regardless of this flag.
@@ -448,6 +464,22 @@ impl Pool {
     }
 }
 
+/// AT WHAT RATE A PART TAKES WEAK POINT DAMAGE — the wiki's own three cases
+/// (Enemy Body Parts §Heads, §Weak Points), written once because three sites
+/// ask and a fourth will.
+///
+/// *"If the weak point is also a head, then bonuses apply at 1.5x rate"*;
+/// *"If the weak point is not a head, applies at normal rate"*; and a part
+/// that is no weak point at all takes none, however large its own multiplier
+/// (the Leaping Thrasher's 3x skull is strictly a bodyshot location).
+pub fn weak_point_damage_rate(part: &BodyPart) -> f64 {
+    match (part.is_weak_point, part.is_head) {
+        (true, true) => 1.5,
+        (true, false) => 1.0,
+        (false, _) => 0.0,
+    }
+}
+
 impl BodyPart {
     /// A generic humanoid: body 1x, head 3x (headshot-triggering, crit-bonus
     /// eligible), aimed at 50/50.
@@ -458,6 +490,7 @@ impl BodyPart {
                 aim_weight: 0.5,
                 multiplier: 1.0,
                 is_head: false,
+                is_weak_point: false,
                 crit_bonus: false,
             },
             BodyPart {
@@ -465,6 +498,7 @@ impl BodyPart {
                 aim_weight: 0.5,
                 multiplier: 3.0, // humanoid head (wiki: Enemy_Body_Parts)
                 is_head: true,
+                is_weak_point: true,
                 crit_bonus: true,
             },
         ]
@@ -592,6 +626,7 @@ impl crate::data::enemies::EnemySpec {
                     aim_weight: *w,
                     multiplier: p.multiplier,
                     is_head: p.is_head,
+                    is_weak_point: p.is_weak_point(),
                     crit_bonus: p.crit_bonus,
                 })
             })

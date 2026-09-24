@@ -19,6 +19,7 @@ fn a_line_of_heads(mods: &[&str], n: usize) -> FightParams {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }]
     };

@@ -1,0 +1,59 @@
+id: aksondol
+name: Aksondol
+slot: secondary
+# NARIN'S SIGNATURE DUAL PISTOLS, half Puncture and half Cold on a 10-shot-a-
+# second hitscan pull out of an 8-round magazine — so the reload is most of the
+# weapon's clock, and the reload is also where its own mechanic lives. That
+# mechanic is admitted below rather than modelled: the page states it and
+# publishes not one number for it.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # no CompatibilityTags: a plain hitscan sidearm
+mastery_rank: 14
+max_rank: 30
+
+# see notes: weapon_level_metadata_wiki_uncrosschecked
+accuracy: 23.5
+disposition: 1.0            # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+# NO `riven_family`. It is DE's own `compatibility` string and the only
+# place we can read it is a week of trades — where a weapon this new does
+# not appear, because nobody has traded one. Writing the display name here
+# would be a guess that reads exactly like a checked fact.
+traits: [tenno]
+introduced: "44.0"
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 60
+magazine: 8
+reload_seconds: 2.6
+
+# see notes: condition_overload_no_row_6
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 0.5
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 10
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.6
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # see notes: wall_ramp_full_damage_2
+  range_m: 300.0
+  damage: { puncture: 70, cold: 70 }   # total 140
+
+unmodeled:
+  - "RELOADING LEAVES A CLOUD OF FREEZING MIST that applies Cold to anything entering it, and it grows with each round reloaded (wiki). Nothing below models it, and nothing could: the page states the mechanic and publishes no number for it — no damage, no radius, no duration, no tick rate — and the weapon module carries no lingering part. Every figure here is the gun alone, so a real Aksondol applies more Cold than this does"
+
+source:
+  url: https://wiki.warframe.com/w/Aksondol

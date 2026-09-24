@@ -25,6 +25,7 @@ fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }];
     let base_form = FightParams {
@@ -179,6 +180,7 @@ fn eximus_advantage_needs_an_eximus_and_a_weak_point() {
                     aim_weight: head_weight,
                     multiplier: 1.0, // no head MULTIPLIER: isolate the buff
                     is_head: true,
+                    is_weak_point: true,
                     crit_bonus: false,
                 },
                 BodyPart {
@@ -186,6 +188,7 @@ fn eximus_advantage_needs_an_eximus_and_a_weak_point() {
                     aim_weight: 1.0 - head_weight,
                     multiplier: 1.0,
                     is_head: false,
+                    is_weak_point: false,
                     crit_bonus: false,
                 },
             ],

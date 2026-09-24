@@ -73,6 +73,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
                     aim_weight: w,
                     multiplier: b.multiplier,
                     is_head: b.is_head,
+                    is_weak_point: b.is_weak_point(),
                     crit_bonus: b.crit_bonus,
                 })
                 .collect(),

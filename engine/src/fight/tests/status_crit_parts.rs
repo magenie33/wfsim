@@ -12,6 +12,7 @@ fn frenzy_ammo_efficiency_prevents_reloads() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: true,
         }],
         ..no_status()
@@ -34,6 +35,7 @@ fn frenzy_accelerates_fire_rate_on_headshots() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: true,
         }],
         ..no_status()
@@ -748,6 +750,7 @@ fn non_head_weak_spot_never_triggers_headshot() {
         aim_weight: 1.0,
         multiplier: 3.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     });
     let s = monte_carlo(&p, 2000, 11);
@@ -769,6 +772,7 @@ fn helmeted_head_triggers_headshot_without_crit_bonus() {
         aim_weight: 1.0,
         multiplier: 3.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     });
     let s = monte_carlo(&p, 2000, 13);
@@ -790,6 +794,7 @@ fn one_x_location_gets_no_crit_bonus_even_if_flagged() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: true,
     });
     let s = monte_carlo(&p, 2000, 17);

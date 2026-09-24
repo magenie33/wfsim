@@ -85,6 +85,7 @@ fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> FightPara
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
+            is_weak_point: false,
             crit_bonus: false,
         }],
         abilities: resolve(&picks, &Caster { strength, ..Default::default() }, "", "melee"),
@@ -610,6 +611,7 @@ fn the_extra_hit_takes_the_body_part_multiplier_a_second_time() {
             aim_weight: 1.0,
             multiplier: mult,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: false,
         }];
         let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));

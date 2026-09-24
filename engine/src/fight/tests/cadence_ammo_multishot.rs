@@ -618,6 +618,7 @@ fn faction_mult_scales_direct_damage_linearly() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     });
     let boosted = FightParams {
@@ -1037,6 +1038,7 @@ fn a_locked_stat_ignores_the_live_sources_too() {
         aim_weight: 1.0,
         multiplier: 3.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: true,
     }];
     // ---- FIRE RATE: the buff bar's Frenzy multiplier.
@@ -1125,6 +1127,7 @@ fn a_zero_cost_shot_fires_off_an_empty_magazine_instead_of_reloading() {
         aim_weight: 1.0,
         multiplier: 3.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: true,
     }];
     let p = |frenzy: bool| FightParams {
@@ -1683,6 +1686,7 @@ fn primary_crux_stacks_status_chance_on_weakpoint_hits() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head,
+            is_weak_point: is_head,
             crit_bonus: false,
         }]
     };
@@ -1749,6 +1753,7 @@ fn primary_crux_ammo_efficiency_stretches_the_magazine() {
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
+            is_weak_point: true,
             crit_bonus: true,
         }],
         ..no_status()
@@ -1762,5 +1767,72 @@ fn primary_crux_ammo_efficiency_stretches_the_magazine() {
         "shots {} vs {}",
         crux.mean_shots,
         bare.mean_shots
+    );
+}
+
+/// A HEAD IS WHAT A HIT IS WORTH; A WEAK POINT IS WHAT IT TRIGGERS.
+///
+/// The wiki calls them *"distinct, but mostly overlapping categories"*, and
+/// Update 44 made the overlap smaller: every Bursa's and MOA's rear is a weak
+/// point that is not a head. One flag made each of those a bodyshot — no
+/// Weak Point Damage, no weak-point critical chance, and none of the triggers
+/// whose own cards say *"Despite the description specifying headshots, the
+/// effect can be trigger on weak-point hits"*.
+///
+/// THE PART IS THE SAME SIZE IN EVERY RUN BELOW, so nothing here moves because
+/// a multiplier changed — only because a flag did.
+#[test]
+fn a_weak_point_that_is_not_a_head_triggers_what_a_head_triggers() {
+    let part = |is_head: bool, is_weak_point: bool| {
+        vec![BodyPart {
+            name: "spot".into(),
+            aim_weight: 1.0,
+            multiplier: 3.0,
+            is_head,
+            is_weak_point,
+            crit_bonus: false,
+        }]
+    };
+
+    // ---- WEAK POINT DAMAGE, at the wiki's two rates and its one zero -------
+    //
+    //   head weak point            (3 + 1.5 x d)
+    //   weak point, not a head     (3 + 1.0 x d)
+    //   head, not a weak point     (3 + 0.0 x d) — the multiplier, and no more
+    let rate = |h, w| crate::target::weak_point_damage_rate(&part(h, w)[0]);
+    assert_eq!(rate(true, true), 1.5);
+    assert_eq!(rate(false, true), 1.0);
+    assert_eq!(rate(true, false), 0.0, "a head that is no weak point takes none of it");
+    assert_eq!(rate(false, false), 0.0);
+
+    // ---- …AND THE TRIGGERS READ THE WEAK POINT ----------------------------
+    //
+    // Primary Crux stacks on a weak-point HIT and its stacks are EARNED, so a
+    // run that never triggers it is identical to a run without the arcane —
+    // which is a stricter statement than "fewer stacks".
+    let mk = |h: bool, w: bool, a: ArcaneFx| FightParams {
+        status_chance: 0.25,
+        base_status_chance: 0.25,
+        base_crit_chance: 0.0,
+        duration_seconds: 20.0,
+        arcane: a,
+        body_parts: part(h, w),
+        ..FightParams::default()
+    };
+    let bare = run_once(&mk(true, true, ArcaneFx::none()), &mut Rng::new(11));
+    let procs = |h, w| run_once(&mk(h, w, arc("primary_crux")), &mut Rng::new(11)).procs;
+
+    assert!(procs(true, true) > bare.procs, "a head weak point triggers it");
+    assert_eq!(
+        procs(false, true),
+        procs(true, true),
+        "a weak point that is NOT a head triggers it just the same — the whole \
+         reason the second flag exists"
+    );
+    assert_eq!(
+        procs(true, false),
+        bare.procs,
+        "and a head that is not a weak point triggers nothing, so the arcane \
+         may as well not be equipped"
     );
 }

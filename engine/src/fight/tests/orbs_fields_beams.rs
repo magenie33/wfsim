@@ -124,6 +124,7 @@ fn an_unaimed_attack_decides_where_its_own_strikes_land() {
                         aim_weight: 0.0,
                         multiplier: 3.0,
                         is_head: true,
+                        is_weak_point: true,
                         crit_bonus: false,
                     },
                     BodyPart {
@@ -131,6 +132,7 @@ fn an_unaimed_attack_decides_where_its_own_strikes_land() {
                         aim_weight: 1.0,
                         multiplier: 1.0,
                         is_head: false,
+                        is_weak_point: false,
                         crit_bonus: false,
                     },
                 ],
@@ -185,6 +187,7 @@ fn an_orb_strike_on_an_eligible_head_folds_the_crit_in() {
                     aim_weight: 1.0,
                     multiplier: 3.0,
                     is_head: true,
+                    is_weak_point: true,
                     crit_bonus,
                 }],
                 ..orb_thrower()
@@ -503,6 +506,7 @@ fn a_round_leaves_after_the_windup_and_the_interval_is_still_the_rates() {
                 aim_weight: 1.0,
                 multiplier: 1.0,
                 is_head: false,
+                is_weak_point: false,
                 crit_bonus: false,
             }],
             crit_multiplier: 1.0,
@@ -936,6 +940,7 @@ fn a_beams_dot_scales_with_multishot_squared() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
+            is_weak_point: false,
             crit_bonus: false,
         }];
         p

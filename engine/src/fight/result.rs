@@ -347,6 +347,16 @@ pub struct RunResult {
     /// Below 100% the two are the same number.
     pub crit_tier_sum: u32,
     pub headshots: u32,  // hits on an `is_head` part
+    /// WEAK POINTS THE AIMING DID PICK — hits on an `is_weak_point` part.
+    ///
+    /// NOT `headshots`, since Update 44: a head is what a hit is WORTH and a
+    /// weak point is what it TRIGGERS, and the Incarnon gauge is a trigger.
+    /// The wiki settles the one case that tells them apart — *"Although The
+    /// Severed Warden's arms are not a headshot, they still generate Incarnon
+    /// charge"* — so the gauge reads this and the reported headshot RATE reads
+    /// the other. They are the same number on every body whose weak points are
+    /// all heads, which is most of them.
+    pub weakpoint_hits: u32,
     /// WEAK POINTS THE AIMING DID NOT PICK — a body the round punched through
     /// and entered at the head, or one a bounce arrived at.
     ///

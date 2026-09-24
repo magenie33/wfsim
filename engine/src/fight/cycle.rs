@@ -275,9 +275,11 @@ pub(super) fn charge_the_gauge(
             // which is the whole difference the third one makes.
             incarnon.charges += match charge_on {
                 // EVERY WEAK POINT THE SHOT LANDED, not only the aimed one:
-                // a round punching two heads charges twice (M103).
+                // a round punching two heads charges twice (M103). The aimed
+                // one is counted as a WEAK POINT rather than as a head — see
+                // `RunResult::weakpoint_hits`.
                 crate::model::ChargeOn::WeakpointHits => {
-                    (r.headshots + r.headshots_on_others) - headshots_before
+                    (r.weakpoint_hits + r.headshots_on_others) - headshots_before
                 }
                 crate::model::ChargeOn::DirectHits => r.pellets - pellets_before,
                 crate::model::ChargeOn::Kills => fresh_kills,

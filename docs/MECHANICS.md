@@ -995,21 +995,42 @@ headshots can crit are known edge cases.
 
 **Body parts / location multipliers** (wiki `Enemy_Body_Parts`, `Headshot`).
 Targets are made of **body parts**, each with its own damage multiplier. A
-part carries three independent properties:
+part carries four independent properties:
 1. **Location multiplier** — humanoid head 3.0x (almost all Grineer / Corpus /
    Infested), body 1x. Outliers: Nox helmet 3x / exposed head 4x, Amalgam
    Machinist head 0.5x, MOA "fanny pack" 3x, Bursa riot shield 0x / front
    0.4x, boss weak points on a 0x body (Sargas Ruk vents 1x, Lephantis
    mouths 1x, Jordas engines 1x).
-2. **Headshot trigger** (`is_head`) — **headshot is a trigger condition, not a
-   damage stat**. "Effects that specify headshots only take effect when
-   striking the target's head and do **not** apply against any other weak
-   spot" (§Weak Spot Bonuses). So Frenzy/Covenant-style effects never fire on
-   a MOA fanny pack or a boss weak point; Charger "mouth" is explicitly
-   "1x, not a headshot".
-3. **Critical-location eligibility** — whether a crit on this part gets the
-   `2*cd` fold-in of §5. Ineligible even at >1x: MOA fanny pack, helmeted
-   Corpus heads. 1x locations are never eligible.
+2. **Head** (`is_head`) — **what the hit is WORTH.** The part's own
+   multiplier, the additive headshot-damage bracket (Primary/Secondary
+   Deadhead, Prowl, Target Acquired, a sniper's zoom), and the **1.5x rate** a
+   head takes Weak Point Damage at.
+3. **Weak point** (`is_weak_point`) — **what the hit TRIGGERS.** Every "on weak
+   point hit" and "on weak point kill" effect, the weak-point critical-chance
+   bracket, Weak Point Damage itself, and the Incarnon gauge.
+
+   THE TWO ARE NOT SYNONYMS. The wiki calls them "distinct, but mostly
+   overlapping categories": every Bursa's and MOA's rear is a weak point that
+   is not a head, and the Ropalolyst's head and the H-09 Efervon Tank's
+   proboscises are heads that are not weak points. A card's own text is not
+   the test either — "Despite the description specifying headshots, the effect
+   can be trigger on weak-point hits".
+
+   **Weak Point Damage is added at a rate the pair decides** (`target::
+   weak_point_damage_rate`), and the wiki's own examples pin it:
+
+   ```
+   head weak point, 3x, Seek + Primed Acuity:  (3 + 1.5 x (3.5 + 0.75)) = 9.375x
+   weak point, not a head, same:               (3 + 1.0 x (3.5 + 0.75)) = 7.25x
+   neither:                                     the multiplier, and no more
+   ```
+
+   A file that states no `weak_point:` means "the same as `is_head`", which is
+   true of every body whose weak points are all heads — most of them.
+4. **Critical-location eligibility** (`crit_bonus`) — whether a crit on this
+   part gets the `2*cd` fold-in of §5. The narrowest of the three: ineligible
+   even at >1x on helmeted Corpus heads, most of the Murmur and much of
+   Techrot. 1x locations are never eligible.
 
 Weapon-side exceptions: some weapons always hit at 1x (beams like Ignis,
 launchers like Kuva Bramma); the **radial** part of AoE damage is always 1x

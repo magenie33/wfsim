@@ -31,6 +31,7 @@ fn head_only() -> Vec<BodyPart> {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }]
 }

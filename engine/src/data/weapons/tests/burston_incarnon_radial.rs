@@ -192,6 +192,7 @@ fn multishot_multiplies_the_direct_hit_and_not_the_explosion() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
+            is_weak_point: false,
             crit_bonus: false,
         }]
     };

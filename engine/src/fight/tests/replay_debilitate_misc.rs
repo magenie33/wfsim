@@ -946,6 +946,7 @@ fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: head,
+            is_weak_point: head,
             crit_bonus: false,
         }],
         ..FightParams::default()
@@ -1003,6 +1004,7 @@ fn gotva_super_crit_arms_on_status_and_only_on_status() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
+            is_weak_point: false,
             crit_bonus: false,
         }],
         ..FightParams::default()
@@ -1042,6 +1044,7 @@ fn gotva_super_crit_arms_on_status_and_only_on_status() {
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: head,
+            is_weak_point: head,
             crit_bonus: false,
         }],
         ..build(1.0, true)

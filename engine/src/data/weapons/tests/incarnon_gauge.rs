@@ -24,11 +24,13 @@ fn transforms(weapon: &str, evo: &str, headshot_pct: f64) -> u32 {
     let parts = vec![
         crate::target::BodyPart {
             name: "head".into(), aim_weight: headshot_pct / 100.0,
-            multiplier: 3.0, is_head: true, crit_bonus: true,
+            multiplier: 3.0, is_head: true,
+ is_weak_point: true, crit_bonus: true,
         },
         crate::target::BodyPart {
             name: "body".into(), aim_weight: 1.0 - headshot_pct / 100.0,
-            multiplier: 1.0, is_head: false, crit_bonus: false,
+            multiplier: 1.0, is_head: false,
+ is_weak_point: false, crit_bonus: false,
         },
     ];
     let arena = crate::arena::Arena { body_parts: parts, ..crate::arena::Arena::training(120.0) };

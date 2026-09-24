@@ -21,6 +21,7 @@ fn the_sim_actually_applies_the_radial() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     }];
     let params =
@@ -57,7 +58,8 @@ fn direct_then_radial_lands_at_the_declared_ratio() {
         .unwrap();
     let parts = vec![crate::target::BodyPart {
         name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
-        is_head: false, crit_bonus: false,
+        is_head: false,
+        is_weak_point: false, crit_bonus: false,
     }];
     let params = FightParams::from_panel(&p, &crate::arena::Arena { target, body_parts: parts, ..crate::arena::Arena::training(30.0) }, &crate::data::arcanes::ArcaneFx::none());
     let s = monte_carlo(&params, 40, 3);
@@ -108,6 +110,7 @@ fn overwhelming_attrition_earns_and_pays_out() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     }];
     let run = |evos: &[&str]| {
@@ -139,6 +142,7 @@ fn lethal_rearmament_shortens_the_cycle_not_just_reloads() {
         aim_weight: 1.0,
         multiplier: 3.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }];
     let run = |evos: &[&str]| {
@@ -172,6 +176,7 @@ fn a_reload_buff_shortens_the_transmutes_but_never_the_gauge() {
         aim_weight: 1.0,
         multiplier: 3.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }];
     let params = |evos: &[&str], pin: bool| {
@@ -244,6 +249,7 @@ fn overwhelming_attrition_is_diluted_by_base_damage_mods() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     }];
     let pool = crate::data::mods::pistol_pool();
@@ -321,6 +327,7 @@ fn condition_overload_is_adding_direct_only_and_devouring_stacks_on_top() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: false,
+        is_weak_point: false,
         crit_bonus: false,
     }];
     let sources = |evos: &[&str], mods: &[&crate::model::ModDef]| {

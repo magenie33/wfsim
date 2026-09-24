@@ -1,0 +1,72 @@
+id: nunchasa
+name: Nunchasa
+slot: primary
+# NARIN'S SIGNATURE BOW, half Puncture and half Cold, drawn rather than tapped.
+#
+# ITS ALT FIRE IS A SECOND CHARGED SHOT and is not here: a group registers one
+# form per kind (`every_weapon_registers_a_form_that_matches_its_mechanics`),
+# because a form id has to name a form — and both of this bow's attacks are
+# charges. The admission below carries what it would have said.
+class: bow
+form: charged
+default_form: true          # the drawn shot, which is how a bow is played
+transform_group: nunchasa
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE
+mastery_rank: 14
+max_rank: 30
+
+# see notes: weapon_level_metadata_wiki_uncrosschecked
+accuracy: 100.0             # the module states 0, which a bow reads as perfect
+disposition: 1.0            # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+# NO `riven_family`. It is DE's own `compatibility` string and the only
+# place we can read it is a week of trades — where a weapon this new does
+# not appear, because nobody has traded one. Writing the display name here
+# would be a guess that reads exactly like a checked fact.
+traits: [tenno]
+introduced: "44.0"
+grip_type: BOW
+# A BOW IS SILENT, and the module says so on both attacks (`IsSilent`).
+noise: silent
+ammo_type: primary
+ammo_max: 50
+ammo_pickup: 15
+magazine: 1
+reload_seconds: 0.6
+
+# see notes: condition_overload_no_row_3
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charge
+  # THE MODULE PUBLISHES NO DRAW FOR THIS ATTACK, where it publishes 1.5 s for
+  # the Alt Fire on the same weapon — so this takes none rather than the other
+  # attack's. 0.0 is how the schema spells "none", and on a magazine of 1 it
+  # means the cadence is the 0.6 s nock, which is what `panel` asserts.
+  #
+  # IT IS A CEILING, and the admission below says so: a draw this weapon really
+  # has and the wiki has not written down can only make it slower.
+  charge_seconds: 0.0
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.32
+  crit_multiplier: 2.4
+  status_chance: 0.32
+  punch_through_m: 1.4
+  damage: { puncture: 200, cold: 200 }   # total 400
+
+unmodeled:
+  - "THE ALT FIRE IS NOT MODELLED — a second CHARGED shot, and a weapon holds one charged form because a form id has to name a form. What it does is published and none of it is below: 1.5 s of draw for 1000 damage (500 Cold, 250 Puncture, 250 Slash) at 36% crit for 3.0x, 36% status and 2 m of punch through, against this draw's 400 at 32% for 2.4x. It also leaves a CHILLING PATH behind the arrow, which has no published number at all — no damage, no width, no duration, no tick rate — and is a shape this engine does not hold: every field it has is a sphere where a shot landed, and that one is a trail along the way there"
+  - "THE DRAW IS NOT PUBLISHED. The module states a charge time for this weapon's Alt Fire (1.50 s) and none at all for this attack, so the cadence below is the 0.6 s nock alone — a bow drawn instantly. Whatever draw it really has makes it slower, so every rate here is a CEILING"
+  - reason: projectile_must_be_led
+
+source:
+  url: https://wiki.warframe.com/w/Nunchasa

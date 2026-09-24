@@ -143,6 +143,7 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
         aim_weight: w,
         multiplier: b.multiplier,
         is_head: b.is_head,
+        is_weak_point: b.is_weak_point(),
         crit_bonus: b.crit_bonus,
     };
 

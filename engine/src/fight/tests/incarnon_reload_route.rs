@@ -12,6 +12,7 @@ fn cycle_with(per_shell_perk: bool, base_mag: f64) -> FightParams {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }];
     let base_form = FightParams {
@@ -81,6 +82,7 @@ fn the_gauge_overshoots_and_transforms_at_the_end_of_the_shot() {
         aim_weight: 1.0,
         multiplier: 1.0,
         is_head: true,
+        is_weak_point: true,
         crit_bonus: false,
     }];
     // 7 pellets a shot, 1 shot/s, gauge 30. Base and Incarnon forms are
