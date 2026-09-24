@@ -16,6 +16,7 @@ use wfsim_engine::fight::{BuffConfig, LockMode};
 use wfsim_engine::target::{BodyPart, TargetMode};
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::{ModDef, StackPolicy};
+use wfsim_optimizer::descent::descent;
 use wfsim_optimizer::search::{search, SearchConfig, SearchStats};
 use wfsim_optimizer::space::SubsetSpace;
 use wfsim_optimizer::truth::{judge, Truth, Verdict};
@@ -187,6 +188,9 @@ fn run_pipeline(
     jobs: &[Job],
     min: usize,
     max_evals: u64,
+    // `Some(starts)` runs the descent from those starts (empty = the element
+    // pairs) instead of the sampler.
+    descent_from: Option<&[Vec<usize>]>,
 ) -> (Verdict, SearchStats, usize) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
@@ -204,7 +208,10 @@ fn run_pipeline(
         out
     };
     let cfg = SearchConfig { max_evals, keep: 65_536, seed: 0xDEAD_BEEF, ..Default::default() };
-    let (screened, stats) = search(&space, &expand, &arcanes, s, &cfg, None, None);
+    let (screened, stats) = match descent_from {
+        Some(starts) => descent(&space, &pool, starts, &expand, &arcanes, s, &cfg, None, None),
+        None => search(&space, &expand, &arcanes, s, &cfg, None, None),
+    };
     assert!(!screened.is_empty(), "the search returned nothing");
 
     // Deduplicate into a candidate table exactly as the web path does.
@@ -267,7 +274,7 @@ fn a_scope_that_fits_is_searched_exhaustively_and_solved() {
     let (cands, jobs) = exhaust(&s, 8);
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
-    let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0);
+    let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, None);
     println!(
         "[search] {} of {} index positions, exhaustive {} -> rank {} (regret {:.2}%, recall {:.0}%) in {} sims",
         stats.sampled, stats.space, stats.exhaustive, v.rank, v.regret * 100.0, v.recall * 100.0, v.sims
@@ -296,7 +303,7 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     let (cands, jobs) = exhaust(&s, 1);
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
-    let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 120);
+    let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 120, None);
     println!(
         "[search] {} of {} index positions ({:.1}%), exhaustive {} -> rank {} of {} (regret {:.2}%)",
         stats.sampled, stats.space, stats.coverage() * 100.0, stats.exhaustive,
@@ -319,7 +326,43 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     );
 }
 
-/// The production funnel, graded. It may return any build the reference cannot/// The production funnel, graded. It may return any build the reference cannot
+/// The DESCENT, graded on the whole size range: from the element pairs, and
+/// from a single start that carries no element at all — the start a player
+/// who knows nothing would type. Both must reach the answer set, and for
+/// less than it costs to exhaust the scope.
+#[test]
+fn the_descent_reaches_the_answer_set_from_any_start() {
+    const RUNS: u32 = 40;
+    let s = scenario(30.0, 150);
+    let (cands, jobs) = exhaust(&s, 1);
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
+    let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
+    let serration = pool().iter().position(|m| m.id == "serration").expect("in scope");
+    for (label, starts) in [("element pairs", vec![]), ("serration alone", vec![vec![serration]])] {
+        let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some(&starts));
+        println!(
+            "[descent from {label}] {} subsets, {} evals -> rank {} of {} (regret {:.2}%, recall {:.0}%)",
+            stats.subsets, stats.evals, v.rank, jobs.len(), v.regret * 100.0, v.recall * 100.0
+        );
+        assert_eq!(unmatched, 0, "{unmatched} results were not in the exhaustive enumeration");
+        assert!(!stats.exhaustive, "a descent is never an enumeration");
+        assert!(
+            (stats.evals as usize) < jobs.len() / 2,
+            "{} evals against {} jobs — the descent cost more than half an exhaustive walk",
+            stats.evals,
+            jobs.len()
+        );
+        assert!(
+            v.within_noise,
+            "from {label}: rank {} (regret {:.2}%) — outside the answer set of {} builds",
+            v.rank,
+            v.regret * 100.0,
+            truth.indistinguishable(3.0).len()
+        );
+    }
+}
+
+/// The production funnel, graded. It may return any build the reference cannot
 /// separate from the best; anything else is a build it LOST.
 #[test]
 fn the_funnel_lands_inside_the_reference_answer_set() {

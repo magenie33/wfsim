@@ -10,6 +10,8 @@
 //!               [fixed=id,…] [min=1] [size=8] [enemy=thrax_centurion] [level=9999]
 //!               [steel_path=0|1] [duration=300] [runs=100] [truth_runs=200]
 //!               [finalists=10] [max_jobs=200000] [threads=N]
+//!               [strategy=sample|descent] [starts=id+id;id] [search_evals=N]
+//!               [explore_frac=F] [arcanes=id,…] [evo1=id,…] … [evo5=id,…]
 //!
 //! `runs` is the search's own final-round precision (the scenario's);
 //! `truth_runs` is the reference's, and it should be several times larger —
@@ -53,7 +55,18 @@ fn main() {
     for id in &pooled {
         mods.entry(id.clone()).or_insert(Value::String("search".into()));
     }
+    // `arcanes=a,b` searches those arcanes; `evo<tier>=a,b` those evolutions.
+    let arcanes: serde_json::Map<String, Value> =
+        ids("arcanes").into_iter().map(|id| (id, Value::String("search".into()))).collect();
+    let evolutions: serde_json::Map<String, Value> = (1..=5)
+        .filter_map(|t| {
+            let v = ids(&format!("evo{t}"));
+            (!v.is_empty()).then(|| (t.to_string(), json!(v)))
+        })
+        .collect();
     let req = json!({
+        "arcanes": Value::Object(arcanes),
+        "evolutions": Value::Object(evolutions),
         "weapon": get("weapon", "verglas_prime"),
         "mods": Value::Object(mods),
         "build_size": num("size", 8),
@@ -65,6 +78,13 @@ fn main() {
         "runs": num("runs", 100),
         "finalists": num("finalists", 10),
         "threads": num("threads", 0),
+        "strategy": get("strategy", "sample"),
+        // `starts=cryo_rounds;hellfire+serration` — one start per `;`.
+        "starts": get("starts", "")
+            .split(';')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.split('+').collect::<Vec<_>>())
+            .collect::<Vec<_>>(),
     });
 
     let truth_runs = num("truth_runs", 200) as u32;
