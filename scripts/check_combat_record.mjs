@@ -64,12 +64,20 @@ const r = await evaluate(`(async () => {
   out.block = !!fold;
   if (fold && fold.classList.contains('shut')) { fold.querySelector('.fold-h').click(); await sleep(200); }
   out.mods = (typeof buildPayload === 'function' ? buildPayload().mods : []) || [];
-  // WHAT THE REPORT SAID THIS ENGAGEMENT WAS WORTH. The dps it prints is the
-  // MEDIAN run's effective damage over the duration, and the record is that
-  // same run — so the rows have to add up to it. It is the one assertion that
-  // tells "the record explains this report" from "a similar fight".
-  out.reportTotal = (shownResult && shownResult.r)
-    ? shownResult.r.dps * shownResult.r.duration : 0;
+  // WHAT THE REPORT SAID THIS ENGAGEMENT WAS WORTH — the BENCHMARK run's own
+  // figure, which is the run the record explains.
+  //
+  // dps IS THE MEAN OVER EVERY RUN and sample.dps is the median run's
+  // (Summary::median_run). Reading the first compared ONE engagement's rows
+  // against a hundred engagements' average, so it failed by ordinary
+  // run-to-run variance — 5.8% on this fight — while reporting it as the
+  // record and the report disagreeing. It is the one assertion that tells
+  // "the record explains this report" from "a similar fight", so it has to
+  // name the same engagement the rows came from.
+  const rep = (shownResult && shownResult.r) || null;
+  out.reportTotal = rep && rep.sample
+    ? rep.sample.dps * rep.duration
+    : (rep ? rep.dps * rep.duration : 0);
 
   const load = document.querySelector('#rec-load');
   out.button = !!load;
@@ -517,6 +525,18 @@ const paged = await evaluate(`(() => ({
   page: REC_PAGE,
 }))()`);
 
+// THESE TWO MEASURE THE PEEK, NOT THE RECORD, AND FAIL ON IT.
+//
+// `paged.total` comes back 300 — exactly RECORD_PEEK — against a REC_PAGE of
+// 500, so the pager is correctly absent and the premise never holds. The
+// panel draws a 300-row preview of its own accord and the wait above returns
+// on it, because that preview is a .rec-t too; waiting on the STREAM instead
+// (`recordState.limit > RECORD_PEEK`) was tried and did not move it, so
+// something else here is still handing these two the preview.
+//
+// THE PRODUCT IS NOT WHAT IS WRONG, measured by hand on the same build:
+// the auto-peek loads 300, `#rec-load` then loads 4,015, the pager appears
+// and the table draws 500 — one screenful, as claimed.
 check(`${tag} the table draws one screenful, however long the fight is`,
   paged.total > paged.page && paged.rows <= paged.page,
   `${paged.rows} rows of ${paged.total}`);
@@ -618,7 +638,10 @@ const closed = await evaluate(`(() => {
     const h = document.getElementById('rec-host');
     res({
       gone: !recWin || recWin.closed,
-      table: !!h.querySelector('table.rec-t'),
+      // THE FULL TABLE, not the peek. The panel always shows a preview of
+      // the first rows, so asking for any .rec-t said the table had been
+      // inlined on a panel that was only ever showing its peek.
+      table: !!h.querySelector('.rec-scroll > table.rec-t'),
       offer: !!h.querySelector('#rec-load'),
       text: (h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40),
     });
