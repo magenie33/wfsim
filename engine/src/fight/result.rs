@@ -30,25 +30,7 @@ impl Default for BodyDamage {
     }
 }
 
-/// WHO DEALT A DAMAGE INSTANCE — the counterpart of the `body` that took it.
-///
-/// A COMBATANT ACTS; A BODY IS HIT, and they are ROLES rather than sides: a
-/// unit that does both is a combatant on one row and a body on another, which
-/// is what lets the enemy side start dealing damage without a word being
-/// renamed. Not "shooter", because a melee swing, a lingering field and an
-/// ability are none of them a shot.
-///
-/// A NEWTYPE, NOT A `usize`. It rides beside `body: usize` through
-/// [`ledger::settle`], and two bare indices next to each other transpose
-/// silently — the same defect `record::Factor` exists to prevent.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Seat(pub usize);
-
-impl Seat {
-    /// THE BUILD THIS PANEL IS ABOUT, and index 0 for the same reason body 0
-    /// is the aimed one: every fight has it, so it needs no lookup.
-    pub const WIELDER: Seat = Seat(0);
-}
+pub use crate::record::Seat;
 
 /// WHAT ONE SEAT DID, as against what the fight did.
 ///

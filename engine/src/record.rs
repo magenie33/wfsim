@@ -499,13 +499,33 @@ pub enum Layer {
     },
 }
 
+/// WHO DEALT A DAMAGE INSTANCE — the counterpart of the `body` that took it.
+///
+/// A COMBATANT ACTS; A BODY IS HIT, and they are ROLES rather than sides: a
+/// unit that does both is a combatant on one row and a body on another, which
+/// is what lets the enemy side start dealing damage without a word being
+/// renamed. Not "shooter", because a melee swing, a lingering field and an
+/// ability are none of them a shot.
+///
+/// A NEWTYPE, NOT A `usize`. It rides beside `body: usize` through
+/// `fight::ledger::settle`, and two bare indices next to each other transpose
+/// silently — the same defect [`Factor`] exists to prevent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Seat(pub usize);
+
+impl Seat {
+    /// THE BUILD THIS PANEL IS ABOUT, and index 0 for the same reason body 0
+    /// is the aimed one: every fight has it, so it needs no lookup.
+    pub const WIELDER: Seat = Seat(0);
+}
+
 /// ONE NUMBER THE GAME POPPED, and everything behind it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Damage {
     /// WHO DEALT IT. The row already says who TOOK it (`Event::subject`), and
     /// with anything but the wielder on the field that half alone leaves every
     /// number unattributed — a companion's tick and your own hit read the same.
-    pub combatant: crate::fight::Seat,
+    pub combatant: Seat,
     pub origin: Origin,
     /// WHICH PELLET OF THE TRIGGER PULL, counting from 1 — `None` for anything
     /// a pellet did not fire (a status tick, a field's clock).
