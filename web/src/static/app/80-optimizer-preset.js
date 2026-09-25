@@ -254,7 +254,7 @@ function renderOptProgress(st) {
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
   const sub = descending
-    ? `<div class="opt-prog-sub">${escHtml(tr("each start runs in a worker of its own; in the browser a search takes minutes"))}</div>`
+    ? `<div class="opt-prog-sub">${escHtml(tr("every worker scores each batch; in the browser a search takes minutes"))}</div>`
     : st.phase === "enumerating"
     ? ""
     : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.jobs ? ` · ${st.jobs.toLocaleString()} candidate builds` : ""}</div>`;

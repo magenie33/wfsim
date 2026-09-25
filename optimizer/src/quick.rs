@@ -55,6 +55,13 @@ pub trait QuickSpace: Sync {
     fn identity(&self, b: &Self::Build) -> String {
         self.key(b)
     }
+    /// The last `score` left builds for someone else to score. The start that
+    /// asked PAUSES — it stops where it is, its scores uncached — and the run
+    /// moves on to the next start, so one run collects every start's next
+    /// batch. A caller that sees any pause discards the answers and runs again.
+    fn pending(&self) -> bool {
+        false
+    }
 }
 
 /// Where a descent begins and what it may never change.
@@ -130,6 +137,9 @@ impl<S: QuickSpace> Run<'_, S> {
             }
             let batch: Vec<S::Build> = fresh.iter().map(|&i| bs[i].clone()).collect();
             let got = self.space.score(&batch);
+            if self.space.pending() {
+                return None;
+            }
             self.stats.evals += batch.len() as u64;
             for (&i, s) in fresh.iter().zip(got) {
                 self.cache.insert(keys[i].clone(), s);

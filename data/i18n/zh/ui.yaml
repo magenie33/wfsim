@@ -424,7 +424,7 @@ ui:
   Finalists: 优胜名额
   "Swap width": 替换宽度
   "improving the starts — {b} builds scored, {s} fights": 正在改进起点 —— 已评估 {b} 套配装，模拟 {s} 场
-  "each start runs in a worker of its own; in the browser a search takes minutes": 每个起点单独占一个 worker；在浏览器里一次搜索要几分钟
+  "every worker scores each batch; in the browser a search takes minutes": 每一批候选都由全部 worker 一起评估；在浏览器里一次搜索要几分钟
   "Who else is firing": 队友
   "nobody else": 没有队友
   "none start stacked": 开场都没有层数

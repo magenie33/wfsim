@@ -266,6 +266,10 @@ pub struct OptimizePlan {
     /// build lost to a Magnetic+Heat one 5% below it on Boar Prime. 1 is the
     /// fast option, and a coarse one.
     candidate_runs: u32,
+    /// The browser fleet's part in a quick descent (`"quick_fleet"`): `lead`
+    /// with the scores returned so far, or `score` with a slice to score.
+    /// `Null` everywhere else.
+    fleet: Value,
     /// This run's STRIDE of the search space, of `shards` total. The browser
     /// buys coverage by running several Web Workers over disjoint strides and
     /// merging their leaderboards; a native run is one shard of one.
@@ -937,6 +941,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         strategy: v.get("strategy").and_then(|x| x.as_str()).map(str::to_string),
         swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
         candidate_runs: v.get("candidate_runs").and_then(|x| x.as_u64()).unwrap_or(10).clamp(1, 1000) as u32,
+        fleet: v.get("quick_fleet").cloned().unwrap_or(Value::Null),
         starts,
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
@@ -958,6 +963,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 // whole surviving field, and twenty rows would each carry a
                 // copy of it.
                 o.remove("__resume");
+                // …and the fleet's traffic, which is the search's, never the build's.
+                o.remove("quick_fleet");
                 // …and a whole scope this parse filled in, which is every card.
                 if whole.is_some() {
                     for k in ["mods", "exilus", "arcanes", "evolutions", "modes", "valence"] {
@@ -1333,6 +1340,7 @@ pub fn grade_optimize(
             best: Default::default(),
             sims: Default::default(),
             progress: None,
+            lead: false,
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
         let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len());
@@ -1517,6 +1525,7 @@ pub fn run_optimize_resumable(
         starts,
         swap_width,
         candidate_runs,
+        fleet,
         shard,
         shards,
         replay_base,
@@ -1908,10 +1917,23 @@ pub fn run_optimize_resumable(
             best: Default::default(),
             sims: Default::default(),
             progress: Some(state),
+            lead: fleet.get("lead").is_some(),
         };
+            // A FLEET WORKER'S SHARE: score these builds and nothing else.
+            if let Some(builds) = fleet.get("score").and_then(Value::as_array) {
+                return ctx.score_json(builds);
+            }
+            if ctx.lead {
+                let scores = fleet.get("scores").and_then(Value::as_array).cloned().unwrap_or_default();
+                quick::QuickCtx::lead_take(&scores, fleet.get("fresh").and_then(Value::as_bool).unwrap_or(false));
+            }
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
             let (sj, stats, report) =
                 quick::run_quick(&ctx, st, max_evals, swap_width, Some(state), shard, shards, space.len());
+            // THE LEADER'S PAUSE: the builds its starts wait for go back to the page.
+            if let Some(p) = ctx.lead.then(quick::QuickCtx::lead_pending).flatten() {
+                return p;
+            }
             quick_report = Some(report);
             (sj, stats)
         } else if !walks_whole(strategy.as_deref()) {
@@ -2841,5 +2863,45 @@ mod whole_scope_tests {
         assert_eq!(rows.len(), 1, "{out}");
         assert_eq!(rows[0]["from_starts"][0]["start"], json!(0), "{out}");
         assert_eq!(rows[0]["mods"].as_array().map(Vec::len), Some(8), "{out}");
+    }
+    /// THE FLEET IS ONE SEARCH. A leader that pauses its starts and hands each
+    /// batch to three workers lands on exactly the answers one process reaches
+    /// alone: the same builds, from the same starts, in the same number of
+    /// changes — every build is scored on the same paired stream wherever it runs.
+    #[test]
+    fn a_descent_split_across_workers_lands_where_one_worker_does() {
+        let start = |slots: Value, fixed: Value| json!({ "slots": slots, "evolutions": [], "arcane": [], "fixed": fixed });
+        // Three elements pinned: several element orders, so a worker's choice
+        // of order is part of what has to reach the leader intact.
+        let three = json!([{ "kind": "mods", "idx": 0 }, { "kind": "mods", "idx": 1 }, { "kind": "mods", "idx": 2 }]);
+        let req = json!({
+            "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
+            "duration": 5.0, "runs": 4, "final_runs": 4, "finalists": 2,
+            "candidate_runs": 1, "strategy": "quick",
+            "starts": [start(json!([]), json!([])), start(json!(["hellfire", "infected_clip", "stormbringer"]), three)],
+        });
+        let alone = run_optimize(parse_optimize(&req).unwrap(), &FunnelState::default(), |_, _| {}, None);
+        let with = |fleet: Value| {
+            let mut r = req.clone();
+            r["quick_fleet"] = fleet;
+            run_optimize(parse_optimize(&r).unwrap(), &FunnelState::default(), |_, _| {}, None)
+        };
+        let mut scores: Vec<Value> = Vec::new();
+        let mut steps = 0;
+        let led = loop {
+            let out = with(json!({ "lead": true, "fresh": steps == 0, "scores": scores }));
+            let Some(pending) = out.get("pending").and_then(Value::as_array).cloned() else { break out };
+            steps += 1;
+            assert!(steps < 500, "the leader never settles");
+            scores = pending
+                .chunks(pending.len().div_ceil(3))
+                .flat_map(|part| with(json!({ "score": part }))["scores"].as_array().cloned().unwrap_or_default())
+                .collect();
+        };
+        let rows = |v: &Value| -> Vec<Value> {
+            v["results"].as_array().unwrap().iter().map(|r| json!([r["mods"], r["arcane"], r["evolutions"], r["from_starts"]])).collect()
+        };
+        assert!(steps > 1, "the leader paused {steps} times");
+        assert_eq!(rows(&led), rows(&alone), "after {steps} steps");
     }
 }

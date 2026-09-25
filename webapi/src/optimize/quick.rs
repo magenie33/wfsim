@@ -16,6 +16,8 @@
 //! at 30 runs and by a reorder move of its own). So each build is scored over
 //! its distinct element orders and keeps the best, the enumerator's own rule.
 
+use std::collections::HashMap;
+
 use serde_json::{json, Value};
 use wfsim_engine::model::ModDef;
 use wfsim_optimizer::quick::{Position, QuickSpace, QuickStart, Score};
@@ -30,6 +32,50 @@ pub(crate) struct QBuild {
     pub(crate) evo: usize,
     pub(crate) mode: usize,
     pub(crate) val: usize,
+}
+
+impl QBuild {
+    /// Indices as they travel between workers: the eight slots (-1 empty),
+    /// then exilus, arcane, evolution set, mode, valence. Only a worker that
+    /// parsed the same request can read them.
+    fn to_json(&self) -> Value {
+        let mut v: Vec<i64> = self.mods.iter().map(|m| m.map_or(-1, |i| i as i64)).collect();
+        v.extend([self.exilus, self.arcane, self.evo, self.mode, self.val].map(|x| x as i64));
+        json!(v)
+    }
+
+    fn from_json(v: &Value) -> Option<Self> {
+        let a: Vec<i64> = v.as_array()?.iter().map(|x| x.as_i64()).collect::<Option<_>>()?;
+        if a.len() != 13 {
+            return None;
+        }
+        let mut mods = [None; 8];
+        for (i, m) in mods.iter_mut().enumerate() {
+            *m = usize::try_from(a[i]).ok();
+        }
+        let at = |i: usize| usize::try_from(a[i]).ok();
+        Some(QBuild { mods, exilus: at(8)?, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)? })
+    }
+}
+
+/// THE BROWSER FLEET'S SHARED DESCENT (docs/WASM.md, "The quick descent across
+/// the fleet"). A worker is one thread and cannot wait for another, so the
+/// LEADER runs the descent on the scores it holds; a start whose next builds
+/// nobody has scored pauses, and the call hands every start's batch back to the
+/// page, which splits it across all workers and returns the scores. It persists
+/// between the leader's calls — the scores, and the candidate lists and
+/// legality the replay would otherwise recompute at every step.
+#[derive(Default)]
+pub(crate) struct Fleet {
+    scores: HashMap<String, (Score, usize)>,
+    candidates: HashMap<(QBuild, Position), Vec<QBuild>>,
+    legal: HashMap<QBuild, bool>,
+    pending: Vec<QBuild>,
+    missed: bool,
+}
+
+thread_local! {
+    pub(crate) static FLEET: std::cell::RefCell<Fleet> = std::cell::RefCell::new(Fleet::default());
 }
 
 pub(crate) struct QuickCtx<'a> {
@@ -64,6 +110,9 @@ pub(crate) struct QuickCtx<'a> {
     /// Where the page reads progress: builds scored (`enumerated`) and fights
     /// run (`sims_done`), advanced a chunk at a time so a slow host shows it.
     pub(crate) progress: Option<&'a wfsim_optimizer::FunnelState>,
+    /// Leading the browser fleet: scores come from [`FLEET`], and a miss
+    /// pauses the start that asked rather than being simulated here.
+    pub(crate) lead: bool,
 }
 
 /// Jobs scored between progress updates: small enough that a single-threaded
@@ -118,7 +167,8 @@ impl QuickCtx<'_> {
         if let Some(c) = self.best.lock().ok().and_then(|m| m.get(&self.key(b)).cloned()) {
             return Some(c);
         }
-        self.orders(b).into_iter().next()
+        let at = if self.lead { FLEET.with(|f| f.borrow().scores.get(&self.key(b)).map(|x| x.1)) } else { None };
+        self.orders(b).into_iter().nth(at.unwrap_or(0))
     }
 
     fn has_required(&self, b: &QBuild) -> bool {
@@ -334,6 +384,85 @@ impl QuickSpace for QuickCtx<'_> {
     }
 
     fn candidates(&self, b: &QBuild, p: Position) -> Vec<QBuild> {
+        if self.lead {
+            if let Some(c) = FLEET.with(|f| f.borrow().candidates.get(&(b.clone(), p)).cloned()) {
+                return c;
+            }
+            let c = self.candidates_now(b, p);
+            FLEET.with(|f| f.borrow_mut().candidates.insert((b.clone(), p), c.clone()));
+            return c;
+        }
+        self.candidates_now(b, p)
+    }
+
+    fn legal(&self, b: &QBuild) -> bool {
+        if self.lead {
+            if let Some(l) = FLEET.with(|f| f.borrow().legal.get(b).copied()) {
+                return l;
+            }
+            let l = self.legal_now(b);
+            FLEET.with(|f| f.borrow_mut().legal.insert(b.clone(), l));
+            return l;
+        }
+        self.legal_now(b)
+    }
+
+    /// Each build at its best element order: every order is scored on the one
+    /// paired stream and the best is kept, and remembered for the answer. The
+    /// fleet's leader reads the scores it was handed instead.
+    fn score(&self, bs: &[QBuild]) -> Vec<Score> {
+        if !self.lead {
+            return self.score_orders(bs).into_iter().map(|(s, _)| s).collect();
+        }
+        FLEET.with(|f| {
+            let mut f = f.borrow_mut();
+            f.missed = false;
+            let mut out = Vec::with_capacity(bs.len());
+            for b in bs {
+                match f.scores.get(&self.key(b)) {
+                    Some(&(s, _)) => out.push(s),
+                    None => {
+                        f.missed = true;
+                        if !f.pending.contains(b) {
+                            f.pending.push(b.clone());
+                        }
+                        out.push(None);
+                    }
+                }
+            }
+            out
+        })
+    }
+
+    fn pending(&self) -> bool {
+        self.lead && FLEET.with(|f| f.borrow().missed)
+    }
+
+    /// ORDER-BLIND: the cards as a set, since a build scores at its best order.
+    fn key(&self, b: &QBuild) -> String {
+        let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
+        mods.sort_unstable();
+        format!("{mods:?} x{} a{} e{} m{} v{}", b.exilus, b.arcane, b.evo, b.mode, b.val)
+    }
+
+    /// The canonical form: the same cards whatever their slots, the same
+    /// combined elements, the same exilus, arcane and variant.
+    fn identity(&self, b: &QBuild) -> String {
+        let Some(c) = self.materialize(b) else { return self.key(b) };
+        let mut cards: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
+        cards.sort_unstable();
+        let elements: Vec<String> = c
+            .panel
+            .damage
+            .iter_nonzero()
+            .map(|(t, v)| format!("{t:?}:{v:.3}"))
+            .collect();
+        format!("{cards:?}|{elements:?}|{}|{}|{:?}", b.exilus, b.arcane, self.variant(b))
+    }
+}
+
+impl QuickCtx<'_> {
+    fn candidates_now(&self, b: &QBuild, p: Position) -> Vec<QBuild> {
         let res = crate::candidates::candidates_json(&self.candidate_request(b, p));
         let list = res.get("candidates").and_then(Value::as_array).cloned().unwrap_or_default();
         let mut out = Vec::new();
@@ -406,13 +535,13 @@ impl QuickSpace for QuickCtx<'_> {
         out
     }
 
-    fn legal(&self, b: &QBuild) -> bool {
+    fn legal_now(&self, b: &QBuild) -> bool {
         self.has_required(b) && !self.orders(b).is_empty()
     }
 
-    /// Each build at its best element order: every order is scored on the one
-    /// paired stream and the best is kept, and remembered for the answer.
-    fn score(&self, bs: &[QBuild]) -> Vec<Score> {
+    /// Every build's score at its best element order, and WHICH order that is
+    /// (its index in [`Self::orders`]) — what a fleet worker hands back.
+    fn score_orders(&self, bs: &[QBuild]) -> Vec<(Score, usize)> {
         let orders: Vec<Vec<Candidate>> = bs.iter().map(|b| self.orders(b)).collect();
         let jobs: Vec<(&Candidate, usize)> = orders
             .iter()
@@ -436,42 +565,61 @@ impl QuickSpace for QuickCtx<'_> {
         let mut it = sums.into_iter();
         let mut out = Vec::with_capacity(bs.len());
         for (b, os) in bs.iter().zip(&orders) {
-            let mut best: Option<(&Candidate, (f64, f64))> = None;
-            for c in os {
+            let mut best: Option<(usize, (f64, f64))> = None;
+            for (oi, _) in os.iter().enumerate() {
                 let Some(s) = it.next() else { break };
                 let sc = (s.mean_kill_progress.max(0.0), s.mean_effective_damage);
                 if best.is_none_or(|(_, x)| sc.0.total_cmp(&x.0).then(sc.1.total_cmp(&x.1)).is_gt()) {
-                    best = Some((c, sc));
+                    best = Some((oi, sc));
                 }
             }
-            if let (Some((c, _)), Ok(mut m)) = (best, self.best.lock()) {
-                m.insert(self.key(b), c.clone());
+            if let (Some((oi, _)), Ok(mut m)) = (best, self.best.lock()) {
+                m.insert(self.key(b), os[oi].clone());
             }
-            out.push(best.map(|(_, s)| s));
+            out.push((best.map(|(_, s)| s), best.map_or(0, |(oi, _)| oi)));
         }
         out
     }
 
-    /// ORDER-BLIND: the cards as a set, since a build scores at its best order.
-    fn key(&self, b: &QBuild) -> String {
-        let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
-        mods.sort_unstable();
-        format!("{mods:?} x{} a{} e{} m{} v{}", b.exilus, b.arcane, b.evo, b.mode, b.val)
+    /// A fleet worker's share of a batch: each build's score and best order.
+    pub(crate) fn score_json(&self, builds: &[Value]) -> Value {
+        let bs: Vec<QBuild> = builds.iter().filter_map(QBuild::from_json).collect();
+        let got = self.score_orders(&bs);
+        let rows: Vec<Value> = bs
+            .iter()
+            .zip(got)
+            .map(|(b, (s, oi))| json!({ "key": self.key(b), "score": s.map(|(k, e)| json!([k, e])), "order": oi }))
+            .collect();
+        json!({ "ok": true, "scores": rows })
     }
 
-    /// The canonical form: the same cards whatever their slots, the same
-    /// combined elements, the same exilus, arcane and variant.
-    fn identity(&self, b: &QBuild) -> String {
-        let Some(c) = self.materialize(b) else { return self.key(b) };
-        let mut cards: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
-        cards.sort_unstable();
-        let elements: Vec<String> = c
-            .panel
-            .damage
-            .iter_nonzero()
-            .map(|(t, v)| format!("{t:?}:{v:.3}"))
-            .collect();
-        format!("{cards:?}|{elements:?}|{}|{}|{:?}", b.exilus, b.arcane, self.variant(b))
+    /// The leader takes the scores the fleet returned; `fresh` begins a new
+    /// search and forgets the last one's.
+    pub(crate) fn lead_take(scores: &[Value], fresh: bool) {
+        FLEET.with(|f| {
+            let mut f = f.borrow_mut();
+            if fresh {
+                *f = Fleet::default();
+            }
+            f.pending.clear();
+            for r in scores {
+                let Some(key) = r.get("key").and_then(Value::as_str) else { continue };
+                let s = r.get("score").and_then(Value::as_array).and_then(|a| Some((a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
+                let oi = r.get("order").and_then(Value::as_u64).unwrap_or(0) as usize;
+                f.scores.insert(key.to_string(), (s, oi));
+            }
+        });
+    }
+
+    /// The batch the paused starts wait for, or `None` when every start ran to
+    /// the end on scores the leader already holds.
+    pub(crate) fn lead_pending() -> Option<Value> {
+        FLEET.with(|f| {
+            let f = f.borrow();
+            (!f.pending.is_empty()).then(|| {
+                json!({ "ok": true, "pending": f.pending.iter().map(QBuild::to_json).collect::<Vec<_>>(), "scored": f.scores.len() })
+            })
+        })
     }
 }
 

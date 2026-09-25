@@ -164,33 +164,12 @@ fn optimize_inner(
         let counts = counts.clone();
         let f = on_progress.clone();
         let last = std::cell::Cell::new(0.0f64);
-        // The budget clock.
-        let budget_t0 = std::cell::Cell::new(t0);
         wfsim_optimizer::set_tick_hook(Some(Box::new(move || {
             let now = js_sys::Date::now();
             if now - last.get() < 250.0 {
                 return;
             }
             last.set(now);
-            if state.rewalking.load(std::sync::atomic::Ordering::Relaxed) {
-                budget_t0.set(now);
-            }
-            // THE SEARCH BUDGET. A browser tab cannot sit through a search of
-            // any length, so it is given a clock and answers with the best it
-            // found. NOT `cancel`: that would return an empty result — this
-            // asks for a best-so-far, and the result says whether the search
-            // finished (a walk's coverage, a descent's `cut`). Five minutes: a
-            // search the visitor asked for, with a progress bar and a Cancel
-            // button in front of it, may take real time.
-            const ENUM_BUDGET_MS: f64 = 300_000.0;
-            if counts.get().is_none() {
-                let spent = now - budget_t0.get();
-                if spent > ENUM_BUDGET_MS {
-                    state
-                        .stop_enumeration
-                        .store(true, std::sync::atomic::Ordering::Relaxed);
-                }
-            }
             let phase = if counts.get().is_some() { "running" } else { "searching" };
             let payload = status_json(&state, phase, counts.get(), (now - t0) / 1000.0);
             let _ = f.call1(&JsValue::NULL, &JsValue::from_str(&payload));

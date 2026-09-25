@@ -103,12 +103,78 @@ function woptMerge(parts) {
   };
 }
 
+/// THE QUICK DESCENT ACROSS THE FLEET (docs/WASM.md). A worker is one thread
+/// and cannot wait on another, so worker 0 LEADS: it runs the descent on the
+/// scores it holds and answers with the builds its starts wait for; every
+/// worker scores a slice of them, and the scores go back to the leader, until
+/// it answers with the result. Every worker is busy on every batch, whatever
+/// the number of starts.
+function woptQuickFleet(body, n) {
+  const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
+    cancelled: false, shards: n, t0: Date.now() };
+  const done = { builds: 0, fights: 0 };
+  const live = new Array(n).fill(null);
+  const show = () => {
+    const cur = live.filter(Boolean);
+    job.status = { phase: "searching", round: 0, rounds: 0, round_jobs: 0, round_runs: 0, sims_planned: 0, notes: [],
+      workers: n, enumerated: done.builds + cur.reduce((a, s) => a + (s.enumerated || 0), 0),
+      sims_done: done.fights + cur.reduce((a, s) => a + (s.sims_done || 0), 0) };
+  };
+  const stop = () => { job.workers.forEach((w) => w && w.terminate()); job.workers = []; };
+  const fail = (why) => { if (!job.result) job.result = { ok: false, error: why }; stop(); };
+  // One call to one worker; its progress, if any, to `onProgress`.
+  const call = (i, b, onProgress) => new Promise((resolve) => {
+    const w = job.workers[i];
+    if (!w) { resolve(null); return; }
+    const wd = watchSilence(() => { fail("worker stopped answering"); resolve(null); });
+    w.onmessage = (e) => {
+      wd.heard();
+      if (e.data.kind === "progress" && onProgress) onProgress(e.data.payload);
+      if (e.data.kind === "result") { wd.done(); resolve(e.data.payload); }
+    };
+    w.onerror = (e) => { wd.clear(); fail(String((e && e.message) || "worker error")); resolve(null); };
+    w.postMessage({ kind: "optimize", body: b });
+    wd.start();
+  });
+  for (let i = 0; i < n; i++) job.workers.push(new Worker("/worker.js"));
+  show();
+  (async () => {
+    let scores = [];
+    for (let step = 0; ; step++) {
+      if (job.cancelled || job.result) return;
+      // The leader's own progress matters only once it reaches the final round.
+      const r = await call(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
+        (p) => { if (p.rounds) job.status = p; });
+      if (!r || job.cancelled) return;
+      if (!r.pending) { job.result = r; stop(); return; }
+      const per = Math.ceil(r.pending.length / n);
+      const outs = await Promise.all(Array.from({ length: n }, (_, i) => {
+        const part = r.pending.slice(i * per, (i + 1) * per);
+        return part.length
+          ? call(i, { ...body, quick_fleet: { score: part } }, (s) => { live[i] = s; show(); })
+          : Promise.resolve({ scores: [] });
+      }));
+      if (outs.some((o) => !o) || job.cancelled) return;
+      const bad = outs.find((o) => o.ok === false);
+      if (bad) { fail(bad.error || "a worker could not score its share"); return; }
+      scores = outs.flatMap((o) => o.scores || []);
+      done.builds += scores.length;
+      done.fights += live.reduce((a, s) => a + ((s && s.sims_done) || 0), 0);
+      live.fill(null);
+      show();
+    }
+  })();
+  wopt = job;
+  return { ok: true, job_id: job.id };
+}
+
 function woptStart(body, checkpoint) {
   if (wopt && wopt.workers && wopt.workers.length) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
   const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
   body = req;
+  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, Math.max(1, woptWorkerCount()));
   // A CHECKPOINT is one worker's field, so it can only resume a run that had
   // one worker. Rather than resume a fraction of a fleet, a resume runs
   // unsharded — slower, but it is continuing a search that already exists.

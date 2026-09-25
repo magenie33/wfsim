@@ -173,11 +173,6 @@ made cheap.
   Only the SERIAL (wasm) screen emits cuts: the threaded screen's heap lags
   its producer, so a cut taken there would not be a consistent prefix.
   Honouring a cut works on both.
-- The enumeration budget's clock is held while a resumed screen re-walks.
-  That phase does no screening (rejected candidates are skipped), so
-  charging it would spend the whole 20 s catching up. A resumed screen
-  therefore covers MORE of the scope than an uninterrupted one — which is
-  the point of resuming, not a discrepancy.
 - Best-so-far also comes from INSIDE a round, every 4096 jobs. A round is
   one blocking `evaluate_batch` call and round 1 of a materialized scope is
   millions of jobs — round boundaries alone are far too coarse a heartbeat
@@ -233,6 +228,32 @@ The art is Digital Extremes' and this repository makes no grant in it —
 the only mark here stays ours.
 A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the FETCHER
 takes it from the wiki; the cached name and the page's URL are the bare name.
+
+## The quick descent across the fleet
+
+The optimizer's search is a descent from each start (docs/OPTIMIZER.md, "The
+quick descent"), and it runs on EVERY worker, whatever the number of starts. A
+worker is one thread and the page is not cross-origin isolated, so workers
+share no memory and none can wait for another; the descent is therefore split
+into steps the PAGE drives (`woptQuickFleet`):
+
+1. Worker 0 LEADS: `quick_fleet: { lead, fresh, scores }`. It runs the whole
+   descent again on every score it holds — no simulation, and its candidate
+   lists and legality are cached between calls (`Fleet`, a thread-local that
+   lives as long as the worker). A start that reaches builds nobody has scored
+   PAUSES and the next start runs, so one call returns every start's next
+   batch: `{ pending: [...] }`.
+2. The page splits the batch across all workers, the leader included:
+   `quick_fleet: { score: [...] }` → each build's score and the element order
+   it scored best at.
+3. The scores go back to the leader. When no start pauses, the leader runs
+   the final round itself and answers with the ordinary result.
+
+Every build is scored on the one paired stream wherever it runs, so the fleet
+lands exactly where one process does
+(`a_descent_split_across_workers_lands_where_one_worker_does`). There is no
+time budget: the run goes until every start has settled, with a progress line
+and a Cancel in front of it.
 
 ## A simulation runs on a worker fleet
 
