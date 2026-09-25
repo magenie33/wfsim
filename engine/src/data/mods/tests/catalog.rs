@@ -642,9 +642,9 @@ fn fixed_and_rank_varying_values_land_in_the_right_slots() {
     // printed "+1200% Critical Chance".
     assert_eq!(
         desc_info("galvanized_crosshairs").unwrap().at(10),
-        "On Headshot:
+        "On Weak Point Hit:
 +120% Critical Chance when Aiming for 12s
-On Headshot Kill:
+On Weak Point Kill:
 +40% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );
     // Its rifle twin spells all five out. The first buff carries a
@@ -652,17 +652,17 @@ On Headshot Kill:
     // hand THAT to "Stacks up to Xx" instead of the second buff's 5.
     assert_eq!(
         desc_info("galvanized_scope").unwrap().at(10),
-        "On Headshot:
+        "On Weak Point Hit:
 +120% Critical Chance when Aiming for 12s
-On Headshot Kill:
+On Weak Point Hit:
 +40% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );
     // A duration that RAMPS: 1.5s at rank 0, 9s at max. Stored as one number
     // it read "for 9s" at every rank.
     let argon = desc_info("argon_scope").unwrap();
-    assert_eq!(argon.at(0), "On Headshot:
+    assert_eq!(argon.at(0), "On Weak Point Hit:
 +22.5% Critical Chance when Aiming for 1.5s");
-    assert_eq!(argon.at(5), "On Headshot:
+    assert_eq!(argon.at(5), "On Weak Point Hit:
 +135% Critical Chance when Aiming for 9s");
     // A stack CAP that ramps, 1x -> 6x — rank-varying, not fixed.
     assert_eq!(

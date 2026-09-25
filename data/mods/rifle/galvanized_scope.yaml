@@ -5,7 +5,11 @@ polarity: madurai
 base_drain: 2                 # max drain 12 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleSPMod
-description: "On Headshot:\n+X% Critical Chance when Aiming for Xs\nOn Headshot Kill:\n+X% Critical Chance when Aiming for Xs. Stacks up to Xx."
+# DE's card, verbatim: it heads the stacks "On Weak Point Hit" too, where its
+# pistol twin reads "On Weak Point Kill". The stacks stay earned on a KILL —
+# the wiki's page says "Headshot kills will grant", and Update 44.0 changed
+# the trigger's LOCATION, not its event.
+description: "On Weak Point Hit:\n+X% Critical Chance when Aiming for Xs\nOn Weak Point Hit:\n+X% Critical Chance when Aiming for Xs. Stacks up to Xx."
 # see notes: exalted_mods_reenabled
 
 effects:

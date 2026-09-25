@@ -5,7 +5,7 @@ polarity: madurai
 base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveLasSilencedPistolAugmentMod
-description: "On Weakpoint Hit:\n+X% Gas Damage and Status Chance for Xs"
+description: "On Weak Point Hit:\n+X% Gas Damage and Status Chance for Xs"
 
 # A WEAPON AUGMENT for the VESPER 77 (Nightwave Cred Offerings, 20 Creds;
 # originally Rank 13 of Nora's Mix Volume 8). WFCD's `compatName` is the same

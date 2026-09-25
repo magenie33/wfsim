@@ -65,8 +65,15 @@ fn a_condition_on_the_card_is_a_condition_in_the_model() {
             None => String::new(),
         };
         let has_damage = DAMAGE_KINDS.iter().any(|k| effects.contains(k));
-        if desc.contains("weak point") && !effects.contains("weakpoint_") {
+        // "On Weak Point Hit:" is a TRIGGER and wants one; "Weak Point Damage"
+        // is a STAT and wants its bucket. Update 44.0 put the first on cards
+        // that never had the second.
+        let stat = desc.replace("on weak point", "");
+        if stat.contains("weak point") && !effects.contains("weakpoint_") {
             bad.push(format!("{id}: card says Weak Point, no weakpoint_* effect"));
+        }
+        if desc.contains("on weak point") && !effects.contains("trigger:") {
+            bad.push(format!("{id}: card triggers on a weak point, no effect has a trigger"));
         }
         // ANY "while/when <state>" clause, not the two phrases that
         // happened to be known. Spectral Serration reads "+330% Damage
