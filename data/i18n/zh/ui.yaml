@@ -423,6 +423,7 @@ ui:
   "Final-round runs": 最终轮次数
   Finalists: 优胜名额
   "Swap width": 替换宽度
+  "could not list the candidates": 无法列出候选
   "how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot": 当一次只换一处已经不再有提升时，搜索可以同时更换多少张卡、赋能或进化。1 最快；每加 1 大约多花一个数量级，但能跨过一次只换一处跨不过去的坎
   Starts: 起点
   "the search begins from each; click a card or arcane to lock it there": 搜索从每个起点各自出发；点击卡或赋能即可在该起点锁定

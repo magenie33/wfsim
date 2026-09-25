@@ -141,21 +141,31 @@ async function scanGains(axis, repaint) {
   // The note is WHICH FIGHT this was measured in, and nothing else: each
   // chip's tooltip states its own run count, which is the only place the
   // number changes how a reading should be taken.
-  // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
-  // the base fight is still going already knows how many of ITS OWN rows are
-  // coming. One request, no simulation — it costs a round trip and no runs.
-  const cands = await gainCandidates(axis);
-  if (!live()) return;
   // THE KEY IS NOT STAMPED YET. `ensureGains` returns early when the key
   // matches, so stamping it at the START meant a scan that died half way —
   // lanes gone, an exception — left the page believing this fight was already
   // answered, and no later request ever re-asked. It is written at the end, and
   // only when the scan actually finished; `want` is what a live scan is FOR,
   // which is what the interrupt check compares against.
+  //
+  // CLAIMED BEFORE ANYTHING IS AWAITED, so an edit mid-scan supersedes it at
+  // once rather than queueing behind the candidate request.
   gainScan = { key: null, want: gainKey(), axis, running: true, base: 0, floor: 0,
     phase: "", by: {}, refused: {}, done: 0, repaint, beat: Date.now(),
-    total: cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0),
-    ids: new Set(cands.map((c) => c.id)), note: name, metric: "", lanesLost: 0 };
+    total: 0, ids: new Set(), note: name, metric: "", lanesLost: 0 };
+  // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
+  // the base fight is still going already knows how many of ITS OWN rows are
+  // coming. One request, no simulation — it costs a round trip and no runs.
+  let cands;
+  try {
+    cands = await gainCandidates(axis);
+  } catch (e) {
+    if (live()) gainStop(`${tr("could not list the candidates")}: ${e}`);
+    return;
+  }
+  if (!live()) return;
+  gainScan.total = cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0);
+  gainScan.ids = new Set(cands.map((c) => c.id));
   // THE BAR APPEARS WHEN THE WORK STARTS, not when the first candidate lands.
   // The BASE fight runs before any candidate does, and on a crowd at a real run
   // count that is tens of seconds — throughout which `running` is already true
