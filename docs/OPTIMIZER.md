@@ -865,6 +865,111 @@ answer to a valley is a start that already sits on its far side.
 width 1 stalls (rank 2, 30% regret) so the fixture still holds the valley,
 and width 2 solves it; with wide moves disabled it fails.
 
+## PLANNED — the descent is the quick calc, repeated
+
+**NOT BUILT.** This section is the agreed design for the next optimizer; the
+sections above describe what runs today. Where the two differ, the code is the
+section above until this one is built, and then this one replaces them.
+
+**The definition.** From each start, run the QUICK CALC on one position of the
+current build, take the best candidate, keep it if it beats what is there, and
+start over at the first position — until no position's quick calc offers
+anything better. The descent is not a second search beside the quick calc; it
+IS the quick calc, applied until it stops changing the build. Everything the
+quick calc learns — a new axis, a legality rule — the optimizer gets by
+construction.
+
+### Starts
+
+- A start is A BUILD, and it need not be a good one — a perfect start would
+  leave nothing to optimize.
+- A start is edited IN THE BUILDER, in a start-editing mode (a banner naming
+  the start, and a FIXED toggle on every position). There is no second slot
+  UI in the optimizer; saved builds can be picked as starts.
+- **Fixed** is the only pin: a fixed position is never swept, so every answer
+  from that start carries it. It lives on the start. The scope's own `fixed`
+  mark goes away; "fixed in every start" is fixed in each start.
+- The initial list is FOUR REAL BUILDS, each holding one primary element's
+  strongest card and nothing else — the same thing a player gets by making
+  those four builds by hand, run by the same rules. They are shown and
+  removable; with every start removed, the one start is the BLANK build.
+  There is no hidden default path.
+
+### Positions and candidates
+
+- The positions are the quick calc's axes: mod slots 1–8, the exilus slot,
+  each arcane seat, evolutions (a candidate swaps one tier), mode, valence,
+  and the assembly. Each is its own position — nothing is bundled.
+- The candidates of a position come from ONE generator, shared with the quick
+  calc and moved into the engine: family exclusivity, what an evolution set
+  forbids, an evolution that would evict an equipped card, a mode a mod takes
+  away, the every-rank list — plus the scope's whitelist. There is no EMPTY
+  candidate: a full build is never beaten by a slot left bare.
+- Slot ORDER is the build's: a candidate goes into the slot being swept, as
+  in the quick calc, and element order is not enumerated separately.
+- The generator does not consider capacity. The quick calc never does.
+
+### One step
+
+1. Rank the position's candidates by LEGALITY first: the build with the
+   candidate in place goes through the auto-Forma planner (`plan_forma`, the
+   builder's own, under the builder's Forma rules), and a candidate it cannot
+   fit is dropped before it is simulated. Dropping first and taking the best
+   of the rest is the same answer as simulating everything and taking the
+   first legal one down the ranking, at a fraction of the cost.
+2. Score the rest through the simulator's own request, N runs each on one
+   seed, paired. N is the player's (1 is coarse and fast, 10 is the quick
+   calc's).
+3. The best legal candidate that beats the current build replaces it, and the
+   sweep restarts at the first position. None beats it: the position stays.
+
+The FILL obeys the same rule card by card, so the build is legal from the
+moment it is full — a full illegal build is not always one swap from a legal
+one. A player's start that no single legal move can repair reports "the start
+itself does not fit".
+
+After width 1 settles, `swap_width` tries moves changing 2, 3, … positions at
+once, under the same legality rule.
+
+### The answer
+
+- **ONE build per start** — the build its descent settled on, legal by
+  construction, with the Forma it needs. Keeping each start's runners-up adds
+  variables nobody defined; a start with rules is one answer.
+- Starts that settle on the SAME build merge into one row naming them all.
+  Same means the canonical form (§1): the same cards whatever their slots,
+  the same combined elements, the same arcanes, evolutions, mode, valence and
+  exilus. Two DIFFERENT builds whose scores tie within noise stay two rows,
+  marked tied.
+- The merged builds are measured at the final-round run count and ranked.
+  The finalists count goes away: the rows are the starts.
+
+### What changes from the descent above
+
+| today | planned |
+|---|---|
+| a start is mods + arcane, locks | a start is a whole build; `fixed` per position |
+| mode × evolutions × valence is one variant axis | each is its own position |
+| exilus and element order enumerated inside a subset | exilus is a position; order is the build's |
+| candidates from the optimizer's subset space | candidates from the quick calc's generator |
+| builds scored as optimizer `Candidate`s | builds scored through the simulator's request |
+| every scored job enters the funnel | one build per start, merged, then ranked |
+| scope carries `fixed` marks | scope is a whitelist per axis |
+| capacity dropped inside `expand` | capacity checked first at every step, next-best legal taken |
+
+### Order of work
+
+1. **The builder ⇄ row hop.** `check_opt_replay` fails on "+ add": the build
+   the builder makes of a ranked row does not re-run at the row's number. The
+   planned design sends every start and every answer through that hop, so it
+   is fixed first.
+2. **Move the quick calc's candidate generation into the engine**, and prove
+   the quick calc's rankings unchanged by the move.
+3. **The descent over build payloads**, on that generator, with the legality
+   step, graded with `wfsim-truth` against the descent above.
+4. **The builder's start-editing mode** and fixed toggles.
+5. **The optimizer page**: starts, scope, results with one row per start.
+
 ## FILLING A SCOPE IS THE UNSOLVED HALF
 
 A search preset is a **way of looking for a build on this weapon** — the
