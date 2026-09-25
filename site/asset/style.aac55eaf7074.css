@@ -1025,6 +1025,7 @@ label.check input{width:auto}
 .opt-limit-list .opt.opt-out{opacity:.55}
 .opt-limit-list .opt.opt-out .mn{text-decoration:line-through}
 .opt-limit-fill{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin:4px 0 8px;font-size:13px}
+.opt-limit-fill label{display:inline-flex;flex-direction:row;align-items:center;gap:6px}
 .opt-limit-tier{font-size:11px;color:var(--muted);font-weight:700;margin:6px 0 3px}
 #opt-limit-filter{width:100%;margin-bottom:6px}
 .opt-start-clash{margin-top:6px;font-size:12px;color:var(--critical)}

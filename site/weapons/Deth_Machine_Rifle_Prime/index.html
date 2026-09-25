@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Deth Machine Rifle Prime","description":"Deth Machine Rifle Prime (死亡机枪 Prime) — Sentinel Weapon · Sentinel · Mastery Rank 0. 20 base damage (impact 2, puncture 1, slash 17), 10% crit chance, 2x crit multiplier, 4% status chance. Best riven-free build on the board: 0.02318 under Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM, as of 2026-09-25.","url":"https://wfsim.app/weapons/Deth_Machine_Rifle_Prime","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Deth Machine Rifle Prime","item":"https://wfsim.app/weapons/Deth_Machine_Rifle_Prime"}]},"dateModified":"2026-09-25","about":{"@type":"Thing","name":"Deth Machine Rifle Prime","alternateName":"死亡机枪 Prime"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.287b92f376f9.css" />
+  <link rel="stylesheet" href="/asset/style.aac55eaf7074.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -389,32 +389,32 @@
     </section>
 
     <section class="block" data-module="optimizer" id="opt-block">
-      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>each start improved by the quick calc until nothing helps — the fight is the simulator's</span></div>
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>The search</h2><span class="sub" data-i18n>the starts and the limits — what a search preset saves, with the runs per candidate</span></div>
       <div class="bb">
-        
-        <div class="opt-half fold sect" id="opt-plan" data-fold="opt-plan">
-          <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>the starts and how hard to look — all of it, and only it, is what a search preset saves</span></div>
-          
-          <div class="preset-bar" id="preset-bar-optimizer"></div>
-          
-          <div class="opt-runbar" id="opt-runbar">
-            <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
-            <label data-i18n>Runs per candidate <select id="opt-cand-runs"><option value="1">1</option><option value="10">10</option></select></label>
-            <div id="opt-runs-block" class="runs-row"></div>
-            <div id="opt-estimate" class="opt-est"></div>
-          </div>
-          <div id="opt-starts"></div>
-          <div id="opt-limits"></div>
-        </div>
+        <div class="preset-bar" id="preset-bar-optimizer"></div>
+        <div id="opt-starts"></div>
+        <div id="opt-limits"></div>
+      </div>
+    </section>
 
+    <section class="block" data-module="optimizer" id="opt-fight-block">
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>The fight</h2><span class="sub" data-i18n>the simulator's — every candidate is scored under it, and it is edited over there</span></div>
+      <div class="bb">
+        <div class="preset-bar" id="opt-scenario-ref"></div>
+        <div id="opt-fight-brief"></div>
+      </div>
+    </section>
+
+    <section class="block" data-module="optimizer" id="opt-run-block">
+      <div class="bh"><span class="n">★</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>each start improved by the quick calc until nothing helps</span></div>
+      <div class="bb">
+        <div class="opt-runbar" id="opt-runbar">
+          <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
+          <label data-i18n>Runs per candidate <select id="opt-cand-runs"><option value="1">1</option><option value="10">10</option></select></label>
+          <div id="opt-runs-block" class="runs-row"></div>
+          <div id="opt-estimate" class="opt-est"></div>
+        </div>
         <div id="opt-results"></div>
-
-        <div class="opt-half fold sect" id="opt-fight-half" data-fold="opt-fight">
-          <div class="opt-half-h fold-h" data-i18n>The fight <span class="sim-hint" data-i18n>the simulator's, shown read-only — every candidate is scored under it, and it is edited over there</span></div>
-          <div class="preset-bar" id="opt-scenario-ref"></div>
-          <div id="opt-fight-brief"></div>
-        </div>
-
       </div>
     </section>
   </main>
@@ -581,13 +581,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">8af160ae</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">90ce156d</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.d3af1d49de40.js"></script>
+  <script src="/asset/app.db1b8e9f989f.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>
