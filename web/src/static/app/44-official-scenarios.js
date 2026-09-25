@@ -204,6 +204,7 @@ function applyWeapon(id, presetMods) {
 // renderOpt re-runs bootstrapOptPresets against the new scope.
 // NOT called from restoreState: loading a preset must not re-enter this.
 function switchWeapon(id) {
+  if (startEdit && startEdit.weapon !== id) finishStartEdit(true, false);
   flushPresetSaves();
   $("weapon").value = id;
   ensureWeaponBoard(id);

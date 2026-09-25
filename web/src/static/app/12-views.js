@@ -74,6 +74,7 @@ function nav(path) {
 }
 let routeGen = 0;
 async function route() {
+  leaveStartEdit();
   // A SHARED LINK is answered before anything else on the page is drawn for
   // it, and the query is stripped afterwards so a refresh does not import the
   // same build a second time. `?b=` only ever ADDS — see importShare.

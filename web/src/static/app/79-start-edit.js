@@ -104,7 +104,7 @@ function editStart(i) {
   if (!s) return;
   flushPresetSaves();
   const w = $("weapon").value;
-  startEdit = { idx: i, saved: snapshotState(), savedPreset: activePreset, fixed: new Set(s.fixed || []) };
+  startEdit = { idx: i, weapon: w, saved: snapshotState(), savedPreset: activePreset, fixed: new Set(s.fixed || []) };
   history.pushState({}, "", weaponPath(w));
   route();
   whileApplying(() => restoreState(s.build, w));
@@ -113,8 +113,9 @@ function editStart(i) {
 }
 
 /// Close the start: `save` writes the builder's build and pins into it. Either
-/// way the builder goes back to the player's own build.
-function finishStartEdit(save) {
+/// way the builder goes back to the player's own build. `navigate` false when
+/// the page is already on its way somewhere else (`leaveStartEdit`).
+function finishStartEdit(save, navigate = true) {
   if (!startEdit) return;
   const se = startEdit;
   const w = $("weapon").value;
@@ -125,13 +126,25 @@ function finishStartEdit(save) {
   renderPresetBar();
   renderStartEditBanner();
   decorateStartPins();
-  history.pushState({}, "", `${weaponPath(w)}/optimizer`);
-  route();
+  if (navigate) {
+    history.pushState({}, "", `${weaponPath(w)}/optimizer`);
+    route();
+  }
   // WRITTEN AFTER THE RESTORE: putting the player's build back re-applies the
   // weapon, which reads the search back from its preset — a start written
   // before that was read over.
   if (build) opt.starts[se.idx] = { build, fixed: [...se.fixed] };
   renderOptStarts(); updateOptEstimate();
+}
+
+/// LEAVING THE BUILDER ENDS THE EDIT, as Done does. A start left open by a tab,
+/// the back button or another weapon kept the builder in start mode — pins on,
+/// the player's autosave suspended — wherever they went next.
+function leaveStartEdit() {
+  if (!startEdit) return;
+  const here = decodeURIComponent(location.pathname).replace(/\/$/, "");
+  if (here === decodeURIComponent(weaponPath(startEdit.weapon))) return;
+  finishStartEdit(true, false);
 }
 
 function renderStartEditBanner() {
