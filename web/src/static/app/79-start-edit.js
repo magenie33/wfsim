@@ -62,8 +62,7 @@ function renderOptStarts() {
   if (!opt.starts.length) opt.starts.push(blankStart());
   const mine = loadPresetList(BUILDS).filter((p) => p.state && p.state.weapon === w.id);
   box.innerHTML =
-    `<h4 class="sim-h">① ${escHtml(tr("Starts"))}</h4>`
-    + `<div class="opt-guide">${escHtml(tr("A start is the build the search begins from. A blank start is filled in order — mode, evolutions, element, arcane, mods, exilus — and then improved position by position with the quick calc until no change helps. To begin from a build of your own, add the current build or one of your builds; edit a start in the builder, where a pinned position stays in every answer. Several starts that differ (another element, another mode) find answers one start cannot."))}</div>`
+    `<div class="opt-guide">${escHtml(tr("A start is the build the search begins from. A blank start is filled in order — mode, evolutions, element, arcane, mods, exilus — and then improved position by position with the quick calc until no change helps. To begin from a build of your own, add the current build or one of your builds; edit a start in the builder, where a pinned position stays in every answer. Several starts that differ (another element, another mode) find answers one start cannot."))}</div>`
     + opt.starts.map((s, i) => `<div class="opt-start" data-i="${i}">
         <div class="opt-start-h"><b>${escHtml(tr("Start"))} ${i + 1}</b><span style="flex-grow:1"></span>
         <button type="button" class="ghost-btn small" data-edit="${i}">${escHtml(tr("edit in the builder"))}</button>
