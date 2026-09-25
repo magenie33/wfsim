@@ -328,7 +328,7 @@ adds nothing new; when it does, that is the interesting half of the intake.
 | item | where | fails how, if skipped |
 | --- | --- | --- |
 | art | `data/assets.yaml`, then `scripts/fetch_images.py` | `build_site_app.py` FAILS on a missing file |
-| Chinese name | `data/i18n/zh/names.yaml` via `scripts/wfcd_i18n.py` | **transcribed from DE, never translated**; unreachable ⇒ leave empty and say so |
+| Chinese name | `data/i18n/zh/names.yaml` via `scripts/de_i18n.py` | **transcribed from DE, never translated**; unreachable ⇒ leave empty and say so |
 | riven family | `riven_family:` | the editor offers the wrong stat pool |
 | innate polarities | `polarities:`, `exilus_polarity:` | every Forma plan is wrong |
 | disposition | the infobox | every riven is wrong |

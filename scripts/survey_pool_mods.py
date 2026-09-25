@@ -1,4 +1,4 @@
-"""Every CLASS-TAGGED gun mod our roster's pools can hold, from WFCD's export.
+"""Every CLASS-TAGGED gun mod our roster's pools can hold, from DE's Public Export.
 
 The sibling of `survey_weapon_mods.py`, and the half it never covered. That one
 joins `compatName` against WEAPON NAMES, which finds the mod written for one
@@ -30,41 +30,54 @@ import json
 import os
 import re
 
+import de_export
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXPORT = os.path.join(ROOT, 'vendor/warframe-items/data/json/Mods.json')
 OUT = os.path.join(ROOT, 'data/surveys/pool_mods.yaml')
 
 # DE's (type, compatName) pair -> OUR pool directory.
-#
-# The pair and not the tag alone: "Shotgun" appears under both `Primary Mod`
-# and `Shotgun Mod`, and the game means the same pool by both.
 #
 # The `(No Aoe)` tags are the same pool with an equip rule on top — the rule is
 # the MOD's business (`requires_weapon`/`excludes_weapon` on its own card), not
 # a reason to file it somewhere the weapon cannot see it.
 POOL_TAG = {
-    ('Primary Mod', 'PRIMARY'): 'primary',
-    ('Primary Mod', 'Rifle'): 'rifle',
-    ('Primary Mod', 'Rifle (No Aoe)'): 'rifle',
-    ('Primary Mod', 'Assault Rifle'): 'assault_rifle',
-    ('Primary Mod', 'Bow'): 'bow',
-    ('Primary Mod', 'Sniper'): 'sniper',
-    ('Primary Mod', 'Shotgun'): 'shotgun',
-    ('Shotgun Mod', 'Shotgun'): 'shotgun',
-    ('Secondary Mod', 'Pistol'): 'pistol',
-    ('Secondary Mod', 'Pistol (No Aoe)'): 'pistol',
-    ('Arch-Gun Mod', 'Archgun'): 'archgun',
+    ('PRIMARY', 'PRIMARY'): 'primary',
+    ('PRIMARY', 'Rifle'): 'rifle',
+    ('PRIMARY', 'Rifle (No Aoe)'): 'rifle',
+    ('PRIMARY', 'Assault Rifle'): 'assault_rifle',
+    ('PRIMARY', 'Bow'): 'bow',
+    ('PRIMARY', 'Sniper'): 'sniper',
+    # DE leaves the type blank on both Sniper Ammo Mutations.
+    ('---', 'Sniper'): 'sniper',
+    ('PRIMARY', 'Shotgun'): 'shotgun',
+    ('SECONDARY', 'Pistol'): 'pistol',
+    ('SECONDARY', 'Pistol (No Aoe)'): 'pistol',
+    ('ARCH-GUN', 'Archgun'): 'archgun',
     # A TOME'S OWN EIGHT, which sit BESIDE `pistol` rather than replacing it:
     # *"Tomes can equip Pistol Mods but also have access to unique Tome Mods"*
-    # (wiki `Tome`). The export files them as a Secondary Mod, which is why the
+    # (wiki `Tome`). The export files them as SECONDARY, which is why the
     # Grimoire carries both tags.
-    ('Secondary Mod', 'Tome'): 'tome',
-    # MELEE. `Melee Mod`/`Melee` is the general pool every melee
+    ('SECONDARY', 'Tome'): 'tome',
+    # MELEE. `MELEE`/`Melee` is the general pool every melee
     # weapon draws; the per-class tag beside it holds the STANCES, which are the
     # only cards DE files that narrowly for a hammer.
-    ('Melee Mod', 'Melee'): 'melee',
-    ('Stance Mod', 'Hammers'): 'hammer',
-    ('Warframe Mod', 'Melee'): 'melee',
+    ('MELEE', 'Melee'): 'melee',
+    ('STANCE', 'Hammers'): 'hammer',
+    ('STANCE', 'Tonfas'): 'tonfa',
+}
+
+# A POOL NO EXPORT TAG CAN FILL, by declaration: the card in it is not an item.
+# Hysteria's stance is the ability's own, "No module or export carries this
+# card" (data/mods/valkyr_talons/hysteria.yaml).
+NO_EXPORT_TAG = {'valkyr_talons'}
+
+# CARDS DE HAS BUILT AND NEVER SHIPPED, by `uniqueName`. The export carries
+# them like any other card and has no flag that says so — `excludeFromCodex`
+# and `codexSecret` sit on released Primed mods too (Primed Polar Magazine,
+# Primed Combustion Rounds) — so the evidence is the wiki having no page.
+UNRELEASED = {
+    '/Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponElectricityDamageModExpert':
+        'Primed Electrified Barrel',
 }
 
 # WHAT THE EXPORT HOLDS THAT NO PLAYER CAN EQUIP HERE, by RULE rather than by
@@ -77,21 +90,18 @@ POOL_TAG = {
 def unreleased(m):
     """DE'S FILES ARE NOT THE GAME, and the export says which is which.
 
-    WFCD scrapes the client, so it carries cards DE has built and never
-    shipped; those have no version behind them and read `introduced: TBA` /
-    `releaseDate: 0000-00-00`. Two of the export's 1806 mods are marked that
-    way. This survey listed one of them, Primed Electrified Barrel, as a gap
-    to transcribe — so it was transcribed, and sat in the archgun pool and on
-    three boards as a card no player can hold. The wiki has no page for it,
-    which is the same statement from the source that wins.
+    The export carries cards DE has built and never shipped. This survey once
+    listed one, Primed Electrified Barrel, as a gap to transcribe — so it was
+    transcribed, and sat in the archgun pool and on three boards as a card no
+    player can hold. The wiki has no page for it, and that is the evidence
+    `UNRELEASED` records.
 
     Checked BEFORE `rule_out` and for CARRIED entries too: every other rule
     here answers "may a player equip this", and this one answers "does it
     exist", which has to be asked first.
     """
-    intro = (m.get('introduced') or {}).get('name')
-    if intro == 'TBA' or m.get('releaseDate') == '0000-00-00':
-        return 'unreleased: the export marks it `introduced: TBA` and the wiki has no page for it'
+    if m.get('uniqueName') in UNRELEASED:
+        return 'unreleased: the wiki has no page for it'
     return None
 
 
@@ -177,14 +187,14 @@ def roster_pools():
 
 
 def main():
-    mods = json.load(io.open(EXPORT, encoding='utf-8'))
+    mods = de_export.categories('en')['ExportUpgrades']
     have, have_names = carried()
 
     # THE POOL A WEAPON CLAIMS MUST BE REACHABLE. A tag with no export mapping
     # can only ever resolve to an empty directory, which is what `bow` and
     # `sniper` silently were.
     claimed = roster_pools()
-    unmapped = sorted(claimed - set(POOL_TAG.values()))
+    unmapped = sorted(claimed - set(POOL_TAG.values()) - NO_EXPORT_TAG)
     if unmapped:
         raise SystemExit(
             'weapons claim mod pools no export tag maps to: %s\n'
@@ -234,7 +244,7 @@ def main():
     lines = [
         '# EVERY CLASS-TAGGED GUN MOD OUR ROSTER\'S POOLS CAN HOLD.',
         '#',
-        '# GENERATED by scripts/survey_pool_mods.py from WFCD\'s export — read by',
+        '# GENERATED by scripts/survey_pool_mods.py from DE\'s Public Export — read by',
         '# a TEST and by nothing else. Do not hand-edit; re-run the script.',
         '#',
         '# The sibling of weapon_exclusive_mods.yaml: that one joins compatName against',

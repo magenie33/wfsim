@@ -273,5 +273,5 @@ the hosts and no frame.
    one is already there without numbers.
 3. Its augments into `data/warframe_mods/` with `augments: <ability>`.
 4. `python scripts/gen_assets.py --write`, then the zh names
-   (`scripts/wfcd_i18n.py fill --section warframe_mods`), then
+   (`scripts/de_i18n.py fill --section warframe_mods`), then
    `python scripts/fetch_images.py`.

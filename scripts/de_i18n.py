@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Localized names from WFCD warframe-items (DE's official client strings).
+"""Localized names and card text from DE's Public Export (`scripts/de_export.py`).
 
 The dual-verification setup (data/README.md "i18n"): every zh display name
 should be witnessed by BOTH sources —
-  1. WFCD warframe-items i18n.json (datamined DE client strings) — this
-     script automates that arm, joining by internal_name == uniqueName;
+  1. DE's Public Export in that language (`Export*_zh.json`) — this script
+     automates that arm, joining by internal_name == uniqueName;
   2. the community wiki's 对照 table
      (https://warframe.huijiwiki.com/wiki/Project:中英名称对照) — human
      cross-check, tracked in CONTRIBUTING/PR review.
@@ -14,23 +14,22 @@ A locale is a DIRECTORY (`data/i18n/<locale>/`) whose files are merged:
 by this script and never by hand.
 
 Usage:
-  python scripts/wfcd_i18n.py check [--i18n PATH] [--locale zh]
+  python scripts/de_i18n.py check [--locale zh]
       Two questions, and the second is the one that matters more.
-      (1) Does what we have DISAGREE with WFCD? A non-base FORM is expected
+      (1) Does what we have DISAGREE with DE's export? A non-base FORM is expected
           to — DE names the weapon, ours names the form — and is reported as
           a form, not as a mismatch to re-approve every run.
       (2) COVERAGE: what can the UI name that has NO chinese name at all,
           across EVERY family — including enemies and Incarnon evolutions,
-          which WFCD cannot supply and which the old check was therefore
+          which the export cannot supply and which the old check was therefore
           blind to. It is where a gap is most likely and was least visible.
-  python scripts/wfcd_i18n.py fill --section mods --section arcanes
-      [--i18n PATH] [--locale zh]
-      ADD the ids WFCD can name that have no line yet. Existing lines are
+  python scripts/de_i18n.py fill --section mods --section arcanes [--locale zh]
+      ADD the ids the export can name that have no line yet. Existing lines are
       never touched — not the names, not the comments explaining them — so
       a deliberate divergence survives (`cernos_prime_uncharged` is
       西诺斯 Prime (速射) here and plain 西诺斯 Prime in DE's export).
       Disagreements are `check`'s business, and a human's.
-  python scripts/wfcd_i18n.py descriptions [--i18n PATH] [--locale zh]
+  python scripts/de_i18n.py descriptions [--locale zh]
       Rewrite data/i18n/<locale>/descriptions.yaml from DE's per-rank
       localized card text (`levelStats`) for every mod and arcane.
 
@@ -39,18 +38,18 @@ Usage:
       "+30% 射速（弓类武器效果加倍）" in their client. Phrase substitution
       gets the terms and leaves the idiom in English.
 
-Without --i18n the file is downloaded (~52 MB) to a temp cache.
+The export is read from vendor/public-export/ — `python scripts/de_export.py fetch`.
 """
 
 import argparse
 import json
 import re
 import sys
-import urllib.request
 from pathlib import Path
 
+import de_export
+
 ROOT = Path(__file__).resolve().parent.parent
-I18N_URL = "https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/i18n.json"
 SECTIONS = {
     "weapons": "data/weapons/**/*.yaml",
     "mods": "data/mods/**/*.yaml",
@@ -62,18 +61,10 @@ SECTIONS = {
 }
 
 
-def load_wfcd(path: str | None) -> dict:
-    if path:
-        return json.load(open(path, encoding="utf-8"))
-    vendored = ROOT / "vendor" / "warframe-items" / "data" / "json" / "i18n.json"
-    if vendored.exists():
-        return json.load(open(vendored, encoding="utf-8"))
-    cache = Path(__file__).parent / ".cache" / "wfcd_i18n.json"
-    if not cache.exists():
-        cache.parent.mkdir(exist_ok=True)
-        print(f"downloading {I18N_URL} ... (tip: scripts/vendor.py clones the whole dataset)", file=sys.stderr)
-        urllib.request.urlretrieve(I18N_URL, cache)
-    return json.load(open(cache, encoding="utf-8"))
+def load_export(locale: str) -> dict:
+    """uniqueName -> {locale: entry}: DE's export in that language, in the shape
+    every reader below takes."""
+    return {u: {locale: e} for u, e in de_export.items(locale).items()}
 
 
 def our_ids(pattern: str) -> dict[str, str]:
@@ -91,10 +82,10 @@ def our_ids(pattern: str) -> dict[str, str]:
     return out
 
 
-def wfcd_names(wfcd: dict, locale: str, section: str) -> tuple[dict, list]:
+def export_names(export: dict, locale: str, section: str) -> tuple[dict, list]:
     hits, missing = {}, []
     for idv, iname in sorted(our_ids(SECTIONS[section]).items()):
-        name = wfcd.get(iname, {}).get(locale, {}).get("name")
+        name = export.get(iname, {}).get(locale, {}).get("name")
         if name:
             hits[idv] = name
         else:
@@ -110,8 +101,8 @@ MARKUP = re.compile(r"<[^>]+>")
 
 
 def clean_line(s: str) -> str:
-    # DE writes line breaks as a literal backslash-n inside the string.
-    return MARKUP.sub("", s.replace("\\n", "\n")).strip()
+    # DE writes a line break as CRLF, and in older strings as a literal "\n".
+    return MARKUP.sub("", s.replace("\\n", "\n").replace("\r\n", "\n")).strip()
 
 
 def card_text(stats: list) -> str:
@@ -122,16 +113,16 @@ def card_text(stats: list) -> str:
     remaining entries repeat those same lines on their own. Joining verbatim
     printed them twice on the top-rank card of Primary/Secondary Deadhead,
     Primary/Secondary Dexterity, Primary/Secondary Merciless, and on EVERY
-    rank of Secondary Fortifier. A card never states the same line twice, so
-    the first occurrence wins.
+    rank of Secondary Fortifier. So a line a LATER entry repeats is dropped.
+    Within one entry every line is kept: Galvanized Scope's own card says
+    "On Weak Point Hit:" twice, and dropping the second leaves its stacks
+    with no trigger at all.
     """
     seen, out = set(), []
     for s in stats:
-        for line in clean_line(s).split("\n"):
-            line = line.strip()
-            if line and line not in seen:
-                seen.add(line)
-                out.append(line)
+        lines = [x.strip() for x in clean_line(s).split("\n") if x.strip()]
+        out += [x for x in lines if x not in seen]
+        seen.update(lines)
     return "\n".join(out)
 
 
@@ -147,7 +138,7 @@ def _already_said(prefix: str, rank: str) -> bool:
     return norm(prefix) and norm(prefix) in norm(rank)
 
 
-def wfcd_descriptions(wfcd: dict, locale: str, section: str) -> tuple[dict, list]:
+def export_descriptions(export: dict, locale: str, section: str) -> tuple[dict, list]:
     """id -> one card text per rank (rank 0 first), from DE's own card text.
 
     TWO fields, and a card is both of them. `levelStats` carries the per-rank
@@ -163,7 +154,7 @@ def wfcd_descriptions(wfcd: dict, locale: str, section: str) -> tuple[dict, list
     """
     hits, missing = {}, []
     for idv, iname in sorted(our_ids(SECTIONS[section]).items()):
-        loc = wfcd.get(iname, {}).get(locale, {})
+        loc = export.get(iname, {}).get(locale, {})
         ranks = loc.get("levelStats")
         if not ranks:
             missing.append(idv)
@@ -181,8 +172,8 @@ def write_descriptions(path: Path, locale: str, tables: dict[str, dict]) -> None
     out = [
         f"# {locale} — mod and arcane card text, in DE's OWN words.",
         "#",
-        "# GENERATED by scripts/wfcd_i18n.py descriptions — DO NOT HAND-EDIT.",
-        "# Source: WFCD warframe-items i18n.json, joined on",
+        "# GENERATED by scripts/de_i18n.py descriptions — DO NOT HAND-EDIT.",
+        "# Source: DE's Public Export in this language, joined on",
         "# internal_name == uniqueName, one entry per rank (rank 0 first) with",
         "# DE's client markup (<DT_*_COLOR>, <LOWER_IS_BETTER>) stripped.",
         "#",
@@ -217,11 +208,11 @@ def overlay_section(text: str, section: str) -> dict:
 
 # EVERY family the UI can show a Chinese name for, and where a name comes from.
 #
-# `SECTIONS` is only the WFCD-joinable part of this: enemies carry no
+# `SECTIONS` is only the export-joinable part of this: enemies carry no
 # `internal_name` (DE's export has no entity to join them to) and Incarnon
 # evolutions are not items at all, so neither can ever be filled from the
 # export. They were therefore invisible to `check`, which only ever asked
-# "what could WFCD name that we haven't filled" — a question that cannot
+# "what could the export name that we haven't filled" — a question that cannot
 # report a gap in the two families where a gap is most likely.
 #
 # That is not hypothetical: five Boar Prime evolution names were simply absent,
@@ -229,7 +220,7 @@ def overlay_section(text: str, section: str) -> dict:
 # the five wrong (docs/DATA_SOURCES.md). A name that cannot be read
 # must be left empty and asked for; being told it is empty is the first half.
 #
-#   family -> (ids glob, overlay file, table, WFCD can name it)
+#   family -> (ids glob, overlay file, table, the export can name it)
 FAMILIES = {
     "weapons": ("data/weapons/**/*.yaml", "names.yaml", "weapons", True),
     "mods": ("data/mods/**/*.yaml", "names.yaml", "mods", True),
@@ -280,7 +271,7 @@ def data_ids(pattern: str) -> set:
 def coverage(locale_dir: Path) -> int:
     """Report every id the UI can show that has no localized name."""
     gaps = 0
-    for family, (glob, fname, table, from_wfcd) in FAMILIES.items():
+    for family, (glob, fname, table, from_export) in FAMILIES.items():
         path = locale_dir / fname
         named = overlay_section(path.read_text(encoding="utf-8"), table) if path.exists() else {}
         missing = sorted(data_ids(glob) - set(named))
@@ -288,7 +279,7 @@ def coverage(locale_dir: Path) -> int:
             print(f"  {family}: {len(named)} named, complete")
             continue
         gaps += len(missing)
-        how = f"run `fill --section {family}`" if from_wfcd else HAND_SOURCE
+        how = f"run `fill --section {family}`" if from_export else HAND_SOURCE
         print(f"  {family}: {len(missing)} UNNAMED — {how}")
         for idv in missing[:12]:
             print(f"      {idv}")
@@ -300,19 +291,18 @@ def coverage(locale_dir: Path) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("mode", choices=["check", "fill", "descriptions"])
-    ap.add_argument("--i18n", help="local path to warframe-items i18n.json")
     ap.add_argument("--locale", default="zh")
     ap.add_argument("--section", action="append", choices=list(SECTIONS),
                     help="(fill) sections to rewrite")
     args = ap.parse_args()
 
-    wfcd = load_wfcd(args.i18n)
+    export = load_export(args.locale)
     locale_dir = ROOT / "data" / "i18n" / args.locale
 
     if args.mode == "descriptions":
         tables, report = {}, []
         for section, table in [("mods", "mod_descriptions"), ("arcanes", "arcane_descriptions")]:
-            hits, missing = wfcd_descriptions(wfcd, args.locale, section)
+            hits, missing = export_descriptions(export, args.locale, section)
             tables[table] = hits
             report.append(f"{table}: {len(hits)} entries, "
                           f"{sum(len(v) for v in hits.values())} ranks"
@@ -324,7 +314,7 @@ def main() -> int:
         wf_tables = {}
         for section, table in [("warframe_mods", "warframe_mod_descriptions"),
                                ("warframe_arcanes", "warframe_arcane_descriptions")]:
-            hits, missing = wfcd_descriptions(wfcd, args.locale, section)
+            hits, missing = export_descriptions(export, args.locale, section)
             # A LADDER OF ANOTHER LENGTH IS LEFT OUT, never trimmed: the wiki's
             # `max_rank` is the one we state, and a card of DE's with a different
             # count would show one rank's numbers on another. It falls back to
@@ -340,9 +330,11 @@ def main() -> int:
         write_descriptions(locale_dir / "warframe_descriptions.yaml", args.locale, wf_tables)
         # An ability's text sits on its FRAME's entry, keyed by the ability's own
         # uniqueName, one string rather than a rank ladder.
+        # The Helminth's own abilities are a category of their own, keyed the same.
         by_unique = {}
-        for entry in wfcd.values():
-            for a in (entry or {}).get(args.locale, {}).get("abilities") or []:
+        for entry in export.values():
+            e = (entry or {}).get(args.locale, {})
+            for a in (e.get("abilities") or []) + ([e] if "abilityUniqueName" in e else []):
                 if a.get("abilityUniqueName") and a.get("description"):
                     by_unique.setdefault(a["abilityUniqueName"], clean_line(a["description"]))
         abilities = {i: by_unique[u] for i, u in sorted(our_ids("data/warframe_abilities/*.yaml").items())
@@ -362,27 +354,27 @@ def main() -> int:
         forms = weapon_forms()
         for section in SECTIONS:
             ours = overlay_section(text, section)
-            theirs, missing = wfcd_names(wfcd, args.locale, section)
+            theirs, missing = export_names(export, args.locale, section)
             for idv, name in sorted(ours.items()):
                 if idv not in theirs or theirs[idv] == name:
                     continue
                 if idv in forms:
                     print(f"form     {section}.{idv}: '{name}' (DE names the weapon: '{theirs[idv]}')")
                     continue
-                print(f"MISMATCH {section}.{idv}: overlay='{name}' wfcd='{theirs[idv]}'")
+                print(f"MISMATCH {section}.{idv}: overlay='{name}' export='{theirs[idv]}'")
                 bad += 1
             unfilled = sorted(set(theirs) - set(ours))
             if unfilled:
-                print(f"unfilled {section}: {len(unfilled)} ids WFCD could name: {unfilled[:8]}{' ...' if len(unfilled) > 8 else ''}")
+                print(f"unfilled {section}: {len(unfilled)} ids the export could name: {unfilled[:8]}{' ...' if len(unfilled) > 8 else ''}")
             if missing:
-                print(f"no wfcd name for {section}: {missing}")
+                print(f"no export name for {section}: {missing}")
         print("\ncoverage — every id the UI can name, in every family:")
         gaps = coverage(locale_dir)
         print("\ncheck done" + (f" — {bad} mismatches" if bad else " — no mismatches")
               + (f", {gaps} unnamed" if gaps else ", nothing unnamed"))
         return 1 if bad else 0
 
-    # FILL IS ADDITIVE. Rewriting the whole section from WFCD
+    # FILL IS ADDITIVE. Rewriting the whole section from the export
     # destroyed two things a generated list cannot carry: the COMMENTS (where
     # the Acolytes' names came from, "the tapped form, same weapon") and the
     # DELIBERATE DIVERGENCES they explain — `cernos_prime_uncharged` is
@@ -390,10 +382,10 @@ def main() -> int:
     # FORM has no name of its own and ours says which form it is.
     #
     # So an existing line is never touched. `check` is where a disagreement
-    # with WFCD gets reported and a human decides; `fill` only ever adds ids
+    # with the export gets reported and a human decides; `fill` only ever adds ids
     # that have no line at all.
     for section in args.section or []:
-        theirs, missing = wfcd_names(wfcd, args.locale, section)
+        theirs, missing = export_names(export, args.locale, section)
         pat = re.compile(rf"^{section}:( \{{\}})?\n?((?:^[ \t]+.*\n?|^\n)*)", re.M)
         m = pat.search(text)
         kept = overlay_section(text, section) if m else {}
@@ -406,8 +398,8 @@ def main() -> int:
             text += f"\n{section}:\n" + "".join(f"  {i}: {n}\n" for i, n in sorted(fresh.items()))
         differs = sorted(i for i, n in kept.items() if i in theirs and theirs[i] != n)
         print(f"filled {section}: +{len(fresh)} new, {len(kept)} kept"
-              + (f" ({len(differs)} of them differ from WFCD: {differs[:4]} — see `check`)" if differs else "")
-              + (f" (no wfcd name: {missing})" if missing else ""))
+              + (f" ({len(differs)} of them differ from the export: {differs[:4]} — see `check`)" if differs else "")
+              + (f" (no export name: {missing})" if missing else ""))
     overlay_path.write_text(text, encoding="utf-8", newline="")
     return 0
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Transcribe Incarnon evolution names from the CN wiki — never translate them.
 
-Evolution strings exist in NO export: DE ships none, WFCD has no entity for
-them (docs/DATA_SOURCES.md). The CN wiki is the only source, and the rule is
+Evolution strings exist in NO export: DE's Public Export carries none
+(docs/DATA_SOURCES.md). The CN wiki is the only source, and the rule is
 absolute — "A STRING IS TRANSCRIBED, NEVER TRANSLATED".
 DE's Chinese is routinely non-literal (Commodore's Fortune is 准将沐福), so a
 name derived from the English is wrong more often than not: five Boar Prime
@@ -13,7 +13,7 @@ names were translated that way once and four of the five were wrong.
 
 TWO THINGS THIS SCRIPT WILL NOT DO. It never overwrites an existing name — a
 deliberate divergence and the comment explaining it survive, exactly as
-`wfcd_i18n.py fill` behaves. And it never guesses: a perk it cannot match with
+`de_i18n.py fill` behaves. And it never guesses: a perk it cannot match with
 confidence is REPORTED and left empty, because an empty field is a question
 and a wrong name is an answer.
 
@@ -406,7 +406,7 @@ def main():
         # INTO THE `evolutions:` SECTION, not onto the end of the file. This
         # file has two of them — names and card text — and appending blindly
         # filed 447 names under `evolution_descriptions:`, where the loader
-        # never looks and `wfcd_i18n.py check` still reported them unnamed.
+        # never looks and `de_i18n.py check` still reported them unnamed.
         lines, body, done = text.split("\n"), [], False
         for i, line in enumerate(lines):
             body.append(line)
@@ -418,7 +418,7 @@ def main():
         # that is certainly not inside something. Two other insertion points
         # were tried and both were wrong: after the section's last LINE put the
         # names past a comment block that opens the next section, where the
-        # reader (`wfcd_i18n.overlay_section` stops at column 0) never saw
+        # reader (`de_i18n.overlay_section` stops at column 0) never saw
         # them; after its last KEY line landed inside a value, because a card
         # text may run onto a second line and that continuation starts in
         # column 0 too. Order inside a YAML mapping means nothing, so the top

@@ -26,7 +26,7 @@ fn the_pool_mods_we_still_owe_only_goes_down() {
     // Pressure Point variant that carries neither marker. That is the
     // repo's `internal_name` rule made executable: joining by NAME is what
     // put a phantom +200% Pressure Point in front of the melee intake.
-    const OWED: usize = 21;
+    const OWED: usize = 18;
     let text = crate::data::file("surveys/pool_mods.yaml")
         .expect("data/surveys/pool_mods.yaml — run scripts/survey_pool_mods.py");
     let mut total = 0usize;

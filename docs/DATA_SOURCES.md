@@ -279,7 +279,7 @@ The `api.php` call above now answers **403 Forbidden** for every action,
 `list=search` included — the same Cloudflare challenge that already covered the
 pages. So the Burston family's 18 evolution names went in EMPTY, which is the
 rule ("if a source cannot be reached, LEAVE IT EMPTY AND SAY SO") and which
-`python scripts/wfcd_i18n.py check` reports as 18 unnamed.
+`python scripts/de_i18n.py check` reports as 18 unnamed.
 
 WEAPON names survived it, because they have a second source: **WFCD's
 `i18n.json` carries `zh.name` per `uniqueName`**, so 伯斯顿 / 伯斯顿 Prime /
@@ -338,7 +338,7 @@ values, both carry the number 50, and nothing on the page ties either name to
 either effect.
 
 With that, the Burston and Furis families' 36 evolution strings went in and
-`wfcd_i18n.py check` reports **nothing unnamed in any family** for the first
+`de_i18n.py check` reports **nothing unnamed in any family** for the first
 time. Two of them also corroborated engine fixes made the day before from the
 English wiki alone — 力量前奏 reads "暴击几率低于 40% 时，**基础**暴击伤害增加
 +3x" (Prelude of Might applies before mods, not after), and 风雷骤起 reads
@@ -356,7 +356,7 @@ which one a given sentence lands in:
 | `levelStats` | the rank's numbers | `["+40% 伤害", "+0.25 穿透"]` |
 | `description` | the RULE the card opens with | `["仅适用于半自动扳机。射速无法修改。"]` |
 
-`scripts/wfcd_i18n.py descriptions` read only `levelStats`, so the opening line
+`scripts/de_i18n.py descriptions` read only `levelStats`, so the opening line
 was dropped from **35** mods and arcanes — the Cannonades printed their damage
 and punch through and said nothing about the trigger they need or the fire rate
 they lock, and Firestorm/Fulmination lost "提高范围攻击武器的爆炸半径。" that

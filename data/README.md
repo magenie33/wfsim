@@ -44,16 +44,16 @@ item  ──references──▶  perk (trigger + grants)
   every overlay key must be a real id — a translator's typo fails CI, so a
   translation PR can never break the app.
 - **Dual verification**: every localized name should be witnessed by BOTH
-  sources — (1) DE's official client strings via WFCD warframe-items
-  (`python scripts/wfcd_i18n.py check` automates this arm, joining our
+  sources — (1) DE's official client strings via their Public Export
+  (`python scripts/de_i18n.py check` automates this arm, joining our
   `internal_name` to their `uniqueName`), and (2) the community wiki's
   对照 table (https://warframe.huijiwiki.com/wiki/Project:中英名称对照,
-  human cross-check in PR review). `wfcd_i18n.py fill` bulk-seeds a
+  human cross-check in PR review). `de_i18n.py fill` bulk-seeds a
   section from source (1).
 - **A card is not a bag of terms.** Mod and arcane descriptions are NOT
   assembled by substituting terms into our English line — they are DE's own
   localized sentence, per rank, taken whole
-  (`python scripts/wfcd_i18n.py descriptions` → `descriptions.yaml`). Phrase
+  (`python scripts/de_i18n.py descriptions` → `descriptions.yaml`). Phrase
   substitution reaches "Fire Rate" → "射速" and stops there: the same card's
   "(x2 for Bows)" stayed English, where DE writes "（弓类武器效果加倍）". Two
   tests hold the generated file to our data — one entry per rank, and every

@@ -609,7 +609,7 @@ damage_types:
   true: 真实
 
 # GENERATED SECTIONS. `mods:` and `arcanes:` below are written by
-# `python scripts/wfcd_i18n.py fill --section mods --section arcanes` from
+# `python scripts/de_i18n.py fill --section mods --section arcanes` from
 # DE's own client strings — the same source as descriptions.yaml, so a card's
 # name and its text always come from one place. Hand-edit only to correct a
 # name the community wiki's 对照 table disagrees with, and say so in a comment.
