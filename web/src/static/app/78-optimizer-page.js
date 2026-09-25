@@ -107,11 +107,13 @@ function excludedCard(id) {
 const isOut = (axis, id) => opt.limits.exclude[axis].includes(id);
 const outChip = () => ` <span class="slotchip cur">${escHtml(tr("excluded"))}</span>`;
 
-/// Every axis's section heading is the builder block's own number and name.
-function limitHead(blockId, fallback) {
+/// Every axis's section heading is the builder block's own number and name —
+/// `name` where the block's title is not the axis's (the mod block names its pools).
+function limitHead(blockId, fallback, name) {
   const b = $(blockId);
   const n = b && b.querySelector(".bh .n"), h2 = b && b.querySelector(".bh h2");
-  return `<h4 class="sim-h">${n && h2 ? `${escHtml(n.textContent.trim())} · ${escHtml(h2.textContent.trim())}` : escHtml(tr(fallback))}</h4>`;
+  const label = name ? tr(name) : h2 ? h2.textContent.trim() : tr(fallback);
+  return `<h4 class="sim-h">${n ? `${escHtml(n.textContent.trim())} · ` : ""}${escHtml(label)}</h4>`;
 }
 
 const plainRow = (axis, id, label, extra = "") => `<div class="opt ${isOut(axis, id) ? "cur opt-out" : ""}" data-axis="${axis}" data-id="${escHtml(id)}">`
@@ -131,7 +133,7 @@ function renderOptLimits() {
     html += limitHead("mode-block", "Mode") + `<div class="combo-menu opt-limit-list">${
       w.modes.map((id) => plainRow("modes", id, modeLabel(w, id))).join("")}</div>`;
   }
-  html += limitHead("mod-block", "Mods")
+  html += limitHead("mod-block", "Mods", "Mods")
     + `<div class="opt-limit-fill"><label>${escHtml(tr("fill at most"))} <select data-fill="mods">${
       [8, 7, 6, 5, 4, 3, 2, 1, 0].map((n) => `<option value="${n}"${n === L.mods ? " selected" : ""}>${n}</option>`).join("")}</select> ${escHtml(tr("mods"))}</label>`
     + (AX.hasExilus ? toggle(L.exilus, "exilus", tr("fill the exilus")) : "") + `</div>`
