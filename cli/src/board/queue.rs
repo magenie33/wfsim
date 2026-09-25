@@ -116,6 +116,47 @@ pub(crate) fn load_queue(spec: Option<String>, bench_id: &str) -> Option<Vec<(St
     Some(owed)
 }
 
+/// THE ROWS OWED THAT NO BUILD CAN PAY: queued `(build_id, mode)` pairs the walk
+/// never produced. Sorted, so a file is comparable run to run.
+///
+/// AN EMPTY WALK NAMES NOTHING. A library that read back empty would make every
+/// row an orphan, and the purge would empty the queue on a bad read.
+pub(crate) fn orphans(
+    owed: Option<&std::collections::HashSet<(String, String)>>,
+    payable: &std::collections::HashSet<(String, String)>,
+    walked: usize,
+) -> Vec<(String, String)> {
+    if walked == 0 {
+        return Vec::new();
+    }
+    let mut out: Vec<(String, String)> = owed
+        .map(|o| o.iter().filter(|k| !payable.contains(*k)).cloned().collect())
+        .unwrap_or_default();
+    out.sort();
+    out
+}
+
+/// …written one json per line in the queue's own shape, for
+/// `scripts/purge_orphans.sh`, and counted out loud.
+pub(crate) fn write_orphans(
+    path: &str,
+    owed: Option<&std::collections::HashSet<(String, String)>>,
+    payable: &std::collections::HashSet<(String, String)>,
+    walked: usize,
+    bench_id: &str,
+) {
+    let rows = orphans(owed, payable, walked);
+    let text: String = rows
+        .iter()
+        .map(|(b, m)| format!("{}\n", serde_json::json!({ "build_id": b, "ruler": bench_id, "mode": m })))
+        .collect();
+    if let Err(e) = std::fs::write(path, text) {
+        eprintln!("queue: cannot write {path}: {e}");
+        return;
+    }
+    eprintln!("queue: {} row(s) owed on {bench_id} that no build can pay", rows.len());
+}
+
 /// WHAT NOTHING HAS ASKED FOR YET, written and flushed before anything reads
 /// the file. The reconciliation is the reason a hand-written queue cannot
 /// quietly lose a row, so the count is said out loud on every run: a number
@@ -164,6 +205,22 @@ pub(crate) fn write_missing(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **A ROW NO BUILD CAN PAY IS AN ORPHAN, AND ONLY THAT.** The case that
+    /// found it: rows queued under a build id the identity rule has since moved
+    /// — the build scored under its new id, the old row owed for ever.
+    #[test]
+    fn an_orphan_is_a_queued_row_the_walk_never_produced() {
+        let k = |b: &str, m: &str| (b.to_string(), m.to_string());
+        let owed: std::collections::HashSet<_> =
+            [k("new", "base"), k("old", "base"), k("new", "lost_mode")].into_iter().collect();
+        let payable: std::collections::HashSet<_> = [k("new", "base"), k("new", "cycle")].into_iter().collect();
+        assert_eq!(orphans(Some(&owed), &payable, 10), vec![k("new", "lost_mode"), k("old", "base")]);
+        // A walk over nothing names nothing: an empty read may not empty the queue.
+        assert!(orphans(Some(&owed), &Default::default(), 0).is_empty());
+        // No queue read, no orphans.
+        assert!(orphans(None, &payable, 10).is_empty());
+    }
 
     /// **AN UNMEASURED ROW IS PRICED BY ITS OWN RULER.** A figure carried over
     /// from a cheaper ruler under-charges the whole backlog, and the run is

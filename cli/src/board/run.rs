@@ -13,7 +13,7 @@ use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactL
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
 use super::publish::{write_pages, Row, RowRiven};
 use super::queue::{
-    builds_with_a_row_owed, charge, load_queue, unmeasured_row_seconds, write_missing,
+    builds_with_a_row_owed, charge, load_queue, unmeasured_row_seconds, write_missing, write_orphans,
 };
 use super::state::record_state;
 
@@ -88,6 +88,13 @@ pub fn run() {
         .and_then(|p| std::fs::read_to_string(&p).ok())
         .map(|t| t.lines().map(str::trim).filter(|l| !l.is_empty()).map(String::from).collect())
         .unwrap_or_default();
+    // …AND THE QUEUE ROWS NOTHING IN THE LIBRARY CAN PAY, for the
+    // reconciliation to forget (`scripts/purge_orphans.sh`). A row is deleted
+    // beside the fact that settles it, so one no build can settle is owed for
+    // ever: a build this ruler refuses, a mode the weapon lost, or an id the
+    // identity rule has since moved (the build is scored under its new one).
+    let orphans_out = flag("--queue-orphans");
+    let mut payable: std::collections::HashSet<(String, String)> = Default::default();
     let missing_out = flag("--queue-missing").and_then(|p| {
         std::fs::File::create(&p)
             .map_err(|e| eprintln!("queue: cannot write {p}: {e}"))
@@ -154,6 +161,10 @@ pub fn run() {
     let mut work_seconds = 0.0f64;
     let mut fresh_seen = 0usize;
     let mut fresh_left = 0usize;
+    // EVERY NEVER-SCORED ROW THIS RUN MET, the queue's leftovers included —
+    // what `fresh_left` is a part of. `fresh_seen` is the new-row BOUND and
+    // skips those, so the log line's "taken" is `fresh_total - fresh_left`.
+    let mut fresh_total = 0usize;
     // WHOSE ROWS WERE DEFERRED, as identities. The accounting below asserts
     // that every validated build reached a row, and a bounded run makes that
     // false ON PURPOSE — a build the budget did not reach this time is queued,
@@ -461,6 +472,7 @@ pub fn run() {
                 wfsim_engine::board::builds::build_id(&v),
                 if played.id.is_empty() { "base".to_string() } else { played.id.to_string() },
             );
+            payable.insert(asked.clone());
             let take = taking.as_ref().is_some_and(|t| t.contains(&asked));
             // …AND A ROW NOBODY ASKED FOR IS NOT WORK. Where there is no queue
             // at all — `--project`, a local run — the fact alone decides, which
@@ -521,6 +533,7 @@ pub fn run() {
                     // ORDER a person set, and a row outside that is left for a
                     // later run. The reconciliation is what guarantees it is
                     // owed at all, so nothing here can be forgotten.
+                    fresh_total += 1;
                     if taking.is_some() && !take {
                         fresh_left += 1;
                         deferred_ids.insert(identity_of(&key));
@@ -673,14 +686,16 @@ pub fn run() {
                         paused += 1;
                         continue;
                     };
+                    // A FIGHT THAT RAN AND DEALT NOTHING IS A MEASUREMENT, and
+                    // it is banked: a Verglas Prime riven with a -145% Damage
+                    // malus kills nothing, and refusing the zero left its queue
+                    // row owed for ever. The entry line keeps it off the page.
+                    // Only a fight that did not run is refused.
                     let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
-                    let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
-                    if !ok || raw <= 0.0 {
+                    if !ok {
                         eprintln!(
                             "refused {weapon}: did not simulate ({})",
-                            out.get("error")
-                                .and_then(Value::as_str)
-                                .unwrap_or("scored zero")
+                            out.get("error").and_then(Value::as_str).unwrap_or("no error given")
                         );
                         refused += 1;
                         continue;
@@ -787,10 +802,10 @@ pub fn run() {
         eprintln!("paused: {paused} row(s) banked partway — they resume on the next run");
     }
     if fresh_left > 0 {
+        let fresh_taken = fresh_total - fresh_left;
         let why = if deadline.is_some_and(|d| started.elapsed() > d) { "clock" } else { "count" };
         eprintln!(
-            "new: {} of {fresh_seen} never-scored row(s) taken, {fresh_left} left for the next run ({why})",
-            fresh_seen - fresh_left
+            "new: {fresh_taken} of {fresh_total} never-scored row(s) taken, {fresh_left} left for the next run ({why})",
         );
     }
 
@@ -824,6 +839,9 @@ pub fn run() {
     // where it costs a line in a file. A build that reaches a tenth of some
     // group's leader keeps earning every row it is owed; one that reaches it
     // nowhere keeps the facts it has and stops being asked for more.
+    if let Some(p) = orphans_out.as_deref() {
+        write_orphans(p, owed.as_ref(), &payable, seen, &bench_id);
+    }
     if missing_out.is_some() {
         write_missing(
             missing_out, pending_missing, gate, &cross, &who, &already_owed, &corner_of, &bench_id,

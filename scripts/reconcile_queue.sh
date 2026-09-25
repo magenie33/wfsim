@@ -32,6 +32,8 @@ bash scripts/fetch_queue.sh "$OUT"
 
 missing=$(mktemp)
 : > "$missing"
+orphans=$(mktemp)
+: > "$orphans"
 for f in data/benchmarks/*.yaml; do
   id=$(basename "$f" .yaml)
   one=$(mktemp)
@@ -46,9 +48,11 @@ for f in data/benchmarks/*.yaml; do
     --facts-in "$FACTS" \
     --queue-in "$OUT" \
     --queue-missing "$one" \
+    --queue-orphans "$one.orphans" \
     < "$LIB" > /dev/null
   cat "$one" >> "$missing"
-  rm -f "$one"
+  cat "$one.orphans" >> "$orphans" 2>/dev/null || true
+  rm -f "$one" "$one.orphans"
 done
 
 # ONE BATCH A DAY, named by the day. An hourly clock would otherwise mint
@@ -65,5 +69,9 @@ rm -f "$missing"
 # no longer has. Nothing else can: a queue row is deleted beside the fact that
 # settles it, and a retired ruler never produces one.
 bash scripts/purge_queue.sh
+# …AND A ROW NO BUILD CAN PAY — a refused build, a lost mode, an id the
+# identity rule has moved — which no fact will ever settle either.
+bash scripts/purge_orphans.sh "$orphans"
+rm -f "$orphans"
 
 bash scripts/fetch_queue.sh "$OUT"

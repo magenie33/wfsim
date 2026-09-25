@@ -246,6 +246,15 @@ once, in the first job, and handed to every shard as an artifact — which is wh
 lets them agree on who owns which row without talking. Builds that arrive while
 a run is fighting are picked up by the next hour's reconciliation.
 
+**A ROW NO BUILD CAN PAY IS FORGOTTEN, AND A ZERO IS PAID.** A queue row is
+deleted beside the fact that settles it, so the reconciliation's dry run names
+every queued (build, mode) that a full walk of the library never produced —
+a build the ruler refuses, a mode the weapon lost, an id the identity rule has
+since moved — and `purge_orphans.sh` forgets them; the page's "rows still
+measuring" is otherwise a floor no run can lower. A fight that RAN and dealt
+nothing is a measurement and is banked as 0 (the entry line keeps it off the
+page); only a fight that did not run is refused.
+
 **AND ONCE A NIGHT, WHAT HAS GONE LONGEST IS ASKED FOR AGAIN.** Nothing here
 retires a fact on its own: a board is a claim about what the code computes
 TODAY, and a row measured under an engine six weeks old is a claim nobody has
