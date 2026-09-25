@@ -164,6 +164,57 @@ function buildCardHtml(d) {
   ].join("");
 }
 
+/// THE FIGHT AS A CARD — the scenario read back in the build card's own chips,
+/// for a surface that runs the simulator's fight and does not edit it. A section
+/// the fight leaves empty says so, the way the build card does.
+function fightCardHtml() {
+  const chip = (label, title) => `<span class="sb-chip"${title ? ` title="${escHtml(title)}"` : ""}><span>${escHtml(label)}</span></span>`;
+  const section = (head, chips, empty) => `<div class="sb-h">${escHtml(head)}</div><div class="sb-chips">${
+    chips.join("") || `<span class="sb-empty">${escHtml(empty)}</span>`}</div>`;
+  const en = allEnemies().find((e) => e.id === sim.enemy) || {};
+  const gap = Math.hypot((sim.target_at || [0, 0])[0] - (sim.player_at || [0, 0])[0],
+    (sim.target_at || [0, 0])[1] - (sim.player_at || [0, 0])[1]);
+  const enemy = [chip(`${en.name || sim.enemy} Lv ${sim.level}${sim.steel_path ? " (SP)" : ""}`)];
+  if (sim.eximus) enemy.push(chip(tr("Eximus")));
+  const play = [
+    chip(`${sim.duration} s`),
+    chip(`${sim.headshot_pct}% ${tr("headshots")}`),
+    chip(tr(sim.aiming ? "Aiming" : "hip-fire")),
+    chip(`${Math.round(gap * 10) / 10} m`),
+    chip(metricLabel(metricOf(sim.metric))),
+  ];
+  if (sim.invisible) play.push(chip(tr("invisible")));
+  if (sim.airborne) play.push(chip(tr("airborne")));
+  if (!sim.infinite_ammo) play.push(chip(tr("ammo counts")));
+  const squad = alsoActing().map((ref) => chip(weaponExists(ref.weapon) ? tf(weaponInfo(ref.weapon).name) : ref.weapon));
+  const frame = (META.warframes || []).find((f) => f.id === sim.frame);
+  const wf = [
+    ...(frame ? [chip(frame.name)] : []),
+    ...wfAbilities().filter((a) => wfPick(a.id)).map((a) => chip(wfName(a), wfValueLabel(a))),
+    ...(sim.auras || []).map((a) => chip(`${(AURAS().find((x) => x.id === a.id) || {}).name || a.id}${a.count > 1 ? ` ×${a.count}` : ""}`)),
+    ...(sim.shards || []).map((p) => {
+      const d = SHARDS().find((x) => x.id === p.shard);
+      const o = d && d.options.find((x) => x.id === p.effect);
+      return d && o ? chip(wfShardLine(d, o, p.tauforged)) : "";
+    }),
+  ];
+  if (wf.length && Math.round((Number(sim.ability_strength) || 0) * 100) !== 100) {
+    wf.push(chip(`${Math.round(sim.ability_strength * 100)}% ${tr("Ability Strength")}`));
+  }
+  const extra = EXTRA_STAT_KEYS.filter(([k]) => Number((sim.extra_stats || {})[k]))
+    .map(([k, label]) => chip(`${tr(label)} +${Math.round(sim.extra_stats[k] * 1000) / 10}%`));
+  const buffs = Object.entries(sim.buffs || {}).filter(([, c]) => c && c.stacks > 0).map(([id, c]) => {
+    const b = buffList.find((x) => x.id === id) || {};
+    return chip(`${b.name || prettify(id)} ${c.stacks}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}`);
+  });
+  return section(tr("Enemy"), enemy)
+    + section(tr("The Tenno"), play)
+    + section(tr("Who else is firing"), squad, tr("nobody else"))
+    + section(tr("Warframe buffs"), wf, tr("none"))
+    + section(tr("Extra stats"), extra, tr("none"))
+    + section(tr("Buffs"), buffs, tr("none start stacked"));
+}
+
 // The headshot rate a weapon is played at. A SENTINEL is fired by the
 // companion, which picks its own targets and does not aim for the head, so it
 // starts at 0 rather than the player's 100. Still a knob

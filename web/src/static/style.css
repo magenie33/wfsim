@@ -1045,6 +1045,7 @@ label.check input{width:auto}
 .opt-start{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px;background:var(--surface)}
 .opt-start-h{display:flex;align-items:center;gap:6px}
 .opt-start-add{display:flex;flex-wrap:wrap;gap:8px}
+#opt-fight-brief{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0;background:var(--surface)}
 .opt-runbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:8px 0 14px}
 .opt-runbar .run-btn{width:auto;margin-top:0;padding:9px 22px}
 .opt-runbar .runs-row,.opt-runbar .opt-est{margin:0}

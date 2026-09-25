@@ -278,6 +278,7 @@ function renderSim() {
   // its own tab happens to be entered — a tab that repaints only on arrival
   // shows the buffs you had when you last arrived.
   renderWfBuffs("opt-wfbuffs", true);
+  renderOptFightBrief();
   renderScenarioBar();
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();

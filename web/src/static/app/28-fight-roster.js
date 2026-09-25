@@ -61,6 +61,7 @@ function setRoster(list) {
 /// rank builds under a fight the reader cannot see they asked for — the same
 /// reason that half already mirrors the buffs, the arena and the limits.
 function renderRosterRef() {
+  renderOptFightBrief();
   const host = $("opt-roster");
   if (!host || !META) return;
   const list = alsoActing();

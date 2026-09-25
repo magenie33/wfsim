@@ -1100,6 +1100,9 @@
         <div class="opt-half fold sect" id="opt-fight-half" data-fold="opt-fight">
           <div class="opt-half-h fold-h" data-i18n>The fight <span class="sim-hint" data-i18n>the simulator's, shown read-only — every candidate is scored under it, and it is edited over there</span></div>
           <div class="preset-bar" id="opt-scenario-ref"></div>
+          <!-- THE FIGHT AS A CARD (`fightCardHtml`): read, not edited, here. -->
+          <div id="opt-fight-brief"></div>
+          <div id="opt-fight-full" hidden>
           <div id="opt-target" class="sub-block"></div>
           <div class="fold sect" data-fold="opt-tenno">
             <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
@@ -1130,6 +1133,7 @@
           <div class="fold sect" data-fold="opt-buffs">
             <h3 class="sim-h fold-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
             <div id="opt-buffs"></div>
+          </div>
           </div>
         </div>
 

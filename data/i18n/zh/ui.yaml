@@ -423,6 +423,10 @@ ui:
   "Final-round runs": 最终轮次数
   Finalists: 优胜名额
   "Swap width": 替换宽度
+  "Who else is firing": 队友
+  "nobody else": 没有队友
+  "none start stacked": 开场都没有层数
+  "ammo counts": 计算弹药
   "each start improved by the quick calc until nothing helps — the fight is the simulator's": 每个起点用快速计算反复改进，直到再换什么都不涨 —— 战斗用模拟器的
   "the starts and how hard to look — all of it, and only it, is what a search preset saves": 起点和搜索力度 —— 搜索预设保存的就是这些，也只有这些
   "Runs per candidate": 每个候选跑几场

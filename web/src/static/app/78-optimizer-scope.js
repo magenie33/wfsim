@@ -354,6 +354,7 @@ function renderOpt() {
 // for. A buff nobody set falls to its own default, which is now 0 for anything
 // timed: a candidate is credited with a stack only if the fight says so.
 async function renderOptBuffs() {
+  renderOptFightBrief();
   const box = $("opt-buffs");
   if (!box) return;
   renderBuffCards(box, await fetchAllBuffs(), sim.buffs, null, { readonly: true });
@@ -380,8 +381,15 @@ function renderOptMods() {
 // No Runs/Measure section here: the funnel decides run counts round by round,
 // so the engagement LENGTH is the only measurement input the search takes,
 // and it sits beside the enemy.
+/// The fight card on the optimizer tab, redrawn wherever the fight's parts are.
+function renderOptFightBrief() {
+  const box = $("opt-fight-brief");
+  if (box && META) box.innerHTML = fightCardHtml();
+}
+
 function renderOptEnemy() {
   if (!$("opt-target")) return;
+  renderOptFightBrief();
   renderWfBuffs("opt-wfbuffs", true);
   renderScenarioFields(
     { target: "opt-target", technique: "opt-technique", limits: "opt-limits",
