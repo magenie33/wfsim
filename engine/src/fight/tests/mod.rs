@@ -31,6 +31,7 @@ mod radials_roster_targets;
 mod replay_debilitate_misc;
 mod replay_reads_every_buff;
 mod sniper_combo_fight;
+mod spliced_riven;
 mod status_crit_parts;
 mod stormburst;
 mod stream_independence;
