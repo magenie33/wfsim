@@ -68,6 +68,10 @@ pub struct SearchConfig {
     /// carries is committing to one basin.
     pub shard: u32,
     pub shards: u32,
+    /// The DESCENT's widest move: how many positions it may change at once
+    /// once single changes stop paying. 1 = single changes only. The sampler
+    /// ignores it.
+    pub swap_width: u32,
 }
 
 impl Default for SearchConfig {
@@ -92,6 +96,7 @@ impl Default for SearchConfig {
             runs: 1,
             shard: 0,
             shards: 1,
+            swap_width: 1,
         }
     }
 }
