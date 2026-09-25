@@ -456,9 +456,17 @@ impl QuickSpace for QuickCtx<'_> {
     }
 }
 
+/// Where each answer came from, and the starts that reached none — keyed by
+/// the job, since the funnel re-ranks answers and rows are drawn from its list.
+#[derive(Default)]
+pub(crate) struct QuickReport {
+    pub(crate) from_starts: std::collections::HashMap<super::JobIdentity, serde_json::Value>,
+    pub(crate) failures: Vec<serde_json::Value>,
+}
+
 /// Descend from this shard's share of the starts (`index % shards`) and hand
 /// back each answer as a screened job, for the funnel to rank at the final
-/// run count.
+/// run count. Start numbers in the report are the REQUEST's, not the shard's.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn run_quick(
     ctx: &QuickCtx<'_>,
@@ -469,8 +477,9 @@ pub(crate) fn run_quick(
     shard: u32,
     shards: u32,
     space: u128,
-) -> (Vec<wfsim_optimizer::ScreenedJob>, wfsim_optimizer::search::SearchStats) {
+) -> (Vec<wfsim_optimizer::ScreenedJob>, wfsim_optimizer::search::SearchStats, QuickReport) {
     let shards = shards.max(1) as usize;
+    let global = |j: usize| j * shards + shard as usize % shards;
     let mine: Vec<QuickStart<QBuild>> = starts
         .into_iter()
         .enumerate()
@@ -480,9 +489,29 @@ pub(crate) fn run_quick(
     let stop: Vec<&std::sync::atomic::AtomicBool> =
         state.map(|s| vec![&s.cancel, &s.stop_enumeration]).unwrap_or_default();
     let cfg = wfsim_optimizer::quick::QuickConfig { max_evals, swap_width, stop };
-    let (answers, _failures, qs) = wfsim_optimizer::quick::quick_descent(ctx, &mine, &cfg);
-    let built: Vec<(Candidate, usize)> =
-        answers.iter().filter_map(|a| ctx.materialize(&a.build).map(|c| (c, a.build.arcane))).collect();
+    let (answers, failures, qs) = wfsim_optimizer::quick::quick_descent(ctx, &mine, &cfg);
+    let mut report = QuickReport {
+        failures: failures.iter().map(|f| json!({ "start": global(f.start), "why": f.why })).collect(),
+        ..Default::default()
+    };
+    let mut built: Vec<(Candidate, usize)> = Vec::new();
+    for a in &answers {
+        let Some(c) = ctx.materialize(&a.build) else { continue };
+        let lanes: Vec<Value> = a
+            .starts
+            .iter()
+            .enumerate()
+            .map(|(k, &s)| {
+                json!({
+                    "start": global(s),
+                    "from": a.from.get(k).copied().flatten().map(|(kp, _)| kp),
+                    "moves": a.moves.get(k).copied().unwrap_or(0),
+                })
+            })
+            .collect();
+        report.from_starts.insert((c.ordered.clone(), c.variant, c.exilus, a.build.arcane), json!(lanes));
+        built.push((c, a.build.arcane));
+    }
     let jobs: Vec<(&Candidate, usize)> = built.iter().map(|(c, a)| (c, *a)).collect();
     let sums = wfsim_optimizer::descent::evaluate_paired(&jobs, ctx.arcanes, ctx.scenario, ctx.runs, ctx.seed);
     let screened = built
@@ -502,5 +531,87 @@ pub(crate) fn run_quick(
         starts: qs.starts,
         cut: qs.cut,
     };
-    (screened, stats)
+    (screened, stats, report)
+}
+
+/// THE QUICK CALC'S WHOLE SCOPE, for a quick request that names none: every
+/// card, exilus card, arcane, evolution, mode and element the weapon takes, and
+/// each lower rank the every-rank lists ask for — what `/api/candidates` offers
+/// at each position, so the descent's candidates are the quick calc's.
+/// `None` when the request is not quick or names its own scope (the grader's).
+pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
+    if v.get("strategy").and_then(Value::as_str) != Some("quick") || v.get("mods").is_some() {
+        return None;
+    }
+    let info = crate::registry::weapon(v.get("weapon").and_then(Value::as_str).unwrap_or(""));
+    let every = wfsim_engine::data::mods::every_rank();
+    let every_list = |k: &str, dflt: &[String]| -> Vec<String> {
+        v.get("every_rank")
+            .and_then(|e| e.get(k))
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
+            .unwrap_or_else(|| dflt.to_vec())
+    };
+    let every_mods = every_list("mods", &every.mods);
+    let every_arcanes = every_list("arcanes", &every.arcanes);
+    let ranked = |id: &str, max: u32, every: &[String]| -> Vec<String> {
+        let mut ids = vec![id.to_string()];
+        if every.iter().any(|e| e == id) {
+            ids.extend((0..max).map(|r| format!("{id}@{r}")));
+        }
+        ids
+    };
+    let pool = crate::rivens::mod_pool_with_rivens(v, info, &[]);
+    let mut mods = serde_json::Map::new();
+    let mut exilus = serde_json::Map::new();
+    for m in pool.iter().filter(|m| m.stance.is_none()) {
+        for id in ranked(m.id, m.max_rank, &every_mods) {
+            mods.insert(id.clone(), json!("search"));
+            if m.exilus {
+                exilus.insert(id, json!("search"));
+            }
+        }
+    }
+    let mut arcanes = serde_json::Map::new();
+    for seat in &info.arcane_pools {
+        for a in wfsim_engine::data::arcanes::pool_for_weapon(&info.id, seat) {
+            if a.id != "none" {
+                for id in ranked(&a.id, a.max_rank, &every_arcanes) {
+                    arcanes.insert(id, json!("search"));
+                }
+            }
+        }
+    }
+    let group = crate::registry::evo_group(info);
+    let mut evolutions = serde_json::Map::new();
+    for t in 1..=wfsim_engine::data::evolutions::tier_count(group) {
+        let ids: Vec<Value> =
+            wfsim_engine::data::evolutions::options(group, t).iter().map(|o| json!(o.id)).collect();
+        if !ids.is_empty() {
+            evolutions.insert(t.to_string(), json!(ids));
+        }
+    }
+    let modes: serde_json::Map<String, Value> = wfsim_engine::data::weapons::play_modes(&info.id)
+        .iter()
+        .filter(|m| m.sustainable)
+        .map(|m| (m.id.to_string(), json!("search")))
+        .collect();
+    let valence: serde_json::Map<String, Value> = wfsim_engine::data::weapons::valence_of(&info.id)
+        .map(|s| s.elements.iter().map(|e| (e.to_string(), json!("search"))).collect())
+        .unwrap_or_default();
+    let mut out = v.clone();
+    let o = out.as_object_mut()?;
+    o.insert("mods".into(), Value::Object(mods));
+    o.insert("exilus".into(), Value::Object(exilus));
+    o.insert("arcanes".into(), Value::Object(arcanes));
+    o.insert("evolutions".into(), Value::Object(evolutions));
+    if !modes.is_empty() {
+        o.insert("modes".into(), Value::Object(modes));
+    }
+    if !valence.is_empty() {
+        o.insert("valence".into(), Value::Object(valence));
+    }
+    o.insert("build_size".into(), json!(8));
+    o.insert("build_min".into(), json!(0));
+    Some(out)
 }

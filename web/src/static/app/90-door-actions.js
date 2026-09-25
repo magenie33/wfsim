@@ -439,92 +439,33 @@ const AGENT_ACTIONS = [
     },
   },
   {
-    id: "optimizer.scope.read",
+    id: "optimizer.search.read",
     query: true,
-    what: "Read the build search's scope: which mods, exilus mods, arcanes, evolutions, modes and elements are required (fixed) or searched (search), whether a single slot may stay empty, how many mods a build holds, and the candidate count.",
+    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), how many cards may change at once, and how many fights each candidate gets. The candidates are the quick calc's — every card, arcane and evolution the weapon takes.",
     anchor: "#opt-plan",
     needs_weapon: true,
     args: {},
     run() {
       return {
-        size: { min: opt.min, max: opt.size }, finalists: optRun.finalists,
-        mods: agentMarks(opt.mods), exilus: agentMarks(opt.exilus), arcanes: agentMarks(opt.arcanes),
-        evolutions: Object.fromEntries(Object.entries(opt.evos).map(([t, m]) => [t, agentMarks(m)])),
-        modes: agentMarks(opt.modes), valence: agentMarks(opt.valence),
+        starts: opt.starts.map((s) => ({ ...startPayload(s), fixed: s.fixed.slice() })),
+        swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs,
         estimate: $("opt-estimate").textContent.trim(),
       };
     },
   },
   {
-    id: "optimizer.scope.mark",
+    id: "optimizer.search.set",
     writes: "search",
-    what: "Mark one option in the build search's scope: \"fixed\" requires it, \"search\" lets the search try it, \"off\" clears it. Axes: mods, exilus, arcanes, evolutions (give the tier), modes, valence. The page's own rules apply: requiring a mod clears its family, one slot takes one pin, a build is played one way.",
-    anchor: "#opt-plan",
+    what: "Set how hard the search looks: how many cards, arcanes or evolutions it may change at once (1-4), and how many fights each candidate gets (1 or 10).",
+    anchor: "#opt-runbar",
     needs_weapon: true,
     args: {
-      axis: { kind: "string", required: true, what: "which axis", enum: () => ["mods", "exilus", "arcanes", "evolutions", "modes", "valence"] },
-      id: { kind: "string", required: true, what: "the mod, arcane, evolution, mode or element id" },
-      mark: { kind: "string", required: true, what: "fixed, search or off", enum: () => ["fixed", "search", "off"] },
-      tier: { kind: "number", min: 1, max: 4, what: "the evolution's tier" },
+      swap_width: { kind: "number", min: 1, max: 4, what: "changes at once" },
+      candidate_runs: { kind: "number", min: 1, max: 10, what: "1 or 10 fights a candidate" },
     },
-    run({ axis, id, mark, tier }) {
-      const cur = axis === "evolutions" ? ((opt.evos[tier] || {})[id]) : (opt[axis] || {})[id];
-      const known = {
-        mods: () => buildPool().some((m) => m.id === id && !m.stance),
-        exilus: () => buildPool().some((m) => m.id === id && m.exilus),
-        arcanes: () => arcanePools().some((_, i) => arcanePool(i).some((a) => a.id === id)),
-        evolutions: () => (weaponEvos().find((t) => t.tier === tier) || { options: [] }).options.some((o) => o.id === id),
-        modes: () => modeOpts(weaponInfo($("weapon").value) || {}).some(([m]) => m === id),
-        valence: () => ((valenceSpec($("weapon").value) || {}).elements || []).includes(id),
-      }[axis];
-      if (axis === "evolutions" && tier == null) return agentNo("missing_argument", { argument: "tier" });
-      if (!known()) return agentNo("not_in_scope", { argument: "id", because: `this weapon's ${axis} have no ${id}` });
-      if (mark === "off" && !cur) return { text: "already clear" };
-      const want = mark === "off" ? cur : mark;
-      if (mark !== "off" && cur === want) return { text: "already marked" };
-      if (axis === "mods") markOptMod(id, want);
-      else if (axis === "exilus") markOptExilus(id, want);
-      else if (axis === "arcanes") markOptArcane(id, want);
-      else if (axis === "evolutions") markOptEvo(String(tier), id, want);
-      else markOptOneWay(axis, id, want);
-      return { estimate: $("opt-estimate").textContent.trim() };
-    },
-  },
-  {
-    id: "optimizer.scope.empty",
-    writes: "search",
-    what: "Say whether the search may leave a single slot empty: the exilus slot, an arcane seat (give the seat's pool, e.g. primary) or an evolution tier. never = always filled, allowed = both, only = searched empty.",
-    anchor: "#opt-plan",
-    needs_weapon: true,
-    args: {
-      axis: { kind: "string", required: true, what: "which slot", enum: () => ["exilus", "arcanes", "evolutions"] },
-      key: { kind: "string", what: "the arcane seat's pool, or the evolution tier" },
-      empty: { kind: "string", required: true, what: "never, allowed or only", enum: () => ["never", "allowed", "only"] },
-    },
-    run({ axis, key, empty }) {
-      if (axis === "arcanes" && !arcanePools().includes(key)) return agentNo("bad_argument", { argument: "key", alternatives: arcanePools() });
-      if (axis === "evolutions" && !weaponEvos().some((t) => String(t.tier) === String(key))) {
-        return agentNo("bad_argument", { argument: "key", alternatives: weaponEvos().map((t) => String(t.tier)) });
-      }
-      const [lo, hi] = { never: [1, 1], allowed: [0, 1], only: [0, 0] }[empty];
-      setOptRange(axis, axis === "exilus" ? null : String(key), lo, hi);
-      return { estimate: $("opt-estimate").textContent.trim() };
-    },
-  },
-  {
-    id: "optimizer.scope.size",
-    writes: "search",
-    what: "How many mods a searched build holds (min to max, 0 to 8), and how many builds reach the search's last round.",
-    anchor: "#opt-plan",
-    needs_weapon: true,
-    args: {
-      min: { kind: "number", min: 0, max: 8, what: "fewest mods" },
-      max: { kind: "number", min: 0, max: 8, what: "most mods" },
-      finalists: { kind: "number", min: 1, max: 100, what: "builds in the last round" },
-    },
-    run({ min, max, finalists }) {
-      setOptSizes({ size: max, min, finalists });
-      return { size: { min: opt.min, max: opt.size }, finalists: optRun.finalists, estimate: $("opt-estimate").textContent.trim() };
+    run({ swap_width, candidate_runs }) {
+      setOptSizes({ swap_width, candidate_runs });
+      return { swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
     },
   },
   {

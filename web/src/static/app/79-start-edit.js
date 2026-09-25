@@ -45,17 +45,6 @@ function startPayload(s) {
   };
 }
 
-/// A START'S CARDS JOIN THE SCOPE, so a start is never outside what may be
-/// searched: the server refuses a start the scope cannot hold.
-function scopeTakesStart(b) {
-  (b.slots || []).forEach((x, i) => {
-    if (!x || !x.mod || i === STANCE) return;
-    if (i === EXILUS) { if (!opt.exilus[x.mod]) opt.exilus[x.mod] = "search"; return; }
-    if (!opt.mods[x.mod]) opt.mods[x.mod] = "search";
-  });
-  (b.arcane || []).forEach((a) => { if (a && a !== "none" && !opt.arcanes[a]) opt.arcanes[a] = "search"; });
-}
-
 /// THE FOUR DEFAULT STARTS: one build per primary element, holding the
 /// strongest card of it this weapon can equip and nothing else — what a player
 /// gets by making those four builds by hand, and edited and removed the same way.
@@ -73,8 +62,7 @@ function defaultStarts() {
 
 function addStart(build) {
   opt.starts.push({ build, fixed: [] });
-  scopeTakesStart(build);
-  renderOptMods(); renderOptExilus(); renderOptArcanes(); renderOptStarts(); updateOptEstimate();
+  renderOptStarts(); updateOptEstimate();
 }
 
 /// THE STARTS LIST: each start is the simulator's card, with Edit and Remove.
@@ -85,7 +73,7 @@ function renderOptStarts() {
   opt.starts = (opt.starts || []).map((s) => normalizeStart(s, w.id));
   const mine = loadPresetList(BUILDS).filter((p) => p.state && p.state.weapon === w.id);
   box.innerHTML =
-    `<h4 class="sim-h">${escHtml(tr("Starts"))} <span class="sim-hint">${escHtml(tr(opt.starts.length
+    `<h4 class="sim-h">① ${escHtml(tr("Starts"))} <span class="sim-hint">${escHtml(tr(opt.starts.length
       ? "each is a build the search begins from; edit one in the builder, where a pinned position is FIXED in its answer"
       : "none — the search begins from a blank build"))}</span></h4>`
     + opt.starts.map((s, i) => `<div class="opt-start" data-i="${i}">
@@ -95,6 +83,7 @@ function renderOptStarts() {
         ${cardOfState(s.build, w, new Set(s.fixed))}</div>`).join("")
     + `<div class="opt-start-add">`
     + `<button type="button" class="ghost-btn small" id="opt-start-add">${escHtml(tr("+ add the current build as a start"))}</button>`
+    + `<button type="button" class="ghost-btn small" id="opt-start-blank">${escHtml(tr("+ a blank start"))}</button>`
     + (mine.length ? `<select id="opt-start-mine" class="ghost-btn small"><option value="">${escHtml(tr("+ add one of my builds"))}</option>`
       + mine.map((p, i) => `<option value="${i}">${escHtml(presetLabel(p))}</option>`).join("") + `</select>` : "")
     + `<button type="button" class="ghost-btn small" id="opt-start-defaults">${escHtml(tr("restore the 4 default starts"))}</button>`
@@ -109,6 +98,7 @@ function renderOptStarts() {
     renderOptStarts(); updateOptEstimate();
   }));
   $("opt-start-add").addEventListener("click", () => addStart(snapshotState()));
+  $("opt-start-blank").addEventListener("click", () => addStart(stateFromBuild({ mods: [] }, w.id)));
   const pick = $("opt-start-mine");
   if (pick) pick.addEventListener("change", () => {
     const p = mine[Number(pick.value)];
@@ -148,11 +138,8 @@ function finishStartEdit(save) {
   // WRITTEN AFTER THE RESTORE: putting the player's build back re-applies the
   // weapon, which reads the search back from its preset — a start written
   // before that was read over.
-  if (build) {
-    opt.starts[se.idx] = { build, fixed: [...se.fixed] };
-    scopeTakesStart(build);
-  }
-  renderOptMods(); renderOptExilus(); renderOptArcanes(); renderOptStarts(); updateOptEstimate();
+  if (build) opt.starts[se.idx] = { build, fixed: [...se.fixed] };
+  renderOptStarts(); updateOptEstimate();
 }
 
 function renderStartEditBanner() {

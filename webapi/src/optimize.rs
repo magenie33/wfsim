@@ -293,6 +293,9 @@ pub struct OptimizePlan {
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
+    // A quick request that names no scope searches the quick calc's whole one.
+    let whole = quick::whole_scope(v);
+    let v = whole.as_ref().unwrap_or(v);
     // THE FIGHT FIRST, and everything below derives from it. Nothing here reads
     // the request for anything the simulator already decided — not the weapon,
     // not the player, not the run count. The optimizer parses its SCOPE and its
@@ -955,6 +958,12 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 // whole surviving field, and twenty rows would each carry a
                 // copy of it.
                 o.remove("__resume");
+                // …and a whole scope this parse filled in, which is every card.
+                if whole.is_some() {
+                    for k in ["mods", "exilus", "arcanes", "evolutions", "modes", "valence"] {
+                        o.remove(k);
+                    }
+                }
             }
             r
         },
@@ -1325,7 +1334,8 @@ pub fn grade_optimize(
             sims: Default::default(),
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
-        quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len())
+        let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len());
+        (sj, stats)
     } else if !walks_whole(strategy.as_deref()) {
         wfsim_optimizer::descent::descent(
             &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, None, None,
@@ -1771,6 +1781,7 @@ pub fn run_optimize_resumable(
     };
     // What the search covered — `None` on a round resume, which does not search.
     let mut search_stats: Option<wfsim_optimizer::search::SearchStats> = None;
+    let mut quick_report: Option<quick::QuickReport> = None;
     let (cands, last, cancelled, n_jobs) = if let Some((r_round, r_alive, r_jobs_at_start)) = round_resume {
         // ---- RESUME: no walk at all. The checkpoint holds identities, so the
         // candidates are rebuilt with the same plan_forma / resolve_with the
@@ -1897,7 +1908,10 @@ pub fn run_optimize_resumable(
             sims: Default::default(),
         };
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
-            quick::run_quick(&ctx, st, max_evals, swap_width, Some(state), shard, shards, space.len())
+            let (sj, stats, report) =
+                quick::run_quick(&ctx, st, max_evals, swap_width, Some(state), shard, shards, space.len());
+            quick_report = Some(report);
+            (sj, stats)
         } else if !walks_whole(strategy.as_deref()) {
             wfsim_optimizer::descent::descent(
                 &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, Some(state), board,
@@ -1999,7 +2013,18 @@ pub fn run_optimize_resumable(
         .iter()
         .take(finalists)
         .enumerate()
-        .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
+        .map(|(rank, ((ci, ai), s))| {
+            let mut row = entry(rank, &cands[*ci], *ai, s);
+            // WHICH STARTS SETTLED HERE, each from its own score and in how
+            // many changes — a quick descent's row is one start's answer.
+            let c = &cands[*ci];
+            if let Some(lanes) =
+                quick_report.as_ref().and_then(|r| r.from_starts.get(&(c.ordered.clone(), c.variant, c.exilus, *ai)))
+            {
+                row["from_starts"] = lanes.clone();
+            }
+            row
+        })
         .collect();
 
     // WHAT THE SEARCH ACTUALLY COVERED. A run that did not reach the end of
@@ -2054,6 +2079,7 @@ pub fn run_optimize_resumable(
         "headshot_pct": headshot_pct,
         "duration": duration,
         "results": results,
+        "failed_starts": quick_report.map(|r| r.failures).unwrap_or_default(),
         "target": { "name": target_name, "level": level, "steel_path": steel_path },
     })
 }
@@ -2787,5 +2813,31 @@ mod lower_ranks {
         let max = arcane_at_rank("primary", &id).map(|x| x.1).expect("the bare id");
         assert_eq!(arcane_at_rank("primary", &format!("{id}@1")).map(|x| x.1), Some(1));
         assert!(arcane_at_rank("primary", &format!("{id}@{max}")).is_none());
+    }
+}
+
+#[cfg(test)]
+mod whole_scope_tests {
+    use super::*;
+
+    /// A QUICK REQUEST WITH NO SCOPE searches every card: one row per start,
+    /// each naming the start it came from.
+    #[test]
+    fn a_quick_request_without_a_scope_answers_each_start() {
+        let blank = json!({ "slots": [], "evolutions": [], "arcane": [], "fixed": [] });
+        let req = json!({
+            "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
+            "duration": 5.0, "runs": 4, "final_runs": 4, "finalists": 4,
+            "candidate_runs": 1, "strategy": "quick", "starts": [blank],
+        });
+        let plan = parse_optimize(&req).expect("plan");
+        let t = std::time::Instant::now();
+        let out = run_optimize(plan, &FunnelState::default(), |_, _| {}, None);
+        eprintln!("{:?} {}", t.elapsed(), out["results"][0]);
+        assert_eq!(out["ok"], json!(true), "{out}");
+        let rows = out["results"].as_array().unwrap();
+        assert_eq!(rows.len(), 1, "{out}");
+        assert_eq!(rows[0]["from_starts"][0]["start"], json!(0), "{out}");
+        assert_eq!(rows[0]["mods"].as_array().map(Vec::len), Some(8), "{out}");
     }
 }

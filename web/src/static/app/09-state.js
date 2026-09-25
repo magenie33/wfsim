@@ -280,7 +280,7 @@ const setFinalRuns = (n) => {
 // load, and the auto-save drops them the first time the scope is touched.
 // `swap_width` is how many positions the descent may change at once once
 // single changes stop paying — how HARD to search, like `finalists`.
-const OPT_RUN_DEFAULTS = { finalists: 10, swap_width: 1 };
+const OPT_RUN_DEFAULTS = { finalists: 10, swap_width: 1, candidate_runs: 10 };
 let optRun = { ...OPT_RUN_DEFAULTS };
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.

@@ -64,13 +64,16 @@ function woptMerge(parts) {
   // A shard that owned no ground returns an empty but complete envelope, so
   // any part is a valid head — prefer one that actually ranked something.
   const rows = [];
-  const seen = new Set();
+  const seen = new Map();
   for (const p of parts) {
     for (const r of p.results || []) {
-      const key = JSON.stringify([r.mods, r.arcane, r.evolutions, r.exilus]);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      rows.push(r);
+      const key = JSON.stringify([[...(r.mods || [])].sort(), r.arcane, r.evolutions, r.exilus, r.mode, r.valence]);
+      // Two shards' starts that settled on one build are ONE answer from both.
+      const had = seen.get(key);
+      if (had) { had.from_starts = [...(had.from_starts || []), ...(r.from_starts || [])]; continue; }
+      const row = { ...r };
+      seen.set(key, row);
+      rows.push(row);
     }
   }
   rows.sort((a, b) => (b.kill_progress ?? b.kills ?? 0) - (a.kill_progress ?? a.kills ?? 0));
@@ -95,6 +98,7 @@ function woptMerge(parts) {
     candidates: parts.reduce((n, p) => n + (p.candidates || 0), 0),
     jobs: parts.reduce((n, p) => n + (p.jobs || 0), 0),
     cancelled: parts.some((p) => p.cancelled),
+    failed_starts: parts.flatMap((p) => p.failed_starts || []),
     results: rows.slice(0, finalists).map((r, i) => ({ ...r, rank: i + 1 })),
   };
 }

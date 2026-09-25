@@ -479,37 +479,18 @@ check("aiming at a point, and back to one body", arena.aim.ok && arena.aimed && 
 const scope = await evaluate(`(async () => {
   const out = {};
   await window.wfsim.do("shell.module.open", { module: "optimizer" });
-  out.req = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "serration", mark: "fixed" });
-  out.pool = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "hellfire", mark: "search" });
-  out.size = await window.wfsim.do("optimizer.scope.size", { min: 2, max: 4 });
-  out.read = await window.wfsim.do("optimizer.scope.read", {});
-  out.onScreen = !!document.querySelector('#opt-mods .seg.on[data-m="serration"]');
-  out.off = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "serration", mark: "off" });
-  out.after = await window.wfsim.do("optimizer.scope.read", {});
-  out.bad = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "no_such_mod", mark: "fixed" });
-  const t = weaponEvos()[0];
-  if (t) {
-    out.evo = await window.wfsim.do("optimizer.scope.mark", { axis: "evolutions", tier: t.tier, id: t.options[0].id, mark: "search" });
-    out.empty = await window.wfsim.do("optimizer.scope.empty", { axis: "evolutions", key: String(t.tier), empty: "never" });
-    out.evoRead = (await window.wfsim.do("optimizer.scope.read", {})).evolutions[t.tier];
-  }
-  await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "hellfire", mark: "off" });
-  await window.wfsim.do("optimizer.scope.size", { min: 0, max: 8 });
+  out.set = await window.wfsim.do("optimizer.search.set", { swap_width: 2, candidate_runs: 1 });
+  out.read = await window.wfsim.do("optimizer.search.read", {});
+  out.onScreen = document.getElementById("opt-swap-width").value === "2" && document.getElementById("opt-cand-runs").value === "1";
+  await window.wfsim.do("optimizer.search.set", { swap_width: 1, candidate_runs: 10 });
   await window.wfsim.do("shell.module.open", { module: "builder" });
   return out;
 })()`, { awaitPromise: true });
 
-check("the search's scope takes a required and a searched mod, and reads them back",
-  scope.req.ok && scope.pool.ok && scope.read.mods.fixed.includes("serration") && scope.read.mods.search.includes("hellfire"),
-  JSON.stringify(scope.read).slice(0, 300));
-check("...the scope on screen moved with it", scope.onScreen === true);
-check("...its size bounds hold", scope.size.ok && scope.read.size.min === 2 && scope.read.size.max === 4, JSON.stringify(scope.read.size));
-check("...a mark clears", scope.off.ok && !scope.after.mods.fixed.includes("serration"), JSON.stringify(scope.after.mods));
-check("...a mod the weapon cannot take is refused", scope.bad.ok === false && scope.bad.reason === "not_in_scope", JSON.stringify(scope.bad));
-if (scope.evo) {
-  check("an evolution tier is searched, and never left empty", scope.evo.ok && scope.empty.ok
-    && scope.evoRead.search.length === 1 && scope.evoRead.empty === undefined, JSON.stringify(scope.evoRead));
-}
+check("the search takes its swap width and runs per candidate, and reads them back",
+  scope.set.ok && scope.read.swap_width === 2 && scope.read.candidate_runs === 1, JSON.stringify(scope.read).slice(0, 300));
+check("...the run bar moved with it", scope.onScreen === true);
+check("...and it reads its starts as builds", Array.isArray(scope.read.starts), JSON.stringify(scope.read.starts).slice(0, 200));
 
 // ---- the search: started, watched, stopped -----------------------------------
 //

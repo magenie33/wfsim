@@ -423,6 +423,27 @@ ui:
   "Final-round runs": 最终轮次数
   Finalists: 优胜名额
   "Swap width": 替换宽度
+  "each start improved by the quick calc until nothing helps — the fight is the simulator's": 每个起点用快速计算反复改进，直到再换什么都不涨 —— 战斗用模拟器的
+  "the starts and how hard to look — all of it, and only it, is what a search preset saves": 起点和搜索力度 —— 搜索预设保存的就是这些，也只有这些
+  "Runs per candidate": 每个候选跑几场
+  "how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured at the final-round runs either way": 搜索比较候选时每个候选打几场。1 场快十倍但更吵；无论选哪个，答案最后都按最终轮次数重新测量
+  "+ a blank start": "+ 空白起点"
+  "starts, swap width and runs per candidate": 起点、替换宽度和每个候选的场次
+  "{n} starts · {r} runs a candidate · final round {f} runs": "{n} 个起点 · 每个候选 {r} 场 · 最终轮 {f} 场"
+  "vs": 对
+  "start": 起点
+  "{n} changes": 改了 {n} 次
+  "use as a new start": 当作新起点
+  "from": 来自
+  "no legal build from this start": 这个起点找不到合法配装
+  "the time budget ran out before every start settled — strong builds, short of what those starts reach": 时间预算用完时还有起点没收敛 —— 结果不错，但还没到这些起点能到的最好
+  "each start improved until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点或调大替换宽度
+  "cancelled — best so far": 已取消 —— 目前最好的结果
+  "runs each": 场/每行
+  "Results": 结果
+  "on the list for other weapons": 其他武器的卡（也在清单里）
+  "this weapon's cards only": 只看这把武器的卡
+  "the whole list ({n} more for other weapons)": 完整清单（另有 {n} 张属于其他武器）
   "could not list the candidates": 无法列出候选
   "how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot": 当一次只换一处已经不再有提升时，搜索可以同时更换多少张卡、赋能或进化。1 最快；每加 1 大约多花一个数量级，但能跨过一次只换一处跨不过去的坎
   Starts: 起点

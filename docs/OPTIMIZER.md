@@ -901,8 +901,12 @@ above runs only when a tool asks for it by name.
 - The candidates of a position are `/api/candidates`' (`webapi/src/candidates.rs`),
   the quick calc's own list: family exclusivity, what an evolution set forbids,
   an evolution that would evict an equipped card, a mode a mod takes away, the
-  every-rank list — kept when they map onto the plan's tables (the scope). No
-  candidate is EMPTY. It took the page's generator's place after reproducing it
+  every-rank list — kept when they map onto the plan's tables. A quick request
+  that names no scope gets the WHOLE one (`whole_scope`): every card, exilus
+  card, arcane, evolution, mode and element the weapon takes, with the lower
+  ranks of the request's `every_rank` list — so the tables are exactly what
+  the quick calc offers. The page sends no scope; only the grader names one.
+  No candidate is EMPTY. It took the page's generator's place after reproducing it
   on 91 of 91 positions over six weapons; like it, it offers a stance card for
   a main slot, which the builder's picker does not.
 - **A build scores at its BEST ELEMENT ORDER.** Slot position decides only
@@ -933,7 +937,10 @@ it is full. After width 1 settles, `swap_width` tries 2, 3, … positions at onc
 - **ONE build per start**, legal by construction. Starts that settle on the
   same canonical build — the same cards in any order, the same resolved
   damage, the same exilus, arcane and variant — merge.
-- The answers are measured at the final-round run count and ranked.
+- The answers are measured at the final-round run count and ranked. Each row
+  carries `from_starts` — per start, its score before the descent and the
+  changes it took — and a start that reached no legal build is listed in
+  `failed_starts`. The fleet merges shards' rows for one build into one row.
 
 ### Measured
 
@@ -955,79 +962,16 @@ is not sustainable), so the scope asks a question the page does not.
 scope where only the sweep reaches the answer: with it disabled the guard
 fails at rank 14, 25.5% regret.
 
-### Not built yet
+### The page
 
-- The results are still the ranked table with a finalists count, not one row
-  per start with the starts each answer came from.
-- The scope still carries `fixed` marks beside the starts' own.
-
-## FILLING A SCOPE IS THE UNSOLVED HALF
-
-A search preset is a **way of looking for a build on this weapon** — the
-pool/req marks on every axis plus the funnel that spends them — and it is per
-weapon by the same rule a build is (`wfsim-presets-<weapon>-optimizer`). That
-model is right and is not what is wrong with the optimizer.
-
-What is wrong is that the only ways to fill one are the mod list's sort, its
-polarity filter and its search box, all of which are *"let me scroll less"*.
-Marking a scope is still one click per card, and **a new weapon starts from
-nothing** — which is exactly the moment a player has the least idea what to
-mark. Two ways in, and each has a trap that is not obvious.
-
-### ① Import a ranked build's cards into the pool
-
-`BOARD[weaponId]` is already on the page — every stored row carries a complete
-build (mods, arcane, evolutions, valence, exilus, riven) — so pouring a
-weapon's leading rows into `opt.mods` as **pool** marks costs no server work at
-all. The appeal is real: those cards have been scored, so a search starts from
-a set somebody already proved is worth something.
-
-**THE TRAP IS THAT A NEW WEAPON HAS NO ROWS**, and a new weapon is the case
-this exists for. Importing *this* weapon's board only helps the weapons that
-least need help. The form that answers the actual complaint is **CROSS-WEAPON**:
-take the leading rows of the other weapons sharing this one's `mod_pools`, and
-filter what they carry through this weapon's own pool (`pool_for_weapon` /
-`buildPool()`) on the way in.
-
-That does not weaken **NOTHING CROSSES BETWEEN WEAPONS** (AGENTS.md), and the
-distinction is the whole reason it is allowed: what crosses is a **SCOPE** —
-a set of cards worth searching — never a BUILD. A build is a statement about
-one weapon and stays one; "these are the mods people win with on rifles" is a
-statement about the POOL.
-
-Two decisions it still needs:
-
-- **Pool, never req.** `req` pins a slot; pinning eight slots from a table is
-  not a search, it is a copy. An import may only ever widen what is searched.
-- **Which axes.** A board row is a build on four axes. Importing only `mods` is
-  the honest minimum; arcanes and evolutions are cheap to add and valence is
-  not (a progenitor element is a property of the COPY a player owns).
-
-### ② Mark every card that does one thing
-
-*"Click 多重 and every card carrying a multishot bonus joins the pool."*
-
-`mod_category` (webapi `mods_json`) is **not** this and must not be stretched
-into it. It is **single-valued and first-match** — element → crit → status →
-handling → damage — so a dual-stat card lands in exactly one bucket, and there
-is no multishot class at all. What this needs is a **multi-valued tag set**: a
-card is *multishot* and *status* at once.
-
-**IT IS DERIVED IN THE ENGINE, NOT LISTED IN THE PAGE.** The tags come off the
-`ModEffect` variants a card actually carries and ride `/api/meta` beside
-`category`, so a mod added tomorrow tags itself and a hand list cannot go
-stale. A table of mod ids in `app.js` would be wrong within a week and nothing
-would report it — the same failure `pool_for_weapon` was written to end (see
-`applyWeaponInner`).
-
-### Both of them have to show the bill
-
-A tag button can put thirty cards in a pool in one click, and the candidate
-count is combinatorial in pool size. `updateOptEstimate` already computes it;
-a batch control that does not put that number next to itself is a button that
-quietly makes the search unfinishable.
-
----
+Top to bottom: the search preset bar; the run bar (run, runs per candidate
+1 / 10, swap width, final-round runs, what the run will do); ① the starts, each
+the simulator's build card, edited in the builder; ③ the results, one row per
+answer with the starts it came from, a tie with the leader marked, "+ add" and
+"use as a new start"; then the fight, read-only. A search preset saves the
+starts, the swap width and the runs per candidate. There is no scope to mark:
+what may change is what the quick calc offers, and a pin on a start is the one
+way to keep something.
 
 ## The optimizer is the builder, in bulk
 

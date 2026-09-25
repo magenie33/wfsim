@@ -329,11 +329,11 @@ async function init() {
   // floor (every required mod, plus one pooled) is at least 1 and wins, so 0
   // and 1 differ in exactly the one case above.
   $("opt-min").addEventListener("input", () => setOptSizes({ min: Number($("opt-min").value) || 0 }));
-  // updateOptEstimate is also the scope's auto-save, so finalists lands in the
-  // active preset the same way every other search setting does.
-  $("opt-finalists").value = optRun.finalists;
-  $("opt-finalists").title = tr("how many builds survive to the last round — each is then run at the final-round run count beside this");
-  $("opt-finalists").addEventListener("input", () => setOptSizes({ finalists: Number($("opt-finalists").value) || 10 }));
+  // updateOptEstimate is also the search's auto-save, so these land in the
+  // active preset the same way the starts do.
+  $("opt-cand-runs").value = String(optRun.candidate_runs);
+  $("opt-cand-runs").title = tr("how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured at the final-round runs either way");
+  $("opt-cand-runs").addEventListener("change", () => setOptSizes({ candidate_runs: Number($("opt-cand-runs").value) || 10 }));
   $("opt-swap-width").value = optRun.swap_width;
   $("opt-swap-width").title = tr("how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot");
   $("opt-swap-width").addEventListener("input", () => setOptSizes({ swap_width: Number($("opt-swap-width").value) || 1 }));

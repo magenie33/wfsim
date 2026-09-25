@@ -977,7 +977,7 @@
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
          enemy & buff settings → top-10 ranked builds, each loadable. -->
     <section class="block" data-module="optimizer" id="opt-block">
-      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>what to search, and how hard — the fight is the simulator's</span></div>
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>each start improved by the quick calc until nothing helps — the fight is the simulator's</span></div>
       <div class="bb">
         <!-- TWO HALVES, AND NOW TWO BOXES. The split has
              been this tab's rule since 2026-08-02 and only headings said so,
@@ -986,10 +986,20 @@
              inside this box is what a search preset saves, everything inside
              the next one belongs to the simulator and is read-only here. -->
         <div class="opt-half fold sect" id="opt-plan" data-fold="opt-plan">
-          <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>what to look through, and how hard to look — all of it, and only it, is what a search preset saves</span></div>
-          <!-- ONE preset per weapon: the whole search (scope + finalists).
-               Not the scenario — the optimizer runs the simulator's. -->
+          <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>the starts and how hard to look — all of it, and only it, is what a search preset saves</span></div>
+          <!-- Search presets, per weapon: the starts, swap width and runs per
+               candidate. Not the fight — the optimizer runs the simulator's. -->
           <div class="preset-bar" id="preset-bar-optimizer"></div>
+          <!-- THE RUN BAR. Final runs are the reader's preference and are not
+               saved in the preset; the rest of the bar is. -->
+          <div class="opt-runbar" id="opt-runbar">
+            <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
+            <label data-i18n>Runs per candidate <select id="opt-cand-runs"><option value="1">1</option><option value="10">10</option></select></label>
+            <label data-i18n>Swap width <input id="opt-swap-width" type="number" min="1" max="4" value="1"></label>
+            <div id="opt-runs-block" class="runs-row"></div>
+            <div id="opt-estimate" class="opt-est"></div>
+          </div>
+          <div id="opt-starts"></div>
           <!-- THE SCOPE, IN THE BUILDER'S OWN ORDER, UNDER THE BUILDER'S OWN
                NUMBERS. The optimizer is the builder in bulk — it binds a SET on
                every axis where the builder binds a value — so the two must read
@@ -1002,7 +1012,7 @@
                name are the builder's, already translated by `applyI18n`; only
                the hint, which is about SEARCHING and has no builder counterpart,
                is written and translated here. -->
-          <div id="opt-scope">
+          <div id="opt-scope" hidden>
             <!-- Each scope is an AXIS of the search, and a weapon that has no
                  such axis shows nothing here — heading included. The builder
                  already hides the matching BLOCK; these are the same facts,
@@ -1075,19 +1085,6 @@
               <div id="opt-valence" class="combo-menu opt-modlist"></div>
             </div>
           </div>
-          <!-- CLOSING THE FIRST HALF. Everything from the search's preset bar
-               down to here is the SEARCH and is saved in the search preset. -->
-          <div class="fold sect" data-fold="opt-search">
-            <h3 class="sim-h fold-h" data-i18n>Search <span class="sim-hint" data-i18n>how many builds survive to the last round</span></h3>
-            <div id="opt-search" class="field-grid">
-              <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
-              <label data-i18n>Swap width <input id="opt-swap-width" type="number" min="1" max="4" value="1"></label>
-            </div>
-            <!-- WHERE THE SEARCH BEGINS. A start is a partial build taken from
-                 the builder; a card or arcane clicked in it is LOCKED for that
-                 start. No starts = one per element. -->
-            <div id="opt-starts"></div>
-          </div>
           <!-- CPU THREADS IS GONE. How much of the machine
                the page may use is ONE setting and it is in the topbar
                (`compute-select`, a share of the reported cores); a second box
@@ -1095,6 +1092,8 @@
                two controls for one fact — the arena's own rule. `poolSize()` is
                now the whole answer, for the search as for everything else. -->
         </div>
+
+        <div id="opt-results"></div>
 
         <!-- HALF TWO: THE FIGHT. Not the optimizer's — the SIMULATOR's, shown
              read-only, because a preset is edited in exactly one place. -->
@@ -1134,15 +1133,6 @@
           </div>
         </div>
 
-        <!-- IN NEITHER HALF, AND THAT IS THE POINT. The
-             final round's run count is not what to search and it is not the
-             fight — the fight has never carried a run count either. It is how
-             hard YOU want to measure right now, so it lives outside both boxes
-             and outside both presets, exactly as the simulator's Runs does. -->
-        <div id="opt-runs-block" class="runs-row"></div>
-        <div id="opt-estimate" class="opt-est"></div>
-        <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
-        <div id="opt-results"></div>
       </div>
     </section>
   </main>

@@ -525,6 +525,8 @@ function renderQuickCalc() {
   }; });
   const add = $("gp-ranks-add");
   if (add) add.onclick = () => openEveryRankPicker(add);
+  const all = $("gp-ranks-all");
+  if (all) all.onclick = () => { everyRankAll = !everyRankAll; renderQuickCalc(); };
   const reset = $("gp-ranks-reset");
   if (reset) reset.onclick = () => setEveryRank(null);
 }
@@ -547,11 +549,24 @@ function setEveryRank(next) {
 const everyRankRow = (k, card, opts = {}) => (k === "mods"
   ? modRow(card, { ...opts, attrs: `data-id="${card.id}" ${opts.attrs || ""}` })
   : arcaneRow(card, opts));
-const everyRankCard = (k, id) => (k === "mods" ? modById(id) : arcaneById(id));
+const everyRankCard = (k, id) => (k === "mods"
+  ? modById(id) || (META.mods || []).find((m) => m.id === id)
+  : arcaneById(id));
+/// THE LIST IS ONE LIST FOR EVERY WEAPON; the panel shows this weapon's part
+/// of it, and `everyRankAll` shows the rest — kept, and applied on the weapons
+/// that take them.
+let everyRankAll = false;
+const everyRankHere = (k, id) => (k === "mods" ? !!modById(id) : arcaneFitsWeapon($("weapon").value, id));
 
-/// Every card this weapon could put on the list: its pool's ranked mods and
-/// its seats' ranked arcanes.
+/// Every card that could go on the list: this weapon's ranked mods and its
+/// seats' ranked arcanes — or, with the whole list open, every ranked card.
 function everyRankOffers() {
+  if (everyRankAll) {
+    return [
+      ...(META.mods || []).filter((m) => !m.riven && !m.stance && m.max_rank > 0).map((m) => ["mods", m]),
+      ...(META.arcanes || []).filter((a) => a.id !== "none" && (a.max_rank || 0) > 0).map((a) => ["arcanes", a]),
+    ];
+  }
   const arcs = [...new Map(arcanePools().flatMap((_, i) => arcanePool(i)).map((a) => [a.id, a])).values()];
   return [
     ...currentPool.filter((m) => !m.riven && m.max_rank > 0).map((m) => ["mods", m]),
@@ -563,14 +578,22 @@ function everyRankOffers() {
 /// that opens the picker, and the way back to the default.
 function everyRankPanel() {
   const list = everyRank();
-  const rows = ["mods", "arcanes"].flatMap((k) => list[k].map((id) => [k, everyRankCard(k, id)]))
-    .filter(([, c]) => c)
-    .map(([k, c]) => everyRankRow(k, c, {
-      trailing: `<button class="rk-x" data-k="${k}" data-id="${escHtml(c.id)}" title="${escHtml(tr("remove"))}">×</button>`,
-    }));
+  const cards = ["mods", "arcanes"].flatMap((k) => list[k].map((id) => [k, everyRankCard(k, id)]))
+    .filter(([, c]) => c);
+  const row = ([k, c]) => everyRankRow(k, c, {
+    trailing: `<button class="rk-x" data-k="${k}" data-id="${escHtml(c.id)}" title="${escHtml(tr("remove"))}">×</button>`,
+  });
+  const here = cards.filter(([k, c]) => everyRankHere(k, c.id));
+  const elsewhere = cards.filter(([k, c]) => !everyRankHere(k, c.id));
   return `<div class="pc-ranks">` +
-    (rows.length ? `<div class="combo-menu pc-rank-list">${rows.join("")}</div>`
+    (here.length ? `<div class="combo-menu pc-rank-list">${here.map(row).join("")}</div>`
       : `<span class="pc-note">${escHtml(tr("every card at max rank only"))}</span>`) +
+    (everyRankAll && elsewhere.length
+      ? `<div class="pc-note">${escHtml(tr("on the list for other weapons"))}</div><div class="combo-menu pc-rank-list">${elsewhere.map(row).join("")}</div>`
+      : "") +
+    `<button class="ghost-btn small" id="gp-ranks-all">${escHtml(everyRankAll
+      ? tr("this weapon's cards only")
+      : tr("the whole list ({n} more for other weapons)").replace("{n}", elsewhere.length))}</button>` +
     `<button class="ghost-btn small" id="gp-ranks-add">+ ${escHtml(tr("add a card"))}</button>` +
     (gainPrefs.everyRank ? `<button class="ghost-btn small" id="gp-ranks-reset">${escHtml(tr("default list"))}</button>` : "") +
     `</div>`;
