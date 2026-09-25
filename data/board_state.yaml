@@ -11,14 +11,14 @@
 # question and the page answers it (docs/BOARD.md).
 boards:
   demolisher:
-    submissions: 13342
-    listed: 10064
-    scored_at_epoch_seconds: 1790310118
+    submissions: 13592
+    listed: 10124
+    scored_at_epoch_seconds: 1790324753
   standard_multi_target:
-    submissions: 13342
-    listed: 9652
-    scored_at_epoch_seconds: 1790310121
+    submissions: 13592
+    listed: 9706
+    scored_at_epoch_seconds: 1790324758
   standard_single_target:
-    submissions: 13342
-    listed: 11441
-    scored_at_epoch_seconds: 1790310124
+    submissions: 13592
+    listed: 11508
+    scored_at_epoch_seconds: 1790324761
