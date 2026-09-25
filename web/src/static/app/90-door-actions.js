@@ -439,7 +439,7 @@ const AGENT_ACTIONS = [
     },
   },
   {
-    id: "optimizer.search.read",
+    id: "optimizer.plan.read",
     query: true,
     what: "Read the build search: its starts (each a build, with the positions fixed in its answer), how many cards may change at once, and how many fights each candidate gets. The candidates are the quick calc's — every card, arcane and evolution the weapon takes.",
     anchor: "#opt-plan",
@@ -454,7 +454,7 @@ const AGENT_ACTIONS = [
     },
   },
   {
-    id: "optimizer.search.set",
+    id: "optimizer.plan.set",
     writes: "search",
     what: "Set how hard the search looks: how many cards, arcanes or evolutions it may change at once (1-4), and how many fights each candidate gets (1 or 10).",
     anchor: "#opt-runbar",

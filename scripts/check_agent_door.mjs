@@ -479,10 +479,10 @@ check("aiming at a point, and back to one body", arena.aim.ok && arena.aimed && 
 const scope = await evaluate(`(async () => {
   const out = {};
   await window.wfsim.do("shell.module.open", { module: "optimizer" });
-  out.set = await window.wfsim.do("optimizer.search.set", { swap_width: 2, candidate_runs: 1 });
-  out.read = await window.wfsim.do("optimizer.search.read", {});
+  out.set = await window.wfsim.do("optimizer.plan.set", { swap_width: 2, candidate_runs: 1 });
+  out.read = await window.wfsim.do("optimizer.plan.read", {});
   out.onScreen = document.getElementById("opt-swap-width").value === "2" && document.getElementById("opt-cand-runs").value === "1";
-  await window.wfsim.do("optimizer.search.set", { swap_width: 1, candidate_runs: 10 });
+  await window.wfsim.do("optimizer.plan.set", { swap_width: 1, candidate_runs: 10 });
   await window.wfsim.do("shell.module.open", { module: "builder" });
   return out;
 })()`, { awaitPromise: true });
