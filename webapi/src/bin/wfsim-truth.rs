@@ -10,7 +10,7 @@
 //!               [fixed=id,…] [min=1] [size=8] [enemy=thrax_centurion] [level=9999]
 //!               [steel_path=0|1] [duration=300] [runs=100] [truth_runs=200]
 //!               [finalists=10] [max_jobs=200000] [threads=N]
-//!               [strategy=sample|descent] [starts=id+id;id] [search_evals=N]
+//!               [strategy=sample|descent] [starts=id+!locked+@!arcane;id] [search_evals=N]
 //!               [explore_frac=F] [arcanes=id,…] [evo1=id,…] … [evo5=id,…]
 //!               [swap_width=N]
 //!
@@ -81,11 +81,28 @@ fn main() {
         "threads": num("threads", 0),
         "strategy": get("strategy", "sample"),
         "swap_width": num("swap_width", 1),
-        // `starts=cryo_rounds;hellfire+serration` — one start per `;`.
+        // `starts=cryo_rounds;!hellfire+serration+@!primary_merciless` — one
+        // start per `;`; `!` locks a card, `@` names the arcane, `@!` locks it.
         "starts": get("starts", "")
             .split(';')
             .filter(|s| !s.is_empty())
-            .map(|s| s.split('+').collect::<Vec<_>>())
+            .map(|s| {
+                let (mut mods, mut locked, mut arcane, mut lock_arcane) =
+                    (Vec::new(), Vec::new(), Vec::new(), false);
+                for item in s.split('+') {
+                    if let Some(a) = item.strip_prefix("@!") {
+                        arcane.push(a);
+                        lock_arcane = true;
+                    } else if let Some(a) = item.strip_prefix('@') {
+                        arcane.push(a);
+                    } else if let Some(m) = item.strip_prefix('!') {
+                        locked.push(m);
+                    } else {
+                        mods.push(item);
+                    }
+                }
+                json!({ "mods": mods, "locked": locked, "arcane": arcane, "lock_arcane": lock_arcane })
+            })
             .collect::<Vec<_>>(),
     });
 
