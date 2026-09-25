@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Survey which riven stats a weapon family ACTUALLY rolls, from live listings.
 
+PHYSICAL stats are not this script's: scripts/survey_riven_physical.py writes
+their verdicts, which the engine reads. This count checks the rest.
+
 The wiki states one rule and admits it is not a law: "Weapons without more
 than 25% of a physical damage type usually cannot roll that respective
 attribute... Exceptions exist on a case by case basis." `excluded_for` in

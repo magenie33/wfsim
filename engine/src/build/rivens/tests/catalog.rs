@@ -583,11 +583,10 @@ fn a_weapon_does_not_roll_a_stat_it_does_not_have() {
     for id in ["zoom", "weapon_recoil", "ammo_maximum", "projectile_speed"] {
         assert!(v.contains(&id), "verglas_prime must not roll {id}: {v:?}");
     }
-    // 100% Cold and nobody has counted its cards: the share rule would refuse
-    // all three physical stats, so they are OFFERED and marked unconfirmed.
-    let u = unconfirmed_for("verglas_prime");
+    // 100% Cold, and its family's cards carry no physical stat: refused by
+    // that evidence, not by the share.
     for id in PHYSICAL {
-        assert!(u.contains(&id) && !v.contains(&id), "verglas_prime {id}: {u:?} / {v:?}");
+        assert!(v.contains(&id), "verglas_prime {id}: {v:?}");
     }
     // …and it keeps everything a sentinel weapon really has.
     for id in ["magazine_capacity", "reload_speed", "punch_through", "cold"] {
@@ -941,11 +940,13 @@ fn an_exception_overrides_the_derivation_and_nothing_else_does() {
     assert!(!excluded_for("karak_wraith").contains(&"slash"));
 
     // 3. THE DERIVATION answers for every unexcepted NON-physical stat, and
-    //    a physical one nobody has counted is offered as unconfirmed.
+    //    a physical one the cards cannot settle is offered as unconfirmed —
+    //    the Acrid's market is too thin to say either way.
     let v = excluded_for("verglas_prime");
-    assert!(v.contains(&"zoom") && !v.contains(&"impact"));
-    assert!(unconfirmed_for("verglas_prime").contains(&"impact"));
-    assert!(exceptions("Verglas").rolls.is_empty() && exceptions("Verglas").never.is_empty());
+    assert!(v.contains(&"zoom"));
+    let acrid = unconfirmed_for("acrid");
+    assert!(!acrid.is_empty(), "the share rule refuses something on a Toxin pistol");
+    assert!(acrid.iter().all(|id| !excluded_for("acrid").contains(id)), "{acrid:?}");
 }
 
 /// THE SURVEY IS A CHECK, NOT A SOURCE — this is the check.
@@ -969,12 +970,14 @@ fn the_survey_still_agrees_with_the_rules() {
         let Some(sv) = survey(fam) else { continue };
         let ours = excluded_for(&w.id);
         checked += 1;
-        for r in &sv.rollable {
+        // A physical stat's answer IS a survey (`physical.yaml`, the newer and
+        // per-stat one), so this older count is checked against the rules only.
+        for r in sv.rollable.iter().filter(|s| !PHYSICAL.contains(s)) {
             if ours.contains(r) {
                 bad.push(format!("{fam}/{r}: {} listings carry it, we refuse it", sv.n));
             }
         }
-        for n in &sv.never {
+        for n in sv.never.iter().filter(|s| !PHYSICAL.contains(s)) {
             if !ours.contains(n) {
                 bad.push(format!("{fam}/{n}: no listing carries it, we offer it"));
             }

@@ -1273,9 +1273,19 @@ Four files, and which one DECIDES is the whole design:
 | file | role |
 |---|---|
 | `engine/src/build/rivens/pools.rs::derived_for` | **the model** for non-physical stats — the ammo pool, whether anything it fires travels, whether anyone aims it |
-| `data/rivens/physical.yaml` | **the physical evidence** — the survey's verdicts, generated, every entry carrying its count |
+| `data/rivens/physical.yaml` | **the physical evidence** — `scripts/survey_riven_physical.py`'s verdicts, every entry carrying its count |
 | `data/rivens/exceptions.yaml` | **the overrides** — hand-written, per riven FAMILY: a real card, or a count that overrules the model |
 | `data/rivens/pools.yaml` | **the check** — the raw count over live warframe.market listings, read by a test and by nothing else |
+
+The physical survey asks the market one (family, stat, sign) at a time and
+trusts a POSITIVE listing only when its generated name carries the stat's
+syllable. Even that is not proof alone — a card filed under the wrong weapon
+passes it — so two verified listings count only above the noise floor. A
+NEGATIVE stat never reaches the name, so every count is set against the family's
+own scale (its Damage and Critical Chance listings): `rolls` at a rolling stat's
+rate, `never` at the noise floor of a market deep enough for absence to mean
+something, and anything between left unconfirmed. A weapon with no
+`riven_family` is not surveyed and stays unconfirmed.
 
 One (family, stat) may appear in only one of the two evidence files
 (`no_riven_fact_is_stated_in_both_evidence_files`): a card sent in for a pair

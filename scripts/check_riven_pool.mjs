@@ -44,10 +44,12 @@ const CASES = [
   ["Lex Prime", "projectile_speed", false, "4 of 500 cards"],
   ["Atomos", "projectile_speed", false, "0 of 500 cards"],
   // MELEE, where the pool is a different item rather than the rifle's with
-  // rows crossed out. No melee family is counted yet, so a 5% share is
-  // OFFERED and marked unconfirmed rather than refused.
-  ["Magistar", "impact", true, "80% of its damage"],
-  ["Magistar", "slash", true, "5% of its damage, and no card counted either way"],
+  // rows crossed out, and the cards decide it the same way.
+  ["Magistar", "impact", true, "80% of its damage, and cards carry it"],
+  ["Magistar", "slash", false, "5% of its damage, and no card carries it"],
+  // A MARKET TOO THIN TO SAY is offered, not refused: the Acrid is pure Toxin
+  // and its cards settle nothing either way.
+  ["Acrid", "slash", true, "unconfirmed — too few cards to say"],
   // …AND THE TWO SLOTS ARE DIFFERENT LISTS, which melee is the first pool to
   // prove in both directions. DE ships the combo-count stat as two entries and
   // only one of them can be the negative.
