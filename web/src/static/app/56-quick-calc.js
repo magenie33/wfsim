@@ -143,9 +143,9 @@ async function scanGains(axis, repaint) {
   // number changes how a reading should be taken.
   // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
   // the base fight is still going already knows how many of ITS OWN rows are
-  // coming. `gainCandidates` is a pure enumeration and awaits nothing, so this
-  // costs the move and no time.
-  const cands = gainCandidates(axis);
+  // coming. One request, no simulation — it costs a round trip and no runs.
+  const cands = await gainCandidates(axis);
+  if (!live()) return;
   // THE KEY IS NOT STAMPED YET. `ensureGains` returns early when the key
   // matches, so stamping it at the START meant a scan that died half way —
   // lanes gone, an exception — left the page believing this fight was already

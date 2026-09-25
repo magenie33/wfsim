@@ -963,12 +963,20 @@ The builder ⇄ row hop every start and every answer goes through is sound:
 `check_opt_replay` walks it, and the builder's build re-runs at the row's
 number exactly.
 
-1. **Move the quick calc's candidate generation into the engine**, and prove
-   the quick calc's rankings unchanged by the move.
-2. **The descent over build payloads**, on that generator, with the legality
+The candidate generator is the server's: `/api/candidates`
+(`webapi/src/candidates.rs`) takes the build as the page holds it — ten
+slots, not the wire's flat list, since which slot is the exilus is a fact the
+list cannot carry — and one position, and the quick calc asks it. It
+reproduced the page's own generator on 91 of 91 positions over six weapons
+(every axis: slots with lower ranks, two arcane seats, evolutions, mode,
+valence, assembly, stance, exilus) before that one was deleted. It offers a
+stance card for a main slot, as the page's did; the builder's picker does
+not.
+
+1. **The descent over build payloads**, on that generator, with the legality
    step, graded with `wfsim-truth` against the descent above.
-3. **The builder's start-editing mode** and fixed toggles.
-4. **The optimizer page**: starts, scope, results with one row per start.
+2. **The builder's start-editing mode** and fixed toggles.
+3. **The optimizer page**: starts, scope, results with one row per start.
 
 ## FILLING A SCOPE IS THE UNSOLVED HALF
 

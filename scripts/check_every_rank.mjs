@@ -39,10 +39,10 @@ const out = await evaluate(`(async () => {
   const back = stateFromBuild(buildPayload(), 'burston_prime');
   r.back = { mod: back.slots[0].mod, rank: back.slots[0].rank };
   // THE QUICK CALC ASKS ABOUT EVERY OTHER RANK of the card this slot holds.
-  r.cands = gainCandidates({ kind: 'mods', idx: 0 }).map((c) => c.id).filter((id) => id.startsWith('hunter_track'));
+  r.cands = (await gainCandidates({ kind: 'mods', idx: 0 })).map((c) => c.id).filter((id) => id.startsWith('hunter_track'));
   // TAKING THE CARD OFF THE LIST takes its rows away; the default brings them back.
   setEveryRank({ ...everyRank(), mods: everyRank().mods.filter((x) => x !== 'hunter_track') });
-  r.afterRemove = gainCandidates({ kind: 'mods', idx: 0 }).map((c) => c.id).filter((id) => id.startsWith('hunter_track@')).length;
+  r.afterRemove = (await gainCandidates({ kind: 'mods', idx: 0 })).map((c) => c.id).filter((id) => id.startsWith('hunter_track@')).length;
   setEveryRank(null);
   r.afterReset = everyRank().mods.includes('hunter_track');
   closePopovers();

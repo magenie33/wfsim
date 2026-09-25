@@ -11,7 +11,7 @@ use crate::tenno::floor_json;
 /// The PARTS a modular weapon can be assembled from, for `/api/meta`.
 ///
 /// `Value::Null` for every weapon that is not one.
-fn assembly_meta(id: &str) -> Value {
+pub(crate) fn assembly_meta(id: &str) -> Value {
     use wfsim_engine::data::weapons::kitguns as kg;
     let Some(record) = wfsim_engine::data::weapons::spec(id).and_then(|s| s.kitgun.as_deref())
     else {

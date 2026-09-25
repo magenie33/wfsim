@@ -59,7 +59,7 @@ pub(crate) fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), Stri
 /// UNKNOWN stat id is an ERROR: `resolved_slots` drops a stat it cannot find,
 /// so a typo left unrefused equips a riven that occupies a slot, drains
 /// capacity and grants nothing, with the card still naming the stats.
-fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
+pub(crate) fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
     use wfsim_engine::build::rivens::{RivenSpec, RolledStat};
     let class = riven_class(info);
     let rolled = |x: &Value| -> Option<RolledStat> {

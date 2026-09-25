@@ -18,12 +18,12 @@ const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
   history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
-  const ids = () => gainCandidates({kind:'evo',idx:0}).map(c=>c.id);
-  const none = ids();
-  evoSel = {1:'torid_evo1_incarnon_form'}; const one = ids();
-  evoSel = {1:'torid_evo1_incarnon_form',2:'torid_final_fusillade'}; const two = ids();
-  evoSel = {1:'torid_evo1_incarnon_form',2:'torid_final_fusillade',3:'torid_extended_volley'}; const three = ids();
-  const swap = gainCandidates({kind:'evo',idx:0}).find(c=>c.id==='torid_plentiful_mayhem');
+  const ids = async () => (await gainCandidates({kind:'evo',idx:0})).map(c=>c.id);
+  const none = await ids();
+  evoSel = {1:'torid_evo1_incarnon_form'}; const one = await ids();
+  evoSel = {1:'torid_evo1_incarnon_form',2:'torid_final_fusillade'}; const two = await ids();
+  evoSel = {1:'torid_evo1_incarnon_form',2:'torid_final_fusillade',3:'torid_extended_volley'}; const three = await ids();
+  const swap = (await gainCandidates({kind:'evo',idx:0})).find(c=>c.id==='torid_plentiful_mayhem');
   return { none, one, two, three, swap: swap && swap.payload.evolutions };
 })()`);
 
@@ -54,7 +54,7 @@ const m = await evaluate(`(async () => {
   slots.forEach(s => { s.mod = null; s.rank = null; });
   const w = weaponInfo('torid');
   const cands = () => gainCandidates({kind:'mode',idx:0});
-  const open = cands();
+  const open = await cands();
   const blocker = ((w.evo_forbids || {})[w.unlock_evo] || [])[0];
   // THE CONTROL IS A PLAIN DROPDOWN AND STILL AN AXIS: what makes a list
   // measure is the declaration, not the shape of the thing that opens it.
@@ -65,9 +65,9 @@ const m = await evaluate(`(async () => {
   // is missing for the wrong reason and the exclusion is never reached.
   const opened = mode;
   mode = 'base';
-  const unblocked = cands().map(c => c.id);
+  const unblocked = (await cands()).map(c => c.id);
   slots[0] = { mod: blocker, pol: slots[0].pol, rank: null };
-  const blocked = cands().map(c => c.id);
+  const blocked = (await cands()).map(c => c.id);
   mode = opened;
   return {
     unblocked,

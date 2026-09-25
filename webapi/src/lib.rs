@@ -17,6 +17,7 @@
 
 mod board;
 mod buffs;
+mod candidates;
 mod fight;
 mod forma;
 mod i18n;
@@ -34,6 +35,7 @@ mod tenno;
 mod warframe;
 
 pub use board::{board_check_json, build_keys_json, targets_json};
+pub use candidates::candidates_json;
 pub use fight::pairings_json;
 pub use forma::{forma_optimize_json, forma_plan_json};
 pub use i18n::i18n_json;
@@ -66,6 +68,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/meta", |_| meta_json()),
     ("/api/i18n", |_| i18n_json()),
     ("/api/panel", panel_json),
+    ("/api/candidates", candidates_json),
     ("/api/pairings", pairings_json),
     ("/api/simulate", simulate_json),
     ("/api/shapley", shapley_json),

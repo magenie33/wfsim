@@ -155,125 +155,29 @@ let gainAxis = { kind: "mods", idx: 0 };
 const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs.on,
   gainScenario().scenario, everyRank()]);
 
-// A CARD IS ITS OWN FAMILY here, so one card at two ranks is refused too.
-const famOf = (id) => {
-  const [card] = splitRank(id);
-  const m = modById(card);
-  return m ? m.family || card : null;
-};
-const modsCompatible = (ids) => {
-  const fams = ids.map(famOf).filter(Boolean);
-  return new Set(fams).size === fams.length;
-};
-
 /// Every candidate for an axis position, as `{ id, payload }` — the payload
 /// being what to OVERRIDE on `buildPayload()` to try it.
 ///
-/// The axes differ only here. A mod replaces one slot, an arcane one pool, an
-/// evolution one tier, a mode the whole way the weapon is played — and
-/// evolutions are scanned across EVERY tier at once, because they are all on
-/// screen at once and there are a dozen of them, not seventy.
-function gainCandidates(axis) {
-  if (axis.kind === "arcane") {
-    const cur = arcanes.slice();
-    const here = arcaneRankedId(axis.idx);
-    return arcanePool(axis.idx)
-      .flatMap((a) => [a, ...lowerArcaneRanks(a)])
-      .filter((a) => a.id !== here)
-      .map((a) => {
-        const next = cur.slice();
-        const ranks = arcaneRanks.slice();
-        next[axis.idx] = a.card || a.id;
-        ranks[axis.idx] = a.card ? a.rank : null;
-        return { id: a.id, payload: { arcane: next, arcane_rank: ranks } };
-      });
-  }
-  if (axis.kind === "evo") {
-    // Every tier at once, because they are all on screen at once — but only
-    // the tiers the LADDER opens. Scanning a locked tier's options too makes
-    // the picker offer (and rank) an evolution the builder will not let you
-    // click, measured on a build that cannot exist.
-    //
-    // Within a tier this is exactly "current vs replacement": the base run is
-    // the build as it stands, and each candidate swaps ONE tier's choice and
-    // leaves the rest alone.
-    const openTo = evoOpenTo();
-    const equipped = slots.map((s) => s.mod).filter(Boolean);
-    const out = [];
-    weaponEvos().filter((tier) => tier.tier <= openTo).forEach((tier) => {
-      tier.options.forEach((o) => {
-        if (evoSel[tier.tier] === o.id) return;
-        const next = { ...evoSel, [tier.tier]: o.id };
-        // An evolution that would take an EQUIPPED mod off the weapon is not a
-        // one-step swap — it is that swap plus an eviction, and scoring it
-        // against this build would price a build the game refuses. It is still
-        // choosable; it just has no gain to report until the mod comes out.
-        const no = forbiddenByEvos(next);
-        if (equipped.some((m) => no.has(m))) return;
-        out.push({ id: o.id, payload: { evolutions: Object.values(next).filter(Boolean) } });
-      });
-    });
-    return out;
-  }
-  if (axis.kind === "assembly") {
-    // BOTH PARTS AT ONCE, the way a tier of evolutions is scanned: they are on
-    // screen together, so measuring one and leaving the other blank would be a
-    // ranking that only half exists. One axis also keeps them from cancelling
-    // each other in `ensureGains`, which gives way per axis.
-    //
-    // A grip and a loader can share a name, so the candidate id carries the
-    // part — it is the key the chip is looked up by.
-    const w = $("weapon").value;
-    const spec = assemblySpec(w);
-    if (!spec || !assembly) return [];
-    const out = [];
-    [["grip", spec.grips], ["loader", spec.loaders]].forEach(([part, items]) => {
-      (items || []).forEach((it) => {
-        if (assembly[part] === it.id) return;
-        out.push({
-          id: part + ":" + it.id,
-          payload: { assembly: { ...assembly, [part]: it.id } },
-        });
-      });
-    });
-    return out;
-  }
-  if (axis.kind === "valence") {
-    // THE SEVEN PROGENITOR ELEMENTS, scanned the way a tier of evolutions is —
-    // all on screen at once, one swap each, everything else left alone.
-    //
-    // It is the axis a scan is worth the most on: the choice is a whole element
-    // entering the hierarchy, so which one wins depends on the mods around it
-    // and on the target — a question nobody can answer by reading cards.
-    const s = valenceSpec($("weapon").value);
-    if (!s) return [];
-    return s.elements
-      .filter((e) => e !== valence.element)
-      .map((e) => ({ id: e, payload: { valence_element: e, valence_bonus: valence.bonus } }));
-  }
-  if (axis.kind === "mode") {
-    // ONE FIELD, AND NOTHING ELSE MOVES. A form carries no mod pool of its
-    // own — only its group's default entry states one — so the mods, arcanes
-    // and evolutions the build already wears are exactly as legal in every
-    // other mode, and the candidate is the request's `mode` and no more.
-    //
-    // A MODE A MOD HAS TAKEN OFF THE WEAPON IS NOT MEASURED, the rule the
-    // evolution axis applies to a tier that would evict one: it is still
-    // listed and still choosable, it just has nothing to report until the mod
-    // comes out.
-    return modeOpts(weaponInfo($("weapon").value) || {})
-      .filter(([id, , off]) => id !== mode && !off)
-      .map(([id]) => ({ id, payload: { mode: id } }));
-  }
-  const cur = slots.map(slotModId);
-  // `buildPool()`, not the weapon's: a scan that ranks a mod this build's
-  // evolutions forbid recommends something the picker will not offer.
-  return buildPool()
-    .flatMap((m) => [m, ...lowerRanks(m)])
-    .filter((m) => !cur.includes(m.id))
-    .filter((m) => axis.idx !== EXILUS || m.exilus)
-    .map((m) => { const next = cur.slice(); next[axis.idx] = m.id; return { id: m.id, payload: { mods: next.filter(Boolean) } }; })
-    .filter((c) => modsCompatible(c.payload.mods));
+/// THE SERVER'S LIST (`/api/candidates`), written once for the quick calc and
+/// the optimizer alike, so a rule added there reaches both. The request is the
+/// build as the page holds it — SLOTS rather than the wire's flat mod list,
+/// because which slot is the exilus is a fact a flat list cannot carry.
+async function gainCandidates(axis) {
+  const r = await api("/api/candidates", {
+    weapon: $("weapon").value,
+    slots: slots.map(slotModId),
+    evo_sel: evoSel,
+    arcane: arcanes.slice(),
+    arcane_rank: arcaneRanks.slice(),
+    mode,
+    valence_element: valence.element,
+    valence_bonus: valence.bonus,
+    assembly: assembly ? { ...assembly } : null,
+    rivens: rivenPayload(),
+    every_rank: everyRank(),
+    axis,
+  });
+  return (r && r.candidates) || [];
 }
 
 // How many of the leaders AUTO looks at twice. Small on purpose: the second
