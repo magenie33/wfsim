@@ -65,6 +65,15 @@ const r = await app.evaluate(`(async () => {
   out.discardKept = JSON.stringify(opt.starts[0]) === before;
   out.discardBack = JSON.stringify(snapshotState().slots.map(s => s.mod)) === mine;
 
+  // Leaving by a tab ends the edit as Done does: no pins, no banner, the
+  // player's build back, and what was changed kept in the start.
+  document.querySelector('#opt-starts [data-edit="0"]').click(); await sleep(1200);
+  equipMod(3, 'hammer_shot', null); renderMods(); await sleep(300);
+  history.pushState({}, '', '/weapons/Verglas_Prime/simulator'); route(); await sleep(1200);
+  out.leftOpen = !!startEdit || document.querySelectorAll('.start-pin').length > 0 || !$('start-edit-banner').hidden;
+  out.leftKept = opt.starts[0].build.slots.map(s => s.mod).includes('hammer_shot');
+  out.leftBack = JSON.stringify(snapshotState().slots.map(s => s.mod)) === mine;
+
   // Optimize from the start: Hellfire is fixed, so every answer carries it.
   const body = { weapon: 'verglas_prime',
     mods: Object.fromEntries(['serration','split_chamber','vital_sense','point_strike','hellfire','cryo_rounds','infected_clip','hammer_shot','heavy_caliber'].map(m => [m, 'search'])),
@@ -91,6 +100,8 @@ c("...and the player's own build and preset come back untouched", r.backToMine &
 c("...and the banner and pins go away", r.bannerGone && r.pinsGone === 0);
 c("the list marks the fixed card", r.fixedChip === 1);
 c("discard leaves the start as it was and restores the build", r.discardKept && r.discardBack);
+c("leaving the builder by a tab ends the edit as done does", r.leftOpen === false && r.leftKept && r.leftBack,
+  JSON.stringify([r.leftOpen, r.leftKept, r.leftBack]));
 c("an optimize from the start is a quick descent from 1 start", r.optOk === true && r.optStrategy === "descent" && r.optStarts === 1 && r.rows > 0);
 c("...and every answer keeps the fixed card", r.allHellfire === true);
 await app.finish("start edit");
