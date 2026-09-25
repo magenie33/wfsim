@@ -1931,7 +1931,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         if killed {
             gal.bump_on_kill(params, t);
             arc.on_kill(params, t);
-            // THE WEAK POINT, not the head: DE converted Deadhead and
+            // THE WEAK POINT, not the head: Update 44.0 converted Deadhead and
             // Galvanized Scope / Crosshairs from "On Headshot" to "On Weakpoint".
             if direct && part.is_weak_point {
                 weakpoint_kill(params, arc, windows, t);

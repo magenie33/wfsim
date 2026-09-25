@@ -12,7 +12,7 @@ effects:
   # CONDITIONAL, not a flat crit bonus - the skeleton had it always-on, which
   # is the whole mod for free. Identical to the pistol twin Hydraulic
   # Crosshairs, numbers included. The sim assumes constant aiming, so
-  # `aiming` is satisfied and only the headshot trigger gates it.
+  # `aiming` is satisfied and only the weak-point trigger gates it.
   - kind: buff
     trigger: headshot
     condition: aiming
@@ -20,8 +20,8 @@ effects:
     rank0: 0.225
     rankMax: 1.35
     max_stacks: 1
-    # see notes: ramps_with_rank_wfcd
-    duration_rank0: 2
+    # RAMPS with rank, 1.5 s per rank: the wiki's table reads 1.5 / 3 / 4.5 / 6 / 7.5 / 9 s.
+    duration_rank0: 1.5
     duration: 9
 
 family: argon_scope

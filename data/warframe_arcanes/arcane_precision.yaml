@@ -3,11 +3,11 @@ name: "Arcane Precision"
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/GolemArcanePistolDamageOnHeadshot
-description: "On Headshot:\n+300% Damage for 18s on Secondary Weapon"
+description: "On Weak Point Hit:\n+300% Damage for 18s on Secondary Weapon"
 
 effects:
   - kind: unmodelled
-    text: "On Headshot:"
+    text: "On Weak Point Hit:"
   - kind: unmodelled
     text: "+300% Damage for 18s on Secondary Weapon"
 

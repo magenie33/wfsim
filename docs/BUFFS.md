@@ -207,17 +207,22 @@ the Galvanized rule while you keep hitting and four times harsher the moment you
 stop — a full pile drains over four windows there and vanishes in one here,
 which is why the choice has to be data rather than a default nobody re-read.
 
-### A HEADSHOT KILL IS THE ROUND'S KILL
+### A WEAK-POINT KILL IS THE ROUND'S KILL
 
 One definition, in `fight::pellet::weakpoint_kill`, and everything that reads
 the trigger reads it there: the DIRECT hit entered a weak point and the DIRECT
-hit finished that body. A bleed that kills afterwards, an explosion that kills
+hit finished that body. A WEAK POINT, not a head (`is_weak_point`, MECHANICS
+§Body parts): Update 44.0 converted both Deadheads and Galvanized Scope /
+Crosshairs from "On Headshot" to "On Weakpoint". The wire id stays
+`headshot_kill`. A bleed that kills afterwards, an explosion that kills
 beside it and a bounce's assumed head are all kills and none of them is this.
 
 It is paid once per body the round killed that way — the aimed one, and each
-one behind it the round punched through (MEASUREMENTS M103). Three things read
-it: Galvanized Scope / Crosshairs' kill stacks, Primary Deadhead
-(`ArcTrigger::HeadshotKill`), and the kill-gated half of Exact Penance.
+one behind it the round punched through (MEASUREMENTS M103). Two things read
+it: Galvanized Scope / Crosshairs' kill stacks and Primary and Secondary
+Deadhead (`ArcTrigger::HeadshotKill`). The kill-gated instant reloads (Exact
+Penance, Executioner's Fortune) were not converted and still roll on a HEAD
+(`head_direct`).
 
 ### A MOD can grant one too
 

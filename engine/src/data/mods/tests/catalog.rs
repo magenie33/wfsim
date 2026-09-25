@@ -657,11 +657,11 @@ On Headshot Kill:
 On Headshot Kill:
 +40% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );
-    // A duration that RAMPS: 2s at rank 0, 9s at max. Stored as one number
+    // A duration that RAMPS: 1.5s at rank 0, 9s at max. Stored as one number
     // it read "for 9s" at every rank.
     let argon = desc_info("argon_scope").unwrap();
     assert_eq!(argon.at(0), "On Headshot:
-+22.5% Critical Chance when Aiming for 2s");
++22.5% Critical Chance when Aiming for 1.5s");
     assert_eq!(argon.at(5), "On Headshot:
 +135% Critical Chance when Aiming for 9s");
     // A stack CAP that ramps, 1x -> 6x — rank-varying, not fixed.

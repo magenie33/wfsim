@@ -3,12 +3,12 @@ name: Secondary Deadhead
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnNoMelee
-description: "On Precision Headshot Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
+description: "On Weak Point Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
 
 effects:
-  # PRECISION headshot kill - NOT the same boundary as a plain "headshot kill". Wiki verbatim: "'Precision' refers to direct hit
-  # headshots (not AoE)". Excluded: AoE/explosion damage and most status-proc
-  # kills on the head. Included: direct hits; Electricity/Gas proc kills aimed
+  # A WEAK-POINT KILL by the DIRECT hit. Wiki verbatim: "'Precision' refers to
+  # direct hit weak points (not AoE)". Excluded: AoE/explosion damage and most
+  # status-proc kills. Included: direct hits; Electricity/Gas proc kills aimed
   # at the head (those procs land their own headshots).
   # Additive with base-damage mods (Hornet Strike bucket) - so it also scales
   # ModifiedBase (DoT payloads, elemental amounts).

@@ -10,7 +10,7 @@ rarity: legendary
 max_rank: 5
 equip_classes: [bow]
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/LongbowDamageOnHeadshot
-description: "On Headshot: Gain +X% damage on your next shot."
+description: "On Weak Point Hit: Gain +X% damage on your next shot."
 
 effects:
   # ITS OWN MULTIPLIER, not a Serration-bucket bonus — this was wrong when the
@@ -26,11 +26,11 @@ effects:
   # with damage mods (Daikyu). We model the product; the CO interaction is the
   # weapon's own `co_behavior` bracket and is not changed here.
   #
-  # UPTIME. "As long as every consecutive shot is a headshot, the buff is always
-  # active", and the benchmark's Tenno lands 100% headshots — so under
+  # UPTIME. "As long as every consecutive shot is a weak point hit, the buff is
+  # always active", and the benchmark's Tenno lands 100% headshots — so under
   # AssumedMax it is on for every shot but the first, which is what
-  # `final_damage_cap` resolves to. "If the buff is not active, the first
-  # headshot does not benefit from it, even if the bow has multishot": one shot
+  # `final_damage_cap` resolves to. "If the buff is not active, the first weak
+  # point hit does not benefit from it, even if the bow has multishot": one shot
   # in a 180 s engagement, and not modelled.
   - kind: buff
     trigger: weakpoint_hit

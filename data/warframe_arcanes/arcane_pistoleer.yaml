@@ -3,11 +3,11 @@ name: "Arcane Pistoleer"
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AmmoEfficiencyOnPistolHeadshot
-description: "On Pistol Headshot Kill:\n60% chance for +102% Ammo Efficiency for 12s"
+description: "On Pistol Weak Point Kill:\n60% chance for +102% Ammo Efficiency for 12s"
 
 effects:
   - kind: unmodelled
-    text: "On Pistol Headshot Kill:"
+    text: "On Pistol Weak Point Kill:"
   - kind: unmodelled
     text: "60% chance for +102% Ammo Efficiency for 12s"
 

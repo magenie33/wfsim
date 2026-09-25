@@ -186,7 +186,7 @@ fn galvanized_scopes_kill_stacks_each_run_their_own_clock() {
     );
 }
 
-/// …AND THE KILL IS A WEAK-POINT KILL, not a head kill: DE moved
+/// …AND THE KILL IS A WEAK-POINT KILL, not a head kill: Update 44.0 moved
 /// Galvanized Scope / Crosshairs and both Deadheads to "On Weakpoint". A MOA's
 /// rear earns the pile; a head that is no weak point earns none of it.
 #[test]

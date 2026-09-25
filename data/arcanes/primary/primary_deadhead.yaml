@@ -3,20 +3,16 @@ name: Primary Deadhead
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryDamageOnNoMelee
-description: "On Headshot Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
+description: "On Weak Point Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
 
 effects:
-  # TEXT DIFFERENCE from the secondary twin, deliberately NOT modeled as a
-  # mechanical one: the wiki module says "On Headshot Kill" here and "On
-  # PRECISION Headshot Kill" on Secondary Deadhead - but this page carries the
-  # same note, "'Precision' refers to direct hit headshots (not AoE)", and the
-  # AoE rule makes the distinction moot anyway: a radial can never headshot at
-  # all ("Radial damage no longer gains extra headshot damage or triggers
-  # headshot conditions", MECHANICS section 7). Only direct hits qualify either
-  # way, so both arcanes take the same trigger.
-  # Also excluded (wiki): "Kills from some status procs on the target's head do
-  # not count as a headshot kill." Electricity and Gas proc kills aimed at the
-  # head DO count - those procs land their own headshots.
+  # A WEAK-POINT KILL by the DIRECT hit: "'Precision' refers to direct hit weak
+  # points (not AoE)", and a radial never triggers a weak-point condition
+  # (MECHANICS section 7). `headshot_kill` is the trigger's wire id; the engine
+  # fires it on `is_weak_point`.
+  # Also excluded (wiki): "Kills from some status procs on the target's weak
+  # point do not count as a weak point kill." Electricity and Gas proc kills
+  # aimed at the head DO count - those procs land their own headshots.
   - kind: buff
     trigger: headshot_kill
     grants: base_damage
