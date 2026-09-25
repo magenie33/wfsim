@@ -1020,7 +1020,8 @@ label.check input{width:auto}
 .opt-start{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px;background:var(--surface)}
 .opt-start-h{display:flex;align-items:center;gap:6px}
 .opt-start-add{display:flex;flex-wrap:wrap;gap:8px}
-#opt-limits{margin-top:12px}
+[data-fold="opt-limits"]{margin-top:12px}
+#opt-limits{margin-top:6px}
 .opt-limit-list{max-height:260px;margin-bottom:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel3)}
 .opt-limit-list .opt{cursor:pointer}
 .opt-limit-list .opt.opt-out{opacity:.55}
