@@ -874,6 +874,29 @@ grader do not know which one ran. It never reports itself exhaustive.
 `the_descent_reaches_the_answer_set_from_any_start` is the CI guard; with
 moves never accepted it fails at rank 440.
 
+### Swap width — a valley two changes wide
+
+A width-1 sweep cannot cross a valley where each change alone loses and both
+together win: a card that pays only under another evolution, two element
+cards traded at once. `"swap_width": n` (1–8, default 1) adds wider moves,
+tried ONLY once width 1 is at a fixed point, one width at a time: every move
+changing exactly `w` positions — `m` mods replaced plus the arcane and/or the
+variant, `m + changes = w`. It is first-improvement in chunks of 1,024, and
+any gain sends the sweep back to width 1. A move of `m` mods costs
+C(held, m)·C(free, m), so the width is the player's to spend. The other
+answer to a valley is a start that already sits on its far side.
+
+| scope | start | width | screen evals | rank | within noise |
+|---|---|---|---|---|---|
+| Verglas Prime, 14 mods | all four elements in one | 1 | 557 | 283 | no (49%) |
+| | | 2 | 2,436 | 1 | yes |
+| | one per element | 2 | 2,736 | 1 | yes |
+| Boar Prime, arcanes × evolutions | one per element | 2 | 1,291 | 3 | yes |
+
+`swap_width_two_leaves_a_start_width_one_cannot` is the guard: it asserts
+width 1 stalls (rank 2, 30% regret) so the fixture still holds the valley,
+and width 2 solves it; with wide moves disabled it fails.
+
 ## FILLING A SCOPE IS THE UNSOLVED HALF
 
 A search preset is a **way of looking for a build on this weapon** — the

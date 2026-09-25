@@ -256,6 +256,9 @@ pub struct OptimizePlan {
     /// (`"starts": [["cryo_rounds"], ["hellfire", "serration"]]`). Empty = the
     /// one start per primary element.
     starts: Vec<Vec<String>>,
+    /// How many positions the descent may change at once when single
+    /// changes stop paying (`"swap_width"`, 1 = single changes only).
+    swap_width: u32,
     /// This run's STRIDE of the search space, of `shards` total. The browser
     /// buys coverage by running several Web Workers over disjoint strides and
     /// merging their leaderboards; a native run is one shard of one.
@@ -921,6 +924,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .min(256) as usize,
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
         descent: v.get("strategy").and_then(|x| x.as_str()) == Some("descent"),
+        swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
         starts: v
             .get("starts")
             .and_then(|x| x.as_array())
@@ -1047,6 +1051,7 @@ pub fn grade_optimize(
         threads,
         descent: plan_descent,
         starts,
+        swap_width,
         ..
     } = plan;
     wfsim_optimizer::set_worker_threads(threads);
@@ -1225,6 +1230,7 @@ pub fn grade_optimize(
         explore_frac,
         keep: 65_536,
         seed: 0xDEAD_BEEF,
+        swap_width,
         ..Default::default()
     };
     let (screened, sstats) = if plan_descent {
@@ -1395,6 +1401,7 @@ pub fn run_optimize_resumable(
         max_evals,
         descent,
         starts,
+        swap_width,
         shard,
         shards,
         replay_base,
@@ -1753,6 +1760,7 @@ pub fn run_optimize_resumable(
             max_evals,
             keep: SCREEN_KEEP,
             seed: 0xDEAD_BEEF,
+            swap_width,
             shard,
             shards,
             ..Default::default()

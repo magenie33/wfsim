@@ -188,9 +188,9 @@ fn run_pipeline(
     jobs: &[Job],
     min: usize,
     max_evals: u64,
-    // `Some(starts)` runs the descent from those starts (empty = the element
-    // pairs) instead of the sampler.
-    descent_from: Option<&[Vec<usize>]>,
+    // `Some((starts, width))` runs the descent from those starts (empty = one
+    // per element) at that swap width instead of the sampler.
+    descent_from: Option<(&[Vec<usize>], u32)>,
 ) -> (Verdict, SearchStats, usize) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
@@ -207,9 +207,11 @@ fn run_pipeline(
         );
         out
     };
-    let cfg = SearchConfig { max_evals, keep: 65_536, seed: 0xDEAD_BEEF, ..Default::default() };
+    let swap_width = descent_from.map_or(1, |(_, w)| w);
+    let cfg =
+        SearchConfig { max_evals, keep: 65_536, seed: 0xDEAD_BEEF, swap_width, ..Default::default() };
     let (screened, stats) = match descent_from {
-        Some(starts) => descent(&space, &pool, starts, &expand, &arcanes, s, &cfg, None, None),
+        Some((starts, _)) => descent(&space, &pool, starts, &expand, &arcanes, s, &cfg, None, None),
         None => search(&space, &expand, &arcanes, s, &cfg, None, None),
     };
     assert!(!screened.is_empty(), "the search returned nothing");
@@ -326,10 +328,10 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     );
 }
 
-/// The DESCENT, graded on the whole size range: from one start per element, and
-/// from a single start that carries no element at all — the start a player
-/// who knows nothing would type. Both must reach the answer set, and for
-/// less than it costs to exhaust the scope.
+/// The DESCENT, graded on the whole size range: from one start per element,
+/// and from a single start that carries no element at all — the start a
+/// player who knows nothing would type. Both must reach the answer set, and
+/// for less than it costs to exhaust the scope.
 #[test]
 fn the_descent_reaches_the_answer_set_from_any_start() {
     const RUNS: u32 = 40;
@@ -338,8 +340,11 @@ fn the_descent_reaches_the_answer_set_from_any_start() {
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let serration = pool().iter().position(|m| m.id == "serration").expect("in scope");
-    for (label, starts) in [("one start per element", vec![]), ("serration alone", vec![vec![serration]])] {
-        let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some(&starts));
+    for (label, starts, width) in
+        [("one start per element", vec![], 1), ("serration alone", vec![vec![serration]], 1)]
+    {
+        let (v, stats, unmatched) =
+            run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some((&starts, width)));
         println!(
             "[descent from {label}] {} subsets, {} evals -> rank {} of {} (regret {:.2}%, recall {:.0}%)",
             stats.subsets, stats.evals, v.rank, jobs.len(), v.regret * 100.0, v.recall * 100.0
@@ -358,6 +363,35 @@ fn the_descent_reaches_the_answer_set_from_any_start() {
             v.rank,
             v.regret * 100.0,
             truth.indistinguishable(3.0).len()
+        );
+    }
+}
+
+/// SWAP WIDTH 2 crosses a valley width 1 cannot: from one start holding all
+/// four elements, shedding any one costs its combination before the freed
+/// slot pays. Width 1 must stall here — otherwise the fixture no longer holds
+/// the valley and the width-2 half proves nothing — and width 2 must solve it.
+#[test]
+fn swap_width_two_leaves_a_start_width_one_cannot() {
+    const RUNS: u32 = 40;
+    let s = scenario(30.0, 9999);
+    let (cands, jobs) = exhaust(&s, 8);
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
+    let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
+    let ix = |id: &str| pool().iter().position(|m| m.id == id).expect("in scope");
+    let four = vec![vec![ix("cryo_rounds"), ix("hellfire"), ix("stormbringer"), ix("infected_clip")]];
+    for width in [1, 2] {
+        let (v, stats, _) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some((&four, width)));
+        println!(
+            "[width {width}] {} evals -> rank {} of {} (regret {:.2}%), answer set {}",
+            stats.evals, v.rank, jobs.len(), v.regret * 100.0, truth.indistinguishable(3.0).len()
+        );
+        assert_eq!(
+            v.within_noise,
+            width == 2,
+            "width {width}: rank {} (regret {:.2}%) — width 1 must stall and width 2 must solve",
+            v.rank,
+            v.regret * 100.0
         );
     }
 }

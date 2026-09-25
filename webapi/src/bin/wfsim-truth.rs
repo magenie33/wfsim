@@ -12,6 +12,7 @@
 //!               [finalists=10] [max_jobs=200000] [threads=N]
 //!               [strategy=sample|descent] [starts=id+id;id] [search_evals=N]
 //!               [explore_frac=F] [arcanes=id,…] [evo1=id,…] … [evo5=id,…]
+//!               [swap_width=N]
 //!
 //! `runs` is the search's own final-round precision (the scenario's);
 //! `truth_runs` is the reference's, and it should be several times larger —
@@ -79,6 +80,7 @@ fn main() {
         "finalists": num("finalists", 10),
         "threads": num("threads", 0),
         "strategy": get("strategy", "sample"),
+        "swap_width": num("swap_width", 1),
         // `starts=cryo_rounds;hellfire+serration` — one start per `;`.
         "starts": get("starts", "")
             .split(';')
