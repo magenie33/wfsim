@@ -84,9 +84,12 @@ const runFor = (w) => evaluate(`(async () => {
   // Through the page's own path: "+ add", open the preset, then let the
   // BUILDER assemble its own request the way Run Sim does. This is the hop
   // that broke, and the only way to test a hop is to walk it.
-  addResult(row);
+  // AWAITED: addResult resolves the row into a state before it saves, so a
+  // list read without waiting holds no new preset and the builder opens blank.
+  await addResult(row);
   const ps = loadPresetList(BUILDS);
   const saved = ps[ps.length - 1];
+  if (!saved || !saved.name) return { weapon: W.id, err: "'+ add' saved no build" };
   history.pushState({}, '', '/weapons/' + W.page); route(); await sleep(2500);
   pickPreset(buildBarCfg(), presetId(saved)); await sleep(1200);
   const asBuilt = async () => api('/api/simulate', {

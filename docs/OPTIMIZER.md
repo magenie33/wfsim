@@ -959,16 +959,16 @@ once, under the same legality rule.
 
 ### Order of work
 
-1. **The builder ⇄ row hop.** `check_opt_replay` fails on "+ add": the build
-   the builder makes of a ranked row does not re-run at the row's number. The
-   planned design sends every start and every answer through that hop, so it
-   is fixed first.
-2. **Move the quick calc's candidate generation into the engine**, and prove
+The builder ⇄ row hop every start and every answer goes through is sound:
+`check_opt_replay` walks it, and the builder's build re-runs at the row's
+number exactly.
+
+1. **Move the quick calc's candidate generation into the engine**, and prove
    the quick calc's rankings unchanged by the move.
-3. **The descent over build payloads**, on that generator, with the legality
+2. **The descent over build payloads**, on that generator, with the legality
    step, graded with `wfsim-truth` against the descent above.
-4. **The builder's start-editing mode** and fixed toggles.
-5. **The optimizer page**: starts, scope, results with one row per start.
+3. **The builder's start-editing mode** and fixed toggles.
+4. **The optimizer page**: starts, scope, results with one row per start.
 
 ## FILLING A SCOPE IS THE UNSOLVED HALF
 
