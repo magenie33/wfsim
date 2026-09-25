@@ -247,12 +247,6 @@ const r = await evaluate(`(async () => {
   await sleep(700);
   out.officialMoved = Math.abs(state() - before) > 1e-9;
   out.officialLooksLocked = !!document.querySelector('#sim-target-arena.ar-ro');
-
-  // 6. THE OPTIMIZER SHOWS IT READ-ONLY.
-  history.pushState({}, '', '/weapons/Braton/optimizer'); route(); await sleep(2200);
-  const oh = document.querySelector('#opt-target-arena');
-  out.optDrew = !!(oh && oh.querySelector('.arc-cv'));
-  out.optReadonly = !!(oh && oh.classList.contains('ar-ro'));
   return out;
 })()`);
 
@@ -314,7 +308,5 @@ check("...and it opens at the distance the ruler pins — contact, a zero gap",
 check("...and its fight cannot be dragged", r.officialMoved === false);
 check("...and the scene says so rather than silently ignoring the finger",
   r.officialLooksLocked === true);
-check("the optimizer draws the same scene", r.optDrew === true);
-check("...read-only, because a fight is edited in one place", r.optReadonly === true);
 
 await finish("the arena is a place you can drag");

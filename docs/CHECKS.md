@@ -120,12 +120,11 @@ ratchet. Verified to bite: dropping one exemption named its control.
 
 ## `check_parity`
 
-The builder and the optimizer offer the same options, the
-same visibility, the same ORDER, under the same numbers and names, on every
-axis. It asserts the property rather than a list (`orderOptScope` reads the
-order off the builder's own blocks) and SCRAMBLES the sections first, since
-markup authored in the right order would pass on a page where nothing orders
-anything. Run it after adding a weapon or anything a weapon can carry.
+Every axis the builder shows belongs to the weapon it is on: an axis is shown
+exactly when it has options (and `weaponAxes` answers for the weapon it was
+ASKED about), the served polarities arrive intact, an unmodelled evolution is
+marked on the tile where it is chosen, and every axis a build has travels in a
+board submission. Run it after adding a weapon or anything a weapon can carry.
 
 ## `check_board_submit`
 
@@ -237,8 +236,8 @@ A Warframe ability buff is the FIGHT's and reaches the
 number: the section draws in both languages under DE's OWN names (战吼,
 黯然失色), the card's value follows Ability Strength, ticking one moves a real
 `/api/simulate`, two of a FAMILY do not stack AND the page says which one
-lost, the optimizer shows the same buffs read-only, and — the negative control
-— no RULER carries one.
+lost, the optimizer's fight card names the ticked one and holds no control,
+and — the negative control — no RULER carries one.
 
 ## `check_pace_and_hits`
 
@@ -293,14 +292,6 @@ The IMMUNITY is MEASURED rather than read off the card (a Toxin-immune target
 takes literally nothing from a Torid; the same target at x1 takes something),
 and DELETING a custom must repoint the fight.
 
-## `check_opt_modes`
-
-Mode is the BUILDER's control and the OPTIMIZER's
-dimension. Pinning a mode makes every ranked row come back in it, pooling both
-DOUBLES the candidate count, and each row carries the mode it was scored in
-into the build it becomes. Server-side a VARIANT is a (mode, evolution set)
-pair, which is why nothing downstream had to learn about modes.
-
 ## `check_run_counts`
 
 How hard you measure is a number someone can set, in all
@@ -310,9 +301,9 @@ box (1.3 s a run in the shipping build, against 0.14 s at 100). The quick calc
 takes its own with a FLOOR of 10, where a status mod stops being a coin flip
 (M24: one run swings it ±39 points), and a number under it is raised rather
 than obeyed. The optimizer's final round takes its own too, and it is a
-PREFERENCE: typed, never blank, in NEITHER half of the tab and in NEITHER
-preset. It asserts the number on screen is the number sent, that the box is
-drawn outside both halves, that `snapshotOpt` does not carry it, that
+PREFERENCE: typed, never blank, in the run bar and in NEITHER preset. It
+asserts the number on screen is the number sent, that the box is in the run
+bar, that `snapshotOpt` does not carry it, that
 restoring a scope leaves it where the reader put it — and, its negative
 control, that the CPU threads box is gone and no `threads` reaches the request.
 
@@ -401,21 +392,6 @@ decides what it swings. Every assertion is on the WIRE or on a real
 slot 9 — and the FALLBACK: an empty slot fires the entry's own script, which
 happens to be Crushing Ruin's, so a stance that failed to apply would read as
 a pass.
-
-## `check_slot_ranges`
-
-Every axis says how many of its slots a candidate fills,
-in one shape: the mods axis is 8 slots and a number 0–8, every other axis is
-ONE slot and 0–0 / 0–1 / 1–1. It walks all three states on all four axes ON
-THE WIRE. The range is DERIVED first and adjusted second, so no existing scope
-grows; a PIN is not a range (a pinned candidate settles at 1–1 with the inputs
-disabled); and 0–0 KEEPS THE CANDIDATES, which is why the evolution ladder
-keys on the RANGE rather than the marks. Mode and valence carry the row
-read-only at 1–1. The empty choice is a mark like any other — `none`, or
-`none:<pool>` on an arcane seat — so the range is a VIEW over the option set
-and needs no field in the preset, the request or the round trip. An arcane
-costs no capacity and no Forma, so an empty seat can only tie the same build
-with the arcane in it: `an_arcane_seat_marked_none_is_not_a_default`.
 
 ## `check_stance_capacity`
 
@@ -522,21 +498,6 @@ rather than a stale table.
 the native dev server does not serve it, so a run pointed at 8787/8799 sees an
 empty board and every assertion passes on an empty table. The first check
 asserts the weapon under test has rows, which is what makes that loud.
-
-## `check_build_size`
-
-How full a searched build must be is a RANGE
-(`build_min`–`build_size`): both ends push each other, both ride the search
-preset, both reach the request. The floor starts at 0 and is drawn AFTER the
-mod list, because how full a build must be is a CONCLUSION and means nothing
-until the required and the pooled are chosen. "Nothing marked" is the empty
-option, as on every other axis; once anything is marked the DERIVED floor is
-at least 1 and wins. A 0 ceiling OUTRANKS the derived floor in three places
-that must agree — `min_slots`, the guard refusing pooled mods with no slot to
-reserve, and the page's `poolStarved` — or `SubsetSpace::new(1, 0)` reports a
-legal request as "no legal builds in this scope". The row says what the marks
-raised the floor to, stated only when the two DIFFER. The count is the product
-of all six axes.
 
 ## `check_riven_pool`
 

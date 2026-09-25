@@ -55,19 +55,18 @@ const r = await evaluate(`(async () => {
   const buildJson2 = JSON.stringify(loadPresetList('builder-builds')[0].state.slots);
 
   // ...and the SEARCH must survive a build switch too. Loading a build
-  // rebuilds the editor for its weapon, which resets the scope in passing —
+  // rebuilds the editor for its weapon, which resets the search in passing —
   // the active search preset is what has to put it back.
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(1500);
-  opt.mods = { serration: 'search', heavy_caliber: 'fixed' };
-  optRun.finalists = 13;
-  updateOptEstimate(); await sleep(900);
+  opt.starts = opt.starts.slice(0, 2);
+  setOptSizes({ swap_width: 3 }); await sleep(900);
   document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
   await sleep(800);
   chips[1].click(); await sleep(1600);
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(1800);
-  const scope = JSON.stringify(opt.mods), fin = optRun.finalists;
+  const scope = opt.starts.length, fin = optRun.swap_width;
 
   // The optimizer's BUFFS are the scenario's, read-only. Set one in the
   // simulator and the search must show it, without a control to change it.
@@ -84,8 +83,11 @@ const r = await evaluate(`(async () => {
   await sleep(1200);
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(2500);
-  const optBox = $$('#opt-buffs');
-  const mirrored = buffId ? optBox.querySelector('input[data-b="'+buffId+'"][data-f="stacks"]') : null;
+  // THE OPTIMIZER'S FIGHT CARD lists the buff at the scenario's stacks, and
+  // holds no control to change it.
+  const card = $$('#opt-fight-brief');
+  const buffName = ((buffList.find(b => b.id === buffId) || {}).name) || '';
+  const chip = [...card.querySelectorAll('.sb-chip')].find(c => buffName && c.textContent.startsWith(buffName));
   const optOwnsBuffs = typeof opt.buffs !== 'undefined';
 
   // ---- WHAT CROSSES BETWEEN WEAPONS, and what must not.
@@ -113,8 +115,8 @@ const r = await evaluate(`(async () => {
 
   return { names, carriesSim, levelBefore, levelAfter, onScreen, modAfter,
            buildUntouched: buildJson === buildJson2, scope, fin,
-           buffId, mirroredValue: mirrored ? mirrored.value : null,
-           mirroredLocked: mirrored ? mirrored.disabled : null, optOwnsBuffs,
+           buffId, cardChip: chip ? chip.textContent : null,
+           cardControls: card.querySelectorAll('input,select,button,textarea').length, optOwnsBuffs,
            aFight, bFight, backFight, staleResults, aMods, bMods,
            perWeaponKeys, sharedNames: sharedList.map(p => p.name),
            defLevel: (META.defaults || {}).level };
@@ -126,12 +128,11 @@ check("switching build leaves the fight alone (state)", r.levelBefore === r.leve
 check("...and on screen", String(r.onScreen) === String(r.levelAfter), `${r.onScreen} vs ${r.levelAfter}`);
 check("the build itself did load", r.modAfter === "serration", String(r.modAfter));
 check("editing the fight leaves the build alone", r.buildUntouched);
-check("switching build leaves the SEARCH scope alone",
-  r.scope === '{"serration":"search","heavy_caliber":"fixed"}', r.scope);
-check("...and its finalists", r.fin === 13, String(r.fin));
+check("switching build leaves the SEARCH's starts alone", r.scope === 2, String(r.scope));
+check("...and its swap width", r.fin === 3, String(r.fin));
 check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
-check("it shows the scenario's buff value", r.mirroredValue === "3", `${r.buffId} = ${r.mirroredValue}`);
-check("...and offers no way to change it", r.mirroredLocked === true, String(r.mirroredLocked));
+check("its fight card shows the scenario's buff value", / 3(\/|$)/.test(r.cardChip || ""), `${r.buffId}: ${r.cardChip}`);
+check("...and offers no way to change it", r.cardControls === 0, String(r.cardControls));
 // THE FIGHT FOLLOWS YOU, and that is the point of it.
 // Measuring your own roster under your own fight is the thing a
 // per-weapon scenario made impossible — you had to rebuild it on every
@@ -230,7 +231,7 @@ const md = await evaluate(`(async () => {
   out.simMode = mode;
   // AGAINST THE APP'S OWN LABEL, not against an English word. This check runs
   // in the machine's language, so 'Base Form' is 基础形态 here — the same trap
-  // that broke check_opt_gain when an evolution got a Chinese name. Comparing
+  // that broke a check when an evolution got a Chinese name. Comparing
   // to what the app would print for this mode is true in every language.
   out.simShows = out.simText.includes(modeLabel(weaponInfo($('weapon').value), mode));
   // A CONTROL THAT BINDS THE MODE, not any control at all.

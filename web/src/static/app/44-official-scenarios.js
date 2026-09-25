@@ -239,18 +239,9 @@ function applyWeaponInner(id, presetMods) {
   // the shared scenario every time you changed weapon, and auto-save would have
   // stored that.
   sim.__weapon = id;
-  // `min` IS IN HERE, and it was not — the one field of the scope this reset
-  // forgot, since the day the range landed. `updateOptEstimate`
-  // reads it as `Math.max(derived, opt.min)`, and `Math.max(n, undefined)` is
-  // NaN, so `for (k = NaN; k <= size; k++)` never runs: every weapon with no
-  // saved search reported its scope as impossible ("more required (0) than
-  // slots (8)") and disabled Run until some control was touched. `modes`,
-  // `valence`, `arcanes` and `evos` are absent on purpose — `renderOpt`'s seed
-  // block fills those from the build you are holding — while `size` and `min`
-  // are this line's to state (owner asked for a floor of 0, 2026-08-29, which
-  // is what made the missing field visible).
-  opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, min: 0 }; optSeeded = false; // reset scope
-  optLast = null;                 // and the winner the quick calc could measure against
+  // A weapon's search is its own: `renderOpt` seeds the default starts.
+  opt = { starts: [] }; optSeeded = false;
+  optLast = null;
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
   // has never been searched must not inherit the last weapon's finalists or
   // thread count into the "search 1" it is about to be given.

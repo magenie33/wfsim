@@ -262,7 +262,7 @@ const h1 = await centre("jump-head");
 await drag([h1.left + 30, h1.y], [h1.left + 31, h1.y]);
 check("a click on the header shuts the menu", (await evaluate("jump.open")) === false);
 
-// ---- the optimizer: sections two levels down ------------------------------
+// ---- the optimizer: its two boxes ----------------------------------------
 
 const opt = await evaluate(`(async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -274,22 +274,14 @@ const opt = await evaluate(`(async () => {
     return !!el; };
   jump.open = true; renderJump(); await sleep(150);
   out.rows = [...document.querySelectorAll('.jump-row')].map(b => b.dataset.jump);
-  // THE HALVES ARE FOLDS TOO, and the axes inside them are one level deeper —
-  // which the menu has to say, or a flat list of thirteen rows reads as
-  // thirteen peers where the page has two boxes and their contents.
-  out.deep = [...document.querySelectorAll('.jump-row.deep')].map(b => b.dataset.jump);
-  // SHUTTING A HALF TAKES ITS AXES WITH IT.
+  // SHUTTING A BOX TAKES ITS CONTENTS WITH IT, and a jump brings them back.
   hit('[data-fold="opt-plan"] > .fold-h'); await sleep(200);
-  out.axisGone = document.getElementById('opt-mods').offsetParent === null;
-  // ...and jumping to one brings both back.
-  hit('[data-jump="opt-mods"]'); await sleep(400);
-  out.axisBack = document.getElementById('opt-mods').offsetParent !== null
-    && !document.querySelector('[data-fold="opt-plan"]').classList.contains('shut');
-  // THE FILTER BOX INSIDE THE MODS AXIS IS NOT A FOLD TOGGLE either — it sits
-  // in the body, but the same rule covers the heading's own controls.
-  const box = document.querySelector('[data-fold="opt-mods"]');
-  document.getElementById('opt-mod-filter').click(); await sleep(120);
-  out.filterKept = !box.classList.contains('shut');
+  out.boxGone = document.getElementById('opt-starts').offsetParent === null;
+  hit('[data-jump="opt-plan"]'); await sleep(400);
+  out.boxBack = document.getElementById('opt-starts').offsetParent !== null;
+  // A CONTROL IN THE BOX'S BODY IS NOT A FOLD TOGGLE.
+  document.getElementById('opt-swap-width').click(); await sleep(120);
+  out.controlKept = !document.querySelector('[data-fold="opt-plan"]').classList.contains('shut');
   // ...AND HERE TOO, where the Buffs grid has a twin. Defined again: the reload
   // above took the simulator half's page with it.
   const sectLeaks = (list) => list.flatMap(s => [...s.children]
@@ -303,13 +295,10 @@ const opt = await evaluate(`(async () => {
 })()`);
 
 check(`the optimizer's boxes are in the menu (${opt.rows.length} rows)`,
-  opt.rows.includes("opt-plan") && opt.rows.includes("opt-mods")
-  && opt.rows.includes("opt-fight"), opt.rows.join(","));
-check("an axis inside a half reads as one level deeper",
-  opt.deep.includes("opt-mods"), opt.deep.join(","));
-check("shutting a half takes its axes with it", opt.axisGone);
-check("...and a jump to one brings both back", opt.axisBack);
-check("the mods filter is not a fold toggle", opt.filterKept);
+  opt.rows.includes("opt-plan") && opt.rows.includes("opt-fight"), opt.rows.join(","));
+check("shutting a box takes its contents with it", opt.boxGone);
+check("...and a jump to it brings them back", opt.boxBack);
+check("a control in the box is not a fold toggle", opt.controlKept);
 check("nothing inside a shut optimizer section is still drawn", opt.leaks.length === 0, JSON.stringify(opt.leaks));
 check("...and every control the menu was asked for here was drawn too",
   !opt.missing, JSON.stringify(opt.missing));

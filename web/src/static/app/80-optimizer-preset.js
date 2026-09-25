@@ -1,11 +1,5 @@
-// ---- The optimizer preset — ONE document per weapon.
-//
-// It was three (mods / arcanes / evolutions), split so the parts could be
-// reused across weapons. They no longer need to be: preset storage is
-// weapon-scoped (`wfsim-presets-<weapon>-optimizer`), and carrying a search to
-// another weapon is the explicit IMPORT, which filters per axis. Three lists
-// bought nothing and cost three bootstraps, three actives and three bars over
-// one search.
+// ---- The optimizer preset — ONE document per weapon
+// (`wfsim-presets-<weapon>-optimizer`).
 //
 // What it holds is the SEARCH: the starts, the swap width and the runs per
 // candidate. No scope — the candidates are the quick calc's, every one the
@@ -22,13 +16,12 @@ let activeOptPreset = null;
 const loadOptPresets = () => loadPresetList(OPT_DOMAIN);
 const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 
-// Called from renderOpt's seed block (page load AND weapon switch). The
-// first-ever run creates "search 1" from the build-seeded scope; afterwards
-// the active preset IS the scope.
+// Called from renderOpt's seed block (page load AND weapon switch): the active
+// preset, when there is one, replaces the default starts.
 function bootstrapOptPresets() {
   // NOTHING IS AUTO-CREATED here either — see `initPresets`. A search that has
   // never been run is not a search you own, and the scope controls are already
-  // a complete live state without one (`OPT_RUN_DEFAULTS` plus an empty scope).
+  // a complete live state without one (`OPT_RUN_DEFAULTS` plus the default starts).
   const ps = loadOptPresets();
   const want = activeOptPreset || localStorage.getItem(presetActiveKey(OPT_DOMAIN));
   activeOptPreset = ps.some((p) => p.name === want) ? want : (ps[0] ? ps[0].name : "");
@@ -36,63 +29,6 @@ function bootstrapOptPresets() {
   const cur = ps.find((p) => p.name === activeOptPreset);
   if (cur) applyOptState(cur.state);
 }
-
-// One-time merges, oldest first: the single legacy bar was split into three
-// groups, and the three are now one again. Both run over whatever is on the
-// machine, so a browser that skipped a release still lands on the current
-// shape. Names are the join key — a preset named "crit" in each group was one
-// search described three times, which is exactly what it becomes.
-(function migrateOptPresets() {
-  const parse = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } };
-  // Step 1: one bar -> three groups, under the current weapon.
-  const legacy = parse("wfsim-opt-presets");
-  if (Array.isArray(legacy)) {
-    legacy.forEach((p) => {
-      const st = p.state || {};
-      [["mods", { mods: st.mods || {}, exilus: (st.exilus && typeof st.exilus === "object") ? st.exilus : {}, size: st.size || 8 }],
-       ["arcanes", { arcanes: st.arcanes || {} }],
-       ["evolutions", { evos: st.evos || {} }]].forEach(([g, state]) => {
-        const key = "wfsim-presets-" + presetWeapon() + "-optimizer-" + g;
-        const ps = parse(key) || [];
-        if (!ps.some((x) => x.name === p.name)) {
-          ps.push({ name: p.name, savedAt: p.savedAt || Date.now(), state });
-          localStorage.setItem(key, JSON.stringify(ps));
-        }
-      });
-    });
-    localStorage.removeItem("wfsim-opt-presets");
-  }
-  // Step 2: three groups -> one, for EVERY weapon that has them.
-  const groups = ["mods", "arcanes", "evolutions"];
-  const weapons = new Set();
-  for (let i = 0; i < localStorage.length; i++) {
-    const m = /^wfsim-presets-(.+)-optimizer-(mods|arcanes|evolutions)$/.exec(localStorage.key(i));
-    if (m) weapons.add(m[1]);
-  }
-  weapons.forEach((w) => {
-    const merged = parse(`wfsim-presets-${w}-optimizer`) || [];
-    const byName = new Map(merged.map((p) => [p.name, p]));
-    groups.forEach((g) => {
-      (parse(`wfsim-presets-${w}-optimizer-${g}`) || []).forEach((p) => {
-        const into = byName.get(p.name)
-          || { name: p.name, savedAt: p.savedAt || Date.now(), state: {} };
-        into.state = { ...into.state, ...(p.state || {}) };
-        byName.set(p.name, into);
-      });
-    });
-    if (byName.size) {
-      localStorage.setItem(`wfsim-presets-${w}-optimizer`, JSON.stringify([...byName.values()]));
-      // The three old actives disagree by construction (three bars, three
-      // choices); the mod scope is the one that decided what the search was.
-      const act = localStorage.getItem(`wfsim-preset-active-${w}-optimizer-mods`);
-      if (act && byName.has(act)) localStorage.setItem(`wfsim-preset-active-${w}-optimizer`, act);
-    }
-    groups.forEach((g) => {
-      localStorage.removeItem(`wfsim-presets-${w}-optimizer-${g}`);
-      localStorage.removeItem(`wfsim-preset-active-${w}-optimizer-${g}`);
-    });
-  });
-})();
 
 function snapshotOpt() {
   return {
@@ -105,11 +41,7 @@ function snapshotOpt() {
 const blankOpt = () => ({ starts: defaultStarts(),
   swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs });
 
-// State-only apply (validation + cross-weapon id dropping); no re-render.
-//
-// Every axis drops what THIS weapon cannot hold, which is what makes a preset
-// carried over from another weapon land as "the part that still applies"
-// rather than as a search the run cannot execute.
+// State-only apply (validation + cross-weapon dropping); no re-render.
 function applyOptState(st) {
   // A preset from before the quick descent also carries a scope (`mods`,
   // `arcanes`, …); nothing reads it now, and the next save drops it.
@@ -157,190 +89,6 @@ function optBarCfg() {
     isBlank: (st) => sameState(st, blankOpt()),
     rerender: renderOptPresetBars,
   };
-}
-
-function renderOptTools() {
-  const t = $("opt-picker-tools");
-  const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
-  t.innerHTML =
-    `<label>${escHtml(tr("Sort"))} ` + ddButton("opk-sort", {
-      value: optPrefs.sort,
-      items: [{ value: "name", label: tr("Name") }, { value: "drain", label: tr("Drain") }],
-      onPick: (v) => { optPrefs.sort = v; renderOptTools(); renderOptModList(); },
-    }) + `</label>` +
-    `<button id="opk-dir" class="ghost-btn small" title="direction">${optPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
-    `<span class="pk-pols"><span class="pk-pol ${!optPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
-    pols.map((p) => `<span class="pk-pol ${optPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
-    `</span>` +
-    // QUICK CALC, on a button rather than on every edit. The builder's scan
-    // follows an opened slot because opening one IS the question; here every
-    // click on a pool/req control would restart ~250 engagements, and the
-    // scope is edited many clicks in a row.
-    `<span class="pk-gain"><button id="opk-gain" class="ghost-btn small"${optGain.running ? " disabled" : ""}>${
-      optGain.running ? `${optGain.done}/${optGain.total}` : escHtml(tr("quick calc"))}</button>` +
-    (optWinnerMods()
-      ? ddButton("opk-gain-ref", {
-        value: optGain.mode,
-        title: tr("the build every number is measured on"),
-        items: [
-          { value: "require", label: tr("vs required"), hint: tr("the mods you have pinned") },
-          { value: "winner", label: tr("vs winner"), hint: tr("the build the search returned") },
-        ],
-        onPick: (v) => { optGain.mode = v; renderOptTools(); renderOptPairings(); renderOptModList(); renderOptArcanes(); renderOptEvos(); },
-      })
-      : "") +
-    `</span>`;
-  $("opk-dir").onclick = () => { optPrefs.dir = optPrefs.dir === "asc" ? "desc" : "asc"; renderOptTools(); renderOptModList(); };
-  t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { optPrefs.pol = o.dataset.p || null; renderOptTools(); renderOptModList(); });
-  // All three axes are on screen at once and all three now carry numbers, so
-  // a tick repaints all three — a chip that appeared on one list and not the
-  // others would read as "this axis was not scanned".
-  const paint = () => {
-    renderOptTools(); renderOptPairings(); renderOptModList();
-    renderOptArcanes(); renderOptEvos();
-  };
-  $("opk-gain").onclick = () => scanOptGains(() => paint());
-}
-
-// A chip's ✕ removes; the chip itself REVEALS the mod in the list below.
-// Making the whole chip a delete button meant reaching for a selected mod to
-// look at it threw it away instead — and the ✕ was sitting
-// right there looking like the control that did it.
-function revealOptMod(id) {
-  const m = modById(id);
-  if (!m) return;
-  // The list is filtered; a chip must be able to reach a row the current
-  // filter hides, so clear whatever would keep it off screen.
-  if (optPrefs.pol && m.polarity !== optPrefs.pol) { optPrefs.pol = null; renderOptTools(); }
-  const q = ($("opt-mod-filter").value || "").trim().toLowerCase();
-  if (q && !searchBlob(m).includes(q)) $("opt-mod-filter").value = "";
-  renderOptModList();
-  const row = $("opt-mods").querySelector(`.opt .seg[data-m="${CSS.escape(id)}"]`);
-  if (!row) return;
-  const box = row.closest(".opt");
-  box.scrollIntoView({ block: "center", behavior: "smooth" });
-  box.classList.add("revealed");
-  setTimeout(() => box.classList.remove("revealed"), 1600);
-}
-
-function renderOptModSel() {
-  const chip = (id, cls) => {
-    const m = modById(id);
-    return `<span class="oselchip ${cls}" data-m="${id}" title="${escHtml(tr("click to find it in the list below"))}">`
-      + `${m ? m.name : id}<button class="oselx" data-x="${id}" title="${escHtml(tr("remove"))}">✕</button></span>`;
-  };
-  const req = Object.keys(opt.mods).filter((id) => opt.mods[id] === "fixed").map((id) => chip(id, "fixed"));
-  const pool = Object.keys(opt.mods).filter((id) => opt.mods[id] === "search").map((id) => chip(id, "search"));
-  const box = $("opt-mods-sel");
-  // TRANSLATED, and it was not: these three lines and the size row under them
-  // are meant to read down as one sentence, and two of them were English on a
-  // Chinese page.
-  box.innerHTML =
-    (req.length ? `<div class="oselrow"><span class="osellbl">${escHtml(tr("required"))} (${req.length}/${opt.size})</span>${req.join("")}</div>` : "") +
-    (pool.length ? `<div class="oselrow"><span class="osellbl">${escHtml(tr("pool"))} (${pool.length})</span>${pool.join("")}</div>` : "") +
-    (!req.length && !pool.length ? `<div class="sim-empty">${escHtml(tr("nothing marked — the search is the bare weapon. Mark mods below as pool or required."))}</div>` : "");
-  box.querySelectorAll("[data-x]").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      delete opt.mods[el.dataset.x];
-      renderOptMods(); renderOptExilus(); updateOptEstimate();
-    }));
-  box.querySelectorAll(".oselchip[data-m]").forEach((el) =>
-    el.addEventListener("click", () => revealOptMod(el.dataset.m)));
-}
-
-/// THE PAIRING LADDER — the quick calc's first statement, above the mods.
-///
-/// Absent until there is a choice to make: one pairing is not a ladder, and a
-/// scope with no elemental mod has nothing to say. What it reports is the
-/// reference build measured every way its elements can pair, best first.
-function renderOptPairings() {
-  const box = $("opt-pairings");
-  if (!box) return;
-  const fresh = optGain.key === optGainKey();
-  const rows = fresh ? optGain.orders : [];
-  if (rows.length < 2) { box.innerHTML = ""; return; }
-  const head = `${tr("element pairings")} · ${rows.length} · ${escHtml(optGain.metric)} · ${escHtml(optGain.note)}`;
-  box.innerHTML = `<div class="pairbox"><div class="pairhead">${head}</div>${rows.map((o, i) => `
-    <div class="pairrow${i === 0 ? " best" : ""}">
-      <span class="pl">${pairingLabel(o.combined, o.leftover)}</span>
-      <span class="pv">${o.value == null ? "—" : sig2(o.value)}</span>
-      <span class="pd">${i === 0 ? tr("best") : gainPct(o.pct)}</span>
-    </div>`).join("")}</div>`;
-}
-
-function renderOptModList() {
-  const q = ($("opt-mod-filter").value || "").trim().toLowerCase();
-  // Exilus mods are IN this list too — all 9 slots accept them (game rule),
-  // so marking one here makes it compete for a MAIN slot; the exilus SLOT
-  // has its own block below.
-  const hits = poolWithRivens()
-    // A STANCE IS NOT A MAIN-SLOT MOD, and this list offered every melee
-    // weapon's as one until 2026-08-29. The builder's picker has run the same
-    // filter in both directions since the stance slot landed — a stance is
-    // legal there and NOWHERE else — and this copy of the list never grew it,
-    // so marking one here asked the search for a build nobody can hold.
-    // Searching the stance SLOT is a real axis and is not this: it wants the
-    // treatment the exilus slot has, in the optimizer as well as here.
-    .filter((m) => !m.stance)
-    .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
-    .filter((m) => !q || searchBlob(m).includes(q))
-    .sort((a, b) => {
-      // Rivens first, as their own block, as in the builder's picker.
-      const r = (b.riven ? 1 : 0) - (a.riven ? 1 : 0);
-      if (r) return r;
-      const c = optPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
-      return optPrefs.dir === "desc" ? -c : c;
-    });
-  // The picker's `.opt` row markup verbatim; only the trailing `.dr` is
-  // replaced by the pool/req control (`.oseg`). Mutex-aware: a family
-  // sibling of a req'd mod is dead (game exclusivity); once required fills
-  // every slot, unmarked mods can no longer join; and pooled mods RESERVE
-  // one open slot — req may only grow to size−1 while any pool mark exists
-  // (pinning the last slot would silently kill the search).
-  const fixedN = reqCountMain();
-  const poolN = Object.values(opt.mods).filter((s) => s === "search").length;
-  const full = fixedN >= opt.size;
-  const row = (m) => {
-    const st = opt.mods[m.id] || "off";
-    const fam = famReqBy(m);
-    const dead = !!fam || (full && st === "off");
-    // Would req'ing this row leave pooled mods with zero open slots?
-    const poolAfter = poolN - (st === "search" ? 1 : 0);
-    const reqBlocked = st !== "fixed" && (fixedN + 1 > opt.size - (poolAfter > 0 ? 1 : 0));
-    const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
-      : dead ? `all ${opt.size} slots are required already` : "";
-    return modRow(m, {
-      cls: `${st === "off" ? "" : st} ${dead ? "dis-soft" : ""}`,
-      title: why || (m.effects || []).join(" · "),
-      chips: optGainChipFor(m.id),
-      note: optPairingNoteFor(m.id),
-      // …AND THE OPTIMIZER BINDS A SET.
-      trailing: oseg(`data-m="${m.id}"`, st, {
-        poolDead: dead,
-        reqDead: dead || reqBlocked,
-        reqTitle: !dead && reqBlocked
-          ? tr("pooled mods reserve ≥1 open slot — raise max mods or clear pools") : "",
-      }),
-    });
-  };
-  // THE OPTIMIZER'S OWN SCAN, same component and a different state. It has no
-  // slots and therefore no axis — there is one list and one question — so the
-  // strip is asked without one.
-  $("opt-mods").innerHTML = scanStrip(optGain) + (hits.length
-    ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
-    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
-  $("opt-mods").querySelectorAll(".seg:not(.dis)").forEach((el) =>
-    el.addEventListener("click", (e) => { e.stopPropagation(); markOptMod(el.dataset.m, el.dataset.s); }));
-}
-
-/// A MOD'S MARK IN THE SEARCH: "fixed" (required), "search" (pooled), or the
-/// same mark again to clear it. Requiring one clears its family everywhere.
-function markOptMod(id, want) {
-  const cur = opt.mods[id] || "off";
-  if (cur === want) delete opt.mods[id]; else opt.mods[id] = want;
-  if (opt.mods[id] === "fixed") clearFamMarks(id);
-  renderOptMods(); renderOptExilus(); updateOptEstimate();
 }
 
 /// The search's run settings, from the run bar or the agent door.
@@ -611,10 +359,8 @@ const evoName = (id) => {
   return prettify(id);
 };
 
-/// The ranking on screen. Kept so the quick calc can offer the WINNER as its
-/// reference build — a mod measured on two required cards meets no diminishing
-/// returns, and the winner is the same question asked on a build that is full.
-/// Cleared with the results themselves when the weapon changes.
+/// The ranking on screen, which the agent door reads. Cleared with the results
+/// themselves when the weapon changes.
 let optLast = null;
 
 /// ③ THE RESULTS: one row per answer, which is one start's — or several

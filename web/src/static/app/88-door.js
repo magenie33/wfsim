@@ -345,10 +345,6 @@ const AGENT_EXEMPT = [
   { sel: "#topmenu", kind: "view", why: "moves between the site's pages" },
   { sel: "#tbmore-toggle", kind: "view", why: "opens the topbar's overflow" },
   { sel: "#sim-buffs-all", kind: "view", why: "shows every buff that could apply, not only this build's" },
-  { sel: "#opt-mod-filter", kind: "view", why: "filters the list on screen" },
-  { sel: "#opt-arc-filter", kind: "view", why: "filters the list on screen" },
-  { sel: "#opt-picker-tools", kind: "view", why: "sorts and filters the list on screen" },
-  { sel: "#opk-dir", kind: "view", why: "flips the list's sort order" },
   { sel: "#nona-fab", kind: "view", why: "opens Nona herself" },
   { sel: "#theme-toggle", kind: "pref", why: "light or dark, for this browser" },
   { sel: "#quick-calc", kind: "pref", why: "the quick calc's own settings, for this browser" },
@@ -359,7 +355,6 @@ const AGENT_EXEMPT = [
   { sel: "#qq-copy-foot", kind: "outward", why: "copies the community group number" },
   { sel: ".pop.ren", kind: "reader", why: "renaming a build is the reader's" },
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
-  { sel: "#opk-gain", kind: "pref", why: "the search list's own quick-calc scan" },
   { sel: "#opt-fight-half", kind: "view", why: "the simulator's fight, shown read-only beside the search" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
@@ -375,17 +370,6 @@ const agentRivenCard = () => ({
     slot: x.slot, stat: x.id, text: x.text, roll: x.roll, range: `${x.min} to ${x.max}`, ...(x.modeled ? {} : { modeled: false }) })),
   ...(rivenResolved && rivenResolved.illegal && rivenResolved.illegal.length ? { illegal: rivenResolved.illegal } : {}),
 });
-
-/// A SEARCH AXIS'S MARKS, grouped the way the scope reads: pinned, pooled,
-/// and whether the slot may stay empty (the `none` marks are its range).
-const agentMarks = (map, name) => {
-  const out = { fixed: [], search: [] };
-  for (const [id, st] of Object.entries(map || {})) {
-    if (id === "none" || id.startsWith("none:")) { out.empty = st === "fixed" ? "only" : "allowed"; continue; }
-    if (out[st]) out[st].push(name ? name(id) : id);
-  }
-  return out;
-};
 
 /// AN ARENA EDIT IS A FIGHT EDIT: the page repaints and saves the scenario
 /// after it (and `agentDo` refuses it on an official ruler, as the drag does).

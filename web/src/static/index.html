@@ -974,17 +974,13 @@
       </div>
     </section>
 
-    <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
-         enemy & buff settings → top-10 ranked builds, each loadable. -->
+    <!-- Block: Optimizer — starts, improved by the quick calc → one build per
+         start, under the simulator's fight. -->
     <section class="block" data-module="optimizer" id="opt-block">
       <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>each start improved by the quick calc until nothing helps — the fight is the simulator's</span></div>
       <div class="bb">
-        <!-- TWO HALVES, AND NOW TWO BOXES. The split has
-             been this tab's rule since 2026-08-02 and only headings said so,
-             which cannot tell a reader WHICH preset bar owns the thing they
-             are editing. A container says it without a sentence: everything
-             inside this box is what a search preset saves, everything inside
-             the next one belongs to the simulator and is read-only here. -->
+        <!-- TWO BOXES: everything in the first is what a search preset saves;
+             the second is the simulator's fight, read back as a card. -->
         <div class="opt-half fold sect" id="opt-plan" data-fold="opt-plan">
           <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>the starts and how hard to look — all of it, and only it, is what a search preset saves</span></div>
           <!-- Search presets, per weapon: the starts, swap width and runs per
@@ -1000,141 +996,14 @@
             <div id="opt-estimate" class="opt-est"></div>
           </div>
           <div id="opt-starts"></div>
-          <!-- THE SCOPE, IN THE BUILDER'S OWN ORDER, UNDER THE BUILDER'S OWN
-               NUMBERS. The optimizer is the builder in bulk — it binds a SET on
-               every axis where the builder binds a value — so the two must read
-               as one page. Nothing here declares that order:
-               `orderOptScope` walks the builder's blocks and appends each axis's
-               section as it meets it, stamping the heading from that block's own
-               `.n` and `<h2>`. Reorder or rename a builder block and this
-               follows with no edit here and none in app.js.
-               Each `<h3>` therefore has an EMPTY `.axh` — the number and the
-               name are the builder's, already translated by `applyI18n`; only
-               the hint, which is about SEARCHING and has no builder counterpart,
-               is written and translated here. -->
-          <div id="opt-scope" hidden>
-            <!-- Each scope is an AXIS of the search, and a weapon that has no
-                 such axis shows nothing here — heading included. The builder
-                 already hides the matching BLOCK; these are the same facts,
-                 asked in the module that searches them. -->
-            <div id="opt-modes-sect" class="fold sect" data-fold="opt-modes">
-              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>how it is played — pool = searched, req = pin one</span></h3>
-              <div id="opt-modes" class="combo-menu opt-modlist"></div>
-            </div>
-            <!-- MODS, and the EXILUS slot inside it — the builder's `mod-block`
-                 holds its exilus slot the same way, and an axis that is a
-                 sub-slot there must not be a peer heading here. -->
-            <div id="opt-mods-sect" class="fold sect" data-fold="opt-mods">
-              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>search by name or effect; mark each as pool (search) or required</span></h3>
-              <div class="opt-mods-head">
-                <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" data-i18n-ph autocomplete="off">
-              </div>
-              <div id="opt-picker-tools" class="picker-tools"></div>
-              <!-- ELEMENT PAIRINGS. Three elemental mods are not one build but
-                   three, and the spread between them is larger than any single
-                   mod's — so it is stated above the list the numbers appear in,
-                   never inside a row. -->
-              <div id="opt-pairings"></div>
-              <div id="opt-mods-sel"></div>
-              <div id="opt-mods" class="combo-menu opt-modlist"></div>
-              <!-- HOW FULL A SEARCHED BUILD MUST BE, AFTER THE MARKING AND
-                   NOT BEFORE IT. It is not a filter and it
-                   is not a summary: it is the CONCLUSION you reach once the
-                   required and the pooled are chosen, so it closes the list
-                   rather than sitting over it. It shared a flex row with the
-                   search box first (a column-stacked label made that row four
-                   lines tall and read as a setting ON the filter), then joined
-                   the marks summary above the list — which was still ahead of
-                   the act it concludes.
-                   THE 8 MAIN SLOTS ARE ITS SUBJECT, which is why it lands here
-                   and not after the Exilus block below: that slot is the +1 and
-                   is counted separately.
-                   THE INPUTS STAY IN THE MARKUP because `init` wires them once;
-                   only the effective-range line is rendered, by
-                   `updateOptEstimate`, which is where the numbers already are. -->
-              <div id="opt-size-row" class="oselrow">
-                <label class="osellbl" for="opt-min" data-i18n>Mods / build</label>
-                <input id="opt-min" type="number" min="0" max="8" value="0" title="the fewest a searched build may carry — 0 imposes no floor of your own, and the marks below still impose theirs; set both ends to 8 to search only full builds" data-i18n-title>
-                <span class="osdash">–</span>
-                <input id="opt-size" type="number" min="0" max="8" value="8" title="the most a searched build may carry — 0 searches the bare weapon and keeps every mark, the same thing 0 means on every other axis" data-i18n-title>
-                <span id="opt-size-eff" class="opt-size-eff"></span>
-              </div>
-              <div id="opt-exilus-sect">
-                <div class="exlabel" data-i18n>Exilus</div>
-                <div class="exhint" data-i18n>the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</div>
-                <div id="opt-exilus" class="combo-menu opt-modlist"></div>
-                <!-- …and how many of THIS slot a candidate fills, after its
-                     list for the same reason the mod range is after its own. -->
-                <div id="opt-exilus-range"></div>
-              </div>
-            </div>
-            <div id="opt-arcanes-sect" class="fold sect" data-fold="opt-arcanes">
-              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>pool = searched options, req = pin the slot</span></h3>
-              <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
-              <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
-            </div>
-            <div id="opt-evos-sect" class="fold sect" data-fold="opt-evos">
-              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>per tier: pool = searched options, req = pin</span></h3>
-              <div id="opt-evos"></div>
-            </div>
-            <!-- THE VALENCE AXIS — an adversary weapon's progenitor element,
-                 searched the way the mode is. Hidden on every weapon that has
-                 none, exactly as the builder's own block is. -->
-            <div id="opt-valence-sect" class="fold sect" data-fold="opt-valence">
-              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>the progenitor element — pool = searched, req = pin one</span></h3>
-              <div id="opt-valence" class="combo-menu opt-modlist"></div>
-            </div>
-          </div>
-          <!-- CPU THREADS IS GONE. How much of the machine
-               the page may use is ONE setting and it is in the topbar
-               (`compute-select`, a share of the reported cores); a second box
-               here was a per-search override of a global preference, which is
-               two controls for one fact — the arena's own rule. `poolSize()` is
-               now the whole answer, for the search as for everything else. -->
         </div>
 
         <div id="opt-results"></div>
 
-        <!-- HALF TWO: THE FIGHT. Not the optimizer's — the SIMULATOR's, shown
-             read-only, because a preset is edited in exactly one place. -->
         <div class="opt-half fold sect" id="opt-fight-half" data-fold="opt-fight">
           <div class="opt-half-h fold-h" data-i18n>The fight <span class="sim-hint" data-i18n>the simulator's, shown read-only — every candidate is scored under it, and it is edited over there</span></div>
           <div class="preset-bar" id="opt-scenario-ref"></div>
-          <!-- THE FIGHT AS A CARD (`fightCardHtml`): read, not edited, here. -->
           <div id="opt-fight-brief"></div>
-          <div id="opt-fight-full" hidden>
-          <div id="opt-target" class="sub-block"></div>
-          <div class="fold sect" data-fold="opt-tenno">
-            <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
-            <div id="opt-technique" class="field-grid"></div>
-            <div id="opt-squad" class="sub-block"></div>
-          </div>
-          <!-- WHO ELSE IS FIRING, read-only like the rest of this half. A
-               squad kills faster, so what an uptime mod is worth moves with
-               it — a roster that changed every ranking with nothing on this
-               tab saying so is the search answering a question the reader
-               cannot see they asked. -->
-          <div class="fold sect" data-fold="opt-roster">
-            <h3 class="sim-h fold-h" data-i18n>Who else is firing <span class="sim-hint" data-i18n>read-only — every candidate is scored beside them</span></h3>
-            <div id="opt-roster" class="sub-block"></div>
-          </div>
-          <div class="fold sect" data-fold="opt-wfbuffs">
-            <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
-            <div id="opt-wfbuffs"></div>
-          </div>
-          <div class="fold sect" data-fold="opt-extra">
-            <h3 class="sim-h fold-h" data-i18n>Extra stats <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored with them</span></h3>
-            <div id="opt-extra" class="field-grid"></div>
-          </div>
-          <div class="fold sect" data-fold="opt-limits">
-            <h3 class="sim-h fold-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
-            <div id="opt-limits" class="field-grid"></div>
-          </div>
-          <div class="fold sect" data-fold="opt-buffs">
-            <h3 class="sim-h fold-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
-            <div id="opt-buffs"></div>
-          </div>
-          </div>
         </div>
 
       </div>

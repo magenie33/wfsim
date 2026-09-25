@@ -312,23 +312,6 @@ async function init() {
   $("weapon").addEventListener("change", () => { wfsim.do("builder.weapon.set", { weapon: $("weapon").value }); });
   $("run-sim").addEventListener("click", runSim);
   $("run-opt").addEventListener("click", runOptimize);
-  $("opt-mod-filter").addEventListener("input", renderOptModList);
-  $("opt-arc-filter").addEventListener("input", renderOptArcanes);
-  // How full a build must be, as a RANGE. The two ends are one setting: a
-  // ceiling below the floor is not a scope, so each end pushes the other.
-  // THE CEILING MAY BE 0, like every other axis's: 0–0 is "search it empty,
-  // and keep the marks" — the bare weapon, without unmarking everything.
-  $("opt-size").addEventListener("input", () => setOptSizes({ size: Number($("opt-size").value) || 0 }));
-  // THE FLOOR STARTS AT 0, AND 0 IS THE DEFAULT. Every
-  // other axis here treats "nothing marked" as the EMPTY option — an unmarked
-  // exilus slot stays empty, an unmarked arcane seat searches no arcane — and
-  // the mods axis alone answered it with an error. `updateOptEstimate` has
-  // claimed "an empty scope = the bare weapon, still a legal search" since it
-  // was written, and a floor of 1 made that sentence false.
-  // It costs nothing anywhere else: the moment anything is marked, the DERIVED
-  // floor (every required mod, plus one pooled) is at least 1 and wins, so 0
-  // and 1 differ in exactly the one case above.
-  $("opt-min").addEventListener("input", () => setOptSizes({ min: Number($("opt-min").value) || 0 }));
   // updateOptEstimate is also the search's auto-save, so these land in the
   // active preset the same way the starts do.
   $("opt-cand-runs").value = String(optRun.candidate_runs);

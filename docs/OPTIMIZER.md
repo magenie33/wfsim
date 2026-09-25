@@ -138,144 +138,40 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
 
-## The optimizer tab is TWO HALVES
-
-Two preset bars, and the page is cut cleanly between them — nothing on it
-belongs to neither, which is what makes the two domains legible instead of a
-rule to remember.
-
-**AND NOW THEY ARE TWO CONTAINERS**. The split was the rule
-for four weeks and only headings said so, which cannot tell a reader WHICH
-preset bar owns the thing they are editing. A box says it without a sentence.
+## The optimizer tab is TWO BOXES
 
 ```
-┌ THE SEARCH ─────────┐   everything in this box, and only it,
-│ preset bar: SEARCH  │   is what a search preset saves.
-│   1 · Mode          │
-│   2 · Mods          │   The axes, their order, their numbers and
-│         Exilus      │   their names are the BUILDER's — read off
-│   3 · Arcane        │   its blocks rather than restated here.
-│   4 · Evolution     │
-│   5 · Valence       │
-│   Search            │   finalists
-└─────────────────────┘
-┌ THE FIGHT ──────────┐   the SIMULATOR's, shown READ-ONLY. Edited
-│ preset bar: SCENARIO│   there, because a preset is edited in
-│   The fight         │   exactly one place.
-│   The Tenno         │
-│   Limits            │
-│   Buffs             │
-└─────────────────────┘
-  Final-round runs        IN NEITHER BOX, AND IN NEITHER PRESET.
-  Run Optimizer
+┌ THE SEARCH ─────────────────┐   everything in this box but the final-round
+│ preset bar: SEARCH          │   runs is what a search preset saves
+│ run bar: Run · runs per     │
+│   candidate · swap width ·  │
+│   final-round runs          │
+│ ① starts                    │   each a build card, edited in the builder
+└─────────────────────────────┘
+  ③ results                         one row per answer
+┌ THE FIGHT ──────────────────┐   the SIMULATOR's scenario, read back as a
+│ scenario · edit in the Sim →│   card (`fightCardHtml`) with no control in
+│ card: enemy, the Tenno,     │   it — a fight is edited in one place
+│   squad, Warframe buffs,    │
+│   extra stats, buffs        │
+└─────────────────────────────┘
 ```
 
 | what | where it lives | why |
 |---|---|---|
-| the scope, and `finalists` | the SEARCH preset | both are decisions about a search: what to look through, and how many winners survive to the last round |
-| the fight, the player, the buffs | the SCENARIO preset, read-only here | a preset is edited in exactly one place; the winner has to be scored under the fight the replay will run |
-| the final round's run count | **neither** — `OPT_RUNS_KEY`, a preference | how hard you want to measure right now is a fact about the person, not about the search and not about the fight |
-| how many cores to use | **neither** — the topbar's compute share | one setting for the whole page; a per-search override is two controls for one fact |
+| the starts, swap width, runs per candidate | the SEARCH preset | decisions about one search |
+| the fight, the player, the buffs | the SCENARIO preset, read here as a card | the winner is scored under the fight the replay runs |
+| the final round's run count | **neither** — `OPT_RUNS_KEY`, a preference | how hard to measure right now is the reader's |
+| how many cores to use | **neither** — the topbar's compute share | one setting for the whole page |
 
-The BUFFS were the last thing to move. The optimizer kept its own
-scope-wide config — a union over everything searchable, with its own stack
-settings — on the reasonable ground that a candidate carries mods the current
-build does not. That bought one real thing and cost a worse one: the two
-modules scored the same fight under different buffs, and "add this winner, then
-Run Sim" only agreed because adding a winner secretly copied the search's
-config into the user's scenario. One fight, one buff config, and the
-disagreement cannot exist. The section still shows the WIDE list — every buff
-this weapon could produce, which is what the scenario's "all potential buffs"
-view is for — because a search does cover builds you are not holding; a buff
-nobody set simply falls to its own default, which for anything timed is now 0.
+There is no scope to mark: what may change is what the quick calc offers, and
+a pin on a start is the one way to keep something. The final-round count can
+differ from the simulator's, so every row is re-run through `/api/simulate`
+and marked `≠` when the two disagree by more than 4σ of their standard errors.
 
-### The run count left the preset
-
-It rode the search preset with a BLANK box meaning *"the fight's own count"*.
-That is one control with two readings, and the wrong home for both. A run count
-is not what to search; and it is not the fight either — `sim.runs` has never
-existed, because *"how hard do I want to measure right now"* is a fact about
-the person and not about the engagement (`SIM_RUNS_KEY`).
-
-So it is a preference with a key of its own (`OPT_RUNS_KEY`), TYPED rather than
-defaulted from somewhere else, saved by no preset and pinned by no ruler, drawn
-outside both boxes. The same shape as the simulator's Runs, because it is the
-same question asked in the other module — written twice now, rather than
-answered two different ways.
-
-**The cost is stated rather than hidden.** The two counts can differ, so a
-winner may be crowned at a precision the replay will not use. That was already
-possible — a typed number already overrode the fight's — and the ranking
-already reports it: every row is re-run through `/api/simulate` and marked `≠`
-when the search's figure and the simulator's disagree by more than 4σ of their
-two standard errors.
-
-### …and so did CPU threads
-
-Same argument, other direction. How much of this machine the page may use is
-ONE setting and it lives in the topbar beside the language and the theme
-(`compute-select`, a share of the reported cores). A `CPU threads`
-box in the search preset was a per-search override of a global preference —
-two controls for one fact — and it put that override on the one thing most able
-to cook a phone, which is the last place a global heat setting should be
-ignorable. `woptWorkerCount()` is `poolSize()`.
-
-An older preset may still carry `threads` and `runs`. Neither is read, neither
-is migrated into the new homes — guessing which of a weapon's saved searches
-meant the reader's current preference would be worse than the default — and the
-auto-save drops them the first time that scope is touched.
-
-`check_run_counts.mjs` asserts all of it, including the negative control that
-the threads box is gone and that no `threads` reaches the request;
-`check_search.mjs` asks for one worker through the compute share instead, and
-asserts the share actually moved the lane count — otherwise its "a fleet covers
-more ground than one worker" assertion would pass for the wrong reason.
-
-## The optimizer is the BUILDER, in bulk
-
-Every axis on this tab is a question the builder already asks. The only
-difference is what gets bound: the builder binds a **value**, the optimizer
-binds a **set**. That is the whole of the relationship, and the page did not
-say it — the optimizer opened on Mods and put Mode fourth, called the builder's
-*Arcane* block *Arcanes* and its *Evolution* block *Evolutions*, and numbered
-nothing. Three chances for a reader crossing between the tabs to conclude they
-are about different things.
-
-So the scope is **the builder's blocks, in the builder's order, under the
-builder's numbers and the builder's names** — and the exilus slot sits INSIDE
-Mods, because that is where the builder's exilus slot sits.
-
-**NOTHING DECLARES THAT ORDER TWICE.** `orderOptScope` walks
-`section.block[data-module="builder"]` in DOM order and appends each axis's
-section as it meets one, stamping the heading from that block's own `.n` and
-`<h2>` — already translated by `applyI18n`, so the label is the builder's word
-in the reader's language rather than a second string to keep in step. Reorder a
-builder block, renumber one, rename one, and this tab follows with no edit
-anywhere. `OPT_SCOPE_OF` — which section is which block's bulk form — is the
-only hand-written half, and it is touched only when an axis is added or
-removed. `check_parity.mjs` asserts it, and **scrambles the sections first**:
-the markup is authored in the right order, so reading it as it stands would
-pass just as well on a page where nothing orders anything. Verified to bite:
-an `orderOptScope` that returns early reddens it, reporting the scrambled
-sequence with every heading empty.
-
-The same argument one level down. The `.opt` row is one function
-(`modRow`) with the trailing control as its parameter — the drain for the
-builder, the pool/req segs for the optimizer — and the segs are one function
-(`oseg`) that six lists call. It was two copies of the row with
-`// The picker's .opt row markup verbatim` written over the second, which is a
-comment that stops being true in silence, and it did: the optimizer's copy
-never grew the builder's **stance filter**, so every melee weapon offered its
-stances as MAIN-slot marks — a build nobody can hold.
-
-### What the scope still cannot reach
-
-Searching the **stance slot** itself. A stance decides what the weapon swings
+**The stance slot is not searched.** A stance decides what the weapon swings
 (Crushing Ruin against Shattering Storm is 1,275 against 1,162 DPS on the same
-Magistar in the same mode), so it is a real axis and a large one — it wants the
-treatment the exilus slot has, in `optimizer/` as well as on the page. Today
-the builder has the slot and the optimizer has nothing, which is the one place
-these two tabs still disagree about what a build is.
+Magistar), so it is a real axis; every candidate carries the builder's.
 
 ## A card is searched at max rank, unless it is named
 
@@ -497,193 +393,27 @@ with no Heat wins on a weapon where Heat is worth 4.5×. The walk therefore
 runs over a shuffled index range, and a cut walk reports its coverage rather
 than rendering as a completed search.
 
-## EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS
+## A scope, for a caller that names one
 
-Every axis of a search is one shape: **N slots, an option set, and a range**
-saying how many of the slots a searched build must fill. The mods axis is 8
-slots and the range is a number 0–8; every other axis is ONE slot and the range
-is 0–0, 0–1 or 1–1. They are the same question, so the page asks it the same
-way — one row, after each axis's list, because a range is a **conclusion** of
-the marking and means nothing before it.
+The page sends none (`whole_scope`); the grader and `wfsim-truth` do, to
+compare a search against an exhausted space. A scope is a MARK MAP per axis —
+`fixed` pins, `search` pools — and its rules are the server's:
 
-It was three different ways of saying one thing:
-
-| axis | slots | how it said it, before |
-|---|---|---|
-| mode | 1 | fixed at 1–1, and said nothing |
-| mods | 8 | a numeric range on screen (`build_min`/`build_size`) |
-| exilus | 1 | 0–1 reachable, but only by pooling a `none` row nothing pointed at |
-| arcane seat | 1 each | **0–1 not reachable at all** |
-| evolution tier | 1 each | **0–1 not reachable at all** |
-| valence | 1 | fixed at 1–1, and said nothing |
-
-…so on three of the four adjustable axes, which of 0–0 / 1–1 you got was
-decided by whether you had marked anything, and the middle answer did not
-exist.
-
-**IT IS DERIVED FIRST AND ADJUSTED SECOND**, which is the whole of what makes
-this safe. The derived answer is exactly what the scope did before the control
-existed — nothing marked is 0–0, a mark is 1–1 — so **no existing scope grows**.
-That matters most on the arcane seats, where the empty seat was ruled out on
-evidence: *"an arcane slot costs nothing — no capacity, no Forma — so leaving
-it empty can never beat filling it with something that helps, and marking a
-candidate IS the statement that the slot should be filled"*. That decision was against the empty seat being a **default**;
-asking for it out loud is a different thing, and the exilus slot could always
-do it. `an_arcane_seat_marked_none_is_not_a_default` is that decision, kept as
-an assertion.
-
-**THE EMPTY CHOICE IS A MARK LIKE ANY OTHER** — `none` on the exilus slot and
-on an evolution tier, `none:<pool>` on an arcane seat, which names its seat
-because a weapon can hold two and the marks are one flat map. So the range is a
-**view over the option set** rather than a second thing to store: it travels in
-the search preset, in the request and through the round trip with no field of
-its own anywhere, and the server reads it as one more option in the list.
-
-**A PIN IS NOT A RANGE.** A pinned candidate settles its slot at 1–1 and the
-row says so with its inputs disabled, rather than showing a number the search
-will not honour. `slotRange` asks for a real pin FIRST so a stale empty mark
-cannot outrank one.
-
-**AND 0–0 KEEPS THE CANDIDATES.** Going down to "searched empty" and back must
-not cost the reader what they marked. That is what forced the evolution
-LADDER to key on the range rather than on the marks: a 0–0 tier still has
-marks, and counting them opened the tier above over sets whose every rung
-`ladder_prefix` then truncates — the marks up there would price nothing while
-the scope said otherwise. `evoFillsRung` is the question the ladder actually
-means. 0–1 **does** open the tier above: half its sets carry the rung, and the
-other half being truncated is the ladder working.
-
-**IT FOUND A DISAGREEMENT BETWEEN THE ESTIMATE AND THE SEARCH.**
-`arcaneOptionsIn` counted `marked + 1` — the empty seat, always — while
-`parse_optimize` has dropped it beside marked candidates since 2026-08-01. So
-the candidate count over-reported by one factor per arcane seat on every scope
-with an arcane in it. Both sides read the range now.
-
-`scripts/check_slot_ranges.mjs` walks all three states on all four axes and
-asserts them ON THE WIRE, because a range that draws correctly and sends
-nothing looks exactly like a working control. Verified to bite: a `setSlotRange`
-that returns early reddens 8 of its 18.
-
-### All six axes, and what the count comes to
-
-| axis | slots | range | adjustable |
-|---|---|---|---|
-| mode | 1 | 1–1 | no — a build is played exactly one way |
-| mods | 8 | 0–8 | yes |
-| exilus | 1 | 0–0 / 0–1 / 1–1 | yes |
-| arcane seat | 1 each | 0–0 / 0–1 / 1–1 | yes |
-| evolution tier | 1 each | 0–0 / 0–1 / 1–1 | yes |
-| valence | 1 | 1–1 | no — the weapon always has one progenitor element |
-
-**THE TWO FIXED ONES CARRY THE ROW ANYWAY**, read-only. An axis that simply
-omitted it would be the axis the rule forgot, which is the shape this whole
-change is about; and "1–1, and here is why" is a fact worth stating once rather
-than a gap the reader has to explain to themselves.
-
-**THE COUNT IS THE PRODUCT OF ALL SIX**, and it was not. Completing the model
-found the estimate wrong in both directions at once:
-
-- `arcaneOptionsIn` counted `marked + 1` — the empty seat, always — while
-  `parse_optimize` has dropped it beside marked candidates since 2026-08-01.
-  **Over**-reported by a factor per arcane seat.
-- `modes` and `valence` were not factors at all, though the server's variant
-  table is `modes × evo_sets × valences`. Pooling a second mode genuinely
-  doubles the search and the panel said nothing. **Under**-reported by exactly
-  the two axes that had no range row — the same blind spot, seen from the
-  other side.
-
-**AND THE MODS CEILING MAY BE 0.** Every other axis can be set to "search this
-slot empty, and keep the marks"; this one was clamped to 1, so the only way to
-reach the bare weapon was to unmark everything — which costs the reader
-precisely what 0–0 exists to protect. A ceiling of 0 OUTRANKS the derived floor,
-in three places that all had to agree: `min_slots`, the guard that refuses
-pooled mods with no slot to reserve, and the page's own `poolStarved`. Without
-that the marks say "use these" and the ceiling says "not this time", the two
-contradict, and `SubsetSpace::new(1, 0)` enumerates nothing — a legal request
-reported as "no legal builds in this scope".
-
-**ONE ASYMMETRY IS DELIBERATE AND IS NOT AN OVERSIGHT.** On a single-slot axis
-the boxes show the EFFECTIVE range and lock when a pin forces it, because the
-typed answer and the derived one live in the same three states. On the mods
-axis the boxes show what YOU typed and the effective floor is a sentence beside
-them, because there they are different numbers in a 0..8 space and both matter:
-a derived floor of 2 does not stop you wanting 3. Stating it beside the boxes
-is the resolution, not a second control.
-
-## How full a build must be is a RANGE
-
-The scope had a ceiling (`build_size`, "max mods / build") and a derived floor:
-`required + 1 if anything is pooled`. So "search only full 8-mod builds" was
-not a thing you could ask for, and every search paid for the sizes below its
-ceiling — on a 14-mod pool that is more than half the space, spent on builds
-that leave slots empty for no reason.
-
-`build_min` is its own request field now, and the UI is one control with two
-ends: **exactly 8** is 8–8, **up to 8** is 1–8, **up to 7** is 1–7. Three settings, not three behaviours.
-
-The derived floor stays a FLOOR rather than being replaced: pooling mods is the
-statement that they should be used, so every searched build carries at least one
-pooled mod and all of the required ones. A `build_min` below that is raised to
-it — it asks for builds the scope has already ruled out — while one above it
-wins. `scripts/check_build_size.mjs` asserts both ends on screen, in the preset
-and in the request.
-
-### The floor starts at 0, and it closes the list
-
-**IT IS A CONCLUSION, NOT A FILTER AND NOT A SUMMARY**, and that is what
-decides where it goes: how full a build must be only means anything once the
-required and the pooled have been chosen, so it comes AFTER the marking. It
-took two tries to land — first it shared a flex row with the mod search box as
-a column-stacked label (four lines tall, the filter pushed to the bottom of it,
-reading as a setting *on the filter*), then it joined the marks summary, which
-is still above the list and so still ahead of the act it concludes.
-
-It closes the mod list now, under a rule, and before the Exilus block — because
-the two numbers count the **8 main slots** and the exilus slot is the +1,
-counted separately.
-
-```
-  … the mod list, where you mark …
-  ────────────────────────────────────────────────────────────
-  Mods / build [0] – [8]   actually 2–8: 1 required, plus at least one pooled
-  EXILUS
-```
-
-**THE SENTENCE BESIDE IT EXISTS BECAUSE THE CONTROL WAS LYING.** The floor the search
-uses is the larger of what you typed and what the marks imply
-(`min_slots = derived_min.max(build_min)`), so a box reading 0 could sit over a
-search that never looks below 3. It is stated only when the two DIFFER — a line
-repeating the two numbers beside it distinguishes nothing.
-
-**AND THE FLOOR STARTS AT 0** rather than at 1, which is the change that makes
-the axis consistent with every other one. "Nothing marked" means the EMPTY
-option everywhere else — an unmarked exilus slot stays empty, an unmarked
-arcane seat searches no arcane, an unmarked evolution tier installs nothing —
-and the mods axis alone answered it with *"no legal builds in this scope"*.
-`updateOptEstimate` has carried the sentence *"an empty scope = the bare
-weapon, still a legal search"* since it was written, and `build_min.clamp(1, 8)`
-made it false.
-
-It costs nothing anywhere else, by arithmetic: the moment anything is marked
-`derived_min` is at least 1 and wins, so 0 and 1 differ in exactly that one
-case. `an_empty_scope_searches_the_bare_weapon` pins both halves — the empty
-scope enumerates one candidate, and the derived floor still wins over a typed 0
-— and is verified to bite: restoring the clamp reddens it at `left: 1 right: 0`.
-
-**THE OTHER AXES DO NOT GET A BOX OF THEIR OWN.** They are 0–1 by nature — a
-slot holds one thing or nothing — and which of those it is, is already said by
-whether anything is marked. A 0–1 control beside them would be a second control
-for a fact the marks already state, which is the same shape as the CPU-threads
-box that just left. The consistency is reached by lowering this floor, not by
-adding boxes elsewhere.
-
-**IT SURFACED A BUG OLDER THAN ITSELF.** `switchWeapon` resets the scope and
-its object never carried `min` — the one field it forgot, since the range
-landed on 2026-08-03. `Math.max(derived, undefined)` is NaN, so
-`for (k = NaN; k <= size; k++)` never runs: on any weapon with no saved search,
-the scope reported itself impossible ("more required (0) than slots (8)") and
-Run stayed disabled until some control was touched. `check_build_size` could
-not see it, because its first act was to type a floor.
+- **Every axis is N slots and a range.** Mods are 8 slots, `build_min` to
+  `build_size` (0–8); every other axis is one slot, 0–0, 0–1 or 1–1. The empty
+  choice is a mark like any other: `none` on the exilus slot and an evolution
+  tier, `none:<pool>` on an arcane seat. Nothing marked is 0–0, a mark is 1–1,
+  so no scope grows by default; an arcane seat is never empty beside a marked
+  candidate (`an_arcane_seat_marked_none_is_not_a_default`).
+- **The floor is derived first.** Every required mod, plus one pooled mod when
+  anything is pooled; `build_min` below that is raised to it
+  (`min_slots = derived_min.max(build_min)`). A ceiling of 0 outranks the
+  derived floor — the bare weapon with the marks kept — and an empty scope is
+  the bare weapon (`an_empty_scope_searches_the_bare_weapon`).
+- **A pin settles its slot**; a 0–0 evolution tier keeps its marks and does not
+  open the tier above.
+- **The variant table is `modes × evo_sets × valences`**, so pooling a second
+  mode doubles the space.
 
 ## The search — every scope is descended
 
@@ -973,26 +703,11 @@ starts, the swap width and the runs per candidate. There is no scope to mark:
 what may change is what the quick calc offers, and a pin on a start is the one
 way to keep something.
 
-## The optimizer is the builder, in bulk
+## One mod row
 
-**THE OPTIMIZER IS THE BUILDER, IN BULK.** The same claim on the PAGE: every
-axis on the optimizer tab is a question the builder already asks, and the only
-difference is what gets bound — the builder binds a VALUE, the optimizer binds
-a SET. Same axes, same order, same numbers, same names, with the exilus slot
-
-INSIDE Mods because that is where the builder's exilus slot sits.
-
-NOTHING DECLARES THAT ORDER TWICE: `orderOptScope` walks the builder's own
-blocks in DOM order and stamps each heading from that block's `.n` and `<h2>`
-— already translated. `OPT_SCOPE_OF` is the only hand-written half and is
-touched only when an axis is added or removed.
-
-THE SAME ARGUMENT ONE LEVEL DOWN: the `.opt` row is ONE function (`modRow`)
-with the trailing control as its parameter, and those segs are one function
-(`oseg`) that six lists call. A copied row is a comment that stops being true
-in silence. Searching the stance SLOT is a real axis and is still missing; it
-wants the treatment the exilus slot has, in `optimizer/` as well as on the
-page (`docs/OPTIMIZER.md`).
+The `.opt` row is ONE function (`modRow`) with the trailing control as its
+parameter — the picker's drain, the every-rank list's ×. A copied row is a
+comment that stops being true in silence.
 
 ## A ranked row is a build you can re-run
 

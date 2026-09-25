@@ -56,32 +56,8 @@ function setRoster(list) {
   setScenarioFields({ also_acting: list.length ? list : null });
 }
 
-/// …AND THE OPTIMIZER'S COPY, read-only. Every candidate is scored beside
-/// this roster (`Scenario::also_acting`), so a tab that did not draw it would
-/// rank builds under a fight the reader cannot see they asked for — the same
-/// reason that half already mirrors the buffs, the arena and the limits.
-function renderRosterRef() {
-  renderOptFightBrief();
-  const host = $("opt-roster");
-  if (!host || !META) return;
-  const list = alsoActing();
-  const name = (ref) => escHtml(weaponExists(ref.weapon) ? tf(weaponInfo(ref.weapon).name) : ref.weapon);
-  const preset = (ref) => escHtml((presetListWithIds(BUILDS, ref.weapon)
-    .find((p) => p.id === ref.preset) || {}).name || tr("Default"));
-  host.innerHTML = `<div class="rs">
-    <div class="rs-row rs-you"><span class="rs-n">1</span>
-      <span class="rs-me">${escHtml(tr("this build"))}</span>
-      <span class="rs-hint">${escHtml(tr("the one being searched"))}</span></div>
-    ${list.map((ref, i) => `<div class="rs-row"><span class="rs-n">${i + 2}</span>
-      <span class="rs-me">${name(ref)}</span>
-      <span class="rs-hint">${preset(ref)}</span></div>`).join("")}
-    ${list.length ? "" : `<div class="rs-add"><span class="rs-hint">${
-    escHtml(tr("nobody else — one gun against the formation"))}</span></div>`}
-  </div>`;
-}
-
 function renderRoster() {
-  renderRosterRef();
+  renderOptFight();
   const host = $("sim-roster");
   if (!host || !META) return;
   const list = alsoActing();

@@ -1012,33 +1012,7 @@ label.check input{width:auto}
 .bev input{width:auto;accent-color:var(--gold)}
 .bev.on{color:var(--gold);border-color:var(--gold)}
 
-/* ---- Optimizer: mod scope (rich searchable list) + results ---- */
-.opt-mods-head{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}
-.opt-mods-head #opt-mod-filter{flex:1 1 auto}
-/* HOW FULL A BUILD MUST BE — the line that CLOSES the mod list rather than one
-   that sits over it. It is a conclusion, not a filter and
-   not a summary: it only means anything once the required and the pooled have
-   been chosen, so it reads after them. It borrows `.oselrow`'s flex layout for
-   the label + inputs and adds the closing rule of its own. */
-/* EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS, in one shape: the mods axis over 8 slots, the exilus slot, each arcane seat
-   and each evolution tier over 1. Same row, same rule, so a reader learns it
-   once. `#opt-size-row` is the mods one and keeps its id because `init` wires
-   those two inputs by name. */
-#opt-size-row,.slot-range{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
-#opt-size-row input[type=number],.slot-range input[type=number]{width:52px;padding:2px 6px;font-size:12px}
-#opt-size-row .osdash,.slot-range .osdash{color:var(--muted)}
-.opt-size-eff{font-size:11px;color:var(--muted);margin-left:4px}
-/* A range nobody can move — a pinned option settles its slot, and a slot with
-   no candidates has nothing to widen to. Stated rather than hidden: the row is
-   how this axis says what it will search. */
-.slot-range.locked{opacity:.7}
-.slot-range.locked input[type=number]{background:transparent;border-style:dashed}
-/* Inside a tier block the range is the closing line of that tier's own list. */
-.opt-tier-block .slot-range{margin:0 9px 9px}
-/* Every optimizer list reuses the picker's `.combo-menu .opt` rows verbatim
-   (mod/arcane image, polarity icon, effect lines); only the trailing control
-   differs (pool/req for mods, include/search for arcanes & evolutions). */
-.opt-modlist{border:1px solid var(--line);border-radius:10px;background:var(--panel3)}
+/* ---- Optimizer ---- */
 /* The optimizer's starts: each the simulator's own build card, with a fixed
    position outlined in the accent — the one mark the card gains here. */
 #opt-starts{margin-top:8px}
@@ -1063,34 +1037,11 @@ label.check input{width:auto}
   border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0}
 .start-pin.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
 .slot.fixed-pin{box-shadow:inset 0 0 0 1.5px var(--accent)}
-#opt-mods,#opt-arcanes{margin-bottom:6px}
-.opt-modlist .opt,.opt-evolist .opt{cursor:default;border-bottom:1px solid var(--line);border-left:3px solid var(--rar,transparent)}
-.opt-modlist .opt:last-child,.opt-evolist .opt:last-child{border-bottom:none}
-.opt-modlist .opt:hover,.opt-evolist .opt:hover{background:transparent}
-.opt-modlist .opt.search,.opt-evolist .opt.search{background:color-mix(in srgb,var(--accent) 9%,transparent)}
-.opt-modlist .opt.fixed{background:color-mix(in srgb,var(--gold) 12%,transparent)}
-.opt-evolist .opt.dis-soft{opacity:.6}
-.opt-tier-block{margin-bottom:8px}
-.opt-tier-h{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.03em;margin:6px 0 3px}
-.opt-evolist{border:1px solid var(--line);border-radius:10px;background:var(--panel3);max-height:none}
-.exchip.brk{background:var(--critical);color:#fff}
 .oseg{display:flex;gap:3px;flex:0 0 auto;margin-top:2px}
-.combo-menu .opt.dis-soft{opacity:.45}
 .oseg .seg.dis{opacity:.4;pointer-events:none}
 .oseg .seg{font-size:11px;padding:3px 9px;border-radius:7px;border:1px solid var(--line);cursor:pointer;user-select:none;color:var(--muted);background:var(--panel2)}
 .oseg .seg.on{border-color:var(--accent);color:#fff;background:var(--accent)}
 .oseg .seg[data-s="fixed"].on{border-color:var(--gold);color:#fff;background:var(--gold)}
-.oselrow{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-bottom:5px}
-.osellbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:3px}
-.oselchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 3px 2px 8px;border-radius:999px;cursor:pointer;user-select:none;color:#fff}
-.oselchip.search{background:var(--accent)}
-.oselchip.fixed{background:var(--gold)}
-/* The ✕ is the only delete: give it its own hit area so the chip body can
-   mean "show me this one" without the two actions overlapping. */
-.oselx{border:0;background:transparent;color:inherit;font:inherit;line-height:1;opacity:.7;cursor:pointer;padding:1px 5px;border-radius:999px}
-.oselx:hover{opacity:1;background:rgba(0,0,0,.28)}
-/* Where the chip lands you. */
-.opt.revealed{outline:2px solid var(--accent);outline-offset:-2px}
 .opt-tier{display:flex;align-items:center;gap:8px;margin:4px 0}
 .opt-tier .rk{font-size:11px;color:var(--muted);min-width:22px;font-weight:700}
 .opt-est{font-size:12px;color:var(--text-2);margin:12px 0 4px}
@@ -1429,10 +1380,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .opt-half-h{font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .opt-half-h .sim-hint{font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0;line-height:1.45;color:var(--muted);margin:3px 0 0;max-width:66ch}
 
-/* A tier that cannot be chosen yet: the one before it is not installed. */
-.opt-tier-block.locked .opt-tier-h{opacity:.45}
-.opt-tier-block.locked .opt{opacity:.45}
-.seg.tlocked{cursor:not-allowed;pointer-events:none}
 
 /* Undo/redo feedback — inline, never a native dialog. Theme-aware like
    everything else: the first cut hardcoded a dark palette and became a black
@@ -1737,26 +1684,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   --dt-tau: #f06666;
 }
 
-/* ---- the optimizer's quick calc ------------------------------------- */
-/* The pairing ladder. It sits above the mod list because the spread between
-   pairings is larger than any one mod's — 3.3x on the Burston Prime — so a
-   number in the list below is only readable once this has been read. */
-.pairbox{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0;background:var(--panel-2)}
-.pairhead{font-size:12px;color:var(--muted);margin-bottom:6px}
-.pairrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:baseline;padding:3px 0}
-.pairrow.best .pl{font-weight:600}
-.pairrow .pv{font-variant-numeric:tabular-nums;color:var(--muted)}
-.pairrow .pd{font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right}
-.pairrow.best .pd{color:var(--ok)}
-/* What a pairing MAKES, and — dimmed — what it could not pair. The leftover
-   is not a choice: it is the odd element out, the weapon's innate included. */
-.pw{white-space:nowrap}
-.pw.dim{opacity:.55}
-/* Where a candidate LANDS, when that is not where the reference landed. This
-   is the line that explains a negative number on a mod that only adds damage:
-   a fourth element re-pairs the other three. */
-.pairnote{font-size:12px;color:var(--muted);margin-top:2px}
-.pk-gain{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
 
 /* ---- THE dropdown ---------------------------------------------------- */
 /* One trigger shape for every choose-one control. It

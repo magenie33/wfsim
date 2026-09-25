@@ -93,7 +93,7 @@ jobs:
       # with its reason, and the not-yet list only shrinks.
       - name: Every control is on the door or says why not
         run: node scripts/check_agent_coverage.mjs
-      - name: Builder / optimizer parity
+      - name: Builder axes match the weapon and reach the board
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
         run: node scripts/check_parity.mjs

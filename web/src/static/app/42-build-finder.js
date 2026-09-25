@@ -566,7 +566,7 @@ function scenariosChanged() {
   // ...and whether this fight can reach the board at all — asked of the board.
   renderBoardConsent();
   refreshBoardDoor();
-  if ($("opt-buffs")) renderOptBuffs();
+  renderOptFight();
   // …and the Warframe buffs, which are the SCENARIO's: switching fights
   // switches which abilities are running, so the cards have to be repainted
   // from the incoming state rather than left showing the outgoing one's.
@@ -583,6 +583,5 @@ function scenariosChanged() {
   // `lockOfficialScenario`, and the same reasoning makes it the one place that
   // cannot be forgotten by a mutation added later.
   refreshGains();
-  if ($("opt-target")) renderOptEnemy();
 }
 

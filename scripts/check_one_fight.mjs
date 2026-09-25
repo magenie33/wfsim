@@ -102,24 +102,15 @@ const r = await evaluate(`(async () => {
   out.gainSent = mark()[0] ? mark()[0].b : null;
   await sleep(500);
 
-  // ---- 3. THE OPTIMIZER'S GAIN SCAN --------------------------------------
+  // ---- 3. THE OPTIMIZER -------------------------------------------------
   document.querySelector('[data-tab="optimizer"]')?.click(); await sleep(800);
-  mark = take();
-  try { scanOptGains(null); } catch (_) {}
-  for (let i = 0; i < 60 && !mark().length; i++) await sleep(200);
-  optGainGen++;
-  out.optGainSent = mark()[0] ? mark()[0].b : null;
-  out.optGainPath = mark()[0] ? mark()[0].p : null;
-  await sleep(500);
-
-  // ---- 4. THE OPTIMIZER ITSELF -------------------------------------------
   mark = take();
   try { await runOptimize(); } catch (_) {}
   for (let i = 0; i < 40 && !mark().length; i++) await sleep(200);
   out.optSent = mark()[0] ? mark()[0].b : null;
   out.optPath = mark()[0] ? mark()[0].p : null;
 
-  // ---- 5. THE SHARE CARD'S OWN MEASUREMENT -------------------------------
+  // ---- 4. THE SHARE CARD'S OWN MEASUREMENT -------------------------------
   // It reuses the build's stored result when that result was measured under
   // THIS fight, which Run Sim above just made true — so the cache is dropped
   // to force the measurement this check is about.
@@ -162,7 +153,6 @@ const sameFight = (label, body) => {
 sameFight("the SIMULATOR sends the fight", r.simSent);
 check("...and it is the only one that pays for a replay", r.simReplay === true);
 sameFight("the QUICK CALC sends the SAME fight, field for field", r.gainSent);
-sameFight("the OPTIMIZER'S GAIN SCAN sends the same fight", r.optGainSent);
 sameFight("the OPTIMIZER sends the same fight", r.optSent);
 sameFight("the SHARE CARD'S measurement is made in the same fight", r.shareSent);
 

@@ -273,12 +273,8 @@ function renderSim() {
   renderRoster();
   renderSimRuns();
   renderWfBuffs("sim-wfbuffs", false);
-  // …AND THE OPTIMIZER'S COPY, from the same call. It shows the SIMULATOR's
-  // fight, so it is repainted whenever that fight is redrawn rather than when
-  // its own tab happens to be entered — a tab that repaints only on arrival
-  // shows the buffs you had when you last arrived.
-  renderWfBuffs("opt-wfbuffs", true);
-  renderOptFightBrief();
+  // …AND THE OPTIMIZER'S FIGHT CARD, whenever the fight is redrawn.
+  renderOptFight();
   renderScenarioBar();
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();

@@ -1,16 +1,9 @@
-// Do the BUILDER and the OPTIMIZER offer the same thing?
+// Does every axis the BUILDER shows belong to the weapon, and reach the board?
 //
-// They are the same question asked twice — the builder fills a weapon's slots,
-// the optimizer searches them — so every axis must present the same options
-// and the same visibility on both sides. `weaponAxes()` in app.js exists to
-// make that true by construction; this checks that it stayed true.
-//
-// It has caught, in the two hours it took to write the thing it checks:
-//   - the optimizer offering an Exilus and an Arcanes scope on a sentinel
-//     weapon, which has neither
-//   - the Larkspur being given an exilus slot with no mod that can enter it
-//   - the two modules computing the exilus pool from different sources
-//     (`poolWithRivens()` vs `currentPool`), agreeing only by coincidence
+// `weaponAxes()` derives each axis from the weapon it is asked about; this
+// asserts that an axis is shown exactly when it has options, that the served
+// polarities arrive intact, that an unmodelled evolution is marked where it is
+// chosen, and that every axis a build has travels in a board submission.
 //
 // Usage:
 //   node scripts/check_parity.mjs                 serves site/ itself
@@ -46,11 +39,6 @@ const PROBE = `(async () => {
         served: (w.innate_polarities || []).slice(),
         stance: w.stance_polarity || null,
       },
-      // What each module INDEPENDENTLY decides to show.
-      shown: {
-        builder: { exilus: AX.hasExilus, arcanes: AX.arcanes.length > 0,
-                   evolutions: AX.evolutions.length > 0 },
-      },
     });
   }
   return out; })()`;
@@ -76,8 +64,7 @@ const applied = (id) => `(() => {
   // than a longer guess.
   return !!el && el.value === ${JSON.stringify(id)}
     && document.body.dataset.panelFor === ${JSON.stringify(id)}
-    ? [v("exilus-block"), v("arcane-block"), v("evo-block"),
-       v("opt-exilus-sect"), v("opt-arcanes-sect"), v("opt-evos-sect")].join(",")
+    ? [v("exilus-block"), v("arcane-block"), v("evo-block")].join(",")
     : null;
 })()`;
 
@@ -96,14 +83,6 @@ const VISIBLE = `(() => {
            sel: (document.getElementById("weapon") || {}).value || null,
            axes: (weaponAxes($("weapon").value).evolutions || []).length };
 })()`;
-const VISIBLE_OPT = `(() => {
-  const v = (id) => { const e = document.getElementById(id); return !!e && !e.hidden; };
-  return { exilus: v("opt-exilus-sect"), arcanes: v("opt-arcanes-sect"), evolutions: v("opt-evos-sect"),
-           for: document.body.dataset.panelFor || null,
-           sel: (document.getElementById("weapon") || {}).value || null,
-           axes: (weaponAxes($("weapon").value).evolutions || []).length };
-})()`;
-
 // `node scripts/check_parity.mjs http://host:port` points it at a running
 // server instead of the built `site/`.
 const app = await openApp({ base: process.argv[2] });
@@ -165,24 +144,18 @@ const settled = async (id) => {
       const n = Array.isArray(v[0]) ? v.map((x) => x.length).join(",") : v.length;
       notes.push(`${k} ${n}`);
     }
-    // The two modules render their own visibility; read BOTH pages for real.
     await send("Page.navigate", { url: `${url}/weapons/${r.weapon}` });
     await settled(r.weapon);
     const shownBuilder = await evaluate(VISIBLE);
-    await send("Page.navigate", { url: `${url}/weapons/${r.weapon}/optimizer` });
-    await settled(r.weapon);
-    const shownOpt = await evaluate(VISIBLE_OPT);
-    // The three AXES only: `for`/`sel`/`axes` are diagnostics carried in the
-    // same object, and the two pages legitimately differ on none of them.
-    const diffs = ["exilus", "arcanes", "evolutions"]
-      .filter((k) => shownBuilder[k] !== shownOpt[k])
-      .map((k) => `${k}: builder ${shownBuilder[k]} vs optimizer ${shownOpt[k]}`
-        + ` [builder saw ${shownBuilder.for}/${shownBuilder.sel}/${shownBuilder.axes},`
-        + ` optimizer ${shownOpt.for}/${shownOpt.sel}/${shownOpt.axes}]`);
+    const diffs = [];
     // An axis that is SHOWN must have options, and one with options must show.
+    // `for`/`sel`/`axes` in the reading say whether the page was mid-switch.
     for (const k of ["exilus", "arcanes", "evolutions"]) {
       const has = k === "exilus" ? r.axes.exilus.length > 0 : r.axes[k].length > 0;
-      if (has !== shownBuilder[k]) diffs.push(`${k}: has options ${has} but builder shows ${shownBuilder[k]}`);
+      if (has !== shownBuilder[k]) {
+        diffs.push(`${k}: has options ${has} but builder shows ${shownBuilder[k]}`
+          + ` [saw ${shownBuilder.for}/${shownBuilder.sel}/${shownBuilder.axes}]`);
+      }
     }
     // Nothing the server said about polarities may be lost on the way in.
     //
@@ -308,48 +281,7 @@ const stale = [...Object.keys(TRAVELS_AS), ...NOT_A_ROW].filter((k) => !AXES.bui
 app.check("...and nothing is named here that the build no longer has",
   stale.length === 0, stale.join(", "));
 
-// ---- …AND IN THE SAME ORDER, UNDER THE SAME NUMBERS AND NAMES -----------
-//
-// The optimizer is the builder in bulk — the same axes, asked as a SET instead
-// of as a value — so a reader must be able to move between the two tabs
-// without re-learning where anything is. It could not: the optimizer opened on
-// Mods and put Mode fourth, called the builder's "Arcane" block "Arcanes" and
-// its "Evolution" block "Evolutions", and numbered nothing.
-//
-// `orderOptScope` reads the ORDER, the NUMBER and the NAME off the builder's
-// own blocks, so this asserts one property rather than a list: reorder,
-// renumber or rename a builder block and the optimizer follows with no edit,
-// and this stays true. `OPT_SCOPE_OF` — which section is which block's bulk
-// form — is the only hand-written half and is the only thing that can rot.
-//
-// IT SCRAMBLES FIRST. The markup is authored in the right order, so reading it
-// as it stands would pass just as well on a page where nothing orders
-// anything; the headings are blanked for the same reason. Verified to bite:
-// an `orderOptScope` that returns early reddens it, reporting the scrambled
-// sequence with every heading empty.
-const ORDER = await app.evaluate(`(() => {
-  const host = document.getElementById("opt-scope");
-  host.insertBefore(host.lastElementChild, host.firstElementChild);
-  host.querySelectorAll(".axh").forEach((h) => { h.textContent = ""; });
-  orderOptScope();
-  const want = [], got = [];
-  for (const b of document.querySelectorAll('section.block[data-module="builder"]')) {
-    const id = OPT_SCOPE_OF[b.id];
-    if (!id) continue;
-    want.push(id + " = " + b.querySelector(".bh .n").textContent.trim()
-      + " · " + b.querySelector(".bh h2").textContent.trim());
-  }
-  for (const sect of [...host.children]) {
-    const h = sect.querySelector(".axh");
-    got.push(sect.id + " = " + (h ? h.textContent.trim() : "(no heading)"));
-  }
-  return { want, got };
-})()`);
-app.check(`the optimizer's scope is the builder's blocks, in order (${ORDER.want.length} axes)`,
-  ORDER.want.length >= 4 && JSON.stringify(ORDER.want) === JSON.stringify(ORDER.got),
-  `builder: ${ORDER.want.join(" | ")}\n    optimizer: ${ORDER.got.join(" | ")}`);
-
 // The table above already names each mismatch; `finish` only has to carry the
 // verdict and the exit code.
 app.failures += bad;
-await app.finish("builder and optimizer agree on every axis");
+await app.finish("every axis the builder shows is the weapon's, and reaches the board");

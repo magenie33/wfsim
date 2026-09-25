@@ -784,10 +784,8 @@ function lockOfficialScenario() {
     .map((id) => $(id)).filter(Boolean);
   // The ARENA's bodies are SVG circles and the input sweep below cannot reach
   // them, so the scene is marked here and refuses the gesture itself.
-  ["sim-target-arena", "opt-target-arena"].forEach((id) => {
-    const a = $(id);
-    if (a) a.classList.toggle("ar-ro", on || id.startsWith("opt-"));
-  });
+  const arena = $("sim-target-arena");
+  if (arena) arena.classList.toggle("ar-ro", on);
   boxes.forEach((b) => {
     b.classList.toggle("locked", on);
     b.querySelectorAll("input,select,button,textarea").forEach((el) => {
@@ -958,8 +956,8 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
       // for mods this build does not carry. A build keeps no copy of the
       // scenario, so this dirties the scenario alone.
       markScenarioDirty();
-      // The optimizer shows these read-only, so redraw its copy if it is up.
-      if ($("opt-buffs") && !opts.readonly) renderOptBuffs();
+      // The optimizer's fight card lists the stacks a run starts with.
+      if (!opts.readonly) renderOptFight();
     });
   });
 }

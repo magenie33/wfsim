@@ -201,12 +201,13 @@ for (const lang of ["en", "zh"]) {
     }
     history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2200);
 
-    // 5. THE OPTIMIZER SHOWS THE SAME FIGHT, read-only.
-    history.pushState({}, '', '/weapons/Torid/optimize'); route(); await sleep(3000);
-    const oc = [...document.querySelectorAll('#opt-wfbuffs .wfb')];
-    out.optCards = oc.length;
-    out.optChecked = oc.filter(c => c.querySelector('[data-wf]').checked).length;
-    out.optEditable = oc.filter(c => !c.querySelector('[data-wf]').disabled).length;
+    // 5. THE OPTIMIZER'S FIGHT CARD NAMES WHAT IS TICKED, and holds no control.
+    history.pushState({}, '', '/weapons/Torid/optimizer'); route(); await sleep(3000);
+    const card = document.getElementById('opt-fight-brief');
+    const picked = wfAbilities().filter(a => wfPick(a.id));
+    out.optPicked = picked.length;
+    out.optNamed = picked.every(a => card.textContent.includes(wfName(a)));
+    out.optControls = card.querySelectorAll('input,select,button,textarea').length;
 
     // 6. THE BOARD CARRIES NONE — the negative control.
     history.pushState({}, '', '/benchmark'); route(); await sleep(3000);
@@ -357,11 +358,9 @@ for (const lang of ["en", "zh"]) {
     r.blockByTab.simulator === true && r.blockByTab.builder === false
       && r.blockByTab.optimizer === false,
     JSON.stringify(r.blockByTab));
-  check(`[${lang}] the optimizer shows the same buffs`,
-    r.optCards === r.catalogue && r.optChecked === 1,
-    `${r.optCards} cards, ${r.optChecked} ticked`);
-  check(`[${lang}] …and cannot edit them`, r.optEditable === 0,
-    `${r.optEditable} editable`);
+  check(`[${lang}] the optimizer's fight card names the ticked buff`,
+    r.optPicked === 1 && r.optNamed === true, `${r.optPicked} ticked, named ${r.optNamed}`);
+  check(`[${lang}] …and cannot edit it`, r.optControls === 0, `${r.optControls} controls`);
   // THE CONTROL. A ruler that cast Roar would make its board a statement about
   // Rhino.
   check(`[${lang}] no ruler carries a Warframe buff`,

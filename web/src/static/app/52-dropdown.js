@@ -121,7 +121,7 @@ function ddRender(id, query) {
   //
   // IT KEEPS ITS `data-v`. Dropping the value was the first way this was
   // written, and it left a greyed row identifiable only by the words on it —
-  // which is the thing that broke `check_opt_gain` the day an evolution got a
+  // which is the thing that broke a check the day an evolution got a
   // Chinese name. An option carries its identity whether or not it can be
   // clicked; being clickable is a separate fact and lives in the class.
   // GROUPED, where the data has a grouping. A flat list is right up to about a

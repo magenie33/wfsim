@@ -343,7 +343,6 @@ const bev = await evaluate(`(async () => {
     limits: at('sim-limits', 'data-bev'),
     headers: at('sim-limits', 'data-bevg'),
     lockedUnderOfficial: [...document.querySelectorAll('#sim-limits [data-bev]')].every(x => x.disabled),
-    optReadOnly: [...document.querySelectorAll('#opt-limits [data-bev]')].every(x => x.disabled),
   };
   const dup = document.querySelector('#bench-bar-simulator-scenarios .pop.dup');
   if (dup) { dup.click(); await sleep(1200); }
@@ -363,7 +362,6 @@ check("every trigger has a switch in Limits, on a weapon with no buffs",
 check("...one header per group", bev.headers.join() === bev.groups.join(),
   `${bev.headers.join(" ")} vs ${bev.groups.join(" ")}`);
 check("...the official ruler's copy is not editable", bev.lockedUnderOfficial === true);
-check("...nor the optimizer's", bev.optReadOnly === true);
 // A GROUP TICKS ITS MEMBERS AND NOTHING ELSE.
 check("...a group header ticks exactly its own",
   bev.afterGroup.join() === "kill,headshot_kill,melee_kill", bev.afterGroup.join(" "));

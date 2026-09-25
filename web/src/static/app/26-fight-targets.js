@@ -62,7 +62,7 @@ function saveEnemyDoc() {
 
 function renderSimTargetIfAny() {
   if (typeof renderEnemy === "function") renderEnemy();
-  if (typeof renderOptEnemy === "function") renderOptEnemy();
+  if (typeof renderOptFight === "function") renderOptFight();
 }
 
 function renderEnemyAll() {

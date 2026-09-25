@@ -9,7 +9,7 @@
 // families are offered from a roster and both write into `sim`, so a panel that
 // drew every card correctly and sent nothing would read as a working feature —
 // the same shape as the mode control that was picked on the optimizer tab and
-// never sent (check_opt_modes.mjs). Every assertion below is either
+// never sent. Every assertion below is either
 // ON THE WIRE or on a real `/api/simulate` answer in the shipping wasm build.
 //
 // The other half is the ADMISSION. Twenty of the twenty-seven shard effects pay

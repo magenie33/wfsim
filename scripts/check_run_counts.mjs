@@ -91,9 +91,6 @@ const r = await evaluate(`(async () => {
 
   // ---- the OPTIMIZER's final round -------------------------------------
   document.querySelector('[data-tab="optimizer"]')?.click(); await sleep(600);
-  const ids=['serration','split_chamber','point_strike','vital_sense'];
-  ids.forEach(i=>{opt.mods[i]='search';});
-  updateOptEstimate(); renderOptMods(); await sleep(300);
 
   const sendOnce = async () => {
     const seen=[]; const real=window.api;
@@ -114,10 +111,8 @@ const r = await evaluate(`(async () => {
   // FILLED, never blank — the reader can always say what the last round used.
   out.optShown = runsBox ? runsBox.value : 'MISSING';
   out.sentDefault = (await sendOnce()).final_runs;
-  // IN NEITHER BOX. The two halves are the two presets; this is outside both,
-  // which is the whole claim the page is making by drawing it there.
-  out.optRunsOutside = !!runsBox
-    && !runsBox.closest('#opt-plan') && !runsBox.closest('#opt-fight-half');
+  // IN THE RUN BAR, beside the controls that start a run.
+  out.optRunsInBar = !!runsBox && !!runsBox.closest('#opt-runbar');
   // A number of its own reaches the request, and does not move the simulator's.
   await setC('opt-runs', 60);
   out.sentOwn = (await sendOnce()).final_runs;
@@ -285,8 +280,7 @@ check("...a rejected number snaps back to what was taken", r.qcSnapBack === "10"
 check("the optimizer offers a final-round count", r.optOnScreen === true);
 check("...with a number in it, never blank", r.optShown === "100", `"${r.optShown}"`);
 check("...and that number is what it SENDS", r.sentDefault === 100, `${r.sentDefault}`);
-check("...drawn outside both halves, because it is in neither preset",
-  r.optRunsOutside === true);
+check("...drawn in the run bar", r.optRunsInBar === true);
 check("...its own number reaches the request", r.sentOwn === 60, `${r.sentOwn}`);
 check("...and does not edit the simulator's", r.simStillDefault === 100, `${r.simStillDefault}`);
 check("...the search preset does not carry it", r.notInPreset === true);

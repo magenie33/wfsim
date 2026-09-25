@@ -278,7 +278,7 @@ async function route() {
     // those fields on arrival — the other tab may have moved them, and the
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
-    if (mod === "optimizer") { renderOptEnemy(); updateOptEstimate(); }
+    if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); }
     if (mod === "rivens") renderRivens();
     if (mod === "enemies") renderEnemies();
     if (mod === "benchmark") renderWeaponBench();

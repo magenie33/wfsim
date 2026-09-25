@@ -1066,7 +1066,7 @@ function renderEnemyMenu(query) {
   menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {
     closePopovers();
     setScenarioFields({ enemy: el.dataset.e });
-    if ($("opt-target")) renderOptEnemy();
+    renderOptFight();
   });
 }
 

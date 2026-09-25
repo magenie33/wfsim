@@ -112,7 +112,6 @@ async function refreshRivenNames() {
   // no values on them, and nothing ever came back to correct it. It was
   // invisible while the slot printed nothing at all.
   if ($("mod-slots")) renderMods();
-  if (typeof renderOptModList === "function" && $("opt-mods") && !$("opt-block").hidden) renderOptModList();
   if ($("riven-all") && !$("riven-block").hidden) renderRivenAll();
   if ($("mod-popover") && !$("mod-popover").hidden && rivenPickerSlot != null) renderMenu(rivenPickerSlot, $("mod-search").value || "");
 }

@@ -235,15 +235,11 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 0, starts: [] };
+let opt = { starts: [] };
 // THE START OPEN IN THE BUILDER, or null — `79-start-edit.js`. Declared here,
 // early, because the autosave it suspends can run during boot.
 let startEdit = null;
 let optSeeded = false;
-// (The optimizer keeps no scope-wide buff list of its own: it reads the
-// SCENARIO's — see `renderOptBuffs`.)
-// Sort/polarity prefs for the optimizer mod list (independent of the picker's).
-let optPrefs = { sort: "name", dir: "asc", pol: null };
 // HOW THE SEARCH RUNS. `finalists` is the whole of it, and it IS the search's:
 // how many builds survive to the last round is a decision about this search
 // and about nothing else, so it rides the search preset.

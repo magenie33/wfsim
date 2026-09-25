@@ -380,7 +380,6 @@ try { const s = JSON.parse(localStorage.getItem("wfsim-market")); if (s) marketP
     if (w) renderWeaponName();
     const pop = $("mod-popover");
     if (pop && !pop.hidden) renderMenu(pickerSlot, $("mod-search").value);
-    if (typeof renderOptModList === "function" && $("opt-mods") && !$("opt-block").hidden) renderOptModList();
   });
 })();
 
