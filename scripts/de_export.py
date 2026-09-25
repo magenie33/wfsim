@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """DE's Public Export — the first-party item data, cached under vendor/ (gitignored).
 
-WHAT IT IS AUTHORITATIVE FOR, and what it is not (docs/DATA_SOURCES.md):
-identity and structure — `uniqueName` (every data file's `internal_name`, the
-join key), `baseDrain` / `fusionLimit`, polarity, rarity, compatibility tags,
-texture paths — and DE's own card text in every language. It is NOT a source
-for a mechanical number: `levelStats` is the card as DE DISPLAYS it, rounded
-(Argon Scope reads 2 / 3 / 5 / 6 / 8 / 9 s where the timer is 1.5 s a rank).
+LAST IN THE ORDER: measurement > wiki > this (docs/DATA_SOURCES.md). It fills
+what the wiki does not state — `uniqueName` (every data file's
+`internal_name`, the join key), `baseDrain` / `fusionLimit`, polarity, rarity,
+compatibility tags, texture paths, DE's own card text in every language — and
+loses every conflict with the wiki. It is never the source of a mechanical
+number: `levelStats` is the card as DE DISPLAYS it, rounded (Argon Scope reads
+2 / 3 / 5 / 6 / 8 / 9 s where the wiki's table is 1.5 s a rank).
 
 Usage:
   python scripts/de_export.py fetch [--lang en --lang zh]

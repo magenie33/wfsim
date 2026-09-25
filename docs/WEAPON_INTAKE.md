@@ -213,17 +213,17 @@ Prime's. Add both, or neither.
 
 ### 1. The sources, and which one wins
 
-**OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING** — AGENTS.md and
-`docs/DATA_SOURCES.md` state the order and the evidence behind it. DE's Public
-Export owns identity — `uniqueName`, `base_drain` / `max_rank` — and never a
-number.
+**MEASUREMENT > WIKI > DE's PUBLIC EXPORT** on every conflict — AGENTS.md and
+`docs/DATA_SOURCES.md` state the order and the evidence behind it. The export
+fills what the wiki does not state (`uniqueName`, card text) and is never a
+number's source.
 
 | what | source | rule |
 | --- | --- | --- |
 | every stat | the RENDERED weapon page's infobox | the source of record. `?action=raw` gives you `{{WeaponInfoboxAutomatic}}` and nothing else; `Module:Weapons/data/*` truncates alphabetically and a reader invents past the cut |
 | two wiki sources disagreeing | the weapon's OWN page and its infobox module | over a family overview table; or measure. The export's agreement with either proves nothing — it has no idea an Arch-Gun has two columns |
 | what the numbers MEAN | the page's Characteristics, Notes, Tips | the structured fields describe the weapon; the prose says which of them are lies |
-| `base_drain` / `max_rank` | DE's Public Export | the wiki is wrong for ~20 mods |
+| `base_drain` / `max_rank` | the wiki PAGE's rank table | `Module:Mods/data` is wrong for ~20 mods; the page wins over it |
 
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.

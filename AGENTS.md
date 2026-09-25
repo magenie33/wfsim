@@ -114,10 +114,10 @@ Each of these fails silently. That is why it is here and not in a document.
 - **Golden values only change with an in-game measurement** justifying it. New
   mechanics need golden tests; a faithful-looking implementation without a
   measurement is not correct.
-- **OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING** for a number. DE's
-  Public Export (`scripts/de_export.py`) owns IDENTITY — `uniqueName`,
-  `base_drain`/`max_rank`, DE's card text — never a number: its `levelStats` is
-  rounded display. Join by `internal_name` == `uniqueName`, **never by name**.
+- **MEASUREMENT > WIKI > DE's PUBLIC EXPORT**, on every conflict. The export
+  (`scripts/de_export.py`) fills what the wiki does not state — `uniqueName`,
+  card text, textures — and its `levelStats` is rounded display, never a
+  number's source. Join by `internal_name` == `uniqueName`, **never by name**.
   WFCD is not a source.
 - **A DATA FILE STATES ONLY RULES THE ENGINE APPLIES.** Stating one it does not
   is worse than omitting it: to anyone auditing it reads as applied. WHOSE
