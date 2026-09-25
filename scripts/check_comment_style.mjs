@@ -252,7 +252,7 @@ check(`comment style comments per line (${ratio.toFixed(4)} ≤ ${RATIO_CEILING.
 //   constraint and started explaining a subject, and that is the growth this
 //   check exists to catch — a file can creep to twice its size one reasonable
 //   paragraph at a time without any single edit looking wrong.
-const AGENTS_CHAR_CEILING = 14000;
+const AGENTS_CHAR_CEILING = 13800;
 const AGENTS_ENTRY_LIMIT = 8;
 const agents = readFileSync(resolve(ROOT, "AGENTS.md"), "utf8");
 const agentsLines = agents.split(NL);

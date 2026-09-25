@@ -67,7 +67,7 @@ label the app draws.
 ## 2. THE MECHANICS, AND WHERE EACH ONE CAME FROM
 
 Every line below is quoted from `wiki.warframe.com` and cross-checked against
-WFCD's export where the export carries the field.
+DE's Public Export where the export carries the field.
 
 ### The combo counter
 
@@ -187,7 +187,7 @@ where the two hammers carried nothing; it now carries nothing either.
 
 - 2x a normal attack, **3x for a heavy slam**.
 - *"linearly diminishing with distance from the point of impact to 50% (70% for
-  heavy slam) at the edge of its radius."* WFCD's `attacks[]` array agrees
+  heavy slam) at the edge of its radius."* The module's `Attacks[]` agrees
   exactly: `falloff {start: 0, end: 10, reduction: 0.3}`.
 - The sphere is centred on the **wielder's own feet** — `BlastKind::Slam`, its
   own variant beside `Contact` and `Terminal` because it answers the same
@@ -746,7 +746,5 @@ the wiki's infobox and its stance's published table — plus one line in
 **Two traps, both hit on the way in.** The export carries `Beginner /
 Intermediate / Expert` internal tiers of the same mod under one display name:
 joining by NAME put a phantom Pressure Point (+200%, rank 10) in front of this
-work, and the bare path is the player's card. And WFCD's top-level `damage`
-object has the Magistar's Puncture and Slash swapped, where its own
-`damagePerShot` array, its own `attacks[]` block and the wiki all agree with
-each other. Join by `uniqueName`, and let the wiki settle it.
+work, and the bare path is the player's card. Join by `uniqueName`, and let the
+wiki settle every number.

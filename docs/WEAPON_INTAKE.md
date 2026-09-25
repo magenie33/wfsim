@@ -89,7 +89,7 @@ folder for the Kitgun rig it shares and not a statement that it is modular.
 
 Reading a weapon out of the wiki is now mechanical —
 `private/scripts/wiki_weapons.py` gives the whole entry as JSON, cross-checked
-against WFCD, and every field maps to our schema by name. Call that an hour a
+against DE's Public Export, and every field maps to our schema by name. Call that an hour a
 weapon, most of it reading comments.
 
 What is not mechanical is the rule that makes any of it worth having:
@@ -214,15 +214,16 @@ Prime's. Add both, or neither.
 ### 1. The sources, and which one wins
 
 **OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING** — AGENTS.md and
-`docs/DATA_SOURCES.md` state the order and the evidence behind it. WFCD is not a
-data source here: images at most.
+`docs/DATA_SOURCES.md` state the order and the evidence behind it. DE's Public
+Export owns identity — `uniqueName`, `base_drain` / `max_rank` — and never a
+number.
 
 | what | source | rule |
 | --- | --- | --- |
 | every stat | the RENDERED weapon page's infobox | the source of record. `?action=raw` gives you `{{WeaponInfoboxAutomatic}}` and nothing else; `Module:Weapons/data/*` truncates alphabetically and a reader invents past the cut |
-| two wiki sources disagreeing | the weapon's OWN page and its infobox module | over a family overview table; or measure. WFCD's agreement with either proves nothing — it has no idea an Arch-Gun has two columns |
+| two wiki sources disagreeing | the weapon's OWN page and its infobox module | over a family overview table; or measure. The export's agreement with either proves nothing — it has no idea an Arch-Gun has two columns |
 | what the numbers MEAN | the page's Characteristics, Notes, Tips | the structured fields describe the weapon; the prose says which of them are lies |
-| `base_drain` / `max_rank` | WFCD only | the wiki is wrong for ~20 mods |
+| `base_drain` / `max_rank` | DE's Public Export | the wiki is wrong for ~20 mods |
 
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.
@@ -248,8 +249,8 @@ line sits under *primary fire* and the guaranteed proc under *Alternate Fire* �
 one indent level apart, and swapping them would have modelled the synergy
 backwards.
 
-**AN ARCH-GUN HAS TWO COLUMNS AND WFCD ONLY HAS ONE**. Its page's
-infobox has an `Archwing` tab and an `Atmosphere` tab, and `warframe-items`
+**AN ARCH-GUN HAS TWO COLUMNS AND DE'S EXPORT ONLY HAS ONE**. Its page's
+infobox has an `Archwing` tab and an `Atmosphere` tab, and the export
 carries the ARCHWING one — so the export is the wrong column for this repo,
 whose arena is the ground. What differs is not only the sustain:
 
@@ -332,7 +333,7 @@ adds nothing new; when it does, that is the interesting half of the intake.
 | riven family | `riven_family:` | the editor offers the wrong stat pool |
 | innate polarities | `polarities:`, `exilus_polarity:` | every Forma plan is wrong |
 | disposition | the infobox | every riven is wrong |
-| `internal_name` | WFCD `uniqueName` | the join key for every future cross-check |
+| `internal_name` | DE's export `uniqueName` (`python scripts/de_export.py show <path>`) | the join key for every future cross-check |
 | tests | `cargo test --workspace` | a data file that does not parse fails the build, not the test |
 | checks | `check_parity`, `check_equip_rules`, `check_disclosure` | per-weapon by construction; run the ones the weapon can reach |
 
@@ -355,7 +356,7 @@ the number is a faithful-looking implementation with nothing behind it.
 ## THE ARCH-GUN CLASS — done
 
 All twenty, as 29 entries. What the class taught is in §1 above (two columns,
-and WFCD carries the wrong one).
+and DE's export carries the wrong one).
 
 **THE ARBUCEP WAS THE LAST ONE, and it needed engine work rather than typing.**
 It was held back for a day with the reasoning written out here, because none of

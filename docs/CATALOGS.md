@@ -676,7 +676,7 @@ single-target number — the blast goes off ON the aimed body — and in a crowd
 is the whole cost of the card. A row marked `Doesn't Work` takes no metres and
 shrinks nothing.
 
-Rank ramp (wiki rank table == WFCD `levelStats`, both linear):
+Rank ramp (the wiki's rank table, linear):
 
 | rank | damage per metre | ammo efficiency per metre |
 | --- | --- | --- |

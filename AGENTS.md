@@ -114,11 +114,11 @@ Each of these fails silently. That is why it is here and not in a document.
 - **Golden values only change with an in-game measurement** justifying it. New
   mechanics need golden tests; a faithful-looking implementation without a
   measurement is not correct.
-- **OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING.** WFCD (`vendor/`) is
-  unreliable — images at most, never a tiebreaker between wiki sources, never
-  the reason a data file gives for a number. Join to it by `internal_name` ==
-  `uniqueName`, **never by name**. The ONE standing exception is
-  `base_drain`/`max_rank` on MODS (`docs/DATA_SOURCES.md`).
+- **OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING** for a number. DE's
+  Public Export (`scripts/de_export.py`) owns IDENTITY — `uniqueName`,
+  `base_drain`/`max_rank`, DE's card text — never a number: its `levelStats` is
+  rounded display. Join by `internal_name` == `uniqueName`, **never by name**.
+  WFCD is not a source.
 - **A DATA FILE STATES ONLY RULES THE ENGINE APPLIES.** Stating one it does not
   is worse than omitting it: to anyone auditing it reads as applied. WHOSE
   condition it is decides nothing — `docs/UNMODELLED.md` is the register.
@@ -205,7 +205,7 @@ Each of these fails silently. That is why it is here and not in a document.
 
 ## Maintaining this file
 
-**BUDGET: 14,000 characters, and no entry over 8 lines.**
+**BUDGET: 13,800 characters, and no entry over 8 lines.**
 `scripts/check_comment_style.mjs` enforces both. The character ceiling is a
 RATCHET — lower it when a pass removes some, never raise it to make a red run
 green — and it is set CLOSE to the current size on purpose: a ratchet with

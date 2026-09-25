@@ -60,8 +60,8 @@ Weapons, mods, arcanes, enemies, evolutions, rivens. Data is normalized —
 anything reusable is defined once and referenced by `id` (stable English slugs,
 never translated). Read [`data/README.md`](data/README.md) for the reference
 graph and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for sourcing rules.
-Two sources, always cross-checked: the wiki's structured Lua modules and WFCD's
-export. Each entry cites its source.
+Two sources, always cross-checked: the wiki's structured Lua modules and DE's
+Public Export. Each entry cites its source.
 
 ### 3. Translations (`data/i18n/<locale>/`, YAML — no code, lowest barrier)
 

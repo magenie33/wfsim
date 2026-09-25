@@ -17,10 +17,9 @@ still falls back, which is the backlog below.
 
 Every entry whose form kind is `base` while the weapon has a second form —
 these are the ones where the fallback is both wrong and load-bearing. The
-candidate name is DE's own (`vendor/warframe-items`, `attacks[].name`, matched
-to our entry by damage + crit + status + charge), and **it is a candidate, not
-a source**: the wiki wins, so each one wants its page opened before it is
-written in.
+candidate name is the wiki module's own `Attacks[].AttackName`, matched to our
+entry by damage + crit + status + charge, and **it is a candidate until the
+weapon's page is opened**: the page's own wording wins over the module's.
 
 | entries | candidate |
 | --- | --- |

@@ -65,7 +65,7 @@ standards ON PURPOSE:
 
 | | source | standard |
 | --- | --- | --- |
-| **stats** (both forms, damage, crit, status, rate, magazine, reload, gauge) | WFCD `attacks` = DE's own export | EXACT. On all eleven hand-checked guns it agreed with the wiki infobox field for field. |
+| **stats** (both forms, damage, crit, status, rate, magazine, reload, gauge) | the wiki module's `Attacks[]` | EXACT — one row per attack, which is what an Incarnon weapon's two forms need. |
 | **evolutions** | the wiki's evolution table, transcribed | ROUGH. A clause the intake's rule engine recognises becomes a real effect; one it does not becomes a kind NAMED `unmodelled_<its own words>`. |
 
 **"Rough" never means silent.** An `unmodelled_*` kind loads as

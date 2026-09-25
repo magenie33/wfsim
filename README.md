@@ -74,9 +74,8 @@ WFSim's own schema, reproducing no wiki page or prose. The wiki declares its
 own content **CC BY-NC-SA 3.0** and is credited accordingly here and in the
 footer of every page. Measurements, engine
 outputs and game art each carry terms of their own:
-[`LICENSE-DATA.md`](LICENSE-DATA.md) sets out all four categories. WFCD's
-[warframe-items](https://github.com/WFCD/warframe-items) is MIT upstream and
-is fetched locally rather than redistributed here.
+[`LICENSE-DATA.md`](LICENSE-DATA.md) sets out all four categories. DE's
+Public Export is fetched locally rather than redistributed here.
 Unofficial fan project, not affiliated with Digital Extremes; Warframe
 is a trademark of Digital Extremes Ltd.
 

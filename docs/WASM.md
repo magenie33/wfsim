@@ -217,9 +217,8 @@ per round; no shared memory needed), or (b) wasm threads
 **Images are SAME-ORIGIN, and the art ships with the site.** `site/img/` holds
 every file `data/assets.yaml` references (`scripts/fetch_images.py` fills
 `web/cache/img/`, `build_site_app.py` copies it and FAILS the build on a
-missing one). Hotlinking `cdn.warframestat.us/img/…` answers **301 →
-raw.githubusercontent.com**, which is unreliable to blocked from mainland
-China. If wfsim.app loads, its art loads.
+missing one). A third-party image host is unreliable to blocked from mainland
+China; same-origin means that if wfsim.app loads, its art loads.
 
 **A SIZE CLAIM IS MADE ON THE WIRE, NOT ON DISK.** Cloudflare answers `br`, so
 the raw byte count is not a number about any reader: a 6.7 MB wasm is

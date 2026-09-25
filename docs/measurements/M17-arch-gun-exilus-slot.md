@@ -9,7 +9,7 @@ worth a slot of free damage.
 |---|---|
 | wiki `Module:Mods/data` | `IsExilus: True` for **Zodiac Shred** (+90% Slash) |
 | wiki `Category:Exilus_Weapon_Mods` | Zodiac Shred is **not** in the list — and the 74 that are, are ALL utility (ammo, zoom, recoil, silence, speed). Not one grants damage. |
-| WFCD export | carries no exilus field for any Arch-Gun mod — silent, not a vote |
+| DE's Public Export | carries no exilus field for any Arch-Gun mod — silent, not a vote |
 | wiki `Arch-Gun` page | does not say whether Arch-Guns have an exilus slot at all |
 
 **Implemented: `exilus: false`**, which is the safer error — a wrong `true`

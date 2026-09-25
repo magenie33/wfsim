@@ -1265,8 +1265,8 @@ accordingly, making them more or less effective at longer ranges."*
 
 **Unmodeled, deliberately.** The arena is single-target at a fixed engagement,
 so it models neither travel time nor range, and no roster weapon publishes a
-projectile lifetime — the Torid's wiki page and WFCD both stop at `shot_speed:
-40` — so the resulting range is not even derivable from data. Recorded here so
+projectile lifetime — the Torid's wiki page stops at `shot_speed: 40` — so the
+resulting range is not even derivable from data. Recorded here so
 the omission is a stated scope boundary rather than an oversight.
 
 The critical-headshot damage interaction is specified in §5.

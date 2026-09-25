@@ -117,13 +117,11 @@ What this project does about that, because each of these is checkable:
 - **Anything Digital Extremes asks to have removed will be removed.** An issue
   at <https://github.com/magenie33/wfsim> reaches the maintainer.
 
-## WFCD / warframe-items
+## DE's Public Export
 
 `vendor/` is **fetched locally and never committed** (see `.gitignore`), so this
-repository redistributes no WFCD data. Where their export is consulted, it is
-[MIT](https://github.com/WFCD/warframe-items/blob/master/LICENSE) upstream and
-stays that way. `site/img/` is sourced through their CDN, but the files
-themselves are DE's and belong to §4.
+repository redistributes no export file. The export is Digital Extremes' own,
+and so are the textures `site/img/` is built from; both belong to §4.
 
 ## Summary
 
