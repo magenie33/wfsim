@@ -816,6 +816,21 @@ best builds — kept at tag `archive/optimizer-sampler`:
 | | descent, Primed Point Blank alone | 273 | 3 | yes | 40% |
 | | sample + climb, budget 1,000 | 4,768 | 5 | **no** (1.6%) | 40% |
 
+**Across weapon classes**, each against its own exhausted reference (all
+settled), the descent at its default starts and sample + climb at the same
+screen evaluations:
+
+| scope | jobs | descent: evals, rank, regret | sample + climb: evals, rank, regret |
+|---|---|---|---|
+| Sancti Magistar (melee), 11 mods × 2 arcanes | 7,792 | 446, **1**, 0% | 464, 26, 12.3% |
+| Sancti Magistar, 13 mods × 2 arcanes | 26,878 | 473, **1**, 0% | 470, 22, 5.0% |
+| Lex Prime (incarnon), 11 mods × 2 arcanes × 4 evolution sets | 31,680 | 758, **1**, 0% | 1,664 (budget 760), 200, 47.9% |
+| Kuva Hind (valence), 11 mods × 2 arcanes | 7,032 | 412, **1**, 0% | 430, 16, 10.7% |
+| Kuva Hind, 13 mods × 2 arcanes | 30,704 | 751, **1**, 0% | 752, 3, 1.0% |
+| Rubico Prime (sniper), 11 mods × 2 arcanes | 6,276 | 414, **1**, 0% | 448, 7, 21.9% |
+| Lex Prime, 10 mods × modes base / cycle / transformed | 5,466 | 336, **1**, 0% | — |
+| Kuva Hind, 11 mods × 5 valence elements (answer set 2) | 17,580 | 517, 2, 0.9% (within noise) | — |
+
 **Measured on the whole pool**, where no reference exists: both searches at
 20,000 screen evaluations, winners replayed on 400 paired runs.
 

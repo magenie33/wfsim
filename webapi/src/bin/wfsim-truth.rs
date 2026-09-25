@@ -11,7 +11,7 @@
 //!               [steel_path=0|1] [duration=300] [runs=100] [truth_runs=200]
 //!               [finalists=10] [max_jobs=200000] [threads=N]
 //!               [strategy=exhaust|descent] [starts=id+!locked+@!arcane;id] [search_evals=N]
-//!               [arcanes=id,…] [evo1=id,…] … [evo5=id,…]
+//!               [arcanes=id,…] [evo1=id,…] … [evo5=id,…] [modes=id,…] [valence=element,…]
 //!               [swap_width=N]
 //!
 //! `runs` is the search's own final-round precision (the scenario's);
@@ -65,7 +65,13 @@ fn main() {
             (!v.is_empty()).then(|| (t.to_string(), json!(v)))
         })
         .collect();
+    // `modes=base,cycle` and `valence=heat,cold` search those, the page's marks.
+    let marks = |k: &str| -> Value {
+        Value::Object(ids(k).into_iter().map(|id| (id, Value::String("search".into()))).collect())
+    };
     let req = json!({
+        "modes": marks("modes"),
+        "valence": marks("valence"),
         "arcanes": Value::Object(arcanes),
         "evolutions": Value::Object(evolutions),
         "weapon": get("weapon", "verglas_prime"),
