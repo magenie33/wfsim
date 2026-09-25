@@ -429,6 +429,7 @@ ui:
   "none start stacked": 开场都没有层数
   "ammo counts": 计算弹药
   "Runs per candidate": 每个候选跑几场
+  "② Limits": ② 限制
   "chosen by the search": 由搜索决定
   "A start is the build the search begins from. A blank start is filled in order — mode, evolutions, element, arcane, mods, exilus — and then improved position by position with the quick calc until no change helps. To begin from a build of your own, add the current build or one of your builds; edit a start in the builder, where a pinned position stays in every answer. Several starts that differ (another element, another mode) find answers one start cannot.": 起点就是搜索开始时的配装。空白起点会按顺序填满——模式、进化、元素、赋能、mod、Exilus——然后逐个位置用快速计算改进，直到换什么都不再提升。想从自己的配装出发，就把当前配装或存过的配装加为起点；起点可以在配装器里编辑，钉住的位置在每个结果里都保持不变。多放几个方向不同的起点（换个元素、换个模式），能找到单个起点找不到的答案。
   "Limits": 限制

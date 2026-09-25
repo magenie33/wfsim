@@ -127,8 +127,7 @@ function renderOptLimits() {
   const L = opt.limits;
   const q = (($("opt-limit-filter") || {}).value || "").trim().toLowerCase();
   const toggle = (on, key, label) => `<label class="check"><input type="checkbox" data-fill="${key}"${on ? " checked" : ""}> ${escHtml(label)}</label>`;
-  let html = `<h4 class="sim-h">② ${escHtml(tr("Limits"))} <span class="sim-hint">${escHtml(tr(
-    "none by default — click an option to exclude it; a start that pins an excluded option cannot run, one that only holds it has it replaced"))}</span></h4>`;
+  let html = "";
   if ((w.modes || []).length > 1) {
     html += limitHead("mode-block", "Mode") + `<div class="combo-menu opt-limit-list">${
       w.modes.map((id) => plainRow("modes", id, modeLabel(w, id))).join("")}</div>`;

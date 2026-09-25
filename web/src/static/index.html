@@ -981,7 +981,11 @@
       <div class="bb">
         <div class="preset-bar" id="preset-bar-optimizer"></div>
         <div id="opt-starts"></div>
-        <div id="opt-limits"></div>
+        <!-- THE LIMITS fold, shut until wanted: nothing is limited by default. -->
+        <div class="fold sect shut" data-fold="opt-limits">
+          <h3 class="sim-h fold-h" data-i18n>② Limits <span class="sim-hint" data-i18n>none by default — click an option to exclude it; a start that pins an excluded option cannot run, one that only holds it has it replaced</span></h3>
+          <div id="opt-limits"></div>
+        </div>
       </div>
     </section>
 
