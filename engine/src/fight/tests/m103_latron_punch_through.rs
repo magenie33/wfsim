@@ -186,6 +186,43 @@ fn galvanized_scopes_kill_stacks_each_run_their_own_clock() {
     );
 }
 
+/// …AND THE KILL IS A WEAK-POINT KILL, not a head kill: DE moved
+/// Galvanized Scope / Crosshairs and both Deadheads to "On Weakpoint". A MOA's
+/// rear earns the pile; a head that is no weak point earns none of it.
+#[test]
+fn a_weak_point_kill_earns_the_kill_stacks_and_a_bare_head_does_not() {
+    let peak = |is_head: bool, is_weak_point: bool| {
+        let p = FightParams {
+            fire_rate: 1.0,
+            magazine_size: 1e9,
+            body_parts: vec![BodyPart {
+                name: "spot".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head,
+                is_weak_point,
+                crit_bonus: false,
+            }],
+            foe: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            crit_chance_stack: Some(crate::model::StackSpec {
+                per_stack: 0.04,
+                max_stacks: 5,
+                duration: 3.5,
+                initial_stacks: 0,
+                earned_on: Some("headshot_kill"),
+            }),
+            duration_seconds: 20.0,
+            ..no_status()
+        };
+        let trace = replay(&p, Rng::new(7).state(), 400);
+        let i = trace.buffs_of(0).iter().position(|x| x.id == "on_headshot_kill_cc").expect("rostered");
+        trace.frames.iter().map(|f| f.stacks_of(0)[i]).max().expect("frames")
+    };
+    assert_eq!(peak(true, true), 4);
+    assert_eq!(peak(false, true), 4, "a weak point that is not a head earns the same pile");
+    assert_eq!(peak(true, false), 0, "a head that is not a weak point earns nothing");
+}
+
 /// …AND A HEADSHOT KILL IS A KILL BY THE HIT ITSELF. The bleed a weak-point
 /// hit started finishes this target, and the mod's kill half earns nothing:
 /// "On Headshot Kill" is the round's kill, not the body's death.
