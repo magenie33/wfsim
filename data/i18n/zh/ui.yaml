@@ -1267,6 +1267,7 @@ ui:
   "takes every type as written": 所有伤害类型都按原样结算
   "testing build": 测试配装
   "that share link could not be read": 这条分享链接读不出来
+  "that share link could not be found": 找不到这条分享链接
   "that share link is for a weapon this build of the site does not have": 这条分享链接指向本站还没有的武器
   "the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty": 专用槽 —— 候选池 = 该槽的可选项，必带 = 钉死一张；一张都不标 = 该槽留空
   "the +50% Reload Speed while SPRINTING is not modelled: the sim's player stands still, and reloading on the move is a play pattern rather than a stat (Gauss and Gauss Prime double it to +100%, which is a Warframe-layer bonus this engine has no place for either)": 冲刺时 +50% 装填速度尚未建模：模拟里的玩家站着不动，边跑边装填是一种打法而不是一项属性（Gauss 和 Gauss Prime 会把它翻倍到 +100%，那是战甲层的加成，这个引擎同样没有位置容纳）

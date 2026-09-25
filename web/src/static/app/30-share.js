@@ -638,8 +638,56 @@ function sharePayload() {
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const cap1 = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
 
+/// WHERE SHORT LINKS LIVE, whatever origin made one: the desktop client and the
+/// dev server have no store of their own, and a link must open for anybody.
+const SHARE_ORIGIN = "https://wfsim.app";
+const shareApi = () => (location.origin === SHARE_ORIGIN ? "" : SHARE_ORIGIN);
+/// THE SITE AND THE DESKTOP SHELL make short links; a dev server or a check
+/// (127.0.0.1) makes the long form, so no test ever writes the live store.
+const SHARE_SHORT_HOSTS = ["wfsim.app", "wfsim.localhost"];
+
+/// THE LINK: short when the store answers, the full code when it does not —
+/// offline, on a shell with no network, or a store that is down. The long form
+/// opens exactly as it always has, so a failure here costs length and nothing
+/// else.
 async function shareUrl() {
+  const w = weaponInfo($("weapon").value);
+  const code = await shareCode();
+  if (SHARE_SHORT_HOSTS.includes(location.hostname)) try {
+    const ask = new AbortController();
+    const timer = setTimeout(() => ask.abort(), 4000);
+    const r = await fetch(`${shareApi()}/api/s`, {
+      method: "POST", headers: { "content-type": "application/json" }, signal: ask.signal,
+      body: JSON.stringify({ w: weaponPath(w.id).slice("/weapons/".length), c: code }),
+    });
+    clearTimeout(timer);
+    const j = r.ok ? await r.json() : null;
+    if (j && j.ok && /^[0-9A-Za-z]{10}$/.test(j.id)) return `${SHARE_ORIGIN}${weaponPath(w.id)}/s/${j.id}`;
+  } catch (_) { /* the long form below */ }
+  return `${location.origin}${weaponPath(w.id)}?${SHARE_PARAM}=${code}`;
+}
+
+/// THE BUILD A SHORT LINK NAMES, or null. Its id is a hash of what it stores,
+/// so the answer never changes and the browser may keep it.
+async function shortShareCode(id) {
+  try {
+    const r = await fetch(`${shareApi()}/api/s/${id}`);
+    const j = r.ok ? await r.json() : null;
+    return j && j.ok && typeof j.c === "string" ? j.c : null;
+  } catch (_) { return null; }
+}
+
+/// THE CODE, WITH NO NAMES IN IT. A name is the one field a person types, and
+/// it was most of a link's length — a riven named in Chinese, a build called
+/// "… copy copy". The reader gets the riven's generated name and a build named
+/// for where it came from (`importShare`), which is all a name told them.
+async function shareCode() {
   const payload = sharePayload();
+  payload[2] = 0;
+  payload[6] = (payload[6] || []).map(([, ...rest]) => [boardRivenName({
+    bonuses: (rest[3] || []).map(([x]) => x),
+    malus: rest[4] ? rest[4][0] : null,
+  }), ...rest]);
   // THE SHORTEST OF FOUR, chosen by MEASURING rather than by rule. v4 wins on
   // every ordinary build; v3 catches what v4 declines to spell (an id the
   // manifest has not been told about); the two base64 forms catch what neither
@@ -653,9 +701,7 @@ async function shareUrl() {
   const zipped = z && z.length < json.length
     ? SHARE_V_DEFLATE + b64urlEnc(z)
     : SHARE_V_PLAIN + b64urlEnc(json);
-  const code = forms.concat(zipped).reduce((a, b) => (b.length < a.length ? b : a), zipped);
-  const w = weaponInfo($("weapon").value);
-  return `${location.origin}${weaponPath(w.id)}?${SHARE_PARAM}=${code}`;
+  return forms.concat(zipped).reduce((a, b) => (b.length < a.length ? b : a), zipped);
 }
 
 async function decodeShare(code) {

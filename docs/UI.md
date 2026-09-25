@@ -314,6 +314,23 @@ deflate+base64 form, so the encoder measures all three and takes the shortest.
 A NAME THE SHAPE IMPLIES DOES NOT TRAVEL: a board riven's local name is
 `boardRivenName(shape)`, derived on arrival, which is shorter AND names it in
 the reader's own language.
+
+**NO NAME TRAVELS AT ALL, AND THE LINK IS SHORT.** A name is the one field a
+person types and it was most of a link — a riven named in Chinese is dozens of
+`%XX` escapes, and a long random-looking string is what phishing heuristics
+flag. `shareCode` drops the build name and replaces every riven name with its
+generated one; the reader's copy is named `build (shared)` and `Crita-…`.
+The code is then STORED: `POST /api/s` on the worker returns an id, and the
+link is `/weapons/<Wiki_Name>/s/<id>`. The id is the worker's hash of
+(weapon, code) — the same build is one id and one row, no client picks an id,
+and the row under an id never changes (worker/index.js §"SHORT SHARE LINKS",
+table `shares`). The short path serves the weapon's own prerendered page, so a
+pasted link previews as that weapon; boot takes the id off the address before
+anything reads it and `route` lands the build through `importShare`, exactly
+as a `?b=` link does. Only wfsim.app and the desktop shell make short links; a
+dev server or a check (127.0.0.1) makes the long form so no test writes the
+live store, and ANY failure to store falls back to the long form, which opens
+as it always has. `check_share_short.mjs` holds the worker's half.
 It rides the QUERY, not the fragment — a fragment never reaches a crawler and
 these links are meant to be posted.
 

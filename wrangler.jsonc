@@ -38,7 +38,9 @@
     // down: a page cached from the previous build asks for a hashed file this
     // one has deleted, and HTML served under that name is executed as script.
     // The worker turns those into a real 404; see worker/index.js.
-    "run_worker_first": ["/api/*", "/asset/*", "/pkg/*"]
+    // …AND A SHORT SHARE LINK, which the SPA fallback would answer with the
+    // home page's HTML; the worker serves the weapon's own page for it.
+    "run_worker_first": ["/api/*", "/asset/*", "/pkg/*", "/weapons/*/s/*"]
   },
   // WHERE EVERYTHING GOES. One database, and it is the only store: the library
   // of builds, the scores computed from it, and the money that has come in. A

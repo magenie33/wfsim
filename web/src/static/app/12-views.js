@@ -98,6 +98,17 @@ async function route() {
     importShare(shared);
     return;
   }
+  // …AND A SHORT ONE, whose id boot already took off the address. The page is
+  // drawn first on the same terms; the build lands when the store answers.
+  if (SHARE_ENABLED && SHORT_SHARE_ID) {
+    const id = SHORT_SHARE_ID;
+    SHORT_SHARE_ID = null;
+    route();
+    shortShareCode(id).then((code) => (code
+      ? importShare(code)
+      : presetToast(tr("that share link could not be found"))));
+    return;
+  }
   // `/support` is a page of the SHELL, not a fourth module and not a weapon's
   // tab: it belongs to no weapon, so it sits beside the home grid rather than
   // under /weapons/<name>.

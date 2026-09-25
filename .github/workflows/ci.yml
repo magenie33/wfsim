@@ -131,6 +131,10 @@ jobs:
       # submitter is told "sent". See docs/BOARD.md.
       - name: The board's submission endpoint keeps the whole build
         run: node scripts/check_board_submit.mjs
+      # A SHORT SHARE LINK stores a build under the worker's own hash of it, and
+      # nothing that is not a share code. Stub store, no network.
+      - name: Short share links store a build and nothing else
+        run: node scripts/check_share_short.mjs
       # …AND IT CAN BE PUT BACK. A backup nobody has restored is a hope: the
       # restore runs once, under pressure, by someone who has just lost data,
       # which is the worst moment to find a typo in it. Stub `curl`, no network.

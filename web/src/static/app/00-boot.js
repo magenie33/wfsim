@@ -4,6 +4,16 @@
 // official polarity icons from the wiki, art from DE's Public Export.
 
 const $ = (id) => document.getElementById(id);
+/// A SHORT SHARE LINK'S ID, taken off the address BEFORE anything reads it:
+/// `/weapons/<name>/s/<id>` becomes the weapon's own path, so boot, the router
+/// and the board all see an ordinary weapon page, and `route` lands the build
+/// the id names (`30-share.js`).
+let SHORT_SHARE_ID = (() => {
+  const m = location.pathname.match(/^(\/weapons\/[^/]+)\/s\/([0-9A-Za-z]{10})\/?$/);
+  if (!m) return null;
+  history.replaceState(null, "", m[1]);
+  return m[2];
+})();
 /// A PAGE INSIDE A PAGE: the weapon's wielder block frames the Warframe and
 /// Operator pages themselves, so the module is edited by its own code over its
 /// own stored builds. `?embed` drops the shell's chrome and nothing else.

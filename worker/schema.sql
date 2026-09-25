@@ -181,3 +181,14 @@ CREATE TABLE IF NOT EXISTS queue (
 -- "WHAT IS LEFT, IN ORDER" is one indexed read, and it is the only question a
 -- run asks of this table.
 CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
+
+-- SHORT SHARE LINKS: `/weapons/<weapon>/s/<id>` names a stored share code.
+-- `id` is a hash of (weapon, code) computed by the worker, so a row never
+-- changes, the same build is one row, and no client chooses an id. `at` is the
+-- day, like every table here. worker/index.js §"SHORT SHARE LINKS".
+CREATE TABLE IF NOT EXISTS shares (
+  id     TEXT PRIMARY KEY,
+  weapon TEXT NOT NULL,
+  code   TEXT NOT NULL,
+  at     TEXT NOT NULL
+);

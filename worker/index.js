@@ -269,9 +269,110 @@ async function pending(env) {
   });
 }
 
+// ---- SHORT SHARE LINKS -----------------------------------------------------
+//
+// A share code is the build, spelled out (`web/src/static/app/30-share.js`), and
+// a posted link carrying it reads as a long random string — which is what
+// phishing heuristics look for. So the code is STORED and the link names it by
+// a short id: `/weapons/<Wiki_Name>/s/<id>`.
+//
+// CONTENT-ADDRESSED: the id is a hash of what is stored, computed HERE. The
+// same build is always the same id, a write is idempotent (`INSERT OR
+// IGNORE`), and a client cannot choose an id and so cannot choose which stored
+// link to overwrite. It is a build and never a redirect: nothing stored here
+// can send a reader anywhere but the weapon it names.
+
+/// What a share code may contain: the version character, then the alphabet
+/// every form travels in — the compact forms' own and base64url's. EXPORTED so
+/// `check_share_short.mjs` can hold it against the page's `SHARE_TEXT_OK`.
+export const SHARE_CODE = /^[0-4][A-Za-z0-9~.:;,!_%-]{1,1500}$/;
+/// A weapon's URL slug (`urlSlug` on the page): every one in the roster is
+/// letters, digits, `_` and `-`, so a slash has nowhere to hide.
+const SHARE_WEAPON = /^[A-Za-z0-9_-]{1,80}$/;
+/// Ten base62 characters is 59 bits: nobody guesses one and no two builds meet.
+export const SHARE_ID = /^[0-9A-Za-z]{10}$/;
+const B62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+/// The id of a (weapon, code) pair. The WEAPON is in the hash because the row
+/// stores it, and a row whose weapon a first writer could pick would be a page
+/// that opens under the wrong name.
+export async function shareId(weapon, code) {
+  const bytes = new Uint8Array(await crypto.subtle.digest(
+    "SHA-256", new TextEncoder().encode(`${weapon}\n${code}`)));
+  let n = 0n;
+  for (const b of bytes.slice(0, 8)) n = (n << 8n) | BigInt(b);
+  let out = "";
+  for (let i = 0; i < 10; i++) { out = B62[Number(n % 62n)] + out; n /= 62n; }
+  return out;
+}
+
+/// Any origin may ask: the desktop client and the dev server both make links
+/// that point here, and nothing here depends on who is asking.
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
+const shareJson = (obj, status = 200, extra = {}) =>
+  new Response(JSON.stringify(obj), {
+    status, headers: { "content-type": "application/json", ...CORS, ...extra },
+  });
+
+async function shareStore(request, env) {
+  if (!env.LIBRARY) return shareJson({ ok: false, error: "not configured" }, 503);
+  const { b, err } = await body(request);
+  if (err) return shareJson({ ok: false, error: err }, 400);
+  const weapon = b && b.w, code = b && b.c;
+  if (typeof weapon !== "string" || !SHARE_WEAPON.test(weapon)
+      || typeof code !== "string" || !SHARE_CODE.test(code)) {
+    return shareJson({ ok: false, error: "not a share code" }, 400);
+  }
+  const id = await shareId(weapon, code);
+  try {
+    // THE DAY, and nothing finer — the same promise every table here makes.
+    await env.LIBRARY.prepare(
+      "INSERT OR IGNORE INTO shares (id, weapon, code, at) VALUES (?, ?, ?, ?)",
+    ).bind(id, weapon, code, new Date().toISOString().slice(0, 10)).run();
+  } catch (e) {
+    console.log("share write failed:", (e && e.message) || String(e));
+    return shareJson({ ok: false, error: "could not be stored" }, 503);
+  }
+  return shareJson({ ok: true, id, path: `/weapons/${weapon}/s/${id}` });
+}
+
+async function shareFetch(id, env) {
+  if (!SHARE_ID.test(id)) return shareJson({ ok: false, error: "not a share id" }, 404);
+  if (!env.LIBRARY) return shareJson({ ok: false, error: "not configured" }, 503);
+  const row = await env.LIBRARY.prepare("SELECT weapon, code FROM shares WHERE id = ?")
+    .bind(id).first();
+  if (!row) return shareJson({ ok: false, error: "no such link" }, 404);
+  // FOREVER: the id is a hash of the row, so the row under it can never change.
+  return shareJson({ ok: true, w: row.weapon, c: row.code }, 200,
+    { "cache-control": "public, max-age=31536000, immutable" });
+}
+
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (path === "/api/s" || path.startsWith("/api/s/")) {
+      if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+      if (path === "/api/s") {
+        return request.method === "POST" ? shareStore(request, env) : shareJson({ ok: false, error: "POST only" }, 405);
+      }
+      return request.method === "GET"
+        ? shareFetch(path.slice("/api/s/".length), env)
+        : shareJson({ ok: false, error: "GET only" }, 405);
+    }
+    // A SHORT LINK OPENS THE WEAPON'S OWN PAGE — its prerendered title and
+    // preview, which is what a chat shows when the link is pasted. The page
+    // itself reads the id and asks `/api/s/<id>` for the build.
+    const short = path.match(/^\/weapons\/([^/]+)\/s\/[0-9A-Za-z]{10}\/?$/);
+    if (short) {
+      const page = new URL(request.url);
+      page.pathname = `/weapons/${short[1]}`;
+      const res = await env.ASSETS.fetch(new Request(page.toString(), request));
+      return new Response(res.body, { status: res.status, headers: res.headers });
+    }
     if (path === "/api/board/pending") {
       return request.method === "GET" ? pending(env) : bad("GET only", 405);
     }
