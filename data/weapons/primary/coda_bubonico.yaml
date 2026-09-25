@@ -5,14 +5,12 @@ slot: primary
 # innate punch through — the deepest in this batch, and enough to reach the
 # fourth body in a line.
 #
-# ITS CLASS IS DISPUTED AND THE WIKI WINS. The module gives Class = Shotgun with
-# CompatibilityTags PROJECTILE/AOE/BATTERY, identical to the ordinary Bubonico's;
-# WFCD types the ordinary one Shotgun and THIS one Rifle, which is WFCD
-# disagreeing with itself across two entries the wiki says are the same weapon.
-# So `[primary, shotgun]`, per docs/DATA_SOURCES.md. The page's own "It is
-# officially classified as a Launcher and cannot be used in missions with
-# Shotgun-Only restrictions" appears verbatim on the ORDINARY Bubonico too, so
-# it is a mission-restriction tag rather than a statement about mods.
+# THE MODULE gives Class = Shotgun with CompatibilityTags PROJECTILE/AOE/BATTERY,
+# identical to the ordinary Bubonico's. So `[primary, shotgun]`, per
+# docs/DATA_SOURCES.md. The page's own "It is officially classified as a
+# Launcher and cannot be used in missions with Shotgun-Only restrictions"
+# appears verbatim on the ORDINARY Bubonico too, so it is a
+# mission-restriction tag rather than a statement about mods.
 class: shotgun
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -23,13 +21,11 @@ mastery_rank: 17
 # see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — the one disagreement is the class above).
+# Weapon-level metadata (wiki Module:Weapons/data/primary).
 accuracy: 25.0
-disposition: 0.55            # riven disposition
-# Was 0.5 until 2026-08-21, caught by scripts/audit_weapon_stats.py. Both
-# sources say 0.55 and they are independent: the wiki module's Disposition
-# column, and WFCD's `omegaAttenuation` (0.55000001).
+disposition: 0.60            # riven disposition (●○○○○) — wiki Coda_Bubonico's
+                              # Disposition column and DE's Public Export
+                              # `omegaAttenuation` (0.60000002) agree.
 polarities: [naramon, madurai, naramon]
 exilus_polarity: madurai
 riven_family: Bubonico

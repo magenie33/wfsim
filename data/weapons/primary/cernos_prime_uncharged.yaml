@@ -74,7 +74,7 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Cernos_Prime
-  # note: wiki Module:Weapons/data/primary Attacks[1] == WFCD's
-  # "Uncharged Horizontal/Vertical Shot" (joined on internal name), exactly.
+  # note: wiki Module:Weapons/data/primary Attacks[1] is "Uncharged
+  # Horizontal/Vertical Shot" — the module's own name for this attack.
   # The module additionally carries MinSpread 0 / MaxSpread 12 for this attack
   # — the wide cone the page calls out — which nothing consumes single-target.

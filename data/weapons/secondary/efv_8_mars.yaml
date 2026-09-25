@@ -10,11 +10,7 @@ mod_pools: [pistol]   # CompatibilityTags PROJECTILE, AOE
 mastery_rank: 14
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items, which DISAGREES on one field:
-# WFCD gives a different RELOAD; the wiki wins. The wiki wins (data/README.md), and
-# `scripts/audit_weapon_stats.py` carries the divergence with its reason
-# so it cannot be mistaken for a transcription error.
+# Weapon-level metadata (wiki Module:Weapons/data/secondary).
 accuracy: 100.0
 disposition: 1.05           # riven disposition
 polarities: [madurai, vazarin]
@@ -29,10 +25,9 @@ ammo_max: 210
 ammo_pickup: 60
 magazine: 15
 reload_seconds: 1.7  # module: Reload
-# Was 1.2 until 2026-08-21, caught by scripts/audit_weapon_stats.py. The
-# module says 1.7 and it is the only source that has this weapon at all —
-# WFCD's export does not carry it, so nothing cross-checked the first
-# transcription.
+# scripts/audit_weapon_stats.py catches drift from the module's own 1.7 s —
+# the module is the only source that has this weapon at all, so nothing
+# else cross-checks the transcription.
 
 # see notes: condition_overload_no_row_4
 co_behavior: additive_with_base_damage

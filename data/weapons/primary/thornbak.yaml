@@ -10,13 +10,9 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
 mastery_rank: 0
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items, which DISAGREES on one field:
-# WFCD holds an older DISPOSITION. The wiki wins (data/README.md), and
-# `scripts/audit_weapon_stats.py` carries the divergence with its reason
-# so it cannot be mistaken for a transcription error.
+# Weapon-level metadata (wiki Module:Weapons/data/primary).
 accuracy: 25.0
-disposition: 1.1             # riven disposition
+disposition: 1.2              # riven disposition (●●●●○), wiki module `Disposition`
 polarities: [naramon]
 # NO EXILUS POLARITY — the module states none, which is a fact rather than a
 # gap: most of the roster carries one and this weapon does not.

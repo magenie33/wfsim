@@ -1,7 +1,7 @@
 id: braton
 name: Braton
 slot: primary
-# WFCD `type: Rifle`, so the same three pools every assault rifle here draws.
+# wiki module `Class: Rifle`, so the same three pools every assault rifle here draws.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)

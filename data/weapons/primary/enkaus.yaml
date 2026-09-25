@@ -20,10 +20,10 @@ riven_family: Enkaus
 traits: [tenno]
 introduced: "42"
 # THE MODULE CARRIES NO InternalName FOR THIS WEAPON, so this key comes from
-# WFCD's export joined on the display name — which is the join this roster
-# forbids everywhere else, and is stated because it is an exception. It is
-# safe here because the export holds exactly ONE Enkaus (checked 2026-08-20);
-# the rule exists for names the export carries twice.
+# DE's Public Export joined on the display name — which is the join this
+# roster forbids everywhere else, and is stated because it is an exception.
+# It is safe here because the export holds exactly ONE Enkaus; the rule
+# exists for names the export carries twice.
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnInkRifle/TnInkRifleWeapon
 noise: alarming
 ammo_type: primary

@@ -10,10 +10,10 @@ description: "+X% Life Steal\n+X Purity"
 # A SYNDICATE AUGMENT (New Loka, rank Pure, 25,000 standing) and the roster's
 # second. The equip gate is the wiki's own sentence in both directions: it is
 # "exclusive to the Furis and Mk1-Furis" and "cannot be equipped on the Afuris
-# or Dex Furis" — so a family member is named IN, not assumed in. WFCD's
-# `compatName` says only "Furis", which is the trap `exclusive_to` exists to
-# avoid: that field names a compatibility CLASS, and taking it literally would
-# have offered this on every weapon in the family.
+# or Dex Furis" — so a family member is named IN, not assumed in. DE's Public
+# Export's `compatName` says only "Furis", which is the trap `exclusive_to`
+# exists to avoid: that field names a compatibility CLASS, and taking it
+# literally would have offered this on every weapon in the family.
 exclusive_to: [furis, mk1_furis]
 
 effects:
@@ -56,8 +56,9 @@ family: winds_of_purity
 source:
   url: https://wiki.warframe.com/w/Winds_of_Purity
   # Rank table (life steal 5/10/15/20%, Purity 0.25/0.5/0.75/1) from the wiki;
-  # `base_drain` 4 and `max_rank` 3 from WFCD, which is authoritative for those
-  # two (AGENTS.md: the wiki is wrong for ~20 mods there). The two agree here.
-  # WFCD's own rank table prints Purity 0.3 and 0.8 where the wiki prints 0.25
-  # and 0.75 — display rounding of the same ladder, and neither is read: the
-  # sim runs the mod at max rank, where both say 1.
+  # `base_drain` 4 and `max_rank` 3 from DE's Public Export, which is
+  # authoritative for those two (AGENTS.md: the wiki is wrong for ~20 mods
+  # there). The two agree here. The export's own `levelStats` prints Purity
+  # 0.3 and 0.8 where the wiki prints 0.25 and 0.75 — a rounded display of the
+  # same ladder, and neither is read: the sim runs the mod at max rank, where
+  # both say 1.

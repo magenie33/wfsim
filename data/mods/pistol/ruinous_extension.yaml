@@ -10,9 +10,10 @@ description: "+Xm Beam Range"
 
 # WHICH WEAPONS MAY EQUIP IT — a CATALOG, and DE's own rule is a hidden tag we
 # cannot read: "this mod can only be equipped on secondaries with the hidden
-# BEAM Compatibility Tag". The export does not carry it (WFCD says `Pistol`), so
-# the wiki's list is the source and it is transcribed rather than derived. The
-# two exceptions are why no property test could stand in for it:
+# BEAM Compatibility Tag". DE's Public Export does not carry it (`compatName`
+# reads `Pistol`), so the wiki's list is the source and it is transcribed
+# rather than derived. The two exceptions are why no property test could
+# stand in for it:
 #   · "Despite its Incarnon form being a beam weapon, Furis cannot equip this
 #     mod" — the same rule the Torid already taught us, that modding is decided
 #     on the BASE form;

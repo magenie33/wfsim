@@ -34,5 +34,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/MK1-Paris
-  # WFCD `attacks`: "Uncharged Shot"
+  # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Uncharged Shot"
 

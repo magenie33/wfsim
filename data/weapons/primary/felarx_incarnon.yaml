@@ -71,5 +71,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Felarx
-  # WFCD `attacks`: "Incarnon Form"
+  # wiki module `Attacks[].AttackName`: "Incarnon Form"
 

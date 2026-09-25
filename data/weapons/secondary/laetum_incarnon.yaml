@@ -133,7 +133,7 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Laetum
-  # note: Stats from the wiki page and the WFCD warframe-items dataset
-  # (which lists the explosion as a separate "Auto Radial Attack" with
-  # falloff {start 0, end 2, reduction 0.2}).
+  # note: Stats from the wiki page and the module's Attacks[], which lists
+  # the explosion as a separate "Auto Radial Attack" with falloff {start 0,
+  # end 2, reduction 0.2}.
 

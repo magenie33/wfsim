@@ -18,11 +18,10 @@ mod_pools: [pistol, tome]   # wiki `Tome`: "Tomes can equip Pistol Mods but
 mastery_rank: 10
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items, which DISAGREES on one field:
-# a Tome does not reload; WFCD's 0.01 s is a floor. The wiki wins (data/README.md), and
-# `scripts/audit_weapon_stats.py` carries the divergence with its reason
-# so it cannot be mistaken for a transcription error.
+# Weapon-level metadata (wiki Module:Weapons/data/secondary). A Tome does not
+# reload, and `scripts/audit_weapon_stats.py` carries that reading with its
+# reason so a future rank of the module cannot be mistaken for a
+# transcription error.
 accuracy: 100.0
 disposition: 0.6            # riven disposition
 polarities: [madurai, naramon]

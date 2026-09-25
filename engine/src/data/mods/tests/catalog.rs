@@ -633,8 +633,8 @@ fn loads_the_pistol_pool_from_yaml() {
 
 /// A description's numbers are of two kinds and they must not swap places:
 /// some RAMP with rank, some are FIXED. Every case here was wrong when the
-/// values were handed out by position (checked against WFCD `levelStats`,
-/// 2026-07-31).
+/// values were handed out by position (checked against the wiki's rank
+/// tables).
 #[test]
 fn fixed_and_rank_varying_values_land_in_the_right_slots() {
     // Literal duration and stack cap in the text, so the two X's are both

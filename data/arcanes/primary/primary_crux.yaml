@@ -8,7 +8,7 @@ description: "On Weak Point Hit: Gain +X% Status Chance and +X% Ammo Efficiency 
 effects:
   # Two grants on ONE trigger, 10 stacks, 10 s, ALL stacks drop together -
   # structurally Conjunction Voltage with a weakpoint-HIT trigger instead of a
-  # status one. Both numbers cross-checked wiki rank table == WFCD levelStats
+  # status one. Both numbers read off the wiki rank table
   # (5%/1% at rank 0 -> 30%/6% at rank 5; "Max Bonus" column = per_stack x 10).
   #
   # VERBATIM (wiki notes):

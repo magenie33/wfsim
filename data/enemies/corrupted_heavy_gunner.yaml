@@ -45,7 +45,7 @@ body_parts:
 source:
   url: https://wiki.warframe.com/w/Module:Enemies/data/orokin
   # note: >-
-  # Stats and Multis from the wiki's structured Lua enemy data module.
-  # Cross-checked against WFCD's Enemy.json (OrokinHeavyFemaleAvatar:
-  # 700/0/500) — the two agree exactly. Health/Armor/Shield classes do not
-  # exist post-U36; resistances are faction-wide (data/factions).
+  # Stats and Multis from the wiki's structured Lua enemy data module, entry
+  # OrokinHeavyFemaleAvatar: Health 700, Shield 0, Armor 500. Health/Armor/
+  # Shield classes do not exist post-U36; resistances are faction-wide
+  # (data/factions).

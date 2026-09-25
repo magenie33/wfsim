@@ -34,4 +34,4 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Paris
-  # WFCD `attacks`: "Uncharged Shot"
+  # wiki module `Attacks[].AttackName`: "Uncharged Shot"

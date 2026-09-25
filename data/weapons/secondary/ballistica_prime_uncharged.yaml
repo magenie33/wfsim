@@ -35,4 +35,4 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Ballistica_Prime
-  # WFCD `attacks`: "Normal Shot"
+  # wiki module `Attacks[].AttackName`: "Normal Shot"

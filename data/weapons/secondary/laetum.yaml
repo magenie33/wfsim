@@ -18,7 +18,7 @@ max_rank: 30
 transform_group: laetum
 transforms_to: laetum_incarnon
 
-# Weapon-level metadata (wiki data module / WFCD warframe-items).
+# Weapon-level metadata (wiki data module).
 accuracy: 16
 disposition: 0.5             # riven disposition (●○○○○)
 polarities: [madurai]
@@ -84,7 +84,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Laetum
-  # note: Stats cross-checked against the wiki page infobox and the WFCD
-  # warframe-items dataset (same datamined source). The dataset's summary
-  # `damage` object mislabels the 96 Slash as Puncture; `damagePerShot`
-  # and the per-attack tables agree on Impact 64 / Slash 96.
+  # note: Stats from the wiki page infobox and the module's Attacks[0]
+  # ("Normal Attack"): Impact 64 / Slash 96.

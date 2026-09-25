@@ -54,7 +54,7 @@ attack:
   spread:
     min_deg: 1
     max_deg: 3
-  # AUTO-SPOOL, which the page states and WFCD flattens to "Auto". The fire
+  # AUTO-SPOOL, which the page states. The fire
   # rate below is the spooled-up one; the ramp itself is not modelled, so a
   # short burst is faster here than in game — stated in `unmodeled:`.
   trigger: auto

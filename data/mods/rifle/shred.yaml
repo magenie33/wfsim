@@ -10,9 +10,9 @@ description: "+X% Fire Rate (x2 for Bows)\n+X Punch Through"
 # see notes: x2_bows_clause_literal
 effects:
   - kind: fire_rate_bonus
-    # +5% -> +30%, both sources: WFCD levelStats and the wiki rank table.
-    # Was the placeholder pair (1/6, 1.0) = +100% fire rate at max, which the
-    # sim built with - not just a wrong card.
+    # +5% -> +30%, the wiki's rank table. Was the placeholder pair
+    # (1/6, 1.0) = +100% fire rate at max, which the sim built with - not
+    # just a wrong card.
     rank0: 0.05
     rankMax: 0.30
   - kind: punch_through_bonus

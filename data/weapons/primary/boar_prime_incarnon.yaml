@@ -144,8 +144,7 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis
-  # note: attack stats cross-checked wiki Module:Weapons/data/primary
-  # ("Boar Prime", attack 2 "Incarnon Form", Trigger "Held") == WFCD
-  # warframe-items (joined on internal name). Both give 30 Heat / 20% / 2.2x /
-  # 24% at 8 ticks per second, Hit-Scan. The module additionally carries
-  # Multishot 1, Range 20, Accuracy 100 and IncarnonCharges 150.
+  # note: attack stats from wiki Module:Weapons/data/primary ("Boar Prime",
+  # attack 2 "Incarnon Form", Trigger "Held"): 30 Heat / 20% / 2.2x / 24% at
+  # 8 ticks per second, Hit-Scan. The module additionally carries Multishot
+  # 1, Range 20, Accuracy 100 and IncarnonCharges 150.

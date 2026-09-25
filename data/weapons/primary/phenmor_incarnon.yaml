@@ -114,6 +114,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Phenmor
-  # note: Both forms' stats come from the wiki infobox and the WFCD
-  # warframe-items `attacks` array ("Normal Attack" / "Incarnon Form"), which
-  # agree on every field.
+  # note: Both forms' stats come from the wiki infobox and module
+  # `Attacks[].AttackName` ("Normal Attack" / "Incarnon Form").

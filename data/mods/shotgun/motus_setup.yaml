@@ -18,7 +18,7 @@ effects:
   # and both halves resolve to a no-op — which is the honest answer, and the
   # same one Nano-Applicator's ability cast gets. Written as the real trigger
   # rather than dropped, so the day the arena has movement this mod is already
-  # described correctly. Duration ramps 1s -> 4s with rank (WFCD levelStats).
+  # described correctly. Duration ramps 1s -> 4s with rank (the wiki's rank table).
   - kind: buff
     trigger: bullet_jump_land
     grants: crit_chance

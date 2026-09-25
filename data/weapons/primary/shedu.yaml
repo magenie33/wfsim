@@ -3,8 +3,8 @@ name: Shedu
 slot: primary
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
-# WFCD `type: Rifle`, and DE's own path is a rifle path — an ARM-CANNON is a
-# chassis, not a mod class. Same three pools a rifle gets.
+# wiki module `Class: "Rifle"`, and DE's own path is a rifle path — an
+# ARM-CANNON is a chassis, not a mod class. Same three pools a rifle gets.
 class: rifle
 mod_pools: [primary, rifle]
 grip_type: RIFLE
@@ -14,16 +14,15 @@ max_rank: 30
 # Weapon-level metadata. EVERY FIELD HERE IS TAKEN, NOT REMEMBERED — the first
 # draft of this file invented three of them and all three were wrong: the
 # internal name (which is the i18n JOIN KEY, so the Chinese name silently went
-# missing), the accuracy (100 for the page's "Very High", where the scale this
-# repo uses is WFCD's 28.57) and the update it shipped in. Cross-checked against
-# WFCD warframe-items, which agrees with the wiki on every attack figure below.
-accuracy: 28.571428          # WFCD; the page prints it as "Very High"
-disposition: 0.75            # ●●○○○, WFCD omegaAttenuation 0.75
+# missing), the accuracy (100 for the page's "Very High", where the wiki
+# module's own scale reads 28.6) and the update it shipped in.
+accuracy: 28.6                # wiki module `Accuracy`; the page prints it as "Very High"
+disposition: 0.75             # ●●○○○, wiki module `Disposition`
 polarities: [madurai, madurai]
-# NO `exilus_polarity:` — WFCD does not carry one for this weapon and the page
-# does not print one, so the field is LEFT OUT rather than guessed. It is
-# optional, and an absent one costs a player nothing but a Forma; an invented
-# one would silently make every capacity plan wrong.
+# NO `exilus_polarity:` — the wiki module states `ExilusPolarity: "None"` and
+# the page does not print one, so the field is LEFT OUT rather than guessed. It
+# is optional, and an absent one costs a player nothing but a Forma; an
+# invented one would silently make every capacity plan wrong.
 riven_family: Shedu
 traits: [sentient]
 introduced: "27.0"           # Empyrean; the blueprint comes from Erra
@@ -50,8 +49,8 @@ magazine: 7
 #
 # 7 / 28 = 0.25 s, so a fully depleted battery costs 1.0 + 0.25 = 1.25 s — the
 # wiki's Reload Time to the digit — and a partially spent one costs
-# 0.4 + 0.25 = 0.65 s, which is WFCD's `reloadTime`. The two sources disagreed
-# only because each published a different case of the same model.
+# 0.4 + 0.25 = 0.65 s, a second case of the same model rather than a second
+# figure to reconcile.
 reload_seconds: 1.25         # the EMPTY case: 1.0 s delay + 7/28 s refill
 #
 # AND ONLY PART OF A GAP PAYS — the part beyond the delay — so the weapon breaks
@@ -181,6 +180,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Shedu
-  # note: every attack figure agrees between the wiki infobox and WFCD's
-  # `attacks` array ("Normal Attack" / "Radial Attack", falloff
-  # {start 0, end 6.6, reduction 0.6} — the fraction LOST there, 40% kept).
+  # note: wiki module `Attacks[].AttackName`: "Normal Attack" / "Radial
+  # Attack"; `Falloff` {start 0, end 6.6, reduction 0.6} — the fraction LOST,
+  # 40% kept.

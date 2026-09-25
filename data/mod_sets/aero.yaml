@@ -1,8 +1,8 @@
 id: aero
 name: Aero
-# DE's internal id for this set is "Hawk" (WFCD modSet .../Hawk/HawkSetMod);
-# the wiki and the cards call it the Aero set, and the player-facing name is
-# the one used here.
+# DE's internal id for this set is "Hawk" (DE's Public Export:
+# /Lotus/Upgrades/Mods/Sets/Hawk/HawkSetMod); the wiki and the cards call it
+# the Aero set, and the player-facing name is the one used here.
 #
 # Three mods: 1 Warframe, 1 Sniper, 1 Primary (Aero Periphery). The bonus lets
 # you damage enemies while aim gliding and sleeps up to 5 of them on landing -

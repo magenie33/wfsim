@@ -7,9 +7,8 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponFireRateMod
 description: "+X% Fire Rate"
 
-# Plain fire-rate mod, linear +12%/rank -> +72% at rank 5. (warframestat has
-# stale duplicate entries at +30% and +132%; the correct current mod is the
-# fusionLimit-5 / +72% one — picked deliberately, not auto-imported.)
+# Plain fire-rate mod, linear +12%/rank -> +72% at rank 5, the wiki's rank
+# table (fusionLimit 5).
 effects:
   - kind: fire_rate_bonus
     rank0: 0.12

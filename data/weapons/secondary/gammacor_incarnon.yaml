@@ -66,5 +66,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form" and "Incarnon Form Radial Attack"
+  # wiki module Attacks[].AttackName: "Incarnon Form" and "Incarnon Form Radial Attack"
 

@@ -11,11 +11,11 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, P
 mastery_rank: 12
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items, which DISAGREES on one field:
-# WFCD's magazine is in SHOTS (80 rounds = 8 at 10 apiece). The wiki wins (data/README.md), and
-# `scripts/audit_weapon_stats.py` carries the divergence with its reason
-# so it cannot be mistaken for a transcription error.
+# Weapon-level metadata (wiki Module:Weapons/data/primary). The magazine
+# below is in ROUNDS (80), not the 8 semi-auto shots at 10 apiece; the wiki
+# module's own quantity is rounds. `scripts/audit_weapon_stats.py` carries
+# the divergence with its reason so it cannot be mistaken for a
+# transcription error.
 accuracy: 9.1
 disposition: 0.75           # riven disposition
 polarities: [naramon]

@@ -35,6 +35,5 @@ source:
   url: https://wiki.warframe.com/w/Primed_Polar_Magazine
   # Every value above is the wiki's `Module:Mods/data` entry, read on the day
   # the page was created: BaseDrain 4, MaxRank 10, Polarity Vazarin, Rarity
-  # Legendary, Type Archgun, and the rank table 17% -> 187%. WFCD's export has
-  # no entry for it yet, so there is nothing to cross-check against — the join
-  # will start working on its own once the export catches up.
+  # Legendary, Type Archgun, and the rank table 17% -> 187%. DE's Public Export
+  # agrees on `base_drain` 4 and `max_rank` 10 for this `internal_name`.

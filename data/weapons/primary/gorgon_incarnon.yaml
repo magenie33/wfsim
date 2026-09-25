@@ -71,5 +71,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Gorgon_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form" and "Incarnon Form AoE"
+  # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form AoE"
 

@@ -18,7 +18,7 @@ max_rank: 40
 # share this shape, which is why the VALENCE block below is a weapon field
 # rather than something written into this file's prose.
 
-accuracy: 100                 # the infobox says "Very High"; WFCD's number is 100
+accuracy: 100                 # the infobox says "Very High"; module Accuracy 100
 disposition: 0.5
 # NO INNATE POLARITIES. The infobox says "Polarities: None" — which on a weapon
 # that reaches rank 40 is not the drawback it looks like.
@@ -129,8 +129,7 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Nukor
-  # Stats cross-checked field for field between the rendered infobox (MR 13,
+  # Stats: wiki rendered infobox and Attacks[] agree field for field (MR 13,
   # magazine 77, max ammo 210, reload 2.00 s, fire rate 10.00, disposition
   # 0.50x, Radiation 21, crit 7.00%, crit mult 5.00x, status 50.00%, punch
-  # through 0.0 m, beam range 29.0 m, polarities None) and WFCD's `attacks`
-  # array, which agrees on every one of them.
+  # through 0.0 m, beam range 29.0 m, polarities None).

@@ -1160,7 +1160,7 @@ mod asset_tests {
     /// A missing one does not fail anything at runtime — it renders as
     /// nothing, and the card just looks empty (Verglas Prime and ten mods
     /// shipped that way,). The map is filled by
-    /// `scripts/gen_assets.py` from the committed WFCD export, so a failure
+    /// `scripts/gen_assets.py` from DE's Public Export, so a failure
     /// here is one command away from fixed, and this is what makes anyone
     /// run it.
     /// Every weapon can be given a riven, so every weapon must reach a stat

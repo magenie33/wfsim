@@ -73,10 +73,10 @@ attack:
     max_deg: 15
   # A CONTINUOUS BEAM, and the page does not say so in those words — it says
   # "fire a wide Heat Damage beam" and gives it a 16 m maximum range, while
-  # WFCD gives the attack `speed: 12` and shot type Hit-Scan. That is exactly
-  # the Ocucor's shape (held, hit_scan, 12 ticks/s), which is why it is read
-  # the same way here. If it turns out to be per-trigger-pull, the cadence
-  # model changes and this line is where to change it.
+  # the wiki module gives the attack FireRate 12 and ShotType Hit-Scan. That is
+  # exactly the Ocucor's shape (held, hit_scan, 12 ticks/s), which is why it is
+  # read the same way here. If it turns out to be per-trigger-pull, the
+  # cadence model changes and this line is where to change it.
   trigger: held
   shot_type: hit_scan
   fire_rate: 12.0              # TICKS per second while held
@@ -114,6 +114,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis
-  # Attack stats cross-checked against WFCD warframe-items (attack "Incarnon
-  # Form", joined on internal name): speed 12, crit 26%, 3.4x, status 24%,
-  # Heat 100 — all agree. The falloff is the one field that does not.
+  # Attack stats: wiki module Attacks[] "Incarnon Form" entry — speed 12,
+  # crit 26%, 3.4x, status 24%, Heat 100; falloff per the module (see above,
+  # the Genesis page's own prose gives a different Reduction).

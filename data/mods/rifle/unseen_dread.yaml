@@ -56,5 +56,6 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Unseen_Dread
   # Rank table, Notes and Patch History, read 2026-08-13. Polarity, drain and
-  # rank cross-checked against WFCD (/Lotus/Upgrades/Mods/Bows/Event/Nightwave/
-  # NightwaveStalkerBowAugmentMod: madurai, rare, baseDrain 2, fusionLimit 5).
+  # rank confirmed in DE's Public Export (/Lotus/Upgrades/Mods/Bows/Event/
+  # Nightwave/NightwaveStalkerBowAugmentMod: madurai, rare, baseDrain 2,
+  # fusionLimit 5).

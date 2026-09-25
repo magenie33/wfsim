@@ -11,10 +11,9 @@ mod_pools: [pistol]   # CompatibilityTags TNJETTURBINEPISTOL
 mastery_rank: 14
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# Weapon-level metadata (wiki Module:Weapons/data/secondary).
 # NO ACCURACY ROW — the module states none for this weapon.
-disposition: 0.5            # riven disposition
+disposition: 0.65           # riven disposition (●○○○○), wiki module `Disposition`
 polarities: [madurai, madurai, madurai]
 exilus_polarity: naramon
 riven_family: Athodai

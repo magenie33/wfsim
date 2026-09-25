@@ -48,5 +48,5 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Dizzying_Rounds
   # Rank table and the Notes block, read 2026-08-13. Polarity, drain and rank
-  # cross-checked against WFCD (/Lotus/Upgrades/Mods/Nightwave/
+  # confirmed in DE's Public Export (/Lotus/Upgrades/Mods/Nightwave/
   # BroncoNightwaveMod: naramon, rare, baseDrain 4, fusionLimit 3).

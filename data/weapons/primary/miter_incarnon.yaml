@@ -72,5 +72,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form" and "Incarnon Form Radial Attack"
+  # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form Radial Attack"
 

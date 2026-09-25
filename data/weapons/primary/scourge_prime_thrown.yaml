@@ -116,7 +116,7 @@ attack:
     damage: { corrosive: 55 }
     radius_m: 7.0
     falloff_start_m: 0.0
-    falloff_reduction: 0.6    # WFCD `{start 0, end 7, reduction 0.6}`: 100% -> 40%
+    falloff_reduction: 0.6    # wiki module `Attacks[3].Falloff`: 100% -> 40%
     forced_procs: [impact]
     crit_chance: 0.10
     crit_multiplier: 2.0
@@ -124,5 +124,4 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Scourge_Prime
-  # Infobox and Characteristics read 2026-08-14; WFCD names these two attacks
-  # "Spear Throw" and "Spear Explosion" and agrees field for field.
+  # wiki module `Attacks[].AttackName`: "Spear Throw" and "Spear Explosion".

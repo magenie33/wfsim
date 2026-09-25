@@ -13,7 +13,7 @@ effects:
   - kind: recoil_reduction
     rank0: -0.15
     rankMax: -0.9
-  # DRAWBACK: -36% fire rate at max, not +100%. WFCD ramp: -6% -> -36%.
+  # DRAWBACK: -36% fire rate at max, not +100%. The wiki's rank table: -6% -> -36%.
   - kind: fire_rate_bonus
     rank0: -0.06
     rankMax: -0.36

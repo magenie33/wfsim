@@ -52,7 +52,7 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Metamorphic_Magazine
   # Rank table, Notes, Tips and Patch History, read 2026-08-13. Polarity, drain
-  # and rank cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/
+  # and rank confirmed in DE's Public Export (/Lotus/Upgrades/Mods/Rifle/Event/
   # Nightwave/NightwaveGorgonAugmentMod: naramon, rare, baseDrain 2,
   # fusionLimit 5), whose rank strings carry the same three clauses in this
   # order.

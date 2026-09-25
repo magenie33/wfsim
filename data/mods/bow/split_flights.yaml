@@ -86,9 +86,9 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Split_Flights
   # Rank table (Multishot +16.7% -> +100%, Spread +0.3 -> +1.8, Duration 0.33 s
-  # -> 2 s, cost 10 -> 15), Notes and Patch History, read 2026-08-18. WFCD
-  # cross-check on `uniqueName`: madurai, Rare, baseDrain 10, fusionLimit 5,
-  # compatName Bow — agrees on every field.
+  # -> 2 s, cost 10 -> 15), Notes and Patch History, read 2026-08-18. DE's
+  # Public Export agrees on every identity field for `internal_name`: madurai,
+  # Rare, baseDrain 10, fusionLimit 5, compatName Bow.
   #
   # THE AoE BOWS IT REFUSES are Artemis Bow, Attica, Kuva Bramma, Lenz (and
   # Prisma), Nagantaka (and Prime), Nataruk, Proboscis Cernos and Zhuge (and

@@ -72,4 +72,4 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form Blob Embed" and "Incarnon Form Blob Explosion"
+  # wiki module Attacks[].AttackName: "Incarnon Form Blob Embed" and "Incarnon Form Blob Explosion"

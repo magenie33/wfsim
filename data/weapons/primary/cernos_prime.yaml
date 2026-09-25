@@ -19,10 +19,8 @@ grip_type: BOW
 mastery_rank: 12
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary cross-checked
-# against WFCD warframe-items, joined on internal name — they agree on every
-# number below; the module additionally carries AmmoMax/AmmoPickup, the spread
-# cone and ExtraHeadshotDmg, which WFCD does not export).
+# Weapon-level metadata (wiki Module:Weapons/data/primary; the module also
+# carries AmmoMax/AmmoPickup, the spread cone and ExtraHeadshotDmg).
 accuracy: 16.7               # the page prints "Very High" for this number
 disposition: 1.25            # riven disposition (●●●●○)
 polarities: [madurai, madurai]
@@ -78,9 +76,9 @@ co_behavior: additive_with_base_damage
 co_base_fraction: 0.5
 
 # THE CHARGED SHOT — the module's Attacks[2], which it marks as the arsenal's
-# with `_TooltipAttackDisplay = 2`, and what WFCD's summary `damagePerShot`
-# carries (184 per arrow). Attacks[1], the tapped shot at exactly half the
-# damage, is the sibling entry.
+# with `_TooltipAttackDisplay = 2` — the same 184-per-arrow total the
+# module's own Damage block sums to. Attacks[1], the tapped shot at exactly
+# half the damage, is the sibling entry.
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -127,8 +125,7 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Cernos_Prime
-  # note: every number cross-checked wiki Module:Weapons/data/primary ==
-  # WFCD warframe-items (joined on internal name). They agree exactly on both
+  # note: every number is from wiki Module:Weapons/data/primary — both
   # attacks, the polarities, the exilus, disposition, mastery, magazine and
   # reload; the CO row is from Condition_Overload_(Mechanic).
 

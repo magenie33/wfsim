@@ -12,8 +12,7 @@ mod_pools: [pistol]   # CompatibilityTags TNJETTURBINEPISTOL
 mastery_rank: 10
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# Weapon-level metadata (wiki Module:Weapons/data/secondary).
 # NO ACCURACY ROW — the module states none for this weapon.
 disposition: 1.05           # riven disposition
 polarities: [madurai]

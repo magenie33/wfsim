@@ -62,5 +62,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form Charged Shot"
+  # wiki module `Attacks[].AttackName`: "Incarnon Form Charged Shot"
 

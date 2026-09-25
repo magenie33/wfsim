@@ -120,7 +120,7 @@ pub struct LocaleSpec {
     /// `\n` between lines like the English `description` it mirrors.
     ///
     /// Hand-transcribed rather than generated: evolutions are not items, so
-    /// they are in neither DE's PublicExport nor WFCD's derivative of it (see
+    /// they are not in DE's Public Export (see
     /// `data/i18n/zh/evolutions.yaml` for what was checked). That makes them
     /// the one card a phrase table mangles — "Increase Base Damage by +60."
     /// comes out as "Increase Base 伤害 by +60." — and the reason the UI shows

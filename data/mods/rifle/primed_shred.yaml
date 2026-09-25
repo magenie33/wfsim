@@ -9,9 +9,9 @@ description: "+X% Fire Rate (x2 for Bows)\n+X Punch Through"
 
 # see notes: x2_bows_clause_literal
 effects:
-  # WFCD ramp: +5% -> +55%, NOT +100%. The single-source audit missed this
-  # because candidates(1.0) includes the +1 multiplier reading 2.0, which
-  # matched the "(x2 for Bows)" in the mod's own description.
+  # The wiki's rank table: +5% -> +55%, NOT +100%. The single-source audit
+  # missed this because candidates(1.0) includes the +1 multiplier reading
+  # 2.0, which matched the "(x2 for Bows)" in the mod's own description.
   - kind: fire_rate_bonus
     rank0: 0.05
     rankMax: 0.55

@@ -15,7 +15,7 @@ effects:
   # is what the skeleton said. On kill it grants +rankMax per status TYPE on the
   # target, per stack, DIRECT hits only; the arithmetic is per-weapon (the
   # weapon's `co_behavior`). Shotgun numbers match the rifle twin Galvanized
-  # Aptitude exactly — 20 s, 2 stacks, +40% (WFCD levelStats r0/r10).
+  # Aptitude exactly — 20 s, 2 stacks, +40% (the wiki's rank table, r0/r10).
   - kind: buff
     trigger: kill
     grants: condition_overload

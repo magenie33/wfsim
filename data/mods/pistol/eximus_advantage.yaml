@@ -61,5 +61,5 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Eximus_Advantage
   # Rank table and the Notes block, read 2026-08-13. Polarity, drain and rank
-  # cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/Nightwave/
+  # confirmed in DE's Public Export (/Lotus/Upgrades/Mods/Rifle/Event/Nightwave/
   # NightwaveZylokAugmentMod: madurai, rare, baseDrain 2, fusionLimit 5).

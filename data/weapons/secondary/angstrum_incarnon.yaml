@@ -63,5 +63,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Angstrum_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form"
+  # wiki module `Attacks[].AttackName`: "Incarnon Form"
 

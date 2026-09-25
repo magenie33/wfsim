@@ -67,5 +67,5 @@ effects:
 
 source:
   url: https://wiki.warframe.com/w/Clip_Delegation
-  # Rank table and Notes. WFCD cross-check on `uniqueName`: vazarin, Rare,
-  # baseDrain 2, fusionLimit 5, compatName Sobek — agrees on every field.
+  # Rank table and Notes. DE's Public Export, keyed by `uniqueName`: vazarin,
+  # Rare, baseDrain 2, fusionLimit 5, compatName Sobek — agrees on every field.

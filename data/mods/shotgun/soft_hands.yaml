@@ -11,7 +11,7 @@ description: "On Equip: \n-X% Weapon Recoil and +X% Accuracy for Xs"
 effects:
   # CONDITIONAL, ON EQUIP — two indirect stats off one trigger with one timer,
   # and the recoil half is NEGATIVE (a reduction), which is the sign convention
-  # every recoil mod in `data/` already uses. 8s at every rank (WFCD levelStats).
+  # every recoil mod in `data/` already uses. 8s at every rank (the wiki page).
   - kind: buff
     trigger: equip
     grants: recoil

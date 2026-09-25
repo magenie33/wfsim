@@ -28,7 +28,7 @@ max_rank: 30
 transform_group: torid
 transforms_to: torid_incarnon
 
-# Weapon-level metadata (wiki data module cross-checked against WFCD).
+# Weapon-level metadata (wiki data module).
 accuracy: 100
 disposition: 1.3             # riven disposition (●●●●○)
 polarities: []               # NO innate main polarities (both sources agree)
@@ -154,7 +154,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Torid
-  # note: every number cross-checked wiki Module:Weapons/data/primary ==
-  # WFCD warframe-items (joined on internal name). They agree exactly on all
-  # three attacks; the module additionally carries AmmoMax/AmmoPickup, the
-  # cloud's EffectDuration and AttackParentIndex, and IncarnonChargeGain.
+  # note: every number from the wiki module `Module:Weapons/data/primary`,
+  # which carries all three attacks, AmmoMax/AmmoPickup, the cloud's
+  # EffectDuration and AttackParentIndex, and IncarnonChargeGain.

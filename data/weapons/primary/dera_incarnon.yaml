@@ -56,5 +56,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form"
+  # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Incarnon Form"
 

@@ -70,7 +70,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis
-  # Attack stats from the wiki infobox and WFCD's `attacks` array, which agree
-  # on every field; the 3x multishot is the page's own sentence, since WFCD's
-  # summary `multishot` reports the BASE form's 1 for both.
+  # Attack stats from the wiki module's (private/scripts/wiki_weapons.py)
+  # "Incarnon Form" attack, including its own Multishot of 3.
 

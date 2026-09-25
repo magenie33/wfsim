@@ -514,7 +514,7 @@ fn snapshot() -> String {
 ///
 /// The listed "Reload Time" is therefore not a reload — it is
 /// `delay + magazine/rate`, and both published numbers fall out of it: 1.25 s
-/// is the wiki's empty battery, 0.65 s WFCD's partial one.
+/// is the wiki's empty battery, 0.65 s DE's export's partial one.
 ///
 /// WHAT IT CHANGES that a plain reload does not: the battery refills BETWEEN
 /// SHOTS, for the part of the gap exceeding the delay, so it breaks even at

@@ -9,7 +9,7 @@ description: "+X% Fire Rate (x2 for Bows)"
 
 # see notes: x2_bows_clause_literal
 effects:
-  # WFCD ramp: +10% -> +60%. Was the placeholder pair (1/6, 1.0).
+  # The wiki's rank table: +10% -> +60%. Was the placeholder pair (1/6, 1.0).
   - kind: fire_rate_bonus
     rank0: 0.1
     rankMax: 0.6

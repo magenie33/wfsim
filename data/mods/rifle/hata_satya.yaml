@@ -94,5 +94,5 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Hata-Satya
   # Rank table, Notes and Patch History, read 2026-08-13. Polarity, drain and
-  # rank cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/
+  # rank confirmed in DE's Public Export (/Lotus/Upgrades/Mods/Rifle/Event/
   # SomaCritChanceOnHitMod: madurai, rare, baseDrain 2, fusionLimit 5).

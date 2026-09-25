@@ -8,12 +8,10 @@ mod_pools: [pistol]
 mastery_rank: 14
 max_rank: 30
 
-# A DUAL ROCKET LAUNCHER, and every number here is DE's own export
-# (`vendor/warframe-items` `attacks`) cross-checked field for field against the
-# wiki's `Module:Weapons/data/secondary`. The two agree except on one field,
-# and the module is followed: WFCD's TOP-LEVEL `fireRate` reads 3.901
-# where both the module and WFCD's own `attacks[].speed` read 3.667 — the same
-# split the roster's other burst weapons have.
+# A DUAL ROCKET LAUNCHER, and every number here is the wiki's own
+# `Module:Weapons/data/secondary` — the per-attack `FireRate` of 3.667, not a
+# top-level per-burst average, the same split the roster's other burst
+# weapons have.
 
 # WHAT THIS SIM DOES NOT MODEL ABOUT IT. Read off the weapon PAGE rather than
 # the module, which carries none of it (WEAPON_INTAKE §"READ THE PAGE").

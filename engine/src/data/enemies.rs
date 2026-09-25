@@ -133,7 +133,7 @@ pub struct EnemySpec {
     #[serde(default)]
     pub synthetic: bool,
     /// Portrait file name, served from our own origin at `/img/<name>`.
-    /// Wiki-hosted (WFCD's export carries no enemy art), so it is declared
+    /// Wiki-hosted (DE's export carries no enemies), so it is declared
     /// here rather than in `data/assets.yaml` — see the yaml's comment.
     /// Absent → the UI draws no picture, never a broken one.
     #[serde(default)]

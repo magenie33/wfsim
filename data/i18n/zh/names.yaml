@@ -5,8 +5,8 @@
 # translation is always safe. Every key must be a real id (machine-enforced
 # by engine::data::i18n tests — a typo fails the build).
 #
-# Canonical reference: the official CN client (WFCD i18n, joined on
-# internal_name), cross-checked against the community wiki's 对照 table
+# Canonical reference: the official CN client (DE's Public Export in Chinese,
+# joined on internal_name), cross-checked against the community wiki's 对照 table
 # https://warframe.huijiwiki.com/wiki/Project:中英名称对照
 #
 # A locale is a DIRECTORY and its files are merged (engine::data::i18n):
@@ -14,22 +14,23 @@
 #   ui.yaml            UI strings + the phrase-substitution fallback
 #   descriptions.yaml  GENERATED from DE's client strings, never hand-edited
 
-# Every name here is the official CN client string (WFCD i18n, joined on
-# internal_name). The FORM suffixes are ours, not DE's: the client has one
+# Every name here is the official CN client string (DE's Public Export in
+# Chinese, joined on internal_name). The FORM suffixes are ours, not DE's: the client has one
 # name per weapon, and our roster splits a weapon into entries per form, so
 # the suffix says which form — which is why this section is hand-written
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
   # (BurstRifle -> 伯斯顿, PrimeBurston -> 伯斯顿 Prime, FullAutoShotgun ->
   # Arch-Gun. Both entries are the same weapon; the FORM is
-  # DE own strings (WFCD i18n.json, joined on internal name).
+  # DE own strings (DE's Public Export in Chinese, joined on internal name).
   # DE 的中文是意译：Latin "furis" 的贼盗之意，不是音译。
-  # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
-  # DE's own strings (WFCD i18n.json, joined on internal name:
-  # DE's own strings, from WFCD i18n.json joined on internal name
+  # DE's own string (DE's Public Export in Chinese, CrpSentExperimentPistol).
+  # DE's own strings (DE's Public Export in Chinese, joined on internal name:
+  # DE's own strings, from DE's Public Export in Chinese joined on internal name
   # DE's, read out of a DE string rather than derived from the English.
   # SapientPistol -> 阿利乌双枪, PrimeAkarius -> 阿利乌双枪 Prime).
-  # TAKEN FROM DE'S OWN CODA NAME, not translated: WFCD has no Chinese string
+  # TAKEN FROM DE'S OWN CODA NAME, not translated: read directly off DE's
+  # Public Export.
   # The FORM, named the way every other Incarnon form here is: DE's own
   akarius: 阿利乌双枪
   akarius_prime: 阿利乌双枪 Prime
@@ -1082,9 +1083,9 @@ arcanes:
 
 abilities:
   # TRANSCRIBED FROM DE, not translated (house rule). Every one of these is
-  # lifted out of WFCD's `i18n.json` — the three abilities off their frame's
-  # own ability list, the four augments off their mod cards — so they are the
-  # strings the Chinese client shows and nothing here is our phrasing.
+  # lifted out of DE's own zh Public Export — the three abilities off their
+  # frame's own ability list, the four augments off their mod cards — so they
+  # are the strings the Chinese client shows and nothing here is our phrasing.
   #
   # NO FRAME NAMES. DE's Chinese client leaves them in English ("Rhino 重拳以
   # 待"), so a translated one would be a word DE did not write.
@@ -1105,10 +1106,9 @@ abilities:
   nourish_helminth: 消化滋养（Helminth）
   # 真理密语, off the CN wiki's own ability page (`?action=raw` via the API —
   # DATA_SOURCES §"The CN wiki is reachable through its API, not its pages").
-  # WFCD carries no zh ability NAMES at all — its `abilities` entries have a
-  # description and a null name for every frame — so this is the same path the
-  # seven above came down, and the same reason a derived name was not an option:
-  # nothing about "Xata's Whisper" would have produced 真理密语.
+  # IT IS NOT AN ITEM DE EXPORTS AT ALL, unlike the seven above, so a derived
+  # name was not an option: nothing about "Xata's Whisper" would have
+  # produced 真理密语.
   xatas_whisper: 真理密语
   xatas_whisper_helminth: 真理密语（Helminth）
   shock_trooper: 电击奇兵
@@ -1117,20 +1117,21 @@ abilities:
   venom_dose: 猛毒附加
   toxic_lash: 剧毒鞭笞
   # A DIFFERENT PATH FROM THE SEVEN ABOVE: this one is an AUGMENT MOD, so DE's
-  # own string is in WFCD's export like any other mod card, joined on
+  # own string is in DE's Public Export like any other mod card, joined on
   # `/Lotus/Powersuits/Alchemist/AlchemistPassiveAugmentCard`. Its card says the
   # mechanic in DE's words too — 「为武器附加 200% 该元素伤害」, 附加 rather than
   # 合成, which is the wiki's "parallel … will NOT combine" from the other side.
   valence_formation: 效价炼成
   resupply: 补给
   # HELMINTH'S OWN, off `/Lotus/Powersuits/PowersuitAbilities/Helminth`'s ability
-  # list in WFCD's i18n.json — DE's Chinese client, not a translation of ours.
+  # list in DE's Public Export in Chinese — DE's Chinese client, not a
+  # translation of ours.
   energized_munitions: 充沛军需
 
-# AURAS — DE's own client strings (WFCD i18n.json, joined on the aura's
-# internal name). Seven of the eight; EMP Aura is NOT in the export and is
-# deliberately absent rather than derived from the English, which is the house
-# rule: if a source cannot be reached, leave it empty and say so.
+# AURAS — DE's own client strings (DE's Public Export in Chinese, joined on
+# the aura's internal name). Seven of the eight are filled here; EMP Aura's
+# Chinese name (电磁脉冲场, RobotPoorAimAuraMod) is in the export but not yet
+# transcribed into this list.
 auras:
   corrosive_projection: 腐蚀投射
   shield_disruption: 护盾瓦解
@@ -1216,7 +1217,8 @@ shards:
   violet_archon_shard/orb_conversion: 拾取生命球得能量、拾取能量球得生命
 
 # WARFRAME ABILITIES (data/warframe_abilities/) — DE's own strings, off each
-# frame's `abilities` list in WFCD i18n.json, joined on the ability's internal_name.
+# frame's `abilities` list in DE's Public Export in Chinese, joined on the
+# ability's internal_name.
 warframe_abilities:
   airburst: "空爆"
   aquablades: "水形之刃"

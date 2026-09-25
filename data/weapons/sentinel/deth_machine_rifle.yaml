@@ -27,8 +27,8 @@ reload_seconds: 2.0
 co_behavior: additive_with_base_damage
 
 attack:
-  # AUTO-SPOOL, which the page states and WFCD flattens to "Auto". The rate
-  # below is the spooled-up one; the ramp is in `unmodeled:`.
+  # AUTO-SPOOL, which the page states in prose though `Trigger` alone reads
+  # "Auto". The rate below is the spooled-up one; the ramp is in `unmodeled:`.
   trigger: auto
   shot_type: hit_scan
   fire_rate: 8.33

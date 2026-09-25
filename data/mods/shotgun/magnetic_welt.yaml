@@ -7,8 +7,9 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponMagneticOnImpactShotgunMod
 # The two CONSTANTS are spelled out rather than left as X's, exactly as the
 # pistol twin Hemorrhage writes them: they do not ramp with rank, so an X
-# there has no value to take and the fill would stop on it. WFCD levelStats at
-# max rank: "...have 35% chance... (x2 when Fire Rate is below 2.5)".
+# there has no value to take and the fill would stop on it. DE's Public
+# Export's `levelStats` at max rank: "...have 35% chance... (x2 when Fire
+# Rate is below 2.5)".
 description: "Impact Status Effects have X% chance to apply a Magnetic Status Effect (x2 when Fire Rate is below 2.5)"
 
 # WHAT THE CARD'S NOTES ADD, all four checked against the engine 2026-08-10

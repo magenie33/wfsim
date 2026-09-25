@@ -99,8 +99,7 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Gotva_Prime
-  # Stats from the wiki Lua module via private/scripts/wiki_weapons.py, then
-  # `--check` against WFCD: magazine, reload, mastery, accuracy, disposition,
-  # crit, status, fire rate and the per-attack damage all agree. WFCD's flat
-  # `damage` dict is NOT consulted — it is wrong for 140 of 158 primaries
-  # (docs/DATA_SOURCES.md).
+  # Stats from the wiki Lua module via private/scripts/wiki_weapons.py:
+  # magazine, reload, mastery, accuracy, disposition, crit, status, fire
+  # rate and the per-attack damage are all the module's own attack record —
+  # never a flat per-weapon damage summary (docs/DATA_SOURCES.md).

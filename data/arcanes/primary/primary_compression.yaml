@@ -29,8 +29,8 @@ effects:
   # means the weapon has no AoE for the arcane to compress, so it is worth
   # nothing rather than unknown.
   #
-  # TWO RAMPS, because the description carries two Xs (wiki rank table == WFCD
-  # levelStats, both linear).
+  # TWO RAMPS, because the description carries two Xs (wiki rank table:
+  # 50%/+3.0% at rank 0 to 100%/+5.5% at rank 5, both linear).
   - kind: compression_damage
     rank0: 0.5
     rankMax: 1.0

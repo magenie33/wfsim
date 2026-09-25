@@ -60,5 +60,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Dread_Incarnon_Genesis
-  # WFCD `attacks`: "Incarnon Form Charged Shot"
+  # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Incarnon Form Charged Shot"
 

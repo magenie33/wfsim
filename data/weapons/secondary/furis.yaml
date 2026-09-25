@@ -18,17 +18,9 @@ grip_type: PISTOL
 mastery_rank: 2
 max_rank: 30
 
-# Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
-# against WFCD warframe-items — TWO disagreements, both resolved to the wiki:
-#
-#  1. MASTERY. The wiki says 2, WFCD's `masteryReq` says 1. No obvious error on
-#     either side, so the wiki takes it.
-#  2. THE DAMAGE SPLIT, and this one IS an obvious error. WFCD's roll-up
-#     `damage` block reads Puncture 3 / Slash 14, while WFCD's OWN `attacks[0]`
-#     entry for the same weapon reads Puncture 14 / Slash 3 — agreeing with the
-#     wiki. A source that contradicts itself is not a second opinion, so the
-#     roll-up is discarded rather than weighed.
-accuracy: 22.22              # "Very High"; WFCD 22.222221
+# Weapon-level metadata: wiki `Module:Weapons/data/secondary` (Mastery 2,
+# attacks[0] Damage Impact 3 / Puncture 14 / Slash 3).
+accuracy: 22.22              # "Very High"; module Accuracy 22.2
 disposition: 1.35            # riven disposition (●●●●●) — LOWER than the
                              # MK1's 1.40, which is the usual direction: the
                              # weaker variant is the better riven platform.
@@ -95,12 +87,11 @@ attack:
 #    weapon that is easy to aim is not paid for it here. It is real, and it is
 #    why the accuracy figure above is recorded rather than dropped.
 #
+# incarnon_genesis: see data/weapons/secondary/furis_incarnon.yaml and
+# data/evolutions/furis_*.yaml (the Genesis covers the Furis, the MK1-Furis
+# and the Afuris).
+#
 # NOT BUILT YET, deliberately:
-#  - the FURIS INCARNON GENESIS. WFCD carries the form's attack (Heat 100, 26%
-#    crit, 3.4x, 24% status, falloff 10–16 m at 0.48) and the wiki carries its
-#    five evolution tiers; both are a second weapon entry plus an evolution
-#    ladder, which is its own piece of work rather than a field on this one.
-#    The Genesis covers the Furis, the MK1-Furis and the Afuris.
 #  - WINDS OF PURITY, the family's exclusive augment (New Loka, rank Pure,
 #    25,000 standing): +20% Life Steal and +1 Purity at rank 3, equippable on
 #    the Furis and the MK1-Furis and nothing else. Its syndicate half is

@@ -215,7 +215,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis
-  # note: stats cross-checked wiki Module:Weapons/data/primary (attack 3,
-  # "Incarnon Form", Trigger "Held") == WFCD warframe-items. Both give
-  # 51 Toxin / 29% / 3.1x / 39% at 8 ticks per second.
+  # note: wiki module `Module:Weapons/data/primary` attack 3, "Incarnon Form",
+  # Trigger "Held": 51 Toxin / 29% / 3.1x / 39% at 8 ticks per second.
 

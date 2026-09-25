@@ -10,9 +10,10 @@ description: "+Xm Beam Range"
 
 # WHICH WEAPONS MAY EQUIP IT — a CATALOG, and DE's own rule is a hidden tag we
 # cannot read: "the mod can only be equipped on weapons with the hidden BEAM
-# compatibility tag". The export does not carry it (WFCD says `PRIMARY`, which
-# is not the whole rule), so the wiki's list is the source and it is
-# transcribed rather than derived from "is this weapon continuous".
+# compatibility tag". DE's Public Export does not carry it (`compatName`
+# reads `PRIMARY`, which is not the whole rule), so the wiki's list is the
+# source and it is transcribed rather than derived from "is this weapon
+# continuous".
 #
 # THAT PROPERTY TEST WAS WRONG IN BOTH DIRECTIONS, which is why it is gone. The
 # Torid's Incarnon form is a continuous beam and cannot take it (modding is

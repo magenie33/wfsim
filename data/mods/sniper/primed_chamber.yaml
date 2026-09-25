@@ -29,8 +29,8 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Primed_Chamber
   # Rank table (+25/50/75/100%, cost 4-7), Notes and Patch History, read
-  # 2026-08-18. WFCD cross-check on `uniqueName`: madurai, Rare, baseDrain 4,
-  # fusionLimit 3, compatName Sniper — agrees on every field.
+  # 2026-08-18. DE's Public Export, keyed by `uniqueName`: madurai, Rare,
+  # baseDrain 4, fusionLimit 3, compatName Sniper — agrees on every field.
   #
   # ver 43.5: "Fixed the Vectis Incarnon Form benefitting from Primed Chamber on
   # every shot." So the Incarnon form takes it once per magazine like any other

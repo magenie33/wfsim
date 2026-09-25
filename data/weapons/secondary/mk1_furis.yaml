@@ -18,13 +18,8 @@ grip_type: PISTOL
 mastery_rank: 0             # a starter-tier weapon: the module says Mastery 0
 max_rank: 30
 
-# Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
-# against WFCD warframe-items — one disagreement, the same shape as the
-# Furis's and resolved the same way. WFCD's roll-up `damage` block reads
-# Puncture 1.95 / Slash 9.1 while its OWN `attacks[0]` reads Puncture 9.1 /
-# Slash 1.95, agreeing with the wiki. A source that contradicts itself is not
-# a second opinion: the English wiki is first priority absent an obvious
-# error, and self-contradiction is one.
+# Weapon-level metadata: wiki `Module:Weapons/data/secondary` (attacks[0]
+# Damage Impact 1.95 / Puncture 9.1 / Slash 1.95).
 accuracy: 22.22              # identical to the Furis: the MK1 is not less
                              # accurate, it is weaker.
 disposition: 1.40            # riven disposition (●●●●●) — HIGHER than the

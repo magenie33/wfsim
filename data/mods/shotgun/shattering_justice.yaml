@@ -38,6 +38,6 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Shattering_Justice
   # Rank table and Notes; the Justice effect's own numbers from
-  # https://wiki.warframe.com/w/Justice. WFCD cross-check on `uniqueName`:
-  # naramon, Rare, baseDrain 4, fusionLimit 3, compatName Sobek — agrees on
-  # every field.
+  # https://wiki.warframe.com/w/Justice. DE's Public Export, keyed by
+  # `uniqueName`: naramon, Rare, baseDrain 4, fusionLimit 3, compatName Sobek —
+  # agrees on every field.

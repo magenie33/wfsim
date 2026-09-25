@@ -9,8 +9,8 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ProjectNightwatch/OgrisNightwatc
 description: "Rockets disperse napalm, inflicting X% damage over Xs across X% of the explosion area."
 
 # A WEAPON AUGMENT for the OGRIS and the KUVA OGRIS — "a mod for the Ogris and
-# Kuva Ogris", and WFCD's compatName says `Ogris`, which is the same statement
-# from the other side.
+# Kuva Ogris", and DE's Public Export's compatName says `Ogris`, which is the
+# same statement from the other side.
 exclusive_to: [ogris, kuva_ogris]
 
 # THE RANK TABLE, and the first column is the one the Notes overturn:
@@ -145,5 +145,5 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Nightwatch_Napalm
   # Rank table, Notes and the export's `levelStats` card text, read 2026-08-23.
-  # WFCD cross-check on `uniqueName`: madurai, Uncommon, baseDrain 4,
+  # DE's Public Export, keyed by `uniqueName`: madurai, Uncommon, baseDrain 4,
   # fusionLimit 5, compatName Ogris — agrees on every field.

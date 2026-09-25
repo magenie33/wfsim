@@ -16,13 +16,11 @@ max_rank: 30
 transform_group: scourge_prime
 transforms_to: scourge_prime_thrown
 
-# STATS CROSS-CHECKED, both sources agreeing field for field:
-# the rendered wiki infobox against WFCD `warframe-items`' `attacks` array,
-# joined on `internal_name` == `uniqueName`. Four attacks there — Projectile
-# Impact, Explosion, Spear Throw Impact, Spear Throw Explosion — and the first
-# two are this entry.
+# Stats from the rendered wiki infobox and wiki module `Attacks[]`. Four
+# attacks there — Projectile Impact, Explosion, Spear Throw Impact, Spear
+# Throw Explosion — and the first two are this entry.
 accuracy: 100
-disposition: 1.10            # WFCD `omegaAttenuation`; its `disposition: 3` is the DOT count
+disposition: 1.10            # wiki module `Disposition`
 polarities: [naramon, madurai, madurai, madurai]
 exilus_polarity: madurai
 riven_family: Scourge
@@ -95,13 +93,11 @@ attack:
     damage: { corrosive: 60 }
     radius_m: 1.7
     falloff_start_m: 0.0
-    falloff_reduction: 0.3    # WFCD `{start 0, end 1.7, reduction 0.3}`: 100% -> 70%
+    falloff_reduction: 0.3    # wiki module `Attacks[1].Falloff`: 100% -> 70%
     crit_chance: 0.10
     crit_multiplier: 2.0
     status_chance: 0.30
 
 source:
   url: https://wiki.warframe.com/w/Scourge_Prime
-  # Infobox and Characteristics read 2026-08-14; every attack figure agrees
-  # with WFCD's `attacks` array. `totalDamage: 140` there is 80 + 60, the
-  # direct hit plus this explosion.
+  # 80 + 60 = 140, the direct hit plus this explosion.

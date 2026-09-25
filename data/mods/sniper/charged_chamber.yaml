@@ -28,5 +28,5 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Charged_Chamber
   # Rank table (+10/20/30/40%, cost 6-9), Notes and Patch History, read
-  # 2026-08-18. WFCD cross-check on `uniqueName`: madurai, Uncommon,
+  # 2026-08-18. DE's Public Export, keyed by `uniqueName`: madurai, Uncommon,
   # baseDrain 6, fusionLimit 3, compatName Sniper — agrees on every field.

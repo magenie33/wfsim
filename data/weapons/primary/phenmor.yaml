@@ -1,8 +1,9 @@
 id: phenmor
 name: Phenmor
 slot: primary
-# WFCD `type: Rifle`, same as the Burston Prime and the Karak Wraith, so the
-# same three pools: primary-wide, Rifle, and the Assault Rifle sub-pool.
+# wiki module `Class: "Rifle"`, `CompatibilityTags: [ASSAULT_AMMO, PROJECTILE]`,
+# same as the Burston Prime and the Karak Wraith, so the same three pools:
+# primary-wide, Rifle, and the Assault Rifle sub-pool.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -18,11 +19,9 @@ max_rank: 30
 transform_group: phenmor
 transforms_to: phenmor_incarnon
 
-# Weapon-level metadata (wiki infobox, cross-checked against WFCD
-# warframe-items — 0 disagreements on anything below).
-accuracy: 28.57              # WFCD 28.571428; the page says "High"
-disposition: 0.6             # riven disposition (●○○○○), WFCD omegaAttenuation
-                             # 0.6 — its `disposition: 1` field is the stale one
+# Weapon-level metadata (wiki infobox).
+accuracy: 28.6               # wiki module `Accuracy`; the page prints it as "High"
+disposition: 0.6             # riven disposition (●○○○○), wiki module `Disposition`
 polarities: [madurai, naramon]
 exilus_polarity: madurai
 riven_family: Phenmor
@@ -60,11 +59,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.20
   punch_through_m: 0.0
-  # WFCD's summary `damage` object SWAPS these two — it reads Puncture 98 /
-  # Slash 42 while its own `attacks[].damage` and the wiki infobox both read
-  # Puncture 42 / Slash 98. The same mislabel is recorded on the Laetum; the
-  # per-attack table is the one to trust.
-  damage: { puncture: 42.0, slash: 98.0 }   # total 140
+  damage: { puncture: 42.0, slash: 98.0 }   # total 140, wiki module `Attacks[0].Damage`
 
 # Incarnon evolutions are perks shared by the transform group; definitions live
 # in data/evolutions/phenmor_*.yaml. THIRTEEN of them: a natural Incarnon

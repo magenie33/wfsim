@@ -14,7 +14,7 @@ effects:
   # On-kill STACKING multishot, not a second flat bonus — the shotgun twin of
   # Galvanized Chamber (rifle, 5 stacks) and Galvanized Diffusion (pistol, 4).
   # This one is 4 stacks at +30% each, 20 s, and its unconditional half is
-  # +110% against the rifle's +80% (WFCD levelStats r0/r10).
+  # +110% against the rifle's +80% (the wiki's rank table, r0/r10).
   - kind: buff
     trigger: kill
     grants: multishot

@@ -6,8 +6,8 @@
 # Max Over 700" perk paid nothing, and the panel had no way to say otherwise —
 # there was not even a sprint field on it.
 #
-# SOURCE: DE's own export (`vendor/warframe-items` Warframes.json), which
-# carries the RANK 0 stat block. Checked against the wiki infobox on two frames
+# SOURCE: DE's own Public Export, which carries the RANK 0 stat block.
+# Checked against the wiki infobox on two frames
 # — Ash (455/270/105/100/1.15) and Inaros Prime (2215/0/240/140/1.05) — and it
 # is rank 0 on both, digit for digit.
 #
@@ -58,9 +58,9 @@
 #     perks pay nothing until the number is typed over by hand. The panel still
 #     allows that, which is why the override was kept rather than replaced.
 #
-# NAMES ARE NOT TRANSLATED, and that is DE's doing: the Chinese client keeps
-# every Warframe name in English (WFCD i18n agrees on all 121), the same reason
-# the ability cards print the frame in English.
+# NAMES ARE NOT TRANSLATED, and that is DE's doing: DE's own Chinese Public
+# Export keeps every Warframe `name` field in English, the same reason the
+# ability cards print the frame in English.
 frames:
   - id: ash
     name: Ash

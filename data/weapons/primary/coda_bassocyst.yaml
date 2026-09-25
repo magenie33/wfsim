@@ -14,13 +14,9 @@ mastery_rank: 17
 # see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items, which DISAGREES on one field:
-# WFCD holds an older DISPOSITION. The wiki wins (data/README.md), and
-# `scripts/audit_weapon_stats.py` carries the divergence with its reason
-# so it cannot be mistaken for a transcription error.
+# Weapon-level metadata (wiki Module:Weapons/data/primary).
 accuracy: 100.0
-disposition: 0.55            # riven disposition
+disposition: 0.55            # riven disposition — wiki Coda_Bassocyst, current
 polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Coda Bassocyst

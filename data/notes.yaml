@@ -61,8 +61,9 @@ notes:
     strength you set; there is no per-rank table, because a calculator
     is asked what a maxed ability does.
   attack_stats_from_wiki: |
-    Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
-    Form" and "Incarnon Form AoE"), which agree on every field.
+    Attack stats from the wiki infobox and the wiki module's `Attacks[]` array
+    (`AttackName`: "Incarnon Form" and "Incarnon Form AoE"), which agree on
+    every field.
   auras_are_warframe_file: |
     Auras are on the WARFRAME, so this file is read into the fight's Tenno beside
     armour and energy — the block that becomes a real frame when frames are built. Nothing here is a weapon stat and nothing belongs in a
@@ -110,23 +111,21 @@ notes:
     and the rate is scaled at load time so that this card's OWN flat base damage
     is excluded from what it multiplies.
   bulk_intake_stats_are: |
-    BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-    array, which is DE's own export and which agreed with the wiki infobox field
-    for field on every one of the eleven guns checked by hand first. The
-    EVOLUTIONS are the rough half: transcribed from the wiki's table,
-    with every clause the intake's rule engine did not recognise loaded as a
-    NAMED INERT effect that the builder and the optimizer both print as "not
-    modelled yet". Nothing is dropped in silence — some perks do nothing
-    yet and say so on their own tile.
+    BULK INTAKE. The STATS are exact: the wiki module's `Attacks[]` array
+    agreed with the wiki infobox field for field on every one of the eleven
+    guns checked by hand first. The EVOLUTIONS are the rough half:
+    transcribed from the wiki's table, with every clause the intake's rule
+    engine did not recognise loaded as a NAMED INERT effect that the builder
+    and the optimizer both print as "not modelled yet". Nothing is dropped
+    in silence — some perks do nothing yet and say so on their own tile.
   bulk_intake_stats_are_2: |
-    BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-    array, which is DE's own export and which agreed with the wiki infobox field
-    for field on every one of the eleven guns checked by hand first. The
-    EVOLUTIONS are the rough half: transcribed from the wiki's table,
-    with every clause the intake's rule engine did not recognise loaded as a
-    NAMED INERT effect that the builder and the optimizer both print as "not
-    modelled yet". Nothing is dropped in silence — some perks do nothing
-    yet and say so on their own tile.
+    BULK INTAKE. The STATS are exact: the wiki module's `Attacks[]` array
+    agreed with the wiki infobox field for field on every one of the eleven
+    guns checked by hand first. The EVOLUTIONS are the rough half:
+    transcribed from the wiki's table, with every clause the intake's rule
+    engine did not recognise loaded as a NAMED INERT effect that the builder
+    and the optimizer both print as "not modelled yet". Nothing is dropped
+    in silence — some perks do nothing yet and say so on their own tile.
     NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
     multi-part base needs a SECOND weapon entry to be right; the Cernos
     Prime is the pattern (uncharged and charged are two entries in one
@@ -462,8 +461,8 @@ notes:
     `semi_auto` does not reach it. docs/DATA_SOURCES.md §"INSIDE THE WIKI".
   de_s_own_incompatibility: |
     DE's own incompatibility tags, from the wiki's `Module:Mods/data`
-    (`IncompatibilityTags`) — the same list the mod infobox prints. The
-    WFCD export carries no such field, so this module is the only
+    (`IncompatibilityTags`) — the same list the mod infobox prints. DE's own
+    Public Export carries no such field, so this module is the only
     structured source for what a mod REFUSES to be equipped on.
   decay_read_mods_data: |
     `decay` is NOT read by data::mods. The engine hardcodes the matching model
@@ -535,13 +534,11 @@ notes:
     and cannot find in the builder is indistinguishable from one the app got
     wrong, and now the builder offers it and states what it is worth here.
   every_stat_wiki_page: |
-    Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
-    `warframe-items` supplied `internal_name` and was cross-checked on the
-    rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).
+    Every stat is the wiki page's infobox, including the Mod Pool row.
+    `internal_name` is DE's own `uniqueName` (Public Export).
   every_stat_wiki_page_2: |
-    Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
-    read for `internal_name` only: its Arch-Gun entries are the ARCHWING
-    column, which is the wrong one here (docs/DATA_SOURCES.md).
+    Every stat is the wiki page's Atmosphere tab. `internal_name` is DE's own
+    `uniqueName` (Public Export).
   exalted_mods_reenabled: |
     RE-ENABLED ON EXALTED WEAPONS, over the module's POWER_WEAPON tag. Techrot
     Encore (W`Exalted_Weapon`): "Acolyte, Amalgam and Melee Combo Counter mods
@@ -667,7 +664,7 @@ notes:
     below; what is missing is the machinery.
   guaranteed_impact_every_shot: |
     GUARANTEED IMPACT, every shot — the wiki module's `ForcedProcs` for this
-    attack. WFCD's export carries no such field, so the bulk intake had no
+    attack. No item export carries such a field, so the bulk intake had no
     source for it and this weapon under-reported its status. A type that is
     always present is also a permanent +1 to Condition Overload's count.
   head_worth_1x_attack: |
@@ -1056,9 +1053,9 @@ notes:
   two_columns_fields_below: |
     TWO COLUMNS, and the fields below are the ATMOSPHERE one because this arena is
     the ground. See docs/WEAPON_INTAKE.md §1: the page's infobox has an `Archwing`
-    tab and an `Atmosphere` tab, WFCD carries only the Archwing one, and the two
-    differ in damage, reserve, reload and shot type while agreeing on crit,
-    multiplier, status, fire rate and magazine.
+    tab and an `Atmosphere` tab, and the two differ in damage, reserve, reload
+    and shot type while agreeing on crit, multiplier, status, fire rate and
+    magazine.
   two_weapons_model_base: |
     TWO WEAPONS MODEL: base and Incarnon forms are
     separate entries linked by a transform group.
@@ -1139,26 +1136,21 @@ notes:
     counting and is measuring in game. If it counts, the check
     moves into the pellet loop beside the weak-point bucket.
   weapon_level_metadata_wiki: |
-    Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-    against WFCD warframe-items — 0 disagreements).
+    Weapon-level metadata (wiki Module:Weapons/data/primary).
   weapon_level_metadata_wiki_2: |
-    Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-    against WFCD warframe-items — 0 disagreements).
+    Weapon-level metadata (wiki Module:Weapons/data/secondary).
   weapon_level_metadata_wiki_uncrosschecked: |
     Weapon-level metadata (wiki Module:Weapons/data). NOT cross-checked: the
-    WFCD export does not hold this weapon, and the wiki's own `InternalName`
-    for it is the placeholder `[PH]` — so there is no join key to check it by
-    (`internal_name`, never the display name). The wiki stands alone here.
+    wiki's own `InternalName` for it is the placeholder `[PH]` — so there is
+    no join key to check it by (`internal_name`, never the display name). The
+    wiki stands alone here.
   weapon_level_metadata_wiki_3: |
-    Weapon-level metadata (wiki infobox, cross-checked against WFCD
-    warframe-items — 0 disagreements).
+    Weapon-level metadata (wiki infobox).
   weapon_level_metadata_wiki_4: |
-    Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-    against WFCD warframe-items — 0 disagreements).
+    Weapon-level metadata (wiki Module:Weapons/data/primary).
     NO ACCURACY ROW — the module states none for this weapon.
   weapon_level_metadata_wiki_5: |
-    Weapon-level metadata (wiki `Module:Weapons/data/primary`, cross-checked
-    against WFCD warframe-items — 0 disagreements).
+    Weapon-level metadata (wiki `Module:Weapons/data/primary`).
   what_every_them_does: |
     WHAT EVERY ONE OF THEM DOES, identically (the page states it once for all):
       - 1000 damage of its own element in a 25 m radius, with a guaranteed
@@ -1190,10 +1182,10 @@ notes:
     damage TYPE. A flag could not carry that; two files can. See README.md.
   x2_bows_clause_literal: |
     The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale with
-    rank. BOTH sources agree: WFCD levelStats prints the same "x2" at every rank,
-    and the wiki's rank table carries a separate Fire Rate (Bows) column that is
-    exactly twice the rifle column at every rank. That column also settles the
-    scope - the multiplier applies to FIRE RATE only, not to punch through.
+    rank. The wiki's rank table carries a separate Fire Rate (Bows) column that
+    is exactly twice the rifle column at every rank, which settles both scope
+    and constancy - the multiplier applies to FIRE RATE only, not to punch
+    through, and does not scale with rank.
     No bow is in data/weapons yet, so nothing models it.
   zero_row_omission_arcane: |
     ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this

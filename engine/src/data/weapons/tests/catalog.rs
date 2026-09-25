@@ -9,8 +9,8 @@
 /// EVERY `internal_name` IS ONE THE EXPORT ACTUALLY HOLDS.
 ///
 /// The only join between this data and its cross-check source —
-/// `internal_name` == WFCD's `uniqueName`, never the display name, since
-/// the export carries stale duplicates sharing one. A key resolving to
+/// `internal_name` == DE's `uniqueName`, never the display name, since
+/// the export carries duplicates sharing one. A key resolving to
 /// NOTHING still produces "cross-checked — 0 disagreements" out of a
 /// comparison that never ran, which is how the Hema was skipped.
 ///
@@ -1006,7 +1006,7 @@ fn loads_the_weapon_roster() {
 
 /// The Torid is the first PRIMARY weapon and the first weapon with a
 /// lingering FIELD, so this pins what the loader must produce for it — every
-/// number cross-checked wiki data module == WFCD.
+/// number from the wiki data module.
 #[test]
 fn torid_loads_both_forms_with_its_field_and_direct_hit_gauge() {
     use crate::model::{ChargeOn, FieldStacking};
@@ -1269,8 +1269,8 @@ fn an_explosions_forced_proc_is_its_own_and_not_the_direct_hits() {
 /// The Cernos Prime is the first CHARGE-trigger weapon, so this pins the
 /// three things a bow brings that no other roster entry has: a draw that
 /// replaces the fire-rate cadence, an innate headshot bonus, and a CO term
-/// computed off the UNCHARGED base. Every number is wiki data module ==
-/// WFCD (joined on internal name), except `co_base_fraction`, which is the
+/// computed off the UNCHARGED base. Every number is the wiki data module's,
+/// except `co_base_fraction`, which is the
 /// CO catalog's own column.
 #[test]
 fn cernos_prime_loads_as_a_charged_bow() {

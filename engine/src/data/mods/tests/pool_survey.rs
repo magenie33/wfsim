@@ -95,8 +95,8 @@ fn the_pool_mods_we_still_owe_only_goes_down() {
 /// and in the pool at once, and nothing would say so.
 ///
 /// The bug this was written for is `Primed Electrified Barrel`: DE built
-/// the card, never shipped it, WFCD's export carries it with `introduced:
-/// TBA`, the survey listed it as a gap, and it was transcribed. The wiki
+/// the card, never shipped it, DE's export carries it like any other card,
+/// the survey listed it as a gap, and it was transcribed. The wiki
 /// has no page for it. It sat in the archgun pool and on three boards.
 #[test]
 fn no_mod_the_survey_excluded_is_carried() {

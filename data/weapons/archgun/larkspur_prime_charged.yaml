@@ -97,7 +97,8 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Larkspur_Prime
-  # note: WFCD lists the two parts separately as "Alt-Fire Projectile Impact"
-  # (charge_time 0.5, shot_speed 100) and "Explosion" (AoE, falloff
-  # {start 0, end 9.6, reduction 0.6}); the wiki page states the same numbers
-  # and the 9.6 m range.
+  # note: the wiki module (private/scripts/wiki_weapons.py) lists the two
+  # parts separately as "Alt-Fire Projectile Impact" (charge_time 0.5,
+  # shot_speed 100) and "Explosion" (AoE, falloff {start 0, end 9.6,
+  # reduction 0.6}); the wiki page states the same numbers and the 9.6 m
+  # range.

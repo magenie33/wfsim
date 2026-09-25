@@ -48,5 +48,5 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Harkonar_Scope
   # Rank table (+2s..+12s, cost 4-9), Notes and Patch History, read 2026-08-23.
-  # WFCD cross-check on `uniqueName`: naramon, Uncommon, baseDrain 4,
+  # DE's Public Export, keyed by `uniqueName`: naramon, Uncommon, baseDrain 4,
   # fusionLimit 5, compatName Sniper — agrees on every field.

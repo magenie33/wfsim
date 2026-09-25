@@ -14,8 +14,7 @@ grip_type: GUN_ONE_HAND
 mastery_rank: 8
 max_rank: 30
 
-# Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# Weapon-level metadata (wiki `Module:Weapons/data/secondary`).
 accuracy: 100                # "Pinpoint accuracy" — the page's own advantage
 disposition: 1.2             # riven disposition
 polarities: []               # no innate main polarities in either source

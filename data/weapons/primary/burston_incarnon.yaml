@@ -156,6 +156,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis
-  # Attack stats cross-checked wiki Module:Weapons/data/primary ("Burston",
-  # attack 2 "Incarnon Form" and attack 3 "Incarnon Form Radial Attack") ==
-  # WFCD warframe-items, joined on internal name.
+  # Attack stats from wiki Module:Weapons/data/primary ("Burston", attack 2
+  # "Incarnon Form" and attack 3 "Incarnon Form Radial Attack").

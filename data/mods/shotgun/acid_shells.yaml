@@ -9,7 +9,8 @@ internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/ProjectNightwatch/SobekNightwa
 description: "Enemies explode on death, dealing X Corrosive Damage (+X% Enemy Max Health) in a Xm radius."
 
 # A WEAPON AUGMENT for the SOBEK and the KUVA SOBEK — "exclusive to the Sobek
-# and Kuva Sobek", and WFCD's compatName says `Sobek` from the other side.
+# and Kuva Sobek", and DE's Public Export's compatName says `Sobek` from the
+# other side.
 exclusive_to: [sobek, kuva_sobek]
 
 # THE RANK TABLE:
@@ -86,6 +87,6 @@ effects:
 
 source:
   url: https://wiki.warframe.com/w/Acid_Shells
-  # Rank table, Notes and Tips, read 2026-08-23. WFCD cross-check on
+  # Rank table, Notes and Tips, read 2026-08-23. DE's Public Export, keyed by
   # `uniqueName`: madurai, Uncommon, baseDrain 4, fusionLimit 5, compatName
   # Sobek — agrees on every field.

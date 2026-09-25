@@ -1,8 +1,8 @@
 id: demolisher_devourer
 name: Demolisher Devourer
 # Portrait, hosted on the WIKI — enemy art is declared here rather than in
-# data/assets.yaml (WFCD has no usable enemy images); scripts/fetch_images.py
-# pulls it through Special:FilePath.
+# data/assets.yaml (enemies are not in DE's Public Export at all);
+# scripts/fetch_images.py pulls it through Special:FilePath.
 image: DemolisherDevourer.png
 faction: grineer
 scaling_faction: grineer

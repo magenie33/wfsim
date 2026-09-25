@@ -1591,10 +1591,11 @@ ui:
 # [regex, replacement, flags] (default flags: gi).
   # --- Rivens (裂罅) ------------------------------------------------------
   # DE's own word: the CN client calls these "步枪裂罅 Mod" / "手枪裂罅 Mod"
-  # (WFCD i18n, joined on internal_name), so the noun is 裂罅 and the class
-  # prefixes are its own. Bonus/Malus have no official CN string — they are
-  # the wiki's words for the two halves of a card — so they take the standard
-  # 增益/减益 pair. Every VALUE line localizes through effect_phrases below:
+  # (DE's Public Export in Chinese, joined on internal_name), so the noun is
+  # 裂罅 and the class prefixes are its own. Bonus/Malus have no official CN
+  # string — they are the wiki's words for the two halves of a card — so they
+  # take the standard 增益/减益 pair. Every VALUE line localizes through
+  # effect_phrases below:
   # "+150% Critical Chance" reads the same on a riven as on Point Strike.
   "Rivens": 裂罅
   "Riven": 裂罅
@@ -1634,8 +1635,9 @@ ui:
   "board": "榜单"
   # THE KITGUN FAMILY, off the CN wiki's own page (`组合枪`, reached through its
   # MediaWiki API — DATA_SOURCES §"The CN wiki is reachable through its API").
-  # WFCD carries the PART names in Chinese (Haymaker is 重拳) and none of the
-  # category words, so this is the same path the evolution strings came down.
+  # DE's own export carries the PART names in Chinese (Haymaker is 重拳) and
+  # none of the category words, so this is the same path the evolution
+  # strings came down.
   #
   # It was 组装枪 for a day, with no source behind it — the CN wiki's article
   # says 组合枪 in its title and in every sentence of its body, and a name that

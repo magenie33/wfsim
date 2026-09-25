@@ -1,8 +1,8 @@
 id: techrot_babau
 name: Techrot Babau
 # Portrait, hosted on the WIKI — enemy art is declared here rather than in
-# data/assets.yaml (WFCD has no usable enemy images); scripts/fetch_images.py
-# pulls it through Special:FilePath.
+# data/assets.yaml (enemies are not in DE's Public Export at all);
+# scripts/fetch_images.py pulls it through Special:FilePath.
 #
 # THE FILE IS NAMED FOR THE UNIT'S INTERNAL NAME, not its display name:
 # `TechrotBabau.png` does not exist and `Babau.png` does not either. Every sound

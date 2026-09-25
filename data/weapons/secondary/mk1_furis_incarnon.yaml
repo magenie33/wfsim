@@ -83,7 +83,7 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis
-  # Attack stats cross-checked against WFCD warframe-items (attack "Incarnon
-  # Form" on /Lotus/Weapons/MK1Series/MK1Furis): speed 12, crit 20%, 3.0x,
-  # status 8%, Heat 60 — all agree except the falloff.
+  # Attack stats: wiki module Attacks[] "Incarnon Form" entry on
+  # /Lotus/Weapons/MK1Series/MK1Furis — speed 12, crit 20%, 3.0x, status 8%,
+  # Heat 60; falloff per the module (see furis_incarnon.yaml).
 

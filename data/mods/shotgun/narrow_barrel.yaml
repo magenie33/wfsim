@@ -11,7 +11,7 @@ description: "On Hit:\n+X% Accuracy when Aiming for Xs"
 effects:
   # CONDITIONAL — accuracy, on hit, while aiming. Not a damage stat and the
   # arena has no spread, so it lands in the indirect bucket; written with its
-  # real trigger so the card's window survives (WFCD levelStats: 2s -> 9s).
+  # real trigger so the card's window survives (the wiki's rank table: 1.5s -> 9s).
   - kind: buff
     trigger: hit
     condition: aiming

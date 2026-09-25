@@ -22,18 +22,18 @@ effects:
   #
   # Still INERT here, but for a stated reason rather than by dismissal: the
   # arena is single-target at a fixed engagement, so it models neither travel
-  # time nor range. And the number is not even derivable — NEITHER source gives
-  # the Torid's projectile lifetime (the wiki page and WFCD both stop at
-  # shot_speed 40), so the new max range cannot be computed from data.
+  # time nor range. And the number is not even derivable — no source gives
+  # the Torid's projectile lifetime (the wiki page stops at shot_speed 40), so
+  # the new max range cannot be computed from data.
   #
   # THE NUMBER COUNTS. Projectile speed has an indirect bucket, the same one
   # the mods feed, so the value reaches the panel like any other
   # handling stat.
   #
   # What is still NOT derived is the RANGE it buys: max range = speed x
-  # lifetime, and neither source gives the Torid's projectile lifetime (both
-  # stop at shot_speed 40). The arena is single-target at a fixed engagement
-  # anyway, so it models neither travel time nor range.
+  # lifetime, and no source gives the Torid's projectile lifetime (the wiki
+  # page stops at shot_speed 40). The arena is single-target at a fixed
+  # engagement anyway, so it models neither travel time nor range.
   - kind: projectile_speed_bonus
     value: 0.50
 

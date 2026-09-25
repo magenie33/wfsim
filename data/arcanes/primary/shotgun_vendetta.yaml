@@ -46,6 +46,6 @@ effects:
 
 source:
   url: https://wiki.warframe.com/w/Shotgun_Vendetta
-  # Wiki module (Type Shotgun, Rarity Rare, MaxRank 5) cross-checked against
-  # WFCD levelStats: rank 0 "+30% Multishot and +12.5% Reload Speed for 15s",
-  # rank 5 "+180% Multishot and +75% Reload Speed for 15s". Both agree.
+  # Wiki module (Type Shotgun, Rarity Rare, MaxRank 5); rank table: rank 0
+  # "+30% Multishot and +12.5% Reload Speed for 15s", rank 5 "+180% Multishot
+  # and +75% Reload Speed for 15s".

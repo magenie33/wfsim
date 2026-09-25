@@ -50,10 +50,9 @@ mod_pools: [archgun]
 mastery_rank: 8
 max_rank: 30
 
-# Weapon-level metadata (wiki Larkspur_Prime cross-checked against WFCD
-# warframe-items, joined on internal name — they agree on every number).
+# Weapon-level metadata from wiki Larkspur_Prime.
 accuracy: 8.33               # the page prints "Low" for this number
-disposition: 0.80            # riven disposition (●●○○○), WFCD omegaAttenuation
+disposition: 0.80            # riven disposition (●●○○○)
 polarities: [madurai, madurai, madurai]
 riven_family: Larkspur
 traits: [prime, vaulted]
@@ -152,8 +151,7 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Larkspur_Prime
-  # note: every number cross-checked wiki page == WFCD warframe-items
-  # (joined on internal name). They agree on both attacks, the explosion and
-  # its falloff, the polarities, disposition, mastery, magazine and the two
-  # reload columns. The Arch-Gun deployment rules (Ammo Max by mode, the
+  # note: every number here is the wiki page's — both attacks, the explosion
+  # and its falloff, the polarities, disposition, mastery, magazine and the
+  # two reload columns. The Arch-Gun deployment rules (Ammo Max by mode, the
   # five-minute cooldown, the two arcane slots) are from wiki Arch-Gun.

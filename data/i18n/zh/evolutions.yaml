@@ -2,14 +2,11 @@
 #
 # WHY THIS FILE EXISTS SEPARATELY. Every other card in the app takes DE's own
 # localized string from their export (descriptions.yaml). Evolutions cannot:
-# they are not items, so they appear in NEITHER source we normally use —
-# checked, not assumed:
-#   - WFCD warframe-items: no entity at all (the only hit for "Devouring
-#     Attrition" across every export file is a Laetum PATCHLOG line);
-#   - DE's own PublicExport (`index_zh.txt.lzma` → 16 files): ExportUpgrades
-#     is mods and arcanes; the only "灵化" in ExportWeapons is weapon flavour
-#     text. The evolution strings live in the client's localization tables,
-#     which are not exported.
+# they are not items, so they do not appear in the source we normally use —
+# checked, not assumed. DE's own PublicExport (`index_zh.txt.lzma` → 16
+# files): ExportUpgrades is mods and arcanes; the only "灵化" in ExportWeapons
+# is weapon flavour text. The evolution strings live in the client's
+# localization tables, which are not exported.
 #
 # HOW TO READ IT. The wiki's PAGES sit behind a Cloudflare
 # challenge that neither curl nor a fetch tool can pass — every `?action=raw`

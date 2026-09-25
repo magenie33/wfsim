@@ -3,7 +3,7 @@ name: Verglas Prime
 # SENTINEL WEAPON (the default weapon of Nautilus Prime). Its own equipment
 # slot: it is not a Primary, it sits on the companion — but it draws from the
 # RIFLE mod pool, which is what actually decides what fits (wiki: Mod Pool =
-# Rifle Mods; WFCD productCategory = SentinelWeapons).
+# Rifle Mods; DE's Public Export productCategory = SentinelWeapons).
 slot: sentinel
 class: sentinel_weapon         # the "sentinel" in the class is what gates the
 # One form, and it is a real registration rather than an absence: a beam
@@ -24,10 +24,10 @@ max_rank: 30
 # from `class` containing "sentinel", so there is nothing to declare here —
 # recorded so the ABSENCE of `exilus_polarity` reads as a fact, not an omission.
 
-# Weapon-level metadata (wiki cross-checked against WFCD).
+# Weapon-level metadata (wiki page).
 accuracy: 100                  # hit-scan; the wiki page prints N/A for that
 disposition: 1.3               # riven disposition (●●●●○)
-polarities: [naramon]          # one innate Naramon (both sources agree)
+polarities: [naramon]          # one innate Naramon
 riven_family: Verglas
 traits: [prime]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle

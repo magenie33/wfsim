@@ -13,16 +13,14 @@ grip_type: ""                # the data module records an empty GripType
 mastery_rank: 2
 max_rank: 30
 
-# Weapon-level metadata (wiki `Module:Weapons/data/primary` cross-checked
-# against the committed WFCD export, joined on internal name).
+# Weapon-level metadata (wiki `Module:Weapons/data/primary`).
 
 accuracy: 5                  # the page prints "Very Low" for this number
 disposition: 1.45            # riven disposition (●●●●●) — HIGHER than the
                              # Prime's 1.34, which is the usual shape: the
                              # weaker weapon gets the bigger riven
 polarities: []               # no innate main polarities (no `Polarities` key
-                             # in the module's block, none in WFCD) — the same
-                             # as the Prime
+                             # in the module's block) — the same as the Prime
 exilus_polarity: madurai
 riven_family: Boar           # module `Family` — SHARED with the Boar Prime, so
                              # one riven fits both

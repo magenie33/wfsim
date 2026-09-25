@@ -20,7 +20,7 @@ effects:
     applies: cold
     rank0: 1
     rankMax: 3
-    ranks: [1, 1, 2, 2, 3, 3]   # NON-LINEAR stack count (warframestat)
+    ranks: [1, 1, 2, 2, 3, 3]   # NON-LINEAR stack count (wiki rank table)
     radius_rank0: 10
     radius_rankMax: 15
 

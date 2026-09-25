@@ -142,6 +142,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Phantasma
   # Attack stats from the wiki `Module:Weapons/data/primary` ("Phantasma
-  # Prime", attacks 2 "Plasma Bomb Impact" and 3 "Plasma Bomb Explosion"),
-  # cross-checked against WFCD warframe-items joined on internal name — 0
-  # disagreements. Attacks 4 and 5 are the bomblets, recorded above.
+  # Prime", attacks 2 "Plasma Bomb Impact" and 3 "Plasma Bomb Explosion").
+  # Attacks 4 and 5 are the bomblets, recorded above.

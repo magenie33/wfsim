@@ -44,8 +44,8 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Scattered_Justice
   # Rank table and Notes; the Justice effect's own numbers from
-  # https://wiki.warframe.com/w/Justice. WFCD cross-check on `uniqueName`:
-  # madurai, Rare, baseDrain 4, fusionLimit 3, compatName Hek — agrees on every
-  # field. Its `levelStats` round the Justice ladder to 0.3 / 0.5 / 0.8 / 1
-  # where the rank table is the linear 0.25 / 0.5 / 0.75 / 1; the table is the
-  # number.
+  # https://wiki.warframe.com/w/Justice. DE's Public Export, keyed by
+  # `uniqueName`: madurai, Rare, baseDrain 4, fusionLimit 3, compatName Hek —
+  # agrees on every field. Its `levelStats` round the Justice ladder to
+  # 0.3 / 0.5 / 0.8 / 1 where the rank table is the linear 0.25 / 0.5 / 0.75 /
+  # 1; the table is the number.

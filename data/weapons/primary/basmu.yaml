@@ -11,9 +11,10 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, P
 mastery_rank: 11
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items, which DISAGREES on one field:
-# WFCD carries the PARTIAL reload, this is the wiki's full one. The wiki wins (data/README.md), and
+# Weapon-level metadata (wiki Module:Weapons/data/primary). The reload below
+# is the wiki's FULL reload, not the PARTIAL one the page also states — "a 2
+# second reload animation from empty… if there are still rounds left, there
+# is a delay of 0.x" — and this sim always empties the magazine.
 # `scripts/audit_weapon_stats.py` carries the divergence with its reason
 # so it cannot be mistaken for a transcription error.
 accuracy: 20.0

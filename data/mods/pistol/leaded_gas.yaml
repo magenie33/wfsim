@@ -8,8 +8,8 @@ internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveLasSilencedPistolAugmentM
 description: "On Weak Point Hit:\n+X% Gas Damage and Status Chance for Xs"
 
 # A WEAPON AUGMENT for the VESPER 77 (Nightwave Cred Offerings, 20 Creds;
-# originally Rank 13 of Nora's Mix Volume 8). WFCD's `compatName` is the same
-# weapon, which is what this gate is transcribed from.
+# originally Rank 13 of Nora's Mix Volume 8). DE's Public Export's
+# `compatName` is the same weapon, which is what this gate is transcribed from.
 exclusive_to: [vesper_77]
 
 #   Rank | Gas damage & status chance | Duration | Cost
@@ -55,5 +55,6 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Leaded_Gas
   # Rank table (bonus and duration) from the wiki, read 2026-09-21. Rarity,
-  # polarity, `base_drain` 2 and `max_rank` 5 from WFCD, which is authoritative
-  # for those (AGENTS.md); the wiki's own Cost column agrees with both ends.
+  # polarity, `base_drain` 2 and `max_rank` 5 from DE's Public Export, which is
+  # authoritative for those (AGENTS.md); the wiki's own Cost column agrees
+  # with both ends.
