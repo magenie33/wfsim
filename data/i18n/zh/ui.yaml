@@ -430,6 +430,19 @@ ui:
   "ammo counts": 计算弹药
   "each start improved by the quick calc until nothing helps — the fight is the simulator's": 每个起点用快速计算反复改进，直到再换什么都不涨 —— 战斗用模拟器的
   "Runs per candidate": 每个候选跑几场
+  "none by default — click an option to exclude it; a start that pins an excluded option cannot run, one that only holds it has it replaced": 默认不限制 —— 点选项就排除它；起点钉住了被排除的东西就不能运行，只是装着的会被替换
+  "fill at most": 最多填
+  "mods": 张 mod
+  "fill the exilus": 填 Exilus
+  "fill the seat": 填这个赋能槽
+  "tier {n}": "第 {n} 层"
+  "{x} is excluded": "{x} 已被排除"
+  "{x}: the exilus is left empty": "{x}：Exilus 设为留空"
+  "{x}: the seat is left empty": "{x}：这个赋能槽设为留空"
+  "{x}: more cards than the limit of {n}": "{x}：超过了最多 {n} 张的限制"
+  "pinned, and ruled out by the limits — this start cannot run:": 钉住了、但被限制排除 —— 这个起点不能运行：
+  "ruled out by the limits, so the search replaces:": 被限制排除，搜索会替换：
+  "a start pins what a limit rules out — change the start or the limit": 有起点钉住了被限制排除的东西 —— 请改起点或改限制
   "Excluded mods": 排除的 mod
   "none by default — a card named here, or one rank of it, is never a candidate; arcanes are not listed": 默认不排除任何卡 —— 这里点名的卡（或它的某一个等级）不会作为候选；赋能不在这里
   "exclude a mod": 排除一张卡

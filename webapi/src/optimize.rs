@@ -1335,6 +1335,7 @@ pub fn grade_optimize(
             sims: Default::default(),
             progress: None,
             lead: false,
+            mod_slots: build_size.min(8),
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
         let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, None, 0, 1, space.len());
@@ -1910,6 +1911,7 @@ pub fn run_optimize_resumable(
             sims: Default::default(),
             progress: Some(state),
             lead: fleet.get("lead").is_some(),
+            mod_slots: build_size.min(8),
         };
             // A FLEET WORKER'S SHARE: score these builds and nothing else.
             if let Some(builds) = fleet.get("score").and_then(Value::as_array) {
@@ -2897,28 +2899,39 @@ mod whole_scope_tests {
         assert_eq!(rows(&led), rows(&alone), "after {steps} steps");
     }
 
-    /// AN EXCLUDED CARD IS NEVER A CANDIDATE, at any slot, and an excluded
-    /// RANK leaves the card's other ranks alone.
+    /// A LIMIT IS NEVER CROSSED: an excluded card, arcane or evolution is in no
+    /// answer, an excluded RANK leaves the card's other ranks, a cap of seven
+    /// fills seven slots, and an exilus left empty stays empty.
     #[test]
-    fn an_excluded_card_is_in_no_answer() {
+    fn a_limit_is_in_no_answer() {
         let blank = json!({ "slots": [], "evolutions": [], "arcane": [], "fixed": [] });
-        let req = |exclude: Value| json!({
+        let req = |limits: Value| json!({
             "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
             "duration": 5.0, "runs": 4, "final_runs": 4, "finalists": 1,
-            "candidate_runs": 1, "strategy": "quick", "starts": [blank.clone()], "exclude": exclude,
+            "candidate_runs": 1, "strategy": "quick", "starts": [blank.clone()], "limits": limits,
         });
-        let mods = |out: &Value| -> Vec<String> {
-            out["results"][0]["replay"]["mods"].as_array().unwrap().iter().map(|m| m.as_str().unwrap().to_string()).collect()
-        };
-        let free = run_optimize(parse_optimize(&req(json!([]))).unwrap(), &FunnelState::default(), |_, _| {}, None);
-        let taken = mods(&free);
-        assert!(!taken.is_empty(), "{free}");
-        let gone = taken[0].clone();
-        let out = run_optimize(parse_optimize(&req(json!([gone]))).unwrap(), &FunnelState::default(), |_, _| {}, None);
-        assert!(!mods(&out).contains(&gone), "{gone} was excluded and is in {:?}", mods(&out));
-        let plan = parse_optimize(&req(json!(["hunter_track@2"]))).unwrap();
+        let run = |limits: Value| run_optimize(parse_optimize(&req(limits)).unwrap(), &FunnelState::default(), |_, _| {}, None);
+        let free = run(json!({}));
+        let row = |o: &Value| o["results"][0].clone();
+        let (card, arcane, evo) = (
+            row(&free)["mods"][0].as_str().unwrap().to_string(),
+            row(&free)["arcane"][0].as_str().unwrap().to_string(),
+            row(&free)["evolutions"][1].as_str().unwrap().to_string(),
+        );
+        let out = run(json!({
+            "exclude": { "mods": [card], "arcanes": [arcane], "evolutions": [evo] },
+            "mods": 7, "exilus": false,
+        }));
+        let r = row(&out);
+        let mods: Vec<&str> = r["mods"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
+        assert!(!mods.contains(&card.as_str()), "{card} was excluded: {mods:?}");
+        assert!(r["arcane"].as_array().unwrap().iter().all(|a| a != arcane.as_str()), "{arcane} was excluded: {r}");
+        assert!(r["evolutions"].as_array().unwrap().iter().all(|e| e != evo.as_str()), "{evo} was excluded: {r}");
+        assert_eq!(mods.len(), 7, "a cap of seven: {mods:?}");
+        assert!(r["exilus"].is_null() || r["exilus"] == json!("none"), "the exilus was left empty: {}", r["exilus"]);
+        let plan = parse_optimize(&req(json!({ "exclude": { "mods": ["hunter_track@2"] } }))).unwrap();
         let ids: Vec<&str> = plan.pool.iter().map(|m| m.id).collect();
         assert!(!ids.contains(&"hunter_track@2"), "the excluded rank is still in the pool");
-        assert!(ids.contains(&"hunter_track@1") && ids.contains(&"hunter_track"), "the other ranks left with it: {ids:?}");
+        assert!(ids.contains(&"hunter_track@1") && ids.contains(&"hunter_track"), "the other ranks left with it");
     }
 }

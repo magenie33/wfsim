@@ -320,7 +320,6 @@ function everyRankPanel() {
 /// stays open, so several cards are one visit.
 function openEveryRankPicker(anchor) {
   closePopovers();
-  excludePicking = false;
   const pop = $("rank-popover");
   place(pop, anchor);
   const search = $("rank-search");

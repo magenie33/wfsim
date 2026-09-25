@@ -235,7 +235,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { starts: [], exclude: [] };
+let opt = { starts: [], limits: null };
 // THE START OPEN IN THE BUILDER, or null — `79-start-edit.js`. Declared here,
 // early, because the autosave it suspends can run during boot.
 let startEdit = null;

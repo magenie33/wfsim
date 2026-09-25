@@ -32,13 +32,13 @@ function bootstrapOptPresets() {
 function snapshotOpt() {
   return {
     starts: JSON.parse(JSON.stringify(opt.starts)),
-    exclude: opt.exclude.slice(),
+    limits: JSON.parse(JSON.stringify(opt.limits || normalizeLimits(null))),
     candidate_runs: optRun.candidate_runs,
   };
 }
 
 // A new search: the four default starts, the run settings left alone.
-const blankOpt = () => ({ starts: defaultStarts(), exclude: [],
+const blankOpt = () => ({ starts: defaultStarts(), limits: normalizeLimits(null),
   candidate_runs: optRun.candidate_runs });
 
 // State-only apply (validation + cross-weapon dropping); no re-render.
@@ -49,8 +49,9 @@ function applyOptState(st) {
   optRun.candidate_runs = st.candidate_runs === 1 ? 1 : 10;
   const cr = $("opt-cand-runs");
   if (cr) cr.value = String(optRun.candidate_runs);
-  // Exclusions name THIS weapon's cards; another weapon's do not apply here.
-  opt.exclude = (st.exclude || []).filter((id) => excludedCard(id));
+  // Limits name THIS weapon's options; another weapon's do not apply here. A
+  // search saved with only an excluded-mods list carries it into the limits.
+  opt.limits = normalizeLimits(st.limits || (st.exclude ? { exclude: { mods: st.exclude } } : null));
   // Starts: builds, each a build of THIS weapon — another weapon's start is
   // not a start here, the way another weapon's build is not a build here.
   opt.starts = (st.starts || [])
@@ -77,7 +78,7 @@ function optBarCfg() {
     domain: OPT_DOMAIN,
     label: tr("Searches"),
     noun: "search",
-    hint: "starts, excluded mods and runs per candidate",
+    hint: "starts, limits and runs per candidate",
     load: loadOptPresets,
     store: storeOptPresets,
     active: () => activeOptPreset,
@@ -106,8 +107,14 @@ function updateOptEstimate() {
   $("opt-estimate").innerHTML = escHtml(tr("{n} starts · {r} runs a candidate · final round {f} runs")
     .replace("{n}", n).replace("{r}", optRun.candidate_runs).replace("{f}", finalRuns().toLocaleString()))
     + ` · ${escHtml(tr("vs"))} <b>${escHtml(en.name || sim.enemy)}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.duration} s`;
+  // A START THAT PINS WHAT A LIMIT RULES OUT has no answer to give: the run
+  // waits until one side changes, and says so here.
+  const blocked = opt.limits && startsBlocked();
+  if (blocked) {
+    $("opt-estimate").innerHTML += ` · <span class="warn">${escHtml(tr("a start pins what a limit rules out — change the start or the limit"))}</span>`;
+  }
   // Never re-enable while a background job is still running.
-  $("run-opt").disabled = optJobId != null;
+  $("run-opt").disabled = optJobId != null || !!blocked;
   // Every search mutation funnels through here — AUTO-SAVE into the active
   // preset (debounced), same contract as the build bar.
   optSaveTimer = deferSave("search", () => {
@@ -175,8 +182,8 @@ async function runOptimize() {
       final_runs: finalRuns(), finalists: starts.length,
       strategy: "quick",
       starts, candidate_runs: optRun.candidate_runs,
-      // The cards the player named; the rest of the builder's list is the scope.
-      exclude: opt.exclude,
+      // What the player ruled out; the rest of the builder's lists is the scope.
+      limits: opt.limits,
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {

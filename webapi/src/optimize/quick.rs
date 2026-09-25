@@ -115,6 +115,8 @@ pub(crate) struct QuickCtx<'a> {
     /// Leading the browser fleet: scores come from [`FLEET`], and a miss
     /// pauses the start that asked rather than being simulated here.
     pub(crate) lead: bool,
+    /// How many of the eight main slots a build may fill (`build_size`).
+    pub(crate) mod_slots: usize,
 }
 
 /// Jobs scored between progress updates: small enough that a single-threaded
@@ -246,8 +248,10 @@ impl QuickCtx<'_> {
             let slots = s.get("slots").and_then(Value::as_array).cloned().unwrap_or_default();
             for (i, id) in slots.iter().take(9).enumerate() {
                 let Some(id) = id.as_str() else { continue };
-                if i < 8 {
+                if i < self.mod_slots {
                     b.mods[i] = self.pool.iter().position(|m| m.id == id).filter(|&p| self.usable[p]);
+                } else if i < 8 {
+                    // Past the limit's last slot: the page refuses such a start.
                 } else if let Some(x) = self.exilus_defs.iter().position(|x| x.as_ref().is_some_and(|m| m.id == id)) {
                     b.exilus = x;
                 }
@@ -261,11 +265,16 @@ impl QuickCtx<'_> {
                 Some(a) => b.arcane = a,
                 None => unnamed.extend((0..self.arcane_sets[0].len()).map(|idx| Position { kind: "arcane", idx })),
             }
+            // What the limits exclude is in no set, so a start holding it has
+            // not named that tier: the fill chooses it.
             let evos: Vec<String> = s
                 .get("evolutions")
                 .and_then(Value::as_array)
-                .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
-                .unwrap_or_default();
+                .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect::<Vec<String>>())
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|id| self.evo_sets.iter().any(|set| set.contains(id)))
+                .collect();
             // The set that holds every tier the start names; the tiers it does
             // not name are the fill's.
             if let Some(e) = self.evo_sets.iter().position(|x| evos.iter().all(|id| x.contains(id))) {
@@ -413,7 +422,7 @@ impl QuickSpace for QuickCtx<'_> {
         if self.arcane_sets.len() > 1 {
             out.extend((0..self.arcane_sets[0].len()).map(|idx| Position { kind: "arcane", idx }));
         }
-        out.extend((0..8).map(|idx| Position { kind: "mods", idx }));
+        out.extend((0..self.mod_slots).map(|idx| Position { kind: "mods", idx }));
         if self.exilus_defs.len() > 1 {
             out.push(Position { kind: "mods", idx: 8 });
         }
@@ -421,8 +430,10 @@ impl QuickSpace for QuickCtx<'_> {
     }
 
     fn empty(&self, b: &QBuild) -> Vec<Position> {
-        let mut out: Vec<Position> =
-            (0..8).filter(|&i| b.mods[i].is_none()).map(|idx| Position { kind: "mods", idx }).collect();
+        let mut out: Vec<Position> = (0..self.mod_slots)
+            .filter(|&i| b.mods[i].is_none())
+            .map(|idx| Position { kind: "mods", idx })
+            .collect();
         if self.exilus_defs.len() > 1 && self.exilus_defs[b.exilus].is_none() {
             out.push(Position { kind: "mods", idx: 8 });
         }
@@ -765,8 +776,10 @@ pub(crate) fn run_quick(
 /// card, exilus card, arcane, evolution, mode and element the weapon takes, and
 /// each lower rank the every-rank lists ask for — what `/api/candidates` offers
 /// at each position, so the descent's candidates are the quick calc's — less
-/// the cards the request's `exclude` names, each by its exact id (`card@2` is
-/// that card at rank 2 alone).
+/// what the request's `limits` rule out: an excluded option on any axis (a
+/// card by its exact id, so `card@2` is that card at rank 2 alone; an arcane
+/// at every rank), at most `mods` cards, the exilus or an arcane seat left
+/// empty (docs/OPTIMIZER.md, "Limits").
 /// `None` when the request is not quick or names its own scope (the grader's).
 pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
     if v.get("strategy").and_then(Value::as_str) != Some("quick") || v.get("mods").is_some() {
@@ -790,23 +803,43 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
         }
         ids
     };
-    let exclude: Vec<&str> =
-        v.get("exclude").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+    let limits = v.get("limits").cloned().unwrap_or(Value::Null);
+    let out_of = |axis: &str| -> Vec<String> {
+        limits
+            .get("exclude")
+            .and_then(|e| e.get(axis))
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
+            .unwrap_or_default()
+    };
+    let (no_mods, no_arcanes, no_evos, no_modes, no_valence) =
+        (out_of("mods"), out_of("arcanes"), out_of("evolutions"), out_of("modes"), out_of("valence"));
     let pool = crate::rivens::mod_pool_with_rivens(v, info, &[]);
     let mut mods = serde_json::Map::new();
     let mut exilus = serde_json::Map::new();
     for m in pool.iter().filter(|m| m.stance.is_none()) {
-        for id in ranked(m.id, m.max_rank, &every_mods).into_iter().filter(|id| !exclude.contains(&id.as_str())) {
+        for id in ranked(m.id, m.max_rank, &every_mods).into_iter().filter(|id| !no_mods.contains(id)) {
             mods.insert(id.clone(), json!("search"));
             if m.exilus {
                 exilus.insert(id, json!("search"));
             }
         }
     }
+    // The exilus left empty: its one option is the empty slot.
+    if limits.get("exilus").and_then(Value::as_bool) == Some(false) {
+        exilus = serde_json::Map::from_iter([("none".to_string(), json!("fixed"))]);
+    }
+    let seat_filled = |i: usize| -> bool {
+        limits.get("arcane_seats").and_then(|a| a.get(i)).and_then(Value::as_bool) != Some(false)
+    };
     let mut arcanes = serde_json::Map::new();
-    for seat in &info.arcane_pools {
+    for (i, seat) in info.arcane_pools.iter().enumerate() {
+        if !seat_filled(i) {
+            arcanes.insert(format!("none:{seat}"), json!("fixed"));
+            continue;
+        }
         for a in wfsim_engine::data::arcanes::pool_for_weapon(&info.id, seat) {
-            if a.id != "none" {
+            if a.id != "none" && !no_arcanes.contains(&a.id) {
                 for id in ranked(&a.id, a.max_rank, &every_arcanes) {
                     arcanes.insert(id, json!("search"));
                 }
@@ -816,20 +849,24 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
     let group = crate::registry::evo_group(info);
     let mut evolutions = serde_json::Map::new();
     for t in 1..=wfsim_engine::data::evolutions::tier_count(group) {
-        let ids: Vec<Value> =
-            wfsim_engine::data::evolutions::options(group, t).iter().map(|o| json!(o.id)).collect();
+        let ids: Vec<Value> = wfsim_engine::data::evolutions::options(group, t)
+            .iter()
+            .filter(|o| !no_evos.contains(&o.id))
+            .map(|o| json!(o.id))
+            .collect();
         if !ids.is_empty() {
             evolutions.insert(t.to_string(), json!(ids));
         }
     }
     let modes: serde_json::Map<String, Value> = wfsim_engine::data::weapons::play_modes(&info.id)
         .iter()
-        .filter(|m| m.sustainable)
+        .filter(|m| m.sustainable && !no_modes.iter().any(|x| x == m.id))
         .map(|m| (m.id.to_string(), json!("search")))
         .collect();
     let valence: serde_json::Map<String, Value> = wfsim_engine::data::weapons::valence_of(&info.id)
-        .map(|s| s.elements.iter().map(|e| (e.to_string(), json!("search"))).collect())
+        .map(|s| s.elements.iter().filter(|e| !no_valence.iter().any(|x| x == *e)).map(|e| (e.to_string(), json!("search"))).collect())
         .unwrap_or_default();
+    let most = limits.get("mods").and_then(Value::as_u64).unwrap_or(8).min(8);
     let mut out = v.clone();
     let o = out.as_object_mut()?;
     o.insert("mods".into(), Value::Object(mods));
@@ -842,7 +879,7 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
     if !valence.is_empty() {
         o.insert("valence".into(), Value::Object(valence));
     }
-    o.insert("build_size".into(), json!(8));
+    o.insert("build_size".into(), json!(most));
     o.insert("build_min".into(), json!(0));
     Some(out)
 }

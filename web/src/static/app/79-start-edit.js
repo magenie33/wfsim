@@ -80,7 +80,7 @@ function renderOptStarts() {
         <div class="opt-start-h"><b>${escHtml(tr("Start"))} ${i + 1}</b><span style="flex-grow:1"></span>
         <button type="button" class="ghost-btn small" data-edit="${i}">${escHtml(tr("edit in the builder"))}</button>
         <button type="button" class="ghost-btn small" data-del="${i}" aria-label="${escHtml(tr("remove this start"))}">✕</button></div>
-        ${cardOfState(s.build, w, new Set(s.fixed))}</div>`).join("")
+        ${cardOfState(s.build, w, new Set(s.fixed))}${startConflictHtml(s)}</div>`).join("")
     + `<div class="opt-start-add">`
     + `<button type="button" class="ghost-btn small" id="opt-start-add">${escHtml(tr("+ add the current build as a start"))}</button>`
     + `<button type="button" class="ghost-btn small" id="opt-start-blank">${escHtml(tr("+ a blank start"))}</button>`
@@ -104,6 +104,15 @@ function renderOptStarts() {
     const p = mine[Number(pick.value)];
     if (p) addStart(JSON.parse(JSON.stringify(p.state)));
   });
+}
+
+/// What the limits do to a start, under its card: a pinned conflict in red,
+/// what will be replaced in grey.
+function startConflictHtml(s) {
+  if (!opt.limits) return "";
+  const c = startConflicts(s);
+  return (c.blocked.length ? `<div class="opt-start-clash">${escHtml(tr("pinned, and ruled out by the limits — this start cannot run:"))} ${c.blocked.map(escHtml).join(" · ")}</div>` : "")
+    + (c.replaced.length ? `<div class="opt-start-swap">${escHtml(tr("ruled out by the limits, so the search replaces:"))} ${c.replaced.map(escHtml).join(" · ")}</div>` : "");
 }
 
 /// Open start `i` in the builder.

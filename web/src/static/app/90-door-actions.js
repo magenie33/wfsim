@@ -441,35 +441,66 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.plan.read",
     query: true,
-    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), the mods it may not use (`card@rank` is one rank of a card) and how many fights each candidate gets. The candidates are the quick calc's — every card, arcane and evolution the weapon takes.",
+    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), its limits (what it may not use per axis — `card@rank` is one rank of a card — and how full it fills) and how many fights each candidate gets. Everything the limits leave is a candidate.",
     anchor: "#opt-plan",
     needs_weapon: true,
     args: {},
     run() {
       return {
         starts: opt.starts.map((s) => ({ ...startPayload(s), fixed: s.fixed.slice() })),
-        exclude: opt.exclude.slice(),
+        limits: JSON.parse(JSON.stringify(opt.limits)),
+        blocked: opt.starts.map((s, i) => ({ start: i + 1, ...startConflicts(s) })).filter((x) => x.blocked.length || x.replaced.length),
         candidate_runs: optRun.candidate_runs,
         estimate: $("opt-estimate").textContent.trim(),
       };
     },
   },
   {
-    id: "optimizer.plan.exclude",
+    id: "optimizer.plan.limit",
     writes: "search",
-    what: "Exclude a mod from the search, or take it back: the id as the builder lists it, `card@rank` for one rank of a card on the every-rank list. Nothing is excluded by default; arcanes are not excluded here.",
-    anchor: "#opt-exclude",
+    what: "Exclude an option from the search, or take it back: a mod as the builder lists it (`card@rank` for one rank of an every-rank card), an arcane, an evolution, a mode or a valence element. Nothing is excluded by default; the last mode or element cannot be.",
+    anchor: "#opt-limits",
     needs_weapon: true,
     args: {
-      id: { kind: "string", required: true, what: "the mod id, or card@rank" },
+      axis: { kind: "string", required: true, what: "which axis", enum: () => LIMIT_AXES },
+      id: { kind: "string", required: true, what: "the option's id" },
       excluded: { kind: "boolean", required: true, what: "true excludes it, false takes it back" },
     },
-    run({ id, excluded }) {
-      if (!excludedCard(id) || !excludeOffers("").some((m) => m.id === id)) {
-        return agentNo("not_in_scope", { argument: "id", because: `this weapon's list has no ${id}` });
+    run({ axis, id, excluded }) {
+      const w = weaponInfo($("weapon").value) || {};
+      const known = {
+        mods: () => excludeOffers("").some((m) => m.id === id),
+        arcanes: () => arcaneFitsWeapon(w.id, id),
+        evolutions: () => weaponEvos(w.id).some((t) => t.options.some((o) => o.id === id)),
+        modes: () => (w.modes || []).length > 1 && w.modes.includes(id),
+        valence: () => ((valenceSpec(w.id) || {}).elements || []).includes(id),
+      }[axis];
+      if (!known()) return agentNo("not_in_scope", { argument: "id", because: `this weapon's ${axis} have no ${id}` });
+      if (excluded !== isOut(axis, id)) toggleLimit(axis, id);
+      return { excluded: isOut(axis, id), limits: JSON.parse(JSON.stringify(opt.limits)) };
+    },
+  },
+  {
+    id: "optimizer.plan.fill",
+    writes: "search",
+    what: "Set how full the search fills: at most `mods` cards (0-8), whether the exilus is filled, and whether arcane seat `seat` (0-based) is filled.",
+    anchor: "#opt-limits",
+    needs_weapon: true,
+    args: {
+      mods: { kind: "number", min: 0, max: 8, what: "the most cards a build holds" },
+      exilus: { kind: "boolean", what: "fill the exilus" },
+      seat: { kind: "number", min: 0, max: 3, what: "an arcane seat, with `filled`" },
+      filled: { kind: "boolean", what: "fill that arcane seat" },
+    },
+    run({ mods, exilus, seat, filled }) {
+      if (mods != null) opt.limits.mods = mods;
+      if (exilus != null) opt.limits.exilus = exilus;
+      if (seat != null && filled != null) {
+        if (seat >= opt.limits.arcane_seats.length) return agentNo("bad_argument", { argument: "seat", because: "this weapon has no such seat" });
+        opt.limits.arcane_seats[seat] = filled;
       }
-      setOptExclude(excluded ? [...opt.exclude, id] : opt.exclude.filter((x) => x !== id));
-      return { exclude: opt.exclude.slice() };
+      limitsChanged();
+      return { limits: JSON.parse(JSON.stringify(opt.limits)) };
     },
   },
   {

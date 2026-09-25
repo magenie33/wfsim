@@ -691,17 +691,39 @@ fails at rank 14, 25.5% regret.
 
 Top to bottom: the search preset bar; the run bar (run, runs per candidate
 1 / 10, final-round runs, what the run will do); ① the starts, each
-the simulator's build card, edited in the builder; the EXCLUDED MODS — none by
-default, named by the builder's own rows, so one rank of an every-rank card
-(`card@2`) can go and the others stay, arcanes not listed — sent as `exclude`
-and left out of `whole_scope`; while it runs, a line per start (filling k of n,
+the simulator's build card, edited in the builder; ② the LIMITS (below); while
+it runs, a line per start (filling k of n,
 round r at position k of n, settled) and a bar of settled starts, since how many
 rounds a start takes is found by taking them; ③ the results, one row per
 answer with the starts it came from, a tie with the leader marked, "+ add" and
 "use as a new start"; then the fight, read-only. A search preset saves the
-starts, the excluded mods and the runs per candidate. There is no scope to mark:
+starts, the limits and the runs per candidate. There is no scope to mark:
 what may change is what the quick calc offers, and a pin on a start is the one
 way to keep something.
+
+
+### Limits
+
+What the search may not use, and how full it fills — NOTHING BY DEFAULT. The
+page lists every option of every axis expanded, in the builder's order under
+the builder's own numbers and names (mode, mods with the exilus, arcane,
+evolution tiers, element), and a click excludes one: a mod by the builder's
+rows, so one rank of an every-rank card (`card@2`) can go and the others stay;
+an arcane at every rank; an evolution, a mode, a valence element (never the
+last mode or element). The fill: at most `mods` cards (0–8), the exilus filled
+or left empty, each arcane seat filled or left empty.
+
+The request carries `limits: { exclude: { mods, arcanes, evolutions, modes,
+valence }, mods, exilus, arcane_seats }`; `whole_scope` leaves the excluded
+options out, pins an empty exilus or seat (`none`, `none:<pool>`), and sets
+`build_size`, and the descent sweeps only that many mod slots. A search saved
+with only an excluded-mods list carries it in as `exclude.mods`.
+
+A START AND A LIMIT MAY DISAGREE. What a start PINS and a limit rules out —
+an excluded option, a card past the cap, a filled exilus or seat set to empty —
+blocks the run until one side changes; the start card says which, in red. What
+a start only HOLDS is replaced: the search treats that position as unnamed and
+fills it. `a_limit_is_in_no_answer` is the guard.
 
 ## One mod row
 

@@ -29,12 +29,13 @@ function renderOpt() {
   // A weapon's first visit: the four default starts, then the active preset.
   if (!optSeeded) {
     opt.starts = defaultStarts();
+    opt.limits = normalizeLimits(null);
     optSeeded = true;
     bootstrapOptPresets();
   }
   renderOptPresetBars();
   renderOptStarts();
-  renderOptExclude();
+  renderOptLimits();
   renderOptFight();
   updateOptEstimate();
 }
@@ -56,12 +57,36 @@ function renderOptFight() {
   }
 }
 
-// ---- The mods the search may not use -------------------------------------
+// ---- ② THE LIMITS: what the search may not use, and how full it fills ----
 //
-// NOTHING BY DEFAULT: every card the builder's list holds is a candidate, and
-// the player names what is not — by the builder's own rows, so a card on the
-// every-rank list can be excluded at ONE rank (`card@2`) and keep the others.
-// Arcanes are not listed here. Saved in the search preset.
+// NOTHING BY DEFAULT. Every option of every axis is a candidate until the
+// player excludes it, in the builder's order under the builder's own numbers
+// and names — a mod by the builder's rows, so a card on the every-rank list can
+// go at ONE rank (`card@2`); an arcane at every rank. The fill: at most `mods`
+// cards, the exilus and each arcane seat filled or left empty. Saved in the
+// search preset; a start that pins something a limit rules out cannot run.
+// docs/OPTIMIZER.md, "Limits".
+
+const LIMIT_AXES = ["mods", "arcanes", "evolutions", "modes", "valence"];
+const blankLimits = () => ({ exclude: Object.fromEntries(LIMIT_AXES.map((k) => [k, []])),
+  mods: 8, exilus: true, arcane_seats: [] });
+
+/// A stored limits object, cleaned against THIS weapon: what it cannot hold drops.
+function normalizeLimits(l) {
+  const out = blankLimits();
+  const w = weaponInfo($("weapon").value) || {};
+  const ex = (l && l.exclude) || {};
+  out.exclude.mods = (ex.mods || []).filter((id) => excludedCard(id));
+  out.exclude.arcanes = (ex.arcanes || []).filter((id) => arcaneFitsWeapon(w.id, id));
+  const evoIds = new Set(weaponEvos(w.id).flatMap((t) => t.options.map((o) => o.id)));
+  out.exclude.evolutions = (ex.evolutions || []).filter((id) => evoIds.has(id));
+  out.exclude.modes = (ex.modes || []).filter((id) => (w.modes || []).includes(id));
+  out.exclude.valence = (ex.valence || []).filter((e) => ((valenceSpec(w.id) || {}).elements || []).includes(e));
+  out.mods = Math.max(0, Math.min(8, l && l.mods != null ? l.mods : 8));
+  out.exilus = !(l && l.exilus === false);
+  out.arcane_seats = (w.arcane_pools || []).map((_, i) => !(l && (l.arcane_seats || [])[i] === false));
+  return out;
+}
 
 /// The builder's list for this weapon: every card, and a row per rank for the
 /// cards on the every-rank list.
@@ -79,68 +104,134 @@ function excludedCard(id) {
   return m && (rank == null ? m : { ...m, id, card, rank });
 }
 
-const excludeRow = (m, extra = {}) => modRow(m, {
-  rank: m.card ? m.rank : m.max_rank,
-  attrs: `data-id="${m.id}"`,
-  ...extra,
-  chips: `${m.card ? ` <span class="rkchip">R${m.rank}</span>` : ""}${extra.chips || ""}`,
-});
+const isOut = (axis, id) => opt.limits.exclude[axis].includes(id);
+const outChip = () => ` <span class="slotchip cur">${escHtml(tr("excluded"))}</span>`;
 
-function renderOptExclude() {
-  const box = $("opt-exclude");
+/// Every axis's section heading is the builder block's own number and name.
+function limitHead(blockId, fallback) {
+  const b = $(blockId);
+  const n = b && b.querySelector(".bh .n"), h2 = b && b.querySelector(".bh h2");
+  return `<h4 class="sim-h">${n && h2 ? `${escHtml(n.textContent.trim())} · ${escHtml(h2.textContent.trim())}` : escHtml(tr(fallback))}</h4>`;
+}
+
+const plainRow = (axis, id, label, extra = "") => `<div class="opt ${isOut(axis, id) ? "cur opt-out" : ""}" data-axis="${axis}" data-id="${escHtml(id)}">`
+  + `<div class="info"><div class="mn">${escHtml(label)}${isOut(axis, id) ? outChip() : ""}${extra}</div></div></div>`;
+
+function renderOptLimits() {
+  const box = $("opt-limits");
   if (!box || !META) return;
-  const cards = opt.exclude.map(excludedCard).filter(Boolean);
-  box.innerHTML = `<h4 class="sim-h">${escHtml(tr("Excluded mods"))} <span class="sim-hint">${escHtml(tr(
-    "none by default — a card named here, or one rank of it, is never a candidate; arcanes are not listed"))}</span></h4>`
-    + (cards.length ? `<div class="combo-menu pc-rank-list">${cards.map((m) => excludeRow(m, {
-      trailing: `<button class="rk-x" data-x="${escHtml(m.id)}" title="${escHtml(tr("remove"))}">×</button>`,
-    })).join("")}</div>` : "")
-    + `<div class="opt-start-add"><button type="button" class="ghost-btn small" id="opt-exclude-add">+ ${escHtml(tr("exclude a mod"))}</button>`
-    + (cards.length ? `<button type="button" class="ghost-btn small" id="opt-exclude-clear">${escHtml(tr("exclude nothing"))}</button>` : "")
-    + `</div>`;
-  box.querySelectorAll(".rk-x").forEach((b) => b.addEventListener("click", () => setOptExclude(opt.exclude.filter((x) => x !== b.dataset.x))));
-  $("opt-exclude-add").addEventListener("click", (e) => openExcludePicker(e.currentTarget));
-  const clear = $("opt-exclude-clear");
-  if (clear) clear.addEventListener("click", () => setOptExclude([]));
-}
-
-function setOptExclude(list) {
-  opt.exclude = [...new Set(list)];
-  renderOptExclude();
-  updateOptEstimate();
-  if (!$("rank-popover").hidden && excludePicking) renderExcludeMenu($("rank-search").value);
-}
-
-/// The picker is the every-rank list's popover: a click toggles and it stays
-/// open, so several cards are one visit.
-let excludePicking = false;
-function openExcludePicker(anchor) {
-  closePopovers();
-  excludePicking = true;
-  const pop = $("rank-popover");
-  place(pop, anchor);
-  const search = $("rank-search");
-  search.value = "";
-  search.oninput = () => renderExcludeMenu(search.value);
-  renderExcludeMenu("");
-  search.focus();
-}
-
-function renderExcludeMenu(query) {
-  const menu = $("rank-menu");
-  const q = query.trim().toLowerCase();
-  const hits = excludeOffers(q);
-  const on = (m) => opt.exclude.includes(m.id);
-  menu.innerHTML = hits.length
-    ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), (m) => excludeRow(m, {
-      cls: on(m) ? "cur" : "",
-      chips: on(m) ? ` <span class="slotchip cur">${escHtml(tr("excluded"))}</span>` : "",
-    }))
-    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
-  menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", (e) => {
-    e.stopPropagation();
+  const w = weaponInfo($("weapon").value) || {};
+  const AX = weaponAxes(w.id);
+  const L = opt.limits;
+  const q = (($("opt-limit-filter") || {}).value || "").trim().toLowerCase();
+  const toggle = (on, key, label) => `<label class="check"><input type="checkbox" data-fill="${key}"${on ? " checked" : ""}> ${escHtml(label)}</label>`;
+  let html = `<h4 class="sim-h">② ${escHtml(tr("Limits"))} <span class="sim-hint">${escHtml(tr(
+    "none by default — click an option to exclude it; a start that pins an excluded option cannot run, one that only holds it has it replaced"))}</span></h4>`;
+  if ((w.modes || []).length > 1) {
+    html += limitHead("mode-block", "Mode") + `<div class="combo-menu opt-limit-list">${
+      w.modes.map((id) => plainRow("modes", id, modeLabel(w, id))).join("")}</div>`;
+  }
+  html += limitHead("mod-block", "Mods")
+    + `<div class="opt-limit-fill"><label>${escHtml(tr("fill at most"))} <select data-fill="mods">${
+      [8, 7, 6, 5, 4, 3, 2, 1, 0].map((n) => `<option value="${n}"${n === L.mods ? " selected" : ""}>${n}</option>`).join("")}</select> ${escHtml(tr("mods"))}</label>`
+    + (AX.hasExilus ? toggle(L.exilus, "exilus", tr("fill the exilus")) : "") + `</div>`
+    + `<input id="opt-limit-filter" type="text" placeholder="${escHtml(tr("search mods by name or effect…"))}" value="${escHtml(q)}" autocomplete="off">`
+    + `<div class="combo-menu opt-limit-list" id="opt-limit-mods">${sectionedRows(excludeOffers(q), (m) => (m.riven ? "Riven" : "Mods"),
+      (m) => modRow(m, { rank: m.card ? m.rank : m.max_rank, attrs: `data-axis="mods" data-id="${m.id}"`,
+        cls: isOut("mods", m.id) ? "cur opt-out" : "",
+        chips: `${m.card ? ` <span class="rkchip">R${m.rank}</span>` : ""}${isOut("mods", m.id) ? outChip() : ""}` }))}</div>`;
+  if (AX.arcanes.length) {
+    const arcs = [...new Map(AX.arcanes.flatMap((s) => s.options).filter((a) => a.id !== "none").map((a) => [a.id, a])).values()];
+    html += limitHead("arcane-block", "Arcane") + `<div class="opt-limit-fill">${
+      AX.arcanes.map((s, i) => toggle(L.arcane_seats[i] !== false, `arcane:${i}`,
+        AX.arcanes.length > 1 ? `${tr("fill the seat")} ${tr(s.pool)}` : tr("fill the seat"))).join("")}</div>`
+      + `<div class="combo-menu opt-limit-list">${arcs.map((a) => arcaneRow(a, { attrs: `data-axis="arcanes"`,
+        cls: isOut("arcanes", a.id) ? "cur opt-out" : "", chips: isOut("arcanes", a.id) ? outChip() : "" })).join("")}</div>`;
+  }
+  if (AX.evolutions.length) {
+    html += limitHead("evo-block", "Evolution") + AX.evolutions.map((t) =>
+      `<div class="opt-limit-tier">${escHtml(tr("tier {n}").replace("{n}", t.tier))}</div><div class="combo-menu opt-limit-list">${
+        t.options.map((o) => plainRow("evolutions", o.id, o.name)).join("")}</div>`).join("");
+  }
+  const vs = valenceSpec(w.id);
+  if (vs) {
+    html += limitHead("element-block", "Valence") + `<div class="combo-menu opt-limit-list">${
+      vs.elements.map((e) => plainRow("valence", e, DT(e))).join("")}</div>`;
+  }
+  box.innerHTML = html;
+  box.querySelectorAll(".opt[data-axis]").forEach((o) => o.addEventListener("click", (e) => {
     if (e.target.closest("a")) return;
-    const id = o.dataset.id;
-    setOptExclude(opt.exclude.includes(id) ? opt.exclude.filter((x) => x !== id) : [...opt.exclude, id]);
+    toggleLimit(o.dataset.axis, o.dataset.id);
   }));
+  box.querySelectorAll("[data-fill]").forEach((el) => el.addEventListener("change", () => {
+    const k = el.dataset.fill;
+    if (k === "mods") opt.limits.mods = Number(el.value);
+    else if (k === "exilus") opt.limits.exilus = el.checked;
+    else opt.limits.arcane_seats[Number(k.split(":")[1])] = el.checked;
+    limitsChanged();
+  }));
+  const f = $("opt-limit-filter");
+  f.addEventListener("input", () => {
+    const at = f.selectionStart;
+    renderOptLimits();
+    const g = $("opt-limit-filter");
+    g.focus(); g.setSelectionRange(at, at);
+  });
 }
+
+/// Exclude an option or take it back. An axis that would be left with nothing
+/// — the last mode, the last element — keeps it.
+function toggleLimit(axis, id) {
+  const list = opt.limits.exclude[axis];
+  if (list.includes(id)) opt.limits.exclude[axis] = list.filter((x) => x !== id);
+  else {
+    const w = weaponInfo($("weapon").value) || {};
+    const all = axis === "modes" ? (w.modes || []) : axis === "valence" ? ((valenceSpec(w.id) || {}).elements || []) : null;
+    if (all && all.filter((x) => !list.includes(x)).length <= 1) return;
+    opt.limits.exclude[axis] = [...list, id];
+  }
+  limitsChanged();
+}
+
+function limitsChanged() {
+  renderOptLimits();
+  renderOptStarts();
+  updateOptEstimate();
+}
+
+/// WHAT A LIMIT DOES TO A START: a position the start PINS that a limit rules
+/// out blocks the run (`blocked`); one it only holds is replaced (`replaced`).
+function startConflicts(s) {
+  const L = opt.limits, b = s.build || {};
+  const pinned = (k) => (s.fixed || []).includes(k);
+  const out = { blocked: [], replaced: [] };
+  const note = (k, text) => (pinned(k) ? out.blocked : out.replaced).push(text);
+  (b.slots || []).forEach((x, i) => {
+    if (!x || !x.mod || i === STANCE) return;
+    const id = rankedId(x.mod, x.rank);
+    const name = ((modById(x.mod) || {}).name || x.mod) + (id.includes("@") ? ` R${x.rank}` : "");
+    if (i === EXILUS) {
+      if (!L.exilus) note("mods:8", tr("{x}: the exilus is left empty").replace("{x}", name));
+      else if (isOut("mods", id)) note("mods:8", tr("{x} is excluded").replace("{x}", name));
+      return;
+    }
+    if (i >= L.mods) out.blocked.push(tr("{x}: more cards than the limit of {n}").replace("{x}", name).replace("{n}", L.mods));
+    else if (isOut("mods", id)) note("mods:" + i, tr("{x} is excluded").replace("{x}", name));
+  });
+  (b.arcane || []).forEach((a, i) => {
+    if (!a || a === "none") return;
+    const name = (arcaneById(a) || {}).name || a;
+    if (L.arcane_seats[i] === false) note("arcane:" + i, tr("{x}: the seat is left empty").replace("{x}", name));
+    else if (isOut("arcanes", a)) note("arcane:" + i, tr("{x} is excluded").replace("{x}", name));
+  });
+  Object.values(b.evoSel || {}).filter(Boolean).forEach((id) => {
+    if (isOut("evolutions", id)) note("evo:0", tr("{x} is excluded").replace("{x}", evoName(id)));
+  });
+  if (b.mode && isOut("modes", b.mode)) note("mode:0", tr("{x} is excluded").replace("{x}", modeLabel(weaponInfo($("weapon").value) || {}, b.mode)));
+  const el = (b.valence || {}).element;
+  if (el && isOut("valence", el)) note("valence:0", tr("{x} is excluded").replace("{x}", DT(el)));
+  return out;
+}
+
+/// Any start a limit blocks — the run waits until one side changes.
+const startsBlocked = () => opt.starts.some((s) => startConflicts(s).blocked.length);

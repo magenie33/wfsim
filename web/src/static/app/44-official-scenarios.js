@@ -240,7 +240,7 @@ function applyWeaponInner(id, presetMods) {
   // stored that.
   sim.__weapon = id;
   // A weapon's search is its own: `renderOpt` seeds the default starts.
-  opt = { starts: [], exclude: [] }; optSeeded = false;
+  opt = { starts: [], limits: null }; optSeeded = false;
   optLast = null;
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
   // has never been searched must not inherit the last weapon's finalists or
