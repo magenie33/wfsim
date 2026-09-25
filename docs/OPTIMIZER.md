@@ -144,8 +144,8 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
 ┌ THE SEARCH ─────────────────┐   everything in this box but the final-round
 │ preset bar: SEARCH          │   runs is what a search preset saves
 │ run bar: Run · runs per     │
-│   candidate · swap width ·  │
-│   final-round runs          │
+│   candidate · final-round   │
+│   runs                      │
 │ ① starts                    │   each a build card, edited in the builder
 └─────────────────────────────┘
   ③ results                         one row per answer
@@ -159,7 +159,7 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
 
 | what | where it lives | why |
 |---|---|---|
-| the starts, swap width, runs per candidate | the SEARCH preset | decisions about one search |
+| the starts, runs per candidate | the SEARCH preset | decisions about one search |
 | the fight, the player, the buffs | the SCENARIO preset, read here as a card | the winner is scored under the fight the replay runs |
 | the final round's run count | **neither** — `OPT_RUNS_KEY`, a preference | how hard to measure right now is the reader's |
 | how many cores to use | **neither** — the topbar's compute share | one setting for the whole page |
@@ -572,28 +572,13 @@ moves never accepted it fails at rank 440.
 `a_locked_arcane_is_the_only_one_its_start_scores` guard the locks; each fails
 with its lock ignored.
 
-### Swap width — a valley two changes wide
+### One change at a time
 
-A width-1 sweep cannot cross a valley where each change alone loses and both
-together win: a card that pays only under another evolution, two element
-cards traded at once. `"swap_width": n` (1–8, default 1) adds wider moves,
-tried ONLY once width 1 is at a fixed point, one width at a time: every move
-changing exactly `w` positions — `m` mods replaced plus the arcane and/or the
-variant, `m + changes = w`. It is first-improvement in chunks of 1,024, and
-any gain sends the sweep back to width 1. A move of `m` mods costs
-C(held, m)·C(free, m), so the width is the player's to spend. The other
-answer to a valley is a start that already sits on its far side.
-
-| scope | start | width | screen evals | rank | within noise |
-|---|---|---|---|---|---|
-| Verglas Prime, 14 mods | all four elements in one | 1 | 557 | 283 | no (49%) |
-| | | 2 | 2,436 | 1 | yes |
-| | one per element | 2 | 2,736 | 1 | yes |
-| Boar Prime, arcanes × evolutions | one per element | 2 | 1,291 | 3 | yes |
-
-`swap_width_two_leaves_a_start_width_one_cannot` is the guard: it asserts
-width 1 stalls (rank 2, 30% regret) so the fixture still holds the valley,
-and width 2 solves it; with wide moves disabled it fails.
+A move changes ONE position. A valley where each change alone loses and two
+together win is crossed by a START on its far side — a player's own, or a
+default one per element — never by trying every pair: with every card a
+candidate, a pair move is C(8,2)·85² ≈ 200,000 builds a round, hours in a
+browser.
 
 ## The quick descent — the quick calc, repeated
 
@@ -670,8 +655,7 @@ start named alone — judged on a half-empty build, Primed Cryo Rounds lost to
 Hellfire on Burston Prime and the answer lost Viral (74.7 against 166.4). The
 page's default starts name only their card. Every choice is legal, so a build
 is legal from the moment it is full. On that Burston Prime start the fill cut
-the work from 6,569 builds to 1,876 and reached the same build. After width 1
-settles, `swap_width` tries 2, 3, … positions at once.
+the work from 6,569 builds to 1,876 and reached the same build.
 
 ### The answer
 
@@ -685,7 +669,7 @@ settles, `swap_width` tries 2, 3, … positions at once.
 
 ### Measured
 
-`wfsim-truth … strategy=quick` (defaults: 10 runs, width 1), 60 s, Thrax Lv
+`wfsim-truth … strategy=quick` (defaults: 10 runs), 60 s, Thrax Lv
 9999 SP, reference 100 runs:
 
 | scope | rank | regret | within noise | simulated |
@@ -706,11 +690,16 @@ fails at rank 14, 25.5% regret.
 ### The page
 
 Top to bottom: the search preset bar; the run bar (run, runs per candidate
-1 / 10, swap width, final-round runs, what the run will do); ① the starts, each
-the simulator's build card, edited in the builder; ③ the results, one row per
+1 / 10, final-round runs, what the run will do); ① the starts, each
+the simulator's build card, edited in the builder; the EXCLUDED MODS — none by
+default, named by the builder's own rows, so one rank of an every-rank card
+(`card@2`) can go and the others stay, arcanes not listed — sent as `exclude`
+and left out of `whole_scope`; while it runs, a line per start (filling k of n,
+round r at position k of n, settled) and a bar of settled starts, since how many
+rounds a start takes is found by taking them; ③ the results, one row per
 answer with the starts it came from, a tie with the leader marked, "+ add" and
 "use as a new start"; then the fight, read-only. A search preset saves the
-starts, the swap width and the runs per candidate. There is no scope to mark:
+starts, the excluded mods and the runs per candidate. There is no scope to mark:
 what may change is what the quick calc offers, and a pin on a start is the one
 way to keep something.
 

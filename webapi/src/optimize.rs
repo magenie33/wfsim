@@ -257,9 +257,6 @@ pub struct OptimizePlan {
     /// Where the descent begins — [`parse_starts`]. Empty = one start per
     /// primary element.
     starts: Vec<wfsim_optimizer::descent::Start>,
-    /// How many positions the descent may change at once when single
-    /// changes stop paying (`"swap_width"`, 1 = single changes only).
-    swap_width: u32,
     /// Runs per candidate in the quick descent (`"candidate_runs"`). 10 by
     /// default, the quick calc's own count: with ONE answer per start there is
     /// no funnel behind a step to undo a noisy one, and at 1 run a Viral+Heat
@@ -939,7 +936,6 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .min(256) as usize,
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
         strategy: v.get("strategy").and_then(|x| x.as_str()).map(str::to_string),
-        swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
         candidate_runs: v.get("candidate_runs").and_then(|x| x.as_u64()).unwrap_or(10).clamp(1, 1000) as u32,
         fleet: v.get("quick_fleet").cloned().unwrap_or(Value::Null),
         starts,
@@ -1130,7 +1126,6 @@ pub fn grade_optimize(
         threads,
         strategy,
         starts,
-        swap_width,
         candidate_runs,
         arcane_sets,
         replay_base,
@@ -1311,7 +1306,6 @@ pub fn grade_optimize(
         max_evals: search_evals,
         keep: 65_536,
         seed: 0xDEAD_BEEF,
-        swap_width,
         ..Default::default()
     };
     let (screened, sstats) = if strategy.as_deref() == Some("quick") {
@@ -1343,7 +1337,7 @@ pub fn grade_optimize(
             lead: false,
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
-        let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len());
+        let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, None, 0, 1, space.len());
         (sj, stats)
     } else if !walks_whole(strategy.as_deref()) {
         wfsim_optimizer::descent::descent(
@@ -1523,7 +1517,6 @@ pub fn run_optimize_resumable(
         max_evals,
         strategy,
         starts,
-        swap_width,
         candidate_runs,
         fleet,
         shard,
@@ -1885,8 +1878,7 @@ pub fn run_optimize_resumable(
             max_evals,
             keep: SCREEN_KEEP,
             seed: 0xDEAD_BEEF,
-            swap_width,
-            shard,
+                shard,
             shards,
             ..Default::default()
         };
@@ -1929,7 +1921,7 @@ pub fn run_optimize_resumable(
             }
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
             let (sj, stats, report) =
-                quick::run_quick(&ctx, st, max_evals, swap_width, Some(state), shard, shards, space.len());
+                quick::run_quick(&ctx, st, max_evals, Some(state), shard, shards, space.len());
             // THE LEADER'S PAUSE: the builds its starts wait for go back to the page.
             if let Some(p) = ctx.lead.then(quick::QuickCtx::lead_pending).flatten() {
                 return p;
@@ -2903,5 +2895,30 @@ mod whole_scope_tests {
         };
         assert!(steps > 1, "the leader paused {steps} times");
         assert_eq!(rows(&led), rows(&alone), "after {steps} steps");
+    }
+
+    /// AN EXCLUDED CARD IS NEVER A CANDIDATE, at any slot, and an excluded
+    /// RANK leaves the card's other ranks alone.
+    #[test]
+    fn an_excluded_card_is_in_no_answer() {
+        let blank = json!({ "slots": [], "evolutions": [], "arcane": [], "fixed": [] });
+        let req = |exclude: Value| json!({
+            "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
+            "duration": 5.0, "runs": 4, "final_runs": 4, "finalists": 1,
+            "candidate_runs": 1, "strategy": "quick", "starts": [blank.clone()], "exclude": exclude,
+        });
+        let mods = |out: &Value| -> Vec<String> {
+            out["results"][0]["replay"]["mods"].as_array().unwrap().iter().map(|m| m.as_str().unwrap().to_string()).collect()
+        };
+        let free = run_optimize(parse_optimize(&req(json!([]))).unwrap(), &FunnelState::default(), |_, _| {}, None);
+        let taken = mods(&free);
+        assert!(!taken.is_empty(), "{free}");
+        let gone = taken[0].clone();
+        let out = run_optimize(parse_optimize(&req(json!([gone]))).unwrap(), &FunnelState::default(), |_, _| {}, None);
+        assert!(!mods(&out).contains(&gone), "{gone} was excluded and is in {:?}", mods(&out));
+        let plan = parse_optimize(&req(json!(["hunter_track@2"]))).unwrap();
+        let ids: Vec<&str> = plan.pool.iter().map(|m| m.id).collect();
+        assert!(!ids.contains(&"hunter_track@2"), "the excluded rank is still in the pool");
+        assert!(ids.contains(&"hunter_track@1") && ids.contains(&"hunter_track"), "the other ranks left with it: {ids:?}");
     }
 }

@@ -114,10 +114,13 @@ function woptQuickFleet(body, n) {
     cancelled: false, shards: n, t0: Date.now() };
   const done = { builds: 0, fights: 0 };
   const live = new Array(n).fill(null);
+  // Where each start stands, as the leader last reported it.
+  let starts = [];
   const show = () => {
     const cur = live.filter(Boolean);
     job.status = { phase: "searching", round: 0, rounds: 0, round_jobs: 0, round_runs: 0, sims_planned: 0, notes: [],
-      workers: n, enumerated: done.builds + cur.reduce((a, s) => a + (s.enumerated || 0), 0),
+      workers: n, starts,
+      enumerated: done.builds + cur.reduce((a, s) => a + (s.enumerated || 0), 0),
       sims_done: done.fights + cur.reduce((a, s) => a + (s.sims_done || 0), 0) };
   };
   const stop = () => { job.workers.forEach((w) => w && w.terminate()); job.workers = []; };
@@ -147,6 +150,7 @@ function woptQuickFleet(body, n) {
         (p) => { if (p.rounds) job.status = p; });
       if (!r || job.cancelled) return;
       if (!r.pending) { job.result = r; stop(); return; }
+      starts = r.progress || starts;
       const per = Math.ceil(r.pending.length / n);
       const outs = await Promise.all(Array.from({ length: n }, (_, i) => {
         const part = r.pending.slice(i * per, (i + 1) * per);
@@ -159,7 +163,7 @@ function woptQuickFleet(body, n) {
       if (bad) { fail(bad.error || "a worker could not score its share"); return; }
       scores = outs.flatMap((o) => o.scores || []);
       done.builds += scores.length;
-      done.fights += live.reduce((a, s) => a + ((s && s.sims_done) || 0), 0);
+      done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
       live.fill(null);
       show();
     }

@@ -983,7 +983,7 @@
              the second is the simulator's fight, read back as a card. -->
         <div class="opt-half fold sect" id="opt-plan" data-fold="opt-plan">
           <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>the starts and how hard to look — all of it, and only it, is what a search preset saves</span></div>
-          <!-- Search presets, per weapon: the starts, swap width and runs per
+          <!-- Search presets, per weapon: the starts and the runs per
                candidate. Not the fight — the optimizer runs the simulator's. -->
           <div class="preset-bar" id="preset-bar-optimizer"></div>
           <!-- THE RUN BAR. Final runs are the reader's preference and are not
@@ -991,11 +991,11 @@
           <div class="opt-runbar" id="opt-runbar">
             <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
             <label data-i18n>Runs per candidate <select id="opt-cand-runs"><option value="1">1</option><option value="10">10</option></select></label>
-            <label data-i18n>Swap width <input id="opt-swap-width" type="number" min="1" max="4" value="1"></label>
             <div id="opt-runs-block" class="runs-row"></div>
             <div id="opt-estimate" class="opt-est"></div>
           </div>
           <div id="opt-starts"></div>
+          <div id="opt-exclude"></div>
         </div>
 
         <div id="opt-results"></div>

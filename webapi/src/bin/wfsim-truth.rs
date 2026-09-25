@@ -12,7 +12,7 @@
 //!               [finalists=10] [max_jobs=200000] [threads=N]
 //!               [strategy=exhaust|descent] [starts=id+!locked+@!arcane;id] [search_evals=N]
 //!               [arcanes=id,…] [evo1=id,…] … [evo5=id,…] [modes=id,…] [valence=element,…]
-//!               [swap_width=N] [candidate_runs=N]
+//!               [candidate_runs=N]
 //!
 //! `runs` is the search's own final-round precision (the scenario's);
 //! `truth_runs` is the reference's, and it should be several times larger —
@@ -86,7 +86,6 @@ fn main() {
         "finalists": num("finalists", 10),
         "threads": num("threads", 0),
         "strategy": get("strategy", "auto"),
-        "swap_width": num("swap_width", 1),
         "candidate_runs": num("candidate_runs", 10),
         // `starts=cryo_rounds;!hellfire+serration+@!primary_merciless` — one
         // start per `;`; `!` locks a card, `@` names the arcane, `@!` locks it.

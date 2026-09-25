@@ -441,31 +441,49 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.plan.read",
     query: true,
-    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), how many cards may change at once, and how many fights each candidate gets. The candidates are the quick calc's — every card, arcane and evolution the weapon takes.",
+    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), the mods it may not use (`card@rank` is one rank of a card) and how many fights each candidate gets. The candidates are the quick calc's — every card, arcane and evolution the weapon takes.",
     anchor: "#opt-plan",
     needs_weapon: true,
     args: {},
     run() {
       return {
         starts: opt.starts.map((s) => ({ ...startPayload(s), fixed: s.fixed.slice() })),
-        swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs,
+        exclude: opt.exclude.slice(),
+        candidate_runs: optRun.candidate_runs,
         estimate: $("opt-estimate").textContent.trim(),
       };
     },
   },
   {
+    id: "optimizer.plan.exclude",
+    writes: "search",
+    what: "Exclude a mod from the search, or take it back: the id as the builder lists it, `card@rank` for one rank of a card on the every-rank list. Nothing is excluded by default; arcanes are not excluded here.",
+    anchor: "#opt-exclude",
+    needs_weapon: true,
+    args: {
+      id: { kind: "string", required: true, what: "the mod id, or card@rank" },
+      excluded: { kind: "boolean", required: true, what: "true excludes it, false takes it back" },
+    },
+    run({ id, excluded }) {
+      if (!excludedCard(id) || !excludeOffers("").some((m) => m.id === id)) {
+        return agentNo("not_in_scope", { argument: "id", because: `this weapon's list has no ${id}` });
+      }
+      setOptExclude(excluded ? [...opt.exclude, id] : opt.exclude.filter((x) => x !== id));
+      return { exclude: opt.exclude.slice() };
+    },
+  },
+  {
     id: "optimizer.plan.set",
     writes: "search",
-    what: "Set how hard the search looks: how many cards, arcanes or evolutions it may change at once (1-4), and how many fights each candidate gets (1 or 10).",
+    what: "Set how many fights each candidate gets while the search compares them (1 or 10).",
     anchor: "#opt-runbar",
     needs_weapon: true,
     args: {
-      swap_width: { kind: "number", min: 1, max: 4, what: "changes at once" },
       candidate_runs: { kind: "number", min: 1, max: 10, what: "1 or 10 fights a candidate" },
     },
-    run({ swap_width, candidate_runs }) {
-      setOptSizes({ swap_width, candidate_runs });
-      return { swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
+    run({ candidate_runs }) {
+      setOptSizes({ candidate_runs });
+      return { candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
     },
   },
   {

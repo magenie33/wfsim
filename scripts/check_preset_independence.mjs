@@ -60,13 +60,13 @@ const r = await evaluate(`(async () => {
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(1500);
   opt.starts = opt.starts.slice(0, 2);
-  setOptSizes({ swap_width: 3 }); await sleep(900);
+  setOptSizes({ candidate_runs: 1 }); await sleep(900);
   document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
   await sleep(800);
   chips[1].click(); await sleep(1600);
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(1800);
-  const scope = opt.starts.length, fin = optRun.swap_width;
+  const scope = opt.starts.length, fin = optRun.candidate_runs;
 
   // The optimizer's BUFFS are the scenario's, read-only. Set one in the
   // simulator and the search must show it, without a control to change it.
@@ -129,7 +129,7 @@ check("...and on screen", String(r.onScreen) === String(r.levelAfter), `${r.onSc
 check("the build itself did load", r.modAfter === "serration", String(r.modAfter));
 check("editing the fight leaves the build alone", r.buildUntouched);
 check("switching build leaves the SEARCH's starts alone", r.scope === 2, String(r.scope));
-check("...and its swap width", r.fin === 3, String(r.fin));
+check("...and its runs per candidate", r.fin === 1, String(r.fin));
 check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
 check("its fight card shows the scenario's buff value", / 3(\/|$)/.test(r.cardChip || ""), `${r.buffId}: ${r.cardChip}`);
 check("...and offers no way to change it", r.cardControls === 0, String(r.cardControls));

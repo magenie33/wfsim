@@ -192,9 +192,9 @@ fn run_pipeline(
     jobs: &[Job],
     min: usize,
     max_evals: u64,
-    // `Some((starts, width))` runs the descent from those starts (empty = one
-    // per element) at that swap width instead of the sampler.
-    descent_from: Option<(&[Start], u32)>,
+    // `Some(starts)` runs the descent from those starts (empty = one per
+    // element) instead of the sampler.
+    descent_from: Option<&[Start]>,
 ) -> (Verdict, SearchStats, usize, Vec<usize>) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
@@ -211,11 +211,9 @@ fn run_pipeline(
         );
         out
     };
-    let swap_width = descent_from.map_or(1, |(_, w)| w);
-    let cfg =
-        SearchConfig { max_evals, keep: 65_536, seed: 0xDEAD_BEEF, swap_width, ..Default::default() };
+    let cfg = SearchConfig { max_evals, keep: 65_536, seed: 0xDEAD_BEEF, ..Default::default() };
     let (screened, stats) = match descent_from {
-        Some((starts, _)) => descent(&space, &pool, starts, &expand, &arcanes, s, &cfg, None, None),
+        Some(starts) => descent(&space, &pool, starts, &expand, &arcanes, s, &cfg, None, None),
         None => search(&space, &expand, &arcanes, s, &cfg, None, None),
     };
     assert!(!screened.is_empty(), "the search returned nothing");
@@ -342,11 +340,8 @@ fn the_descent_reaches_the_answer_set_from_any_start() {
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let serration = pool().iter().position(|m| m.id == "serration").expect("in scope");
-    for (label, starts, width) in
-        [("one start per element", vec![], 1), ("serration alone", vec![start(&[serration])], 1)]
-    {
-        let (v, stats, unmatched, _) =
-            run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some((&starts, width)));
+    for (label, starts) in [("one start per element", vec![]), ("serration alone", vec![start(&[serration])])] {
+        let (v, stats, unmatched, _) = run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some(&starts));
         println!(
             "[descent from {label}] {} subsets, {} evals -> rank {} of {} (regret {:.2}%, recall {:.0}%)",
             stats.subsets, stats.evals, v.rank, jobs.len(), v.regret * 100.0, v.recall * 100.0
@@ -369,35 +364,6 @@ fn the_descent_reaches_the_answer_set_from_any_start() {
     }
 }
 
-/// SWAP WIDTH 2 crosses a valley width 1 cannot: from one start holding all
-/// four elements, shedding any one costs its combination before the freed
-/// slot pays. Width 1 must stall here — otherwise the fixture no longer holds
-/// the valley and the width-2 half proves nothing — and width 2 must solve it.
-#[test]
-fn swap_width_two_leaves_a_start_width_one_cannot() {
-    const RUNS: u32 = 40;
-    let s = scenario(30.0, 9999);
-    let (cands, jobs) = exhaust(&s, 8);
-    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
-    let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
-    let ix = |id: &str| pool().iter().position(|m| m.id == id).expect("in scope");
-    let four = vec![start(&[ix("cryo_rounds"), ix("hellfire"), ix("stormbringer"), ix("infected_clip")])];
-    for width in [1, 2] {
-        let (v, stats, _, _) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some((&four, width)));
-        println!(
-            "[width {width}] {} evals -> rank {} of {} (regret {:.2}%), answer set {}",
-            stats.evals, v.rank, jobs.len(), v.regret * 100.0, truth.indistinguishable(3.0).len()
-        );
-        assert_eq!(
-            v.within_noise,
-            width == 2,
-            "width {width}: rank {} (regret {:.2}%) — width 1 must stall and width 2 must solve",
-            v.rank,
-            v.regret * 100.0
-        );
-    }
-}
-
 /// A card a start LOCKS is in every build that start scores, even where the
 /// unconstrained answer leaves it out — a lock is a promise to the player, not
 /// a starting hint. Its other cards stay free: the winner is the best build
@@ -414,7 +380,7 @@ fn a_locked_card_stays_in_every_build_its_start_scores() {
     // A card the unconstrained winner does NOT carry, so the lock has to bite.
     let lock = (0..pool.len()).find(|i| !best.contains(i)).expect("a card outside the winner");
     let starts = vec![Start { mods: vec![lock], locked: vec![lock], ..Default::default() }];
-    let (_, _, _, board) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some((&starts, 1)));
+    let (_, _, _, board) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some(&starts));
     for &ji in &board {
         assert!(
             cands[jobs[ji].0].ordered.contains(&lock),

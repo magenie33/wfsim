@@ -1,8 +1,7 @@
 // ---- The optimizer preset — ONE document per weapon
 // (`wfsim-presets-<weapon>-optimizer`).
 //
-// What it holds is the SEARCH: the starts, the swap width and the runs per
-// candidate. No scope — the candidates are the quick calc's, every one the
+// What it holds is the SEARCH: the starts and the runs per candidate. No scope — the candidates are the quick calc's, every one the
 // weapon takes. NOT the scenario — the optimizer runs the simulator's, which
 // has its own preset domain.
 //
@@ -33,25 +32,25 @@ function bootstrapOptPresets() {
 function snapshotOpt() {
   return {
     starts: JSON.parse(JSON.stringify(opt.starts)),
-    swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs,
+    exclude: opt.exclude.slice(),
+    candidate_runs: optRun.candidate_runs,
   };
 }
 
 // A new search: the four default starts, the run settings left alone.
-const blankOpt = () => ({ starts: defaultStarts(),
-  swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs });
+const blankOpt = () => ({ starts: defaultStarts(), exclude: [],
+  candidate_runs: optRun.candidate_runs });
 
 // State-only apply (validation + cross-weapon dropping); no re-render.
 function applyOptState(st) {
   // A preset from before the quick descent also carries a scope (`mods`,
   // `arcanes`, …); nothing reads it now, and the next save drops it.
   const w = $("weapon").value;
-  optRun.swap_width = Math.max(1, Math.min(4, st.swap_width || 1));
   optRun.candidate_runs = st.candidate_runs === 1 ? 1 : 10;
-  const sw = $("opt-swap-width");
-  if (sw) sw.value = optRun.swap_width;
   const cr = $("opt-cand-runs");
   if (cr) cr.value = String(optRun.candidate_runs);
+  // Exclusions name THIS weapon's cards; another weapon's do not apply here.
+  opt.exclude = (st.exclude || []).filter((id) => excludedCard(id));
   // Starts: builds, each a build of THIS weapon — another weapon's start is
   // not a start here, the way another weapon's build is not a build here.
   opt.starts = (st.starts || [])
@@ -78,7 +77,7 @@ function optBarCfg() {
     domain: OPT_DOMAIN,
     label: tr("Searches"),
     noun: "search",
-    hint: "starts, swap width and runs per candidate",
+    hint: "starts, excluded mods and runs per candidate",
     load: loadOptPresets,
     store: storeOptPresets,
     active: () => activeOptPreset,
@@ -92,11 +91,8 @@ function optBarCfg() {
 }
 
 /// The search's run settings, from the run bar or the agent door.
-function setOptSizes({ swap_width, candidate_runs }) {
-  if (swap_width != null) optRun.swap_width = Math.max(1, Math.min(4, swap_width));
+function setOptSizes({ candidate_runs }) {
   if (candidate_runs != null) optRun.candidate_runs = candidate_runs === 1 ? 1 : 10;
-  const sw = $("opt-swap-width");
-  if (sw) sw.value = optRun.swap_width;
   const cr = $("opt-cand-runs");
   if (cr) cr.value = String(optRun.candidate_runs);
   updateOptEstimate();
@@ -178,7 +174,9 @@ async function runOptimize() {
       // One answer per start at most, each re-measured at the final runs.
       final_runs: finalRuns(), finalists: starts.length,
       strategy: "quick",
-      starts, swap_width: optRun.swap_width, candidate_runs: optRun.candidate_runs,
+      starts, candidate_runs: optRun.candidate_runs,
+      // The cards the player named; the rest of the builder's list is the scope.
+      exclude: opt.exclude,
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {
@@ -240,7 +238,12 @@ async function pollOptimize() {
 }
 
 function renderOptProgress(st) {
-  const pct = st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
+  // A DESCENT'S BAR COUNTS SETTLED STARTS: how many rounds one takes is found
+  // by taking them, so the only total that exists is the number of starts.
+  const lanes = st.starts || [];
+  const pct = !st.rounds && lanes.length
+    ? (100 * lanes.filter((s) => s.settled).length) / lanes.length
+    : st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
   // THE DESCENT HAS NO PLAN TO BE A PERCENTAGE OF — how many changes a start
   // takes is found by taking them — so it reports what it has done.
   const descending = !st.rounds;
@@ -253,8 +256,13 @@ function renderOptProgress(st) {
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
+  const lane = (s, i) => `<div class="opt-note">${escHtml(tr("start"))} ${i + 1}: ${escHtml(s.settled
+    ? tr("settled")
+    : s.round === 0
+      ? tr("filling {k} of {n}").replace("{k}", s.at + 1).replace("{n}", s.of)
+      : tr("round {r}, position {k} of {n}").replace("{r}", s.round).replace("{k}", s.at + 1).replace("{n}", s.of))}</div>`;
   const sub = descending
-    ? `<div class="opt-prog-sub">${escHtml(tr("every worker scores each batch; in the browser a search takes minutes"))}</div>`
+    ? `<div class="opt-prog-sub">${escHtml(tr("{d} of {n} starts settled").replace("{d}", lanes.filter((s) => s.settled).length).replace("{n}", lanes.length || "…"))} · ${escHtml(tr("every worker scores each batch; in the browser a search takes minutes"))}</div>${lanes.map(lane).join("")}`
     : st.phase === "enumerating"
     ? ""
     : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.jobs ? ` · ${st.jobs.toLocaleString()} candidate builds` : ""}</div>`;
@@ -408,7 +416,7 @@ function renderOptResults(r) {
     escHtml(tr("no legal build from this start"))} <span class="sim-hint">${escHtml(f.why)}</span></div>`).join("");
   const meta = `<span class="${r.cut ? "warn" : "ok"}">${escHtml(tr(r.cut
     ? "the time budget ran out before every start settled — strong builds, short of what those starts reach"
-    : "each start improved until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further"))}</span>`
+    : "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further"))}</span>`
     + `${r.cancelled ? ` · <span class="warn">${escHtml(tr("cancelled — best so far"))}</span>` : ""}`
     + ` · vs ${escHtml(r.target.name)} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${d ?? "?"} s · ${(r.final_runs || 0).toLocaleString()} ${escHtml(tr("runs each"))}`;
   $("opt-results").innerHTML = `<h4 class="sim-h">③ ${escHtml(tr("Results"))}</h4><div class="opt-board" id="opt-board"></div><div class="opt-meta">${meta}</div>${html}${failed}`;

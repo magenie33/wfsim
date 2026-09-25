@@ -45,9 +45,6 @@ pub struct SearchConfig {
     /// share of the starts.
     pub shard: u32,
     pub shards: u32,
-    /// The DESCENT's widest move: how many positions it may change at once
-    /// once single changes stop paying. 1 = single changes only.
-    pub swap_width: u32,
 }
 
 impl Default for SearchConfig {
@@ -59,7 +56,6 @@ impl Default for SearchConfig {
             runs: 1,
             shard: 0,
             shards: 1,
-            swap_width: 1,
         }
     }
 }

@@ -235,7 +235,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { starts: [] };
+let opt = { starts: [], exclude: [] };
 // THE START OPEN IN THE BUILDER, or null — `79-start-edit.js`. Declared here,
 // early, because the autosave it suspends can run during boot.
 let startEdit = null;
@@ -274,9 +274,7 @@ const setFinalRuns = (n) => {
 // arena's own rule in another module. `poolSize()` is the whole answer now.
 // An older preset may still carry `threads` and `runs`; both are ignored on
 // load, and the auto-save drops them the first time the scope is touched.
-// `swap_width` is how many positions the descent may change at once once
-// single changes stop paying — how HARD to search, like `finalists`.
-const OPT_RUN_DEFAULTS = { finalists: 10, swap_width: 1, candidate_runs: 10 };
+const OPT_RUN_DEFAULTS = { finalists: 10, candidate_runs: 10 };
 let optRun = { ...OPT_RUN_DEFAULTS };
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.

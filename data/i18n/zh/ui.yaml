@@ -422,7 +422,6 @@ ui:
   "FIRING FROM THE HIP throws the seven beams in a spread and aiming focuses them on the crosshairs (wiki). This arena aims, so all seven land — which is the ceiling. A player firing from the hip covers more ground and lands fewer of them on one enemy": "腰射会把七道光束打成一个散布，瞄准则会把它们汇聚到准星上（维基）。这个战场是瞄准状态，所以七道全部命中 —— 这是上限。腰射的玩家覆盖面更大，但打在同一个敌人身上的更少"
   "Final-round runs": 最终轮次数
   Finalists: 优胜名额
-  "Swap width": 替换宽度
   "improving the starts — {b} builds scored, {s} fights": 正在改进起点 —— 已评估 {b} 套配装，模拟 {s} 场
   "every worker scores each batch; in the browser a search takes minutes": 每一批候选都由全部 worker 一起评估；在浏览器里一次搜索要几分钟
   "Who else is firing": 队友
@@ -430,11 +429,20 @@ ui:
   "none start stacked": 开场都没有层数
   "ammo counts": 计算弹药
   "each start improved by the quick calc until nothing helps — the fight is the simulator's": 每个起点用快速计算反复改进，直到再换什么都不涨 —— 战斗用模拟器的
-  "the starts and how hard to look — all of it, and only it, is what a search preset saves": 起点和搜索力度 —— 搜索预设保存的就是这些，也只有这些
   "Runs per candidate": 每个候选跑几场
+  "Excluded mods": 排除的 mod
+  "none by default — a card named here, or one rank of it, is never a candidate; arcanes are not listed": 默认不排除任何卡 —— 这里点名的卡（或它的某一个等级）不会作为候选；赋能不在这里
+  "exclude a mod": 排除一张卡
+  "exclude nothing": 全部取消排除
+  "excluded": 已排除
+  "settled": 已收敛
+  "filling {k} of {n}": 填满中 {k}/{n}
+  "round {r}, position {k} of {n}": 第 {r} 轮扫描，位置 {k}/{n}
+  "{d} of {n} starts settled": "{d}/{n} 个起点已收敛"
+  "the starts and how hard to look — all of it, and only it, is what a search preset saves": 起点和搜索力度 —— 搜索预设保存的就是这些，也只有这些
+  "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点
   "how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured at the final-round runs either way": 搜索比较候选时每个候选打几场。1 场快十倍但更吵；无论选哪个，答案最后都按最终轮次数重新测量
   "+ a blank start": "+ 空白起点"
-  "starts, swap width and runs per candidate": 起点、替换宽度和每个候选的场次
   "{n} starts · {r} runs a candidate · final round {f} runs": "{n} 个起点 · 每个候选 {r} 场 · 最终轮 {f} 场"
   "vs": 对
   "start": 起点
@@ -443,7 +451,6 @@ ui:
   "from": 来自
   "no legal build from this start": 这个起点找不到合法配装
   "the time budget ran out before every start settled — strong builds, short of what those starts reach": 时间预算用完时还有起点没收敛 —— 结果不错，但还没到这些起点能到的最好
-  "each start improved until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点或调大替换宽度
   "cancelled — best so far": 已取消 —— 目前最好的结果
   "runs each": 场/每行
   "Results": 结果
@@ -451,7 +458,6 @@ ui:
   "this weapon's cards only": 只看这把武器的卡
   "the whole list ({n} more for other weapons)": 完整清单（另有 {n} 张属于其他武器）
   "could not list the candidates": 无法列出候选
-  "how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot": 当一次只换一处已经不再有提升时，搜索可以同时更换多少张卡、赋能或进化。1 最快；每加 1 大约多花一个数量级，但能跨过一次只换一处跨不过去的坎
   Starts: 起点
   Start: 起点
   "each is a build the search begins from; edit one in the builder, where a pinned position is FIXED in its answer": 每个起点是一套配装，搜索从它出发；在配装器里编辑，钉住的位置在它的答案里固定不变
@@ -469,7 +475,6 @@ ui:
   "fixed — click to free it": 已固定 —— 点击取消
   "fix this position in the start": 在这个起点里固定这个位置
   "descended from {n} starts, but the time budget ran out before every one settled — a strong build, short of the best those starts reach": 从 {n} 个起点出发下降，但时间预算在全部收敛前用完了 —— 这是一套强配置，但还不是这些起点能到达的最优
-  "descended from {n} starts until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further": 从 {n} 个起点出发，一直下降到任何改动都不再有提升 —— 这是这些起点能到达的最优，不是证明过的最优；想看得更远，可以加一个起点或调高替换宽度
   "Fire Rate": 射速
   "Fire {base} until the gauge fills, spend it in {other}, come back — and again.": 用{base}打到充能条满，切到{other}把它花掉，再切回来 —— 如此往复。
   "Fired in its {form} for the whole engagement.": 整场交战都用{form}射击。

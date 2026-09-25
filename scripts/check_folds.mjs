@@ -280,7 +280,7 @@ const opt = await evaluate(`(async () => {
   hit('[data-jump="opt-plan"]'); await sleep(400);
   out.boxBack = document.getElementById('opt-starts').offsetParent !== null;
   // A CONTROL IN THE BOX'S BODY IS NOT A FOLD TOGGLE.
-  document.getElementById('opt-swap-width').click(); await sleep(120);
+  document.getElementById('opt-cand-runs').click(); await sleep(120);
   out.controlKept = !document.querySelector('[data-fold="opt-plan"]').classList.contains('shut');
   // ...AND HERE TOO, where the Buffs grid has a twin. Defined again: the reload
   // above took the simulator half's page with it.

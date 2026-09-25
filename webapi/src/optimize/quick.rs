@@ -72,6 +72,8 @@ pub(crate) struct Fleet {
     legal: HashMap<QBuild, bool>,
     pending: Vec<QBuild>,
     missed: bool,
+    /// Where each start stood when the last call ended.
+    progress: Value,
 }
 
 thread_local! {
@@ -629,13 +631,15 @@ impl QuickCtx<'_> {
     /// A fleet worker's share of a batch: each build's score and best order.
     pub(crate) fn score_json(&self, builds: &[Value]) -> Value {
         let bs: Vec<QBuild> = builds.iter().filter_map(QBuild::from_json).collect();
+        let before = self.sims.load(std::sync::atomic::Ordering::Relaxed);
         let got = self.score_orders(&bs);
+        let fights = self.sims.load(std::sync::atomic::Ordering::Relaxed) - before;
         let rows: Vec<Value> = bs
             .iter()
             .zip(got)
             .map(|(b, (s, oi))| json!({ "key": self.key(b), "score": s.map(|(k, e)| json!([k, e])), "order": oi }))
             .collect();
-        json!({ "ok": true, "scores": rows })
+        json!({ "ok": true, "scores": rows, "fights": fights })
     }
 
     /// The leader takes the scores the fleet returned; `fresh` begins a new
@@ -662,7 +666,12 @@ impl QuickCtx<'_> {
         FLEET.with(|f| {
             let f = f.borrow();
             (!f.pending.is_empty()).then(|| {
-                json!({ "ok": true, "pending": f.pending.iter().map(QBuild::to_json).collect::<Vec<_>>(), "scored": f.scores.len() })
+                json!({
+                    "ok": true,
+                    "pending": f.pending.iter().map(QBuild::to_json).collect::<Vec<_>>(),
+                    "scored": f.scores.len(),
+                    "progress": f.progress,
+                })
             })
         })
     }
@@ -684,7 +693,6 @@ pub(crate) fn run_quick(
     ctx: &QuickCtx<'_>,
     starts: Vec<QuickStart<QBuild>>,
     max_evals: u64,
-    swap_width: u32,
     state: Option<&wfsim_optimizer::FunnelState>,
     shard: u32,
     shards: u32,
@@ -700,8 +708,15 @@ pub(crate) fn run_quick(
         .collect();
     let stop: Vec<&std::sync::atomic::AtomicBool> =
         state.map(|s| vec![&s.cancel, &s.stop_enumeration]).unwrap_or_default();
-    let cfg = wfsim_optimizer::quick::QuickConfig { max_evals, swap_width, stop };
-    let (answers, failures, qs) = wfsim_optimizer::quick::quick_descent(ctx, &mine, &cfg);
+    let cfg = wfsim_optimizer::quick::QuickConfig { max_evals, stop };
+    let (answers, failures, qs, progress) = wfsim_optimizer::quick::quick_descent(ctx, &mine, &cfg);
+    if ctx.lead {
+        let rows: Vec<Value> = progress
+            .iter()
+            .map(|p| json!({ "settled": p.settled, "round": p.round, "at": p.at, "of": p.of }))
+            .collect();
+        FLEET.with(|f| f.borrow_mut().progress = json!(rows));
+    }
     let mut report = QuickReport {
         failures: failures.iter().map(|f| json!({ "start": global(f.start), "why": f.why })).collect(),
         ..Default::default()
@@ -749,7 +764,9 @@ pub(crate) fn run_quick(
 /// THE QUICK CALC'S WHOLE SCOPE, for a quick request that names none: every
 /// card, exilus card, arcane, evolution, mode and element the weapon takes, and
 /// each lower rank the every-rank lists ask for — what `/api/candidates` offers
-/// at each position, so the descent's candidates are the quick calc's.
+/// at each position, so the descent's candidates are the quick calc's — less
+/// the cards the request's `exclude` names, each by its exact id (`card@2` is
+/// that card at rank 2 alone).
 /// `None` when the request is not quick or names its own scope (the grader's).
 pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
     if v.get("strategy").and_then(Value::as_str) != Some("quick") || v.get("mods").is_some() {
@@ -773,11 +790,13 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
         }
         ids
     };
+    let exclude: Vec<&str> =
+        v.get("exclude").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
     let pool = crate::rivens::mod_pool_with_rivens(v, info, &[]);
     let mut mods = serde_json::Map::new();
     let mut exilus = serde_json::Map::new();
     for m in pool.iter().filter(|m| m.stance.is_none()) {
-        for id in ranked(m.id, m.max_rank, &every_mods) {
+        for id in ranked(m.id, m.max_rank, &every_mods).into_iter().filter(|id| !exclude.contains(&id.as_str())) {
             mods.insert(id.clone(), json!("search"));
             if m.exilus {
                 exilus.insert(id, json!("search"));

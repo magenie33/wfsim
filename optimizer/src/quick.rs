@@ -96,6 +96,18 @@ pub struct QuickFailure {
     pub why: &'static str,
 }
 
+/// Where one start is: filling or sweeping (which round), and at which of how
+/// many positions — what the page shows while a descent runs, since how many
+/// rounds it takes is found by taking them.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct StartProgress {
+    pub settled: bool,
+    /// 0 = filling; n = the n-th sweep.
+    pub round: u32,
+    pub at: usize,
+    pub of: usize,
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 pub struct QuickStats {
     pub evals: u64,
@@ -108,7 +120,6 @@ pub struct QuickStats {
 pub struct QuickConfig<'a> {
     /// Screen evaluations; 0 = no cap.
     pub max_evals: u64,
-    pub swap_width: u32,
     /// Any of these set stops the run: a cancel, a clock.
     pub stop: Vec<&'a AtomicBool>,
 }
@@ -118,6 +129,7 @@ struct Run<'a, S: QuickSpace> {
     cfg: &'a QuickConfig<'a>,
     cache: HashMap<String, Score>,
     stats: QuickStats,
+    now: StartProgress,
 }
 
 impl<S: QuickSpace> Run<'_, S> {
@@ -171,31 +183,6 @@ impl<S: QuickSpace> Run<'_, S> {
         Some(best)
     }
 
-    /// Every build `w` changes away from `b`, over the positions not fixed.
-    fn wide(&self, b: &S::Build, positions: &[Position], w: usize) -> Vec<S::Build> {
-        fn rec<S: QuickSpace>(
-            space: &S,
-            b: &S::Build,
-            positions: &[Position],
-            from: usize,
-            left: usize,
-            out: &mut Vec<S::Build>,
-        ) {
-            for i in from..positions.len() {
-                for c in space.candidates(b, positions[i]) {
-                    if left == 1 {
-                        out.push(c);
-                    } else {
-                        rec(space, &c, positions, i + 1, left - 1, out);
-                    }
-                }
-            }
-        }
-        let mut out = Vec::new();
-        rec(self.space, b, positions, 0, w, &mut out);
-        out
-    }
-
     /// Fill, then sweep to a fixed point. `Err` = the start has no answer.
     fn descend(
         &mut self,
@@ -219,7 +206,9 @@ impl<S: QuickSpace> Run<'_, S> {
             .into_iter()
             .filter(|p| !fixed(p) && (empty.contains(p) || start.unnamed.contains(p)))
             .collect();
-        for p in fill {
+        self.now = StartProgress { settled: false, round: 0, at: 0, of: fill.len() };
+        for (k, p) in fill.into_iter().enumerate() {
+            self.now.at = k;
             let Some(found) = self.best(self.space.candidates(&cur, p)) else {
                 return Ok((cur, None, None, moves, true));
             };
@@ -250,7 +239,9 @@ impl<S: QuickSpace> Run<'_, S> {
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
-            for &p in &positions {
+            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of: positions.len() };
+            for (k, &p) in positions.iter().enumerate() {
+                self.now.at = k;
                 match self.best(self.space.candidates(&cur, p)) {
                     None => return Ok((cur, cur_score, from, moves, true)),
                     Some(Some((b, s))) if better(s, cur_score) => {
@@ -262,36 +253,32 @@ impl<S: QuickSpace> Run<'_, S> {
                     Some(_) => {}
                 }
             }
-            // Width 1 settled. Wider moves only here, one width at a time.
-            for w in 2..=self.cfg.swap_width.max(1) as usize {
-                match self.best(self.wide(&cur, &positions, w)) {
-                    None => return Ok((cur, cur_score, from, moves, true)),
-                    Some(Some((b, s))) if better(s, cur_score) => {
-                        cur = b;
-                        cur_score = s;
-                        moves += 1;
-                        continue 'sweep;
-                    }
-                    Some(_) => {}
-                }
-            }
+            self.now.settled = true;
             return Ok((cur, cur_score, from, moves, false));
         }
     }
 }
+
+/// What a run hands back: the answers best first, the starts that found none,
+/// what it spent, and where each start stood when it stopped.
+pub type QuickRun<B> = (Vec<QuickAnswer<B>>, Vec<QuickFailure>, QuickStats, Vec<StartProgress>);
 
 /// Descend from every start; answers merged by key, best first.
 pub fn quick_descent<S: QuickSpace>(
     space: &S,
     starts: &[QuickStart<S::Build>],
     cfg: &QuickConfig<'_>,
-) -> (Vec<QuickAnswer<S::Build>>, Vec<QuickFailure>, QuickStats) {
-    let mut run = Run { space, cfg, cache: HashMap::new(), stats: QuickStats::default() };
+) -> QuickRun<S::Build> {
+    let mut run =
+        Run { space, cfg, cache: HashMap::new(), stats: QuickStats::default(), now: StartProgress::default() };
     let mut answers: Vec<QuickAnswer<S::Build>> = Vec::new();
     let mut failures = Vec::new();
+    let mut progress = Vec::with_capacity(starts.len());
     for (i, start) in starts.iter().enumerate() {
         run.stats.starts += 1;
-        match run.descend(start) {
+        let out = run.descend(start);
+        progress.push(StartProgress { settled: out.is_err() || run.now.settled, ..run.now });
+        match out {
             Err(why) => failures.push(QuickFailure { start: i, why }),
             Ok((build, score, from, moves, cut)) => {
                 run.stats.cut |= cut;
@@ -316,7 +303,7 @@ pub fn quick_descent<S: QuickSpace>(
             std::cmp::Ordering::Equal
         }
     });
-    (answers, failures, run.stats)
+    (answers, failures, run.stats, progress)
 }
 
 #[cfg(test)]
@@ -365,8 +352,8 @@ mod tests {
             QuickStart { build: [Some(1), Some(2), Some(3)], fixed: vec![], unnamed: vec![] },
             QuickStart { build: [Some(0), None, None], fixed: vec![Position { kind: "d", idx: 0 }], unnamed: vec![] },
         ];
-        let cfg = QuickConfig { max_evals: 0, swap_width: 1, stop: Vec::new() };
-        let (answers, failures, _) = quick_descent(&Digits, &starts, &cfg);
+        let cfg = QuickConfig { max_evals: 0, stop: Vec::new() };
+        let (answers, failures, _, _) = quick_descent(&Digits, &starts, &cfg);
         assert!(failures.is_empty());
         assert_eq!(answers[0].build, [Some(8), Some(9), Some(9)]);
         assert_eq!(answers[0].starts, vec![0, 1], "two starts settle on one build");

@@ -34,6 +34,7 @@ function renderOpt() {
   }
   renderOptPresetBars();
   renderOptStarts();
+  renderOptExclude();
   renderOptFight();
   updateOptEstimate();
 }
@@ -53,4 +54,93 @@ function renderOptFight() {
       `<span class="pchip sel" title="${escHtml(tr("the scenario the simulator is set to"))}">${escHtml(presetLabel(scenarioNamed(activeScenario)) || tr("current"))}</span>` +
       `<a class="pchip" href="${weaponPath(w.id)}/simulator">${escHtml(tr("edit in the Simulator"))} →</a>`;
   }
+}
+
+// ---- The mods the search may not use -------------------------------------
+//
+// NOTHING BY DEFAULT: every card the builder's list holds is a candidate, and
+// the player names what is not — by the builder's own rows, so a card on the
+// every-rank list can be excluded at ONE rank (`card@2`) and keep the others.
+// Arcanes are not listed here. Saved in the search preset.
+
+/// The builder's list for this weapon: every card, and a row per rank for the
+/// cards on the every-rank list.
+const excludeOffers = (q) => buildPool()
+  .filter((m) => !m.stance && (!q || searchHit(m, q)))
+  .flatMap((m) => [m, ...lowerRanks(m)])
+  .sort((a, b) => ((b.riven ? 1 : 0) - (a.riven ? 1 : 0))
+    || String(a.name).localeCompare(String(b.name))
+    || (b.card ? b.rank : b.max_rank) - (a.card ? a.rank : a.max_rank));
+
+/// One excluded id as the builder's row: `card@rank` is that card at that rank.
+function excludedCard(id) {
+  const [card, rank] = splitRank(id);
+  const m = modById(card);
+  return m && (rank == null ? m : { ...m, id, card, rank });
+}
+
+const excludeRow = (m, extra = {}) => modRow(m, {
+  rank: m.card ? m.rank : m.max_rank,
+  attrs: `data-id="${m.id}"`,
+  ...extra,
+  chips: `${m.card ? ` <span class="rkchip">R${m.rank}</span>` : ""}${extra.chips || ""}`,
+});
+
+function renderOptExclude() {
+  const box = $("opt-exclude");
+  if (!box || !META) return;
+  const cards = opt.exclude.map(excludedCard).filter(Boolean);
+  box.innerHTML = `<h4 class="sim-h">${escHtml(tr("Excluded mods"))} <span class="sim-hint">${escHtml(tr(
+    "none by default — a card named here, or one rank of it, is never a candidate; arcanes are not listed"))}</span></h4>`
+    + (cards.length ? `<div class="combo-menu pc-rank-list">${cards.map((m) => excludeRow(m, {
+      trailing: `<button class="rk-x" data-x="${escHtml(m.id)}" title="${escHtml(tr("remove"))}">×</button>`,
+    })).join("")}</div>` : "")
+    + `<div class="opt-start-add"><button type="button" class="ghost-btn small" id="opt-exclude-add">+ ${escHtml(tr("exclude a mod"))}</button>`
+    + (cards.length ? `<button type="button" class="ghost-btn small" id="opt-exclude-clear">${escHtml(tr("exclude nothing"))}</button>` : "")
+    + `</div>`;
+  box.querySelectorAll(".rk-x").forEach((b) => b.addEventListener("click", () => setOptExclude(opt.exclude.filter((x) => x !== b.dataset.x))));
+  $("opt-exclude-add").addEventListener("click", (e) => openExcludePicker(e.currentTarget));
+  const clear = $("opt-exclude-clear");
+  if (clear) clear.addEventListener("click", () => setOptExclude([]));
+}
+
+function setOptExclude(list) {
+  opt.exclude = [...new Set(list)];
+  renderOptExclude();
+  updateOptEstimate();
+  if (!$("rank-popover").hidden && excludePicking) renderExcludeMenu($("rank-search").value);
+}
+
+/// The picker is the every-rank list's popover: a click toggles and it stays
+/// open, so several cards are one visit.
+let excludePicking = false;
+function openExcludePicker(anchor) {
+  closePopovers();
+  excludePicking = true;
+  const pop = $("rank-popover");
+  place(pop, anchor);
+  const search = $("rank-search");
+  search.value = "";
+  search.oninput = () => renderExcludeMenu(search.value);
+  renderExcludeMenu("");
+  search.focus();
+}
+
+function renderExcludeMenu(query) {
+  const menu = $("rank-menu");
+  const q = query.trim().toLowerCase();
+  const hits = excludeOffers(q);
+  const on = (m) => opt.exclude.includes(m.id);
+  menu.innerHTML = hits.length
+    ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), (m) => excludeRow(m, {
+      cls: on(m) ? "cur" : "",
+      chips: on(m) ? ` <span class="slotchip cur">${escHtml(tr("excluded"))}</span>` : "",
+    }))
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+  menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (e.target.closest("a")) return;
+    const id = o.dataset.id;
+    setOptExclude(opt.exclude.includes(id) ? opt.exclude.filter((x) => x !== id) : [...opt.exclude, id]);
+  }));
 }
