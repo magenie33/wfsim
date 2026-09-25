@@ -138,6 +138,28 @@ def _already_said(prefix: str, rank: str) -> bool:
     return norm(prefix) and norm(prefix) in norm(rank)
 
 
+# DE'S OWN TYPOS, corrected after the join: (text, replacement, which occurrence).
+# Galvanized Scope heads its KILL stacks "On Weak Point Hit" in every language;
+# its pistol twin Galvanized Crosshairs, same mechanic, reads "Kill", and so
+# does the wiki ("Headshot kills will grant"). The twin's own words replace it.
+ERRATA = {
+    ("galvanized_scope", "zh"): ("命中弱点时：", "弱点击杀时：", 2),
+}
+
+
+def _errata(idv: str, locale: str, text: str) -> str:
+    fix = ERRATA.get((idv, locale))
+    if not fix:
+        return text
+    old, new, nth = fix
+    at = -1
+    for _ in range(nth):
+        at = text.find(old, at + 1)
+        if at < 0:
+            return text
+    return text[:at] + new + text[at + len(old):]
+
+
 def export_descriptions(export: dict, locale: str, section: str) -> tuple[dict, list]:
     """id -> one card text per rank (rank 0 first), from DE's own card text.
 
@@ -163,7 +185,8 @@ def export_descriptions(export: dict, locale: str, section: str) -> tuple[dict, 
         cards = []
         for r in ranks:
             body = card_text(r.get("stats", []))
-            cards.append(f"{prefix}\n{body}" if prefix and not _already_said(prefix, body) else body)
+            card = f"{prefix}\n{body}" if prefix and not _already_said(prefix, body) else body
+            cards.append(_errata(idv, locale, card))
         hits[idv] = cards
     return hits, missing
 

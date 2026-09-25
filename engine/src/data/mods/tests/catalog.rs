@@ -654,7 +654,7 @@ On Weak Point Kill:
         desc_info("galvanized_scope").unwrap().at(10),
         "On Weak Point Hit:
 +120% Critical Chance when Aiming for 12s
-On Weak Point Hit:
+On Weak Point Kill:
 +40% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );
     // A duration that RAMPS: 1.5s at rank 0, 9s at max. Stored as one number
