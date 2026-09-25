@@ -428,8 +428,11 @@ ui:
   "nobody else": 没有队友
   "none start stacked": 开场都没有层数
   "ammo counts": 计算弹药
-  "each start improved by the quick calc until nothing helps — the fight is the simulator's": 每个起点用快速计算反复改进，直到再换什么都不涨 —— 战斗用模拟器的
   "Runs per candidate": 每个候选跑几场
+  "Limits": 限制
+  "the starts and the limits — what a search preset saves, with the runs per candidate": 起点和限制 —— 搜索预设保存的就是这些，外加每个候选跑几场
+  "the simulator's — every candidate is scored under it, and it is edited over there": 用的是模拟器的战斗 —— 每个候选都在它下面计分，要改请去模拟器
+  "each start improved by the quick calc until nothing helps": 每个起点用快速计算反复改进，直到再换什么都不涨
   "none by default — click an option to exclude it; a start that pins an excluded option cannot run, one that only holds it has it replaced": 默认不限制 —— 点选项就排除它；起点钉住了被排除的东西就不能运行，只是装着的会被替换
   "fill at most": 最多填
   "mods": 张 mod
@@ -452,7 +455,6 @@ ui:
   "filling {k} of {n}": 填满中 {k}/{n}
   "round {r}, position {k} of {n}": 第 {r} 轮扫描，位置 {k}/{n}
   "{d} of {n} starts settled": "{d}/{n} 个起点已收敛"
-  "the starts and how hard to look — all of it, and only it, is what a search preset saves": 起点和搜索力度 —— 搜索预设保存的就是这些，也只有这些
   "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点
   "how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured at the final-round runs either way": 搜索比较候选时每个候选打几场。1 场快十倍但更吵；无论选哪个，答案最后都按最终轮次数重新测量
   "+ a blank start": "+ 空白起点"
@@ -582,7 +584,6 @@ ui:
   "Later": "稍后"
   "Leaded Gas, the Vesper 77-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Leaded Gas」，Vesper 77 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Level scaling": 等级缩放
-  "Limits": 限制
   "Lingering field": 持续云雾
   "MAGAZINE CAPACITY IS A DAMAGE STAT here and this entry pins it at the unmodded 10 — \"Increasing Magazine Capacity (Slip Magazine, Primed Slip Magazine, Ice Storm, Tainted Clip, Combo Fury) will increase the Alternate Fire's damage\", multiplicatively with base-damage mods. A build carrying one is understated by exactly that ratio": "在这里「弹匣容量」是一条伤害属性，而本条目把它钉在未改装的 10 上——「提高弹匣容量（滑膛弹匣、初始滑膛弹匣、冰风暴、污染弹夹、连击狂怒）会提高交替射击的伤害」，且与基础伤害类 MOD 是乘算。带了这类 MOD 的配装，在这里正好按那个比例被低估"
   "MICROWAVE's other half: it ENLARGES the body part it was shot at, which is a hit-location mechanic and worth nothing where nobody is aiming by hand. Its status COUNT is modelled (`applies_microwave`)": 微波的另一半：它会放大被击中的那个身体部位，这是一个命中部位机制，在没有人手动瞄准的地方毫无价值。它的触发计数是有建模的（`applies_microwave`）

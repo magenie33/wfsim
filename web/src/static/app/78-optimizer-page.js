@@ -23,7 +23,7 @@ function renderOptRuns() {
 }
 
 function renderOpt() {
-  show("opt-block", !!META);
+  ["opt-block", "opt-fight-block", "opt-run-block"].forEach((id) => show(id, !!META));
   if (!META) return;
   renderOptRuns();
   // A weapon's first visit: the four default starts, then the active preset.

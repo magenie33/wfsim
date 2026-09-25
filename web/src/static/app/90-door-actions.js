@@ -442,7 +442,7 @@ const AGENT_ACTIONS = [
     id: "optimizer.plan.read",
     query: true,
     what: "Read the build search: its starts (each a build, with the positions fixed in its answer), its limits (what it may not use per axis — `card@rank` is one rank of a card — and how full it fills) and how many fights each candidate gets. Everything the limits leave is a candidate.",
-    anchor: "#opt-plan",
+    anchor: "#opt-block",
     needs_weapon: true,
     args: {},
     run() {

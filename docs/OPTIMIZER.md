@@ -138,23 +138,18 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
 
-## The optimizer tab is TWO BOXES
+## The optimizer tab is THREE BLOCKS
+
+The simulator's shape — a block per thing, each with its own number, title and
+fold:
 
 ```
-┌ THE SEARCH ─────────────────┐   everything in this box but the final-round
-│ preset bar: SEARCH          │   runs is what a search preset saves
-│ run bar: Run · runs per     │
-│   candidate · final-round   │
-│   runs                      │
-│ ① starts                    │   each a build card, edited in the builder
-└─────────────────────────────┘
-  ③ results                         one row per answer
-┌ THE FIGHT ──────────────────┐   the SIMULATOR's scenario, read back as a
-│ scenario · edit in the Sim →│   card (`fightCardHtml`) with no control in
-│ card: enemy, the Tenno,     │   it — a fight is edited in one place
-│   squad, Warframe buffs,    │
-│   extra stats, buffs        │
-└─────────────────────────────┘
+⚙ THE SEARCH      preset bar · ① starts (build cards, edited in the builder)
+                  · ② limits                  — what a search preset saves
+▶ THE FIGHT       the scenario, a link to edit it in the Simulator, and the
+                  fight as a card (`fightCardHtml`) with no control in it
+★ OPTIMIZE        run · runs per candidate · final-round runs · the estimate,
+                  then the progress and the results
 ```
 
 | what | where it lives | why |
@@ -689,18 +684,17 @@ fails at rank 14, 25.5% regret.
 
 ### The page
 
-Top to bottom: the search preset bar; the run bar (run, runs per candidate
-1 / 10, final-round runs, what the run will do); ① the starts, each
-the simulator's build card, edited in the builder; ② the LIMITS (below); while
-it runs, a line per start (filling k of n,
-round r at position k of n, settled) and a bar of settled starts, since how many
-rounds a start takes is found by taking them; ③ the results, one row per
-answer with the starts it came from, a tie with the leader marked, "+ add" and
-"use as a new start"; then the fight, read-only. A search preset saves the
-starts, the limits and the runs per candidate. There is no scope to mark:
-what may change is what the quick calc offers, and a pin on a start is the one
-way to keep something.
-
+THE SEARCH block: the search preset bar; ① the starts, each the simulator's
+build card, edited in the builder; ② the limits (below). THE FIGHT block: the
+simulator's scenario as a card. THE OPTIMIZE block: the run bar (run, runs per
+candidate 1 / 10, final-round runs, what the run will do); while it runs, a
+line per start (filling k of n, round r at position k of n, settled) and a bar
+of settled starts, since how many rounds a start takes is found by taking
+them; then the results, one row per answer with the starts it came from, a tie
+with the leader marked, "+ add" and "use as a new start". A search preset
+saves the starts, the limits and the runs per candidate. There is no scope to
+mark: what may change is what the quick calc offers less the limits, and a pin
+on a start is the one way to keep something.
 
 ### Limits
 
