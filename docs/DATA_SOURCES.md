@@ -630,9 +630,9 @@ Three properties make it usable as a source rather than as a rumour:
 - **A real card is the strongest evidence there is.** The Furis is why: 13 of
   500 is inside the unclear band and a player has the riven.
 
-None of that makes the count an AUTHORITY — see §"Riven pools: the rules decide,
-the survey checks" below, which is where the counts go now. Full reasoning and
-the corrections: `docs/MEASUREMENTS.md` M35.
+None of that makes the raw count an AUTHORITY — see §"Riven pools: evidence
+decides a physical stat, the rules the rest" below, which is where the counts go.
+Full reasoning and the corrections: `docs/MEASUREMENTS.md` M35.
 
 **A CLASS's pool is a different question and DE answers it.** Which stats exist
 at all, their bases, their name fragments and their display templates are
@@ -1218,7 +1218,7 @@ reached before any config multiplier, so their roundness says nothing about it.
 What remains is a 1% uncertainty on two-bonus rivens, and one in-game riven with
 a known roll settles it.
 
-## Riven pools: the rules decide, the survey checks
+## Riven pools: evidence decides a physical stat, the rules the rest
 
 ### What actually generates a pool
 
@@ -1250,9 +1250,16 @@ pin down what the mechanism is:
    and Slash).
 
 So: UNION over the family's members, UNION over each member's free forms, then
-the exceptions. An exception is not a patch on a broken rule; it is the one
-place DE's actual table is recorded, and the rule is what fills in for a family
-nobody has a card from.
+the exceptions — for every stat but the three PHYSICAL ones.
+
+**NO RULE PREDICTS A PHYSICAL POOL.** DE's internal damage tables (the extracted
+export's `behaviours`) were set against all 26 surveyed families: no share
+threshold on any reading gets fewer than 9 of 78 (family, physical stat) verdicts
+wrong. The Ocucor is 0% Slash and rolls it; the Phenmor is 30% Puncture and does
+not, while the Karak's 30% Puncture does. So a physical stat is REFUSED only by
+evidence, and one with no evidence is OFFERED and marked unconfirmed
+(`unconfirmed_for`, served as `riven_unconfirmed`). The 25% rule survives only as
+the hint for which stats to mark.
 
 A GAUGE-SWITCHED form stays out, and the survey settles that rather than the
 argument. An Incarnon form is paid for with evolutions and a riven's pool is
@@ -1261,32 +1268,25 @@ Lex and Atomos Incarnon forms all fire a literal travelling projectile, and
 their families show zero cards carrying Projectile Speed.
 
 
-Three files, and which one DECIDES is the whole design:
+Four files, and which one DECIDES is the whole design:
 
 | file | role |
 |---|---|
-| `engine/src/build/rivens/pools.rs::derived_for` | **the model** — the weapon's physical shares, its ammo pool, whether anything it fires travels |
-| `data/rivens/exceptions.yaml` | **the overrides** — hand-written, per riven FAMILY, every entry carrying the evidence it came from |
-| `data/rivens/pools.yaml` | **the check** — a count over live warframe.market listings, read by a test and by nothing else |
+| `engine/src/build/rivens/pools.rs::derived_for` | **the model** for non-physical stats — the ammo pool, whether anything it fires travels, whether anyone aims it |
+| `data/rivens/physical.yaml` | **the physical evidence** — the survey's verdicts, generated, every entry carrying its count |
+| `data/rivens/exceptions.yaml` | **the overrides** — hand-written, per riven FAMILY: a real card, or a count that overrules the model |
+| `data/rivens/pools.yaml` | **the check** — the raw count over live warframe.market listings, read by a test and by nothing else |
 
-**THE SURVEY IS A CHECK, NOT A SOURCE**, and it was the other way round for a
-day. `pools.yaml` outranked the derivation, so a scrape was a silent authority
-over 26 weapon families — and a re-run of it came back *"nothing rolls
-anything"* for every one of them, wrote itself to disk, and was caught only
-because two unrelated tests happened to fail. Nothing in the pipeline was
-looking: the file parsed, the pools emptied, and no assertion was about that.
+One (family, stat) may appear in only one of the two evidence files
+(`no_riven_fact_is_stated_in_both_evidence_files`): a card sent in for a pair
+the survey has an answer for moves the pair into `exceptions.yaml`.
 
-Now `the_survey_still_agrees_with_the_rules` fails, naming the family and the
-stat, and the fix is a human one — promote the disagreement into
-`exceptions.yaml` with its count, or fix the rule.
-`a_survey_that_refuses_everything_is_a_broken_scrape` catches the specific
-failure above before anyone reads a number off it.
-
-The exception list is small on purpose: 11 families of 26 have an entry, 15 run
-on the rules alone, and a weapon added tomorrow is approximately right before
-anybody counts cards. The wiki's own sentence is the licence for it —
-*"exceptions exist on a case by case basis"* — and a case-by-case exception is
-data, not a formula.
+**THE RAW COUNT IS A CHECK, NOT A SOURCE.** When `pools.yaml` outranked the
+derivation, a re-run of the scrape came back *"nothing rolls anything"* for every
+family, wrote itself to disk, and was caught only because two unrelated tests
+happened to fail. Now `the_survey_still_agrees_with_the_rules` fails, naming the
+family and the stat, and `a_survey_that_refuses_everything_is_a_broken_scrape`
+catches that specific failure before anyone reads a number off it.
 
 ---
 

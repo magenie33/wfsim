@@ -14,14 +14,12 @@ const RIVENS = "rivens";   // its preset domain, per weapon like the builds
 // The stat pool this weapon's rivens draw from. NOT its mod class: a bow's
 // mods are `bow` and its rivens are `rifle`, so the server derives which pool
 // applies and says so.
-// `riven_excludes` takes out what THIS weapon cannot roll, and the server
-// answers from three sources in order (MEASUREMENTS M35): a real card someone
-// has, a COUNT over ~12 000 live riven listings per family, and only then the
-// derivation — a sentinel weapon has no Zoom and no Recoil, a hit-scan one no
-// flight speed, an infinite-ammo one no Ammo Maximum, and a weapon with no
-// physical damage rolls no physical attribute (the wiki's 25% rule, which is
-// wrong on six of 26 families in both directions). The class table stays
-// shared; only the weapon's view of it narrows.
+// `riven_excludes` takes out what THIS weapon cannot roll (MEASUREMENTS M35):
+// a sentinel weapon has no Zoom and no Recoil, a hit-scan one no flight speed,
+// an infinite-ammo one no Ammo Maximum, and a PHYSICAL stat is out only where
+// the family's cards say it never rolls. `riven_unconfirmed` is the physical
+// stats nobody has counted: offered, and marked. The class table stays shared;
+// only the weapon's view of it narrows.
 const rivenPoolAll = () => {
   const w = weaponInfo($("weapon").value);
   return (META.riven_stats || {})[w.riven_class || w.mod_class] || [];
@@ -386,6 +384,7 @@ function openRivenPicker(anchor, slot) {
   const menu = $("riven-menu");
   const at = slot === "malus" ? riven.malus : riven.bonuses[Number(slot)];
   const used = new Set(riven.bonuses.map((x) => x.id).concat(riven.malus ? [riven.malus.id] : []));
+  const unconfirmed = weaponInfo($("weapon").value).riven_unconfirmed || [];
   const draw = (q) => {
     const f = (q || "").trim().toLowerCase();
     menu.innerHTML = rivenPool()
@@ -399,7 +398,8 @@ function openRivenPicker(anchor, slot) {
       .filter((x) => !f || `${rivenStatNameEn(x)} ${rivenStatName(x)}`.toLowerCase().includes(f))
       .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
         <div class="info"><div class="mn">${escHtml(rivenStatName(x))}</div>
-        <div class="me">${x.modeled ? "" : `<div>${escHtml(tr("not modeled — it rolls and it names the riven, but it adds no damage"))}</div>`}</div></div>
+        <div class="me">${x.modeled ? "" : `<div>${escHtml(tr("not modeled — it rolls and it names the riven, but it adds no damage"))}</div>`}${
+          unconfirmed.includes(x.id) ? `<div>${escHtml(tr("unconfirmed — no card of this riven family says whether it rolls"))}</div>` : ""}</div></div>
       </div>`).join("") || `<div class="opt dis">${escHtml(tr("no matching stat"))}</div>`;
     menu.querySelectorAll("[data-rvid]").forEach((el) => el.onclick = () => {
       at.id = el.dataset.rvid;
@@ -573,6 +573,9 @@ function renderRivenCard() {
     ? `<div class="error"><b>${escHtml(tr("not a legal riven"))}</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
     : `<div class="rv-name">${escHtml(r.name)}</div>
        <div class="rv-meta">${r.drain} ${escHtml(tr("capacity"))} · ${escHtml(tr(r.class))} ${escHtml(tr("riven"))} · ${escHtml(tr("disposition"))} ${Number(r.disposition).toFixed(2)}</div>`
+      // LEGAL AND SAID SO: no card of the family settles these either way.
+      + ((r.unconfirmed || []).length ? `<div class="rv-meta">${escHtml(tr("unconfirmed on this weapon: {stats}")
+        .replace("{stats}", r.unconfirmed.map((id) => { const d = rivenStat(id); return d ? rivenStatName(d) : id; }).join(", ")))}</div>` : "")
       + rivenKinResolved.filter((k) => k && k.r && k.r.ok && !(k.r.illegal || []).length).map((k) =>
         `<div class="rv-kin"><span class="rv-meta">${escHtml(kinName(k.w))} · ${escHtml(tr("disposition"))} ${
           Number(k.r.disposition).toFixed(2)}</span><div class="rv-all-s">${(k.r.stats || []).map((x) =>

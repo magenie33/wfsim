@@ -1715,6 +1715,8 @@ ui:
   "nothing rolled yet": 尚未选择词条
   "no rivens for this weapon yet": 这把武器还没有裂罅
   "not a legal riven": 不是合法的裂罅
+  "unconfirmed — no card of this riven family says whether it rolls": 未确认——这个裂罅家族还没有卡能说明它出不出
+  "unconfirmed on this weapon: {stats}": 在这把武器上未确认：{stats}
   "one more stat to finish this riven": 还差 1 条词条这张裂罅就完整了
   "pick {n} more stats to finish this riven": 还差 {n} 条词条这张裂罅就完整了
   "where this roll landed in its 0.9-1.1 band": 这条词条的随机值在 0.9-1.1 区间里的位置

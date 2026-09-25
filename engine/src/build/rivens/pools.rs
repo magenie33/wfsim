@@ -110,28 +110,25 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     out
 }
 
-/// What this weapon's rivens can NOT roll: the derivation, with the
-/// hand-written per-family EXCEPTIONS applied over it.
+/// What this weapon's rivens can NOT roll: the derivation, with the per-family
+/// evidence applied over it (`exceptions.yaml` and `physical.yaml`).
 ///
-/// TWO LAYERS AND NOT THREE, and which two is the point.
-/// The rules generate the pool; `data/rivens/exceptions.yaml` overrides them
-/// where somebody has looked; the SURVEY is neither of those and no longer
-/// appears here at all.
+/// The SURVEY's raw count is not in this path: a scrape that outranks the rules
+/// rewrites every pool when it breaks, so evidence reaches here only as entries
+/// that carry their count, and `the_survey_still_agrees_with_the_rules` checks
+/// the rest.
 ///
-/// It must not. `pools.yaml` outranking the derivation makes a scrape a silent
-/// authority over 26 weapon families, and a re-run of one came back "nothing
-/// rolls anything" for every one of them. Nothing in the pipeline catches that:
-/// the file parses, the pools empty, and the two
-/// tests that failed were both about something else. Evidence belongs in a
-/// check (`the_survey_still_agrees_with_the_rules`), where a broken scrape is
-/// loud.
+/// The evidence speaks per riven FAMILY, because that is the unit DE rolls: one
+/// Boar riven fits the Boar and the Boar Prime, so one entry covers both.
 ///
-/// The exception list speaks per riven FAMILY, because that is the unit DE
-/// rolls: one Boar riven fits the Boar and the Boar Prime, so one entry covers
-/// both.
+/// A PHYSICAL STAT IS REFUSED ONLY BY EVIDENCE. The 25% share rule is wrong in
+/// both directions (the Ocucor is 0% Slash and rolls it, the Phenmor is 30%
+/// Puncture and does not), so it never refuses a card on its own: what it
+/// would have refused and nobody has looked at is [`unconfirmed_for`].
 pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     let Some(s) = crate::data::weapons::spec(weapon_id) else { return Vec::new() };
     let mut out = derived_for(weapon_id);
+    out.retain(|id| !PHYSICAL.contains(id));
     if let Some(fam) = s.riven_family.as_deref() {
         let ex = exceptions(fam);
         out.retain(|id| !ex.rolls.contains(id));
@@ -147,6 +144,23 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     // speak in the market's stat vocabulary rather than in one class's, and
     // every caller intersects with the pool anyway.
     out
+}
+
+/// The three physical stats — the ones whose pool no rule predicts.
+pub const PHYSICAL: [&str; 3] = ["impact", "puncture", "slash"];
+
+/// Physical stats this weapon's riven is OFFERED without evidence either way:
+/// the share rule would refuse them, and no card or count for the family says
+/// whether they roll. Legal until a survey says otherwise, and shown as
+/// unconfirmed so a visitor knows the answer is not ours to give yet.
+pub fn unconfirmed_for(weapon_id: &str) -> Vec<&'static str> {
+    let Some(s) = crate::data::weapons::spec(weapon_id) else { return Vec::new() };
+    let ex = s.riven_family.as_deref().map(exceptions);
+    derived_for(weapon_id)
+        .into_iter()
+        .filter(|id| PHYSICAL.contains(id))
+        .filter(|id| ex.is_none_or(|e| !e.rolls.contains(id) && !e.never.contains(id)))
+        .collect()
 }
 
 /// DE's OWN riven family names — `data/rivens/de_families.yaml`, written by
@@ -257,28 +271,32 @@ pub fn survey(family: &str) -> Option<&'static SurveyedPool> {
     surveys().iter().find(|s| s.family == family)
 }
 
-/// One family's exceptions — `data/rivens/exceptions.yaml`.
+/// The two evidence files, each parsed on its own: `exceptions.yaml` (hand-
+/// written) and `physical.yaml` (the survey's physical verdicts).
+pub(super) fn exception_files() -> Vec<(&'static str, Vec<RawExceptions>)> {
+    crate::data::files_under("rivens/")
+        .filter(|(p, _)| *p == "rivens/exceptions.yaml" || *p == "rivens/physical.yaml")
+        .map(|(p, t)| {
+            let f = serde_norway::from_str::<ExceptionsFile>(t).unwrap_or_else(|e| panic!("{p}: {e}"));
+            (p, f.families)
+        })
+        .collect()
+}
+
+/// One family's exceptions — `data/rivens/exceptions.yaml` and `physical.yaml`, merged.
 pub fn exceptions(family: &str) -> &'static Exceptions {
     static S: OnceLock<std::collections::BTreeMap<String, Exceptions>> = OnceLock::new();
     static EMPTY: OnceLock<Exceptions> = OnceLock::new();
     let all = S.get_or_init(|| {
-        crate::data::files_under("rivens/")
-            .filter(|(p, _)| *p == "rivens/exceptions.yaml")
-            .map(|(p, t)| {
-                serde_norway::from_str::<ExceptionsFile>(t)
-                    .unwrap_or_else(|e| panic!("{p}: {e}"))
-            })
-            .flat_map(|f| f.families)
-            .map(|r| {
-                (
-                    r.family,
-                    Exceptions {
-                        rolls: r.rolls.into_iter().map(|s| leak(s.stat)).collect(),
-                        never: r.never.into_iter().map(|s| leak(s.stat)).collect(),
-                    },
-                )
-            })
-            .collect()
+        let mut m: std::collections::BTreeMap<String, Exceptions> = Default::default();
+        for (_, fams) in exception_files() {
+            for r in fams {
+                let e = m.entry(r.family).or_default();
+                e.rolls.extend(r.rolls.into_iter().map(|s| leak(s.stat)));
+                e.never.extend(r.never.into_iter().map(|s| leak(s.stat)));
+            }
+        }
+        m
     });
     all.get(family).unwrap_or_else(|| EMPTY.get_or_init(Exceptions::default))
 }

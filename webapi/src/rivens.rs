@@ -2,7 +2,6 @@
 //! The rivens a request carries, and `/api/riven`.
 
 use serde_json::{json, Value};
-use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::ModDef;
 use crate::registry::{WeaponInfo, default_weapon_id, mod_pool_for, weapon};
 use crate::request::{get_str, get_u32};
@@ -178,8 +177,6 @@ pub fn riven_json(v: &Value) -> Value {
             _ => wfsim_engine::rules::capacity::Polarity::Madurai,
         },
     };
-    let evo_refs: Vec<&str> = Vec::new();
-    let base = WeaponBase::from_data(&info.id, true, &evo_refs);
     let disposition = info.disposition;
     let n_pos = spec.bonuses.len();
     // A typed VALUE overrides the roll, once the stat is known.
@@ -241,6 +238,9 @@ pub fn riven_json(v: &Value) -> Value {
             })
         })
         .collect();
+    let open = wfsim_engine::build::rivens::unconfirmed_for(&info.id);
+    let unconfirmed: Vec<&str> = spec.bonuses.iter().chain(spec.malus.iter())
+        .map(|s| s.id.as_str()).filter(|id| open.contains(id)).collect();
     json!({
         "ok": true,
         "class": class,
@@ -250,7 +250,9 @@ pub fn riven_json(v: &Value) -> Value {
         "stats": stats,
         // Every reason at once, so the UI can point at the knob that is wrong
         // instead of only refusing.
-        "illegal": spec.illegal_on(&base),
+        "illegal": spec.illegal_for(&info.id),
+        // Stats on this card no evidence settles either way — legal, and said so.
+        "unconfirmed": unconfirmed,
     })
 }
 

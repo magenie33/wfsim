@@ -502,11 +502,11 @@ asserts the weapon under test has rows, which is what makes that loud.
 ## `check_riven_pool`
 
 The riven editor offers the stats that weapon's rivens
-actually roll, in BOTH slots. THE RULES DECIDE AND THE SURVEY CHECKS:
-`build::rivens::derived_for` is the model, `data/rivens/exceptions.yaml`
-overrides it per riven FAMILY with the evidence in each entry, and
-`data/rivens/pools.yaml` (from `scripts/survey_riven_pools.py`) is read by a
-TEST and by nothing else. See DATA_SOURCES §"Riven pools" (MEASUREMENTS M35).
+actually roll, in BOTH slots. A PHYSICAL stat is refused only by evidence
+(`data/rivens/physical.yaml`, or a card in `exceptions.yaml`) and one with none is
+offered; every other stat comes from `build::rivens::derived_for`, overridden per
+riven FAMILY by `exceptions.yaml`. See DATA_SOURCES §"Riven pools" (MEASUREMENTS
+M35).
 
 THE TWO SLOTS ARE DIFFERENT LISTS, which is why a case may state one answer per
 slot: five stats are bonus-only and one melee stat is malus-only.

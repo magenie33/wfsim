@@ -1,14 +1,12 @@
 // A WEAPON'S RIVEN EDITOR OFFERS THE STATS ITS RIVENS ACTUALLY ROLL.
 //
-// What a riven can roll is DE's own per-weapon table (MEASUREMENTS M35): it is
-// published nowhere, the wiki's 25%-of-a-physical-type rule disclaims itself
-// ("exceptions exist on a case by case basis"), and a count over ~12 000 live
-// cards found the derivation wrong in BOTH directions on six of 26 families.
-// So the engine derives the pool from the weapon and lets
-// `data/rivens/exceptions.yaml` override it per family (the survey is a test's
-// business, not the calculation's) — and this asserts
-// the PICKER acts on that, because the failure a player sees is a stat their
-// real riven carries not being in the list.
+// What a riven can roll is DE's own per-weapon table (MEASUREMENTS M35) and it
+// is published nowhere. The engine derives the non-physical pool from the
+// weapon, `data/rivens/exceptions.yaml` overrides it per family, and a PHYSICAL
+// stat is refused only by evidence (`data/rivens/physical.yaml`) — the wiki's
+// 25% share rule is wrong in both directions and refuses nothing on its own.
+// This asserts the PICKER acts on that, because the failure a player sees is a
+// stat their real riven carries not being in the list.
 //
 // It opens the popover rather than reading `rivenPool()`, and it walks BOTH
 // SLOTS. The bonus list and the malus list are drawn from one pool through two
@@ -31,11 +29,11 @@ const CASES = [
   // where a count proves nothing.
   ["Furis", "projectile_speed", true, "a player's card carries it"],
   ["MK1-Furis", "projectile_speed", true, "same riven, same family"],
-  // THE SURVEY, adding what the rules struck out: 9% Puncture, 91% Radiation,
-  // and all three physical stats roll on real cards.
+  // PHYSICAL STATS BY EVIDENCE: 9% Puncture, 91% Radiation, and all three
+  // physical stats roll on real cards.
   ["Ocucor", "impact", true, "49 of 500 cards"],
   ["Ocucor", "slash", true, "39 of 500 cards"],
-  // ...and taking away what they allowed.
+  // ...and refused where no card carries them, whatever the share says.
   ["Phenmor", "puncture", false, "30% of its damage, 0 of 500 cards"],
   ["Boar", "zoom", false, "no scope, and no field in the data says so"],
   ["Phantasma Prime", "projectile_speed", false, "the bomb flies, 0 of 500 cards"],
@@ -46,10 +44,10 @@ const CASES = [
   ["Lex Prime", "projectile_speed", false, "4 of 500 cards"],
   ["Atomos", "projectile_speed", false, "0 of 500 cards"],
   // MELEE, where the pool is a different item rather than the rifle's with
-  // rows crossed out. The 25% rule reads the same on a hammer: 80% Impact, 5%
-  // Slash.
+  // rows crossed out. No melee family is counted yet, so a 5% share is
+  // OFFERED and marked unconfirmed rather than refused.
   ["Magistar", "impact", true, "80% of its damage"],
-  ["Magistar", "slash", false, "5% of its damage"],
+  ["Magistar", "slash", true, "5% of its damage, and no card counted either way"],
   // …AND THE TWO SLOTS ARE DIFFERENT LISTS, which melee is the first pool to
   // prove in both directions. DE ships the combo-count stat as two entries and
   // only one of them can be the negative.

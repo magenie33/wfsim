@@ -48,14 +48,16 @@ that fits both, which is the point — DE's table is not a formula.
 ### What was decided
 
 Three sources, in order: **a real card** → **a count over live listings** →
-**the derivation**.
+**the derivation** — and the derivation never refuses a PHYSICAL stat, because
+no threshold fits the table (above).
 
-**WHICH FILE DECIDES:** the RULES do. `data/rivens/exceptions.yaml` overrides
-them per family with each entry naming its evidence, and `data/rivens/pools.yaml`
-— the survey — is read by a TEST and by nothing else: a scrape is there to
-VERIFY, never to be the source (DATA_SOURCES §"Riven pools"). Everything below is
-what the survey FOUND,
-and every finding became an exception entry carrying its count.
+**WHICH FILE DECIDES:** a physical stat is decided by evidence alone —
+`data/rivens/physical.yaml` (the survey's verdicts) and a real card in
+`data/rivens/exceptions.yaml`; with neither, it is offered and marked
+unconfirmed. Every other stat is decided by the rules, which `exceptions.yaml`
+overrides per family. `data/rivens/pools.yaml`, the raw count, is read by a
+TEST and by nothing else (DATA_SOURCES §"Riven pools"). Everything below is what
+the survey FOUND, and every finding became an evidence entry carrying its count.
 
 Why the survey does not decide: a re-run of the scrape came back "nothing rolls
 anything" for all 26 families. Data the engine reads at calculation time would
@@ -89,5 +91,5 @@ entirely.
 ### What would falsify it
 
 Any in-game card carrying a stat this file marks `never`. Absence in 500 listings
-is strong evidence and not a proof — one card beats the count, which is exactly
-what `exceptions.yaml` is for.
+is strong evidence and not a proof — one card beats the count, and it goes in
+`exceptions.yaml`, taking the pair out of `physical.yaml`.

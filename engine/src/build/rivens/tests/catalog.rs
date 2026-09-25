@@ -441,34 +441,32 @@ fn illegality_is_reported_per_reason() {
     assert!(alien.illegal().iter().any(|r| r.contains("not a rifle riven stat")));
 }
 
-/// A physical stat needs the weapon to actually deal that type.
+/// A PHYSICAL STAT IS REFUSED BY EVIDENCE, NEVER BY THE SHARE RULE — and the
+/// card's own check reads the same list the picker and the board read.
 #[test]
-fn a_physical_stat_needs_more_than_25_percent_of_that_type() {
-    use crate::model::WeaponBase;
-    // The Torid is pure Toxin: no physical riven stat exists on it.
-    let torid = WeaponBase::from_data("torid", true, &[]);
-    for id in ["impact", "puncture", "slash"] {
+fn a_physical_stat_is_refused_by_evidence_not_by_its_share() {
+    // The Torid is pure Toxin and its family's cards carry no physical stat.
+    for id in PHYSICAL {
         let s = spec(&["damage", id], None, 8);
-        assert!(
-            s.illegal_on(&torid).iter().any(|r| r.contains("more than 25%")),
-            "{id} should be impossible on the Torid: {:?}",
-            s.illegal_on(&torid)
-        );
+        assert!(!s.illegal_for("torid").is_empty(), "{id} should be refused on the Torid");
     }
     // And it is the RIVEN that is fine — only the pairing is wrong.
     assert!(spec(&["damage", "slash"], None, 8).illegal().is_empty());
 
-    // Dual Toxocyst is 7.5 Impact / 60 Puncture / 7.5 Slash = 75, so only
-    // Puncture (80%) clears the bar; the other two sit at 10%.
-    let toxo = WeaponBase::from_data("dual_toxocyst", true, &[]);
-    let ok = RivenSpec { class: "pistol".into(), ..spec(&["damage", "puncture"], None, 8) };
-    assert!(ok.illegal_on(&toxo).is_empty(), "{:?}", ok.illegal_on(&toxo));
-    let no = RivenSpec { class: "pistol".into(), ..spec(&["damage", "slash"], None, 8) };
-    assert!(no.illegal_on(&toxo).iter().any(|r| r.contains("10%")), "{:?}", no.illegal_on(&toxo));
+    // The Ocucor is 0% Slash, and real cards carry it as the malus: the card a
+    // player sent, which this check refused while the picker offered it.
+    let ocucor = RivenSpec { class: "pistol".into(), ..spec(&["damage", "critical_damage"], Some("slash"), 8) };
+    assert!(ocucor.illegal_for("ocucor").is_empty(), "{:?}", ocucor.illegal_for("ocucor"));
 
-    // A malus is restricted the same way.
-    let with_malus = RivenSpec { class: "pistol".into(), ..spec(&["damage", "multishot"], Some("impact"), 8) };
-    assert!(with_malus.illegal_on(&toxo).iter().any(|r| r.contains("more than 25%")));
+    // A family nobody has looked at: the share rule would refuse the stat, so
+    // it is OFFERED and marked unconfirmed rather than refused.
+    let unseen = crate::data::weapons::all().iter().find(|w| {
+        w.riven_family.as_deref().is_some_and(|f| survey(f).is_none()) && !unconfirmed_for(&w.id).is_empty()
+    });
+    if let Some(w) = unseen {
+        let u = unconfirmed_for(&w.id);
+        assert!(u.iter().all(|id| !excluded_for(&w.id).contains(id)), "{}: {u:?}", w.id);
+    }
 }
 
 /// A value can be typed IN, not just rolled to — that is how a riven you
@@ -583,17 +581,19 @@ fn a_weapon_does_not_roll_a_stat_it_does_not_have() {
     for id in ["zoom", "weapon_recoil", "ammo_maximum", "projectile_speed"] {
         assert!(v.contains(&id), "verglas_prime must not roll {id}: {v:?}");
     }
-    // The wiki's 25% rule, on a weapon with no physical damage at all.
-    for id in ["impact", "puncture", "slash"] {
-        assert!(v.contains(&id), "verglas_prime is 100% Cold, so no {id}: {v:?}");
+    // 100% Cold and nobody has counted its cards: the share rule would refuse
+    // all three physical stats, so they are OFFERED and marked unconfirmed.
+    let u = unconfirmed_for("verglas_prime");
+    for id in PHYSICAL {
+        assert!(u.contains(&id) && !v.contains(&id), "verglas_prime {id}: {u:?} / {v:?}");
     }
     // …and it keeps everything a sentinel weapon really has.
     for id in ["magazine_capacity", "reload_speed", "punch_through", "cold"] {
         assert!(!v.contains(&id), "verglas_prime does have {id}: {v:?}");
     }
 
-    // The rule is a SHARE, not "has any": Cernos Prime is 165.6/9.2/9.2,
-    // so Impact stays and the two 5% components go.
+    // Cernos Prime is 165.6/9.2/9.2, and its family's cards carry Impact and
+    // neither 5% component — refused by that evidence, not by the share.
     let c = excluded_for("cernos_prime");
     assert!(!c.contains(&"impact"), "impact is 90% of the arrow: {c:?}");
     assert!(c.contains(&"puncture") && c.contains(&"slash"), "both are 5%: {c:?}");
@@ -620,7 +620,7 @@ fn a_free_alt_fire_counts_toward_the_physical_share() {
     // family where one member is pinned and its twin is not is precisely
     // how a fixed bug gets re-reported: there is nothing to point at.
     for id in ["larkspur", "larkspur_prime"] {
-        let l = excluded_for(id);
+        let l = derived_for(id);
         assert!(!l.contains(&"impact"), "{id}: the alt-fire is 33% Impact: {l:?}");
         // Nothing else is invented: neither form deals Puncture or Slash.
         assert!(l.contains(&"puncture") && l.contains(&"slash"), "{id}: {l:?}");
@@ -765,15 +765,15 @@ fn a_riven_family_agrees_with_itself() {
     // the Ballistica Prime's charged shot is 18% Slash on a 44% Puncture
     // body, over the line, and all three members roll it now.
     for id in ["ballistica", "ballistica_prime", "rakta_ballistica"] {
-        let e = excluded_for(id);
+        let e = derived_for(id);
         assert!(!e.contains(&"slash"), "{id}: the Prime's charge earns Slash: {e:?}");
         // Nothing is invented: no member is over the line on Impact.
         assert!(e.contains(&"impact"), "{id}: no member deals 25% Impact: {e:?}");
     }
     // The Ogris is the other direction of the same rule — the KUVA member
     // is the one over the line, and the ordinary one inherits it.
-    assert!(!excluded_for("ogris").contains(&"impact"));
-    assert!(!excluded_for("ogris").contains(&"puncture"));
+    assert!(!derived_for("ogris").contains(&"impact"));
+    assert!(!derived_for("ogris").contains(&"puncture"));
 }
 
 /// THE FAMILY POOL IS THE UNION, and these are the cards that say so.
@@ -882,7 +882,7 @@ fn an_incarnon_form_does_not_widen_the_physical_pool() {
         ("mk1_kunai", "slash", 430),
         ("bronco", "slash", 309),
     ] {
-        let e = excluded_for(id);
+        let e = derived_for(id);
         assert!(
             e.contains(&stat),
             "{id}: counting the Incarnon form would offer {stat}, which \
@@ -892,13 +892,13 @@ fn an_incarnon_form_does_not_widen_the_physical_pool() {
     // …AND THE NEGATIVE CONTROL, which is what keeps this from being a test
     // that would pass on a derivation that excluded everything: the same
     // weapons still roll the physical stats their BASE form earns.
-    let lex = excluded_for("lex");
+    let lex = derived_for("lex");
     assert!(!lex.contains(&"puncture"), "the Lex is 88% Puncture: {lex:?}");
-    let kunai = excluded_for("kunai");
+    let kunai = derived_for("kunai");
     assert!(!kunai.contains(&"puncture"), "the Kunai is 90% Puncture: {kunai:?}");
     // …and the FREE alt-fire is still counted, which is the rule this one
     // bounds rather than replaces.
-    assert!(!excluded_for("larkspur").contains(&"impact"));
+    assert!(!derived_for("larkspur").contains(&"impact"));
 }
 
 /// AN EXCEPTION OVERRIDES THE RULES, and only an exception does.
@@ -938,11 +938,11 @@ fn an_exception_overrides_the_derivation_and_nothing_else_does() {
     // Wraith's Slash is 7.75 of 31 and the rule reads "more than 25%".
     assert!(!excluded_for("karak_wraith").contains(&"slash"));
 
-    // 3. THE DERIVATION answers for everything unexcepted — 15 of the 26
-    //    families have no entry at all, and a weapon added tomorrow is
-    //    approximately right before anyone looks at a card.
+    // 3. THE DERIVATION answers for every unexcepted NON-physical stat, and
+    //    a physical one nobody has counted is offered as unconfirmed.
     let v = excluded_for("verglas_prime");
-    assert!(v.contains(&"zoom") && v.contains(&"impact"));
+    assert!(v.contains(&"zoom") && !v.contains(&"impact"));
+    assert!(unconfirmed_for("verglas_prime").contains(&"impact"));
     assert!(exceptions("Verglas").rolls.is_empty() && exceptions("Verglas").never.is_empty());
 }
 
@@ -1199,4 +1199,26 @@ fn the_name_comes_from_the_stats_ranked_by_roll() {
     // An in-game 2-bonus-plus-malus riven does.
     let with_malus = rolled(&[("damage", 1.10), ("multishot", 0.95)], Some("weapon_recoil"));
     assert_eq!(with_malus.name(1.0), two.name(1.0));
+}
+
+/// ONE (family, stat) IN ONE FILE. `physical.yaml` is regenerated by the survey
+/// and `exceptions.yaml` is hand-written; the same pair in both is two answers
+/// with nothing saying which wins, and a regeneration could silently flip it.
+#[test]
+fn no_riven_fact_is_stated_in_both_evidence_files() {
+    use std::collections::BTreeMap;
+    let mut seen: BTreeMap<(String, String), &str> = BTreeMap::new();
+    let mut both = Vec::new();
+    let files = crate::build::rivens::pools::exception_files();
+    assert_eq!(files.len(), 2, "both evidence files load");
+    for (path, fams) in files {
+        for f in fams {
+            for s in f.rolls.iter().chain(f.never.iter()) {
+                if let Some(other) = seen.insert((f.family.clone(), s.stat.clone()), path) {
+                    both.push(format!("{} / {}: {other} and {path}", f.family, s.stat));
+                }
+            }
+        }
+    }
+    assert!(both.is_empty(), "{}", both.join("\n"));
 }

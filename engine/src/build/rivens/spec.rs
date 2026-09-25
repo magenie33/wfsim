@@ -77,43 +77,16 @@ impl RivenSpec {
         out
     }
 
-    /// Legality that depends on the WEAPON, not just on the riven.
-    ///
-    /// Wiki: "Weapons without more than 25% of a physical damage type usually
-    /// cannot roll that respective attribute. For example, a Simulor Riven
-    /// will never have +/- Slash Damage stat."
-    ///
-    /// It matters immediately: the Torid is pure Toxin, so no Impact, Puncture
-    /// or Slash riven stat can exist on it at all. On the Dual Toxocyst
-    /// (7.5 Impact / 60 Puncture / 7.5 Slash) only Puncture clears the bar.
-    ///
-    /// The wiki says "usually", and "Exceptions exist on a case by case
-    /// basis" — so this is the general rule and a named exception would have
-    /// to be data on the weapon, not a hole in this check.
-    pub fn illegal_on(&self, base: &crate::model::WeaponBase) -> Vec<String> {
+    /// Legality that depends on the WEAPON, not just on the riven: a stat
+    /// [`excluded_for`] refuses. The same list the page's picker and the
+    /// board's validation read, so the card, the picker and the board give one
+    /// answer — a second rule here refused real Ocucor cards the picker offered.
+    pub fn illegal_for(&self, weapon_id: &str) -> Vec<String> {
         let mut out = self.illegal();
-        let total = base.base_vector.total();
-        let p = pool(&self.class);
+        let excluded = excluded_for(weapon_id);
         for s in self.bonuses.iter().chain(self.malus.iter()) {
-            let Some(def) = p.iter().find(|x| x.id == s.id) else { continue };
-            if def.kind != "physical_damage_bonus" {
-                continue;
-            }
-            let Some(t) = def.arg.as_deref().and_then(|a| match a {
-                "impact" => Some(DamageType::Impact),
-                "puncture" => Some(DamageType::Puncture),
-                "slash" => Some(DamageType::Slash),
-                _ => None,
-            }) else {
-                continue;
-            };
-            let share = if total > 0.0 { base.base_vector.get(t) / total } else { 0.0 };
-            if share <= 0.25 {
-                out.push(format!(
-                    "{} needs more than 25% {t:?} in the weapon's base, and it has {:.0}%",
-                    def.id,
-                    share * 100.0
-                ));
+            if excluded.contains(&s.id.as_str()) {
+                out.push(format!("this weapon's riven does not roll {}", s.id));
             }
         }
         out

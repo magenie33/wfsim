@@ -246,10 +246,12 @@ pub fn meta_json() -> Value {
                 // …minus the stats THIS weapon cannot roll. The pool is per
                 // class, but a sentinel weapon has no Zoom and no Recoil, a
                 // hit-scan one has no flight speed, an infinite-ammo one has
-                // no Ammo Maximum, and a weapon with no IPS rolls no physical
-                // attribute (wiki's 25% rule). Sent as a list rather than a
+                // no Ammo Maximum, and a physical stat is out only where the
+                // family's evidence says so. Sent as a list rather than a
                 // filtered pool so the class table stays shared.
                 "riven_excludes": wfsim_engine::build::rivens::excluded_for(&w.id),
+                // …and the offered ones nobody has confirmed: legal, and marked.
+                "riven_unconfirmed": wfsim_engine::build::rivens::unconfirmed_for(&w.id),
                 // WHERE it is fired, when that changes the weapon. Fewer than
                 // two means the axis does not exist for it and nothing should
                 // offer a choice - the same rule every other axis follows.
