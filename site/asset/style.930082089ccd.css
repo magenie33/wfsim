@@ -1039,14 +1039,29 @@ label.check input{width:auto}
    (mod/arcane image, polarity icon, effect lines); only the trailing control
    differs (pool/req for mods, include/search for arcanes & evolutions). */
 .opt-modlist{border:1px solid var(--line);border-radius:10px;background:var(--panel3)}
-/* The descent's starts: one row per start, a chip per card or arcane; a
-   locked chip is outlined in the accent so a pin reads at a glance. */
+/* The optimizer's starts: each the simulator's own build card, with a fixed
+   position outlined in the accent — the one mark the card gains here. */
 #opt-starts{margin-top:8px}
-.opt-start{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
-.opt-start-chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel3);cursor:pointer}
-.opt-start-chip.locked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
-.opt-start-del{margin-left:auto;font-size:12px;padding:2px 6px}
-#opt-start-add{margin-top:6px;font-size:12px}
+.opt-start{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px;background:var(--surface)}
+.opt-start-h{display:flex;align-items:center;gap:6px}
+.opt-start-add{display:flex;flex-wrap:wrap;gap:8px}
+.opt-runbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:8px 0 14px}
+.opt-runbar .run-btn{width:auto;margin-top:0;padding:9px 22px}
+.opt-runbar .runs-row,.opt-runbar .opt-est{margin:0}
+.opt-runbar .opt-est{flex-basis:100%}
+.opt-lanes{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted);margin:4px 0 6px}
+.opt-lane{color:var(--text-2)}
+.opt-tie{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--text-2)}
+.opt-failed{border-color:var(--critical);color:var(--critical)}
+.sb-chip.fixed{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+/* Editing a start in the builder: its banner, and the pin on every position. */
+.start-edit{border-color:var(--accent)}
+.start-edit-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.start-edit-done{border-color:var(--accent);color:var(--accent)}
+.start-pin{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;
+  border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0}
+.start-pin.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.slot.fixed-pin{box-shadow:inset 0 0 0 1.5px var(--accent)}
 #opt-mods,#opt-arcanes{margin-bottom:6px}
 .opt-modlist .opt,.opt-evolist .opt{cursor:default;border-bottom:1px solid var(--line);border-left:3px solid var(--rar,transparent)}
 .opt-modlist .opt:last-child,.opt-evolist .opt:last-child{border-bottom:none}

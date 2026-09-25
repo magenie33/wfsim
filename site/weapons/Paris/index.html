@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Paris","description":"Paris (帕里斯) — Bow · Primary · Mastery Rank 0. 320 base damage (impact 16, puncture 256, slash 48), 30% crit chance, 2x crit multiplier, 10% status chance. Best riven-free build on the board: 26.5041 under Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM, as of 2026-09-25.","url":"https://wfsim.app/weapons/Paris","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Paris","item":"https://wfsim.app/weapons/Paris"}]},"dateModified":"2026-09-25","about":{"@type":"Thing","name":"Paris","alternateName":"帕里斯"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.ec606316fa90.css" />
+  <link rel="stylesheet" href="/asset/style.930082089ccd.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   
   <script>
@@ -382,15 +382,24 @@
     </section>
 
     <section class="block" data-module="optimizer" id="opt-block">
-      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>what to search, and how hard — the fight is the simulator's</span></div>
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>each start improved by the quick calc until nothing helps — the fight is the simulator's</span></div>
       <div class="bb">
         
         <div class="opt-half fold sect" id="opt-plan" data-fold="opt-plan">
-          <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>what to look through, and how hard to look — all of it, and only it, is what a search preset saves</span></div>
+          <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>the starts and how hard to look — all of it, and only it, is what a search preset saves</span></div>
           
           <div class="preset-bar" id="preset-bar-optimizer"></div>
           
-          <div id="opt-scope">
+          <div class="opt-runbar" id="opt-runbar">
+            <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
+            <label data-i18n>Runs per candidate <select id="opt-cand-runs"><option value="1">1</option><option value="10">10</option></select></label>
+            <label data-i18n>Swap width <input id="opt-swap-width" type="number" min="1" max="4" value="1"></label>
+            <div id="opt-runs-block" class="runs-row"></div>
+            <div id="opt-estimate" class="opt-est"></div>
+          </div>
+          <div id="opt-starts"></div>
+          
+          <div id="opt-scope" hidden>
             
             <div id="opt-modes-sect" class="fold sect" data-fold="opt-modes">
               <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>how it is played — pool = searched, req = pin one</span></h3>
@@ -439,17 +448,9 @@
             </div>
           </div>
           
-          <div class="fold sect" data-fold="opt-search">
-            <h3 class="sim-h fold-h" data-i18n>Search <span class="sim-hint" data-i18n>how many builds survive to the last round</span></h3>
-            <div id="opt-search" class="field-grid">
-              <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
-              <label data-i18n>Swap width <input id="opt-swap-width" type="number" min="1" max="4" value="1"></label>
-            </div>
-            
-            <div id="opt-starts"></div>
-          </div>
-          
         </div>
+
+        <div id="opt-results"></div>
 
         <div class="opt-half fold sect" id="opt-fight-half" data-fold="opt-fight">
           <div class="opt-half-h fold-h" data-i18n>The fight <span class="sim-hint" data-i18n>the simulator's, shown read-only — every candidate is scored under it, and it is edited over there</span></div>
@@ -483,10 +484,6 @@
           </div>
         </div>
 
-        <div id="opt-runs-block" class="runs-row"></div>
-        <div id="opt-estimate" class="opt-est"></div>
-        <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
-        <div id="opt-results"></div>
       </div>
     </section>
   </main>
@@ -653,13 +650,13 @@
     
     <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">07392792</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">0a10a03b</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.0c8b41e3fbe4.js"></script>
+  <script src="/asset/app.c249ad793d9a.js"></script>
   <script type="module" src="/asset/nona.b1bfb25b3372/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>
