@@ -149,6 +149,12 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
 
                 "family": m.family,
                 "category": mod_category(m),
+                // THE PRIMARY ELEMENT IT ADDS, and how much — what the optimizer's
+                // four default starts pick their card by (the strongest of each).
+                "element": m.effects.iter().find_map(|e| match e {
+                    wfsim_engine::model::ModEffect::Element(t, v) => Some(json!([t.name(), v])),
+                    _ => None,
+                }),
                 "image": assets().mods.get(m.id),
                 // WHAT WARFRAME.MARKET CALLS IT. Absent means it does not trade
                 // there at all — Umbral and Galvanized cards carry no link, and

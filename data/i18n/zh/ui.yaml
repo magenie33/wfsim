@@ -428,7 +428,8 @@ ui:
   Starts: 起点
   Start: 起点
   "each is a build the search begins from; edit one in the builder, where a pinned position is FIXED in its answer": 每个起点是一套配装，搜索从它出发；在配装器里编辑，钉住的位置在它的答案里固定不变
-  "none — the search begins from one start per element": 未设置 —— 搜索会从每个元素各一个起点出发
+  "none — the search begins from a blank build": 未设置 —— 搜索从一套空白配装开始
+  "restore the 4 default starts": 恢复 4 个默认起点
   "+ add the current build as a start": + 把当前配装加为起点
   "+ add one of my builds": + 从我的配装里选
   "edit in the builder": 在配装器里编辑

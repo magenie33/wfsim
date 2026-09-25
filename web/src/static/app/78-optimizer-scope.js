@@ -319,7 +319,7 @@ function renderOpt() {
     // NOTHING CROSSES BETWEEN WEAPONS: the valence axis is seeded from the
     // build's own element, like the mode is.
     opt.valence = valenceSpec(w.id) ? { [valence.element]: "fixed" } : {};
-    opt.starts = [];
+    opt.starts = defaultStarts();
     optSeeded = true;
     bootstrapOptPresets();
   }

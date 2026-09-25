@@ -26,6 +26,11 @@ function normalizeStart(s, w) {
   return { build, fixed };
 }
 
+/// The starts as `/api/optimize` reads them. No starts is ONE BLANK build — the
+/// builder cleared and filled in the search's own order — not a hidden default.
+const startsPayload = () => (opt.starts.length ? opt.starts.map(startPayload)
+  : [{ slots: Array(10).fill(null), evolutions: [], arcane: [], arcane_rank: [], mode: null, valence_element: null, fixed: [] }]);
+
 /// A start as `/api/optimize` reads it: the build's slots, its axes, its pins.
 function startPayload(s) {
   const b = s.build;
@@ -51,6 +56,21 @@ function scopeTakesStart(b) {
   (b.arcane || []).forEach((a) => { if (a && a !== "none" && !opt.arcanes[a]) opt.arcanes[a] = "search"; });
 }
 
+/// THE FOUR DEFAULT STARTS: one build per primary element, holding the
+/// strongest card of it this weapon can equip and nothing else — what a player
+/// gets by making those four builds by hand, and edited and removed the same way.
+function defaultStarts() {
+  const w = $("weapon").value;
+  const pool = buildPool();
+  return ["cold", "heat", "electricity", "toxin"].map((e) => {
+    let best = null;
+    for (const m of pool) {
+      if (m.element && m.element[0] === e && (!best || m.element[1] > best.element[1])) best = m;
+    }
+    return best ? { build: stateFromBuild({ mods: [best.id] }, w), fixed: [] } : null;
+  }).filter(Boolean);
+}
+
 function addStart(build) {
   opt.starts.push({ build, fixed: [] });
   scopeTakesStart(build);
@@ -67,7 +87,7 @@ function renderOptStarts() {
   box.innerHTML =
     `<h4 class="sim-h">${escHtml(tr("Starts"))} <span class="sim-hint">${escHtml(tr(opt.starts.length
       ? "each is a build the search begins from; edit one in the builder, where a pinned position is FIXED in its answer"
-      : "none — the search begins from one start per element"))}</span></h4>`
+      : "none — the search begins from a blank build"))}</span></h4>`
     + opt.starts.map((s, i) => `<div class="opt-start" data-i="${i}">
         <div class="opt-start-h"><b>${escHtml(tr("Start"))} ${i + 1}</b><span style="flex-grow:1"></span>
         <button type="button" class="ghost-btn small" data-edit="${i}">${escHtml(tr("edit in the builder"))}</button>
@@ -77,7 +97,12 @@ function renderOptStarts() {
     + `<button type="button" class="ghost-btn small" id="opt-start-add">${escHtml(tr("+ add the current build as a start"))}</button>`
     + (mine.length ? `<select id="opt-start-mine" class="ghost-btn small"><option value="">${escHtml(tr("+ add one of my builds"))}</option>`
       + mine.map((p, i) => `<option value="${i}">${escHtml(presetLabel(p))}</option>`).join("") + `</select>` : "")
+    + `<button type="button" class="ghost-btn small" id="opt-start-defaults">${escHtml(tr("restore the 4 default starts"))}</button>`
     + `</div>`;
+  $("opt-start-defaults").addEventListener("click", () => {
+    defaultStarts().forEach((s) => opt.starts.push(s));
+    renderOptStarts(); updateOptEstimate();
+  });
   box.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => editStart(Number(b.dataset.edit))));
   box.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => {
     opt.starts.splice(Number(b.dataset.del), 1);

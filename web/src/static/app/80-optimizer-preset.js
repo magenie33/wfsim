@@ -114,7 +114,7 @@ const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, min: 0, arcanes: {}, ev
   // The build's own mode, the way an empty scope seeds every other axis from
   // what you are holding.
   modes: { [mode]: "fixed" },
-  starts: [],
+  starts: defaultStarts(),
   finalists: optRun.finalists, swap_width: optRun.swap_width });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
@@ -710,9 +710,9 @@ async function runOptimize() {
       // WHERE THE DESCENT BEGINS and how far it may reach at once. Empty
       // starts = one per element, chosen by the server.
       // THE QUICK DESCENT, from the player's starts as builds, each with its
-      // fixed positions. None = one start per element, chosen by the server.
+      // fixed positions. None = one blank build.
       strategy: "quick",
-      starts: opt.starts.map(startPayload), swap_width: optRun.swap_width,
+      starts: startsPayload(), swap_width: optRun.swap_width,
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {

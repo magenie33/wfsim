@@ -889,8 +889,10 @@ above runs only when a tool asks for it by name.
   Done and Discard put the player's build back. `check_start_edit`.
 - **Fixed** is the pin: a fixed position is never swept, so every answer from
   that start carries it. A start's cards join the scope when it is saved.
-- No starts = one per primary element, each a build holding that element's
-  strongest card and nothing else, chosen by the server.
+- A new search opens with FOUR DEFAULT STARTS, made by the page: one build per
+  primary element, holding the strongest card of it the weapon can equip and
+  nothing else, edited and removed like any other. With every start removed,
+  the one start is the BLANK build.
 
 ### Positions and candidates
 
@@ -955,8 +957,6 @@ fails at rank 14, 25.5% regret.
 
 ### Not built yet
 
-- The four default starts are the server's and not shown on the page as
-  builds a player can edit or remove.
 - The results are still the ranked table with a finalists count, not one row
   per start with the starts each answer came from.
 - The scope still carries `fixed` marks beside the starts' own.
