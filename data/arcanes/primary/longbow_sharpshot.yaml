@@ -40,5 +40,5 @@ effects:
 
 source:
   url: https://wiki.warframe.com/w/Longbow_Sharpshot
-  # Wiki module (Type Bow, Rarity Legendary, MaxRank 5) cross-checked against
-  # WFCD levelStats: rank 0 "+50% damage on your next shot", rank 5 "+300%".
+  # Wiki module: Type Bow, Rarity Legendary, MaxRank 5; the Effect table reads
+  # 50 / 100 / 150 / 200 / 250 / 300% from rank 0 to 5.

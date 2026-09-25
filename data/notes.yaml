@@ -896,9 +896,11 @@ notes:
   railjack_variant: |
     railjack_variant: >-
     None - no Railjack counterpart; excluded from Railjack proc weighting.
-  ramps_with_rank_wfcd: |
-    RAMPS with rank (WFCD levelStats); `duration` is the max-rank value
-    the engine builds with, `duration_rank0` is where the card starts.
+  ramps_with_rank: |
+    RAMPS with rank, 1.5 s per rank from 1.5 s at rank 0 — the wiki's
+    Duration column, 1.5 / 3 / 4.5 / 6 / 7.5 / 9 s on a rank-5 card.
+    `duration` is the max-rank value the engine builds with,
+    `duration_rank0` is where the card starts.
   range_wall_ramp_full: |
     THE RANGE IS A WALL, NOT A RAMP: full damage to the end of it and
     literally nothing past it. Transcribed from the wiki's Range stat; it

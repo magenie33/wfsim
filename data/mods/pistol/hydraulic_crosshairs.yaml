@@ -16,7 +16,7 @@ effects:
     rank0: 0.225
     rankMax: 1.35
     max_stacks: 1
-    # RAMPS with rank, 1.5 s per rank: the wiki's table reads 1.5 / 3 / 4.5 / 6 / 7.5 / 9 s.
+    # see notes: ramps_with_rank
     duration_rank0: 1.5
     duration: 9
 

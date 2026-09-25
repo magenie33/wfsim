@@ -22,8 +22,8 @@ effects:
     rank0: 0.125
     rankMax: 0.75
     max_stacks: 1
-    # RAMPS with rank, like Deadly Efficiency: 2 s at rank 0, 9 s at max.
-    duration_rank0: 2
+    # see notes: ramps_with_rank
+    duration_rank0: 1.5
     duration: 9
 
 source:

@@ -19,7 +19,8 @@ effects:
     rank0: 0.05
     rankMax: 0.3
     max_stacks: 1
-    duration_rank0: 2
+    # see notes: ramps_with_rank
+    duration_rank0: 1.5
     duration: 9
 
 source:
