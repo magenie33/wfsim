@@ -1,0 +1,30 @@
+# A FLAT CRITICAL DAMAGE the companion's precept grants the player, offered
+# beside the ability buffs because it is the same kind of input: assumed up when
+# ticked.
+#
+# THE CONDITION IS THE TICK. "If the Companion's Critical Chance is over 50%" is
+# a fact about a companion build this fight does not seat, so ticking it says the
+# companion clears it.
+#
+# Where it lands, VERBATIM (wiki, Critical_Hit): "Braton with Vital Sense
+# (relative) and Tenacious Bond (absolute) has a critical damage multiplier of:
+# 1.6 × (1 + 120%) + 1.2".
+id: tenacious_bond
+name: Tenacious Bond
+frame: Companion mod
+family: tenacious_bond
+helminth: false
+scales_with: none
+
+# At max rank (5), from the card.
+value: 1.2
+
+effect:
+  kind: final_crit_damage
+
+unmodelled:
+  - "the condition, the companion's critical chance over 50%, is not checked: ticking this says the companion clears it"
+  - "headshot kills shortening the companion's recovery timer: this fight has no companion to revive"
+
+source:
+  url: https://wiki.warframe.com/w/Tenacious_Bond

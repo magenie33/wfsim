@@ -705,6 +705,13 @@ That is the whole design, and everything else follows from it:
 - **They are not in the buff bar**, and should not be: the bar shows what this
   build gained during the run. An ability you cast is an input to the run.
 
+**NOT EVERY ENTRY IS AN ABILITY.** Arcane Crepuscular and Tenacious Bond sit in
+the same list because they are the same kind of input — a flat bonus the fight
+hands the weapon — and their conditions (invisible; a companion over 50% crit
+chance) are not simulated: the tick says they hold, and each card says so in its
+`unmodelled` lines. `scales_with: none` keeps Ability Strength off them, and no
+`duration_seconds` means no window of their own.
+
 ### The effect kinds — multipliers, an INSTANCE, and one that buys no damage
 
 Each is a different BUCKET, and the differences are quoted rather than assumed
@@ -717,6 +724,7 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 | `add_element` | Shock Trooper +100% Electricity | the FINISHED vector | its own element's DoT, **re-read at every tick** |
 | `extra_hit` | Xata's Whisper +26% Void | **nowhere — it fires a second instance** | rolls its own, independently |
 | `fire_rate` | Warcry +50% attack speed | the sum a fire-rate MOD is in | **nothing — it buys no damage** |
+| `final_crit_damage` | Tenacious Bond +1.2x | added to the finished crit multiplier, after the mods and before the tier | whatever the crit that made it carried |
 
 ### Cast, or assumed up
 

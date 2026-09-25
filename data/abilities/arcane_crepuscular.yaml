@@ -1,0 +1,30 @@
+# A FLAT CRITICAL DAMAGE the wielder brings, offered beside the ability buffs
+# because it is the same kind of input: assumed up when ticked.
+#
+# THE CONDITION IS THE TICK. "While invisible" is not simulated — this arena has
+# no stealth — so ticking it says the wielder is invisible for the whole fight.
+# The same card in a Warframe build's arcane slot pays nothing
+# (data/warframe_arcanes/arcane_crepuscular.yaml); this entry is where it is paid.
+#
+# Where it lands, VERBATIM (wiki, Critical_Hit): "A few effects grant absolute
+# (also called flat) amounts of critical damage which are applied after relative
+# bonuses", with Arcane Crepuscular named among them.
+id: arcane_crepuscular
+name: Arcane Crepuscular
+frame: Arcane
+family: arcane_crepuscular
+helminth: false
+scales_with: none
+
+# At max rank (5), from the card.
+value: 3.0
+
+effect:
+  kind: final_crit_damage
+
+unmodelled:
+  - "the condition, being invisible, is not simulated: ticking this says the wielder is invisible for the whole fight"
+  - "its +30% Ability Strength: add it to the Ability Strength box yourself if the buffs here should feel it"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Crepuscular

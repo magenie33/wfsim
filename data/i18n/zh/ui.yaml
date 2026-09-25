@@ -287,6 +287,9 @@ ui:
   "Arcane (on status)": 赋能附加伤害
   "Arcane presets": 赋能预设
   "Arcane": 赋能
+  "Companion mod": 同伴 MOD
+  "what the fight hands this weapon — a squadmate's Roar, your own frame's, an arcane or a companion's precept — assumed up while ticked. WHEN an ability is cast is the action priority list's question and not this block's": 战斗给这把武器的加成——队友的战吼、你自己 Warframe 的技能、赋能或同伴的专属 MOD——勾选即视为一直生效。技能什么时候施放由行动优先级列表决定，不归这里管
+  "critical damage added flat to the finished multiplier, after the mods and before the crit tier — the same +x on every weapon, so it is worth more the lower the weapon's own crit damage": 暴击伤害以固定值加到最终倍率上，在 MOD 之后、暴击等级之前——每把武器加的都是同样的倍数，所以武器自身暴伤越低它越值钱
   "Arcanes": 赋能
   "Arch-Guns": 空战武器
   "Archwing": 空战

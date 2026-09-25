@@ -56,6 +56,8 @@ const wfElement = (a) => {
 const wfElementName = (id) => DT(id);
 
 function wfValueLabel(a) {
+  // A MULTIPLIER, written the way the card writes it ("+3x"), never as a percent.
+  if (a.kind === "final_crit_damage") return `+${Math.round(wfValue(a) * 100) / 100}x`;
   const pct = Math.round(wfValue(a) * 1000) / 10;
   if (a.kind === "add_element" || a.kind === "extra_hit") {
     return `+${pct}% ${wfElementName(wfElement(a))}`;
@@ -69,6 +71,9 @@ function wfValueLabel(a) {
 function wfEffectLine(a) {
   if (a.kind === "faction_damage") {
     return tr("faction damage — the bracket a Bane mod is in, so a status tick takes it twice");
+  }
+  if (a.kind === "final_crit_damage") {
+    return tr("critical damage added flat to the finished multiplier, after the mods and before the crit tier — the same +x on every weapon, so it is worth more the lower the weapon's own crit damage");
   }
   if (a.kind === "final_damage") {
     return tr("damage on its own multiplier — applied once, to the hit and to the status alike");
@@ -157,7 +162,7 @@ function renderWfBuffs(host, readonly) {
     `<div class="wfb-head">
        <label title="${escHtml(tr("your Warframe's Ability Strength, as the arsenal shows it — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
          <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}"${readonly ? " disabled" : ""}></label>
-       <span class="wfb-early">${escHtml(tr("what others hand you — a squadmate's Roar, or your own frame's, assumed up. WHEN one is cast is the action priority list's question and not this block's"))}</span>
+       <span class="wfb-early">${escHtml(tr("what the fight hands this weapon — a squadmate's Roar, your own frame's, an arcane or a companion's precept — assumed up while ticked. WHEN an ability is cast is the action priority list's question and not this block's"))}</span>
      </div>
      ${nulled ? `<div class="wfb-null">${escHtml(
         tr("this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way"))}</div>` : ""}

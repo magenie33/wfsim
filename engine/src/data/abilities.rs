@@ -43,6 +43,11 @@ pub enum AbilityEffect {
     /// applied to melee weapons is a flat value applied after mods (e.g. a
     /// melee weapon with 25% critical chance becomes 225%)"*.
     FlatCritChance(f64),
+    /// A FLAT CRITICAL DAMAGE, added to the finished multiplier after the mods
+    /// and before the tier: *"Total Critical Damage Multiplier = Base Critical
+    /// Damage Multiplier × (1 + Relative Bonus) + Absolute Bonus"* (wiki
+    /// `Critical_Hit`), the bucket Cold's received bonus is already in.
+    FinalCritDamage(f64),
     /// **ATTACK SPEED / FIRE RATE, ADDITIVE WITH THE MODS.** Warcry states the
     /// bracket and works the example: *"Attack Speed bonus is additive to mods
     /// (e.g., Fury)"*, `Attack Speed Mods + Warcry Modifier × (1 + Strength
@@ -139,8 +144,9 @@ pub struct AbilityDef {
     pub requires_slot: Option<&'static str>,
     /// At max rank and 100% Ability Strength.
     pub value: f64,
-    /// At max rank and 100% Ability Duration, in seconds.
-    pub duration_seconds: f64,
+    /// At max rank and 100% Ability Duration, in seconds — `None` for a source
+    /// with no window of its own (an arcane or a precept held on a condition).
+    pub duration_seconds: Option<f64>,
     /// EVERY bracket this one cast grants. A list because a single ability can
     /// touch more than one — Redline sets fire rate AND reload speed off one
     /// gauge — and splitting those into two entries would let a player tick
@@ -342,7 +348,8 @@ struct AbilityFile {
     #[serde(default)]
     helminth: bool,
     value: f64,
-    duration_seconds: f64,
+    #[serde(default)]
+    duration_seconds: Option<f64>,
     /// ONE effect, the shape every ability had before Redline. Kept because it
     /// is what most of them are and a list of one reads worse than a value.
     #[serde(default)]
@@ -475,6 +482,7 @@ pub fn all() -> &'static [AbilityDef] {
                             element("add_element"), v, ef.forced_status),
                         "ammo_efficiency" => AbilityEffect::AmmoEfficiency(v),
                         "flat_crit_chance" => AbilityEffect::FlatCritChance(v),
+                        "final_crit_damage" => AbilityEffect::FinalCritDamage(v),
                         "fire_rate" => AbilityEffect::FireRate(v),
                         "extra_hit" => AbilityEffect::ExtraHit {
                             element: element("extra_hit"),
@@ -646,6 +654,7 @@ pub fn resolve(
                 }
                 AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
                 AbilityEffect::FlatCritChance(v) => AbilityEffect::FlatCritChance(scale(v)),
+                AbilityEffect::FinalCritDamage(v) => AbilityEffect::FinalCritDamage(scale(v)),
                 AbilityEffect::FireRate(v) => AbilityEffect::FireRate(scale(v)),
                 AbilityEffect::ExtraHit { element, fraction, forced_status } => {
                     AbilityEffect::ExtraHit {
@@ -747,6 +756,19 @@ pub fn flat_crit_at(list: &[ActiveAbility], t: f64) -> f64 {
         .flat_map(|a| a.effects.iter())
         .filter_map(|e| match *e {
             AbilityEffect::FlatCritChance(v) => Some(v),
+            _ => None,
+        })
+        .sum()
+}
+
+/// FLAT CRITICAL DAMAGE running at `t` — added to the finished multiplier,
+/// never scaled by the weapon's base. Two sources add.
+pub fn final_crit_damage_at(list: &[ActiveAbility], t: f64) -> f64 {
+    list.iter()
+        .filter(|a| a.live_at(t))
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
+            AbilityEffect::FinalCritDamage(v) => Some(v),
             _ => None,
         })
         .sum()
@@ -958,7 +980,10 @@ mod tests {
         for d in a {
             assert!(!d.name.is_empty());
             assert!(d.value > 0.0, "{}", d.id);
-            assert!(d.duration_seconds > 0.0, "{}", d.id);
+            // A window is stated wherever there is one, and a castable ability
+            // always has one: a price with no window buys nothing.
+            assert!(d.duration_seconds.is_none_or(|s| s > 0.0), "{}", d.id);
+            assert!(d.energy_cost.is_none() || d.duration_seconds.is_some(), "{}", d.id);
             // A NUMBER WITHOUT A SOURCE IS A GUESS. Every one of these is a
             // wiki figure and the file has to name the page it came off.
             assert!(
@@ -1212,7 +1237,7 @@ mod tests {
                     continue;
                 }
                 assert!(
-                    (a.value - b.value).abs() > 1e-9 || (a.duration_seconds - b.duration_seconds).abs() > 1e-9,
+                    (a.value - b.value).abs() > 1e-9 || a.duration_seconds != b.duration_seconds,
                     "{} and {} are the same buff — keep one",
                     a.id,
                     b.id
@@ -1270,7 +1295,7 @@ mod tests {
         // …and Toxic Lash's own number, for guns: 30% Toxin, 45 s.
         let tl = get("toxic_lash").expect("toxic_lash");
         assert!((tl.value - 0.30).abs() < 1e-9);
-        assert!((tl.duration_seconds - 45.0).abs() < 1e-9);
+        assert_eq!(tl.duration_seconds, Some(45.0));
         assert!(tl.effects.iter().any(|e| matches!(*e,
             AbilityEffect::ExtraHit { element: DamageType::Toxin, .. })));
     }

@@ -273,7 +273,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         }
         _ => 0.0,
     };
-    let cd_abs = bodies[0].debuffs.cold_cd_bonus(t) + spiteful + weakpoint_cd;
+    let cd_abs = bodies[0].debuffs.cold_cd_bonus(t)
+        + spiteful
+        + weakpoint_cd
+        + crate::data::abilities::final_crit_damage_at(&params.abilities, t);
     // PRELUDE OF MIGHT is the one perk whose condition is read at the
     // MOMENT OF THE HIT rather than off the arsenal: "With Critical
     // Chance below 40%", plus the wiki's note on the same row —

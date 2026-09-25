@@ -840,3 +840,38 @@ fn casting_costs_shots_and_the_pool_limits_the_window() {
     assert_eq!(free_ends, long_ends);
     assert!(free_shots > long_shots, "{free_shots} against {long_shots}");
 }
+
+/// A FLAT CRITICAL DAMAGE LANDS AFTER THE MODS AND BEFORE THE TIER — the wiki's
+/// own worked example:
+///
+///   "Braton with Vital Sense (relative) and Tenacious Bond (absolute) has a
+///    critical damage multiplier of: 1.6 × (1 + 120%) + 1.2" (wiki `Critical_Hit`)
+///
+/// So the card is worth EXACTLY a finished multiplier 1.2 higher, at every crit
+/// chance and so at every tier, which adding it after the tier would break.
+#[test]
+fn a_flat_crit_damage_lands_after_the_mods_and_before_the_tier() {
+    let braton = |abilities: &[(&'static str, Option<f64>)], cc: f64, cd: f64, strength: f64| {
+        let mut p = params(abilities, strength);
+        p.base_crit_chance = cc;
+        p.unmodded_crit_damage = 1.6;
+        p.crit_multiplier = cd;
+        // No kill, so no overkill trimmed off the number being compared.
+        p.foe.base_health = 1e15;
+        direct(&p)
+    };
+    let vital = 1.6 * (1.0 + 1.2);
+    for cc in [0.0, 1.0, 2.0] {
+        let bond = braton(&[("tenacious_bond", None)], cc, vital, 1.0);
+        let want = braton(&[], cc, vital + 1.2, 1.0);
+        assert!((bond - want).abs() < 1e-6, "at {cc} crit chance: {bond} against {want}");
+        // Two sources ADD: +3 and +1.2 is +4.2 on the same multiplier.
+        let both = braton(&[("tenacious_bond", None), ("arcane_crepuscular", None)], cc, vital, 1.0);
+        let want = braton(&[], cc, vital + 4.2, 1.0);
+        assert!((both - want).abs() < 1e-6, "at {cc} crit chance: {both} against {want}");
+        // …and Ability Strength moves neither card.
+        let strong = braton(&[("tenacious_bond", None)], cc, vital, 3.0);
+        assert!((strong - bond).abs() < 1e-6, "strength moved a precept");
+    }
+}
+

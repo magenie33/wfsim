@@ -341,7 +341,10 @@ pub(super) fn field_tick(
     let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
         + arc.cd_bonus(active, at)
         + params.arcane.crit_damage_relative;
-    let cd = f.crit_damage + f.base_crit_damage * crit_damage_relative + debuffs.cold_cd_bonus(at);
+    let cd = f.crit_damage
+        + f.base_crit_damage * crit_damage_relative
+        + debuffs.cold_cd_bonus(at)
+        + crate::data::abilities::final_crit_damage_at(&params.abilities, at);
     // …AND THE CRIT-HEADSHOT FOLD-IN, on a tick that found an eligible head.
     // No exception is invented for it: a strike that can hit a weak point is a
     // hit on a weak point, and `Critical_Hit` §Critical Headshots is the rule
