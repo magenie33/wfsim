@@ -274,10 +274,11 @@ const opt = await evaluate(`(async () => {
     return !!el; };
   jump.open = true; renderJump(); await sleep(150);
   out.rows = [...document.querySelectorAll('.jump-row')].map(b => b.dataset.jump);
-  // SHUTTING A BOX TAKES ITS CONTENTS WITH IT, and a jump brings them back.
+  // SHUTTING A BOX TAKES ITS CONTENTS WITH IT, and its header opens it again.
+  // (A jump opens what is ABOVE its target and leaves the target's own fold.)
   hit('[data-fold="opt-plan"] > .fold-h'); await sleep(200);
   out.boxGone = document.getElementById('opt-starts').offsetParent === null;
-  hit('[data-jump="opt-plan"]'); await sleep(400);
+  hit('[data-fold="opt-plan"] > .fold-h'); await sleep(200);
   out.boxBack = document.getElementById('opt-starts').offsetParent !== null;
   // A CONTROL IN THE BOX'S BODY IS NOT A FOLD TOGGLE.
   document.getElementById('opt-cand-runs').click(); await sleep(120);
@@ -297,7 +298,7 @@ const opt = await evaluate(`(async () => {
 check(`the optimizer's boxes are in the menu (${opt.rows.length} rows)`,
   opt.rows.includes("opt-plan") && opt.rows.includes("opt-fight"), opt.rows.join(","));
 check("shutting a box takes its contents with it", opt.boxGone);
-check("...and a jump to it brings them back", opt.boxBack);
+check("...and its header brings them back", opt.boxBack);
 check("a control in the box is not a fold toggle", opt.controlKept);
 check("nothing inside a shut optimizer section is still drawn", opt.leaks.length === 0, JSON.stringify(opt.leaks));
 check("...and every control the menu was asked for here was drawn too",
