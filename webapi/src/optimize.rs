@@ -254,7 +254,7 @@ pub struct OptimizePlan {
     descent: bool,
     /// Where the descent begins: the player's partial builds, as mod ids
     /// (`"starts": [["cryo_rounds"], ["hellfire", "serration"]]`). Empty = the
-    /// element pairs.
+    /// one start per primary element.
     starts: Vec<Vec<String>>,
     /// This run's STRIDE of the search space, of `shards` total. The browser
     /// buys coverage by running several Web Workers over disjoint strides and

@@ -326,7 +326,7 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     );
 }
 
-/// The DESCENT, graded on the whole size range: from the element pairs, and
+/// The DESCENT, graded on the whole size range: from one start per element, and
 /// from a single start that carries no element at all — the start a player
 /// who knows nothing would type. Both must reach the answer set, and for
 /// less than it costs to exhaust the scope.
@@ -338,7 +338,7 @@ fn the_descent_reaches_the_answer_set_from_any_start() {
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let serration = pool().iter().position(|m| m.id == "serration").expect("in scope");
-    for (label, starts) in [("element pairs", vec![]), ("serration alone", vec![vec![serration]])] {
+    for (label, starts) in [("one start per element", vec![]), ("serration alone", vec![vec![serration]])] {
         let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some(&starts));
         println!(
             "[descent from {label}] {} subsets, {} evals -> rank {} of {} (regret {:.2}%, recall {:.0}%)",

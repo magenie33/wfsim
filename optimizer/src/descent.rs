@@ -8,11 +8,10 @@
 //! the rest held still, so one sweep costs the SUM of the option counts and the
 //! whole pool stays searchable.
 //!
-//! 1. STARTS: the player's own, each a partial build. Without any, every pair
-//!    of the four primary elements, one card each — which card does not
-//!    matter, the sweep upgrades it and adds a third element if one pays. A
-//!    start is where the descent begins, not a constraint: it may swap any of
-//!    it out (a card that must stay is the scope's `fixed` mark).
+//! 1. STARTS: the player's own, each a partial build. Without any, one per
+//!    primary element, one card each ([`seeds`]). A start is where the descent
+//!    begins, not a constraint: it may swap any of it out (a card that must
+//!    stay is the scope's `fixed` mark).
 //! 2. FILL: from the start, add the best card until the build is full.
 //! 3. SWEEP, arcane → each mod → an empty slot → the variant (evolution set,
 //!    mode, valence). Any accepted change restarts at the arcane, because a
@@ -296,9 +295,13 @@ impl Run<'_> {
     }
 }
 
-/// The seeds: every pair of primary elements the scope can field, one card
-/// each — the strongest carrier of that element, ties to pool order. Required
-/// mods ride in every seed, and an element one of them already carries is not
+/// The default starts: one per primary element the scope can field, holding
+/// its strongest carrier (ties to pool order). The fill picks the partner, so
+/// four starts reach every pair that six pair-starts would, for less: graded,
+/// Verglas 1,092 evals against 1,535 and Boar Prime 601 against 971, same
+/// answer. ONE start holding all four elements is the wrong shape — it stuck
+/// at 49% regret, because shedding an element costs its combination first.
+/// Required mods ride in every start; an element one of them carries is not
 /// added twice.
 pub fn seeds(space: &SubsetSpace, pool: &[ModDef]) -> Vec<Vec<usize>> {
     let strength = |i: usize, t: DamageType| -> Option<f64> {
@@ -322,23 +325,19 @@ pub fn seeds(space: &SubsetSpace, pool: &[ModDef]) -> Vec<Vec<usize>> {
         best.map(|(i, _)| i)
     };
     let mut out: Vec<Vec<usize>> = Vec::new();
-    for (a, &ea) in PRIMARY.iter().enumerate() {
-        for &eb in &PRIMARY[a + 1..] {
-            let (Some(x), Some(y)) = (carrier(ea), carrier(eb)) else { continue };
-            let mut v = space.required().to_vec();
-            for m in [x, y] {
-                if !v.contains(&m) {
-                    v.push(m);
-                }
-            }
-            v.sort_unstable();
-            if space.legal_upto(&v) && !out.contains(&v) {
-                out.push(v);
-            }
+    for e in PRIMARY {
+        let Some(x) = carrier(e) else { continue };
+        let mut v = space.required().to_vec();
+        if !v.contains(&x) {
+            v.push(x);
+        }
+        v.sort_unstable();
+        if space.legal_upto(&v) && !out.contains(&v) {
+            out.push(v);
         }
     }
     if out.is_empty() {
-        // No element pair in the scope: start from what is required.
+        // No element in the scope: start from what is required.
         let mut v = space.required().to_vec();
         v.sort_unstable();
         out.push(v);
@@ -366,7 +365,7 @@ pub fn starts_in(space: &SubsetSpace, starts: &[Vec<usize>]) -> Vec<Vec<usize>> 
 }
 
 /// Run the descent from every start this shard owns (`index % shards ==
-/// shard`) — the player's `starts` (pool indices), or the element pairs when
+/// shard`) — the player's `starts` (pool indices), or one start per element when
 /// there are none. Returns every scored job, best first, and what it spent.
 #[allow(clippy::too_many_arguments)]
 pub fn descent(
