@@ -555,6 +555,19 @@ pub fn descent(
 /// Every candidate one point expands to, scored under its arcane. The seed is
 /// the candidate's position within its subset and nothing else, so every build
 /// runs on the same random stream as every other.
+/// Score candidates on ONE random stream — every build gets the same seed — so
+/// any two are compared on paired runs, across threads natively.
+pub fn evaluate_paired(
+    jobs: &[(&Candidate, usize)],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
+    scenario: &Scenario,
+    runs: u32,
+    seed: u64,
+) -> Vec<Summary> {
+    let seed = job_seed(seed, 0, 0);
+    par_map(jobs, |(c, ai)| evaluate(c, &arcanes[*ai], scenario, runs, seed))
+}
+
 fn eval_point(
     p: &Point,
     expand: &Expand<'_>,

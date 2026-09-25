@@ -22,6 +22,8 @@ pub mod search;
 /// The other way to choose them: seeded one start per element, swept one
 /// position at a time.
 pub mod descent;
+/// The planned optimizer: the quick calc, repeated from build starts.
+pub mod quick;
 /// The mod-subset space as an INDEX RANGE rather than a walk — what makes a
 /// truncated search a sample instead of a corner.
 pub mod space;

@@ -18,6 +18,8 @@ use crate::request::{err_json, get_f64, get_str, get_u32};
 use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
 use crate::tenno::tenno_from;
 
+mod quick;
+
 // All buffs the scope could produce (union over every fixed/search mod + every
 // searched arcane + the weapon passive) — the optimizer's buff panel enumerates
 // over the WHOLE scope, not one build. `apply_buff_config` applies each per
@@ -258,6 +260,9 @@ pub struct OptimizePlan {
     /// How many positions the descent may change at once when single
     /// changes stop paying (`"swap_width"`, 1 = single changes only).
     swap_width: u32,
+    /// Runs per candidate in the quick descent (`"candidate_runs"`): 1 is
+    /// coarse and fast, 10 is the quick calc's own count.
+    candidate_runs: u32,
     /// This run's STRIDE of the search space, of `shards` total. The browser
     /// buys coverage by running several Web Workers over disjoint strides and
     /// merging their leaderboards; a native run is one shard of one.
@@ -925,6 +930,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
         strategy: v.get("strategy").and_then(|x| x.as_str()).map(str::to_string),
         swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
+        candidate_runs: v.get("candidate_runs").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 1000) as u32,
         starts,
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
@@ -1101,6 +1107,9 @@ pub fn grade_optimize(
         strategy,
         starts,
         swap_width,
+        candidate_runs,
+        arcane_sets,
+        replay_base,
         ..
     } = plan;
     wfsim_optimizer::set_worker_threads(threads);
@@ -1281,7 +1290,33 @@ pub fn grade_optimize(
         swap_width,
         ..Default::default()
     };
-    let (screened, sstats) = if !walks_whole(strategy.as_deref()) {
+    let (screened, sstats) = if strategy.as_deref() == Some("quick") {
+        let ctx = quick::QuickCtx {
+            weapon_id: &info.id,
+            pool: &pool,
+            usable: (0..pool.len()).map(|i| usable.contains(&i)).collect(),
+            required: required.clone(),
+            forms: &forms,
+            variants: &variants,
+            variant_forbids: &variant_forbids,
+            evo_sets: &evo_sets,
+            mode_ids: modes.iter().map(|m| m.id.clone()).collect(),
+            valences: &valences,
+            valence_bonus,
+            arcanes: &arcanes,
+            arcane_sets: &arcane_sets,
+            exilus_defs: &exilus_defs,
+            exilus_refs: &exilus_refs,
+            innate: &innate,
+            cap,
+            scenario: &scenario,
+            request: &replay_base,
+            runs: candidate_runs,
+            seed: 0xDEAD_BEEF,
+        };
+        let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
+        quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len())
+    } else if !walks_whole(strategy.as_deref()) {
         wfsim_optimizer::descent::descent(
             &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, None, None,
         )
@@ -1313,20 +1348,29 @@ pub fn grade_optimize(
         &sc, &arcanes, &scenario, sjobs, &rounds, 0xDEAD_BEEF, false,
         None, None, 0, None, None,
     );
-    // Map each result back to its position in the exhaustive job list. Both
-    // sides build candidates through `expand_one` from an ascending subset, so
-    // the identity is exact rather than a resolved-vector comparison.
-    let ix_of: std::collections::HashMap<(Vec<usize>, u32, u32, usize), usize> = jobs
+    // Map each result back to its position in the exhaustive job list BY
+    // CANONICAL IDENTITY: the same cards in any order, the same resolved damage
+    // vector, the same variant, exilus and arcane. The walk keeps one element
+    // order per distinct vector, so this is exact; a search that seats cards in
+    // slot order (the quick descent) still finds its job.
+    let canon = |c: &Candidate| -> String {
+        let mut ids = c.ordered.clone();
+        ids.sort_unstable();
+        let v: Vec<String> =
+            c.panel.damage.iter_nonzero().map(|(t, x)| format!("{t:?}:{x:.3}")).collect();
+        format!("{ids:?}|{v:?}")
+    };
+    let ix_of: std::collections::HashMap<(String, u32, u32, usize), usize> = jobs
         .iter()
         .enumerate()
         .map(|(ji, &(ci, ai))| {
-            ((cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai), ji)
+            ((canon(&cands[ci]), cands[ci].variant, cands[ci].exilus, ai), ji)
         })
         .collect();
     let mut board: Vec<usize> = Vec::new();
     let mut unmatched = 0usize;
     for &((ci, ai), _) in last.iter() {
-        let k = (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai);
+        let k = (canon(&sc[ci]), sc[ci].variant, sc[ci].exilus, ai);
         match ix_of.get(&k) {
             Some(&ji) => board.push(ji),
             None => unmatched += 1,
@@ -1451,6 +1495,7 @@ pub fn run_optimize_resumable(
         strategy,
         starts,
         swap_width,
+        candidate_runs,
         shard,
         shards,
         replay_base,
@@ -1815,7 +1860,33 @@ pub fn run_optimize_resumable(
             ..Default::default()
         };
         let board = board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>);
-        let (screened, stats) = if !walks_whole(strategy.as_deref()) {
+        let (screened, stats) = if strategy.as_deref() == Some("quick") {
+            let ctx = quick::QuickCtx {
+            weapon_id: &info.id,
+            pool: &pool,
+            usable: (0..pool.len()).map(|i| usable.contains(&i)).collect(),
+            required: required.clone(),
+            forms: &forms,
+            variants: &variants,
+            variant_forbids: &variant_forbids,
+            evo_sets: &evo_sets,
+            mode_ids: modes.iter().map(|m| m.id.clone()).collect(),
+            valences: &valences,
+            valence_bonus,
+            arcanes: &arcanes,
+            arcane_sets: &arcane_sets,
+            exilus_defs: &exilus_defs,
+            exilus_refs: &exilus_refs,
+            innate: &innate,
+            cap,
+            scenario: &scenario,
+            request: &replay_base,
+            runs: candidate_runs,
+            seed: 0xDEAD_BEEF,
+        };
+            let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
+            quick::run_quick(&ctx, st, max_evals, swap_width, Some(state), shard, shards, space.len())
+        } else if !walks_whole(strategy.as_deref()) {
             wfsim_optimizer::descent::descent(
                 &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, Some(state), board,
             )
