@@ -236,6 +236,9 @@ const simMeterOpen = new Set();
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
 let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 0, starts: [] };
+// THE START OPEN IN THE BUILDER, or null — `79-start-edit.js`. Declared here,
+// early, because the autosave it suspends can run during boot.
+let startEdit = null;
 let optSeeded = false;
 // (The optimizer keeps no scope-wide buff list of its own: it reads the
 // SCENARIO's — see `renderOptBuffs`.)

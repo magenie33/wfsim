@@ -2,8 +2,9 @@
 //! `/api/candidates` — what one position of a build may be swapped for.
 //!
 //! THE QUICK CALC'S CANDIDATES, WRITTEN ONCE. The quick calc ranks every
-//! candidate of one position of the build on screen; the planned optimizer is
-//! that same scan applied until nothing improves (docs/OPTIMIZER.md, "PLANNED").
+//! candidate of one position of the build on screen; the optimizer is that
+//! same scan applied until nothing improves (docs/OPTIMIZER.md, "The quick
+//! descent").
 //! Both ask this, so a legality rule or an axis added here reaches both.
 //!
 //! A position is `{ kind, idx }`: a slot (`mods`, idx 0–7 main, 8 exilus,

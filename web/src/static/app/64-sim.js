@@ -15,22 +15,8 @@ function renderSimBuild() {
   const activeLabel = presetLabel(buildNamed(activePreset));
   if (sub) sub.textContent = activeLabel ? `${tr("testing build")}: ${activeLabel}` : "";
   const w = weaponInfo($("weapon").value);
-  box.innerHTML = buildCardHtml({
-    mode: modeLabel(w, mode),
-    mods: slots.map((s) => {
-      const m = s.mod && modById(s.mod);
-      return m ? { img: IMG(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank } : null;
-    }).filter(Boolean),
-    arcanes: (w.arcane_slots || 0) >= 1
-      ? arcanes.map((id, i) => {
-        const a = id !== "none" && arcaneById(id);
-        return a ? { img: IMG(a.image), label: a.name, rank: arcaneRanks[i] ?? ((a.ranks || []).length - 1) } : null;
-      }).filter(Boolean)
-      : null,
-    parts: assembly ? partChipsOf(w.id, assembly.grip, assembly.loader) : null,
-    evolutions: w.uses_evo2 ? evoChipsOf(Object.values(evoSel || {}).filter(Boolean)) : null,
-    valence: valenceSpec(w.id) ? `${DT(valence.element)} +${Math.round(valence.bonus * 1000) / 10}%` : null,
-  }) + aplHtml(w) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+  box.innerHTML = cardOfState(snapshotState(), w)
+    + aplHtml(w) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
   renderSimWielder(box.querySelector(".sb-wielder"));
   // The part value analysis lists THIS build's parts, so it follows the card.
   renderShapley();
@@ -134,6 +120,34 @@ function evoChipsOf(ids) {
 /// arcane, evolutions, and the valence LAST — which on an adversary weapon, with
 /// no evolutions, makes it the fourth block. The mode is stated even where the
 /// weapon has one: a summary that drops a field the build has is not a summary.
+/// A BUILD STATE AS THE SIMULATOR'S CARD — the one brief every surface that
+/// shows a build draws: the simulator's own, and the optimizer's starts. `fixed`
+/// (a set of `mods:i` / `arcane:i` keys) marks the positions a start pins.
+function cardOfState(st, w, fixed) {
+  const pinned = (k) => (fixed && fixed.has(k) ? "fixed" : "");
+  const arcs = st.arcane || [];
+  const ranks = st.arcaneRank || [];
+  return buildCardHtml({
+    mode: modeLabel(w, st.mode || mode),
+    mods: (st.slots || []).map((s, i) => {
+      const m = s && s.mod && modById(s.mod);
+      return m ? { img: IMG(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank,
+        cls: pinned("mods:" + i) } : null;
+    }).filter(Boolean),
+    arcanes: (w.arcane_slots || 0) >= 1
+      ? arcs.map((id, i) => {
+        const a = id !== "none" && arcaneById(id);
+        return a ? { img: IMG(a.image), label: a.name, rank: ranks[i] ?? ((a.ranks || []).length - 1),
+          cls: pinned("arcane:" + i) } : null;
+      }).filter(Boolean)
+      : null,
+    parts: st.assembly ? partChipsOf(w.id, st.assembly.grip, st.assembly.loader) : null,
+    evolutions: w.uses_evo2 ? evoChipsOf(Object.values(st.evoSel || {}).filter(Boolean)) : null,
+    valence: valenceSpec(w.id) && st.valence
+      ? `${DT(st.valence.element)} +${Math.round(st.valence.bonus * 1000) / 10}%` : null,
+  });
+}
+
 function buildCardHtml(d) {
   const chip = (c) => `<span class="sb-chip${c.cls ? " " + c.cls : ""}"${c.title ? ` title="${escHtml(c.title)}"` : ""}>` +
     `${c.img ? imgTag(c.img, "sb-img") : ""}<span>${escHtml(c.label)}</span>${c.rank != null ? `<span class="rk">R${c.rank}</span>` : ""}</span>`;

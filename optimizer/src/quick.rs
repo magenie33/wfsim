@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! THE QUICK CALC, REPEATED — the planned optimizer (docs/OPTIMIZER.md,
-//! "PLANNED — the descent is the quick calc, repeated").
+//! THE QUICK CALC, REPEATED — the page's search (docs/OPTIMIZER.md,
+//! "The quick descent — the quick calc, repeated").
 //!
 //! From each start: fill every empty position with its best legal candidate,
 //! then sweep the positions in order, run the quick calc on each, keep the best
@@ -148,9 +148,9 @@ impl<S: QuickSpace> Run<'_, S> {
         }
         let scores = self.score(&alts)?;
         let mut best: Option<(S::Build, Score)> = None;
-        for (b, s) in alts.into_iter().zip(scores) {
+        for (b, s) in alts.iter().zip(scores) {
             if best.as_ref().is_none_or(|(_, x)| better(s, *x)) {
-                best = Some((b, s));
+                best = Some((b.clone(), s));
             }
         }
         Some(best)

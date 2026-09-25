@@ -865,118 +865,101 @@ answer to a valley is a start that already sits on its far side.
 width 1 stalls (rank 2, 30% regret) so the fixture still holds the valley,
 and width 2 solves it; with wide moves disabled it fails.
 
-## PLANNED — the descent is the quick calc, repeated
+## The quick descent — the quick calc, repeated
 
-**NOT BUILT.** This section is the agreed design for the next optimizer; the
-sections above describe what runs today. Where the two differ, the code is the
-section above until this one is built, and then this one replaces them.
-
-**The definition.** From each start, run the QUICK CALC on one position of the
-current build, take the best candidate, keep it if it beats what is there, and
-start over at the first position — until no position's quick calc offers
-anything better. The descent is not a second search beside the quick calc; it
-IS the quick calc, applied until it stops changing the build. Everything the
-quick calc learns — a new axis, a legality rule — the optimizer gets by
-construction.
+The page's search (`"strategy": "quick"`): from each start, run the QUICK CALC
+on one position of the current build, keep the best candidate if it beats what
+is there, and start over at the first position — until no position offers
+anything better. It is not a search beside the quick calc; it IS the quick
+calc, applied until the build stops changing, so what the quick calc learns —
+an axis, a legality rule — the optimizer has by construction.
+`optimizer::quick` is the loop behind a `QuickSpace` trait; webapi's
+`optimize::quick` implements it over the plan's tables. The subset descent
+above runs only when a tool asks for it by name.
 
 ### Starts
 
 - A start is A BUILD, and it need not be a good one — a perfect start would
-  leave nothing to optimize.
-- A start is edited IN THE BUILDER, in a start-editing mode (a banner naming
-  the start, and a FIXED toggle on every position). There is no second slot
-  UI in the optimizer; saved builds can be picked as starts.
-- **Fixed** is the only pin: a fixed position is never swept, so every answer
-  from that start carries it. It lives on the start. The scope's own `fixed`
-  mark goes away; "fixed in every start" is fixed in each start.
-- The initial list is FOUR REAL BUILDS, each holding one primary element's
-  strongest card and nothing else — the same thing a player gets by making
-  those four builds by hand, run by the same rules. They are shown and
-  removable; with every start removed, the one start is the BLANK build.
-  There is no hidden default path.
+  leave nothing to optimize. The optimizer lists each as the simulator's own
+  build card (`cardOfState`).
+- A start is edited IN THE BUILDER (`79-start-edit.js`): a banner names it, the
+  build bar is put away, and every position carries a pin. The builder's
+  autosave is suspended while one is open, so the player's own build is never
+  written with it; Done writes the build and the pins into the start, and both
+  Done and Discard put the player's build back. `check_start_edit`.
+- **Fixed** is the pin: a fixed position is never swept, so every answer from
+  that start carries it. A start's cards join the scope when it is saved.
+- No starts = one per primary element, each a build holding that element's
+  strongest card and nothing else, chosen by the server.
 
 ### Positions and candidates
 
 - The positions are the quick calc's axes: mod slots 1–8, the exilus slot,
-  each arcane seat, evolutions (a candidate swaps one tier), mode, valence,
-  and the assembly. Each is its own position — nothing is bundled.
-- The candidates of a position come from ONE generator, shared with the quick
-  calc and moved into the engine: family exclusivity, what an evolution set
-  forbids, an evolution that would evict an equipped card, a mode a mod takes
-  away, the every-rank list — plus the scope's whitelist. There is no EMPTY
-  candidate: a full build is never beaten by a slot left bare.
-- Slot ORDER is the build's: a candidate goes into the slot being swept, as
-  in the quick calc, and element order is not enumerated separately.
-- The generator does not consider capacity. The quick calc never does.
+  each arcane seat, evolutions (a candidate swaps one tier), mode, valence.
+- The candidates of a position are `/api/candidates`' (`webapi/src/candidates.rs`),
+  the quick calc's own list: family exclusivity, what an evolution set forbids,
+  an evolution that would evict an equipped card, a mode a mod takes away, the
+  every-rank list — kept when they map onto the plan's tables (the scope). No
+  candidate is EMPTY. It took the page's generator's place after reproducing it
+  on 91 of 91 positions over six weapons; like it, it offers a stance card for
+  a main slot, which the builder's picker does not.
+- **A build scores at its BEST ELEMENT ORDER.** Slot position decides only
+  what combines, and a candidate seated in the slot being swept cannot move its
+  element behind another: Magnetic + Toxin on Sancti Magistar needs a card swap
+  AND a reorder at once, each worse alone — rank 4, 1.6% short, unmoved at 30
+  runs and by a reorder move of its own. Each build is scored over its distinct
+  element orders (the enumerator's `expand_one`) and keeps the best.
 
 ### One step
 
-1. Rank the position's candidates by LEGALITY first: the build with the
-   candidate in place goes through the auto-Forma planner (`plan_forma`, the
-   builder's own, under the builder's Forma rules), and a candidate it cannot
-   fit is dropped before it is simulated. Dropping first and taking the best
-   of the rest is the same answer as simulating everything and taking the
-   first legal one down the ranking, at a fraction of the cost.
-2. Score the rest through the simulator's own request, N runs each on one
-   seed, paired. N is the player's (1 is coarse and fast, 10 is the quick
-   calc's).
-3. The best legal candidate that beats the current build replaces it, and the
-   sweep restarts at the first position. None beats it: the position stays.
+1. LEGALITY FIRST: a candidate whose build Forma cannot fit (the auto-Forma
+   planner, through the enumerator) is dropped before it is simulated —
+   the same answer as simulating all and walking down the ranking, for less.
+2. Score the rest on ONE paired stream, `candidate_runs` each — **10 by
+   default**, the quick calc's count. With one answer per start no funnel sits
+   behind a step to undo a noisy one: at 1 run, Viral + Heat on Boar Prime lost
+   to Magnetic + Heat 5% below it and the answer came 13th. 1 is the fast
+   option.
+3. The best legal candidate that beats the build replaces it, and the sweep
+   restarts at the first position.
 
-The FILL obeys the same rule card by card, so the build is legal from the
-moment it is full — a full illegal build is not always one swap from a legal
-one. A player's start that no single legal move can repair reports "the start
-itself does not fit".
-
-After width 1 settles, `swap_width` tries moves changing 2, 3, … positions at
-once, under the same legality rule.
+The FILL obeys the same rule card by card, so a build is legal from the moment
+it is full. After width 1 settles, `swap_width` tries 2, 3, … positions at once.
 
 ### The answer
 
-- **ONE build per start** — the build its descent settled on, legal by
-  construction, with the Forma it needs. Keeping each start's runners-up adds
-  variables nobody defined; a start with rules is one answer.
-- Starts that settle on the SAME build merge into one row naming them all.
-  Same means the canonical form (§1): the same cards whatever their slots,
-  the same combined elements, the same arcanes, evolutions, mode, valence and
-  exilus. Two DIFFERENT builds whose scores tie within noise stay two rows,
-  marked tied.
-- The merged builds are measured at the final-round run count and ranked.
-  The finalists count goes away: the rows are the starts.
+- **ONE build per start**, legal by construction. Starts that settle on the
+  same canonical build — the same cards in any order, the same resolved
+  damage, the same exilus, arcane and variant — merge.
+- The answers are measured at the final-round run count and ranked.
 
-### What changes from the descent above
+### Measured
 
-| today | planned |
-|---|---|
-| a start is mods + arcane, locks | a start is a whole build; `fixed` per position |
-| mode × evolutions × valence is one variant axis | each is its own position |
-| exilus and element order enumerated inside a subset | exilus is a position; order is the build's |
-| candidates from the optimizer's subset space | candidates from the quick calc's generator |
-| builds scored as optimizer `Candidate`s | builds scored through the simulator's request |
-| every scored job enters the funnel | one build per start, merged, then ranked |
-| scope carries `fixed` marks | scope is a whitelist per axis |
-| capacity dropped inside `expand` | capacity checked first at every step, next-best legal taken |
+`wfsim-truth … strategy=quick` (defaults: 10 runs, width 1), 60 s, Thrax Lv
+9999 SP, reference 100 runs:
 
-### Order of work
+| scope | rank | regret | within noise | simulated |
+|---|---|---|---|---|
+| Verglas Prime, 14 mods | 1 | 0% | yes | 12,020 |
+| Boar Prime, 11 mods × 2 arcanes × 8 evolution sets | 2 | 0.3% | yes | 5,760 |
+| Lex Prime, 10 mods × base / cycle | 1 | 0% | yes | 3,400 |
+| Kuva Hind, 11 mods × 5 valence elements | 1 | 0% | yes | 5,270 |
+| Sancti Magistar, 11 mods × 2 arcanes | 2 | 0.6% | yes | 3,090 |
 
-The builder ⇄ row hop every start and every answer goes through is sound:
-`check_opt_replay` walks it, and the builder's build re-runs at the row's
-number exactly.
+A Lex Prime scope that also names `transformed` ranks it 3rd: the reference's
+winner fires that mode, which the builder and the quick calc never offer (it
+is not sustainable), so the scope asks a question the page does not.
+`the_quick_descent_lands_in_the_answer_set` is the CI guard, on a Boar Prime
+scope where only the sweep reaches the answer: with it disabled the guard
+fails at rank 14, 25.5% regret.
 
-The candidate generator is the server's: `/api/candidates`
-(`webapi/src/candidates.rs`) takes the build as the page holds it — ten
-slots, not the wire's flat list, since which slot is the exilus is a fact the
-list cannot carry — and one position, and the quick calc asks it. It
-reproduced the page's own generator on 91 of 91 positions over six weapons
-(every axis: slots with lower ranks, two arcane seats, evolutions, mode,
-valence, assembly, stance, exilus) before that one was deleted. It offers a
-stance card for a main slot, as the page's did; the builder's picker does
-not.
+### Not built yet
 
-1. **The descent over build payloads**, on that generator, with the legality
-   step, graded with `wfsim-truth` against the descent above.
-2. **The builder's start-editing mode** and fixed toggles.
-3. **The optimizer page**: starts, scope, results with one row per start.
+- The four default starts are the server's and not shown on the page as
+  builds a player can edit or remove.
+- The results are still the ranked table with a finalists count, not one row
+  per start with the starts each answer came from.
+- The scope still carries `fixed` marks beside the starts' own.
 
 ## FILLING A SCOPE IS THE UNSOLVED HALF
 

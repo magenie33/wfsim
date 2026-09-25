@@ -260,8 +260,11 @@ pub struct OptimizePlan {
     /// How many positions the descent may change at once when single
     /// changes stop paying (`"swap_width"`, 1 = single changes only).
     swap_width: u32,
-    /// Runs per candidate in the quick descent (`"candidate_runs"`): 1 is
-    /// coarse and fast, 10 is the quick calc's own count.
+    /// Runs per candidate in the quick descent (`"candidate_runs"`). 10 by
+    /// default, the quick calc's own count: with ONE answer per start there is
+    /// no funnel behind a step to undo a noisy one, and at 1 run a Viral+Heat
+    /// build lost to a Magnetic+Heat one 5% below it on Boar Prime. 1 is the
+    /// fast option, and a coarse one.
     candidate_runs: u32,
     /// This run's STRIDE of the search space, of `shards` total. The browser
     /// buys coverage by running several Web Workers over disjoint strides and
@@ -930,7 +933,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
         strategy: v.get("strategy").and_then(|x| x.as_str()).map(str::to_string),
         swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
-        candidate_runs: v.get("candidate_runs").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 1000) as u32,
+        candidate_runs: v.get("candidate_runs").and_then(|x| x.as_u64()).unwrap_or(10).clamp(1, 1000) as u32,
         starts,
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
@@ -1026,6 +1029,11 @@ fn parse_starts(
     };
     let mut out = Vec::new();
     for s in v.get("starts").and_then(Value::as_array).into_iter().flatten() {
+        // A BUILD-SHAPED start (`slots`, `fixed`) is the quick descent's, read
+        // over the plan's tables by `quick::QuickCtx::starts`.
+        if s.get("slots").is_some() {
+            continue;
+        }
         let (mods, locked, arcane, lock_arcane) = match s {
             Value::Array(_) => (ids(Some(s)), Vec::new(), Vec::new(), false),
             _ => (
@@ -1313,6 +1321,8 @@ pub fn grade_optimize(
             request: &replay_base,
             runs: candidate_runs,
             seed: 0xDEAD_BEEF,
+            best: Default::default(),
+            sims: Default::default(),
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
         quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len())
@@ -1883,6 +1893,8 @@ pub fn run_optimize_resumable(
             request: &replay_base,
             runs: candidate_runs,
             seed: 0xDEAD_BEEF,
+            best: Default::default(),
+            sims: Default::default(),
         };
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
             quick::run_quick(&ctx, st, max_evals, swap_width, Some(state), shard, shards, space.len())
@@ -2087,6 +2099,50 @@ pub fn funnel_status_json(
         out["jobs"] = json!(jobs);
     }
     out
+}
+
+#[cfg(test)]
+mod quick_descent_tests {
+    use super::*;
+
+    /// THE QUICK DESCENT, GRADED: the planned optimizer, through the request
+    /// path the page uses, against an exhausted scope. Boar Prime, nine cards,
+    /// two arcanes and eight evolution sets — a start fills under the first
+    /// set and arcane, so only the SWEEP can reach the answer; with it
+    /// disabled this fails, where a mods-only scope passes on the fill alone.
+    #[test]
+    fn the_quick_descent_lands_in_the_answer_set() {
+        let ids = ["primed_point_blank", "hells_chamber", "primed_ravage", "blunderbuss",
+            "chilling_grasp", "incendiary_coat", "contagious_spread", "frigid_blast", "charged_shell"];
+        let req = json!({
+            "weapon": "boar_prime",
+            "mods": ids.iter().map(|id| (id.to_string(), json!("search"))).collect::<serde_json::Map<_, _>>(),
+            "arcanes": { "primary_merciless": "search", "primary_dexterity": "search" },
+            "evolutions": {
+                "1": ["boar_prime_evo1_incarnon_form"],
+                "2": ["boar_prime_fortress_salvo", "boar_prime_reified_bane"],
+                "3": ["boar_prime_mercenary_chamber", "boar_prime_practiced_grip"],
+                "4": ["boar_prime_critical_parallel", "boar_prime_elemental_balance"],
+            },
+            "build_size": 8, "build_min": 8,
+            "enemy": "thrax_centurion", "level": 9999, "steel_path": true,
+            "duration": 30.0, "runs": 40, "finalists": 3,
+            "strategy": "quick",
+        });
+        let out = grade_optimize(&req, 40, 20_000, 0);
+        assert_eq!(out["ok"], json!(true), "{out}");
+        let s = &out["search"];
+        assert_eq!(s["strategy"], json!("descent"), "{s}");
+        assert_eq!(s["unmatched"], json!(0), "a quick answer the exhaustive walk does not contain: {s}");
+        assert_eq!(
+            s["within_noise"],
+            json!(true),
+            "rank {} (regret {}) — outside the reference's answer set of {}",
+            s["rank"],
+            s["regret"],
+            out["reference"]["answer_set"]
+        );
+    }
 }
 
 #[cfg(test)]

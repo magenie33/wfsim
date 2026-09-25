@@ -88,9 +88,11 @@ const buildIsUntouched = () =>
   pristineBuild !== null && JSON.stringify(canon(snapshotState())) === pristineBuild;
 
 function markPresetDirty() {
-  if (presetApplying) return;
+  // A START OPEN IN THE BUILDER is not the player's build: its edits go back
+  // into the start when it is closed, and must never reach a preset.
+  if (presetApplying || startEdit) return;
   presetSaveTimer = deferSave("builds", () => {
-    if (presetApplying) return;
+    if (presetApplying || startEdit) return;
     // An official build is not written — same rule as the official scenario,
     // and enforced in the same place. Auto-save is what would otherwise make
     // read-only a suggestion.

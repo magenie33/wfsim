@@ -426,12 +426,20 @@ ui:
   "could not list the candidates": 无法列出候选
   "how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot": 当一次只换一处已经不再有提升时，搜索可以同时更换多少张卡、赋能或进化。1 最快；每加 1 大约多花一个数量级，但能跨过一次只换一处跨不过去的坎
   Starts: 起点
-  "the search begins from each; click a card or arcane to lock it there": 搜索从每个起点各自出发；点击卡或赋能即可在该起点锁定
+  Start: 起点
+  "each is a build the search begins from; edit one in the builder, where a pinned position is FIXED in its answer": 每个起点是一套配装，搜索从它出发；在配装器里编辑，钉住的位置在它的答案里固定不变
   "none — the search begins from one start per element": 未设置 —— 搜索会从每个元素各一个起点出发
-  "+ add the current build as a start": + 把当前配置加为起点
+  "+ add the current build as a start": + 把当前配装加为起点
+  "+ add one of my builds": + 从我的配装里选
+  "edit in the builder": 在配装器里编辑
   "remove this start": 删除这个起点
-  "locked in this start — click to free it": 已在此起点锁定 —— 点击解除
-  "click to lock it in this start": 点击在此起点锁定
+  "Editing start": 正在编辑起点
+  "for the optimizer — your own build comes back when you close this": 用于优化 —— 关闭后你自己的配装会原样回来
+  "the pin beside a position FIXES it: this start's answer always keeps it, and the search never changes it": 位置旁边的图钉 = 固定：这个起点的答案一定包含它，搜索不会改动它
+  discard: 放弃修改
+  "done — back to the optimizer": 完成，返回优化
+  "fixed — click to free it": 已固定 —— 点击取消
+  "fix this position in the start": 在这个起点里固定这个位置
   "descended from {n} starts, but the time budget ran out before every one settled — a strong build, short of the best those starts reach": 从 {n} 个起点出发下降，但时间预算在全部收敛前用完了 —— 这是一套强配置，但还不是这些起点能到达的最优
   "descended from {n} starts until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further": 从 {n} 个起点出发，一直下降到任何改动都不再有提升 —— 这是这些起点能到达的最优，不是证明过的最优；想看得更远，可以加一个起点或调高替换宽度
   "Fire Rate": 射速

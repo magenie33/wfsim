@@ -191,16 +191,11 @@ function applyOptState(st) {
   optRun.swap_width = Math.max(1, Math.min(4, st.swap_width || 1));
   const sw = $("opt-swap-width");
   if (sw) sw.value = optRun.swap_width;
-  // Starts: a card or arcane this weapon cannot hold drops out of its start,
-  // and a start left with nothing in it drops whole.
+  // Starts: builds, each a build of THIS weapon — another weapon's start is
+  // not a start here, the way another weapon's build is not a build here.
   opt.starts = (st.starts || [])
-    .map((s) => ({
-      mods: (s.mods || []).filter((id) => modById(id)),
-      locked: (s.locked || []).filter((id) => modById(id)),
-      arcane: (s.arcane || []).filter((id) => arcaneFitsWeapon(w, id)),
-      lock_arcane: !!s.lock_arcane,
-    }))
-    .filter((s) => s.mods.length || s.arcane.length);
+    .map((s) => normalizeStart(s, w))
+    .filter((s) => s.build && (!s.build.weapon || s.build.weapon === w));
 }
 
 function applyOptPreset(st) {
@@ -714,7 +709,10 @@ async function runOptimize() {
       final_runs: finalRuns(), finalists: optRun.finalists,
       // WHERE THE DESCENT BEGINS and how far it may reach at once. Empty
       // starts = one per element, chosen by the server.
-      starts: opt.starts, swap_width: optRun.swap_width,
+      // THE QUICK DESCENT, from the player's starts as builds, each with its
+      // fixed positions. None = one start per element, chosen by the server.
+      strategy: "quick",
+      starts: opt.starts.map(startPayload), swap_width: optRun.swap_width,
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {

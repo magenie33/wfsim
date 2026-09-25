@@ -578,6 +578,16 @@ localized name in a wiki URL lands on garbage), its VULNERABILITY COLUMN, and
 a statement of what the sim does not model about it. Enemy art is declared in
 the enemy's own YAML (`image:`, wiki-hosted), NOT in `data/assets.yaml`.
 
+## `check_start_edit`
+
+An optimizer start is edited in the builder, and the player's own build
+survives it: a start is added and shown as the simulator's card, opened in the
+builder (banner up, build bar away, a pin on every position), a card pinned and
+another changed; Done writes both into the start, Discard leaves it as it was,
+and each time the player's build and preset come back with identical contents.
+An optimize from the start is a quick descent whose every answer keeps the
+pinned card.
+
 ## `check_search`
 
 A real optimize in the shipping build: even a tiny scope is DESCENDED and

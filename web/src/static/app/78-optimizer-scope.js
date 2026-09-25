@@ -274,61 +274,6 @@ function renderOptRuns() {
   });
 }
 
-/// WHERE THE SEARCH BEGINS. Each start is a partial build taken from the
-/// builder — put in only what you mean (one card is a start) and add it.
-/// Clicking a card or the arcane in a start LOCKS it for that start: the search
-/// never swaps it out there, where the scope's req pins it for every start.
-/// A start's cards join the scope as pool, since a start outside the scope is
-/// refused by the server rather than silently trimmed.
-function renderOptStarts() {
-  const box = $("opt-starts");
-  if (!box) return;
-  const cardName = (id) => (modById(id) || { name: prettify(id) }).name;
-  const arcName = (id) => (arcaneById(id) || { name: prettify(id) }).name;
-  const chip = (label, locked, attrs) =>
-    `<button type="button" class="opt-start-chip${locked ? " locked" : ""}" ${attrs}` +
-    ` title="${escHtml(tr(locked ? "locked in this start — click to free it" : "click to lock it in this start"))}">` +
-    `${locked ? "🔒 " : ""}${escHtml(label)}</button>`;
-  const rows = opt.starts.map((s, i) =>
-    `<div class="opt-start" data-i="${i}">` +
-    s.mods.map((id) => chip(cardName(id), s.locked.includes(id), `data-mod="${escHtml(id)}"`)).join("") +
-    s.arcane.map((id) => chip(arcName(id), s.lock_arcane, `data-arc="${escHtml(id)}"`)).join("") +
-    `<button type="button" class="opt-start-del" title="${escHtml(tr("remove this start"))}">✕</button></div>`
-  ).join("");
-  box.innerHTML =
-    `<h4 class="sim-h">${escHtml(tr("Starts"))} <span class="sim-hint">${escHtml(tr(
-      opt.starts.length
-        ? "the search begins from each; click a card or arcane to lock it there"
-        : "none — the search begins from one start per element"))}</span></h4>` +
-    rows +
-    `<button type="button" id="opt-start-add">${escHtml(tr("+ add the current build as a start"))}</button>`;
-  box.querySelectorAll(".opt-start").forEach((row) => {
-    const s = opt.starts[Number(row.dataset.i)];
-    row.querySelectorAll("[data-mod]").forEach((b) => b.addEventListener("click", () => {
-      const id = b.dataset.mod;
-      s.locked = s.locked.includes(id) ? s.locked.filter((x) => x !== id) : [...s.locked, id];
-      renderOptStarts(); updateOptEstimate();
-    }));
-    row.querySelectorAll("[data-arc]").forEach((b) => b.addEventListener("click", () => {
-      s.lock_arcane = !s.lock_arcane;
-      renderOptStarts(); updateOptEstimate();
-    }));
-    row.querySelector(".opt-start-del").addEventListener("click", () => {
-      opt.starts.splice(Number(row.dataset.i), 1);
-      renderOptStarts(); updateOptEstimate();
-    });
-  });
-  $("opt-start-add").addEventListener("click", () => {
-    const mods = slots.slice(0, 8).map((x) => x.mod).filter(Boolean);
-    const arcane = arcanes.filter((a) => a && a !== "none");
-    if (!mods.length && !arcane.length) return;
-    mods.forEach((id) => { if (!opt.mods[id]) opt.mods[id] = "search"; });
-    arcane.forEach((id) => { if (!opt.arcanes[id]) opt.arcanes[id] = "search"; });
-    opt.starts.push({ mods, locked: [], arcane, lock_arcane: false });
-    renderOptMods(); renderOptArcanes(); renderOptStarts(); updateOptEstimate();
-  });
-}
-
 function renderOpt() {
   // Every weapon is optimizable: the scope is built from the weapon's OWN
   // pools (mod class, arcane slot, evolution tiers), so nothing here is

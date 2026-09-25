@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! THE PLANNED OPTIMIZER'S SPACE over one plan's tables (docs/OPTIMIZER.md,
-//! "PLANNED — the descent is the quick calc, repeated").
+//! THE QUICK DESCENT'S SPACE over one plan's tables (docs/OPTIMIZER.md,
+//! "The quick descent — the quick calc, repeated").
 //!
 //! A build is indices into the plan: eight mod slots, an exilus option, an
 //! arcane set, an evolution set, a mode and a valence. That makes "inside the
 //! scope" a lookup — a candidate the quick calc offers is kept when it maps onto
 //! the plan's tables and dropped when it does not. The candidates themselves are
-//! `/api/candidates`'; a build fits when `rebuild_candidate` can plan its Forma;
-//! it scores through the funnel's own `evaluate`, the fight the replay runs.
+//! `/api/candidates`'; a build fits when the enumerator can plan its Forma; it
+//! scores through the funnel's own `evaluate`, the fight the replay runs.
+//!
+//! A BUILD SCORES AT ITS BEST ELEMENT ORDER. Slot position decides only what
+//! combines, and a candidate seated in the slot being swept cannot move its
+//! element behind another: Magnetic + Toxin on Sancti Magistar needs a card
+//! swap AND a reorder at once, each worse alone (rank 4, 1.6% short, unmoved
+//! at 30 runs and by a reorder move of its own). So each build is scored over
+//! its distinct element orders and keeps the best, the enumerator's own rule.
 
 use serde_json::{json, Value};
 use wfsim_engine::model::ModDef;
@@ -50,6 +57,10 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) request: &'a Value,
     pub(crate) runs: u32,
     pub(crate) seed: u64,
+    /// Each scored build's best element order, by key.
+    pub(crate) best: std::sync::Mutex<std::collections::HashMap<String, Candidate>>,
+    /// Engagements simulated: every order of every build, at `runs` each.
+    pub(crate) sims: std::sync::atomic::AtomicU64,
 }
 
 fn split_rank(s: &str) -> (&str, Option<u64>) {
@@ -64,29 +75,43 @@ impl QuickCtx<'_> {
         self.variants.iter().position(|&(m, e, l)| m == b.mode && e == b.evo && l == b.val)
     }
 
-    /// The build as the funnel scores it, or `None` when it cannot exist:
-    /// no such variant, a card its evolutions refuse, or Forma cannot fit it.
-    pub(crate) fn materialize(&self, b: &QBuild) -> Option<Candidate> {
-        let vi = self.variant(b)?;
-        let ordered: Vec<usize> = b.mods.iter().flatten().copied().collect();
+    /// Every distinct element order of the build that can exist — empty when
+    /// none can: no such variant, a card its evolutions refuse, or Forma
+    /// cannot fit it.
+    fn orders(&self, b: &QBuild) -> Vec<Candidate> {
+        let Some(vi) = self.variant(b) else { return Vec::new() };
+        let mut subset: Vec<usize> = b.mods.iter().flatten().copied().collect();
         let forbids = &self.variant_forbids[self.variants[vi].1];
-        if ordered.iter().any(|&i| forbids[i]) {
-            return None;
+        if subset.iter().any(|&i| forbids[i]) {
+            return Vec::new();
         }
+        subset.sort_unstable();
         let (base, second) = &self.forms[vi];
-        wfsim_optimizer::rebuild_candidate(
+        let mut out = Vec::new();
+        wfsim_optimizer::expand_one(
             self.pool,
             base,
             second.as_ref(),
-            self.innate,
+            vi as u32,
             self.cap,
+            self.innate,
+            self.exilus_refs,
+            &subset,
             &self.scenario.arena.tenno,
             self.scenario.policy,
-            &ordered,
-            vi as u32,
-            b.exilus as u32,
-            self.exilus_refs,
-        )
+            &mut out,
+        );
+        out.retain(|c| c.exilus as usize == b.exilus);
+        out
+    }
+
+    /// The build at its best element order, once scored; before that, the
+    /// first order that can exist.
+    pub(crate) fn materialize(&self, b: &QBuild) -> Option<Candidate> {
+        if let Some(c) = self.best.lock().ok().and_then(|m| m.get(&self.key(b)).cloned()) {
+            return Some(c);
+        }
+        self.orders(b).into_iter().next()
     }
 
     fn has_required(&self, b: &QBuild) -> bool {
@@ -148,6 +173,79 @@ impl QuickCtx<'_> {
         self.arcane_sets.iter().position(|s| *s == spelled)
     }
 
+    /// The request's BUILD-SHAPED starts — the page's: ten slots, the axes, and
+    /// the positions fixed. What the plan's tables cannot hold falls back to the
+    /// plan's default for that axis; the page puts a start's cards into the
+    /// scope, so that is a start from an older scope, not a new rule.
+    fn build_starts(&self) -> Vec<QuickStart<QBuild>> {
+        let list = self.request.get("starts").and_then(Value::as_array).cloned().unwrap_or_default();
+        let str_of = |v: &Value, k: &str| v.get(k).and_then(Value::as_str).map(str::to_string);
+        let mut out = Vec::new();
+        for s in list.iter().filter(|s| s.get("slots").is_some()) {
+            let mut b = self.blank();
+            let slots = s.get("slots").and_then(Value::as_array).cloned().unwrap_or_default();
+            for (i, id) in slots.iter().take(9).enumerate() {
+                let Some(id) = id.as_str() else { continue };
+                if i < 8 {
+                    b.mods[i] = self.pool.iter().position(|m| m.id == id).filter(|&p| self.usable[p]);
+                } else if let Some(x) = self.exilus_defs.iter().position(|x| x.as_ref().is_some_and(|m| m.id == id)) {
+                    b.exilus = x;
+                }
+            }
+            let ids = s.get("arcane").and_then(Value::as_array).cloned().unwrap_or_default();
+            let ranks = s.get("arcane_rank").and_then(Value::as_array).cloned().unwrap_or_default();
+            if let Some(a) = self.arcane_set_of(&ids, &ranks) {
+                b.arcane = a;
+            }
+            let evos: Vec<String> = s
+                .get("evolutions")
+                .and_then(Value::as_array)
+                .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
+                .unwrap_or_default();
+            if let Some(e) = self.evo_sets.iter().position(|x| *x == evos) {
+                b.evo = e;
+            }
+            if let Some(m) = str_of(s, "mode").and_then(|m| self.mode_ids.iter().position(|x| *x == m)) {
+                b.mode = m;
+            }
+            if let Some(v) = str_of(s, "valence_element").and_then(|e| self.valences.iter().position(|x| *x == e)) {
+                b.val = v;
+            }
+            // Required cards ride in every start, in the first free slots.
+            for r in &self.required {
+                if !b.mods.contains(&Some(*r)) {
+                    if let Some(slot) = b.mods.iter().position(Option::is_none) {
+                        b.mods[slot] = Some(*r);
+                    }
+                }
+            }
+            let mut fixed: Vec<Position> = s
+                .get("fixed")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(|p| {
+                    let kind: &'static str = match p.get("kind").and_then(Value::as_str)? {
+                        "mods" => "mods",
+                        "arcane" => "arcane",
+                        "evo" => "evo",
+                        "mode" => "mode",
+                        "valence" => "valence",
+                        _ => return None,
+                    };
+                    Some(Position { kind, idx: p.get("idx").and_then(Value::as_u64)? as usize })
+                })
+                .collect();
+            for (slot, m) in b.mods.iter().enumerate() {
+                if m.is_some_and(|m| self.required.contains(&m)) {
+                    fixed.push(Position { kind: "mods", idx: slot });
+                }
+            }
+            out.push(QuickStart { build: b, fixed });
+        }
+        out
+    }
+
     /// The plan's default for every axis a start does not name.
     fn blank(&self) -> QBuild {
         QBuild {
@@ -168,6 +266,10 @@ impl QuickCtx<'_> {
         given: &[wfsim_optimizer::descent::Start],
         seeds: Vec<wfsim_optimizer::descent::Start>,
     ) -> Vec<QuickStart<QBuild>> {
+        let builds = self.build_starts();
+        if !builds.is_empty() {
+            return builds;
+        }
         let list = if given.is_empty() { seeds } else { given.to_vec() };
         let arcane_seats: Vec<Position> = (0..self.arcane_sets.first().map_or(0, Vec::len))
             .map(|idx| Position { kind: "arcane", idx })
@@ -298,30 +400,44 @@ impl QuickSpace for QuickCtx<'_> {
     }
 
     fn legal(&self, b: &QBuild) -> bool {
-        self.has_required(b) && self.materialize(b).is_some()
+        self.has_required(b) && !self.orders(b).is_empty()
     }
 
+    /// Each build at its best element order: every order is scored on the one
+    /// paired stream and the best is kept, and remembered for the answer.
     fn score(&self, bs: &[QBuild]) -> Vec<Score> {
-        let cands: Vec<Option<Candidate>> = bs.iter().map(|b| self.materialize(b)).collect();
-        let jobs: Vec<(&Candidate, usize)> = cands
+        let orders: Vec<Vec<Candidate>> = bs.iter().map(|b| self.orders(b)).collect();
+        let jobs: Vec<(&Candidate, usize)> = orders
             .iter()
             .zip(bs)
-            .filter_map(|(c, b)| c.as_ref().map(|c| (c, b.arcane)))
+            .flat_map(|(os, b)| os.iter().map(move |c| (c, b.arcane)))
             .collect();
+        self.sims.fetch_add(jobs.len() as u64 * u64::from(self.runs), std::sync::atomic::Ordering::Relaxed);
         let sums = wfsim_optimizer::descent::evaluate_paired(&jobs, self.arcanes, self.scenario, self.runs, self.seed);
         let mut it = sums.into_iter();
-        cands
-            .iter()
-            .map(|c| {
-                c.as_ref()
-                    .and_then(|_| it.next())
-                    .map(|s| (s.mean_kill_progress.max(0.0), s.mean_effective_damage))
-            })
-            .collect()
+        let mut out = Vec::with_capacity(bs.len());
+        for (b, os) in bs.iter().zip(&orders) {
+            let mut best: Option<(&Candidate, (f64, f64))> = None;
+            for c in os {
+                let Some(s) = it.next() else { break };
+                let sc = (s.mean_kill_progress.max(0.0), s.mean_effective_damage);
+                if best.is_none_or(|(_, x)| sc.0.total_cmp(&x.0).then(sc.1.total_cmp(&x.1)).is_gt()) {
+                    best = Some((c, sc));
+                }
+            }
+            if let (Some((c, _)), Ok(mut m)) = (best, self.best.lock()) {
+                m.insert(self.key(b), c.clone());
+            }
+            out.push(best.map(|(_, s)| s));
+        }
+        out
     }
 
+    /// ORDER-BLIND: the cards as a set, since a build scores at its best order.
     fn key(&self, b: &QBuild) -> String {
-        format!("{b:?}")
+        let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
+        mods.sort_unstable();
+        format!("{mods:?} x{} a{} e{} m{} v{}", b.exilus, b.arcane, b.evo, b.mode, b.val)
     }
 
     /// The canonical form: the same cards whatever their slots, the same
@@ -379,7 +495,9 @@ pub(crate) fn run_quick(
         sampled: u128::from(qs.evals),
         subsets: qs.evals,
         candidates: qs.evals,
-        evals: qs.evals,
+        // SIMULATED ENGAGEMENTS, which is what the walk's count means: every
+        // order of every build scored, at `runs` each.
+        evals: ctx.sims.load(std::sync::atomic::Ordering::Relaxed),
         exhaustive: false,
         starts: qs.starts,
         cut: qs.cut,
