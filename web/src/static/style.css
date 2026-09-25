@@ -1039,6 +1039,14 @@ label.check input{width:auto}
    (mod/arcane image, polarity icon, effect lines); only the trailing control
    differs (pool/req for mods, include/search for arcanes & evolutions). */
 .opt-modlist{border:1px solid var(--line);border-radius:10px;background:var(--panel3)}
+/* The descent's starts: one row per start, a chip per card or arcane; a
+   locked chip is outlined in the accent so a pin reads at a glance. */
+#opt-starts{margin-top:8px}
+.opt-start{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.opt-start-chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel3);cursor:pointer}
+.opt-start-chip.locked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.opt-start-del{margin-left:auto;font-size:12px;padding:2px 6px}
+#opt-start-add{margin-top:6px;font-size:12px}
 #opt-mods,#opt-arcanes{margin-bottom:6px}
 .opt-modlist .opt,.opt-evolist .opt{cursor:default;border-bottom:1px solid var(--line);border-left:3px solid var(--rar,transparent)}
 .opt-modlist .opt:last-child,.opt-evolist .opt:last-child{border-bottom:none}

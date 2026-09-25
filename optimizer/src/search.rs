@@ -1,34 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! THE SEARCH — one path at every scope.
+//! THE WALK — every subset of a scope small enough to take whole.
 //!
-//! The space is superexponential — a 22-mod pool is 571,569 candidates, 30 mods
-//! is 9.2 million, the full 60-mod pool ~10⁹ — while one evaluation costs a
-//! full simulated engagement (~150/s single-threaded in wasm). At that ratio a
-//! search affords ~10⁴ evaluations against 10⁹ candidates, so BEING CUT SHORT
-//! IS THE NORMAL CASE, and a depth-first enumeration cut short leaves a
-//! lexicographic corner rather than a sample (docs/OPTIMIZER.md).
+//! [`crate::descent`] searches a scope too big to enumerate; this answers the
+//! one that is not, and its answer is PROVEN: the walk visits every subset
+//! exactly once, so its winner is the optimum of everything pooled, where a
+//! descent's is the best its starts reached. The caller picks between them
+//! (webapi `EXHAUST_UP_TO`).
 //!
-//! This file is WHICH BUILDS TO LOOK AT; which of them is best under noise is
-//! the funnel, which culls 22,316 jobs to 10 for 1.5% of the flat cost and
-//! loses nothing against ground truth.
-//!
-//! ONE LOOP, BOTH REGIMES. The search walks [`Shuffle`], a pseudorandom
-//! bijection on the subset space's index range, so walking to the end visits
-//! every subset exactly once and stopping early leaves a uniform sample WITHOUT
-//! REPLACEMENT. There is no mode to pick and no threshold to cross;
-//! [`SearchStats::exhaustive`] says which a run turned out to be.
-//!
-//! SAMPLING ALONE IS NOT ENOUGH, so the budget is split: 10⁴ uniform samples of
-//! 10⁹ builds find a build at about the 1-in-10⁴ quantile, so once the explore
-//! share is spent the rest goes to the NEIGHBOURHOOD of what was found — swap
-//! one mod, add one, drop one — deduplicated against everything already tried.
+//! It walks [`Shuffle`], a pseudorandom bijection on the subset space's index
+//! range, rather than a depth-first descent: a walk cut short by the clock
+//! then leaves a uniform sample instead of a lexicographic corner, and
+//! [`SearchStats::coverage`] says how much of the space it reached.
 //!
 //! A 1-RUN SCREEN IS ALLOWED TO STEER, measured rather than assumed: over a
 //! 64,796-job scope, ranking every job on ONE Monte-Carlo run and keeping the
 //! top sixth drops **0 of the true top 100**, because kill progress over a
 //! 300 s engagement is a low-variance statistic.
 
-use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
 use crate::space::{Shuffle, SubsetSpace};
@@ -46,51 +34,27 @@ pub struct SearchConfig {
     /// Screen evaluations the search may spend. 0 = no cap (the host's clock,
     /// via `FunnelState`, is then the only bound).
     pub max_evals: u64,
-    /// Share of `max_evals` spent SAMPLING before the neighbourhood takes
-    /// over. Ignored when the sample exhausts the space first, which is the
-    /// whole point: a scope that fits is never sampled twice.
-    pub explore_frac: f64,
     /// How many screened jobs survive into the funnel.
     pub keep: usize,
     pub seed: u64,
     /// Monte-Carlo runs per screen evaluation. 1 — see the module note.
     pub runs: u32,
-    /// WHICH SHARD of the space this run walks, of `shards` total. The browser
-    /// is single-threaded, so the only way to buy coverage there is to run
-    /// several Web Workers — each takes one stride of the shuffled order
-    /// (`shard`, `shard + shards`, `shard + 2·shards`, …). The strides are
-    /// disjoint and their union is the whole space, so N workers cover N times
-    /// the ground with no coordination and nothing evaluated twice.
-    ///
-    /// Each shard also CLIMBS on its own, which is a feature rather than a
-    /// compromise: N independent hill-climbs from N independent samples is
-    /// exactly the diversity a single best-first climb lacks, and the risk it
-    /// carries is committing to one basin.
+    /// WHICH SHARD this run is, of `shards` total. The browser is
+    /// single-threaded, so it buys compute with several Web Workers: the walk
+    /// gives each one stride of the shuffled order (`shard`, `shard + shards`,
+    /// …), disjoint and together the whole space; the descent gives each its
+    /// share of the starts.
     pub shard: u32,
     pub shards: u32,
     /// The DESCENT's widest move: how many positions it may change at once
-    /// once single changes stop paying. 1 = single changes only. The sampler
-    /// ignores it.
+    /// once single changes stop paying. 1 = single changes only.
     pub swap_width: u32,
 }
 
 impl Default for SearchConfig {
     fn default() -> Self {
-        // 0.3 is MEASURED, not chosen (14-mod Verglas scope, 22,316 jobs,
-        // Thrax Lv 9999 SP, graded against ground truth at 500 and 1000
-        // screen evaluations):
-        //
-        //   fraction  500 evals            1000 evals
-        //   0.15  rank 1, recall 60%   rank 1, recall  90%
-        //   0.30  rank 1, recall 60%   rank 1, recall 100%
-        //   0.45  rank 8, regret 2.3%  rank 1, recall  80%
-        //
-        // 0.15 and 0.30 both find the optimum where 0.45 does not; 0.30 wins
-        // on recall and keeps twice the exploration, which is the safer side
-        // of a landscape whose ruggedness has been measured on one scope.
         SearchConfig {
             max_evals: 0,
-            explore_frac: 0.3,
             keep: 65_536,
             seed: 0xDEAD_BEEF,
             runs: 1,
@@ -101,28 +65,29 @@ impl Default for SearchConfig {
     }
 }
 
-/// What a run actually did — the honest report a truncated search owes.
+/// What a run actually did — the honest report a search owes.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SearchStats {
     /// Indices the space holds.
     pub space: u128,
-    /// Indices consumed from the shuffled order.
+    /// Indices the walk consumed from the shuffled order.
     pub sampled: u128,
-    /// Subsets actually built (the rest were family collisions).
+    /// Subsets actually scored.
     pub subsets: u64,
-    /// Subsets proposed by the neighbourhood rather than the sample.
-    pub neighbours: u64,
     /// Candidates expanded from those subsets.
     pub candidates: u64,
     /// Screen evaluations spent.
     pub evals: u64,
-    /// Did the sample reach the end of the space? Then this was not a search
-    /// at all — it was an enumeration, and its winner is THE winner.
+    /// Did the walk reach the end of the space? Then its winner is THE winner.
     pub exhaustive: bool,
+    /// Starts a descent ran from; 0 = this was the walk.
+    pub starts: u32,
+    /// A descent the budget stopped before every start reached a fixed point.
+    pub cut: bool,
 }
 
 impl SearchStats {
-    /// Share of the space the sample covered, in `0..=1`. Exact, because the
+    /// Share of the space the walk covered, in `0..=1`. Exact, because the
     /// denominator is a counted index range rather than an estimate.
     pub fn coverage(&self) -> f64 {
         if self.space == 0 {
@@ -136,7 +101,7 @@ impl SearchStats {
 struct Proposal {
     subset: Vec<usize>,
     /// Global sequence number — the seed source, so a job's random stream
-    /// depends on nothing but the search's own deterministic order.
+    /// depends on nothing but the walk's own deterministic order.
     seq: usize,
 }
 
@@ -155,9 +120,8 @@ pub(crate) fn key_of(subset: &[usize]) -> u64 {
     h
 }
 
-/// Run the search. Returns the screened survivors (best first) and what the
-/// run covered.
-#[allow(clippy::too_many_arguments)]
+/// Walk this shard's stride of the space. Returns the screened survivors
+/// (best first) and what the walk covered.
 pub fn search(
     space: &SubsetSpace,
     expand: &Expand<'_>,
@@ -172,7 +136,6 @@ pub fn search(
 
     let mut stats = SearchStats { space: space.len(), ..Default::default() };
     let mut top: BinaryHeap<Reverse<Scored>> = BinaryHeap::new();
-    let mut tried: HashSet<u64> = HashSet::new();
     let shuffle = Shuffle::new(space.len(), cfg.seed);
     let mut seq = 0usize;
     // How many of THIS SHARD's positions have been consumed; the position
@@ -181,128 +144,43 @@ pub fn search(
     let shards = u128::from(cfg.shards.max(1));
     let shard = u128::from(cfg.shard) % shards;
     let taken = |k: u128| shard + k * shards;
-    // The climb's frontier: elites whose neighbourhood has been generated, and
-    // the neighbours still waiting for a slot in a batch.
-    let mut expanded: HashSet<u64> = HashSet::new();
-    let mut pending: Vec<Vec<usize>> = Vec::new();
-
     let stopped = |st: Option<&FunnelState>| {
         st.is_some_and(|s| {
             s.cancel.load(Ordering::Relaxed) || s.stop_enumeration.load(Ordering::Relaxed)
         })
     };
-    let batch_size = crate::batch_width();
+    let width = crate::batch_width();
 
-    loop {
-        if stopped(state) {
+    while taken(k) < space.len() {
+        if stopped(state) || (cfg.max_evals > 0 && stats.evals >= cfg.max_evals) {
             break;
         }
-        if cfg.max_evals > 0 && stats.evals >= cfg.max_evals {
-            break;
-        }
-        // EXPLORE while the shuffled order still has ground and the explore
-        // share is unspent; EXPLOIT after that. `stop_explore` lets a host
-        // whose budget is a clock rather than a count make the same switch.
-        let explore_spent = (cfg.max_evals > 0
-            && stats.evals as f64 >= cfg.explore_frac * cfg.max_evals as f64)
-            || state.is_some_and(|s| s.stop_explore.load(Ordering::Relaxed));
-        let exploring = taken(k) < space.len() && !explore_spent;
-
-        // A batch must not overrun the phase it belongs to. Batches are wide
-        // (4 per worker) so every core stays fed, and a small budget was
-        // therefore spent entirely inside the FIRST one: with 120 evaluations
-        // and a batch of 104 subsets, the explore share ended after the budget
-        // did and the climb never ran at all. Trim the batch to what is left of
-        // the current limit, in SUBSETS — a subset costs several evaluations
-        // (its element orders, exilus options and evolution sets), so the
-        // conversion uses the rate this run has actually been paying.
-        let per_subset = if stats.subsets > 0 {
-            (stats.evals as f64 / stats.subsets as f64).max(1.0)
-        } else {
-            1.0
-        };
-        let room = |limit: f64| -> usize {
-            if !limit.is_finite() {
-                return batch_size;
-            }
-            let left = limit - stats.evals as f64;
-            if left <= 0.0 {
-                return 1;
-            }
-            ((left / per_subset).ceil() as usize).clamp(1, batch_size)
-        };
-        let total_limit = if cfg.max_evals > 0 { cfg.max_evals as f64 } else { f64::INFINITY };
-        let batch_size = if exploring {
-            let explore_limit = if cfg.max_evals > 0 {
-                cfg.explore_frac * cfg.max_evals as f64
+        // A batch must not overrun the budget: batches are wide (4 per worker)
+        // so every core stays fed, and a subset costs several evaluations (its
+        // element orders, exilus options and evolution sets) — so the batch is
+        // trimmed to what is left, at the rate this run has actually paid.
+        let batch_size = if cfg.max_evals > 0 {
+            let per_subset = if stats.subsets > 0 {
+                (stats.evals as f64 / stats.subsets as f64).max(1.0)
             } else {
-                f64::INFINITY
+                1.0
             };
-            room(explore_limit)
+            let left = (cfg.max_evals - stats.evals) as f64;
+            ((left / per_subset).ceil() as usize).clamp(1, width)
         } else {
-            room(total_limit)
+            width
         };
-
         let mut batch: Vec<Proposal> = Vec::with_capacity(batch_size);
-        if exploring {
-            let mut buf = Vec::new();
-            while batch.len() < batch_size && taken(k) < space.len() {
-                let i = shuffle.at(taken(k));
-                k += 1;
-                stats.sampled += 1;
-                if !space.nth(i, &mut buf) {
-                    continue; // family collision: an index with no subset
-                }
-                if !tried.insert(key_of(&buf)) {
-                    continue;
-                }
+        let mut buf = Vec::new();
+        while batch.len() < batch_size && taken(k) < space.len() {
+            let i = shuffle.at(taken(k));
+            k += 1;
+            stats.sampled += 1;
+            if space.nth(i, &mut buf) {
                 batch.push(Proposal { subset: buf.clone(), seq });
                 seq += 1;
             }
-        } else {
-            // CLIMB, best-first and EXHAUSTIVELY. The neighbourhood of one
-            // build is small — swaps are k(n-k), plus n-k adds and k drops, so
-            // 62 subsets for 8-of-14 — and enumerating all of it is both
-            // cheaper and far better than sampling it at random: a random
-            // mutation mostly re-draws moves already seen, while the full
-            // neighbourhood is a complete local improvement step. It is also
-            // deterministic, which the sampling version was not.
-            while pending.is_empty() {
-                let Some(next) = best_unexpanded(&top, &expanded) else { break };
-                expanded.insert(key_of(&next));
-                pending = neighbourhood(space, &next)
-                    .into_iter()
-                    .filter(|n| !tried.contains(&key_of(n)))
-                    .collect();
-            }
-            if pending.is_empty() {
-                break; // every elite expanded and every neighbour already seen
-            }
-            while batch.len() < batch_size {
-                let Some(next) = pending.pop() else { break };
-                if !tried.insert(key_of(&next)) {
-                    continue;
-                }
-                batch.push(Proposal { subset: next, seq });
-                seq += 1;
-                stats.neighbours += 1;
-            }
-            if batch.is_empty() {
-                continue;
-            }
         }
-        if batch.is_empty() {
-            // Explore ran the shuffled order out without filling a batch —
-            // the space is exhausted. Fall through to exploitation only if
-            // there is budget left AND ground it has not covered; there is
-            // not, so the run is over and it is an EXHAUSTIVE one.
-            if taken(k) >= space.len() {
-                break;
-            }
-            continue;
-        }
-
-        // ---- evaluate the batch ----
         for (pseq, n_cands, results) in
             evaluate_proposals(&batch, expand, arcanes, scenario, cfg, state)
         {
@@ -370,73 +248,6 @@ pub(crate) fn snapshot(
     v.into_iter()
         .map(|s| ScreenedJob { cand: s.cand.clone(), ai: s.ai, summary: s.summary })
         .collect()
-}
-
-/// The best elite whose neighbourhood has not been generated yet — where the
-/// climb goes next. Best-first, so the budget is spent around the strongest
-/// build found rather than spread evenly over a pool most of which is known to
-/// be worse.
-fn best_unexpanded(
-    top: &std::collections::BinaryHeap<std::cmp::Reverse<Scored>>,
-    expanded: &HashSet<u64>,
-) -> Option<Vec<usize>> {
-    let mut v: Vec<&Scored> = top.iter().map(|r| &r.0).collect();
-    v.sort_by(|a, b| b.cmp(a));
-    for s in v {
-        let mut sub = s.cand.ordered.clone();
-        sub.sort_unstable();
-        if !expanded.contains(&key_of(&sub)) {
-            return Some(sub);
-        }
-    }
-    None
-}
-
-/// EVERY 1-move neighbour of a subset: swap one member for one non-member,
-/// add one, drop one. Canonical (ascending) and filtered to what this space
-/// accepts, so the caller can treat them as ordinary proposals.
-///
-/// Swap is the move that carries the information — it holds the build size
-/// still, so it compares two builds that differ in exactly one slot. Add and
-/// drop exist so the size can move at all when the scope allows a range.
-fn neighbourhood(space: &SubsetSpace, from: &[usize]) -> Vec<Vec<usize>> {
-    let pool = space.choosable();
-    let sizes = space.sizes();
-    let droppable: Vec<usize> = from
-        .iter()
-        .copied()
-        .filter(|i| !space.required().contains(i))
-        .collect();
-    let mut out = Vec::new();
-    let mut push = |v: Vec<usize>| {
-        if space.legal(&v) {
-            out.push(v);
-        }
-    };
-    for &inn in pool {
-        if from.contains(&inn) {
-            continue;
-        }
-        for &out_i in &droppable {
-            let mut v: Vec<usize> = from.iter().copied().filter(|&x| x != out_i).collect();
-            v.push(inn);
-            v.sort_unstable();
-            push(v);
-        }
-        if from.len() < *sizes.end() {
-            let mut v = from.to_vec();
-            v.push(inn);
-            v.sort_unstable();
-            push(v);
-        }
-    }
-    if from.len() > *sizes.start() {
-        for &out_i in &droppable {
-            let v: Vec<usize> = from.iter().copied().filter(|&x| x != out_i).collect();
-            push(v);
-        }
-    }
-    out
 }
 
 type Evaluated = (

@@ -422,6 +422,17 @@ ui:
   "FIRING FROM THE HIP throws the seven beams in a spread and aiming focuses them on the crosshairs (wiki). This arena aims, so all seven land — which is the ceiling. A player firing from the hip covers more ground and lands fewer of them on one enemy": "腰射会把七道光束打成一个散布，瞄准则会把它们汇聚到准星上（维基）。这个战场是瞄准状态，所以七道全部命中 —— 这是上限。腰射的玩家覆盖面更大，但打在同一个敌人身上的更少"
   "Final-round runs": 最终轮次数
   Finalists: 优胜名额
+  "Swap width": 替换宽度
+  "how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot": 当一次只换一处已经不再有提升时，搜索可以同时更换多少张卡、赋能或进化。1 最快；每加 1 大约多花一个数量级，但能跨过一次只换一处跨不过去的坎
+  Starts: 起点
+  "the search begins from each; click a card or arcane to lock it there": 搜索从每个起点各自出发；点击卡或赋能即可在该起点锁定
+  "none — the search begins from one start per element": 未设置 —— 搜索会从每个元素各一个起点出发
+  "+ add the current build as a start": + 把当前配置加为起点
+  "remove this start": 删除这个起点
+  "locked in this start — click to free it": 已在此起点锁定 —— 点击解除
+  "click to lock it in this start": 点击在此起点锁定
+  "descended from {n} starts, but the time budget ran out before every one settled — a strong build, short of the best those starts reach": 从 {n} 个起点出发下降，但时间预算在全部收敛前用完了 —— 这是一套强配置，但还不是这些起点能到达的最优
+  "descended from {n} starts until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further": 从 {n} 个起点出发，一直下降到任何改动都不再有提升 —— 这是这些起点能到达的最优，不是证明过的最优；想看得更远，可以加一个起点或调高替换宽度
   "Fire Rate": 射速
   "Fire {base} until the gauge fills, spend it in {other}, come back — and again.": 用{base}打到充能条满，切到{other}把它花掉，再切回来 —— 如此往复。
   "Fired in its {form} for the whole engagement.": 整场交战都用{form}射击。

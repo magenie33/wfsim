@@ -235,7 +235,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 0 };
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 0, starts: [] };
 let optSeeded = false;
 // (The optimizer keeps no scope-wide buff list of its own: it reads the
 // SCENARIO's — see `renderOptBuffs`.)
@@ -275,7 +275,9 @@ const setFinalRuns = (n) => {
 // arena's own rule in another module. `poolSize()` is the whole answer now.
 // An older preset may still carry `threads` and `runs`; both are ignored on
 // load, and the auto-save drops them the first time the scope is touched.
-const OPT_RUN_DEFAULTS = { finalists: 10 };
+// `swap_width` is how many positions the descent may change at once once
+// single changes stop paying — how HARD to search, like `finalists`.
+const OPT_RUN_DEFAULTS = { finalists: 10, swap_width: 1 };
 let optRun = { ...OPT_RUN_DEFAULTS };
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.

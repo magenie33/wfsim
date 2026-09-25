@@ -334,6 +334,9 @@ async function init() {
   $("opt-finalists").value = optRun.finalists;
   $("opt-finalists").title = tr("how many builds survive to the last round — each is then run at the final-round run count beside this");
   $("opt-finalists").addEventListener("input", () => setOptSizes({ finalists: Number($("opt-finalists").value) || 10 }));
+  $("opt-swap-width").value = optRun.swap_width;
+  $("opt-swap-width").title = tr("how many cards, arcanes or evolutions the search may change AT ONCE when changing one no longer helps. 1 is fast; each step up costs roughly an order of magnitude more, and crosses a gap one change cannot");
+  $("opt-swap-width").addEventListener("input", () => setOptSizes({ swap_width: Number($("opt-swap-width").value) || 1 }));
   // (The final-round run count is not wired here: it is a PREFERENCE and
   // draws itself — `renderOptRuns`, outside both halves because it is in
   // neither preset. There is no CPU-thread box, because the topbar's compute

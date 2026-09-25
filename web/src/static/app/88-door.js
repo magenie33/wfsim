@@ -326,7 +326,9 @@ function agentSearchResults(limit) {
   return {
     phase: r.cancelled ? "cancelled" : "done",
     duration: r.duration, ranked_by: "kills per minute",
-    ...(r.exhaustive ? { covered: "every candidate" } : r.coverage != null ? { covered: `${Math.round(r.coverage * 1000) / 10}% of ${r.space} candidates, sampled uniformly` } : {}),
+    ...(r.strategy === "descent"
+      ? { covered: `descent from ${r.starts || 0} starts${r.cut ? ", cut by the time budget" : ", every start settled"} — not a proven best` }
+      : r.exhaustive ? { covered: "every candidate" } : r.coverage != null ? { covered: `${Math.round(r.coverage * 1000) / 10}% of ${r.space} candidates, sampled uniformly` } : {}),
     results: rows,
     note: "search numbers; the simulator re-measures a saved row",
   };

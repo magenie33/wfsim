@@ -1,13 +1,15 @@
 // THE SEARCH RUNS IN THE BROWSER, AND SAYS WHAT IT COVERED.
 //
-// The optimizer's enumeration is no longer a depth-first walk of the whole
-// scope: it walks a shuffled index range, so running to the end is an
-// exhaustive enumeration and stopping early is a uniform sample
-// (optimizer/src/space.rs). Two claims that have to hold ON SCREEN, in the
+// A scope small enough is WALKED over a shuffled index range, so running to
+// the end is an exhaustive enumeration and stopping early is a uniform sample
+// (optimizer/src/space.rs); a bigger one is DESCENDED from starts
+// (optimizer/src/descent.rs). Claims that have to hold ON SCREEN, in the
 // single-threaded wasm build that actually ships:
 //
 //   - a scope small enough to finish reports `exhaustive` and says so;
-//   - the run produces a real leaderboard either way.
+//   - a walk the budget cuts reports its coverage;
+//   - a scope too big to walk says it descended, and keeps a start's lock;
+//   - the run produces a real leaderboard every time.
 //
 // This is the end-to-end check for the whole path — parse → search → funnel →
 // render — in the host where it is slowest and least like the tests.
@@ -85,6 +87,25 @@ const r = await evaluate(`(async () => {
   out.fleetSampled = big && big.sampled;
   setComputePct(pctWas);
 
+  // A SCOPE TOO BIG TO WALK IS DESCENDED — thirty cards, far past the walk's
+  // threshold — from the player's own start, which LOCKS Hellfire: every row
+  // must carry it, and the run must say it descended rather than sampled.
+  const thirty = [...new Set(['hellfire', ...poolWithRivens()
+    .filter((m) => !m.exilus && !String(m.id).startsWith('riven')).map((m) => m.id)])].slice(0, 30);
+  const desc = await runIt({ ...req,
+    mods: Object.fromEntries(thirty.map(id => [id, 'search'])),
+    build_size: 8, build_min: 1, max_evals: 300,
+    starts: [{ mods: ['hellfire'], locked: ['hellfire'] }] });
+  out.descOk = !!(desc && desc.ok);
+  out.descStrategy = desc && desc.strategy;
+  out.descStarts = desc && desc.starts;
+  out.descExhaustive = desc && desc.exhaustive;
+  out.descRows = desc && (desc.results || []).length;
+  out.descAllLocked = !!(desc && (desc.results || []).every((x) => (x.mods || []).includes('hellfire')));
+  try { renderOptResults(desc); } catch (e) { out.renderErr3 = String(e).slice(0,200); }
+  await sleep(100);
+  out.descText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
+
   // What the page SAYS about each — the numbers are worth nothing if the
   // difference between "sampled" and "proven" never reaches the screen.
   try { renderOptResults(small); } catch (e) { out.renderErr = String(e).slice(0,200); }
@@ -117,5 +138,12 @@ check("...and covered more ground than one worker would",
   r.fleetSampled > r.soloSampled * 1.5,
   `fleet ${r.fleetSampled} at ${r.bigWorkers} lanes vs solo ${r.soloSampled} at ${r.soloWorkers}`);
 check("the page says it sampled", /searched .*% of this scope|搜索覆盖了/.test(r.bigText), JSON.stringify(r.bigText.slice(0, 160)));
+
+check("a scope too big to walk is DESCENDED", r.descOk === true && r.descStrategy === 'descent', `${r.descStrategy}`);
+check("...from the player's one start", r.descStarts === 1, String(r.descStarts));
+check("...never claiming to be exhaustive", r.descExhaustive === false);
+check("...and ranks", r.descRows > 0, String(r.descRows));
+check("...with the LOCKED card in every row", r.descAllLocked === true);
+check("the page says it descended", /descended from 1 starts|从 1 个起点出发/.test(r.descText), JSON.stringify(r.descText.slice(0, 160)));
 
 await app.finish("the search reports the ground it actually covered");

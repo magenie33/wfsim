@@ -10,8 +10,8 @@
 //!               [fixed=id,…] [min=1] [size=8] [enemy=thrax_centurion] [level=9999]
 //!               [steel_path=0|1] [duration=300] [runs=100] [truth_runs=200]
 //!               [finalists=10] [max_jobs=200000] [threads=N]
-//!               [strategy=sample|descent] [starts=id+!locked+@!arcane;id] [search_evals=N]
-//!               [explore_frac=F] [arcanes=id,…] [evo1=id,…] … [evo5=id,…]
+//!               [strategy=exhaust|descent] [starts=id+!locked+@!arcane;id] [search_evals=N]
+//!               [arcanes=id,…] [evo1=id,…] … [evo5=id,…]
 //!               [swap_width=N]
 //!
 //! `runs` is the search's own final-round precision (the scenario's);
@@ -79,7 +79,7 @@ fn main() {
         "runs": num("runs", 100),
         "finalists": num("finalists", 10),
         "threads": num("threads", 0),
-        "strategy": get("strategy", "sample"),
+        "strategy": get("strategy", "auto"),
         "swap_width": num("swap_width", 1),
         // `starts=cryo_rounds;!hellfire+serration+@!primary_merciless` — one
         // start per `;`; `!` locks a card, `@` names the arcane, `@!` locks it.
@@ -113,10 +113,8 @@ fn main() {
     // other value asks the question that actually matters — how good is the
     // answer when the budget only buys a slice.
     let search_evals = num("search_evals", 0);
-    // How much of that budget goes to SAMPLING before the climb takes over.
-    let explore_frac = get("explore_frac", "0.6").parse::<f64>().unwrap_or(0.6);
     let t0 = std::time::Instant::now();
-    let out = wfsim_webapi::grade_optimize(&req, truth_runs, max_jobs, search_evals, explore_frac);
+    let out = wfsim_webapi::grade_optimize(&req, truth_runs, max_jobs, search_evals);
     if out.get("ok").and_then(|x| x.as_bool()) != Some(true) {
         eprintln!("{}", out.get("error").and_then(|e| e.as_str()).unwrap_or("failed"));
         std::process::exit(1);
@@ -140,15 +138,20 @@ fn main() {
         println!("    !! the two reference seeds disagree on the best build — raise truth_runs;");
         println!("       every verdict below is measured against a ranking that is still noise.");
     }
-    println!(
-        "[search] covered {:.4}% of {} index positions ({} subsets sampled + {} climbed), exhaustive: {} | {} screen evals",
-        search["coverage"].as_f64().unwrap_or(0.0) * 100.0,
-        search["space"].as_f64().unwrap_or(0.0),
-        search["subsets"].as_u64().unwrap_or(0) - search["neighbours"].as_u64().unwrap_or(0),
-        search["neighbours"],
-        search["exhaustive"],
-        search["screen_evals"],
-    );
+    if search["strategy"] == "descent" {
+        println!(
+            "[search] descent from {} starts, {} subsets scored, cut by budget: {} | {} screen evals",
+            search["starts"], search["subsets"], search["cut"], search["screen_evals"],
+        );
+    } else {
+        println!(
+            "[search] walk covered {:.4}% of {} index positions, exhaustive: {} | {} screen evals",
+            search["coverage"].as_f64().unwrap_or(0.0) * 100.0,
+            search["space"].as_f64().unwrap_or(0.0),
+            search["exhaustive"],
+            search["screen_evals"],
+        );
+    }
     if search["unmatched"].as_u64().unwrap_or(0) > 0 {
         println!(
             "    !! {} finalists were not in the exhaustive list — the two enumerations disagree",

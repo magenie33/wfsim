@@ -1078,7 +1078,12 @@
             <h3 class="sim-h fold-h" data-i18n>Search <span class="sim-hint" data-i18n>how many builds survive to the last round</span></h3>
             <div id="opt-search" class="field-grid">
               <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
+              <label data-i18n>Swap width <input id="opt-swap-width" type="number" min="1" max="4" value="1"></label>
             </div>
+            <!-- WHERE THE SEARCH BEGINS. A start is a partial build taken from
+                 the builder; a card or arcane clicked in it is LOCKED for that
+                 start. No starts = one per element. -->
+            <div id="opt-starts"></div>
           </div>
           <!-- CPU THREADS IS GONE. How much of the machine
                the page may use is ONE setting and it is in the topbar

@@ -433,8 +433,8 @@ Lv 1000 SP, 60 s, `truth_runs=200`:
 |---|---|
 | scope | 1,822 jobs, exhaustive |
 | reference | 364,400 sims; answer set **1 build**; settled; top-10 overlap 1.00 |
-| search | rank **1**, regret 0.000%, within noise, top-10 recall 100% |
-| cost | 4,241 sims — **1.2%** of the reference |
+| search | walked whole (under `EXHAUST_UP_TO`); rank **1**, regret 0.000%, within noise, top-10 recall 100% |
+| cost | 6,063 sims — **1.7%** of the reference |
 
 The reference's own #1 is Viral+Heat (`cryo_rounds, malignant_force, hellfire`
 + the four damage mods), which is what the weapon's innate Cold makes reachable
@@ -487,33 +487,16 @@ Measured on Verglas Prime's rifle pool, min 1 / max 8 slots:
 It is superexponential, and evaluating one candidate costs a full engagement:
 ~200 sims/s per native thread, and the browser is single-threaded. So a search
 in the browser can afford on the order of **10⁴ evaluations** against a space of
-**10⁹**.
+**10⁹** — which is why a scope past `EXHAUST_UP_TO` is descended (§"The
+search") rather than walked.
 
-The old answer was `ENUM_BUDGET_MS` in `wasm/src/lib.rs`: stop walking after
-20 s. Three things were wrong with it, in increasing order of seriousness.
-
-1. **It bought almost nothing.** On the streaming path the wasm screen runs
-   INLINE in the producer — one full simulation per candidate emitted — so the
-   budget covered walking *and* screening. 20 s ≈ 3,000 candidates.
-2. **The truncation is systematic, not a sample.** `enumerate_rec` is a
-   depth-first descent over pool indices, so what survives a cut is a
-   lexicographic prefix: builds made of the first few mods plus one varying
-   tail. Measured on a 22-mod pool, the complete walk carries Heat in 2.77% of
-   candidates; truncated to 8.7% of it, 1.45%; truncated to 3,000 candidates of
-   the full 60-mod pool, **0%**. Viral+Heat needs `cryo_rounds`(11) +
-   `malignant_force`(26) + `hellfire`(20) together with `serration`(50) and
-   `split_chamber`(54) — a subset that appears astronomically late in DFS order.
-   This is why the optimizer could return a build with no Heat on a weapon where
-   Heat is worth 4.5×.
-3. **It did not say so.** `stream_screen` treats only `cancel` as "did not
-   finish"; a walk stopped by the budget returns `complete = true` and renders
-   as a completed search.
-
-Raising the budget does not fix (2): at 5 minutes the coverage of a full pool
-goes from one ten-millionth to one millionth, and it is still the same corner.
-The fix is to stop substituting exhaustive enumeration for search — ONE path at
-every scope, graded by the harness above (rigour over
-convenience; a user who wants less work should pool fewer mods).
+A walk that IS cut short must leave a sample, not a corner. A depth-first walk
+over pool indices leaves a lexicographic prefix: measured on a 22-mod pool, the
+complete walk carries Heat in 2.77% of candidates, truncated to 8.7% of it
+1.45%, and truncated to 3,000 candidates of the full pool **0%** — so a build
+with no Heat wins on a weapon where Heat is worth 4.5×. The walk therefore
+runs over a shuffled index range, and a cut walk reports its coverage rather
+than rendering as a completed search.
 
 ## EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS
 
@@ -703,139 +686,93 @@ the scope reported itself impossible ("more required (0) than slots (8)") and
 Run stayed disabled until some control was touched. `check_build_size` could
 not see it, because its first act was to type a floor.
 
-## The search
+## The search — walk what fits, descend what does not
 
-Candidate GENERATION and candidate RANKING are different problems, and only
-the second was ever solved here. The funnel culls 22,316 jobs to 10 for 1.5%
-of the flat cost and loses nothing (§Accuracy) — it never needed replacing.
-What did was the enumeration in front of it.
+Candidate GENERATION and candidate RANKING are different problems. The funnel
+ranks: it culls 22,316 jobs to 10 for 1.5% of the flat cost and loses nothing
+(§Accuracy). Generation is one of two searches, and the server picks
+(`walks_whole` in `webapi/src/optimize.rs`):
 
-**The space is an index range, not a walk.** `optimizer/src/space.rs`:
-`SubsetSpace::nth(i)` unranks the i-th subset in colex order, O(k log n).
-Family exclusivity is REJECTED rather than folded into the index — measured
-over the four shipped pools, family-legal subsets are 79–85% of C(n, 8), so
-rejection costs ~25% of a walk against an evaluation that costs a whole
-simulated engagement.
+- **The WALK** (`optimizer/src/search.rs`) when the scope's estimated cost —
+  subsets × arcane sets × variants — is at most `EXHAUST_UP_TO` (20,000, about
+  two minutes of one browser worker). It visits every subset, so its answer
+  is PROVEN: the optimum of everything pooled.
+- **The DESCENT** (`optimizer/src/descent.rs`) above it. Its answer is the best
+  its starts reach, and it never reports itself exhaustive.
 
-**One loop is both regimes.** `Shuffle` is a pseudorandom bijection on
-`0..len` (a 4-round Feistel network with cycle-walking). The search walks it:
-reaching the end visits every subset exactly once, so the run IS an exhaustive
-enumeration; stopping early leaves a uniform sample WITHOUT REPLACEMENT. There
-is no mode to select and no size threshold, and therefore no class of bug
-where one regime carries a fix the other does not.
-`SearchStats::exhaustive` reports which a run turned out to be, and
+`"strategy": "exhaust" | "descent"` overrides the choice; graders and tools
+name one, the page sends neither. The result says which ran: `strategy` is
+`walk` or `descent`, a walk carries `exhaustive` and `coverage`, a descent
+carries `starts` and `cut` (the clock stopped it before every start settled).
+
+**Inside a subset, everything stays exhaustive** under both: element orders,
+exilus options, evolution sets. A couple of dozen cheap combinations each —
+handing an exact subproblem to a stochastic search is how an answer gets lost
+for no reason.
+
+### The walk
+
+**The space is an index range.** `optimizer/src/space.rs`: `SubsetSpace::nth(i)`
+unranks the i-th subset in colex order, O(k log n). Family exclusivity is
+REJECTED rather than folded into the index — family-legal subsets are 79–85%
+of C(n, 8) over the shipped pools, so rejection costs ~25% of a walk against
+an evaluation that costs a whole simulated engagement.
+
+`Shuffle` is a pseudorandom bijection on `0..len` (a 4-round Feistel network
+with cycle-walking) and the walk follows it: reaching the end visits every
+subset exactly once; a clock that stops it early leaves a uniform sample, and
 `coverage()` is exact because the denominator is a counted index range.
 
-**Sampling alone is not an answer**, so the budget splits: `explore_frac` of it
-samples, the rest climbs. The climb is BEST-FIRST and takes the WHOLE
-neighbourhood of an elite — every 1-swap, add and drop — because that
-neighbourhood is small (62 subsets for 8-of-14) and enumerating it is both
-cheaper and far better than sampling it. Measured, 14-mod scope, 22,316 jobs,
-graded against ground truth:
+A batch is trimmed to the budget left, converted from evaluations to subsets
+at the rate the run has actually paid — batches are wide (4 proposals per
+worker) and a subset costs several evaluations, so an untrimmed batch
+overruns a small budget many times over.
 
-| | rank | regret |
-|---|---|---|
-| random mutation, 3,000 evals | 10 | 2.9% |
-| whole neighbourhood, 800 evals | **1** | **0.000%** |
-| whole neighbourhood, 1,500 evals | **1** | **0.000%** (top-10 recall 100%) |
+**The depth-first walk is kept as the GRADER's enumeration.**
+`enumerate_candidates_observed` is what `grade_optimize` exhausts a scope with
+— a reference must not share machinery with what it grades.
+`optimizer/tests/enumeration_equivalence.rs` pins the two together: a full
+sweep of the index space is exactly the walk's output on a real pool.
 
-`explore_frac` is 0.3 on measurement, not on taste — 0.45 fails to find the
-optimum at 500 evals where 0.15 and 0.30 both find it, and 0.30 keeps twice
-the exploration of 0.15 for the same result.
-
-**Inside a subset, everything stays exhaustive**: element orders, exilus
-options, evolution sets. A couple of dozen cheap combinations each — handing an
-exact subproblem to a stochastic search is how an answer gets lost for no
-reason.
-
-**The walk is kept, as the GRADER's enumeration.**
-`enumerate_candidates_observed` is no longer in the product path but is what
-`grade_optimize` exhausts a scope with — a reference must not share machinery
-with what it grades. `optimizer/tests/enumeration_equivalence.rs` pins the two
-together: a full sweep of the index space is exactly the walk's output on a
-real pool, in both directions, with required mods and family collisions in it.
-
-**One regression, recorded as a decision.** Mid-search resume is gone; the
-funnel's ROUND checkpoint stays. The old one stored a position in a
-depth-first walk plus the survivors at that cut, and a position in a shuffled
-range with an elite pool behind it is not the same thing. Restoring it means
-checkpointing the elites by identity and re-screening them on resume.
-
-### A batch must not overrun its phase
-
-Batches are wide — 4 proposals per worker — so every core stays fed. That made
-the explore/exploit split meaningless at small budgets: with 120 evaluations
-and a batch of 104 subsets, the explore share was over before the first batch
-was, and the climb never ran. Graded, that cost rank 5 and **22.5% regret** on
-a scope the same budget now solves outright.
-
-The batch is trimmed to what is left of the current phase's limit, converted
-from evaluations to subsets at the rate the run has actually been paying (a
-subset costs several evaluations — its element orders, exilus options and
-evolution sets). `a_budget_it_cannot_finish_leaves_an_honest_sample` is the
-regression guard; it asserts `neighbours > 0`, which is what failed.
-
-**Where the pipeline stands** (Verglas Prime, 14 pooled mods, 12,910 subsets /
-22,316 jobs, Thrax Centurion Lv 9999 SP, 60 s, reference at 120 runs):
-
-| search budget | coverage | rank | regret | recall |
-|---|---|---|---|---|
-| unbudgeted | 100%, **exhaustive** | 1 | 0.000% | 100% |
-| 800 evals | 2.07% | **1** | **0.000%** | 60% |
-| 300 evals | 0.96% | 8 | 2.280% | 10% |
-
-Two per cent of the space buys the optimum; one per cent does not. The
-depth-first walk had no coverage at which it did — its sample was a corner, not
-a sample.
+**Resume is by round.** The funnel's ROUND checkpoint survives a reload; a
+search in progress does not — its position is not a thing a checkpoint can
+name.
 
 ### The browser runs a FLEET
 
-The browser is where coverage is scarcest and compute is smallest: one thread
-at ~150 simulated engagements per second, against ~5,100 on a 26-thread
-desktop. Parameters cannot close a 34x gap; workers can.
+The browser is where compute is smallest: one thread at ~150 simulated
+engagements per second, against ~5,100 on a 26-thread desktop. Parameters
+cannot close a 34x gap; workers can.
 
-N Web Workers walk DISJOINT STRIDES of the shuffled index range — worker `w`
-takes `w, w + N, w + 2N, …` (`SearchConfig::shard` / `shards`). The strides are
-a partition, so nothing is evaluated twice and nothing is missed;
-`shards_partition_the_shuffled_order_exactly` pins that, because an overlap
-would waste the budget and a gap would let N shards each report themselves
-exhaustive over a space they had not covered.
-
-Each shard also CLIMBS on its own. That is a feature rather than a compromise:
-N independent hill-climbs from N independent samples is exactly the basin
-diversity one best-first climb lacks.
+A WALK gives N Web Workers DISJOINT STRIDES of the shuffled index range —
+worker `w` takes `w, w + N, w + 2N, …` (`SearchConfig::shard` / `shards`). The
+strides are a partition; `shards_partition_the_shuffled_order_exactly` pins
+that, because an overlap would waste the budget and a gap would let N shards
+each report themselves exhaustive over a space they had not covered. A
+DESCENT gives each worker its share of the starts (`index % shards`).
 
 The count is the **topbar's compute share** and nothing else:
-`woptWorkerCount()` is `poolSize()`, a percentage of the cores the machine
-reports. See §"…and so did CPU threads" for why a per-search override of a
-global setting is the wrong shape, particularly on the one thing here most able
-to cook a phone.
+`woptWorkerCount()` is `poolSize()`. See §"…and so did CPU threads".
 
 **Merging** is a sort: every row was produced by its shard's own funnel at the
-same run count under the same scenario, so the scores are directly comparable.
-Rows are deduplicated by identity first — strides are disjoint but the climb is
-not, so two workers can reach the same build. `exhaustive` is the AND of the
-shards; coverage is the SUM of their walked positions over the space.
+same run count under the same scenario. Rows are deduplicated by identity
+first — two descents can reach the same build. `exhaustive` is the AND of the
+shards, coverage the SUM of their walked positions over the space, `starts`
+the sum of theirs, `cut` the OR.
 
-**Empty shards are not failures.** With more workers than index positions —
-8 workers over a scope holding one build — every shard but the first owns no
-ground, and each answered "no legal builds in this scope (Forma / family
-constraints eliminated all)", which the fleet then surfaced as the whole run's
-error. Walking nothing differs from walking and finding nothing; only the
-second is that message.
-
-**Resume is unsharded.** A checkpoint is one worker's field, so resuming a run
-starts a single worker rather than a fraction of a fleet.
+**Empty shards are not failures.** A shard that owns no ground — more workers
+than index positions, or than starts — returns an empty, complete envelope;
+"no legal builds in this scope" is reserved for a shard that searched and
+found nothing.
 
 ## The descent — the axes ADD
 
-The sampler pays for every subset under every arcane and every variant (mode ×
-evolution set × valence), so its cost is their PRODUCT. On Boar Prime with two
-arcanes and eight evolution sets one subset costs ~46 evaluations, and the
-first batch alone spent 4,768 against a budget of 1,000.
-`optimizer/src/descent.rs` holds one build and sweeps one position at a time,
-so a sweep costs the SUM of the option counts. It is opt-in per request
-(`"strategy": "descent"`); the sampler stays the default.
+A search that pays for every subset under every arcane and every variant (mode
+× evolution set × valence) pays their PRODUCT: on Boar Prime with three
+arcanes and eighteen evolution sets one subset costs ~180 evaluations, so
+20,000 buy 212 subsets. The descent holds one build and sweeps one position at
+a time, so a sweep costs the SUM of the option counts, and the whole pool
+stays searchable.
 
 1. **Starts** are the player's partial builds: a list of mod ids, or
    `{"mods": [...], "locked": [...], "arcane": id | [ids], "lock_arcane":
@@ -843,25 +780,30 @@ so a sweep costs the SUM of the option counts. It is opt-in per request
    what it LOCKS, which that start never swaps out (the scope's `fixed` mark
    locks it for every start). An id outside the scope is refused, not
    dropped: a start that silently lost its pin searches something the player
-   did not ask for. Without any, there
-   is one start per primary element, one card each; the fill picks the
-   partner, and which card does not matter, because the sweep upgrades it.
-   ONE start holding all four is the wrong shape: shedding an element costs
-   its combination before the freed slot pays, so it stalls (49% regret below).
+   did not ask for. Without any, there is one start per primary element, one
+   card each; the fill picks the partner, and which card does not matter,
+   because the sweep upgrades it. ONE start holding all four is the wrong
+   shape: shedding an element costs its combination before the freed slot
+   pays, so it stalls (49% regret below).
 2. **Fill**: add the best card until the build is full.
 3. **Sweep**: arcane → each mod → an empty slot → the variant. ANY accepted
    move restarts at the arcane, because a change anywhere moves what every
    other position wants. A sweep with no move is that start's answer.
 
+On the page a start is taken from the builder ("add the current build as a
+start"): put in only what you mean — one card is a start — and click a card or
+the arcane in it to lock it there.
+
 Slot POSITION is not part of a start: element order inside a subset is still
 enumerated exhaustively, so "Cold in slot 1" and "Cold somewhere" are one
 start. Every build is scored on ONE random stream, so a comparison is paired
 and the score is a fixed function of the build — each accepted move strictly
-raises it over a finite set, which is why the loop ends. What it returns is
-the sampler's shape (every scored job), so the funnel, the replay and the
-grader do not know which one ran. It never reports itself exhaustive.
+raises it over a finite set, which is why the loop ends.
 
-**Measured** (`wfsim-truth`, 60 s, Thrax Lv 9999 SP, reference 100 runs):
+**Measured against ground truth** (`wfsim-truth`, 60 s, Thrax Lv 9999 SP,
+reference 100 runs). "Sample + climb" is the search the descent replaced — a
+uniform sample of the space, then a best-first climb over every 1-swap of the
+best builds — kept at tag `archive/optimizer-sampler`:
 
 | scope | strategy | screen evals | rank | within noise | top-10 recall |
 |---|---|---|---|---|---|
@@ -869,14 +811,24 @@ grader do not know which one ran. It never reports itself exhaustive.
 | | descent, six element-pair starts | 1,535 | 1 | yes | 100% |
 | | descent, one start holding all four | 557 | 283 | **no** (49%) | 0% |
 | | descent, Serration alone | 361 | 1 | yes | 80% |
-| | sampler, 1,500 | 1,505 | 1 | yes | 90% |
+| | sample + climb, 1,500 | 1,505 | 1 | yes | 90% |
 | Boar Prime, 11 mods × 2 arcanes × 8 evolution sets, 7,504 jobs, answer set 4 | descent, one start per element | 601 | 3 | yes | 50% |
-| | descent, six element-pair starts | 971 | 3 | yes | 80% |
 | | descent, Primed Point Blank alone | 273 | 3 | yes | 40% |
-| | sampler, budget 1,000 | 4,768 | 5 | **no** (1.6%) | 40% |
+| | sample + climb, budget 1,000 | 4,768 | 5 | **no** (1.6%) | 40% |
+
+**Measured on the whole pool**, where no reference exists: both searches at
+20,000 screen evaluations, winners replayed on 400 paired runs.
+
+| scope | sample + climb | descent | descent − sample + climb |
+|---|---|---|---|
+| Verglas Prime, 59 cards | 0.767 | 1.003 | **+30.8%** (1,433σ), a quarter of the time |
+| Boar Prime, 67 cards × 3 arcanes × 18 evolution sets | 6.62 | 29.49 | **+346%** (535σ) |
 
 `the_descent_reaches_the_answer_set_from_any_start` is the CI guard; with
 moves never accepted it fails at rank 440.
+`a_locked_card_stays_in_every_build_its_start_scores` and
+`a_locked_arcane_is_the_only_one_its_start_scores` guard the locks; each fails
+with its lock ignored.
 
 ### Swap width — a valley two changes wide
 

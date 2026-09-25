@@ -297,11 +297,10 @@ fn a_scope_that_fits_is_searched_exhaustively_and_solved() {
     );
 }
 
-/// ...and a budget it cannot finish leaves a SAMPLE, which must be honest
-/// about being one and must still be worth reading. The old depth-first walk
-/// left a lexicographic corner here — builds made of the first few pool
-/// entries — which is what let a Heat-less build win on a weapon where Heat is
-/// worth 4.5x.
+/// ...and a walk the clock cuts leaves a SAMPLE, which must be honest about
+/// being one and must still be worth reading. A depth-first walk leaves a
+/// lexicographic corner here — builds made of the first few pool entries —
+/// which is how a Heat-less build can win on a weapon where Heat is worth 4.5x.
 #[test]
 fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     const RUNS: u32 = 40;
@@ -318,14 +317,13 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     assert_eq!(unmatched, 0, "{unmatched} results were not in the exhaustive enumeration");
     assert!(!stats.exhaustive, "a search this budget cannot finish must not claim it did");
     assert!(stats.coverage() < 1.0, "coverage {} claims the whole space", stats.coverage());
-    assert!(stats.neighbours > 0, "the budget was never spent climbing");
     // Not the optimum — this budget cannot promise one. What it must promise is
-    // that a few per cent of the space still buys the top of it, which is the
-    // property the depth-first walk did not have at any coverage.
+    // that a few per cent of the space still buys the top of it, which a
+    // depth-first corner does not at any coverage.
     let top_decile = (jobs.len() / 10).max(5);
     assert!(
         v.rank <= top_decile,
-        "rank {} of {} on {:.1}% coverage — a uniform sample plus a climb should not land there",
+        "rank {} of {} on {:.1}% coverage — a uniform sample should not land there",
         v.rank,
         jobs.len(),
         stats.coverage() * 100.0

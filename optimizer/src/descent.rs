@@ -135,7 +135,6 @@ impl Run<'_> {
             let results = par_map(&fresh, |p| eval_point(p, expand, arcanes, scenario, cfg, state));
             for (p, res) in fresh.iter().zip(results) {
                 self.stats.subsets += 1;
-                self.stats.neighbours += 1;
                 self.stats.candidates += res.len() as u64;
                 self.stats.evals += res.len() as u64;
                 let mut best: Score = None;
@@ -206,9 +205,9 @@ impl Run<'_> {
         Some(best.filter(|(_, s)| better(*s, cur)))
     }
 
-    /// Fill a seed to size, then sweep it to a fixed point. Returns early when
-    /// the budget runs out; everything scored so far is already in `top`.
-    fn descend(&mut self, start: Start) {
+    /// Fill a start to size, then sweep it to a fixed point. `false` = the
+    /// budget ran out first; everything scored so far is already in `top`.
+    fn descend(&mut self, start: Start) -> bool {
         let space = self.space;
         let sizes = space.sizes();
         self.locked = start.locked.clone();
@@ -230,7 +229,7 @@ impl Run<'_> {
         };
         let at_start: Vec<Point> =
             tried.iter().map(|&ai| Point { subset: seed.clone(), ai, vi: None }).collect();
-        let Some(scores) = self.score(&at_start) else { return };
+        let Some(scores) = self.score(&at_start) else { return false };
         let mut cur = Point { subset: seed, ai: tried[0], vi: None };
         let mut cur_score = None;
         for (&ai, s) in tried.iter().zip(scores) {
@@ -239,9 +238,9 @@ impl Run<'_> {
                 cur.ai = ai;
             }
         }
-        let Some((_, _, vi)) = cur_score else { return };
+        let Some((_, _, vi)) = cur_score else { return true };
         cur.vi = Some(vi);
-        let Some(s) = self.score(std::slice::from_ref(&cur)) else { return };
+        let Some(s) = self.score(std::slice::from_ref(&cur)) else { return false };
         cur_score = s[0];
 
         // FILL. Below the minimum a card is added even if it costs; above it,
@@ -257,7 +256,7 @@ impl Run<'_> {
                 .collect();
             let floor = if cur.subset.len() < *sizes.start() { None } else { cur_score };
             match self.best_move(floor, alts) {
-                None => return,
+                None => return false,
                 Some(Some((p, s))) => {
                     cur = p;
                     cur_score = s;
@@ -266,7 +265,7 @@ impl Run<'_> {
             }
         }
         if !space.legal(&cur.subset) {
-            return; // the pool cannot reach the minimum from this seed
+            return true; // the pool cannot reach the minimum from this seed
         }
 
         // SWEEP. Positions in a fixed order — the arcane, each mod the build
@@ -319,7 +318,7 @@ impl Run<'_> {
             );
             for alts in positions {
                 match self.best_move(cur_score, alts) {
-                    None => return,
+                    None => return false,
                     Some(Some((p, s))) => {
                         cur = p;
                         cur_score = s;
@@ -332,7 +331,7 @@ impl Run<'_> {
             // width at a time, and any gain sends the sweep back to width 1.
             for w in 2..=self.cfg.swap_width.max(1) as usize {
                 match self.wide(&cur, cur_score, w) {
-                    None => return,
+                    None => return false,
                     Some(Some((p, s))) => {
                         cur = p;
                         cur_score = s;
@@ -341,7 +340,7 @@ impl Run<'_> {
                     Some(None) => {}
                 }
             }
-            return;
+            return true;
         }
     }
 
@@ -537,10 +536,10 @@ pub fn descent(
         if i % shards != shard {
             continue;
         }
-        if run.out_of_budget() {
-            break;
+        run.stats.starts += 1;
+        if run.out_of_budget() || !run.descend(seed) {
+            run.stats.cut = true;
         }
-        run.descend(seed);
     }
     run.stats.exhaustive = false;
     let mut out: Vec<Scored> = run.top.into_iter().map(|r| r.0).collect();

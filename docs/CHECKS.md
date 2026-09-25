@@ -581,9 +581,11 @@ the enemy's own YAML (`image:`, wiki-hosted), NOT in `data/assets.yaml`.
 ## `check_search`
 
 A real optimize in the shipping build: a scope it finished
-reports `exhaustive` and says so on screen, a budgeted one reports its
-COVERAGE and does not pretend, and the WORKER FLEET covers more ground than
-one worker would.
+reports `exhaustive` and says so on screen, a budgeted walk reports its
+COVERAGE and does not pretend, the WORKER FLEET covers more ground than one
+worker would, and a scope too big to walk is DESCENDED — from the player's
+start, which keeps its locked card in every row, and the page says it
+descended.
 
 ## `check_gain_band`
 

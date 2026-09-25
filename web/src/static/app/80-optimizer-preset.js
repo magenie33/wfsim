@@ -99,7 +99,8 @@ function snapshotOpt() {
     mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size, min: opt.min,
     arcanes: { ...opt.arcanes }, modes: { ...opt.modes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
-    finalists: optRun.finalists,
+    starts: JSON.parse(JSON.stringify(opt.starts)),
+    finalists: optRun.finalists, swap_width: optRun.swap_width,
   };
 }
 
@@ -113,7 +114,8 @@ const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, min: 0, arcanes: {}, ev
   // The build's own mode, the way an empty scope seeds every other axis from
   // what you are holding.
   modes: { [mode]: "fixed" },
-  finalists: optRun.finalists });
+  starts: [],
+  finalists: optRun.finalists, swap_width: optRun.swap_width });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
 //
@@ -186,6 +188,19 @@ function applyOptState(st) {
   if (st.finalists) optRun.finalists = st.finalists;
   const f = $("opt-finalists");
   if (f) f.value = optRun.finalists;
+  optRun.swap_width = Math.max(1, Math.min(4, st.swap_width || 1));
+  const sw = $("opt-swap-width");
+  if (sw) sw.value = optRun.swap_width;
+  // Starts: a card or arcane this weapon cannot hold drops out of its start,
+  // and a start left with nothing in it drops whole.
+  opt.starts = (st.starts || [])
+    .map((s) => ({
+      mods: (s.mods || []).filter((id) => modById(id)),
+      locked: (s.locked || []).filter((id) => modById(id)),
+      arcane: (s.arcane || []).filter((id) => arcaneFitsWeapon(w, id)),
+      lock_arcane: !!s.lock_arcane,
+    }))
+    .filter((s) => s.mods.length || s.arcane.length);
 }
 
 function applyOptPreset(st) {
@@ -406,7 +421,7 @@ function markOptMod(id, want) {
 
 /// HOW MANY MODS A SEARCHED BUILD HOLDS (min to size, 0 to 8) and how many
 /// builds reach the last round. The two bounds push each other, never cross.
-function setOptSizes({ size, min, finalists }) {
+function setOptSizes({ size, min, finalists, swap_width }) {
   if (size != null) {
     opt.size = Math.max(0, Math.min(8, size));
     if (opt.min > opt.size) opt.min = opt.size;
@@ -416,6 +431,9 @@ function setOptSizes({ size, min, finalists }) {
     if (opt.min > opt.size) opt.size = opt.min;
   }
   if (finalists != null) optRun.finalists = Math.max(1, Math.min(100, finalists));
+  if (swap_width != null) optRun.swap_width = Math.max(1, Math.min(4, swap_width));
+  const sw = $("opt-swap-width");
+  if (sw) sw.value = optRun.swap_width;
   $("opt-size").value = opt.size; $("opt-min").value = opt.min; $("opt-finalists").value = optRun.finalists;
   updateOptEstimate();
 }
@@ -694,6 +712,9 @@ async function runOptimize() {
       // No `threads`: the server reads an absent one as 0 = auto, which is the
       // only answer this page has now that the compute share is the topbar's.
       final_runs: finalRuns(), finalists: optRun.finalists,
+      // WHERE THE DESCENT BEGINS and how far it may reach at once. Empty
+      // starts = one per element, chosen by the server.
+      starts: opt.starts, swap_width: optRun.swap_width,
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {
@@ -931,7 +952,14 @@ function renderOptResults(r) {
   // `exhaustive` is the other half and it is the one worth saying out loud:
   // when the search reaches the end of its space, the answer is not a
   // best-so-far, it is the optimum of everything you pooled.
-  const cov = r.exhaustive
+  // A DESCENT has no coverage to report: it says how many starts it ran from,
+  // and that its answer is the best those starts reach — or, when the clock
+  // stopped it first, a strong build short of even that.
+  const descentLine = () => `<span class="${r.cut ? "warn" : "ok"}">${escHtml(tr(r.cut
+    ? "descended from {n} starts, but the time budget ran out before every one settled — a strong build, short of the best those starts reach"
+    : "descended from {n} starts until no change helped — the best those starts reach, not a proven best; add a start or raise the swap width to look further"))
+    .replace("{n}", String(r.starts || 0))}</span> · `;
+  const cov = r.strategy === "descent" ? descentLine() : r.exhaustive
     ? `<span class="ok">${escHtml(tr("every build in this scope was searched"))}</span> · `
     : (r.coverage != null && r.coverage < 1
       ? `<span class="warn">${escHtml(tr("searched {pct}% of this scope ({n} of {total} builds) — a uniform sample, so this is a strong build rather than a proven best; pool fewer mods to search all of it"))

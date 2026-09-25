@@ -175,33 +175,16 @@ fn optimize_inner(
             if state.rewalking.load(std::sync::atomic::Ordering::Relaxed) {
                 budget_t0.set(now);
             }
-            // THE SEARCH BUDGET. A browser tab cannot sit through the whole
-            // space (the full pool is ~10⁹ subsets and this build simulates one
-            // engagement per candidate, single-threaded), so the search is
-            // given a clock and answers with the best it found. NOT `cancel`:
-            // that would return an empty result — this asks for a best-so-far,
-            // and the result reports the COVERAGE it reached.
-            //
-            // Five minutes, not the 20 s it was (accuracy
-            // over convenience — a search the visitor asked for, with a
-            // progress bar and a Cancel button in front of it, may take real
-            // time). What the number cannot fix is WHICH builds a cut leaves
-            // behind; that was the depth-first walk's doing and is the search's
-            // to fix (see optimizer/src/space.rs).
+            // THE SEARCH BUDGET. A browser tab cannot sit through a search of
+            // any length, so it is given a clock and answers with the best it
+            // found. NOT `cancel`: that would return an empty result — this
+            // asks for a best-so-far, and the result says whether the search
+            // finished (a walk's coverage, a descent's `cut`). Five minutes: a
+            // search the visitor asked for, with a progress bar and a Cancel
+            // button in front of it, may take real time.
             const ENUM_BUDGET_MS: f64 = 300_000.0;
-            // The EXPLORE share ends first. The search samples the space until
-            // then and climbs from what it found afterwards; a host whose
-            // budget is a clock cannot express a FRACTION of it as an
-            // evaluation count, so it says so here instead. The 0.3 is
-            // measured — see `SearchConfig::default`.
-            const EXPLORE_MS: f64 = ENUM_BUDGET_MS * 0.3;
             if counts.get().is_none() {
                 let spent = now - budget_t0.get();
-                if spent > EXPLORE_MS {
-                    state
-                        .stop_explore
-                        .store(true, std::sync::atomic::Ordering::Relaxed);
-                }
                 if spent > ENUM_BUDGET_MS {
                     state
                         .stop_enumeration

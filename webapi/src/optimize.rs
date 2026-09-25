@@ -249,9 +249,10 @@ pub struct OptimizePlan {
     /// the funnel. 0 = uncapped, and then the host's clock is the only bound
     /// (the browser sets one; a native run has a Cancel button instead).
     max_evals: u64,
-    /// WHICH SEARCH picks the builds the funnel ranks: the sampler, or the
-    /// descent (`"strategy": "descent"`).
-    descent: bool,
+    /// WHICH SEARCH picks the builds the funnel ranks — [`walks_whole`].
+    /// `"strategy": "exhaust" | "descent"` overrides the choice; the page sends
+    /// neither and graders and tools name one.
+    strategy: Option<String>,
     /// Where the descent begins — [`parse_starts`]. Empty = one start per
     /// primary element.
     starts: Vec<wfsim_optimizer::descent::Start>,
@@ -923,7 +924,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .unwrap_or(0)
             .min(256) as usize,
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
-        descent: v.get("strategy").and_then(|x| x.as_str()) == Some("descent"),
+        strategy: v.get("strategy").and_then(|x| x.as_str()).map(str::to_string),
         swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
         starts,
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
@@ -986,6 +987,30 @@ pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
 /// screen is one pass over the whole scope, so a snapshot of it is NOT a
 /// resume point — continuing from one would silently drop the unwalked part.
 pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
+
+/// Estimated screen evaluations above which a scope is DESCENDED rather than
+/// walked whole: ~2 minutes of one browser worker (~150 evaluations/s), seconds
+/// natively. The estimate is subsets × arcane sets × variants — element orders
+/// and exilus options add a small factor on top. Below it the walk's answer is
+/// proven; above it the descent's is the best its starts reach, and at equal
+/// budget it beat the walk-and-climb it replaced by 31% on a whole rifle pool
+/// and 4.5x on a pool with arcanes and evolutions (docs/OPTIMIZER.md).
+const EXHAUST_UP_TO: u128 = 20_000;
+
+/// Walk the whole space (`true`) or descend. The request may name one; a
+/// scope that fits is walked, because a proven answer costs nothing extra.
+fn walks_whole(
+    strategy: Option<&str>,
+    space: &wfsim_optimizer::space::SubsetSpace,
+    arcanes: usize,
+    variants: usize,
+) -> bool {
+    match strategy {
+        Some("exhaust") => true,
+        Some("descent") => false,
+        _ => space.len().saturating_mul((arcanes.max(1) * variants.max(1)) as u128) <= EXHAUST_UP_TO,
+    }
+}
 
 /// The descent's starts. Each is a list of mod ids, or an object that also
 /// pins: `{"mods": [...], "locked": [...], "arcane": id | [ids], "lock_arcane":
@@ -1063,7 +1088,6 @@ pub fn grade_optimize(
     truth_runs: u32,
     max_jobs: usize,
     search_evals: u64,
-    explore_frac: f64,
 ) -> Value {
     use wfsim_optimizer::truth::{judge, Truth};
     let plan = match parse_optimize(v) {
@@ -1090,7 +1114,7 @@ pub fn grade_optimize(
         variants,
         weapon_id,
         threads,
-        descent: plan_descent,
+        strategy,
         starts,
         swap_width,
         ..
@@ -1268,13 +1292,12 @@ pub fn grade_optimize(
     };
     let cfg = wfsim_optimizer::search::SearchConfig {
         max_evals: search_evals,
-        explore_frac,
         keep: 65_536,
         seed: 0xDEAD_BEEF,
         swap_width,
         ..Default::default()
     };
-    let (screened, sstats) = if plan_descent {
+    let (screened, sstats) = if !walks_whole(strategy.as_deref(), &space, arcanes.len(), variants.len()) {
         wfsim_optimizer::descent::descent(
             &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, None, None,
         )
@@ -1361,7 +1384,9 @@ pub fn grade_optimize(
             "space": sstats.space as f64,
             "exhaustive": sstats.exhaustive,
             "subsets": sstats.subsets,
-            "neighbours": sstats.neighbours,
+            "strategy": if sstats.starts > 0 { "descent" } else { "walk" },
+            "starts": sstats.starts,
+            "cut": sstats.cut,
             "screen_evals": sstats.evals,
             "rank": verdict.rank,
             "regret": verdict.regret,
@@ -1439,7 +1464,7 @@ pub fn run_optimize_resumable(
         variants,
         threads,
         max_evals,
-        descent,
+        strategy,
         starts,
         swap_width,
         shard,
@@ -1806,7 +1831,7 @@ pub fn run_optimize_resumable(
             ..Default::default()
         };
         let board = board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>);
-        let (screened, stats) = if descent {
+        let (screened, stats) = if !walks_whole(strategy.as_deref(), &space, arcanes.len(), variants.len()) {
             wfsim_optimizer::descent::descent(
                 &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, Some(state), board,
             )
@@ -1931,11 +1956,22 @@ pub fn run_optimize_resumable(
         // be claiming credit for a search this call never ran.
         None => (false, 0.0, 0.0, 0, 0.0),
     };
+    // WHICH SEARCH RAN. A walk's `coverage` is a share of the space; a
+    // descent has none to report — it says how many starts it ran from and
+    // whether the budget stopped it before every one converged.
+    let (strategy_ran, starts_run, cut) = match search_stats {
+        Some(st) if st.starts > 0 => ("descent", st.starts, st.cut),
+        Some(_) => ("walk", 0, false),
+        None => ("resume", 0, false),
+    };
     json!({
         "ok": true,
         "candidates": cands.len(),
         "jobs": n_jobs,
         "cancelled": cancelled,
+        "strategy": strategy_ran,
+        "starts": starts_run,
+        "cut": cut,
         "exhaustive": exhaustive,
         "coverage": coverage,
         "space": space_size,

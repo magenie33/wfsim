@@ -37,11 +37,11 @@ function loadCheckpoint() {
 // HOW MANY WORKERS the browser search runs on. This is the only lever the
 // browser has: it is single-threaded at ~150 simulated engagements per second
 // against ~5,100 on a 26-thread desktop, so coverage is scarcest exactly where
-// there is least compute. N workers walk DISJOINT STRIDES of the shuffled
-// index range (`shard`, `shard + shards`, …), which is a partition — nothing
+// there is least compute. A WALK gives the N workers DISJOINT STRIDES of the
+// shuffled index range (`shard`, `shard + shards`, …), a partition — nothing
 // is evaluated twice and nothing is missed (`shards_partition_the_shuffled_
-// order_exactly`). Each also climbs on its own, so N workers are also N
-// independent hill-climbs, which is the diversity one best-first climb lacks.
+// order_exactly`). A DESCENT gives each worker its share of the starts, so a
+// worker with no start of its own returns an empty, complete envelope.
 //
 // THE COUNT IS THE TOPBAR'S COMPUTE SHARE, and it is the whole answer. A `CPU
 // threads` box in a search preset — on the reasoning that a heavy scope might
@@ -56,9 +56,8 @@ const woptWorkerCount = () => poolSize();
 // its own elites, so every row here is measured at the SAME run count under the
 // SAME scenario and the scores are directly comparable — the merge is a sort.
 //
-// Deduplicate first: strides are disjoint but the CLIMB is not, so two workers
-// can reach the same build from different samples. Counting it twice would
-// push a real alternative off the board.
+// Deduplicate first: two descents can reach the same build from different
+// starts. Counting it twice would push a real alternative off the board.
 function woptMerge(parts) {
   const bad = parts.find((p) => p && p.ok === false);
   if (bad) return bad;
@@ -83,6 +82,11 @@ function woptMerge(parts) {
     ...head,
     // EVERY shard must have finished its stride for the union to be the space.
     exhaustive: parts.length > 0 && parts.every((p) => p.exhaustive),
+    // A descent's starts are split across the fleet, so they add up, and one
+    // shard the clock stopped makes the whole run a cut one.
+    strategy: (parts.find((p) => p.strategy) || head).strategy,
+    starts: parts.reduce((n, p) => n + (p.starts || 0), 0),
+    cut: parts.some((p) => p.cut),
     // Coverage of the FLEET, not of one worker: the strides are disjoint, so
     // the positions add up.
     coverage: space > 0 ? Math.min(1, sampled / space) : 0,

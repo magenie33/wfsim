@@ -41,12 +41,6 @@ pub struct FunnelState {
     /// the illegal remainder to prove it, which no browser tab should be asked
     /// to sit through.
     pub stop_enumeration: AtomicBool,
-    /// Observer → search: the EXPLORE share of the budget is spent, switch to
-    /// the neighbourhood. Separate from `stop_enumeration` because a host whose
-    /// budget is a clock cannot express "60% of it" as an evaluation count, and
-    /// a search that only ever samples finds a typical build rather than a good
-    /// one (search.rs).
-    pub stop_explore: AtomicBool,
     /// Candidates emitted so far by a running enumeration (progress for
     /// the "enumerating" phase, where sims_done is still 0).
     pub enumerated: AtomicU64,
