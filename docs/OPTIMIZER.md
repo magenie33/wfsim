@@ -837,9 +837,13 @@ first batch alone spent 4,768 against a budget of 1,000.
 so a sweep costs the SUM of the option counts. It is opt-in per request
 (`"strategy": "descent"`); the sampler stays the default.
 
-1. **Starts** are the player's partial builds (`"starts": [["cryo_rounds"],
-   ["hellfire", "serration"]]`). A start is where the descent begins, not a
-   constraint — a card that must stay is the `fixed` mark. Without any, there
+1. **Starts** are the player's partial builds: a list of mod ids, or
+   `{"mods": [...], "locked": [...], "arcane": id | [ids], "lock_arcane":
+   bool}`. A start is where the descent begins, not a constraint — except
+   what it LOCKS, which that start never swaps out (the scope's `fixed` mark
+   locks it for every start). An id outside the scope is refused, not
+   dropped: a start that silently lost its pin searches something the player
+   did not ask for. Without any, there
    is one start per primary element, one card each; the fill picks the
    partner, and which card does not matter, because the sweep upgrades it.
    ONE start holding all four is the wrong shape: shedding an element costs

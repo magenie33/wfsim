@@ -16,7 +16,7 @@ use wfsim_engine::fight::{BuffConfig, LockMode};
 use wfsim_engine::target::{BodyPart, TargetMode};
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::{ModDef, StackPolicy};
-use wfsim_optimizer::descent::descent;
+use wfsim_optimizer::descent::{descent, Start};
 use wfsim_optimizer::search::{search, SearchConfig, SearchStats};
 use wfsim_optimizer::space::SubsetSpace;
 use wfsim_optimizer::truth::{judge, Truth, Verdict};
@@ -181,6 +181,10 @@ fn the_reference_reproduces_itself_under_a_different_seed() {
 /// Grading the funnel alone graded the half that was already good: it is handed
 /// a job list, and the half that decides what is IN that list is the half that
 /// could lose the winner (docs/OPTIMIZER.md).
+fn start(mods: &[usize]) -> Start {
+    Start { mods: mods.to_vec(), ..Default::default() }
+}
+
 fn run_pipeline(
     s: &Scenario,
     truth: &Truth,
@@ -190,8 +194,8 @@ fn run_pipeline(
     max_evals: u64,
     // `Some((starts, width))` runs the descent from those starts (empty = one
     // per element) at that swap width instead of the sampler.
-    descent_from: Option<(&[Vec<usize>], u32)>,
-) -> (Verdict, SearchStats, usize) {
+    descent_from: Option<(&[Start], u32)>,
+) -> (Verdict, SearchStats, usize, Vec<usize>) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
     let innate = wfsim_engine::data::weapons::innate_slots("verglas_prime");
@@ -263,7 +267,7 @@ fn run_pipeline(
         }
     }
     assert!(!board.is_empty(), "nothing the search returned was in the exhaustive enumeration");
-    (judge(truth, &board, 10, spent), stats, unmatched)
+    (judge(truth, &board, 10, spent), stats, unmatched, board)
 }
 
 /// A scope the budget can finish is still SOLVED, not sampled: the shuffled
@@ -276,7 +280,7 @@ fn a_scope_that_fits_is_searched_exhaustively_and_solved() {
     let (cands, jobs) = exhaust(&s, 8);
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
-    let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, None);
+    let (v, stats, unmatched, _) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, None);
     println!(
         "[search] {} of {} index positions, exhaustive {} -> rank {} (regret {:.2}%, recall {:.0}%) in {} sims",
         stats.sampled, stats.space, stats.exhaustive, v.rank, v.regret * 100.0, v.recall * 100.0, v.sims
@@ -305,7 +309,7 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     let (cands, jobs) = exhaust(&s, 1);
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
-    let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 120, None);
+    let (v, stats, unmatched, _) = run_pipeline(&s, &truth, &cands, &jobs, 1, 120, None);
     println!(
         "[search] {} of {} index positions ({:.1}%), exhaustive {} -> rank {} of {} (regret {:.2}%)",
         stats.sampled, stats.space, stats.coverage() * 100.0, stats.exhaustive,
@@ -341,9 +345,9 @@ fn the_descent_reaches_the_answer_set_from_any_start() {
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let serration = pool().iter().position(|m| m.id == "serration").expect("in scope");
     for (label, starts, width) in
-        [("one start per element", vec![], 1), ("serration alone", vec![vec![serration]], 1)]
+        [("one start per element", vec![], 1), ("serration alone", vec![start(&[serration])], 1)]
     {
-        let (v, stats, unmatched) =
+        let (v, stats, unmatched, _) =
             run_pipeline(&s, &truth, &cands, &jobs, 1, 0, Some((&starts, width)));
         println!(
             "[descent from {label}] {} subsets, {} evals -> rank {} of {} (regret {:.2}%, recall {:.0}%)",
@@ -379,9 +383,9 @@ fn swap_width_two_leaves_a_start_width_one_cannot() {
     let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let ix = |id: &str| pool().iter().position(|m| m.id == id).expect("in scope");
-    let four = vec![vec![ix("cryo_rounds"), ix("hellfire"), ix("stormbringer"), ix("infected_clip")]];
+    let four = vec![start(&[ix("cryo_rounds"), ix("hellfire"), ix("stormbringer"), ix("infected_clip")])];
     for width in [1, 2] {
-        let (v, stats, _) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some((&four, width)));
+        let (v, stats, _, _) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some((&four, width)));
         println!(
             "[width {width}] {} evals -> rank {} of {} (regret {:.2}%), answer set {}",
             stats.evals, v.rank, jobs.len(), v.regret * 100.0, truth.indistinguishable(3.0).len()
@@ -394,6 +398,78 @@ fn swap_width_two_leaves_a_start_width_one_cannot() {
             v.regret * 100.0
         );
     }
+}
+
+/// A card a start LOCKS is in every build that start scores, even where the
+/// unconstrained answer leaves it out — a lock is a promise to the player, not
+/// a starting hint. Its other cards stay free: the winner is the best build
+/// that carries it.
+#[test]
+fn a_locked_card_stays_in_every_build_its_start_scores() {
+    const RUNS: u32 = 40;
+    let s = scenario(30.0, 9999);
+    let (cands, jobs) = exhaust(&s, 8);
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
+    let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
+    let pool = pool();
+    let best = &cands[jobs[truth.best()].0].ordered;
+    // A card the unconstrained winner does NOT carry, so the lock has to bite.
+    let lock = (0..pool.len()).find(|i| !best.contains(i)).expect("a card outside the winner");
+    let starts = vec![Start { mods: vec![lock], locked: vec![lock], ..Default::default() }];
+    let (_, _, _, board) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0, Some((&starts, 1)));
+    for &ji in &board {
+        assert!(
+            cands[jobs[ji].0].ordered.contains(&lock),
+            "a board build dropped the locked {}",
+            pool[lock].id
+        );
+    }
+    // The best build that carries it, not merely some build that does.
+    let with_lock: Vec<usize> =
+        truth.order.iter().copied().filter(|&j| cands[jobs[j].0].ordered.contains(&lock)).collect();
+    let rank = with_lock.iter().position(|&j| j == board[0]).map(|p| p + 1);
+    println!("[locked {}] winner is #{:?} of {} builds carrying it", pool[lock].id, rank, with_lock.len());
+    assert!(rank.is_some_and(|r| r <= 3), "winner is {rank:?} among builds carrying the lock");
+}
+
+/// A start that LOCKS its arcane is never scored under another — and the
+/// same start unlocked does switch, or the lock would be proving nothing.
+#[test]
+fn a_locked_arcane_is_the_only_one_its_start_scores() {
+    let mut s = scenario(30.0, 9999);
+    s.policy = StackPolicy::Emergent;
+    let pool = pool();
+    let base = WeaponBase::from_data("verglas_prime", true, &[]);
+    let innate = wfsim_engine::data::weapons::innate_slots("verglas_prime");
+    let merciless = wfsim_engine::data::arcanes::secondary("primary_merciless").expect("arcane");
+    let arcanes = vec![
+        wfsim_engine::data::arcanes::ArcaneFx::none(),
+        merciless.fx(merciless.max_rank, s.policy, base.traits, &s.arena.tenno),
+    ];
+    let families: Vec<Option<&'static str>> = pool.iter().map(|m| m.family).collect();
+    let usable: Vec<usize> = (0..pool.len()).collect();
+    let space = SubsetSpace::new(&families, &usable, &[], 8, 8);
+    let expand = |subset: &[usize]| -> Vec<Candidate> {
+        let mut out = Vec::new();
+        expand_one(&pool, &base, None, 0, 60, &innate, &[None], subset, &s.arena.tenno, s.policy, &mut out);
+        out
+    };
+    let cfg = SearchConfig { keep: 65_536, ..Default::default() };
+    let cryo = pool.iter().position(|m| m.id == "cryo_rounds").expect("in scope");
+    let arcanes_scored = |lock: bool| -> Vec<usize> {
+        let starts =
+            vec![Start { mods: vec![cryo], arcane: Some(0), lock_arcane: lock, ..Default::default() }];
+        let (screened, _) = descent(&space, &pool, &starts, &expand, &arcanes, &s, &cfg, None, None);
+        screened.iter().map(|j| j.ai).collect()
+    };
+    assert!(
+        arcanes_scored(false).contains(&1),
+        "unlocked, the descent never tried Merciless — this fixture cannot test a lock"
+    );
+    assert!(
+        arcanes_scored(true).iter().all(|&ai| ai == 0),
+        "a start locked to no arcane was scored under Merciless"
+    );
 }
 
 /// The production funnel, graded. It may return any build the reference cannot

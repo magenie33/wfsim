@@ -73,8 +73,26 @@ impl Point {
     }
 }
 
+/// Where one descent begins, and what it may never change.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Start {
+    /// Pool indices the start holds.
+    pub mods: Vec<usize>,
+    /// Pool indices the descent never swaps out — a pin for THIS start only,
+    /// where the scope's `fixed` mark pins every start.
+    pub locked: Vec<usize>,
+    /// Index into the arcane list to begin under; `None` = the one the start
+    /// scores best with.
+    pub arcane: Option<usize>,
+    /// The arcane never changes.
+    pub lock_arcane: bool,
+}
+
 struct Run<'a> {
     space: &'a SubsetSpace,
+    /// The current start's pins.
+    locked: Vec<usize>,
+    lock_arcane: bool,
     expand: &'a Expand<'a>,
     arcanes: &'a [wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &'a Scenario,
@@ -155,6 +173,24 @@ impl Run<'_> {
         Some(points.iter().map(|p| self.cache[&p.key()]).collect())
     }
 
+    /// The mods a move may take out: neither required by the scope nor locked
+    /// by the start.
+    fn swappable(&self, subset: &[usize]) -> Vec<usize> {
+        subset
+            .iter()
+            .copied()
+            .filter(|i| !self.space.required().contains(i) && !self.locked.contains(i))
+            .collect()
+    }
+
+    /// The arcanes a move may switch to — none while the start locks it.
+    fn other_arcanes(&self, ai: usize) -> Vec<usize> {
+        if self.lock_arcane {
+            return Vec::new();
+        }
+        (0..self.arcanes.len()).filter(|&a| a != ai).collect()
+    }
+
     /// The best of `alts`, if it beats `cur`.
     fn best_move(&mut self, cur: Score, alts: Vec<Point>) -> Option<Option<(Point, Score)>> {
         if alts.is_empty() {
@@ -172,9 +208,12 @@ impl Run<'_> {
 
     /// Fill a seed to size, then sweep it to a fixed point. Returns early when
     /// the budget runs out; everything scored so far is already in `top`.
-    fn descend(&mut self, seed: Vec<usize>) {
+    fn descend(&mut self, start: Start) {
         let space = self.space;
         let sizes = space.sizes();
+        self.locked = start.locked.clone();
+        self.lock_arcane = start.lock_arcane && start.arcane.is_some();
+        let seed = start.mods;
         let with = |sub: &[usize], add: usize, drop: Option<usize>| -> Vec<usize> {
             let mut v: Vec<usize> = sub.iter().copied().filter(|&x| Some(x) != drop).collect();
             v.push(add);
@@ -185,13 +224,16 @@ impl Run<'_> {
         // The arcane and variant the start wants. The sweep revisits both once
         // the build is full; this only keeps the fill from being chosen under
         // a bad pair.
-        let all_arcanes: Vec<Point> = (0..self.arcanes.len())
-            .map(|ai| Point { subset: seed.clone(), ai, vi: None })
-            .collect();
-        let Some(scores) = self.score(&all_arcanes) else { return };
-        let mut cur = Point { subset: seed, ai: 0, vi: None };
+        let tried: Vec<usize> = match start.arcane {
+            Some(a) => vec![a],
+            None => (0..self.arcanes.len()).collect(),
+        };
+        let at_start: Vec<Point> =
+            tried.iter().map(|&ai| Point { subset: seed.clone(), ai, vi: None }).collect();
+        let Some(scores) = self.score(&at_start) else { return };
+        let mut cur = Point { subset: seed, ai: tried[0], vi: None };
         let mut cur_score = None;
-        for (ai, s) in scores.into_iter().enumerate() {
+        for (&ai, s) in tried.iter().zip(scores) {
             if better(s, cur_score) {
                 cur_score = s;
                 cur.ai = ai;
@@ -231,14 +273,10 @@ impl Run<'_> {
         // holds, an empty slot, the variant — restarting at the first after
         // any accepted move.
         'sweep: loop {
-            let held: Vec<usize> = cur
-                .subset
-                .iter()
-                .copied()
-                .filter(|i| !space.required().contains(i))
-                .collect();
-            let mut positions: Vec<Vec<Point>> = vec![(0..self.arcanes.len())
-                .filter(|&ai| ai != cur.ai)
+            let held = self.swappable(&cur.subset);
+            let mut positions: Vec<Vec<Point>> = vec![self
+                .other_arcanes(cur.ai)
+                .into_iter()
                 .map(|ai| Point { subset: cur.subset.clone(), ai, vi: cur.vi })
                 .collect()];
             for &m in &held {
@@ -315,11 +353,10 @@ impl Run<'_> {
     fn wide(&mut self, cur: &Point, cur_score: Score, w: usize) -> Option<Option<(Point, Score)>> {
         const CHUNK: usize = 1024;
         let space = self.space;
-        let held: Vec<usize> =
-            cur.subset.iter().copied().filter(|i| !space.required().contains(i)).collect();
+        let held = self.swappable(&cur.subset);
         let free: Vec<usize> =
             space.choosable().iter().copied().filter(|i| !cur.subset.contains(i)).collect();
-        let arcs: Vec<usize> = (0..self.arcanes.len()).filter(|&a| a != cur.ai).collect();
+        let arcs = self.other_arcanes(cur.ai);
         let mut vars: Vec<Option<u32>> =
             (self.expand)(&cur.subset).iter().map(|c| Some(c.variant)).collect();
         vars.sort_unstable();
@@ -397,7 +434,7 @@ fn combos(items: &[usize], k: usize) -> Vec<Vec<usize>> {
 /// at 49% regret, because shedding an element costs its combination first.
 /// Required mods ride in every start; an element one of them carries is not
 /// added twice.
-pub fn seeds(space: &SubsetSpace, pool: &[ModDef]) -> Vec<Vec<usize>> {
+pub fn seeds(space: &SubsetSpace, pool: &[ModDef]) -> Vec<Start> {
     let strength = |i: usize, t: DamageType| -> Option<f64> {
         pool[i].effects.iter().find_map(|e| match e {
             ModEffect::Element(et, v) if *et == t => Some(*v),
@@ -436,36 +473,41 @@ pub fn seeds(space: &SubsetSpace, pool: &[ModDef]) -> Vec<Vec<usize>> {
         v.sort_unstable();
         out.push(v);
     }
-    out
+    out.into_iter().map(|mods| Start { mods, ..Default::default() }).collect()
 }
 
-/// The player's starts as canonical subsets: required mods added, and a start
-/// outside the scope or colliding in a family dropped rather than guessed at.
-pub fn starts_in(space: &SubsetSpace, starts: &[Vec<usize>]) -> Vec<Vec<usize>> {
-    let mut out: Vec<Vec<usize>> = Vec::new();
+/// The player's starts, canonical: required and locked mods added, and a
+/// start outside the scope or colliding in a family dropped rather than
+/// guessed at.
+pub fn starts_in(space: &SubsetSpace, starts: &[Start]) -> Vec<Start> {
+    let mut out: Vec<Start> = Vec::new();
     for s in starts {
         let mut v = space.required().to_vec();
-        for &i in s {
+        for &i in s.mods.iter().chain(&s.locked) {
             if !v.contains(&i) {
                 v.push(i);
             }
         }
         v.sort_unstable();
-        if space.legal_upto(&v) && !out.contains(&v) {
-            out.push(v);
+        let mut locked = s.locked.clone();
+        locked.sort_unstable();
+        locked.dedup();
+        let start = Start { mods: v, locked, ..s.clone() };
+        if space.legal_upto(&start.mods) && !out.contains(&start) {
+            out.push(start);
         }
     }
     out
 }
 
 /// Run the descent from every start this shard owns (`index % shards ==
-/// shard`) — the player's `starts` (pool indices), or one start per element when
-/// there are none. Returns every scored job, best first, and what it spent.
+/// shard`) — the player's `starts`, or one start per element when there are
+/// none. Returns every scored job, best first, and what it spent.
 #[allow(clippy::too_many_arguments)]
 pub fn descent(
     space: &SubsetSpace,
     pool: &[ModDef],
-    starts: &[Vec<usize>],
+    starts: &[Start],
     expand: &Expand<'_>,
     arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
@@ -475,6 +517,8 @@ pub fn descent(
 ) -> (Vec<ScreenedJob>, SearchStats) {
     let mut run = Run {
         space,
+        locked: Vec::new(),
+        lock_arcane: false,
         expand,
         arcanes,
         scenario,

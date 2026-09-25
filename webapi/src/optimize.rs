@@ -252,10 +252,9 @@ pub struct OptimizePlan {
     /// WHICH SEARCH picks the builds the funnel ranks: the sampler, or the
     /// descent (`"strategy": "descent"`).
     descent: bool,
-    /// Where the descent begins: the player's partial builds, as mod ids
-    /// (`"starts": [["cryo_rounds"], ["hellfire", "serration"]]`). Empty = the
-    /// one start per primary element.
-    starts: Vec<Vec<String>>,
+    /// Where the descent begins — [`parse_starts`]. Empty = one start per
+    /// primary element.
+    starts: Vec<wfsim_optimizer::descent::Start>,
     /// How many positions the descent may change at once when single
     /// changes stop paying (`"swap_width"`, 1 = single changes only).
     swap_width: u32,
@@ -892,6 +891,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         policy: fight.policy,
     };
 
+    let starts = parse_starts(v, &pool, &arcane_sets).map_err(err_json)?;
     Ok(OptimizePlan {
         weapon_id: info.id.clone(),
         pool,
@@ -925,16 +925,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
         descent: v.get("strategy").and_then(|x| x.as_str()) == Some("descent"),
         swap_width: v.get("swap_width").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 8) as u32,
-        starts: v
-            .get("starts")
-            .and_then(|x| x.as_array())
-            .map(|a| {
-                a.iter()
-                    .filter_map(|s| s.as_array())
-                    .map(|s| s.iter().filter_map(|id| id.as_str().map(str::to_string)).collect())
-                    .collect()
-            })
-            .unwrap_or_default(),
+        starts,
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
         replay_base: {
@@ -996,13 +987,63 @@ pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
 /// resume point — continuing from one would silently drop the unwalked part.
 pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
 
-/// The player's starts as pool indices. A card the scope does not hold is
-/// left out of its start rather than failing the run.
-fn start_indices(pool: &[ModDef], starts: &[Vec<String>]) -> Vec<Vec<usize>> {
-    starts
-        .iter()
-        .map(|s| s.iter().filter_map(|id| pool.iter().position(|m| m.id == *id)).collect())
-        .collect()
+/// The descent's starts. Each is a list of mod ids, or an object that also
+/// pins: `{"mods": [...], "locked": [...], "arcane": id | [ids], "lock_arcane":
+/// bool}` — a locked card or arcane is never swapped out of THAT start. An id
+/// the scope does not hold is refused, not dropped: a start that silently lost
+/// its pin searches something the player did not ask for.
+fn parse_starts(
+    v: &Value,
+    pool: &[ModDef],
+    arcane_sets: &[Vec<String>],
+) -> Result<Vec<wfsim_optimizer::descent::Start>, String> {
+    let ids = |x: Option<&Value>| -> Vec<String> {
+        match x {
+            Some(Value::String(s)) => vec![s.clone()],
+            Some(Value::Array(a)) => a.iter().filter_map(|i| i.as_str().map(str::to_string)).collect(),
+            _ => Vec::new(),
+        }
+    };
+    let mod_ix = |id: &str| -> Result<usize, String> {
+        pool.iter()
+            .position(|m| m.id == id)
+            .ok_or_else(|| format!("start: {id} is not in this search's mod scope"))
+    };
+    let mut out = Vec::new();
+    for s in v.get("starts").and_then(Value::as_array).into_iter().flatten() {
+        let (mods, locked, arcane, lock_arcane) = match s {
+            Value::Array(_) => (ids(Some(s)), Vec::new(), Vec::new(), false),
+            _ => (
+                ids(s.get("mods")),
+                ids(s.get("locked")),
+                ids(s.get("arcane")),
+                s.get("lock_arcane").and_then(Value::as_bool).unwrap_or(false),
+            ),
+        };
+        // An arcane start names the WORN arcanes; the set it matches may fill
+        // its other seats with "none".
+        let arcane = if arcane.is_empty() {
+            None
+        } else {
+            let mut want = arcane.clone();
+            want.sort();
+            let found = arcane_sets.iter().position(|set| {
+                let mut worn: Vec<String> = set.iter().filter(|a| *a != "none").cloned().collect();
+                worn.sort();
+                worn == want
+            });
+            Some(found.ok_or_else(|| {
+                format!("start: arcane {} is not in this search's arcane scope", arcane.join(" + "))
+            })?)
+        };
+        out.push(wfsim_optimizer::descent::Start {
+            mods: mods.iter().map(|m| mod_ix(m)).collect::<Result<_, _>>()?,
+            locked: locked.iter().map(|m| mod_ix(m)).collect::<Result<_, _>>()?,
+            arcane,
+            lock_arcane,
+        });
+    }
+    Ok(out)
 }
 
 /// GRADE the search against ground truth — the same request, the same plan,
@@ -1234,7 +1275,6 @@ pub fn grade_optimize(
         ..Default::default()
     };
     let (screened, sstats) = if plan_descent {
-        let starts = start_indices(&pool, &starts);
         wfsim_optimizer::descent::descent(
             &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, None, None,
         )
@@ -1767,7 +1807,6 @@ pub fn run_optimize_resumable(
         };
         let board = board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>);
         let (screened, stats) = if descent {
-            let starts = start_indices(&pool, &starts);
             wfsim_optimizer::descent::descent(
                 &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, Some(state), board,
             )
@@ -1957,6 +1996,52 @@ pub fn funnel_status_json(
         out["jobs"] = json!(jobs);
     }
     out
+}
+
+#[cfg(test)]
+mod descent_start_tests {
+    use super::*;
+
+    fn plan(starts: Value) -> Result<OptimizePlan, Value> {
+        parse_optimize(&json!({
+            "weapon": "larkspur_prime",
+            "build_size": 2,
+            "mods": { "rubedo_lined_barrel": "search", "critical_focus": "search" },
+            "arcanes": { "primary_merciless": "search", "primary_deadhead": "search" },
+            "strategy": "descent",
+            "starts": starts,
+        }))
+    }
+
+    /// Both spellings resolve: a bare list is a start with no pins; an object
+    /// names its locks and its arcane, matched to the scope's arcane set.
+    #[test]
+    fn a_start_resolves_its_cards_and_its_arcane() {
+        let p = plan(json!([
+            ["rubedo_lined_barrel"],
+            { "mods": ["critical_focus"], "locked": ["critical_focus"],
+              "arcane": "primary_deadhead", "lock_arcane": true },
+        ]))
+        .expect("a plan");
+        let ix = |id: &str| p.pool.iter().position(|m| m.id == id).expect("in scope");
+        assert_eq!(p.starts[0].mods, vec![ix("rubedo_lined_barrel")]);
+        assert!(p.starts[0].locked.is_empty() && p.starts[0].arcane.is_none());
+        let s = &p.starts[1];
+        assert_eq!(s.locked, vec![ix("critical_focus")]);
+        let arcane = s.arcane.expect("an arcane");
+        assert!(p.arcane_sets[arcane].iter().any(|a| a == "primary_deadhead"));
+        assert!(s.lock_arcane);
+    }
+
+    /// A pin the scope cannot honour is refused, not dropped.
+    #[test]
+    fn a_start_naming_something_outside_the_scope_is_refused() {
+        for starts in [json!([{ "mods": ["serration"] }]), json!([{ "arcane": "primary_crux" }])] {
+            let err = plan(starts).err().expect("refused");
+            let msg = err["error"].as_str().unwrap_or("");
+            assert!(msg.starts_with("start:"), "refused for another reason: {msg}");
+        }
+    }
 }
 
 #[cfg(test)]
