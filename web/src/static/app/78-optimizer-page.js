@@ -26,9 +26,9 @@ function renderOpt() {
   ["opt-block", "opt-fight-block", "opt-run-block"].forEach((id) => show(id, !!META));
   if (!META) return;
   renderOptRuns();
-  // A weapon's first visit: the four default starts, then the active preset.
+  // A weapon's first visit: one blank start, then the active preset.
   if (!optSeeded) {
-    opt.starts = defaultStarts();
+    opt.starts = [blankStart()];
     opt.limits = normalizeLimits(null);
     optSeeded = true;
     bootstrapOptPresets();

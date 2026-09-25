@@ -59,7 +59,7 @@ const r = await evaluate(`(async () => {
   // the active search preset is what has to put it back.
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(1500);
-  opt.starts = opt.starts.slice(0, 2);
+  opt.starts = [blankStart(), blankStart()];
   setOptSizes({ candidate_runs: 1 }); await sleep(900);
   document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
   await sleep(800);

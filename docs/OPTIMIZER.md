@@ -599,10 +599,11 @@ above runs only when a tool asks for it by name.
   Done and Discard put the player's build back. `check_start_edit`.
 - **Fixed** is the pin: a fixed position is never swept, so every answer from
   that start carries it. A start's cards join the scope when it is saved.
-- A new search opens with FOUR DEFAULT STARTS, made by the page: one build per
-  primary element, holding the strongest card of it the weapon can equip and
-  nothing else, edited and removed like any other. With every start removed,
-  the one start is the BLANK build.
+- THERE IS ALWAYS A START, the way the builder always holds a build: a new
+  search holds ONE BLANK START, which the fill completes in the search's order,
+  and removing the last start leaves a blank one. The page guides the player
+  to add their own — the current build, a saved one — and to add starts that
+  differ, since that is what crosses a valley one change cannot.
 
 ### Positions and candidates
 
@@ -647,8 +648,8 @@ start left EMPTY (a mod slot: its best legal candidate) and what it did not
 NAME (a mode, an evolution tier, the valence, an arcane seat, the exilus: the
 axis's default is kept only when no candidate beats it), and leaves what the
 start named alone — judged on a half-empty build, Primed Cryo Rounds lost to
-Hellfire on Burston Prime and the answer lost Viral (74.7 against 166.4). The
-page's default starts name only their card. Every choice is legal, so a build
+Hellfire on Burston Prime and the answer lost Viral (74.7 against 166.4). A
+blank start names nothing. Every choice is legal, so a build
 is legal from the moment it is full. On that Burston Prime start the fill cut
 the work from 6,569 builds to 1,876 and reached the same build.
 

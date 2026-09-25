@@ -128,7 +128,8 @@ function cardOfState(st, w, fixed) {
   const arcs = st.arcane || [];
   const ranks = st.arcaneRank || [];
   return buildCardHtml({
-    mode: modeLabel(w, st.mode || mode),
+    // A START (the call that passes pins) may name no mode: the search chooses it.
+    mode: st.mode || !fixed ? modeLabel(w, st.mode || mode) : tr("chosen by the search"),
     mods: (st.slots || []).map((s, i) => {
       const m = s && s.mod && modById(s.mod);
       return m ? { img: IMG(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank,

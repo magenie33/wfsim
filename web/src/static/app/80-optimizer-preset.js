@@ -16,11 +16,11 @@ const loadOptPresets = () => loadPresetList(OPT_DOMAIN);
 const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 
 // Called from renderOpt's seed block (page load AND weapon switch): the active
-// preset, when there is one, replaces the default starts.
+// preset, when there is one, replaces the blank start.
 function bootstrapOptPresets() {
   // NOTHING IS AUTO-CREATED here either — see `initPresets`. A search that has
   // never been run is not a search you own, and the scope controls are already
-  // a complete live state without one (`OPT_RUN_DEFAULTS` plus the default starts).
+  // a complete live state without one (`OPT_RUN_DEFAULTS` plus one blank start).
   const ps = loadOptPresets();
   const want = activeOptPreset || localStorage.getItem(presetActiveKey(OPT_DOMAIN));
   activeOptPreset = ps.some((p) => p.name === want) ? want : (ps[0] ? ps[0].name : "");
@@ -37,8 +37,8 @@ function snapshotOpt() {
   };
 }
 
-// A new search: the four default starts, the run settings left alone.
-const blankOpt = () => ({ starts: defaultStarts(), limits: normalizeLimits(null),
+// A new search: one blank start, the run settings left alone.
+const blankOpt = () => ({ starts: [blankStart()], limits: normalizeLimits(null),
   candidate_runs: optRun.candidate_runs });
 
 // State-only apply (validation + cross-weapon dropping); no re-render.
@@ -57,6 +57,7 @@ function applyOptState(st) {
   opt.starts = (st.starts || [])
     .map((s) => normalizeStart(s, w))
     .filter((s) => s.build && (!s.build.weapon || s.build.weapon === w));
+  if (!opt.starts.length) opt.starts = [blankStart()];
 }
 
 function applyOptPreset(st) {

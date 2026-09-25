@@ -58,8 +58,8 @@ const r = await evaluate(`(async () => {
   updateOptEstimate(); await sleep(1200);
   const opened = ${counts};
 
-  // …CHANGING THE SEARCH IS: one default start removed.
-  opt.starts = opt.starts.slice(1);
+  // …CHANGING THE SEARCH IS: a second start added.
+  opt.starts.push(blankStart());
   updateOptEstimate(); await sleep(1200);
   const scoped = Object.assign(${counts}, { active: activeOptPreset });
 

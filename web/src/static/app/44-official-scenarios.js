@@ -239,7 +239,7 @@ function applyWeaponInner(id, presetMods) {
   // the shared scenario every time you changed weapon, and auto-save would have
   // stored that.
   sim.__weapon = id;
-  // A weapon's search is its own: `renderOpt` seeds the default starts.
+  // A weapon's search is its own: `renderOpt` seeds one blank start.
   opt = { starts: [], limits: null }; optSeeded = false;
   optLast = null;
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that

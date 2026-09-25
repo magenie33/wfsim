@@ -88,7 +88,7 @@ for (const w of WEAPONS) {
     // A search is born on its first edit, and only then does its bar carry
     // rename and delete.
     if (m === "optimizer") {
-      await evaluate(`(() => { opt.starts = opt.starts.slice(1); renderOptStarts(); updateOptEstimate(); })()`);
+      await evaluate(`(() => { addStart(snapshotState()); })()`);
       await new Promise((r) => setTimeout(r, 900));
     }
     if (m === "enemies") await evaluate(`(() => { const b = document.querySelector("#enemy-tools .cu-new"); if (b) b.click(); })()`);
