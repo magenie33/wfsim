@@ -2,8 +2,9 @@
 //! THE QUICK CALC, REPEATED — the page's search (docs/OPTIMIZER.md,
 //! "The quick descent — the quick calc, repeated").
 //!
-//! From each start: fill every empty position with its best legal candidate,
-//! then sweep the positions in order, run the quick calc on each, keep the best
+//! From each start: one pass over the positions in order that fills what the
+//! start left empty or did not name, and keeps what it did — then sweep the
+//! positions in order, run the quick calc on each, keep the best
 //! legal candidate when it beats the build, and start the sweep over — until no
 //! position offers anything better. Each start answers with ONE build; starts
 //! that settle on the same build merge.
@@ -37,9 +38,9 @@ fn better(a: Score, b: Score) -> bool {
 /// Everything the loop asks of the world.
 pub trait QuickSpace: Sync {
     type Build: Clone + Send + Sync;
-    /// Every position a sweep visits, in order.
+    /// Every position a sweep visits, in order — the order the fill takes too.
     fn positions(&self, b: &Self::Build) -> Vec<Position>;
-    /// The positions a start leaves empty, in the order they are filled.
+    /// The positions a start leaves empty.
     fn empty(&self, b: &Self::Build) -> Vec<Position>;
     /// What may replace `p`: whole builds, one change from `b`, already inside
     /// the scope. Capacity is NOT asked here.
@@ -64,11 +65,15 @@ pub trait QuickSpace: Sync {
     }
 }
 
-/// Where a descent begins and what it may never change.
+/// Where a descent begins, what it may never change, and what it did not name.
 #[derive(Debug, Clone)]
 pub struct QuickStart<B> {
     pub build: B,
     pub fixed: Vec<Position>,
+    /// Positions holding only their axis's default because the start named
+    /// nothing there: the fill chooses them, keeping the default only when no
+    /// candidate beats it.
+    pub unnamed: Vec<Position>,
 }
 
 /// One start's answer.
@@ -199,17 +204,39 @@ impl<S: QuickSpace> Run<'_, S> {
         let fixed = |p: &Position| start.fixed.contains(p);
         let mut cur = start.build.clone();
         let mut moves = 0u32;
-        // FILL, in the space's order. A position is filled with its best legal
-        // candidate whether or not the empty build scored higher: no candidate
-        // is "empty", and no full build has been beaten by a bare slot.
-        for p in self.space.empty(&cur).into_iter().filter(|p| !fixed(p)) {
-            match self.best(self.space.candidates(&cur, p)) {
-                None => return Ok((cur, None, None, moves, true)),
-                Some(Some((b, _))) => {
-                    cur = b;
-                    moves += 1;
+        // FILL: ONE PASS, in the sweep's order, so what shapes the weapon (its
+        // mode, its evolutions, its arcane) is settled before any card is
+        // chosen for it. An EMPTY position takes its best legal candidate
+        // whether or not the bare slot scored higher — no candidate is
+        // "empty". An UNNAMED one holds only a default, and keeps it only when
+        // no candidate beats it. What the start NAMED is not touched here:
+        // judged on a half-empty build, Primed Cryo Rounds lost to Hellfire on
+        // Burston Prime and the answer lost Viral with it.
+        let empty = self.space.empty(&cur);
+        let fill: Vec<Position> = self
+            .space
+            .positions(&cur)
+            .into_iter()
+            .filter(|p| !fixed(p) && (empty.contains(p) || start.unnamed.contains(p)))
+            .collect();
+        for p in fill {
+            let Some(found) = self.best(self.space.candidates(&cur, p)) else {
+                return Ok((cur, None, None, moves, true));
+            };
+            let Some((b, s)) = found else { continue };
+            let take = empty.contains(&p) || {
+                if !self.space.legal(&cur) {
+                    true
+                } else {
+                    let Some(now) = self.score(std::slice::from_ref(&cur)) else {
+                        return Ok((cur, None, None, moves, true));
+                    };
+                    better(s, now[0])
                 }
-                Some(None) => {}
+            };
+            if take {
+                cur = b;
+                moves += 1;
             }
         }
         if !self.space.legal(&cur) {
@@ -334,9 +361,9 @@ mod tests {
     #[test]
     fn a_descent_takes_the_best_legal_and_merges_what_settles_together() {
         let starts = vec![
-            QuickStart { build: [None, None, None], fixed: vec![] },
-            QuickStart { build: [Some(1), Some(2), Some(3)], fixed: vec![] },
-            QuickStart { build: [Some(0), None, None], fixed: vec![Position { kind: "d", idx: 0 }] },
+            QuickStart { build: [None, None, None], fixed: vec![], unnamed: vec![] },
+            QuickStart { build: [Some(1), Some(2), Some(3)], fixed: vec![], unnamed: vec![] },
+            QuickStart { build: [Some(0), None, None], fixed: vec![Position { kind: "d", idx: 0 }], unnamed: vec![] },
         ];
         let cfg = QuickConfig { max_evals: 0, swap_width: 1, stop: Vec::new() };
         let (answers, failures, _) = quick_descent(&Digits, &starts, &cfg);

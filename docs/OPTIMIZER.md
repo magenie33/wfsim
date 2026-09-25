@@ -626,8 +626,11 @@ above runs only when a tool asks for it by name.
 
 ### Positions and candidates
 
-- The positions are the quick calc's axes: mod slots 1–8, the exilus slot,
-  each arcane seat, evolutions (a candidate swaps one tier), mode, valence.
+- The positions are the quick calc's axes, in this order: mode, each
+  evolution tier, valence, each arcane seat, mod slots 1–8, the exilus slot.
+  WHAT SHAPES THE WEAPON COMES FIRST: a card chosen before the mode or the
+  evolutions is chosen for another weapon. With mode last, Burston Prime spent
+  56% of its work on the base form before the cycle doubled the score.
 - The candidates of a position are `/api/candidates`' (`webapi/src/candidates.rs`),
   the quick calc's own list: family exclusivity, what an evolution set forbids,
   an evolution that would evict an equipped card, a mode a mod takes away, the
@@ -659,8 +662,16 @@ above runs only when a tool asks for it by name.
 3. The best legal candidate that beats the build replaces it, and the sweep
    restarts at the first position.
 
-The FILL obeys the same rule card by card, so a build is legal from the moment
-it is full. After width 1 settles, `swap_width` tries 2, 3, … positions at once.
+The FILL is one pass in the same order, before any sweep. It fills what the
+start left EMPTY (a mod slot: its best legal candidate) and what it did not
+NAME (a mode, an evolution tier, the valence, an arcane seat, the exilus: the
+axis's default is kept only when no candidate beats it), and leaves what the
+start named alone — judged on a half-empty build, Primed Cryo Rounds lost to
+Hellfire on Burston Prime and the answer lost Viral (74.7 against 166.4). The
+page's default starts name only their card. Every choice is legal, so a build
+is legal from the moment it is full. On that Burston Prime start the fill cut
+the work from 6,569 builds to 1,876 and reached the same build. After width 1
+settles, `swap_width` tries 2, 3, … positions at once.
 
 ### The answer
 

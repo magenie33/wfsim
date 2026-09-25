@@ -240,6 +240,7 @@ impl QuickCtx<'_> {
         let mut out = Vec::new();
         for s in list.iter().filter(|s| s.get("slots").is_some()) {
             let mut b = self.blank();
+            let mut unnamed: Vec<Position> = Vec::new();
             let slots = s.get("slots").and_then(Value::as_array).cloned().unwrap_or_default();
             for (i, id) in slots.iter().take(9).enumerate() {
                 let Some(id) = id.as_str() else { continue };
@@ -249,24 +250,39 @@ impl QuickCtx<'_> {
                     b.exilus = x;
                 }
             }
+            if slots.get(8).and_then(Value::as_str).is_none() && self.exilus_defs.len() > 1 {
+                unnamed.push(Position { kind: "mods", idx: 8 });
+            }
             let ids = s.get("arcane").and_then(Value::as_array).cloned().unwrap_or_default();
             let ranks = s.get("arcane_rank").and_then(Value::as_array).cloned().unwrap_or_default();
-            if let Some(a) = self.arcane_set_of(&ids, &ranks) {
-                b.arcane = a;
+            match self.arcane_set_of(&ids, &ranks) {
+                Some(a) => b.arcane = a,
+                None => unnamed.extend((0..self.arcane_sets[0].len()).map(|idx| Position { kind: "arcane", idx })),
             }
             let evos: Vec<String> = s
                 .get("evolutions")
                 .and_then(Value::as_array)
                 .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
                 .unwrap_or_default();
-            if let Some(e) = self.evo_sets.iter().position(|x| *x == evos) {
+            // The set that holds every tier the start names; the tiers it does
+            // not name are the fill's.
+            if let Some(e) = self.evo_sets.iter().position(|x| evos.iter().all(|id| x.contains(id))) {
                 b.evo = e;
             }
-            if let Some(m) = str_of(s, "mode").and_then(|m| self.mode_ids.iter().position(|x| *x == m)) {
-                b.mode = m;
+            let named: Vec<usize> = evos
+                .iter()
+                .filter_map(|id| wfsim_engine::data::evolutions::get(id).map(|e| e.tier as usize))
+                .collect();
+            unnamed.extend(
+                self.evo_tiers().into_iter().filter(|t| !named.contains(t)).map(|idx| Position { kind: "evo", idx }),
+            );
+            match str_of(s, "mode").and_then(|m| self.mode_ids.iter().position(|x| *x == m)) {
+                Some(m) => b.mode = m,
+                None => unnamed.push(Position { kind: "mode", idx: 0 }),
             }
-            if let Some(v) = str_of(s, "valence_element").and_then(|e| self.valences.iter().position(|x| *x == e)) {
-                b.val = v;
+            match str_of(s, "valence_element").and_then(|e| self.valences.iter().position(|x| *x == e)) {
+                Some(v) => b.val = v,
+                None => unnamed.push(Position { kind: "valence", idx: 0 }),
             }
             // Required cards ride in every start, in the first free slots.
             for r in &self.required {
@@ -298,9 +314,27 @@ impl QuickCtx<'_> {
                     fixed.push(Position { kind: "mods", idx: slot });
                 }
             }
-            out.push(QuickStart { build: b, fixed });
+            // The page pins the evolution BLOCK; each tier is a position here.
+            if fixed.iter().any(|p| p.kind == "evo") {
+                fixed.retain(|p| p.kind != "evo");
+                fixed.extend(self.evo_tiers().into_iter().map(|idx| Position { kind: "evo", idx }));
+            }
+            out.push(QuickStart { build: b, fixed, unnamed });
         }
         out
+    }
+
+    /// The evolution tiers the scope ranges over, in ladder order.
+    fn evo_tiers(&self) -> Vec<usize> {
+        let mut t: Vec<usize> = self
+            .evo_sets
+            .iter()
+            .flatten()
+            .filter_map(|id| wfsim_engine::data::evolutions::get(id).map(|e| e.tier as usize))
+            .collect();
+        t.sort_unstable();
+        t.dedup();
+        t
     }
 
     /// The plan's default for every axis a start does not name.
@@ -349,7 +383,7 @@ impl QuickCtx<'_> {
                         fixed.extend(arcane_seats.iter().copied());
                     }
                 }
-                QuickStart { build: b, fixed }
+                QuickStart { build: b, fixed, unnamed: Vec::new() }
             })
             .collect()
     }
@@ -358,8 +392,22 @@ impl QuickCtx<'_> {
 impl QuickSpace for QuickCtx<'_> {
     type Build = QBuild;
 
+    /// WHAT SHAPES THE WEAPON FIRST: how it is played, its evolutions tier by
+    /// tier, its element, its arcane — then the cards, then the exilus. A card
+    /// chosen before the mode or the evolutions is chosen for another weapon:
+    /// on Burston Prime the cycle doubled the score and half the work before it
+    /// had been spent on the base form.
     fn positions(&self, _: &QBuild) -> Vec<Position> {
         let mut out: Vec<Position> = Vec::new();
+        if self.mode_ids.len() > 1 {
+            out.push(Position { kind: "mode", idx: 0 });
+        }
+        if self.evo_sets.len() > 1 {
+            out.extend(self.evo_tiers().into_iter().map(|idx| Position { kind: "evo", idx }));
+        }
+        if self.valences.len() > 1 {
+            out.push(Position { kind: "valence", idx: 0 });
+        }
         if self.arcane_sets.len() > 1 {
             out.extend((0..self.arcane_sets[0].len()).map(|idx| Position { kind: "arcane", idx }));
         }
@@ -367,20 +415,16 @@ impl QuickSpace for QuickCtx<'_> {
         if self.exilus_defs.len() > 1 {
             out.push(Position { kind: "mods", idx: 8 });
         }
-        if self.evo_sets.len() > 1 {
-            out.push(Position { kind: "evo", idx: 0 });
-        }
-        if self.mode_ids.len() > 1 {
-            out.push(Position { kind: "mode", idx: 0 });
-        }
-        if self.valences.len() > 1 {
-            out.push(Position { kind: "valence", idx: 0 });
-        }
         out
     }
 
     fn empty(&self, b: &QBuild) -> Vec<Position> {
-        (0..8).filter(|&i| b.mods[i].is_none()).map(|idx| Position { kind: "mods", idx }).collect()
+        let mut out: Vec<Position> =
+            (0..8).filter(|&i| b.mods[i].is_none()).map(|idx| Position { kind: "mods", idx }).collect();
+        if self.exilus_defs.len() > 1 && self.exilus_defs[b.exilus].is_none() {
+            out.push(Position { kind: "mods", idx: 8 });
+        }
+        out
     }
 
     fn candidates(&self, b: &QBuild, p: Position) -> Vec<QBuild> {
@@ -498,6 +542,7 @@ impl QuickCtx<'_> {
                         None => false,
                     }
                 }
+                "evo" if wfsim_engine::data::evolutions::get(id).is_none_or(|e| e.tier as usize != p.idx) => false,
                 "evo" => {
                     let list: Vec<String> = payload
                         .get("evolutions")
