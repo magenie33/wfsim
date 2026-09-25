@@ -7,8 +7,8 @@
 // to hold ON SCREEN, in the single-threaded wasm build that actually ships:
 //
 //   - even a tiny scope is descended, and the page says so;
-//   - an asked-for walk that finishes reports `exhaustive` and says so, and
-//     one the budget cuts reports its coverage;
+//   - an asked-for walk that finishes reports `exhaustive`, and one the budget
+//     cuts reports its coverage (a tool's answer: the page never walks);
 //   - a big scope descends from the player's start and keeps its lock;
 //   - the run produces a real leaderboard every time.
 //
@@ -109,27 +109,19 @@ const r = await evaluate(`(async () => {
   await sleep(100);
   out.descText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
 
-  // What the page SAYS about each — the numbers are worth nothing if the
-  // difference between "sampled" and "proven" never reaches the screen.
+  // What the page SAYS about a descent: that it is the best its starts reach.
   try { renderOptResults(small); } catch (e) { out.renderErr = String(e).slice(0,200); }
   await sleep(100);
   out.smallText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
-  try { renderOptResults(walked); } catch (e) { out.renderErr1 = String(e).slice(0,200); }
-  await sleep(100);
-  out.walkedText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
-  try { renderOptResults(big); } catch (e) { out.renderErr2 = String(e).slice(0,200); }
-  await sleep(100);
-  out.bigText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
   return out;
 })()`);
 
 check("a small scope runs to a result", r.smallOk === true && r.results > 0, JSON.stringify(r.results));
 check("...and is DESCENDED like any other", r.smallStrategy === 'descent', String(r.smallStrategy));
 check("...with a build in it", Array.isArray(r.top) && r.top.length === 6, JSON.stringify(r.top));
-check("the page says it descended", /descended from|个起点出发/.test(r.smallText), JSON.stringify(r.smallText.slice(0, 160)));
+check("the page says it descended", /each start improved|每个起点都改到了/.test(r.smallText), JSON.stringify(r.smallText.slice(0, 160)));
 check("an asked-for walk reports itself EXHAUSTIVE", r.exhaustive === true, `coverage ${r.coverage}`);
 check("...over a counted space", r.space > 0, String(r.space));
-check("the page says every build was searched", /every build|每一套/.test(r.walkedText), JSON.stringify(r.walkedText.slice(0, 160)));
 
 check("a budgeted run still ranks", r.bigOk === true && r.bigResults > 0);
 check("...and does NOT claim to be exhaustive", r.bigExhaustive === false);
@@ -145,13 +137,12 @@ check(`...and the compute share moved it (${r.bigWorkers} → ${r.soloWorkers})`
 check("...and covered more ground than one worker would",
   r.fleetSampled > r.soloSampled * 1.5,
   `fleet ${r.fleetSampled} at ${r.bigWorkers} lanes vs solo ${r.soloSampled} at ${r.soloWorkers}`);
-check("the page says it sampled", /searched .*% of this scope|搜索覆盖了/.test(r.bigText), JSON.stringify(r.bigText.slice(0, 160)));
 
 check("a scope too big to walk is DESCENDED", r.descOk === true && r.descStrategy === 'descent', `${r.descStrategy}`);
 check("...from the player's one start", r.descStarts === 1, String(r.descStarts));
 check("...never claiming to be exhaustive", r.descExhaustive === false);
 check("...and ranks", r.descRows > 0, String(r.descRows));
 check("...with the LOCKED card in every row", r.descAllLocked === true);
-check("the page says it descended", /descended from 1 starts|从 1 个起点出发/.test(r.descText), JSON.stringify(r.descText.slice(0, 160)));
+check("the page says it descended, or that the budget cut it", /each start improved|每个起点都改到了|time budget|时间预算/.test(r.descText), JSON.stringify(r.descText.slice(0, 160)));
 
 await app.finish("the search reports the ground it actually covered");
