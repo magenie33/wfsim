@@ -61,7 +61,14 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) best: std::sync::Mutex<std::collections::HashMap<String, Candidate>>,
     /// Engagements simulated: every order of every build, at `runs` each.
     pub(crate) sims: std::sync::atomic::AtomicU64,
+    /// Where the page reads progress: builds scored (`enumerated`) and fights
+    /// run (`sims_done`), advanced a chunk at a time so a slow host shows it.
+    pub(crate) progress: Option<&'a wfsim_optimizer::FunnelState>,
 }
+
+/// Jobs scored between progress updates: small enough that a single-threaded
+/// browser worker reports every few seconds, large enough to keep cores busy.
+const PROGRESS_CHUNK: usize = 32;
 
 fn split_rank(s: &str) -> (&str, Option<u64>) {
     match s.rsplit_once('@') {
@@ -412,8 +419,20 @@ impl QuickSpace for QuickCtx<'_> {
             .zip(bs)
             .flat_map(|(os, b)| os.iter().map(move |c| (c, b.arcane)))
             .collect();
-        self.sims.fetch_add(jobs.len() as u64 * u64::from(self.runs), std::sync::atomic::Ordering::Relaxed);
-        let sums = wfsim_optimizer::descent::evaluate_paired(&jobs, self.arcanes, self.scenario, self.runs, self.seed);
+        use std::sync::atomic::Ordering::Relaxed;
+        self.sims.fetch_add(jobs.len() as u64 * u64::from(self.runs), Relaxed);
+        // One seed for every chunk, so the chunks stay one paired stream.
+        let mut sums = Vec::with_capacity(jobs.len());
+        for chunk in jobs.chunks(PROGRESS_CHUNK) {
+            sums.extend(wfsim_optimizer::descent::evaluate_paired(chunk, self.arcanes, self.scenario, self.runs, self.seed));
+            if let Some(p) = self.progress {
+                p.sims_done.fetch_add(chunk.len() as u64 * u64::from(self.runs), Relaxed);
+            }
+            wfsim_optimizer::tick();
+        }
+        if let Some(p) = self.progress {
+            p.enumerated.fetch_add(bs.len() as u64, Relaxed);
+        }
         let mut it = sums.into_iter();
         let mut out = Vec::with_capacity(bs.len());
         for (b, os) in bs.iter().zip(&orders) {

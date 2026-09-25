@@ -1332,6 +1332,7 @@ pub fn grade_optimize(
             seed: 0xDEAD_BEEF,
             best: Default::default(),
             sims: Default::default(),
+            progress: None,
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
         let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, swap_width, None, 0, 1, space.len());
@@ -1906,6 +1907,7 @@ pub fn run_optimize_resumable(
             seed: 0xDEAD_BEEF,
             best: Default::default(),
             sims: Default::default(),
+            progress: Some(state),
         };
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
             let (sj, stats, report) =

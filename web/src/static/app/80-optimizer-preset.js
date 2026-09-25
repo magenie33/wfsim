@@ -241,13 +241,21 @@ async function pollOptimize() {
 
 function renderOptProgress(st) {
   const pct = st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
-  const head = st.phase === "enumerating"
+  // THE DESCENT HAS NO PLAN TO BE A PERCENTAGE OF — how many changes a start
+  // takes is found by taking them — so it reports what it has done.
+  const descending = !st.rounds;
+  const head = descending
+    ? escHtml(tr("improving the starts — {b} builds scored, {s} fights")
+      .replace("{b}", (st.enumerated || 0).toLocaleString()).replace("{s}", (st.sims_done || 0).toLocaleString()))
+    : st.phase === "enumerating"
     ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}${st.sims_done ? ` · ${st.sims_done.toLocaleString()} screened` : ""}`
     : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
-  const sub = st.phase === "enumerating"
+  const sub = descending
+    ? `<div class="opt-prog-sub">${escHtml(tr("each start runs in a worker of its own; in the browser a search takes minutes"))}</div>`
+    : st.phase === "enumerating"
     ? ""
     : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.jobs ? ` · ${st.jobs.toLocaleString()} candidate builds` : ""}</div>`;
   $("opt-results").innerHTML = `<div class="opt-progress">
