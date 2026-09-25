@@ -1089,6 +1089,8 @@ pub fn meta_json() -> Value {
                                 // the mod's own `elemental`.
                                 "elemental": s.kind == "elemental_damage_bonus",
                                 "modeled": s.kind != "unmodelled",
+                                // A Riven Splicer's stat: one a card, and unmeasured.
+                                "spliced": s.spliced,
                             }))
                             .collect::<Vec<_>>()),
                     )

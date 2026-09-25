@@ -580,6 +580,8 @@ pub struct ResolvedPanel {
     /// Σ chance for a CRITICAL hit to apply a Slash status (Hunter
     /// Munitions), rolled per pellet, independent of status chance.
     pub slash_on_crit: f64,
+    /// Σ ammo efficiency the MODS grant, before the arcane's joins it.
+    pub ammo_efficiency: f64,
     /// MOD SET bonus: chance for a hit that ALREADY crit to move up one
     /// critical tier (Vigilante). Scales per equipped member with no
     /// threshold — see [`crate::data::mod_sets`]. 0.0 = no set equipped.

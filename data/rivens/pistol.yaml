@@ -12,8 +12,20 @@
 # see notes: bonus_false_malus_only
 #
 # see notes: order_de_s_own
+#
+# see notes: spliced_riven_stat
 class: pistol
 stats:
+  - id: ammo_efficiency
+    tag: WeaponAmmoEfficiency
+    order: 26
+    base: 0.001
+    prefix: "parci"
+    suffix: "pia"
+    text: "|val|% Ammo Efficiency"
+    kind: ammo_efficiency_bonus
+    malus: false
+    spliced: true
   - id: ammo_maximum
     tag: WeaponAmmoMaxMod
     order: 12
@@ -22,6 +34,17 @@ stats:
     suffix: "bin"
     text: "|val|% Ammo Maximum"
     kind: ammo_max_bonus
+  - id: blast
+    tag: WeaponBlastDamageMod
+    order: 33
+    base: 0.0099999998
+    prefix: "fraga"
+    suffix: "tus"
+    text: "|val|% Blast"
+    kind: combined_element_bonus
+    arg: blast
+    malus: false
+    spliced: true
   - id: cold
     tag: WeaponFreezeDamageMod
     order: 6
@@ -32,6 +55,17 @@ stats:
     kind: elemental_damage_bonus
     arg: cold
     malus: false
+  - id: corrosive
+    tag: WeaponCorrosiveDamageMod
+    order: 30
+    base: 0.0099999998
+    prefix: "cori"
+    suffix: "or"
+    text: "|val|% Corrosive"
+    kind: combined_element_bonus
+    arg: corrosive
+    malus: false
+    spliced: true
   - id: critical_chance
     tag: WeaponCritChanceMod
     order: 1
@@ -83,6 +117,39 @@ stats:
     text: "|val| Damage to Infested"
     kind: faction_damage_bonus
     arg: infested
+  - id: damage_to_orokin
+    tag: WeaponFactionDamageOrokin
+    order: 35
+    base: 0.0049999999
+    prefix: "effi"
+    suffix: "tas"
+    text: "|val| Damage to Orokin"
+    kind: faction_damage_bonus
+    arg: orokin
+    malus: false
+    spliced: true
+  - id: damage_to_scaldra
+    tag: WeaponFactionDamageScaldra
+    order: 37
+    base: 0.0049999999
+    prefix: "exsi"
+    suffix: "llo"
+    text: "|val| Damage to Scaldra"
+    kind: faction_damage_bonus
+    arg: scaldra
+    malus: false
+    spliced: true
+  - id: damage_to_techrot
+    tag: WeaponFactionDamageTechrot
+    order: 36
+    base: 0.0049999999
+    prefix: "muti"
+    suffix: "gia"
+    text: "|val| Damage to Techrot"
+    kind: faction_damage_bonus
+    arg: techrot
+    malus: false
+    spliced: true
   - id: electricity
     tag: WeaponElectricityDamageMod
     order: 3
@@ -101,6 +168,17 @@ stats:
     suffix: "dra"
     text: "|val|% Fire Rate"
     kind: fire_rate_bonus
+  - id: gas
+    tag: WeaponGasDamageMod
+    order: 29
+    base: 0.0099999998
+    prefix: "cali"
+    suffix: "fel"
+    text: "|val|% Gas"
+    kind: combined_element_bonus
+    arg: gas
+    malus: false
+    spliced: true
   - id: heat
     tag: WeaponFireDamageMod
     order: 4
@@ -128,6 +206,17 @@ stats:
     suffix: "tin"
     text: "|val|% Magazine Capacity"
     kind: magazine_capacity_bonus
+  - id: magnetic
+    tag: WeaponMagneticDamageMod
+    order: 34
+    base: 0.0099999998
+    prefix: "magni"
+    suffix: "bra"
+    text: "|val|% Magnetic"
+    kind: combined_element_bonus
+    arg: magnetic
+    malus: false
+    spliced: true
   - id: multishot
     tag: WeaponFireIterationsMod
     order: 15
@@ -162,6 +251,17 @@ stats:
     text: "|val|% Puncture"
     kind: physical_damage_bonus
     arg: puncture
+  - id: radiation
+    tag: WeaponRadiationDamageMod
+    order: 32
+    base: 0.0099999998
+    prefix: "radi"
+    suffix: "lo"
+    text: "|val|% Radiation"
+    kind: combined_element_bonus
+    arg: radiation
+    malus: false
+    spliced: true
   - id: reload_speed
     tag: WeaponReloadSpeedMod
     order: 19
@@ -170,6 +270,16 @@ stats:
     suffix: "tak"
     text: "|val|% Reload Speed"
     kind: reload_speed_bonus
+  - id: reload_while_holstered
+    tag: WeaponMagazineReloadHolstered
+    order: 27
+    base: 0.0099999998
+    prefix: "parci"
+    suffix: "pia"
+    text: "|val|% Magazine Reloaded/s when Holstered"
+    kind: unmodelled
+    malus: false
+    spliced: true
   - id: slash
     tag: WeaponSlashDamageMod
     order: 9
@@ -187,6 +297,16 @@ stats:
     suffix: "dex"
     text: "|val|% Status Chance"
     kind: status_chance_bonus
+  - id: status_damage
+    tag: WeaponStatusDamage
+    order: 28
+    base: 0.0099999998
+    prefix: "plaga"
+    suffix: "mna"
+    text: "|val|% Status Damage"
+    kind: status_damage_bonus
+    malus: false
+    spliced: true
   - id: status_duration
     tag: WeaponProcTimeMod
     order: 8
@@ -205,6 +325,37 @@ stats:
     kind: elemental_damage_bonus
     arg: toxin
     malus: false
+  - id: viral
+    tag: WeaponViralDamageMod
+    order: 31
+    base: 0.0099999998
+    prefix: "cari"
+    suffix: "sco"
+    text: "|val|% Viral"
+    kind: combined_element_bonus
+    arg: viral
+    malus: false
+    spliced: true
+  - id: weak_point_critical_chance
+    tag: WeaponWeakpointCriticalChance
+    order: 25
+    base: 0.0099999998
+    prefix: "exiti"
+    suffix: "eus"
+    text: "|val|% Weak Point Critical Chance"
+    kind: weakpoint_crit_chance_bonus
+    malus: false
+    spliced: true
+  - id: weak_point_damage
+    tag: WeaponWeakpointDamage
+    order: 24
+    base: 0.0099999998
+    prefix: "eni"
+    suffix: "vo"
+    text: "|val|% Weak Point Damage"
+    kind: weakpoint_damage_bonus
+    malus: false
+    spliced: true
   - id: weapon_recoil
     tag: WeaponRecoilReductionMod
     order: 18

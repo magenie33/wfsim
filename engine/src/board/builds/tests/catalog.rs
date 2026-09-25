@@ -90,7 +90,8 @@ fn the_board_accepts_every_stat_the_riven_editor_offers() {
         // bonus-only and one melee stat is malus-only, so "offered" is two
         // lists and a stat asked for in the wrong one is refused by both
         // surfaces rather than by one.
-        let bonuses: Vec<&String> = offered.iter().filter(|x| x.bonus).map(|x| &x.id).collect();
+        // A PARTNER IS A ROLLED STAT: the picker offers one spliced stat a card.
+        let bonuses: Vec<&String> = offered.iter().filter(|x| x.bonus && !x.spliced).map(|x| &x.id).collect();
         assert!(bonuses.len() >= 2, "{}: fewer than two bonus stats", w.id);
         for id in offered.iter() {
             // THE SMALLEST LEGAL SHAPE that carries the stat — a riven has

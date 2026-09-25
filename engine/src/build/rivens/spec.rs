@@ -66,6 +66,7 @@ impl RivenSpec {
                 }
             }
         }
+        out.extend(too_many_spliced(&self.class, self.bonuses.iter().chain(self.malus.iter()).map(|s| s.id.as_str())));
         // ...AND THE OTHER DIRECTION, which melee is the first pool to need.
         for s in &self.bonuses {
             if let Some(def) = p.iter().find(|x| x.id == s.id) {
@@ -271,6 +272,14 @@ impl RivenSpec {
     }
 }
 
+/// A SPLICER MAKES ONE: a card carries at most one spliced stat. The card and
+/// the board's validation both ask this, so they give one answer.
+pub fn too_many_spliced<'a>(class: &str, ids: impl Iterator<Item = &'a str>) -> Option<String> {
+    let p = pool(class);
+    let n = ids.filter(|id| p.iter().any(|x| x.id == *id && x.spliced)).count();
+    (n > 1).then(|| format!("a riven carries one spliced stat, not {n}"))
+}
+
 /// One resolved riven stat as a [`ModEffect`]. `None` = a stat the engine does
 /// not model; it stays on the card and contributes nothing.
 pub(super) fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
@@ -282,6 +291,12 @@ pub(super) fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
         "impact" => Some(DamageType::Impact),
         "puncture" => Some(DamageType::Puncture),
         "slash" => Some(DamageType::Slash),
+        "gas" => Some(DamageType::Gas),
+        "corrosive" => Some(DamageType::Corrosive),
+        "viral" => Some(DamageType::Viral),
+        "radiation" => Some(DamageType::Radiation),
+        "blast" => Some(DamageType::Blast),
+        "magnetic" => Some(DamageType::Magnetic),
         _ => None,
     };
     Some(match def.kind.as_str() {
@@ -295,6 +310,9 @@ pub(super) fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
         "reload_speed_bonus" => ModEffect::ReloadSpeed(v),
         "magazine_capacity_bonus" => ModEffect::MagazineCapacity(v),
         "elemental_damage_bonus" => ModEffect::Element(element(def.arg.as_deref()?)?, v),
+        // A SPLICED combined element joins its type's total and never pairs,
+        // the way a combined-element mod does.
+        "combined_element_bonus" => ModEffect::CombinedElement(element(def.arg.as_deref()?)?, v),
         "physical_damage_bonus" => ModEffect::Physical(element(def.arg.as_deref()?)?, v),
         "faction_damage_bonus" => {
             let f = Faction::from_name(def.arg.as_deref()?);
@@ -320,6 +338,16 @@ pub(super) fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
         "initial_combo" => ModEffect::InitialCombo(v),
         "combo_count_chance" => ModEffect::ComboCountChance(v),
         "combo_gain_chance" => ModEffect::ComboGainChance(v),
+        // SPLICED, each in the bucket its mod lands in: Pistol Acuity's two,
+        // the Elementalists' status damage, Killing Blow's heavy pair, Seismic
+        // Wave's slam.
+        "weakpoint_damage_bonus" => ModEffect::WeakpointDamage(v),
+        "weakpoint_crit_chance_bonus" => ModEffect::WeakpointCritChance(v),
+        "status_damage_bonus" => ModEffect::StatusDamage(v),
+        "ammo_efficiency_bonus" => ModEffect::AmmoEfficiency(v),
+        "heavy_attack_damage_bonus" => ModEffect::HeavyAttackDamage(v),
+        "heavy_windup_speed_bonus" => ModEffect::HeavyWindUpSpeed(v),
+        "slam_damage_bonus" => ModEffect::SlamDamage(v),
         _ => return None,
     })
 }

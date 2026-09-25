@@ -207,6 +207,7 @@ pub fn resolve_for(
     let mut br = 0.0;
     // Hunter Munitions: its own bucket, because its roll is its own.
     let mut slash_on_crit = 0.0;
+    let mut ammo_efficiency = 0.0;
     // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
     // …AND THE HALF THAT ASKS ABOUT THE PLAYER. "With Sprint Speed 1.2 or
     // Higher" is a question about who is carrying the gun, so it is answered
@@ -529,6 +530,7 @@ pub fn resolve_for(
                 // Independent of everything else: it is its own roll on a
                 // crit, so it is its own bucket rather than joining status.
                 ModEffect::SlashOnCrit(v) => slash_on_crit += v,
+                ModEffect::AmmoEfficiency(v) => ammo_efficiency += v,
                 // Physical (IPS) bonus: accumulate per type; applied to the
                 // BASE physical component below (NOT the elemental hierarchy).
                 ModEffect::Physical(t, v) => {
@@ -1363,6 +1365,7 @@ pub fn resolve_for(
         falloff,
         lingering,
         slash_on_crit,
+        ammo_efficiency,
         crit_tier_upgrade_chance,
         continuous: base.continuous,
         field_duration_on_empty_reload: base.field_duration_on_empty_reload,

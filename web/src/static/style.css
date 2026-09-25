@@ -1238,6 +1238,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .seg.pol img{width:13px;height:13px;display:block}
 .rv-row.malus .rv-tag{color:var(--bad,#e06c75)}
 .rv-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+/* A spliced stat's value is unmeasured: the chip and the note say so. */
+.rv-spl{display:block;margin-top:2px;color:var(--gold);letter-spacing:0}
+.rv-disclaim{margin-top:8px;padding:7px 10px;border:1px dashed var(--gold);border-radius:7px;
+  font-size:12px;color:var(--text-2)}
+.rv-disclaim b{color:var(--gold);margin-right:4px}
 .rv-roll{width:100%}
 .rv-card{margin:12px 0}
 .rv-name{font-size:22px;font-weight:800;letter-spacing:.01em}

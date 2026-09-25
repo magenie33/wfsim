@@ -242,7 +242,9 @@ mod tests {
     #[test]
     fn every_riven_stat_can_be_filtered_on() {
         for class in riven_classes() {
-            for stat in crate::build::rivens::pool(&class) {
+            // A SPLICED STAT has no filter on warframe.market yet, and the page
+            // withholds the link from a card carrying one (`rivenMarketUrl`).
+            for stat in crate::build::rivens::pool(&class).iter().filter(|s| !s.spliced) {
                 assert!(
                     riven_stat_slug(&stat.id).is_some(),
                     "no auction filter for riven stat {} ({class})",

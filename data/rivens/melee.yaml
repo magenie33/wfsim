@@ -12,6 +12,8 @@
 # see notes: bonus_false_malus_only
 #
 # see notes: order_de_s_own
+#
+# see notes: spliced_riven_stat
 class: melee
 stats:
   - id: additional_combo_count_chance
@@ -157,6 +159,16 @@ stats:
     suffix: "us"
     text: "|val|% Heavy Attack Efficiency"
     kind: heavy_attack_efficiency
+  - id: heavy_attack_wind_up_speed
+    tag: WeaponMeleeHeavyAttackChargeMod
+    order: 25
+    base: 0.0133
+    prefix: "laci"
+    suffix: "nus"
+    text: "|val|% Heavy Attack Wind Up Speed"
+    kind: heavy_windup_speed_bonus
+    malus: false
+    spliced: true
   - id: impact
     tag: WeaponImpactDamageMod
     order: 2
@@ -182,6 +194,26 @@ stats:
     suffix: "ata"
     text: "|val|% Melee Damage"
     kind: base_damage_bonus
+  - id: melee_damage_on_heavy_attack
+    tag: WeaponMeleeHeavyAttackDamageMod
+    order: 24
+    base: 0.0133
+    prefix: "laci"
+    suffix: "nus"
+    text: "|val|% Melee Damage on Heavy Attack"
+    kind: heavy_attack_damage_bonus
+    malus: false
+    spliced: true
+  - id: parry_angle
+    tag: WeaponMeleeParryAngleMod
+    order: 26
+    base: 0.090000004
+    prefix: "laci"
+    suffix: "nus"
+    text: "|val| Parry Angle"
+    kind: unmodelled
+    malus: false
+    spliced: true
   - id: puncture
     tag: WeaponArmorPiercingDamageMod
     order: 1
@@ -199,6 +231,16 @@ stats:
     suffix: "tor"
     text: "|val| Range"
     kind: melee_range_bonus_m
+  - id: slam_attack_damage
+    tag: WeaponMeleeSlamDamageMod
+    order: 27
+    base: 0.0133
+    prefix: "laci"
+    suffix: "nus"
+    text: "|val|% Slam Attack Damage"
+    kind: slam_damage_bonus
+    malus: false
+    spliced: true
   - id: slash
     tag: WeaponSlashDamageMod
     order: 3

@@ -529,6 +529,7 @@ fn mod_sources(
                 // Its own row: the chance is not a status chance and does not
                 // pool with one - it is a separate roll off a critical hit.
                 SlashOnCrit(x) => push("slash_on_crit", x, None),
+                AmmoEfficiency(x) => push("ammo_efficiency", x, None),
                 FireRate(x) => push("fire_rate", x, None),
                 // Its own row, not fire rate's: a charge-rate mod shortens the
                 // DRAW and leaves an uncharged form's cadence alone.

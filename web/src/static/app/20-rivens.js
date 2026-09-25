@@ -48,6 +48,8 @@ const rivenStat = (id) => rivenPoolAll().find((s) => s.id === id);
 const rivenStatNameEn = (s) =>
   s.text.replace("|val|", "").replace(/^\s*[%s]\s*/, "").replace(/\s+/g, " ").trim();
 const rivenStatName = (s) => tf(rivenStatNameEn(s));
+// The disclaimer every spliced stat carries (see notes: spliced_riven_stat).
+const RIVEN_SPLICED_NOTE = "A spliced stat's value uses the formula every rolled stat uses, on DE's own base number, and no in-game card has been checked against it yet — the number on your card may differ.";
 
 // The shape, in the notation everyone already uses: 2, 3, 2+1, 3+1 — the
 // count of bonuses, and a +1 for the malus. It leads because it is the
@@ -339,7 +341,8 @@ function renderRivenStats() {
   const row = (slot, s, isMalus) => {
     const def = rivenStat(s.id);
     return `<div class="rv-row ${isMalus ? "malus" : ""}">
-      <span class="rv-tag">${escHtml(tr(isMalus ? "Malus" : "Bonus"))}</span>
+      <span class="rv-tag">${escHtml(tr(isMalus ? "Malus" : "Bonus"))}${def && def.spliced
+        ? `<span class="rv-spl" title="${escHtml(tr(RIVEN_SPLICED_NOTE))}">${escHtml(tr("spliced"))}</span>` : ""}</span>
       <button class="rv-pick" data-slot="${slot}">${def ? escHtml(rivenStatName(def)) : escHtml(tr("choose a stat"))}</button>
       <input class="rv-roll" type="range" data-slot="${slot}"
              min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll}">
@@ -349,9 +352,12 @@ function renderRivenStats() {
       <span class="rv-unit" data-slot="${slot}"></span>
     </div>`;
   };
+  // A SPLICED STAT IS NOT MEASURED, and the card says so beside it.
+  const spliced = riven.bonuses.concat(riven.malus ? [riven.malus] : []).some((s) => (rivenStat(s.id) || {}).spliced);
   $("riven-stats").innerHTML =
     riven.bonuses.map((s, i) => row(String(i), s, false)).join("") +
-    (riven.malus ? row("malus", riven.malus, true) : "");
+    (riven.malus ? row("malus", riven.malus, true) : "") +
+    (spliced ? `<div class="rv-disclaim"><b>${escHtml(tr("For reference only"))}</b> ${escHtml(tr(RIVEN_SPLICED_NOTE))}</div>` : "");
 
   const at = (slot) => (slot === "malus" ? riven.malus : riven.bonuses[Number(slot)]);
   $("riven-stats").querySelectorAll(".rv-pick").forEach((el) =>
@@ -384,6 +390,9 @@ function openRivenPicker(anchor, slot) {
   const menu = $("riven-menu");
   const at = slot === "malus" ? riven.malus : riven.bonuses[Number(slot)];
   const used = new Set(riven.bonuses.map((x) => x.id).concat(riven.malus ? [riven.malus.id] : []));
+  // ONE SPLICED STAT A CARD: another slot holding one takes the rest off the list.
+  const splicedElsewhere = riven.bonuses.concat(riven.malus ? [riven.malus] : [])
+    .some((x) => x !== at && (rivenStat(x.id) || {}).spliced);
   const unconfirmed = weaponInfo($("weapon").value).riven_unconfirmed || [];
   const draw = (q) => {
     const f = (q || "").trim().toLowerCase();
@@ -393,12 +402,13 @@ function openRivenPicker(anchor, slot) {
       // A MALUS IS NOT ANY STAT and neither is a bonus: five roll as a bonus
       // only, and one melee stat rolls as the malus only.
       .filter((x) => (!used.has(x.id) || x.id === at.id)
-        && (slot === "malus" ? x.malus : x.bonus !== false))
+        && (slot === "malus" ? x.malus : x.bonus !== false)
+        && !(x.spliced && splicedElsewhere))
       // Both languages match, exactly as the mod picker does.
       .filter((x) => !f || `${rivenStatNameEn(x)} ${rivenStatName(x)}`.toLowerCase().includes(f))
       .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
         <div class="info"><div class="mn">${escHtml(rivenStatName(x))}</div>
-        <div class="me">${x.modeled ? "" : `<div>${escHtml(tr("not modeled — it rolls and it names the riven, but it adds no damage"))}</div>`}${
+        <div class="me">${x.spliced ? `<div>${escHtml(tr("spliced — for reference only"))}</div>` : ""}${x.modeled ? "" : `<div>${escHtml(tr("not modeled — it rolls and it names the riven, but it adds no damage"))}</div>`}${
           unconfirmed.includes(x.id) ? `<div>${escHtml(tr("unconfirmed — no card of this riven family says whether it rolls"))}</div>` : ""}</div></div>
       </div>`).join("") || `<div class="opt dis">${escHtml(tr("no matching stat"))}</div>`;
     menu.querySelectorAll("[data-rvid]").forEach((el) => el.onclick = () => {

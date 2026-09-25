@@ -533,13 +533,14 @@ const AGENT_ACTIONS = [
   {
     id: "rivens.stats.list",
     query: true,
-    what: "List the stats a riven for this weapon can roll, which can be the malus, and which are modelled.",
+    what: "List the stats a riven for this weapon can roll, which can be the malus, which are modelled, and which are spliced (at most one a card, value unmeasured).",
     anchor: "#riven-stats, #riven-tools",
     needs_weapon: true,
     args: {},
     run() {
       return { shapes: RIVEN_SHAPES.map((x) => x.id), rolls: rivenRules(), stats: rivenPool().map((x) => ({
-        id: x.id, name: rivenStatName(x), bonus: x.bonus !== false, malus: !!x.malus, ...(x.modeled ? {} : { modeled: false }) })) };
+        id: x.id, name: rivenStatName(x), bonus: x.bonus !== false, malus: !!x.malus, ...(x.modeled ? {} : { modeled: false }),
+        ...(x.spliced ? { spliced: true } : {}) })) };
     },
   },
   {

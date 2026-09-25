@@ -1716,6 +1716,11 @@ ui:
   "Shape": 词条构成
   "Bonus": 增益
   "Malus": 减益
+  # SPLICED: DE's Riven Splicer is 裂罅熔接器 and its description's verb is 拼接.
+  "spliced": 拼接
+  "spliced — for reference only": "拼接词条 —— 仅供参考"
+  "For reference only": 仅供参考
+  "A spliced stat's value uses the formula every rolled stat uses, on DE's own base number, and no in-game card has been checked against it yet — the number on your card may differ.": "拼接词条的数值沿用普通词条的同一条公式、取 DE 自己的基础值，还没有和游戏里的实卡核对过——你卡上的数字可能不同。"
   "Rank": 等级
   "Polarity": 极性
   "capacity": 容量
@@ -2227,6 +2232,14 @@ effect_phrases:
   # Charge, Reflex Coil, Maiming Strike, True Punishment, Quickening, Finishing
   # Touch, True Steel). Before the generic rows below, which would otherwise
   # take 'Damage' and 'Critical Chance' out of the middle of these.
+  # SPLICED riven stats, off the cards that grant the same stat: Killing Blow,
+  # Focused Defense, Seismic Wave, Lock and Load, the Elementalists.
+  - ['Melee Damage on Heavy Attack', '在重击时的近战伤害']
+  - ['Heavy Attack Wind Up Speed', '重击准备速度']
+  - ['Slam Attack Damage', '震地攻击伤害']
+  - ['Parry Angle', '招架角度']
+  - ['Magazine Reloaded/s when Holstered', '收起武器时弹匣每秒自动装填']
+  - ['Status Damage', '异常状态伤害']
   - ['Melee Damage', '近战伤害']
   - ['Finisher Damage', '处决伤害']
   - ['Critical Chance for Slide Attack', '滑行攻击暴击几率']
@@ -2255,7 +2268,10 @@ effect_phrases:
   - ['\bAccuracy\b', '精准度']
   - ['Weak Point Damage', '弱点伤害']
   - ['Weak Point', '弱点']
-  - ['Damage to (Grineer|Corpus|Infested|Corrupted|The Murmur)', '对 $1 伤害']
+  # Cleanse Orokin's card. Techrot and Scaldra have no card in the CN client
+  # yet, so they keep the English name the way Grineer does.
+  - ['Damage to Orokin', '对奥罗金的伤害']
+  - ['Damage to (Grineer|Corpus|Infested|Corrupted|The Murmur|Techrot|Scaldra)', '对 $1 伤害']
   - ['\bImpact\b', '冲击', 'g']
   - ['\bPuncture\b', '穿刺', 'g']
   - ['\bSlash\b', '切割', 'g']

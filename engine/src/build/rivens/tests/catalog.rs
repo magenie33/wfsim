@@ -205,9 +205,11 @@ fn spec(ids: &[&str], malus: Option<&str>, rank: u32) -> RivenSpec {
 
 #[test]
 fn both_pools_load() {
-    assert_eq!(pool("rifle").len(), 24);
-    assert_eq!(pool("pistol").len(), 24);
-    assert_eq!(pool("melee").len(), 24);
+    // The ROLLED pools; the spliced stats are `spliced.rs`'s.
+    let rolled = |c: &str| pool(c).iter().filter(|x| !x.spliced).count();
+    assert_eq!(rolled("rifle"), 24);
+    assert_eq!(rolled("pistol"), 24);
+    assert_eq!(rolled("melee"), 24);
     assert!(pool("nonexistent").is_empty());
 }
 

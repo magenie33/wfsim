@@ -540,6 +540,12 @@ pub(super) fn check_riven_shape(
                 .map_or(weapon, |w| w.name.as_str())));
         }
     }
+    if let Some(e) = crate::build::rivens::too_many_spliced(
+        class,
+        shape.bonuses.iter().chain(shape.malus.iter()).map(String::as_str),
+    ) {
+        return Err(e);
+    }
     // A MALUS IS NOT ANY STAT. Five are bonus-only, and the pool says which.
     if let Some(m) = &shape.malus {
         let ok = crate::build::rivens::pool(class).iter().any(|x| &x.id == m && x.malus);

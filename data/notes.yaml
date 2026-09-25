@@ -863,6 +863,11 @@ notes:
     `order` is DE's own index in upgradeEntries. Stats that share a base
     are worth exactly the same at the same roll, so the name's magnitude
     ordering ties between them. This is what breaks it.
+  spliced_riven_stat: |
+    `spliced: true` is a stat a Riven Splicer makes out of two rolled ones
+    (wiki Riven_Mods §"Spliced Values"). It is never rolled, it is always a
+    bonus, and one card carries at most one. Its value is the same formula
+    as every other stat's; no in-game card has been measured against it yet.
   other_tab_transcribed_rather: |
     THE OTHER TAB, transcribed rather than derived — both columns are written
     down so either can be checked against the page without arithmetic.

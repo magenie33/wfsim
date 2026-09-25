@@ -240,6 +240,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         "crit_damage_bonus" => ModEffect::CritDamage(max("rankMax")),
         "status_chance_bonus" => ModEffect::StatusChance(max("rankMax")),
         "status_damage_bonus" => ModEffect::StatusDamage(max("rankMax")),
+        "ammo_efficiency_bonus" => ModEffect::AmmoEfficiency(max("rankMax")),
         // Hunter Munitions / Internal Bleeding: a Slash status rolled off a
         // CRITICAL hit, independently of status chance.
         "slash_on_crit" => ModEffect::SlashOnCrit(max("rankMax")),

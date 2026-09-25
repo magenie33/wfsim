@@ -21,6 +21,8 @@ pub enum Faction {
     Corrupted,
     Murmur,
     Sentient,
+    Techrot,
+    Scaldra,
     Unknown,
 }
 
@@ -35,6 +37,8 @@ impl Faction {
             "corrupted" | "orokin" => Faction::Corrupted,
             "murmur" | "the_murmur" | "the murmur" => Faction::Murmur,
             "sentient" => Faction::Sentient,
+            "techrot" => Faction::Techrot,
+            "scaldra" => Faction::Scaldra,
             _ => Faction::Unknown,
         }
     }
@@ -320,6 +324,9 @@ pub enum ModEffect {
     SlashOnCrit(f64),
     /// Status-damage bucket (Pistol Elementalist) — scales status payloads.
     StatusDamage(f64),
+    /// Ammo efficiency (a spliced riven stat): the share of a shot's ammo cost
+    /// waived. Joins the arcane's additive bucket (`fight::ammo_efficiency`).
+    AmmoEfficiency(f64),
     /// Primary element: ModifiedBase × bonus enters the hierarchy at this
     /// mod's position.
     Element(DamageType, f64),

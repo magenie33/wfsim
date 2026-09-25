@@ -111,6 +111,51 @@ KIND = {
     # answer Finishing Touch's card already gets, and the riven rolls it
     # anyway, so it occupies a slot and names the card and pays nothing.
     "WeaponMeleeFinisherDamageMod": (None, None),
+    # SPLICED, below: each lands in the bucket its MOD already lands in.
+    "WeaponWeakpointDamage": ("weakpoint_damage_bonus", None),
+    "WeaponWeakpointCriticalChance": ("weakpoint_crit_chance_bonus", None),
+    "WeaponStatusDamage": ("status_damage_bonus", None),
+    "WeaponAmmoEfficiency": ("ammo_efficiency_bonus", None),
+    "WeaponGasDamageMod": ("combined_element_bonus", "gas"),
+    "WeaponCorrosiveDamageMod": ("combined_element_bonus", "corrosive"),
+    "WeaponViralDamageMod": ("combined_element_bonus", "viral"),
+    "WeaponRadiationDamageMod": ("combined_element_bonus", "radiation"),
+    "WeaponBlastDamageMod": ("combined_element_bonus", "blast"),
+    "WeaponMagneticDamageMod": ("combined_element_bonus", "magnetic"),
+    "WeaponFactionDamageOrokin": ("faction_damage_bonus", "orokin"),
+    "WeaponFactionDamageTechrot": ("faction_damage_bonus", "techrot"),
+    "WeaponFactionDamageScaldra": ("faction_damage_bonus", "scaldra"),
+    "WeaponMeleeHeavyAttackDamageMod": ("heavy_attack_damage_bonus", None),
+    "WeaponMeleeHeavyAttackChargeMod": ("heavy_windup_speed_bonus", None),
+    "WeaponMeleeSlamDamageMod": ("slam_damage_bonus", None),
+    # Nothing in this arena is ever holstered or parries.
+    "WeaponMagazineReloadHolstered": (None, None),
+    "WeaponMeleeParryAngleMod": (None, None),
+}
+
+# SPLICED STATS: made by a Riven Splicer out of two rolled ones, never rolled.
+# The export ships them in `upgradeEntries` with nothing to tell them apart;
+# the wiki's Riven_Mods §"Spliced Values" is what names these eighteen. Each
+# is bonus-only, and a card carries at most one (`RivenSpec::illegal`).
+SPLICED = {
+    "WeaponWeakpointDamage",
+    "WeaponWeakpointCriticalChance",
+    "WeaponStatusDamage",
+    "WeaponAmmoEfficiency",
+    "WeaponMagazineReloadHolstered",
+    "WeaponGasDamageMod",
+    "WeaponCorrosiveDamageMod",
+    "WeaponViralDamageMod",
+    "WeaponRadiationDamageMod",
+    "WeaponBlastDamageMod",
+    "WeaponMagneticDamageMod",
+    "WeaponFactionDamageOrokin",
+    "WeaponFactionDamageTechrot",
+    "WeaponFactionDamageScaldra",
+    "WeaponMeleeHeavyAttackDamageMod",
+    "WeaponMeleeHeavyAttackChargeMod",
+    "WeaponMeleeParryAngleMod",
+    "WeaponMeleeSlamDamageMod",
 }
 
 # A TAG IS NOT ALWAYS ONE EFFECT. `WeaponCritChanceMod` is the tag a rifle
@@ -155,8 +200,15 @@ def hole(text):
     return re.sub(r"<[^>]*>", "", text).replace("|STAT1|", "|val|")
 
 
+# The one display text that slugs badly: "Magazine Reloaded/s when Holstered".
+# The wiki's own name for the stat is the id.
+SLUG = {"WeaponMagazineReloadHolstered": "reload_while_holstered"}
+
+
 def slug(tag, text):
     """A stable English id, from the display text rather than DE's tag."""
+    if tag in SLUG:
+        return SLUG[tag]
     # The UNIT sits between the hole and the name -- `%` on most, `s` on Combo
     # Duration -- and is not part of what the stat is called.
     t = hole(text).replace("|val|", "").lstrip(" %s").strip()
@@ -179,6 +231,10 @@ def main():
         for order, e in enumerate(item["upgradeEntries"]):
             tag = e["tag"]
             val = e["upgradeValues"][0]
+            # `reverseValueSymbol` prints the number with its sign flipped:
+            # Ammo Efficiency's base is -0.001 and its card reads "+9%". The
+            # stored base is what the card means, so the flip happens here.
+            base = -val["value"] if val.get("reverseValueSymbol") and tag in SPLICED else val["value"]
             kind, arg = CLASS_KIND.get((cls, tag)) or KIND.get(tag, (None, None))
             if kind is None:
                 unknown.append((cls, tag))
@@ -191,13 +247,14 @@ def main():
                     # which is the only non-arbitrary way to break a tie
                     # between two stats that share a base value.
                     "order": order,
-                    "base": val["value"],
+                    "base": base,
                     "prefix": e.get("prefixTag", ""),
                     "suffix": e.get("suffixTag", ""),
                     "text": hole(val["locTag"]).strip(),
                     "kind": kind or "unmodelled",
                     "arg": arg,
-                    "malus": tag not in NEVER_MALUS,
+                    "malus": tag not in NEVER_MALUS and tag not in SPLICED,
+                    "spliced": tag in SPLICED,
                     "bonus": tag not in NEVER_BONUS,
                 }
             )
@@ -234,6 +291,8 @@ def main():
                 "# see notes: bonus_false_malus_only",
                 "#",
                 "# see notes: order_de_s_own",
+                "#",
+                "# see notes: spliced_riven_stat",
                 f"class: {cls}",
                 "stats:",
             ]
@@ -254,6 +313,8 @@ def main():
                     out.append("    malus: false")
                 if not r["bonus"]:
                     out.append("    bonus: false")
+                if r["spliced"]:
+                    out.append("    spliced: true")
             io.open(OUT / f"{cls}.yaml", "w", encoding="utf-8", newline="\n").write(
                 "\n".join(out) + "\n"
             )

@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 4671839d8ea7d5e1
-count: 1771
+digest: 71c1dbe9d620327d
+count: 1789
 ids:
   - acceltra
   - acceltra_prime
@@ -1781,3 +1781,21 @@ ids:
   - leaded_gas
   - aksondol
   - nunchasa
+  - ammo_efficiency
+  - blast
+  - corrosive
+  - damage_to_orokin
+  - damage_to_scaldra
+  - damage_to_techrot
+  - gas
+  - magnetic
+  - radiation
+  - reload_while_holstered
+  - status_damage
+  - viral
+  - weak_point_critical_chance
+  - weak_point_damage
+  - heavy_attack_wind_up_speed
+  - melee_damage_on_heavy_attack
+  - parry_angle
+  - slam_attack_damage

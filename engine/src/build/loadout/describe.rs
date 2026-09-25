@@ -195,6 +195,7 @@ impl ModEffect {
             ChargeRate(v) => format!("{} Charge Rate", pct(v)),
             ReloadSpeed(v) => format!("{} Reload Speed", pct(v)),
             StatusDamage(v) => format!("{} Status Damage", pct(v)),
+            AmmoEfficiency(v) => format!("{} Ammo Efficiency", pct(v)),
             SlashOnCrit(v) => format!("{} chance to apply Slash on Critical", pct(v)),
             Element(t, v) => format!("{} {t:?}", pct(v)),
             CombinedElement(t, v) => format!("{} {t:?}", pct(v)),

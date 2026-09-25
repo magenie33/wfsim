@@ -81,6 +81,9 @@ pub struct RivenStat {
     /// entries, and the second exists only to be the negative.
     #[serde(default = "yes")]
     pub bonus: bool,
+    /// Made by a Riven Splicer, never rolled (see notes: spliced_riven_stat).
+    #[serde(default)]
+    pub spliced: bool,
 }
 
 pub(super) fn yes() -> bool {

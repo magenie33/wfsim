@@ -930,6 +930,7 @@ impl FightParams {
             // joins the arcane's in the same additive bucket, which is where a
             // second source of one quantity belongs.
             fx.ammo_efficiency += arena.tenno.bonuses.ammo_efficiency;
+            fx.ammo_efficiency += panel.ammo_efficiency;
             fx
         };
         // READ BEFORE `arcane` IS MOVED into the struct below. Both halves of
