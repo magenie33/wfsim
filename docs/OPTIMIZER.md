@@ -839,9 +839,11 @@ so a sweep costs the SUM of the option counts. It is opt-in per request
 
 1. **Starts** are the player's partial builds (`"starts": [["cryo_rounds"],
    ["hellfire", "serration"]]`). A start is where the descent begins, not a
-   constraint — a card that must stay is the `fixed` mark. Without any, the
-   starts are every pair of primary elements, one card each; which card does
-   not matter, because the sweep upgrades it.
+   constraint — a card that must stay is the `fixed` mark. Without any, there
+   is one start per primary element, one card each; the fill picks the
+   partner, and which card does not matter, because the sweep upgrades it.
+   ONE start holding all four is the wrong shape: shedding an element costs
+   its combination before the freed slot pays, so it stalls (49% regret below).
 2. **Fill**: add the best card until the build is full.
 3. **Sweep**: arcane → each mod → an empty slot → the variant. ANY accepted
    move restarts at the arcane, because a change anywhere moves what every
@@ -859,10 +861,13 @@ grader do not know which one ran. It never reports itself exhaustive.
 
 | scope | strategy | screen evals | rank | within noise | top-10 recall |
 |---|---|---|---|---|---|
-| Verglas Prime, 14 mods, 30,288 jobs | descent, element pairs | 1,535 | 1 | yes | 100% |
+| Verglas Prime, 14 mods, 30,288 jobs | descent, one start per element | 1,092 | 1 | yes | 80% |
+| | descent, six element-pair starts | 1,535 | 1 | yes | 100% |
+| | descent, one start holding all four | 557 | 283 | **no** (49%) | 0% |
 | | descent, Serration alone | 361 | 1 | yes | 80% |
 | | sampler, 1,500 | 1,505 | 1 | yes | 90% |
-| Boar Prime, 11 mods × 2 arcanes × 8 evolution sets, 7,504 jobs, answer set 4 | descent, element pairs | 971 | 3 | yes | 80% |
+| Boar Prime, 11 mods × 2 arcanes × 8 evolution sets, 7,504 jobs, answer set 4 | descent, one start per element | 601 | 3 | yes | 50% |
+| | descent, six element-pair starts | 971 | 3 | yes | 80% |
 | | descent, Primed Point Blank alone | 273 | 3 | yes | 40% |
 | | sampler, budget 1,000 | 4,768 | 5 | **no** (1.6%) | 40% |
 

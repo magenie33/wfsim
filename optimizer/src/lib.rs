@@ -19,7 +19,7 @@
 
 /// WHICH BUILDS TO LOOK AT — the anytime search over the subset space.
 pub mod search;
-/// The other way to choose them: seeded by the element pairs, swept one
+/// The other way to choose them: seeded one start per element, swept one
 /// position at a time.
 pub mod descent;
 /// The mod-subset space as an INDEX RANGE rather than a walk — what makes a
