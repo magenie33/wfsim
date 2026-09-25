@@ -1,14 +1,15 @@
 // THE SEARCH RUNS IN THE BROWSER, AND SAYS WHAT IT COVERED.
 //
-// A scope small enough is WALKED over a shuffled index range, so running to
-// the end is an exhaustive enumeration and stopping early is a uniform sample
-// (optimizer/src/space.rs); a bigger one is DESCENDED from starts
-// (optimizer/src/descent.rs). Claims that have to hold ON SCREEN, in the
-// single-threaded wasm build that actually ships:
+// The page DESCENDS every scope from starts (optimizer/src/descent.rs); a
+// tool may ask for the WALK instead (`strategy: 'exhaust'`), which runs over a
+// shuffled index range, so running to the end is an exhaustive enumeration and
+// stopping early is a uniform sample (optimizer/src/space.rs). Claims that have
+// to hold ON SCREEN, in the single-threaded wasm build that actually ships:
 //
-//   - a scope small enough to finish reports `exhaustive` and says so;
-//   - a walk the budget cuts reports its coverage;
-//   - a scope too big to walk says it descended, and keeps a start's lock;
+//   - even a tiny scope is descended, and the page says so;
+//   - an asked-for walk that finishes reports `exhaustive` and says so, and
+//     one the budget cuts reports its coverage;
+//   - a big scope descends from the player's start and keeps its lock;
 //   - the run produces a real leaderboard every time.
 //
 // This is the end-to-end check for the whole path — parse → search → funnel →
@@ -47,10 +48,12 @@ const r = await evaluate(`(async () => {
     return null;
   };
   const small = await runIt(req);
+  out.smallStrategy = small && small.strategy;
+  const walked = await runIt({ ...req, strategy: 'exhaust' });
   out.smallOk = !!(small && small.ok);
-  out.exhaustive = small && small.exhaustive;
-  out.coverage = small && small.coverage;
-  out.space = small && small.space;
+  out.exhaustive = walked && walked.exhaustive;
+  out.coverage = walked && walked.coverage;
+  out.space = walked && walked.space;
   out.results = small && (small.results || []).length;
   out.top = small && small.results && small.results[0] ? small.results[0].mods : null;
 
@@ -60,7 +63,7 @@ const r = await evaluate(`(async () => {
   // scope it cannot: twelve mods, any size, a handful of evaluations each.
   const wide = ['serration','split_chamber','point_strike','vital_sense','cryo_rounds','hellfire',
                 'infected_clip','stormbringer','malignant_force','rime_rounds','thermite_rounds','hammer_shot'];
-  const big = await runIt({ ...req,
+  const big = await runIt({ ...req, strategy: 'exhaust',
     mods: Object.fromEntries(wide.map(id => [id, 'search'])),
     build_size: 8, build_min: 1, max_evals: 40 });
   out.bigWorkers = woptWorkerCount();
@@ -80,7 +83,7 @@ const r = await evaluate(`(async () => {
   const pctWas = computePct;
   setComputePct(computeSteps()[0].pct);   // the narrowest share this machine offers
   out.soloWorkers = woptWorkerCount();
-  const solo = await runIt({ ...req,
+  const solo = await runIt({ ...req, strategy: 'exhaust',
     mods: Object.fromEntries(wide.map(id => [id, 'search'])),
     build_size: 8, build_min: 1, max_evals: 40 });
   out.soloSampled = solo && solo.sampled;
@@ -111,6 +114,9 @@ const r = await evaluate(`(async () => {
   try { renderOptResults(small); } catch (e) { out.renderErr = String(e).slice(0,200); }
   await sleep(100);
   out.smallText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
+  try { renderOptResults(walked); } catch (e) { out.renderErr1 = String(e).slice(0,200); }
+  await sleep(100);
+  out.walkedText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
   try { renderOptResults(big); } catch (e) { out.renderErr2 = String(e).slice(0,200); }
   await sleep(100);
   out.bigText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
@@ -118,10 +124,12 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("a small scope runs to a result", r.smallOk === true && r.results > 0, JSON.stringify(r.results));
-check("...and reports itself EXHAUSTIVE", r.exhaustive === true, `coverage ${r.coverage}`);
-check("...over a counted space", r.space > 0, String(r.space));
+check("...and is DESCENDED like any other", r.smallStrategy === 'descent', String(r.smallStrategy));
 check("...with a build in it", Array.isArray(r.top) && r.top.length === 6, JSON.stringify(r.top));
-check("the page says every build was searched", /every build|每一套/.test(r.smallText), JSON.stringify(r.smallText.slice(0, 160)));
+check("the page says it descended", /descended from|个起点出发/.test(r.smallText), JSON.stringify(r.smallText.slice(0, 160)));
+check("an asked-for walk reports itself EXHAUSTIVE", r.exhaustive === true, `coverage ${r.coverage}`);
+check("...over a counted space", r.space > 0, String(r.space));
+check("the page says every build was searched", /every build|每一套/.test(r.walkedText), JSON.stringify(r.walkedText.slice(0, 160)));
 
 check("a budgeted run still ranks", r.bigOk === true && r.bigResults > 0);
 check("...and does NOT claim to be exhaustive", r.bigExhaustive === false);

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! THE WALK — every subset of a scope small enough to take whole.
+//! THE WALK — every subset of a scope, on request.
 //!
-//! [`crate::descent`] searches a scope too big to enumerate; this answers the
-//! one that is not, and its answer is PROVEN: the walk visits every subset
-//! exactly once, so its winner is the optimum of everything pooled, where a
-//! descent's is the best its starts reached. The caller picks between them
-//! (webapi `EXHAUST_UP_TO`).
+//! The page's search is [`crate::descent`] on every scope. This answers a
+//! tool that asks for the whole space (`"strategy": "exhaust"`): the walk
+//! visits every subset exactly once, so its winner is the optimum of
+//! everything pooled.
 //!
 //! It walks [`Shuffle`], a pseudorandom bijection on the subset space's index
 //! range, rather than a depth-first descent: a walk cut short by the clock

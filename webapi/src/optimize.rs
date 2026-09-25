@@ -249,9 +249,8 @@ pub struct OptimizePlan {
     /// the funnel. 0 = uncapped, and then the host's clock is the only bound
     /// (the browser sets one; a native run has a Cancel button instead).
     max_evals: u64,
-    /// WHICH SEARCH picks the builds the funnel ranks — [`walks_whole`].
-    /// `"strategy": "exhaust" | "descent"` overrides the choice; the page sends
-    /// neither and graders and tools name one.
+    /// `"strategy": "exhaust"` walks the whole space instead of descending —
+    /// [`walks_whole`]. The page never sends it.
     strategy: Option<String>,
     /// Where the descent begins — [`parse_starts`]. Empty = one start per
     /// primary element.
@@ -988,28 +987,13 @@ pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
 /// resume point — continuing from one would silently drop the unwalked part.
 pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
 
-/// Estimated screen evaluations above which a scope is DESCENDED rather than
-/// walked whole: ~2 minutes of one browser worker (~150 evaluations/s), seconds
-/// natively. The estimate is subsets × arcane sets × variants — element orders
-/// and exilus options add a small factor on top. Below it the walk's answer is
-/// proven; above it the descent's is the best its starts reach, and at equal
-/// budget it beat the walk-and-climb it replaced by 31% on a whole rifle pool
-/// and 4.5x on a pool with arcanes and evolutions (docs/OPTIMIZER.md).
-const EXHAUST_UP_TO: u128 = 20_000;
-
-/// Walk the whole space (`true`) or descend. The request may name one; a
-/// scope that fits is walked, because a proven answer costs nothing extra.
-fn walks_whole(
-    strategy: Option<&str>,
-    space: &wfsim_optimizer::space::SubsetSpace,
-    arcanes: usize,
-    variants: usize,
-) -> bool {
-    match strategy {
-        Some("exhaust") => true,
-        Some("descent") => false,
-        _ => space.len().saturating_mul((arcanes.max(1) * variants.max(1)) as u128) <= EXHAUST_UP_TO,
-    }
+/// EVERY SCOPE IS DESCENDED, whatever its size: one search on every scope
+/// means the answer always depends on the same thing — the starts — and a
+/// small scope is not answered by a different rule than a big one. Walking
+/// the whole space is a tool's request (`"strategy": "exhaust"`), never the
+/// page's.
+fn walks_whole(strategy: Option<&str>) -> bool {
+    strategy == Some("exhaust")
 }
 
 /// The descent's starts. Each is a list of mod ids, or an object that also
@@ -1297,7 +1281,7 @@ pub fn grade_optimize(
         swap_width,
         ..Default::default()
     };
-    let (screened, sstats) = if !walks_whole(strategy.as_deref(), &space, arcanes.len(), variants.len()) {
+    let (screened, sstats) = if !walks_whole(strategy.as_deref()) {
         wfsim_optimizer::descent::descent(
             &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, None, None,
         )
@@ -1831,7 +1815,7 @@ pub fn run_optimize_resumable(
             ..Default::default()
         };
         let board = board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>);
-        let (screened, stats) = if !walks_whole(strategy.as_deref(), &space, arcanes.len(), variants.len()) {
+        let (screened, stats) = if !walks_whole(strategy.as_deref()) {
             wfsim_optimizer::descent::descent(
                 &space, &pool, &starts, &expand, &arcanes, &scenario, &cfg, Some(state), board,
             )

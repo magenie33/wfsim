@@ -580,12 +580,12 @@ the enemy's own YAML (`image:`, wiki-hosted), NOT in `data/assets.yaml`.
 
 ## `check_search`
 
-A real optimize in the shipping build: a scope it finished
-reports `exhaustive` and says so on screen, a budgeted walk reports its
-COVERAGE and does not pretend, the WORKER FLEET covers more ground than one
-worker would, and a scope too big to walk is DESCENDED — from the player's
-start, which keeps its locked card in every row, and the page says it
-descended.
+A real optimize in the shipping build: even a tiny scope is DESCENDED and
+the page says so; a big one descends from the player's start and keeps its
+locked card in every row; an asked-for walk (`strategy: 'exhaust'`) that
+finishes reports `exhaustive`, one the budget cuts reports its COVERAGE and
+does not pretend, and the WORKER FLEET covers more ground than one worker
+would.
 
 ## `check_gain_band`
 

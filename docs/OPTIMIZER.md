@@ -433,8 +433,8 @@ Lv 1000 SP, 60 s, `truth_runs=200`:
 |---|---|
 | scope | 1,822 jobs, exhaustive |
 | reference | 364,400 sims; answer set **1 build**; settled; top-10 overlap 1.00 |
-| search | walked whole (under `EXHAUST_UP_TO`); rank **1**, regret 0.000%, within noise, top-10 recall 100% |
-| cost | 6,063 sims — **1.7%** of the reference |
+| search | descent from 4 starts; rank **1**, regret 0.000%, within noise, top-10 recall 100% |
+| cost | 1,821 sims — **0.5%** of the reference |
 
 The reference's own #1 is Viral+Heat (`cryo_rounds, malignant_force, hellfire`
 + the four damage mods), which is what the weapon's innate Cold makes reachable
@@ -487,8 +487,7 @@ Measured on Verglas Prime's rifle pool, min 1 / max 8 slots:
 It is superexponential, and evaluating one candidate costs a full engagement:
 ~200 sims/s per native thread, and the browser is single-threaded. So a search
 in the browser can afford on the order of **10⁴ evaluations** against a space of
-**10⁹** — which is why a scope past `EXHAUST_UP_TO` is descended (§"The
-search") rather than walked.
+**10⁹** — which is why the page's search is a descent (§"The search").
 
 A walk that IS cut short must leave a sample, not a corner. A depth-first walk
 over pool indices leaves a lexicographic prefix: measured on a 22-mod pool, the
@@ -686,24 +685,22 @@ the scope reported itself impossible ("more required (0) than slots (8)") and
 Run stayed disabled until some control was touched. `check_build_size` could
 not see it, because its first act was to type a floor.
 
-## The search — walk what fits, descend what does not
+## The search — every scope is descended
 
 Candidate GENERATION and candidate RANKING are different problems. The funnel
 ranks: it culls 22,316 jobs to 10 for 1.5% of the flat cost and loses nothing
-(§Accuracy). Generation is one of two searches, and the server picks
-(`walks_whole` in `webapi/src/optimize.rs`):
+(§Accuracy). Generation is the **DESCENT** (`optimizer/src/descent.rs`) on
+every scope, whatever its size: one search everywhere, so the answer always
+depends on one thing — the starts — and a small scope is not answered by a
+different rule than a big one. Its answer is the best its starts reach, and it
+never reports itself exhaustive.
 
-- **The WALK** (`optimizer/src/search.rs`) when the scope's estimated cost —
-  subsets × arcane sets × variants — is at most `EXHAUST_UP_TO` (20,000, about
-  two minutes of one browser worker). It visits every subset, so its answer
-  is PROVEN: the optimum of everything pooled.
-- **The DESCENT** (`optimizer/src/descent.rs`) above it. Its answer is the best
-  its starts reach, and it never reports itself exhaustive.
-
-`"strategy": "exhaust" | "descent"` overrides the choice; graders and tools
-name one, the page sends neither. The result says which ran: `strategy` is
-`walk` or `descent`, a walk carries `exhaustive` and `coverage`, a descent
-carries `starts` and `cut` (the clock stopped it before every start settled).
+**The WALK** (`optimizer/src/search.rs`) visits every subset and so answers
+with the proven optimum; it runs only when a tool asks
+(`"strategy": "exhaust"`, `walks_whole` in `webapi/src/optimize.rs`) — the
+page never does. The result says which ran: `strategy` is `walk` or
+`descent`, a walk carries `exhaustive` and `coverage`, a descent carries
+`starts` and `cut` (the clock stopped it before every start settled).
 
 **Inside a subset, everything stays exhaustive** under both: element orders,
 exilus options, evolution sets. A couple of dozen cheap combinations each —
