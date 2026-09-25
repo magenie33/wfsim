@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
-"""Fill in `data/assets.yaml` from the COMMITTED WFCD export.
+"""Fill in `data/assets.yaml` from DE's Public Export (`scripts/de_export.py`).
 
-The map is id -> image filename; the images themselves live on
-`https://cdn.warframestat.us/img/<name>` and no binary enters this repo.
+The map is id -> image filename, a CACHE KEY: `scripts/fetch_images.py`
+downloads the file from DE's own server, and no binary enters this repo.
 
-This reads `vendor/warframe-items/data/json/All.json`, which travels WITH the
-repo, joined by `internal_name` == `uniqueName` — the same join rule the rest
-of `data/` uses, and never by display name (WFCD has stale duplicates sharing
-one). The previous generator lived in `private/` and fetched a live API, so it
-could not be run by anyone else and its output could not be reproduced.
+A new entry is named after DE's texture file, joined by `internal_name` ==
+`uniqueName` — the same join rule the rest of `data/` uses, and never by
+display name. Two DIFFERENT textures sharing a file name (a rifle and a pistol
+card are both `CritChanceWhileAiming.jpg`) are told apart by their folder.
 
 It only ADDS what is missing. Entries already present are left exactly as they
 are, because several are deliberate overrides with comments explaining them —
 an Incarnon form shows its base weapon's image, not the Genesis adapter icon.
 
-AND IT REFUSES TO GUESS WRONG. WFCD's `imageName` is a SIBLING'S file for some
-weapons: it gives MK1-Furis `Furis.png` and Ocucor `CrpSentExperimentPistol.png`
-(which the CDN does not serve at all). Both are hand-set `wiki:` entries today,
-and the one run of `--write` that saw them absent replaced them with the
-export's answer — a page showing a Furis where an MK1-Furis belongs, which
+AND IT REFUSES TO GUESS WRONG. The export gives some weapons a SIBLING'S
+texture: MK1-Furis wears the Furis's, MK1-Paris the Paris's. Both are hand-set
+`wiki:` entries today, and a run of `--write` that saw them absent would write
+the export's answer — a page showing a Furis where an MK1-Furis belongs, which
 nothing downstream can notice: the file exists, the fetcher caches it, and the
 build's missing-art guard passes. So a proposed filename that another weapon
 already wears is NOT written; it is reported for a hand-set override. Two forms
@@ -29,14 +27,14 @@ of ONE weapon sharing art is the legitimate case and is exempt.
 """
 
 import io
-import json
 import re
 import sys
 from pathlib import Path
 
+import de_export
+
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "data" / "assets.yaml"
-EXPORT = ROOT / "vendor" / "warframe-items" / "data" / "json" / "All.json"
 
 # data directory -> the section of assets.yaml it belongs in
 SECTIONS = [("mods", "mods"), ("weapons", "weapons"), ("arcanes", "arcanes"),
@@ -78,10 +76,26 @@ def transform_groups():
     return out
 
 
+def texture_names(internal):
+    """File names for DE's texture of an item, shortest first: the file's own
+    name, then with one more folder in front each time — `CritChanceWhileAiming.jpg`,
+    `RifleCritChanceWhileAiming.jpg`, … Empty when the export has no texture."""
+    tex = de_export.texture(internal) if internal else None
+    if not tex:
+        return []
+    parts = tex.split("!")[0].strip("/").split("/")
+    return ["".join(parts[-k:]) for k in range(1, len(parts) + 1)]
+
+
 def main():
     write = "--write" in sys.argv
-    export = json.loads(EXPORT.read_text(encoding="utf-8"))
-    by_unique = {it["uniqueName"]: it for it in export if it.get("uniqueName")}
+    # which texture each existing file name stands for, to tell a real clash
+    # (another weapon's picture) from two textures that share a file name
+    texture_of = {}
+    for kind, _ in SECTIONS:
+        if (ROOT / "data" / kind).is_dir():
+            for mid, internal in data_entries(kind):
+                texture_of.setdefault(mid, de_export.texture(internal) if internal else None)
 
     text = ASSETS.read_text(encoding="utf-8")
     have = set(re.findall(r"^\s{2}(\S+):", text, re.M))
@@ -105,8 +119,13 @@ def main():
         for mid, internal in data_entries(kind):
             if mid in have:
                 continue
-            item = by_unique.get(internal) if internal else None
-            image = (item or {}).get("imageName")
+            # The shortest name no DIFFERENT texture already wears.
+            image = next(
+                (name for name in texture_names(internal)
+                 if not any(img == name and texture_of.get(other) != texture_of.get(mid)
+                            for other, img in taken.items())),
+                None,
+            )
             # A FORM INHERITS ITS WEAPON'S PICTURE, which is the rule the file's
             # own header states and the reason 29 Incarnon forms sat here
             # unresolved: a form is not an ITEM in the export, so it has no
@@ -142,7 +161,7 @@ def main():
         for mid, image in rows:
             print(f"  + {section:8s} {mid:26s} {image}")
     for section, mid, internal in unresolved:
-        print(f"  ! {section:8s} {mid:26s} NO imageName for {internal}")
+        print(f"  ! {section:8s} {mid:26s} NO texture in DE's export for {internal}")
     for section, mid, image, owners in collided:
         print(f"  ! {section:8s} {mid:26s} {image} is already {', '.join(owners)}'s "
               f"picture — set this one by hand")

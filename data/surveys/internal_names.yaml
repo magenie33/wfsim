@@ -41,6 +41,7 @@ resolved:
   akmagnus_prime:                /Lotus/Weapons/Tenno/Akimbo/DualMagnusPrime
   aksomati:                      /Lotus/Weapons/Tenno/Pistols/SomaSidearm/AkimboSomaPistols
   aksomati_prime:                /Lotus/Weapons/Tenno/Pistols/PrimeAksomati/PrimeAksomati
+  aksondol:                      /Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols
   akstiletto:                    /Lotus/Weapons/Tenno/Pistols/TennoUzi/TennoUzi
   akstiletto_prime:              /Lotus/Weapons/Tenno/Pistols/PrimeAkstiletto/PrimeAkstiletto
   akvasto:                       /Lotus/Weapons/Tenno/Akimbo/DualVastos
@@ -246,6 +247,7 @@ resolved:
   nagantaka_prime:               /Lotus/Weapons/Tenno/LongGuns/PrimeNagantaka/PrimeNagantakaWeapon
   nataruk:                       /Lotus/Weapons/Tenno/Bows/Omicrus/OmicrusPlayerWep
   nukor:                         /Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol
+  nunchasa:                      /Lotus/Weapons/Tenno/Bows/DuelistBow/DuelistBow
   ocucor:                        /Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol
   ogris:                         /Lotus/Weapons/ClanTech/Chemical/RocketLauncher
   onos:                          /Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon

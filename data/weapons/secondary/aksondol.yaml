@@ -24,6 +24,7 @@ exilus_polarity: madurai
 # would be a guess that reads exactly like a checked fact.
 traits: [tenno]
 introduced: "44.0"
+internal_name: /Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

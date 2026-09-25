@@ -26,6 +26,7 @@ exilus_polarity: madurai
 # would be a guess that reads exactly like a checked fact.
 traits: [tenno]
 introduced: "44.0"
+internal_name: /Lotus/Weapons/Tenno/Bows/DuelistBow/DuelistBow
 grip_type: BOW
 # A BOW IS SILENT, and the module says so on both attacks (`IsSilent`).
 noise: silent

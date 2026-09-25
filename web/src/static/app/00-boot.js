@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // WFSim build configurator — PURE CONFIG. Modules: Mods / Arcane / Evolution /
 // Element; each weapon enables only the ones it has. Data from /api/meta;
-// official polarity icons from the wiki, art from WFCD.
+// official polarity icons from the wiki, art from DE's Public Export.
 
 const $ = (id) => document.getElementById(id);
 /// A PAGE INSIDE A PAGE: the weapon's wielder block frames the Warframe and

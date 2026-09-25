@@ -58,7 +58,7 @@ pub(crate) struct Assets {
 }
 
 // ---- Image asset map (data/assets.yaml, embedded by the engine) --------
-// id -> WFCD imageName; the frontend builds https://cdn.warframestat.us/img/<name>.
+// id -> image file name, served same-origin from /img/ (scripts/fetch_images.py).
 pub(crate) fn assets() -> &'static Assets {
     use std::sync::OnceLock;
     static A: OnceLock<Assets> = OnceLock::new();
@@ -428,12 +428,10 @@ pub(crate) fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
 
 /// TWO WEAPONS MUST NOT WEAR ONE PICTURE.
 ///
-/// `data/assets.yaml` is filled from WFCD's `imageName`, and for some weapons
-/// that field is a SIBLING'S file: the export gives MK1-Furis `Furis.png` and
-/// Ocucor `CrpSentExperimentPistol.png` (which the CDN does not serve at all).
-/// Both are hand-overridden to `wiki:` entries, and both were silently
-/// re-derived — wrongly — the one time `scripts/gen_assets.py --write` ran with
-/// them absent. Nothing downstream notices: the file exists, the fetcher caches
+/// DE's export gives some weapons a SIBLING'S texture: MK1-Furis wears the
+/// Furis's. Those are hand-overridden to `wiki:` entries, and a
+/// `scripts/gen_assets.py --write` that saw one absent would re-derive it
+/// wrongly. Nothing downstream notices: the file exists, the fetcher caches
 /// it, the build's missing-art guard passes, and the page shows a Furis where
 /// an MK1-Furis should be.
 ///
@@ -478,8 +476,36 @@ mod one_picture_one_weapon {
             assert!(
                 subjects.len() <= 1,
                 "`{image}` is worn by {ids:?}, which are different weapons — one of \
-                 them has a sibling's picture. WFCD's `imageName` is wrong for these; \
-                 set the right file by hand (a `wiki:` prefix if the CDN lacks it)."
+                 them has a sibling's picture; set the right file by hand (a `wiki:` \
+                 prefix if DE's export lacks it)."
+            );
+        }
+    }
+
+    /// …AND TWO MODS ONLY WHEN THEY ARE ONE FAMILY. A Primed mod wears its
+    /// base card's art, which is DE's own texture for both. A rifle mod and its
+    /// pistol twin are two textures under one file name, and seven pairs shared
+    /// one file that way, so one card of each showed the other's art.
+    #[test]
+    fn no_two_mod_families_share_an_image() {
+        let mut family: std::collections::HashMap<&str, &str> = Default::default();
+        for class in wfsim_engine::data::mods::classes() {
+            for m in wfsim_engine::data::mods::load_class(class) {
+                family.insert(m.id, m.family.unwrap_or(m.id));
+            }
+        }
+        let mut by_image: std::collections::HashMap<&str, Vec<&str>> = Default::default();
+        for (id, image) in &assets().mods {
+            by_image.entry(image.as_str()).or_default().push(id.as_str());
+        }
+        for (image, mut ids) in by_image {
+            ids.sort_unstable();
+            let families: std::collections::BTreeSet<&str> =
+                ids.iter().map(|i| family.get(i).copied().unwrap_or(*i)).collect();
+            assert!(
+                families.len() <= 1,
+                "`{image}` is worn by {ids:?}, which are different mods — give each \
+                 its own file (scripts/gen_assets.py names it after DE's texture)."
             );
         }
     }

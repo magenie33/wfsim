@@ -5,10 +5,12 @@ data/assets.yaml into web/cache/img/ (gitignored).
 NOT optional any more. Both deployments serve art SAME-ORIGIN — the native
 server from this cache, the static build from site/img/, which
 `scripts/build_site_app.py` copies out of it and refuses to build without.
-A static build that hotlinks the CDN instead goes through a redirector: it 301s to
-raw.githubusercontent.com: unreliable to blocked from mainland China, where
-the players are. (The art is DE's and this repo makes no grant in it — see
-LICENSE-DATA.md §4.)
+(The art is DE's and this repo makes no grant in it — see LICENSE-DATA.md §4.)
+
+WHERE A FILE COMES FROM. A name in data/assets.yaml is OUR cache key; the file
+is DE's own texture, found through the id's `internal_name` in DE's Public
+Export (`scripts/de_export.py`). A `wiki:` name, and the art declared in a data
+file, come from the wiki.
 
 Usage: python scripts/fetch_images.py
 """
@@ -16,16 +18,56 @@ import os
 import re
 import subprocess
 
+import de_export
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "web", "cache", "img")
-CDN = "https://cdn.warframestat.us/img/"
 UA = "wfsim/0.1 (https://github.com/magenie33/wfsim; magenie33@gmail.com)"
 
 
-def image_names():
-    """(cdn_names, wiki_names) from data/assets.yaml.
+def internal_names():
+    """id -> internal_name, for every data file that states one."""
+    out = {}
+    for root, _dirs, files in os.walk(os.path.join(ROOT, "data")):
+        for fn in files:
+            if not fn.endswith(".yaml"):
+                continue
+            with open(os.path.join(root, fn), encoding="utf-8") as fh:
+                text = fh.read()
+            mid = re.search(r"^id:\s*(\S+)", text, re.M)
+            iname = re.search(r"^internal_name:\s*(\S+)", text, re.M)
+            if mid and iname:
+                out.setdefault(mid.group(1), iname.group(1))
+    return out
 
-    A `wiki:` prefix says the CDN does not carry that file (the wiki does).
+
+# Art whose id has no data file: the riven card the builder draws for any riven.
+UNIQUE_NAMES = {"riven": "/Lotus/Upgrades/Mods/Randomized/LotusRifleRandomModRare"}
+
+
+def export_urls():
+    """cache name -> DE's texture URL, through each id's `internal_name`.
+
+    A FORM shares its weapon's name and has no `internal_name` of its own, so
+    the name is resolved by whichever id wearing it is an item.
+    """
+    inames = {**internal_names(), **UNIQUE_NAMES}
+    urls = {}
+    with open(os.path.join(ROOT, "data", "assets.yaml"), encoding="utf-8") as fh:
+        for line in fh:
+            m = re.match(r"^\s+(\S+):\s*\"?([A-Za-z0-9_.-]+\.(?:png|jpg|jpeg))\"?\s*$", line)
+            if not m or m.group(2) in urls:
+                continue
+            url = de_export.image_url(inames.get(m.group(1), ""))
+            if url:
+                urls[m.group(2)] = url
+    return urls
+
+
+def image_names():
+    """(export_names, wiki_names) from data/assets.yaml.
+
+    A `wiki:` prefix says DE's export does not carry that file (the wiki does).
     It is quoted in the yaml, which the old end-of-line regex could not match
     at all — so those entries were silently never cached, and the page fell
     back to hotlinking the wiki. With art served same-origin that is no longer
@@ -41,12 +83,11 @@ def image_names():
 
 
 def wiki_icon_names():
-    """Art declared in a data file rather than in assets.yaml, because the
-    WFCD CDN does not carry it — the wiki does (Special:FilePath):
+    """Art declared in a data file rather than in assets.yaml, because DE's
+    export does not carry it — the wiki does (Special:FilePath):
 
     - evolution icons: `icon:` in data/evolutions/*.yaml
-    - enemy portraits: `image:` in data/enemies/**.yaml (WFCD's export has no
-      Thrax entry at all, and api.warframestat.us 404s the name)
+    - enemy portraits: `image:` in data/enemies/**.yaml (enemies are not items)
     - Warframe ability icons: `icon:` in data/warframe_abilities/*.yaml
     """
     names = set()
@@ -88,10 +129,11 @@ def is_image(path):
 
 def main():
     os.makedirs(CACHE, exist_ok=True)
-    # (name, base url) pairs: CDN art + wiki-hosted evolution icons.
-    cdn_names, wiki_names = image_names()
+    # (name, url) pairs: DE's textures + wiki-hosted art.
+    export_names, wiki_names = image_names()
     wiki_names = sorted(set(wiki_names) | set(wiki_icon_names()))
-    jobs = [(n, CDN + n) for n in cdn_names] + [
+    urls = export_urls()
+    jobs = [(n, urls.get(n)) for n in export_names] + [
         (n, "https://wiki.warframe.com/w/Special:FilePath/" + n) for n in wiki_names
     ]
     have = fetched = 0
@@ -107,6 +149,10 @@ def main():
                 continue
             os.remove(dst)          # HTML error page, truncated file, …
             print(f"  BAD  {n} — cached file was not an image, refetching")
+        if url is None:
+            bad.append(n)
+            print(f"  MISS {n} — no id wearing it resolves to a texture in DE's export")
+            continue
         subprocess.run(["curl", "-sL", "--max-time", "25", "-A", UA, url, "-o", dst],
                        capture_output=True)
         if is_image(dst):

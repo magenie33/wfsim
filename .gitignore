@@ -11,7 +11,7 @@ __pycache__/
 *.pyc
 
 # Cached weapon/mod/arcane art (runtime cache, pre-warmed by fetch_images.py;
-# DE art is never committed — served via the /img proxy with WFCD fallback).
+# DE art is never committed here — the dev server serves it from this cache).
 web/cache/
 
 # Private, never committed

@@ -657,12 +657,11 @@ def ship_art() -> None:
     """Derive `site/img/` from the art cache, so the static deployment serves
     game art from ITS OWN ORIGIN.
 
-    Loading straight from the CDN goes through a redirector:
-    `cdn.warframestat.us/img/X.png` answers 301 to raw.githubusercontent.com.
-    GitHub is unreliable-to-blocked from mainland China, which is where the
-    players are — so the app's own images would be the slowest, least reliable
-    thing on the page for its actual audience. Same-origin removes the
-    question entirely: if wfsim.app loads, its art loads.
+    A third-party image host is unreliable-to-blocked from mainland China,
+    which is where the players are — so the app's own images would be the
+    slowest, least reliable thing on the page for its actual audience.
+    Same-origin removes the question entirely: if wfsim.app loads, its art
+    loads.
 
     The art is Digital Extremes' and this repository makes no grant in it —
     `LICENSE-DATA.md` §4. No Warframe or Digital Extremes logo is used, so the

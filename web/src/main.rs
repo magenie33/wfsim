@@ -159,7 +159,7 @@ fn respond_asset(stream: &mut TcpStream, content_type: &str, body: &[u8]) -> std
     stream.flush()
 }
 
-/// 302 redirect (used as the /img CDN fallback when the local cache misses).
+/// 302 redirect (used as the /img wiki fallback when the local cache misses).
 fn respond_redirect(stream: &mut TcpStream, location: &str) -> std::io::Result<()> {
     let header = format!(
         "HTTP/1.1 302 Found\r\nLocation: {location}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
@@ -229,9 +229,10 @@ fn board_response(stream: &mut TcpStream, path: &str) -> std::io::Result<()> {
 
 /// Weapon/mod/arcane art: served from a local on-disk cache (web/cache/img/,
 /// gitignored, pre-warmed by scripts/fetch_images.py) so it loads locally and
-/// works offline. On a cache miss, 302-redirect to the WFCD CDN — so it always
-/// works, and DE art never has to be committed to the repo. `name` is a bare
-/// filename (traversal-guarded).
+/// works offline, and DE art never has to be committed to the repo. A miss is
+/// a 404: the name is our cache key, not a path any CDN knows, so the fix is
+/// `python scripts/fetch_images.py`. `name` is a bare filename
+/// (traversal-guarded).
 fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
     // Parentheses admit the wiki's evolution-icon names ("…(xWhite).png").
     let safe = !name.is_empty()
@@ -254,14 +255,14 @@ fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
         }
     }
     // Cache miss: wiki-hosted art (evolution icons) redirects to the wiki
-    // file path; everything else to the WFCD CDN.
+    // file path, whose names are the wiki's own.
     if name.contains('(') {
         return respond_redirect(
             stream,
             &format!("https://wiki.warframe.com/w/Special:FilePath/{name}"),
         );
     }
-    respond_redirect(stream, &format!("https://cdn.warframestat.us/img/{name}"))
+    respond(stream, "404 Not Found", "text/plain; charset=utf-8", b"not cached: run scripts/fetch_images.py")
 }
 
 /// THE METHOD A PURE ENDPOINT ANSWERS, which `api()` in app.js matches: these
