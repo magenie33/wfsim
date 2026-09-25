@@ -351,11 +351,9 @@ const AGENT_EXEMPT = [
   { sel: "#opt-runs", kind: "pref", why: "final-round runs, a preference of this browser" },
   { sel: "#board-no", kind: "pref", why: "whether this browser sends results to the board" },
   { sel: "#w-name a", kind: "outward", why: "links to the wiki and the market" },
-  { sel: ".opt .mn a", kind: "outward", why: "links to the wiki and the market" },
   { sel: "#qq-copy-foot", kind: "outward", why: "copies the community group number" },
   { sel: ".pop.ren", kind: "reader", why: "renaming a build is the reader's" },
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
-  { sel: "#opt-fight-half", kind: "view", why: "the simulator's fight, shown read-only beside the search" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
 ];

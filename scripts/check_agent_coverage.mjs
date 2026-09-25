@@ -85,6 +85,12 @@ for (const w of WEAPONS) {
     // AN EDITOR'S CONTROLS EXIST ONLY WITH SOMETHING OPEN IN IT, so each gets
     // a document before the scan: a list with nothing open hides the editor.
     if (m === "rivens") await evaluate(`window.wfsim.do("rivens.card.new", {})`, { awaitPromise: true });
+    // A search is born on its first edit, and only then does its bar carry
+    // rename and delete.
+    if (m === "optimizer") {
+      await evaluate(`(() => { opt.starts = opt.starts.slice(1); renderOptStarts(); updateOptEstimate(); })()`);
+      await new Promise((r) => setTimeout(r, 900));
+    }
     if (m === "enemies") await evaluate(`(() => { const b = document.querySelector("#enemy-tools .cu-new"); if (b) b.click(); })()`);
     // EVERY FOLD OPEN: a control inside a shut block is still one a reader can
     // reach, and a block that ships shut would otherwise hide its whole feature.
