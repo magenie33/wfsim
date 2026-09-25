@@ -128,8 +128,9 @@ function cardOfState(st, w, fixed) {
   const arcs = st.arcane || [];
   const ranks = st.arcaneRank || [];
   return buildCardHtml({
-    // A START (the call that passes pins) may name no mode: the search chooses it.
-    mode: st.mode || !fixed ? modeLabel(w, st.mode || mode) : tr("chosen by the search"),
+    // A START (the call that passes pins) that names no mode shows the one the
+    // builder opens this weapon in; the simulator's build shows the builder's.
+    mode: modeLabel(w, st.mode || (fixed ? defaultMode(w.id, null) : mode)),
     mods: (st.slots || []).map((s, i) => {
       const m = s && s.mod && modById(s.mod);
       return m ? { img: IMG(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank,
