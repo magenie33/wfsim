@@ -167,6 +167,10 @@ body.on-wbench [data-module="builder"]{display:none}
 .sb-apl code{font-size:12px;color:var(--text);background:var(--panel2);border-radius:4px;padding:0 4px}
 .wld-nest,.wld-op{border-left:2px solid var(--line);padding-left:10px}
 .wld-op{margin-top:8px}
+.sf-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:3px 0}
+.sf-name{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:12px}
+.sf-lead{width:56px}
+.sf-add{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .wld-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
 .hero-tested{color:var(--muted);font-size:11px;margin-top:4px}
 /* Sim results: the WoW-style damage-by-source meter */
