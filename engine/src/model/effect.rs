@@ -194,6 +194,17 @@ pub enum ModEffect {
     /// two resolve against the form; the third is an equip rule, because a
     /// magazine mod can neither buy it nor lose it.
     LastRoundDamage(f64),
+    /// CRITICAL MUTATION, the Catabolyst family's augment — DE's card: *"Each
+    /// kill increases Critical Chance and Critical Damage by 30% up to 300%.
+    /// Reduce by 30% when fewer than 3 enemies are struck by the grenade
+    /// explosion."* Relative, in the buckets Pistol Gambit and Target Cracker are
+    /// in, and paid on the RELOAD GRENADE only: DE's patch notes name it the mod
+    /// "which applied buffs to its grenade" (U35). `(per kill, cap)`.
+    GrenadeCritPerKill(f64, f64),
+    /// …and the card's SECOND COLUMN, what a throw that strikes fewer than three
+    /// enemies takes back. Its own entry because the wiki's rank table gives it
+    /// its own column ("Crit Chance / Damage Reduction").
+    GrenadeCritLossPerThrow(f64),
     /// **A BONUS COMPUTED FROM THE PLAYER**, per unit of one of their stats,
     /// capped — the Basmu's Dreadful Killshot: *"increases Damage and Status
     /// Chance for every 75 Current Warframe Health, up to 360% at all ranks"*.

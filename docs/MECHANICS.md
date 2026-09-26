@@ -1475,6 +1475,48 @@ each of them a rule of its own and a CO class is a property of the WEAPON here,
 so they take none at all rather than take it under a class the catalog denies
 them — recorded per entry as `cluster_bomblet_co` (docs/CATALOGS.md §1).
 
+### Reload grenades — the magazine, thrown (§7.2)
+
+The Catabolyst family throws its magazine when it reloads, and a reload from
+empty throws the big one. Declared as `reload_grenade:` in the attack
+(`data::weapons::ReloadGrenadeSpec`), resolved through the same buckets as the
+beam (`ResolvedReloadGrenade`), and landed by `fight::grenades`.
+
+| entry | grenades | contact | explosion |
+| --- | --- | --- | --- |
+| Catabolyst | 1 | 11 Impact, 31% crit, 59% status | 1,997 Corrosive, 7 m, 100% to 50% |
+| Coda Catabolyst | 3, a 45° fan | 11 Impact, 31% crit, 59% status | 658 Corrosive, 5 m, 100% to 50% |
+
+1. **ONLY THE FROM-EMPTY THROW.** The loop reloads when it cannot fire, so every
+   reload it performs is from empty; the weaker partial-reload grenade is never
+   thrown and is not in the data. The same fact is why the innate **-20% reload
+   speed** (`reload_from_empty_speed`, *"additive with Quickdraw"*) joins the
+   mods' bucket outright: 1.7 s becomes 2.125 s on every reload.
+2. **IT LANDS WHEN THE RELOAD STARTS.** The page says it is thrown mid-reload and
+   has travel time and states neither, so the earliest instant is the one that
+   invents no delay. It is queued on the magazine (`Ammo::grenade_thrown_at`)
+   and settled before the next shot — or at the end, if the clock runs out
+   inside the reload.
+3. **WHERE IT LANDS IS GEOMETRY.** Each grenade flies the reticle's distance;
+   the Coda's three are fanned 45° edge to edge, so the outer two land a chord
+   away from the aimed body and reach it only where their blast does. The blast
+   falls off from where it landed, takes no headshot, and ignores Fulmination.
+   The contact hits a body only if the grenade came down on it.
+4. **MULTISHOT DOES NOT RAISE THE COUNT** — *"Multishot does not affect the
+   reload grenade"* is on the page's Bugs list, which is to say it is the game.
+5. **SYNTH CHARGE REACHES IT** (*"Synth Charge increases the grenade damage"*)
+   though the beam, being continuous, takes none of the card: the throw
+   follows the magazine's last round.
+
+**CRITICAL MUTATION** pays the grenade and nothing else — DE's U35 notes call it
+the augment *"which applied buffs to its grenade"*. Each kill adds +30% crit
+chance and crit damage, relative and in the crit mods' buckets, capped at 300%;
+each THROW whose explosions strike fewer than three enemies takes 30% back. The
+pile is settled at the throw from the run's kill counter, the same delta every
+on-kill pile reads, and it is per throw rather than per grenade because the card
+speaks of "the grenade explosion" as one event. A lone target therefore pays for
+every throw, and the pile is worth most in a crowd — which is the card's design.
+
 ### Continuous (beam) weapons
 
 Trigger "Held". Two rules differ from a gun, both from wiki Continuous_Weapon

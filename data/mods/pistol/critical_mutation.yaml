@@ -1,0 +1,36 @@
+id: critical_mutation
+name: Critical Mutation
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Pistol/Event/Nightwave/NightwaveCatabolystAugmentMod
+description: "Each kill increases Critical Chance and Critical Damage by X% up to 300%. Reduce by X% when fewer than 3 enemies are struck by the grenade explosion."
+
+exclusive_to: [catabolyst, coda_catabolyst]
+
+effects:
+  # TWO ENTRIES FOR THE CARD'S TWO COLUMNS — the wiki's rank table heads them
+  # "Crit Chance / Damage Increase" and "Crit Chance / Damage Reduction", both
+  # 5% to 30%. Settled at each throw (`fight::grenades`).
+  #
+  # THE RELOAD GRENADE ONLY. DE's patch notes call it the augment "which applied
+  # buffs to its grenade" (U35), and the wiki's tip is about reaching "its
+  # maximum strength grenade sooner"; the beam takes none of it.
+  #
+  # RELATIVE, in the crit mods' buckets: "Critical Chance bonus is additive with
+  # mods such as Pistol Gambit", "Critical Damage bonus is additive with mods
+  # such as Target Cracker". The 300% cap holds at every rank; U38.5.3 fixed it
+  # capping at 270% on the Coda.
+  - kind: grenade_crit_per_kill
+    rank0: 0.05
+    rankMax: 0.30
+    cap: 3.0
+  # PER THROW, not per grenade: the card speaks of "the grenade explosion" as one
+  # event, and the Coda's three grenades are one reload.
+  - kind: grenade_crit_loss_per_throw
+    rank0: 0.05
+    rankMax: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Critical_Mutation

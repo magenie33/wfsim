@@ -1050,6 +1050,7 @@ impl FightParams {
             damage: panel.damage,
             radial: compressed_radial,
             cluster: panel.cluster,
+            reload_grenade: panel.reload_grenade,
             falloff: panel.falloff,
             spread: panel.spread,
             // Straight off the ARENA, like `abilities` and `duration_seconds`.

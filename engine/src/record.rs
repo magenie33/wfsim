@@ -118,6 +118,9 @@ pub enum Origin {
     Influence,
     /// An arcane's or a syndicate's own instance.
     Arcane,
+    /// A RELOAD GRENADE's contact hit or explosion — the Catabolyst family's
+    /// thrown magazine (`fight::grenades`).
+    ReloadGrenade,
 }
 
 impl Origin {
@@ -137,6 +140,7 @@ impl Origin {
             Origin::ExtraHit => "extra_hit",
             Origin::Influence => "influence",
             Origin::Arcane => "arcane",
+            Origin::ReloadGrenade => "reload_grenade",
         }
     }
 }

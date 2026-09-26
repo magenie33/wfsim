@@ -28,6 +28,7 @@ mod pellet_volley;
 mod perks_and_cards;
 mod pools_columns_record;
 mod radials_roster_targets;
+mod reload_grenade;
 mod replay_debilitate_misc;
 mod replay_reads_every_buff;
 mod sniper_combo_fight;
@@ -67,6 +68,7 @@ impl Default for FightParams {
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
             cluster: None,
+            reload_grenade: None,
             // POINT BLANK, and no falloff to notice it with — every golden
             // value in this file was measured with the two of them standing on
             // the same spot, so the fixture keeps them there.

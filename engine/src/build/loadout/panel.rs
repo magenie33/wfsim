@@ -180,6 +180,24 @@ pub struct ResolvedCluster {
     pub blast: ResolvedRadial,
 }
 
+/// THE GRENADES A RELOAD FROM EMPTY THROWS, through the mod buckets — see
+/// [`crate::model::ReloadGrenadeBase`].
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedReloadGrenade {
+    pub count: u32,
+    pub fan_deg: f64,
+    pub contact: ResolvedRadial,
+    pub blast: ResolvedRadial,
+    /// SYNTH CHARGE'S FACTOR on the throw, 1.0 without it. The beam cannot
+    /// take the card ("no effect on Continuous Weapons"); the grenade does —
+    /// "Synth Charge increases the grenade damage" (wiki `Catabolyst`), and the
+    /// throw follows the magazine's last round.
+    pub last_round_factor: f64,
+    /// CRITICAL MUTATION, `(per kill, cap, lost per small throw)` — see
+    /// [`crate::model::ModEffect::GrenadeCritPerKill`].
+    pub crit_per_kill: Option<(f64, f64, f64)>,
+}
+
 impl ResolvedRadial {
     /// The share the CO term reads, for a reader — the damage path takes the
     /// pair in [`Self::co_base`] instead.
@@ -257,6 +275,8 @@ pub struct ResolvedPanel {
     pub radial: Option<ResolvedRadial>,
     /// The resolved bomblets, when the weapon's explosion throws any.
     pub cluster: Option<ResolvedCluster>,
+    /// The resolved reload grenades, when a reload from empty throws any.
+    pub reload_grenade: Option<ResolvedReloadGrenade>,
     /// THE CONE, accuracy mods applied. A zero-width one lands on the reticle;
     /// `None` = this entry's spread is not transcribed, so no shot of it is
     /// allowed to miss and the entry admits that.

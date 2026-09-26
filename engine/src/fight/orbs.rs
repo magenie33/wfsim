@@ -320,7 +320,7 @@ pub(super) fn orb_strike(
     field_tick(
         w,
         orb.owner,
-        &part, mult, at, ctx, here, gal, arc, params, active, r, rec, d,
+        &part, mult, at, ctx, here, b, gal, arc, params, active, r, rec, d,
         spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
     )
 }
@@ -362,7 +362,7 @@ pub(super) fn orb_detonation(
             field_tick(
                 w,
                 orb.owner,
-                &part, mult, at, ctx, here, gal, arc, params, active, r, rec, d,
+                &part, mult, at, ctx, here, b, gal, arc, params, active, r, rec, d,
                 spec.params, crate::record::Origin::Orb, None, true,
             );
         }

@@ -181,6 +181,7 @@ pub(super) fn process_field_ticks(
             at,
             ctx,
             &mut bodies[0],
+            0,
             gal,
             arc,
             params,
@@ -217,6 +218,7 @@ pub(super) fn process_field_ticks(
                 at,
                 ctx,
                 foe,
+                b,
                 gal,
                 arc,
                 params,
@@ -279,6 +281,10 @@ pub(super) fn field_tick(
     // THE BODY THIS LANDS ON. Its pools and the statuses on them are
     // one thing, so they arrive as one.
     body: &mut Body,
+    // …AND ITS NUMBER in the fight's numbering, which is who the ledger books it
+    // to. A number and the body it names arrive together or a splash on a
+    // neighbour is booked to the aimed one.
+    body_index: usize,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     params: &FightParams,
@@ -428,7 +434,7 @@ pub(super) fn field_tick(
         add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     }
     ledger::settle(
-        r, rec, at, owner, 0, DamageType::Cinematic,
+        r, rec, at, owner, body_index, DamageType::Cinematic,
         // THE NUMBER'S OWN SHAPE ON SCREEN: a blast draws as a blast.
         if is_blast { PopKind::BlastArea } else { PopKind::Field },
         &breakdown, settled,

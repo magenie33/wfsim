@@ -454,15 +454,36 @@ fn mod_sources(
                 // on its own multiplier — folding it into base damage would
                 // both overstate every shot and put it in the wrong bracket.
                 LastRoundDamage(x) => {
+                    let throws = forms_list.iter().any(|(_, _, b)| b.reload_grenade.is_some());
                     conditionals.push(json!({
                         "mod": name,
                         "desc": e.describe(),
                         "active": x > 0.0,
-                        "why": if x > 0.0 {
+                        "why": if throws {
+                            "the RELOAD GRENADE, which follows the magazine's last round: \"Synth Charge increases the grenade damage\" (wiki), though the beam itself takes none of it".to_string()
+                        } else if x > 0.0 {
                             "the magazine's LAST round only, and multiplicative with Hornet Strike rather than additive with it".to_string()
                         } else {
                             "nothing here: the mod has no effect on a continuous weapon or on an Incarnon fire mode, whatever its magazine".to_string()
                         },
+                    }));
+                }
+                // CRITICAL MUTATION is a pile earned in the fight and paid on the
+                // grenade only, so no bucket line can hold it.
+                GrenadeCritPerKill(..) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": "earned by kills during the fight and spent on the reload grenade only — the simulator counts it, this panel cannot".to_string(),
+                    }));
+                }
+                GrenadeCritLossPerThrow(_) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": "charged once per throw, so against a lone target every reload pays it and the pile is worth most in a crowd".to_string(),
                     }));
                 }
                 // THE CHAMBER FAMILY, the same shape from the other end of the
@@ -1750,6 +1771,48 @@ fn form_section(
             "stats": part_rows(&cb.blast, &cr.blast),
             "damage": vector_rows(&cr.blast.damage),
             "damage_total": num(cr.blast.damage.total()),
+        }));
+    }
+
+    // THE RELOAD GRENADES — two more parts, on the card for the same reason the
+    // bomblets are: the fight counts them, so a reader must be able to see
+    // them. The meta line says how many a throw is and when it happens.
+    if let (Some(gb), Some(gr)) = (base.reload_grenade.as_ref(), panel.reload_grenade.as_ref()) {
+        let part_rows = |b: &wfsim_engine::model::RadialBase,
+                         r: &wfsim_engine::build::loadout::ResolvedRadial| {
+            vec![
+                json!({ "key": "base_damage", "label": "Base Damage",
+                    "base": num(b.base_vector.total()), "final": num(r.modified_base),
+                    "sources": sources("base_damage", None) }),
+                json!({ "key": "crit_chance", "label": "Crit Chance",
+                    "base": pc(b.base_crit_chance), "final": pc(r.crit_chance),
+                    "sources": sources("crit_chance", None) }),
+                json!({ "key": "crit_damage", "label": "Crit Damage",
+                    "base": format!("×{}", num(b.base_crit_damage)),
+                    "final": format!("×{}", num(r.crit_damage)),
+                    "sources": sources("crit_damage", None) }),
+                json!({ "key": "status_chance", "label": "Status Chance",
+                    "base": pc(b.base_status_chance), "final": pc(r.status_chance),
+                    "sources": sources("status_chance", None) }),
+            ]
+        };
+        let n = gr.count;
+        let fan = if gr.fan_deg > 0.0 { format!(", {}° fan", display_number(gr.fan_deg)) } else { String::new() };
+        parts.push(json!({
+            "id": "reload_grenade_contact",
+            "label": "Reload grenade",
+            "meta": format!("×{n} on a reload from empty{fan}"),
+            "stats": part_rows(&gb.contact, &gr.contact),
+            "damage": vector_rows(&gr.contact.damage),
+            "damage_total": num(gr.contact.damage.total()),
+        }));
+        parts.push(json!({
+            "id": "reload_grenade_blast",
+            "label": "Reload grenade explosion",
+            "meta": format!("×{n}, {} m radius", display_number(gr.blast.radius_m)),
+            "stats": part_rows(&gb.blast, &gr.blast),
+            "damage": vector_rows(&gr.blast.damage),
+            "damage_total": num(gr.blast.damage.total()),
         }));
     }
 

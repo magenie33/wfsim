@@ -37,6 +37,15 @@ impl ModEffect {
                 "{} damage on the magazine's LAST round — its own multiplier, not the                  base-damage bucket (nothing on a continuous weapon or an Incarnon form)",
                 pct(v)
             ),
+            GrenadeCritPerKill(v, cap) => format!(
+                "{} critical chance and critical damage per kill, up to {}, on the reload grenade only — relative, in the buckets the crit mods are in",
+                pct(v),
+                pct(cap)
+            ),
+            GrenadeCritLossPerThrow(v) => format!(
+                "{} of that back for every throw whose explosions strike fewer than 3 enemies",
+                pct(v)
+            ),
             FirstRoundDamage(v) => format!(
                 "{} damage on the magazine's FIRST round — its own multiplier, not the base-damage bucket, and it reaches status damage",
                 pct(v)

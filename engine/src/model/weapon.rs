@@ -1137,6 +1137,11 @@ pub struct WeaponBase {
     pub radial: Option<RadialBase>,
     /// The bomblets this attack's explosion throws out — see [`ClusterBase`].
     pub cluster: Option<ClusterBase>,
+    /// The grenades a reload from empty throws — see [`ReloadGrenadeBase`].
+    pub reload_grenade: Option<ReloadGrenadeBase>,
+    /// The weapon's own reload-speed term on a reload from empty, in the mods'
+    /// bucket (`WeaponSpec::reload_from_empty_speed`).
+    pub reload_from_empty_speed: f64,
     /// THE CONE this attack fires into, as the data states it and before
     /// accuracy mods — see [`crate::model::SpreadSpec`]. `None` = not
     /// transcribed, and the entry admits it.

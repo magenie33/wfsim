@@ -3,8 +3,7 @@ name: Catabolyst
 slot: secondary
 # A BEAM WITH A BLAST ON THE END OF IT, and the weapon whose reload is the
 # point: it throws a grenade every time. ONE grenade, where the Coda throws
-# three — that is the adversary variant's real addition, and it is why the
-# unmodelled line below is worth as much here as it is there.
+# three — that is the adversary variant's real addition.
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -27,6 +26,10 @@ ammo_max: 155
 ammo_pickup: 20
 magazine: 31
 reload_seconds: 1.7
+# "Reload from empty has an innate -20% Reload Speed buff applied to it's base
+# reload time of 1.7 seconds, increasing the time it takes to reload to 2.125
+# seconds. Bonus is additive with Quickdraw and similar bonuses."
+reload_from_empty_speed: -0.2
 
 # see notes: condition_overload_catalog_names
 #
@@ -81,15 +84,44 @@ attack:
       damage_per_hop: 0.0
       origin: radius_targets
 
+  # THE RELOAD GRENADE — every reload throws the magazine, and a reload FROM
+  # EMPTY throws the big one, which is the only reload this arena performs
+  # (module attacks "Reload From Empty Impact" and "Reload From Empty
+  # Explosion").
+  # ONE grenade, where the Coda throws three.
+  #
+  # "Initial hit and explosion apply status separately", so the contact and the
+  # blast are two instances. The blast falls off "from 100% to 50% from central
+  # impact", takes no headshot, and its "Radius is not affected by Fulmination".
+  reload_grenade:
+    count: 1
+    damage: { impact: 11 }
+    crit_chance: 0.31
+    crit_multiplier: 2.9
+    status_chance: 0.59
+    radial:
+      damage: { corrosive: 1997 }
+      radius_m: 7.0
+      takes_blast_radius_mods: false
+      crit_chance: 0.31
+      crit_multiplier: 2.9
+      status_chance: 0.59
+      falloff_start_m: 0.0
+      falloff_reduction: 0.5
+
 # THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
 # 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays
 # back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
 # the 20% floor exactly.
 
 unmodeled:
-  - "THE RELOAD GRENADE, which is most of this weapon and the whole reason it is built: every reload throws one at the reticle, exploding in a 5-7 metre radius, and reloading FROM EMPTY makes it far larger — 1,997 Corrosive in 7 metres at 31% crit and 59% status, against 203 in 5 metres at 11% and 43% on a partial reload. The engine has no hook that fires an attack ON A RELOAD, so none of it is counted and the number on screen is the beam alone. The CODA variant throws THREE of them"
-  - "the reload-from-empty penalty that pays for it: an innate -20% Reload Speed, taking the 1.7 s reload to 2.125 s. Not applied, because what it buys is not either"
-  - "Critical Mutation, the Catabolyst family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+  - "the PARTIAL-reload grenade, a weaker attack thrown when the magazine is not empty: this arena reloads only when it cannot fire, so every throw it makes is the from-empty one"
+  - "WHEN the throw lands: the page says the grenade is thrown mid-reload and has travel time, and states neither, so it lands at the instant the reload starts"
+  - "the explosion's SELF-STAGGER, which costs the wielder time when the target stands inside the blast"
+  - "Condition Overload on the grenade's 11 Impact contact — the CO catalog gives it a row, and the contact is half a percent of the throw"
+  - "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage, wiki `Catabolyst` Bugs)"
+  - "interrupting the reload to throw again without reloading, the page's own exploit"
+  - "this weapon will never reload on its own and must be reloaded manually — a habit cost this arena does not charge"
 
 source:
   url: https://wiki.warframe.com/w/Catabolyst

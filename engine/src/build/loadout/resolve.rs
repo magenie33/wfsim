@@ -194,7 +194,7 @@ pub fn resolve_for(
     // and its family feed the SAME additive bucket the mods do — one bucket, so
     // an evolution's +60% and Primed Fast Hands' +55% sum rather than
     // multiplying, which is the shape every other shared stat here has.
-    let mut rl = base.evo_reload_bonus + fb.reload_speed;
+    let mut rl = base.evo_reload_bonus + base.reload_from_empty_speed + fb.reload_speed;
     // Magazine-capacity and status-duration additive buckets.
     let (mut mag, mut sdur) = (fb.magazine, fb.status_duration);
     // Sentient Surge's three, carried to the sim rather than spent here: all
@@ -238,6 +238,8 @@ pub fn resolve_for(
     // is still a bucket, and a second card would otherwise silently replace the
     // first.
     let mut last_round_damage = 0.0f64;
+    let mut grenade_crit_per_kill: Option<(f64, f64)> = None;
+    let mut grenade_crit_loss = 0.0f64;
     let mut first_round_damage = 0.0f64;
     // STACKING BUFFS THE MODS GRANT — see `ModEffect::GrantsStackingBuff`.
     // They join the weapon's own list below rather than replacing anything, so
@@ -391,6 +393,8 @@ pub fn resolve_for(
                 ModEffect::AddedSpread(v) => added_spread += v,
                 ModEffect::GrantsStackingBuff(b) => mod_buffs.push(b),
                 ModEffect::LastRoundDamage(v) => last_round_damage += v,
+                ModEffect::GrenadeCritPerKill(v, cap) => grenade_crit_per_kill = Some((v, cap)),
+                ModEffect::GrenadeCritLossPerThrow(v) => grenade_crit_loss += v,
                 // THE CHAMBERS SUM, which is the wiki's own "stacks additively
                 // with … for up to 140% bonus damage" — one factor, two cards.
                 ModEffect::FirstRoundDamage(v) => first_round_damage += v,
@@ -1125,6 +1129,16 @@ pub fn resolve_for(
         contact: a_resolved(&c.contact),
         blast: a_resolved(&c.blast),
     });
+    // THE RELOAD GRENADES, the same buckets again — a Serration the beam reads
+    // is a Serration the throw reads.
+    let reload_grenade = base.reload_grenade.as_ref().map(|g| ResolvedReloadGrenade {
+        count: g.count,
+        fan_deg: g.fan_deg,
+        contact: a_resolved(&g.contact),
+        blast: a_resolved(&g.blast),
+        last_round_factor: 1.0 + last_round_damage,
+        crit_per_kill: grenade_crit_per_kill.map(|(v, cap)| (v, cap, grenade_crit_loss)),
+    });
 
     // The lingering FIELD (Torid's Toxin cloud): its own base vector, crit and
     // status stats, through the SAME mod buckets — three patch notes settle
@@ -1361,6 +1375,7 @@ pub fn resolve_for(
         damage,
         radial,
         cluster,
+        reload_grenade,
         spread,
         falloff,
         lingering,

@@ -213,6 +213,9 @@ pub struct FightParams {
     /// see [`crate::data::weapons::ClusterSpec`]. Each one is TWO more instances
     /// on top of the explosion, resolved where the explosion was.
     pub cluster: Option<crate::build::loadout::ResolvedCluster>,
+    /// THE GRENADES A RELOAD FROM EMPTY THROWS — see
+    /// [`crate::build::loadout::ResolvedReloadGrenade`] and `fight::grenades`.
+    pub reload_grenade: Option<crate::build::loadout::ResolvedReloadGrenade>,
     /// DIRECT-hit damage falloff, when this attack lists one. Read against the
     /// distance the shot travelled; `None` = full damage wherever it lands.
     ///

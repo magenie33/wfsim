@@ -429,6 +429,9 @@ pub struct AttackSpec {
     /// The BOMBLETS this attack's explosion throws out — see [`ClusterSpec`].
     #[serde(default)]
     pub cluster: Option<ClusterSpec>,
+    /// THE GRENADES A RELOAD THROWS — see [`ReloadGrenadeSpec`].
+    #[serde(default)]
+    pub reload_grenade: Option<ReloadGrenadeSpec>,
     /// PRIMARY COMPRESSION's row for this attack — see [`CompressionSpec`].
     /// `None` means the weapon is absent from the table, which is not the same
     /// as 0%: absent is untested or inapplicable (every secondary, since the
@@ -737,6 +740,33 @@ pub struct ClusterSpec {
     #[serde(default)]
     pub forced_procs: Vec<String>,
     /// The bomblet's own explosion.
+    pub radial: RadialSpec,
+}
+
+/// THE GRENADES A RELOAD THROWS — the Catabolyst family's, docs/MECHANICS.md
+/// §7.2. Each is a contact hit and an explosion, laid out like a bomblet.
+///
+/// ONLY THE RELOAD-FROM-EMPTY THROW, because it is the only reload this arena
+/// performs: the loop reloads when it cannot fire. The partial-reload grenade
+/// is a different, weaker attack, and stating it here would be a rule nothing
+/// applies.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReloadGrenadeSpec {
+    /// Grenades per throw — one on the Catabolyst, three on the Coda.
+    pub count: u32,
+    /// The fan they leave in, degrees edge to edge, centred on the reticle.
+    #[serde(default)]
+    pub fan_deg: f64,
+    /// THE CONTACT HIT, per grenade.
+    pub damage: BTreeMap<String, f64>,
+    #[serde(default)]
+    pub crit_chance: Option<f64>,
+    #[serde(default)]
+    pub crit_multiplier: Option<f64>,
+    #[serde(default)]
+    pub status_chance: Option<f64>,
+    /// The grenade's own explosion, centred where it landed.
     pub radial: RadialSpec,
 }
 

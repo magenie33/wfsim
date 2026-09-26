@@ -125,6 +125,9 @@ pub(super) fn charge_magazine_cycle(
                 }
                 let rs = live_reload_speed(params, &cy.base_form, *rs_armed, buff_stacks, *t);
                 let spent = live_reload_time(&cy.base_form, params, arc, rs, *t);
+                if cy.base_form.reload_grenade.is_some() {
+                    ammo.grenade_thrown_at = Some(*t);
+                }
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
                 // magazine you walked in with was worth.
@@ -191,6 +194,12 @@ pub(super) fn charge_magazine_cycle(
             // reloads when it cannot fire — which is exactly the condition.
             let rs = live_reload_speed(params, params, *rs_armed, buff_stacks, *t);
             let spent = live_reload_time(params, params, arc, rs, *t);
+            // THE THROW IS THE RELOAD'S, and it leaves when the reload STARTS:
+            // the page says it is thrown mid-reload and states no timing, so the
+            // earliest instant is the one that invents no delay.
+            if params.reload_grenade.is_some() {
+                ammo.grenade_thrown_at = Some(*t);
+            }
             // TWO ROWS, THE START AND THE END, and nothing in between. What is between them is not a reload event — it is
             // whatever the fight went on doing while the weapon was down, which
             // for a status build is most of its damage.

@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 71c1dbe9d620327d
-count: 1789
+digest: c07545fa180cf5d4
+count: 1790
 ids:
   - acceltra
   - acceltra_prime
@@ -1799,3 +1799,4 @@ ids:
   - melee_damage_on_heavy_attack
   - parry_angle
   - slam_attack_damage
+  - critical_mutation

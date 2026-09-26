@@ -117,6 +117,17 @@ pub struct ClusterBase {
     pub blast: RadialBase,
 }
 
+/// THE GRENADES A RELOAD FROM EMPTY THROWS — see
+/// [`crate::data::weapons::ReloadGrenadeSpec`]. A contact hit and an
+/// explosion per grenade, the bomblet's shape.
+#[derive(Debug, Clone)]
+pub struct ReloadGrenadeBase {
+    pub count: u32,
+    pub fan_deg: f64,
+    pub contact: RadialBase,
+    pub blast: RadialBase,
+}
+
 /// THE CO TERM'S BASE, AND THE BASE IT IS A SHARE OF — carried together.
 ///
 /// The FACT is `absolute`: an evolution's flat add leaves it alone, a valence

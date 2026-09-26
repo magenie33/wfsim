@@ -667,6 +667,12 @@ ui:
   "default list": 恢复默认清单
   "Radial (AoE)": 范围伤害
   "Radial explosion": 范围爆炸
+  "Reload grenade": 换弹手雷
+  "Reload grenade explosion": 换弹手雷爆炸
+  "×1 on a reload from empty": ×1，空弹匣换弹时扔出
+  "×3 on a reload from empty, 45° fan": ×3，空弹匣换弹时扔出，45° 扇形
+  "×1, 7 m radius": ×1，7 米半径
+  "×3, 5 m radius": ×3，5 米半径
   "Range": 射程
   "Range Advantage, the Akjagara-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Range Advantage」，Akjagara 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Recoil": 后坐力
@@ -1559,6 +1565,13 @@ ui:
   "this weapon does NOT inflict self-stagger, which is a real advantage over every other explosive in this batch and is worth nothing here, because the arena never charges any of them for it either": "这把武器「不会」自我踉跄，这相对本批次其它每一件爆炸武器都是实打实的优势，但在这里一文不值，因为本场对它们所有人都不收这笔账"
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
   "this weapon is never holstered during the fight": 战斗中这把武器从不收起
+  "the PARTIAL-reload grenade, a weaker attack thrown when the magazine is not empty: this arena reloads only when it cannot fire, so every throw it makes is the from-empty one": "半弹匣换弹扔出的手雷——弹匣没打空时扔出的较弱攻击：本场只在打不出子弹时才换弹，所以每一次投掷都是空弹匣那一种"
+  "WHEN the throw lands: the page says the grenade is thrown mid-reload and has travel time, and states neither, so it lands at the instant the reload starts": "手雷何时落地：页面说手雷在换弹途中扔出、有飞行时间，但两者都没给数值，所以按换弹开始的那一刻落地"
+  "the explosion's SELF-STAGGER, which costs the wielder time when the target stands inside the blast": "爆炸的自身硬直——目标站在爆炸范围内时，会让持有者损失时间"
+  "Condition Overload on the grenade's 11 Impact contact — the CO catalog gives it a row, and the contact is half a percent of the throw": "手雷 11 点冲击直击上的异况超量——CO 目录里有这一行，而直击只占一次投掷的百分之零点五"
+  "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage, wiki `Catabolyst` Bugs)": "镀层 准确射手在手雷直击上的 bug（与基础伤害相乘，见 wiki `Catabolyst` 的 Bugs）"
+  "interrupting the reload to throw again without reloading, the page's own exploit": "打断换弹以不换弹反复扔手雷——页面自己写的技巧"
+  "the 45-degree FAN is read as edge to edge about the reticle, which the page does not spell out": "45 度的扇形按以准星为中心、两边缘之间的夹角理解，页面没有写明"
   "this weapon will never reload on its own and must be reloaded manually — a habit cost this arena does not charge": "这把武器永远不会自动换弹，必须手动换——这是一笔操作习惯上的成本，本场不收"
   "this weapon's passive is not modelled yet — the numbers below are a floor, not its full output": 这把武器的被动尚未建模——下面的数字是下限，不是它的完整输出
   "this weapon's passive is not modelled yet": 这把武器的被动尚未建模
@@ -1930,6 +1943,7 @@ ui:
   "status": "异常"
   "field": "力场"
   "extra hit": "额外伤害"
+  "reload grenade": "换弹手雷"
   "arcane": "赋能"
   # ---- the pools a number lands in ----
   "on the shield": "打在护盾上"

@@ -192,6 +192,10 @@ pub(super) struct Ammo {
     /// reload takes, so it is passed into every reload and every transmute.
     /// Set by a pellet that rolled Executioner's Fortune, spent once by the shot.
     pub(super) instant_reload_now: bool,
+    /// WHEN A RELOAD THREW THIS MAGAZINE AS A GRENADE, until the loop that owns
+    /// the airborne list takes it (the Catabolyst family: "toss the ammo bladder
+    /// as a grenade when reloading").
+    pub(super) grenade_thrown_at: Option<f64>,
 }
 
 /// WHERE A TRANSMUTING WEAPON IS IN ITS CYCLE — which form is out, when the

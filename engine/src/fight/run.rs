@@ -1071,6 +1071,17 @@ pub fn run_once_traced(
     // own, so looping a seat through all three would reorder how status
     // settles — a golden-value change rather than an attribution one.
     let end = params.duration_seconds;
+    // A MAGAZINE THROWN BY A RELOAD NO SHOT FOLLOWED — the engagement ended
+    // inside it — still lands: it left before the clock ran out.
+    for me in seats.iter_mut() {
+        if let Some(at) = me.ammo.grenade_thrown_at.take() {
+            let active = me.params.cycle.as_ref().map_or(me.params, |cy| &cy.base_form);
+            throw_reload_grenades(
+                &me.windows, me.seat, at, &me.field_ctx, &mut me.gal, &mut me.arc,
+                me.params, active, &mut r, rec, &mut me.d, &mut bodies,
+            );
+        }
+    }
     for (si, me) in seats.iter_mut().enumerate() {
         let mut mine = owned_by(&mut orbs, Seat(si), |o| o.owner);
         process_orbs(

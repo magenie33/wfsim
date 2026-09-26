@@ -373,6 +373,7 @@ pub(super) fn open<'a>(
         loaded: params.magazine_size,
         reserve: params.reserve_ammo,
         instant_reload_now: false,
+        grenade_thrown_at: None,
     };
     // Kills already paid to on-kill stacking buffs. See `BuffTrigger::Kill`.
     let kill_buff_mark: u32 = 0;

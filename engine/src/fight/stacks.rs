@@ -120,6 +120,8 @@ impl LiveStacks {
 pub(super) struct GalStacks {
     pub(super) co: LiveStacks,
     pub(super) multishot: LiveStacks,
+    /// Critical Mutation's pile — another kill-fed stack, settled at the throw.
+    pub(super) mutation: Mutation,
 }
 
 impl GalStacks {
