@@ -151,6 +151,7 @@ impl Default for FightParams {
             abilities: Vec::new(),
             dot_modified_base: None,
             reload_bonus: 0.0,
+            reload_from_empty_speed: 0.0,
             weakpoint_damage: 0.0,
             headshot_multiplier: None,
             crit_tier_upgrade_chance: 0.0,

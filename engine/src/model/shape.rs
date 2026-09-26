@@ -117,13 +117,20 @@ pub struct ClusterBase {
     pub blast: RadialBase,
 }
 
-/// THE GRENADES A RELOAD FROM EMPTY THROWS — see
-/// [`crate::data::weapons::ReloadGrenadeSpec`]. A contact hit and an
-/// explosion per grenade, the bomblet's shape.
+/// THE GRENADES A RELOAD THROWS — see
+/// [`crate::data::weapons::ReloadGrenadeSpec`]. Two throws, from empty and
+/// partial, each a contact hit and an explosion per grenade.
 #[derive(Debug, Clone)]
 pub struct ReloadGrenadeBase {
     pub count: u32,
     pub fan_deg: f64,
+    pub from_empty: GrenadeThrowBase,
+    pub partial: GrenadeThrowBase,
+}
+
+/// One throw's grenade, the bomblet's shape.
+#[derive(Debug, Clone)]
+pub struct GrenadeThrowBase {
     pub contact: RadialBase,
     pub blast: RadialBase,
 }

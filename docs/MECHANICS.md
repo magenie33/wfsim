@@ -1477,21 +1477,31 @@ them — recorded per entry as `cluster_bomblet_co` (docs/CATALOGS.md §1).
 
 ### Reload grenades — the magazine, thrown (§7.2)
 
-The Catabolyst family throws its magazine when it reloads, and a reload from
-empty throws the big one. Declared as `reload_grenade:` in the attack
-(`data::weapons::ReloadGrenadeSpec`), resolved through the same buckets as the
+The Catabolyst family throws its magazine when it reloads: a reload from empty
+throws the big grenade, any other reload a weaker one. Declared as
+`reload_grenade:` in the attack (`data::weapons::ReloadGrenadeSpec`, a
+`from_empty:` and a `partial:` throw), resolved through the same buckets as the
 beam (`ResolvedReloadGrenade`), and landed by `fight::grenades`.
 
-| entry | grenades | contact | explosion |
-| --- | --- | --- | --- |
-| Catabolyst | 1 | 11 Impact, 31% crit, 59% status | 1,997 Corrosive, 7 m, 100% to 50% |
-| Coda Catabolyst | 3, a 45° fan | 11 Impact, 31% crit, 59% status | 658 Corrosive, 5 m, 100% to 50% |
+| entry | grenades | throw | contact | explosion |
+| --- | --- | --- | --- | --- |
+| Catabolyst | 1 | from empty | 11 Impact, 31% crit, 59% status | 1,997 Corrosive, 7 m |
+| | | partial | 11 Impact, 11% crit, 43% status | 203 Corrosive, 5 m |
+| Coda Catabolyst | 3, a 45° fan | from empty | 11 Impact, 31% crit, 59% status | 658 Corrosive, 5 m |
+| | | partial | 11 Impact, 11% crit, 43% status | 74 Corrosive, 3 m |
 
-1. **ONLY THE FROM-EMPTY THROW.** The loop reloads when it cannot fire, so every
-   reload it performs is from empty; the weaker partial-reload grenade is never
-   thrown and is not in the data. The same fact is why the innate **-20% reload
-   speed** (`reload_from_empty_speed`, *"additive with Quickdraw"*) joins the
-   mods' bucket outright: 1.7 s becomes 2.125 s on every reload.
+Every explosion falls off 100% to 50% from where it landed.
+
+1. **FROM EMPTY IS A READING, NOT AN ASSUMPTION.** The reload asks the magazine
+   before it refills it — fewer than one whole round is empty, the Incarnon
+   transmute's own reading — and every "on reload from empty" rule reads that
+   one answer: which grenade flies, the innate **-20% reload speed**
+   (`reload_from_empty_speed`, *"additive with Quickdraw"*: 1.7 s becomes
+   2.125 s), Resonant Restore, Renewed Horror, and a pile an empty magazine
+   clears. The default list reloads only when it cannot fire, so its reloads
+   are all from empty; `reload,if=magazine.pct<=N` inserted above it reloads
+   early and throws the partial grenade. A full magazine cannot be reloaded,
+   so a reload rule is passed over while it is.
 2. **IT LANDS WHEN THE RELOAD STARTS.** The page says it is thrown mid-reload and
    has travel time and states neither, so the earliest instant is the one that
    invents no delay. It is queued on the magazine (`Ammo::grenade_thrown_at`)
@@ -1504,8 +1514,9 @@ beam (`ResolvedReloadGrenade`), and landed by `fight::grenades`.
    The contact hits a body only if the grenade came down on it.
 4. **MULTISHOT DOES NOT RAISE THE COUNT** — *"Multishot does not affect the
    reload grenade"* is on the page's Bugs list, which is to say it is the game.
-5. **SYNTH CHARGE REACHES IT** (*"Synth Charge increases the grenade damage"*)
-   though the beam, being continuous, takes none of the card: the throw
+5. **SYNTH CHARGE REACHES THE FROM-EMPTY THROW** (*"Synth Charge increases the
+   grenade damage"*) though the beam, being continuous, takes none of the card,
+   and a partial reload fired no last round to carry it: the throw
    follows the magazine's last round.
 
 **CRITICAL MUTATION** pays the grenade and nothing else — DE's U35 notes call it

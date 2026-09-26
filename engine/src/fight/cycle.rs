@@ -115,18 +115,26 @@ pub(super) fn charge_magazine_cycle(
                 if !params.infinite_reserve && ammo.reserve < 1e-9 {
                     return Flow::Break;
                 }
+                // FROM EMPTY OR NOT, read before anything refills it — see the
+                // plain path below, which asks the same question the same way.
+                let from_empty = !can_fire(incarnon.base_magazine, 1.0);
                 // THE SAME CLEAR as the plain path below: an empty magazine
                 // takes the pile whichever branch notices it, and a CYCLE
                 // reloads the base form here.
+                let clears = if from_empty {
+                    crate::model::ClearedBy::EmptyMagazine
+                } else {
+                    crate::model::ClearedBy::PartialReload
+                };
                 for (i, b) in params.stacking_buffs.iter().enumerate() {
-                    if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
+                    if b.cleared_by == clears {
                         buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                     }
                 }
                 let rs = live_reload_speed(params, &cy.base_form, *rs_armed, buff_stacks, *t);
-                let spent = live_reload_time(&cy.base_form, params, arc, rs, *t);
+                let spent = live_reload_time(&cy.base_form, params, arc, rs, *t, from_empty);
                 if cy.base_form.reload_grenade.is_some() {
-                    ammo.grenade_thrown_at = Some(*t);
+                    ammo.grenade_thrown_at = Some((*t, from_empty));
                 }
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
@@ -162,21 +170,34 @@ pub(super) fn charge_magazine_cycle(
                 // nothing written down to say so.
                 bump_shells(params, buff_stacks, loaded.round().max(0.0) as u32, *t, rng);
                 bump_on_trigger(params, buff_stacks, crate::model::BuffTrigger::ReloadComplete, *t, rng);
-                bump_reload_from_empty(params, buff_stacks, ammo, *t, rng);
-                // Renewed Horror: "On Reload from Empty". This branch IS the
-                // reload-from-empty path.
-                *field_duration_boost = true;
+                if from_empty {
+                    bump_reload_from_empty(params, buff_stacks, ammo, *t, rng);
+                    // Renewed Horror: "On Reload from Empty".
+                    *field_duration_boost = true;
+                }
                 return Flow::Continue;
             }
         } else if want == Action::Reload {
+            // FROM EMPTY OR NOT — the one question every "reload from empty"
+            // card asks, read before the refill. The default list reloads only
+            // when it cannot fire, so that list's reloads are all from empty;
+            // a rule inserted above it (`reload,if=magazine.pct<=N`) is not,
+            // and a card that pays on empty pays nothing for it. Fewer than one
+            // whole round is empty, the Incarnon transmute's own reading.
+            let from_empty = !can_fire(ammo.loaded, 1.0);
             // AN EMPTY MAGAZINE TAKES THE WHOLE PILE, before the reload that
             // rebuilds it. Mounting Momentum is cleared the instant the count
             // reaches zero — not by the reload, and not by a clock — so firing
-            // a magazine dry earns one magazine's worth and never more. The
-            // 99-stack cap belongs to a player who tops up a magazine that
-            // never empties, which is not what this loop does.
+            // a magazine dry earns one magazine's worth and never more, and a
+            // magazine topped up before it empties keeps its pile.
+            // …AND A PARTIAL RELOAD TAKES THE OTHER KIND (Mauler's Magazine).
+            let clears = if from_empty {
+                crate::model::ClearedBy::EmptyMagazine
+            } else {
+                crate::model::ClearedBy::PartialReload
+            };
             for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if b.cleared_by == crate::model::ClearedBy::EmptyMagazine {
+                if b.cleared_by == clears {
                     buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                 }
             }
@@ -189,16 +210,13 @@ pub(super) fn charge_magazine_cycle(
             // ACTION is the trigger, not its completion.
             // So it is armed BEFORE the line below, and the reload that armed
             // it is the first thing it speeds up.
-            //
-            // Every reload this loop performs is a reload from empty — it only
-            // reloads when it cannot fire — which is exactly the condition.
             let rs = live_reload_speed(params, params, *rs_armed, buff_stacks, *t);
-            let spent = live_reload_time(params, params, arc, rs, *t);
+            let spent = live_reload_time(params, params, arc, rs, *t, from_empty);
             // THE THROW IS THE RELOAD'S, and it leaves when the reload STARTS:
             // the page says it is thrown mid-reload and states no timing, so the
             // earliest instant is the one that invents no delay.
             if params.reload_grenade.is_some() {
-                ammo.grenade_thrown_at = Some(*t);
+                ammo.grenade_thrown_at = Some((*t, from_empty));
             }
             // TWO ROWS, THE START AND THE END, and nothing in between. What is between them is not a reload event — it is
             // whatever the fight went on doing while the weapon was down, which
@@ -233,8 +251,10 @@ pub(super) fn charge_magazine_cycle(
             // trigger at the top of the loop.
             bump_shells(params, buff_stacks, loaded.round().max(0.0) as u32, *t, rng);
             bump_on_trigger(params, buff_stacks, crate::model::BuffTrigger::ReloadComplete, *t, rng);
-            bump_reload_from_empty(params, buff_stacks, ammo, *t, rng);
-            *field_duration_boost = true; // reloaded from empty (Renewed Horror)
+            if from_empty {
+                bump_reload_from_empty(params, buff_stacks, ammo, *t, rng);
+                *field_duration_boost = true; // Renewed Horror
+            }
             if *t >= params.duration_seconds {
                 return Flow::Break;
             }

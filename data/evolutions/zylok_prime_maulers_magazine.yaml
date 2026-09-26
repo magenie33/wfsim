@@ -24,11 +24,9 @@ effects:
   # from: "Increase Base Damage by +30"
   - kind: flat_base_damage
     value: 30.0
-  # A STACKING BUFF WITH NO CLOCK. "Stacks are shown as a buff, which are lost
-  # when reloading from a partial magazine or on death" — and neither can happen
-  # here: this loop reloads only when it cannot fire, so every reload it performs
-  # is a reload from empty. Nothing takes the pile, so `cleared_by` is left at
-  # its default of nothing rather than being given a rule that would never fire.
+  # A STACKING BUFF WITH NO CLOCK, lost "when reloading from a partial
+  # magazine or on death": a reload the list calls before the magazine is
+  # empty takes the pile, and nobody dies in this arena.
   #
   # "+1x BASE Critical Damage Multiplier", so the crit-damage MODS multiply the
   # grant — `resolve` converts the card's number into the post-mod multiplier it
@@ -38,6 +36,7 @@ effects:
     per_stack: 1.0
     max_stacks: 2
     trigger: reload_from_empty
+    cleared_by: partial_reload
 
 source:
   url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis

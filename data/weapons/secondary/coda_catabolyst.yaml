@@ -94,10 +94,12 @@ attack:
       damage_per_hop: 0.0
       origin: radius_targets
 
-  # THE RELOAD GRENADE — every reload throws the magazine, and a reload FROM
-  # EMPTY throws the big one, which is the only reload this arena performs
-  # (module attacks "Reload From Empty Impact" and "Reload From Empty
-  # Explosion").
+  # THE RELOAD GRENADE — every reload throws the magazine, and there are two
+  # throws: a reload FROM EMPTY throws the big one, any other reload the
+  # partial one (module attacks "Reload From Empty Impact / Explosion" and
+  # "Partial Reload Impact / Explosion"). "Damage, critical chance, status
+  # chance, and explosion range increase when reloading with no ammo in the
+  # magazine."
   # THREE grenades, "at a 45 degree angle towards the reticle" — read as a fan
   # 45 degrees edge to edge, so the outer two land beside the aimed body and
   # reach it only where their blast does.
@@ -108,19 +110,34 @@ attack:
   reload_grenade:
     count: 3
     fan_deg: 45
-    damage: { impact: 11 }
-    crit_chance: 0.31
-    crit_multiplier: 2.9
-    status_chance: 0.59
-    radial:
-      damage: { corrosive: 658 }
-      radius_m: 5.0
-      takes_blast_radius_mods: false
+    from_empty:
+      damage: { impact: 11 }
       crit_chance: 0.31
       crit_multiplier: 2.9
       status_chance: 0.59
-      falloff_start_m: 0.0
-      falloff_reduction: 0.5
+      radial:
+        damage: { corrosive: 658 }
+        radius_m: 5.0
+        takes_blast_radius_mods: false
+        crit_chance: 0.31
+        crit_multiplier: 2.9
+        status_chance: 0.59
+        falloff_start_m: 0.0
+        falloff_reduction: 0.5
+    partial:
+      damage: { impact: 11 }
+      crit_chance: 0.11
+      crit_multiplier: 2.9
+      status_chance: 0.43
+      radial:
+        damage: { corrosive: 74 }
+        radius_m: 3.0
+        takes_blast_radius_mods: false
+        crit_chance: 0.11
+        crit_multiplier: 2.9
+        status_chance: 0.43
+        falloff_start_m: 0.0
+        falloff_reduction: 0.5
 
 # THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
 # 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays
@@ -128,7 +145,6 @@ attack:
 # the 20% floor exactly, so no `beam_ramp_floor` override.
 
 unmodeled:
-  - "the PARTIAL-reload grenade, a weaker attack thrown when the magazine is not empty: this arena reloads only when it cannot fire, so every throw it makes is the from-empty one"
   - "WHEN the throw lands: the page says the grenade is thrown mid-reload and has travel time, and states neither, so it lands at the instant the reload starts"
   - "the explosion's SELF-STAGGER, which costs the wielder time when the target stands inside the blast"
   - "Condition Overload on the grenade's 11 Impact contact — the CO catalog gives it a row, and the contact is half a percent of the throw"

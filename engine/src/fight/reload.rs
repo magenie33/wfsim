@@ -10,11 +10,21 @@ pub(super) fn live_reload_time(
     arc: &mut ArcRuntime,
     live_rs: f64,
     t: f64,
+    // A RELOAD FROM EMPTY takes the weapon's own term too (the Catabolyst
+    // family's -20%), in the mods' bucket — "additive with Quickdraw".
+    from_empty: bool,
 ) -> f64 {
     let add = outer.arcane.reload_bonus
         + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t)
         + live_rs;
-    reload_span(form.reload_seconds, form.reload_bonus, add)
+    let (secs, bucket) = match form.reload_from_empty_speed {
+        innate if from_empty && innate != 0.0 => {
+            let b = form.reload_bonus;
+            (form.reload_seconds * (1.0 + b) / (1.0 + b + innate).max(1e-9), b + innate)
+        }
+        _ => (form.reload_seconds, form.reload_bonus),
+    };
+    reload_span(secs, bucket, add)
 }
 
 /// Rescale a time already divided by `(1 + bucket)` so it also carries a

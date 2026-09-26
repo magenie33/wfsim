@@ -56,6 +56,9 @@ pub(super) fn throw_reload_grenades(
     w: &CardWindows,
     owner: Seat,
     at: f64,
+    // WHICH THROW: the big one follows a reload from empty, any other reload
+    // throws the partial one.
+    from_empty: bool,
     ctx: &FieldCtx,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
@@ -78,8 +81,11 @@ pub(super) fn throw_reload_grenades(
     // THE PILE, paid in for every kill since the last throw and capped on the
     // way in. It is read only here, so settling it at the throw is exact.
     let bonus = g.crit_per_kill.map_or(0.0, |(per_kill, cap, _)| gal.mutation.pay_in(r.kills, per_kill, cap));
-    let contact = lingering_of(&g.contact, bonus);
-    let blast = lingering_of(&g.blast, bonus);
+    let throw = if from_empty { g.from_empty } else { g.partial };
+    let contact = lingering_of(&throw.contact, bonus);
+    let blast = lingering_of(&throw.blast, bonus);
+    // Synth Charge rides the throw that follows the magazine's LAST round.
+    let last_round_factor = if from_empty { g.last_round_factor } else { 1.0 };
 
     let body_at = params.body_positions();
     let aim = params.aim_point();
@@ -99,7 +105,7 @@ pub(super) fn throw_reload_grenades(
         // nothing if it came down on the floor beside one.
         let hit = (0..body_at.len()).find(|&b| body_at[b].distance(land) <= crate::rules::space::BODY_RADIUS_M + 1e-9);
         if let Some(b) = hit {
-            if settle(w, owner, &contact, g.last_round_factor, at, ctx, b, gal, arc, params, active, r, rec, d, bodies) && b == 0 {
+            if settle(w, owner, &contact, last_round_factor, at, ctx, b, gal, arc, params, active, r, rec, d, bodies) && b == 0 {
                 bodies[0].debuffs.on_death(owner, params.acid_shells, &params.foe);
                 return;
             }
@@ -116,7 +122,7 @@ pub(super) fn throw_reload_grenades(
             if !struck.contains(&b) {
                 struck.push(b);
             }
-            let multiplier = g.last_round_factor * blast.falloff_at(crate::rules::space::blast_reach(dist));
+            let multiplier = last_round_factor * blast.falloff_at(crate::rules::space::blast_reach(dist));
             aimed_died |= settle(w, owner, &blast, multiplier, at, ctx, b, gal, arc, params, active, r, rec, d, bodies) && b == 0;
         }
         if aimed_died {

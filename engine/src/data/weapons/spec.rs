@@ -417,8 +417,8 @@ pub struct WeaponSpec {
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     /// AN INNATE RELOAD-SPEED TERM on a reload from empty, in the bucket the
-    /// mods are in (the Catabolyst family's -20%). Every reload this arena
-    /// performs is from empty, so it applies to every one.
+    /// mods are in (the Catabolyst family's -20%). Read at a reload that finds
+    /// the magazine empty, and at no other.
     #[serde(default)]
     pub reload_from_empty_speed: Option<f64>,
     /// A MAGAZINE THAT REFILLS ITSELF — see [`Battery`]. `None` on every weapon

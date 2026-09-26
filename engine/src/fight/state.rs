@@ -157,11 +157,10 @@ pub(super) struct Ammo {
     /// …and the other half of that split: the reload FINISHED, for the buffs
     /// that were counting reloads rather than shells.
     ///
-    /// TWO TRIGGERS, ONE SITE. Every reload this loop performs is a reload from
-    /// empty — it only reloads when it cannot fire — so both fire here and the
-    /// difference between them lives at exactly one other place: the Incarnon
-    /// transform, which refills the base magazine whether or not it was empty
-    /// and therefore bumps `ReloadFromEmpty` alone, and only when it was.
+    /// TWO TRIGGERS, TWO QUESTIONS. A reload always completes a reload; it is
+    /// also a reload from EMPTY only when the magazine was, which the reload
+    /// reads before it refills (`fight::cycle`). The Incarnon transform refills
+    /// the base magazine too, and bumps `ReloadFromEmpty` alone, and only then.
     /// THE MAGAZINE'S CAPACITY, LIVE. Resonant Restore grows it — "On Reload
     /// From Empty: Increase Base Magazine Capacity by +15. Stacks up to 3x" —
     /// so the capacity is a variable rather than `params.magazine_size`, and
@@ -192,10 +191,10 @@ pub(super) struct Ammo {
     /// reload takes, so it is passed into every reload and every transmute.
     /// Set by a pellet that rolled Executioner's Fortune, spent once by the shot.
     pub(super) instant_reload_now: bool,
-    /// WHEN A RELOAD THREW THIS MAGAZINE AS A GRENADE, until the loop that owns
-    /// the airborne list takes it (the Catabolyst family: "toss the ammo bladder
-    /// as a grenade when reloading").
-    pub(super) grenade_thrown_at: Option<f64>,
+    /// WHEN A RELOAD THREW THIS MAGAZINE AS A GRENADE, and whether that reload
+    /// was from empty, until the loop that owns the airborne list takes it (the
+    /// Catabolyst family: "toss the ammo bladder as a grenade when reloading").
+    pub(super) grenade_thrown_at: Option<(f64, bool)>,
 }
 
 /// WHERE A TRANSMUTING WEAPON IS IN ITS CYCLE — which form is out, when the
@@ -257,6 +256,7 @@ impl IncarnonState {
             return crate::data::apl::Now {
                 can_fire: can_fire(ammo.loaded, next_cost),
                 gauge_pct: 0.0,
+                magazine_pct: ammo.loaded / ammo.cap.max(1e-9),
                 tennokai,
                 in_base_form: true,
                 remaining,
@@ -305,6 +305,15 @@ impl IncarnonState {
                 next_cost,
             ),
             gauge_pct,
+            // THE MAGAZINE A RELOAD WOULD FILL: the base form's held-aside one in
+            // its own half of a charge-magazine cycle, none in the other (a
+            // charge magazine is spent, never reloaded), and the one magazine
+            // of a clock-ended cycle.
+            magazine_pct: match (self.in_base_form, cy.ends) {
+                (true, Ends::ChargeMagazine) => self.base_magazine / cy.base_form.magazine_size.max(1e-9),
+                (false, Ends::ChargeMagazine) => 1.0,
+                _ => ammo.loaded / ammo.cap.max(1e-9),
+            },
             tennokai,
             in_base_form: self.in_base_form,
             remaining,

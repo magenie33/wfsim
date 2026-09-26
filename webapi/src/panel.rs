@@ -1798,22 +1798,28 @@ fn form_section(
         };
         let n = gr.count;
         let fan = if gr.fan_deg > 0.0 { format!(", {}° fan", display_number(gr.fan_deg)) } else { String::new() };
-        parts.push(json!({
-            "id": "reload_grenade_contact",
-            "label": "Reload grenade",
-            "meta": format!("×{n} on a reload from empty{fan}"),
-            "stats": part_rows(&gb.contact, &gr.contact),
-            "damage": vector_rows(&gr.contact.damage),
-            "damage_total": num(gr.contact.damage.total()),
-        }));
-        parts.push(json!({
-            "id": "reload_grenade_blast",
-            "label": "Reload grenade explosion",
-            "meta": format!("×{n}, {} m radius", display_number(gr.blast.radius_m)),
-            "stats": part_rows(&gb.blast, &gr.blast),
-            "damage": vector_rows(&gr.blast.damage),
-            "damage_total": num(gr.blast.damage.total()),
-        }));
+        // BOTH THROWS, because a reload that is not from empty throws the other.
+        for (key, when, label, gt, rt) in [
+            ("from_empty", "on a reload from empty", "Reload grenade", &gb.from_empty, &gr.from_empty),
+            ("partial", "on a partial reload", "Partial-reload grenade", &gb.partial, &gr.partial),
+        ] {
+            parts.push(json!({
+                "id": format!("reload_grenade_{key}_contact"),
+                "label": label,
+                "meta": format!("×{n} {when}{fan}"),
+                "stats": part_rows(&gt.contact, &rt.contact),
+                "damage": vector_rows(&rt.contact.damage),
+                "damage_total": num(rt.contact.damage.total()),
+            }));
+            parts.push(json!({
+                "id": format!("reload_grenade_{key}_blast"),
+                "label": format!("{label} explosion"),
+                "meta": format!("×{n}, {} m radius", display_number(rt.blast.radius_m)),
+                "stats": part_rows(&gt.blast, &rt.blast),
+                "damage": vector_rows(&rt.blast.damage),
+                "damage_total": num(rt.blast.damage.total()),
+            }));
+        }
     }
 
     // The lingering FIELD is a THIRD kind of part (MECHANICS §7): it does

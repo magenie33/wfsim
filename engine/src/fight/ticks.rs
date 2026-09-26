@@ -627,9 +627,9 @@ pub(super) fn settle_what_is_in_the_air(
     strip_kills_seen: &mut u32,) {
         // A MAGAZINE THROWN BY THE RELOAD BEFORE THIS SHOT, settled at the
         // instant it left — the clouds due before it burn first, the rest after.
-        if let Some(at) = ammo.grenade_thrown_at.take() {
+        if let Some((at, from_empty)) = ammo.grenade_thrown_at.take() {
             process_field_ticks(w, fields, gal, arc, at, params, field_active, field_ctx, r, rec, d, bodies);
-            throw_reload_grenades(w, owner, at, field_ctx, gal, arc, params, active, r, rec, d, bodies);
+            throw_reload_grenades(w, owner, at, from_empty, field_ctx, gal, arc, params, active, r, rec, d, bodies);
         }
         process_field_ticks(
             w,

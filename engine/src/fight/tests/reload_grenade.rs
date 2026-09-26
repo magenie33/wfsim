@@ -15,12 +15,18 @@ fn part(total: f64, radius_m: f64, falloff_reduction: f64) -> crate::build::load
     }
 }
 
+/// A throw pair: the from-empty grenade as given, and a partial one a tenth
+/// its size in a smaller blast — distinct enough that a sum names which flew.
 fn grenade(count: u32, fan_deg: f64, blast: f64, radius_m: f64) -> crate::build::loadout::ResolvedReloadGrenade {
+    let throw = |contact: f64, blast: f64, radius_m: f64| crate::build::loadout::ResolvedGrenadeThrow {
+        contact: part(contact, crate::rules::space::BODY_RADIUS_M, 0.0),
+        blast: part(blast, radius_m, 0.5),
+    };
     crate::build::loadout::ResolvedReloadGrenade {
         count,
         fan_deg,
-        contact: part(11.0, crate::rules::space::BODY_RADIUS_M, 0.0),
-        blast: part(blast, radius_m, 0.5),
+        from_empty: throw(11.0, blast, radius_m),
+        partial: throw(1.0, blast / 10.0, radius_m),
         last_round_factor: 1.0,
         crit_per_kill: None,
     }
@@ -135,21 +141,27 @@ fn the_catabolyst_family_resolves_its_throw_and_its_augment() {
     let one = resolved("catabolyst", &[]);
     let g = one.reload_grenade.expect("the Catabolyst throws");
     assert_eq!(g.count, 1);
-    assert!((g.blast.damage.total() - 1997.0).abs() < 1e-9 && (g.blast.radius_m - 7.0).abs() < 1e-9);
-    assert!((g.contact.damage.total() - 11.0).abs() < 1e-9 && (g.contact.crit_chance - 0.31).abs() < 1e-9);
-    // "increasing the time it takes to reload to 2.125 seconds"
-    assert!((one.reload_seconds - 2.125).abs() < 1e-9, "{}", one.reload_seconds);
+    let e = g.from_empty;
+    assert!((e.blast.damage.total() - 1997.0).abs() < 1e-9 && (e.blast.radius_m - 7.0).abs() < 1e-9);
+    assert!((e.contact.damage.total() - 11.0).abs() < 1e-9 && (e.contact.crit_chance - 0.31).abs() < 1e-9);
+    let p = g.partial;
+    assert!((p.blast.damage.total() - 203.0).abs() < 1e-9 && (p.blast.radius_m - 5.0).abs() < 1e-9);
+    assert!((p.blast.crit_chance - 0.11).abs() < 1e-9 && (p.blast.status_chance - 0.43).abs() < 1e-9);
+    // The arsenal's 1.7 s, with the -20% held for a reload from empty.
+    assert!((one.reload_seconds - 1.7).abs() < 1e-9, "{}", one.reload_seconds);
+    assert!((one.reload_from_empty_speed + 0.2).abs() < 1e-9);
 
     let three = resolved("coda_catabolyst", &["critical_mutation"]);
     let g = three.reload_grenade.expect("the Coda throws");
     assert_eq!((g.count, g.fan_deg), (3, 45.0));
-    assert!((g.blast.damage.total() - 658.0).abs() < 1e-9 && (g.blast.radius_m - 5.0).abs() < 1e-9);
+    assert!((g.from_empty.blast.damage.total() - 658.0).abs() < 1e-9 && (g.from_empty.blast.radius_m - 5.0).abs() < 1e-9);
+    assert!((g.partial.blast.damage.total() - 74.0).abs() < 1e-9 && (g.partial.blast.radius_m - 3.0).abs() < 1e-9);
     assert_eq!(g.crit_per_kill, Some((0.3, 3.0, 0.3)));
     // The beam carries none of it.
     assert!((three.crit_chance - 0.11).abs() < 1e-9, "{}", three.crit_chance);
     // "Radius is not affected by Fulmination" — the beam's 0.7 m is.
     let fulminated = resolved("coda_catabolyst", &["fulmination"]);
-    assert!((fulminated.reload_grenade.expect("throws").blast.radius_m - 5.0).abs() < 1e-9);
+    assert!((fulminated.reload_grenade.expect("throws").from_empty.blast.radius_m - 5.0).abs() < 1e-9);
 
     assert!(
         !crate::data::mods::pool_for_build("ocucor", &[]).iter().any(|m| m.id == "critical_mutation"),
@@ -202,4 +214,75 @@ fn a_neighbour_in_the_blast_takes_its_share_under_its_own_number() {
     let share = 1.0 - 0.5 * (3.0 - BODY_RADIUS_M) / 7.0;
     assert!((by_body[0] - throws * 1011.0).abs() < 1e-6, "aimed: {by_body:?}");
     assert!((by_body[1] - throws * 1000.0 * share).abs() < 1e-6, "beside: {by_body:?}");
+}
+
+/// A RELOAD BEFORE EMPTY THROWS THE OTHER GRENADE, and pays nothing a reload
+/// from empty pays. The list reloads at a third of a magazine, so every throw is
+/// the partial one, every reload is the arsenal's time, and a card that grows the
+/// magazine on a reload from empty never grows it.
+#[test]
+fn a_reload_before_empty_throws_the_partial_grenade_and_nothing_from_empty_pays() {
+    use crate::data::apl::{Action, Apl, Rule, When};
+    let empty = FightParams {
+        reload_from_empty_speed: -0.2,
+        magazine_growth_on_empty_reload: Some((3.0, 3)),
+        ..thrower(grenade(1, 0.0, 1000.0, 7.0), crate::rules::space::CONTACT_RANGE_M)
+    };
+    let early = FightParams {
+        apl_inserted: Apl(vec![Rule { action: Action::Reload, when: When::MagazineAtMost { pct: 0.5 } }]),
+        ..empty.clone()
+    };
+    let run = |p: &FightParams| run_once(p, &mut crate::rules::rng::Rng::new(3));
+    let (e, a) = (run(&empty), run(&early));
+    // Which grenade flew — 1011 a throw from empty, 101 from a partial reload.
+    assert!((e.sources.radial - f64::from(e.reloads) * 1011.0).abs() < 1e-6, "from empty: {}", e.sources.radial);
+    assert!((a.sources.radial - f64::from(a.reloads) * 101.0).abs() < 1e-6, "partial: {}", a.sources.radial);
+    // THE -20% is a reload from empty's alone: 1 s becomes 1.25 s there.
+    assert!((e.downtime_seconds / f64::from(e.reloads) - 1.25).abs() < 1e-9, "{}", e.downtime_seconds);
+    assert!((a.downtime_seconds / f64::from(a.reloads) - 1.0).abs() < 1e-9, "{}", a.downtime_seconds);
+    // RESONANT RESTORE grows the magazine only when it was empty, so it buys
+    // shots under the first list and not one under the second.
+    let shots = |p: &FightParams, on: bool| {
+        // Long enough for a grown magazine to be loaded: the growth lands after
+        // the refill, so it pays from the reload after the one that earned it.
+        run(&FightParams { magazine_growth_on_empty_reload: on.then_some((3.0, 3)), duration_seconds: 30.0, ..p.clone() }).shots
+    };
+    assert!(shots(&empty, true) > shots(&empty, false), "a reload from empty grows it");
+    assert_eq!(shots(&early, true), shots(&early, false), "a partial reload does not");
+}
+
+/// A PARTIAL RELOAD TAKES A PILE THAT SAYS SO — Mauler's Magazine: *"lost when
+/// reloading from a partial magazine"*. A pile that grows on every reload
+/// completing keeps one stack when each reload clears it first, and keeps
+/// growing under a list that only ever reloads from empty.
+#[test]
+fn a_partial_reload_clears_a_pile_lost_to_one() {
+    use crate::data::apl::{Action, Apl, Rule, When};
+    let piled = |cleared_by: crate::model::ClearedBy, early: bool| {
+        let mut p = thrower(grenade(1, 0.0, 0.0, 1.0), crate::rules::space::CONTACT_RANGE_M);
+        p.reload_grenade = None;
+        p.duration_seconds = 30.0;
+        p.stacking_buffs = vec![crate::model::StackingBuff {
+            id: "reload_fire_rate",
+            trigger: crate::model::BuffTrigger::ReloadComplete,
+            grant: crate::model::BuffGrant::FireRate,
+            per_stack: 0.5,
+            max_stacks: 99,
+            duration: crate::model::NO_TIMEOUT,
+            chance: 1.0,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by,
+            card_opens_full: false,
+        }];
+        if early {
+            p.apl_inserted = Apl(vec![Rule { action: Action::Reload, when: When::MagazineAtMost { pct: 0.5 } }]);
+        }
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots
+    };
+    use crate::model::ClearedBy::{Nothing, PartialReload};
+    assert!(piled(PartialReload, true) < piled(Nothing, true), "partial reloads take the pile");
+    assert_eq!(piled(PartialReload, false), piled(Nothing, false), "reloads from empty do not");
 }

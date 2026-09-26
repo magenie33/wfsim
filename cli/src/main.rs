@@ -197,6 +197,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         faction_multiplier: 1.0,
         dot_modified_base: None,
         reload_bonus: 0.0,
+        reload_from_empty_speed: 0.0,
         weakpoint_damage: 0.0,
         headshot_multiplier: None,
         weakpoint_crit_chance_relative: 0.0,

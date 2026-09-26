@@ -744,12 +744,10 @@ pub struct ClusterSpec {
 }
 
 /// THE GRENADES A RELOAD THROWS — the Catabolyst family's, docs/MECHANICS.md
-/// §7.2. Each is a contact hit and an explosion, laid out like a bomblet.
-///
-/// ONLY THE RELOAD-FROM-EMPTY THROW, because it is the only reload this arena
-/// performs: the loop reloads when it cannot fire. The partial-reload grenade
-/// is a different, weaker attack, and stating it here would be a rule nothing
-/// applies.
+/// §7.2. TWO THROWS, because the game has two: a reload FROM EMPTY throws the
+/// big one and any other reload a weaker one ("Damage, critical chance, status
+/// chance, and explosion range increase when reloading with no ammo in the
+/// magazine"). The count and the fan are the weapon's, shared by both.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReloadGrenadeSpec {
@@ -758,6 +756,14 @@ pub struct ReloadGrenadeSpec {
     /// The fan they leave in, degrees edge to edge, centred on the reticle.
     #[serde(default)]
     pub fan_deg: f64,
+    pub from_empty: GrenadeThrowSpec,
+    pub partial: GrenadeThrowSpec,
+}
+
+/// ONE THROW'S GRENADE: a contact hit and an explosion, laid out like a bomblet.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GrenadeThrowSpec {
     /// THE CONTACT HIT, per grenade.
     pub damage: BTreeMap<String, f64>,
     #[serde(default)]

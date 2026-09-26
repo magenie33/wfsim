@@ -180,18 +180,25 @@ pub struct ResolvedCluster {
     pub blast: ResolvedRadial,
 }
 
-/// THE GRENADES A RELOAD FROM EMPTY THROWS, through the mod buckets — see
+/// One throw's grenade through the mod buckets.
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedGrenadeThrow {
+    pub contact: ResolvedRadial,
+    pub blast: ResolvedRadial,
+}
+
+/// THE GRENADES A RELOAD THROWS, through the mod buckets — see
 /// [`crate::model::ReloadGrenadeBase`].
 #[derive(Debug, Clone, Copy)]
 pub struct ResolvedReloadGrenade {
     pub count: u32,
     pub fan_deg: f64,
-    pub contact: ResolvedRadial,
-    pub blast: ResolvedRadial,
-    /// SYNTH CHARGE'S FACTOR on the throw, 1.0 without it. The beam cannot
-    /// take the card ("no effect on Continuous Weapons"); the grenade does —
-    /// "Synth Charge increases the grenade damage" (wiki `Catabolyst`), and the
-    /// throw follows the magazine's last round.
+    pub from_empty: ResolvedGrenadeThrow,
+    pub partial: ResolvedGrenadeThrow,
+    /// SYNTH CHARGE'S FACTOR on the FROM-EMPTY throw, 1.0 without it. The beam
+    /// cannot take the card ("no effect on Continuous Weapons"); the grenade
+    /// does — "Synth Charge increases the grenade damage" (wiki `Catabolyst`) —
+    /// and only the throw that follows the magazine's last round.
     pub last_round_factor: f64,
     /// CRITICAL MUTATION, `(per kill, cap, lost per small throw)` — see
     /// [`crate::model::ModEffect::GrenadeCritPerKill`].
@@ -545,6 +552,9 @@ pub struct ResolvedPanel {
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
     pub reload_bonus: f64,
+    /// The weapon's own reload-speed term on a reload FROM EMPTY, joined to
+    /// `reload_bonus` only then (`fight::live_reload_time`).
+    pub reload_from_empty_speed: f64,
     /// Σ base-damage bonuses (needed live when CO joins this bucket).
     pub base_damage_bonus: f64,
     /// See [`WeaponBase::base_damage_below_half_health`] — carried through unchanged,

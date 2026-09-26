@@ -407,6 +407,8 @@ pub struct FightParams {
     /// reload buffs (Merciless r5, Conjunction Voltage stacks) join the
     /// bucket: time = base_reload / (1 + this + arcane additions).
     pub reload_bonus: f64,
+    /// See [`crate::build::loadout::ResolvedPanel::reload_from_empty_speed`].
+    pub reload_from_empty_speed: f64,
     /// Σ LISTED Weak Point damage (Pistol Acuity): +1.5× this on the part
     /// multiplier of true weak points, before the headshot bracket.
     pub weakpoint_damage: f64,

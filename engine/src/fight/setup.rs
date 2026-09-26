@@ -1251,6 +1251,7 @@ impl FightParams {
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
             reload_bonus: panel.reload_bonus,
+            reload_from_empty_speed: panel.reload_from_empty_speed,
             weakpoint_damage: panel.weakpoint_damage,
             headshot_multiplier: panel.headshot_multiplier,
             crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,

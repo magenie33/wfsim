@@ -311,24 +311,28 @@ pub fn base_panel_assembled(
     // THE RELOAD GRENADES, both halves through the same builder as a bomblet's.
     // Multishot raises neither: the wiki lists it as a bug that "Multishot does
     // not affect the reload grenade", and the throw's count is the weapon's.
-    let reload_grenade = s.attack.reload_grenade.as_ref().map(|g| crate::model::ReloadGrenadeBase {
-        count: g.count,
-        fan_deg: g.fan_deg,
+    let a_throw = |t: &crate::data::weapons::GrenadeThrowSpec| crate::model::GrenadeThrowBase {
         contact: a_radial(&RadialSpec {
-            damage: g.damage.clone(),
+            damage: t.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),
             takes_blast_radius_mods: false,
-            crit_chance: g.crit_chance,
-            crit_multiplier: g.crit_multiplier,
-            status_chance: g.status_chance,
+            crit_chance: t.crit_chance,
+            crit_multiplier: t.crit_multiplier,
+            status_chance: t.status_chance,
             falloff_start_m: None,
             falloff_reduction: None,
             forced_procs: Vec::new(),
             takes_condition_overload: false,
             takes_multishot: false,
         }),
-        blast: a_radial(&RadialSpec { takes_multishot: false, ..g.radial.clone() }),
+        blast: a_radial(&RadialSpec { takes_multishot: false, ..t.radial.clone() }),
+    };
+    let reload_grenade = s.attack.reload_grenade.as_ref().map(|g| crate::model::ReloadGrenadeBase {
+        count: g.count,
+        fan_deg: g.fan_deg,
+        from_empty: a_throw(&g.from_empty),
+        partial: a_throw(&g.partial),
     });
 
     // The lingering FIELD (Torid's Toxin cloud). Each stat falls back to the

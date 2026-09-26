@@ -194,7 +194,7 @@ pub fn resolve_for(
     // and its family feed the SAME additive bucket the mods do — one bucket, so
     // an evolution's +60% and Primed Fast Hands' +55% sum rather than
     // multiplying, which is the shape every other shared stat here has.
-    let mut rl = base.evo_reload_bonus + base.reload_from_empty_speed + fb.reload_speed;
+    let mut rl = base.evo_reload_bonus + fb.reload_speed;
     // Magazine-capacity and status-duration additive buckets.
     let (mut mag, mut sdur) = (fb.magazine, fb.status_duration);
     // Sentient Surge's three, carried to the sim rather than spent here: all
@@ -1134,8 +1134,14 @@ pub fn resolve_for(
     let reload_grenade = base.reload_grenade.as_ref().map(|g| ResolvedReloadGrenade {
         count: g.count,
         fan_deg: g.fan_deg,
-        contact: a_resolved(&g.contact),
-        blast: a_resolved(&g.blast),
+        from_empty: crate::build::loadout::ResolvedGrenadeThrow {
+            contact: a_resolved(&g.from_empty.contact),
+            blast: a_resolved(&g.from_empty.blast),
+        },
+        partial: crate::build::loadout::ResolvedGrenadeThrow {
+            contact: a_resolved(&g.partial.contact),
+            blast: a_resolved(&g.partial.blast),
+        },
         last_round_factor: 1.0 + last_round_damage,
         crit_per_kill: grenade_crit_per_kill.map(|(v, cap)| (v, cap, grenade_crit_loss)),
     });
@@ -1785,6 +1791,7 @@ pub fn resolve_for(
             None => base.base_reload / (1.0 + rl),
         },
         reload_bonus: rl,
+        reload_from_empty_speed: base.reload_from_empty_speed,
         base_damage_bonus: base_damage,
         // A LOCKED base damage takes this with it, the same rule the live
         // buffs follow: a lock is "set to its default ignoring other bonuses".

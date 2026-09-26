@@ -544,6 +544,10 @@ pub enum ClearedBy {
     /// and picking either as "close enough" is a stack count nobody can
     /// reproduce.
     Reload,
+    /// A RELOAD THAT WAS NOT FROM EMPTY — Mauler's Magazine: *"Stacks are shown
+    /// as a buff, which are lost when reloading from a partial magazine"*. At
+    /// the reload's start, on the same from-empty reading every such card uses.
+    PartialReload,
 }
 
 /// What event grants/refreshes a stack.
@@ -683,6 +687,7 @@ impl ClearedBy {
             Some("reload") => ClearedBy::Reload,
             Some("magazine_refilled") => ClearedBy::MagazineRefilled,
             Some("empty_magazine") => ClearedBy::EmptyMagazine,
+            Some("partial_reload") => ClearedBy::PartialReload,
             _ => ClearedBy::Nothing,
         }
     }

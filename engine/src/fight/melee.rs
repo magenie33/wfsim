@@ -668,6 +668,7 @@ pub(super) fn swing_this_shot(
         .pick_rule(&crate::data::apl::Now {
             can_fire: true,
             gauge_pct: 0.0,
+            magazine_pct: 1.0,
             tennokai,
             in_base_form: true,
             remaining: &|_| 0.0,

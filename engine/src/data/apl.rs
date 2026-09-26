@@ -124,6 +124,10 @@ pub enum When {
     GaugeAtLeast { pct: f64 },
     /// `if=gauge.pct<=N` — spent, which is what ends a cycle's other half.
     GaugeAtMost { pct: f64 },
+    /// `if=magazine.pct<=N` — the magazine is down to this share or less. What
+    /// makes a reload BEFORE empty expressible, and on a weapon whose reload
+    /// does something (the Catabolyst's grenade) that is a different attack.
+    MagazineAtMost { pct: f64 },
     /// `if=buff.<ability>.remains<N` — the buff is down, or has less than this
     /// long to run. Zero means "only once it is actually down".
     BuffRemainsUnder { ability: String, seconds: f64 },
@@ -170,6 +174,7 @@ impl Rule {
             When::CannotFire => format!("{act},if=!can_fire"),
             When::GaugeAtLeast { pct } => format!("{act},if=gauge.pct>={pct}"),
             When::GaugeAtMost { pct } => format!("{act},if=gauge.pct<={pct}"),
+            When::MagazineAtMost { pct } => format!("{act},if=magazine.pct<={pct}"),
             When::BuffRemainsUnder { ability, seconds } => {
                 format!("{act},if=buff.{ability}.remains<{seconds}")
             }
@@ -226,6 +231,9 @@ impl Apl {
             let possible = match &r.action {
                 Action::TransformIn => now.in_base_form,
                 Action::TransformOut => !now.in_base_form,
+                // A FULL MAGAZINE CANNOT BE RELOADED, so a rule that would is
+                // passed over like a transmute into a form already held.
+                Action::Reload => now.magazine_pct < 1.0 - 1e-9,
                 _ => true,
             };
             if !possible {
@@ -236,6 +244,7 @@ impl Apl {
                 When::CannotFire => !now.can_fire,
                 When::GaugeAtLeast { pct } => now.gauge_pct >= *pct,
                 When::GaugeAtMost { pct } => now.gauge_pct <= *pct,
+                When::MagazineAtMost { pct } => now.magazine_pct <= *pct,
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
                 When::Tennokai => now.tennokai,
             };
@@ -273,6 +282,9 @@ pub struct Now<'a> {
     /// charges into a 30-charge gauge is 1.17, and a rule reading a clamped
     /// value could not tell a full gauge from an overfilled one.
     pub gauge_pct: f64,
+    /// THE ACTIVE MAGAZINE'S SHARE LEFT, 0 to 1 — 1 on anything with no magazine,
+    /// which is also what makes a reload impossible there.
+    pub magazine_pct: f64,
     /// Is the Tennokai flash up — a melee-only fact, and `false` on every
     /// weapon and every instant that has no window open.
     pub tennokai: bool,
@@ -348,7 +360,7 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_fire: true, gauge_pct: 0.0, tennokai: false, in_base_form: true, remaining }
+        Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, in_base_form: true, remaining }
     }
 
     /// An ordinary gun: the trigger, and no flash to convert a swing.
@@ -517,7 +529,7 @@ heavy");
         // the only thing that distinguishes a converted swing from the press a
         // heavy build makes all engagement.
         let none = |_: &str| 0.0;
-        let flash = Now { can_fire: true, gauge_pct: 0.0, tennokai: true,
+        let flash = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true,
                           in_base_form: true, remaining: &none };
         let converted = |a: &Apl| a.pick_rule(&flash)
             .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
@@ -532,9 +544,9 @@ heavy");
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, tennokai: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_fire: true, gauge_pct: 0.0, tennokai: false, in_base_form: false, remaining: &none };
+        let spent = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, in_base_form: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -555,7 +567,23 @@ heavy");
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_fire: false, gauge_pct: 0.5, tennokai: false, in_base_form: true, remaining: &none };
+        let dry = Now { can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
+    }
+
+    /// `magazine.pct<=N` reads the magazine, and a FULL magazine cannot be
+    /// reloaded whatever the rule says — the scan passes over it to the next.
+    #[test]
+    fn a_reload_rule_reads_the_magazine_and_passes_over_a_full_one() {
+        let apl = Apl(vec![
+            Rule { action: Action::Reload, when: When::MagazineAtMost { pct: 0.5 } },
+            Rule { action: Action::Reload, when: When::Always },
+        ]);
+        let none = |_: &str| 0.0;
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, in_base_form: true, remaining: &none };
+        assert_eq!(apl.pick_rule(&at(0.4)).map(|r| &r.when), Some(&When::MagazineAtMost { pct: 0.5 }));
+        assert_eq!(apl.pick_rule(&at(0.8)).map(|r| &r.when), Some(&When::Always), "only the second holds");
+        assert_eq!(apl.pick(&at(1.0)), Action::Shoot, "a full magazine reloads nothing");
+        assert_eq!(apl.0[0].to_simc(), "reload,if=magazine.pct<=0.5");
     }
 }

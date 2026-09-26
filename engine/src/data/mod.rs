@@ -82,7 +82,7 @@ mod tests {
                 || ArcTrigger::from_id(w).is_some()
         };
         let decay = |w: &str| ["lose_one_and_reset", "per_stack_expiry", "all_at_once"].contains(&w);
-        let cleared_by = |w: &str| ["reload", "magazine_refilled", "empty_magazine"].contains(&w);
+        let cleared_by = |w: &str| ["reload", "magazine_refilled", "empty_magazine", "partial_reload"].contains(&w);
         let mut bad = Vec::new();
         for family in ["mods/", "evolutions/", "arcanes/", "warframe_mods/", "warframe_arcanes/", "perks/"] {
             for (path, text) in files_under(family) {
