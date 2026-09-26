@@ -182,7 +182,7 @@ pub(super) fn fire_extra_hits(
     rec: &mut crate::record::Record,
     rng: &mut Rng,
 ) -> bool {
-    let hits = crate::data::abilities::extra_hits_at(&params.abilities, at);
+    let hits = crate::data::abilities::extra_hits_at(&params.abilities_now(), at);
     if hits.is_empty() || trigger_raw <= 0.0 {
         return false;
     }

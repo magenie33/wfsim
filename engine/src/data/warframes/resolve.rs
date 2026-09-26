@@ -428,10 +428,11 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                     if stacks > 0 {
                         add(FrameStat::AbilityStrength, &a.id, by_rank(per_stack, rank) * f64::from(stacks), false);
                     }
+                    cast_arcanes.per_kill = Some((by_rank(per_stack, rank), *max_stacks, stacks));
                     admissions.push(Admission {
                         from: a.id.clone(),
-                        text: "the stacks it opens with count; kills during the fight add none yet".into(),
-                        kind: AdmissionKind::Unmodelled,
+                        text: "the stacks it opens with; each kill in a fight adds one to what the action list casts after it".into(),
+                        kind: AdmissionKind::OutOfScope,
                     });
                 }
                 FrameEffect::Arcane(ArcaneRule::StrengthAfterOperatorAbility(r)) => {

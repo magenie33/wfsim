@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! **WHAT THE FRAME AND ITS OPERATOR DO, ON ONE TIMELINE** — docs/BUFFS.md
-//! §"Cast, or assumed up" and §"Snapshots".
+//! **WHAT THE FRAME AND ITS OPERATOR DO, DECIDED AS THE FIGHT RUNS** —
+//! docs/BUFFS.md §"Cast, or assumed up".
 //!
-//! Every planned rule of the action list (`Apl::planned`) is laid out here
-//! before the fight: casts, the summoning of an Exalted weapon, and the
-//! Operator's actions. ONE PLAYER DOES ONE THING AT A TIME, so an action due
-//! while another is under way starts when that one ends.
+//! Every planned rule of the action list (`Apl::planned`) is asked BETWEEN
+//! SHOTS, top down, whether it acts now ([`FrameRuntime::act`]): a cast, the
+//! summoning of an Exalted weapon, an Operator trip. Asked in the fight rather
+//! than laid out before it, because what decides them happens in it — a melee
+//! kill that lengthens Warcry (Eternal War) moves the moment it lapses, and a
+//! kill that adds a Molt Augmented stack moves what the next cast snapshots.
 //!
 //! **A WARFRAME BUFF IS A SNAPSHOT** (M105). A cast reads Ability Strength at
 //! the instant it is cast and keeps that number for its whole window; a buff
@@ -13,8 +15,10 @@
 //! resolved at its own strength, and an Exalted weapon's damage is the strength
 //! its summoning cast read.
 
+use std::sync::{Arc, Mutex};
+
 use crate::data::abilities::{self, AbilityPick, ActiveAbility, Caster, CAST_SECONDS_UNMEASURED};
-use crate::data::apl::{Action, Apl};
+use crate::data::apl::{Action, Apl, When};
 use crate::data::warframes::{focus_school, FrameEffect, FrameStat, NodeTrigger};
 
 /// **HOW LONG AN OPERATOR TRIP TAKES**: Transference out and back, 1 s (M105),
@@ -25,8 +29,8 @@ pub const TRANSFERENCE_SECONDS: f64 = 1.0;
 pub const CHAINED_SLING_SECONDS_UNMEASURED: f64 = 1.0;
 pub const OPERATOR_ABILITY_SECONDS_UNMEASURED: f64 = 1.0;
 
-/// **THE WIELDER'S ARCANES THAT MOVE A CAST** — the two whose number depends
-/// on what the frame did before it, so only the plan can spend them.
+/// **THE WIELDER'S ARCANES THAT MOVE A CAST** — whose number depends on what the
+/// frame did before it, so only the fight can spend them.
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct CastArcanes {
     /// Molt Vigor: added to the next Warframe cast after an Operator ability.
@@ -35,11 +39,16 @@ pub struct CastArcanes {
     /// Arcane Power Ramp: `(strength per stack, max stacks)`.
     #[serde(default)]
     pub per_cast_stack: Option<(f64, u32)>,
+    /// Molt Augmented: `(strength per stack, max stacks, stacks it opens with)`.
+    /// The opening stacks are already in the frame's own strength; a kill in
+    /// the fight adds one more, "Kills from all sources" (W`Molt_Augmented`).
+    #[serde(default)]
+    pub per_kill: Option<(f64, u32, u32)>,
 }
 
 impl CastArcanes {
     /// A frame with none of them.
-    pub const NONE: CastArcanes = CastArcanes { after_operator_ability: 0.0, per_cast_stack: None };
+    pub const NONE: CastArcanes = CastArcanes { after_operator_ability: 0.0, per_cast_stack: None, per_kill: None };
 }
 
 /// A stretch of time Ability Strength is raised, and what raised it.
@@ -67,46 +76,75 @@ pub struct Summon {
     pub strength: f64,
 }
 
-/// The frame's side of one fight.
+/// An ability pick that owns its strings, so a spec can outlive the request.
 #[derive(Debug, Clone, PartialEq)]
-pub struct FramePlan {
-    /// Every ability window: one entry per CAST for an ability the list names,
-    /// the assumed entry untouched for one it does not.
-    pub abilities: Vec<ActiveAbility>,
-    /// When the player is busy and not attacking, in time order: `(at, seconds)`.
-    pub interrupts: Vec<(f64, f64)>,
-    pub strength: Vec<StrengthWindow>,
-    pub summon: Summon,
+pub struct Pick {
+    pub id: String,
+    pub duration_seconds: Option<f64>,
+    pub element: Option<String>,
 }
 
-/// Who is doing it: the frame's stats, what it has picked, and the Operator.
-pub struct Frame<'a> {
-    /// `strength` is the frame's own, before any window below.
-    pub caster: Caster<'a>,
-    pub picks: &'a [AbilityPick<'a>],
-    /// The picks resolved at `caster` — the family contest already settled.
-    pub assumed: &'a [ActiveAbility],
+/// **WHO IS DOING IT** — the frame's stats, its picks, its Operator and its
+/// arcanes, and the rules it acts on. Built once per fight; every run opens a
+/// [`FrameRuntime`] on it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FrameSpec {
+    /// The planned rules, in list order.
+    pub rules: Vec<(Action, When)>,
+    /// The frame's own Ability Strength, before anything the fight earns.
+    pub strength: f64,
+    pub duration: f64,
+    pub efficiency: f64,
+    pub casting_speed_bonus: f64,
+    pub augments: Vec<String>,
+    pub picks: Vec<Pick>,
+    /// The picks resolved at the frame's own strength — the family contest
+    /// already settled.
+    pub assumed: Vec<ActiveAbility>,
     /// The linked Operator's active Focus school.
-    pub school: &'a str,
+    pub school: String,
     /// The ability that summons the weapon being fought with, if it is Exalted.
-    pub summoned_by: Option<&'a str>,
-    pub weapon_class: &'a str,
-    pub weapon_slot: &'a str,
-    pub arcanes: &'a CastArcanes,
+    pub summoned_by: Option<String>,
+    pub weapon_class: &'static str,
+    pub weapon_slot: &'static str,
+    pub arcanes: CastArcanes,
 }
 
-/// The frame's Ability Strength at `t`: its own plus every source live then.
-/// A source counts ONCE however many of its windows overlap — earning a buff
-/// again refreshes it, never stacks it.
-pub fn strength_at(base: f64, windows: &[StrengthWindow], t: f64) -> f64 {
-    let mut by_source: Vec<(&str, f64)> = Vec::new();
-    for w in windows.iter().filter(|w| w.live_at(t)) {
-        match by_source.iter_mut().find(|(f, _)| *f == w.from) {
-            Some(slot) => slot.1 = slot.1.max(w.bonus),
-            None => by_source.push((&w.from, w.bonus)),
-        }
+impl FrameSpec {
+    /// A named ability with a stated price — the only kind the list casts.
+    fn castable(&self, id: &str) -> Option<&ActiveAbility> {
+        self.assumed.iter().find(|a| a.id == id && a.energy_cost.is_some())
     }
-    base + by_source.iter().map(|(_, b)| b).sum::<f64>()
+
+    /// **THE FIGHT'S OPENING SET**: every pick the list does not cast, assumed
+    /// up as it always was. What it casts opens down and is cast in the fight.
+    pub fn opening(&self) -> Vec<ActiveAbility> {
+        let named = |a: &ActiveAbility| {
+            self.rules.iter().any(|(act, _)| matches!(act, Action::Cast { ability } if ability == a.id))
+        };
+        self.assumed.iter().filter(|a| !(named(a) && a.energy_cost.is_some())).cloned().collect()
+    }
+
+    /// Does a fight under this spec need the frame at all? Only when the list
+    /// plans something, or an assumed window can grow (Eternal War).
+    pub fn needed(&self) -> bool {
+        !self.rules.is_empty() || self.assumed.iter().any(|a| a.extend_per_melee_kill_seconds > 0.0)
+    }
+
+    /// **THE SUMMON, BEFORE THE FIGHT**: the opening burst run with nothing
+    /// killed, because the weapon it summons has not attacked yet. It is the
+    /// WEAPON's number and so has to be known before its build is resolved.
+    pub fn summon(self: &Arc<Self>) -> Summon {
+        let mut rt = FrameRuntime::new(self.clone(), Arc::new(Mutex::new(self.opening())));
+        let mut t = 0.0;
+        for _ in 0..(self.rules.len() * 2 + 1) {
+            match rt.act(t, 0) {
+                Some(s) => t += s,
+                None => break,
+            }
+        }
+        rt.summon
+    }
 }
 
 /// The school's nodes an action earns, as `(id, seconds, strength bonus)`.
@@ -132,305 +170,275 @@ fn earned_by(school: &str, trigger: NodeTrigger) -> Vec<(String, f64, f64)> {
     })
 }
 
-/// **LAY OUT THE FRAME'S SIDE OF THE FIGHT.** Energy is not spent: the pool is
-/// unlimited until regeneration is modelled, so a named ability is recast
-/// whenever its window lapses (or `lead` seconds before; `if=once` never), and
-/// an ability whose price no source states is still never cast — it keeps the
-/// assumed reading.
-pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
-    let actions = apl.planned();
-    let base = frame.caster.strength;
-    let named = |a: &ActiveAbility| {
-        actions.iter().any(|(act, _)| matches!(act, Action::Cast { ability } if ability == a.id))
-            && a.energy_cost.is_some()
-    };
-    let mut abilities: Vec<ActiveAbility> = frame.assumed.iter().filter(|a| !named(a)).cloned().collect();
-    let mut interrupts = Vec::new();
-    let mut strength: Vec<StrengthWindow> = Vec::new();
-    let mut summon = Summon { at_seconds: f64::NEG_INFINITY, strength: base };
-    // `(due, index into actions)`, all due at the buzzer.
-    let mut due: Vec<(f64, usize)> = (0..actions.len()).map(|k| (0.0, k)).collect();
-    let mut busy = 0.0f64;
-    // WHAT THE NEXT CAST GAINS BEYOND THE FRAME'S TIMELINE: Molt Vigor, held
-    // from an Operator ability until spent, and Power Ramp's stacks with the
-    // ability that earned the last one.
-    let mut vigor = 0.0f64;
-    let mut ramp: (u32, Option<String>) = (0, None);
-    let mut cast_bonus = |id: &str, vigor: &mut f64| {
-        let mut b = std::mem::take(vigor);
-        if let Some((per, max)) = frame.arcanes.per_cast_stack {
-            // THE SAME ABILITY TWICE RUNNING DROPS IT TO ZERO AT ONCE (M105):
-            // the repeat gains nothing and arms nothing.
-            if ramp.1.as_deref() == Some(id) {
-                ramp.0 = 0;
-            } else {
-                b += per * f64::from(ramp.0);
-                ramp.0 = (ramp.0 + 1).min(max);
+/// **ONE RUN'S FRAME**: the windows it has opened, what the next cast gains,
+/// and which once-only rules are spent. `live` is shared with the run's params,
+/// which is how every reader of an ability window sees a cast made mid-fight.
+pub struct FrameRuntime {
+    spec: Arc<FrameSpec>,
+    live: Arc<Mutex<Vec<ActiveAbility>>>,
+    strength: Vec<StrengthWindow>,
+    /// Molt Vigor, held from an Operator ability until the next cast spends it.
+    vigor: f64,
+    /// Power Ramp's stacks, and the ability that earned the last one.
+    ramp: (u32, Option<String>),
+    once_done: Vec<bool>,
+    kill_mark: u32,
+    pub summon: Summon,
+}
+
+/// HOW OFTEN ONE TURN MAY ACT — a guard, so a rule whose action does not clear
+/// its own condition cannot hold the clock still.
+const ACTS_PER_CALL: usize = 16;
+
+impl FrameRuntime {
+    pub fn new(spec: Arc<FrameSpec>, live: Arc<Mutex<Vec<ActiveAbility>>>) -> Self {
+        let n = spec.rules.len();
+        let summon = Summon { at_seconds: f64::NEG_INFINITY, strength: spec.strength };
+        FrameRuntime { spec, live, strength: Vec::new(), vigor: 0.0, ramp: (0, None), once_done: vec![false; n], kill_mark: 0, summon }
+    }
+
+    /// The frame's Ability Strength at `t` with `kills` made so far: its own,
+    /// every strength window live then — a source counts ONCE however many of
+    /// its windows overlap — and the Molt Augmented stacks the fight has added.
+    pub fn strength_now(&self, t: f64, kills: u32) -> f64 {
+        let mut by_source: Vec<(&str, f64)> = Vec::new();
+        for w in self.strength.iter().filter(|w| w.live_at(t)) {
+            match by_source.iter_mut().find(|(f, _)| *f == w.from) {
+                Some(slot) => slot.1 = slot.1.max(w.bonus),
+                None => by_source.push((&w.from, w.bonus)),
             }
-            ramp.1 = Some(id.to_string());
+        }
+        let molt = self.spec.arcanes.per_kill.map_or(0.0, |(per, max, open)| {
+            per * f64::from((open + kills).min(max) - open.min(max))
+        });
+        self.spec.strength + by_source.iter().map(|(_, b)| b).sum::<f64>() + molt
+    }
+
+    /// Power Ramp's share of a cast of `id` now, without spending it.
+    fn ramp_bonus(&self, id: &str) -> f64 {
+        match self.spec.arcanes.per_cast_stack {
+            Some((per, _)) if self.ramp.1.as_deref() != Some(id) => per * f64::from(self.ramp.0),
+            _ => 0.0,
+        }
+    }
+
+    /// Spend what the next cast gains: Molt Vigor, and Power Ramp — THE SAME
+    /// ABILITY TWICE RUNNING DROPS IT TO ZERO AT ONCE, arming nothing (M105).
+    fn spend_cast_bonus(&mut self, id: &str) -> f64 {
+        let b = std::mem::take(&mut self.vigor) + self.ramp_bonus(id);
+        if let Some((_, max)) = self.spec.arcanes.per_cast_stack {
+            self.ramp.0 = if self.ramp.1.as_deref() == Some(id) { 0 } else { (self.ramp.0 + 1).min(max) };
+            self.ramp.1 = Some(id.to_string());
         }
         b
-    };
-    while let Some(pos) = due
-        .iter()
-        .enumerate()
-        .min_by(|a, b| a.1 .0.total_cmp(&b.1 .0).then(a.1 .1.cmp(&b.1 .1)))
-        .map(|(i, _)| i)
-    {
-        let (at, k) = due.remove(pos);
-        let start = at.max(busy);
-        if start >= fight_seconds {
-            continue;
+    }
+
+    /// **EVERY STACKING SOURCE IS FULL** — the gate on recasting for strength:
+    /// a cast one stack in would throw away a window for nothing. False when
+    /// the frame carries none, so the gate never opens on a plain frame.
+    fn stacks_full(&self, id: &str, kills: u32) -> bool {
+        let molt = self.spec.arcanes.per_kill.map(|(_, max, open)| open + kills >= max);
+        let ramp = self.spec.arcanes.per_cast_stack.map(|(_, max)| self.ramp.1.as_deref() != Some(id) && self.ramp.0 >= max);
+        match (molt, ramp) {
+            (None, None) => false,
+            (m, r) => m.unwrap_or(true) && r.unwrap_or(true),
         }
-        let (action, lead) = actions[k];
+    }
+
+    /// The live window of `id` — the one the latest cast opened — if any.
+    fn window(&self, id: &str, t: f64) -> Option<(f64, f64)> {
+        let live = self.live.lock().expect("one run, one thread");
+        live.iter()
+            .filter(|a| a.id == id && a.live_at(t))
+            .max_by(|a, b| a.starts_at_seconds.total_cmp(&b.starts_at_seconds))
+            .map(|a| (a.ends_at_seconds - t, a.snapshot_strength))
+    }
+
+    /// How long the sling's earned windows have left at `t`; `None` when the
+    /// school earns nothing from a sling, which leaves nothing to keep up.
+    fn sling_remains(&self, t: f64) -> Option<f64> {
+        let earned = earned_by(&self.spec.school, NodeTrigger::OperatorSling);
+        if earned.is_empty() {
+            return None;
+        }
+        Some(
+            self.strength
+                .iter()
+                .filter(|w| earned.iter().any(|(id, _, _)| *id == w.from) && w.live_at(t))
+                .map(|w| w.ends_at_seconds - t)
+                .fold(0.0, f64::max),
+        )
+    }
+
+    /// **DOES RULE `k` ACT NOW?**
+    fn wants(&self, k: usize, t: f64, kills: u32) -> bool {
+        let (action, when) = &self.spec.rules[k];
+        let once = !self.once_done[k];
+        let kept = |remains: f64| match when {
+            When::Once => once,
+            When::Always | When::StrengthGain => remains <= 0.0,
+            // DOWN, OR THIS MANY SECONDS BEFORE — a lead of 0 is "when down".
+            When::BuffRemainsUnder { seconds, .. } => remains <= 0.0 || remains < *seconds,
+            _ => false,
+        };
+        match action {
+            Action::Operator { sling, .. } => match (sling, self.sling_remains(t)) {
+                (true, Some(r)) => kept(r),
+                // A TRIP THAT EARNS NO WINDOW has nothing to keep up: once.
+                _ => once,
+            },
+            Action::Cast { ability } if self.spec.summoned_by.as_deref() == Some(ability.as_str()) => once,
+            Action::Cast { ability } => {
+                if self.spec.castable(ability).is_none() {
+                    return false;
+                }
+                let (remains, snapshot) = self.window(ability, t).unwrap_or((0.0, f64::NEG_INFINITY));
+                // A STRONGER CAST, ONCE EVERY STACK IS IN — a recast one stack
+                // in would throw away a window for nothing.
+                let stronger = matches!(when, When::StrengthGain)
+                    && self.stacks_full(ability, kills)
+                    && self.strength_now(t, kills) + self.vigor + self.ramp_bonus(ability) > snapshot + 1e-9;
+                kept(remains) || stronger
+            }
+            _ => false,
+        }
+    }
+
+    /// Do rule `k` at `t`; the seconds it keeps the weapon from attacking.
+    fn perform(&mut self, k: usize, t: f64, kills: u32) -> f64 {
+        self.once_done[k] = true;
+        let action = self.spec.rules[k].0.clone();
         match action {
             Action::Operator { sling, ability } => {
                 let secs = TRANSFERENCE_SECONDS
-                    + if *sling { CHAINED_SLING_SECONDS_UNMEASURED } else { 0.0 }
-                    + if *ability { OPERATOR_ABILITY_SECONDS_UNMEASURED } else { 0.0 };
-                interrupts.push((start, secs));
-                busy = start + secs;
-                if *ability {
-                    vigor = frame.arcanes.after_operator_ability;
+                    + if sling { CHAINED_SLING_SECONDS_UNMEASURED } else { 0.0 }
+                    + if ability { OPERATOR_ABILITY_SECONDS_UNMEASURED } else { 0.0 };
+                if ability {
+                    self.vigor = self.spec.arcanes.after_operator_ability;
                 }
-                let earned = if *sling { earned_by(frame.school, NodeTrigger::OperatorSling) } else { Vec::new() };
-                // A SLING THAT EARNS NOTHING IS DONE ONCE: there is no window
-                // whose lapse would call for another.
-                let next = earned.iter().map(|(_, s, _)| busy + s).fold(f64::INFINITY, f64::min);
-                for (from, s, bonus) in earned {
-                    strength.push(StrengthWindow { from, starts_at_seconds: busy, ends_at_seconds: busy + s, bonus });
+                if sling {
+                    let back = t + secs;
+                    for (from, s, bonus) in earned_by(&self.spec.school, NodeTrigger::OperatorSling) {
+                        self.strength.push(StrengthWindow { from, starts_at_seconds: back, ends_at_seconds: back + s, bonus });
+                    }
                 }
-                if next.is_finite() && lead.is_finite() {
-                    due.push(((next - lead).max(busy), k));
-                }
+                secs
             }
-            Action::Cast { ability } if frame.summoned_by == Some(ability.as_str()) => {
-                // ONCE: the pool never runs dry, so the channel is never dropped.
-                if summon.at_seconds.is_finite() {
-                    continue;
-                }
-                let secs = CAST_SECONDS_UNMEASURED / (1.0 + frame.caster.casting_speed_bonus);
-                let extra = cast_bonus(ability, &mut vigor);
-                summon = Summon { at_seconds: start, strength: strength_at(base, &strength, start) + extra };
-                interrupts.push((start, secs));
-                busy = start + secs;
+            Action::Cast { ability } if self.spec.summoned_by.as_deref() == Some(ability.as_str()) => {
+                let extra = self.spend_cast_bonus(&ability);
+                self.summon = Summon { at_seconds: t, strength: self.strength_now(t, kills) + extra };
+                CAST_SECONDS_UNMEASURED / (1.0 + self.spec.casting_speed_bonus)
             }
-            Action::Cast { ability } => {
-                let Some(a) = frame.assumed.iter().find(|a| a.id == ability && a.energy_cost.is_some()) else {
-                    continue;
-                };
-                let Some(pick) = frame.picks.iter().find(|p| p.id == a.id) else { continue };
-                let extra = cast_bonus(a.id, &mut vigor);
-                let at_strength = Caster { strength: strength_at(base, &strength, start) + extra, ..frame.caster };
-                let Some(mut cast) =
-                    abilities::resolve(std::slice::from_ref(pick), &at_strength, frame.weapon_class, frame.weapon_slot)
-                        .into_iter()
-                        .next()
-                else {
-                    continue;
-                };
-                cast.starts_at_seconds = start;
-                cast.ends_at_seconds = start + cast.window_seconds;
-                if cast.interrupts_fire {
-                    interrupts.push((start, cast.cast_seconds));
-                    busy = start + cast.cast_seconds;
-                }
-                if cast.ends_at_seconds.is_finite() && lead.is_finite() {
-                    due.push(((cast.ends_at_seconds - lead).max(busy), k));
-                }
-                abilities.push(cast);
-            }
-            _ => unreachable!("`Apl::planned` yields planned actions only"),
+            Action::Cast { ability } => self.cast(&ability, t, kills),
+            _ => 0.0,
         }
     }
-    FramePlan { abilities, interrupts, strength, summon }
+
+    /// CAST A BUFF: resolved at the strength of this instant, for the ability's
+    /// own duration times the frame's, replacing the window it had.
+    fn cast(&mut self, id: &str, t: f64, kills: u32) -> f64 {
+        let spec = self.spec.clone();
+        let Some(def) = abilities::get(id) else { return 0.0 };
+        let Some(pick) = spec.picks.iter().find(|p| p.id == id) else { return 0.0 };
+        let strength = self.strength_now(t, kills) + self.spend_cast_bonus(id);
+        // THE WINDOW IS THE CARD'S DURATION × THE FRAME'S, not a typed one:
+        // a cast lasts what the build makes it last.
+        let window = def.duration_seconds.map(|d| d * spec.duration).or(pick.duration_seconds).unwrap_or(f64::INFINITY);
+        let augments: Vec<&str> = spec.augments.iter().map(String::as_str).collect();
+        let caster = Caster {
+            strength,
+            duration: spec.duration,
+            efficiency: spec.efficiency,
+            casting_speed_bonus: spec.casting_speed_bonus,
+            augments: &augments,
+        };
+        let one = AbilityPick { id: def.id, duration_seconds: Some(window), element: pick.element.as_deref() };
+        let Some(mut cast) = abilities::resolve(&[one], &caster, spec.weapon_class, spec.weapon_slot).into_iter().next()
+        else {
+            return 0.0;
+        };
+        cast.starts_at_seconds = t;
+        cast.ends_at_seconds = t + window;
+        // THE CAP IS THIS CAST'S: "up to a maximum of double the ability's
+        // duration after mods" (W`Eternal_War`), counted from when it opened.
+        cast.extend_cap_seconds += t;
+        let busy = if cast.interrupts_fire { cast.cast_seconds } else { 0.0 };
+        let mut live = self.live.lock().expect("one run, one thread");
+        for old in live.iter_mut().filter(|a| a.id == id && a.ends_at_seconds > t) {
+            old.ends_at_seconds = t;
+        }
+        live.push(cast);
+        busy
+    }
+
+    /// **A MELEE KILL LENGTHENS THE WINDOW IT LANDS IN** (Eternal War): every
+    /// window with an augment that grows, live now, by the kills since the last
+    /// call, up to its cap. A kill while it is down lengthens nothing.
+    fn grow(&mut self, t: f64, kills: u32) {
+        let fresh = kills.saturating_sub(self.kill_mark);
+        self.kill_mark = kills;
+        if fresh == 0 || self.spec.weapon_slot != "melee" {
+            return;
+        }
+        let mut live = self.live.lock().expect("one run, one thread");
+        for a in live.iter_mut().filter(|a| a.extend_per_melee_kill_seconds > 0.0 && a.live_at(t)) {
+            a.ends_at_seconds =
+                (a.ends_at_seconds + f64::from(fresh) * a.extend_per_melee_kill_seconds).min(a.extend_cap_seconds);
+        }
+    }
+
+    /// **THE FRAME'S TURN, between shots**: grow what the kills grew, then the
+    /// first rule that acts now acts. Returns the seconds the weapon waits, or
+    /// `None` when nothing acted; the caller asks again until it is `None`.
+    pub fn act(&mut self, t: f64, kills: u32) -> Option<f64> {
+        self.grow(t, kills);
+        (0..self.spec.rules.len()).find(|&k| self.wants(k, t, kills)).map(|k| self.perform(k, t, kills))
+    }
+
+    /// Every act due at `t`, back to back; the time the weapon is free again.
+    pub fn act_all(&mut self, mut t: f64, kills: u32) -> f64 {
+        for _ in 0..ACTS_PER_CALL {
+            match self.act(t, kills) {
+                Some(s) => t += s,
+                None => break,
+            }
+        }
+        t
+    }
+}
+
+/// THE SPEC A REQUEST'S LIST AND FRAME MAKE, with the planned rules pulled out.
+#[allow(clippy::too_many_arguments)]
+pub fn spec(
+    apl: &Apl,
+    caster: &Caster<'_>,
+    picks: &[AbilityPick<'_>],
+    assumed: &[ActiveAbility],
+    school: &str,
+    summoned_by: Option<&str>,
+    weapon_class: &'static str,
+    weapon_slot: &'static str,
+    arcanes: &CastArcanes,
+) -> FrameSpec {
+    FrameSpec {
+        rules: apl.0.iter().filter(|r| r.action.is_planned()).map(|r| (r.action.clone(), r.when.clone())).collect(),
+        strength: caster.strength,
+        duration: caster.duration,
+        efficiency: caster.efficiency,
+        casting_speed_bonus: caster.casting_speed_bonus,
+        augments: caster.augments.iter().map(|a| (*a).to_string()).collect(),
+        picks: picks
+            .iter()
+            .map(|p| Pick { id: p.id.to_string(), duration_seconds: p.duration_seconds, element: p.element.map(str::to_string) })
+            .collect(),
+        assumed: assumed.to_vec(),
+        school: school.to_string(),
+        summoned_by: summoned_by.map(str::to_string),
+        weapon_class,
+        weapon_slot,
+        arcanes: arcanes.clone(),
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::data::apl::{Rule, When};
-
-    const SLING: f64 = TRANSFERENCE_SECONDS + CHAINED_SLING_SECONDS_UNMEASURED;
-    const SLING_TRIP: Action = Action::Operator { sling: true, ability: false };
-
-    fn rule(action: Action, when: When) -> Rule {
-        Rule { action, when }
-    }
-    fn cast(id: &str) -> Action {
-        Action::Cast { ability: id.into() }
-    }
-    fn frame<'a>(
-        picks: &'a [AbilityPick<'a>],
-        assumed: &'a [ActiveAbility],
-        school: &'a str,
-        summoned_by: Option<&'a str>,
-        strength: f64,
-    ) -> Frame<'a> {
-        Frame {
-            caster: Caster { strength, ..Default::default() },
-            picks,
-            assumed,
-            school,
-            summoned_by,
-            weapon_class: "rifle",
-            weapon_slot: "primary",
-            arcanes: &CastArcanes::NONE,
-        }
-    }
-    fn warcry_picked(secs: f64) -> (Vec<AbilityPick<'static>>, Vec<ActiveAbility>) {
-        let picks = vec![AbilityPick { id: "warcry", duration_seconds: Some(secs), element: None }];
-        let assumed = abilities::resolve(&picks, &Caster::default(), "rifle", "primary");
-        (picks, assumed)
-    }
-    fn fire_rate(a: &ActiveAbility) -> f64 {
-        a.effects
-            .iter()
-            .find_map(|e| match e {
-                abilities::AbilityEffect::FireRate(v) => Some(*v),
-                _ => None,
-            })
-            .expect("warcry grants attack speed")
-    }
-
-    /// **THE POOL IS UNLIMITED, SO A NAMED ABILITY IS UP FROM ITS FIRST CAST
-    /// TO THE END**, one entry per cast, each opening where the last closed.
-    #[test]
-    fn a_named_ability_is_recast_at_every_lapse() {
-        let (picks, assumed) = warcry_picked(20.0);
-        let apl = Apl(vec![rule(cast("warcry"), When::Always)]);
-        let p = plan(&apl, &frame(&picks, &assumed, "vazarin", None, 1.0), 100.0);
-        assert_eq!(p.abilities.len(), 5, "{:?}", p.abilities);
-        assert_eq!(p.abilities[0].starts_at_seconds, 0.0);
-        assert_eq!(p.abilities[1].starts_at_seconds, 20.0);
-        assert_eq!(p.interrupts.len(), 5, "each cast took the trigger finger");
-        assert!(!p.abilities.iter().any(|a| a.live_at(-1.0)), "nothing was up before the first cast");
-    }
-
-    /// AN ABILITY THE LIST NEVER NAMES IS ASSUMED UP, untouched, and costs
-    /// nothing.
-    #[test]
-    fn an_ability_the_list_never_names_is_assumed_up() {
-        let (picks, assumed) = warcry_picked(20.0);
-        let p = plan(&Apl::default(), &frame(&picks, &assumed, "vazarin", None, 1.0), 100.0);
-        assert_eq!(p.abilities, assumed);
-        assert!(p.interrupts.is_empty());
-    }
-
-    /// **A CAST SNAPSHOTS THE STRENGTH OF ITS INSTANT.** Sling first, and the
-    /// Warcry cast inside Sling Strength's 20 s keeps the +40% for its whole
-    /// window, after the sling's own window has lapsed.
-    #[test]
-    fn a_cast_keeps_the_strength_it_was_cast_at() {
-        let (picks, assumed) = warcry_picked(30.0);
-        let apl = Apl(vec![
-            rule(SLING_TRIP, When::BuffRemainsUnder { ability: "sling_strength".into(), seconds: 0.0 }),
-            rule(cast("warcry"), When::Always),
-        ]);
-        let p = plan(&apl, &frame(&picks, &assumed, "madurai", None, 1.0), 60.0);
-        let sling = SLING;
-        assert_eq!(p.strength[0].starts_at_seconds, sling, "earned on the switch back");
-        assert_eq!(p.strength[0].ends_at_seconds, sling + 20.0);
-        let first = &p.abilities[0];
-        assert_eq!(first.starts_at_seconds, sling, "one thing at a time");
-        assert!((fire_rate(first) - fire_rate(&assumed[0]) * 1.4).abs() < 1e-9, "cast at 140%");
-        assert!(first.live_at(sling + 25.0), "the sling lapsed, the snapshot did not");
-        assert_eq!(p.interrupts[0], (0.0, sling));
-    }
-
-    /// **AN EXALTED WEAPON IS THE STRENGTH ITS SUMMONING READ** — and the same
-    /// sling after the summon earns the claws nothing.
-    #[test]
-    fn the_summon_snapshots_the_strength_of_its_cast() {
-        let sling = rule(SLING_TRIP, When::Always);
-        let hysteria = rule(cast("hysteria"), When::Always);
-        let before = plan(&Apl(vec![sling.clone(), hysteria.clone()]), &frame(&[], &[], "madurai", Some("hysteria"), 2.0), 60.0);
-        assert_eq!(before.summon.at_seconds, SLING);
-        assert!((before.summon.strength - 2.4).abs() < 1e-9);
-        let after = plan(&Apl(vec![hysteria, sling]), &frame(&[], &[], "madurai", Some("hysteria"), 2.0), 60.0);
-        assert_eq!(after.summon.at_seconds, 0.0);
-        assert_eq!(after.summon.strength, 2.0);
-        // …and one the list never casts was out before the fight, at the frame's own.
-        let assumed = plan(&Apl::default(), &frame(&[], &[], "madurai", Some("hysteria"), 2.0), 60.0);
-        assert_eq!(assumed.summon, Summon { at_seconds: f64::NEG_INFINITY, strength: 2.0 });
-    }
-
-    /// A SCHOOL WITH NOTHING TO EARN STILL PAYS THE TIME, once.
-    #[test]
-    fn a_sling_that_earns_nothing_costs_its_time_once() {
-        let apl = Apl(vec![rule(SLING_TRIP, When::Always)]);
-        let p = plan(&apl, &frame(&[], &[], "vazarin", None, 1.0), 60.0);
-        assert!(p.strength.is_empty());
-        assert_eq!(p.interrupts, vec![(0.0, SLING)]);
-    }
-
-    /// `remains<N` RE-SLINGS N SECONDS EARLY, so the window never lapses.
-    #[test]
-    fn a_lead_keeps_the_window_up() {
-        let apl = Apl(vec![rule(
-            SLING_TRIP,
-            When::BuffRemainsUnder { ability: "sling_strength".into(), seconds: SLING },
-        )]);
-        let p = plan(&apl, &frame(&[], &[], "madurai", None, 1.0), 60.0);
-        for pair in p.strength.windows(2) {
-            assert!(pair[1].starts_at_seconds <= pair[0].ends_at_seconds, "{pair:?}");
-        }
-        // …and the overlap is a refresh, not a second +40%.
-        let t = p.strength[1].starts_at_seconds;
-        assert!((strength_at(1.0, &p.strength, t) - 1.4).abs() < 1e-9);
-    }
-
-    /// `if=once` IS ONE SLING: the claws' snapshot is taken, and nothing after
-    /// it is worth standing still for.
-    #[test]
-    fn once_is_done_once() {
-        let apl = Apl(vec![rule(SLING_TRIP, When::Once), rule(cast("hysteria"), When::Always)]);
-        let p = plan(&apl, &frame(&[], &[], "madurai", Some("hysteria"), 1.0), 120.0);
-        assert_eq!(p.strength.len(), 1);
-        assert_eq!(p.interrupts.len(), 2, "one sling and one summon: {:?}", p.interrupts);
-        assert!((p.summon.strength - 1.4).abs() < 1e-9);
-    }
-
-    /// **MOLT VIGOR IS SPENT BY THE NEXT CAST, AND ONLY AN OPERATOR ABILITY
-    /// ARMS IT** — a sling alone does not (W`Molt_Vigor` lists the schools'
-    /// abilities, and Void Sling is not one).
-    #[test]
-    fn molt_vigor_is_armed_by_an_operator_ability_and_spent_once() {
-        let vigor = CastArcanes { after_operator_ability: 0.45, per_cast_stack: None };
-        let run = |trip: Action| {
-            let apl = Apl(vec![rule(trip, When::Once), rule(cast("hysteria"), When::Always)]);
-            let f = Frame { arcanes: &vigor, ..frame(&[], &[], "madurai", Some("hysteria"), 1.0) };
-            plan(&apl, &f, 60.0).summon.strength
-        };
-        assert!((run(Action::Operator { sling: false, ability: true }) - 1.45).abs() < 1e-9);
-        assert!((run(Action::Operator { sling: true, ability: true }) - 1.85).abs() < 1e-9, "both, one trip");
-        assert!((run(SLING_TRIP) - 1.4).abs() < 1e-9, "a sling arms nothing");
-    }
-
-    /// **POWER RAMP: EACH CAST ARMS THE NEXT, AND THE SAME ABILITY TWICE
-    /// RUNNING STARTS OVER.**
-    #[test]
-    fn power_ramp_stacks_across_casts_and_resets_on_a_repeat() {
-        let ramp = CastArcanes { after_operator_ability: 0.0, per_cast_stack: Some((0.09, 4)) };
-        let (picks, assumed) = warcry_picked(20.0);
-        let apl = Apl(vec![rule(cast("warcry"), When::Always)]);
-        let f = Frame { arcanes: &ramp, ..frame(&picks, &assumed, "vazarin", None, 1.0) };
-        let p = plan(&apl, &f, 60.0);
-        // WARCRY AFTER WARCRY IS A REPEAT EVERY TIME, so no cast ever gains.
-        for c in &p.abilities {
-            assert!((fire_rate(c) - fire_rate(&assumed[0])).abs() < 1e-9, "{c:?}");
-        }
-        // …while the summon after a Warcry takes the one stack it earned.
-        let apl = Apl(vec![rule(cast("warcry"), When::Once), rule(cast("hysteria"), When::Always)]);
-        let f = Frame { arcanes: &ramp, ..frame(&picks, &assumed, "vazarin", Some("hysteria"), 1.0) };
-        assert!((plan(&apl, &f, 60.0).summon.strength - 1.09).abs() < 1e-9);
-        // …and a REPEAT between them leaves it nothing: zero at once, and the
-        // repeat arms no stack of its own (M105).
-        let apl = Apl(vec![
-            rule(cast("warcry"), When::Once),
-            rule(cast("warcry"), When::Once),
-            rule(cast("hysteria"), When::Always),
-        ]);
-        assert!((plan(&apl, &f, 60.0).summon.strength - 1.0).abs() < 1e-9);
-    }
-}
+mod tests;

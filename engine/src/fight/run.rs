@@ -383,6 +383,19 @@ pub fn run_once_traced(
     // costs one branch per event.
     rec: &mut crate::record::Record,
 ) -> RunResult {
+    // A FRAME THAT CASTS WRITES ITS WINDOWS AS THE RUN GOES, so the run takes a
+    // copy of the params with windows of its own: runs never share them, and
+    // the params a caller holds are never written.
+    let owned;
+    let params = match &params.frame {
+        Some(spec) => {
+            let mut p = params.clone();
+            p.abilities_live = Some(std::sync::Arc::new(std::sync::Mutex::new(spec.opening())));
+            owned = p;
+            &owned
+        }
+        None => params,
+    };
     // THE ENGAGEMENT AS IT OPENS — see [`open`]. Destructured by value, so
     // every name below is the one the setup gave it.
     let (fight, me) = open(params, Seat::WIELDER, rng, rec, &trace);

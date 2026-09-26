@@ -112,14 +112,11 @@ pub(super) struct SniperComboCount {
 
 /// A HELD TRIGGER'S SPOOL — shots since it was released, and when the next was due.
 pub(super) struct Spool {
-    /// **HOW MANY PLANNED CASTS HAVE ALREADY TAKEN THE TRIGGER FINGER.**
-    ///
-    /// The cast plan is made before the run and its interrupts are in time
-    /// order (`data::abilities::plan_casts`), so the run only has to remember
-    /// how far down that list it is. Here because this is the struct the shot
-    /// clock already carries: a cast that roots the frame is a pause in exactly
-    /// the sense a spool-up is.
-    pub(super) casts_paid: usize,
+    /// **THE RUN'S FRAME** (`data::casting::FrameRuntime`), `None` when nothing
+    /// in the fight casts. Here because this is the struct the shot clock
+    /// already carries: a cast that roots the frame is a pause in exactly the
+    /// sense a spool-up is.
+    pub(super) frame: Option<crate::data::casting::FrameRuntime>,
     /// HELD-TRIGGER SPOOL — shots since the trigger was last released, and the
     /// moment the next one was due. See `data::weapons::SustainedFireRate`.
     pub(super) shots: f64,

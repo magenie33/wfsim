@@ -140,7 +140,9 @@ ui:
   "armed by the weapon's own hits in the fight": 由武器在战斗中的命中触发
   "Cast": 施放
   "once, at its turn — the snapshot holds for the fight": 轮到时施放一次，快照保持整场
-  "again when it lapses, or this many seconds before": 到期时重做，或提前这么多秒
+  "again when it is down, or this many seconds before": buff 消失时重做，或提前这么多秒
+  "again when it is down, or when a cast now would be stronger and every stack is full": buff 消失时重做；或所有叠层都满、现在施放会更强时重做
+  "when stronger": 更强时重放
   "once, at its turn": 轮到时做一次
   "once": 一次
   "keep up": 保持
@@ -149,7 +151,6 @@ ui:
   "no Warframe holds this weapon": 没有战甲持有这把武器
   "last run": 上次运行
   "summoned at": 召唤时
-  "not attacking for": 无法攻击
   "typed for this fight": 本场手动设置
   "from the Warframe build": 来自战甲配装
   "empty is your Warframe build's own Ability Strength; a number here overrides it for this fight — every value below is this times the wiki's max-rank number": 留空则使用战甲配装的技能强度；填入数字则仅在本场覆盖它。下方每个数值都是这个强度乘以 wiki 上的满级数值

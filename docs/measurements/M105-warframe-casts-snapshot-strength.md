@@ -12,7 +12,7 @@ Three readings from the owner's play, stated as they were given.
 
 ### What it settles
 
-- **One entry per cast** (`data::casting::plan`): a strength window that
+- **One entry per cast** (`data::casting::FrameRuntime`): a strength window that
   lapses after a cast does not reach back into it, and one that opens after
   it earns that cast nothing. An Exalted weapon's damage is its summoning
   cast's snapshot (`Tenno::summon_strength`), so Sling Strength pays the claws

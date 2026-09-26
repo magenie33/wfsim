@@ -101,7 +101,7 @@ pub(super) fn before_the_shot(
                     + weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t),
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
-                crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
+                crate::data::abilities::ammo_efficiency_at(&params.abilities_now(), t),
             );
             // `active` already picks the form whose magazine is about to be
             // checked, so this is THAT form's cost.

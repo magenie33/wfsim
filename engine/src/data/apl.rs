@@ -95,10 +95,10 @@ pub enum Action {
 }
 
 impl Action {
-    /// **PLANNED BEFORE THE FIGHT, NEVER PICKED BETWEEN SHOTS.** What the frame
-    /// and its Operator do is laid out on one timeline first
-    /// (`data::casting::plan`), so the shot loop's scan skips these rules; a
-    /// held condition on one must not stop a reload.
+    /// **THE FRAME'S, NEVER THE WEAPON'S.** What the frame and its Operator do
+    /// is decided by the frame's own turn (`data::casting::FrameRuntime`), so the
+    /// shot loop's scan skips these rules; a held condition on one must not stop
+    /// a reload.
     pub fn is_planned(&self) -> bool {
         matches!(self, Action::Cast { .. } | Action::Operator { .. })
     }
@@ -151,6 +151,11 @@ pub enum When {
     /// `if=buff.<ability>.remains<N` — the buff is down, or has less than this
     /// long to run. Zero means "only once it is actually down".
     BuffRemainsUnder { ability: String, seconds: f64 },
+    /// `if=strength_gain` — a PLANNED cast done when its buff is down, and
+    /// again when a cast NOW would snapshot more strength than the running one
+    /// — but only once every stacking source the frame carries is full, since a
+    /// recast one stack in throws a window away. Never holds between shots.
+    StrengthGain,
     /// `if=once` — a PLANNED action done once, at its turn, and never again:
     /// a sling whose strength only the summoning cast reads. Never holds
     /// between shots.
@@ -210,6 +215,7 @@ impl Rule {
             }
             When::Tennokai => format!("{act},if=tennokai"),
             When::Once => format!("{act},if=once"),
+            When::StrengthGain => format!("{act},if=strength_gain"),
         }
     }
 }
@@ -237,20 +243,10 @@ impl Apl {
         out
     }
 
-    /// **WHAT THE FRAME AND ITS OPERATOR DO, in list order** — every planned
-    /// rule with the lead its condition asks for: `buff.X.remains<N` acts N
-    /// seconds before the window lapses, and anything else when it has lapsed.
-    /// `if=once` is a lead of infinity: it is never due again.
-    pub fn planned(&self) -> Vec<(&Action, f64)> {
-        self.0
-            .iter()
-            .filter(|r| r.action.is_planned())
-            .map(|r| match &r.when {
-                When::BuffRemainsUnder { seconds, .. } => (&r.action, seconds.max(0.0)),
-                When::Once => (&r.action, f64::INFINITY),
-                _ => (&r.action, 0.0),
-            })
-            .collect()
+    /// **WHAT THE FRAME AND ITS OPERATOR DO** — every planned action, in list
+    /// order (`data::casting` decides when each acts).
+    pub fn planned(&self) -> Vec<&Action> {
+        self.0.iter().filter(|r| r.action.is_planned()).map(|r| &r.action).collect()
     }
 
     /// The list the shot loop scans: everything but [`Self::planned`].
@@ -299,7 +295,7 @@ impl Apl {
                 When::MagazineAtMost { pct } => now.magazine_pct <= *pct,
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
                 When::Tennokai => now.tennokai,
-                When::Once => false,
+                When::Once | When::StrengthGain => false,
             };
             if holds {
                 return Some(r);

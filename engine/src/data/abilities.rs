@@ -189,17 +189,14 @@ pub struct ActiveAbility {
     pub effects: Vec<AbilityEffect>,
     /// **SECONDS THIS WINDOW GROWS BY, PER MELEE KILL** — an augment's doing
     /// (Eternal War on Warcry), 0 when the frame casting it does not carry one.
-    ///
-    /// THE ONLY THING IN THIS FIGHT THAT MOVES AN ABILITY'S WINDOW. Every other
-    /// window is fixed when the fight starts, so this is read at the ONE site
-    /// that asks a live question — the shot loop's rate — and `resolve` refuses
-    /// to build one on an ability whose effects are read anywhere else. When the
-    /// Warframe becomes an actor that casts, the window becomes run state for
-    /// every kind and this guard is what says so.
+    /// The fight's frame moves `ends_at_seconds` itself (`data::casting`), so
+    /// every reader sees the longer window.
     pub extend_per_melee_kill_seconds: f64,
-    /// …and the ceiling it grows to: *"up to a maximum of double the ability's
-    /// duration after mods"* (W`Eternal_War`).
+    /// …and the latest it may end, from the fight's start: *"up to a maximum of
+    /// double the ability's duration after mods"* (W`Eternal_War`).
     pub extend_cap_seconds: f64,
+    /// The Ability Strength this window was resolved at — its cast's snapshot.
+    pub snapshot_strength: f64,
     /// WHAT ONE CAST COSTS in this fight, efficiency already spent — `None`
     /// where no source states it, which is what stops it being cast at all.
     pub energy_cost: Option<f64>,
@@ -606,12 +603,6 @@ pub fn resolve(
                 let ends = p.duration_seconds.unwrap_or(f64::INFINITY);
                 (per_kill * duration, ends * cap_multiple)
             });
-        assert!(
-            grows.0 <= 0.0
-                || effects.iter().all(|e| matches!(e, AbilityEffect::FireRate(_))),
-            "{}: a window that grows is read only where the fight asks a live              question, which today is the rate — see ActiveAbility",
-            def.id
-        );
         let live = ActiveAbility {
             id: def.id,
             starts_at_seconds: f64::NEG_INFINITY,
@@ -619,6 +610,7 @@ pub fn resolve(
             effects,
             extend_per_melee_kill_seconds: grows.0,
             extend_cap_seconds: grows.1,
+            snapshot_strength: strength,
             // EFFICIENCY AND CASTING SPEED ARE SPENT HERE, the one place handed
             // both the ability and the frame casting it — the same reason the
             // strength knob is spent here (W`Ability_Efficiency`:
@@ -653,9 +645,9 @@ pub fn faction_bonus_at(list: &[ActiveAbility], t: f64) -> f64 {
 
 /// The FIRE-RATE share running at `t` (Warcry's attack speed). Summed, and the
 /// caller adds it to the mods' own sum rather than multiplying by it.
-pub fn fire_rate_at(list: &[ActiveAbility], t: f64, extra_seconds: f64) -> f64 {
+pub fn fire_rate_at(list: &[ActiveAbility], t: f64) -> f64 {
     list.iter()
-        .filter(|a| a.live_at(t - if a.extend_per_melee_kill_seconds > 0.0 { extra_seconds } else { 0.0 }))
+        .filter(|a| a.live_at(t))
         .flat_map(|a| a.effects.iter())
         .filter_map(|e| match *e {
             AbilityEffect::FireRate(v) => Some(v),

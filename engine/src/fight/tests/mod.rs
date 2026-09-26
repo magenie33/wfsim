@@ -50,7 +50,8 @@ impl Default for FightParams {
             also_acting: Vec::new(),
             sample_by: crate::rules::metrics::RunStat::KillProgress,
             // A FIXTURE ASSUMES ITS ABILITIES UP, which is the fight's default.
-            cast_interrupts: Vec::new(),
+            frame: None,
+            abilities_live: None,
             apl_inserted: crate::data::apl::Apl::default(),
             form: crate::model::FormKind::Base,
             // Ordinary: only one measured entry differs (see the field).

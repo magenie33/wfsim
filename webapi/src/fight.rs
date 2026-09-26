@@ -633,31 +633,29 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let apl = inserted_apl(v)?;
     // …AND THE STRENGTH AN EXALTED WEAPON WAS SUMMONED AT, which is the
     // WEAPON's number and so has to be known before its build is resolved. The
-    // fight re-plans the rest where the build is known (`FightParams::from_panel`)
-    // with the same function, and the summon does not depend on the build.
+    // fight runs the same frame where the build is known (`FightParams::from_panel`),
+    // and nothing before the summon depends on the build: the weapon it summons
+    // has not attacked yet.
     if let Some(by) = wfsim_engine::data::weapons::spec(&info.id).and_then(|s| s.summoned_by.as_deref()) {
         let seated: Vec<&str> = tenno.augments.iter().map(String::as_str).collect();
-        let summon = wfsim_engine::data::casting::plan(
+        let spec = std::sync::Arc::new(wfsim_engine::data::casting::spec(
             &apl,
-            &wfsim_engine::data::casting::Frame {
-                caster: wfsim_engine::data::abilities::Caster {
-                    strength,
-                    duration: tenno.ability_duration,
-                    efficiency: tenno.ability_efficiency,
-                    casting_speed_bonus: tenno.casting_speed_bonus,
-                    augments: &seated,
-                },
-                picks: &picks,
-                assumed: &abilities,
-                school: &tenno.operator_school,
-                summoned_by: Some(by),
-                weapon_class: "",
-                weapon_slot: "",
-                arcanes: &tenno.cast_arcanes,
+            &wfsim_engine::data::abilities::Caster {
+                strength,
+                duration: tenno.ability_duration,
+                efficiency: tenno.ability_efficiency,
+                casting_speed_bonus: tenno.casting_speed_bonus,
+                augments: &seated,
             },
-            duration,
-        )
-        .summon;
+            &picks,
+            &abilities,
+            &tenno.operator_school,
+            Some(by),
+            "",
+            "",
+            &tenno.cast_arcanes,
+        ));
+        let summon = spec.summon();
         tenno.summon_strength = Some(summon.strength);
     }
 

@@ -104,7 +104,7 @@ pub(super) fn resolve_the_shot(
                 + weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t),
             params.arcane.ammo_efficiency,
             arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
-            crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
+            crate::data::abilities::ammo_efficiency_at(&params.abilities_now(), t),
         );
         // Final Fusillade's gate, read BEFORE the round is spent: this pull is
         // the magazine's last round if there is at most one left to fire. On a
@@ -168,7 +168,7 @@ pub(super) fn resolve_the_shot(
         // mods"*, which is this bucket exactly: it lands on every attack part
         // and is never multiplied by a crit-chance card.
         let flat_crit = contribs.flat_crit_chance
-            + crate::data::abilities::flat_crit_at(&params.abilities, t);
+            + crate::data::abilities::flat_crit_at(&params.abilities_now(), t);
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         // Relative, shared by every stage: Crosshairs' on-headshot buff and
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the

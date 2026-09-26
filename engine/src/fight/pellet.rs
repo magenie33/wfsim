@@ -280,7 +280,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     let cd_abs = bodies[0].debuffs.cold_cd_bonus(t)
         + spiteful
         + weakpoint_cd
-        + crate::data::abilities::final_crit_damage_at(&params.abilities, t);
+        + crate::data::abilities::final_crit_damage_at(&params.abilities_now(), t);
     // PRELUDE OF MIGHT is the one perk whose condition is read at the
     // MOMENT OF THE HIT rather than off the arsenal: "With Critical
     // Chance below 40%", plus the wiki's note on the same row —
@@ -1121,7 +1121,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // applies a Status Effect", and a hit that always procs can
         // never be one.
         let ability_forced =
-            crate::data::abilities::forced_status_elements_at(&params.abilities, t);
+            crate::data::abilities::forced_status_elements_at(&params.abilities_now(), t);
         // ONE SLOT PER DAMAGE TYPE IS ENOUGH: both sources are sets of
         // types and the merge below refuses a duplicate, so the union
         // can never be longer than the type list itself.

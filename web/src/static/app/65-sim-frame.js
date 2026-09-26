@@ -117,12 +117,14 @@ function aplCandidates(w) {
 
 /// The seconds early a rule re-acts: `buff_remains_under` names them.
 const aplLead = (r) => ((r.when || {}).if === "buff_remains_under" ? Number(r.when.seconds) || 0 : 0);
-const aplOnce = (r) => (r.when || {}).if === "once";
-/// `once`, or KEPT UP — re-done when it lapses, or `seconds` before.
-function setAplWhen(r, once, seconds) {
+/// `once`, `keep` — re-done when it lapses, or `seconds` before — or `gain`:
+/// also re-done when a cast now would snapshot more, once every stack is in.
+const aplMode = (r) => ({ once: "once", strength_gain: "gain" })[(r.when || {}).if] || "keep";
+function setAplWhen(r, mode, seconds) {
   const a = r.action || {};
   const key = aplIsSling(a) ? (((r.when || {}).ability) || slingNode()) : a.ability;
-  r.when = once ? { if: "once" }
+  r.when = mode === "once" ? { if: "once" }
+    : mode === "gain" ? { if: "strength_gain" }
     : seconds > 0 || aplIsSling(a) ? { if: "buff_remains_under", ability: key, seconds: Math.max(0, seconds) }
     : { if: "always" };
 }
@@ -211,17 +213,21 @@ async function renderSimFrame(host) {
   const ruleRows = rules.map((r, i) => {
     const lead = aplLead(r);
     const summon = (r.action || {}).do === "cast" && w && r.action.ability === w.summoned_by;
-    const once = aplOnce(r);
+    const mode = aplMode(r);
+    const once = mode === "once";
     const op = aplIsOp(r.action);
     // A TRIP WITH NO SLING EARNS NO WINDOW, so it has nothing to keep up.
     const fixedOnce = summon || (op && !r.action.sling);
     const part = (k, label) => `<span class="seg${r.action[k] ? " on" : ""}${locked ? " dis" : ""}" data-apl-part="${k}">${escHtml(label)}</span>`;
+    const modeSeg = (m, label) => `<span class="seg${mode === m ? " on" : ""}${locked ? " dis" : ""}" data-apl-mode="${i}" data-s="${m}">${escHtml(label)}</span>`;
     return `<div class="sf-row"><div class="sf-name"><code>${escHtml(aplRuleLabel(r))}</code>
         <span class="sb-empty">${escHtml(summon ? tr("once, at its turn — the snapshot holds for the fight")
-          : once ? tr("once, at its turn") : tr("again when it lapses, or this many seconds before"))}</span></div>
+          : once ? tr("once, at its turn")
+          : mode === "gain" ? tr("again when it is down, or when a cast now would be stronger and every stack is full")
+          : tr("again when it is down, or this many seconds before"))}</span></div>
       ${op ? `<span class="oseg">${part("sling", tr("Chained Sling"))}${part("ability", tr("school ability"))}</span>` : ""}
-      ${fixedOnce ? "" : `<span class="oseg"><span class="seg${once ? " on" : ""}${locked ? " dis" : ""}" data-apl-once="${i}" data-s="1">${escHtml(tr("once"))}</span><span class="seg${once ? "" : " on"}${locked ? " dis" : ""}" data-apl-once="${i}" data-s="0">${escHtml(tr("keep up"))}</span></span>`}
-      ${fixedOnce || once ? "" : `<input type="number" class="sf-lead" data-apl-lead="${i}" min="0" max="60" step="0.5" value="${lead}"${locked ? " disabled" : ""}>`}
+      ${fixedOnce ? "" : `<span class="oseg">${modeSeg("once", tr("once"))}${modeSeg("keep", tr("keep up"))}${op ? "" : modeSeg("gain", tr("when stronger"))}</span>`}
+      ${fixedOnce || mode !== "keep" ? "" : `<input type="number" class="sf-lead" data-apl-lead="${i}" min="0" max="60" step="0.5" value="${lead}"${locked ? " disabled" : ""}>`}
       <button class="ghost-btn small" data-apl-up="${i}"${i === 0 || locked ? " disabled" : ""}>↑</button>
       <button class="ghost-btn small" data-apl-down="${i}"${i === rules.length - 1 || locked ? " disabled" : ""}>↓</button>
       <button class="ghost-btn small" data-apl-del="${i}"${locked ? " disabled" : ""}>×</button></div>`;
@@ -241,8 +247,7 @@ async function renderSimFrame(host) {
       ? `<div class="sf-add">${adds.map((c) => `<button class="ghost-btn small" data-apl-add="${escHtml(c.key)}">+ ${escHtml(c.label)}</button>`).join(" ")}</div>`
       : "")
     + (frame ? `<div class="sb-empty">${escHtml(tr("last run"))}: ${escHtml(tr("Ability Strength"))} ${pct(frame.ability_strength)}${
-        frame.summon_strength != null ? ` · ${escHtml(tr("summoned at"))} ${pct(frame.summon_strength)}` : ""}${
-        frame.busy_seconds > 0 ? ` · ${escHtml(tr("not attacking for"))} ${frame.busy_seconds.toFixed(1)} s` : ""}</div>` : "");
+        frame.summon_strength != null ? ` · ${escHtml(tr("summoned at"))} ${pct(frame.summon_strength)}` : ""}</div>` : "");
 
   const redraw = () => { markScenarioDirty(); renderSim(); };
   host.querySelectorAll("[data-node]").forEach((el) => el.addEventListener("click", () => {
@@ -275,12 +280,11 @@ async function renderSimFrame(host) {
   host.querySelectorAll("[data-apl-down]").forEach((el) => el.addEventListener("click", () => move(Number(el.dataset.aplDown), 1)));
   host.querySelectorAll("[data-apl-lead]").forEach((el) => el.addEventListener("change", () => {
     const r = aplRules()[Number(el.dataset.aplLead)];
-    if (r) { setAplWhen(r, false, Number(el.value) || 0); redraw(); }
+    if (r) { setAplWhen(r, "keep", Number(el.value) || 0); redraw(); }
   }));
-  host.querySelectorAll("[data-apl-once]").forEach((el) => el.addEventListener("click", () => {
-    const r = aplRules()[Number(el.dataset.aplOnce)];
-    const once = el.dataset.s === "1";
-    if (r && !el.classList.contains("dis") && once !== aplOnce(r)) { setAplWhen(r, once, 0); redraw(); }
+  host.querySelectorAll("[data-apl-mode]").forEach((el) => el.addEventListener("click", () => {
+    const r = aplRules()[Number(el.dataset.aplMode)];
+    if (r && !el.classList.contains("dis") && el.dataset.s !== aplMode(r)) { setAplWhen(r, el.dataset.s, 0); redraw(); }
   }));
   host.querySelectorAll("[data-apl-part]").forEach((el) => el.addEventListener("click", () => {
     const r = aplOpRule();

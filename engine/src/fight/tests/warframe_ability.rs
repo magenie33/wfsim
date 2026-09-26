@@ -779,15 +779,23 @@ fn warcry_is_attack_speed_additive_with_the_mods_and_scaled_by_strength() {
 /// double the ability's duration after mods"* — and it pays only on a frame
 /// carrying the card.
 ///
-/// THE ONE THING IN THIS FIGHT THAT MOVES AN ABILITY'S WINDOW, so the assertion
-/// is that the window OUTLIVES its own seconds: a 4 s Warcry still buying
-/// attacks at 8 s is the augment, and nothing else here can do that.
+/// The assertion is that the window OUTLIVES its own seconds: a 4 s Warcry
+/// still buying attacks at 8 s is the augment, and nothing else here can do that.
 #[test]
 fn eternal_war_extends_warcry_while_melee_kills_land() {
     let shots = |augments: &[&str], secs: f64| {
         let picks = [AbilityPick { id: "warcry", duration_seconds: Some(secs), element: None }];
         let mut p = params(&[], 1.0);
-        p.abilities = resolve(&picks, &Caster { strength: 1.0, augments, ..Default::default() }, "", "melee");
+        let caster = Caster { strength: 1.0, augments, ..Default::default() };
+        let assumed = resolve(&picks, &caster, "", "melee");
+        // THE FRAME IS WHAT GROWS IT (`data::casting`), so the fight has one
+        // whenever a window can grow, casting or not.
+        let spec = crate::data::casting::spec(
+            &crate::data::apl::Apl::default(), &caster, &picks, &assumed, "", None, "", "melee",
+            &crate::data::casting::CastArcanes::NONE,
+        );
+        p.abilities = spec.opening();
+        p.frame = spec.needed().then(|| std::sync::Arc::new(spec));
         // A TARGET THAT DIES TO EVERY SWING AND COMES BACK, so kills land at the
         // swing rate. The default fixture target is `InfiniteHealth` and a 1 HP
         // version of it still never dies — which is what a kill-gated mechanic
@@ -810,39 +818,31 @@ fn eternal_war_extends_warcry_while_melee_kills_land() {
 /// **CASTING IS PAID FOR IN TIME, AND THE FIGHT SHOWS IT.**
 ///
 /// The default reading is that a ticked ability is up and nobody paid — which
-/// is what every board row was measured under. Casting it instead opens a
-/// window at each cast, and each cast roots the frame for its cast time.
+/// is what every board row was measured under. Casting it instead opens it at
+/// the first cast and roots the frame at every one, so the same Warcry cast
+/// fires fewer shots than the same Warcry assumed up the whole fight.
 #[test]
-fn casting_costs_shots_and_rooting_is_what_costs_them() {
+fn casting_costs_shots_an_assumed_buff_does_not() {
     use crate::data::apl::{Action, Apl, Rule, When};
-    let run = |rooted: bool| {
-        let picks = [AbilityPick { id: "warcry", duration_seconds: Some(20.0), element: None }];
+    let run = |cast: bool| {
+        let picks = [AbilityPick { id: "warcry", duration_seconds: None, element: None }];
         let mut p = params(&[], 1.0);
-        let assumed = resolve(&picks, &Caster::default(), "", "melee");
         p.duration_seconds = 60.0;
-        let frame = crate::data::casting::Frame {
-            caster: Caster::default(),
-            picks: &picks,
-            assumed: &assumed,
-            school: "",
-            summoned_by: None,
-            weapon_class: "",
-            weapon_slot: "melee",
-            arcanes: &crate::data::casting::CastArcanes::NONE,
-        };
-        let apl = Apl(vec![Rule { action: Action::Cast { ability: "warcry".into() }, when: When::Always }]);
-        let cast = crate::data::casting::plan(&apl, &frame, 60.0);
-        p.abilities = cast.abilities;
-        p.cast_interrupts = if rooted { cast.interrupts } else { Vec::new() };
-        (p.abilities.len(), run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots)
+        let assumed = resolve(&picks, &Caster::default(), "", "melee");
+        let rules = if cast { vec![Rule { action: Action::Cast { ability: "warcry".into() }, when: When::Always }] } else { vec![] };
+        let spec = crate::data::casting::spec(
+            &Apl(rules), &Caster::default(), &picks, &assumed, "", None, "", "melee",
+            &crate::data::casting::CastArcanes::NONE,
+        );
+        p.abilities = spec.opening();
+        p.frame = spec.needed().then(|| std::sync::Arc::new(spec));
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots
     };
-    // THREE CASTS COVER A 60 s FIGHT, each opening where the last lapsed…
-    let (casts, shots) = run(true);
-    assert_eq!(casts, 3);
-    // …AND THE ROOTING IS WHAT COSTS SHOTS: the same windows with nobody
-    // standing still for them fire more, and it is the only difference.
-    let (_, free_shots) = run(false);
-    assert!(free_shots > shots, "{free_shots} against {shots}");
+    let (assumed, cast) = (run(false), run(true));
+    assert!(assumed > cast, "{assumed} against {cast}");
+    // …AND THE PARAMS A CALLER HOLDS ARE NEVER WRITTEN: a second run casts
+    // from scratch and fires the same.
+    assert_eq!(run(true), cast);
 }
 
 /// A FLAT CRITICAL DAMAGE LANDS AFTER THE MODS AND BEFORE THE TIER — the wiki's

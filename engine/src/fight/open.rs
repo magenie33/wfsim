@@ -553,13 +553,15 @@ pub(super) fn open<'a>(
     // Zero for every gun but the Grimoire's primary fire, so nothing else moves
     // by so much as a bit.
     let mut t = field_active.windup_seconds;
-    // …AND AFTER WHATEVER THE FRAME DOES AT THE BUZZER: a plan that opens on a
-    // cast or a summon keeps the first attack waiting until it is done
-    // (`data::casting::plan`), which the shot loop would pay one shot late.
-    let mut casts_paid = 0;
-    while let Some(&(at, secs)) = params.cast_interrupts.get(casts_paid).filter(|(at, _)| *at <= t) {
-        t = t.max(at) + secs;
-        casts_paid += 1;
+    // …AND AFTER WHATEVER THE FRAME DOES AT THE BUZZER: a list that opens on a
+    // cast or a summon keeps the first attack waiting until it is done, which
+    // the shot loop would pay one shot late.
+    let mut frame = match (&params.frame, &params.abilities_live) {
+        (Some(spec), Some(live)) => Some(crate::data::casting::FrameRuntime::new(spec.clone(), live.clone())),
+        _ => None,
+    };
+    if let Some(f) = frame.as_mut() {
+        t = f.act_all(t, 0);
     }
     // GOTVA PRIME'S PASSIVE, armed. Set by a pellet that landed a status, spent
     // by the next pellet that lands. It survives across shots and reloads: the
@@ -628,7 +630,7 @@ pub(super) fn open<'a>(
         count: params.tendrils_initial.min(params.tendril_max),
     };
     let spool = Spool {
-        casts_paid,
+        frame,
         shots: 0.0f64,
         due: f64::NEG_INFINITY,
     };
@@ -636,8 +638,6 @@ pub(super) fn open<'a>(
     let melee = MeleeState {
         combo_points: 0.0f64,
         rage_kill_mark: r.kills,
-        ability_extra_seconds: 0.0,
-        ability_kill_mark: r.kills,
         combo_expiry: f64::NEG_INFINITY,
         combo_spent_t: f64::NEG_INFINITY,
         swing_idx: 0usize,

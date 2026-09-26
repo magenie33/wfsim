@@ -11,10 +11,11 @@ use crate::data::apl::Action;
 pub(super) fn ability_remains(params: &FightParams, t: f64) -> impl Fn(&str) -> f64 + '_ {
     move |id: &str| {
         params
-            .abilities
+            .abilities_now()
             .iter()
-            .find(|a| a.id == id)
-            .map_or(0.0, |a| (a.ends_at_seconds - t).max(0.0))
+            .filter(|a| a.id == id && a.live_at(t))
+            .map(|a| a.ends_at_seconds - t)
+            .fold(0.0, f64::max)
     }
 }
 

@@ -598,7 +598,7 @@ impl FightParams {
     /// The product above is what the damage takes; this is what a reader can
     /// CHECK against a mod, and the two are told apart nowhere else.
     pub fn faction_bracket_at(&self, t: f64) -> f64 {
-        self.faction_multiplier + crate::data::abilities::faction_bonus_at(&self.abilities, t)
+        self.faction_multiplier + crate::data::abilities::faction_bonus_at(&self.abilities_now(), t)
     }
 
     /// ECLIPSE'S OWN MULTIPLIER at `t`, or 1.0. Applied ONCE wherever it is
@@ -606,7 +606,7 @@ impl FightParams {
     /// which double dips for status effects, the one from Eclipse is applied
     /// once."
     pub fn ability_final_at(&self, t: f64) -> f64 {
-        crate::data::abilities::final_mult_at(&self.abilities, t)
+        crate::data::abilities::final_mult_at(&self.abilities_now(), t)
     }
 
     /// ONE ELEMENT'S LIVE BONUS AT `t` — every source of it, and there is no
@@ -643,7 +643,7 @@ impl FightParams {
         let arcane: f64 =
             self.arcane.added_elements.iter().filter(|(e, _)| *e == ty).map(|(_, v)| v).sum();
         arcane
-            + crate::data::abilities::added_elements_at(&self.abilities, t)
+            + crate::data::abilities::added_elements_at(&self.abilities_now(), t)
                 .iter()
                 .filter(|(e, _)| *e == ty)
                 .map(|(_, v)| v)
@@ -664,7 +664,7 @@ impl FightParams {
         t: f64,
         w: &CardWindows,
     ) -> DamageVector {
-        let mut added = crate::data::abilities::added_elements_at(&self.abilities, t);
+        let mut added = crate::data::abilities::added_elements_at(&self.abilities_now(), t);
         for &(ty, v) in &self.arcane.added_elements {
             match added.iter_mut().find(|(t2, _)| *t2 == ty) {
                 Some(slot) => slot.1 += v,
@@ -984,24 +984,25 @@ impl FightParams {
         } else {
             abilities
         };
-        // …AND WHAT THE FRAME DOES WITH THEM: the planned rules of the action
-        // list, one cast at a time, each at the strength of its instant
-        // (`data::casting`). An empty list leaves `assumed` as it is.
-        let summoned_by = panel.summoned_by;
-        let crate::data::casting::FramePlan { abilities, interrupts: cast_interrupts, .. } = crate::data::casting::plan(
+        // …AND THE FRAME THAT ACTS WITH THEM, in the fight (`data::casting`).
+        // What the list casts opens down; everything else is assumed up, and
+        // a fight with nothing to cast and nothing to grow has no frame at all.
+        let spec = crate::data::casting::spec(
             &apl_inserted,
-            &crate::data::casting::Frame {
-                caster,
-                picks: &picks,
-                assumed: &assumed,
-                school: &tenno.operator_school,
-                summoned_by,
-                weapon_class: panel.class,
-                weapon_slot: panel.slot,
-                arcanes: &tenno.cast_arcanes,
-            },
-            duration_seconds,
+            &caster,
+            &picks,
+            &assumed,
+            &tenno.operator_school,
+            panel.summoned_by,
+            panel.class,
+            panel.slot,
+            &tenno.cast_arcanes,
         );
+        let (abilities, frame) = if spec.needed() {
+            (spec.opening(), Some(std::sync::Arc::new(spec)))
+        } else {
+            (assumed, None)
+        };
         // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
         //
         // HERE, and not in `resolve`, because this is the first clause in the
@@ -1046,7 +1047,8 @@ impl FightParams {
             squad: tenno.squad(panel.class),
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
-            cast_interrupts,
+            frame,
+            abilities_live: None,
             apl_inserted,
             form: panel.form,
             damage: panel.damage,

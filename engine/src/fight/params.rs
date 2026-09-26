@@ -385,10 +385,14 @@ pub struct FightParams {
     /// [`FightParams::ability_element_at`] are the three reads, one per effect
     /// kind, and there is no fourth.
     pub abilities: Vec<crate::data::abilities::ActiveAbility>,
-    /// WHEN THE PLAYER IS BUSY AND NOT ATTACKING, AND FOR HOW LONG, in time
-    /// order — empty unless the action list plans something for the frame or
-    /// its Operator (`data::casting::plan`).
-    pub cast_interrupts: Vec<(f64, f64)>,
+    /// **THE FRAME THAT ACTS IN THIS FIGHT** — `None` unless the action list
+    /// plans something for it or a window can grow (`FrameSpec::needed`). Each
+    /// run opens its own runtime on it (`data::casting::FrameRuntime`).
+    pub frame: Option<std::sync::Arc<crate::data::casting::FrameSpec>>,
+    /// …AND THAT RUN'S WINDOWS, which the frame writes as it casts. Set on a
+    /// run's own copy of the params only; every reader goes through
+    /// [`FightParams::abilities_now`].
+    pub abilities_live: Option<std::sync::Arc<std::sync::Mutex<Vec<crate::data::abilities::ActiveAbility>>>>,
     /// **THE RULES THE PLAYER INSERTED ABOVE THE FIGHT'S OWN** — empty for
     /// every fight this app has run, which is exactly the mode's own list
     /// (`data::apl::for_fight`). It is the INSERTED half and not the composed
@@ -790,6 +794,33 @@ impl FightParams {
         match self.headshot_multiplier {
             Some(m) => m,
             None => part_multiplier + weakpoint_rate * self.weakpoint_damage,
+        }
+    }
+}
+
+/// The ability windows a reader sees: the fixed set, or a run's live one.
+pub enum AbilitiesNow<'a> {
+    Fixed(&'a [crate::data::abilities::ActiveAbility]),
+    Live(std::sync::MutexGuard<'a, Vec<crate::data::abilities::ActiveAbility>>),
+}
+
+impl std::ops::Deref for AbilitiesNow<'_> {
+    type Target = [crate::data::abilities::ActiveAbility];
+    fn deref(&self) -> &Self::Target {
+        match self {
+            AbilitiesNow::Fixed(s) => s,
+            AbilitiesNow::Live(g) => g,
+        }
+    }
+}
+
+impl FightParams {
+    /// **EVERY ABILITY WINDOW, AS THIS RUN HAS IT** — the live set a frame casts
+    /// into, or the fixed one when nothing in the fight casts.
+    pub fn abilities_now(&self) -> AbilitiesNow<'_> {
+        match &self.abilities_live {
+            Some(l) => AbilitiesNow::Live(l.lock().expect("one run, one thread")),
+            None => AbilitiesNow::Fixed(&self.abilities),
         }
     }
 }

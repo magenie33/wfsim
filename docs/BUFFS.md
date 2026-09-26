@@ -740,15 +740,26 @@ instead: it is cast at the start and RECAST the moment its window lapses (or
 rules the player INSERTED and the engine puts them above the mode's own. The
 response carries back the whole list it ran.
 
-**THE FRAME'S RULES ARE PLANNED, NOT SCANNED** (`data::casting::plan`). Every
-cast, the summoning of an Exalted weapon and every Operator action is laid out
-on one timeline before the fight; the shot loop scans only the rest
+**THE FRAME ACTS BETWEEN SHOTS** (`data::casting::FrameRuntime::act`). Every
+cast, the summoning of an Exalted weapon and every Operator trip is asked, top
+down, whether it acts now — at the buzzer and after every shot — because what
+decides them happens in the fight: a melee kill lengthens Warcry, a kill adds a
+Molt Augmented stack. The shot loop's own scan skips these rules
 (`Apl::between_shots`), so a held condition on a cast never stops a reload.
 
-- **ONE THING AT A TIME.** An action due while another is under way starts when
-  that one ends, and a cast that roots the frame (`interrupts_fire`, true where
-  nothing says otherwise) is time the weapon is not attacking. A plan that opens
-  at the buzzer delays the first attack.
+- **WHEN IT ACTS.** `if=always` — when its buff is DOWN; `buff.X.remains<N` —
+  that many seconds before; `if=once`; and `if=strength_gain` — when down, or
+  when a cast now would snapshot more than the running one AND every stacking
+  source the frame carries (Molt Augmented, Power Ramp) is full, since a recast
+  one stack in throws a window away. A recast replaces the running window.
+- **A CAST LASTS THE CARD'S DURATION × THE FRAME'S**, not a typed one. A buff
+  the list does not cast keeps the pick's own seconds.
+- **ONE THING AT A TIME.** Actions due together go back to back, and a cast that
+  roots the frame (`interrupts_fire`, true where nothing says otherwise) is time
+  the weapon is not attacking. A list that opens at the buzzer delays the first
+  attack.
+- **EACH RUN HAS ITS OWN WINDOWS**: a run copies the params and casts into its
+  own `abilities_live`; every reader goes through `FightParams::abilities_now`.
 - **A WARFRAME BUFF IS A SNAPSHOT** (M105). A cast reads Ability Strength at its instant
   and keeps that number for its window: each cast is its own entry, resolved at
   its own strength. A strength window that lapses later does not reach back.
@@ -787,30 +798,24 @@ refreshes it; it never stacks. Default for every other conditional node is off.
 | rule | arcane | where it is spent |
 | --- | --- | --- |
 | `ability_strength_per_max_health` | Bellicose | the build's resolve, off the finished Max Health |
-| `ability_strength_per_kill` | Molt Augmented | the resolve, at the stacks the Warframe build opens with (`SlotPick::stacks`, 0 by default) |
+| `ability_strength_per_kill` | Molt Augmented | the resolve, at the stacks the Warframe build opens with (`SlotPick::stacks`, 0 by default); the frame, a stack a kill |
 | `ability_strength_after_operator_ability` | Molt Vigor | the plan: the first cast after a trip with `ability` — Void Sling is not an Operator ability |
 | `ability_strength_per_cast_stack` | Power Ramp | the plan: a stack per cast, spent by the next; the same ability twice running drops it to zero and arms nothing (M105) |
 | `weapon_buff` | Fury, Strike | the weapon's fight, as a mod's `StackingBuff` on the named slot — one stack, refreshed |
 
-Molt Augmented's kills during the fight add nothing yet: the plan is laid out
-before the fight, and a snapshot that reads kills needs the casts in the loop.
+Molt Augmented opens at its stacks and every kill in the fight adds one to what
+the action list casts after it.
 
-### One window grows, and it is the only one
+### A melee kill grows the window it lands in
 
-**EVERY ABILITY WINDOW IS FIXED WHEN THE FIGHT STARTS, EXCEPT ONE.** Eternal War
-*"extends Warcry's duration for each melee kill"* — +2s a kill, *"affected by
-Ability Duration"*, *"up to a maximum of double the ability's duration after
-mods"* — so that window is the one thing here a fight can move. It is declared
-on the ability (`augment: {id, seconds_per_melee_kill, cap_multiple}`) and pays
-only when the frame casting it carries the card, which the wielder's build says
-(`Resolved::augments` → `Tenno::augments`).
-
-It is folded at the ONE site that asks a live question — the shot loop's rate,
-off the same kill watermark Rage keeps — and `resolve` PANICS if a growing
-window is declared on an ability whose effects any other reader would have to
-know about. That guard is the note to the next person: when the Warframe becomes
-an actor that casts, the window stops being an exception and becomes run state
-for every effect kind, and the guard is what will say so.
+Eternal War *"extends Warcry's duration for each melee kill"* — +2s a kill,
+*"affected by Ability Duration"*, *"up to a maximum of double the ability's
+duration after mods"*. It is declared on the ability (`augment: {id,
+seconds_per_melee_kill, cap_multiple}`) and pays only when the frame casting it
+carries the card (`Resolved::augments` → `Tenno::augments`). The frame moves the
+live window's end itself (`FrameRuntime::grow`), so every reader sees it, and a
+recast waits for the longer window to lapse. A fight with such a window has a
+frame whether or not its list casts anything.
 
 **ONE OF THEM BUYS NO DAMAGE AT ALL.** `fire_rate` is attack speed, and Warcry
 states both the bracket and the worked example: *"Attack Speed bonus is additive

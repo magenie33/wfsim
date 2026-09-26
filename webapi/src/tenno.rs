@@ -50,7 +50,7 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
         .map_or_else(Vec::new, |apl| {
             apl.planned()
                 .iter()
-                .filter_map(|(a, _)| match a {
+                .filter_map(|a| match a {
                     wfsim_engine::data::apl::Action::Operator { sling: true, .. } => Some(wf::NodeTrigger::OperatorSling),
                     _ => None,
                 })
