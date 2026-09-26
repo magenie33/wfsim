@@ -84,6 +84,18 @@ pub(super) fn eclipse_at(mult: f64, co_share: f64) -> f64 {
     1.0 + (mult - 1.0) * (1.0 - co_share.clamp(0.0, 1.0))
 }
 
+/// LONGBOW SHARPSHOT, as the factor it is: "multiplicative to mods like
+/// Serration", and on a weapon whose Condition Overload ADDS it does not reach
+/// that term — "Damage bonus% = [(1 + Serration) x (1 + Longbow Sharpshot)] +
+/// Galvanized Aptitude" (wiki `Longbow_Sharpshot`), which is `eclipse_at`'s
+/// arithmetic. A Multiplying CO is a factor of its own and takes it whole.
+pub(super) fn sharpshot_at(bonus: f64, co_share: f64, behavior: crate::model::CoBehavior) -> f64 {
+    match behavior {
+        crate::model::CoBehavior::AdditiveWithBaseDamage => eclipse_at(1.0 + bonus, co_share),
+        _ => 1.0 + bonus,
+    }
+}
+
 /// Pox's row in the same catalog: "Damage recalculates on every tick".
 #[allow(clippy::too_many_arguments)]
 pub(super) fn gunco_bucket(

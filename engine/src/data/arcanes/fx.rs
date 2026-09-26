@@ -92,6 +92,9 @@ pub struct ArcaneFx {
     /// Final damage multiplier on direct hits (Secondary Surge assumed-max:
     /// the cap, multiplicative with Hornet Strike). 1.0 = none.
     pub final_multiplier: f64,
+    /// Longbow Sharpshot's bonus on the shot after a weak point hit; 0.0 = not
+    /// equipped. The sim decides which shots carry it.
+    pub weakpoint_next_shot_damage: f64,
     /// Primary Debilitate's per-instance chance to split a saturated combined
     /// status into one of its components. 0.0 = the arcane is not equipped.
     pub debilitate_chance: f64,
@@ -160,6 +163,7 @@ impl Default for ArcaneFx {
             crit_damage_relative: 0.0,
             weakpoint_crit_chance_relative: 0.0,
             final_multiplier: 1.0,
+            weakpoint_next_shot_damage: 0.0,
             debilitate_chance: 0.0,
             per_cold_base_damage: 0.0,
             cold_cap: 0,
@@ -255,6 +259,7 @@ impl ArcaneFx {
                         }
                     }
                     out.final_multiplier *= a.final_multiplier;
+                    out.weakpoint_next_shot_damage += a.weakpoint_next_shot_damage;
                     // One arcane grants it and a weapon seats at most one of
                     // any arcane, so this is a max rather than a sum — summing
                     // would invent a stacking rule nothing states.

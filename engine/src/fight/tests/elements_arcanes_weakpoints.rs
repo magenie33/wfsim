@@ -1489,3 +1489,54 @@ fn heat_strip_ramps_up_and_decays_after_the_entity_dies() {
     assert_eq!(d.heat_strip(10.6, 1.0), 0.15);
     assert_eq!(d.heat_strip(12.1, 1.0), 0.0);
 }
+
+/// LONGBOW SHARPSHOT ARMS THE NEXT SHOT, and only a weak point arms it: the
+/// first shot of the fight never carries it, a shot that found no weak point
+/// leaves the next one bare, and every other shot of a 100% weak-point run
+/// carries +300% (wiki `Longbow_Sharpshot`).
+#[test]
+fn longbow_sharpshot_arms_the_shot_after_a_weak_point() {
+    let with = |head: f64, bonus: f64| FightParams {
+        arcane: ArcaneFx { weakpoint_next_shot_damage: bonus, ..ArcaneFx::none() },
+        body_parts: vec![
+            BodyPart { name: "head".into(), aim_weight: head, multiplier: 1.0, is_head: true, is_weak_point: true, crit_bonus: false },
+            BodyPart { name: "body".into(), aim_weight: 1.0 - head, multiplier: 1.0, is_head: false, is_weak_point: false, crit_bonus: false },
+        ],
+        ..flat_base()
+    };
+    let dmg = |p: &FightParams| monte_carlo(p, 400, 5);
+    let bare = dmg(&with(1.0, 0.0));
+    let shots = bare.mean_shots;
+    assert!(shots >= 2.0, "the fixture fires more than one shot: {shots}");
+
+    // EVERY SHOT BUT THE FIRST: (1 + (n - 1) x 4) / n.
+    let all_heads = dmg(&with(1.0, 3.0)).mean_damage / bare.mean_damage;
+    let want = (1.0 + (shots - 1.0) * 4.0) / shots;
+    assert!((all_heads - want).abs() < 1e-9, "{all_heads} vs {want}");
+
+    // NO WEAK POINT, NOTHING ARMED.
+    let no_heads = dmg(&with(0.0, 3.0)).mean_damage / dmg(&with(0.0, 0.0)).mean_damage;
+    assert!((no_heads - 1.0).abs() < 1e-9, "{no_heads}");
+
+    // HALF THE SHOTS ON A WEAK POINT: armed after a head and spent by a body,
+    // so each shot after the first carries it half the time.
+    let half = dmg(&with(0.5, 3.0)).mean_damage / dmg(&with(0.5, 0.0)).mean_damage;
+    let want = (1.0 + (shots - 1.0) * (1.0 + 3.0 * 0.5)) / shots;
+    assert!((half / want - 1.0).abs() < 0.05, "{half} vs {want}");
+}
+
+/// …AND ON A WEAPON WHOSE CONDITION OVERLOAD ADDS, IT DOES NOT REACH THAT TERM.
+/// The wiki's own formula: "[(1 + Serration) x (1 + Longbow Sharpshot)] +
+/// Galvanized Aptitude". A Multiplying CO is a factor of its own and takes it.
+#[test]
+fn longbow_sharpshot_leaves_an_adding_condition_overload_alone() {
+    use crate::model::CoBehavior;
+    let (serration, gunco, sharpshot) = (1.65, 1.2, 3.0);
+    let bracket = 1.0 + serration + gunco;
+    let share = gunco / bracket;
+    let adding = bracket * super::super::scale::sharpshot_at(sharpshot, share, CoBehavior::AdditiveWithBaseDamage);
+    let wiki = (1.0 + serration) * (1.0 + sharpshot) + gunco;
+    assert!((adding - wiki).abs() < 1e-9, "{adding} vs {wiki}");
+    let multiplying = super::super::scale::sharpshot_at(sharpshot, share, CoBehavior::Independent);
+    assert!((multiplying - 4.0).abs() < 1e-12);
+}

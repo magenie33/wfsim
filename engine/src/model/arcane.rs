@@ -45,6 +45,9 @@ pub enum ArcEffect {
     WeakpointCritChance(Scale),
     /// Surge: final damage-multiplier cap (stored as bonus; assumed-max).
     FinalDamageCap(Scale),
+    /// Longbow Sharpshot: a weak point hit arms the NEXT shot with this bonus
+    /// (stored as bonus). Simulated shot by shot, so never assumed.
+    WeakpointNextShotDamage(Scale),
     /// Fractalized Reset: reload speed on a trigger the arena cannot fire (an
     /// ability cast). The GRANT is modeled, so it follows the house policy for
     /// non-simmed triggers — assumed-max only, a no-op under `Emergent`.

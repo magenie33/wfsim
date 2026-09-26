@@ -13,25 +13,17 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/LongbowDamageOnHeadsh
 description: "On Weak Point Hit: Gain +X% damage on your next shot."
 
 effects:
-  # ITS OWN MULTIPLIER, not a Serration-bucket bonus — this was wrong when the
-  # arcane was first added and the wiki says so outright: "Damage bonus is
-  # multiplicative to mods like Serration."
+  # ITS OWN MULTIPLIER, not a Serration-bucket bonus: "Damage bonus is
+  # multiplicative to mods like Serration". On a weapon whose CO ADDS it does
+  # not reach that term — "[(1 + Serration) x (1 + Longbow Sharpshot)] +
+  # Galvanized Aptitude" — and a Multiplying CO takes it whole
+  # (`fight::scale::sharpshot_at`).
   #
-  #   damage bonus% = [(1 + Serration) x (1 + Longbow Sharpshot)] + Galvanized Aptitude
-  #
-  # The Galvanized Aptitude term sits OUTSIDE the product, and the wiki explains
-  # why: GunCO's contribution is a recalculation of every bonus except +damage,
-  # and that recalculation is stale — it does not know about this arcane. So CO
-  # does not multiply the Sharpshot bonus even where CO is otherwise additive
-  # with damage mods (Daikyu). We model the product; the CO interaction is the
-  # weapon's own `co_behavior` bracket and is not changed here.
-  #
-  # UPTIME. "As long as every consecutive shot is a weak point hit, the buff is
-  # always active", and the benchmark's Tenno lands 100% headshots — so under
-  # AssumedMax it is on for every shot but the first, which is what
-  # `final_damage_cap` resolves to. "If the buff is not active, the first weak
-  # point hit does not benefit from it, even if the bow has multishot": one shot
-  # in a 180 s engagement, and not modelled.
+  # THE NEXT SHOT, simulated: a shot that puts any pellet on a weak point arms
+  # the one after it, every pellet and explosion of that shot carries the bonus,
+  # and a shot that finds none leaves the next bare. The fight's first shot is
+  # never armed: "If the buff is not active, the first weak point hit does not
+  # benefit from it, even if the bow has multishot".
   - kind: buff
     trigger: weakpoint_hit
     grants: final_damage

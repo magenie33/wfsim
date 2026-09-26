@@ -80,13 +80,11 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
             let grants = s(v, "grants")?;
             let all_drop = crate::model::BuffDecay::from_id(s(v, "decay")) == crate::model::BuffDecay::AllAtOnce;
             let trig = match trigger {
-                // Longbow Sharpshot: armed by a headshot, spent on the next
-                // shot, and MULTIPLICATIVE — "Damage bonus is multiplicative to
-                // mods like Serration". It reaches the same final-damage
-                // multiplier as the ability-cast one because that is the
-                // bucket, not because the trigger is alike.
+                // Longbow Sharpshot: armed by a weak point hit, spent on the
+                // next shot, and MULTIPLICATIVE — "Damage bonus is
+                // multiplicative to mods like Serration". The sim arms it.
                 "weakpoint_hit" if grants == "final_damage" => {
-                    return Some(ArcEffect::FinalDamageCap(scale(v)))
+                    return Some(ArcEffect::WeakpointNextShotDamage(scale(v)))
                 }
                 // Non-simmed triggers with modeled grants:
                 "swap_consume_combo" => {

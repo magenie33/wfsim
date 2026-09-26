@@ -902,6 +902,11 @@ pub fn run_once_traced(
                 status_damage: me.fixed.status_damage,
                 live_rate,
                 beam_ramp,
+                next_shot_bonus: if me.weakpoint_next_shot_armed {
+                    me.params.arcane.weakpoint_next_shot_damage
+                } else {
+                    0.0
+                },
                 undamaged,
                 t,
                 bar: &me.bar,
@@ -962,6 +967,10 @@ pub fn run_once_traced(
                 struck,
             );
         }
+
+        // THE NEXT SHOT IS ARMED BY THIS ONE, pellets and spread included, and
+        // a shot that found no weak point leaves it unarmed.
+        me.weakpoint_next_shot_armed = r.weakpoint_hits + r.headshots_on_others > headshots_before;
 
         // …AND THE CLOUDS AND ARCS THIS SHOT LEFT reach the bodies standing in
         // them. Once per SHOT, after every instance of it has settled: a gas

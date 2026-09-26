@@ -243,6 +243,10 @@ impl ArcaneDef {
                         fx.final_multiplier = 1.0 + sc.at(rank, self.max_rank);
                     }
                 }
+                // NOT gated on `assumed`: the sim arms it shot by shot.
+                ArcEffect::WeakpointNextShotDamage(sc) => {
+                    fx.weakpoint_next_shot_damage = sc.at(rank, self.max_rank);
+                }
                 ArcEffect::CondReloadSpeed(sc) => {
                     if assumed {
                         fx.reload_bonus += sc.at(rank, self.max_rank);
@@ -381,7 +385,8 @@ impl ArcaneDef {
                 // Multiplier kinds ("xX"): stored as the bonus — fill_x's
                 // xX rule renders the +1.
                 | ArcEffect::Debilitate(scale)
-                | ArcEffect::FinalDamageCap(scale) => vals.push(at(scale)),
+                | ArcEffect::FinalDamageCap(scale)
+                | ArcEffect::WeakpointNextShotDamage(scale) => vals.push(at(scale)),
                 // …AND THE ONE WHOSE CARD PRINTS THE EXTRA. `fill_x`'s "xX"
                 // rule exists because DE usually prints the TOTAL over a stored
                 // bonus; Secondary Fortifier's card says "Deals x8 Extra Damage
@@ -512,6 +517,10 @@ impl ArcaneDef {
                 ArcEffect::FinalDamageCap(sc) => out.push(format!(
                     "On Ability Cast: next shot ×{:.0} damage cap (0.5%/energy)",
                     1.0 + at(sc)
+                )),
+                ArcEffect::WeakpointNextShotDamage(sc) => out.push(format!(
+                    "On Weak Point Hit: {} damage on the next shot",
+                    pct(at(sc))
                 )),
                 ArcEffect::CondReloadSpeed(sc) => out.push(format!(
                     "On Ability Cast: {} Reload Speed (conditional)",

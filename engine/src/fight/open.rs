@@ -95,6 +95,7 @@ pub(super) struct Combatant<'a> {
     pub(super) meter: Meter,
     pub(super) strip_kills_seen: u32,
     pub(super) super_crit_armed: bool,
+    pub(super) weakpoint_next_shot_armed: bool,
     pub(super) incarnon: IncarnonState,
     pub(super) syndicate: Syndicate,
     pub(super) crit_per_hit: CritPerHit,
@@ -565,6 +566,12 @@ pub(super) fn open<'a>(
     // card says the chance "remains until landing another successful shot", and
     // nothing but a landing shot spends it.
     let super_crit_armed = false;
+    // LONGBOW SHARPSHOT, armed by a shot that put any pellet on a weak point
+    // and spent by the next shot, which re-arms only if it hits one too. The
+    // first shot of a fight is never armed: "If the buff is not active, the
+    // first weak point hit does not benefit from it, even if the bow has
+    // multishot" (wiki `Longbow_Sharpshot`).
+    let weakpoint_next_shot_armed = false;
     let incarnon = IncarnonState {
         kill_mark: 0u32,
         in_base_form: params.cycle.as_ref().is_some_and(|c| !c.starts_primed),
@@ -691,6 +698,7 @@ pub(super) fn open<'a>(
             meter,
             strip_kills_seen,
             super_crit_armed,
+            weakpoint_next_shot_armed,
             incarnon,
             syndicate,
             crit_per_hit,

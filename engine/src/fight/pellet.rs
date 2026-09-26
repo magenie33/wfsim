@@ -61,6 +61,9 @@ pub(super) struct Strike<'a> {
     pub(super) status_damage: f64,
     pub(super) live_rate: f64,
     pub(super) beam_ramp: f64,
+    /// Longbow Sharpshot's bonus on THIS shot — 0.0 unless the last one hit a
+    /// weak point. Every pellet and the explosion of the shot carry it.
+    pub(super) next_shot_bonus: f64,
     pub(super) undamaged: bool,
     pub(super) t: f64,
     pub(super) bar: &'a BuffBar,
@@ -178,6 +181,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         status_damage,
         live_rate,
         beam_ramp,
+        next_shot_bonus,
         undamaged,
         t,
         bar,
@@ -1179,6 +1183,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // is the same pellet on the same line, so if it took a head it
         // keeps taking one.
         let body_only = |x: f64| x / part_factor.max(1e-9);
+        let sharpshot = sharpshot_at(next_shot_bonus, co_mult.co_share, active.co_behavior);
         let dt_here = if direct && active.consecutive_hit_radial_only { 1.0 } else { dt_mult };
         let raw = qtotal
             * part_factor
@@ -1186,6 +1191,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             * bucket
             * params.faction_at_time(t)
             * arc_final
+            * sharpshot
             * attrition
             // DOUBLE TAP stands on its own: "multiplicatively stacks
             // with damage bonuses like Serration and Faction Damage
@@ -1576,7 +1582,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 (crate::record::Factor::ConditionOverload, bucket),
                 faction_layers(params, t, DEPTH_HIT)[0],
                 faction_layers(params, t, DEPTH_HIT)[1],
-                (crate::record::Factor::ArcaneFinal, arc_final),
+                (crate::record::Factor::ArcaneFinal, arc_final * sharpshot),
                 (crate::record::Factor::Attrition, attrition),
                 (crate::record::Factor::WarframeAbility, eclipse_at(params.ability_final_at(t), co_mult.co_share)),
                 (crate::record::Factor::BeamRamp, beam_ramp),
