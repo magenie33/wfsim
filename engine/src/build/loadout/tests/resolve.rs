@@ -2215,3 +2215,26 @@ fn an_exalted_weapon_scales_with_its_wielders_ability_strength() {
     assert_eq!(at("magistar", 3.0), at("magistar", 1.0));
 }
 }
+
+/// RIFLE AND SHOTGUN ELEMENTALIST PAY STATUS DAMAGE, not Serration's bracket:
+/// the direct hit keeps its base and the status multiplier reads x1.9, and
+/// beside the class's damage card (Serration, Point Blank) nothing is added.
+#[test]
+fn an_elementalist_pays_status_damage_and_leaves_the_hit_alone() {
+    use crate::model::StackPolicy;
+    for (weapon, card, damage) in [
+        ("braton_prime", "rifle_elementalist", "serration"),
+        ("tigris_prime", "shotgun_elementalist", "point_blank"),
+    ] {
+        let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
+        let pool = crate::data::mods::pool_for_weapon(weapon);
+        let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{weapon}: {id}"));
+        let bare = resolve(&base, &[], StackPolicy::AssumedMax);
+        let with = resolve(&base, &[pick(card)], StackPolicy::AssumedMax);
+        assert!((with.damage.total() - bare.damage.total()).abs() < 1e-9, "{card} moved the hit");
+        assert!((with.status_damage_multiplier - 1.9).abs() < 1e-9, "{card}: {}", with.status_damage_multiplier);
+        let both = resolve(&base, &[pick(card), pick(damage)], StackPolicy::AssumedMax);
+        let alone = resolve(&base, &[pick(damage)], StackPolicy::AssumedMax);
+        assert!((both.damage.total() - alone.damage.total()).abs() < 1e-9, "{card} beside {damage}");
+    }
+}

@@ -731,3 +731,27 @@ fn desc_info_fills_every_x_across_the_pool() {
         "+90% Fire Rate (x2 for Bows)\n-15% Damage"
     );
 }
+
+/// THE CARD'S NOUN PICKS THE BUCKET. "+X% Status Damage" is the status-damage
+/// multiplier and "+X% Damage" is Serration's bracket, and the two compound
+/// rather than add, so a card filed under the other kind moves direct damage
+/// and status damage in opposite directions.
+#[test]
+fn a_status_damage_card_pays_status_damage_and_a_damage_card_pays_damage() {
+    let mut wrong: Vec<String> = Vec::new();
+    for (p, text) in crate::data::files_under("mods/").filter(|(p, _)| p.ends_with(".yaml")) {
+        let v: serde_norway::Value = serde_norway::from_str(text).unwrap();
+        let desc = v["description"].as_str().unwrap_or("");
+        let kinds: Vec<&str> = v["effects"]
+            .as_sequence()
+            .map(|s| s.iter().filter_map(|e| e["kind"].as_str()).collect())
+            .unwrap_or_default();
+        if desc.contains("Status Damage") && !kinds.contains(&"status_damage_bonus") {
+            wrong.push(format!("{p}: card says Status Damage, kinds {kinds:?}"));
+        }
+        if kinds.contains(&"base_damage_bonus") && !desc.replace("Status Damage", "").contains("Damage") {
+            wrong.push(format!("{p}: base_damage_bonus on a card that names no plain Damage"));
+        }
+    }
+    assert!(wrong.is_empty(), "{wrong:#?}");
+}
