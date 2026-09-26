@@ -686,9 +686,9 @@ pub fn run() {
                         paused += 1;
                         continue;
                     };
-                    // A FIGHT THAT RAN AND DEALT NOTHING IS A MEASUREMENT, and
-                    // it is banked: a Verglas Prime riven with a -145% Damage
-                    // malus kills nothing, and refusing the zero left its queue
+                    // A FIGHT THAT RAN AND SCORED NOTHING IS A MEASUREMENT, and
+                    // it is banked: a build that kills nothing in the ruler's
+                    // time scores zero, and refusing the zero left its queue
                     // row owed for ever. The entry line keeps it off the page.
                     // Only a fight that did not run is refused.
                     let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);

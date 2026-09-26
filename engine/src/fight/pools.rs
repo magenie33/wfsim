@@ -59,12 +59,15 @@ pub struct Portion {
     /// [`ENEMY_SHIELD_GATE_LEAK`] and MEASUREMENTS M61.
     pub shield_gate: f64,
     pub virus_amp: f64,
-    /// The armour term ACTUALLY APPLIED — normally `1 − DR`, but the health
-    /// path floors a mitigated instance at 1 damage, and a ledger that printed
-    /// `1 − DR` there would not multiply out. [`Self::floored`] says which of
-    /// the two this is.
+    /// The armour term, `1 − DR`. The 1-damage floor is its own factor,
+    /// [`Self::floor`], so a lift on an unarmoured pool is never named armour.
     pub armor: f64,
+    /// Whether the 1-damage floor fired on this portion — `floor` says by how
+    /// much, and a hit driven below zero has no factor to say it with.
     pub floored: bool,
+    /// WHAT THE 1-DAMAGE FLOOR LIFTED THIS PORTION BY, as a factor — 1.0 unless
+    /// it fired. `fight::target_state` §"THE 1-DAMAGE FLOOR".
+    pub floor: f64,
     /// The clamp an attenuating target applied, or 1.
     pub attenuation: f64,
     /// WHAT WAS LEFT IN THE POOL, as a factor — 1.0 unless the pool ran out
@@ -101,6 +104,7 @@ impl Default for Portion {
             virus_amp: 1.0,
             armor: 1.0,
             floored: false,
+            floor: 1.0,
             attenuation: 1.0,
             pool_remaining: 1.0,
             effective: 0.0,

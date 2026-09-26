@@ -234,6 +234,7 @@ pub(super) fn write_row(
         keep(crate::record::Factor::Armour, p.armor);
         keep(crate::record::Factor::Attenuation, p.attenuation);
         keep(crate::record::Factor::PoolRanOut, p.pool_remaining);
+        keep(crate::record::Factor::DamageFloor, p.floor);
         rec.push(
             t,
             subject,

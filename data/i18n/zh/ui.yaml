@@ -2023,6 +2023,7 @@ ui:
   "Viral amp": "病毒增伤"
   "attenuation": "伤害衰减保护"
   "the pool ran out": "这一条血用完了"
+  "the 1-damage floor": "1 点伤害下限"
   # ---- the floating numbers ----
   "head_crit": "爆头暴击"
   "blast": "爆炸"

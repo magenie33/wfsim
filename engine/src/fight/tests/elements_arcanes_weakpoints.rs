@@ -194,8 +194,8 @@ fn overguard_break_with_disrupt_fires_the_tesla_payload() {
     // 100 overguard, forced Magnetic (InstantRespawn so pools deplete;
     // health big enough that nothing dies): shot 1 (amp 1, no stacks
     // yet) leaves 25 and lands a stack; shot 2 (amp 2.0) breaks ->
-    // break proc = 3% × 1 stack × 100 = 3 total over 6 ticks. Health
-    // then takes shots 3..10 at amp 1: dot damage == 3 exactly.
+    // break proc = 3% × 1 stack × 100 = 3 over 6 ticks of 0.5, and the
+    // 1-damage floor lifts each tick to 1: dot damage == 6 exactly.
     let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 100.0);
     t.base_health = 10_000.0;
     let p = FightParams {
@@ -204,7 +204,7 @@ fn overguard_break_with_disrupt_fires_the_tesla_payload() {
     };
     let s = monte_carlo(&p, 20, 5);
     assert!(
-        (s.mean_dot_damage - 3.0).abs() < 1e-9,
+        (s.mean_dot_damage - 6.0).abs() < 1e-9,
         "break proc {}",
         s.mean_dot_damage
     );

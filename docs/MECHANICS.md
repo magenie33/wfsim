@@ -2301,6 +2301,17 @@ damage_to_health = incoming × (1 + type_modifier) × (1 − DR)
 `armor` is the value **after** all strips/debuffs (Corrosive −26%/stack to
 −80%, Heat −50%, Corrosive Projection, Terrify).
 
+**EVERY HIT THAT LANDS DEALS AT LEAST 1 — Status: ASSUMED.** wiki `Armor`
+states the floor for armour only ("each damage type has a minimum damage of
+1", and "Non-Armor sources of damage reduction do not have such a
+behavior"); the engine applies it to every pool, armoured or not, on the
+owner's reading that damage is never zero, and a hit driven below zero (a
+Damage total under −100%) deals exactly 1 to the first pool it meets and
+heals nothing. Per HIT, where the wiki says per type. A ×0 column still lets
+nothing through. `TargetState::apply`; the record names it
+`the 1-damage floor`; the readings that would settle it are queued in
+docs/MEASUREMENTS.md.
+
 **90% is where the two branches MEET, not a ceiling on the reduction** —
 `2700/3000 = 0.9 = 0.9·√1`. Past the cap the curve changes rather than
 stopping, and DR keeps climbing (10,000 armor → 97.1%). The two facts get

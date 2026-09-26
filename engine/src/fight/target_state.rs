@@ -188,7 +188,12 @@ impl TargetState {
         // It is DRAWN, in the combat record's `shield_gate_until` — a window
         // nobody can see is a window nobody can check when the time comes.
         let gate = 1.0;
-        let gated = raw;
+        // NEGATIVE DAMAGE HEALS NOTHING. A Damage total below −100% (a riven
+        // malus) makes `raw` negative, and routed as it stood it added to the
+        // Overguard it was subtracted from. It is a hit, and the floor below
+        // is what it deals.
+        let hit_below_zero = raw < 0.0;
+        let gated = raw.max(0.0);
         // THE TARGET AS IT STOOD, before any of this. Read while `led` is still
         // `Some` — i.e. only when somebody is reading — and before the pools
         // below are spent, since a killing instance respawns the body outright
@@ -217,6 +222,9 @@ impl TargetState {
         let mut led_armor_effective = 0.0f64;
         let mut led_hp_armor = 1.0f64;
         let mut led_hp_floored = false;
+        let mut led_hp_floor = 1.0f64;
+        let mut led_og_floor = 1.0f64;
+        let mut led_sh_floor = 1.0f64;
         // What the overflow past a broken shield was multiplied by on its way
         // into health: the gate's 5%, or 1.0 for a weakpoint hit that ignored
         // it. Left at 0.0 while no shield broke, which is not a factor and is
@@ -339,28 +347,18 @@ impl TargetState {
                     scaling::armor_damage_reduction(p.armor() * mit.armor_multiplier)
                 };
                 let boosted = health_part * mit.virus_amp;
-                health_part = if dr > 0.0 {
-                    (boosted * (1.0 - dr)).max(1.0)
-                } else {
-                    boosted
-                };
+                let mitigated = boosted * (1.0 - dr);
+                // THE 1-DAMAGE FLOOR, armoured or not — see below.
+                health_part = mitigated.max(1.0);
                 if led.is_some() {
-                    // WHAT VIRUS AND ARMOUR DID, as one factor — it is the same
-                    // for both halves of `health_part`, so applying it to the
-                    // leak's share is exact rather than proportional.
+                    // WHAT VIRUS, ARMOUR AND THE FLOOR DID, as one factor — it
+                    // is the same for both halves of `health_part`, so applying
+                    // it to the leak's share is exact rather than proportional.
                     led_health_scale = if before > 0.0 { health_part / before } else { 1.0 };
                     led_armor_effective = p.armor() * mit.armor_multiplier;
-                    // THE TERM ACTUALLY APPLIED, floor included. `1 − DR` is
-                    // the formula and is not always the number: the health path
-                    // floors a mitigated instance at 1 damage, so on a target
-                    // thick enough to reach it a ledger printing `1 − DR` would
-                    // stop multiplying out.
-                    led_hp_armor = if boosted > 0.0 {
-                        health_part / boosted
-                    } else {
-                        1.0
-                    };
-                    led_hp_floored = dr > 0.0 && (boosted * (1.0 - dr)) < 1.0;
+                    led_hp_armor = 1.0 - dr;
+                    led_hp_floor = if mitigated > 0.0 { health_part / mitigated } else { 1.0 };
+                    led_hp_floored = mitigated < 1.0;
                 }
             }
             if led.is_some() && gated != 0.0 {
@@ -390,6 +388,35 @@ impl TargetState {
                     led_hp = split(before, carried);
                     led_hp_dtype = shares.dominant();
                 }
+            }
+        }
+
+        // THE 1-DAMAGE FLOOR: a hit that lands deals at least 1 to the pool it
+        // ends in, and a hit driven below zero deals exactly that to the first
+        // pool it meets. ASSUMED, not measured (docs/MEASUREMENTS.md queue):
+        // wiki `Armor` states the floor for armour alone, and the owner's
+        // reading — "damage cannot be zero" — extends it to every pool. A pool
+        // the damage type cannot touch (a ×0 column) still takes nothing: the
+        // floor lifts what landed, it does not create a hit.
+        if hit_below_zero {
+            if self.overguard > 0.0 {
+                og_part = self.overguard.min(1.0);
+            } else if self.shield > 0.0 {
+                shield_part = self.shield.min(1.0);
+            } else {
+                health_part = 1.0;
+                led_hp_floored = true;
+            }
+        } else {
+            if og_part > 0.0 && og_part < 1.0 && og_part < self.overguard {
+                let lifted = self.overguard.min(1.0);
+                led_og_floor = lifted / og_part;
+                og_part = lifted;
+            }
+            if shield_part > 0.0 && shield_part < 1.0 && shield_part < self.shield {
+                let lifted = self.shield.min(1.0);
+                led_sh_floor = lifted / shield_part;
+                shield_part = lifted;
             }
         }
 
@@ -459,7 +486,8 @@ impl TargetState {
             shield_gate: 1.0,
             virus_amp: 1.0,
             armor: 1.0,
-            floored: false,
+            floored: led_og_floor != 1.0,
+            floor: led_og_floor,
             attenuation: atten,
             pool_remaining: led_og_remaining,
             effective: og_part,
@@ -475,7 +503,8 @@ impl TargetState {
             shield_gate: 1.0,
             virus_amp: 1.0,
             armor: 1.0,
-            floored: false,
+            floored: led_sh_floor != 1.0,
+            floor: led_sh_floor,
             attenuation: atten,
             pool_remaining: led_shield_cap,
             effective: shield_part,
@@ -496,6 +525,7 @@ impl TargetState {
             virus_amp: mit.virus_amp,
             armor: led_hp_armor,
             floored: led_hp_floored,
+            floor: led_hp_floor,
             attenuation: atten,
             pool_remaining: 1.0,
             effective: health_part - leak_effective,
@@ -520,6 +550,7 @@ impl TargetState {
             virus_amp: mit.virus_amp,
             armor: led_hp_armor,
             floored: led_hp_floored,
+            floor: led_hp_floor,
             attenuation: atten,
             pool_remaining: 1.0,
             effective: leak_effective,

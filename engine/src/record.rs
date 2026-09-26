@@ -249,6 +249,8 @@ pub enum Factor {
     StatusAccumulator,
     /// `target's own multiplier`
     TargetMultiplier,
+    /// `the 1-damage floor`
+    DamageFloor,
 }
 
 impl Factor {
@@ -256,7 +258,7 @@ impl Factor {
     /// for as long as a client older than the server can exist — which for a
     /// page served from the same deploy is never, so this is a convention
     /// rather than a ratchet.
-    pub const ALL: [Factor; 42] = [
+    pub const ALL: [Factor; 43] = [
         Factor::BaseDamageBracket,
         Factor::BaseDamageMods,
         Factor::HalfHealth,
@@ -299,6 +301,7 @@ impl Factor {
         Factor::StatusSeeds,
         Factor::StatusAccumulator,
         Factor::TargetMultiplier,
+        Factor::DamageFloor,
     ];
 
     /// What a reader is shown, and the key the i18n overlay is written against.
@@ -346,6 +349,7 @@ impl Factor {
             Factor::StatusSeeds => "stored damage seeds",
             Factor::StatusAccumulator => "accumulator (starts at 1)",
             Factor::TargetMultiplier => "target's own multiplier",
+            Factor::DamageFloor => "the 1-damage floor",
         }
     }
 

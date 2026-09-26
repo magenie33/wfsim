@@ -13,6 +13,7 @@ mod chill_and_co_base;
 mod cycle_buff_conversion;
 mod debilitate_attrition;
 mod dot_ticks_measured;
+mod damage_floor;
 mod elements_arcanes_weakpoints;
 mod every_form_runs;
 mod formation_and_spread;
