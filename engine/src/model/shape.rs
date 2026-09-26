@@ -126,6 +126,8 @@ pub struct ReloadGrenadeBase {
     pub fan_deg: f64,
     pub from_empty: GrenadeThrowBase,
     pub partial: GrenadeThrowBase,
+    /// The contact's own Condition Overload class, `None` when it takes none.
+    pub contact_co: Option<crate::model::CoBehavior>,
 }
 
 /// One throw's grenade, the bomblet's shape.

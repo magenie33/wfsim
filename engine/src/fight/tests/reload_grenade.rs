@@ -27,6 +27,7 @@ fn grenade(count: u32, fan_deg: f64, blast: f64, radius_m: f64) -> crate::build:
         fan_deg,
         from_empty: throw(11.0, blast, radius_m),
         partial: throw(1.0, blast / 10.0, radius_m),
+        contact_co: None,
         last_round_factor: 1.0,
         crit_per_kill: None,
     }
@@ -60,10 +61,10 @@ fn every_reload_throws_one_grenade_onto_the_reticle() {
         r.reloads,
         r.sources.radial
     );
-    // A THROW THE ENGAGEMENT ENDS INSIDE still lands: the third shot empties
-    // the magazine at 2 s, the reload starts at 3 s and outlasts the clock, so
-    // no shot follows to settle it.
-    let cut = FightParams { duration_seconds: 3.5, ..p.clone() };
+    // A THROW THE ENGAGEMENT ENDS INSIDE still lands: the reload starts at 3 s
+    // and outlasts the 3.75 s clock, so no shot follows to settle it — and the
+    // grenade left halfway through, at 3.5 s, before the clock ran out.
+    let cut = FightParams { duration_seconds: 3.75, ..p.clone() };
     let r = run_once(&cut, &mut crate::rules::rng::Rng::new(3));
     assert_eq!(r.reloads, 1);
     assert!((r.sources.radial - 1011.0).abs() < 1e-6, "{}", r.sources.radial);
@@ -183,10 +184,10 @@ fn critical_mutation_joins_the_crit_buckets_on_the_grenades_own_base() {
         base_crit_damage: 2.9,
         ..Default::default()
     };
-    let at_cap = crate::fight::grenades::lingering_of(&modded, 3.0);
+    let at_cap = crate::fight::grenades::lingering_of(&modded, 3.0, None);
     assert!((at_cap.crit_chance - 0.31 * (1.0 + 1.5 + 3.0)).abs() < 1e-9, "{}", at_cap.crit_chance);
     assert!((at_cap.crit_damage - 2.9 * (1.0 + 0.6 + 3.0)).abs() < 1e-9, "{}", at_cap.crit_damage);
-    let none = crate::fight::grenades::lingering_of(&modded, 0.0);
+    let none = crate::fight::grenades::lingering_of(&modded, 0.0, None);
     assert!((none.crit_chance - modded.crit_chance).abs() < 1e-12);
 }
 
@@ -285,4 +286,26 @@ fn a_partial_reload_clears_a_pile_lost_to_one() {
     use crate::model::ClearedBy::{Nothing, PartialReload};
     assert!(piled(PartialReload, true) < piled(Nothing, true), "partial reloads take the pile");
     assert_eq!(piled(PartialReload, false), piled(Nothing, false), "reloads from empty do not");
+}
+
+/// CONDITION OVERLOAD REACHES THE CONTACT AND NOT THE EXPLOSION — the catalog's
+/// rows name the "Reload Impact" and nothing else. The beam keeps one Toxin on
+/// the target, so at +100% a type the contact is worth x2 under its own
+/// Multiplying class and the blast is untouched.
+#[test]
+fn condition_overload_reaches_the_grenades_contact_and_not_its_blast() {
+    let throw_sum = |co: Option<crate::model::CoBehavior>| {
+        let mut g = grenade(1, 0.0, 1000.0, 7.0);
+        g.contact_co = co;
+        let mut p = thrower(g, crate::rules::space::CONTACT_RANGE_M);
+        p.damage = DamageVector::new().with(DamageType::Toxin, 1.0);
+        p.status_chance = 1.0;
+        p.base_status_chance = 1.0;
+        p.co_per_type = 1.0;
+        let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
+        r.sources.radial / f64::from(r.reloads)
+    };
+    assert!((throw_sum(None) - 1011.0).abs() < 1e-6, "no class, no CO: {}", throw_sum(None));
+    let multiplying = throw_sum(Some(crate::model::CoBehavior::Independent));
+    assert!((multiplying - (1000.0 + 11.0 * 2.0)).abs() < 1e-6, "the contact doubles: {multiplying}");
 }

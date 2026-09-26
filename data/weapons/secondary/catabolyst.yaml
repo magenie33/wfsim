@@ -31,13 +31,16 @@ reload_seconds: 1.7
 # seconds. Bonus is additive with Quickdraw and similar bonuses."
 reload_from_empty_speed: -0.2
 
-# see notes: condition_overload_catalog_names
+# CONDITION OVERLOAD: the catalog names the GRENADE'S CONTACT and nothing else
+# (docs/CATALOGS.md §1), verbatim:
 #
-#   Catabolyst | Reload From Empty Impact | Projectile | 11 | 11 | 100% |
-#   Multiplying
+#   Catabolyst | Partial Reload Impact    | Projectile | 11 | 11 | 100% | Multiplying
+#   Catabolyst | Reload From Empty Impact | Projectile | 11 | 11 | 100% | Multiplying
 #
-# see notes: entry_read_adding_at
-co_behavior: independent
+# So the contact is Multiplying (`reload_grenade.contact_co_behavior`), the
+# explosion takes none — the mods say direct hits — and the beam, absent from
+# the table, is the ordinary Adding.
+co_behavior: additive_with_base_damage
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki
@@ -96,6 +99,7 @@ attack:
   # blast are two instances. The blast falls off "from 100% to 50% from central
   # impact", takes no headshot, and its "Radius is not affected by Fulmination".
   reload_grenade:
+    contact_co_behavior: independent
     count: 1
     from_empty:
       damage: { impact: 11 }
@@ -132,9 +136,8 @@ attack:
 # the 20% floor exactly.
 
 unmodeled:
-  - "WHEN the throw lands: the page says the grenade is thrown mid-reload and has travel time, and states neither, so it lands at the instant the reload starts"
+  - "WHEN in the reload the grenade lands: the page says it is thrown mid-reload and times nothing, so it lands halfway through (`THROW_AT_RELOAD_SHARE_UNMEASURED`); the throw costs no time of its own either way"
   - "the explosion's SELF-STAGGER, which costs the wielder time when the target stands inside the blast"
-  - "Condition Overload on the grenade's 11 Impact contact — the CO catalog gives it a row, and the contact is half a percent of the throw"
   - "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage, wiki `Catabolyst` Bugs)"
   - "interrupting the reload to throw again without reloading, the page's own exploit"
   - "this weapon will never reload on its own and must be reloaded manually — a habit cost this arena does not charge"

@@ -758,6 +758,11 @@ pub struct ReloadGrenadeSpec {
     pub fan_deg: f64,
     pub from_empty: GrenadeThrowSpec,
     pub partial: GrenadeThrowSpec,
+    /// THE CONTACT HIT'S CONDITION OVERLOAD CLASS, where the catalog gives the
+    /// contact a row of its own (`co_behavior`'s words); absent, the contact takes
+    /// none. The explosion never does — the mods say direct hits.
+    #[serde(default)]
+    pub contact_co_behavior: Option<String>,
 }
 
 /// ONE THROW'S GRENADE: a contact hit and an explosion, laid out like a bomblet.

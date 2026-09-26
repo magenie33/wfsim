@@ -1502,11 +1502,13 @@ Every explosion falls off 100% to 50% from where it landed.
    are all from empty; `reload,if=magazine.pct<=N` inserted above it reloads
    early and throws the partial grenade. A full magazine cannot be reloaded,
    so a reload rule is passed over while it is.
-2. **IT LANDS WHEN THE RELOAD STARTS.** The page says it is thrown mid-reload and
-   has travel time and states neither, so the earliest instant is the one that
-   invents no delay. It is queued on the magazine (`Ammo::grenade_thrown_at`)
-   and settled before the next shot — or at the end, if the clock runs out
-   inside the reload.
+2. **IT IS FREE, AND IT LANDS HALFWAY THROUGH THE RELOAD.** The throw rides the
+   reload and costs no time of its own, so its timing moves only when its
+   damage lands; the page says "thrown mid-reload" and times nothing, so the
+   share is a placeholder (`THROW_AT_RELOAD_SHARE_UNMEASURED`, 0.5 of the
+   reload's own time, which reload speed already scales). It is queued on the
+   magazine (`Ammo::grenade_thrown_at`) and settled before the next shot — or
+   at the end, if it left before the clock ran out.
 3. **WHERE IT LANDS IS GEOMETRY.** Each grenade flies the reticle's distance;
    the Coda's three are fanned 45° edge to edge, so the outer two land a chord
    away from the aimed body and reach it only where their blast does. The blast
@@ -1518,6 +1520,14 @@ Every explosion falls off 100% to 50% from where it landed.
    grenade damage"*) though the beam, being continuous, takes none of the card,
    and a partial reload fired no last round to carry it: the throw
    follows the magazine's last round.
+
+**CONDITION OVERLOAD REACHES THE CONTACT, MULTIPLYING, AND NOTHING ELSE OF THE
+THROW.** The catalog names exactly the contact — *"Catabolyst | Partial Reload
+Impact | Projectile | 11 | 11 | 100% | Multiplying"* and the same for *"Reload
+From Empty Impact"* — so the contact carries a class of its own
+(`contact_co_behavior`, the part's `ResolvedLingering::co_behavior`), the
+explosion takes none as every AoE part does, and the beam, absent from the
+table, is the ordinary Adding. The Coda carries the family's rows.
 
 **CRITICAL MUTATION** pays the grenade and nothing else — DE's U35 notes call it
 the augment *"which applied buffs to its grenade"*. Each kill adds +30% crit

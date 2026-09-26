@@ -108,6 +108,9 @@ pub(super) fn gunco_bucket(
     // to it: the assertion fires until the author either builds that stage its
     // own pair or says `borrowed_for` and means it.
     stage: crate::model::CoStage,
+    // THE CLASS it combines under — the weapon's own everywhere but a part the
+    // catalog gives a row of its own.
+    behavior: crate::model::CoBehavior,
 ) -> Gunco {
     debug_assert_eq!(
         co_base.stage(),
@@ -147,7 +150,7 @@ pub(super) fn gunco_bucket(
         half_hp,
         co_share: if numerator > 0.0 { (gunco_total / numerator).clamp(0.0, 1.0) } else { 0.0 },
     };
-    match active.co_behavior {
+    match behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
         crate::model::CoBehavior::AdditiveWithBaseDamage => {

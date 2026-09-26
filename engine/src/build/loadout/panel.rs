@@ -107,6 +107,9 @@ pub struct ResolvedLingering {
     /// See [`LingeringBase::takes_condition_overload`] — CO on an AoE part is
     /// the exception, not the default.
     pub takes_condition_overload: bool,
+    /// THE PART'S OWN CO CLASS, where the catalog gives the part a row of its own
+    /// (a thrown grenade's contact); `None` reads the weapon's `co_behavior`.
+    pub co_behavior: Option<crate::model::CoBehavior>,
 }
 
 impl ResolvedLingering {
@@ -195,6 +198,8 @@ pub struct ResolvedReloadGrenade {
     pub fan_deg: f64,
     pub from_empty: ResolvedGrenadeThrow,
     pub partial: ResolvedGrenadeThrow,
+    /// The contact's own Condition Overload class, `None` when it takes none.
+    pub contact_co: Option<crate::model::CoBehavior>,
     /// SYNTH CHARGE'S FACTOR on the FROM-EMPTY throw, 1.0 without it. The beam
     /// cannot take the card ("no effect on Continuous Weapons"); the grenade
     /// does — "Synth Charge increases the grenade damage" (wiki `Catabolyst`) —

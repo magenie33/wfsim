@@ -1072,9 +1072,9 @@ pub fn run_once_traced(
     // settles — a golden-value change rather than an attribution one.
     let end = params.duration_seconds;
     // A MAGAZINE THROWN BY A RELOAD NO SHOT FOLLOWED — the engagement ended
-    // inside it — still lands: it left before the clock ran out.
+    // inside it — lands if it left before the clock ran out, and not otherwise.
     for me in seats.iter_mut() {
-        if let Some((at, from_empty)) = me.ammo.grenade_thrown_at.take() {
+        if let Some((at, from_empty)) = me.ammo.grenade_thrown_at.take().filter(|(at, _)| *at < end) {
             let active = me.params.cycle.as_ref().map_or(me.params, |cy| &cy.base_form);
             throw_reload_grenades(
                 &me.windows, me.seat, at, from_empty, &me.field_ctx, &mut me.gal, &mut me.arc,

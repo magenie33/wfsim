@@ -32,8 +32,9 @@ reload_seconds: 1.7
 # seconds. Bonus is additive with Quickdraw and similar bonuses."
 reload_from_empty_speed: -0.2
 
-# CARRIED FROM `catabolyst` — see notes: co_carried_from_the_family
-co_behavior: independent
+# CARRIED FROM `catabolyst` — see notes: co_carried_from_the_family. The beam
+# is Adding, the grenade's contact Multiplying, the explosion takes none.
+co_behavior: additive_with_base_damage
 
 # THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
 # Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
@@ -108,6 +109,7 @@ attack:
   # blast are two instances. The blast falls off "from 100% to 50% from central
   # impact", takes no headshot, and its "Radius is not affected by Fulmination".
   reload_grenade:
+    contact_co_behavior: independent
     count: 3
     fan_deg: 45
     from_empty:
@@ -145,9 +147,8 @@ attack:
 # the 20% floor exactly, so no `beam_ramp_floor` override.
 
 unmodeled:
-  - "WHEN the throw lands: the page says the grenade is thrown mid-reload and has travel time, and states neither, so it lands at the instant the reload starts"
+  - "WHEN in the reload the grenade lands: the page says it is thrown mid-reload and times nothing, so it lands halfway through (`THROW_AT_RELOAD_SHARE_UNMEASURED`); the throw costs no time of its own either way"
   - "the explosion's SELF-STAGGER, which costs the wielder time when the target stands inside the blast"
-  - "Condition Overload on the grenade's 11 Impact contact — the CO catalog gives it a row, and the contact is half a percent of the throw"
   - "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage, wiki `Catabolyst` Bugs)"
   - "interrupting the reload to throw again without reloading, the page's own exploit"
   - "the 45-degree FAN is read as edge to edge about the reticle, which the page does not spell out"

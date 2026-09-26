@@ -381,7 +381,8 @@ pub(super) fn field_tick(
         // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
         // bonus like CO itself, and nothing in the catalog says otherwise.
         gunco_bucket(params, active, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0,
-            active.co_base.borrowed_for(crate::model::CoStage::Field), crate::model::CoStage::Field)
+            active.co_base.borrowed_for(crate::model::CoStage::Field), crate::model::CoStage::Field,
+            f.co_behavior.unwrap_or(active.co_behavior))
             .bucket
     } else {
         arc_ratio

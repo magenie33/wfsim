@@ -448,6 +448,7 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::Resolv
         falloff_reduction: 1.0,
         stacking,
         takes_condition_overload: true,
+        co_behavior: None,
     }
 }
 
@@ -502,6 +503,7 @@ fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
         falloff_reduction: 0.0,
         stacking: crate::model::FieldStacking::Stack,
         takes_condition_overload: false,
+        co_behavior: None,
     }
 }
 

@@ -1142,6 +1142,7 @@ pub fn resolve_for(
             contact: a_resolved(&g.partial.contact),
             blast: a_resolved(&g.partial.blast),
         },
+        contact_co: g.contact_co,
         last_round_factor: 1.0 + last_round_damage,
         crit_per_kill: grenade_crit_per_kill.map(|(v, cap)| (v, cap, grenade_crit_loss)),
     });
@@ -1228,6 +1229,7 @@ pub fn resolve_for(
             falloff_reduction: f.falloff_reduction,
             stacking: f.stacking,
             takes_condition_overload: f.takes_condition_overload,
+            co_behavior: None,
         }
     });
 

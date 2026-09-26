@@ -1119,6 +1119,7 @@ impl FightParams {
                 falloff_reduction: 0.0,
                 stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: false,
+                co_behavior: None,
             }),
             orb_blast: panel.orb.and(panel.radial).map(|r| crate::build::loadout::ResolvedLingering {
                 damage: r.damage,
@@ -1138,6 +1139,7 @@ impl FightParams {
                 falloff_reduction: r.falloff_reduction,
                 stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: r.takes_condition_overload,
+                co_behavior: None,
             }),
             lingering: compressed_lingering,
             continuous: panel.continuous,

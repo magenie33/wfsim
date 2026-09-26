@@ -38,6 +38,13 @@ impl Mutation {
     }
 }
 
+/// WHERE IN THE RELOAD THE GRENADE LEAVES, as a share of the reload's time. A
+/// PLACEHOLDER: the page says "thrown mid-reload" and times nothing, and the throw
+/// costs no time of its own — it rides the reload — so the number moves only
+/// when its damage lands. The share follows reload speed, as "the grenade
+/// throwing animation speed is affected by reload speed" says it does.
+pub(super) const THROW_AT_RELOAD_SHARE_UNMEASURED: f64 = 0.5;
+
 /// Fewer than this many enemies struck by a throw's explosions costs Critical
 /// Mutation one step — DE's card: "Reduce by 30% when fewer than 3 enemies are
 /// struck by the grenade explosion."
@@ -82,8 +89,10 @@ pub(super) fn throw_reload_grenades(
     // way in. It is read only here, so settling it at the throw is exact.
     let bonus = g.crit_per_kill.map_or(0.0, |(per_kill, cap, _)| gal.mutation.pay_in(r.kills, per_kill, cap));
     let throw = if from_empty { g.from_empty } else { g.partial };
-    let contact = lingering_of(&throw.contact, bonus);
-    let blast = lingering_of(&throw.blast, bonus);
+    // THE CONTACT takes Condition Overload under its own class where the catalog
+    // gives it one; the explosion never does.
+    let contact = lingering_of(&throw.contact, bonus, g.contact_co);
+    let blast = lingering_of(&throw.blast, bonus, None);
     // Synth Charge rides the throw that follows the magazine's LAST round.
     let last_round_factor = if from_empty { g.last_round_factor } else { 1.0 };
 
@@ -171,7 +180,11 @@ fn settle(
 /// Mutation's bonus laid into the relative buckets it joins — "additive with
 /// mods such as Pistol Gambit" and "such as Target Cracker" (wiki), so it scales
 /// the part's own base.
-pub(super) fn lingering_of(r: &crate::build::loadout::ResolvedRadial, bonus: f64) -> crate::build::loadout::ResolvedLingering {
+pub(super) fn lingering_of(
+    r: &crate::build::loadout::ResolvedRadial,
+    bonus: f64,
+    co: Option<crate::model::CoBehavior>,
+) -> crate::build::loadout::ResolvedLingering {
     crate::build::loadout::ResolvedLingering {
         damage: r.damage,
         modified_base: r.modified_base,
@@ -189,6 +202,7 @@ pub(super) fn lingering_of(r: &crate::build::loadout::ResolvedRadial, bonus: f64
         falloff_start_m: r.falloff_start_m,
         falloff_reduction: r.falloff_reduction,
         stacking: crate::model::FieldStacking::Stack,
-        takes_condition_overload: false,
+        takes_condition_overload: co.is_some(),
+        co_behavior: co,
     }
 }

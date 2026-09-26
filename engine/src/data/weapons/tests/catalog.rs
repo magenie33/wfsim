@@ -425,7 +425,6 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // "Projectile Impact", "Direct Hit", "Lock-On Mode", "Slug Impact"
         // and "Reload From Empty Impact" all missed silently. Nine more:
         ("aegrit", "independent", 1.0),
-        ("catabolyst", "independent", 1.0),
         ("cyanex", "independent", 1.0),
         ("cyanex_burst", "independent", 1.0),
         ("epitaph_uncharged", "independent", 1.0),
@@ -473,7 +472,6 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         ("rakta_ballistica_incarnon", "independent", 1.0),// [ballistica_prime_incarnon]
         ("coda_bubonico", "independent", 1.0),            // [bubonico]
         ("coda_bubonico_burst", "independent", 1.0),      // [bubonico_burst]
-        ("coda_catabolyst", "independent", 1.0),          // [catabolyst]
         ("corvas", "independent", 1.0),                   // [corvas_prime]
         ("corvas_uncharged", "independent", 1.0),         // [corvas_prime_uncharged]
         ("epitaph_prime", "independent", 1.0),            // [epitaph]
@@ -509,6 +507,18 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         "CO anomaly on an entry the catalog does not name — check the row for THIS              weapon's own name, or make it ordinary: {unexpected:?}"
     );
     assert!(wrong.is_empty(), "CO anomaly disagrees with the catalog: {wrong:?}");
+
+    // A ROW THAT NAMES A THROWN GRENADE'S CONTACT is that part's class, not the
+    // weapon's: "Catabolyst | Partial Reload Impact" and "| Reload From Empty
+    // Impact", both Multiplying — carried to the Coda, the same family and form.
+    for id in ["catabolyst", "coda_catabolyst"] {
+        let g = crate::data::weapons::spec(id).and_then(|s| s.attack.reload_grenade.as_ref());
+        assert_eq!(
+            g.and_then(|g| g.contact_co_behavior.as_deref()),
+            Some("independent"),
+            "{id}: the grenade's contact is the catalog's Multiplying row"
+        );
+    }
 
     // …and every listed entry still EXISTS, so a rename cannot quietly
     // empty this list.

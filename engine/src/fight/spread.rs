@@ -325,6 +325,7 @@ pub(super) fn spread_hit(
         half_hp,
         active.co_base,
         crate::model::CoStage::Direct,
+        active.co_behavior,
     );
     // THE PART FACTOR IS A SEPARATE MULTIPLIER FROM THE SHARE, and the two are
     // not interchangeable: `share` scales the hit AND the modded base its DoTs

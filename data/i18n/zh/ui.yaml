@@ -1571,9 +1571,8 @@ ui:
   "this weapon does NOT inflict self-stagger, which is a real advantage over every other explosive in this batch and is worth nothing here, because the arena never charges any of them for it either": "这把武器「不会」自我踉跄，这相对本批次其它每一件爆炸武器都是实打实的优势，但在这里一文不值，因为本场对它们所有人都不收这笔账"
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
   "this weapon is never holstered during the fight": 战斗中这把武器从不收起
-  "WHEN the throw lands: the page says the grenade is thrown mid-reload and has travel time, and states neither, so it lands at the instant the reload starts": "手雷何时落地：页面说手雷在换弹途中扔出、有飞行时间，但两者都没给数值，所以按换弹开始的那一刻落地"
+  "WHEN in the reload the grenade lands: the page says it is thrown mid-reload and times nothing, so it lands halfway through (`THROW_AT_RELOAD_SHARE_UNMEASURED`); the throw costs no time of its own either way": "手雷在换弹的哪一刻落地：页面只说在换弹途中扔出，没有给时间，所以按换弹进行到一半时落地（`THROW_AT_RELOAD_SHARE_UNMEASURED`）；无论哪一刻，投掷本身都不额外占用时间"
   "the explosion's SELF-STAGGER, which costs the wielder time when the target stands inside the blast": "爆炸的自身硬直——目标站在爆炸范围内时，会让持有者损失时间"
-  "Condition Overload on the grenade's 11 Impact contact — the CO catalog gives it a row, and the contact is half a percent of the throw": "手雷 11 点冲击直击上的异况超量——CO 目录里有这一行，而直击只占一次投掷的百分之零点五"
   "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage, wiki `Catabolyst` Bugs)": "镀层 准确射手在手雷直击上的 bug（与基础伤害相乘，见 wiki `Catabolyst` 的 Bugs）"
   "interrupting the reload to throw again without reloading, the page's own exploit": "打断换弹以不换弹反复扔手雷——页面自己写的技巧"
   "the 45-degree FAN is read as edge to edge about the reticle, which the page does not spell out": "45 度的扇形按以准星为中心、两边缘之间的夹角理解，页面没有写明"

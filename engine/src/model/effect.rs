@@ -1378,6 +1378,19 @@ pub enum CoBehavior {
     Inert,
 }
 
+impl CoBehavior {
+    /// What a data file's `co_behavior:` names — `None` for anything else, which
+    /// every reader refuses rather than guessing a class.
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "additive_with_base_damage" => Some(Self::AdditiveWithBaseDamage),
+            "independent" => Some(Self::Independent),
+            "inert" => Some(Self::Inert),
+            _ => None,
+        }
+    }
+}
+
 /// A MELEE INCARNON FORM: what opens it, and how long it is on for.
 ///
 /// It is NOT A FORM in this repo's sense and does not become one — no weapon

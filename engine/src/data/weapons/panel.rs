@@ -167,13 +167,11 @@ pub fn base_panel_assembled(
     // (docs/MECHANICS.md §Condition Overload), so the class an unlisted weapon
     // takes is ADDITIVE — there is no defensible default that is the exception.
     // Hence: state it, or fail.
-    let co_behavior = match s.co_behavior.as_deref() {
-        Some("additive_with_base_damage") => CoBehavior::AdditiveWithBaseDamage,
-        Some("independent") => CoBehavior::Independent,
-        Some("inert") => CoBehavior::Inert,
-        other => panic!(
-            "weapon {}: co_behavior must be additive_with_base_damage / independent / inert, got {other:?}.              The wiki CO catalog lists only DISCREPANT attacks — a weapon it does not list is              additive_with_base_damage, never independent.",
-            s.id
+    let co_behavior = match s.co_behavior.as_deref().and_then(CoBehavior::from_id) {
+        Some(b) => b,
+        None => panic!(
+            "weapon {}: co_behavior must be additive_with_base_damage / independent / inert, got {:?}.              The wiki CO catalog lists only DISCREPANT attacks — a weapon it does not list is              additive_with_base_damage, never independent.",
+            s.id, s.co_behavior
         ),
     };
 
@@ -333,6 +331,9 @@ pub fn base_panel_assembled(
         fan_deg: g.fan_deg,
         from_empty: a_throw(&g.from_empty),
         partial: a_throw(&g.partial),
+        contact_co: g.contact_co_behavior.as_deref().map(|id| {
+            CoBehavior::from_id(id).unwrap_or_else(|| panic!("weapon {}: contact_co_behavior {id:?}", s.id))
+        }),
     });
 
     // The lingering FIELD (Torid's Toxin cloud). Each stat falls back to the

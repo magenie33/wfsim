@@ -134,7 +134,7 @@ pub(super) fn charge_magazine_cycle(
                 let rs = live_reload_speed(params, &cy.base_form, *rs_armed, buff_stacks, *t);
                 let spent = live_reload_time(&cy.base_form, params, arc, rs, *t, from_empty);
                 if cy.base_form.reload_grenade.is_some() {
-                    ammo.grenade_thrown_at = Some((*t, from_empty));
+                    ammo.grenade_thrown_at = Some((*t + spent * THROW_AT_RELOAD_SHARE_UNMEASURED, from_empty));
                 }
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
@@ -212,11 +212,10 @@ pub(super) fn charge_magazine_cycle(
             // it is the first thing it speeds up.
             let rs = live_reload_speed(params, params, *rs_armed, buff_stacks, *t);
             let spent = live_reload_time(params, params, arc, rs, *t, from_empty);
-            // THE THROW IS THE RELOAD'S, and it leaves when the reload STARTS:
-            // the page says it is thrown mid-reload and states no timing, so the
-            // earliest instant is the one that invents no delay.
+            // THE THROW IS THE RELOAD'S: it leaves partway through and costs no
+            // time of its own — damage the reload delivers for free.
             if params.reload_grenade.is_some() {
-                ammo.grenade_thrown_at = Some((*t, from_empty));
+                ammo.grenade_thrown_at = Some((*t + spent * THROW_AT_RELOAD_SHARE_UNMEASURED, from_empty));
             }
             // TWO ROWS, THE START AND THE END, and nothing in between. What is between them is not a reload event — it is
             // whatever the fight went on doing while the weapon was down, which

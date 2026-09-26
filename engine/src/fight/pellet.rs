@@ -380,6 +380,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         half_hp,
         co_base,
         crate::model::CoStage::Direct,
+        active.co_behavior,
     );
     // The explosion's own, and only when it differs — an evolution
     // that raises the radial's damage without raising its CO base
@@ -394,7 +395,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // DIRECT-hit bonus, like the CO it rides beside.
         Some(r) if r.takes_condition_overload => gunco_bucket(
             params, active, &mut bodies[0].debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
-            r.co_base, crate::model::CoStage::Radial,
+            r.co_base, crate::model::CoStage::Radial, active.co_behavior,
         ),
         _ => Gunco { bucket: arc_ratio, ..Default::default() },
     };
