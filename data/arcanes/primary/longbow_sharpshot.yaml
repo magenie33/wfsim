@@ -17,7 +17,7 @@ effects:
   # multiplicative to mods like Serration". On a weapon whose CO ADDS it does
   # not reach that term — "[(1 + Serration) x (1 + Longbow Sharpshot)] +
   # Galvanized Aptitude" — and a Multiplying CO takes it whole
-  # (`fight::scale::sharpshot_at`).
+  # (`fight::scale::beside_adding_co`).
   #
   # THE NEXT SHOT, simulated: a shot that puts any pellet on a weak point arms
   # the one after it, every pellet and explosion of that shot carries the bonus,

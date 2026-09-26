@@ -875,8 +875,8 @@ impl FightParams {
         // PRIMARY COMPRESSION: the panel brings the metres, the arcane brings
         // what a metre is worth. `adds` joins the live base-damage bracket
         // (diluted by Serration, and it reaches status payloads through
-        // ModifiedBase); `multiplies` is a final multiplier on the instance,
-        // the slot Secondary Surge occupies.
+        // ModifiedBase); `multiplies` is a final multiplier on the instance
+        // that an adding CO's term does not see (`scale::beside_adding_co`).
         let (compression_multiplier, compression_base_damage) = match panel.compression {
             Some(c) => {
                 let bonus = arcane.compression_damage_per_m * c.radius_lost_m;

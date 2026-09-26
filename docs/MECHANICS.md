@@ -850,7 +850,10 @@ exist too (Proboscis Cernos tendrils, Vadarya Prime lightning).
 bracket): Extinguished Dragon Key, range-based damage falloff, Longbow
 Sharpshot / Primary Compression, Warframe ability buffs (Furious Javelin,
 Equinox Duality …), and a bow's charge multiplier — a charged shot's CO is
-computed off the UNCHARGED base.
+computed off the UNCHARGED base. The engine spends range falloff, Compression
+and Sharpshot as ONE product on everything but the CO share
+(`fight::scale::beside_adding_co`), and Eclipse by the same arithmetic on its
+own (M79).
 
 **Evolution exclusion — a per-PERK anomaly, not a law.** The line *"CO-bonus
 does not use base damage increase Evolution"* reads like a general rule and is

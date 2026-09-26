@@ -774,7 +774,11 @@ anything the weapon's own data says:
 
 1. **Stacking** — `Multiplies` is the common case, but a real minority `Adds`
    (Ambassador, Battacor, Ferrox, Opticor, Trumna, and every Braton/Burston
-   Incarnon), and the Trumna's alt-fire is `Both`.
+   Incarnon), and the Trumna's alt-fire is `Both`. `Adds` joins the
+   base-damage bracket (M68). `Multiplies` is a factor of its own that meets a
+   Multiplying CO as a product (M104) and does not reach an Adding CO's term,
+   which the wiki's CO page lists it among the multipliers that ignore
+   (`fight::scale::beside_adding_co`; no reading covers that case yet).
 2. **Effectiveness**, i.e. which radius gets considered — mostly 100% or 0%,
    but the Vectis pair are **4%** and the Trumna's alt-fire is **127%**.
 3. **Radius Calculation** — `Snapshot` / `Stolen` / `Doesn't Work`, plus the

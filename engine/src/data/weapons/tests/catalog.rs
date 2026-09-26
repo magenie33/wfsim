@@ -1711,3 +1711,20 @@ fn a_sentinel_weapon_is_also_a_primary_secondary_or_melee_weapon() {
         }
     }
 }
+
+/// PRIMARY COMPRESSION ESCAPES AN ADDING CO "ON PROJECTILE WEAPONS" (wiki
+/// `Condition_Overload_(Mechanic)`), and the engine applies that to every
+/// `multiplies` row without asking the shot type — right only while every such
+/// row that pays is a projectile. A hit-scan one is the case the wiki's
+/// qualifier leaves open, and `fight::scale::beside_adding_co` must learn it.
+#[test]
+fn every_multiplying_compression_row_on_an_adding_weapon_is_a_projectile() {
+    use crate::data::weapons::ShotType;
+    for w in all() {
+        let Some(c) = w.attack.compression.as_ref() else { continue };
+        let adding = w.co_behavior.as_deref().is_none_or(|b| b == "additive_with_base_damage");
+        if c.stacking == "multiplies" && c.effectiveness > 0.0 && adding {
+            assert_eq!(w.attack.shot_type, Some(ShotType::Projectile), "{}", w.id);
+        }
+    }
+}

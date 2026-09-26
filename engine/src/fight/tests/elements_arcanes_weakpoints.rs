@@ -1534,9 +1534,25 @@ fn longbow_sharpshot_leaves_an_adding_condition_overload_alone() {
     let (serration, gunco, sharpshot) = (1.65, 1.2, 3.0);
     let bracket = 1.0 + serration + gunco;
     let share = gunco / bracket;
-    let adding = bracket * super::super::scale::sharpshot_at(sharpshot, share, CoBehavior::AdditiveWithBaseDamage);
+    let adding = bracket * super::super::scale::beside_adding_co(1.0 + sharpshot, share, CoBehavior::AdditiveWithBaseDamage);
     let wiki = (1.0 + serration) * (1.0 + sharpshot) + gunco;
     assert!((adding - wiki).abs() < 1e-9, "{adding} vs {wiki}");
-    let multiplying = super::super::scale::sharpshot_at(sharpshot, share, CoBehavior::Independent);
+    let multiplying = super::super::scale::beside_adding_co(1.0 + sharpshot, share, CoBehavior::Independent);
     assert!((multiplying - 4.0).abs() < 1e-12);
+}
+
+/// …AND THE OTHER MULTIPLIERS THAT RECALCULATION OMITS GO WITH IT, as ONE
+/// product: Primary Compression on a projectile and range falloff beside Longbow
+/// Sharpshot. Spending each against the CO share on its own would take that
+/// share out once per multiplier.
+#[test]
+fn an_adding_condition_overload_escapes_every_omitted_multiplier_at_once() {
+    use crate::model::CoBehavior;
+    let (serration, gunco) = (1.65, 1.2);
+    let (compression, falloff, sharpshot) = (3.24, 0.6, 4.0);
+    let bracket = 1.0 + serration + gunco;
+    let got = bracket
+        * super::super::scale::beside_adding_co(compression * falloff * sharpshot, gunco / bracket, CoBehavior::AdditiveWithBaseDamage);
+    let wiki = (1.0 + serration) * compression * falloff * sharpshot + gunco;
+    assert!((got - wiki).abs() < 1e-9, "{got} vs {wiki}");
 }

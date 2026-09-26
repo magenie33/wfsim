@@ -84,15 +84,17 @@ pub(super) fn eclipse_at(mult: f64, co_share: f64) -> f64 {
     1.0 + (mult - 1.0) * (1.0 - co_share.clamp(0.0, 1.0))
 }
 
-/// LONGBOW SHARPSHOT, as the factor it is: "multiplicative to mods like
-/// Serration", and on a weapon whose Condition Overload ADDS it does not reach
-/// that term — "Damage bonus% = [(1 + Serration) x (1 + Longbow Sharpshot)] +
-/// Galvanized Aptitude" (wiki `Longbow_Sharpshot`), which is `eclipse_at`'s
-/// arithmetic. A Multiplying CO is a factor of its own and takes it whole.
-pub(super) fn sharpshot_at(bonus: f64, co_share: f64, behavior: crate::model::CoBehavior) -> f64 {
+/// FINAL MULTIPLIERS THAT AN ADDING CONDITION OVERLOAD DOES NOT SEE. Its term is
+/// "an additive recalculation of all effects" that ignores Longbow Sharpshot,
+/// Primary Compression on projectile weapons and range-based falloff (wiki
+/// `Condition_Overload_(Mechanic)`), so `mult` — their product — reaches
+/// everything but the CO share: "[(1 + Serration) x (1 + Longbow Sharpshot)] +
+/// Galvanized Aptitude" (wiki `Longbow_Sharpshot`). A Multiplying CO is a factor
+/// of its own and takes it whole.
+pub(super) fn beside_adding_co(mult: f64, co_share: f64, behavior: crate::model::CoBehavior) -> f64 {
     match behavior {
-        crate::model::CoBehavior::AdditiveWithBaseDamage => eclipse_at(1.0 + bonus, co_share),
-        _ => 1.0 + bonus,
+        crate::model::CoBehavior::AdditiveWithBaseDamage => eclipse_at(mult, co_share),
+        _ => mult,
     }
 }
 

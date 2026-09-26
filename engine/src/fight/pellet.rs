@@ -564,8 +564,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     } else {
         1.0
     };
-    let arc_final =
-        params.arcane.final_multiplier * active.compression_multiplier * og_mult;
+    // Primary Compression's `multiplies` row is NOT here: an adding CO's
+    // recalculation omits it, so it joins `beside_adding_co` below.
+    let arc_final = params.arcane.final_multiplier * og_mult;
 
     // ---- ATTACK PARTS (MECHANICS §7) -------------------------
     // A projectile carries TWO instances where the weapon declares a
@@ -1166,6 +1167,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // so this factor moves no number the engine reported before the
         // arena had a distance in it.
         let falloff = falloff_factor(active, params, rad.as_ref(), det, gap_m);
+        // RANGE falloff is the direct hit's; the explosion's own falloff from
+        // its epicentre is another thing and stays `falloff`.
+        let (range_falloff, falloff) = if rad.is_none() { (falloff, 1.0) } else { (1.0, falloff) };
         // A SPREAD INSTANCE LANDS ON A BODY, so the pellet's own
         // head factor comes back off before it is handed on.
         //
@@ -1183,7 +1187,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // is the same pellet on the same line, so if it took a head it
         // keeps taking one.
         let body_only = |x: f64| x / part_factor.max(1e-9);
-        let sharpshot = sharpshot_at(next_shot_bonus, co_mult.co_share, active.co_behavior);
+        // THE FINAL MULTIPLIERS AN ADDING CO'S RECALCULATION OMITS, taken
+        // together because they multiply each other and only the CO term
+        // escapes them: Primary Compression, range falloff, Longbow Sharpshot.
+        let omitted = active.compression_multiplier * range_falloff * (1.0 + next_shot_bonus);
+        let beside_co = beside_adding_co(omitted, co_mult.co_share, active.co_behavior);
         let dt_here = if direct && active.consecutive_hit_radial_only { 1.0 } else { dt_mult };
         let raw = qtotal
             * part_factor
@@ -1191,7 +1199,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             * bucket
             * params.faction_at_time(t)
             * arc_final
-            * sharpshot
+            * beside_co
             * attrition
             // DOUBLE TAP stands on its own: "multiplicatively stacks
             // with damage bonuses like Serration and Faction Damage
@@ -1582,7 +1590,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 (crate::record::Factor::ConditionOverload, bucket),
                 faction_layers(params, t, DEPTH_HIT)[0],
                 faction_layers(params, t, DEPTH_HIT)[1],
-                (crate::record::Factor::ArcaneFinal, arc_final * sharpshot),
+                // The ARCANE row carries what the omitted multipliers left
+                // of the CO term, so the rows still multiply to the hit.
+                (crate::record::Factor::ArcaneFinal, arc_final * beside_co / range_falloff.max(1e-12)),
                 (crate::record::Factor::Attrition, attrition),
                 (crate::record::Factor::WarframeAbility, eclipse_at(params.ability_final_at(t), co_mult.co_share)),
                 (crate::record::Factor::BeamRamp, beam_ramp),
@@ -1602,7 +1612,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 // than dropping it, because "falloff ×1.00" is
                 // the answer to "why does range not hurt me"
                 // and a missing line is not.
-                (crate::record::Factor::DamageFalloff, falloff),
+                (crate::record::Factor::DamageFalloff, range_falloff * falloff),
             ]
         } else {
             Vec::new()
