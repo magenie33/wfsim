@@ -11,6 +11,11 @@ introduced: "43"
 # see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 
+# THE HEAD IS WORTH 1x: "Athodai (Athodai Prime)'s Alternate Fire" is in
+# wiki `Enemy_Body_Parts`'s list of weapons "always defaulting to the 1x
+# multiplier". The weapon's own page does not say it.
+headshot_multiplier: 1.0
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:

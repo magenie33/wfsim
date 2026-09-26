@@ -976,12 +976,14 @@ fn weakpoint_damage_adds_into_the_part_multiplier_at_1_5x() {
 /// is the roster's first: *"1x headshot multiplier (meaning it does no extra
 /// damage)"*, on an enemy whose head is worth 3x.
 ///
-/// Three claims, because the field is only right if all three hold. The
+/// Four claims, because the field is only right if all four hold. The
 /// enemy's multiplier is REPLACED rather than reduced; a headshot MOD still
 /// pays on top of the replacement, which is the wiki's own next sentence
-/// (*"this can be increased using Primary Deadhead"*); and the critical
-/// headshot doubling goes quiet, since the rule it comes from is about a
-/// weak point worth more than 1x and this head no longer is.
+/// (*"this can be increased using Primary Deadhead"*); weak point damage does
+/// NOT (`Enemy_Body_Parts`: *"unaffected by acuity-like bonuses but affected
+/// by deadhead-like bonuses"*); and the critical headshot doubling goes quiet,
+/// since the rule it comes from is about a weak point worth more than 1x and
+/// this head no longer is.
 #[test]
 fn a_weapon_may_overrule_what_a_head_is_worth() {
     let head3x = |m: Option<f64>, deadhead: f64| FightParams {
@@ -1018,7 +1020,15 @@ fn a_weapon_may_overrule_what_a_head_is_worth() {
         "Deadhead must still pay on a 1x head: {deadhead} vs {flat}"
     );
 
-    // 3. …AND THE BODY IS UNTOUCHED, which is what says the override is
+    // 3. …AND WEAK POINT DAMAGE DOES NOT: Primary Acuity's +350% would make a
+    //    3x head 8.25x, and on a 1x weapon the head stays 1x.
+    let acuity = dmg(&FightParams { weakpoint_damage: 3.5, ..head3x(Some(1.0), 0.0) });
+    assert!(
+        (acuity - flat).abs() < 1e-9,
+        "acuity must not pay on a 1x head: {acuity} vs {flat}"
+    );
+
+    // 4. …AND THE BODY IS UNTOUCHED, which is what says the override is
     //    scoped to the head rather than to the weapon's whole output.
     let body = |m: Option<f64>| {
         dmg(&FightParams {

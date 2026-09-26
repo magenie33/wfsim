@@ -509,12 +509,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             .iter()
             .find(|p| p.is_head)
             .map_or(1.0, |p| p.multiplier);
-        // The WEAPON may overrule what a head is worth — Tenet Arca
-        // Plasmor, "1x headshot multiplier". Its own value REPLACES the
-        // part's, and the additive brackets still pay on top of it.
-        let m = active.headshot_multiplier.unwrap_or(m);
         // A HEAD FOUND BY SEARCHING FOR ONE is a head, so its rate is a head's.
-        (m + 1.5 * active.weakpoint_damage) * (1.0 + hb_head) * (1.0 + hi_head)
+        active.head_value(m, 1.5) * (1.0 + hb_head) * (1.0 + hi_head)
     };
     let head_mult = active.headshot_multiplier.unwrap_or(part.multiplier);
     // WEAK POINT DAMAGE IS ADDED AT A RATE THE TWO FLAGS DECIDE, verbatim from
@@ -525,8 +521,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     //   (3 + 1.5 * (3.5 + 0.75)) = 9.375x   head weak point
     //   (3 + 1.0 * (3.5 + 0.75)) = 7.25x    weak point, not a head
     let wp_rate = weak_point_damage_rate(part);
-    let wp_mult =
-        if part.is_head { head_mult } else { part.multiplier } + wp_rate * active.weakpoint_damage;
+    let wp_mult = if part.is_head {
+        active.head_value(part.multiplier, wp_rate)
+    } else {
+        part.multiplier + wp_rate * active.weakpoint_damage
+    };
     let part_factor = wp_mult * (1.0 + head_bonus) * (1.0 + head_innate);
     // …AND WHAT AN ELECTRICITY OR GAS TICK IS WORTH WHERE IT LANDS: the
     // same brackets over a 1x base, acuity left out (`lands_on_a_part`).

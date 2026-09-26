@@ -1663,3 +1663,31 @@ fn innate_slots_come_from_the_yaml_polarities() {
     assert_eq!(s[1], Some(Polarity::Naramon));
     assert_eq!(s[2], None);
 }
+
+/// THE 1x HEADS ARE EXACTLY THE ONES THE WIKI NAMES — `Enemy_Body_Parts`'s list
+/// of weapons "always defaulting to the 1x multiplier", plus the module's
+/// `ExtraHeadshotDmg = -2` rows, as far as the roster holds them. Both ways: a
+/// listed form left at the enemy's multiplier was worth 3x per headshot on the
+/// board, and a stray 1x silently takes a weapon's heads away.
+///
+/// Read and NOT listed: Cyanex (its page narrows the 1x to the explosion) and
+/// the Ignis pair (their pages say they "can deal headshots"). Nataruk's QUICK
+/// shot keeps its head — "Quick shots will still benefit from headshots".
+#[test]
+fn the_one_x_heads_are_the_ones_the_wiki_names() {
+    let mut have: Vec<&str> = all()
+        .iter()
+        .filter(|w| w.headshot_multiplier.is_some())
+        .map(|w| w.id.as_str())
+        .collect();
+    have.sort_unstable();
+    let mut want = vec![
+        "alternox", "alternox_prime", "arca_plasmor", "tenet_arca_plasmor",
+        "athodai_alt", "athodai_prime_alt", "catchmoon_primary", "catchmoon_secondary",
+        "dread_incarnon", "fulmin_semi", "fulmin_prime_semi", "lex_incarnon",
+        "lex_prime_incarnon", "nataruk_perfect", "paris_incarnon", "mk1_paris_incarnon",
+        "paris_prime_incarnon", "steflos",
+    ];
+    want.sort_unstable();
+    assert_eq!(have, want);
+}

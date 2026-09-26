@@ -779,3 +779,17 @@ pub struct FightParams {
     pub target_at: crate::rules::space::Vec2,
     pub duration_seconds: f64,
 }
+
+impl FightParams {
+    /// A HEAD'S MULTIPLIER BEFORE THE HEADSHOT BRACKET: the part's own plus Weak
+    /// Point Damage at `weakpoint_rate`, unless the weapon overrules the part —
+    /// and then acuity pays nothing. VERBATIM (wiki `Enemy_Body_Parts`): these
+    /// weapons are "always defaulting to the 1x multiplier, unaffected by
+    /// acuity-like bonuses but affected by deadhead-like bonuses".
+    pub fn head_value(&self, part_multiplier: f64, weakpoint_rate: f64) -> f64 {
+        match self.headshot_multiplier {
+            Some(m) => m,
+            None => part_multiplier + weakpoint_rate * self.weakpoint_damage,
+        }
+    }
+}

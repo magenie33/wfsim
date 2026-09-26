@@ -803,8 +803,7 @@ pub fn run_once_traced(
                     .iter()
                     .find(|p| p.is_head)
                     .map_or(1.0, |p| p.multiplier);
-                let m = active.headshot_multiplier.unwrap_or(m);
-                (m + 1.5 * active.weakpoint_damage) * (1.0 + shot_hb) * (1.0 + shot_hi)
+                active.head_value(m, 1.5) * (1.0 + shot_hb) * (1.0 + shot_hi)
             },
             head_landing: shot_head_landing,
         };

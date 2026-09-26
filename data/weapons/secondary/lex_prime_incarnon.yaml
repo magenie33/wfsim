@@ -33,6 +33,9 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 
+# see notes: head_worth_1x_incarnon_form
+headshot_multiplier: 1.0
+
 attack:
   # see notes: cone_half_angle_from
   spread:

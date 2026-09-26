@@ -674,6 +674,13 @@ notes:
     sentence for the same field on the Arca Plasmor, "1x headshot multiplier". The
     shot still counts as a HEAD (Primary Deadhead pays on it); only the enemy's
     own multiplier is overruled, and the critical-headshot doubling goes with it.
+  head_worth_1x_incarnon_form: |
+    THE HEAD IS WORTH 1x on this Incarnon form. Its Genesis page states it in
+    prose — "has a [[headshot]] multiplier of 1x" — and `Enemy_Body_Parts`
+    lists the Genesis among the weapons "always defaulting to the 1x
+    multiplier, unaffected by acuity-like bonuses but affected by deadhead-like
+    bonuses". The module carries no `ExtraHeadshotDmg` for the form, so an
+    audit of the module alone does not find it.
   health_pools_front_target: |
     HEALTH, not the pools in front of it: a target still on its shields or its
     overguard is not below half HEALTH, and reading the total would switch this

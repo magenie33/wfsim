@@ -37,6 +37,9 @@ pseudo_reload:
 # where the charged entry reads half of its own 360 and adds (M83).
 co_behavior: independent
 
+# see notes: head_worth_1x_incarnon_form
+headshot_multiplier: 1.0
+
 attack:
   # see notes: cone_half_angle_from
   spread:

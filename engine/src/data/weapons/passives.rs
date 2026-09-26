@@ -52,7 +52,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     // fitting on a gun whose own head bonus is nothing.
     if let Some(m) = s.headshot_multiplier {
         out.push(format!(
-            "A headshot with this weapon is worth {m:.0}x rather than the enemy body part's own multiplier, so aiming for the head buys nothing by itself. Headshot mods still apply on top of it, and a critical headshot does not double its critical damage."
+            "A headshot with this weapon is worth {m:.0}x rather than the enemy body part's own multiplier, so aiming for the head buys nothing by itself. Headshot damage bonuses such as Primary Deadhead still apply on top of it, weak point damage such as Primary Acuity does not, and a critical headshot does not double its critical damage."
         ));
     }
 
