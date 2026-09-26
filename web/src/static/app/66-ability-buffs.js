@@ -170,7 +170,7 @@ function renderWfBuffs(host, readonly) {
     `<div class="wfb-head">
        <label title="${escHtml(tr("empty is your Warframe build's own Ability Strength; a number here overrides it for this fight — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
          <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}" placeholder="${own}"${readonly ? " disabled" : ""}></label>
-       <span class="wfb-early">${escHtml(typed ? tr("typed for this fight") : tr("from the Warframe build"))}</span>
+       <span class="sb-empty wfb-src">${escHtml(typed ? tr("typed for this fight") : tr("from the Warframe build"))}</span>
        <span class="wfb-early">${escHtml(tr("what the fight hands this weapon — a squadmate's Roar, your own frame's, an arcane or a companion's precept — assumed up while ticked. WHEN an ability is cast is the action priority list's question and not this block's"))}</span>
      </div>
      ${nulled ? `<div class="wfb-null">${escHtml(
