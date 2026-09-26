@@ -98,6 +98,14 @@ pub struct Tenno {
     /// CASTING SPEED, as a share: `time / (1 + bonus)`.
     #[serde(default)]
     pub casting_speed_bonus: f64,
+    /// THE LINKED OPERATOR'S ACTIVE FOCUS SCHOOL, whose triggered nodes an
+    /// action list can earn (`data::casting`). Empty reads as no school.
+    #[serde(default)]
+    pub operator_school: String,
+    /// THE STRENGTH AN EXALTED WEAPON WAS SUMMONED AT — the snapshot its cast
+    /// took (`data::casting::Summon`). `None` reads [`Self::ability_strength`].
+    #[serde(default)]
+    pub summon_strength: Option<f64>,
 }
 
 fn full_strength() -> f64 {

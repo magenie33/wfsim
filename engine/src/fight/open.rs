@@ -551,7 +551,15 @@ pub(super) fn open<'a>(
     //
     // Zero for every gun but the Grimoire's primary fire, so nothing else moves
     // by so much as a bit.
-    let t = field_active.windup_seconds;
+    let mut t = field_active.windup_seconds;
+    // …AND AFTER WHATEVER THE FRAME DOES AT THE BUZZER: a plan that opens on a
+    // cast or a summon keeps the first attack waiting until it is done
+    // (`data::casting::plan`), which the shot loop would pay one shot late.
+    let mut casts_paid = 0;
+    while let Some(&(at, secs)) = params.cast_interrupts.get(casts_paid).filter(|(at, _)| *at <= t) {
+        t = t.max(at) + secs;
+        casts_paid += 1;
+    }
     // GOTVA PRIME'S PASSIVE, armed. Set by a pellet that landed a status, spent
     // by the next pellet that lands. It survives across shots and reloads: the
     // card says the chance "remains until landing another successful shot", and
@@ -613,7 +621,7 @@ pub(super) fn open<'a>(
         count: params.tendrils_initial.min(params.tendril_max),
     };
     let spool = Spool {
-        casts_paid: 0,
+        casts_paid,
         shots: 0.0f64,
         due: f64::NEG_INFINITY,
     };
@@ -658,7 +666,7 @@ pub(super) fn open<'a>(
         Combatant {
             seat,
             params,
-            apl: params.apl(),
+            apl: params.apl().between_shots(),
             // WHEN IT FIRST ACTS, which is not zero: a weapon with a wind-up
             // does not fire at the buzzer, and the engagement's own opening
             // time is what `t` was set to here.

@@ -385,10 +385,9 @@ pub struct FightParams {
     /// [`FightParams::ability_element_at`] are the three reads, one per effect
     /// kind, and there is no fourth.
     pub abilities: Vec<crate::data::abilities::ActiveAbility>,
-    /// WHEN A CAST TAKES THE TRIGGER FINGER AND FOR HOW LONG, in time order —
-    /// empty unless the fight is CASTING its abilities rather than assuming
-    /// them up (`data::abilities::plan_casts`). The windows in `abilities` are
-    /// already what the energy paid for; this is the other half of the price.
+    /// WHEN THE PLAYER IS BUSY AND NOT ATTACKING, AND FOR HOW LONG, in time
+    /// order — empty unless the action list plans something for the frame or
+    /// its Operator (`data::casting::plan`).
     pub cast_interrupts: Vec<(f64, f64)>,
     /// **THE RULES THE PLAYER INSERTED ABOVE THE FIGHT'S OWN** — empty for
     /// every fight this app has run, which is exactly the mode's own list

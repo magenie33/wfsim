@@ -104,11 +104,6 @@ pub struct Arena {
     /// and the same-family conflicts settled, so nothing downstream can forget
     /// that two Roars do not stack.
     pub abilities: Vec<crate::data::abilities::ActiveAbility>,
-    /// WHEN A CAST TAKES THE TRIGGER FINGER, in time order — empty unless this
-    /// fight is CASTING its abilities rather than assuming them up. Both halves
-    /// of an ability's price travel together: the window the energy bought is
-    /// already in `abilities`, and this is the shooting it cost.
-    pub cast_interrupts: Vec<(f64, f64)>,
     /// **THE RULES THE PLAYER INSERTED INTO THE ACTION PRIORITY LIST**, above
     /// whatever the mode already does. A property of the FIGHT, like the
     /// abilities beside it: the optimizer gets it by construction and the board
@@ -159,7 +154,6 @@ impl Arena {
     /// exactly this and should not have to spell it out.
     pub fn training(duration_seconds: f64) -> Self {
         Self {
-            cast_interrupts: Vec::new(),
             apl: crate::data::apl::Apl::default(),
             target_id: "e1".to_string(),
             tenno: crate::data::tenno::default_tenno().clone(),

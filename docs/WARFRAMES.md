@@ -123,8 +123,9 @@ while there is none (docs/UI.md §The default).
   why `WayboundNode` has nowhere to put an effect (`data/notes.yaml`
   `focus_waybound`).
 - `always: true` counts whenever the school is active (Stone Skin). A node that
-  needs an Operator action counts only when the Operator build ASSUMES it, which
-  is the house rule for a condition about the Tenno.
+  needs an Operator action counts only when the Operator build ASSUMES it, or —
+  where it has a `trigger` — when the fight's action list performs the action
+  (docs/BUFFS.md §The Operator's actions), which then replaces the tick.
 - A node's TAG counts whenever its school is active: the node can be used, and a
   tag says what a build can do rather than what is running.
 
@@ -224,8 +225,8 @@ different wielder and never reaches the board.
   hands ("Valkyr Prime Talons").
 - **THE BUILD'S ABILITY STRENGTH COMES WITH IT**, as the stats do: an EXALTED
   weapon's damage is its ability's taken at 100% (`WeaponBase::exalted`), so the
-  frame that summons it scales it, and the fight's ability buffs read the same
-  number. A typed `ability_strength` overrides it, as a ticked stat overrides a
+  frame that summons it scales it — at the strength its summoning cast
+  snapshotted (docs/BUFFS.md §Cast, or assumed up). A typed `ability_strength` overrides it, as a ticked stat overrides a
   resolved one. The unbuilt Prototype resolves 100%, so no board row moves.
 - The BOARD never records one: every ruler scores in the Prototype's hands.
 - A share link does not carry the wielder yet (`SHARE_EXCLUDED_AXES`).

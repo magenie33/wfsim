@@ -381,6 +381,7 @@ pub fn base_panel_assembled(
         // weapon that never came out of a Lich.
         valence_bonus: 0.0,
         exalted: s.exalted,
+        summoned_by: s.summoned_by.as_ref().map(|a| &*Box::leak(a.clone().into_boxed_str())),
         // Zero until an evolution's flat add writes into it
         // (`add_flat_base_damage`), which is the only thing that does.
         unswung_base: 0.0,

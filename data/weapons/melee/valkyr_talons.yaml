@@ -36,6 +36,7 @@ wielder_names:
 # incompatible with it is refused (`data::mods::pool_for_build`); the combo,
 # Acolyte and Amalgam cards are not (see notes: exalted_mods_reenabled).
 exalted: true
+summoned_by: hysteria
 accuracy: ~
 # NO DISPOSITION AND NO RIVEN FAMILY: "Riven Mods are not generated for Valkyr
 # Talons" (W`Hysteria`).

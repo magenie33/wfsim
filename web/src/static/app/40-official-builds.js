@@ -59,7 +59,11 @@ function wielderPayloadOf(v) {
   if (isHostId(v.frame)) return undefined;
   const b = wielderBuild(v);
   if (b) return wfPayloadOf({ ...b.state, frame: v.frame });
-  return v.frame === PROTOTYPE_ID ? undefined : { frame: v.frame };
+  // THE BLANK BUILD STILL HAS AN OPERATOR: its link is unset, which is the first
+  // Operator build (docs/WARFRAMES.md §Operator) — the same one the page shows.
+  if (v.frame === PROTOTYPE_ID) return undefined;
+  const operator = typeof operatorPickFor === "function" ? operatorPickFor(undefined) : null;
+  return operator ? { frame: v.frame, operator } : { frame: v.frame };
 }
 
 const wielderPayload = () => wielderPayloadOf(buildWielder);

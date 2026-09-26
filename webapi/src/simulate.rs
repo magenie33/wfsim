@@ -938,6 +938,14 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // loop was handed — not composed again here. The page prints what comes
         // back, so what it shows is what ran.
         "apl": params.apl().0.iter().map(wfsim_engine::data::apl::Rule::to_simc).collect::<Vec<_>>(),
+        // …AND WHAT THE FRAME DID: the strength it fought at, the strength an
+        // Exalted weapon was summoned at (`data::casting`), and how long the
+        // planned actions kept the weapon from attacking.
+        "frame": {
+            "ability_strength": tenno.ability_strength,
+            "summon_strength": tenno.summon_strength,
+            "busy_seconds": params.cast_interrupts.iter().fold(0.0, |a, (_, s)| a + s),
+        },
         // WHICH ENGAGEMENT THE BENCHMARK FIGHT IS — its own RNG state, as TWO
         // u32 halves.
         //

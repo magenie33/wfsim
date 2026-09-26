@@ -940,7 +940,6 @@ impl FightParams {
         let recharging = arcane.rechargeable_magazine;
         let arc_reload_bonus = arcane.reload_bonus;
         let crate::arena::Arena {
-            cast_interrupts,
             apl: apl_inserted,
             target_id,
             tenno,
@@ -958,48 +957,50 @@ impl FightParams {
         } = arena.clone();
         // THE INVOCATIONS MEET THE ABILITIES HERE, and here is the only place
         // they can: a mod belongs to the BUILD and an ability to the FIGHT, and
-        // this function is the one that holds both.
-        //
-        // RE-RESOLVED rather than rescaled. `data::abilities::resolve` applies
-        // the strength AND settles the same-family contest, and the contest is
-        // decided BY the resolved value — so a bonus big enough to make a
-        // Helminth Roar beat a Rhino's has to be in hand before the winner is
-        // picked, not multiplied onto the loser afterwards. Rescaling would
-        // also have to know which abilities take strength at all, which is a
-        // second copy of a rule `resolve` already owns.
-        //
-        // NOTHING RE-RESOLVES WITHOUT A CARD ASKING. Every fight but one takes
-        // the list the arena already carries, byte for byte.
-        let abilities = if panel.ability_strength_bonus > 0.0
-            || panel.ability_duration_bonus > 0.0
-        {
-            let picks: Vec<crate::data::abilities::AbilityPick<'_>> = ability_picks
-                .iter()
-                .map(|p| crate::data::abilities::AbilityPick {
-                    id: p.id.as_str(),
-                    // DURATION IS A MULTIPLIER ON WHAT WAS ASKED FOR. "The
-                    // whole fight" is already the whole fight and cannot be
-                    // extended, which is why the `None` case is left alone
-                    // rather than given a number.
-                    duration_seconds: p
-                        .duration_seconds
-                        .map(|d| d * (1.0 + panel.ability_duration_bonus)),
-                    element: p.element.as_deref(),
-                })
-                .collect();
-            crate::data::abilities::resolve(
-                &picks,
-                &crate::data::abilities::Caster {
-                    strength: ability_strength + panel.ability_strength_bonus,
-                    duration: 1.0 + panel.ability_duration_bonus,
-                    ..Default::default()
-                },
-                panel.class,
-                panel.slot,
-            )
+        // this function is the one that holds both. RE-RESOLVED rather than
+        // rescaled, because `resolve` settles the same-family contest BY the
+        // resolved value. Nothing re-resolves without a card asking.
+        let bonus_duration = 1.0 + panel.ability_duration_bonus;
+        let picks: Vec<crate::data::abilities::AbilityPick<'_>> = ability_picks
+            .iter()
+            .map(|p| crate::data::abilities::AbilityPick {
+                id: p.id.as_str(),
+                // DURATION IS A MULTIPLIER ON WHAT WAS ASKED FOR. "The whole
+                // fight" is already the whole fight, so `None` stays.
+                duration_seconds: p.duration_seconds.map(|d| d * bonus_duration),
+                element: p.element.as_deref(),
+            })
+            .collect();
+        let seated: Vec<&str> = tenno.augments.iter().map(String::as_str).collect();
+        let caster = crate::data::abilities::Caster {
+            strength: ability_strength + panel.ability_strength_bonus,
+            duration: tenno.ability_duration + panel.ability_duration_bonus,
+            efficiency: tenno.ability_efficiency,
+            casting_speed_bonus: tenno.casting_speed_bonus,
+            augments: &seated,
+        };
+        let assumed = if panel.ability_strength_bonus > 0.0 || panel.ability_duration_bonus > 0.0 {
+            crate::data::abilities::resolve(&picks, &caster, panel.class, panel.slot)
         } else {
             abilities
         };
+        // …AND WHAT THE FRAME DOES WITH THEM: the planned rules of the action
+        // list, one cast at a time, each at the strength of its instant
+        // (`data::casting`). An empty list leaves `assumed` as it is.
+        let summoned_by = panel.summoned_by;
+        let crate::data::casting::FramePlan { abilities, interrupts: cast_interrupts, .. } = crate::data::casting::plan(
+            &apl_inserted,
+            &crate::data::casting::Frame {
+                caster,
+                picks: &picks,
+                assumed: &assumed,
+                school: &tenno.operator_school,
+                summoned_by,
+                weapon_class: panel.class,
+                weapon_slot: panel.slot,
+            },
+            duration_seconds,
+        );
         // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
         //
         // HERE, and not in `resolve`, because this is the first clause in the

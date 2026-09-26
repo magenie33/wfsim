@@ -26,7 +26,6 @@ fn main() {
     // build and nothing resets them: the question is how high a row can read,
     // not how fast this weapon kills.
     let arena = Arena {
-        cast_interrupts: Vec::new(),
         apl: Default::default(),
         squad_size: 1,
         target_id: "e1".to_string(),

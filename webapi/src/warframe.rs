@@ -135,6 +135,10 @@ pub fn warframe_catalog_json() -> Value {
                 "always": n.always,
                 "when": n.when,
                 "tags": tags(&n.tags),
+                // THE OPERATOR ACTION THAT EARNS IT in a fight, when the fight
+                // can simulate it (`data::casting`) — the page offers the action.
+                "trigger": n.trigger.map(|(t, _)| t),
+                "duration_seconds": n.trigger.map(|(_, s)| s),
             })).collect::<Vec<_>>(),
             // THE TWO WAYBOUNDS — shown at max rank whichever school is
             // active, and never a choice: unlocking one cannot be undone. No

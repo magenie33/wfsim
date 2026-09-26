@@ -533,6 +533,9 @@ pub fn meta_json() -> Value {
                     .map(|s| s.wielders.clone()).unwrap_or_default(),
                 "wielder_names": wfsim_engine::data::weapons::spec(&w.id)
                     .map(|s| s.wielder_names.clone()).unwrap_or_default(),
+                // THE ABILITY THAT SUMMONS IT, which the action list can cast.
+                "summoned_by": wfsim_engine::data::weapons::spec(&w.id)
+                    .and_then(|s| s.summoned_by.clone()),
                 "forms": w.forms.iter()
                     .map(|(id, name, def)| {
                         // THE ENTRY BEHIND THIS FORM, once. Everything below is
@@ -1032,6 +1035,9 @@ pub fn meta_json() -> Value {
                 "helminth": a.helminth,
                 "value": a.value,
                 "duration_seconds": a.duration_seconds,
+                // CAN THE ACTION LIST CAST IT — a price is stated. One that has
+                // none is never cast and keeps the assumed reading.
+                "castable": a.energy_cost.is_some(),
                 // The elements this one lets you CHOOSE (Resupply's ten), empty
                 // where it fixes one — the page draws its picker from this.
                 "elements": a.elements,

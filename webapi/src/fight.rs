@@ -554,7 +554,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         rule("headshot_pct"),
         get_f64(v, "headshot_pct", default_headshot_pct(info)),
     );
-    let tenno = tenno_from(v, info);
+    let mut tenno = tenno_from(v, info);
     // INFINITE AMMO, and it is the DEFAULT for every weapon.
     // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic
     // half of a mechanic we only half have — and the headline number people
@@ -610,7 +610,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // THE FRAME CASTING THEM: every one of these is the wielder's build, which
     // is why they travel together (`abilities::Caster`).
     let seated: Vec<&str> = tenno.augments.iter().map(String::as_str).collect();
-    let mut abilities = wfsim_engine::data::abilities::resolve(
+    let abilities = wfsim_engine::data::abilities::resolve(
         &picks,
         &wfsim_engine::data::abilities::Caster {
             strength,
@@ -631,9 +631,34 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // params are built, off the one fact that decides it (`FightParams::apl`),
     // so nothing here has to know what a mode resolves to.
     let apl = inserted_apl(v)?;
-    let cast_interrupts =
-        wfsim_engine::data::abilities::plan_casts(&mut abilities, &apl.abilities(), tenno.energy, duration)
-            .interrupts;
+    // …AND THE STRENGTH AN EXALTED WEAPON WAS SUMMONED AT, which is the
+    // WEAPON's number and so has to be known before its build is resolved. The
+    // fight re-plans the rest where the build is known (`FightParams::from_panel`)
+    // with the same function, and the summon does not depend on the build.
+    if let Some(by) = wfsim_engine::data::weapons::spec(&info.id).and_then(|s| s.summoned_by.as_deref()) {
+        let seated: Vec<&str> = tenno.augments.iter().map(String::as_str).collect();
+        let summon = wfsim_engine::data::casting::plan(
+            &apl,
+            &wfsim_engine::data::casting::Frame {
+                caster: wfsim_engine::data::abilities::Caster {
+                    strength,
+                    duration: tenno.ability_duration,
+                    efficiency: tenno.ability_efficiency,
+                    casting_speed_bonus: tenno.casting_speed_bonus,
+                    augments: &seated,
+                },
+                picks: &picks,
+                assumed: &abilities,
+                school: &tenno.operator_school,
+                summoned_by: Some(by),
+                weapon_class: "",
+                weapon_slot: "",
+            },
+            duration,
+        )
+        .summon;
+        tenno.summon_strength = Some(summon.strength);
+    }
 
     // The published roster PLUS whatever this request brought with it. A
     // custom shadows nothing (`custom_enemies` refuses a published id), so the
@@ -744,9 +769,6 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         } else {
             abilities
         },
-        // A NULLIFIER EATS THE CASTS TOO — what it dispels is the ability, so
-        // the pauses it would have cost are not paid either.
-        cast_interrupts: if spec.nullifies_warframe_abilities { Vec::new() } else { cast_interrupts },
         // …AND THE PICKS THAT PRODUCED THEM, so a build carrying an Invocation
         // can resolve them again at its own Ability Strength. A Nullifier eats
         // the picks too: what it dispels is the ability, not the number that

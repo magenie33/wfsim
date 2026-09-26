@@ -526,7 +526,11 @@ function applyScenario(st) {
   // moment still belongs to the weapon you just left"), and the same reason: a
   // collection's state may not be written from outside it, and reading the
   // outgoing state is how it gets written from outside it.
-  sim = { ...defaultScenario(), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
+  sim = { ...defaultScenario(), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})),
+    apl: JSON.parse(JSON.stringify(Array.isArray(st.apl) ? st.apl : [])) };
+  // A STORED 1 IS NOT A CHOICE: an older page wrote it for everybody, before the
+  // wielder's own strength reached the fight. Null reads the Warframe build.
+  if (typeof sim.ability_strength !== "number" || sim.ability_strength === 1) sim.ability_strength = null;
   // A scenario preset is stored per weapon, so its weapon-scoped field
   // (headshot %) is already right — stamp the marker so the re-seed does not
   // overwrite a saved choice with a default.

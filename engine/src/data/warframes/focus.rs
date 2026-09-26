@@ -11,6 +11,19 @@ pub struct FocusNode {
     pub when: String,
     pub effects: Vec<FrameEffect>,
     pub tags: Vec<TagGrant>,
+    /// **THE OPERATOR ACTION THAT EARNS IT, and for how long** — set only on a
+    /// node the fight can SIMULATE. An action list naming the action earns it
+    /// (`data::casting`); otherwise it is assumed or not, as the Operator build
+    /// says.
+    pub trigger: Option<(NodeTrigger, f64)>,
+}
+
+/// An Operator action a Focus node is conditioned on (`data::apl::Action`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NodeTrigger {
+    /// `Action::OperatorSling`.
+    OperatorSling,
 }
 
 /// **A WAYBOUND NODE — UNBOUND FROM ITS SCHOOL, AND PERMANENT.**
@@ -68,6 +81,10 @@ pub(super) struct RawNode {
     pub(super) effects: Vec<RawEffect>,
     #[serde(default)]
     pub(super) tags: Vec<RawTag>,
+    #[serde(default)]
+    pub(super) trigger: Option<NodeTrigger>,
+    #[serde(default)]
+    pub(super) duration_seconds: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -96,6 +113,11 @@ pub fn focus_schools() -> &'static [FocusSchool] {
                         .iter()
                         .map(|n| {
                             assert!(n.always || !n.when.is_empty(), "{p}: {} says neither `always` nor `when`", n.id);
+                            assert!(
+                                n.trigger.is_some() == n.duration_seconds.is_some() && !(n.always && n.trigger.is_some()),
+                                "{p}: {} — a `trigger` needs a `duration_seconds` and a conditional node",
+                                n.id
+                            );
                             FocusNode {
                                 id: n.id.clone(),
                                 name: n.name.clone(),
@@ -104,6 +126,7 @@ pub fn focus_schools() -> &'static [FocusSchool] {
                                 when: n.when.clone(),
                                 effects: n.effects.iter().map(|e| effect(p, e)).collect(),
                                 tags: tags_of(p, &n.tags),
+                                trigger: n.trigger.zip(n.duration_seconds),
                             }
                         })
                         .collect(),

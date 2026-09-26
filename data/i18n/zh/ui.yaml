@@ -122,6 +122,27 @@ ui:
   "Only the active school's nodes apply. A node that needs an Operator action counts only when you say it is running.": 只有当前流派的节点生效。需要指挥官先做动作才触发的节点，只有你勾选"视为已触发"时才计入。
   "always on": 常驻
   "count it as running": 视为已触发
+  "What the frame does": 战甲与指挥官
+  "Planned actions": 行动列表
+  "off": 关
+  "assumed up": 假设生效
+  "simulated": 模拟
+  "Operator: Transference, Chained Sling, back": 指挥官：切换、连锁冲刺、切回战甲
+  "Cast": 施放
+  "once, at its turn — the snapshot holds for the fight": 轮到时施放一次，快照保持整场
+  "again when it lapses, or this many seconds before": 到期时重做，或提前这么多秒
+  "once, at its turn": 轮到时做一次
+  "once": 一次
+  "keep up": 保持
+  "none — every ticked source is assumed up and nobody paid for it": 无，勾选的来源都按"假设生效"处理，不付代价
+  "no linked Operator — link one on the Warframe page to tick its nodes": 未链接指挥官，在战甲页面链接一个后才能勾选节点
+  "no Warframe holds this weapon": 没有战甲持有这把武器
+  "last run": 上次运行
+  "summoned at": 召唤时
+  "not attacking for": 无法攻击
+  "typed for this fight": 本场手动设置
+  "from the Warframe build": 来自战甲配装
+  "empty is your Warframe build's own Ability Strength; a number here overrides it for this fight — every value below is this times the wiki's max-rank number": 留空则使用战甲配装的技能强度；填入数字则仅在本场覆盖它。下方每个数值都是这个强度乘以 wiki 上的满级数值
   "pick the active Focus school": 选择当前专精流派
   "no linked Operator": 不链接指挥官
   "no school picked": 未选流派

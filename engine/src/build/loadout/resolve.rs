@@ -109,7 +109,7 @@ pub fn resolve_for(
     // a property of the WEAPON here rather than a buff on top of it: it scales
     // the base first, and the gated add below lands on the scaled one, which is
     // the order the game states (the page's numbers ARE the ability at 100%).
-    let strength = if base.exalted { tenno.ability_strength } else { 1.0 };
+    let strength = if base.exalted { tenno.summon_strength.unwrap_or(tenno.ability_strength) } else { 1.0 };
     let base = if gated_flat > 0.0 || gated_mag > 0.0 || strength != 1.0 {
         let mut b = base.clone();
         b.scale_base_damage(strength);
@@ -1375,6 +1375,7 @@ pub fn resolve_for(
     ResolvedPanel {
         form: base.form,
         class: base.class,
+        summoned_by: base.summoned_by,
         slot: base.slot,
         mod_pools: base.mod_pools,
         punch_through_m,

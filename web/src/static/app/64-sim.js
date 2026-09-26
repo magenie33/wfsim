@@ -16,8 +16,9 @@ function renderSimBuild() {
   if (sub) sub.textContent = activeLabel ? `${tr("testing build")}: ${activeLabel}` : "";
   const w = weaponInfo($("weapon").value);
   box.innerHTML = cardOfState(snapshotState(), w)
-    + aplHtml(w) + `<div class="sb-wielder"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+    + aplHtml(w) + `<div class="sb-wielder"></div><div class="sb-frame"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
   renderSimWielder(box.querySelector(".sb-wielder"));
+  renderSimFrame(box.querySelector(".sb-frame"));
   // The part value analysis lists THIS build's parts, so it follows the card.
   renderShapley();
 }
@@ -200,7 +201,7 @@ function fightCardHtml() {
       return d && o ? chip(wfShardLine(d, o, p.tauforged)) : "";
     }),
   ];
-  if (wf.length && Math.round((Number(sim.ability_strength) || 0) * 100) !== 100) {
+  if (wf.length && typeof sim.ability_strength === "number") {
     wf.push(chip(`${Math.round(sim.ability_strength * 100)}% ${tr("Ability Strength")}`));
   }
   const extra = EXTRA_STAT_KEYS.filter(([k]) => Number((sim.extra_stats || {})[k]))

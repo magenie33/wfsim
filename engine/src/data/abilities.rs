@@ -179,6 +179,10 @@ pub struct AbilityDef {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActiveAbility {
     pub id: &'static str,
+    /// When this cast opened it — `f64::NEG_INFINITY` for one assumed up before
+    /// the fight began. A cast ability is one entry PER CAST, each resolved at
+    /// the strength its cast snapshotted (`data::casting`).
+    pub starts_at_seconds: f64,
     /// When it stops, in seconds from the start of the engagement.
     /// `f64::INFINITY` = the whole fight (the page's "whole fight" button).
     pub ends_at_seconds: f64,
@@ -217,85 +221,10 @@ pub struct ActiveAbility {
 /// Replace it one ability at a time with `cast: {seconds: …}` and a measurement.
 pub const CAST_SECONDS_UNMEASURED: f64 = 1.0;
 
-/// **CASTING THEM, AS AGAINST ASSUMING THEY ARE UP** — docs/BUFFS.md
-/// §"Cast, or assumed up" for the whole of it, including what it does not
-/// model and why an ability with no stated price is left alone.
-///
-/// WHO IS CAST IS THE ACTION PRIORITY LIST'S ANSWER AND NOBODY ELSE'S
-/// (`data::apl`): casting is an ACTION, so a switch beside the list would be
-/// two sources for one fact. Anything it does not name keeps the assumed-up
-/// reading, which is what every board row was measured under.
-///
-/// A RECAST IS SEAMLESS, WHICH IS WHY A PLAN IS ENOUGH: recasting exactly at
-/// expiry makes the windows contiguous, so "how many casts the energy buys" IS
-/// "how long the buff is up" — nothing downstream learns that casting exists.
-pub struct CastPlan {
-    /// The moments a cast takes the trigger finger away, in order, each with
-    /// the seconds it costs.
-    pub interrupts: Vec<(f64, f64)>,
-}
-
-/// Plan the casting of the abilities `cast` names out of `energy`, shortening
-/// each window to what the pool pays for. Returns what the shooting loses and
-/// when. Anything `cast` does not name keeps the assumed-up reading.
-pub fn plan_casts(
-    list: &mut [ActiveAbility],
-    cast: &[&str],
-    energy: f64,
-    fight_seconds: f64,
-) -> CastPlan {
-    // IN TIME ORDER, because one pool pays for all of them: two abilities due at
-    // the same moment are paid in the order they were picked, and a pool that
-    // cannot pay the second leaves it down from there.
-    let planned = |a: &ActiveAbility| a.energy_cost.is_some() && cast.contains(&a.id);
-    let mut due: Vec<(f64, usize)> =
-        list.iter().enumerate().filter(|(_, a)| planned(a)).map(|(i, _)| (0.0, i)).collect();
-    let mut left = energy;
-    let mut ends: Vec<Option<f64>> = vec![None; list.len()];
-    let mut interrupts = Vec::new();
-    while let Some(k) = due
-        .iter()
-        .enumerate()
-        .filter(|(_, (t, _))| *t <= fight_seconds)
-        .min_by(|a, b| a.1 .0.total_cmp(&b.1 .0).then(a.0.cmp(&b.0)))
-        .map(|(k, _)| k)
-    {
-        let (t, i) = due.remove(k);
-        let a = &list[i];
-        let Some(cost) = a.energy_cost else { continue };
-        if left < cost {
-            continue;
-        }
-        left -= cost;
-        let end = t + a.window_seconds;
-        ends[i] = Some(end);
-        if a.interrupts_fire {
-            interrupts.push((t, a.cast_seconds));
-        }
-        if end.is_finite() {
-            due.push((end, i));
-        }
-    }
-    for (i, end) in ends.iter().enumerate() {
-        // THE PLAN REPLACES THE WINDOW RATHER THAN CAPPING IT: `ends_at_seconds`
-        // was ONE cast's worth, and recasting is exactly how a player keeps a
-        // 20 s buff up for a 180 s fight. What limits it is the pool, above.
-        if let Some(e) = end {
-            list[i].ends_at_seconds = *e;
-        } else if planned(&list[i]) {
-            // Not one cast was affordable, so it was never up. Only for one the
-            // LIST asked for: an ability nobody cast is assumed up, untouched.
-            list[i].ends_at_seconds = f64::NEG_INFINITY;
-        }
-    }
-    interrupts.sort_by(|a, b| a.0.total_cmp(&b.0));
-    CastPlan { interrupts }
-}
-
 impl ActiveAbility {
     /// Is it running at `t`? Half-open, so a 30s Roar is gone at exactly 30.
     pub fn live_at(&self, t: f64) -> bool {
-        t < self.ends_at_seconds
+        self.starts_at_seconds <= t && t < self.ends_at_seconds
     }
 }
 
@@ -685,6 +614,7 @@ pub fn resolve(
         );
         let live = ActiveAbility {
             id: def.id,
+            starts_at_seconds: f64::NEG_INFINITY,
             ends_at_seconds: p.duration_seconds.unwrap_or(f64::INFINITY),
             effects,
             extend_per_melee_kill_seconds: grows.0,
@@ -871,102 +801,23 @@ pub struct ExtraHitLive {
     pub forced_status: bool,
 }
 
-/// Every distinct moment the ACTIVE SET changes, `0.0` first and each expiry
-/// after it, deduplicated and sorted.
+/// Every distinct moment the ACTIVE SET changes, `0.0` first and each cast and
+/// expiry after it, deduplicated and sorted.
 ///
 /// The sim precomputes a damage vector per interval rather than per shot: the
-/// set is piecewise constant and changes at most once per buff, so this turns
-/// a per-shot rebuild into at most seven of them.
+/// set is piecewise constant between these, so a per-shot rebuild becomes one
+/// per interval.
 pub fn checkpoints(list: &[ActiveAbility]) -> Vec<f64> {
     let mut out = vec![0.0];
     for a in list {
-        if a.ends_at_seconds.is_finite() && a.ends_at_seconds > 0.0 && !out.contains(&a.ends_at_seconds) {
-            out.push(a.ends_at_seconds);
+        for at in [a.starts_at_seconds, a.ends_at_seconds] {
+            if at.is_finite() && at > 0.0 && !out.contains(&at) {
+                out.push(at);
+            }
         }
     }
     out.sort_by(|a, b| a.partial_cmp(b).expect("no NaN in checkpoints"));
     out
-}
-
-#[cfg(test)]
-mod cast_tests {
-    use super::*;
-
-    fn ab(id: &'static str, window: f64, cost: f64, interrupts: bool) -> ActiveAbility {
-        ActiveAbility {
-            id,
-            ends_at_seconds: f64::INFINITY,
-            effects: vec![],
-            extend_per_melee_kill_seconds: 0.0,
-            extend_cap_seconds: 0.0,
-            energy_cost: Some(cost),
-            cast_seconds: 0.5,
-            interrupts_fire: interrupts,
-            window_seconds: window,
-        }
-    }
-
-    /// **A POOL IS A BUDGET OF CASTS, AND THE WINDOW IS WHAT IT BUYS.** A 20 s
-    /// Warcry at 75 energy out of a 300 pool is four casts, so it is up for 80 s
-    /// of a longer fight and down after — which is the whole point of casting
-    /// rather than assuming.
-    #[test]
-    fn a_pool_buys_a_number_of_casts_and_the_window_is_what_it_bought() {
-        let mut list = vec![ab("warcry", 20.0, 75.0, true)];
-        let plan = plan_casts(&mut list, &["warcry"], 300.0, 180.0);
-        assert_eq!(list[0].ends_at_seconds, 80.0);
-        // …AND EACH CAST TOOK THE TRIGGER FINGER: four of them, half a second each.
-        assert_eq!(plan.interrupts.len(), 4);
-        assert_eq!(plan.interrupts.iter().map(|(_, s)| s).sum::<f64>(), 2.0);
-        assert_eq!(plan.interrupts[1].0, 20.0, "the recast is at the lapse");
-    }
-
-    /// ONE POOL PAYS FOR ALL OF THEM, so two abilities share it and the second
-    /// goes down first when it runs out.
-    #[test]
-    fn one_pool_pays_for_every_ability() {
-        let mut list = vec![ab("a", 10.0, 50.0, false), ab("b", 10.0, 50.0, false)];
-        plan_casts(&mut list, &["a", "b"], 150.0, 100.0);
-        // 150 buys three casts between them, and the ties go to the pick order.
-        let total: f64 = list.iter().map(|a| a.ends_at_seconds).sum();
-        assert_eq!(total, 30.0, "{:?}", list.iter().map(|a| a.ends_at_seconds).collect::<Vec<_>>());
-    }
-
-    /// A CAST NOBODY CAN AFFORD NEVER HAPPENS, and the buff was never up.
-    #[test]
-    fn an_ability_no_pool_can_pay_for_is_never_up() {
-        let mut list = vec![ab("warcry", 20.0, 75.0, true)];
-        let plan = plan_casts(&mut list, &["warcry"], 10.0, 180.0);
-        assert!(list[0].ends_at_seconds.is_infinite() && list[0].ends_at_seconds < 0.0);
-        assert!(plan.interrupts.is_empty());
-    }
-
-    /// **THE LIST DECIDES WHO IS CAST.** One named ability is paid for and
-    /// shortened to what the pool bought; the one beside it, priced and
-    /// affordable, is still ASSUMED UP — because nothing in the action list
-    /// says the player ever casts it.
-    #[test]
-    fn an_ability_the_list_never_names_is_assumed_up() {
-        let mut list = vec![ab("warcry", 20.0, 75.0, true), ab("roar", 20.0, 75.0, true)];
-        list[1].ends_at_seconds = f64::INFINITY;
-        let plan = plan_casts(&mut list, &["warcry"], 150.0, 180.0);
-        assert_eq!(list[0].ends_at_seconds, 40.0, "two casts is what 150 bought");
-        assert!(list[1].ends_at_seconds.is_infinite() && list[1].ends_at_seconds > 0.0);
-        // …and the pool paid for the named one alone, so the shooting lost two
-        // casts rather than four.
-        assert_eq!(plan.interrupts.len(), 2);
-    }
-
-    /// AN ABILITY WITH NO PRICE IS LEFT ALONE — the gap is ours, not the build's.
-    #[test]
-    fn an_ability_with_no_stated_cost_keeps_its_window() {
-        let mut list = vec![ab("x", 10.0, 0.0, true)];
-        list[0].energy_cost = None;
-        list[0].ends_at_seconds = 30.0;
-        let plan = plan_casts(&mut list, &["x"], 0.0, 180.0);
-        assert_eq!(list[0].ends_at_seconds, 30.0);
-        assert!(plan.interrupts.is_empty());
-    }
 }
 
 #[cfg(test)]

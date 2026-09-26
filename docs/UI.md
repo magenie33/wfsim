@@ -834,6 +834,20 @@ buffs are the FIGHT's, outside every build, and stay below the summary.
 A weapon a frame summons offers only its frames, and its title follows the frame
 ("Valkyr Prime Talons").
 
+**UNDER THE SUMMARY, WHAT THE FRAME DOES** (`65-sim-frame.js`). Every
+conditional node of the linked Operator's school is one row: OFF, ASSUMED UP, or
+SIMULATED where the fight can earn it (docs/BUFFS.md §The Operator's actions).
+The row stores nothing: OFF and ASSUMED are the Operator build's tick, written to
+that build, and SIMULATED is the action in the scenario's list (`sim.apl`),
+which the same block edits — order, `once` or kept up, and the ability that
+summons the weapon. The blank Warframe build links the first Operator build, as
+an unset link does anywhere.
+
+**ABILITY STRENGTH IS THE WIELDER'S** unless the fight types one over it:
+`sim.ability_strength` is null by default, the box shows the wielder's own as its
+placeholder (`panelWielder.ability_strength`), and a stored 1 — the neutral
+value an older page wrote for everybody — reads as null.
+
 **THE FIGHT'S "EXTERNAL BONUSES" SECTION IS WHAT OTHERS HAND THE WIELDER**: its
 state, the squad's auras, the fight's own stat bonuses — and a tick-and-number
 override per stat (health, shields, armor, energy, sprint). Unticked, the stat is

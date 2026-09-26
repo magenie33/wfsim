@@ -85,7 +85,6 @@ fn main() {
         // ONE GUN. The CLI has no scenario UI to put a squad in.
         also_acting: Vec::new(),
         arena: wfsim_engine::arena::Arena {
-            cast_interrupts: Vec::new(),
             apl: Default::default(),
             squad_size: 1,
             target_id: "e1".to_string(),

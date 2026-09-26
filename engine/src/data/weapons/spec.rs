@@ -299,6 +299,11 @@ pub struct WeaponSpec {
     /// MEASUREMENTS M94) — so it is the weapon's fact and a build only repeats it.
     #[serde(default)]
     pub fixed_stance: Option<String>,
+    /// THE ABILITY THAT SUMMONS IT, by `data/warframe_abilities/` id — an
+    /// Exalted weapon's damage is the Ability Strength that cast snapshotted
+    /// (`data::casting`).
+    #[serde(default)]
+    pub summoned_by: Option<String>,
     /// THE ONLY WARFRAMES THAT CAN HOLD IT, by id. Empty on almost every weapon,
     /// which any wielder can carry, the Prototype included; an Exalted weapon
     /// names its frame (Valkyr Talons: Valkyr and Valkyr Prime), and a build

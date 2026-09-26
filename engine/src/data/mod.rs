@@ -16,6 +16,7 @@ pub mod abilities;
 pub mod apl;
 pub mod arcanes;
 pub mod auras;
+pub mod casting;
 pub mod boards;
 pub mod companions;
 pub mod buff_events;

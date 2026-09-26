@@ -315,7 +315,8 @@ const AGENT_ACTIONS = [
     run() {
       const running = wfRunning();
       return {
-        ability_strength_percent: Math.round((Number(sim.ability_strength) || 0) * 100),
+        ability_strength_percent: Math.round(simStrength() * 100),
+        ability_strength_typed: typeof sim.ability_strength === "number",
         abilities: wfAbilities().map((a) => {
           const p = wfPick(a.id);
           return { id: a.id, name: wfName(a), frame: a.frame, value: wfValueLabel(a), what: wfEffectLine(a),
@@ -350,7 +351,7 @@ const AGENT_ACTIONS = [
   {
     id: "simulator.strength.set",
     writes: "scenario",
-    what: "The Warframe's Ability Strength for the fight, in percent as the arsenal shows it; every ability buff scales with it.",
+    what: "Override the Warframe's Ability Strength for the fight, in percent as the arsenal shows it; every ability buff scales with it. Without an override the fight reads the linked Warframe build's.",
     anchor: "#sim-wfbuffs",
     needs_weapon: true,
     args: { percent: { kind: "number", required: true, min: 0, max: 1000, what: "e.g. 250" } },

@@ -41,6 +41,8 @@ nodes:
     name: Sling Strength
     text: "Switching to Warframe after a Chained Sling adds 40% Ability Strength for 20s."
     when: after a Chained Sling and switching to the Warframe, 20 s
+    trigger: operator_sling
+    duration_seconds: 20
     effects:
       - kind: ability_strength_bonus
         rankMax: 0.4

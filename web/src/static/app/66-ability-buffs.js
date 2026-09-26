@@ -1,10 +1,7 @@
 // ---- WARFRAME ABILITY BUFFS (scenario section 3) ------------------------
 //
-// EARLY ACCESS, and the block says so on screen. Today
-// you type an Ability Strength; when frames land it comes from the frame and
-// the duration from Ability Duration. Nothing else about these buffs changes
-// then, which is why the definitions live in `data/abilities/` and only their
-// two INPUTS are here.
+// ABILITY STRENGTH IS THE WIELDER'S — the linked Warframe build's — unless the
+// fight types one over it (`sim.ability_strength`, null = the wielder's).
 //
 // It is the SCENARIO's, not the build's: a thing done TO this weapon for a
 // while. That is what puts it in section 3 beside the wielder, what carries it
@@ -24,7 +21,16 @@ const wfPick = (id) => (sim.abilities || []).find((a) => a.id === id);
 // The server states which per ability (`scales_with_strength`), so the page
 // cannot disagree with the sim about it.
 const wfValue = (a) =>
-  a.value * (a.scales_with_strength === false ? 1 : (Number(sim.ability_strength) || 0));
+  a.value * (a.scales_with_strength === false ? 1 : simStrength());
+
+/// THE WIELDER'S OWN ABILITY STRENGTH, as the server resolved it on the last
+/// panel (`panelWielder`) — the same resolve the fight makes.
+const wielderStrength = () => {
+  const f = typeof tennoFloor === "function" ? tennoFloor() : null;
+  return f && typeof f.ability_strength === "number" ? f.ability_strength : 1;
+};
+/// The strength the fight runs at: the typed override, else the wielder's.
+const simStrength = () => (typeof sim.ability_strength === "number" ? sim.ability_strength : wielderStrength());
 
 // WHICH PICKS ARE ACTUALLY RUNNING. Same family, only the strongest — the
 // wiki's own rule ("Multiple Freeze Forces do not stack; the buff with the
@@ -106,7 +112,9 @@ function renderWfBuffs(host, readonly) {
   const list = wfAbilities();
   if (!list.length) { box.innerHTML = ""; return; }
   const running = wfRunning();
-  const strength = Math.round((Number(sim.ability_strength) || 0) * 100);
+  const typed = typeof sim.ability_strength === "number";
+  const strength = typed ? Math.round(sim.ability_strength * 100) : "";
+  const own = Math.round(wielderStrength() * 100);
   // THE TARGET GETS A SAY. A Demolisher pulses every 5 s and dispels every
   // Warframe ability in range — so against one, nothing ticked here is up, and
   // the sim scores it that way. A section that let you tick Roar and quietly
@@ -160,8 +168,9 @@ function renderWfBuffs(host, readonly) {
   }
   box.innerHTML =
     `<div class="wfb-head">
-       <label title="${escHtml(tr("your Warframe's Ability Strength, as the arsenal shows it — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
-         <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}"${readonly ? " disabled" : ""}></label>
+       <label title="${escHtml(tr("empty is your Warframe build's own Ability Strength; a number here overrides it for this fight — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
+         <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}" placeholder="${own}"${readonly ? " disabled" : ""}></label>
+       <span class="wfb-early">${escHtml(typed ? tr("typed for this fight") : tr("from the Warframe build"))}</span>
        <span class="wfb-early">${escHtml(tr("what the fight hands this weapon — a squadmate's Roar, your own frame's, an arcane or a companion's precept — assumed up while ticked. WHEN an ability is cast is the action priority list's question and not this block's"))}</span>
      </div>
      ${nulled ? `<div class="wfb-null">${escHtml(
@@ -176,7 +185,7 @@ function renderWfBuffs(host, readonly) {
   }
   const touched = () => { markScenarioDirty(); renderSim(); };
   const str = $(`${host}-str`);
-  if (str) str.addEventListener("change", () => { setAbilityStrength(Number(str.value) || 0); touched(); });
+  if (str) str.addEventListener("change", () => { setAbilityStrength(str.value.trim() === "" ? null : Number(str.value) || 0); touched(); });
   box.querySelectorAll("[data-wfel]").forEach((el) => el.addEventListener("change", () => {
     setWfAbility(el.dataset.wfel, true, el.value);
     touched();
@@ -187,9 +196,10 @@ function renderWfBuffs(host, readonly) {
   }));
 }
 
-/// The fight's Ability Strength, typed in percent as the arsenal shows it.
+/// The fight's Ability Strength, typed in percent as the arsenal shows it —
+/// null hands it back to the wielder's build.
 function setAbilityStrength(percent) {
-  sim.ability_strength = Math.max(0, percent) / 100;
+  sim.ability_strength = percent == null ? null : Math.max(0, percent) / 100;
 }
 
 /// A WARFRAME ABILITY RUNNING IN THE FIGHT, or not. `secs: null` is the whole

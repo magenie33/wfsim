@@ -40,7 +40,29 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
         Some(b) if allowed.is_empty() || allowed.contains(&b.frame) => Some(b),
         _ => allowed.first().map(|f| wf::Build { frame: f.clone(), ..Default::default() }),
     };
-    let Some(build) = build else { return t };
+    let Some(mut build) = build else { return t };
+    // A NODE THE ACTION LIST EARNS IS NOT ALSO ASSUMED: naming its action makes
+    // the fight simulate it (`data::casting`), and counting the tick as well
+    // would pay it twice.
+    let earned: Vec<wf::NodeTrigger> = v
+        .get("apl")
+        .and_then(|a| serde_json::from_value::<wfsim_engine::data::apl::Apl>(a.clone()).ok())
+        .map_or_else(Vec::new, |apl| {
+            apl.planned()
+                .iter()
+                .filter_map(|(a, _)| match a {
+                    wfsim_engine::data::apl::Action::OperatorSling => Some(wf::NodeTrigger::OperatorSling),
+                    _ => None,
+                })
+                .collect()
+        });
+    let school = build.operator.as_ref().map_or(wf::FLOOR_SCHOOL, |o| o.school.as_str()).to_string();
+    if let (Some(o), Some(s)) = (build.operator.as_mut(), wf::focus_school(&school)) {
+        o.assumed.retain(|id| {
+            !s.nodes.iter().any(|n| &n.id == id && n.trigger.is_some_and(|(tr, _)| earned.contains(&tr)))
+        });
+    }
+    t.operator_school = school;
     let Ok(r) = wf::resolve(&build) else { return t };
     // THE WIELDER'S ABILITY STRENGTH COMES WITH THE BUILD, whatever is holding
     // the gun: an EXALTED weapon is summoned by the Warframe behind the
@@ -156,11 +178,13 @@ pub(crate) fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::te
     t
 }
 
-/// The five numbers a wielder floor is, for `/api/meta`.
+/// The five numbers a wielder floor is, for `/api/meta` — and its Ability
+/// Strength, which the fight reads unless one is typed over it.
 pub(crate) fn floor_json(t: &wfsim_engine::data::tenno::Tenno) -> Value {
     json!({
         "name": t.name, "health": t.health, "shield": t.shield,
         "armor": t.armor, "energy": t.energy, "sprint": t.sprint,
+        "ability_strength": t.ability_strength,
     })
 }
 
@@ -261,5 +285,38 @@ mod wielder_tests {
         // …AND THE FIGHT NO LONGER NAMES A FRAME OR SHARDS OF ITS OWN.
         let old = tenno_from(&json!({"frame": "valkyr", "shards": [{"shard": "x", "effect": "y"}]}), praedos);
         assert_eq!((old.name.as_str(), old.shards.len()), ("Prototype", 0));
+    }
+
+    /// **THE CLAWS ARE THE STRENGTH THEIR SUMMONING READ.** Sling first and
+    /// Hysteria inside Sling Strength's window takes +40% for the whole fight;
+    /// Hysteria first takes the frame's own, however often the sling follows.
+    /// A tick on the Operator build is the assumed reading, and naming the
+    /// sling in the list replaces it rather than adding to it.
+    #[test]
+    fn the_claws_are_the_strength_their_summoning_read() {
+        let summoned = |apl: serde_json::Value, assumed: &[&str]| {
+            let v = json!({
+                "weapon": "valkyr_talons",
+                "wielder": {"frame": "valkyr", "operator": {"school": "madurai", "assumed": assumed}},
+                "apl": apl,
+            });
+            let f = crate::fight::parse_fight(&v).expect("a fight");
+            (f.arena.tenno.ability_strength, f.arena.tenno.summon_strength.expect("an exalted weapon"))
+        };
+        let sling = json!({"action": {"do": "operator_sling"}, "when": {"if": "buff_remains_under", "ability": "sling_strength", "seconds": 0.0}});
+        let hysteria = json!({"action": {"do": "cast", "ability": "hysteria"}, "when": {"if": "always"}});
+        let near = |a: f64, b: f64| (a - b).abs() < 1e-9;
+
+        let (own, first) = summoned(json!([sling.clone(), hysteria.clone()]), &[]);
+        assert!(near(own, 1.0) && near(first, 1.4), "sling, then summon: {own} {first}");
+        let (_, late) = summoned(json!([hysteria.clone(), sling.clone()]), &[]);
+        assert!(near(late, 1.0), "summoned before the sling: {late}");
+
+        // THE TICK IS THE ASSUMED READING: up before the fight, so in the claws.
+        let (ticked, out) = summoned(json!([]), &["sling_strength"]);
+        assert!(near(ticked, 1.4) && near(out, 1.4), "{ticked} {out}");
+        // …AND THE LIST REPLACES IT: the sling is earned, never paid twice.
+        let (both, both_claws) = summoned(json!([sling, hysteria]), &["sling_strength"]);
+        assert!(near(both, 1.0) && near(both_claws, 1.4), "{both} {both_claws}");
     }
 }

@@ -807,38 +807,41 @@ fn eternal_war_extends_warcry_while_melee_kills_land() {
     assert_eq!(augmented, shots(&[], 8.0));
 }
 
-/// **CASTING IS PAID FOR IN TIME AND IN ENERGY, AND THE FIGHT SHOWS BOTH.**
+/// **CASTING IS PAID FOR IN TIME, AND THE FIGHT SHOWS IT.**
 ///
 /// The default reading is that a ticked ability is up and nobody paid — which
-/// is what every board row was measured under. Casting it instead buys a window
-/// out of a pool that does not refill, and a cast that roots the frame takes
-/// the trigger finger with it.
+/// is what every board row was measured under. Casting it instead opens a
+/// window at each cast, and each cast roots the frame for its cast time.
 #[test]
-fn casting_costs_shots_and_the_pool_limits_the_window() {
-    let plan = |energy: f64, interrupts: bool| {
+fn casting_costs_shots_and_rooting_is_what_costs_them() {
+    use crate::data::apl::{Action, Apl, Rule, When};
+    let run = |rooted: bool| {
         let picks = [AbilityPick { id: "warcry", duration_seconds: Some(20.0), element: None }];
         let mut p = params(&[], 1.0);
-        p.abilities = resolve(&picks, &Caster::default(), "", "melee");
-        p.abilities[0].interrupts_fire = interrupts;
+        let assumed = resolve(&picks, &Caster::default(), "", "melee");
         p.duration_seconds = 60.0;
-        let cast = crate::data::abilities::plan_casts(&mut p.abilities, &["warcry"], energy, 60.0);
-        p.cast_interrupts = cast.interrupts;
-        (p.abilities[0].ends_at_seconds, run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots)
+        let frame = crate::data::casting::Frame {
+            caster: Caster::default(),
+            picks: &picks,
+            assumed: &assumed,
+            school: "",
+            summoned_by: None,
+            weapon_class: "",
+            weapon_slot: "melee",
+        };
+        let apl = Apl(vec![Rule { action: Action::Cast { ability: "warcry".into() }, when: When::Always }]);
+        let cast = crate::data::casting::plan(&apl, &frame, 60.0);
+        p.abilities = cast.abilities;
+        p.cast_interrupts = if rooted { cast.interrupts } else { Vec::new() };
+        (p.abilities.len(), run_once(&p, &mut crate::rules::rng::Rng::new(3)).shots)
     };
-    // A POOL OF 150 AT 75 A CAST IS TWO CASTS: up for 40 s of a 60 s fight.
-    let (ends, shots) = plan(150.0, true);
-    assert_eq!(ends, 40.0);
-    // …AND A BIGGER POOL KEEPS IT UP FOR THE WHOLE FIGHT, which is more attack
-    // speed and more shots. Past the end rather than exactly at it: the last
-    // recast opens a window the fight does not live to see the end of.
-    let (long_ends, long_shots) = plan(1000.0, true);
-    assert!(long_ends >= 60.0, "{long_ends}");
-    assert!(long_shots > shots, "{long_shots} against {shots}");
-    // THE ROOTING IS WHAT COSTS SHOTS: the same fight where the cast does not
-    // interrupt fires more, and it is the only difference between the two.
-    let (free_ends, free_shots) = plan(1000.0, false);
-    assert_eq!(free_ends, long_ends);
-    assert!(free_shots > long_shots, "{free_shots} against {long_shots}");
+    // THREE CASTS COVER A 60 s FIGHT, each opening where the last lapsed…
+    let (casts, shots) = run(true);
+    assert_eq!(casts, 3);
+    // …AND THE ROOTING IS WHAT COSTS SHOTS: the same windows with nobody
+    // standing still for them fire more, and it is the only difference.
+    let (_, free_shots) = run(false);
+    assert!(free_shots > shots, "{free_shots} against {shots}");
 }
 
 /// A FLAT CRITICAL DAMAGE LANDS AFTER THE MODS AND BEFORE THE TIER — the wiki's

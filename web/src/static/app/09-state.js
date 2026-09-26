@@ -159,13 +159,16 @@ function defaultScenario() {
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || METRIC_FALLBACK.id,
     // NO `form`: how the weapon is played belongs to the build.
     duration: d.duration, buffs: {},
-    // WARFRAME ABILITY BUFFS. A fraction, not a percent — 1 is 100% Ability
-    // Strength — because that is what the server multiplies by, and a scenario
-    // that stored a percent would need a converter nobody would remember.
+    // WARFRAME ABILITY BUFFS. `ability_strength` is a TYPED OVERRIDE, a
+    // fraction (1 = 100%), and NULL means the wielder's own — the linked
+    // Warframe build's (`applyScenario` reads an older page's stored 1 as null).
     // `abilities` is what is ticked: `{id, secs}`, and `secs: null` is the
-    // whole fight. Empty by default, which is what makes the untouched
-    // scenario the same fight it has always been.
-    ability_strength: 1, abilities: [],
+    // whole fight.
+    ability_strength: null, abilities: [],
+    // THE RULES THE PLAYER INSERTED INTO THE ACTION PRIORITY LIST, in the
+    // engine's own shape (`data::apl::Rule`). Empty is every fight run before
+    // it, which assumes everything ticked is up.
+    apl: [],
     // THE FIGHT'S OWN STAT BONUSES — see `EXTRA_STAT_KEYS`. Empty is a fight
     // that hands this weapon nothing it did not earn, which is every ruler.
     extra_stats: { ...(d.extra_stats || {}) },
@@ -222,7 +225,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // comparison against the board is not a puzzle. Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
   infinite_ammo: true, metric: METRIC_FALLBACK.id, duration: 180, buffs: {},
-  ability_strength: 1, abilities: [], extra_stats: {}, auras: [], shards: [] };
+  ability_strength: null, abilities: [], apl: [], extra_stats: {}, auras: [], shards: [] };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept

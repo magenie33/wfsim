@@ -257,6 +257,8 @@ pub struct ResolvedPanel {
     /// numbers AND to different buttons.
     pub form: crate::model::FormKind,
     pub class: &'static str,
+    /// The ability that summons it, on an Exalted weapon (`data::casting`).
+    pub summoned_by: Option<&'static str>,
     /// …AND THE POOLS IT DRAWS, because three of the four amps ask THAT
     /// rather than the class: Rifle Amp "also affects bows, sniper rifles
     /// and launchers", which is the `rifle` pool and not any one class.

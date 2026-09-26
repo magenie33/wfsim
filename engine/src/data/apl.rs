@@ -79,9 +79,23 @@ pub enum Action {
     /// name the way out without naming the way in.
     TransformIn,
     TransformOut,
-    /// Cast a Warframe ability (`data/abilities/<id>.yaml`). It costs energy
-    /// and, when it roots the frame, the shooting it interrupts.
+    /// Cast a Warframe ability (`data/abilities/<id>.yaml`), or the one that
+    /// summons this weapon (`summoned_by`). It costs the time it roots the frame.
     Cast { ability: String },
+    /// Transference to the Operator, a Chained Sling, and back to the Warframe
+    /// — one action, because every Focus node it pays is conditioned on the
+    /// whole sequence ("Switching to Warframe after a Chained Sling").
+    OperatorSling,
+}
+
+impl Action {
+    /// **PLANNED BEFORE THE FIGHT, NEVER PICKED BETWEEN SHOTS.** What the frame
+    /// and its Operator do is laid out on one timeline first
+    /// (`data::casting::plan`), so the shot loop's scan skips these rules; a
+    /// held condition on one must not stop a reload.
+    pub fn is_planned(&self) -> bool {
+        matches!(self, Action::Cast { .. } | Action::OperatorSling)
+    }
 }
 
 impl Action {
@@ -131,6 +145,10 @@ pub enum When {
     /// `if=buff.<ability>.remains<N` — the buff is down, or has less than this
     /// long to run. Zero means "only once it is actually down".
     BuffRemainsUnder { ability: String, seconds: f64 },
+    /// `if=once` — a PLANNED action done once, at its turn, and never again:
+    /// a sling whose strength only the summoning cast reads. Never holds
+    /// between shots.
+    Once,
     /// `if=tennokai` — the Tennokai flash is up, and what it buys is ONE swing
     /// turned into a heavy attack that spends no combo. A condition and not a
     /// property of the heavy action, because on a form that already spends
@@ -153,6 +171,7 @@ impl Rule {
     pub fn to_simc(&self) -> String {
         let act = match &self.action {
             Action::Cast { ability } => ability.clone(),
+            Action::OperatorSling => "operator_sling".into(),
             Action::Shoot => "shoot".into(),
             Action::Charged => "charged".into(),
             Action::AltFire => "alt_fire".into(),
@@ -179,6 +198,7 @@ impl Rule {
                 format!("{act},if=buff.{ability}.remains<{seconds}")
             }
             When::Tennokai => format!("{act},if=tennokai"),
+            When::Once => format!("{act},if=once"),
         }
     }
 }
@@ -204,6 +224,27 @@ impl Apl {
             }
         }
         out
+    }
+
+    /// **WHAT THE FRAME AND ITS OPERATOR DO, in list order** — every planned
+    /// rule with the lead its condition asks for: `buff.X.remains<N` acts N
+    /// seconds before the window lapses, and anything else when it has lapsed.
+    /// `if=once` is a lead of infinity: it is never due again.
+    pub fn planned(&self) -> Vec<(&Action, f64)> {
+        self.0
+            .iter()
+            .filter(|r| r.action.is_planned())
+            .map(|r| match &r.when {
+                When::BuffRemainsUnder { seconds, .. } => (&r.action, seconds.max(0.0)),
+                When::Once => (&r.action, f64::INFINITY),
+                _ => (&r.action, 0.0),
+            })
+            .collect()
+    }
+
+    /// The list the shot loop scans: everything but [`Self::planned`].
+    pub fn between_shots(&self) -> Apl {
+        Apl(self.0.iter().filter(|r| !r.action.is_planned()).cloned().collect())
     }
 
     /// The list as SimC writes one.
@@ -247,6 +288,7 @@ impl Apl {
                 When::MagazineAtMost { pct } => now.magazine_pct <= *pct,
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
                 When::Tennokai => now.tennokai,
+                When::Once => false,
             };
             if holds {
                 return Some(r);

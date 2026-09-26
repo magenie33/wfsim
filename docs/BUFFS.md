@@ -735,31 +735,49 @@ ability means — casting is an action, so the list that says when you act is th
 one that says you cast at all, and no switch sits beside it.
 
 Name it in the list (`apl`, `data::apl`) and the fight plans the casting
-instead: it is cast at the start and RECAST the moment its window lapses, out
-of the Warframe's own energy pool. A fight's request carries the rules the
-player INSERTED and the engine puts them above the mode's own, which is the
-only place they can fire — the mode's last rule is `shoot`, and it always
-holds. The response carries back the whole list it ran.
+instead: it is cast at the start and RECAST the moment its window lapses (or
+`N` seconds before, for `if=buff.X.remains<N`). A fight's request carries the
+rules the player INSERTED and the engine puts them above the mode's own. The
+response carries back the whole list it ran.
 
-- **A RECAST IS SEAMLESS, WHICH IS WHY A PLAN IS ENOUGH.** Recasting exactly at
-  expiry makes the windows contiguous, so "how many casts the energy buys" IS
-  "how long the buff is up" — one window, the shape every reader of these
-  already handles. `plan_casts` shortens the window and hands back WHEN the
-  casting took the trigger finger; nothing else in the fight learned that
-  casting exists.
-- **BOTH HALVES OF THE PRICE.** Energy buys the window; a cast that roots the
-  frame (`interrupts_fire`, true where nothing says otherwise) takes shooting
-  time with it, which is what makes a kill rate honest about it.
+**THE FRAME'S RULES ARE PLANNED, NOT SCANNED** (`data::casting::plan`). Every
+cast, the summoning of an Exalted weapon and every Operator action is laid out
+on one timeline before the fight; the shot loop scans only the rest
+(`Apl::between_shots`), so a held condition on a cast never stops a reload.
+
+- **ONE THING AT A TIME.** An action due while another is under way starts when
+  that one ends, and a cast that roots the frame (`interrupts_fire`, true where
+  nothing says otherwise) is time the weapon is not attacking. A plan that opens
+  at the buzzer delays the first attack.
+- **A WARFRAME BUFF IS A SNAPSHOT.** A cast reads Ability Strength at its instant
+  and keeps that number for its window: each cast is its own entry, resolved at
+  its own strength. A strength window that lapses later does not reach back.
+- **AN EXALTED WEAPON IS ITS SUMMONING CAST'S SNAPSHOT.** `summoned_by` on the
+  weapon names the ability; casting it in the list summons the weapon once, at
+  the strength of that instant (`Tenno::summon_strength`). Not named, the weapon
+  was out before the fight at the frame's own strength.
+- **ENERGY IS UNLIMITED** until regeneration is modelled, so nothing a list names
+  ever lapses for want of it. Efficiency is resolved and not yet spent.
 - **EFFICIENCY, CASTING SPEED, DURATION AND STRENGTH ALL COME OFF THE BUILD**
-  (`abilities::Caster`), so a frame built for energy genuinely keeps a buff up
-  longer than one that is not.
-- **WHAT IT DOES NOT MODEL, and says so**: energy REGEN of any kind (Energize,
-  Zenurik, Equilibrium), so a pool is a budget of casts; and the cast time is
-  one unmeasured second for every ability (`CAST_SECONDS_UNMEASURED`) until each
-  is measured — the builder's CASTING SPEED already divides it, so a build made
-  for it casts faster. Seven buffs belong to frames the builder does not seat
-  and no page states their energy cost: those are never cast and keep the
-  assumed-up reading rather than being priced by guesswork.
+  (`abilities::Caster`).
+- **WHAT IT DOES NOT MODEL, and says so**: the cast time is one unmeasured second
+  for every ability (`CAST_SECONDS_UNMEASURED`) until each is measured — the
+  builder's CASTING SPEED divides it. Seven buffs belong to frames the builder
+  does not seat and no page states their energy cost: those are never cast and
+  keep the assumed-up reading.
+
+### The Operator's actions
+
+**A FOCUS NODE CONDITIONED ON AN OPERATOR ACTION IS EARNED BY DOING IT.** A node
+with a `trigger` (`data/focus/<school>.yaml`) names the action and its seconds;
+`operator_sling` in the list — Transference out, a Chained Sling, Transference
+back, `OPERATOR_SLING_SECONDS_UNMEASURED` in all — opens a strength window from
+the switch back (Madurai's Sling Strength, +40% for 20 s). Earning it again
+refreshes it; it never stacks.
+
+- A node the list earns is NOT also assumed: the Operator build's tick for it is
+  dropped for that fight (`webapi::tenno::wielder_from`), so it is paid once.
+- A sling under a school with nothing to earn still costs its time, once.
 
 ### One window grows, and it is the only one
 

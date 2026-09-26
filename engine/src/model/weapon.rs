@@ -692,6 +692,8 @@ pub struct WeaponBase {
     /// `ability_strength` scales its base before any mod reads it
     /// (`resolve_for`). False on every weapon a player carries themselves.
     pub exalted: bool,
+    /// …and the ability whose cast summons it (`WeaponSpec::summoned_by`).
+    pub summoned_by: Option<&'static str>,
     pub form: crate::model::FormKind,
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
