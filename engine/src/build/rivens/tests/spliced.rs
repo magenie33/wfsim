@@ -28,6 +28,7 @@ fn the_wikis_spliced_column_agrees() {
         ("shotgun", "reload_while_holstered", 90.0),
         ("archgun", "viral", 90.0),
         ("rifle", "status_damage", 90.0),
+        ("melee", "status_damage", 90.0),
         ("melee", "melee_damage_on_heavy_attack", 119.7),
         ("melee", "heavy_attack_wind_up_speed", 119.7),
         ("melee", "slam_attack_damage", 119.7),
@@ -41,7 +42,8 @@ fn the_wikis_spliced_column_agrees() {
 }
 
 /// EIGHTEEN, split by class the way the export ships them: no Reload While
-/// Holstered on an Arch-Gun, and melee's four are its own.
+/// Holstered on an Arch-Gun, and melee's four are its own plus the Status
+/// Damage the export does not carry yet (`gen_rivens.py`, `EXPORT_LAGS`).
 #[test]
 fn each_class_carries_its_spliced_stats() {
     let n = |c: &str| pool(c).iter().filter(|x| x.spliced).count();
@@ -49,7 +51,7 @@ fn each_class_carries_its_spliced_stats() {
     assert_eq!(n("pistol"), 14);
     assert_eq!(n("shotgun"), 14);
     assert_eq!(n("archgun"), 13);
-    assert_eq!(n("melee"), 4);
+    assert_eq!(n("melee"), 5);
     for c in crate::data::mods::classes() {
         for s in pool(c).iter().filter(|x| x.spliced) {
             assert!(!s.malus, "{c}/{}: a spliced stat is always a bonus", s.id);

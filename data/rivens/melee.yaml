@@ -258,6 +258,16 @@ stats:
     suffix: "dex"
     text: "|val|% Status Chance"
     kind: status_chance_bonus
+  - id: status_damage
+    tag: WeaponStatusDamage
+    order: 28
+    base: 0.0099999998
+    prefix: "plaga"
+    suffix: "mna"
+    text: "|val|% Status Damage"
+    kind: status_damage_bonus
+    malus: false
+    spliced: true
   - id: status_duration
     tag: WeaponProcTimeMod
     order: 10

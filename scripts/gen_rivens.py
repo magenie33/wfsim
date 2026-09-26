@@ -190,6 +190,22 @@ NEVER_BONUS = {
     "WeaponMeleeComboPointsOnHitMod",
 }
 
+# A STAT THE GAME ROLLS THAT THE EXPORT DOES NOT CARRY YET. The melee riven
+# rolls Status Damage in game and its `upgradeEntries` has no row for it, so
+# the gun pools' row stands in: same tag, same name fragments, base 0.01, which
+# is 90% at rank 8 and disposition 1.0. Used only while the export lacks the
+# tag — once DE ships the row, the export's own wins and this line is dead.
+EXPORT_LAGS = {
+    "melee": [
+        {
+            "tag": "WeaponStatusDamage",
+            "prefixTag": "plaga",
+            "suffixTag": "mna",
+            "upgradeValues": [{"value": 0.0099999998, "locTag": "|val|% Status Damage"}],
+        },
+    ],
+}
+
 
 def hole(text):
     """DE's template with ONE spelling of the hole the value goes in.
@@ -228,7 +244,14 @@ def main():
             print(f"! no export entry for {cls}: {unique}")
             continue
         rows = []
-        for order, e in enumerate(item["upgradeEntries"]):
+        entries = list(item["upgradeEntries"])
+        shipped = {e["tag"] for e in entries}
+        for e in EXPORT_LAGS.get(cls, []):
+            if e["tag"] in shipped:
+                print(f"! {cls}: the export now carries {e['tag']} -- delete it from EXPORT_LAGS")
+            else:
+                entries.append(e)
+        for order, e in enumerate(entries):
             tag = e["tag"]
             val = e["upgradeValues"][0]
             # `reverseValueSymbol` prints the number with its sign flipped:
