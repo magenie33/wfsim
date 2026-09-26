@@ -71,7 +71,10 @@ function wfNormalize(st, id) {
     }),
     arcanes: [0, 1].map((i) => {
       const y = (s.arcanes || [])[i];
-      return y && wfArcane(y.id) ? { id: y.id, rank: y.rank ?? null } : { id: null, rank: null };
+      // THE STACKS IT OPENS WITH travel with the pick (Molt Augmented).
+      return y && wfArcane(y.id)
+        ? { id: y.id, rank: y.rank ?? null, ...(y.stacks != null ? { stacks: y.stacks } : {}) }
+        : { id: null, rank: null };
     }),
     shards: [0, 1, 2, 3, 4].map((i) => {
       const y = (s.shards || [])[i];

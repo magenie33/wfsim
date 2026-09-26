@@ -768,16 +768,32 @@ on one timeline before the fight; the shot loop scans only the rest
 
 ### The Operator's actions
 
-**A FOCUS NODE CONDITIONED ON AN OPERATOR ACTION IS EARNED BY DOING IT.** A node
-with a `trigger` (`data/focus/<school>.yaml`) names the action and its seconds;
-`operator_sling` in the list — Transference out, a Chained Sling, Transference
-back, `OPERATOR_SLING_SECONDS_UNMEASURED` in all — opens a strength window from
-the switch back (Madurai's Sling Strength, +40% for 20 s). Earning it again
-refreshes it; it never stacks.
+**A FOCUS NODE CONDITIONED ON AN OPERATOR ACTION IS EARNED BY DOING IT.** The
+list's `operator` action is ONE TRIP — Transference out, a Chained Sling
+(`sling`) and/or the school's Operator ability (`ability`), Transference back —
+timed by three unmeasured constants in `data::casting`. A node with a `trigger`
+(`data/focus/<school>.yaml`) names what earns it: a trip with a sling opens
+Madurai's Sling Strength, +40% for 20 s, from the switch back. Earning it again
+refreshes it; it never stacks. Default for every other conditional node is off.
 
 - A node the list earns is NOT also assumed: the Operator build's tick for it is
   dropped for that fight (`webapi::tenno::wielder_from`), so it is paid once.
-- A sling under a school with nothing to earn still costs its time, once.
+- A trip that earns nothing still costs its time, once.
+
+### The wielder's arcanes
+
+**A WARFRAME ARCANE IS RUN WHERE ITS CONDITION IS KNOWN** (`ArcaneRule`):
+
+| rule | arcane | where it is spent |
+| --- | --- | --- |
+| `ability_strength_per_max_health` | Bellicose | the build's resolve, off the finished Max Health |
+| `ability_strength_per_kill` | Molt Augmented | the resolve, at the stacks the Warframe build opens with (`SlotPick::stacks`, 0 by default) |
+| `ability_strength_after_operator_ability` | Molt Vigor | the plan: the first cast after a trip with `ability` — Void Sling is not an Operator ability |
+| `ability_strength_per_cast_stack` | Power Ramp | the plan: a stack per cast, spent by the next, reset by the same ability twice running |
+| `weapon_buff` | Fury, Strike | the weapon's fight, as a mod's `StackingBuff` on the named slot — one stack, refreshed |
+
+Molt Augmented's kills during the fight add nothing yet: the plan is laid out
+before the fight, and a snapshot that reads kills needs the casts in the loop.
 
 ### One window grows, and it is the only one
 

@@ -5,11 +5,12 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/WarframeOnOperatorAbilityPowerStrength
 description: "On Operator Ability:\n45% Ability Strength on next Warframe Ability Cast"
 
+# 15 / 21 / 27 / 33 / 39 / 45%: it "increases Ability Strength of the next
+# Warframe ability after using an Operator ability" — the schools' abilities
+# (Void Strike, Contamination Wave …), not Void Sling (W`Molt_Vigor`).
 effects:
-  - kind: unmodelled
-    text: "On Operator Ability:"
-  - kind: unmodelled
-    text: "45% Ability Strength on next Warframe Ability Cast"
+  - kind: ability_strength_after_operator_ability
+    ranks: [0.15, 0.21, 0.27, 0.33, 0.39, 0.45]
 
 source:
   url: https://wiki.warframe.com/w/Molt_Vigor

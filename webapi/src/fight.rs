@@ -653,6 +653,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 summoned_by: Some(by),
                 weapon_class: "",
                 weapon_slot: "",
+                arcanes: &tenno.cast_arcanes,
             },
             duration,
         )

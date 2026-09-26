@@ -2099,6 +2099,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // same measured reason (M11): a direct hit and its explosion are
     // two.
     bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Hit, t, d.extra);
+    if tier > 0 {
+        bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Crit, t, d.extra);
+    }
     if tier == 0 && procs.is_empty() {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::PlainHit, t, d.extra);
     }

@@ -5,11 +5,17 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/GolemArcaneMeleeDamageOnCrit
 description: "On Critical Hit:\n60% chance for +180% Melee Damage to Melee Weapons for 18s"
 
+# 60% chance on a critical hit, +30 / 60 / 90 / 120 / 150 / 180% melee damage
+# for 18 s; "The increase in damage stacks additively with mods that increase
+# base damage e.g. Pressure Point" (W`Arcane_Fury`).
 effects:
-  - kind: unmodelled
-    text: "On Critical Hit:"
-  - kind: unmodelled
-    text: "60% chance for +180% Melee Damage to Melee Weapons for 18s"
+  - kind: weapon_buff
+    slot: melee
+    trigger: crit
+    grants: base_damage
+    chance: 0.6
+    duration: 18
+    ranks: [0.3, 0.6, 0.9, 1.2, 1.5, 1.8]
 
 source:
   url: https://wiki.warframe.com/w/Arcane_Fury

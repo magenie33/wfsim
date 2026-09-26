@@ -3,7 +3,7 @@ use super::*;
 fn build(mods: &[&str]) -> Build {
     Build {
         frame: "valkyr".into(),
-        mods: mods.iter().map(|m| SlotPick { id: (*m).into(), rank: None }).collect(),
+        mods: mods.iter().map(|m| SlotPick { id: (*m).into(), rank: None, stacks: None }).collect(),
         ..Build::default()
     }
 }
@@ -149,7 +149,7 @@ fn an_augment_without_its_ability_pays_nothing_and_says_so() {
 #[test]
 fn a_slot_refuses_what_does_not_belong_in_it() {
     let mut b = build(&["intensify", "umbral_intensify", "steel_charge"]);
-    b.exilus = Some(SlotPick { id: "intensify".into(), rank: None });
+    b.exilus = Some(SlotPick { id: "intensify".into(), rank: None, stacks: None });
     let r = resolve(&b).unwrap();
     // a family twice, an aura in a main slot, a non-exilus in the exilus slot
     assert_eq!(r.refused.len(), 3, "{:?}", r.refused);
@@ -318,7 +318,7 @@ fn the_shield_gate_follows_the_shield_page_and_catalyzing_shields() {
     assert!(bare.shield_gate.casts.is_empty(), "no refill source, no re-opened gate");
 
     let mut b = build(&["catalyzing_shields", "augur_secrets", "augur_message"]);
-    b.aura = Some(SlotPick { id: "brief_respite".into(), rank: None });
+    b.aura = Some(SlotPick { id: "brief_respite".into(), rank: None, stacks: None });
     let r = resolve(&b).unwrap();
     assert!(close(r.stat(FrameStat::Shield).value, 185.0 * 0.2));
     assert!(close(r.shield_gate.full_seconds, 1.33));
@@ -363,4 +363,31 @@ fn a_bare_prototype_is_the_floor_wielder() {
     assert!(r.abilities.is_empty());
     b.helminth = Some(HelminthPick { slot: 1, ability: "roar".into() });
     assert!(!resolve(&b).unwrap().refused.is_empty(), "nothing to infuse");
+}
+
+/// **BELLICOSE READS THE FINISHED MAX HEALTH, ROUNDED, NOT IN WHOLE 250s** —
+/// "round(Max Health ÷ 250 × Strength Increase)", capped at 72%.
+#[test]
+fn bellicose_rounds_max_health_into_strength() {
+    let mut b = build(&["vitality"]);
+    b.arcanes = vec![SlotPick { id: "arcane_bellicose".into(), rank: None, stacks: None }];
+    let r = resolve(&b).expect("resolves");
+    let health = r.stat(FrameStat::Health).value;
+    let want = ((health / 250.0 * 6.0).round() / 100.0).min(0.72);
+    assert!(want > 0.0);
+    assert!(close(r.stat(FrameStat::AbilityStrength).value, 1.0 + want), "{health} health");
+}
+
+/// **MOLT AUGMENTED OPENS WITH THE STACKS THE BUILD STATES**, 0 by default, and
+/// never more than 250.
+#[test]
+fn molt_augmented_opens_with_the_stacks_the_build_states() {
+    let at = |stacks: Option<u32>| {
+        let mut b = build(&[]);
+        b.arcanes = vec![SlotPick { id: "molt_augmented".into(), rank: None, stacks }];
+        resolve(&b).expect("resolves").stat(FrameStat::AbilityStrength).value
+    };
+    assert!(close(at(None), 1.0));
+    assert!(close(at(Some(100)), 1.24));
+    assert!(close(at(Some(999)), 1.6), "capped at 250 stacks");
 }

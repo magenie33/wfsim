@@ -82,10 +82,16 @@ pub enum Action {
     /// Cast a Warframe ability (`data/abilities/<id>.yaml`), or the one that
     /// summons this weapon (`summoned_by`). It costs the time it roots the frame.
     Cast { ability: String },
-    /// Transference to the Operator, a Chained Sling, and back to the Warframe
-    /// — one action, because every Focus node it pays is conditioned on the
-    /// whole sequence ("Switching to Warframe after a Chained Sling").
-    OperatorSling,
+    /// ONE TRIP TO THE OPERATOR AND BACK — Transference out, a Chained Sling
+    /// and/or the school's Operator ability, Transference back. One action,
+    /// because what it pays is conditioned on the trip ("Switching to Warframe
+    /// after a Chained Sling"; Molt Vigor's "next Warframe Ability Cast").
+    Operator {
+        #[serde(default)]
+        sling: bool,
+        #[serde(default)]
+        ability: bool,
+    },
 }
 
 impl Action {
@@ -94,7 +100,7 @@ impl Action {
     /// (`data::casting::plan`), so the shot loop's scan skips these rules; a
     /// held condition on one must not stop a reload.
     pub fn is_planned(&self) -> bool {
-        matches!(self, Action::Cast { .. } | Action::OperatorSling)
+        matches!(self, Action::Cast { .. } | Action::Operator { .. })
     }
 }
 
@@ -171,7 +177,12 @@ impl Rule {
     pub fn to_simc(&self) -> String {
         let act = match &self.action {
             Action::Cast { ability } => ability.clone(),
-            Action::OperatorSling => "operator_sling".into(),
+            Action::Operator { sling, ability } => match (sling, ability) {
+                (true, true) => "operator_sling_ability".into(),
+                (true, false) => "operator_sling".into(),
+                (false, true) => "operator_ability".into(),
+                (false, false) => "operator".into(),
+            },
             Action::Shoot => "shoot".into(),
             Action::Charged => "charged".into(),
             Action::AltFire => "alt_fire".into(),

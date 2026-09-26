@@ -6,6 +6,10 @@ pub struct SlotPick {
     /// `None` = max rank.
     #[serde(default)]
     pub rank: Option<u32>,
+    /// AN ARCANE'S STACKS WHEN THE FIGHT OPENS, where it keeps them "until
+    /// death" (Molt Augmented). `None` = 0.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stacks: Option<u32>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
@@ -220,6 +224,11 @@ pub struct Resolved {
     /// the admissions already state. A fight reads this to know whether an
     /// ability's augment is on the frame casting it.
     pub augments: Vec<&'static str>,
+    /// The arcanes that move a CAST's strength, which only the fight can spend.
+    pub cast_arcanes: crate::data::casting::CastArcanes,
+    /// The arcanes that arm a buff on a WEAPON (Arcane Fury), which only that
+    /// weapon's fight can run.
+    pub weapon_buffs: Vec<WielderBuff>,
 }
 
 pub(super) fn by_rank(ladder: &[f64], rank: u32) -> f64 {
@@ -374,11 +383,16 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                     text: t.clone(),
                     kind: AdmissionKind::OutOfScope,
                 }),
+                FrameEffect::Arcane(_) => unreachable!("refused on a mod at load"),
             }
         }
     }
 
     let mut arcane_ids: Vec<&str> = Vec::new();
+    // `(from, per, increase, cap)`, spent once Max Health is known.
+    let mut per_health: Vec<(String, f64, f64, f64)> = Vec::new();
+    let mut cast_arcanes = crate::data::casting::CastArcanes::default();
+    let mut weapon_buffs: Vec<WielderBuff> = Vec::new();
     for p in b.arcanes.iter().take(2) {
         let Some(a) = arcane_by_id(&p.id) else {
             refused.push(format!("unknown arcane: {}", p.id));
@@ -406,6 +420,63 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                     text: t.clone(),
                     kind: AdmissionKind::OutOfScope,
                 }),
+                FrameEffect::Arcane(ArcaneRule::StrengthPerMaxHealth { per, increase, cap }) => {
+                    per_health.push((a.id.clone(), *per, by_rank(increase, rank), by_rank(cap, rank)));
+                }
+                FrameEffect::Arcane(ArcaneRule::StrengthPerKill { per_stack, max_stacks }) => {
+                    let stacks = p.stacks.unwrap_or(0).min(*max_stacks);
+                    if stacks > 0 {
+                        add(FrameStat::AbilityStrength, &a.id, by_rank(per_stack, rank) * f64::from(stacks), false);
+                    }
+                    admissions.push(Admission {
+                        from: a.id.clone(),
+                        text: "the stacks it opens with count; kills during the fight add none yet".into(),
+                        kind: AdmissionKind::Unmodelled,
+                    });
+                }
+                FrameEffect::Arcane(ArcaneRule::StrengthAfterOperatorAbility(r)) => {
+                    cast_arcanes.after_operator_ability += by_rank(r, rank);
+                    admissions.push(Admission {
+                        from: a.id.clone(),
+                        text: "paid to a cast in the simulator's action list, after an Operator ability".into(),
+                        kind: AdmissionKind::OutOfScope,
+                    });
+                }
+                FrameEffect::Arcane(ArcaneRule::WeaponBuff { slot, trigger, grant, chance, duration, per_stack }) => {
+                    weapon_buffs.push(WielderBuff {
+                        slot: slot.clone(),
+                        buff: crate::model::StackingBuff {
+                            id: a.id.as_str(),
+                            trigger: *trigger,
+                            grant: *grant,
+                            per_stack: by_rank(per_stack, rank),
+                            // ONE STACK THAT A NEW TRIGGER REFRESHES: the card
+                            // states a bonus and a duration, never a count.
+                            max_stacks: 1,
+                            duration: *duration,
+                            chance: *chance,
+                            decay: crate::model::BuffDecay::LoseOneAndReset,
+                            initial_stacks: 0,
+                            stacks_per_trigger: 1,
+                            per_shell: false,
+                            cleared_by: crate::model::ClearedBy::Nothing,
+                            card_opens_full: false,
+                        },
+                    });
+                    admissions.push(Admission {
+                        from: a.id.clone(),
+                        text: format!("paid to a {slot} weapon in its fight"),
+                        kind: AdmissionKind::OutOfScope,
+                    });
+                }
+                FrameEffect::Arcane(ArcaneRule::StrengthPerCastStack { per_stack, max_stacks }) => {
+                    cast_arcanes.per_cast_stack = Some((by_rank(per_stack, rank), *max_stacks));
+                    admissions.push(Admission {
+                        from: a.id.clone(),
+                        text: "paid to the casts in the simulator's action list".into(),
+                        kind: AdmissionKind::OutOfScope,
+                    });
+                }
             }
         }
     }
@@ -458,6 +529,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                     FrameEffect::ShieldMultiplier(r) => shield_times.push((from.clone(), by_rank(r, 99))),
                     FrameEffect::ShieldGateSeconds(r) => gate_fixed = Some((from.clone(), by_rank(r, 99))),
                     FrameEffect::Unmodelled(_) | FrameEffect::OutOfScope(_) => {}
+                    FrameEffect::Arcane(_) => unreachable!("refused on a node at load"),
                 }
             }
         }
@@ -467,7 +539,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
     //   base × (1 + Σ mods) + Σ flat
     // (W`Health`, W`Shield`, W`Armor`, W`Energy_Capacity`); the ability stats
     // start at 100% and every modifier "combine[s] additively".
-    let stats: Vec<StatLine> = FrameStat::ALL
+    let mut stats: Vec<StatLine> = FrameStat::ALL
         .into_iter()
         .map(|s| {
             let base = match s {
@@ -490,6 +562,17 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             StatLine { stat: s, base, bonus: pct, flat, value, sources }
         })
         .collect();
+    // A SHARE OF MAX HEALTH, read off the finished health: "round(Max Health ÷
+    // 250 × Strength Increase)" (W`Arcane_Bellicose`).
+    let health = stats.iter().find(|l| l.stat == FrameStat::Health).map_or(0.0, |l| l.value);
+    for (from, per, increase, cap) in per_health {
+        let v = ((health / per * increase * 100.0).round() / 100.0).min(cap);
+        if let Some(l) = stats.iter_mut().find(|l| l.stat == FrameStat::AbilityStrength) {
+            l.bonus += v;
+            l.value += l.base * v;
+            l.sources.push(Contribution { from, value: v, flat: false, times: false });
+        }
+    }
     let val = |s: FrameStat| stats.iter().find(|l| l.stat == s).map_or(1.0, |l| l.value);
     let strength = val(FrameStat::AbilityStrength);
     let duration = val(FrameStat::AbilityDuration);
@@ -656,7 +739,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         .iter()
         .filter_map(|(m, _)| m.augments.as_deref().filter(|a| carries(a)).map(|_| m.id.as_str()))
         .collect();
-    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused, augments })
+    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused, augments, cast_arcanes, weapon_buffs })
 }
 
 /// The capacity an aura adds, from W`Aura`: "matching polarity … double of the

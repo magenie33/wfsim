@@ -19,6 +19,7 @@ pub const ALL: &[(&str, &str)] = &[
     ("headshot_kill", "kill"),
     ("melee_kill", "kill"),
     ("hit", "hit"),
+    ("crit", "hit"),
     ("plain_hit", "hit"),
     ("headshot", "hit"),
     ("weakpoint_hit", "hit"),
@@ -107,7 +108,7 @@ mod tests {
     fn the_switch_list_and_the_triggers_agree() {
         let mut spelled: Vec<&str> = Vec::new();
         for t in [
-            BuffTrigger::Kill, BuffTrigger::Hit, BuffTrigger::PlainHit,
+            BuffTrigger::Kill, BuffTrigger::Hit, BuffTrigger::Crit, BuffTrigger::PlainHit,
             BuffTrigger::Headshot, BuffTrigger::ConsecutiveHeadshot,
             BuffTrigger::PunchThrough, BuffTrigger::StatusApplied,
             BuffTrigger::HitEnemyWithStatus(crate::rules::damage::DamageType::Heat),

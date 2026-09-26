@@ -124,7 +124,12 @@ pub fn focus_schools() -> &'static [FocusSchool] {
                                 text: n.text.clone(),
                                 always: n.always,
                                 when: n.when.clone(),
-                                effects: n.effects.iter().map(|e| effect(p, e)).collect(),
+                                effects: n
+                                    .effects
+                                    .iter()
+                                    .map(|e| effect(p, e))
+                                    .inspect(|e| assert!(!matches!(e, FrameEffect::Arcane(_)), "{p}: an arcane's rule on a node"))
+                                    .collect(),
                                 tags: tags_of(p, &n.tags),
                                 trigger: n.trigger.zip(n.duration_seconds),
                             }

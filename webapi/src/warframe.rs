@@ -70,6 +70,19 @@ pub fn warframe_catalog_json() -> Value {
             "effects": x.description.lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&x.tags),
+            // WHAT A FIGHT DOES WITH IT, so the simulator offers the one setting
+            // each rule has (a per-kill arcane's opening stacks) without a list
+            // of ids of its own.
+            "fight_rules": x.effects.iter().filter_map(|e| match e {
+                wf::FrameEffect::Arcane(r) => Some(match r {
+                    wf::ArcaneRule::StrengthPerMaxHealth { .. } => json!({"rule": "per_max_health"}),
+                    wf::ArcaneRule::StrengthPerKill { max_stacks, .. } => json!({"rule": "per_kill", "max_stacks": max_stacks}),
+                    wf::ArcaneRule::StrengthAfterOperatorAbility(_) => json!({"rule": "after_operator_ability"}),
+                    wf::ArcaneRule::StrengthPerCastStack { .. } => json!({"rule": "per_cast_stack"}),
+                    wf::ArcaneRule::WeaponBuff { slot, .. } => json!({"rule": "weapon_buff", "slot": slot}),
+                }),
+                _ => None,
+            }).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         // THE COMPANION POOL, in the same catalogue the Warframe builder reads:
         // a companion page is the same builder over a different pool, and one

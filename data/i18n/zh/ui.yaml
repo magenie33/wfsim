@@ -127,7 +127,17 @@ ui:
   "off": 关
   "assumed up": 假设生效
   "simulated": 模拟
-  "Operator: Transference, Chained Sling, back": 指挥官：切换、连锁冲刺、切回战甲
+  "Operator: Transference and back": 指挥官：切换后切回战甲
+  "Chained Sling": 连锁冲刺
+  "school ability": 流派技能
+  "full": 满层
+  "stacks when the fight opens; kills during it add none yet": 开局层数；战斗中的击杀暂不增加层数
+  "save the Warframe build to set its opening stacks": 保存战甲配装后才能设置开局层数
+  "spent by the first cast after the Operator's school ability": 指挥官流派技能之后的第一次施放获得加成
+  "needs the Operator's school ability in the action list": 需要在行动列表的指挥官动作里加入流派技能
+  "each cast in the action list arms the next; the same ability twice running starts over": 行动列表里每次施放为下一次叠一层，同一技能连续施放会重置
+  "from the build's Max Health": 按配装的最大生命值计算
+  "armed by the weapon's own hits in the fight": 由武器在战斗中的命中触发
   "Cast": 施放
   "once, at its turn — the snapshot holds for the fight": 轮到时施放一次，快照保持整场
   "again when it lapses, or this many seconds before": 到期时重做，或提前这么多秒
@@ -1100,6 +1110,7 @@ ui:
   "weak-point kills": 弱点击杀
   "melee kills": 近战击杀
   "hits that neither crit nor proc": 既不暴击也不触发状态的命中
+  "critical hits": 暴击命中
   "weak-point hits, counted per pellet": 弱点命中（按弹丸计）
   "weak-point hits in a row": 连续弱点命中
   "punch through into a second body": 穿透打到第二个身体

@@ -51,7 +51,7 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
             apl.planned()
                 .iter()
                 .filter_map(|(a, _)| match a {
-                    wfsim_engine::data::apl::Action::OperatorSling => Some(wf::NodeTrigger::OperatorSling),
+                    wfsim_engine::data::apl::Action::Operator { sling: true, .. } => Some(wf::NodeTrigger::OperatorSling),
                     _ => None,
                 })
                 .collect()
@@ -70,6 +70,8 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     t.ability_strength = r.stat(wf::FrameStat::AbilityStrength).value;
     t.ability_duration = r.stat(wf::FrameStat::AbilityDuration).value;
     t.augments = r.augments.iter().map(|a| (*a).to_string()).collect();
+    t.cast_arcanes = r.cast_arcanes.clone();
+    t.weapon_buffs = r.weapon_buffs.clone();
     t.ability_efficiency = r.stat(wf::FrameStat::AbilityEfficiency).value;
     t.casting_speed_bonus = r.stat(wf::FrameStat::CastingSpeed).value - 1.0;
     if !info.sentinel {
@@ -303,7 +305,7 @@ mod wielder_tests {
             let f = crate::fight::parse_fight(&v).expect("a fight");
             (f.arena.tenno.ability_strength, f.arena.tenno.summon_strength.expect("an exalted weapon"))
         };
-        let sling = json!({"action": {"do": "operator_sling"}, "when": {"if": "buff_remains_under", "ability": "sling_strength", "seconds": 0.0}});
+        let sling = json!({"action": {"do": "operator", "sling": true}, "when": {"if": "buff_remains_under", "ability": "sling_strength", "seconds": 0.0}});
         let hysteria = json!({"action": {"do": "cast", "ability": "hysteria"}, "when": {"if": "always"}});
         let near = |a: f64, b: f64| (a - b).abs() < 1e-9;
 

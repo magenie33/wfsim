@@ -5,9 +5,12 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AbilityStrengthOnCast
 description: "On Ability Cast: Next Ability cast gains +9% Ability Strength, stacking up to 4x. Resets when the same ability is recast consecutively."
 
+# 2 / 3 / 4.5 / 6 / 7.5 / 9% a stack, four stacks; "The bonus resets after
+# casting the same ability consecutively" (W`Arcane_Power_Ramp`).
 effects:
-  - kind: unmodelled
-    text: "On Ability Cast: Next Ability cast gains +9% Ability Strength, stacking up to 4x. Resets when the same ability is recast consecutively."
+  - kind: ability_strength_per_cast_stack
+    ranks: [0.02, 0.03, 0.045, 0.06, 0.075, 0.09]
+    max_stacks: 4
 
 source:
   url: https://wiki.warframe.com/w/Arcane_Power_Ramp

@@ -998,6 +998,7 @@ impl FightParams {
                 summoned_by,
                 weapon_class: panel.class,
                 weapon_slot: panel.slot,
+                arcanes: &tenno.cast_arcanes,
             },
             duration_seconds,
         );

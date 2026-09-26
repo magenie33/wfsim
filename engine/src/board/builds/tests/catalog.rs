@@ -25,7 +25,7 @@ fn only_an_exalted_row_is_keyed_by_the_frame_holding_it() {
     let ids = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
     let frame = |mods: &[&str]| Frame {
         frame: "valkyr".to_string(),
-        mods: mods.iter().map(|m| SlotPick { id: (*m).to_string(), rank: None }).collect(),
+        mods: mods.iter().map(|m| SlotPick { id: (*m).to_string(), rank: None, stacks: None }).collect(),
         ..Default::default()
     };
     let door = |weapon: &str, mods: &[String], w: Option<&Frame>| {

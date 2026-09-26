@@ -1019,6 +1019,7 @@ const BUFF_TRIGGER_NAME = {
   headshot_kill: "weak-point kills",
   melee_kill: "melee kills",
   hit: "any hit",
+  crit: "critical hits",
   plain_hit: "hits that neither crit nor proc",
   headshot: "weak-point hits",
   weakpoint_hit: "weak-point hits, counted per pellet",

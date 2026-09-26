@@ -15,6 +15,43 @@ pub enum FrameEffect {
     Unmodelled(String),
     /// A line that cannot pay out in a Warframe's own panel, and why.
     OutOfScope(String),
+    /// An ARCANE's rule that asks more than a stat bucket can answer; refused
+    /// on any other card at load.
+    Arcane(ArcaneRule),
+}
+
+/// **WHAT A WARFRAME ARCANE DOES TO ABILITY STRENGTH**, each read where the
+/// fact it asks for is known. Every ladder is per rank, fractions of 1.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ArcaneRule {
+    /// Arcane Bellicose: `round(Max Health ÷ per × increase)`% and not whole
+    /// steps of `per` (W`Arcane_Bellicose`), up to `cap`.
+    StrengthPerMaxHealth { per: f64, increase: Vec<f64>, cap: Vec<f64> },
+    /// Molt Augmented: a stack per kill that "persists until death"
+    /// (W`Molt_Augmented`). The build states the stacks it opens with.
+    StrengthPerKill { per_stack: Vec<f64>, max_stacks: u32 },
+    /// Molt Vigor: the next Warframe cast after an Operator ability.
+    StrengthAfterOperatorAbility(Vec<f64>),
+    /// Arcane Power Ramp: each cast gives the next one a stack; "The bonus
+    /// resets after casting the same ability consecutively".
+    StrengthPerCastStack { per_stack: Vec<f64>, max_stacks: u32 },
+    /// Arcane Fury, Arcane Strike: a buff armed by the WEAPON on one slot, run
+    /// by the same stacking machinery a mod's is (`model::StackingBuff`).
+    WeaponBuff {
+        slot: String,
+        trigger: crate::model::BuffTrigger,
+        grant: crate::model::BuffGrant,
+        chance: f64,
+        duration: f64,
+        per_stack: Vec<f64>,
+    },
+}
+
+/// A buff the wielder's arcane arms on a weapon of `slot`, at its rank.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WielderBuff {
+    pub slot: String,
+    pub buff: crate::model::StackingBuff,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -37,6 +74,24 @@ pub(super) struct RawEffect {
     pub(super) text: Option<String>,
     #[serde(default)]
     pub(super) applies_to: Option<String>,
+    /// The unit a `*_per_max_health` rule counts in (250 health).
+    #[serde(default)]
+    pub(super) per: f64,
+    /// A per-rank ceiling beside `ranks`.
+    #[serde(default)]
+    pub(super) cap: Vec<f64>,
+    #[serde(default)]
+    pub(super) max_stacks: u32,
+    #[serde(default)]
+    pub(super) slot: Option<String>,
+    #[serde(default)]
+    pub(super) trigger: Option<String>,
+    #[serde(default)]
+    pub(super) grants: Option<String>,
+    #[serde(default)]
+    pub(super) chance: Option<f64>,
+    #[serde(default)]
+    pub(super) duration: Option<f64>,
 }
 
 pub(super) fn effect(path: &str, e: &RawEffect) -> FrameEffect {
@@ -52,6 +107,43 @@ pub(super) fn effect(path: &str, e: &RawEffect) -> FrameEffect {
             } else {
                 FrameEffect::ShieldGateSeconds(e.ranks.clone())
             }
+        }
+        "ability_strength_per_max_health" | "ability_strength_per_kill" | "ability_strength_after_operator_ability"
+        | "ability_strength_per_cast_stack" => {
+            assert!(!e.ranks.is_empty(), "{path}: `{}` carries its `ranks`", e.kind);
+            FrameEffect::Arcane(match e.kind.as_str() {
+                "ability_strength_per_max_health" => {
+                    assert!(e.per > 0.0 && e.cap.len() == e.ranks.len(), "{path}: `per` and a `cap` per rank");
+                    ArcaneRule::StrengthPerMaxHealth { per: e.per, increase: e.ranks.clone(), cap: e.cap.clone() }
+                }
+                "ability_strength_per_kill" | "ability_strength_per_cast_stack" => {
+                    assert!(e.max_stacks > 0, "{path}: `{}` carries its `max_stacks`", e.kind);
+                    if e.kind == "ability_strength_per_kill" {
+                        ArcaneRule::StrengthPerKill { per_stack: e.ranks.clone(), max_stacks: e.max_stacks }
+                    } else {
+                        ArcaneRule::StrengthPerCastStack { per_stack: e.ranks.clone(), max_stacks: e.max_stacks }
+                    }
+                }
+                _ => ArcaneRule::StrengthAfterOperatorAbility(e.ranks.clone()),
+            })
+        }
+        "weapon_buff" => {
+            let word = |w: &Option<String>, what: &str| {
+                w.clone().unwrap_or_else(|| panic!("{path}: a `weapon_buff` names its `{what}`"))
+            };
+            assert!(!e.ranks.is_empty(), "{path}: `weapon_buff` carries its `ranks`");
+            let trigger = word(&e.trigger, "trigger");
+            let grants = word(&e.grants, "grants");
+            FrameEffect::Arcane(ArcaneRule::WeaponBuff {
+                slot: word(&e.slot, "slot"),
+                trigger: crate::model::BuffTrigger::from_id(&trigger)
+                    .unwrap_or_else(|| panic!("{path}: unknown trigger `{trigger}`")),
+                grant: crate::model::BuffGrant::from_id(&grants)
+                    .unwrap_or_else(|| panic!("{path}: unknown grant `{grants}`")),
+                chance: e.chance.unwrap_or(1.0),
+                duration: e.duration.unwrap_or_else(|| panic!("{path}: a `weapon_buff` states its `duration`")),
+                per_stack: e.ranks.clone(),
+            })
         }
         kind if kind.ends_with("_flat") => {
             let id = kind.trim_end_matches("_flat");
@@ -175,6 +267,10 @@ pub fn mods() -> &'static [WarframeMod] {
         let mut out: Vec<WarframeMod> = leak_all("warframe_mods/")
             .map(|(p, text)| {
                 let r: RawMod = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                assert!(
+                    !r.effects.iter().any(|e| matches!(effect(p, e), FrameEffect::Arcane(_))),
+                    "{p}: an arcane's rule on a card that is not an arcane"
+                );
                 WarframeMod {
                     effects: r.effects.iter().map(|e| effect(p, e)).collect(),
                     tags: tags_of(p, &r.tags),

@@ -17,10 +17,29 @@ use crate::data::abilities::{self, AbilityPick, ActiveAbility, Caster, CAST_SECO
 use crate::data::apl::{Action, Apl};
 use crate::data::warframes::{focus_school, FrameEffect, FrameStat, NodeTrigger};
 
-/// **HOW LONG `operator_sling` TAKES, UNTIL IT IS MEASURED**: Transference out,
-/// a Chained Sling, Transference back. One number for the whole sequence, and
-/// none of it is modded — casting speed does not touch Transference.
-pub const OPERATOR_SLING_SECONDS_UNMEASURED: f64 = 3.0;
+/// **HOW LONG AN OPERATOR TRIP TAKES, UNTIL IT IS MEASURED**: Transference out
+/// and back, plus a Chained Sling and the school's ability where the trip has
+/// them. None of it is modded — casting speed does not touch Transference.
+pub const TRANSFERENCE_SECONDS_UNMEASURED: f64 = 2.0;
+pub const CHAINED_SLING_SECONDS_UNMEASURED: f64 = 1.0;
+pub const OPERATOR_ABILITY_SECONDS_UNMEASURED: f64 = 1.0;
+
+/// **THE WIELDER'S ARCANES THAT MOVE A CAST** — the two whose number depends
+/// on what the frame did before it, so only the plan can spend them.
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct CastArcanes {
+    /// Molt Vigor: added to the next Warframe cast after an Operator ability.
+    #[serde(default)]
+    pub after_operator_ability: f64,
+    /// Arcane Power Ramp: `(strength per stack, max stacks)`.
+    #[serde(default)]
+    pub per_cast_stack: Option<(f64, u32)>,
+}
+
+impl CastArcanes {
+    /// A frame with none of them.
+    pub const NONE: CastArcanes = CastArcanes { after_operator_ability: 0.0, per_cast_stack: None };
+}
 
 /// A stretch of time Ability Strength is raised, and what raised it.
 #[derive(Debug, Clone, PartialEq)]
@@ -72,6 +91,7 @@ pub struct Frame<'a> {
     pub summoned_by: Option<&'a str>,
     pub weapon_class: &'a str,
     pub weapon_slot: &'a str,
+    pub arcanes: &'a CastArcanes,
 }
 
 /// The frame's Ability Strength at `t`: its own plus every source live then.
@@ -130,6 +150,23 @@ pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
     // `(due, index into actions)`, all due at the buzzer.
     let mut due: Vec<(f64, usize)> = (0..actions.len()).map(|k| (0.0, k)).collect();
     let mut busy = 0.0f64;
+    // WHAT THE NEXT CAST GAINS BEYOND THE FRAME'S TIMELINE: Molt Vigor, held
+    // from an Operator ability until spent, and Power Ramp's stacks with the
+    // ability that earned the last one.
+    let mut vigor = 0.0f64;
+    let mut ramp: (u32, Option<String>) = (0, None);
+    let mut cast_bonus = |id: &str, vigor: &mut f64| {
+        let mut b = std::mem::take(vigor);
+        if let Some((per, max)) = frame.arcanes.per_cast_stack {
+            if ramp.1.as_deref() == Some(id) {
+                ramp.0 = 0;
+            }
+            b += per * f64::from(ramp.0);
+            ramp.0 = (ramp.0 + 1).min(max);
+            ramp.1 = Some(id.to_string());
+        }
+        b
+    };
     while let Some(pos) = due
         .iter()
         .enumerate()
@@ -143,11 +180,16 @@ pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
         }
         let (action, lead) = actions[k];
         match action {
-            Action::OperatorSling => {
-                let secs = OPERATOR_SLING_SECONDS_UNMEASURED;
+            Action::Operator { sling, ability } => {
+                let secs = TRANSFERENCE_SECONDS_UNMEASURED
+                    + if *sling { CHAINED_SLING_SECONDS_UNMEASURED } else { 0.0 }
+                    + if *ability { OPERATOR_ABILITY_SECONDS_UNMEASURED } else { 0.0 };
                 interrupts.push((start, secs));
                 busy = start + secs;
-                let earned = earned_by(frame.school, NodeTrigger::OperatorSling);
+                if *ability {
+                    vigor = frame.arcanes.after_operator_ability;
+                }
+                let earned = if *sling { earned_by(frame.school, NodeTrigger::OperatorSling) } else { Vec::new() };
                 // A SLING THAT EARNS NOTHING IS DONE ONCE: there is no window
                 // whose lapse would call for another.
                 let next = earned.iter().map(|(_, s, _)| busy + s).fold(f64::INFINITY, f64::min);
@@ -164,7 +206,8 @@ pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
                     continue;
                 }
                 let secs = CAST_SECONDS_UNMEASURED / (1.0 + frame.caster.casting_speed_bonus);
-                summon = Summon { at_seconds: start, strength: strength_at(base, &strength, start) };
+                let extra = cast_bonus(ability, &mut vigor);
+                summon = Summon { at_seconds: start, strength: strength_at(base, &strength, start) + extra };
                 interrupts.push((start, secs));
                 busy = start + secs;
             }
@@ -173,7 +216,8 @@ pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
                     continue;
                 };
                 let Some(pick) = frame.picks.iter().find(|p| p.id == a.id) else { continue };
-                let at_strength = Caster { strength: strength_at(base, &strength, start), ..frame.caster };
+                let extra = cast_bonus(a.id, &mut vigor);
+                let at_strength = Caster { strength: strength_at(base, &strength, start) + extra, ..frame.caster };
                 let Some(mut cast) =
                     abilities::resolve(std::slice::from_ref(pick), &at_strength, frame.weapon_class, frame.weapon_slot)
                         .into_iter()
@@ -203,6 +247,9 @@ mod tests {
     use super::*;
     use crate::data::apl::{Rule, When};
 
+    const SLING: f64 = TRANSFERENCE_SECONDS_UNMEASURED + CHAINED_SLING_SECONDS_UNMEASURED;
+    const SLING_TRIP: Action = Action::Operator { sling: true, ability: false };
+
     fn rule(action: Action, when: When) -> Rule {
         Rule { action, when }
     }
@@ -224,6 +271,7 @@ mod tests {
             summoned_by,
             weapon_class: "rifle",
             weapon_slot: "primary",
+            arcanes: &CastArcanes::NONE,
         }
     }
     fn warcry_picked(secs: f64) -> (Vec<AbilityPick<'static>>, Vec<ActiveAbility>) {
@@ -272,11 +320,11 @@ mod tests {
     fn a_cast_keeps_the_strength_it_was_cast_at() {
         let (picks, assumed) = warcry_picked(30.0);
         let apl = Apl(vec![
-            rule(Action::OperatorSling, When::BuffRemainsUnder { ability: "sling_strength".into(), seconds: 0.0 }),
+            rule(SLING_TRIP, When::BuffRemainsUnder { ability: "sling_strength".into(), seconds: 0.0 }),
             rule(cast("warcry"), When::Always),
         ]);
         let p = plan(&apl, &frame(&picks, &assumed, "madurai", None, 1.0), 60.0);
-        let sling = OPERATOR_SLING_SECONDS_UNMEASURED;
+        let sling = SLING;
         assert_eq!(p.strength[0].starts_at_seconds, sling, "earned on the switch back");
         assert_eq!(p.strength[0].ends_at_seconds, sling + 20.0);
         let first = &p.abilities[0];
@@ -290,10 +338,10 @@ mod tests {
     /// sling after the summon earns the claws nothing.
     #[test]
     fn the_summon_snapshots_the_strength_of_its_cast() {
-        let sling = rule(Action::OperatorSling, When::Always);
+        let sling = rule(SLING_TRIP, When::Always);
         let hysteria = rule(cast("hysteria"), When::Always);
         let before = plan(&Apl(vec![sling.clone(), hysteria.clone()]), &frame(&[], &[], "madurai", Some("hysteria"), 2.0), 60.0);
-        assert_eq!(before.summon.at_seconds, OPERATOR_SLING_SECONDS_UNMEASURED);
+        assert_eq!(before.summon.at_seconds, SLING);
         assert!((before.summon.strength - 2.4).abs() < 1e-9);
         let after = plan(&Apl(vec![hysteria, sling]), &frame(&[], &[], "madurai", Some("hysteria"), 2.0), 60.0);
         assert_eq!(after.summon.at_seconds, 0.0);
@@ -306,18 +354,18 @@ mod tests {
     /// A SCHOOL WITH NOTHING TO EARN STILL PAYS THE TIME, once.
     #[test]
     fn a_sling_that_earns_nothing_costs_its_time_once() {
-        let apl = Apl(vec![rule(Action::OperatorSling, When::Always)]);
+        let apl = Apl(vec![rule(SLING_TRIP, When::Always)]);
         let p = plan(&apl, &frame(&[], &[], "vazarin", None, 1.0), 60.0);
         assert!(p.strength.is_empty());
-        assert_eq!(p.interrupts, vec![(0.0, OPERATOR_SLING_SECONDS_UNMEASURED)]);
+        assert_eq!(p.interrupts, vec![(0.0, SLING)]);
     }
 
     /// `remains<N` RE-SLINGS N SECONDS EARLY, so the window never lapses.
     #[test]
     fn a_lead_keeps_the_window_up() {
         let apl = Apl(vec![rule(
-            Action::OperatorSling,
-            When::BuffRemainsUnder { ability: "sling_strength".into(), seconds: OPERATOR_SLING_SECONDS_UNMEASURED },
+            SLING_TRIP,
+            When::BuffRemainsUnder { ability: "sling_strength".into(), seconds: SLING },
         )]);
         let p = plan(&apl, &frame(&[], &[], "madurai", None, 1.0), 60.0);
         for pair in p.strength.windows(2) {
@@ -332,10 +380,45 @@ mod tests {
     /// it is worth standing still for.
     #[test]
     fn once_is_done_once() {
-        let apl = Apl(vec![rule(Action::OperatorSling, When::Once), rule(cast("hysteria"), When::Always)]);
+        let apl = Apl(vec![rule(SLING_TRIP, When::Once), rule(cast("hysteria"), When::Always)]);
         let p = plan(&apl, &frame(&[], &[], "madurai", Some("hysteria"), 1.0), 120.0);
         assert_eq!(p.strength.len(), 1);
         assert_eq!(p.interrupts.len(), 2, "one sling and one summon: {:?}", p.interrupts);
         assert!((p.summon.strength - 1.4).abs() < 1e-9);
+    }
+
+    /// **MOLT VIGOR IS SPENT BY THE NEXT CAST, AND ONLY AN OPERATOR ABILITY
+    /// ARMS IT** — a sling alone does not (W`Molt_Vigor` lists the schools'
+    /// abilities, and Void Sling is not one).
+    #[test]
+    fn molt_vigor_is_armed_by_an_operator_ability_and_spent_once() {
+        let vigor = CastArcanes { after_operator_ability: 0.45, per_cast_stack: None };
+        let run = |trip: Action| {
+            let apl = Apl(vec![rule(trip, When::Once), rule(cast("hysteria"), When::Always)]);
+            let f = Frame { arcanes: &vigor, ..frame(&[], &[], "madurai", Some("hysteria"), 1.0) };
+            plan(&apl, &f, 60.0).summon.strength
+        };
+        assert!((run(Action::Operator { sling: false, ability: true }) - 1.45).abs() < 1e-9);
+        assert!((run(Action::Operator { sling: true, ability: true }) - 1.85).abs() < 1e-9, "both, one trip");
+        assert!((run(SLING_TRIP) - 1.4).abs() < 1e-9, "a sling arms nothing");
+    }
+
+    /// **POWER RAMP: EACH CAST ARMS THE NEXT, AND THE SAME ABILITY TWICE
+    /// RUNNING STARTS OVER.**
+    #[test]
+    fn power_ramp_stacks_across_casts_and_resets_on_a_repeat() {
+        let ramp = CastArcanes { after_operator_ability: 0.0, per_cast_stack: Some((0.09, 4)) };
+        let (picks, assumed) = warcry_picked(20.0);
+        let apl = Apl(vec![rule(cast("warcry"), When::Always)]);
+        let f = Frame { arcanes: &ramp, ..frame(&picks, &assumed, "vazarin", None, 1.0) };
+        let p = plan(&apl, &f, 60.0);
+        // WARCRY AFTER WARCRY IS A REPEAT EVERY TIME, so no cast ever gains.
+        for c in &p.abilities {
+            assert!((fire_rate(c) - fire_rate(&assumed[0])).abs() < 1e-9, "{c:?}");
+        }
+        // …while the summon after a Warcry takes the one stack it earned.
+        let apl = Apl(vec![rule(cast("warcry"), When::Once), rule(cast("hysteria"), When::Always)]);
+        let f = Frame { arcanes: &ramp, ..frame(&picks, &assumed, "vazarin", Some("hysteria"), 1.0) };
+        assert!((plan(&apl, &f, 60.0).summon.strength - 1.09).abs() < 1e-9);
     }
 }

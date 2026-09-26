@@ -5,11 +5,13 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PowerStrengthOnKill
 description: "On Kill:\n+0.24% Ability Strength. Stacks up to 250x."
 
+# 0.04 / 0.08 / 0.12 / 0.16 / 0.20 / 0.24% a stack, 250 stacks; "Unlike most
+# stackable Arcane buffs, Molt Augmented's bonus persists until death"
+# (W`Molt_Augmented`). The build states the stacks it opens with.
 effects:
-  - kind: unmodelled
-    text: "On Kill:"
-  - kind: unmodelled
-    text: "+0.24% Ability Strength. Stacks up to 250x."
+  - kind: ability_strength_per_kill
+    ranks: [0.0004, 0.0008, 0.0012, 0.0016, 0.0020, 0.0024]
+    max_stacks: 250
 
 source:
   url: https://wiki.warframe.com/w/Molt_Augmented

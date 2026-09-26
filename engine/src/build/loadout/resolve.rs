@@ -244,7 +244,10 @@ pub fn resolve_for(
     // STACKING BUFFS THE MODS GRANT — see `ModEffect::GrantsStackingBuff`.
     // They join the weapon's own list below rather than replacing anything, so
     // a build can carry a perk's buff and a mod's at once.
-    let mut mod_buffs: Vec<StackingBuff> = Vec::new();
+    // THE WIELDER'S ARCANES THAT ARM A BUFF ON THIS SLOT (Arcane Fury) run as
+    // a mod's buff does: the same trigger, grant and clock.
+    let mut mod_buffs: Vec<StackingBuff> =
+        tenno.weapon_buffs.iter().filter(|w| w.slot == base.slot).map(|w| w.buff).collect();
     // Degrees of cone added AFTER the accuracy divisor — see
     // `ModEffect::AddedSpread`.
     let mut added_spread = 0.0f64;

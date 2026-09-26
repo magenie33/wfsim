@@ -573,6 +573,25 @@ pub(crate) fn enumerate_buffs(
     for b in out.iter_mut() {
         b.trigger = card_trigger(&b.id, refs, arcane).unwrap_or_default();
     }
+    // THE WIELDER'S ARCANES THAT ARM A BUFF ON THIS WEAPON (Arcane Fury) —
+    // carded under the arcane's own name, by the id `resolve` hands the fight.
+    let slot = wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.slot.as_str());
+    for w in tenno.weapon_buffs.iter().filter(|w| w.slot == slot) {
+        if !locked(w.buff.grant.locked_stat()) && !out.iter().any(|x| x.id == w.buff.id) {
+            out.push(BuffMeta {
+                id: w.buff.id.into(),
+                name: wfsim_engine::data::warframes::arcane_by_id(w.buff.id).map_or(w.buff.id.into(), |a| a.name.clone()),
+                grants: String::new(),
+                max_stacks: w.buff.max_stacks,
+                kind: "toggle",
+                default_stacks: 0,
+                default_locked: false,
+                permanent: false,
+                uncapped: false,
+                trigger: Some(w.buff.trigger.id()),
+            });
+        }
+    }
     out
 }
 

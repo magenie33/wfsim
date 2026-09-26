@@ -177,6 +177,9 @@ pub enum BuffTrigger {
     /// a hit that did NEITHER. Two cards, two sentences, and reading one as the
     /// other is worth several stacks a second on a high-crit build.
     Hit,
+    /// Arcane Fury: a CRITICAL damage instance — "On Critical Hit" — rolled per
+    /// instance like [`BuffTrigger::Hit`], and on nothing that did not crit.
+    Crit,
     /// Well Rehearsed: CONSECUTIVE weak-point hits — the only trigger here that
     /// can be UNDONE by the next shot.
     ///
@@ -392,6 +395,7 @@ impl BuffTrigger {
             BuffTrigger::Firing => "on firing",
             BuffTrigger::StatusApplied => "on a status landing",
             BuffTrigger::Hit => "on a hit",
+            BuffTrigger::Crit => "on a critical hit",
             BuffTrigger::ConsecutiveHeadshot => "on consecutive weak-point hits",
         }
     }
@@ -610,6 +614,7 @@ impl BuffTrigger {
         match self {
             BuffTrigger::Kill => "kill",
             BuffTrigger::Hit => "hit",
+            BuffTrigger::Crit => "crit",
             BuffTrigger::PlainHit => "plain_hit",
             BuffTrigger::Headshot => "headshot",
             BuffTrigger::ConsecutiveHeadshot => "consecutive_headshot",
@@ -631,7 +636,7 @@ impl BuffTrigger {
     pub fn from_id(id: &str) -> Option<Self> {
         use BuffTrigger as T;
         [
-            T::Kill, T::Hit, T::PlainHit, T::Headshot, T::ConsecutiveHeadshot, T::PunchThrough,
+            T::Kill, T::Hit, T::Crit, T::PlainHit, T::Headshot, T::ConsecutiveHeadshot, T::PunchThrough,
             T::StatusApplied, T::ReloadComplete, T::ReloadFromEmpty, T::FullBurst, T::Firing,
         ]
         .into_iter()

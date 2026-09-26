@@ -841,7 +841,9 @@ The row stores nothing: OFF and ASSUMED are the Operator build's tick, written t
 that build, and SIMULATED is the action in the scenario's list (`sim.apl`),
 which the same block edits — order, `once` or kept up, and the ability that
 summons the weapon. The blank Warframe build links the first Operator build, as
-an unset link does anywhere.
+an unset link does anywhere. The wielder's arcanes a fight runs are listed with
+what earns each; Molt Augmented's opening stacks are written to the Warframe
+build's arcane pick, so the blank build cannot set them.
 
 **ABILITY STRENGTH IS THE WIELDER'S** unless the fight types one over it:
 `sim.ability_strength` is null by default, the box shows the wielder's own as its

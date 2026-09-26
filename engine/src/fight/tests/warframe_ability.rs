@@ -828,6 +828,7 @@ fn casting_costs_shots_and_rooting_is_what_costs_them() {
             summoned_by: None,
             weapon_class: "",
             weapon_slot: "melee",
+            arcanes: &crate::data::casting::CastArcanes::NONE,
         };
         let apl = Apl(vec![Rule { action: Action::Cast { ability: "warcry".into() }, when: When::Always }]);
         let cast = crate::data::casting::plan(&apl, &frame, 60.0);
