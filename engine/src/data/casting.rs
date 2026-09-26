@@ -7,9 +7,9 @@
 //! Operator's actions. ONE PLAYER DOES ONE THING AT A TIME, so an action due
 //! while another is under way starts when that one ends.
 //!
-//! **A WARFRAME BUFF IS A SNAPSHOT.** A cast reads Ability Strength at the
-//! instant it is cast and keeps that number for its whole window; a buff that
-//! lapses later does not reach back into it. So each cast is its own entry,
+//! **A WARFRAME BUFF IS A SNAPSHOT** (M105). A cast reads Ability Strength at
+//! the instant it is cast and keeps that number for its whole window; a buff
+//! that lapses later does not reach back into it. So each cast is its own entry,
 //! resolved at its own strength, and an Exalted weapon's damage is the strength
 //! its summoning cast read.
 
@@ -17,10 +17,11 @@ use crate::data::abilities::{self, AbilityPick, ActiveAbility, Caster, CAST_SECO
 use crate::data::apl::{Action, Apl};
 use crate::data::warframes::{focus_school, FrameEffect, FrameStat, NodeTrigger};
 
-/// **HOW LONG AN OPERATOR TRIP TAKES, UNTIL IT IS MEASURED**: Transference out
-/// and back, plus a Chained Sling and the school's ability where the trip has
-/// them. None of it is modded — casting speed does not touch Transference.
-pub const TRANSFERENCE_SECONDS_UNMEASURED: f64 = 2.0;
+/// **HOW LONG AN OPERATOR TRIP TAKES**: Transference out and back, 1 s (M105),
+/// plus a Chained Sling and the school's ability where the trip has them, which
+/// are not measured yet. None of it is modded — casting speed does not touch
+/// Transference.
+pub const TRANSFERENCE_SECONDS: f64 = 1.0;
 pub const CHAINED_SLING_SECONDS_UNMEASURED: f64 = 1.0;
 pub const OPERATOR_ABILITY_SECONDS_UNMEASURED: f64 = 1.0;
 
@@ -158,11 +159,14 @@ pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
     let mut cast_bonus = |id: &str, vigor: &mut f64| {
         let mut b = std::mem::take(vigor);
         if let Some((per, max)) = frame.arcanes.per_cast_stack {
+            // THE SAME ABILITY TWICE RUNNING DROPS IT TO ZERO AT ONCE (M105):
+            // the repeat gains nothing and arms nothing.
             if ramp.1.as_deref() == Some(id) {
                 ramp.0 = 0;
+            } else {
+                b += per * f64::from(ramp.0);
+                ramp.0 = (ramp.0 + 1).min(max);
             }
-            b += per * f64::from(ramp.0);
-            ramp.0 = (ramp.0 + 1).min(max);
             ramp.1 = Some(id.to_string());
         }
         b
@@ -181,7 +185,7 @@ pub fn plan(apl: &Apl, frame: &Frame<'_>, fight_seconds: f64) -> FramePlan {
         let (action, lead) = actions[k];
         match action {
             Action::Operator { sling, ability } => {
-                let secs = TRANSFERENCE_SECONDS_UNMEASURED
+                let secs = TRANSFERENCE_SECONDS
                     + if *sling { CHAINED_SLING_SECONDS_UNMEASURED } else { 0.0 }
                     + if *ability { OPERATOR_ABILITY_SECONDS_UNMEASURED } else { 0.0 };
                 interrupts.push((start, secs));
@@ -247,7 +251,7 @@ mod tests {
     use super::*;
     use crate::data::apl::{Rule, When};
 
-    const SLING: f64 = TRANSFERENCE_SECONDS_UNMEASURED + CHAINED_SLING_SECONDS_UNMEASURED;
+    const SLING: f64 = TRANSFERENCE_SECONDS + CHAINED_SLING_SECONDS_UNMEASURED;
     const SLING_TRIP: Action = Action::Operator { sling: true, ability: false };
 
     fn rule(action: Action, when: When) -> Rule {
@@ -420,5 +424,13 @@ mod tests {
         let apl = Apl(vec![rule(cast("warcry"), When::Once), rule(cast("hysteria"), When::Always)]);
         let f = Frame { arcanes: &ramp, ..frame(&picks, &assumed, "vazarin", Some("hysteria"), 1.0) };
         assert!((plan(&apl, &f, 60.0).summon.strength - 1.09).abs() < 1e-9);
+        // …and a REPEAT between them leaves it nothing: zero at once, and the
+        // repeat arms no stack of its own (M105).
+        let apl = Apl(vec![
+            rule(cast("warcry"), When::Once),
+            rule(cast("warcry"), When::Once),
+            rule(cast("hysteria"), When::Always),
+        ]);
+        assert!((plan(&apl, &f, 60.0).summon.strength - 1.0).abs() < 1e-9);
     }
 }

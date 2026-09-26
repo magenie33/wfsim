@@ -749,10 +749,10 @@ on one timeline before the fight; the shot loop scans only the rest
   that one ends, and a cast that roots the frame (`interrupts_fire`, true where
   nothing says otherwise) is time the weapon is not attacking. A plan that opens
   at the buzzer delays the first attack.
-- **A WARFRAME BUFF IS A SNAPSHOT.** A cast reads Ability Strength at its instant
+- **A WARFRAME BUFF IS A SNAPSHOT** (M105). A cast reads Ability Strength at its instant
   and keeps that number for its window: each cast is its own entry, resolved at
   its own strength. A strength window that lapses later does not reach back.
-- **AN EXALTED WEAPON IS ITS SUMMONING CAST'S SNAPSHOT.** `summoned_by` on the
+- **AN EXALTED WEAPON IS ITS SUMMONING CAST'S SNAPSHOT** (M105). `summoned_by` on the
   weapon names the ability; casting it in the list summons the weapon once, at
   the strength of that instant (`Tenno::summon_strength`). Not named, the weapon
   was out before the fight at the frame's own strength.
@@ -789,7 +789,7 @@ refreshes it; it never stacks. Default for every other conditional node is off.
 | `ability_strength_per_max_health` | Bellicose | the build's resolve, off the finished Max Health |
 | `ability_strength_per_kill` | Molt Augmented | the resolve, at the stacks the Warframe build opens with (`SlotPick::stacks`, 0 by default) |
 | `ability_strength_after_operator_ability` | Molt Vigor | the plan: the first cast after a trip with `ability` — Void Sling is not an Operator ability |
-| `ability_strength_per_cast_stack` | Power Ramp | the plan: a stack per cast, spent by the next, reset by the same ability twice running |
+| `ability_strength_per_cast_stack` | Power Ramp | the plan: a stack per cast, spent by the next; the same ability twice running drops it to zero and arms nothing (M105) |
 | `weapon_buff` | Fury, Strike | the weapon's fight, as a mod's `StackingBuff` on the named slot — one stack, refreshed |
 
 Molt Augmented's kills during the fight add nothing yet: the plan is laid out
