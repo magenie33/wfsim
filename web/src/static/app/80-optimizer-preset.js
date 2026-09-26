@@ -34,12 +34,19 @@ function snapshotOpt() {
     starts: JSON.parse(JSON.stringify(opt.starts)),
     limits: JSON.parse(JSON.stringify(opt.limits || normalizeLimits(null))),
     candidate_runs: optRun.candidate_runs,
+    finalists: optRun.finalists,
   };
 }
 
 // A new search: one blank start, the run settings left alone.
 const blankOpt = () => ({ starts: [blankStart()], limits: normalizeLimits(null),
-  candidate_runs: optRun.candidate_runs });
+  candidate_runs: optRun.candidate_runs, finalists: optRun.finalists });
+
+/// How many builds a search answers with: 1–100, the server's own clamp.
+const finalistsOf = (n) => {
+  const v = Math.round(Number(n));
+  return Number.isFinite(v) && v >= 1 ? Math.min(100, v) : OPT_RUN_DEFAULTS.finalists;
+};
 
 // State-only apply (validation + cross-weapon dropping); no re-render.
 function applyOptState(st) {
@@ -47,8 +54,11 @@ function applyOptState(st) {
   // `arcanes`, …); nothing reads it now, and the next save drops it.
   const w = $("weapon").value;
   optRun.candidate_runs = st.candidate_runs === 1 ? 1 : 10;
+  optRun.finalists = finalistsOf(st.finalists);
   const cr = $("opt-cand-runs");
   if (cr) cr.value = String(optRun.candidate_runs);
+  const fin = $("opt-finalists");
+  if (fin) fin.value = String(optRun.finalists);
   // Limits name THIS weapon's options; another weapon's do not apply here. A
   // search saved with only an excluded-mods list carries it into the limits.
   opt.limits = normalizeLimits(st.limits || (st.exclude ? { exclude: { mods: st.exclude } } : null));
@@ -79,7 +89,7 @@ function optBarCfg() {
     domain: OPT_DOMAIN,
     label: tr("Searches"),
     noun: "search",
-    hint: "starts, limits and runs per candidate",
+    hint: "starts, limits, results and runs per candidate",
     load: loadOptPresets,
     store: storeOptPresets,
     active: () => activeOptPreset,
@@ -93,10 +103,13 @@ function optBarCfg() {
 }
 
 /// The search's run settings, from the run bar or the agent door.
-function setOptSizes({ candidate_runs }) {
+function setOptSizes({ candidate_runs, finalists }) {
   if (candidate_runs != null) optRun.candidate_runs = candidate_runs === 1 ? 1 : 10;
+  if (finalists != null) optRun.finalists = finalistsOf(finalists);
   const cr = $("opt-cand-runs");
   if (cr) cr.value = String(optRun.candidate_runs);
+  const fin = $("opt-finalists");
+  if (fin) fin.value = String(optRun.finalists);
   updateOptEstimate();
 }
 
@@ -104,9 +117,13 @@ function setOptSizes({ candidate_runs }) {
 /// settles, so this states the inputs that decide it rather than a number.
 function updateOptEstimate() {
   const n = Math.max(1, opt.starts.length);
+  // The run bar shows what will run: a weapon change resets `optRun` and
+  // redraws nothing else.
+  if ($("opt-finalists")) $("opt-finalists").value = String(optRun.finalists);
+  if ($("opt-cand-runs")) $("opt-cand-runs").value = String(optRun.candidate_runs);
   const en = allEnemies().find((e) => e.id === sim.enemy) || {};
-  $("opt-estimate").innerHTML = escHtml(tr("{n} starts · {r} runs a candidate · final round {f} runs")
-    .replace("{n}", n).replace("{r}", optRun.candidate_runs).replace("{f}", finalRuns().toLocaleString()))
+  $("opt-estimate").innerHTML = escHtml(tr("{n} starts · best {k} · {r} runs a candidate · final round {f} runs")
+    .replace("{n}", n).replace("{k}", optRun.finalists).replace("{r}", optRun.candidate_runs).replace("{f}", finalRuns().toLocaleString()))
     + ` · ${escHtml(tr("vs"))} <b>${escHtml(en.name || sim.enemy)}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.duration} s`;
   // A START THAT PINS WHAT A LIMIT RULES OUT has no answer to give: the run
   // waits until one side changes, and says so here.
@@ -179,8 +196,9 @@ async function runOptimize() {
       // THE FIGHT, WHOLE AND DERIVED — `theFight()`, the call the simulator
       // makes, so a candidate is scored under the fight the replay runs.
       ...theFight(),
-      // One answer per start at most, each re-measured at the final runs.
-      final_runs: finalRuns(), finalists: starts.length,
+      // The best N of every whole build the starts' sweeps scored, each
+      // re-measured at the final runs.
+      final_runs: finalRuns(), finalists: optRun.finalists,
       strategy: "quick",
       starts, candidate_runs: optRun.candidate_runs,
       // What the player ruled out; the rest of the builder's lists is the scope.
@@ -387,10 +405,10 @@ const evoName = (id) => {
 /// themselves when the weapon changes.
 let optLast = null;
 
-/// ③ THE RESULTS: one row per answer, which is one start's — or several
-/// starts' that settled on the same build. Each row names its starts, what each
-/// scored before and how many changes it took, and a start that reached no
-/// legal build is said so rather than left out.
+/// ③ THE RESULTS: the best N builds the search scored. A row a start settled on
+/// names its starts, what each scored before and how many changes it took; any
+/// other row names the answer it is nearest to and what differs from it. A
+/// start that reached no legal build is said so rather than left out.
 function renderOptResults(r) {
   optLast = r;
   const w = weaponInfo($("weapon").value) || {};
@@ -404,6 +422,22 @@ function renderOptResults(r) {
   const lanes = (res) => (res.from_starts || []).map((l) => `<span class="opt-lane">${escHtml(tr("start"))} ${l.start + 1}: ${
     l.from == null ? "—" : sig2(kpm(l.from, d))} → ${sig2(kpm(res.kill_progress ?? res.kills, d))} KPM · ${
     escHtml(tr("{n} changes").replace("{n}", l.moves))}</span>`).join("");
+  const said = (axis, id) => {
+    if (id == null) return tr("empty");
+    if (axis === "arcane") return arcName(String(id).split("@")[0]);
+    if (axis === "evolution") return evoName(id);
+    if (axis === "mode") return modeLabel(w, id);
+    if (axis === "valence") return DT(id);
+    const [card, rank] = String(id).split("@");
+    return ((modById(card) || {}).name || prettify(card)) + (rank != null ? ` R${rank}` : "");
+  };
+  const near = (res) => {
+    const n = res.near;
+    if (!n) return "";
+    const whose = n.starts.map((s) => `${tr("start")} ${s + 1}`).join(", ");
+    const what = (n.changes || []).map((c) => `${escHtml(said(c.axis, c.from))} → ${escHtml(said(c.axis, c.to))}`).join(" · ");
+    return `<span class="opt-lane">${escHtml(tr("{s}'s answer with").replace("{s}", whose))} ${what}</span>`;
+  };
   const html = rows.map((res) => `<div class="opt-row">
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
@@ -417,7 +451,7 @@ function renderOptResults(r) {
         <button class="ghost-btn small opt-add" title="${escHtml(tr("save as a new build"))}" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
         <button class="ghost-btn small opt-restart" data-rank="${res.rank}">${escHtml(tr("use as a new start"))}</button>
       </div>
-      <div class="opt-lanes">${escHtml(tr("from"))} ${lanes(res)}</div>
+      <div class="opt-lanes">${res.near ? near(res) : `${escHtml(tr("from"))} ${lanes(res)}`}</div>
       <div class="opt-card" data-rank="${res.rank}"></div>
     </div>`).join("");
   const failed = (r.failed_starts || []).map((f) => `<div class="opt-row opt-failed"><b>${escHtml(tr("start"))} ${f.start + 1}</b> — ${

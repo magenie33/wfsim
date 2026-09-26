@@ -496,7 +496,10 @@ ui:
   "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点
   "how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured at the final-round runs either way": 搜索比较候选时每个候选打几场。1 场快十倍但更吵；无论选哪个，答案最后都按最终轮次数重新测量
   "+ a blank start": "+ 空白起点"
-  "{n} starts · {r} runs a candidate · final round {f} runs": "{n} 个起点 · 每个候选 {r} 场 · 最终轮 {f} 场"
+  "{n} starts · best {k} · {r} runs a candidate · final round {f} runs": "{n} 个起点 · 取前 {k} · 每个候选 {r} 场 · 最终轮 {f} 场"
+  "How many results": 结果个数
+  "how many builds the search answers with: the best that many of every build it scored, re-measured at the final-round runs": 搜索给出几个配装：从它打过分的所有配装里取最好的这么多个，再按最终轮次数重新测量
+  "{s}'s answer with": "{s} 的答案里"
   "vs": 对
   "start": 起点
   "{n} changes": 改了 {n} 次

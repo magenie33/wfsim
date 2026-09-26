@@ -67,7 +67,9 @@ impl QBuild {
 /// legality the replay would otherwise recompute at every step.
 #[derive(Default)]
 pub(crate) struct Fleet {
-    scores: HashMap<String, (Score, usize)>,
+    /// By key: the score, the best element order, and the per-run σ of kill
+    /// progress at that order.
+    scores: HashMap<String, (Score, usize, f64)>,
     candidates: HashMap<(QBuild, Position), Vec<QBuild>>,
     legal: HashMap<QBuild, bool>,
     pending: Vec<QBuild>,
@@ -107,6 +109,9 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) seed: u64,
     /// Each scored build's best element order, by key.
     pub(crate) best: std::sync::Mutex<std::collections::HashMap<String, Candidate>>,
+    /// Each scored build's per-run σ of kill progress at that order, by key —
+    /// what the band around the N-th contender is sized from.
+    pub(crate) spread: std::sync::Mutex<std::collections::HashMap<String, f64>>,
     /// Engagements simulated: every order of every build, at `runs` each.
     pub(crate) sims: std::sync::atomic::AtomicU64,
     /// Where the page reads progress: builds scored (`enumerated`) and fights
@@ -173,6 +178,15 @@ impl QuickCtx<'_> {
         }
         let at = if self.lead { FLEET.with(|f| f.borrow().scores.get(&self.key(b)).map(|x| x.1)) } else { None };
         self.orders(b).into_iter().nth(at.unwrap_or(0))
+    }
+
+    /// The per-run σ of kill progress the build scored with.
+    fn spread_of(&self, b: &QBuild) -> f64 {
+        let k = self.key(b);
+        if self.lead {
+            return FLEET.with(|f| f.borrow().scores.get(&k).map_or(0.0, |x| x.2));
+        }
+        self.spread.lock().ok().and_then(|m| m.get(&k).copied()).unwrap_or(0.0)
     }
 
     fn has_required(&self, b: &QBuild) -> bool {
@@ -469,7 +483,7 @@ impl QuickSpace for QuickCtx<'_> {
     /// fleet's leader reads the scores it was handed instead.
     fn score(&self, bs: &[QBuild]) -> Vec<Score> {
         if !self.lead {
-            return self.score_orders(bs).into_iter().map(|(s, _)| s).collect();
+            return self.score_orders(bs).into_iter().map(|(s, _, _)| s).collect();
         }
         FLEET.with(|f| {
             let mut f = f.borrow_mut();
@@ -477,7 +491,7 @@ impl QuickSpace for QuickCtx<'_> {
             let mut out = Vec::with_capacity(bs.len());
             for b in bs {
                 match f.scores.get(&self.key(b)) {
-                    Some(&(s, _)) => out.push(s),
+                    Some(&(s, _, _)) => out.push(s),
                     None => {
                         f.missed = true;
                         if !f.pending.contains(b) {
@@ -599,7 +613,7 @@ impl QuickCtx<'_> {
 
     /// Every build's score at its best element order, and WHICH order that is
     /// (its index in [`Self::orders`]) — what a fleet worker hands back.
-    fn score_orders(&self, bs: &[QBuild]) -> Vec<(Score, usize)> {
+    fn score_orders(&self, bs: &[QBuild]) -> Vec<(Score, usize, f64)> {
         let orders: Vec<Vec<Candidate>> = bs.iter().map(|b| self.orders(b)).collect();
         let jobs: Vec<(&Candidate, usize)> = orders
             .iter()
@@ -623,18 +637,22 @@ impl QuickCtx<'_> {
         let mut it = sums.into_iter();
         let mut out = Vec::with_capacity(bs.len());
         for (b, os) in bs.iter().zip(&orders) {
-            let mut best: Option<(usize, (f64, f64))> = None;
+            let mut best: Option<(usize, (f64, f64), f64)> = None;
             for (oi, _) in os.iter().enumerate() {
                 let Some(s) = it.next() else { break };
                 let sc = (s.mean_kill_progress.max(0.0), s.mean_effective_damage);
-                if best.is_none_or(|(_, x)| sc.0.total_cmp(&x.0).then(sc.1.total_cmp(&x.1)).is_gt()) {
-                    best = Some((oi, sc));
+                if best.is_none_or(|(_, x, _)| sc.0.total_cmp(&x.0).then(sc.1.total_cmp(&x.1)).is_gt()) {
+                    best = Some((oi, sc, s.std_kill_progress));
                 }
             }
-            if let (Some((oi, _)), Ok(mut m)) = (best, self.best.lock()) {
+            if let (Some((oi, _, _)), Ok(mut m)) = (best, self.best.lock()) {
                 m.insert(self.key(b), os[oi].clone());
             }
-            out.push((best.map(|(_, s)| s), best.map_or(0, |(oi, _)| oi)));
+            let sd = best.map_or(0.0, |(_, _, sd)| sd);
+            if let Ok(mut m) = self.spread.lock() {
+                m.insert(self.key(b), sd);
+            }
+            out.push((best.map(|(_, s, _)| s), best.map_or(0, |(oi, _, _)| oi), sd));
         }
         out
     }
@@ -648,7 +666,9 @@ impl QuickCtx<'_> {
         let rows: Vec<Value> = bs
             .iter()
             .zip(got)
-            .map(|(b, (s, oi))| json!({ "key": self.key(b), "score": s.map(|(k, e)| json!([k, e])), "order": oi }))
+            .map(|(b, (s, oi, sd))| {
+                json!({ "key": self.key(b), "score": s.map(|(k, e)| json!([k, e])), "order": oi, "sd": sd })
+            })
             .collect();
         json!({ "ok": true, "scores": rows, "fights": fights })
     }
@@ -666,7 +686,8 @@ impl QuickCtx<'_> {
                 let Some(key) = r.get("key").and_then(Value::as_str) else { continue };
                 let s = r.get("score").and_then(Value::as_array).and_then(|a| Some((a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
                 let oi = r.get("order").and_then(Value::as_u64).unwrap_or(0) as usize;
-                f.scores.insert(key.to_string(), (s, oi));
+                let sd = r.get("sd").and_then(Value::as_f64).unwrap_or(0.0);
+                f.scores.insert(key.to_string(), (s, oi, sd));
             }
         });
     }
@@ -688,17 +709,73 @@ impl QuickCtx<'_> {
     }
 }
 
-/// Where each answer came from, and the starts that reached none — keyed by
-/// the job, since the funnel re-ranks answers and rows are drawn from its list.
+/// Where each answer came from, how each other contender differs from the
+/// nearest answer, and the starts that reached none — keyed by the job, since
+/// the funnel re-ranks contenders and rows are drawn from its list.
 #[derive(Default)]
 pub(crate) struct QuickReport {
     pub(crate) from_starts: std::collections::HashMap<super::JobIdentity, serde_json::Value>,
+    pub(crate) near: std::collections::HashMap<super::JobIdentity, serde_json::Value>,
     pub(crate) failures: Vec<serde_json::Value>,
 }
 
+impl QuickCtx<'_> {
+    /// What turns `from` into `to`, one entry per changed position: a card
+    /// swapped (either side `null` when the counts differ), the exilus, an
+    /// arcane seat, an evolution tier, the mode, the valence.
+    fn changes(&self, from: &QBuild, to: &QBuild) -> Vec<Value> {
+        let mut out = Vec::new();
+        let cards = |b: &QBuild| -> Vec<&str> {
+            let mut v: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
+            v.sort_unstable();
+            v
+        };
+        let (mut gone, mut came) = (cards(from), cards(to));
+        let both: Vec<&str> = gone.iter().filter(|id| came.contains(id)).copied().collect();
+        for id in both {
+            if let (Some(i), Some(j)) = (gone.iter().position(|x| *x == id), came.iter().position(|x| *x == id)) {
+                gone.remove(i);
+                came.remove(j);
+            }
+        }
+        for k in 0..gone.len().max(came.len()) {
+            out.push(json!({ "axis": "mod", "from": gone.get(k), "to": came.get(k) }));
+        }
+        let exilus = |b: &QBuild| self.exilus_defs[b.exilus].as_ref().map(|m| m.id);
+        if exilus(from) != exilus(to) {
+            out.push(json!({ "axis": "exilus", "from": exilus(from), "to": exilus(to) }));
+        }
+        for (a, b) in self.arcane_sets[from.arcane].iter().zip(&self.arcane_sets[to.arcane]) {
+            if a != b {
+                out.push(json!({ "axis": "arcane", "from": a, "to": b }));
+            }
+        }
+        let tier = |b: &QBuild, t: usize| {
+            self.evo_sets[b.evo]
+                .iter()
+                .find(|id| wfsim_engine::data::evolutions::get(id).is_some_and(|e| e.tier as usize == t))
+                .cloned()
+        };
+        for t in self.evo_tiers() {
+            if tier(from, t) != tier(to, t) {
+                out.push(json!({ "axis": "evolution", "from": tier(from, t), "to": tier(to, t) }));
+            }
+        }
+        if from.mode != to.mode {
+            out.push(json!({ "axis": "mode", "from": self.mode_ids.get(from.mode), "to": self.mode_ids.get(to.mode) }));
+        }
+        if from.val != to.val {
+            out.push(json!({ "axis": "valence", "from": self.valences.get(from.val), "to": self.valences.get(to.val) }));
+        }
+        out
+    }
+}
+
 /// Descend from this shard's share of the starts (`index % shards`) and hand
-/// back each answer as a screened job, for the funnel to rank at the final
-/// run count. Start numbers in the report are the REQUEST's, not the shard's.
+/// back the CONTENDERS as screened jobs, for the funnel to rank at the final
+/// run count: the best `finalists` whole builds the sweeps scored, and every
+/// one below them that ties the N-th (`tied_at_the_line`, the funnel's own
+/// cut). Start numbers in the report are the REQUEST's, not the shard's.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn run_quick(
     ctx: &QuickCtx<'_>,
@@ -708,6 +785,7 @@ pub(crate) fn run_quick(
     shard: u32,
     shards: u32,
     space: u128,
+    finalists: usize,
 ) -> (Vec<wfsim_optimizer::ScreenedJob>, wfsim_optimizer::search::SearchStats, QuickReport) {
     let shards = shards.max(1) as usize;
     let global = |j: usize| j * shards + shard as usize % shards;
@@ -720,7 +798,8 @@ pub(crate) fn run_quick(
     let stop: Vec<&std::sync::atomic::AtomicBool> =
         state.map(|s| vec![&s.cancel, &s.stop_enumeration]).unwrap_or_default();
     let cfg = wfsim_optimizer::quick::QuickConfig { max_evals, stop };
-    let (answers, failures, qs, progress) = wfsim_optimizer::quick::quick_descent(ctx, &mine, &cfg);
+    let wfsim_optimizer::quick::QuickRun { answers, failures, stats: qs, progress, pool } =
+        wfsim_optimizer::quick::quick_descent(ctx, &mine, &cfg);
     if ctx.lead {
         let rows: Vec<Value> = progress
             .iter()
@@ -732,23 +811,51 @@ pub(crate) fn run_quick(
         failures: failures.iter().map(|f| json!({ "start": global(f.start), "why": f.why })).collect(),
         ..Default::default()
     };
+    let scored: Vec<&(QBuild, Score)> = pool.iter().filter(|(_, s)| s.is_some()).collect();
+    let field: Vec<(f64, f64)> =
+        scored.iter().map(|(b, s)| (s.map_or(0.0, |(kp, _)| kp), ctx.spread_of(b))).collect();
+    let keep = wfsim_optimizer::tied_at_the_line(&field, finalists, ctx.runs);
+    let contenders: Vec<&QBuild> = scored[..keep].iter().map(|(b, _)| b).collect();
+    let answer_of = |b: &QBuild| {
+        let id = ctx.identity(b);
+        answers.iter().position(|a| ctx.identity(&a.build) == id)
+    };
+    // A runner-up is described against an answer ON THE LIST, so the row it
+    // names is one the reader can see. The best answer always is: a sweep that
+    // scored a better build would have moved to it.
+    let listed: Vec<usize> = contenders.iter().filter_map(|b| answer_of(b)).collect();
     let mut built: Vec<(Candidate, usize)> = Vec::new();
-    for a in &answers {
-        let Some(c) = ctx.materialize(&a.build) else { continue };
-        let lanes: Vec<Value> = a
-            .starts
-            .iter()
-            .enumerate()
-            .map(|(k, &s)| {
-                json!({
-                    "start": global(s),
-                    "from": a.from.get(k).copied().flatten().map(|(kp, _)| kp),
-                    "moves": a.moves.get(k).copied().unwrap_or(0),
-                })
-            })
-            .collect();
-        report.from_starts.insert((c.ordered.clone(), c.variant, c.exilus, a.build.arcane), json!(lanes));
-        built.push((c, a.build.arcane));
+    for &b in &contenders {
+        let Some(c) = ctx.materialize(b) else { continue };
+        let job = (c.ordered.clone(), c.variant, c.exilus, b.arcane);
+        match answer_of(b) {
+            Some(ai) => {
+                let a = &answers[ai];
+                let lanes: Vec<Value> = a
+                    .starts
+                    .iter()
+                    .enumerate()
+                    .map(|(k, &s)| {
+                        json!({
+                            "start": global(s),
+                            "from": a.from.get(k).copied().flatten().map(|(kp, _)| kp),
+                            "moves": a.moves.get(k).copied().unwrap_or(0),
+                        })
+                    })
+                    .collect();
+                report.from_starts.insert(job, json!(lanes));
+            }
+            None => {
+                let near: Vec<usize> = if listed.is_empty() { (0..answers.len()).collect() } else { listed.clone() };
+                if let Some((a, changes)) =
+                    near.into_iter().map(|ai| (&answers[ai], ctx.changes(&answers[ai].build, b))).min_by_key(|(_, c)| c.len())
+                {
+                    let starts: Vec<usize> = a.starts.iter().map(|&s| global(s)).collect();
+                    report.near.insert(job, json!({ "starts": starts, "changes": changes }));
+                }
+            }
+        }
+        built.push((c, b.arcane));
     }
     let jobs: Vec<(&Candidate, usize)> = built.iter().map(|(c, a)| (c, *a)).collect();
     let sums = wfsim_optimizer::descent::evaluate_paired(&jobs, ctx.arcanes, ctx.scenario, ctx.runs, ctx.seed);

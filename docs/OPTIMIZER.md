@@ -299,6 +299,14 @@ Alongside it: `rank`, `regret` (objective given up, as a fraction of the best),
 search can find the winner and still be blind to the field), and `sims` against
 the reference's own cost, because accuracy is only interesting next to its price.
 
+**Recall counts DISTINCT builds.** The flat measurement gives every job its own
+seed, so two jobs that are one build to the fight — a utility exilus, an
+evolution the engine does not load — rank apart by noise and a top ten can hold
+one build five times. `Truth::merge_twins` groups the jobs that are
+`one_build` on one paired 10-run pass — the list's own rule — and `recall`
+counts groups on both sides: a search that lists a build once is not missing
+its twins.
+
 **The reference has to earn the name.** One measured at too few runs is just
 another noisy ranking wearing a badge. Every grading run measures the scope
 TWICE under different seeds and reports whether the two agree on the answer set
@@ -655,13 +663,32 @@ the work from 6,569 builds to 1,876 and reached the same build.
 
 ### The answer
 
-- **ONE build per start**, legal by construction. Starts that settle on the
-  same canonical build — the same cards in any order, the same resolved
-  damage, the same exilus, arcane and variant — merge.
-- The answers are measured at the final-round run count and ranked. Each row
-  carries `from_starts` — per start, its score before the descent and the
-  changes it took — and a start that reached no legal build is listed in
-  `failed_starts`. The fleet merges shards' rows for one build into one row.
+- **THE BEST N BUILDS THE SEARCH SCORED**, N the request's `finalists` (the
+  page's "How many results", 10 by default; 1 is the best of the starts).
+  Each start settles on ONE build, its ANSWER; starts that settle on the same
+  canonical build — the same cards in any order, the same resolved damage, the
+  same exilus, arcane and variant — merge. The list is not the answers alone:
+  a start's last sweep has scored every build one change from its answer, and
+  that is where the runner-ups are — the answer with one card swapped.
+- **THE POOL** is every whole build a sweep scored, on the one paired stream:
+  the answers and every build one change from where a start stood. The fill's
+  half-empty builds are not in it. THE SAME SCORE IS THE SAME BUILD for the
+  list (`one_build`: both counts within a relative 1e-9 on the paired stream)
+  — a utility exilus, an evolution the engine does not load, Serration for
+  Heavy Caliber whose accuracy penalty the arena does not read — and the
+  answer is the one kept: re-measured on separate streams, such twins pushed
+  the answer itself off the list.
+- **THE CONTENDERS** are the pool's best N and every one below that ties the
+  N-th — `tied_at_the_line`, the funnel's own cut: ±3·SE from the pooled σ of
+  kill progress, capped at 2N. They go STRAIGHT TO THE FINAL ROUND at
+  `final_runs`; a 1-run round in front of it would re-rank them on less than
+  they were chosen by. The best N of that round are the rows.
+- A row a start settled on carries `from_starts` — per start, its score before
+  the descent and the changes it took. Any other row carries `near`: the
+  starts of the answer on the list it is nearest to, and `changes`, one
+  `{axis, from, to}` per position that differs. A start that reached no legal
+  build is listed in `failed_starts`. The fleet merges shards' rows for one
+  build into one row.
 
 ### Measured
 
@@ -676,6 +703,20 @@ the work from 6,569 builds to 1,876 and reached the same build.
 | Kuva Hind, 11 mods × 5 valence elements | 1 | 0% | yes | 5,270 |
 | Sancti Magistar, 11 mods × 2 arcanes | 2 | 0.6% | yes | 3,090 |
 
+THE LIST, graded: `finalists=10`, 30 s, reference 100 runs, recall over
+distinct builds, against the answers alone (one row per start):
+
+| scope | answers alone | the list | simulated |
+|---|---|---|---|
+| Boar Prime, 9 mods × 2 arcanes × 8 evolution sets | 10% | 100% | 2,780 → 3,780 |
+| Braton Prime, 13 mods | 10% | 80% | 5,050 → 5,950 |
+| Kuva Hind, 11 mods × 4 valence elements | 10% | 90% | 4,680 → 5,880 |
+
+What the list misses is TWO changes from every answer — on Braton Prime,
+Stormbringer for High Voltage and a damage card swapped at once: the pool holds
+one change from where a start stood, and a start that stands there is what
+reaches further.
+
 A Lex Prime scope that also names `transformed` ranks it 3rd: the reference's
 winner fires that mode, which the builder and the quick calc never offer (it
 is not sustainable), so the scope asks a question the page does not.
@@ -687,13 +728,14 @@ fails at rank 14, 25.5% regret.
 
 THE SEARCH block: the search preset bar; ① the starts, each the simulator's
 build card, edited in the builder; ② the limits (below). THE FIGHT block: the
-simulator's scenario as a card. THE OPTIMIZE block: the run bar (run, runs per
-candidate 1 / 10, final-round runs, what the run will do); while it runs, a
+simulator's scenario as a card. THE OPTIMIZE block: the run bar (run, how many results,
+runs per candidate 1 / 10, final-round runs, what the run will do); while it runs, a
 line per start (filling k of n, round r at position k of n, settled) and a bar
 of settled starts, since how many rounds a start takes is found by taking
-them; then the results, one row per answer with the starts it came from, a tie
-with the leader marked, "+ add" and "use as a new start". A search preset
-saves the starts, the limits and the runs per candidate. There is no scope to
+them; then the results, one row per build with the starts it came from or
+the answer it is near and what differs, a tie with the leader marked, "+ add"
+and "use as a new start". A search preset saves the starts, the limits, how
+many results and the runs per candidate. There is no scope to
 mark: what may change is what the quick calc offers less the limits, and a pin
 on a start is the one way to keep something.
 

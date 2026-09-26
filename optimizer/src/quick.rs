@@ -128,6 +128,10 @@ struct Run<'a, S: QuickSpace> {
     space: &'a S,
     cfg: &'a QuickConfig<'a>,
     cache: HashMap<String, Score>,
+    /// Every build a SWEEP asked about, by key: whole builds, legal, one change
+    /// from where some start stood. The fill's half-empty builds are not here.
+    seen: HashMap<String, S::Build>,
+    sweeping: bool,
     stats: QuickStats,
     now: StartProgress,
 }
@@ -174,6 +178,11 @@ impl<S: QuickSpace> Run<'_, S> {
             return Some(None);
         }
         let scores = self.score(&alts)?;
+        if self.sweeping {
+            for b in &alts {
+                self.seen.entry(self.space.key(b)).or_insert_with(|| b.clone());
+            }
+        }
         let mut best: Option<(S::Build, Score)> = None;
         for (b, s) in alts.iter().zip(scores) {
             if best.as_ref().is_none_or(|(_, x)| better(s, *x)) {
@@ -206,6 +215,7 @@ impl<S: QuickSpace> Run<'_, S> {
             .into_iter()
             .filter(|p| !fixed(p) && (empty.contains(p) || start.unnamed.contains(p)))
             .collect();
+        self.sweeping = false;
         self.now = StartProgress { settled: false, round: 0, at: 0, of: fill.len() };
         for (k, p) in fill.into_iter().enumerate() {
             self.now.at = k;
@@ -236,6 +246,8 @@ impl<S: QuickSpace> Run<'_, S> {
         };
         let from = s[0];
         let mut cur_score = from;
+        self.sweeping = true;
+        self.seen.entry(self.space.key(&cur)).or_insert_with(|| cur.clone());
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
@@ -259,9 +271,21 @@ impl<S: QuickSpace> Run<'_, S> {
     }
 }
 
-/// What a run hands back: the answers best first, the starts that found none,
-/// what it spent, and where each start stood when it stopped.
-pub type QuickRun<B> = (Vec<QuickAnswer<B>>, Vec<QuickFailure>, QuickStats, Vec<StartProgress>);
+/// What a run hands back.
+pub struct QuickRun<B> {
+    /// One per start, merged by identity, best first.
+    pub answers: Vec<QuickAnswer<B>>,
+    pub failures: Vec<QuickFailure>,
+    pub stats: QuickStats,
+    /// Where each start stood when it stopped.
+    pub progress: Vec<StartProgress>,
+    /// EVERY WHOLE BUILD THE SWEEPS SCORED, one per identity and one per score,
+    /// best first — the answers and every build one change from where a start
+    /// stood. The best N
+    /// of a run are drawn from here, not from the answers alone: the runner-up
+    /// to an answer is usually that answer with one card swapped.
+    pub pool: Vec<(B, Score)>,
+}
 
 /// Descend from every start; answers merged by key, best first.
 pub fn quick_descent<S: QuickSpace>(
@@ -269,8 +293,15 @@ pub fn quick_descent<S: QuickSpace>(
     starts: &[QuickStart<S::Build>],
     cfg: &QuickConfig<'_>,
 ) -> QuickRun<S::Build> {
-    let mut run =
-        Run { space, cfg, cache: HashMap::new(), stats: QuickStats::default(), now: StartProgress::default() };
+    let mut run = Run {
+        space,
+        cfg,
+        cache: HashMap::new(),
+        seen: HashMap::new(),
+        sweeping: false,
+        stats: QuickStats::default(),
+        now: StartProgress::default(),
+    };
     let mut answers: Vec<QuickAnswer<S::Build>> = Vec::new();
     let mut failures = Vec::new();
     let mut progress = Vec::with_capacity(starts.len());
@@ -294,16 +325,52 @@ pub fn quick_descent<S: QuickSpace>(
             }
         }
     }
-    answers.sort_by(|a, b| {
-        if better(a.score, b.score) {
-            std::cmp::Ordering::Less
-        } else if better(b.score, a.score) {
-            std::cmp::Ordering::Greater
-        } else {
-            std::cmp::Ordering::Equal
-        }
+    answers.sort_by(|a, b| best_first(a.score, b.score));
+    // THE SAME SCORE ON THE PAIRED STREAM IS THE SAME BUILD for the list
+    // ([`one_build`]): a utility exilus, or an evolution the engine does not
+    // load, swapped — Boar Prime's Mercenary Chamber and Practiced Grip filled
+    // half its top ten as twins. Re-measured on separate streams, twins also pushed the
+    // answer itself off the list. The answer is the one kept, then the first
+    // key, so the order never depends on the map's. The cost: an effect that
+    // moves no number in `candidate_runs` fights is merged with its absence.
+    let answer_ids: std::collections::HashSet<String> = answers.iter().map(|a| space.identity(&a.build)).collect();
+    let mut pool: Vec<(String, bool, S::Build, Score)> = run
+        .seen
+        .into_iter()
+        .filter_map(|(k, b)| {
+            let s = run.cache.get(&k).copied().flatten()?;
+            Some((k, answer_ids.contains(&space.identity(&b)), b, Some(s)))
+        })
+        .collect();
+    pool.sort_by(|a, b| best_first(a.3, b.3).then(b.1.cmp(&a.1)).then(a.0.cmp(&b.0)));
+    let mut ids = std::collections::HashSet::new();
+    let mut last: Score = None;
+    pool.retain(|(_, _, b, s)| {
+        let fresh = !one_build(*s, last) && ids.insert(space.identity(b));
+        last = *s;
+        fresh
     });
-    (answers, failures, run.stats, progress)
+    let pool = pool.into_iter().map(|(_, _, b, s)| (b, s)).collect();
+    QuickRun { answers, failures, stats: run.stats, progress, pool }
+}
+
+/// ONE BUILD TO THE FIGHT: two scores on one paired stream that agree to a
+/// relative 1e-9 on both counts. Not to the bit — the same bonuses summed in
+/// another slot order differ in the last bit (Serration and Heavy Caliber,
+/// whose accuracy penalty the arena does not read).
+pub fn one_build(a: Score, b: Score) -> bool {
+    let near = |x: f64, y: f64| (x - y).abs() <= 1e-9 * x.abs().max(y.abs());
+    matches!((a, b), (Some((ak, ae)), Some((bk, be))) if near(ak, bk) && near(ae, be))
+}
+
+fn best_first(a: Score, b: Score) -> std::cmp::Ordering {
+    if better(a, b) {
+        std::cmp::Ordering::Less
+    } else if better(b, a) {
+        std::cmp::Ordering::Greater
+    } else {
+        std::cmp::Ordering::Equal
+    }
 }
 
 #[cfg(test)]
@@ -353,8 +420,11 @@ mod tests {
             QuickStart { build: [Some(0), None, None], fixed: vec![Position { kind: "d", idx: 0 }], unnamed: vec![] },
         ];
         let cfg = QuickConfig { max_evals: 0, stop: Vec::new() };
-        let (answers, failures, _, _) = quick_descent(&Digits, &starts, &cfg);
+        let QuickRun { answers, failures, pool, .. } = quick_descent(&Digits, &starts, &cfg);
         assert!(failures.is_empty());
+        assert_eq!(pool[0].0, answers[0].build, "the pool's best is the best answer");
+        assert!(pool.iter().all(|(b, _)| b.iter().all(Option::is_some)), "the fill's half-empty builds are not in it");
+        assert_eq!(pool[1].1, Some((25.0, 0.0)), "a runner-up one change away is, once per score");
         assert_eq!(answers[0].build, [Some(8), Some(9), Some(9)]);
         assert_eq!(answers[0].starts, vec![0, 1], "two starts settle on one build");
         assert_eq!(answers[1].build, [Some(0), Some(9), Some(9)], "a fixed position never moves");

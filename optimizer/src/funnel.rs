@@ -120,6 +120,35 @@ pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32
     rounds
 }
 
+/// HOW MANY OF A RANKED FIELD SURVIVE A CUT AFTER `planned`: every one below
+/// the line whose kill progress still TIES the line's, within ±3·SE — SE from
+/// the field's POOLED per-run σ of kill progress at `runs` (at 1 run no σ
+/// exists anywhere, so a 5% relative gap stands in) — capped at twice the plan.
+/// Rank order AT the line is noise, so a hard cut would gamble contenders away.
+/// `field` is `(mean_kill_progress, std_kill_progress)`, best first.
+pub fn tied_at_the_line(field: &[(f64, f64)], planned: usize, runs: u32) -> usize {
+    let planned = planned.min(field.len());
+    if planned == 0 || field.len() == planned {
+        return planned;
+    }
+    let cap = (planned * 2).min(field.len());
+    let cut_score = field[planned - 1].0;
+    let tol = if runs >= 2 {
+        // THE SPREAD OF THE STATISTIC BEING RANKED: `std_kills` has no partial
+        // credit, so a build that never finishes its second kill got a
+        // zero-width band from it (docs/OPTIMIZER.md, "The RANKING statistic").
+        let pooled = (field.iter().map(|&(_, sd)| sd * sd).sum::<f64>() / field.len() as f64).sqrt();
+        3.0 * pooled / f64::from(runs).sqrt()
+    } else {
+        cut_score.abs() * 0.05
+    };
+    let mut k = planned;
+    while k < cap && field[k].0 >= cut_score - tol {
+        k += 1;
+    }
+    k
+}
+
 /// One streamed job that survived the screen: the candidate (shared — the
 /// same build may survive with several arcanes), its arcane index and the
 /// screen-run summary.
@@ -342,49 +371,15 @@ pub fn run_funnel(
             };
             kb.total_cmp(&ka)
         });
-        // SOFT cut line:
-        // the planned 1/8 keep stays as the BUDGET SKELETON — predictable
-        // cost, guaranteed progress — but the line itself is statistical,
-        // not a hard rank. Candidates below the line whose score still TIES
-        // the cut-line score (within a ±3·SE band, SE from the field's
-        // POOLED per-run σ — thousands of jobs give the pooled estimate
-        // huge effective dof even at 2 runs; at 1 run, no σ exists anywhere,
-        // so a small relative gap stands in) get amnesty, capped at 2× the
-        // plan. Rank order AT the line is noise — a hard cut would gamble
-        // true contenders away; the cap keeps the budget bounded. The final
-        // round never extends (its field is the contract), but the round
-        // FEEDING it may — ties with the last finalist deserve the full-runs
-        // final to settle them.
+        // SOFT cut line: the planned 1/8 keep stays as the BUDGET SKELETON, and
+        // what ties the line gets amnesty (`tied_at_the_line`). The final round
+        // never extends (its field is the contract), but the round FEEDING it
+        // may — ties with the last finalist deserve the full-runs final.
         let planned = keep.min(scored.len());
-        let keep_n = if scored.len() > planned && round + 1 < rounds.len() {
-            let cap = (planned * 2).min(scored.len());
-            let cut_score = scored[planned - 1].1.mean_kill_progress;
-            let tol = if runs >= 2 {
-                // THE SPREAD OF THE STATISTIC BEING RANKED. This pooled σ came
-                // off `std_kills` — whole kills, no partial credit — while the
-                // line it is a tolerance for is a KILL PROGRESS. They are two
-                // statistics that merely look alike, and the gap is not
-                // academic: a build that never finishes its second kill has
-                // `std_kills` 0 and a kill progress that moves all run long, so
-                // it was handed a zero-width band and admitted or dropped on
-                // whichever side of the line noise had left it: kill
-                // progress is the whole KPM logic and every kill figure has to
-                // come off it.
-                let pooled = (scored
-                    .iter()
-                    .map(|(_, s)| s.std_kill_progress * s.std_kill_progress)
-                    .sum::<f64>()
-                    / scored.len() as f64)
-                    .sqrt();
-                3.0 * pooled / f64::from(runs).sqrt()
-            } else {
-                cut_score.abs() * 0.05
-            };
-            let mut k = planned;
-            while k < cap && scored[k].1.mean_kill_progress >= cut_score - tol {
-                k += 1;
-            }
-            k
+        let keep_n = if round + 1 < rounds.len() {
+            let field: Vec<(f64, f64)> =
+                scored.iter().map(|(_, s)| (s.mean_kill_progress, s.std_kill_progress)).collect();
+            tied_at_the_line(&field, planned, runs)
         } else {
             planned
         };

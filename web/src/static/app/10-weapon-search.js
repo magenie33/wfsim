@@ -317,6 +317,9 @@ async function init() {
   $("opt-cand-runs").value = String(optRun.candidate_runs);
   $("opt-cand-runs").title = tr("how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured at the final-round runs either way");
   $("opt-cand-runs").addEventListener("change", () => setOptSizes({ candidate_runs: Number($("opt-cand-runs").value) || 10 }));
+  $("opt-finalists").value = String(optRun.finalists);
+  $("opt-finalists").title = tr("how many builds the search answers with: the best that many of every build it scored, re-measured at the final-round runs");
+  $("opt-finalists").addEventListener("change", () => setOptSizes({ finalists: Number($("opt-finalists").value) }));
   // (The final-round run count is not wired here: it is a PREFERENCE and
   // draws itself — `renderOptRuns`, outside both halves because it is in
   // neither preset. There is no CPU-thread box, because the topbar's compute

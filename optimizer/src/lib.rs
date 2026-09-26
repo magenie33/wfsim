@@ -46,7 +46,7 @@ pub use evaluate::{evaluate, evaluate_batch, Job, Scenario};
 pub(crate) use funnel::Scored;
 pub use funnel::{
     run_funnel, schedule, schedule_to, CheckpointFn, FunnelState, RoundBoardFn, RoundNote,
-    ScreenBoardFn, ScreenedJob, BOARD_TOP,
+    ScreenBoardFn, ScreenedJob, tied_at_the_line, BOARD_TOP,
 };
 pub use pool::{class_pool, dominated_mods, pool};
 pub(crate) use threads::batch_width;

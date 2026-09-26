@@ -442,7 +442,7 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.plan.read",
     query: true,
-    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), its limits (what it may not use per axis — `card@rank` is one rank of a card — and how full it fills) and how many fights each candidate gets. Everything the limits leave is a candidate.",
+    what: "Read the build search: its starts (each a build, with the positions fixed in its answer), its limits (what it may not use per axis — `card@rank` is one rank of a card — and how full it fills) how many builds it answers with and how many fights each candidate gets. Everything the limits leave is a candidate.",
     anchor: "#opt-block",
     needs_weapon: true,
     args: {},
@@ -452,6 +452,7 @@ const AGENT_ACTIONS = [
         limits: JSON.parse(JSON.stringify(opt.limits)),
         blocked: opt.starts.map((s, i) => ({ start: i + 1, ...startConflicts(s) })).filter((x) => x.blocked.length || x.replaced.length),
         candidate_runs: optRun.candidate_runs,
+        finalists: optRun.finalists,
         estimate: $("opt-estimate").textContent.trim(),
       };
     },
@@ -507,15 +508,16 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.plan.set",
     writes: "search",
-    what: "Set how many fights each candidate gets while the search compares them (1 or 10).",
+    what: "Set how many builds the search answers with (the best N it scored, 1-100) and how many fights each candidate gets while the search compares them (1 or 10).",
     anchor: "#opt-runbar",
     needs_weapon: true,
     args: {
+      finalists: { kind: "number", min: 1, max: 100, what: "how many builds the search answers with" },
       candidate_runs: { kind: "number", min: 1, max: 10, what: "1 or 10 fights a candidate" },
     },
-    run({ candidate_runs }) {
-      setOptSizes({ candidate_runs });
-      return { candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
+    run({ finalists, candidate_runs }) {
+      setOptSizes({ finalists, candidate_runs });
+      return { finalists: optRun.finalists, candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
     },
   },
   {

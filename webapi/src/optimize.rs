@@ -1093,6 +1093,17 @@ fn parse_starts(
 /// It REFUSES a scope it cannot exhaust. A reference that samples is not a
 /// reference; if the scope is too big to enumerate, the honest answer is to
 /// say so and let the caller narrow it, not to grade against a guess.
+/// The rounds a screened field goes through. A quick descent's contenders go
+/// STRAIGHT TO THE FINAL ROUND: they were chosen on the paired stream at
+/// `candidate_runs` and cut at the tie band, so a 1-run round in front of the
+/// final would re-rank them on less than they were chosen by.
+fn rounds_for(strategy: Option<&str>, n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32, usize, bool)> {
+    if strategy == Some("quick") {
+        return vec![(final_runs.max(1), finalists.max(1), true)];
+    }
+    schedule_to(n_jobs, final_runs, finalists)
+}
+
 pub fn grade_optimize(
     v: &Value,
     truth_runs: u32,
@@ -1240,7 +1251,12 @@ pub fn grade_optimize(
 
     // ---- the reference, twice: a reference that cannot reproduce itself
     // under a second seed has not established anything.
-    let a = Truth::measure(&cands, &jobs, &arcanes, &scenario, truth_runs, 0xA11CE);
+    let mut a = Truth::measure(&cands, &jobs, &arcanes, &scenario, truth_runs, 0xA11CE);
+    // ONE BUILD TO THE FIGHT IS ONE ROW: jobs that are `one_build` on a paired
+    // stream are twins, so a top `k` holding two copies of one build is not
+    // counted as knowing two.
+    let paired: Vec<(&Candidate, usize)> = jobs.iter().map(|&(ci, ai)| (&cands[ci], ai)).collect();
+    a.merge_twins(&wfsim_optimizer::descent::evaluate_paired(&paired, &arcanes, &scenario, 10, 0x7715));
     let b = Truth::measure(&cands, &jobs, &arcanes, &scenario, truth_runs, 0xB0B);
     let answer = a.indistinguishable(3.0);
     let settled = answer.contains(&b.best()) && b.indistinguishable(3.0).contains(&a.best());
@@ -1332,13 +1348,14 @@ pub fn grade_optimize(
             runs: candidate_runs,
             seed: 0xDEAD_BEEF,
             best: Default::default(),
+            spread: Default::default(),
             sims: Default::default(),
             progress: None,
             lead: false,
             mod_slots: build_size.min(8),
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
-        let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, None, 0, 1, space.len());
+        let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, None, 0, 1, space.len(), finalists);
         (sj, stats)
     } else if !walks_whole(strategy.as_deref()) {
         wfsim_optimizer::descent::descent(
@@ -1358,7 +1375,7 @@ pub fn grade_optimize(
         });
         sjobs.push((ci, sj.ai));
     }
-    let rounds = schedule_to(sjobs.len(), final_runs, finalists);
+    let rounds = rounds_for(strategy.as_deref(), sjobs.len(), final_runs, finalists);
     let planned: u64 = {
         let mut field = sjobs.len() as u64;
         let mut n = sstats.evals;
@@ -1424,6 +1441,7 @@ pub fn grade_optimize(
         "scope": { "builds": cands.len(), "jobs": jobs.len(), "exhaustive": true },
         "reference": {
             "runs": truth_runs,
+            "distinct": (0..jobs.len()).filter(|&j| a.twin[j] == j).count(),
             "sims": verdict.reference_sims,
             "answer_set": answer.len(),
             "settled": settled,
@@ -1828,7 +1846,7 @@ pub fn run_optimize_resumable(
         // The schedule is a function of the ORIGINAL field size, which the
         // checkpoint's round index indexes into — rebuild it the same way so
         // round N means the same thing it did before the reload.
-        let rounds = schedule_to(r_jobs_at_start.max(n_jobs), final_runs, finalists);
+        let rounds = rounds_for(strategy.as_deref(), r_jobs_at_start.max(n_jobs), final_runs, finalists);
         let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
             alive.iter()
                 .map(|&((ci, ai), _)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
@@ -1908,6 +1926,7 @@ pub fn run_optimize_resumable(
             runs: candidate_runs,
             seed: 0xDEAD_BEEF,
             best: Default::default(),
+            spread: Default::default(),
             sims: Default::default(),
             progress: Some(state),
             lead: fleet.get("lead").is_some(),
@@ -1923,7 +1942,7 @@ pub fn run_optimize_resumable(
             }
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
             let (sj, stats, report) =
-                quick::run_quick(&ctx, st, max_evals, Some(state), shard, shards, space.len());
+                quick::run_quick(&ctx, st, max_evals, Some(state), shard, shards, space.len(), finalists);
             // THE LEADER'S PAUSE: the builds its starts wait for go back to the page.
             if let Some(p) = ctx.lead.then(quick::QuickCtx::lead_pending).flatten() {
                 return p;
@@ -1992,7 +2011,7 @@ pub fn run_optimize_resumable(
             let n = jobs.len();
             state.sims_done.store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
             on_enumerated(sc.len(), n);
-            let rounds = schedule_to(n, final_runs, finalists);
+            let rounds = rounds_for(strategy.as_deref(), n, final_runs, finalists);
             let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
                 alive.iter()
                     .map(|&((ci, ai), _)| (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai))
@@ -2034,12 +2053,17 @@ pub fn run_optimize_resumable(
         .map(|(rank, ((ci, ai), s))| {
             let mut row = entry(rank, &cands[*ci], *ai, s);
             // WHICH STARTS SETTLED HERE, each from its own score and in how
-            // many changes — a quick descent's row is one start's answer.
+            // many changes — or, for a runner-up no start settled on, the
+            // answer it is nearest to and what differs.
             let c = &cands[*ci];
-            if let Some(lanes) =
-                quick_report.as_ref().and_then(|r| r.from_starts.get(&(c.ordered.clone(), c.variant, c.exilus, *ai)))
-            {
-                row["from_starts"] = lanes.clone();
+            let job = (c.ordered.clone(), c.variant, c.exilus, *ai);
+            if let Some(r) = quick_report.as_ref() {
+                if let Some(lanes) = r.from_starts.get(&job) {
+                    row["from_starts"] = lanes.clone();
+                }
+                if let Some(near) = r.near.get(&job) {
+                    row["near"] = near.clone();
+                }
             }
             row
         })
@@ -2154,6 +2178,8 @@ mod quick_descent_tests {
     /// two arcanes and eight evolution sets — a start fills under the first
     /// set and arcane, so only the SWEEP can reach the answer; with it
     /// disabled this fails, where a mods-only scope passes on the fill alone.
+    /// And THE LIST: its ten rows are the reference's ten distinct best builds,
+    /// which the answers alone — one per start — are not.
     #[test]
     fn the_quick_descent_lands_in_the_answer_set() {
         let ids = ["primed_point_blank", "hells_chamber", "primed_ravage", "blunderbuss",
@@ -2170,7 +2196,7 @@ mod quick_descent_tests {
             },
             "build_size": 8, "build_min": 8,
             "enemy": "thrax_centurion", "level": 9999, "steel_path": true,
-            "duration": 30.0, "runs": 40, "finalists": 3,
+            "duration": 30.0, "runs": 40, "finalists": 10,
             "strategy": "quick",
         });
         let out = grade_optimize(&req, 40, 20_000, 0);
@@ -2186,6 +2212,7 @@ mod quick_descent_tests {
             s["regret"],
             out["reference"]["answer_set"]
         );
+        assert_eq!(s["recall"], json!(1.0), "the top ten are not the reference's: {s}");
     }
 }
 
@@ -2838,10 +2865,11 @@ mod lower_ranks {
 mod whole_scope_tests {
     use super::*;
 
-    /// A QUICK REQUEST WITH NO SCOPE searches every card: one row per start,
-    /// each naming the start it came from.
+    /// A QUICK REQUEST WITH NO SCOPE searches every card and answers with the
+    /// N rows it asked for, from ONE start: the start's answer names the start,
+    /// and every other row names that answer and what differs from it.
     #[test]
-    fn a_quick_request_without_a_scope_answers_each_start() {
+    fn a_quick_request_answers_with_the_n_it_asked_for() {
         let blank = json!({ "slots": [], "evolutions": [], "arcane": [], "fixed": [] });
         let req = json!({
             "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
@@ -2854,9 +2882,15 @@ mod whole_scope_tests {
         eprintln!("{:?} {}", t.elapsed(), out["results"][0]);
         assert_eq!(out["ok"], json!(true), "{out}");
         let rows = out["results"].as_array().unwrap();
-        assert_eq!(rows.len(), 1, "{out}");
-        assert_eq!(rows[0]["from_starts"][0]["start"], json!(0), "{out}");
-        assert_eq!(rows[0]["mods"].as_array().map(Vec::len), Some(8), "{out}");
+        assert_eq!(rows.len(), 4, "{out}");
+        let answers: Vec<&Value> = rows.iter().filter(|r| r.get("from_starts").is_some()).collect();
+        assert_eq!(answers.len(), 1, "one start, one answer: {out}");
+        assert_eq!(answers[0]["from_starts"][0]["start"], json!(0), "{out}");
+        for r in rows.iter().filter(|r| r.get("from_starts").is_none()) {
+            assert_eq!(r["near"]["starts"], json!([0]), "a runner-up names the answer it is near: {r}");
+            assert!(!r["near"]["changes"].as_array().unwrap().is_empty(), "{r}");
+        }
+        assert!(rows.iter().all(|r| r["mods"].as_array().map(Vec::len) == Some(8)), "every row is a whole build: {out}");
     }
     /// THE FLEET IS ONE SEARCH. A leader that pauses its starts and hands each
     /// batch to three workers lands on exactly the answers one process reaches
@@ -2893,7 +2927,7 @@ mod whole_scope_tests {
                 .collect();
         };
         let rows = |v: &Value| -> Vec<Value> {
-            v["results"].as_array().unwrap().iter().map(|r| json!([r["mods"], r["arcane"], r["evolutions"], r["from_starts"]])).collect()
+            v["results"].as_array().unwrap().iter().map(|r| json!([r["mods"], r["arcane"], r["evolutions"], r["from_starts"], r["near"]])).collect()
         };
         assert!(steps > 1, "the leader paused {steps} times");
         assert_eq!(rows(&led), rows(&alone), "after {steps} steps");

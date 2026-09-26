@@ -52,6 +52,10 @@ pub struct Truth {
     pub est: Vec<Estimate>,
     /// Job indices, best mean first.
     pub order: Vec<usize>,
+    /// Per job, one job standing for its TWIN group: jobs that are one build
+    /// to the fight — a card or an evolution the engine does not read, swapped.
+    /// Each job is its own until [`Truth::merge_twins`] says otherwise.
+    pub twin: Vec<usize>,
 }
 
 impl Truth {
@@ -73,7 +77,42 @@ impl Truth {
         let mut order: Vec<usize> = (0..est.len()).collect();
         // Ties break on index so the order is a strict function of the input.
         order.sort_by(|&a, &b| est[b].mean.total_cmp(&est[a].mean).then(a.cmp(&b)));
-        Truth { runs, est, order }
+        let twin = (0..est.len()).collect();
+        Truth { runs, est, order, twin }
+    }
+
+    /// Group the jobs that are ONE BUILD TO THE FIGHT on one paired stream
+    /// ([`crate::quick::one_build`], the list's own rule). The flat measurement
+    /// gives every job its own seed, so two copies of one build rank apart by
+    /// noise and a top `k` counts one build twice.
+    pub fn merge_twins(&mut self, paired: &[Summary]) {
+        let score = |j: usize| Some((paired[j].mean_kill_progress, paired[j].mean_effective_damage));
+        let mut by: Vec<usize> = (0..paired.len()).collect();
+        by.sort_by(|&a, &b| {
+            let (sa, sb) = (score(a).unwrap_or_default(), score(b).unwrap_or_default());
+            sa.0.total_cmp(&sb.0).then(sa.1.total_cmp(&sb.1)).then(a.cmp(&b))
+        });
+        self.twin = (0..paired.len()).collect();
+        for w in 1..by.len() {
+            if crate::quick::one_build(score(by[w - 1]), score(by[w])) {
+                self.twin[by[w]] = self.twin[by[w - 1]];
+            }
+        }
+    }
+
+    /// The first `k` distinct builds of a ranking, as twin groups.
+    fn distinct(&self, ranking: &[usize], k: usize) -> Vec<usize> {
+        let mut seen = Vec::new();
+        for &j in ranking {
+            let g = self.twin[j];
+            if !seen.contains(&g) {
+                seen.push(g);
+                if seen.len() == k {
+                    break;
+                }
+            }
+        }
+        seen
     }
 
     pub fn best(&self) -> usize {
@@ -127,7 +166,8 @@ pub struct Verdict {
     /// The pass/fail: is the winner inside the reference's answer set?
     pub within_noise: bool,
     /// Fraction of the reference's top `k` the strategy's own top `k` contains
-    /// — a strategy can find the winner and still be blind to the field.
+    /// — a strategy can find the winner and still be blind to the field. Both
+    /// sides count DISTINCT builds ([`Truth::twin`]).
     pub recall: f64,
     /// Monte-Carlo runs the strategy spent to get there, against the flat
     /// reference's own cost. Accuracy is only interesting next to its price.
@@ -140,9 +180,9 @@ pub fn judge(truth: &Truth, leaderboard: &[usize], k: usize, sims: u64) -> Verdi
     let winner = *leaderboard.first().expect("a strategy returns at least one build");
     let answer: std::collections::HashSet<usize> =
         truth.indistinguishable(3.0).into_iter().collect();
-    let k = k.min(truth.order.len()).max(1);
-    let top: std::collections::HashSet<usize> = truth.order[..k].iter().copied().collect();
-    let hits = leaderboard.iter().take(k).filter(|j| top.contains(j)).count();
+    let top = truth.distinct(&truth.order, k);
+    let k = top.len().max(1);
+    let hits = truth.distinct(leaderboard, k).iter().filter(|g| top.contains(g)).count();
     Verdict {
         rank: truth.rank_of(winner),
         regret: truth.regret(winner),

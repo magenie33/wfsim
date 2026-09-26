@@ -128,8 +128,8 @@ fn main() {
 
     let (scope, refr, search) = (&out["scope"], &out["reference"], &out["search"]);
     println!(
-        "[scope] {} builds x arcanes = {} jobs, exhaustive",
-        scope["builds"], scope["jobs"]
+        "[scope] {} builds x arcanes = {} jobs ({} distinct to the fight), exhaustive",
+        scope["builds"], scope["jobs"], refr["distinct"]
     );
     println!(
         "[reference] {} runs each = {} sims | answer set {} builds | settled across seeds: {} | top-{} overlap {:.2}",
