@@ -140,9 +140,10 @@ build that never produced it is the one lie this surface cannot tell.
 
 **A search that blocks.** A search is minutes long, so `optimizer.search.start`
 returns at once and the caller polls `optimizer.search.read`, which reports
-progress while it runs and the ranking once it is done; `optimizer.search.stop`
-keeps what was ranked. Its SCOPE is not on the door yet — a search runs the
-scope the reader set.
+progress while it runs and the ranking once it is done — each row with the
+starts that settled on it or the answer it is near — and
+`optimizer.search.stop` keeps what was ranked. What a search may use and how
+many builds it answers with are set through `optimizer.plan.*`.
 
 **Anything that leaves the browser.** Nothing here shares a build, submits to
 the board or opens a link. Those are outward actions and they want a reader's

@@ -749,10 +749,10 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.search.read",
     query: true,
-    what: "Read the build search: while it runs, how far along it is; once done, the ranked builds.",
+    what: "Read the build search: while it runs, how far along it is; once done, the ranked builds — each with the starts that settled on it (`from_starts`), or the answer it is nearest to and what differs (`near`).",
     anchor: "#opt-results",
     needs_weapon: true,
-    args: { limit: { kind: "number", min: 1, max: 20, what: "ranked builds to return, default 5" } },
+    args: { limit: { kind: "number", min: 1, max: 100, what: "ranked builds to return, default 5" } },
     run({ limit = 5 }) {
       if (optJobId != null) {
         const st = optLastStatus || {};

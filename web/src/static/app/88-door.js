@@ -307,10 +307,24 @@ const AGENT_UNDO = { build: BUILDS, scenario: SCENARIOS, search: OPT_DOMAIN, riv
 const agentBarArg = { kind: "string", required: true, what: "which bar", enum: () => Object.keys(AGENT_BARS) };
 
 /// A SEARCH'S ANSWER as a caller reads it: the ranking the page draws, with
-/// mods named. The page re-measures each row in the simulator after drawing it,
-/// so a caller that wants the number to quote saves the row and runs the fight.
+/// mods named, and where each row came from — the starts that settled on it, or
+/// the answer it is nearest to and what differs, the row's own line on the page.
+/// The page re-measures each row in the simulator after drawing it, so a caller
+/// that wants the number to quote saves the row and runs the fight.
 function agentSearchResults(limit) {
   const r = optLast;
+  const named = (id) => {
+    const [card, rank] = String(id).split("@");
+    return ((modById(card) || { name: card }).name) + (rank != null ? ` R${rank}` : "");
+  };
+  const origin = (res) => {
+    if (res.from_starts) return { from_starts: res.from_starts.map((l) => l.start + 1) };
+    if (!res.near) return {};
+    return { near: { answer_of_starts: res.near.starts.map((s) => s + 1),
+      changes: (res.near.changes || []).map((c) => ({ axis: c.axis,
+        from: c.from == null || c.axis !== "mod" && c.axis !== "exilus" ? c.from : named(c.from),
+        to: c.to == null || c.axis !== "mod" && c.axis !== "exilus" ? c.to : named(c.to) })) } };
+  };
   const rows = (r.results || []).slice(0, limit).map((res) => ({
     rank: res.rank,
     kpm: Number(sig2(kpm(res.kill_progress ?? res.kills, r.duration))),
@@ -322,12 +336,13 @@ function agentSearchResults(limit) {
     ...(res.evolutions ? { evolutions: res.evolutions } : {}),
     ...(res.mode ? { mode: res.mode } : {}),
     ...(res.valence ? { valence: res.valence } : {}),
+    ...origin(res),
   }));
   return {
     phase: r.cancelled ? "cancelled" : "done",
     duration: r.duration, ranked_by: "kills per minute",
     ...(r.strategy === "descent"
-      ? { covered: `descent from ${r.starts || 0} starts${r.cut ? ", cut by the time budget" : ", every start settled"} — not a proven best` }
+      ? { covered: `the best ${r.finalists || rows.length} of every build a descent from ${r.starts || 0} starts scored${r.cut ? ", cut by the time budget" : ", every start settled"} — not a proven best` }
       : r.exhaustive ? { covered: "every candidate" } : r.coverage != null ? { covered: `${Math.round(r.coverage * 1000) / 10}% of ${r.space} candidates, sampled uniformly` } : {}),
     results: rows,
     note: "search numbers; the simulator re-measures a saved row",

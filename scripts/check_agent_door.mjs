@@ -479,10 +479,11 @@ check("aiming at a point, and back to one body", arena.aim.ok && arena.aimed && 
 const scope = await evaluate(`(async () => {
   const out = {};
   await window.wfsim.do("shell.module.open", { module: "optimizer" });
-  out.set = await window.wfsim.do("optimizer.plan.set", { candidate_runs: 1 });
+  out.set = await window.wfsim.do("optimizer.plan.set", { candidate_runs: 1, finalists: 3 });
   out.read = await window.wfsim.do("optimizer.plan.read", {});
   out.onScreen = document.getElementById("opt-cand-runs").value === "1";
-  await window.wfsim.do("optimizer.plan.set", { candidate_runs: 10 });
+  out.finalistsOnScreen = document.getElementById("opt-finalists").value === "3";
+  await window.wfsim.do("optimizer.plan.set", { candidate_runs: 10, finalists: 10 });
   await window.wfsim.do("shell.module.open", { module: "builder" });
   return out;
 })()`, { awaitPromise: true });
@@ -490,6 +491,8 @@ const scope = await evaluate(`(async () => {
 check("the search takes its runs per candidate, and reads them back",
   scope.set.ok && scope.read.candidate_runs === 1, JSON.stringify(scope.read).slice(0, 300));
 check("...the run bar moved with it", scope.onScreen === true);
+check("the search takes how many builds it answers with, and reads it back",
+  scope.read.finalists === 3 && scope.finalistsOnScreen === true, JSON.stringify(scope.read.finalists));
 check("...and it reads its starts as builds", Array.isArray(scope.read.starts), JSON.stringify(scope.read.starts).slice(0, 200));
 
 // ---- the search: started, watched, stopped -----------------------------------
