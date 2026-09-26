@@ -265,7 +265,19 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
     // THE POOL IS THE WEAPON'S, whatever entry was named — `weapon_of`. A form
     // states no `mod_pools` of its own, and an empty pool is indistinguishable
     // from a weapon that refuses everything.
-    pool_union(&weapon.mod_pools)
+    // A MOD MAY NAME A WEAPON KIND beyond the pools that carry it: a sentinel
+    // weapon takes the PRIMARY Vigilante set without drawing the Primary pool
+    // (`ModDef::includes_weapon`). A weapon with NO pool refuses everything.
+    let mut pool = pool_union(&weapon.mod_pools);
+    if weapon.class.contains("sentinel") && !weapon.mod_pools.is_empty() {
+        for m in classes().into_iter().flat_map(class_pool) {
+            if m.includes_weapon.contains(&"sentinel_weapon") && !pool.iter().any(|x| x.id == m.id) {
+                pool.push(m);
+            }
+        }
+        pool.sort_by_key(|m| m.id);
+    }
+    pool
         .into_iter()
         .filter(|m| match m.requires_weapon {
             None => true,

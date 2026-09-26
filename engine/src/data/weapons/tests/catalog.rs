@@ -816,6 +816,7 @@ fn an_archgun_charge_answers_to_charge_rate_and_its_interval_to_fire_rate() {
             family: None,
             requires_weapon: None,
             excludes_weapon: Vec::new(),
+            includes_weapon: Vec::new(),
             set: None,
             requires: None,
             disables: Vec::new(),

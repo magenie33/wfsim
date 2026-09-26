@@ -513,6 +513,7 @@ fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         family: None,
         requires_weapon: None,
         excludes_weapon: Vec::new(),
+        includes_weapon: Vec::new(),
         set: None,
         requires: None,
         disables: Vec::new(),
@@ -1758,7 +1759,7 @@ fn each_vigilante_member_adds_its_share_of_the_set_bonus() {
     // to be the union the Torid actually sees.
     let pool = crate::data::mods::pool_union(&["primary".into(), "rifle".into()]);
     let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
-    let base = WeaponBase::from_data("verglas_prime", true, &[]);
+    let base = WeaponBase::from_data("torid", true, &[]);
     let chance = |mods: &[&ModDef]| resolve(&base, mods, StackPolicy::BaseOnly).crit_tier_upgrade_chance;
 
     assert_eq!(chance(&[]), 0.0);
@@ -1778,6 +1779,11 @@ fn each_vigilante_member_adds_its_share_of_the_set_bonus() {
     assert!(
         (chance(&[pick("vigilante_armaments"), pick("serration")]) - 0.05).abs() < 1e-12
     );
+    // "…from Primary Weapons": a sentinel weapon wears the cards, and the set
+    // pays it nothing.
+    let sentinel = WeaponBase::from_data("verglas_prime", true, &[]);
+    let armaments = [pick("vigilante_armaments")];
+    assert_eq!(resolve(&sentinel, &armaments, StackPolicy::BaseOnly).crit_tier_upgrade_chance, 0.0);
 }
 
 /// …AND THE GLADIATOR SET PAYS INTO BLOOD RUSH'S BRACKET, per piece.

@@ -1090,6 +1090,12 @@ pub struct ModDef {
     /// An Amalgam mod's second half buffs the WARFRAME, which is why the
     /// weapon a companion carries cannot hold one.
     pub excludes_weapon: Vec<&'static str>,
+    /// Weapon KINDS this mod also goes on beyond the pools that carry it — the
+    /// mirror of `excludes_weapon`. The Vigilante set is a PRIMARY card, and a
+    /// sentinel weapon draws Rifle, Shotgun or Pistol mods and no Primary pool,
+    /// yet takes it (wiki `Vigilante_Supplies`: "when only equipped on a
+    /// sentinel's weapon").
+    pub includes_weapon: Vec<&'static str>,
     /// The MOD SET this mod belongs to (`data/mod_sets/<id>.yaml`). A set
     /// bonus is granted by the group, not by any member, and it scales per
     /// equipped member with no threshold — see [`crate::data::mod_sets`].

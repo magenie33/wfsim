@@ -98,6 +98,17 @@ fn every_amalgam_mod_declares_it_cannot_go_on_a_sentinel_weapon() {
     // affect Ammo Maximum have no effect on Robotic weapon because they
     // already have unlimited ammo reserves."
     assert!(!ids.contains(&"ammo_drum"), "an infinite reserve takes no ammo mod: {ids:?}");
+    // THE VIGILANTE SET GOES ON EVERY POOLED SENTINEL WEAPON, rifle, shotgun
+    // and pistol alike (see notes: vigilante_on_sentinel_weapons), and the rest
+    // of the Primary pool does not; a weapon with no pool still takes nothing.
+    for w in ["verglas_prime", "sweeper_prime", "burst_laser_prime"] {
+        let ids: Vec<&str> = pool_for_weapon(w).iter().map(|m| m.id).collect();
+        for v in ["vigilante_armaments", "vigilante_fervor", "vigilante_offense", "vigilante_supplies"] {
+            assert!(ids.contains(&v), "{w} takes {v}");
+        }
+        assert!(!ids.contains(&"hunter_munitions"), "{w} draws no Primary pool");
+    }
+    assert!(pool_for_weapon("deconstructor").is_empty(), "no pool, no mods");
     // The Torid keeps all three — it is neither a sentinel nor ammo-less.
     let torid: Vec<&str> = pool_for_weapon("torid").iter().map(|m| m.id).collect();
     for id in ["serration", "amalgam_serration", "ammo_drum"] {

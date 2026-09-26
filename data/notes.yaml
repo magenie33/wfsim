@@ -972,6 +972,13 @@ notes:
     note requires is an ENERGY DRAIN over time, which is not modelled either;
     the control's own wording carries that, since ticking it for a Desecrate
     would be wrong by the card's own definition.
+  vigilante_on_sentinel_weapons: |
+    ON A SENTINEL WEAPON TOO, which draws Rifle, Shotgun or Pistol mods and no
+    Primary pool. VERBATIM (wiki `Vigilante_Supplies`): "Does not convert ammo
+    for a Warframe's primary weapon when only equipped on a sentinel's weapon."
+    The four Vigilante cards share one compat tag, so the set goes together.
+    The pool's other PRIMARY cards (Hunter, Aero Periphery, the beam mods) are
+    not claimed: nothing cited puts them there.
   sentinel_weapon_own_equipment: |
     SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
     companion. NO exilus slot and NO arcane; both follow from `class` containing

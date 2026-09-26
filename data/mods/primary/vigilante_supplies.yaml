@@ -13,6 +13,9 @@ description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
 # effect is unmodeled and the mod contributes nothing on its own - its whole
 # value here is being a Vigilante member in the exilus slot, where it costs a
 # build nothing to carry.
+# see notes: vigilante_on_sentinel_weapons
+includes_weapon: [sentinel_weapon]
+
 effects:
   # see notes: 2d_groundwork_real_stat
   - kind: ammo_conversion

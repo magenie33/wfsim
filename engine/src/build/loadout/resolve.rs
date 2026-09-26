@@ -1240,8 +1240,12 @@ pub fn resolve_for(
     // does not have to be complete to be worth carrying (wiki: 5% per
     // Vigilante mod, 30% at six). A mod cannot be equipped twice, so counting
     // members is just counting the mods that name the set.
+    // THE BONUS IS A PRIMARY'S: "chance to enhance Critical Hits from Primary
+    // Weapons" (wiki `Vigilante_Set`). A sentinel weapon wears the cards and is
+    // not one, so the cards pay their own stats there and the set pays nothing.
     let crit_tier_upgrade_chance: f64 = mods
         .iter()
+        .filter(|_| !base.class.contains("sentinel"))
         .filter_map(|m| m.set)
         .filter_map(crate::data::mod_sets::set_def)
         .filter(|s| s.kind == crate::data::mod_sets::SetBonusKind::CritTierUpgrade)
