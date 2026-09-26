@@ -3,11 +3,12 @@ name: Multron
 # see notes: robotic_companion_weapon_moa
 slot: sentinel
 class: sentinel_weapon
+weapon_category: primary
 form: base
 default_form: true
 
 # see notes: rifle_mods_quoted_rather
-mod_pools: [rifle]
+mod_pools: [primary, rifle]
 mastery_rank: 3
 max_rank: 30
 

@@ -38,10 +38,6 @@ pub(super) struct ModFile {
     /// `family`; this one names weapon KINDS.
     #[serde(default)]
     pub(super) excludes_weapon: Vec<String>,
-    /// Weapon KINDS this mod also goes on beyond its pool ("sentinel_weapon")
-    /// — see [`crate::model::ModDef::includes_weapon`].
-    #[serde(default)]
-    pub(super) includes_weapon: Vec<String>,
     /// Weapon trait required for the mod to apply (calc-layer gate).
     #[serde(default)]
     pub(super) requires: Option<String>,
@@ -716,11 +712,6 @@ pub(super) fn to_moddef_at(mut mf: ModFile, rank: Option<u32>) -> ModDef {
         ),
         excludes_weapon: mf
             .excludes_weapon
-            .into_iter()
-            .map(|s| &*Box::leak(s.into_boxed_str()))
-            .collect(),
-        includes_weapon: mf
-            .includes_weapon
             .into_iter()
             .map(|s| &*Box::leak(s.into_boxed_str()))
             .collect(),

@@ -3,11 +3,12 @@ name: Prime Laser Rifle
 # see notes: sentinel_weapon_own_equipment
 slot: sentinel
 class: sentinel_weapon
+weapon_category: primary
 form: base
 default_form: true
 
 # see notes: rifle_mods_pool_per
-mod_pools: [rifle]
+mod_pools: [primary, rifle]
 mastery_rank: 0
 max_rank: 30
 

@@ -8,9 +8,6 @@ internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/PrimaryVigilanteFervorMod
 description: "+X% Fire Rate (x2 for Bows)"
 
 # see notes: x2_bows_clause_literal
-# see notes: vigilante_on_sentinel_weapons
-includes_weapon: [sentinel_weapon]
-
 effects:
   - kind: fire_rate_bonus
     rank0: 0.075

@@ -816,7 +816,6 @@ fn an_archgun_charge_answers_to_charge_rate_and_its_interval_to_fire_rate() {
             family: None,
             requires_weapon: None,
             excludes_weapon: Vec::new(),
-            includes_weapon: Vec::new(),
             set: None,
             requires: None,
             disables: Vec::new(),
@@ -1486,9 +1485,8 @@ fn an_evolutions_flat_damage_stays_out_of_the_co_term_by_default() {
 /// a primary weapon with no code change, and its mod pools and arcane slot
 /// follow from `mod_pools` and `slot`.
 /// A weapon's pool is the union of the pools it draws. The Torid sees the
-/// primary-wide mods AND the rifle class pool; Verglas Prime, a sentinel
-/// weapon, sees only the rifle pool — it is not a Primary weapon, so it
-/// does not claim mods DE tags PRIMARY.
+/// primary-wide mods AND the rifle class pool, and so does Verglas Prime: a
+/// sentinel weapon of the primary kind (`weapon_category`).
 /// A compat tag is not the whole restriction. Sinister Reach and
 /// Combustion Beam are tagged PRIMARY and still cannot go on the Torid
 /// — they need a CONTINUOUS weapon, and the Torid is a
@@ -1512,14 +1510,17 @@ fn a_beam_only_mod_needs_a_continuous_weapon_to_be_offered_at_all() {
     // The rest of the primary pool still reaches it.
     assert!(torid.iter().any(|m| m.id == "hunter_munitions"));
     assert!(torid.iter().any(|m| m.id == "vigilante_armaments"));
-    // Verglas Prime IS continuous (wiki: Continuous Weapons category), so
-    // the gate would pass — it just draws the rifle pool, where these are
-    // not, which is a separate question this test does not decide.
+    // Verglas Prime IS continuous (wiki: Continuous Weapons category) and a
+    // primary-kind weapon, so the gate that refuses the Torid lets Combustion
+    // Beam in. Sinister Reach stays out on its own `exclusive_to` list.
     assert_eq!(
         spec("verglas_prime").unwrap().attack.trigger,
         "held",
         "continuous, per the wiki category"
     );
+    let verglas = pool_for_weapon("verglas_prime");
+    assert!(verglas.iter().any(|m| m.id == "combustion_beam"), "Combustion Beam goes on the Verglas Prime");
+    assert!(!verglas.iter().any(|m| m.id == "sinister_reach"), "not on Sinister Reach's list");
 }
 
 #[test]
@@ -1531,9 +1532,9 @@ fn a_weapons_pool_is_the_union_of_the_pools_it_draws() {
     let primary = class_pool("primary").len();
     assert!(primary > 0, "data/mods/primary/ exists");
     assert_eq!(torid.len(), rifle + primary, "union of both, no overlap");
-    assert_eq!(verglas.len(), rifle, "sentinel: rifle only");
+    assert_eq!(verglas.len(), rifle + primary, "a primary-kind sentinel weapon: both");
     assert!(torid.iter().any(|m| m.id == "vigilante_armaments"));
-    assert!(!verglas.iter().any(|m| m.id == "vigilante_armaments"));
+    assert!(verglas.iter().any(|m| m.id == "vigilante_armaments"));
     // A mod in two pools would still appear once.
     let mut ids: Vec<&str> = torid.iter().map(|m| m.id).collect();
     let n = ids.len();
@@ -1691,4 +1692,22 @@ fn the_one_x_heads_are_the_ones_the_wiki_names() {
     ];
     want.sort_unstable();
     assert_eq!(have, want);
+}
+
+/// A SENTINEL WEAPON CARRIES TWO TAGS — where it sits (`slot: sentinel`) and
+/// what kind of weapon it is (`weapon_category`) — and its pool follows the
+/// second: a primary-kind one draws the Primary pool, and no other kind does.
+/// Only a sentinel weapon states the category; everyone else's is its slot.
+#[test]
+fn a_sentinel_weapon_is_also_a_primary_secondary_or_melee_weapon() {
+    for w in all().iter().filter(|w| w.inherits.is_none()) {
+        let sentinel = w.class.contains("sentinel");
+        assert_eq!(w.weapon_category.is_some(), sentinel, "{}: category stated iff sentinel", w.id);
+        let cat = w.category();
+        assert!(["primary", "secondary", "melee", "archgun"].contains(&cat), "{}: {cat}", w.id);
+        if sentinel {
+            let primary_pool = w.mod_pools.iter().any(|p| p == "primary");
+            assert_eq!(primary_pool, cat == "primary", "{}: {cat} kind, pools {:?}", w.id, w.mod_pools);
+        }
+    }
 }

@@ -178,6 +178,13 @@ pub struct WeaponSpec {
     pub accuracy: Option<f64>,
     pub slot: String,
     pub class: String,
+    /// WHICH OF THE THREE a sentinel weapon is — primary, secondary or melee.
+    /// A sentinel weapon carries TWO tags: `slot: sentinel` says where it sits,
+    /// this says what kind of weapon it is, and its mod pools follow the second
+    /// (a primary-kind one draws the Primary pool, Vigilante set included).
+    /// Stated on sentinel weapons only; read through [`WeaponSpec::category`].
+    #[serde(default)]
+    pub weapon_category: Option<String>,
     /// Which DEPLOYMENT the fields on this entry describe (Arch-Guns:
     /// "atmosphere"). `None` = the weapon has only one.
     #[serde(default)]

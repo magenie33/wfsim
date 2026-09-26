@@ -940,12 +940,12 @@ notes:
     It rides on the fight's Tenno for the same reason an aura does — it is the
     WARFRAME's, not the weapon's.
   rifle_mods_pool_per: |
-    RIFLE MODS. The pool is PER WEAPON on this class and it is the field most
-    worth getting right: a sentinel weapon is not a Primary, DE's compat tag is
-    SentinelWeapons rather than LongGuns, and the page's own "Mod Pool" row is
-    what decides. This one says Rifle. The `primary` pool (Hunter Munitions,
-    Vigilante) is NOT claimed — unsourced either way, and omitting compatibility
-    we cannot cite beats inventing it (the rule verglas_prime.yaml set).
+    RIFLE MODS, and the PRIMARY pool with them. The pool is PER WEAPON on this
+    class and the page's own "Mod Pool" row says Rifle; a sentinel weapon is
+    also a primary-kind weapon (`weapon_category`), so it draws what fits any
+    primary — the Vigilante set among them, which wiki `Vigilante_Supplies`
+    places on "a sentinel's weapon". DE's `SENTINEL_WEAPON` incompatibility
+    tag (the Amalgam cards) is what keeps the rest off.
   rifle_mods_quoted_rather: |
     RIFLE MODS, and this one is quoted rather than read off a row: the page's own
     opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
@@ -972,16 +972,10 @@ notes:
     note requires is an ENERGY DRAIN over time, which is not modelled either;
     the control's own wording carries that, since ticking it for a Desecrate
     would be wrong by the card's own definition.
-  vigilante_on_sentinel_weapons: |
-    ON A SENTINEL WEAPON TOO, which draws Rifle, Shotgun or Pistol mods and no
-    Primary pool. VERBATIM (wiki `Vigilante_Supplies`): "Does not convert ammo
-    for a Warframe's primary weapon when only equipped on a sentinel's weapon."
-    The four Vigilante cards share one compat tag, so the set goes together.
-    The pool's other PRIMARY cards (Hunter, Aero Periphery, the beam mods) are
-    not claimed: nothing cited puts them there.
   sentinel_weapon_own_equipment: |
-    SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
-    companion. NO exilus slot and NO arcane; both follow from `class` containing
+    SENTINEL WEAPON — its own equipment slot, on the companion rather than in the
+    Warframe's primary slot, whatever kind of weapon it is (`weapon_category`).
+    NO exilus slot and NO arcane; both follow from `class` containing
     "sentinel", so their absence here is a fact rather than an omission.
   sentinel_weapons_draw_from: |
     Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup

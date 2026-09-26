@@ -3,6 +3,7 @@ name: Sweeper
 # see notes: sentinel_weapon_own_equipment
 slot: sentinel
 class: sentinel_weapon
+weapon_category: primary
 form: base
 default_form: true
 
@@ -10,7 +11,7 @@ default_form: true
 # class — the page's "Mod Pool" row says Shotgun and DE's internal name is
 # `SentShotgun`. It is a shotgun in every sense that matters here: six pellets
 # a shell, and Hell's Chamber rather than Split Chamber.
-mod_pools: [shotgun]
+mod_pools: [primary, shotgun]
 mastery_rank: 0
 max_rank: 30
 

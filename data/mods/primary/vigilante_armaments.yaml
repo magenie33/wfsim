@@ -7,9 +7,6 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/PrimaryVigilanteArmamentsMod
 description: "+X% Multishot"
 
-# see notes: vigilante_on_sentinel_weapons
-includes_weapon: [sentinel_weapon]
-
 effects:
   - kind: multishot_bonus
     rank0: 0.10

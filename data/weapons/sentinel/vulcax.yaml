@@ -3,13 +3,14 @@ name: Vulcax
 # see notes: robotic_companion_weapon_moa
 slot: sentinel
 class: sentinel_weapon
+weapon_category: primary
 # A CHARGE TRIGGER IS THE CHARGED FORM, and nothing else is (the engine's own
 # form guard). This weapon has only the one.
 form: charged
 default_form: true
 
 # see notes: rifle_mods_quoted_rather
-mod_pools: [rifle]
+mod_pools: [primary, rifle]
 mastery_rank: 14
 max_rank: 30
 

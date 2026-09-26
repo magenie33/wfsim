@@ -58,8 +58,8 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-pub(super) const INHERITED: [&str; 27] = [
-    "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
+pub(super) const INHERITED: [&str; 28] = [
+    "slot", "class", "weapon_category", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
     "summoned_by",
     "wielders", "wielder_names",
     "disposition", "polarities", "exilus_polarity", "stance_polarity", "riven_family",
@@ -275,6 +275,12 @@ pub fn roster() -> impl Iterator<Item = &'static WeaponSpec> {
 }
 
 impl WeaponSpec {
+    /// Primary, secondary or melee: the slot itself on a Warframe's weapon, and
+    /// the stated `weapon_category` on a sentinel's.
+    pub fn category(&self) -> &str {
+        self.weapon_category.as_deref().unwrap_or(&self.slot)
+    }
+
     pub fn form_kind(&self) -> FormKind {
         FormKind::parse(&self.form)
     }

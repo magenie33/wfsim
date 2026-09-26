@@ -3,6 +3,7 @@ name: Burst Laser Prime
 # see notes: sentinel_weapon_own_equipment
 slot: sentinel
 class: sentinel_weapon
+weapon_category: secondary
 form: base
 default_form: true
 

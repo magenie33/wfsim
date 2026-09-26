@@ -264,7 +264,6 @@ impl RivenSpec {
             family: Some("riven"),
             requires_weapon: None,
             excludes_weapon: Vec::new(),
-            includes_weapon: Vec::new(),
             set: None,
             requires: None,
             disables: Vec::new(),

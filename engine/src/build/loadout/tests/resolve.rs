@@ -513,7 +513,6 @@ fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         family: None,
         requires_weapon: None,
         excludes_weapon: Vec::new(),
-        includes_weapon: Vec::new(),
         set: None,
         requires: None,
         disables: Vec::new(),
@@ -1779,11 +1778,12 @@ fn each_vigilante_member_adds_its_share_of_the_set_bonus() {
     assert!(
         (chance(&[pick("vigilante_armaments"), pick("serration")]) - 0.05).abs() < 1e-12
     );
-    // "…from Primary Weapons": a sentinel weapon wears the cards, and the set
-    // pays it nothing.
+    // "…from Primary Weapons": a primary-kind SENTINEL weapon is one, and the
+    // set pays it exactly as it pays the Torid.
     let sentinel = WeaponBase::from_data("verglas_prime", true, &[]);
     let armaments = [pick("vigilante_armaments")];
-    assert_eq!(resolve(&sentinel, &armaments, StackPolicy::BaseOnly).crit_tier_upgrade_chance, 0.0);
+    let on_sentinel = resolve(&sentinel, &armaments, StackPolicy::BaseOnly).crit_tier_upgrade_chance;
+    assert!((on_sentinel - 0.05).abs() < 1e-12, "{on_sentinel}");
 }
 
 /// …AND THE GLADIATOR SET PAYS INTO BLOOD RUSH'S BRACKET, per piece.

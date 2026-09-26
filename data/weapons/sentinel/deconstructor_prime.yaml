@@ -8,17 +8,16 @@ name: Deconstructor Prime
 # with the two things it cannot do stated below.
 slot: sentinel
 class: sentinel_weapon
+weapon_category: melee
 form: base
 default_form: true
 
-# NO MOD POOL, and this is the honest answer rather than a placeholder. The
-# page says it "uses melee and thrown melee mods" — Pressure Point, Fury,
-# Whirlwind, Power Throw — and this app has no melee pool at all: it models
-# guns, and its four pools are rifle, shotgun, pistol and archgun. Putting it
-# in ANY of them would offer mods the game refuses and hide every mod it takes.
-#
-# So the entry ships unmoddable and says so. Its base numbers are real and its
-# page is a real page; what it cannot do yet is be BUILT.
+# A MELEE-KIND SENTINEL WEAPON, and NO MOD POOL yet. The page says it "uses
+# melee and thrown melee mods" — Pressure Point, Fury, Whirlwind, Power Throw —
+# and the melee pool is built for a swung weapon: stances, combo and heavy
+# attacks read a swing this thrown weapon never makes. Which of those cards pay
+# on a throw is unsorted, so the entry ships unmoddable rather than offering
+# cards that do nothing.
 mod_pools: []
 mastery_rank: 0
 max_rank: 30

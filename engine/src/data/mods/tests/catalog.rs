@@ -98,16 +98,18 @@ fn every_amalgam_mod_declares_it_cannot_go_on_a_sentinel_weapon() {
     // affect Ammo Maximum have no effect on Robotic weapon because they
     // already have unlimited ammo reserves."
     assert!(!ids.contains(&"ammo_drum"), "an infinite reserve takes no ammo mod: {ids:?}");
-    // THE VIGILANTE SET GOES ON EVERY POOLED SENTINEL WEAPON, rifle, shotgun
-    // and pistol alike (see notes: vigilante_on_sentinel_weapons), and the rest
-    // of the Primary pool does not; a weapon with no pool still takes nothing.
-    for w in ["verglas_prime", "sweeper_prime", "burst_laser_prime"] {
+    // A SENTINEL WEAPON IS ALSO A PRIMARY, SECONDARY OR MELEE WEAPON, and the
+    // second tag is what its pool follows: a primary-kind one takes what fits
+    // any primary, Vigilante set included, and a secondary-kind one does not.
+    let vigilante = ["vigilante_armaments", "vigilante_fervor", "vigilante_offense", "vigilante_supplies"];
+    for w in ["verglas_prime", "sweeper_prime"] {
         let ids: Vec<&str> = pool_for_weapon(w).iter().map(|m| m.id).collect();
-        for v in ["vigilante_armaments", "vigilante_fervor", "vigilante_offense", "vigilante_supplies"] {
-            assert!(ids.contains(&v), "{w} takes {v}");
+        for v in vigilante.iter().chain(&["hunter_munitions"]) {
+            assert!(ids.contains(v), "{w} is a primary-kind weapon and takes {v}");
         }
-        assert!(!ids.contains(&"hunter_munitions"), "{w} draws no Primary pool");
     }
+    let ids: Vec<&str> = pool_for_weapon("burst_laser_prime").iter().map(|m| m.id).collect();
+    assert!(vigilante.iter().all(|v| !ids.contains(v)), "a secondary-kind one takes no Primary card");
     assert!(pool_for_weapon("deconstructor").is_empty(), "no pool, no mods");
     // The Torid keeps all three — it is neither a sentinel nor ammo-less.
     let torid: Vec<&str> = pool_for_weapon("torid").iter().map(|m| m.id).collect();

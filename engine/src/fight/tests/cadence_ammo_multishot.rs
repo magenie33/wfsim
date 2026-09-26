@@ -655,7 +655,6 @@ fn faction_bonus_applies_only_vs_matching_target_faction() {
         family: None,
         requires_weapon: None,
         excludes_weapon: Vec::new(),
-        includes_weapon: Vec::new(),
         set: None,
         requires: None,
         disables: Vec::new(),
