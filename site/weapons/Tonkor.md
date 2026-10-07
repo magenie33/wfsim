@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.8907 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-09-29 10:06 UTC · a96c10c3c2 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.8907 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-05 14:08 UTC · 4d57cccc45 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.06580 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-09-29 09:42 UTC · a96c10c3c2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.8907 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-07 19:35 UTC · a7836d0380 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.8907 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-07 18:55 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.06580 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-07 18:47 UTC · a7836d0380 |
 
 ## Not modelled here
 

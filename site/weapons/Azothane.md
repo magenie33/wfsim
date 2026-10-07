@@ -4,18 +4,6 @@ Chinese name: 溶灵尊
 
 Two Handed Nikana · Melee · Mastery Rank 0. 170 base damage (impact 51, puncture 34, slash 85), 34% crit chance, 3x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-07
-
-A score belongs to its ruler: compare it only with scores under the same ruler.
-
-Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
-
-| Ruler | Fight | Mode | Score | Build | Measured |
-| --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 6.3485 | Volcanic Edge, Sacrificial Steel, Condition Overload, Primed Fury, Galvanized Reflex, Amalgam Organ Shatter, Focus Radon, Magnetic Rush, Dreamer's Wrath, Melee Exposure | 2026-10-05 14:38 UTC · 4d57cccc45 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 11.3857 | Volcanic Edge, Sacrificial Steel, Condition Overload, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Focus Radon, Magnetic Rush, Dreamer's Wrath, Melee Exposure | 2026-10-06 01:19 UTC · 4f892ee6e4 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy | 0.3767 | Volcanic Edge, Sacrificial Steel, Condition Overload, Primed Fury, Galvanized Reflex, Amalgam Organ Shatter, Corrupt Charge, Focus Radon, Dreamer's Wrath, Melee Exposure | 2026-10-05 14:01 UTC · 4d57cccc45 |
-
 ## Not modelled here
 
 - One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.

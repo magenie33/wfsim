@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-09-16 23:49 UTC · 79415eb9ba |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-06 07:17 UTC · 47e30f0f40 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.2877 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-09-16 23:59 UTC · 79415eb9ba |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-07 20:08 UTC · a7836d0380 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-07 19:42 UTC · 7972f35e80 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.2877 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-07 21:44 UTC · c218998e95 |
 
 ## Not modelled here
 

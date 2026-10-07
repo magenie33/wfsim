@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 17.9338 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-09-30 17:06 UTC · 1d3b5bc87a |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 51.7510 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-06 00:02 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.5596 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Creeping Bullseye, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Deadhead | 2026-09-30 16:44 UTC · 1d3b5bc87a |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 17.9338 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-07 19:02 UTC · a7836d0380 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 51.7510 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-07 19:03 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.5596 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Creeping Bullseye, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Deadhead | 2026-10-07 19:19 UTC · a7836d0380 |
 
 ## In WFSim
 

@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-09-17 16:50 UTC · 53bd9fe654 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-05 15:15 UTC · 4d57cccc45 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.8318 | Convulsion, Pathogen Rounds, Frostbite, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Eject Magazine, Secondary Deadhead | 2026-09-17 16:58 UTC · 53bd9fe654 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-07 18:14 UTC · 7972f35e80 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-07 18:56 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.8318 | Convulsion, Pathogen Rounds, Frostbite, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Eject Magazine, Secondary Deadhead | 2026-10-07 19:18 UTC · a7836d0380 |
 
 ## In WFSim
 

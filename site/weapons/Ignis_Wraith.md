@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.4080 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-05 18:20 UTC · 40071ee3b3 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.3716 | Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Shred, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-06 02:56 UTC · 38faffec31 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.9990 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-05 17:18 UTC · 052c2ed8c6 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.4080 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-07 17:53 UTC · 7972f35e80 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.3716 | Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Shred, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-07 19:26 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.9990 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-07 19:22 UTC · a7836d0380 |
 
 ## Not modelled here
 

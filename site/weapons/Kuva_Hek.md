@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 10.2223 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-05 17:12 UTC · 052c2ed8c6 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 40.6706 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-05 21:54 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.7780 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-05 17:22 UTC · 052c2ed8c6 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 10.2223 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-07 19:12 UTC · a7836d0380 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 40.6706 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-07 19:28 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.7780 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-07 18:50 UTC · a7836d0380 |
 
 ## In WFSim
 

@@ -13,8 +13,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 7.3125 | Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Seeker, Primed Target Cracker, Galvanized Shot, Semi-Pistol Cannonade, Magnetic Might, Secondary Fortifier | 2026-10-07 16:47 UTC · 65db03e106 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 40.8141 | Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Seeker, Primed Target Cracker, Galvanized Shot, Semi-Pistol Cannonade, Magnetic Might, Secondary Fortifier | 2026-10-05 19:13 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 0.6599 | Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Seeker, Primed Target Cracker, Galvanized Shot, Semi-Pistol Cannonade, Magnetic Might, Secondary Fortifier | 2026-10-03 18:31 UTC · ea8f24ebe2 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 40.8141 | Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Seeker, Primed Target Cracker, Galvanized Shot, Semi-Pistol Cannonade, Magnetic Might, Secondary Fortifier | 2026-10-07 19:33 UTC · 7972f35e80 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 0.6599 | Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Seeker, Primed Target Cracker, Galvanized Shot, Semi-Pistol Cannonade, Magnetic Might, Secondary Fortifier | 2026-10-07 18:50 UTC · a7836d0380 |
 
 ## In WFSim
 

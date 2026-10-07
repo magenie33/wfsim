@@ -13,8 +13,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3136 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-07 17:25 UTC · 65db03e106 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3146 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-05 21:48 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.01783 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-09-29 16:44 UTC · 33e2ff32ed |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3146 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-07 19:30 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.01783 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-07 18:50 UTC · a7836d0380 |
 
 ## In WFSim
 

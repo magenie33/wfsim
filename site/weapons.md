@@ -469,8 +469,8 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Aegrit](https://wfsim.app/weapons/Aegrit.md): Pistol · Secondary · Mastery Rank 11
 - [Afuris](https://wfsim.app/weapons/Afuris.md): Dual Pistols · Secondary · Mastery Rank 4
 - [Afuris Prime](https://wfsim.app/weapons/Afuris_Prime.md): Dual Pistols · Secondary · Mastery Rank 12
-- [Akarius](https://wfsim.app/weapons/Akarius.md): Pistol · Secondary · Mastery Rank 8
-- [Akarius Prime](https://wfsim.app/weapons/Akarius_Prime.md): Pistol · Secondary · Mastery Rank 14
+- [Akarius](https://wfsim.app/weapons/Akarius.md): Dual Pistols · Secondary · Mastery Rank 8
+- [Akarius Prime](https://wfsim.app/weapons/Akarius_Prime.md): Dual Pistols · Secondary · Mastery Rank 14
 - [Akbolto](https://wfsim.app/weapons/Akbolto.md): Dual Pistols · Secondary · Mastery Rank 8
 - [Akbolto Prime](https://wfsim.app/weapons/Akbolto_Prime.md): Dual Pistols · Secondary · Mastery Rank 13
 - [Akbronco](https://wfsim.app/weapons/Akbronco.md): Dual Shotguns · Secondary · Mastery Rank 2

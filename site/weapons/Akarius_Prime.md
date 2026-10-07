@@ -2,7 +2,7 @@
 
 Chinese name: 阿利乌双枪 Prime
 
-Pistol · Secondary · Mastery Rank 14. 68 base damage (impact 68), 18% crit chance, 2x crit multiplier, 34% status chance.
+Dual Pistols · Secondary · Mastery Rank 14. 68 base damage (impact 68), 18% crit chance, 2x crit multiplier, 34% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-10-07
 

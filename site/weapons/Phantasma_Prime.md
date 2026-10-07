@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.0580 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-09-29 13:20 UTC · 601279c5f9 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 124.6414 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Primary Debilitate | 2026-10-05 16:01 UTC · 4d57cccc45 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.3145 | Frigid Blast, Toxic Barrage, Incendiary Coat, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-09-29 10:07 UTC · a96c10c3c2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.0580 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-07 20:17 UTC · a7836d0380 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 124.6414 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Primary Debilitate | 2026-10-07 18:57 UTC · a7836d0380 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.3145 | Frigid Blast, Toxic Barrage, Incendiary Coat, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-07 21:34 UTC · c218998e95 |
 
 ## In WFSim
 

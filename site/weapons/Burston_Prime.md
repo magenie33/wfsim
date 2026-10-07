@@ -14,7 +14,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 54.3687 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-07 16:49 UTC · 65db03e106 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 416.0512 | Rime Rounds, Primary Acuity, Primed Shred, Serration, Galvanized Scope, Hammer Shot, Rifle Elementalist, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-07 16:50 UTC · 65db03e106 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 9.3476 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Primed Bane of Grineer, Serration, Galvanized Scope, Vital Sense, Gilded Truth, Vigilante Supplies, Primary Deadhead | 2026-10-06 17:53 UTC · 6644c8b983 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 9.3476 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Primed Bane of Grineer, Serration, Galvanized Scope, Vital Sense, Gilded Truth, Vigilante Supplies, Primary Deadhead | 2026-10-07 18:51 UTC · a7836d0380 |
 
 ## In WFSim
 

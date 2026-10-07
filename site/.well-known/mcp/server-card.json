@@ -2,7 +2,7 @@
   "serverInfo": {
     "name": "wfsim",
     "title": "WFSim",
-    "version": "22d1232ca73b"
+    "version": "721994a3dbf2"
   },
   "description": "WFSim is a Warframe weapon calculator. It builds a loadout, simulates the fight against a named enemy, and searches for the best mods. Every formula cites its source, and every golden test is calibrated against a real in-game run. A board score belongs to its ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the number, and give the reader the row's link, which opens the build in the calculator.",
   "transport": {
