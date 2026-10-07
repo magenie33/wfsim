@@ -467,6 +467,18 @@ fn akimbo_slip_shot_pays_only_while_sliding_or_aim_gliding() {
     }
 }
 
+/// THE AKARIUS IS DUAL PISTOLS (wiki `Class = "Dual Pistols"`), so the
+/// roster's own traits open the gate — not a hand-passed slice.
+#[test]
+fn akimbo_slip_shot_reaches_the_akarius() {
+    let a = secondary("akimbo_slip_shot").unwrap();
+    for id in ["akarius", "akarius_prime", "akstiletto_prime"] {
+        let traits = crate::data::weapons::traits_of(crate::data::weapons::spec(id).expect(id));
+        let fx = a.fx(5, StackPolicy::Emergent, traits, &sliding_tenno(true, false));
+        assert!((fx.ammo_efficiency - 0.65).abs() < 1e-9, "{id}: {}", fx.ammo_efficiency);
+    }
+}
+
 /// AN AIM GLIDE IS AIRBORNE: Zazvat-Kar's "while Airborne" holds during one.
 #[test]
 fn aim_gliding_is_airborne() {

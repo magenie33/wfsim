@@ -68,3 +68,37 @@ fn a_spliced_techrot_bonus_lands_on_a_techrot_unit() {
     assert!((got - (1.0 + 0.45 * 0.99)).abs() < 1e-6, "{got}");
     assert_eq!(vs(Foe::training_dummy()), 1.0);
 }
+
+/// THE AKARIUS PRIME NEVER RELOADS on a 2+1 spliced Ammo Efficiency card with
+/// Akimbo Slip Shot while sliding: 0.005 x 90 x 1.2375 x 0.65 disposition is
+/// 36.2%, and +65% takes it past the 100% cap. One magazine and no reserve, so
+/// a single reload would end the fight at 8 shots.
+#[test]
+fn a_sliding_akarius_on_a_spliced_card_never_reloads() {
+    let base = WeaponBase::from_data("akarius_prime", true, &[]);
+    let card = RivenSpec {
+        class: "pistol".into(),
+        bonuses: ["ammo_efficiency", "damage"].iter().map(|id| RolledStat { id: (*id).into(), roll: 1.0 }).collect(),
+        malus: Some(RolledStat { id: "zoom".into(), roll: 1.0 }),
+        rank: MAX_RANK,
+        polarity: Polarity::Madurai,
+    }
+    .to_mod_def("riven:akarius", 0.65);
+    let mut tenno = crate::data::tenno::default_tenno().clone();
+    tenno.state.sliding = true;
+    let spec = crate::data::weapons::spec("akarius_prime").unwrap();
+    let slip = crate::data::arcanes::secondary("akimbo_slip_shot").unwrap().fx(
+        5,
+        StackPolicy::Emergent,
+        crate::data::weapons::traits_of(spec),
+        &tenno,
+    );
+    let arena = crate::arena::Arena { body_parts: mono_body(1.0), ..crate::arena::Arena::training(1000.0) };
+    let panel = resolve(&base, &[&card], StackPolicy::AssumedMax);
+    let mut p = FightParams::from_panel(&panel, &arena, &slip);
+    p.infinite_reserve = false;
+    p.reserve_ammo = 0.0;
+    assert!(p.arcane.ammo_efficiency >= 1.0, "{}", p.arcane.ammo_efficiency);
+    let shots = monte_carlo(&p, 2, 3).mean_shots;
+    assert!(shots > 4.0 * p.magazine_size, "{shots} shots from a {}-round magazine", p.magazine_size);
+}

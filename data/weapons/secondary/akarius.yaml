@@ -2,7 +2,7 @@ id: akarius
 name: Akarius
 slot: secondary
 weapon_type: secondary
-class: pistol
+class: dual_pistols
 form: base
 default_form: true
 mod_pools: [pistol]
