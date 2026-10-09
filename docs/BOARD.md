@@ -768,7 +768,9 @@ each machine's share is counted under its owner's name. Eight rules:
    device is its own owner.
 5. **A DEVICE HAS ONE OWNER.** A signed-in page claims its browser's id
    (`/api/account/devices/claim`, `devices` in the accounts database); the
-   last account to claim it owns it, and its work goes with it. A refused
+   last account to claim it owns it, and its work goes with it. A signed-in page
+   claims its browser once a load, the server's row the only record of it, so a
+   browser stops counting for an account by signing out there. A refused
    client's work counts for nothing.
    The owner sees every device of theirs at `/compute`: the name they call it
    (the browser's coarse guess until renamed), when it last answered

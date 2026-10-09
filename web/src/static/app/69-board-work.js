@@ -64,8 +64,6 @@ async function measureRow(request, ruler, live, onPiece = () => {}) {
 /// keep it does not work: a new id every visit is a ban nobody can apply.
 const VERIFIER_KEY = "wfsim-verifier";
 const VERIFIED_KEY = "wfsim-board-verified";
-/// THE ACCOUNT THIS BROWSER WAS LAST CLAIMED FOR, so a claim is sent once.
-const CLAIMED_KEY = "wfsim-verifier-owner";
 /// How long an idle browser waits before asking again; one that just finished
 /// an order asks at once.
 const ASK_EVERY_MS = 10_000;
@@ -155,12 +153,15 @@ function boardVerifiedCount() {
 
 /// A SIGNED-IN READER'S BROWSER IS THEIRS: claimed once for the account, so
 /// the work it does counts under their name (docs/BOARD.md §"Contribution").
+/// THE CLAIM IS SENT ONCE A PAGE AND ACCOUNT, and the server's answer is the only
+/// record of it: a mark kept here said "claimed" for a device the server had
+/// never joined — one removed, one whose id changed — and no page claimed it again.
+let claimedFor = null;
 async function claimDevice(id) {
   const account = accountState.account && accountState.account.id;
-  if (!account) return;
-  try { if (localStorage.getItem(CLAIMED_KEY) === account) return; } catch (_) { return; }
+  if (!account || claimedFor === `${account}:${id}`) return;
   const r = await accountCall("POST", "/api/account/devices/claim", { verifier: id, label: computeDeviceGuess() });
-  if (r && r.ok) try { localStorage.setItem(CLAIMED_KEY, account); } catch (_) { /* private mode */ }
+  if (r && r.ok) claimedFor = `${account}:${id}`;
 }
 
 /// WHAT THIS BROWSER HAS EARNED — `{ points, recent, claimed }`, asked by its
