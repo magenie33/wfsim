@@ -158,6 +158,7 @@ library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00Z' WHERE
     JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1 }, { volunteers: 1, official: 2 }, 1]),
     JSON.stringify(d));
 }
+check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);
 check("both say how many browsers are computing now, an old answer not counted",
   found.computing === 0 && (await who("bob")).computing === 1 && (await call("/api/contributors")).computing === 1);
 

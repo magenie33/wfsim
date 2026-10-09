@@ -13,6 +13,7 @@
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
 //   POST /api/board/points           { verifier } → { points, recent, claimed }
+//   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, per_hour: { volunteers, official } }
 //   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, mark?, volunteer? } | null }
@@ -303,6 +304,19 @@ async function demand(env) {
   return json(body);
 }
 
+/// THE NAV'S COUNT, asked by every page a reader opens, so held a minute in the
+/// edge cache and computed by one cheap count.
+async function computingCount(request, env) {
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const key = new Request(new URL("/api/board/computing", request.url).toString());
+  const hit = cache && await cache.match(key);
+  if (hit) return hit;
+  const r = new Response(JSON.stringify({ ok: true, computing: await computingNow(env) }),
+    { headers: { "content-type": "application/json", "cache-control": "public, max-age=60" } });
+  if (cache) await cache.put(key, r.clone());
+  return r;
+}
+
 /// The response for a contribution path, or null for a path that is not one.
 export async function contributionRoute(request, env, path) {
   if (path === "/api/contributors") {
@@ -313,6 +327,10 @@ export async function contributionRoute(request, env, path) {
     const name = (q.get("name") || "").trim();
     if (name) return person(env, name);
     return ranking(env, q.get("period"), me);
+  }
+  if (path === "/api/board/computing") {
+    if (request.method !== "GET") return no("method", 405);
+    return computingCount(request, env);
   }
   if (path === "/api/board/demand") {
     if (request.method !== "GET") return no("method", 405);

@@ -2580,7 +2580,7 @@ ui:
   "A new version is out; this page refreshes itself once it is left idle.": "有新版本了，这个页面闲置一会儿后会自动刷新。"
   "refresh now": 立即刷新
   # The compute page (/compute): this browser, the account's devices, recent tasks.
-  "Compute": 我的计算
+  "Compute": 计算
   "Leaderboard order": 榜单订单
   "Task": 任务
   "Computer": 电脑

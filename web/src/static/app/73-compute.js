@@ -289,6 +289,21 @@ function computeDemandHtml() {
   </dl></div></div>`;
 }
 
+/// THE NAV'S COUNT: how many computers are computing for WFSim now, asked when
+/// the page starts and each minute it stays in view — the number as it is,
+/// zero too, and nothing where the site has no such count (a dev server).
+async function navComputing() {
+  const el = document.getElementById("compute-count");
+  if (!el || document.hidden) return;
+  const r = await fetch("/api/board/computing").then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  if (!r || typeof r.computing !== "number") return;
+  el.innerHTML = `<span class="online-dot"></span>${escHtml(r.computing.toLocaleString(accountLocale()))}`;
+  el.hidden = false;
+}
+navComputing();
+setInterval(navComputing, 60_000);
+addEventListener("visibilitychange", navComputing);
+
 function computePage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute")}</h1>
     <p class="set-note">${aT("What this browser computes is free for everyone, never sold, and never runs a paid feature. It runs only while a WFSim page is open on a computer, steps aside the moment you run something yourself, never runs on a phone, and one click turns it off.")}

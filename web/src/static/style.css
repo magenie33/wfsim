@@ -1959,6 +1959,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rank-row.you{background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .rank-you{font-size:12px;color:var(--muted)}
 /* THE COMPUTE PAGE'S DEMAND: who is computing now, and the volunteers' share of an hour. */
+.tcount{margin-left:6px;font-size:11px;font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.tcount .online-dot{width:6px;height:6px;margin-right:4px;box-shadow:0 0 0 3px rgba(88,214,141,.18)}
 .online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#58d68d;box-shadow:0 0 0 4px rgba(88,214,141,.18);margin-right:8px;vertical-align:middle}
 .demand-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 6px;background:color-mix(in srgb,var(--text) 22%,transparent)}
 .demand-bar>div{background:var(--accent)}

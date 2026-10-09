@@ -191,7 +191,7 @@ async function route() {
   $("utility-page").hidden = !util;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : util ? "utility" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !authKind) ? "home" : "";
+  const here = bench ? "benchmark" : util ? "utility" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !authKind) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
