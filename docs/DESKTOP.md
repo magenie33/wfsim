@@ -259,7 +259,7 @@ the **owner's own wording**, transcribed from the notes file that ships beside
 the binary — the notes answer the warning after the download, and the page
 answers it before.
 
-**The topbar's overflow menu is the only entry**; the home page offers no
+**The topbar's settings menu is the only entry**; the home page offers no
 download at all. Nothing reads the user agent outside /download, which is the
 surface that tells a Mac, Linux or phone reader it will not run there.
 

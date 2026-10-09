@@ -32,13 +32,13 @@ const UAS = {
 };
 
 /// WHAT THE HOME PAGE SAYS ABOUT THE DOWNLOAD, which is: nothing, anywhere but
-/// the topbar's overflow panel. The home page is read by somebody who has not
+/// the topbar's settings menu. The home page is read by somebody who has not
 /// seen the tool work yet, and that is the worst moment to put an unsigned
-/// executable in front of them — so the entry lives behind the overflow menu,
+/// executable in front of them — so the entry lives in the settings menu,
 /// where a reader who wants the client goes looking for it.
 const READ = `(() => {
   const main = document.querySelector("main:not([hidden])");
-  const panel = document.querySelector(".tbmore, .tbmore-panel, #tbmore") || document.body;
+  const panel = document.getElementById("tbmore") || document.body;
   const dl = panel.querySelector("a.dl-link");
   return {
     // Every link the VISIBLE page offers, so a download entry anywhere outside
@@ -94,7 +94,7 @@ for (const os of Object.keys(UAS)) {
     !(seen[os].mainLinks || []).some((h) => /\/download|pan\.quark\.cn/.test(h)),
     JSON.stringify((seen[os].mainLinks || []).filter((h) => /download|quark/.test(h))));
 }
-check("...and the overflow menu carries the one entry",
+check("...and the settings menu carries the one entry",
   (seen.Windows.panelHref || "") === "/download",
   `panel ${JSON.stringify(seen.Windows.panelText)} -> ${seen.Windows.panelHref}`);
 

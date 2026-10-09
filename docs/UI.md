@@ -317,7 +317,7 @@ hold; a page that does not yet hold must not save what it substituted.
 ## Saved items as a file
 
 **WHAT A READER SAVED IS THEIRS TO TAKE ANYWHERE, signed in or not.** "Saved
-items" in the topbar's overflow, and on `/account/sync`, exports every
+items" in the topbar's settings menu, and on `/account/sync`, exports every
 collection `COLLECTIONS` names as one file and imports one back
 (`33-saves.js`). Sync is the convenience of not having to.
 
@@ -939,7 +939,7 @@ than under `/weapons/<name>`, and it is not a fourth MODULE: it produces
 nothing the three consume. /download is the offer for the Windows client, a
 PAGE that answers what a downloader asks — what SmartScreen does on first run,
 why the program is unsigned, what updating costs, what uninstalling means,
-where the source is. THE ONLY ENTRY IS THE TOPBAR'S OVERFLOW MENU, and no
+where the source is. THE ONLY ENTRY IS THE TOPBAR'S SETTINGS MENU, and no
 surface of the site offers a download anywhere else. `check_downloads` asserts
 the home page offers nothing on every user agent it drives, and that /download
 is the one surface telling a Mac, Linux or phone reader it will not run there.

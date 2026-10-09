@@ -204,24 +204,21 @@ for (const [label, w, h, mobile] of SCREENS) {
       // real box on screen, inside the viewport on both sides.
       // (No backticks in here: this comment lives inside a template literal.)
       ...(() => {
-        // THE BAR CARRIES WHAT A READER ACTS ON; THE REST IS ONE CLICK AWAY. Until then all eight sat on the desktop bar with
-        // equal weight, which is three unrelated categories in one costume —
-        // so this check asserted that all eight were visible with nothing
-        // opened, and that assertion WAS the old design. Two sets now.
-        // BAR: what is on the desktop bar with nothing opened. The ask is here
-        // because it is the only entry that is not chrome.
+        // THE BAR CARRIES THE SITE'S PAGES, TWO GROUP MENUS AND THE ASK; every
+        // other entry is one click away inside a menu. BAR is what is on the
+        // desktop bar with nothing opened.
         const BAR = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
-                     '#lang-select', '#theme-toggle', '.sup-link', '#tbmore-toggle'];
+                     '.topnav .tnav[data-nav="compute"]', '#community-toggle', '.sup-link', '#tbmore-toggle'];
         // ALL: nothing was DELETED to make the bar fit — every destination and
         // every control is still REACHABLE at every width, which is the claim
         // this check has always existed to make. Only the number of clicks
-        // moved. '.qq-link' / '.dc-link' are BOTH here: one is on the bar and one
-        // is in the overflow, and which is which follows the display language.
-        // ...and the overflow BUTTON is not in it. It is a container, not a
-        // destination or a control: at 768px and below it is not drawn, because
-        // the phone menu already holds what it would have opened.
-        const ALL = BAR.filter((x) => x !== '#tbmore-toggle')
-          .concat(['.gh-link', '.qq-link', '.dc-link', '#compute-select']);
+        // moved. The group BUTTONS are not in it: they are containers, and at
+        // 768px and below they are not drawn, because the phone menu already
+        // holds what they would have opened.
+        const ALL = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
+                     '.topnav .tnav[data-nav="compute"]', '.tbmenu-link[data-nav="contributors"]',
+                     '.sup-link', '.gh-link', '.qq-link', '.dc-link',
+                     '#lang-select', '#theme-toggle', '#compute-select'];
         const missing = (SEL) => SEL.filter((s) => {
           const el = document.querySelector(s);
           if (!el) return true;
@@ -230,16 +227,18 @@ for (const [label, w, h, mobile] of SCREENS) {
         });
         const tog = document.querySelector('.menu-toggle');
         const more = document.querySelector('#tbmore-toggle');
+        const comm = document.querySelector('#community-toggle');
         const closed = missing(BAR);
         const accountClosed = missing(['#account']);
-        // Open BOTH: at 768px and below the hamburger holds everything and the '⋯' is
-        // not drawn; above it the '⋯' holds the overflow and the hamburger is
-        // not drawn. Clicking one that is not there is a no-op either way.
+        // REACHED IN ANY ONE STATE: the hamburger open (at 768px and below it
+        // holds everything), then each group's menu open in turn (above it,
+        // one menu at a time). Clicking a button that is not drawn is a no-op.
         if (tog) tog.click();
-        if (more) more.click();
-        const opened = missing(ALL);
-        if (more) more.click();
+        const states = [missing(ALL)];
+        if (comm) { comm.click(); states.push(missing(ALL)); comm.click(); }
+        if (more) { more.click(); states.push(missing(ALL)); more.click(); }
         if (tog) tog.click();
+        const opened = ALL.filter((s) => states.every((m) => m.includes(s)));
         return {
           missingClosed: closed, missingOpen: opened,
           accountClosed,

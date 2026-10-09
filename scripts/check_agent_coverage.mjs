@@ -100,6 +100,9 @@ for (const w of WEAPONS) {
     // EVERY FOLD OPEN: a control inside a shut block is still one a reader can
     // reach, and a block that ships shut would otherwise hide its whole feature.
     await evaluate(`document.querySelectorAll("[data-fold].shut").forEach(b => setFold(b, false))`);
+    // …AND EVERY TOPBAR GROUP OPEN, for the same reason: the settings and the
+    // community live in menus a reader opens with one click.
+    await evaluate(`document.querySelectorAll(".topbar .tbmore").forEach(b => b.classList.add("open"))`);
     // THE ACCOUNT ENTRY SHOWS ONLY WHERE THE SITE OFFERS A WAY IN, which a
     // check's local server never does — drawn here as if it did, so its
     // exemption is tested.

@@ -246,7 +246,9 @@ its guess; a device is renamed inline and removed after an inline question.
 Built site only: nothing computes until a card asks and is answered — an old
 default's yes and a yes to an older statement are no answer — a no is kept, a
 card page never carries it, a yes turns it on with the statement and when; the
-top bar marks and pauses a running task; a battery holds it; and it takes one
+top bar's ring says a task runs and the pause holds it, keeps its size and the
+search's when the task ends, and leaves only when computing is turned off; a
+battery holds it; and it takes one
 core while the reader is at the computer and the picked share, 30% unless
 changed, of the cores once idle.
 
@@ -796,7 +798,7 @@ authority on what a card costs, so a tradeable one carries a mark that opens
 its page — in the mod picker AND on the equipped mod, in the arcane picker AND
 on the equipped arcane, and in the weapon's own title. The seated mod's mark
 must be the picker row's mark: the same card cannot have two prices. The
-reader's switch (topbar ⋯) then has to take EVERY anchor off the page, not just
+reader's switch (topbar settings) then has to take EVERY anchor off the page, not just
 the list that happens to be open, and put them all back.
 
 ## `check_mode_def`

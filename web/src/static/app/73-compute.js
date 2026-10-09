@@ -53,8 +53,11 @@ function computeAskHtml() {
       <button class="ghost-btn btn-sm" data-compute-ask="no">${aT("No thanks")}</button>
       <a href="/compute">${aT("Learn more")}</a></div>`;
 }
-/// …AND WHILE IT RUNS, A MARK IN THE TOP BAR saying so, with the pause beside
-/// it: work nobody can see is work nobody agreed to keep doing.
+/// …AND WHILE COMPUTING IS ON, THE RING IN THE TOP BAR (`#compute-mark`):
+/// work nobody can see is work nobody agreed to keep doing. It is drawn at a
+/// fixed size whenever computing is on, so a task starting or ending fills
+/// it rather than moving the bar; it links to this page, and the settings
+/// menu holds the pause (10-weapon-search.js `renderComputePicker`).
 function computeChrome() {
   let ask = document.getElementById("compute-ask");
   if (computeAskable()) {
@@ -73,26 +76,47 @@ function computeChrome() {
     }
     ask.innerHTML = computeAskHtml();
   } else if (ask) ask.remove();
-  const bar = document.querySelector(".topbar-inner");
-  let pill = document.getElementById("compute-pill");
-  const show = WASM && boardVerifyOn() && (computeNow || computePaused);
-  if (!show || !bar) { if (pill) pill.remove(); return; }
-  if (!pill) {
-    pill = document.createElement("span");
-    pill.id = "compute-pill";
-    pill.style.cssText = "font-size:12px;color:var(--muted);margin-right:10px;white-space:nowrap";
-    pill.addEventListener("click", (e) => {
-      if (!e.target.closest("[data-compute-pause]")) return;
-      computePaused = !computePaused;
-      computeChrome();
-      computeRedraw();
-    });
-    const account = document.getElementById("account");
-    bar.insertBefore(pill, account && account.parentNode === bar ? account : null);
-  }
-  pill.innerHTML = `<a href="/compute">${aT(computePaused ? "Computing paused" : "Computing for WFSim")}</a> · <a href="#" data-compute-pause>${
-    aT(computePaused ? "resume" : "pause")}</a>`;
+  const mark = document.getElementById("compute-mark");
+  if (!mark) return;
+  mark.hidden = !(WASM && !onPhone() && boardVerifyOn());
+  if (!mark.hidden) computeMarkPaint(mark);
 }
+function computeMarkPaint(mark) {
+  const st = computeState(), f = computeFraction();
+  mark.dataset.state = st.key;
+  mark.classList.toggle("cm-spin", st.key === "computing" && f === null);
+  const arc = mark.querySelector(".cm-arc");
+  if (arc) arc.style.strokeDashoffset = st.key === "computing" ? String(100 * (1 - (f === null ? 0.25 : f))) : "";
+  const label = `${st.text}${st.key === "computing" && f !== null ? ` ${Math.round(f * 100)}%` : ""}`;
+  mark.title = label;
+  mark.setAttribute("aria-label", label);
+}
+/// THE READER'S PAUSE, for this tab, from the settings menu.
+function computeTogglePause() {
+  computePaused = !computePaused;
+  computeChrome();
+  computeRedraw();
+  renderComputePicker();
+}
+/// THE STATE, one answer for the ring and the page's own line: `{ key, text }`,
+/// where `key` is what the ring draws — computing, waiting, paused, held or off.
+function computeState() {
+  const held = computeHeld();
+  const s = (key, text) => ({ key, text: tr(text) });
+  if (!WASM) return s("off", "This copy of WFSim does not compute; the site at wfsim.app does.");
+  if (onPhone()) return s("off", "Phones never compute.");
+  if (!boardVerifyOn()) return s("off", "Computing is off in this browser.");
+  if (boardBanned) return s("off", "This browser is given no more work: a result it sent differed from the server's own.");
+  if (held === "paused") return s("paused", "Paused in this tab.");
+  if (held === "battery") return s("held", "Paused while this computer runs on battery.");
+  if (held === "data") return s("held", "Paused while the browser saves data.");
+  if (boardStale) return s("held", "A new version is out; this page refreshes itself once it is left idle.");
+  if (computeNow) return s("computing", "Computing now.");
+  if (readerBusy()) return s("held", "Paused while you use the calculator.");
+  return s("waiting", "Waiting for the next task.");
+}
+/// HOW FAR THE TASK IS, 0..1, or null when its size is not known (a riven gain).
+const computeFraction = () => (computeNow && computeNow.total ? Math.min(1, computeNow.done / computeNow.total) : null);
 
 function computeLog() {
   try {
@@ -123,6 +147,8 @@ function computeEnd(result) {
 }
 /// Drawn again while the page is open — a progress tick at most once a second.
 function computeRedraw(tick) {
+  const mark = document.getElementById("compute-mark");
+  if (mark && !mark.hidden) computeMarkPaint(mark);
   if (typeof authKindOf !== "function" || authKindOf(location.pathname) !== "compute") return;
   if (tick && Date.now() - computeDrawnAt < 1000) return;
   computeDrawnAt = Date.now();
@@ -163,18 +189,7 @@ function computeTaskHtml(t) {
 /// THIS BROWSER: whether it computes and why not, what it is on, what it earned.
 function computeHereHtml() {
   const on = boardVerifyOn();
-  const held = computeHeld();
-  const state = !WASM ? tr("This copy of WFSim does not compute; the site at wfsim.app does.")
-    : onPhone() ? tr("Phones never compute.")
-    : !on ? tr("Computing is off in this browser.")
-    : boardBanned ? tr("This browser is given no more work: a result it sent differed from the server's own.")
-    : held === "paused" ? tr("Paused in this tab.")
-    : held === "battery" ? tr("Paused while this computer runs on battery.")
-    : held === "data" ? tr("Paused while the browser saves data.")
-    : boardStale ? tr("A new version is out; this page refreshes itself once it is left idle.")
-    : computeNow ? tr("Computing now.")
-    : readerBusy() ? tr("Paused while you use the calculator.")
-    : tr("Waiting for the next task.");
+  const state = computeState().text;
   const flip = WASM && !onPhone()
     ? ` <button class="ghost-btn btn-sm" data-auth="compute-flip">${aT(on ? "stop computing" : "start computing")}</button>` : "";
   const again = on && boardStale ? ` <button class="ghost-btn btn-sm" data-auth="compute-reload">${aT("refresh now")}</button>` : "";

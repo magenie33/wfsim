@@ -59,12 +59,15 @@ const r = await evaluate(`(async () => {
   out.link = (recent[0] && recent[0].querySelector("a") || {}).getAttribute ? recent[0].querySelector("a").getAttribute("href") : null;
   out.secret = page().textContent.includes("secret");
   out.signIn = !!page().querySelector('a[href^="/login"]');
+  // THE NOW ROW IS DRAWN WHILE COMPUTING IS ON, so it is turned on for this.
+  localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
   computeStart({ kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base" });
   computeProgress(50, 100);
   computeRedraw();
   const bar = [...page().querySelectorAll(".kv")].find((k) => k.querySelector("dt").textContent === "Now");
   out.now = bar ? bar.querySelector("dd div div").style.width : null;
   computeEnd(null);
+  localStorage.removeItem("wfsim-compute-consent");
 
   account = { id: "acc1", created_at: "", identities: [{ provider: "email", label: "a@x" }] };
   history.pushState({}, "", "/"); route(); await sleep(100);
@@ -110,7 +113,8 @@ check("...and removed after an inline question", r.asks && r.after === 1
 // computer that can compute and has not answered, a card asks once; an old
 // default's "yes" is no answer; a no is kept and not asked again; a yes turns
 // it on with the statement and the time; a card page a bot photographs never
-// carries it; and while it runs a mark in the top bar says so, with a pause.
+// carries it; and while it is on a ring in the top bar says so, at one size
+// whether a task runs or not, and the pause holds it.
 const c = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const out = { wasm: WASM };
@@ -130,14 +134,17 @@ const c = await evaluate(`(async () => {
   document.querySelector('#compute-ask [data-compute-ask="yes"]').click(); await sleep(50);
   const yes = JSON.parse(localStorage.getItem("wfsim-compute-consent") || "null");
   out.yes = !card() && boardVerifyOn() && yes.on === true && Number.isFinite(Date.parse(yes.at));
+  const mark = () => document.getElementById("compute-mark");
+  const bar = () => [mark().getBoundingClientRect().width, document.querySelector(".wsearch").getBoundingClientRect().width];
   computeStart({ kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base" });
-  const pill = () => (document.getElementById("compute-pill") || { textContent: "" }).textContent;
-  out.mark = pill();
-  document.querySelector("#compute-pill [data-compute-pause]").click(); await sleep(50);
-  out.paused = pill(); out.held = computeHeld();
-  document.querySelector("#compute-pill [data-compute-pause]").click(); await sleep(50);
+  out.mark = mark().hidden ? "" : mark().getAttribute("aria-label");
+  out.during = bar();
+  computeTogglePause(); await sleep(50);
+  out.paused = mark().getAttribute("aria-label"); out.held = computeHeld();
+  computeTogglePause(); await sleep(50);
   computeEnd(null);
-  out.gone = pill() === "";
+  out.after = bar(); out.idle = mark().dataset.state;
+  setBoardVerify(false); out.off = mark().hidden; setBoardVerify(true);
   computeBattery = { charging: false }; out.battery = computeHeld(); computeBattery = null;
   // HOW MUCH: one core while the reader is at the computer, the share they
   // picked (30% unless they did) of its cores once it is idle.
@@ -158,8 +165,10 @@ check("[built site] nothing computes until asked: a card asks, and an old defaul
 check("...a no is kept and not asked again", k.no, c);
 check("...a card page a bot photographs never carries it", k.cardPage, c);
 check("...a yes turns it on, kept with the statement and when", k.yes, c);
-check("while it runs the top bar says so, and pauses it", /Computing for WFSim/.test(k.mark) && /paused/i.test(k.paused) && k.held === "paused", c);
-check("...the mark leaves when nothing runs, and a battery holds it", k.gone && k.battery === "battery", c);
+check("while it runs the top bar's ring says so, and the pause holds it", /Computing now/.test(k.mark) && /Paused/.test(k.paused) && k.held === "paused", c);
+check("...the ring keeps its size when the task ends, so nothing on the bar moves",
+  k.during[0] > 0 && k.during[0] === k.after[0] && k.during[1] === k.after[1] && k.idle === "waiting", c);
+check("...it leaves only when computing is turned off, and a battery holds it", k.off && k.battery === "battery", c);
 check("one core while the reader is at the computer, 30% of its cores once idle, or the share they picked",
   k.busyLanes === 1 && k.idleLanes === k.want30 && k.idle50 === k.want50, c);
 check("...and a yes to an older statement is asked again", k.oldYes, c);

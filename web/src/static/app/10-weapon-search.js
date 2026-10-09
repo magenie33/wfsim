@@ -44,9 +44,13 @@ function renderComputePicker() {
         hint: boardVerifyOn() && communityShare() === pct ? tr("current") : "" })),
       { value: "community:off", label: tr("Help compute WFSim: off"), group: tr("Community computing"),
         hint: boardVerifyOn() ? "" : tr("current") },
+      // …AND THE PAUSE, for this tab only, wherever the ring is.
+      ...(boardVerifyOn() ? [{ value: "community:pause", group: tr("Community computing"),
+        label: computePaused ? tr("Resume computing in this tab") : tr("Pause computing in this tab") }] : []),
     ] : []),
     onPick: (v) => {
       // PICKING A SHARE IS SAYING YES, to the statement the card shows.
+      if (v === "community:pause") { computeTogglePause(); return; }
       if (v.startsWith("community:")) {
         if (v !== "community:off") setCommunityShare(Number(v.slice(10)));
         setBoardVerify(v !== "community:off");
@@ -215,15 +219,11 @@ const QQ_GROUP = "995078378";
   addEventListener("resize", () => { if (innerWidth > 768) set(false); });
 })();
 
-// THE COMMUNITY LINK A READER CAN ACT ON GOES ON THE BAR;
-// the other one is in the overflow. A Chinese reader will never click Discord
-// and an English reader will never click QQ, so putting both on the bar spent
-// two of its slots to serve half a reader each.
-//
-// ORDERED, NEVER DROPPED — an English reader still finds the QQ group one
-// click away. English is the source everywhere in this repo, so the markup
-// ships the English order and this swaps it; a language change reloads the
-// page, so it runs exactly once.
+// THE READER'S OWN GROUP FIRST in the community menu. A Chinese reader will
+// never click Discord and an English reader will never click QQ, so the one
+// that matches the display language leads — ordered, never dropped. English is
+// the source everywhere in this repo, so the markup ships the English order and
+// this swaps it; a language change reloads the page, so it runs exactly once.
 function applyCommunityOrder() {
   const primary = $("community-primary"), alt = $("community-alt");
   const qq = document.querySelector(".qq-link"), dc = document.querySelector(".dc-link");
@@ -234,29 +234,39 @@ function applyCommunityOrder() {
 }
 applyCommunityOrder();
 
-// The topbar overflow. At 768px and below it is `display:contents` and the button is
-// not drawn, so this only does anything on a desktop — but it binds either
-// way, because a resize crosses the breakpoint without reloading.
+// THE TOPBAR'S GROUP MENUS (`.tbmore`): community and settings. At 768px and
+// below each is `display:contents` and its button is not drawn, so this only
+// does anything on a desktop — but it binds either way, because a resize
+// crosses the breakpoint without reloading. One open at a time.
 (function () {
-  const box = $("tbmore"), btn = $("tbmore-toggle");
-  if (!box || !btn) return;
-  const set = (open) => {
+  const boxes = [...document.querySelectorAll(".topbar .tbmore")];
+  const set = (box, open) => {
     box.classList.toggle("open", open);
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    const btn = box.querySelector(".tbmore-btn");
+    if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
   };
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    set(!box.classList.contains("open"));
-  });
-  // `#dd-popover` counts as INSIDE, for the same reason the phone menu counts
-  // it: the compute picker draws into the shared popover, which is a SIBLING
-  // of this panel in the DOM, so picking a share would close the panel out
-  // from under the control that is being used.
+  for (const box of boxes) {
+    const btn = box.querySelector(".tbmore-btn");
+    if (!btn) continue;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !box.classList.contains("open");
+      boxes.forEach((b) => set(b, b === box && open));
+    });
+    // A DESTINATION closes it; a control inside does not, so the language can
+    // follow the theme without reopening the menu.
+    box.querySelector(".tbmore-panel").addEventListener("click", (e) => {
+      if (e.target.closest("a[href]")) set(box, false);
+    });
+  }
+  // `#dd-popover` counts as INSIDE: the language and compute pickers draw into
+  // the shared popover, which is a SIBLING of the panel in the DOM, so picking
+  // from one would close the panel out from under the control being used.
   document.addEventListener("click", (e) => {
-    if (!e.target.closest("#tbmore, #dd-popover")) set(false);
+    for (const box of boxes) if (!box.contains(e.target) && !e.target.closest("#dd-popover")) set(box, false);
   });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !imeComposing(e)) set(false); });
-  addEventListener("resize", () => set(false));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !imeComposing(e)) boxes.forEach((b) => set(b, false)); });
+  addEventListener("resize", () => boxes.forEach((b) => set(b, false)));
 })();
 
 // theme

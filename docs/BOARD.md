@@ -738,7 +738,8 @@ each machine's share is counted under its owner's name. Eight rules:
    a no is kept with when, a new statement asks again, and every ask for work
    carries the yes, which the server keeps on the client's row
    (`verifiers.consent_v`, `consent_at`) and without which it hands nothing
-   out. While it runs a mark in the top bar says so with a pause beside it, and
+   out. While it is on, a ring of fixed size in the top bar says so and fills
+   with the task, the settings menu holds a pause, and
    it holds itself on battery or with the browser's data saver on. It takes
    one core while the reader is at the computer and, once it is idle, the
    share of its cores they pick in the compute menu — 30% unless they do
