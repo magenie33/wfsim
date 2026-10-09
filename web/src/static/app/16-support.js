@@ -112,8 +112,7 @@ function renderHomeFacts() {
 /// THE BOARD'S SCORES BY WHO COMPUTED THEM, under the home hero's claim
 /// (/api/board/tally): the players' machines apart from the official ones, and
 /// the computers at it now. Asked each minute the page is in view; between
-/// answers a count walks to the new one over the minute, so it never shows a
-/// number the server has not.
+/// answers a count walks to the new one over the minute.
 const TALLY_EVERY_MS = 60_000;
 let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0;
 async function loadHomeTally() {
@@ -121,7 +120,10 @@ async function loadHomeTally() {
   const r = await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
   const next = { volunteers: r.totals.volunteers, official: r.totals.official, computing: r.computing | 0 };
-  tallyFrom = tallyShown || next;
+  // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the last hour's pace,
+  // so a count moves the moment the page opens and shows only what it held.
+  const back = (k) => Math.max(0, next[k] - Math.round((r.per_hour?.[k] | 0) / 60));
+  tallyFrom = tallyShown || { volunteers: back("volunteers"), official: back("official"), computing: next.computing };
   tallyTo = next;
   tallyAt = Date.now();
   renderHomeTally();
