@@ -12,7 +12,7 @@
 //   POST /api/account/devices/label  { id, label }        → { ok }
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
-//   POST /api/board/points           { verifier } → { points, recent, claimed }
+//   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, per_hour: { volunteers, official } }
 //   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
@@ -71,9 +71,9 @@ async function workOf(env, ids) {
     const [all, recent] = await env.LIBRARY.batch([
       env.LIBRARY.prepare(`SELECT id, work, consent_at FROM verifiers WHERE banned = 0 AND id IN (${marks})`).bind(...part),
       env.LIBRARY.prepare(
-        `SELECT d.verifier AS id, SUM(d.work) AS work, SUM(CASE WHEN d.day >= ? THEN d.work ELSE 0 END) AS week
-          FROM verifier_days d JOIN verifiers v ON v.id = d.verifier
-          WHERE v.banned = 0 AND d.day >= ? AND d.verifier IN (${marks}) GROUP BY d.verifier`).bind(week, from, ...part),
+        `SELECT d.verifier AS id, SUM(d.work) AS work, SUM(CASE WHEN d.hour >= ? THEN d.work ELSE 0 END) AS week
+          FROM verifier_hours d JOIN verifiers v ON v.id = d.verifier
+          WHERE v.banned = 0 AND d.hour >= ? AND d.verifier IN (${marks}) GROUP BY d.verifier`).bind(week, from, ...part),
     ]);
     for (const r of all.results) out.set(r.id, { work: r.work || 0, recent: 0, week: 0, consent_at: r.consent_at || null });
     for (const r of recent.results) if (out.has(r.id)) Object.assign(out.get(r.id), { recent: r.work || 0, week: r.week || 0 });
@@ -158,7 +158,15 @@ async function devicePoints(env, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
   const w = (await workOf(env, [b.verifier])).get(b.verifier) || NONE;
   const claimed = !!(env.ACCOUNTS && await env.ACCOUNTS.prepare("SELECT 1 FROM devices WHERE verifier = ?1").bind(b.verifier).first());
-  return json({ ok: true, points: points(w.work), recent: points(w.recent), week: points(w.week), claimed });
+  // ITS OWN "TODAY": the whole UTC hours from the one the page names as its
+  // midnight — results sent, what they took, and the points credited in them.
+  let today = null;
+  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(b.since || "") && env.LIBRARY) {
+    const t = await env.LIBRARY.prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
+      .bind(b.verifier, b.since).first();
+    today = { tasks: (t && t.tasks) || 0, ms: (t && t.ms) || 0, points: points((t && t.work) || 0) };
+  }
+  return json({ ok: true, points: points(w.work), recent: points(w.recent), week: points(w.week), claimed, ...(today ? { today } : {}) });
 }
 
 /// A DEVICE BELONGS TO THE LAST ACCOUNT TO CLAIM IT, and its work goes with it:

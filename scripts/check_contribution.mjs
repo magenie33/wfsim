@@ -54,7 +54,7 @@ const device = (id, work, banned = 0) =>
   library.raw.prepare("INSERT INTO verifiers (id, seen, work, banned) VALUES (?, '2026-01-01', ?, ?)").run(id, work, banned);
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 const credit = (id, ago, work) =>
-  library.raw.prepare("INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)").run(id, daysAgo(ago), work);
+  library.raw.prepare("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)").run(id, daysAgo(ago) + "T00", work);
 const call = async (path, { cookie = "", body, method = body ? "POST" : "GET", origin } = {}) => {
   const headers = { cookie, ...(body ? { "content-type": "application/json" } : {}), ...(origin ? { origin } : {}) };
   const r = await contributionRoute(new Request(`https://wfsim.app${path}`,
@@ -168,6 +168,10 @@ check("a browser asks what it earned by its own id, and is told whether it is cl
 check("...an id nobody claimed or credited earns nothing", (await points("q".repeat(24))).points === 0
   && (await points("q".repeat(24))).claimed === false);
 check("...a refused one, nothing either", (await points(W)).points === 0 && (await points(W)).recent === 0);
+library.raw.prepare("INSERT INTO verifier_hours (verifier, hour, work, tasks, ms) VALUES (?, '2999-01-01T05', ?, 4, 6000)").run(X, 3 * POINT);
+const day = await call("/api/board/points", { body: { verifier: X, since: "2999-01-01T00" } });
+check("a browser asks its own today from the hour its midnight falls in: results, time and points credited",
+  JSON.stringify(day.today) === JSON.stringify({ tasks: 4, ms: 6000, points: 3 }), JSON.stringify(day));
 check("...and a malformed id is refused", (await points("nope")).reason === "bad_device");
 
 accounts.raw.prepare("DELETE FROM accounts WHERE id = 'acct-cy'").run();

@@ -299,12 +299,12 @@ function computeRecentHtml() {
   const log = computeLog();
   if (!log.length) return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${aT("Nothing yet.")}</p></div></div>`;
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-  const today = log.filter((t) => t.at >= midnight.getTime());
-  const paid = log.filter((t) => t.state === "confirmed" && (t.confirmedAt || t.at) >= midnight.getTime()).reduce((s, t) => s + taskPts(t), 0);
-  const tiles = `<div class="rt-today"><div class="rt-tile"><b>${escHtml(n(today.length))}</b><span>${aT("tasks finished today")}</span></div>
-    <div class="rt-tile gold"><b>+${escHtml(n(paid))}</b><span>${aT("points credited today")}</span></div>
-    <div class="rt-tile"><b>${escHtml(computeTook(today.reduce((s, t) => s + (t.ms || 0), 0)))}</b><span>${aT("computed today")}</span></div></div>`;
+  // TODAY IS THE SERVER'S COUNT (`/api/board/points` `today`): this list keeps
+  // the last fifty tasks and one browser's, and a machine finishes hundreds a day.
+  const day = (devicePoints && devicePoints.today) || { tasks: 0, ms: 0, points: 0 };
+  const tiles = `<div class="rt-today"><div class="rt-tile"><b>${escHtml(n(day.tasks))}</b><span>${aT("tasks finished today")}</span></div>
+    <div class="rt-tile gold"><b>+${escHtml(n(day.points))}</b><span>${aT("points credited today")}</span></div>
+    <div class="rt-tile"><b>${escHtml(computeTook(day.ms))}</b><span>${aT("computed today")}</span></div></div>`;
   const pill = (t) => {
     if (t.kind !== "board" || !t.identity) return `<span class="rt-pill rt-gone">${escHtml(tr("≈ {n} points").replace("{n}", n(taskPts(t))))}</span>`;
     const pop = t.changedAt && !computeShown.has(`pop:${taskKey(t)}:${t.state}`) ? " rt-pop" : "";

@@ -794,8 +794,12 @@ each machine's share is counted under its owner's name. Eight rules:
    in place and into the simulator.
 6. **EVERYONE IS RANKED; A NAME IS SHOWN ONLY BY CONSENT.** `/contributors`
    lists every account with a claimed device, by all their points, the last
-   thirty days' or the last seven (`verifier_days`, credited with the total and
-   read through the same ban), and tells each account its place on all three. A row is anonymous until its account agrees to show its name
+   thirty days' or the last seven (`verifier_hours`, credited with the total and
+   read through the same ban), and tells each account its place on all three.
+   The same table, by the UTC hour, also counts each browser's results and
+   their time, so a page's "today" is whole hours from its own midnight
+   (`/api/board/points` `since`), never its own fifty-task list. A row is
+   anonymous until its account agrees to show its name
    (`contribution_choice`, asked once, inline, where the reader sees their
    points); then it is the display name, else the username, and nothing else.
    An anonymous row's name and tier never leave the server; the reader's own

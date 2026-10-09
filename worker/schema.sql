@@ -287,11 +287,16 @@ CREATE TABLE IF NOT EXISTS verifiers (
 -- THE SAME WORK BY THE DAY IT WAS CREDITED, for the ranking's last thirty days
 -- (docs/BOARD.md §"Contribution"). A refused client's days count for nothing,
 -- as its total does: the ranking reads them through `verifiers.banned`.
-CREATE TABLE IF NOT EXISTS verifier_days (
+CREATE TABLE IF NOT EXISTS verifier_hours (
   verifier TEXT NOT NULL,
-  day      TEXT NOT NULL,
+  -- THE UTC HOUR, `YYYY-MM-DDTHH`: a reader's own "today" is whole hours of it
+  -- in their time zone, and the rankings' days are its prefix.
+  hour     TEXT NOT NULL,
   work     INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (verifier, day)
+  -- …AND WHAT THE BROWSER SENT IN THAT HOUR: results, and what their fights took.
+  tasks    INTEGER NOT NULL DEFAULT 0,
+  ms       INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (verifier, hour)
 );
 
 -- SHORT SHARE LINKS: `/weapons/<weapon>/s/<id>` names a stored share code.

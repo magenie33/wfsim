@@ -250,11 +250,10 @@ async function volunteerAnswer(env, a, b, now, owners) {
       if (x.key !== y.key || x.score !== y.score || x.work !== y.work || ownerOf(x.verifier) === ownerOf(y.verifier)) continue;
       const won = await db.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL").bind(now, a.code).run();
       if (!won.meta.changes) return json({ ok: true, first: !a.done_at });
-      const today = new Date(now).toISOString().slice(0, 10);
       await db.batch([x, y].flatMap((r) => [
         db.prepare("UPDATE verifiers SET work = work + ? WHERE id = ?").bind(r.work, r.verifier),
-        db.prepare(`INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)
-          ON CONFLICT (verifier, day) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, today, r.work),
+        db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
+          ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, new Date(now).toISOString().slice(0, 13), r.work),
       ]));
       return json({ ok: true, first: !a.done_at });
     }

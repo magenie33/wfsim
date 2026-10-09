@@ -101,8 +101,8 @@ async function ban(id) {
   const owed = agreed.reduce((sum, o) => sum + (o.work || 0), 0);
   if (owed) {
     await d1("UPDATE verifiers SET work = MAX(0, work - ?) WHERE id = ?", [owed, id]);
-    await d1(`INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)
-             ON CONFLICT (verifier, day) DO UPDATE SET work = work + excluded.work`, [id, new Date().toISOString().slice(0, 10), -owed]);
+    await d1(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
+             ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`, [id, new Date().toISOString().slice(0, 13), -owed]);
   }
   for (const o of named) {
     const ms = (o.clients_compute_ms || "").split(",");

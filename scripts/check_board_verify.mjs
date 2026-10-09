@@ -257,8 +257,11 @@ check("...and a rescore's when no new build's is left", (await e8.work(LATER)).w
 const credited = (v) => db.prepare("SELECT work FROM verifiers WHERE id = ?").get(v).work;
 check("a fact credits its work to every client that measured it, once a fact",
   credited(B) === WORK && credited(I) === WORK && credited(A) === 2 * WORK, `${credited(A)} ${credited(B)} ${credited(I)}`);
-const creditedToday = (v) => db.prepare("SELECT SUM(work) AS w FROM verifier_days WHERE verifier = ? AND day = ?")
+const creditedToday = (v) => db.prepare("SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ? AND substr(hour, 1, 10) = ?")
   .get(v, new Date().toISOString().slice(0, 10)).w;
+check("every result is counted in its hour, with what its fight took, for its browser's own today",
+  (db.prepare("SELECT SUM(tasks) AS t, SUM(ms) AS ms FROM verifier_hours WHERE verifier = ?").get(A).t || 0) > 0
+  && (db.prepare("SELECT SUM(ms) AS ms FROM verifier_hours WHERE verifier = ?").get(A).ms || 0) > 0);
 check("...and the same work under the day it was credited, for the ranking's last thirty days",
   creditedToday(A) === 2 * WORK && creditedToday(B) === WORK && creditedToday(I) === WORK,
   `${creditedToday(A)} ${creditedToday(B)} ${creditedToday(I)}`);

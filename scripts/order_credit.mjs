@@ -39,11 +39,10 @@ export const clientsOf = (o) => (o.clients || [o.produced_by, o.verifier].filter
 /// worker/verify.js `fact` makes.
 export async function credit(q, ids, work) {
   if (!work) return;
-  const day = new Date().toISOString().slice(0, 10);
   for (const id of ids) {
     await q("UPDATE verifiers SET work = work + ? WHERE id = ?", [work, id]);
-    await q(`INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)
-             ON CONFLICT (verifier, day) DO UPDATE SET work = work + excluded.work`, [id, day, work]);
+    await q(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
+             ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`, [id, new Date().toISOString().slice(0, 13), work]);
   }
 }
 

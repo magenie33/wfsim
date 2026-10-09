@@ -147,6 +147,7 @@ second one exists.
 | --- | --- | --- |
 | an instant | UTC ISO 8601 to the millisecond, `new Date().toISOString()` — `2026-10-09T06:07:00.370Z` | `<event>_at`, `at`, `<event>_until` |
 | a calendar day | `YYYY-MM-DD`, UTC | `day` |
+| an hour | `YYYY-MM-DDTHH`, UTC — a prefix of the instant, so it compares with one | `hour` |
 | a duration | a number with its unit | `_ms`, `_seconds` |
 
 ONE FORMAT, because the stores compare times as strings: `…:31Z` sorts after

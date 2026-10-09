@@ -64,6 +64,7 @@ const computeOf = (o) => {
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 const day = () => new Date().toISOString().slice(0, 10);
+const hour = () => new Date().toISOString().slice(0, 13);
 const stamp = () => new Date().toISOString().slice(0, 19) + "Z";
 const done = "lease = NULL, lease_until = NULL, leased_to = NULL";
 
@@ -282,6 +283,9 @@ async function verify(request, env) {
   // …AND WHEN IT LAST ANSWERED, for its owner's device list, in the same write.
   const spent = db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?")
     .bind(ms || 0, stamp(), b.verifier);
+  // …AND THE RESULT COUNTED IN ITS HOUR, for the reader's own "today".
+  await db.prepare(`INSERT INTO verifier_hours (verifier, hour, tasks, ms) VALUES (?, ?, 1, ?)
+    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = tasks + 1, ms = ms + excluded.ms`).bind(b.verifier, hour(), ms || 0).run();
   if (o.state === "todo") {
     if (needed(env) <= 1) {
       await fact(db, key, { ...o, score: b.score, metric: b.metric, work: b.work, engine: b.engine, produced_by: b.verifier },
@@ -362,8 +366,8 @@ async function fact(db, key, o, clients, compute, last, spent) {
         clean = CASE WHEN refusals = 0 OR clean + 1 >= refusals * ? THEN 0 ELSE clean + 1 END WHERE id = ?`)
       .bind(FACTS_PER_REFUSAL_FORGIVEN, FACTS_PER_REFUSAL_FORGIVEN, c)),
     ...clients.map((c) => db.prepare(
-      `INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)
-       ON CONFLICT (verifier, day) DO UPDATE SET work = work + excluded.work`).bind(c, day(), o.work || 0)),
+      `INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
+       ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(c, hour(), o.work || 0)),
     spent,
   ]);
 }

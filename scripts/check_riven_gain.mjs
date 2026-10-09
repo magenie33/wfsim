@@ -51,7 +51,7 @@ const open = async (asker) => (await appraise("POST", "/api/appraise/new", { cha
   weapon: "torid", ruler: "standard_single_target", riven }, bot)).body.code;
 const FROZEN = { engine: "e1", request: { weapon: "torid", strategy: "quick" }, context: { weapon: "torid", rivens: {} } };
 const credited = (v) => (LIBRARY.raw.prepare("SELECT work FROM verifiers WHERE id = ?").get(v) || {}).work || 0;
-const today = (v) => (LIBRARY.raw.prepare("SELECT SUM(work) AS w FROM verifier_days WHERE verifier = ?").get(v) || {}).w || 0;
+const today = (v) => (LIBRARY.raw.prepare("SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?").get(v) || {}).w || 0;
 
 const A = "a".repeat(24), B = "b".repeat(24), C = "c".repeat(24), D = "d".repeat(24);
 for (const v of [A, B, C, D]) LIBRARY.raw.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);

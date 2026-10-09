@@ -175,7 +175,9 @@ async function loadDevicePoints() {
   const id = verifierId();
   if (!id) return;
   devicePointsAt = Date.now();
-  const r = await postBoardWork("/api/board/points", { verifier: id });
+  // …AND ITS OWN "TODAY", from this reader's midnight, as the UTC hour it falls in.
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const r = await postBoardWork("/api/board/points", { verifier: id, since: midnight.toISOString().slice(0, 13) });
   if (!(r && r.ok)) return;
   devicePoints = r;
   // WHETHER THE RANKING MAY NAME THEM is asked here, where they see their points.
