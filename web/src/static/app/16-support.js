@@ -106,7 +106,44 @@ function renderHomeFacts() {
   el.hidden = !rows.length;
   el.innerHTML = rows.map((f) => `<span class="hf"><b>${
     escHtml(f.n.toLocaleString())}</b> ${escHtml(tr(f.what))}</span>`).join("");
+  if (!tallyTo) loadHomeTally();
 }
+
+/// THE BOARD'S SCORES BY WHO COMPUTED THEM, under the home hero's claim
+/// (/api/board/tally): the players' machines apart from the official ones, and
+/// the computers at it now. Asked each minute the page is in view; between
+/// answers a count walks to the new one over the minute, so it never shows a
+/// number the server has not.
+const TALLY_EVERY_MS = 60_000;
+let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0;
+async function loadHomeTally() {
+  if (document.hidden || $("home-page")?.hidden) return;
+  const r = await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  if (!r || !r.totals) return;
+  const next = { volunteers: r.totals.volunteers, official: r.totals.official, computing: r.computing | 0 };
+  tallyFrom = tallyShown || next;
+  tallyTo = next;
+  tallyAt = Date.now();
+  renderHomeTally();
+}
+function renderHomeTally() {
+  const box = $("home-tally"), el = $("home-tally-n");
+  if (!box || !el || !tallyTo) return;
+  const f = Math.min(1, (Date.now() - tallyAt) / TALLY_EVERY_MS);
+  const at = (k) => Math.round(tallyFrom[k] + (tallyTo[k] - tallyFrom[k]) * f);
+  tallyShown = { volunteers: at("volunteers"), official: at("official"), computing: tallyTo.computing };
+  const b = (n) => `<b>${escHtml(n.toLocaleString())}</b>`;
+  const line = (s, n, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
+    escHtml(tr(s)).replace("{n}", b(n))}</span>`;
+  el.innerHTML = line("{n} scores computed by players' machines, each agreed by two", tallyShown.volunteers)
+    + line("{n} by the official servers", tallyShown.official)
+    + (tallyShown.computing ? line("{n} computers computing now", tallyShown.computing, true) : "");
+  box.hidden = false;
+}
+loadHomeTally();
+setInterval(loadHomeTally, TALLY_EVERY_MS);
+setInterval(() => { if (tallyTo && Date.now() - tallyAt < TALLY_EVERY_MS + 1000) renderHomeTally(); }, 250);
+addEventListener("visibilitychange", loadHomeTally);
 
 /// WHAT THIS CLIENT IS RUNNING, in the three identifiers of
 /// docs/DISTRIBUTION.md §Identity: the release, the board, the shell.

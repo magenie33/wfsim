@@ -2351,6 +2351,10 @@ ui:
     "套玩家上传的配装"
   "evaluations computed":
     "次测评已算出"
+  "The first build leaderboard computed by its players.": "第一个由玩家算出来的配装排行榜。"
+  "{n} scores computed by players' machines, each agreed by two": "{n} 个成绩由玩家的电脑算出，每个都经两台一致确认"
+  "{n} by the official servers": "{n} 个由官方服务器算出"
+  "{n} computers computing now": "此刻 {n} 台电脑在算"
   "How it works":
     "它是怎么算的"
   "How much of a grenade's damage was the impact and how much was the cloud it left behind is something the fight works out. It is not a ratio you type in.":

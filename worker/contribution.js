@@ -15,6 +15,7 @@
 //   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, per_hour: { volunteers, official } }
+//   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
 //   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, mark?, volunteer? } | null }
 //        — `computing` is how many browsers answered in the last `COMPUTING_MS`;
@@ -313,6 +314,44 @@ async function demand(env) {
   return json(body);
 }
 
+/// THE HOME HERO'S TALLY: every score the board holds, by who computed it, and
+/// the last hour's. Counting the whole table costs a scan, so that count is a
+/// BASE kept `TALLY_BASE_MS` at the edge and each answer adds the rows finished
+/// since it, read on `scores_oldest`. A row replaced since the base is counted
+/// again until the next base; the volunteers' count stays exact either way.
+const TALLY_BASE_MS = 10 * 60_000;
+const SPLIT = `SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official`;
+async function tally(request, env) {
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const key = new Request(new URL("/api/board/tally", request.url).toString());
+  const hit = cache && await cache.match(key);
+  if (hit) return hit;
+  const db = env.LIBRARY;
+  const split = (r) => ({ volunteers: (r && r.volunteers) || 0, official: (r && r.official) || 0 });
+  const baseKey = new Request(new URL("/api/board/tally/base", request.url).toString());
+  let base = cache && await cache.match(baseKey).then((r) => (r ? r.json() : null));
+  if (!base && db) {
+    const at = iso(Date.now());
+    base = { at, ...split(await db.prepare(`SELECT ${SPLIT} FROM scores`).first()) };
+    if (cache) await cache.put(baseKey, new Response(JSON.stringify(base),
+      { headers: { "content-type": "application/json", "cache-control": `public, max-age=${TALLY_BASE_MS / 1000}` } }));
+  }
+  let totals = { volunteers: 0, official: 0 }, perHour = { volunteers: 0, official: 0 };
+  if (db) {
+    const [since, hour] = await db.batch([
+      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at > ?`).bind(base.at),
+      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(Date.now() - 3_600_000)),
+    ]);
+    const s = split(since.results[0]);
+    totals = { volunteers: base.volunteers + s.volunteers, official: base.official + s.official };
+    perHour = split(hour.results[0]);
+  }
+  const r = new Response(JSON.stringify({ ok: true, totals, per_hour: perHour, computing: await computingNow(env) }),
+    { headers: { "content-type": "application/json", "cache-control": "public, max-age=60" } });
+  if (cache) await cache.put(key, r.clone());
+  return r;
+}
+
 /// THE NAV'S COUNT, asked by every page a reader opens, so held a minute in the
 /// edge cache and computed by one cheap count.
 async function computingCount(request, env) {
@@ -344,6 +383,10 @@ export async function contributionRoute(request, env, path) {
   if (path === "/api/board/demand") {
     if (request.method !== "GET") return no("method", 405);
     return demand(env);
+  }
+  if (path === "/api/board/tally") {
+    if (request.method !== "GET") return no("method", 405);
+    return tally(request, env);
   }
   if (path === "/api/board/points") {
     if (request.method !== "POST") return no("method", 405);

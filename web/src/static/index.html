@@ -337,6 +337,12 @@
          source. /support argues the whole case; the hero states it once. -->
     <p class="hero-stance" data-i18n>Every hit counts.</p>
     <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
+    <!-- THE CLAIM IS DRAWN ONLY WITH ITS COUNT (`renderHomeTally`): where
+         /api/board/tally does not answer, neither is shown. -->
+    <div id="home-tally" hidden>
+      <p class="hero-stance" data-i18n>The first build leaderboard computed by its players.</p>
+      <div class="hero-facts" id="home-tally-n"></div>
+    </div>
     <div class="hero-facts" id="home-facts" hidden></div>
     <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support" data-i18n>How to check it</a></p>
     <!-- ONE SECTION PER EQUIPMENT SLOT, in `META.equipment_slots` order
