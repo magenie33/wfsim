@@ -487,6 +487,8 @@ check("...and asking again opens nothing", backfill() === 0);
   check("a browser learns where each of its results stands: waiting, confirmed and when, being checked, or no longer its",
     JSON.stringify(st) === JSON.stringify({ "m-wait": "waiting", "m-ok": "confirmed@2026-10-09T08:00:00Z", "m-check": "checking", "m-gone": "gone" }),
     JSON.stringify(r));
+  const fifty = await ask(M, Array.from({ length: 50 }, (_, i) => `m-${String(i).padStart(30, "0")}`));
+  check("...a browser's whole list of fifty tasks is asked in one go", fifty.ok === true, JSON.stringify(fifty).slice(0, 120));
   const theirs = await ask("b2".repeat(12), ["m-wait", "m-ok"]);
   check("...and another browser asking about them learns only that they are not its",
     (theirs.orders || []).every((o) => o.state === "gone" && !o.at), JSON.stringify(theirs));

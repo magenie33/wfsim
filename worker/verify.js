@@ -68,10 +68,10 @@ const day = () => new Date().toISOString().slice(0, 10);
 const hour = () => new Date().toISOString().slice(0, 13);
 const done = "lease = NULL, lease_until = NULL, leased_to = NULL";
 
-async function read(request) {
+async function read(request, max = 2048) {
   if (request.method !== "POST") return { err: json({ ok: false, error: "POST only" }, 405) };
   const raw = await request.text();
-  if (raw.length > 2048) return { err: json({ ok: false, error: "payload too large" }, 400) };
+  if (raw.length > max) return { err: json({ ok: false, error: "payload too large" }, 400) };
   try { return { b: JSON.parse(raw) }; } catch { return { err: json({ ok: false, error: "not json" }, 400) }; }
 }
 
@@ -407,8 +407,11 @@ async function release(request, env) {
 /// difference, `confirmed` once a fact counts it — with when — and `gone` when
 /// the row is no longer its to earn. It says nothing about anyone else.
 const MINE_MAX = 60;
+/// A WHOLE LIST OF KEYS fits: fifty tasks are about five kilobytes, and at the
+/// common limit every list past twenty was refused and no task left "waiting".
+const MINE_BODY = 8192;
 async function mine(request, env) {
-  const { b, err } = await read(request);
+  const { b, err } = await read(request, MINE_BODY);
   if (err) return err;
   if (!VERIFIER_ID.test(b.verifier || "") || !Array.isArray(b.orders)) return json({ ok: false, error: "bad request" }, 400);
   const keys = b.orders.slice(0, MINE_MAX).filter((k) => k && typeof k.identity === "string" && typeof k.ruler === "string" && typeof k.mode === "string");
