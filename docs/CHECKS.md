@@ -208,7 +208,8 @@ nothing; a page of an engine the site no longer serves, or of an older
 protocol, is told it is stale; a release carries an open result to the new
 engine with its clients, whose reproduction makes the fact and whose
 difference replaces it unrefused; a new build's row is leased before a
-rescore's; a computer that never said yes is handed
+rescore's, and a new build's row that already has a score is not asked for
+again while a rescore's is; a computer that never said yes is handed
 nothing, and the yes it sent is kept on its row; a client is written once a
 day. A scorer run's claim (`fetch_queue.sh`, run as the statements it sends)
 takes every old order, open or not, that no client holds, leaves a held one and

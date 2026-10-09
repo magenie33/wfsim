@@ -68,17 +68,29 @@ batch_body() {
 # `INSERT OR IGNORE`, because asking twice for one row is one row. The primary
 # key is (batch, build, ruler, mode) and that is the whole of the idempotence.
 queue_batches() {
-  jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" '
+  jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT OR IGNORE INTO queue (batch, build_id, ruler, mode) VALUES "
-              + ([$chunk[] | "(?,?,?,?)"] | join(","))),
+        sql: ("INSERT OR IGNORE INTO queue (batch, build_id, ruler, mode)"
+              + " SELECT v.column1, v.column2, v.column3, v.column4 FROM (VALUES "
+              + ([$chunk[] | "(?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed),
         params: [$chunk[] | $batch, .build_id, .ruler, .mode]
       }
   ' "$2"
+}
+
+# A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS: a resubmission the
+# page did not recognise — a board copy that lagged, a row under the entry line
+# it never saw — is the same build, and reopening it fought it again. A
+# rescore's batch asks for scored rows on purpose. Prints the SQL predicate.
+owed_only() {
+  case "$1" in
+    arrivals-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4)" ;;
+    *) echo "true" ;;
+  esac
 }
 
 # …AND A COMPUTE ORDER BESIDE EVERY ROW, built from the library's record of the
@@ -89,7 +101,7 @@ queue_batches() {
 orders_batches() {
   local priority=1
   case "${2:-}" in arrivals-*) priority=0 ;; esac
-  jq -R -s -c --argjson n "$QUEUE_BATCH" --argjson priority "$priority" '
+  jq -R -s -c --argjson n "$QUEUE_BATCH" --argjson priority "$priority" --arg owed "$(owed_only "${2:-}" v.column1 v.column2 v.column3)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
@@ -99,7 +111,7 @@ orders_batches() {
               + " SELECT v.column1, v.column2, v.column3, b.record, ?, ?,"
               + " abs(random()) % 2147483647, unixepoch() * 1000, ?"
               + " FROM (VALUES " + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AS v"
-              + " JOIN builds b ON b.id = v.column1 WHERE true"
+              + " JOIN builds b ON b.id = v.column1 WHERE " + $owed
               + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET state = ?, engine = ?,"
               + " slot = excluded.slot, record = excluded.record, score = NULL, metric = NULL,"
               + " produced_by = NULL, verifier = NULL, disputed = NULL, lease = NULL,"
@@ -271,6 +283,8 @@ DEAD
 }
 
 if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
+# THE STATEMENTS THEMSELVES, for check_board_verify.mjs to run against the schema.
+if [ "${1:-}" = "--body" ]; then "${2:?queue|orders}_batches" "${@:3}"; exit $?; fi
 
 if ! configured; then
   echo "queue: no database configured, nothing asked for"

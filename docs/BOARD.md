@@ -639,7 +639,10 @@ row at a time, so the board's growth is more orders, never a heavier client.
 
 - **Taking in.** The bot server takes a submission in the moment it lands
   (`live_board.sh`: `wfsim-intake --orders`, `ship_builds.sh`,
-  `ship_queue.sh`); `queue.yml`'s hourly intake is the fallback.
+  `ship_queue.sh`); `queue.yml`'s hourly intake is the fallback. A new build's
+  row is asked for only where `scores` holds no score: a resubmission the page
+  did not recognise is the same build, and asking again would fight it again.
+  A rescore's batch asks for scored rows on purpose.
 - **Leasing.** `/api/board/work` (`worker/verify.js`) hands a client one
   order — its library RECORD, a ruler and a mode, never a number — chosen from
   a random `slot` on an index, so a lease reads a few rows however long the

@@ -15,7 +15,9 @@
 import { verifyRoute, LEASE_MS, PROTOCOL } from "../worker/verify.js";
 import { creditConfirmed } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 
 let failures = 0;
@@ -312,6 +314,28 @@ check("a client result the scorer reproduces is paid to its client",
 check("...never one that differs in score, work or engine",
   paid[1] === 0 && ["otherscore", "otherwork", "otherengine"].every((id) => row(id).state === "scoring:open"));
 check("...and only once", (await creditConfirmed(q, facts, "e1")) === 0 && workOf(Z) === WORK);
+
+// A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS (scripts/ship_queue.sh);
+// a rescore's batch asks for scored rows too.
+const rows = join(mkdtempSync(join(tmpdir(), "owed-")), "rows.ndjson");
+writeFileSync(rows, ["scored", "unscored"].map((id) => JSON.stringify({ build_id: id, ruler: "standard_single_target", mode: "base" })).join("\n") + "\n");
+const shipped = (what, batch) => execFileSync("bash", ["scripts/ship_queue.sh", "--body", what, ...(what === "queue" ? [batch, rows] : [rows, batch])],
+  { encoding: "utf8" }).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+const run = (what, batch) => { for (const b of shipped(what, batch)) sql(b).run(...b.params); };
+db.prepare("DELETE FROM queue").run();
+db.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('arrivals-t', '2026-01-01', 'check', 2), ('rescore-t', '2026-01-01', 'check', 2)").run();
+for (const id of ["scored", "unscored"]) db.prepare("INSERT INTO builds (id, at, record) VALUES (?, '2026-01-01', ?)").run(id, JSON.stringify({ weapon: "braton_prime" }));
+order("scored", "verified", { score: SCORE, metric: "kpm", engine: "e1", produced_by: R, clients: R });
+db.prepare("DELETE FROM queue").run();
+db.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+            VALUES ('scored', 'standard_single_target', 'base', 'verified:e1', ?, 'kpm', 0, 'T0', 'T1')`).run(SCORE);
+run("queue", "arrivals-t"); run("orders", "arrivals-t");
+const queued = () => db.prepare("SELECT DISTINCT build_id FROM queue ORDER BY build_id").all().map((r) => r.build_id).join(",");
+check("a resubmitted build's scored row is not asked for again, its order left as it was",
+  queued() === "unscored" && row("scored").state === "verified" && row("unscored").state === "todo" && row("unscored").priority === 0,
+  `${queued()} ${row("scored").state}`);
+run("queue", "rescore-t"); run("orders", "rescore-t");
+check("...while a rescore asks for it", queued() === "scored,unscored" && row("scored").state === "todo");
 
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;
