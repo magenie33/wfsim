@@ -293,6 +293,9 @@ const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
 const computeShown = new Set();
 let computeOpenTask = null;
 function computeRecentHtml() {
+  // NOT BEFORE THE META: a reader landing on /compute is drawn once before it
+  // arrives, and a task names its weapon, ruler and metric through it.
+  if (typeof META === "undefined" || !META) return "";
   const log = computeLog();
   if (!log.length) return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${aT("Nothing yet.")}</p></div></div>`;
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
