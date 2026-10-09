@@ -18,7 +18,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Vitrica","description":"Vitrica (金璃剑) — Heavy Blade · Melee · Mastery Rank 13. 333 base damage (impact 99.9, puncture 99.9, slash 133.2), 23% crit chance, 2.3x crit multiplier, 33% status chance. Build it, simulate the fight, and optimize the mods.","url":"https://wfsim.app/weapons/Vitrica","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Vitrica","item":"https://wfsim.app/weapons/Vitrica"}]},"dateModified":"2026-10-09","about":{"@type":"Thing","name":"Vitrica","alternateName":"金璃剑"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.8c73140a675b.css" />
+  <link rel="stylesheet" href="/asset/style.dd1dc5399f7e.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -101,7 +101,10 @@
         </div>
       </div>
       <select id="weapon" hidden></select>
+
+      <a id="compute-count" class="tcount compute-online" href="/compute" hidden></a>
       
+      <a id="compute-mark" class="compute-mark" href="/compute" hidden aria-label="Compute"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="cm-track" cx="12" cy="12" r="9" pathLength="100"/><circle class="cm-arc" cx="12" cy="12" r="9" pathLength="100"/></svg></a>
       <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false"
               aria-controls="topmenu" aria-label="Menu" title="Menu" data-i18n-title>☰</button>
       <div id="topmenu" class="topmenu">
@@ -113,26 +116,41 @@
           
           <a class="tnav" data-nav="utility" href="/utility/fissures" data-i18n>Utility<span id="utility-badge" class="tbadge" hidden></span></a>
           
-          <a class="tnav" data-nav="compute" href="/compute" data-i18n>Compute<span id="compute-count" class="tcount" hidden></span></a>
+          <div class="tbmore tbgroup" id="community-menu">
+            <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false"
+                    aria-controls="community-panel" aria-haspopup="true" data-i18n>Community</button>
+            <div class="tbmore-panel" id="community-panel">
+              <a class="tbmenu-link" data-nav="compute" href="/compute"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/><path d="M12 4a8 8 0 0 1 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="tbl" data-i18n>Help compute WFSim</span></a>
+              <a class="tbmenu-link" data-nav="contributors" href="/contributors"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg><span class="tbl" data-i18n>Contributors</span></a>
+              <span class="tbmenu-sep"></span>
+              <span class="tbcomm" id="community-primary">
+                <a class="dc-link ghost-btn" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener" title="Join the Discord" data-i18n-title aria-label="Discord"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.54 4.94A16.3 16.3 0 0 0 15.5 3.7a.06.06 0 0 0-.06.03c-.17.31-.37.72-.5 1.03a15.1 15.1 0 0 0-4.5 0 10.4 10.4 0 0 0-.51-1.03.06.06 0 0 0-.06-.03A16.26 16.26 0 0 0 5.83 4.94a.06.06 0 0 0-.03.02C3.24 8.77 2.54 12.48 2.89 16.14a.07.07 0 0 0 .03.05 16.4 16.4 0 0 0 4.94 2.5.06.06 0 0 0 .07-.02c.38-.52.72-1.07 1.01-1.64a.06.06 0 0 0-.03-.09c-.54-.2-1.05-.45-1.54-.73a.06.06 0 0 1 0-.11l.3-.24a.06.06 0 0 1 .07 0 11.7 11.7 0 0 0 9.94 0 .06.06 0 0 1 .07 0l.3.24a.06.06 0 0 1 0 .11c-.5.29-1 .53-1.55.73a.06.06 0 0 0-.03.09c.3.57.63 1.12 1 1.64a.06.06 0 0 0 .08.02 16.35 16.35 0 0 0 4.95-2.5.06.06 0 0 0 .02-.05c.42-4.23-.67-7.9-2.85-11.18a.05.05 0 0 0-.03-.02zM9.68 13.91c-.97 0-1.78-.9-1.78-2s.79-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.79 2-1.78 2zm6.57 0c-.98 0-1.78-.9-1.78-2s.78-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.78 2-1.78 2z"/></svg><span class="tbl">Discord</span></a>
+              </span>
+              <span class="tbcomm" id="community-alt">
+                <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg><span class="tbl" data-i18n>QQ group</span></a>
+              </span>
+              <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="tbl">GitHub</span></a>
+            </div>
+          </div>
         </nav>
         <span id="trail" class="trail" hidden></span>
         <div class="tblinks">
-          
-          <span id="lang-select"></span>
-          <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
-          
-          <span class="tbcomm" id="community-primary">
-            <a class="dc-link ghost-btn" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener" title="Join the Discord" data-i18n-title aria-label="Discord"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.54 4.94A16.3 16.3 0 0 0 15.5 3.7a.06.06 0 0 0-.06.03c-.17.31-.37.72-.5 1.03a15.1 15.1 0 0 0-4.5 0 10.4 10.4 0 0 0-.51-1.03.06.06 0 0 0-.06-.03A16.26 16.26 0 0 0 5.83 4.94a.06.06 0 0 0-.03.02C3.24 8.77 2.54 12.48 2.89 16.14a.07.07 0 0 0 .03.05 16.4 16.4 0 0 0 4.94 2.5.06.06 0 0 0 .07-.02c.38-.52.72-1.07 1.01-1.64a.06.06 0 0 0-.03-.09c-.54-.2-1.05-.45-1.54-.73a.06.06 0 0 1 0-.11l.3-.24a.06.06 0 0 1 .07 0 11.7 11.7 0 0 0 9.94 0 .06.06 0 0 1 .07 0l.3.24a.06.06 0 0 1 0 .11c-.5.29-1 .53-1.55.73a.06.06 0 0 0-.03.09c.3.57.63 1.12 1 1.64a.06.06 0 0 0 .08.02 16.35 16.35 0 0 0 4.95-2.5.06.06 0 0 0 .02-.05c.42-4.23-.67-7.9-2.85-11.18a.05.05 0 0 0-.03-.02zM9.68 13.91c-.97 0-1.78-.9-1.78-2s.79-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.79 2-1.78 2zm6.57 0c-.98 0-1.78-.9-1.78-2s.78-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.78 2-1.78 2z"/></svg><span class="tbl">Discord</span></a>
-          </span>
           
           <a class="sup-link ghost-btn" href="/support" title="Support WFSim" data-i18n-title aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl" data-i18n>Support</span></a>
           
           <div class="tbmore" id="tbmore">
             <button id="tbmore-toggle" class="ghost-btn tbmore-btn" aria-expanded="false"
                     aria-controls="tbmore-panel" aria-haspopup="true"
-                    title="More" data-i18n-title aria-label="More">⋯</button>
+                    title="Settings" data-i18n-title aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h10m4 0h2M4 17h4m4 0h8M14 4.5v5M8 14.5v5"/></svg></button>
             <div class="tbmore-panel" id="tbmore-panel">
-              
+              <div class="tbmore-row">
+                <span class="tbl" data-i18n>Language</span>
+                <span id="lang-select"></span>
+              </div>
+              <div class="tbmore-row">
+                <span class="tbl" data-i18n>Theme</span>
+                <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
+              </div>
               <div class="tbmore-row">
                 <span class="tbl" data-i18n>Cores</span>
                 <span id="compute-select"></span>
@@ -148,12 +166,8 @@
                 <span class="tbl" data-i18n>Saved items</span>
                 <span class="saves-acts"><button type="button" class="ghost-btn btn-sm" data-saves="export" data-i18n>Export</button><button type="button" class="ghost-btn btn-sm" data-saves="import" data-i18n>Import</button></span>
               </div>
-              
+              <span class="tbmenu-sep"></span>
               <a class="dl-link ghost-btn" href="/download" title="Download the Windows app" data-i18n-title aria-label="Download"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v11m0 0-4-4m4 4 4-4M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg><span class="tbl" data-i18n>Windows app</span></a>
-              <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="tbl">GitHub</span></a>
-              <span class="tbcomm" id="community-alt">
-                <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg><span class="tbl" data-i18n>QQ group</span></a>
-              </span>
             </div>
           </div>
         </div>
@@ -636,13 +650,13 @@
     <a href="/support" title="Support WFSim" data-i18n-title data-i18n>Support</a> ·
     <a href="/support#usage" data-i18n>Usage statistics</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">48665071</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">ad6306a1</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.9beebdde1c32.js"></script>
+  <script src="/asset/app.1d864a87022f.js"></script>
   <script type="module" src="/asset/nona.c70ed3980e7d/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

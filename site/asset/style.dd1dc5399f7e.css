@@ -1959,6 +1959,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rank-row.you{background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .rank-you{font-size:12px;color:var(--muted)}
 /* THE COMPUTE PAGE'S DEMAND: who is computing now, and the volunteers' share of an hour. */
+.tcount{margin-left:6px;font-size:11px;font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.tcount .online-dot{width:6px;height:6px;margin-right:4px;box-shadow:0 0 0 3px rgba(88,214,141,.18)}
 .online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#58d68d;box-shadow:0 0 0 4px rgba(88,214,141,.18);margin-right:8px;vertical-align:middle}
 .demand-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 6px;background:color-mix(in srgb,var(--text) 22%,transparent)}
 .demand-bar>div{background:var(--accent)}
@@ -2044,6 +2046,60 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    could see it. Same trap this file warns about two rules up. */
 .tbcomm{display:contents}
 .topbar-inner .tbcomm>*{order:4}
+/* A GROUP'S MENU IN THE NAV (`#community-menu`) is a destination list, so it
+   opens under its own label, from the left, and its button reads as one of
+   the nav's words with a caret rather than as a ghost button. */
+.tbgroup-btn{border:0;background:none;font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.tbgroup-btn::after{content:"";width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;
+  border-top:4px solid currentColor;opacity:.7}
+.tbgroup .tbmore-panel{left:0;right:auto;min-width:210px}
+.tbmenu-link{display:flex;align-items:center;height:30px;padding:0 8px;border-radius:6px;text-decoration:none;color:var(--text)}
+.tbmenu-link:hover{background:var(--plane)}
+.tbmenu-link svg{flex:0 0 auto;margin-right:9px;color:var(--text-2)}
+.tbmenu-sep{height:1px;margin:4px 6px;background:var(--line)}
+/* IN A MENU THE COMMUNITY'S MARKS KEEP THE MARKUP'S ORDER: the bar's own
+   `order:4` on them would sort them after GitHub. */
+.topbar-inner .tbmore-panel .tbcomm>*{order:0}
+.topbar-inner .tbmore-panel a{text-decoration:none}
+/* A ROW IS A ROW even when it is a <label>, which the form rule stacks; and a
+   row's own buttons keep their size, since the panel's full-width rule is for
+   its link rows, not for the theme switch or the saves pair inside a row. */
+.tbmore-row{flex-direction:row}
+.tbmore-row input[type="checkbox"]{width:auto;margin:0}
+.topbar-inner .tbmore-row .ghost-btn{width:auto;height:26px;padding:0 8px;justify-content:center;border-color:var(--line)}
+/* THE RIGHT-HAND GROUP is pushed over by its first box: the computers-online
+   count, else the compute ring, else Support. The count and the ring are
+   direct children of the bar and sort first among the right-hand boxes by
+   their place in the markup. */
+.topbar-inner>.compute-online,.topbar-inner>.compute-mark{order:4;margin-left:auto}
+.topbar-inner .tblinks>.sup-link{margin-left:auto}
+.topbar-inner:has(>.compute-online:not([hidden]))>.compute-mark,
+.topbar-inner:has(>.compute-online:not([hidden])) .tblinks>.sup-link,
+.topbar-inner:has(>.compute-mark:not([hidden])) .tblinks>.sup-link{margin-left:0}
+/* The count is a quiet link: a dot and a number, a word on hover. */
+.topbar-inner .compute-online{display:inline-flex;align-items:center;height:28px;padding:0 8px;margin-right:-6px;border-radius:8px;
+  font-size:12px;color:var(--text-2);text-decoration:none}
+.topbar-inner .compute-online[hidden]{display:none}
+.topbar-inner .compute-online:hover{background:var(--line);color:var(--text)}
+
+/* ---- the compute ring: the bar's one sign that this tab computes --------
+   A fixed 28px whatever it says, so a task starting or ending never moves the
+   bar (`73-compute.js` `computeMarkPaint`). */
+.compute-mark{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 28px;
+  border-radius:8px;text-decoration:none}
+.compute-mark[hidden]{display:none}
+.compute-mark:hover{background:var(--line)}
+.compute-mark svg{width:18px;height:18px;transform:rotate(-90deg)}
+.compute-mark circle{fill:none;stroke-width:3}
+.compute-mark .cm-track{stroke:var(--line)}
+.compute-mark .cm-arc{stroke:var(--muted);stroke-dasharray:100;stroke-dashoffset:100;stroke-linecap:round;
+  transition:stroke-dashoffset .6s ease,stroke .3s}
+.compute-mark[data-state="computing"] .cm-arc{stroke:var(--good)}
+.compute-mark[data-state="waiting"] .cm-arc{stroke:var(--good);stroke-dashoffset:0;animation:cmbreathe 2.6s ease-in-out infinite}
+.compute-mark.cm-spin svg{animation:cmspin 1.2s linear infinite}
+@keyframes cmspin{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+@keyframes cmbreathe{0%,100%{opacity:.25}50%{opacity:.7}}
+@media (prefers-reduced-motion:reduce){ .compute-mark .cm-arc{transition:none;animation:none} .compute-mark.cm-spin svg{animation:none} }
 
 @media (max-width:768px){
   /* Below here the wrapper becomes a real box, hanging off the bar. The
@@ -2090,6 +2146,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   .topbar-inner .tbmore-panel .ghost-btn{width:28px;height:28px;padding:0;
     justify-content:center;border-color:var(--line)}
   .tbmore-row{display:contents}
+  /* THE COMMUNITY'S MENU STAYS A LIST in the phone menu's destination column:
+     its entries are places, and a place needs its name. */
+  .topmenu #community-panel .tbl{display:inline;font-size:13px}
+  .topmenu .tbmenu-link{height:auto;padding:9px 10px;font-size:13px}
+  .topbar-inner #community-panel .ghost-btn{width:100%;height:auto;padding:9px 10px;justify-content:flex-start;border-color:transparent}
+  .topbar-inner .tblinks>.sup-link{margin-left:0}
 }
 
 /* ---- the board -------------------------------------------------------- */
