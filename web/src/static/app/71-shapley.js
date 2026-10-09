@@ -71,6 +71,12 @@ const shapleyFight = () => theFight({ runs: shapleyRuns(), seed: GAIN_SEED, run_
 /// whose key is not the current one is still shown, and said to be stale.
 const shapleyKey = () => JSON.stringify([buildPayload(), shapleyFight(), shapleyChosen().map((p) => p.key)]);
 
+/// IS AN ANALYSIS ACTUALLY WORKING: running, and it asked whether it was live
+/// in the last minute (`beat`). An exit that returns without `shapleyStop` latches
+/// `running`; this expires, as the quick calc's `scanIsLive` does.
+const SHAPLEY_STALE_MS = 60000;
+const shapleyIsLive = () => shapleyJob.running && Date.now() - (shapleyJob.beat || shapleyJob.beganAt || 0) < SHAPLEY_STALE_MS;
+
 function shapleyStop(note) {
   shapleyJob.running = false;
   shapleyJob.note = note || "";
@@ -79,7 +85,12 @@ function shapleyStop(note) {
 
 async function runShapley() {
   const gen = ++shapleyGen;
-  const live = () => gen === shapleyGen;
+  // ASKED BETWEEN EVERY PIECE of every subset, so a live analysis beats.
+  const live = () => {
+    if (gen !== shapleyGen) return false;
+    shapleyJob.beat = Date.now();
+    return true;
+  };
   const parts = shapleyChosen();
   const k = parts.length;
   if (!k) return shapleyStop(tr("choose at least one part"));

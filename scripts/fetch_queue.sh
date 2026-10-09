@@ -84,19 +84,21 @@ page_body() {
     }'
 }
 
-# THE CLAIM: every old `todo` or `open` order no client holds a live lease on
-# becomes `scoring:<state>`, which no lease seeks (worker/verify.js reads those
-# two states only), so a client is never handed a row this run is fighting. One
-# a client holds stays its own, and the read above skips it.
+# THE CLAIM: up to `CLAIM_ROWS` old `todo` or `open` orders no client holds a
+# live lease on, first in the queue's own order, become `scoring:<state>`,
+# which no lease seeks (worker/verify.js reads those two states only), so a
+# client is never handed a row this run is fighting. The rest stay the
+# clients': a claim of every old row left them nothing but the young ones.
 claim_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" '
+  jq -n -c --argjson hold "$HOLD_SECONDS" --argjson rows "${CLAIM_ROWS:-3000}" '
     {
-      sql: ("UPDATE orders SET state = ? || state"
-            + " WHERE state IN (?, ?) AND at <= (unixepoch() - ?) * 1000"
-            + " AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)"
-            + " AND EXISTS (SELECT 1 FROM queue q WHERE q.build_id = orders.identity"
-            + " AND q.ruler = orders.ruler AND q.mode = orders.mode)"),
-      params: ["scoring:", "todo", "open", $hold]
+      sql: ("UPDATE orders SET state = ? || state WHERE rowid IN ("
+            + "SELECT o.rowid FROM orders o JOIN queue q ON q.build_id = o.identity"
+            + " AND q.ruler = o.ruler AND q.mode = o.mode JOIN batches b ON b.id = q.batch"
+            + " WHERE o.state IN (?, ?) AND o.at <= (unixepoch() - ?) * 1000"
+            + " AND (o.lease_until IS NULL OR o.lease_until < unixepoch() * 1000)"
+            + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode LIMIT ?)"),
+      params: ["scoring:", "todo", "open", $hold, $rows]
     }'
 }
 

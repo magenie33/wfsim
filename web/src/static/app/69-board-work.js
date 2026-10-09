@@ -201,9 +201,12 @@ for (const ev of ["pointerdown", "keydown", "wheel", "touchstart"]) {
 }
 /// THE READER IS COMPUTING — anything, here or in another WFSim tab. The calls on
 /// the pool are counted where they run (`readerInFlight`); the jobs that live
-/// between calls, or on workers of their own, are named.
+/// between calls, or on workers of their own, are named — each by whether it is
+/// still WORKING (`scanIsLive`, `shapleyIsLive`), never by its `running` flag,
+/// which an exit nobody thought of latches: a latched flag held this tab and,
+/// through the channel below, every other one off the community's work for good.
 function ownTabBusy() {
-  return foregroundHeld > 0 || readerInFlight > 0 || optJobId !== null || gainScan.running || shapleyJob.running;
+  return foregroundHeld > 0 || readerInFlight > 0 || optJobId !== null || scanIsLive() || shapleyIsLive();
 }
 /// …AND ANOTHER TAB SAYS SO every second while it is, each word good for two:
 /// a Run in one tab holds the community's work in all of them.

@@ -297,6 +297,12 @@ const wy = await work(W);
 check("no client is handed a claimed order", wy.work && row("young").leased_to === W && (await work(Y)).work === null);
 sql(body("release")).run(...body("release").params);
 check("the release hands what the run left back as it was", row("old").state === "todo" && row("oldopen").state === "open");
+const capped = JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", "claim"],
+  { env: { ...process.env, HOLD_SECONDS: "14400", CLAIM_ROWS: "1" }, encoding: "utf8" }));
+sql(capped).run(...capped.params);
+const claimedNow = ["old", "oldopen"].filter((id) => row(id).state.startsWith("scoring:"));
+check("a run claims no more than its share, so old rows are left for the clients", claimedNow.length === 1, JSON.stringify(claimedNow));
+sql(body("release")).run(...body("release").params);
 
 // THE SCORER'S FACT PAYS THE CLIENT IT REPRODUCES, once, and no other.
 const q = async (s, p = []) => (/^\s*select|returning/i.test(s) ? db.prepare(s).all(...p) : (db.prepare(s).run(...p), []));
