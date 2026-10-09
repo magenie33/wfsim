@@ -21,8 +21,11 @@ const r = await evaluate(`(async () => {
   localStorage.setItem("wfsim-verifier", own);
   localStorage.setItem("wfsim-compute-log", JSON.stringify([
     { kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base", mods: ["secret"], at: Date.now() - 120000, ms: 12000, work: 3400000000,
-      identity: "b1", state: "confirmed", record: { weapon: "torid", mods: ["serration"] } },
+      identity: "b1", state: "confirmed", score: 123.4567, metric: "kpm", record: { weapon: "torid", mods: ["serration"] } },
     { kind: "appraise", at: Date.now() - 7200000, ms: 90000, work: 1e9 },
+    { kind: "riven_gain", weapon: "furis", ruler: "standard_single_target", at: Date.now() - 10800000, ms: 95000, work: 1e9,
+      score: 254.3244, metric: "kpm", search: { builds: 1840, fights: 22080 } },
+    { kind: "riven_gain", weapon: "furis", ruler: "standard_single_target", at: Date.now() - 14400000, ms: 95000, work: 1e9, score: 0, metric: "kpm" },
   ]));
   let account = null;
   let devices = [
@@ -102,7 +105,12 @@ const r = await evaluate(`(async () => {
 })()`, 40000);
 
 check("this browser's tasks are drawn by kind, a board order as its weapon and ruler, confirmed with its points",
-  r.recent[0] && r.recent[0].startsWith("Torid") && r.recent[0].includes("Standard Single Target") && r.recent[0].includes("confirmed +3"), JSON.stringify(r.recent));
+  r.recent[0] && r.recent[0].startsWith("SimulateTorid") && r.recent[0].includes("Standard Single Target") && r.recent[0].includes("confirmed +3"), JSON.stringify(r.recent));
+check("...a simulation says what it computed, a search the best it found among the builds it tried",
+  r.recent[0] && r.recent[0].includes("computed 123.4567 KPM")
+  && r.recent[2] && r.recent[2].startsWith("OptimizeFuris") && r.recent[2].includes("best 254.3244 KPM · 1,840 builds"), JSON.stringify(r.recent));
+check("...and a search's stored 0, a misread row, is drawn as no number at all", r.recent[3] && r.recent[3].startsWith("Optimize") && !r.recent[3].includes("KPM"),
+  JSON.stringify(r.recent));
 check("...opened, linked to that weapon's board, and its mods never drawn closed", r.link === "/weapons/Torid/benchmark" && !r.secret && r.closed,
   `${r.link} ${r.secret} ${r.closed}`);
 check("...the list is changed in place, never drawn again", r.kept);

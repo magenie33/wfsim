@@ -352,7 +352,7 @@ async function rivenGainOnce(w, id) {
   if (sent) heldLease = null; else giveBack();
   // …AND WHAT IT FOUND, for this browser's own list: the build, its number, what the search took.
   // A search row carries `kill_progress`, never `score`, and the duration is the answer's.
-  const v = kpm(Number(best.kill_progress ?? best.kills) || 0, r.duration);
+  const v = kpm(best.kill_progress ?? best.kills, r.duration);
   computeEnd(sent ? { ms: Math.round(performance.now() - began), work: r.work || 0, ...(Number.isFinite(v) ? { score: v, metric: "kpm" } : {}),
     record: boardPayloadFromResult(best, w.context), search: { builds: (job.status || {}).enumerated || 0, fights: r.fights || 0 } } : null);
   return true;

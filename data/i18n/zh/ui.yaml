@@ -802,6 +802,7 @@ ui:
   "Reloads": 装填次数
   Replay: 回放
   "Result": 结果
+  "Best found": 找到的最佳
   "Ruinous Extension extends the beam to 36 m (page); beam-range mods are shown on the card but not applied until a measurement shows whether they add a flat or a percentage amount.": "Ruinous Extension 可将光束延长到 36 米（页面）；光束射程类 MOD 会显示在卡片上，但在实测确定它们是固定值还是百分比之前不会应用。"
   "Run Optimizer": 运行优化
   "Run Simulation": 运行模拟
@@ -834,6 +835,7 @@ ui:
   "Shots": 射击次数
   "Shrapnel Rounds, the Marelok-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Shrapnel Rounds」，Marelok 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Sim": 模拟
+  "Simulate": 模拟
   "Simulator": 模拟器
   "Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM": 爆破使 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 180 秒 · KPM
   "Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM": 重型机枪手 · 单体 · 卓越者堕落重型机枪手 9999 钢铁 · 180 秒 · KPM
@@ -2547,6 +2549,7 @@ ui:
   "not counted — the row was no longer owed": "未计分 · 这一行后来不用算了"
   "waiting for another computer · about +{n}": "等另一台电脑确认 · 约 +{n}"
   "computed {s}": "算出 {s}"
+  "best {s}": "最佳 {s}"
   "Progress": "进度"
   "the server is checking": "服务器核对中"
   "no longer owed": "这一行不用算了"

@@ -793,7 +793,9 @@ each machine's share is counted under its owner's name. Eight rules:
    Below it this browser's recent tasks, each with the build, the fight, the
    number it computed and where it stands (`/api/board/mine`, asked by the
    browser's own id: waiting, checking, confirmed or no longer owed), opened
-   in place and into the simulator.
+   in place and into the simulator. Each is marked by its verb: a board order
+   SIMULATES one build and shows its score; a riven gain OPTIMIZES and shows
+   the best it found and how many builds it tried.
 6. **EVERYONE IS RANKED; A NAME IS SHOWN ONLY BY CONSENT.** `/contributors`
    lists every account with a claimed device, by all their points, the last
    thirty days' or the last seven (`verifier_hours`, credited with the total and

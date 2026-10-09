@@ -526,7 +526,10 @@ function restoreState(st, weapon) {
 // current target's pool already drained, so it grows with the engagement —
 // dividing by the clock is what makes two runs of different length
 // comparable, exactly as DPS does for damage.
-const kpm = (score, duration) => (duration > 0 ? ((score || 0) * 60) / duration : 0);
+// A MISSING score or clock is NaN, never 0: an unknown drawn as "0 KPM" reads as
+// a build that killed nothing (a search row once read for a field it lacks).
+const kpm = (score, duration) => (score == null || !(Number(duration) >= 0) ? NaN
+  : duration > 0 ? (Number(score) * 60) / duration : 0);
 
 /// WHAT A SCENARIO IS JUDGED BY — resolved against the table `/api/meta`
 /// publishes (`engine::rules::metrics`), never asked as "is it dps".
@@ -548,10 +551,12 @@ const metricOf = (id) => {
 };
 /// The run's number IN THAT METRIC. `score` off the wire is kill PROGRESS over
 /// the whole engagement, so a per-minute metric turns it into a rate; a metric
-/// that is already a rate reads its own field and is left alone.
+/// that is already a rate reads its own field and is left alone. A result
+/// without that field is NaN, which every formatter below draws as "—".
 const metricValue = (m, r) => {
-  const raw = (r || {})[m.field] || 0;
-  return m.per_minute ? kpm(raw, (r || {}).duration) : raw;
+  const raw = (r || {})[m.field];
+  if (raw == null) return NaN;
+  return m.per_minute ? kpm(raw, (r || {}).duration) : Number(raw);
 };
 /// Its unit, translated. The label is the engine's; the translation is ours.
 const metricLabel = (m) => tr(m.label);
@@ -566,9 +571,12 @@ const escHtml = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;"
 // collapsing to 0.01. Used for every score/percentage in the results.
 // EXACT ZERO keeps the plain "0.00" — only a nonzero-but-tiny value grows
 // decimals (log10(0) is -Infinity, so zero must short-circuit first).
+// A NUMBER NOT KNOWN is "—", never a zero that looks measured.
+const UNKNOWN = "—";
 const sig2 = (x, min = 2) => {
   const v = Number(x);
-  if (!Number.isFinite(v) || v === 0) return (0).toFixed(min);
+  if (x == null || !Number.isFinite(v)) return UNKNOWN;
+  if (v === 0) return (0).toFixed(min);
   const a = Math.abs(v);
   const need = a >= 1 ? min : Math.max(min, 1 - Math.floor(Math.log10(a)));
   return v.toFixed(need);
@@ -585,7 +593,8 @@ const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 /// measurement — and a disagreement of 0.001 looked like agreement.
 const fmtScore = (x) => {
   const v = Number(x);
-  if (!Number.isFinite(v) || v === 0) return (0).toFixed(4);
+  if (x == null || !Number.isFinite(v)) return UNKNOWN;
+  if (v === 0) return (0).toFixed(4);
   const mag = Math.floor(Math.log10(Math.abs(v)));
   return v.toFixed(Math.min(12, Math.max(4, 3 - mag)));
 };

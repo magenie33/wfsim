@@ -15,8 +15,10 @@ let computeRemoving = null;
 let computeDrawnAt = 0;
 
 const COMPUTE_KINDS = {
+  // `verb` is which of the three verbs the task is: one build fought, or a search.
   board: {
     name: "Leaderboard order",
+    verb: "Simulate",
     what: (t) => {
       const w = META && (META.weapons || []).find((x) => x.id === t.weapon);
       const b = META && (META.benchmarks || []).find((x) => x.id === t.ruler);
@@ -29,6 +31,7 @@ const COMPUTE_KINDS = {
   // the card's rolls or who asked.
   riven_gain: {
     name: "Riven gain",
+    verb: "Optimize",
     what: (t) => {
       const w = META && (META.weapons || []).find((x) => x.id === t.weapon);
       const b = META && (META.benchmarks || []).find((x) => x.id === t.ruler);
@@ -37,7 +40,16 @@ const COMPUTE_KINDS = {
     href: () => null,
   },
 };
-const computeKind = (t) => COMPUTE_KINDS[t && t.kind] || { name: "Task", what: () => "", href: () => null };
+const computeKind = (t) => COMPUTE_KINDS[t && t.kind] || { name: "Task", verb: "", what: () => "", href: () => null };
+/// THE NUMBER A TASK FOUND: a simulation's is the score of the build it was
+/// given, a search's the best build it found among those it tried.
+function computeResultHtml(t) {
+  if (t.score == null) return "";
+  const v = `${fmtScore(t.score)} ${metricLabel(metricOf(t.metric))}`;
+  if (computeKind(t).verb !== "Optimize") return escHtml(tr("computed {s}").replace("{s}", v));
+  const of = t.search && t.search.builds ? ` · ${tr("{b} builds, {s} fights").replace("{b}", computeCount(t.search.builds)).replace("{s}", computeCount(t.search.fights))}` : "";
+  return escHtml(tr("best {s}").replace("{s}", v) + of);
+}
 
 /// THE QUESTION, asked once on a computer that can compute and has not
 /// answered the current statement (69-board-work.js `computeConsent`): a card
@@ -122,7 +134,9 @@ const computeFraction = () => (computeNow && computeNow.total ? Math.min(1, comp
 function computeLog() {
   try {
     const l = JSON.parse(localStorage.getItem(COMPUTE_LOG_KEY) || "[]");
-    return Array.isArray(l) ? l : [];
+    // A riven gain's stored 0 is a misread search row (69-board-work.js
+    // `rivenGainOnce`), not a measurement: it is drawn as no number at all.
+    return Array.isArray(l) ? l.map((t) => (t && t.kind === "riven_gain" && t.score === 0 ? { ...t, score: null } : t)) : [];
   } catch (_) { return []; }
 }
 /// A TASK BEGUN, advanced and ended — called by whatever does the work.
@@ -448,9 +462,9 @@ function computeCardEl(t) {
   const tpl = document.createElement("template");
   tpl.innerHTML = `<div class="rt-card" data-auth="compute-task" data-key="${escHtml(computeKeyOf(t))}" data-state="${escHtml(computeCardState(t))}" role="button" tabindex="0">
     ${w && w.image ? `<img src="${IMG(w.image)}" alt="">` : "<span></span>"}
-    <div style="min-width:0"><div class="rt-name">${escHtml(w ? tr(w.name) : tr(computeKind(t).name))}</div>
+    <div style="min-width:0"><div class="rt-name">${computeKind(t).verb ? `<span class="rt-verb" data-verb="${escHtml(computeKind(t).verb)}">${aT(computeKind(t).verb)}</span>` : ""}${escHtml(w ? tr(w.name) : tr(computeKind(t).name))}</div>
       <div class="rt-sub">${escHtml(computeSubOf(t, w))}</div>
-      ${t.score != null ? `<div class="rt-result">${escHtml(tr("computed {s}").replace("{s}", fmtScore(t.score)))} ${escHtml(metricLabel(metricOf(t.metric)))}</div>` : ""}</div>
+      ${t.score != null ? `<div class="rt-result">${computeResultHtml(t)}</div>` : ""}</div>
     <div class="rt-side"><span data-pill>${computePillHtml(t, false)}</span><div class="rt-when" data-when></div></div></div>`;
   return tpl.content.firstElementChild;
 }
@@ -569,7 +583,7 @@ function computeTaskDetail(t, w) {
     <div class="rt-h">${aT("The fight")}</div><dl class="rt-fight">
       <dt>${aT("Ruler")}</dt><dd>${escHtml(bench ? tr(bench.name) : t.ruler)}</dd>
       ${mode ? `<dt>${aT("Mode")}</dt><dd>${escHtml(modeLabel(w, mode))}</dd>` : ""}
-      ${t.score != null ? `<dt>${aT("Result")}</dt><dd><b>${escHtml(fmtScore(t.score))}</b> ${escHtml(metricLabel(metricOf(t.metric)))}</dd>` : ""}</dl>
+      ${t.score != null ? `<dt>${aT(search ? "Best found" : "Result")}</dt><dd><b>${escHtml(fmtScore(t.score))}</b> ${escHtml(metricLabel(metricOf(t.metric)))}</dd>` : ""}</dl>
     <div class="rt-h">${aT(search ? "The answer: the best build the search found for this riven" : "The build")}</div>${cardOfState(boardRowState(w, taskRow(t)), w)}
     <div class="rt-acts"><a class="run-btn btn-sm" href="${escHtml(sim)}">${aT("Open this build in the simulator")}</a>
       <a class="ghost-btn btn-sm" href="${escHtml(weaponPath(w.id))}/benchmark">${aT("See this weapon's board")}</a></div></div>`;
