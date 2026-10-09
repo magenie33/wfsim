@@ -144,12 +144,11 @@ export async function netOf(request, env) {
 }
 const netsOf = (o) => (o.clients_nets || "").split(",").filter(Boolean);
 
-/// UP TO `n` LEASABLE ORDERS IN ONE STATE, the rows a new build owes before a
-/// rescore's (`priority`), each from a random slot onwards and then from the
-/// start: a seek on `orders_pick`, so a lease reads a few rows however long the
-/// book is.
-async function candidates(db, state, engine, now, n) {
-  for (const priority of [0, 1]) {
+/// UP TO `n` LEASABLE ORDERS IN ONE STATE of the given `priorities` in turn,
+/// each from a random slot onwards and then from the start: a seek on
+/// `orders_pick`, so a lease reads a few rows however long the book is.
+async function candidates(db, state, engine, now, n, priorities) {
+  for (const priority of priorities) {
     const start = Math.floor(Math.random() * SLOT_SPAN);
     for (const from of [start, 0]) {
       const { results } = await db.prepare(
@@ -208,25 +207,28 @@ async function work(request, env) {
     const net = await netOf(request, env);
     const riven = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "chat", net);
     if (riven) return json({ ok: true, release, work: riven });
-    // …THEN A NEW BUILD'S ROWS, then a SURVEY's riven gains (appraise.js
-    // `SURVEY_CHANNEL`), then everything else: nobody waits on a survey, and a
-    // player waits on their build.
-    const fresh = await db.prepare(`SELECT 1 FROM orders WHERE priority = 0 AND state IN ('todo', 'open')
-      AND (lease_until IS NULL OR lease_until < ?) LIMIT 1`).bind(iso(now)).first();
-    if (!fresh) {
-      const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net);
-      if (survey) return json({ ok: true, release, work: survey });
-    }
+    // …THEN A NEW BUILD'S ROWS THIS CLIENT MAY TAKE, then a SURVEY's riven gains
+    // (appraise.js `SURVEY_CHANNEL`), then rescores. Asked per client: a global
+    // "any new build row left?" held the survey back from every client while
+    // the only rows left were ones that client could not confirm.
+    const first = await boardWork(env, db, b, engine, now, net, [0]);
+    if (first) return json({ ok: true, release, work: first });
+    const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net);
+    if (survey) return json({ ok: true, release, work: survey });
+    return json({ ok: true, release, work: await boardWork(env, db, b, engine, now, net, [1]) });
   }
+}
+
+/// ONE BOARD ORDER OF THE GIVEN `priorities` LEASED TO THIS CLIENT, or null.
+async function boardWork(env, db, b, engine, now, net, priorities) {
   // A FURTHER RESULT COMES FROM ANOTHER OWNER: one person's machines agreeing
   // with each other would be one witness counted twice.
   // …AND A WINDOW THAT HELD ONLY ITS OWN is not the end: up to three random
   // windows are read, so a client is never told "nothing" while a row it may
   // take waits further along.
-  const net = await netOf(request, env);
   let mineOpen = [];
   for (let tries = 0; tries < 3 && !mineOpen.length; tries++) {
-    const open = (await candidates(db, "open", engine, now, 8))
+    const open = (await candidates(db, "open", engine, now, 8, priorities))
       .filter((o) => !clientsOf(o).includes(b.verifier) && !(net && netsOf(o).includes(net)));
     if (!open.length) continue;
     const owners = await ownersOf(env, [b.verifier, ...open.flatMap(clientsOf)]);
@@ -235,7 +237,7 @@ async function work(request, env) {
   }
   const pool = [
     ...mineOpen.map((o) => ({ ...o, state: "open" })),
-    ...(await candidates(db, "todo", "", now, 4)).map((o) => ({ ...o, state: "todo" })),
+    ...(await candidates(db, "todo", "", now, 4, priorities)).map((o) => ({ ...o, state: "todo" })),
   ];
   for (const o of pool) {
     const key = [o.identity, o.ruler, o.mode];
@@ -257,10 +259,10 @@ async function work(request, env) {
           AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?)`)
       .bind(lease, iso(now + LEASE_MS), b.verifier, ...key, o.state, iso(now), b.verifier, iso(now), b.verifier, iso(now)).run();
     if (took.meta && took.meta.changes) {
-      return json({ ok: true, release, work: { lease, identity: o.identity, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
+      return { lease, identity: o.identity, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode };
     }
   }
-  return json({ ok: true, release, work: null });
+  return null;
 }
 
 /// WHAT THE CLIENT MEASURED. The answer is always `ok`: a client learns

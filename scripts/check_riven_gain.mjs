@@ -178,9 +178,16 @@ check("a question frozen on an older engine is still handed out after a release,
   const first = await home.work(E);
   check("a new build's board row goes before a survey's riven gain", first && first.kind !== "riven_gain" && first.record && first.record.weapon === "furis",
     JSON.stringify(first));
-  L.prepare("UPDATE orders SET state = 'settled', lease = NULL, lease_until = NULL, leased_to = NULL").run();
+  // …and a new build's row this client may NOT take (it measured it already)
+  // does not hold the survey back from it, nor does a rescore go first.
+  L.prepare(`UPDATE orders SET state = 'open', engine = 'e1', produced_by = ?, clients = ?, lease = NULL, lease_until = NULL, leased_to = NULL
+    WHERE identity = 'new1'`).run(E, E);
+  L.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at, priority) VALUES
+    ('old1', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 2, ?, 1)`).run(ago(0));
+  L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('rescore-x', 'old1', 'standard_single_target', 'base')").run();
   const s1 = await home.work(E);
-  check("...and with none left, the survey's is handed out", s1 && s1.kind === "riven_gain" && s1.code === "SV1", JSON.stringify(s1));
+  check("...and with none it may take, the survey's is handed out, before a rescore", s1 && s1.kind === "riven_gain" && s1.code === "SV1", JSON.stringify(s1));
+  L.prepare("UPDATE orders SET state = 'settled', lease = NULL, lease_until = NULL, leased_to = NULL").run();
   const build = { weapon: "furis", mods: ["serration", "riven"], riven_pos: ["critical_damage", "multishot"], riven_neg: "zoom" };
   await home.answer("SV1", s1, E, build);
   check("a further answer never goes to the network of the first", ((await home.work(F)) || {}).code !== "SV1");
