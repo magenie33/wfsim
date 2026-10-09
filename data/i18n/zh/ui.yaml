@@ -2634,6 +2634,8 @@ ui:
   "Paused in this tab.": 已在这个标签页暂停。
   # The top bar's groups, and the settings menu's pause.
   "Community": 社区
+  "Help compute WFSim": 帮 WF模拟 计算
+  "{n} computers computing for WFSim now": "{n} 台电脑正在帮 WF模拟 计算"
   "Language": 语言
   "Theme": 主题
   "Resume computing in this tab": 在这个标签页继续计算

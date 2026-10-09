@@ -313,6 +313,7 @@ async function navComputing() {
   const r = await fetch("/api/board/computing").then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || typeof r.computing !== "number") return;
   el.innerHTML = `<span class="online-dot"></span>${escHtml(r.computing.toLocaleString(accountLocale()))}`;
+  el.title = tr("{n} computers computing for WFSim now").replace("{n}", r.computing.toLocaleString(accountLocale()));
   el.hidden = false;
 }
 navComputing();

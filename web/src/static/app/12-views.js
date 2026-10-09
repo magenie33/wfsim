@@ -197,7 +197,7 @@ async function route() {
   });
   // …AND THE COMMUNITY'S MENU, on any of its own pages.
   const community = $("community-toggle");
-  if (community) community.classList.toggle("sel", authKind === "contributors");
+  if (community) community.classList.toggle("sel", authKind === "compute" || authKind === "contributors");
   document.querySelector(".config-page").hidden = !w;
   const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens", "riven-analyst": " · Riven Analyst", enemies: " · Enemies", benchmark: " · Benchmark" }[mod] || "";
   // The home title carries the SEARCH TERMS, not the headline: nobody looks

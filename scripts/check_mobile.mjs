@@ -208,7 +208,7 @@ for (const [label, w, h, mobile] of SCREENS) {
         // other entry is one click away inside a menu. BAR is what is on the
         // desktop bar with nothing opened.
         const BAR = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
-                     '.topnav .tnav[data-nav="compute"]', '#community-toggle', '.sup-link', '#tbmore-toggle'];
+                     '#community-toggle', '.sup-link', '#tbmore-toggle'];
         // ALL: nothing was DELETED to make the bar fit — every destination and
         // every control is still REACHABLE at every width, which is the claim
         // this check has always existed to make. Only the number of clicks
@@ -216,7 +216,7 @@ for (const [label, w, h, mobile] of SCREENS) {
         // 768px and below they are not drawn, because the phone menu already
         // holds what they would have opened.
         const ALL = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
-                     '.topnav .tnav[data-nav="compute"]', '.tbmenu-link[data-nav="contributors"]',
+                     '.tbmenu-link[data-nav="compute"]', '.tbmenu-link[data-nav="contributors"]',
                      '.sup-link', '.gh-link', '.qq-link', '.dc-link',
                      '#lang-select', '#theme-toggle', '#compute-select'];
         const missing = (SEL) => SEL.filter((s) => {

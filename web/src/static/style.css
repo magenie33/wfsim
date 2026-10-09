@@ -2067,12 +2067,20 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .tbmore-row{flex-direction:row}
 .tbmore-row input[type="checkbox"]{width:auto;margin:0}
 .topbar-inner .tbmore-row .ghost-btn{width:auto;height:26px;padding:0 8px;justify-content:center;border-color:var(--line)}
-/* THE RIGHT-HAND GROUP is pushed over by its first box: the compute ring when
-   it is drawn, Support when it is not. The ring is a direct child of the bar
-   and sorts first among the right-hand boxes by its place in the markup. */
-.topbar-inner>.compute-mark{order:4;margin-left:auto}
+/* THE RIGHT-HAND GROUP is pushed over by its first box: the computers-online
+   count, else the compute ring, else Support. The count and the ring are
+   direct children of the bar and sort first among the right-hand boxes by
+   their place in the markup. */
+.topbar-inner>.compute-online,.topbar-inner>.compute-mark{order:4;margin-left:auto}
 .topbar-inner .tblinks>.sup-link{margin-left:auto}
+.topbar-inner:has(>.compute-online:not([hidden]))>.compute-mark,
+.topbar-inner:has(>.compute-online:not([hidden])) .tblinks>.sup-link,
 .topbar-inner:has(>.compute-mark:not([hidden])) .tblinks>.sup-link{margin-left:0}
+/* The count is a quiet link: a dot and a number, a word on hover. */
+.topbar-inner .compute-online{display:inline-flex;align-items:center;height:28px;padding:0 8px;margin-right:-6px;border-radius:8px;
+  font-size:12px;color:var(--text-2);text-decoration:none}
+.topbar-inner .compute-online[hidden]{display:none}
+.topbar-inner .compute-online:hover{background:var(--line);color:var(--text)}
 
 /* ---- the compute ring: the bar's one sign that this tab computes --------
    A fixed 28px whatever it says, so a task starting or ending never moves the
