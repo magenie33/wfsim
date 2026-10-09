@@ -110,17 +110,33 @@ async function retire(db, engine) {
 }
 
 /// THE CLIENT, remembered by the id it made and nothing else — written once,
-/// and again only when the day changes. `null` when it may not work.
-async function admit(db, id) {
-  const v = await db.prepare("SELECT banned, seen FROM verifiers WHERE id = ?").bind(id).first();
+/// and again only when the day changes. `{ until }` while it is refused: a
+/// refusal is a cool-down (scripts/live_orders.mjs `ban`), lifted here once over.
+async function admit(db, id, now) {
+  const v = await db.prepare("SELECT banned, seen, refused_until FROM verifiers WHERE id = ?").bind(id).first();
   if (!v) {
     await db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, ?)").bind(id, day()).run();
-    return id;
+    return { ok: true };
   }
-  if (v.banned) return null;
+  if (v.banned && v.refused_until > now) return { ok: false, until: v.refused_until };
+  if (v.banned) await db.prepare("UPDATE verifiers SET banned = 0 WHERE id = ?").bind(id).run();
   if (v.seen !== day()) await db.prepare("UPDATE verifiers SET seen = ? WHERE id = ?").bind(day(), id).run();
-  return id;
+  return { ok: true };
 }
+
+/// THE NETWORK A CLIENT ASKS FROM, as a salted hash of its public address — an
+/// IPv4 address whole, an IPv6 one by its /64 — so a further result never comes
+/// from the network of the one it confirms: two browsers on one desk agreeing
+/// are one witness counted twice. Kept on an open order and cleared with it;
+/// "" when the address is unknown, which excludes nothing.
+async function netOf(request, env) {
+  const ip = (request.headers.get("cf-connecting-ip") || "").trim();
+  if (!ip) return "";
+  const net = ip.includes(":") ? ip.split(":").slice(0, 4).join(":") : ip;
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${env.AUTH_SECRET || "wfsim"}|${net}`));
+  return [...new Uint8Array(bytes).slice(0, 6)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+const netsOf = (o) => (o.clients_nets || "").split(",").filter(Boolean);
 
 /// UP TO `n` LEASABLE ORDERS IN ONE STATE, the rows a new build owes before a
 /// rescore's (`priority`), each from a random slot onwards and then from the
@@ -131,7 +147,7 @@ async function candidates(db, state, engine, now, n) {
     const start = Math.floor(Math.random() * SLOT_SPAN);
     for (const from of [start, 0]) {
       const { results } = await db.prepare(
-        `SELECT identity, ruler, mode, record, produced_by, clients FROM orders
+        `SELECT identity, ruler, mode, record, produced_by, clients, clients_nets FROM orders
           WHERE state = ? AND engine = ? AND priority = ? AND slot >= ? AND (lease_until IS NULL OR lease_until < ?)
           ORDER BY slot LIMIT ?`).bind(state, engine, priority, from, now, n).all();
       if (results.length) return results;
@@ -164,7 +180,8 @@ async function work(request, env) {
   if (!c || !Number.isInteger(c.v) || c.v < 1 || typeof c.at !== "string" || !ISO.test(c.at)) return json({ ok: true, work: null });
   // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
   // task for ever and its reader would never learn why.
-  if (!(await admit(db, b.verifier))) return json({ ok: true, work: null, banned: true });
+  const admitted = await admit(db, b.verifier, now);
+  if (!admitted.ok) return json({ ok: true, work: null, banned: true, until: admitted.until });
   await db.prepare(`UPDATE verifiers SET consent_v = ?, consent_at = ? WHERE id = ? AND (consent_v IS NOT ? OR consent_at IS NOT ?)`)
     .bind(c.v, c.at, b.verifier, c.v, c.at).run();
   // A CLIENT THAT ASKS IS WORKING ON NOTHING: one browser computes in one tab
@@ -190,9 +207,11 @@ async function work(request, env) {
   // …AND A WINDOW THAT HELD ONLY ITS OWN is not the end: up to three random
   // windows are read, so a client is never told "nothing" while a row it may
   // take waits further along.
+  const net = await netOf(request, env);
   let mineOpen = [];
   for (let tries = 0; tries < 3 && !mineOpen.length; tries++) {
-    const open = (await candidates(db, "open", engine, now, 8)).filter((o) => !clientsOf(o).includes(b.verifier));
+    const open = (await candidates(db, "open", engine, now, 8))
+      .filter((o) => !clientsOf(o).includes(b.verifier) && !(net && netsOf(o).includes(net)));
     if (!open.length) continue;
     const owners = await ownersOf(env, [b.verifier, ...open.flatMap(clientsOf)]);
     const mine = owners.get(b.verifier);
@@ -249,9 +268,11 @@ async function verify(request, env) {
     return json({ ok: true });
   }
   const o = await db.prepare(
-    `SELECT identity, ruler, mode, state, engine, score, metric, work, produced_by, clients, clients_compute_ms, carried_from FROM orders
+    `SELECT identity, ruler, mode, state, engine, score, metric, work, produced_by, clients, clients_compute_ms, clients_nets, carried_from FROM orders
       WHERE lease = ? AND leased_to = ? AND lease_until >= ?`).bind(b.lease, b.verifier, now).first();
   if (!o) return json({ ok: true });
+  const net = await netOf(request, env);
+  const nets = [...new Set([...netsOf(o), net].filter(Boolean))].join(",");
   const key = [o.identity, o.ruler, o.mode];
   // …AND WHEN IT LAST ANSWERED, for its owner's device list, in the same write.
   const spent = db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?")
@@ -265,8 +286,8 @@ async function verify(request, env) {
     // THE FIRST RESULT, which the server ranks before anyone may agree with it.
     await db.batch([
       db.prepare(`UPDATE orders SET state = 'fresh', score = ?, metric = ?, work = ?, engine = ?, produced_by = ?, clients = ?,
-                  clients_compute_ms = ?, carried_from = NULL, ${done} WHERE identity = ? AND ruler = ? AND mode = ? AND state = 'todo'`)
-        .bind(b.score, b.metric, b.work, b.engine, b.verifier, b.verifier, String(ms ?? ""), ...key),
+                  clients_compute_ms = ?, clients_nets = ?, carried_from = NULL, ${done} WHERE identity = ? AND ruler = ? AND mode = ? AND state = 'todo'`)
+        .bind(b.score, b.metric, b.work, b.engine, b.verifier, b.verifier, String(ms ?? ""), net, ...key),
       spent,
     ]);
     return json({ ok: true });
@@ -280,25 +301,25 @@ async function verify(request, env) {
   if (differs && o.carried_from) {
     await db.batch([
       db.prepare(`UPDATE orders SET state = 'fresh', score = ?, metric = ?, work = ?, engine = ?, produced_by = ?, verifier = NULL,
-                  clients = ?, clients_compute_ms = ?, carried_from = NULL, ${done} WHERE identity = ? AND ruler = ? AND mode = ? AND state = 'open'`)
-        .bind(b.score, b.metric, b.work, b.engine, b.verifier, b.verifier, String(ms ?? ""), ...key),
+                  clients = ?, clients_compute_ms = ?, clients_nets = ?, carried_from = NULL, ${done} WHERE identity = ? AND ruler = ? AND mode = ? AND state = 'open'`)
+        .bind(b.score, b.metric, b.work, b.engine, b.verifier, b.verifier, String(ms ?? ""), net, ...key),
       spent,
     ]);
     return json({ ok: true });
   }
   if (differs) {
     await db.batch([
-      db.prepare(`UPDATE orders SET state = 'dispute', verifier = ?, disputed = ?, clients = ?, clients_compute_ms = ?, ${done}
+      db.prepare(`UPDATE orders SET state = 'dispute', verifier = ?, disputed = ?, clients = ?, clients_compute_ms = ?, clients_nets = ?, ${done}
                   WHERE identity = ? AND ruler = ? AND mode = ?`)
-        .bind(b.verifier, b.score, clients.join(","), compute.join(","), ...key),
+        .bind(b.verifier, b.score, clients.join(","), compute.join(","), nets, ...key),
       spent,
     ]);
     return json({ ok: true });
   }
   if (clients.length < needed(env)) {
     await db.batch([
-      db.prepare(`UPDATE orders SET clients = ?, clients_compute_ms = ?, ${done} WHERE identity = ? AND ruler = ? AND mode = ?`)
-        .bind(clients.join(","), compute.join(","), ...key),
+      db.prepare(`UPDATE orders SET clients = ?, clients_compute_ms = ?, clients_nets = ?, ${done} WHERE identity = ? AND ruler = ? AND mode = ?`)
+        .bind(clients.join(","), compute.join(","), nets, ...key),
       db.prepare("UPDATE verifiers SET agreed = agreed + 1 WHERE id = ?").bind(b.verifier),
       spent,
     ]);
@@ -318,7 +339,7 @@ async function fact(db, key, o, clients, compute, last, spent) {
   const at = stamp();
   await db.batch([
     db.prepare(`UPDATE orders SET state = ?, score = ?, metric = ?, engine = ?, produced_by = ?, verifier = ?, clients = ?,
-                clients_compute_ms = ?, ${done} WHERE identity = ? AND ruler = ? AND mode = ?`)
+                clients_compute_ms = ?, clients_nets = '', ${done} WHERE identity = ? AND ruler = ? AND mode = ?`)
       .bind(state, o.score, o.metric, o.engine, o.produced_by, last, clients.join(","), compute.join(","), ...key),
     // A FACT THE SCORER ALREADY HOLDS STANDS: the clients fill a row nobody
     // measured, and never replace one somebody did.

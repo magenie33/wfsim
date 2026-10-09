@@ -85,23 +85,37 @@ function fight(o) {
 /// A CLIENT ITS NUMBER DISPROVED, refused. What it agreed to is withdrawn and
 /// opened again; what it measured first and nobody has confirmed is measured
 /// again. A result of its that an independent client confirmed stands.
+/// A REFUSAL IS A COOL-DOWN, longer each time — a day, a week, then a month —
+/// never for good: only malice is punished, and a machine that once disagreed
+/// may be honest again.
+const COOL_DOWN_MS = [86_400_000, 7 * 86_400_000, 30 * 86_400_000];
 async function ban(id) {
   if (!id) return;
-  await d1("UPDATE verifiers SET banned = 1 WHERE id = ?", [id]);
-  const named = await d1(`SELECT identity, ruler, mode, state, produced_by, verifier, clients, clients_compute_ms FROM orders
+  const [v] = await d1("SELECT refusals FROM verifiers WHERE id = ?", [id]);
+  const cool = COOL_DOWN_MS[Math.min((v && v.refusals) || 0, COOL_DOWN_MS.length - 1)];
+  await d1("UPDATE verifiers SET banned = 1, refusals = refusals + 1, refused_until = ? WHERE id = ?", [Date.now() + cool, id]);
+  const named = await d1(`SELECT identity, ruler, mode, state, produced_by, verifier, clients, clients_compute_ms, work FROM orders
                           WHERE (',' || clients || ',') LIKE ? AND produced_by != ? AND state IN ('verified', 'spot', 'open')`,
   [`%,${id},%`, id]);
   const agreed = named.filter((o) => o.state !== "open");
+  // …AND WHAT IT WAS PAID FOR THOSE AGREEMENTS IS TAKEN BACK, today: a withdrawn
+  // agreement earned nothing, and keeping its points made the cheat free.
+  const owed = agreed.reduce((sum, o) => sum + (o.work || 0), 0);
+  if (owed) {
+    await d1("UPDATE verifiers SET work = MAX(0, work - ?) WHERE id = ?", [owed, id]);
+    await d1(`INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)
+             ON CONFLICT (verifier, day) DO UPDATE SET work = work + excluded.work`, [id, new Date().toISOString().slice(0, 10), -owed]);
+  }
   for (const o of named) {
     const ms = (o.clients_compute_ms || "").split(",");
     const kept = clientsOf(o).map((c, i) => [c, ms[i] || ""]).filter(([c]) => c !== id);
     if (o.state !== "open") await d1(`DELETE FROM scores ${where} AND measured_by LIKE 'verified:%'`, keyOf(o));
-    await d1(`UPDATE orders SET state = 'open', verifier = NULL, clients = ?, clients_compute_ms = ? ${where}`,
+    await d1(`UPDATE orders SET state = 'open', verifier = NULL, clients = ?, clients_compute_ms = ?, clients_nets = '' ${where}`,
       [kept.map(([c]) => c).join(","), kept.map(([, m]) => m).join(","), ...keyOf(o)]);
   }
-  await d1(`UPDATE orders SET state = 'todo', engine = '', score = NULL, metric = NULL, work = NULL, produced_by = NULL, clients = '', clients_compute_ms = ''
+  await d1(`UPDATE orders SET state = 'todo', engine = '', score = NULL, metric = NULL, work = NULL, produced_by = NULL, clients = '', clients_compute_ms = '', clients_nets = ''
             WHERE produced_by = ? AND state IN ('fresh', 'open', 'arbiter', 'dispute')`, [id]);
-  console.error(`orders: refused client ${id.slice(0, 6)}…, ${agreed.length} agreement(s) withdrawn`);
+  console.error(`orders: refused client ${id.slice(0, 6)}… for ${Math.round(cool / 86_400_000)} day(s), ${agreed.length} agreement(s) withdrawn`);
 }
 
 async function settle() {

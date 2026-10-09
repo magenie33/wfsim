@@ -216,6 +216,9 @@ CREATE INDEX IF NOT EXISTS queue_row ON queue (build_id, ruler, mode);
 --   ALTER TABLE orders ADD COLUMN priority INTEGER NOT NULL DEFAULT 1;
 --   ALTER TABLE orders ADD COLUMN carried_from TEXT;
 --   DROP INDEX orders_pick;
+-- `clients_nets` is the salted hashes of the networks its clients answered
+-- from (worker/verify.js `netOf`), cleared when it becomes a fact:
+--   ALTER TABLE orders ADD COLUMN clients_nets TEXT NOT NULL DEFAULT '';
 CREATE TABLE IF NOT EXISTS orders (
   identity    TEXT NOT NULL,
   ruler       TEXT NOT NULL,
@@ -238,6 +241,7 @@ CREATE TABLE IF NOT EXISTS orders (
   work        INTEGER,
   priority    INTEGER NOT NULL DEFAULT 1,
   carried_from TEXT,
+  clients_nets TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (identity, ruler, mode)
 );
 
@@ -267,7 +271,13 @@ CREATE TABLE IF NOT EXISTS verifiers (
   last_at TEXT,
   -- THE READER'S YES: the statement version they agreed to, and when.
   consent_v  INTEGER,
-  consent_at TEXT
+  consent_at TEXT,
+  -- A REFUSAL IS A COOL-DOWN: how many this client has had, and when the last
+  -- one ends (scripts/live_orders.mjs `ban`):
+  --   ALTER TABLE verifiers ADD COLUMN refusals INTEGER NOT NULL DEFAULT 0;
+  --   ALTER TABLE verifiers ADD COLUMN refused_until INTEGER;
+  refusals      INTEGER NOT NULL DEFAULT 0,
+  refused_until INTEGER
 );
 
 -- THE SAME WORK BY THE DAY IT WAS CREDITED, for the ranking's last thirty days

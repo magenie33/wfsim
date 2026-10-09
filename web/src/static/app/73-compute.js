@@ -106,7 +106,8 @@ function computeState() {
   if (!WASM) return s("off", "This copy of WFSim does not compute; the site at wfsim.app does.");
   if (onPhone()) return s("off", "Phones never compute.");
   if (!boardVerifyOn()) return s("off", "Computing is off in this browser.");
-  if (boardBanned) return s("off", "This browser is given no more work: a result it sent differed from the server's own.");
+  if (boardBanned) return { key: "off", text: tr("This browser is given no work until {t}: a result it sent differed from the server's own.")
+    .replace("{t}", new Date(boardBannedUntil).toLocaleString(accountLocale())) };
   if (held === "paused") return s("paused", "Paused in this tab.");
   if (held === "battery") return s("held", "Paused while this computer runs on battery.");
   if (held === "data") return s("held", "Paused while the browser saves data.");

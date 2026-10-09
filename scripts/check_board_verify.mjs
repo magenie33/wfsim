@@ -152,10 +152,17 @@ Math.random = () => 0.5;
 const J = "j".repeat(24);
 order("eight");
 await work(J);
-db.prepare("UPDATE verifiers SET banned = 1 WHERE id = ?").run(J);
+const coolUntil = Date.now() + 3_600_000;
+db.prepare("UPDATE verifiers SET banned = 1, refusals = 1, refused_until = ? WHERE id = ?").run(coolUntil, J);
 db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
 const refused = await work(J);
-check("a banned client is handed nothing, and told why", refused.work === null && refused.banned === true, JSON.stringify(refused));
+check("a client in its cool-down is handed nothing, and told why and until when",
+  refused.work === null && refused.banned === true && refused.until === coolUntil, JSON.stringify(refused));
+db.prepare("UPDATE verifiers SET refused_until = ? WHERE id = ?").run(Date.now() - 1, J);
+db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
+const lifted = await work(J);
+check("...and once it is over, it works again and the refusal is lifted",
+  !lifted.banned && db.prepare("SELECT banned FROM verifiers WHERE id = ?").get(J).banned === 0, JSON.stringify(lifted));
 const seen = db.prepare("SELECT seen FROM verifiers WHERE id = ?").get(A).seen;
 check("a client is written once a day, not once a poll", seen === new Date().toISOString().slice(0, 10)
   && db.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE id = ?").get(A).n === 1);
@@ -410,6 +417,33 @@ check("an owed row with no order is given one — a new build's first, an old bu
   opened === 2 && bf("new").state === "todo" && bf("new").priority === 0 && bf("old").priority === 1 && bf("held").state === "open",
   `${opened} ${JSON.stringify([bf("new"), bf("old"), bf("held")])}`);
 check("...and asking again opens nothing", backfill() === 0);
+
+// A FURTHER RESULT NEVER COMES FROM THE FIRST ONE'S NETWORK: two browsers on one
+// desk agreeing are one witness counted twice. The network is a salted hash,
+// cleared when the order becomes a fact.
+{
+  const from = (ip) => ({
+    work: async (v) => (await verifyRoute(new Request("https://x/api/board/work", { method: "POST", headers: { "cf-connecting-ip": ip },
+      body: JSON.stringify({ verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES }) }), env, "/api/board/work")).json(),
+    answer: async (w, v) => (await verifyRoute(new Request("https://x/api/board/verify", { method: "POST", headers: { "cf-connecting-ip": ip },
+      body: JSON.stringify({ lease: w.lease, verifier: v, engine: "e1", score: SCORE, metric: "kpm", work: WORK, compute_ms: 1000 }) }), env, "/api/board/verify")).json(),
+  });
+  db.prepare("UPDATE orders SET state = 'settled'").run();
+  order("desk");
+  const N1 = "4".repeat(24), N2 = "5".repeat(24), N3 = "6".repeat(24);
+  const home = from("203.0.113.7"), elsewhere = from("198.51.100.9");
+  await home.answer((await home.work(N1)).work, N1);
+  db.prepare("UPDATE orders SET state = 'open' WHERE identity = 'desk'").run();
+  const nets = row("desk").clients_nets;
+  check("the first result's network is kept on the order as a salted hash, never the address",
+    /^[0-9a-f]{12}$/.test(nets) && !nets.includes("203"), nets);
+  check("a further result is never handed to a browser on the same network", (await home.work(N2)).work === null);
+  const w3 = await elsewhere.work(N3);
+  check("...but to one on another", w3.work && row("desk").leased_to === N3);
+  await elsewhere.answer(w3.work, N3);
+  check("...and the networks are forgotten once the order is a fact", row("desk").state === "verified" && row("desk").clients_nets === "",
+    `${row("desk").state} ${row("desk").clients_nets}`);
+}
 
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;

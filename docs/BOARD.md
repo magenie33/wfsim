@@ -692,8 +692,11 @@ row at a time, so the board's growth is more orders, never a heavier client.
   `spot` order with the scorer itself and ships the fact, in a loop beside the
   live cycle so a heavy row never holds intake, ranking or the site's board. A
   client the server disproves — the first result, the second, or both — is
-  refused: what it agreed to is withdrawn and opened again, what it measured
-  first is measured again. Only for an order of the engine the server runs.
+  refused: what it agreed to is withdrawn and opened again, its points for
+  those agreements are taken back, and what it measured first is measured
+  again. A REFUSAL IS A COOL-DOWN, never for good — a day, then a week, then a
+  month (`ban`, `verifiers.refusals` and `refused_until`) — after which
+  the client works again. Only for an order of the engine the server runs.
   A top-ten order the scorer already measured is settled unfought.
 - **Nobody online** costs nothing. An order younger than `HOLD_SECONDS` is
   the clients' alone. An older one is offered to the clients as before, and
@@ -763,15 +766,18 @@ each machine's share is counted under its owner's name. Eight rules:
    and a further result agrees only if the work is equal too. The server's spot
    check holds the clients to the work as well as the score, so a claimed work
    nobody did is a refused client.
-4. **A FACT NEEDS DIFFERENT OWNERS.** A further result is never handed to a
-   device of an owner whose device already measured the order; an unclaimed
-   device is its own owner.
+4. **A FACT NEEDS DIFFERENT OWNERS AND DIFFERENT NETWORKS.** A further result
+   is never handed to a device of an owner whose device already measured the
+   order, an unclaimed device being its own owner — nor to one asking from the
+   network a result came from (`netOf`: a salted hash of the address, kept on
+   the open order and cleared with it), so two browsers on one desk are one
+   witness.
 5. **A DEVICE HAS ONE OWNER.** A signed-in page claims its browser's id
    (`/api/account/devices/claim`, `devices` in the accounts database); the
    last account to claim it owns it, and its work goes with it. A signed-in page
    claims its browser once a load, the server's row the only record of it, so a
-   browser stops counting for an account by signing out there. A refused
-   client's work counts for nothing.
+   browser stops counting for an account by signing out there. A client in
+   its cool-down is off the ranking until it ends.
    The owner sees every device of theirs at `/compute`: the name they call it
    (the browser's coarse guess until renamed), when it last answered
    (`verifiers.last_at`) and the task it holds a lease on, named by its KIND

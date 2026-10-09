@@ -227,6 +227,8 @@ let releaseNewer = false;
 /// THE SERVER REFUSED THIS BROWSER (worker/verify.js `admit`): its results
 /// disagreed with the server's own, so it is handed nothing, and the page says so.
 let boardBanned = false;
+/// …and until when, the refusal being a cool-down (worker/verify.js `admit`).
+let boardBannedUntil = 0;
 let lastTouched = Date.now();
 for (const ev of ["pointerdown", "keydown", "wheel", "touchstart"]) {
   addEventListener(ev, () => { lastTouched = Date.now(); }, { passive: true, capture: true });
@@ -333,7 +335,9 @@ async function workOnce() {
     { verifier: id, engine: ENGINE_ID, protocol: 6, consent: { v: c.v, at: c.at }, lanes: communityLanes() });
   if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
   if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
-  if (ask && !!ask.banned !== boardBanned) { boardBanned = !!ask.banned; computeRedraw(); computeChrome(); }
+  if (ask && (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil)) {
+    boardBanned = !!ask.banned; boardBannedUntil = ask.until || 0; computeRedraw(); computeChrome();
+  }
   maybeReloadForRelease();
   const w = ask && ask.work;
   if (!w) return false;

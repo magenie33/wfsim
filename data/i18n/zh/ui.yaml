@@ -2640,7 +2640,7 @@ ui:
   "Theme": 主题
   "Resume computing in this tab": 在这个标签页继续计算
   "Pause computing in this tab": 在这个标签页暂停计算
-  "This browser is given no more work: a result it sent differed from the server's own.": 这个浏览器不再分配任务：它交回的一个结果与服务器自己算出的不一致。
+  "This browser is given no work until {t}: a result it sent differed from the server's own.": "{t} 之前不再给这个浏览器分配任务：它交回的一个结果与服务器自己算出的不一致。"
   "Paused while this computer runs on battery.": 电脑在用电池，已暂停。
   "Paused while the browser saves data.": 浏览器开启了省流量，已暂停。
   "Honour": 荣誉
