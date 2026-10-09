@@ -830,6 +830,7 @@ ui:
   "Shattering Justice, Acid Shells and Clip Delegation, the Sobek-exclusive mods — weapon-exclusive cards outside the pools this roster loads. Acid Shells in particular detonates corpses for a share of their health, which is a whole second damage source": "「Shattering Justice」「Acid Shells」和「Clip Delegation」，Sobek 的专属 MOD——这些是武器专属卡，不在本武器库载入的卡池里。尤其是「Acid Shells」，它会按尸体生命值的一定比例引爆尸体，那是一整个第二伤害来源"
   Shield: 护盾
   "Shot Combo Counter": 射击连击计数
+  "Frenzy": 疯狂
   "Shots": 射击次数
   "Shrapnel Rounds, the Marelok-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Shrapnel Rounds」，Marelok 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Sim": 模拟
@@ -923,7 +924,7 @@ ui:
   "Warframe ability": 战甲技能
   "Warframe buffs": 战甲增益
   "Warframe": 战甲
-  "Weapon passive: Frenzy — see its buff card (grants +1 toxin while active).": 武器被动：狂乱 —— 详见它的增益卡（生效期间提供 +1 毒素）。
+  "Weapon passive: Frenzy — see its buff card (grants +1 toxin while active).": 武器被动：疯狂 —— 详见它的增益卡（生效期间提供 +1 毒素）。
   "Weapons": 武器
   "What each mode is": 每种输出方式分别是什么
   "Only the build is sent: the weapon and its mods, evolutions and arcanes. Not your fight, and nothing about you: no account and no score. The board takes builds with every main slot filled.": "只发送配装：武器及其 MOD、进化和赋能。不含场景，也不含任何关于你的信息：没有账号，没有分数。榜单只收主槽位全部装满的配装。"

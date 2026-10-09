@@ -279,7 +279,7 @@ function fightCardHtml() {
       : Math.round(sim.extra_stats[k] * 100) / 100 + (unit === "x" ? "x" : "")}`));
   const buffs = Object.entries(sim.buffs || {}).filter(([, c]) => c && c.stacks > 0).map(([id, c]) => {
     const b = buffList.find((x) => x.id === id) || {};
-    return chip(`${b.name || prettify(id)} ${c.stacks}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}`);
+    return chip(`${b.name ? buffCardName(b.name) : prettify(id)} ${c.stacks}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}`);
   });
   return section(tr("Enemy"), enemy)
     + section(tr("The Tenno"), play)
