@@ -2018,6 +2018,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rt-name{font-weight:600}
 .rt-sub,.rt-when{font-size:12px;color:var(--muted)}
 .rt-result{font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}
+.rt-verb{display:inline-block;font-size:11px;font-weight:600;line-height:16px;padding:0 6px;margin-right:6px;border-radius:4px;vertical-align:1px;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.rt-verb[data-verb="Optimize"]{color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,transparent)}
 .rt-side{text-align:right}
 .rt-when{font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
 .rt-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:2px 10px;border-radius:999px;white-space:nowrap}
@@ -2056,6 +2058,13 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .demand-bar>div{background:var(--accent)}
 .demand-key{opacity:.5}
 .demand-key.on{opacity:1;color:var(--accent)}
+.cr-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 5px;box-sizing:border-box;border-radius:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.cr-badge.cr-30{color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent);border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
+.cr-line{display:flex;align-items:center;gap:10px;min-width:0}
+.cr-line .cr-badge{min-width:34px;height:34px;font-size:16px;border-radius:9px}
+.cr-to{flex:1;min-width:0}
+.cr-bar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--muted) 20%,transparent);overflow:hidden;margin-bottom:4px}
+.cr-bar>i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .contrib-volunteer{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);color:var(--accent)}
 .set-side .me{display:flex;gap:10px;align-items:center;padding:0 6px 14px}
 .set-side .me div b{display:block;font-size:14px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

@@ -10,7 +10,7 @@
 //   `checkpoint` (a JSON string from a previous session) RESUMES that run.
 // The optimize call blocks this worker until done — that is the design: the
 // page runs it in a DEDICATED worker and cancels by terminating it.
-importScripts("/pkg/wfsim_wasm.24b3baa054bc.js");
+importScripts("/pkg/wfsim_wasm.c2f4f5e1991d.js");
 
 // A MODULE THAT WILL NOT DOWNLOAD IS SAID OUT LOUD, after one retry. A rejected
 // `ready` only rejects each message's await, which the page never sees, so the
@@ -20,9 +20,9 @@ importScripts("/pkg/wfsim_wasm.24b3baa054bc.js");
 // rather than a blank page and then a banner (index.html's boot guard).
 // `WASM_BYTES` is the module's size, written in by build_site_app.py; 0 on the
 // dev server, where the page shows the bytes alone.
-const WASM_BYTES = 9200716;
+const WASM_BYTES = 10183877;
 const counted = async () => {
-  const r = await fetch("/pkg/wfsim_wasm_bg.24b3baa054bc.wasm");
+  const r = await fetch("/pkg/wfsim_wasm_bg.c2f4f5e1991d.wasm");
   if (!r.ok || !r.body) return r;
   const reader = r.body.getReader();
   let got = 0, said = 0;
