@@ -199,7 +199,7 @@ CREATE INDEX IF NOT EXISTS queue_row ON queue (build_id, ruler, mode);
 -- is a random number a lease seeks from, which is what keeps one lease a few
 -- rows read however long the book grows. `engine`
 -- is the first result's `ENGINE_ID`, and only that engine verifies it. `at` is
--- when the order was opened, in ms: the scorer leaves a young one to clients.
+-- when the order was opened: the scorer leaves a young one to clients.
 -- `clients` is every client that measured it, comma-separated, in the order
 -- their results came (`produced_by` first, `verifier` last), and
 -- `clients_compute_ms` what each one's fight took on its machine, in the same
@@ -228,14 +228,14 @@ CREATE TABLE IF NOT EXISTS orders (
   engine      TEXT NOT NULL DEFAULT '',
   slot        INTEGER NOT NULL,
   lease       TEXT,
-  lease_until INTEGER,
+  lease_until TEXT,
   leased_to   TEXT,
   score       REAL,
   metric      TEXT,
   produced_by TEXT,
   verifier    TEXT,
   disputed    REAL,
-  at          INTEGER NOT NULL,
+  at          TEXT NOT NULL,
   clients     TEXT NOT NULL DEFAULT '',
   clients_compute_ms TEXT NOT NULL DEFAULT '',
   work        INTEGER,
@@ -344,9 +344,9 @@ CREATE TABLE IF NOT EXISTS bot_inbox (
   channel    TEXT NOT NULL,
   kind       TEXT NOT NULL,
   body       TEXT NOT NULL,
-  at         INTEGER NOT NULL,
-  claimed_at INTEGER,
-  done_at    INTEGER
+  at         TEXT NOT NULL,
+  claimed_at TEXT,
+  done_at    TEXT
 );
 
 -- RIVEN APPRAISAL (worker/appraise.js, docs/AGENT.md §"Riven appraisal"). One row
@@ -363,34 +363,34 @@ CREATE TABLE IF NOT EXISTS appraisals (
   weapon   TEXT NOT NULL,
   ruler    TEXT NOT NULL,
   riven    TEXT NOT NULL,
-  at       INTEGER NOT NULL,
+  at       TEXT NOT NULL,
   winner   INTEGER,
-  done_at  INTEGER,
-  told_at  INTEGER,
+  done_at  TEXT,
+  told_at  TEXT,
   -- AS VOLUNTEER WORK (worker/appraise.js §"Volunteer work"): the search frozen
   -- once by the bot, the engine it is for, the lease of the computer running it,
   -- and when two owners' computers agreed on its answer.
   request     TEXT,
   engine      TEXT,
   lease       TEXT,
-  lease_until INTEGER,
+  lease_until TEXT,
   leased_to   TEXT,
-  agreed_at   INTEGER,
+  agreed_at   TEXT,
   -- WHEN A COMPUTER FIRST TOOK IT, and when the chat was told one had.
-  started_at   INTEGER,
-  started_told INTEGER
+  started_at   TEXT,
+  started_told TEXT
 );
 --   ALTER TABLE appraisals ADD COLUMN request TEXT;  (and engine, lease, leased_to TEXT;
---   lease_until, agreed_at, started_at, started_told INTEGER) — the live table was made before them.
+--   lease_until, agreed_at, started_at, started_told TEXT) — the live table was made before them.
 CREATE INDEX IF NOT EXISTS appraisals_by_asker ON appraisals (channel, asker, at);
 CREATE TABLE IF NOT EXISTS appraisal_results (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   code       TEXT NOT NULL,
   build      TEXT NOT NULL,
   thanks     TEXT NOT NULL DEFAULT '',
-  at         INTEGER NOT NULL,
-  claimed_at INTEGER,
-  checked_at INTEGER,
+  at         TEXT NOT NULL,
+  claimed_at TEXT,
+  checked_at TEXT,
   verdict    TEXT,
   -- A VOLUNTEER'S ANSWER: whose computer, its winner's score, the search's work,
   -- and the build's canonical text, which two answers must share to agree.

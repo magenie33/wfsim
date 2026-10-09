@@ -23,6 +23,9 @@ set -euo pipefail
 # AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, DERIVED so a
 # column added below shrinks the batch rather than putting every write one
 # parameter over the limit.
+# AN INSTANT IS ISO 8601 TO THE MILLISECOND (docs/NAMING.md §9), as SQL:
+# now, and `?` seconds ago.
+ISO_NOW="strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"
 QUEUE_COLUMNS=4
 QUEUE_BATCH=$((100 / QUEUE_COLUMNS))
 
@@ -98,10 +101,10 @@ priority_of() {
 # time, until none is.
 BACKFILL_ROWS=2000
 backfill_body() {
-  jq -n -c --argjson n "$BACKFILL_ROWS" --arg priority "$(priority_of q.batch b.at)" '
+  jq -n -c --argjson n "$BACKFILL_ROWS" --arg now "$ISO_NOW" --arg priority "$(priority_of q.batch b.at)" '
     {
       sql: ("INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority)"
-            + " SELECT q.build_id, q.ruler, q.mode, b.record, ?, ?, abs(random()) % 2147483647, unixepoch() * 1000,"
+            + " SELECT q.build_id, q.ruler, q.mode, b.record, ?, ?, abs(random()) % 2147483647, " + $now + ","
             + " MIN(" + $priority + ")"
             + " FROM queue q JOIN batches t ON t.id = q.batch JOIN builds b ON b.id = q.build_id"
             + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id AND o.ruler = q.ruler AND o.mode = q.mode)"
@@ -136,7 +139,7 @@ owed_only() {
 # rescore, a sweep — is opened afresh unless clients or the server are still
 # working on it. Three bound parameters a row, so the same chunk fits.
 orders_batches() {
-  jq -R -s -c --argjson n "$QUEUE_BATCH" --arg batch "${2:-}" --arg priority "$(priority_of "?" b.at)" --arg owed "$(owed_only "${2:-}" v.column1 v.column2 v.column3)" '
+  jq -R -s -c --argjson n "$QUEUE_BATCH" --arg now "$ISO_NOW" --arg batch "${2:-}" --arg priority "$(priority_of "?" b.at)" --arg owed "$(owed_only "${2:-}" v.column1 v.column2 v.column3)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
@@ -144,7 +147,7 @@ orders_batches() {
     | {
         sql: ("INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority)"
               + " SELECT v.column1, v.column2, v.column3, b.record, ?, ?,"
-              + " abs(random()) % 2147483647, unixepoch() * 1000, " + $priority
+              + " abs(random()) % 2147483647, " + $now + ", " + $priority
               + " FROM (VALUES " + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AS v"
               + " JOIN builds b ON b.id = v.column1 WHERE " + $owed
               + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET state = ?, engine = ?,"

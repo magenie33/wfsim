@@ -73,9 +73,9 @@ stale_body() {
             + " FROM builds b LEFT JOIN scores s ON s.identity = b.id"
             + " GROUP BY b.weapon"
             + " HAVING oldest IS NOT NULL"
-            + " AND oldest < datetime(?, ?)"
+            + " AND oldest < strftime(?, ?, ?)"
             + " ORDER BY oldest"),
-      params: ["now", "now", ("-" + $days + " days")]
+      params: ["now", "%Y-%m-%dT%H:%M:%fZ", "now", ("-" + $days + " days")]
     }'
 }
 
@@ -169,7 +169,7 @@ self_test() {
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
 
   local body; body=$(stale_body 7)
-  printf '%s' "$body" | jq -e '.params == ["now", "now", "-7 days"]' >/dev/null \
+  printf '%s' "$body" | jq -e '.params == ["now", "%Y-%m-%dT%H:%M:%fZ", "now", "-7 days"]' >/dev/null \
     && say ok "the age is bound, not interpolated" \
     || say FAIL "$(printf '%s' "$body" | jq -c .params)"
   # COUNTED FROM `builds`, so a weapon half unmeasured is priced at the whole.

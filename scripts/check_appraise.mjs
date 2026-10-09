@@ -70,7 +70,7 @@ check("the first build the bot accepts wins", c3.tell.length === 1 && c3.tell[0]
 const c4 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r1, ok: true }], told: [code] }, bot)).body;
 const row = db.prepare("SELECT winner, told_at FROM appraisals WHERE code = ?").get(code);
 check("…once: a later acceptance changes nothing", row.winner === r2, JSON.stringify(row));
-check("…and a told appraisal is not handed out to tell again", c4.tell.length === 0 && row.told_at > 0);
+check("…and a told appraisal is not handed out to tell again", c4.tell.length === 0 && Date.parse(row.told_at) > 0);
 const late = await call("POST", `/api/appraise/${code}/result`, { build, thanks: "C" });
 check("a build handed back after the win is still kept, and told it was not first", late.body.ok && late.body.first === false);
 const one = await call("GET", `/api/appraise/${code}?result=${r2}`);

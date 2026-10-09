@@ -5,7 +5,6 @@
 // integer sorts before every string.
 //
 // Plain node over the schemas and the code that writes them, so it sits in CI.
-// The EXEMPT lists name what is not on the standard yet. They may only shrink.
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,18 +16,6 @@ const failures = [];
 // THE ANONYMOUS STORE KEEPS THE DAY AND NOTHING FINER (docs/BOARD.md, the
 // upload consent): these hold a day under the name `at`.
 const DAY_EXEMPT = new Set(["builds.at", "inbox.at", "shares.at"]);
-// STILL EPOCH MILLISECONDS, in the compute tables.
-const INTEGER_EXEMPT = new Set([
-  "orders.lease_until", "orders.at",
-  "bot_inbox.at", "bot_inbox.claimed_at", "bot_inbox.done_at",
-  "appraisals.at", "appraisals.done_at", "appraisals.told_at", "appraisals.lease_until",
-  "appraisals.agreed_at", "appraisals.started_at",
-  "appraisal_results.at", "appraisal_results.claimed_at", "appraisal_results.checked_at",
-]);
-// STILL WRITTEN TO THE SECOND, per file: how many such writes it may hold.
-const SECOND_EXEMPT = { "worker/contribution.js": 2, "worker/verify.js": 1,
-  "scripts/live_orders.mjs": 1, "scripts/live_publish.mjs": 1, "scripts/fetch_queue.sh": 1 };
-
 const instant = (name) => /(^at|_at|_until)$/.test(name);
 
 function schema(path) {
@@ -39,7 +26,7 @@ function schema(path) {
       if (!c) continue;
       const [, col, type] = c, key = `${t[1]}.${col}`;
       if (/_at_ms$/.test(col)) failures.push(`${path}: ${key} is an instant in milliseconds; store it as ${col.replace(/_ms$/, "")} TEXT`);
-      else if (instant(col) && type !== "TEXT" && !INTEGER_EXEMPT.has(key)) failures.push(`${path}: ${key} is ${type}; an instant is TEXT`);
+      else if (instant(col) && type !== "TEXT") failures.push(`${path}: ${key} is ${type}; an instant is TEXT`);
     }
   }
 }
@@ -51,8 +38,7 @@ function writers(path) {
   // A DAY CUT FROM `now()` is an instant someone meant to store and truncated.
   for (const m of s.matchAll(/\bnow\(\)\.slice\(0, 10\)/g)) failures.push(`${path}:${s.slice(0, m.index).split("\n").length}: now().slice(0, 10) — store now(), or name the column day`);
   // AN INSTANT TO THE SECOND sorts after the same second to the millisecond.
-  const seconds = [...s.matchAll(/toISOString\(\)\.slice\(0, 19\)|%Y-%m-%dT%H:%M:%SZ/g)].length;
-  if (seconds > (SECOND_EXEMPT[path] || 0)) failures.push(`${path}: ${seconds} instant(s) written to the second (exempt ${SECOND_EXEMPT[path] || 0}); write toISOString() whole`);
+  for (const m of s.matchAll(/toISOString\(\)\.slice\(0, 19\)|%Y-%m-%dT%H:%M:%SZ/g)) failures.push(`${path}:${s.slice(0, m.index).split("\n").length}: an instant written to the second; write toISOString() whole`);
   // A DAY UNDER AN INSTANT'S NAME, outside the anonymous store.
   for (const m of s.matchAll(/INTO (\w+) \(([^)]*)\)/g)) {
     for (const col of m[2].split(",").map((x) => x.trim())) {
@@ -76,4 +62,4 @@ if (failures.length) {
   console.error(failures.map((f) => `FAIL ${f}`).join("\n"));
   process.exit(1);
 }
-console.log("ok — every stored instant is ISO 8601 to the millisecond, outside the exempt lists");
+console.log("ok — every stored instant is ISO 8601 to the millisecond");

@@ -77,13 +77,14 @@ pub(crate) struct Fact {
 /// carries what both of them need.
 pub(crate) type Facts = std::collections::HashMap<String, Fact>;
 
-/// A WALL CLOCK AS THE DATABASE WANTS IT: seconds, UTC, no fraction. The
-/// column is TEXT and the only thing that ever compares two of them is "which
-/// is newer", which this ordering answers lexically.
+/// A WALL CLOCK AS THE DATABASE WANTS IT: ISO 8601, UTC, to the millisecond
+/// (docs/NAMING.md §9) — the form every store writes, so "which is newer" is a
+/// lexical comparison against any of them.
 pub(crate) fn stamp(at: &std::time::SystemTime) -> String {
-    let secs = at
+    let ms = at
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+        .map_or(0, |d| d.as_millis());
+    let secs = (ms / 1000) as u64;
     // A HAND-ROLLED CIVIL DATE, because the alternative is a dependency for one
     // line of output nothing parses back. Days since the epoch to y/m/d by the
     // proleptic Gregorian rule.
@@ -98,10 +99,11 @@ pub(crate) fn stamp(at: &std::time::SystemTime) -> String {
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = 400 * era + yoe + i64::from(m <= 2);
     format!(
-        "{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}Z",
+        "{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}.{:03}Z",
         rest / 3600,
         (rest % 3600) / 60,
-        rest % 60
+        rest % 60,
+        ms % 1000
     )
 }
 
@@ -318,6 +320,13 @@ mod tests {
     /// is decided by a `SELECT` nobody wrote down. Nothing fails; the board
     /// publishes whichever the paging happened to reach.
     ///
+    /// A STAMP IS THE INSTANT `toISOString()` writes for the same moment.
+    #[test]
+    fn a_stamp_is_iso_8601_to_the_millisecond() {
+        let at = std::time::UNIX_EPOCH + std::time::Duration::from_millis(1_791_433_682_231);
+        assert_eq!(stamp(&at), "2026-10-08T04:28:02.231Z");
+    }
+
     /// READ FROM THE SCHEMA ITSELF, so the two cannot drift.
     #[test]
     fn the_scores_table_holds_one_fact_per_row() {

@@ -60,7 +60,7 @@ ACCOUNTS.raw.exec(`INSERT INTO accounts (id, created_at, username) VALUES ('ann'
   INSERT INTO devices (verifier, account, claimed_at) VALUES ('${A}', 'ann', 'x'), ('${D}', 'ann', 'x'), ('${B}', 'bob', 'x');`);
 // A board order is waiting too, so "first" means first.
 LIBRARY.raw.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES
-  ('b1', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 1, 0)`).run();
+  ('b1', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 1, '1970-01-01T00:00:00.000Z')`).run();
 LIBRARY.raw.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('q', 'b1', 'standard_single_target', 'base')").run();
 
 const code = await open("asker1");
@@ -83,10 +83,10 @@ check("a computer asking for work is handed the riven gain before any board orde
   && JSON.stringify(t1.context) === JSON.stringify(FROZEN.context), JSON.stringify(t1));
 check("...and nobody else holds it meanwhile", (await work(B) || {}).kind !== "riven_gain");
 // STILL AT IT: the holder's word runs its lease on; anyone else's runs nothing.
-LIBRARY.raw.prepare("UPDATE appraisals SET lease_until = ? WHERE code = ?").run(Date.now() + 1000, code);
+LIBRARY.raw.prepare("UPDATE appraisals SET lease_until = ? WHERE code = ?").run(new Date(Date.now() + 1000).toISOString(), code);
 const kept = await appraise("POST", `/api/appraise/${code}/renew`, { lease: t1.lease, verifier: A });
 const until = LIBRARY.raw.prepare("SELECT lease_until FROM appraisals WHERE code = ?").get(code).lease_until;
-check("a computer still searching keeps its lease running on", kept.body.held === true && until > Date.now() + 60_000, String(until - Date.now()));
+check("a computer still searching keeps its lease running on", kept.body.held === true && Date.parse(until) > Date.now() + 60_000, String(Date.parse(until) - Date.now()));
 check("...and one that does not hold it is told so, and changes nothing",
   (await appraise("POST", `/api/appraise/${code}/renew`, { lease: t1.lease, verifier: B })).body.held === false
   && LIBRARY.raw.prepare("SELECT lease_until FROM appraisals WHERE code = ?").get(code).lease_until === until);
@@ -126,26 +126,26 @@ await appraise("POST", `/api/appraise/${late}/request`, FROZEN, bot);
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
 LIBRARY.raw.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ?").run(D);
 check("a fresh one waits for eight cores", (await work(D, "e1", 4) || {}).code !== late);
-LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(Date.now() - 20_000, late);
+LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(new Date(Date.now() - 20_000).toISOString(), late);
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
 check("...four once a round of asks has passed", (await work(D, "e1", 4) || {}).code === late);
 LIBRARY.raw.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE code = ?").run(late);
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
 check("...still not one core in its first two minutes", (await work(D, "e1", 1) || {}).code !== late);
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
-LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(Date.now() - 3 * 60_000, late);
+LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(new Date(Date.now() - 3 * 60_000).toISOString(), late);
 check("...but past them, any computer takes it", (await work(D, "e1", 1) || {}).code === late);
 
 // A QUESTION FROZEN BEFORE A RELEASE is still served after it, and its cap on
 // answers counts the served engine's alone: three answers of the old engine
 // that never agreed do not shut it.
-LIBRARY.raw.prepare("UPDATE appraisals SET agreed_at = 1 WHERE code != ?").run("none");
+LIBRARY.raw.prepare("UPDATE appraisals SET agreed_at = '1970-01-01T00:00:00.001Z' WHERE code != ?").run("none");
 const older = await open("asker3");
 await appraise("POST", `/api/appraise/${older}/request`, { ...FROZEN, engine: "e0" }, bot);
-LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(Date.now() - 3 * 60_000, older);
+LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(new Date(Date.now() - 3 * 60_000).toISOString(), older);
 for (const [v, k] of [["x1", "a"], ["x2", "b"], ["x3", "c"]]) {
   LIBRARY.raw.prepare("INSERT INTO appraisal_results (code, build, at, verifier, score, work, key, engine) VALUES (?, '{}', ?, ?, 1, 1, ?, 'e0')")
-    .run(older, Date.now(), v.repeat(8), k);
+    .run(older, new Date().toISOString(), v.repeat(8), k);
 }
 LIBRARY.raw.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();

@@ -23,6 +23,7 @@
 
 import { ownersOf } from "./contribution.js";
 import { rivenTask } from "./appraise.js";
+import { iso } from "./instant.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest.
 export const LEASE_MS = 30 * 60_000;
@@ -65,7 +66,6 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 const day = () => new Date().toISOString().slice(0, 10);
 const hour = () => new Date().toISOString().slice(0, 13);
-const stamp = () => new Date().toISOString().slice(0, 19) + "Z";
 const done = "lease = NULL, lease_until = NULL, leased_to = NULL";
 
 async function read(request) {
@@ -155,7 +155,7 @@ async function candidates(db, state, engine, now, n) {
       const { results } = await db.prepare(
         `SELECT identity, ruler, mode, record, produced_by, clients, clients_nets FROM orders
           WHERE state = ? AND engine = ? AND priority = ? AND slot >= ? AND (lease_until IS NULL OR lease_until < ?)
-          ORDER BY slot LIMIT ?`).bind(state, engine, priority, from, now, n).all();
+          ORDER BY slot LIMIT ?`).bind(state, engine, priority, from, iso(now), n).all();
       if (results.length) return results;
     }
   }
@@ -195,9 +195,9 @@ async function work(request, env) {
   // still holds is one its page lost — a crash, a reload, an old page — and is
   // handed back here rather than waited out for half an hour.
   await db.batch([
-    db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, now),
+    db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, iso(now)),
     db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?")
-      .bind(b.verifier, now),
+      .bind(b.verifier, iso(now)),
   ]);
   // A RIVEN GAIN FIRST: someone is waiting on it in a chat. It holds its own
   // lease, so a client on one gets nothing more here either.
@@ -245,7 +245,7 @@ async function work(request, env) {
         WHERE identity = ? AND ruler = ? AND mode = ? AND state = ? AND (lease_until IS NULL OR lease_until < ?)
           AND NOT EXISTS (SELECT 1 FROM orders h WHERE h.leased_to = ? AND h.lease_until > ?)
           AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?)`)
-      .bind(lease, now + LEASE_MS, b.verifier, ...key, o.state, now, b.verifier, now, b.verifier, now).run();
+      .bind(lease, iso(now + LEASE_MS), b.verifier, ...key, o.state, iso(now), b.verifier, iso(now), b.verifier, iso(now)).run();
     if (took.meta && took.meta.changes) {
       return json({ ok: true, release, work: { lease, identity: o.identity, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
     }
@@ -275,14 +275,14 @@ async function verify(request, env) {
   }
   const o = await db.prepare(
     `SELECT identity, ruler, mode, state, engine, score, metric, work, produced_by, clients, clients_compute_ms, clients_nets, carried_from FROM orders
-      WHERE lease = ? AND leased_to = ? AND lease_until >= ?`).bind(b.lease, b.verifier, now).first();
+      WHERE lease = ? AND leased_to = ? AND lease_until >= ?`).bind(b.lease, b.verifier, iso(now)).first();
   if (!o) return json({ ok: true });
   const net = await netOf(request, env);
   const nets = [...new Set([...netsOf(o), net].filter(Boolean))].join(",");
   const key = [o.identity, o.ruler, o.mode];
   // …AND WHEN IT LAST ANSWERED, for its owner's device list, in the same write.
   const spent = db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?")
-    .bind(ms || 0, stamp(), b.verifier);
+    .bind(ms || 0, iso(now), b.verifier);
   // …AND THE RESULT COUNTED IN ITS HOUR, for the reader's own "today".
   await db.prepare(`INSERT INTO verifier_hours (verifier, hour, tasks, ms) VALUES (?, ?, 1, ?)
     ON CONFLICT (verifier, hour) DO UPDATE SET tasks = tasks + 1, ms = ms + excluded.ms`).bind(b.verifier, hour(), ms || 0).run();
@@ -345,7 +345,7 @@ async function verify(request, env) {
 /// (`clients_compute_ms` keeps them).
 async function fact(db, key, o, clients, compute, last, spent) {
   const state = Math.random() < SPOT_SHARE ? "spot" : "verified";
-  const at = stamp();
+  const at = iso(Date.now());
   await db.batch([
     db.prepare(`UPDATE orders SET state = ?, score = ?, metric = ?, engine = ?, produced_by = ?, verifier = ?, clients = ?,
                 clients_compute_ms = ?, clients_nets = '', ${done} WHERE identity = ? AND ruler = ? AND mode = ?`)

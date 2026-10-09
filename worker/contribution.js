@@ -27,6 +27,7 @@
 // three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
+import { iso } from "./instant.js";
 
 /// `WORK_WEIGHTS` counts in billionths of a point.
 const WORK_PER_POINT = 1e9;
@@ -100,9 +101,9 @@ async function activityOf(env, ids) {
     const [seen, held, gains] = await env.LIBRARY.batch([
       env.LIBRARY.prepare(`SELECT id, last_at FROM verifiers WHERE id IN (${marks})`).bind(...part),
       env.LIBRARY.prepare(`SELECT leased_to, record, ruler, mode FROM orders WHERE lease_until > ? AND leased_to IN (${marks})`)
-        .bind(t, ...part),
+        .bind(iso(t), ...part),
       env.LIBRARY.prepare(`SELECT leased_to, weapon, ruler FROM appraisals WHERE lease_until > ? AND leased_to IN (${marks})`)
-        .bind(t, ...part),
+        .bind(iso(t), ...part),
     ]);
     for (const r of seen.results) out.set(r.id, { last_at: r.last_at || null, now: null });
     for (const r of held.results) {
@@ -241,7 +242,7 @@ const ordered = (list, key) => list.filter((e) => e[key] > 0)
 const COMPUTING_MS = 10 * 60_000;
 async function computingNow(env) {
   if (!env.LIBRARY) return 0;
-  const from = new Date(Date.now() - COMPUTING_MS).toISOString().slice(0, 19) + "Z";
+  const from = iso(Date.now() - COMPUTING_MS);
   const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
   return (r && r.n) || 0;
 }
@@ -293,7 +294,7 @@ let demandKept = null;
 async function demand(env) {
   if (demandKept && Date.now() - demandKept.at < DEMAND_KEEP_MS) return json(demandKept.body);
   if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0 }, riven_gains: 0, per_hour: { volunteers: 0, official: 0 } });
-  const t = Date.now(), hour = new Date(t - 3_600_000).toISOString().slice(0, 19) + "Z";
+  const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
   const [owed, done, gains] = await db.batch([
     db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN o.priority = 0 THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 ELSE 2 END) AS k
@@ -302,7 +303,7 @@ async function demand(env) {
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
     db.prepare(`SELECT SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official
                 FROM scores WHERE finished_at >= ?`).bind(hour),
-    db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ?").bind(t - 86_400_000),
+    db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ?").bind(iso(t - 86_400_000)),
   ]);
   const by = Object.fromEntries(owed.results.map((r) => [r.k, r.n]));
   const h = done.results[0] || {};

@@ -157,8 +157,7 @@ instant: it is for a count by the day, and for the anonymous store, which keeps
 the day and nothing finer (docs/BOARD.md) and holds it under the frozen name
 `at`. A wire value may be another form — a sync cursor travels as a number —
 and converts at the boundary. `scripts/check_time_storage.mjs` refuses the
-rest; its exempt lists name the columns not on the standard yet, and only
-shrink.
+rest.
 
 ---
 

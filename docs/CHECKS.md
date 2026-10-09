@@ -27,8 +27,8 @@ Every stored instant is UTC ISO 8601 to the millisecond (docs/NAMING.md §9).
 It reads the schemas and the code that writes them: an instant column that is
 not TEXT, an `_at_ms` column, a day cut from `now()`, a day written under an
 instant's name outside the anonymous store, and a write to the second. The
-private worker's schemas and sources are read where it is checked out. Its
-exempt lists only shrink. No browser.
+private worker's schemas and sources are read where it is checked out. No
+browser.
 
 ## `check_release_identity`
 

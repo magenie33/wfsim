@@ -7,6 +7,7 @@
 //
 // CHANNEL-BLIND: `chat` is where the answer goes, written and read only by that
 // channel's bot (QQ today, Discord later); this file never looks inside it.
+import { iso, msOf } from "./instant.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
 const CODE_LEN = 5;
@@ -85,11 +86,11 @@ async function open(request, env) {
   }
   const db = env.LIBRARY, now = Date.now();
   const room = typeof b.room === "string" ? b.room : "";
-  await db.prepare("DELETE FROM appraisals WHERE at < ?").bind(now - KEEP_MS).run();
-  await db.prepare("DELETE FROM appraisal_results WHERE at < ?").bind(now - KEEP_MS).run();
+  await db.prepare("DELETE FROM appraisals WHERE at < ?").bind(iso(now - KEEP_MS)).run();
+  await db.prepare("DELETE FROM appraisal_results WHERE at < ?").bind(iso(now - KEEP_MS)).run();
   const [byAsker, byRoom] = await db.batch([
-    db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND asker = ? AND at > ?").bind(b.channel, b.asker, now - HOUR),
-    db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND room = ? AND room != '' AND at > ?").bind(b.channel, room, now - HOUR),
+    db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND asker = ? AND at > ?").bind(b.channel, b.asker, iso(now - HOUR)),
+    db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND room = ? AND room != '' AND at > ?").bind(b.channel, room, iso(now - HOUR)),
   ]);
   if (byAsker.results[0].n >= PER_ASKER) return json({ ok: false, error: "asker_limit", per_hour: PER_ASKER }, 429);
   if (room && byRoom.results[0].n >= PER_ROOM) return json({ ok: false, error: "room_limit", per_hour: PER_ROOM }, 429);
@@ -97,7 +98,7 @@ async function open(request, env) {
     const code = newCode();
     const r = await db.prepare(`INSERT OR IGNORE INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(code, b.channel, JSON.stringify(b.chat || {}), b.asker, room,
-      b.weapon, b.ruler, JSON.stringify(b.riven), now).run();
+      b.weapon, b.ruler, JSON.stringify(b.riven), iso(now)).run();
     if (r.meta.changes) return json({ ok: true, code });
   }
   return json({ ok: false, error: "no code free" }, 503);
@@ -108,14 +109,14 @@ async function open(request, env) {
 async function read(request, env, code) {
   if (request.method !== "GET") return json({ ok: false, error: "GET only" }, 405);
   const a = await env.LIBRARY.prepare("SELECT * FROM appraisals WHERE code = ?").bind(code).first();
-  if (!a || a.at < Date.now() - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
+  if (!a || Date.parse(a.at) < Date.now() - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
   const won = a.winner && await env.LIBRARY.prepare("SELECT thanks FROM appraisal_results WHERE id = ?").bind(a.winner).first();
   // ONE BUILD HANDED BACK, by its id — what the bot's replay reads. A build is
   // board material and public; whose browser found it is not said.
   const rid = Number(new URL(request.url).searchParams.get("result"));
   const res = Number.isInteger(rid) && rid > 0
     && await env.LIBRARY.prepare("SELECT id, build, thanks FROM appraisal_results WHERE id = ? AND code = ?").bind(rid, code).first();
-  return json({ ok: true, code, weapon: a.weapon, ruler: a.ruler, riven: JSON.parse(a.riven), at: a.at,
+  return json({ ok: true, code, weapon: a.weapon, ruler: a.ruler, riven: JSON.parse(a.riven), at: msOf(a.at),
     done: !!a.done_at, ...(won ? { thanked: won.thanks } : {}),
     ...(res ? { result: { id: res.id, build: JSON.parse(res.build), thanks: res.thanks } } : {}) });
 }
@@ -166,7 +167,7 @@ const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
 /// still the bits, across engines (`volunteerAnswer`).
 export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
   const db = env.LIBRARY, now = Date.now();
-  const held = await db.prepare("SELECT 1 FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, now).first();
+  const held = await db.prepare("SELECT 1 FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, iso(now)).first();
   if (held) return null;
   const { results } = await db.prepare(
     `SELECT a.code, a.weapon, a.ruler, a.request, a.at,
@@ -174,10 +175,10 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
        FROM appraisals a
       WHERE a.request IS NOT NULL AND a.at > ? AND a.agreed_at IS NULL
         AND (a.lease_until IS NULL OR a.lease_until < ?)
-      ORDER BY (answered = 0) DESC, a.at LIMIT 8`).bind(engine, now - KEEP_MS, now).all();
+      ORDER BY (answered = 0) DESC, a.at LIMIT 8`).bind(engine, iso(now - KEEP_MS), iso(now)).all();
   for (const a of results) {
     if (a.answered >= RIVEN_ANSWERS) continue;
-    if (a.answered === 0 && lanes < rivenLanesNeeded(now - a.at)) continue;
+    if (a.answered === 0 && lanes < rivenLanesNeeded(now - Date.parse(a.at))) continue;
     const by = (await db.prepare("SELECT verifier FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL AND engine IS ?")
       .bind(a.code, engine).all()).results.map((r) => r.verifier);
     if (by.includes(verifier)) continue;
@@ -193,7 +194,7 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
         WHERE code = ? AND (lease_until IS NULL OR lease_until < ?)
           AND NOT EXISTS (SELECT 1 FROM appraisals h WHERE h.leased_to = ? AND h.lease_until > ?)
           AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.leased_to = ? AND o.lease_until > ?)`)
-      .bind(lease, now + RIVEN_LEASE_MS, verifier, now, a.code, now, verifier, now, verifier, now).run();
+      .bind(lease, iso(now + RIVEN_LEASE_MS), verifier, iso(now), a.code, iso(now), verifier, iso(now), verifier, iso(now)).run();
     if (took.meta.changes) {
       const { request, context } = JSON.parse(a.request);
       return { kind: "riven_gain", lease, code: a.code, weapon: a.weapon, ruler: a.ruler, request, context };
@@ -220,7 +221,7 @@ async function renew(request, env, code) {
   }
   const r = await env.LIBRARY.prepare(`UPDATE appraisals SET lease_until = ?
       WHERE code = ? AND lease = ? AND leased_to = ? AND lease_until >= ? AND agreed_at IS NULL`)
-    .bind(now + RIVEN_LEASE_MS, code, b.lease, b.verifier, now).run();
+    .bind(iso(now + RIVEN_LEASE_MS), code, b.lease, b.verifier, iso(now)).run();
   return json({ ok: true, held: !!r.meta.changes });
 }
 
@@ -232,11 +233,11 @@ async function volunteerAnswer(env, a, b, now, owners) {
     return json({ ok: false, error: "bad answer" }, 400);
   }
   const db = env.LIBRARY;
-  if (a.lease !== b.lease || a.leased_to !== b.verifier || !(a.lease_until >= now)) return json({ ok: true, first: false });
+  if (a.lease !== b.lease || a.leased_to !== b.verifier || !(Date.parse(a.lease_until) >= now)) return json({ ok: true, first: false });
   const key = canon(b.build);
   await db.batch([
     db.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?)`)
-      .bind(a.code, JSON.stringify(b.build), now, b.verifier, b.score, b.work, key,
+      .bind(a.code, JSON.stringify(b.build), iso(now), b.verifier, b.score, b.work, key,
         typeof b.engine === "string" && ENGINE_ID.test(b.engine) ? b.engine : null),
     db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE code = ?").bind(a.code),
   ]);
@@ -248,12 +249,12 @@ async function volunteerAnswer(env, a, b, now, owners) {
     for (let j = i + 1; j < results.length; j++) {
       const x = results[i], y = results[j];
       if (x.key !== y.key || x.score !== y.score || x.work !== y.work || ownerOf(x.verifier) === ownerOf(y.verifier)) continue;
-      const won = await db.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL").bind(now, a.code).run();
+      const won = await db.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL").bind(iso(now), a.code).run();
       if (!won.meta.changes) return json({ ok: true, first: !a.done_at });
       await db.batch([x, y].flatMap((r) => [
         db.prepare("UPDATE verifiers SET work = work + ? WHERE id = ?").bind(r.work, r.verifier),
         db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
-          ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, new Date(now).toISOString().slice(0, 13), r.work),
+          ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, iso(now).slice(0, 13), r.work),
       ]));
       return json({ ok: true, first: !a.done_at });
     }
@@ -277,10 +278,10 @@ async function handBack(request, env, code, owners = async () => new Map()) {
   if (!b.build || typeof b.build !== "object" || !Array.isArray(b.build.mods)) return json({ ok: false, error: "needs build" }, 400);
   const db = env.LIBRARY, now = Date.now();
   const a = await db.prepare("SELECT code, done_at, at, lease, lease_until, leased_to FROM appraisals WHERE code = ?").bind(code).first();
-  if (!a || a.at < now - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
+  if (!a || Date.parse(a.at) < now - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
   if (b.lease !== undefined) return volunteerAnswer(env, a, b, now, owners);
   await db.prepare("INSERT INTO appraisal_results (code, build, thanks, at) VALUES (?, ?, ?, ?)")
-    .bind(code, JSON.stringify(b.build), cleanThanks(b.thanks), now).run();
+    .bind(code, JSON.stringify(b.build), cleanThanks(b.thanks), iso(now)).run();
   return json({ ok: true, first: !a.done_at });
 }
 
@@ -299,26 +300,26 @@ async function claim(request, env) {
     const id = Number(j.id);
     if (!Number.isInteger(id)) continue;
     await db.prepare("UPDATE appraisal_results SET verdict = ?, checked_at = ? WHERE id = ?")
-      .bind(JSON.stringify({ ok: !!j.ok, ...(j.verdict || {}) }), now, id).run();
+      .bind(JSON.stringify({ ok: !!j.ok, ...(j.verdict || {}) }), iso(now), id).run();
     // THE FIRST ACCEPTED BUILD WINS, once: a later one changes nothing.
     if (j.ok) {
       await db.prepare(`UPDATE appraisals SET winner = ?, done_at = ?
-        WHERE done_at IS NULL AND code = (SELECT code FROM appraisal_results WHERE id = ?)`).bind(id, now, id).run();
+        WHERE done_at IS NULL AND code = (SELECT code FROM appraisal_results WHERE id = ?)`).bind(id, iso(now), id).run();
     }
   }
   for (const code of (Array.isArray(b.told) ? b.told : []).slice(0, 50)) {
-    await db.prepare("UPDATE appraisals SET told_at = ? WHERE code = ?").bind(now, String(code)).run();
+    await db.prepare("UPDATE appraisals SET told_at = ? WHERE code = ?").bind(iso(now), String(code)).run();
   }
   for (const code of (Array.isArray(b.started_told) ? b.started_told : []).slice(0, 50)) {
-    await db.prepare("UPDATE appraisals SET started_told = ? WHERE code = ?").bind(now, String(code)).run();
+    await db.prepare("UPDATE appraisals SET started_told = ? WHERE code = ?").bind(iso(now), String(code)).run();
   }
   const { results: toJudge } = await db.prepare(`SELECT r.id, r.code, r.build, r.thanks, r.at,
       a.weapon, a.ruler, a.riven, a.chat, a.asker, a.at AS asked_at
     FROM appraisal_results r JOIN appraisals a ON a.code = r.code
     WHERE a.channel = ? AND a.done_at IS NULL AND r.checked_at IS NULL AND (r.claimed_at IS NULL OR r.claimed_at < ?)
-    ORDER BY r.at LIMIT 5`).bind(channel, now - RECLAIM_MS).all();
+    ORDER BY r.at LIMIT 5`).bind(channel, iso(now - RECLAIM_MS)).all();
   if (toJudge.length) {
-    await db.batch(toJudge.map((r) => db.prepare("UPDATE appraisal_results SET claimed_at = ? WHERE id = ?").bind(now, r.id)));
+    await db.batch(toJudge.map((r) => db.prepare("UPDATE appraisal_results SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
   }
   const { results: toTell } = await db.prepare(`SELECT a.code, a.weapon, a.ruler, a.riven, a.chat, a.asker, a.at AS asked_at,
       a.done_at, r.id AS result_id, r.thanks, r.verdict, r.verifier IS NOT NULL AS volunteer
@@ -328,7 +329,8 @@ async function claim(request, env) {
   const { results: toStart } = await db.prepare(`SELECT code, weapon, ruler, riven, chat, asker, at AS asked_at, started_at
     FROM appraisals WHERE channel = ? AND started_at IS NOT NULL AND started_told IS NULL AND told_at IS NULL AND done_at IS NULL
     ORDER BY started_at LIMIT 20`).bind(channel).all();
-  const parse = (r) => ({ ...r, riven: JSON.parse(r.riven), chat: JSON.parse(r.chat),
+  const parse = (r) => ({ ...r, at: msOf(r.at), asked_at: msOf(r.asked_at), done_at: msOf(r.done_at), started_at: msOf(r.started_at),
+    riven: JSON.parse(r.riven), chat: JSON.parse(r.chat),
     ...(r.build ? { build: JSON.parse(r.build) } : {}), ...(r.verdict ? { verdict: JSON.parse(r.verdict) } : {}) });
   return json({ ok: true, judge: toJudge.map(parse), tell: toTell.map(parse), started: toStart.map(parse) });
 }

@@ -20,6 +20,10 @@ set -euo pipefail
 # A PAGE, AND THE LOOP IS BOUNDED. The queue is EMPTY at rest — it holds only
 # what is still owed — so a full page is the unusual case: a fresh library, or a
 # rescore somebody just asked for.
+# AN INSTANT IS ISO 8601 TO THE MILLISECOND (docs/NAMING.md §9), as SQL:
+# now, and `?` seconds ago.
+ISO_NOW="strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"
+ISO_AGO="strftime('%Y-%m-%dT%H:%M:%fZ', unixepoch() - ?, 'unixepoch')"
 PAGE=5000
 MAX_PAGES=200
 
@@ -63,14 +67,14 @@ d1() {
 # every owed row is read — which is what a reconciliation needs.
 page_body() {
   if [ -n "${HOLD_SECONDS:-}" ]; then
-    jq -n -c --argjson limit "$1" --argjson offset "$2" --argjson hold "$HOLD_SECONDS" '
+    jq -n -c --argjson limit "$1" --argjson offset "$2" --argjson hold "$HOLD_SECONDS" --arg now "$ISO_NOW" --arg ago "$ISO_AGO" '
       {
         sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
               + " JOIN batches b ON b.id = q.batch"
               + " LEFT JOIN orders c ON c.identity = q.build_id AND c.ruler = q.ruler AND c.mode = q.mode"
               + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id"
               + " AND o.ruler = q.ruler AND o.mode = q.mode"
-              + " AND (o.at > (unixepoch() - ?) * 1000 OR o.state IN (?, ?)))"
+              + " AND (o.at > " + $ago + " OR o.state IN (?, ?)))"
               + " ORDER BY (c.state IN (?, ?)) DESC, b.at, q.batch, q.build_id, q.ruler, q.mode"
               + " LIMIT ? OFFSET ?"),
         params: [$hold, "todo", "open", "scoring:open", "scoring:fresh", $limit, $offset]
@@ -94,15 +98,15 @@ page_body() {
 # than `RESERVE_MIN` orders, and claims only the old `todo` beyond it — so when
 # many computers are on they keep most of the work, and at night the run takes it.
 reserve_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" '
+  jq -n -c --argjson hold "$HOLD_SECONDS" --arg now "$ISO_NOW" --arg ago "$ISO_AGO" '
     {
       sql: ("SELECT"
-            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS open_to_clients,"
-            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND at <= (unixepoch() - ?) * 1000"
-            + "   AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS old,"
+            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND (lease_until IS NULL OR lease_until < " + $now + ")) AS open_to_clients,"
+            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND at <= " + $ago
+            + "   AND (lease_until IS NULL OR lease_until < " + $now + ")) AS old,"
             + " (SELECT COUNT(*) FROM scores WHERE measured_by LIKE ?"
             + "   AND finished_at >= strftime(?, unixepoch() - 3600, ?)) AS facts_last_hour"),
-      params: ["todo", "todo", $hold, "verified:%", "%Y-%m-%dT%H:%M:%SZ", "unixepoch"]
+      params: ["todo", "todo", $hold, "verified:%", "%Y-%m-%dT%H:%M:%fZ", "unixepoch"]
     }'
 }
 
@@ -129,13 +133,13 @@ claim_rows() {
 #   asks for last is what the clients keep.
 # Neither takes an order a client holds a live lease on.
 claim_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" --arg state "${1:?state}" --argjson rows "${2:--1}" '
+  jq -n -c --argjson hold "$HOLD_SECONDS" --arg now "$ISO_NOW" --arg ago "$ISO_AGO" --arg state "${1:?state}" --argjson rows "${2:--1}" '
     {
       sql: ("UPDATE orders SET state = ? || state WHERE rowid IN ("
             + "SELECT o.rowid FROM orders o JOIN queue q ON q.build_id = o.identity"
             + " AND q.ruler = o.ruler AND q.mode = o.mode JOIN batches b ON b.id = q.batch"
-            + " WHERE o.state = ? AND o.at <= (unixepoch() - ?) * 1000"
-            + " AND (o.lease_until IS NULL OR o.lease_until < unixepoch() * 1000)"
+            + " WHERE o.state = ? AND o.at <= " + $ago
+            + " AND (o.lease_until IS NULL OR o.lease_until < " + $now + ")"
             + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode LIMIT ?)"),
       params: ["scoring:", $state, $hold, $rows]
     }'

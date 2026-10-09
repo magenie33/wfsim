@@ -39,7 +39,7 @@ async function delta() {
   const lines = readFileSync(factsPath, "utf8").split("\n").filter(Boolean);
   let seen = existsSync(cursorPath) ? readFileSync(cursorPath, "utf8").trim() : "";
   if (!seen) for (const l of lines) { const f = JSON.parse(l); if (f.finished_at > seen) seen = f.finished_at; }
-  const since = new Date(Date.parse(seen || "1970-01-01T00:00:00Z") - OVERLAP_SECONDS * 1000).toISOString().slice(0, 19) + "Z";
+  const since = new Date(Date.parse(seen || "1970-01-01T00:00:00Z") - OVERLAP_SECONDS * 1000).toISOString();
   const rows = await d1(`SELECT identity, ruler, mode, measured_by, score, cost_seconds, started_at, finished_at
                          FROM scores WHERE finished_at > ? ORDER BY finished_at`, [since]);
   const byKey = new Map(lines.map((l) => [key(JSON.parse(l)), l]));

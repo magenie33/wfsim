@@ -162,7 +162,7 @@ async function settle() {
 async function unverified() {
   const rows = await d1(`SELECT identity, ruler, mode, score, metric, engine FROM orders
                          WHERE state IN ('fresh', 'open', 'arbiter', 'dispute') AND score IS NOT NULL`);
-  const at = new Date().toISOString().slice(0, 19) + "Z";
+  const at = new Date().toISOString();
   writeFileSync(arg, rows.map((o) => JSON.stringify({
     identity: o.identity, ruler: o.ruler, mode: o.mode, metric: o.metric, measured_by: `client:${o.engine}`,
     score: o.score, cost_seconds: 0, started_at: at, finished_at: at,

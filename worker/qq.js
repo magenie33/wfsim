@@ -3,6 +3,7 @@
 // address (op 13), checks every event's signature, and keeps the messages the
 // bot answers in `bot_inbox`. It sends nothing: QQ only takes calls from the
 // whitelisted bot server, which claims the rows over `/api/qq/claim`.
+import { iso, msOf } from "./instant.js";
 
 const KINDS = new Set(["C2C_MESSAGE_CREATE", "GROUP_AT_MESSAGE_CREATE", "GROUP_MESSAGE_CREATE"]);
 /// A COMMAND WITHOUT THE @: the word, then a space or the weapon's own script —
@@ -70,7 +71,7 @@ async function qqCallback(request, env) {
   if (!ok) return json({ ok: false, error: "bad signature" }, 401);
   if (ev.op === 0 && qqAddressed(ev.t, ev.d)) {
     await env.LIBRARY.prepare("INSERT OR IGNORE INTO bot_inbox (id, channel, kind, body, at) VALUES (?, 'qq', ?, ?, ?)")
-      .bind(String(ev.d.id), ev.t, JSON.stringify(ev.d), Date.now()).run();
+      .bind(String(ev.d.id), ev.t, JSON.stringify(ev.d), iso(Date.now())).run();
   }
   return json({ op: 12 });
 }
@@ -86,14 +87,14 @@ async function qqClaim(request, env) {
   try { b = await request.json(); } catch (_) {}
   const done = Array.isArray(b.done) ? b.done.map(String).slice(0, 100) : [];
   const db = env.LIBRARY;
-  const writes = [db.prepare("DELETE FROM bot_inbox WHERE at < ?").bind(now - KEEP_MS)];
-  for (const id of done) writes.push(db.prepare("UPDATE bot_inbox SET done_at = ? WHERE id = ?").bind(now, id));
+  const writes = [db.prepare("DELETE FROM bot_inbox WHERE at < ?").bind(iso(now - KEEP_MS))];
+  for (const id of done) writes.push(db.prepare("UPDATE bot_inbox SET done_at = ? WHERE id = ?").bind(iso(now), id));
   await db.batch(writes);
   const { results } = await db.prepare(`SELECT id, channel, kind, body, at FROM bot_inbox
     WHERE done_at IS NULL AND (claimed_at IS NULL OR claimed_at < ?) ORDER BY at LIMIT ?`)
-    .bind(now - RECLAIM_MS, CLAIM_MAX).all();
+    .bind(iso(now - RECLAIM_MS), CLAIM_MAX).all();
   if (results.length) {
-    await db.batch(results.map((r) => db.prepare("UPDATE bot_inbox SET claimed_at = ? WHERE id = ?").bind(now, r.id)));
+    await db.batch(results.map((r) => db.prepare("UPDATE bot_inbox SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
   }
-  return json({ ok: true, rows: results.map((r) => ({ ...r, body: JSON.parse(r.body) })) });
+  return json({ ok: true, rows: results.map((r) => ({ ...r, at: msOf(r.at), body: JSON.parse(r.body) })) });
 }

@@ -54,7 +54,7 @@ const callIn = async (e, path, body) =>
   (await verifyRoute(new Request(`https://x${path}`, { method: "POST", body: JSON.stringify(body) }), e, path)).json();
 const call = (path, body) => callIn(env, path, body);
 const order = (identity, state = "todo", extra = {}) => {
-  db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES (?, 'standard_single_target', 'base', ?, ?, ?, 0)`)
+  db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES (?, 'standard_single_target', 'base', ?, ?, ?, '1970-01-01T00:00:00.000Z')`)
     .run(identity, JSON.stringify({ weapon: "braton_prime", mods: ["serration"] }), state, Math.floor(Math.random() * 1e9));
   db.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals', ?, 'standard_single_target', 'base')").run(identity);
   if (extra.score !== undefined && extra.work === undefined) extra = { ...extra, work: WORK };
@@ -133,7 +133,7 @@ order("six");
 only("six");
 const G = "g".repeat(24), H = "h".repeat(24);
 const w6 = await work(G);
-db.prepare("UPDATE orders SET lease_until = ? WHERE identity = 'six'").run(Date.now() - 1);
+db.prepare("UPDATE orders SET lease_until = ? WHERE identity = 'six'").run(new Date(Date.now() - 1).toISOString());
 await answer(w6.work, G, SCORE);
 check("an answer on an expired lease is nobody's", row("six").state === "todo" && row("six").score === null);
 const w6b = await work(H);
@@ -302,9 +302,9 @@ db.prepare("DELETE FROM queue").run();
 db.prepare("INSERT INTO batches (id, at, why, total) VALUES ('arrivals', '2026-01-01', 'check', 4)").run();
 order("old");
 order("oldopen", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: R, clients: R });
-order("oldheld", "todo", { leased_to: X, lease: "b".repeat(32), lease_until: Date.now() + LEASE_MS });
+order("oldheld", "todo", { leased_to: X, lease: "b".repeat(32), lease_until: new Date(Date.now() + LEASE_MS).toISOString() });
 order("young");
-db.prepare("UPDATE orders SET at = ? WHERE identity = 'young'").run(Date.now() - 60_000);
+db.prepare("UPDATE orders SET at = ? WHERE identity = 'young'").run(new Date(Date.now() - 60_000).toISOString());
 const reserve = sql(body("reserve")).get(...body("reserve").params);
 check("the reserve counts the unmeasured orders a client could take now, young or old, and what of them is old",
   reserve.open_to_clients === 2 && reserve.old === 1
@@ -411,7 +411,7 @@ for (const [id, at] of [["old", "2026-01-01"], ["new", "2026-03-01"], ["held", "
   db.prepare("INSERT OR IGNORE INTO builds (id, at, record) VALUES (?, ?, ?)").run(`bf-${id}`, at, JSON.stringify({ weapon: "braton_prime" }));
   db.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-2026-03-01', ?, 'heavy_gunner', 'base')").run(`bf-${id}`);
 }
-db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES ('bf-held', 'heavy_gunner', 'base', '{}', 'open', 1, 0)`).run();
+db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES ('bf-held', 'heavy_gunner', 'base', '{}', 'open', 1, '1970-01-01T00:00:00.000Z')`).run();
 const backfill = () => { const b = JSON.parse(execFileSync("bash", ["scripts/ship_queue.sh", "--body", "backfill"], { encoding: "utf8" }));
   return Number(sql(b).run(...b.params).changes); };
 const bf = (id) => db.prepare("SELECT state, priority FROM orders WHERE identity = ? AND ruler = 'heavy_gunner'").get(`bf-${id}`);
