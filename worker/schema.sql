@@ -275,9 +275,9 @@ CREATE TABLE IF NOT EXISTS verifiers (
   -- A REFUSAL IS A COOL-DOWN: how many this client has had, and when the last
   -- one ends (scripts/live_orders.mjs `ban`):
   --   ALTER TABLE verifiers ADD COLUMN refusals INTEGER NOT NULL DEFAULT 0;
-  --   ALTER TABLE verifiers ADD COLUMN refused_until INTEGER;
+  --   ALTER TABLE verifiers ADD COLUMN refused_until TEXT;
   refusals      INTEGER NOT NULL DEFAULT 0,
-  refused_until INTEGER,
+  refused_until TEXT,
   -- …and the facts it has been part of since its last refusal, which forgive
   -- one each `FACTS_PER_REFUSAL_FORGIVEN` (worker/verify.js):
   --   ALTER TABLE verifiers ADD COLUMN clean INTEGER NOT NULL DEFAULT 0;

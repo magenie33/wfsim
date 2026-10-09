@@ -152,13 +152,13 @@ Math.random = () => 0.5;
 const J = "j".repeat(24);
 order("eight");
 await work(J);
-const coolUntil = Date.now() + 3_600_000;
+const coolUntil = new Date(Date.now() + 3_600_000).toISOString();
 db.prepare("UPDATE verifiers SET banned = 1, refusals = 1, refused_until = ? WHERE id = ?").run(coolUntil, J);
 db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
 const refused = await work(J);
 check("a client in its cool-down is handed nothing, and told why and until when",
   refused.work === null && refused.banned === true && refused.until === coolUntil, JSON.stringify(refused));
-db.prepare("UPDATE verifiers SET refused_until = ? WHERE id = ?").run(Date.now() - 1, J);
+db.prepare("UPDATE verifiers SET refused_until = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), J);
 db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
 const lifted = await work(J);
 check("...and once it is over, it works again and the refusal is lifted",

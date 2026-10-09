@@ -124,7 +124,7 @@ async function admit(db, id, now) {
     await db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, ?)").bind(id, day()).run();
     return { ok: true };
   }
-  if (v.banned && v.refused_until > now) return { ok: false, until: v.refused_until };
+  if (v.banned && Date.parse(v.refused_until) > now) return { ok: false, until: v.refused_until };
   if (v.banned) await db.prepare("UPDATE verifiers SET banned = 0 WHERE id = ?").bind(id).run();
   if (v.seen !== day()) await db.prepare("UPDATE verifiers SET seen = ? WHERE id = ?").bind(day(), id).run();
   return { ok: true };

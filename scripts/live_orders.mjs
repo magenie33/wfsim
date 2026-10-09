@@ -91,7 +91,7 @@ async function ban(id) {
   if (!id) return;
   const [v] = await d1("SELECT refusals FROM verifiers WHERE id = ?", [id]);
   const cool = coolDownMs(v && v.refusals);
-  await d1("UPDATE verifiers SET banned = 1, refusals = refusals + 1, clean = 0, refused_until = ? WHERE id = ?", [Date.now() + cool, id]);
+  await d1("UPDATE verifiers SET banned = 1, refusals = refusals + 1, clean = 0, refused_until = ? WHERE id = ?", [new Date(Date.now() + cool).toISOString(), id]);
   const named = await d1(`SELECT identity, ruler, mode, state, produced_by, verifier, clients, clients_compute_ms, work FROM orders
                           WHERE (',' || clients || ',') LIKE ? AND produced_by != ? AND state IN ('verified', 'spot', 'open')`,
   [`%,${id},%`, id]);
