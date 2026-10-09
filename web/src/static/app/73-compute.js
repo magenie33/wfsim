@@ -179,7 +179,12 @@ function computeHereHtml() {
   const again = on && boardStale ? ` <button class="ghost-btn btn-sm" data-auth="compute-reload">${aT("refresh now")}</button>` : "";
   const n = computeNow;
   const pct = n && n.total ? Math.round((100 * n.done) / n.total) : 0;
-  const now = n ? `<div class="kv"><dt>${aT("Now")}</dt><dd>${computeTaskHtml(n)} · ${escHtml(computeTook(Date.now() - n.started))}
+  // THE ROW STAYS WHILE COMPUTING IS ON, task or none: it came and went between
+  // tasks, and everything under it jumped every few seconds.
+  // …AND ONE LINE HIGH, a long task cut short and whole on hover.
+  const task = n ? `${computeTaskHtml(n)} · ${escHtml(computeTook(Date.now() - n.started))}` : "";
+  const now = WASM && !onPhone() && on ? `<div class="kv"><dt>${aT("Now")}</dt><dd style="min-width:0"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"${
+    n ? ` title="${task.replace(/<[^>]*>/g, "")}"` : ""}>${n ? task : `<span class="set-note">${aT("Waiting for the next task.")}</span>`}</div>
       <div style="height:4px;border-radius:2px;background:var(--line);margin-top:6px"><div style="height:4px;border-radius:2px;background:var(--accent);width:${pct}%"></div></div></dd></div>` : "";
   const d = devicePoints;
   const pts = d ? `<div class="kv"><dt>${aT("Points")}</dt><dd>${computePts(d.points)} · ${
