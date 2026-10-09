@@ -279,8 +279,6 @@ let computeDemand = null;
 async function loadComputeDemand() {
   const r = await accountCall("GET", "/api/board/demand");
   computeDemand = r && r.ok ? r : null;
-  // ONE NUMBER ON ONE PAGE: the bar's count takes the page's, read the same moment.
-  if (computeDemand && typeof computeDemand.computing === "number") navComputingPaint(computeDemand.computing);
 }
 function computeDemandHtml() {
   const d = computeDemand;
@@ -297,7 +295,7 @@ function computeDemandHtml() {
   const eta = hours === null || !owed ? "" : hours < 1 ? tr("under an hour") : tr("about {n} hours").replace("{n}", n(Math.round(hours)));
   return `<div class="block"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All computers together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
-    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(n(d.computing))} ${aT("computers")}</dd></div>
+    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("computers")}</dd></div>
     <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
       <div class="demand-bar"><div style="width:${share}%"></div></div>
@@ -310,21 +308,23 @@ function computeDemandHtml() {
 /// THE NAV'S COUNT: how many computers are computing for WFSim now, asked when
 /// the page starts and each minute it stays in view — the number as it is,
 /// zero too, and nothing where the site has no such count (a dev server).
-/// ASKED PAST THE BROWSER'S CACHE (`no-cache` revalidates with the edge): the
-/// edge's minute is the one delay, not that minute plus the browser's own.
+/// ONE SOURCE FOR THE COUNT: the bar and the compute page's "computing now"
+/// both draw `computingCount`, and only this asks for it — so the two are the
+/// same number at every moment, never two reads a minute apart. Asked past the
+/// browser's cache (`no-cache` revalidates with the edge), so the edge's minute
+/// is the one delay.
+let computingCount = null;
 async function navComputing() {
   const el = document.getElementById("compute-count");
   if (!el || document.hidden) return;
   const r = await fetch("/api/board/computing", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || typeof r.computing !== "number") return;
-  navComputingPaint(r.computing);
-}
-function navComputingPaint(n) {
-  const el = document.getElementById("compute-count");
-  if (!el) return;
-  el.innerHTML = `<span class="online-dot"></span>${escHtml(n.toLocaleString(accountLocale()))}`;
-  el.title = tr("{n} computers computing for WFSim now").replace("{n}", n.toLocaleString(accountLocale()));
+  computingCount = r.computing;
+  const n = computingCount.toLocaleString(accountLocale());
+  el.innerHTML = `<span class="online-dot"></span>${escHtml(n)}`;
+  el.title = tr("{n} computers computing for WFSim now").replace("{n}", n);
   el.hidden = false;
+  computeRedraw();
 }
 navComputing();
 setInterval(navComputing, 60_000);
@@ -346,14 +346,14 @@ let computeTimer = null;
 let computeAskedFor = null;
 function computeOpened() {
   loadDevicePoints();
-  if (!computeDemand) loadComputeDemand().then(computeRedraw);
+  if (!computeDemand) Promise.all([loadComputeDemand(), navComputing()]).then(computeRedraw);
   const who = accountState.account && accountState.account.id;
   if (who && computeAskedFor !== who) { computeAskedFor = who; computeRefresh(); }
   if (!computeTimer) computeTimer = setInterval(computeRefresh, 30000);
 }
 async function computeRefresh() {
   if (authKindOf(location.pathname) !== "compute") { clearInterval(computeTimer); computeTimer = null; computeAskedFor = null; return; }
-  await loadComputeDemand();
+  await Promise.all([loadComputeDemand(), navComputing()]);
   if (!accountState.account) return computeRedraw();
   await loadDevices();
   const own = computeOwnId();
