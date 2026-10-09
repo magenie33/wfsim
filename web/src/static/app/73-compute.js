@@ -139,8 +139,8 @@ function computeEnd(result) {
   const t = computeNow;
   computeNow = null;
   if (t && result) {
-    const { done: _d, total: _t, started: _s, ...facts } = t;
-    const entry = { ...facts, at: Date.now(), ms: result.ms, work: result.work };
+    const { done: _d, total: _t, ...facts } = t;
+    const entry = { ...facts, at: Date.now(), ms: result.ms, work: result.work, score: result.score, metric: result.metric };
     try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify([entry, ...computeLog()].slice(0, COMPUTE_LOG_MAX))); } catch (_) { /* this page only */ }
   }
   computeRedraw();
@@ -262,14 +262,103 @@ function computeDevicesHtml() {
 
 /// WHAT THIS BROWSER DID, newest first, with the points each will add once
 /// another computer's answer agrees.
+/// WHERE EACH RECENT RESULT STANDS, asked of the server by this browser's own id
+/// (`/api/board/mine`) for the ones still open, and kept on the entry once it is
+/// final — confirmed or gone — so the list says it after the order is long done.
+const taskKey = (t) => `${t.identity}|${t.ruler}|${t.mode}`;
+async function loadTaskStates() {
+  const id = typeof verifierId === "function" ? verifierId() : null;
+  const open = computeLog().filter((t) => t.kind === "board" && t.identity && !["confirmed", "gone"].includes(t.state));
+  if (!id || !open.length) return;
+  const r = await postBoardWork("/api/board/mine", { verifier: id, orders: open.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })) });
+  if (!(r && r.ok)) return;
+  const by = new Map(r.orders.map((o) => [taskKey(o), o]));
+  const log = computeLog().map((t) => {
+    const o = t.identity && by.get(taskKey(t));
+    return o ? { ...t, state: o.state, ...(o.at ? { confirmedAt: Date.parse(o.at) } : {}), changedAt: o.state !== t.state ? Date.now() : t.changedAt } : t;
+  });
+  try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify(log)); } catch (_) { /* this page only */ }
+}
+
+/// A RECORD AS THE BOARD'S OWN ROW, so the builder's card draws it (`boardRowState`).
+const taskRow = (t) => {
+  const r = t.record || {};
+  return { mods: r.mods, arcanes: r.arcanes, evolutions: r.evolutions, exilus: r.exilus, valence: r.valence, mode: t.mode,
+    ...(r.riven_pos && r.riven_pos.length ? { riven: { bonuses: r.riven_pos, malus: r.riven_neg || null, rolls: r.riven_rolls } } : {}),
+    ...(r.assembly ? { grip: r.assembly.grip, loader: r.assembly.loader } : {}) };
+};
+const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
+/// …SAID ONCE: an entry new to the page slides in, a result newly confirmed
+/// pops, and neither again on the next redraw a second later.
+const computeShown = new Set();
+let computeOpenTask = null;
 function computeRecentHtml() {
   const log = computeLog();
-  const rows = log.map((t) => `<div class="kv"><dt>${computeTaskHtml(t)}</dt>
-      <dd>${escHtml(computeAgo(t.at))} · ${escHtml(computeTook(t.ms || 0))}</dd>
-      <span>≈ ${escHtml((Number(t.work || 0) / 1e9).toFixed(1))}</span></div>`).join("");
-  return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">${rows
-    ? `<dl class="kvs">${rows}</dl><p class="set-note" style="margin:8px 0 0">${aT("A task's points count once another computer's answer agrees with it. This list stays in this browser.")}</p>`
-    : `<p class="set-note" style="margin:0">${aT("Nothing yet.")}</p>`}</div></div>`;
+  if (!log.length) return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${aT("Nothing yet.")}</p></div></div>`;
+  const n = (x) => Number(x || 0).toLocaleString(accountLocale());
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const today = log.filter((t) => t.at >= midnight.getTime());
+  const paid = log.filter((t) => t.state === "confirmed" && (t.confirmedAt || t.at) >= midnight.getTime()).reduce((s, t) => s + taskPts(t), 0);
+  const tiles = `<div class="rt-today"><div class="rt-tile"><b>${escHtml(n(today.length))}</b><span>${aT("tasks finished today")}</span></div>
+    <div class="rt-tile gold"><b>+${escHtml(n(paid))}</b><span>${aT("points credited today")}</span></div>
+    <div class="rt-tile"><b>${escHtml(computeTook(today.reduce((s, t) => s + (t.ms || 0), 0)))}</b><span>${aT("computed today")}</span></div></div>`;
+  const pill = (t) => {
+    if (t.kind !== "board" || !t.identity) return `<span class="rt-pill rt-gone">${escHtml(tr("≈ {n} points").replace("{n}", n(taskPts(t))))}</span>`;
+    const pop = t.changedAt && !computeShown.has(`pop:${taskKey(t)}:${t.state}`) ? " rt-pop" : "";
+    computeShown.add(`pop:${taskKey(t)}:${t.state}`);
+    if (t.state === "confirmed") return `<span class="rt-pill rt-ok${pop}">✓ ${escHtml(tr("confirmed +{n}").replace("{n}", n(taskPts(t))))}</span>`;
+    if (t.state === "checking") return `<span class="rt-pill rt-check${pop}">${aT("results differ — the server is checking")}</span>`;
+    if (t.state === "gone") return `<span class="rt-pill rt-gone${pop}">${aT("not counted — the row was no longer owed")}</span>`;
+    return `<span class="rt-pill rt-wait">${escHtml(tr("waiting for another computer · about +{n}").replace("{n}", n(taskPts(t))))}</span>`;
+  };
+  const benches = META.benchmarks || [];
+  const rulerName = (id) => { const b = benches.find((x) => x.id === id); return b ? tr(b.name).split(" · ")[0] : id; };
+  const card = (t) => {
+    const w = (META.weapons || []).find((x) => x.id === t.weapon);
+    const key = t.identity ? taskKey(t) : `${t.kind}|${t.at}`;
+    const fresh = !computeShown.has(`in:${key}`) && Date.now() - t.at < 15000 ? " rt-in" : "";
+    computeShown.add(`in:${key}`);
+    const open = computeOpenTask === key;
+    const head = `<div class="rt-card${fresh}${open ? " rt-open" : ""}" data-auth="compute-task" data-key="${escHtml(key)}" role="button" tabindex="0">
+      ${w && w.image ? `<img src="${IMG(w.image)}" alt="">` : "<span></span>"}
+      <div><div class="rt-name">${escHtml(w ? tr(w.name) : t.weapon || "")}</div>
+        <div class="rt-sub">${escHtml(t.kind === "board" ? `${rulerName(t.ruler)} · ${w ? modeLabel(w, t.mode) : t.mode}` : tr("Riven gain"))}</div>
+        ${t.score != null ? `<div class="rt-result">${escHtml(tr("computed {s}").replace("{s}", fmtScore(t.score)))} ${escHtml(metricLabel(metricOf(t.metric)))}</div>` : ""}</div>
+      <div class="rt-side">${pill(t)}<div class="rt-when">${escHtml(computeAgo(t.at))} · ${escHtml(computeTook(t.ms || 0))}</div></div></div>`;
+    return head + (open && w && t.record ? computeTaskDetail(t, w) : "");
+  };
+  return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">${tiles}${log.map(card).join("")}
+    <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another computer, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
+}
+/// ONE TASK OPENED: how far it has come, the fight, the build as the builder
+/// draws it, and the way into both.
+function computeTaskDetail(t, w) {
+  const clock = (ms) => (ms ? new Date(ms).toLocaleTimeString(accountLocale()) : "");
+  const st = t.state;
+  const step = (on, label, note) => `<div class="tl-step${on ? " on" : ""}"><span class="tl-dot"></span><b>${aT(label)}</b><small>${escHtml(note || "")}</small></div>`;
+  const third = st === "checking" ? step(true, "the server is checking", "") : st === "gone" ? step(false, "no longer owed", "")
+    : step(st === "confirmed", "another volunteer confirmed", st === "confirmed" ? `${clock(t.confirmedAt)} · ${tr("another owner, another network")}` : tr("waiting"));
+  const bench = (META.benchmarks || []).find((b) => b.id === t.ruler);
+  const sim = `${weaponPath(w.id)}/simulator?task=${encodeURIComponent(taskKey(t))}`;
+  return `<div class="rt-detail"><div class="rt-h">${aT("Progress")}</div><div class="tl">
+      ${step(true, "task taken", clock(t.started))}${step(true, "computed here", `${clock(t.at)} · ${computeTook(t.ms || 0)}`)}${third}
+      ${step(st === "confirmed", "points credited", st === "confirmed" ? `+${taskPts(t)}` : st === "gone" ? tr("none") : "")}</div>
+    <div class="rt-h">${aT("The fight")}</div><dl class="rt-fight">
+      <dt>${aT("Ruler")}</dt><dd>${escHtml(bench ? tr(bench.name) : t.ruler)}</dd>
+      <dt>${aT("Mode")}</dt><dd>${escHtml(modeLabel(w, t.mode))}</dd>
+      ${t.score != null ? `<dt>${aT("Result")}</dt><dd><b>${escHtml(fmtScore(t.score))}</b> ${escHtml(metricLabel(metricOf(t.metric)))}</dd>` : ""}</dl>
+    <div class="rt-h">${aT("The build")}</div>${cardOfState(boardRowState(w, taskRow(t)), w)}
+    <div class="rt-acts"><a class="run-btn btn-sm" href="${escHtml(sim)}">${aT("Open this build in the simulator")}</a>
+      <a class="ghost-btn btn-sm" href="${escHtml(weaponPath(w.id))}/benchmark">${aT("See this weapon's board")}</a></div></div>`;
+}
+/// A TASK OPENED FROM ITS LINK (`?task=`): its ruler's fight and its build, in
+/// the simulator, from this browser's own list.
+async function openComputeTask(w, key) {
+  const t = computeLog().find((x) => x.identity && taskKey(x) === key);
+  if (!t || t.weapon !== w.id || !t.record) return false;
+  await agentDo("shell.preset.open", { bar: "scenario", preset: t.ruler }).catch(() => null);
+  restoreState(boardRowState(w, taskRow(t)), w.id);
+  return true;
 }
 
 /// THE WHOLE PICTURE, above this browser's own: what the board asks for and
@@ -346,6 +435,7 @@ let computeTimer = null;
 let computeAskedFor = null;
 function computeOpened() {
   loadDevicePoints();
+  loadTaskStates().then(computeRedraw);
   if (!computeDemand) Promise.all([loadComputeDemand(), navComputing()]).then(computeRedraw);
   const who = accountState.account && accountState.account.id;
   if (who && computeAskedFor !== who) { computeAskedFor = who; computeRefresh(); }
@@ -353,7 +443,7 @@ function computeOpened() {
 }
 async function computeRefresh() {
   if (authKindOf(location.pathname) !== "compute") { clearInterval(computeTimer); computeTimer = null; computeAskedFor = null; return; }
-  await Promise.all([loadComputeDemand(), navComputing()]);
+  await Promise.all([loadComputeDemand(), navComputing(), loadTaskStates()]);
   if (!accountState.account) return computeRedraw();
   await loadDevices();
   const own = computeOwnId();
@@ -373,6 +463,7 @@ async function computeAct(el, what) {
   else if (what === "device-rename") computeEditing = id;
   else if (what === "device-rename-cancel" || what === "device-remove-cancel") { computeEditing = null; computeRemoving = null; }
   else if (what === "device-remove") computeRemoving = id;
+  else if (what === "compute-task") computeOpenTask = computeOpenTask === el.dataset.key ? null : el.dataset.key;
   else if (what === "device-rename-save") {
     const v = ($("device-label") || {}).value || "";
     const r = await accountCall("POST", "/api/account/devices/label", { id, label: v });

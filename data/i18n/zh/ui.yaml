@@ -2534,6 +2534,28 @@ ui:
   "Show me on the card": 在卡片上展示我
   "Contribution ranking": 贡献榜
   "Demand and compute": 需求与算力
+  "tasks finished today": "今天算完的任务"
+  "points credited today": "今天到账的积分"
+  "computed today": "今天算了多久"
+  "≈ {n} points": "约 {n} 分"
+  "confirmed +{n}": "已确认 +{n}"
+  "results differ — the server is checking": "结果不一致，服务器核对中"
+  "not counted — the row was no longer owed": "未计分 · 这一行后来不用算了"
+  "waiting for another computer · about +{n}": "等另一台电脑确认 · 约 +{n}"
+  "computed {s}": "算出 {s}"
+  "Progress": "进度"
+  "the server is checking": "服务器核对中"
+  "no longer owed": "这一行不用算了"
+  "another volunteer confirmed": "另一位志愿者确认"
+  "another owner, another network": "不同主人、不同网络"
+  "waiting": "等待中"
+  "task taken": "领到任务"
+  "computed here": "这台电脑算完"
+  "points credited": "积分到账"
+  "The build": "这个配装"
+  "Open this build in the simulator": "在模拟器里打开这个配装"
+  "See this weapon's board": "看这把武器的榜单"
+  "A result counts once another computer, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.": "每个结果都要另一台不同主人、不同网络的电脑算出一模一样的数，才会到账。点开一个任务，就能看到它算的配装和战斗。这个列表只存在这个浏览器里。"
   "All computers together · updated every minute": 所有电脑合计 · 每分钟更新
   "Computing now": 此刻在算
   "computers": 台电脑

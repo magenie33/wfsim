@@ -788,6 +788,10 @@ each machine's share is counted under its owner's name. Eight rules:
    whole picture (`/api/board/demand`): browsers computing now, owed rows by
    why, riven gains waiting, and the last hour's scores by the volunteers and
    by the official machines — totals, never a device or a person.
+   Below it this browser's recent tasks, each with the build, the fight, the
+   number it computed and where it stands (`/api/board/mine`, asked by the
+   browser's own id: waiting, checking, confirmed or no longer owed), opened
+   in place and into the simulator.
 6. **EVERYONE IS RANKED; A NAME IS SHOWN ONLY BY CONSENT.** `/contributors`
    lists every account with a claimed device, by all their points, the last
    thirty days' or the last seven (`verifier_days`, credited with the total and

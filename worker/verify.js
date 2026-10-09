@@ -246,7 +246,7 @@ async function work(request, env) {
           AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?)`)
       .bind(lease, now + LEASE_MS, b.verifier, ...key, o.state, now, b.verifier, now, b.verifier, now).run();
     if (took.meta && took.meta.changes) {
-      return json({ ok: true, release, work: { lease, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
+      return json({ ok: true, release, work: { lease, identity: o.identity, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
     }
   }
   return json({ ok: true, release, work: null });
@@ -381,10 +381,42 @@ async function release(request, env) {
   return json({ ok: true });
 }
 
+/// WHERE EACH OF A BROWSER'S RECENT RESULTS STANDS, asked by its own secret id
+/// for the orders it names (73-compute.js, the recent tasks): `waiting` for a
+/// client of another owner and network, `checking` while the server settles a
+/// difference, `confirmed` once a fact counts it — with when — and `gone` when
+/// the row is no longer its to earn. It says nothing about anyone else.
+const MINE_MAX = 60;
+async function mine(request, env) {
+  const { b, err } = await read(request);
+  if (err) return err;
+  if (!VERIFIER_ID.test(b.verifier || "") || !Array.isArray(b.orders)) return json({ ok: false, error: "bad request" }, 400);
+  const keys = b.orders.slice(0, MINE_MAX).filter((k) => k && typeof k.identity === "string" && typeof k.ruler === "string" && typeof k.mode === "string");
+  const db = env.LIBRARY, out = [];
+  for (let i = 0; i < keys.length; i += 30) {
+    const part = keys.slice(i, i + 30);
+    const { results } = await db.prepare(
+      `SELECT o.identity, o.ruler, o.mode, o.state, o.clients, s.finished_at FROM orders o
+        LEFT JOIN scores s ON s.identity = o.identity AND s.ruler = o.ruler AND s.mode = o.mode
+        WHERE (o.identity, o.ruler, o.mode) IN (VALUES ${part.map(() => "(?, ?, ?)").join(", ")})`)
+      .bind(...part.flatMap((k) => [k.identity, k.ruler, k.mode])).all();
+    for (const r of results) {
+      const counted = clientsOf(r).includes(b.verifier);
+      const state = !counted ? "gone"
+        : ["verified", "spot"].includes(r.state) ? "confirmed"
+        : r.state === "dispute" ? "checking"
+        : ["fresh", "open", "scoring:open"].includes(r.state) ? "waiting" : "gone";
+      out.push({ identity: r.identity, ruler: r.ruler, mode: r.mode, state, ...(state === "confirmed" && r.finished_at ? { at: r.finished_at } : {}) });
+    }
+  }
+  return json({ ok: true, orders: out });
+}
+
 export async function verifyRoute(request, env, path) {
   if (!env.LIBRARY) return json({ ok: false, error: "the library is not configured" }, 503);
   if (path === "/api/board/work") return work(request, env);
   if (path === "/api/board/verify") return verify(request, env);
   if (path === "/api/board/release") return release(request, env);
+  if (path === "/api/board/mine") return mine(request, env);
   return json({ ok: false, error: "not found" }, 404);
 }

@@ -466,5 +466,28 @@ check("...and asking again opens nothing", backfill() === 0);
   check("...while one thousand is not yet enough for two", v(NEW).refusals === 2 && v(NEW).clean === FACTS_PER_REFUSAL_FORGIVEN, JSON.stringify(v(NEW)));
 }
 
+// A BROWSER ASKS WHERE ITS OWN RESULTS STAND, by its own id, and learns nothing
+// about anyone else's (73-compute.js, the recent tasks).
+{
+  const M = "9".repeat(24), OTHER = "a1".repeat(12);
+  db.prepare("UPDATE orders SET state = 'settled'").run();
+  order("m-wait", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: M, clients: M });
+  order("m-ok", "verified", { score: SCORE, metric: "kpm", engine: "e1", produced_by: M, clients: `${M},${OTHER}` });
+  db.prepare(`INSERT OR REPLACE INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+              VALUES ('m-ok', 'standard_single_target', 'base', 'verified:e1', ?, 'kpm', 0, 'T0', '2026-10-09T08:00:00Z')`).run(SCORE);
+  order("m-check", "dispute", { score: SCORE, metric: "kpm", engine: "e1", produced_by: M, clients: `${M},${OTHER}` });
+  order("m-gone", "settled", { score: SCORE, metric: "kpm", engine: "e1", produced_by: OTHER, clients: OTHER });
+  const ask = (v, ids) => call("/api/board/mine", { verifier: v, orders: ids.map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) });
+  const r = await ask(M, ["m-wait", "m-ok", "m-check", "m-gone"]);
+  const got = Object.fromEntries((r.orders || []).map((o) => [o.identity, o.at ? `${o.state}@${o.at}` : o.state]));
+  const st = Object.fromEntries(["m-wait", "m-ok", "m-check", "m-gone"].map((k) => [k, got[k]]));
+  check("a browser learns where each of its results stands: waiting, confirmed and when, being checked, or no longer its",
+    JSON.stringify(st) === JSON.stringify({ "m-wait": "waiting", "m-ok": "confirmed@2026-10-09T08:00:00Z", "m-check": "checking", "m-gone": "gone" }),
+    JSON.stringify(r));
+  const theirs = await ask("b2".repeat(12), ["m-wait", "m-ok"]);
+  check("...and another browser asking about them learns only that they are not its",
+    (theirs.orders || []).every((o) => o.state === "gone" && !o.at), JSON.stringify(theirs));
+}
+
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;

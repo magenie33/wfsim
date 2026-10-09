@@ -275,6 +275,9 @@ async function route() {
       switchWeapon(w.id);
     }
     if (wantBench) applyBenchLink(w, wantBench, wantMode, wantRiven);
+    // A TASK THIS BROWSER COMPUTED (73-compute.js), opened from its list.
+    const wantTask = new URLSearchParams(location.search).get("task");
+    if (wantTask && await openComputeTask(w, wantTask)) history.replaceState(null, "", location.pathname);
     if (wantMode && (w.modes || []).includes(wantMode)) {
       if (wantMode !== mode) {
         mode = wantMode;
