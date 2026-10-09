@@ -212,7 +212,7 @@ async function work(request, env) {
     // `SURVEY_CHANNEL`), then everything else: nobody waits on a survey, and a
     // player waits on their build.
     const fresh = await db.prepare(`SELECT 1 FROM orders WHERE priority = 0 AND state IN ('todo', 'open')
-      AND (lease_until IS NULL OR lease_until < ?) LIMIT 1`).bind(now).first();
+      AND (lease_until IS NULL OR lease_until < ?) LIMIT 1`).bind(iso(now)).first();
     if (!fresh) {
       const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net);
       if (survey) return json({ ok: true, release, work: survey });
