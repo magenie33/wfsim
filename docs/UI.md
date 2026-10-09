@@ -931,6 +931,25 @@ is a different claim: it says THIS row has no answer yet. `scanStrip` is one
 component — a bar, a count, sticky at the top of the list — fed from whichever
 scan state that list reads, mounted in all five places a scan ranks something.
 
+## The compute page changes in place
+
+**/compute IS WATCHED, NOT READ ONCE.** A volunteer leaves it open for hours,
+so the block that moves — today's tiles, the task being computed, the list of
+recent tasks (`#rt-live`, 73-compute.js) — is drawn once and changed in place
+from then on. A redraw of the page replaces every other block around it and
+never takes it out of the document, because a node moved restarts every
+animation in it. A progress tick changes that block alone.
+
+- A new task's card slides in and the cards under it glide down; a card whose
+  state changes keeps its place and changes colour.
+- A confirmation flies its points to today's gold tile, which counts them in as
+  they land; several land one after another.
+- The task being computed holds its finish, full and green, before it drops
+  into the list, even when the next task has begun.
+- A search (a riven gain) shows its starts as lanes in the optimizer's own
+  words, and opened, the build it concluded on as the builder's card.
+- With reduced motion asked for, only colours and numbers change.
+
 ## A page that is not a module is a shell page
 
 **A PAGE THAT IS NOT A MODULE IS A SHELL PAGE** — /support, /benchmark,

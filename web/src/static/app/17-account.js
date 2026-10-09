@@ -580,8 +580,7 @@ function renderAuthPage(kind) {
   if (!accountState.loaded) { main.innerHTML = ""; return; }
   // THE COMPUTE PAGE IS EVERYONE'S TOO: this browser's half needs no account.
   if (kind === "compute") {
-    main.innerHTML = computePage();
-    computeOpened();
+    computeDraw(main);
     return;
   }
   // THE RANKING IS EVERYONE'S, signed in or not.

@@ -336,7 +336,7 @@ async function rivenGainOnce(w, id) {
       return true;
     }
     const s = job.status || {};
-    computeProgress(s.sims_done || 0, 0);
+    computeProgress(s.sims_done || 0, 0, s);
     await new Promise((r) => setTimeout(r, 1000));
   }
   const r = job.result;
@@ -350,7 +350,10 @@ async function rivenGainOnce(w, id) {
       score: Number(best.kill_progress) || 0, work: r.work || 0 }),
   }).then((x) => x.ok).catch(() => false);
   if (sent) heldLease = null; else giveBack();
-  computeEnd(sent ? { ms: Math.round(performance.now() - began), work: r.work || 0 } : null);
+  // …AND WHAT IT FOUND, for this browser's own list: the build, its number, what the search took.
+  const m = metricOf(), v = Number(metricValue(m, best));
+  computeEnd(sent ? { ms: Math.round(performance.now() - began), work: r.work || 0, ...(Number.isFinite(v) ? { score: v, metric: m.id } : {}),
+    record: boardPayloadFromResult(best, w.context), search: { builds: (job.status || {}).enumerated || 0, fights: r.fights || 0 } } : null);
   return true;
 }
 

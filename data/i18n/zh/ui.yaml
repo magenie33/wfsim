@@ -2620,6 +2620,15 @@ ui:
   "Computing now.": 正在计算。
   "Paused while you use the calculator.": 你正在使用计算器，计算暂停让路。
   "Waiting for the next task.": 等待下一个任务。
+  "Computed — another computer checks it next": "已算完 · 交给另一台电脑核对"
+  "{n} fights": "{n} 场战斗"
+  "Goals": 目标
+  "searched here": 在这里搜索
+  "{b} builds, {s} fights": "{b} 套配装，{s} 场战斗"
+  "The answer: the best build the search found for this riven": 结论：为这张裂罅搜到的最优配装
+  "Every riven of {w}": "{w} · 全裂罅遍历"
+  "{a} of {n} confirmed": "已确认 {a} / {n}"
+  "{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree": "已开始 {n} · 每种词条组合都从四个元素起点搜索，两位不同玩家在不同网络上算得一致才算确认"
   "{n} in the last 30 days": "近 30 天 {n}"
   "This browser": 这个浏览器
   "State": 状态

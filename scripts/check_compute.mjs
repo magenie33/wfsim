@@ -20,7 +20,8 @@ const r = await evaluate(`(async () => {
   const own = "ownown" + "0".repeat(18);
   localStorage.setItem("wfsim-verifier", own);
   localStorage.setItem("wfsim-compute-log", JSON.stringify([
-    { kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base", mods: ["secret"], at: Date.now() - 120000, ms: 12000, work: 3400000000 },
+    { kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base", mods: ["secret"], at: Date.now() - 120000, ms: 12000, work: 3400000000,
+      identity: "b1", state: "confirmed", record: { weapon: "torid", mods: ["serration"] } },
     { kind: "appraise", at: Date.now() - 7200000, ms: 90000, work: 1e9 },
   ]));
   let account = null;
@@ -54,18 +55,26 @@ const r = await evaluate(`(async () => {
   };
   const out = {};
   history.pushState({}, "", "/compute"); route(); await loadAccount(); await sleep(500);
-  const recent = rowsOf("Recent tasks on this browser");
-  out.recent = recent.map((k) => k.textContent.replace(/\\s+/g, " ").trim());
-  out.link = (recent[0] && recent[0].querySelector("a") || {}).getAttribute ? recent[0].querySelector("a").getAttribute("href") : null;
+  const cards = () => [...page().querySelectorAll("#rt-live .rt-card")];
+  out.recent = cards().map((k) => k.textContent.replace(/\\s+/g, " ").trim());
   out.secret = page().textContent.includes("secret");
+  // OPENED, a task shows its build and the way to its weapon's board; the list
+  // node is the same one after the page is drawn again around it.
+  const live = document.getElementById("rt-live");
+  cards()[0].click(); await sleep(300);
+  out.link = (page().querySelector('#rt-live .rt-detail a[href$="/benchmark"]') || { getAttribute: () => null }).getAttribute("href");
+  out.kept = document.getElementById("rt-live") === live;
+  cards()[0].click(); await sleep(200);
+  out.closed = !page().querySelector("#rt-live .rt-detail");
   out.signIn = !!page().querySelector('a[href^="/login"]');
   // THE NOW ROW IS DRAWN WHILE COMPUTING IS ON, so it is turned on for this.
   localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
   computeStart({ kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base" });
   computeProgress(50, 100);
   computeRedraw();
-  const bar = [...page().querySelectorAll(".kv")].find((k) => k.querySelector("dt").textContent === "Now");
-  out.now = bar ? bar.querySelector("dd div div").style.width : null;
+  const pct = page().querySelector("#rt-live .rt-now .rt-pct");
+  out.now = pct ? pct.textContent : null;
+  out.bar = (page().querySelector("#rt-live .rt-now .rt-bar i") || { style: {} }).style.width;
   computeEnd(null);
   localStorage.removeItem("wfsim-compute-consent");
 
@@ -92,13 +101,14 @@ const r = await evaluate(`(async () => {
   return out;
 })()`, 40000);
 
-check("this browser's tasks are drawn by kind, a board order as its weapon and ruler",
-  r.recent[0] && r.recent[0].startsWith("Leaderboard order · Torid · ") && /≈ 3\.4$/.test(r.recent[0]), JSON.stringify(r.recent));
-check("...linked to that weapon's board, and never its mods", r.link === "/weapons/Torid?bench=standard_single_target" && !r.secret,
-  `${r.link} ${r.secret}`);
+check("this browser's tasks are drawn by kind, a board order as its weapon and ruler, confirmed with its points",
+  r.recent[0] && r.recent[0].startsWith("Torid") && r.recent[0].includes("Standard Single Target") && r.recent[0].includes("confirmed +3"), JSON.stringify(r.recent));
+check("...opened, linked to that weapon's board, and its mods never drawn closed", r.link === "/weapons/Torid/benchmark" && !r.secret && r.closed,
+  `${r.link} ${r.secret} ${r.closed}`);
+check("...the list is changed in place, never drawn again", r.kept);
 check("...and a kind the page does not know still draws", r.recent[1] && r.recent[1].startsWith("Task"), JSON.stringify(r.recent));
 check("signed out, it says how to count the work under a name", r.signIn);
-check("a task in progress shows how far it is", r.now === "50%", r.now);
+check("a task in progress shows how far it is", r.now === "50%" && r.bar === "50%", `${r.now} ${r.bar}`);
 check("signed in, every device is listed by its name, this browser marked",
   / · .* \(this browser\)$/.test(r.devices[0]) && r.devices[1] === "Study PC" && r.devices.length === 2, JSON.stringify(r.devices));
 check("...with what each is doing, or when it last answered",

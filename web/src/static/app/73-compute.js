@@ -131,17 +131,24 @@ function computeStart(task) {
   computeRedraw();
   computeChrome();
 }
-function computeProgress(done, total) {
-  if (computeNow) { computeNow.done = done; computeNow.total = total; }
+/// `search`: a search's own status (08-checkpoint-api.js `quickFleet`), its starts drawn as lanes.
+function computeProgress(done, total, search) {
+  if (computeNow) { computeNow.done = done; computeNow.total = total; if (search) computeNow.search = search; }
   computeRedraw(true);
 }
 function computeEnd(result) {
   const t = computeNow;
   computeNow = null;
   if (t && result) {
-    const { done: _d, total: _t, ...facts } = t;
-    const entry = { ...facts, at: Date.now(), ms: result.ms, work: result.work, score: result.score, metric: result.metric };
+    const { done: _d, total: _t, search: _s, ...facts } = t;
+    const entry = { ...facts, at: Date.now(), ms: result.ms, work: result.work, score: result.score, metric: result.metric,
+      ...(result.record ? { record: result.record } : {}), ...(result.search ? { search: result.search } : {}) };
     try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify([entry, ...computeLog()].slice(0, COMPUTE_LOG_MAX))); } catch (_) { /* this page only */ }
+    // …HELD FULL ON THE CARD a moment, then into the list, today's count asked again.
+    computeJustDone = { task: entry, until: Date.now() + COMPUTE_DONE_MS };
+    setTimeout(computeLive, COMPUTE_DONE_MS + 20);
+    devicePointsAt = 0;
+    Promise.resolve(loadDevicePoints()).then(computeLive);
   }
   computeRedraw();
   computeChrome();
@@ -151,8 +158,7 @@ function computeRedraw(tick) {
   const mark = document.getElementById("compute-mark");
   if (mark && !mark.hidden) computeMarkPaint(mark);
   if (typeof authKindOf !== "function" || authKindOf(location.pathname) !== "compute") return;
-  if (tick && Date.now() - computeDrawnAt < 1000) return;
-  computeDrawnAt = Date.now();
+  if (tick) { if (Date.now() - computeDrawnAt >= 1000) { computeDrawnAt = Date.now(); computeLive(); } return; }
   renderAuthPage("compute");
 }
 
@@ -194,22 +200,13 @@ function computeHereHtml() {
   const flip = WASM && !onPhone()
     ? ` <button class="ghost-btn btn-sm" data-auth="compute-flip">${aT(on ? "stop computing" : "start computing")}</button>` : "";
   const again = on && boardStale ? ` <button class="ghost-btn btn-sm" data-auth="compute-reload">${aT("refresh now")}</button>` : "";
-  const n = computeNow;
-  const pct = n && n.total ? Math.round((100 * n.done) / n.total) : 0;
-  // THE ROW STAYS WHILE COMPUTING IS ON, task or none: it came and went between
-  // tasks, and everything under it jumped every few seconds.
-  // …AND ONE LINE HIGH, a long task cut short and whole on hover.
-  const task = n ? `${computeTaskHtml(n)} · ${escHtml(computeTook(Date.now() - n.started))}` : "";
-  const now = WASM && !onPhone() && on ? `<div class="kv"><dt>${aT("Now")}</dt><dd style="min-width:0"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"${
-    n ? ` title="${task.replace(/<[^>]*>/g, "")}"` : ""}>${n ? task : `<span class="set-note">${aT("Waiting for the next task.")}</span>`}</div>
-      <div style="height:4px;border-radius:2px;background:var(--line);margin-top:6px"><div style="height:4px;border-radius:2px;background:var(--accent);width:${pct}%"></div></div></dd></div>` : "";
   const d = devicePoints;
   const pts = d ? `<div class="kv"><dt>${aT("Points")}</dt><dd>${computePts(d.points)} · ${
     escHtml(tr("{n} in the last 30 days").replace("{n}", Number(d.recent || 0).toLocaleString(accountLocale())))}${
     accountState.account ? "" : ` · <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in to count it under your name")}</a>`}</dd></div>` : "";
   return `<div class="block"><div class="bh"><h2>${aT("This browser")}</h2></div><div class="bb"><dl class="kvs">
-    <div class="kv"><dt>${aT("State")}</dt><dd>${escHtml(state)}${on ? `<br><span class="set-note">${
-      escHtml(tr("{pct}% of this computer's cores while it is idle, one core while you use it.").replace("{pct}", communityShare()))}</span>` : ""}</dd>${flip}${again}</div>${now}${pts}</dl></div></div>`;
+    <div class="kv"><dt>${aT("State")}</dt><dd><span id="compute-state">${escHtml(state)}</span>${on ? `<br><span class="set-note">${
+      escHtml(tr("{pct}% of this computer's cores while it is idle, one core while you use it.").replace("{pct}", communityShare()))}</span>` : ""}</dd>${flip}${again}</div>${pts}</dl></div></div>`;
 }
 
 /// THE HONOUR, once earned: a device of the account said yes and has been
@@ -283,55 +280,271 @@ async function loadTaskStates() {
 /// A RECORD AS THE BOARD'S OWN ROW, so the builder's card draws it (`boardRowState`).
 const taskRow = (t) => {
   const r = t.record || {};
-  return { mods: r.mods, arcanes: r.arcanes, evolutions: r.evolutions, exilus: r.exilus, valence: r.valence, mode: t.mode,
+  return { mods: r.mods, arcanes: r.arcanes, evolutions: r.evolutions, exilus: r.exilus, valence: r.valence, mode: t.mode || r.mode,
     ...(r.riven_pos && r.riven_pos.length ? { riven: { bonuses: r.riven_pos, malus: r.riven_neg || null, rolls: r.riven_rolls } } : {}),
     ...(r.assembly ? { grip: r.assembly.grip, loader: r.assembly.loader } : {}) };
 };
 const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
-/// …SAID ONCE: an entry new to the page slides in, a result newly confirmed
-/// pops, and neither again on the next redraw a second later.
-const computeShown = new Set();
+/// THE LIVE BLOCK (`#rt-live`) — today's tiles, the task being computed and the
+/// list — is drawn ONCE and changed in place from then on (`computeLive`); a
+/// redraw of the page keeps that node where it stands (`computeDraw`). Drawn
+/// again, a card sliding in, a pill turning green or a number counting up was
+/// cut off every second and everything under it jumped. docs/UI.md §"The compute
+/// page changes in place".
 let computeOpenTask = null;
+const computeStill = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const computeCount = (x) => Number(x || 0).toLocaleString(accountLocale());
 function computeRecentHtml() {
   // NOT BEFORE THE META: a reader landing on /compute is drawn once before it
   // arrives, and a task names its weapon, ruler and metric through it.
   if (typeof META === "undefined" || !META) return "";
-  const log = computeLog();
-  if (!log.length) return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${aT("Nothing yet.")}</p></div></div>`;
-  const n = (x) => Number(x || 0).toLocaleString(accountLocale());
-  // TODAY IS THE SERVER'S COUNT (`/api/board/points` `today`): this list keeps
-  // the last fifty tasks and one browser's, and a machine finishes hundreds a day.
-  const day = (devicePoints && devicePoints.today) || { tasks: 0, ms: 0, points: 0 };
-  const tiles = `<div class="rt-today"><div class="rt-tile"><b>${escHtml(n(day.tasks))}</b><span>${aT("tasks finished today")}</span></div>
-    <div class="rt-tile gold"><b>+${escHtml(n(day.points))}</b><span>${aT("points credited today")}</span></div>
-    <div class="rt-tile"><b>${escHtml(computeTook(day.ms))}</b><span>${aT("computed today")}</span></div></div>`;
-  const pill = (t) => {
-    if (t.kind !== "board" || !t.identity) return `<span class="rt-pill rt-gone">${escHtml(tr("≈ {n} points").replace("{n}", n(taskPts(t))))}</span>`;
-    const pop = t.changedAt && !computeShown.has(`pop:${taskKey(t)}:${t.state}`) ? " rt-pop" : "";
-    computeShown.add(`pop:${taskKey(t)}:${t.state}`);
-    if (t.state === "confirmed") return `<span class="rt-pill rt-ok${pop}">✓ ${escHtml(tr("confirmed +{n}").replace("{n}", n(taskPts(t))))}</span>`;
-    if (t.state === "checking") return `<span class="rt-pill rt-check${pop}">${aT("results differ — the server is checking")}</span>`;
-    if (t.state === "gone") return `<span class="rt-pill rt-gone${pop}">${aT("not counted — the row was no longer owed")}</span>`;
-    return `<span class="rt-pill rt-wait">${escHtml(tr("waiting for another computer · about +{n}").replace("{n}", n(taskPts(t))))}</span>`;
-  };
-  const benches = META.benchmarks || [];
-  const rulerName = (id) => { const b = benches.find((x) => x.id === id); return b ? tr(b.name).split(" · ")[0] : id; };
-  const card = (t) => {
-    const w = (META.weapons || []).find((x) => x.id === t.weapon);
-    const key = t.identity ? taskKey(t) : `${t.kind}|${t.at}`;
-    const fresh = !computeShown.has(`in:${key}`) && Date.now() - t.at < 15000 ? " rt-in" : "";
-    computeShown.add(`in:${key}`);
-    const open = computeOpenTask === key;
-    const head = `<div class="rt-card${fresh}${open ? " rt-open" : ""}" data-auth="compute-task" data-key="${escHtml(key)}" role="button" tabindex="0">
-      ${w && w.image ? `<img src="${IMG(w.image)}" alt="">` : "<span></span>"}
-      <div><div class="rt-name">${escHtml(w ? tr(w.name) : t.weapon || "")}</div>
-        <div class="rt-sub">${escHtml(t.kind === "board" ? `${rulerName(t.ruler)} · ${w ? modeLabel(w, t.mode) : t.mode}` : tr("Riven gain"))}</div>
-        ${t.score != null ? `<div class="rt-result">${escHtml(tr("computed {s}").replace("{s}", fmtScore(t.score)))} ${escHtml(metricLabel(metricOf(t.metric)))}</div>` : ""}</div>
-      <div class="rt-side">${pill(t)}<div class="rt-when">${escHtml(computeAgo(t.at))} · ${escHtml(computeTook(t.ms || 0))}</div></div></div>`;
-    return head + (open && w && t.record ? computeTaskDetail(t, w) : "");
-  };
-  return `<div class="block"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">${tiles}${log.map(card).join("")}
+  return `<div class="block" id="rt-live"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">
+    <div class="rt-today"><div class="rt-tile"><b data-tile="tasks"></b><span>${aT("tasks finished today")}</span></div>
+      <div class="rt-tile gold" data-gold><b data-tile="points"></b><span>${aT("points credited today")}</span></div>
+      <div class="rt-tile"><b data-tile="ms"></b><span>${aT("computed today")}</span></div></div>
+    <div data-now></div><div class="rt-list" data-list></div>
+    <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
     <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another computer, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
+}
+/// THE PAGE DRAWN AGAIN AROUND THE LIVE BLOCK: every other block is replaced,
+/// the live one is never taken out of the page — moving it would restart what
+/// it is in the middle of.
+function computeDraw(main) {
+  const live = document.getElementById("rt-live");
+  const t = document.createElement("template");
+  t.innerHTML = computePage();
+  const col = live && live.parentNode;
+  const fresh = t.content.getElementById("rt-live");
+  // …UNLESS ITS OWN WORDS CHANGED — another language — which only a new one says.
+  const same = live && fresh && live.querySelector("h2").textContent === fresh.querySelector("h2").textContent;
+  if (same && col && main.contains(col)) {
+    for (const el of [...col.children]) if (el !== live) el.remove();
+    let after = false;
+    for (const el of [...fresh.parentNode.children]) {
+      if (el === fresh) { after = true; continue; }
+      if (after) col.append(el); else col.insertBefore(el, live);
+    }
+  } else main.replaceChildren(t.content);
+  computeOpened();
+}
+/// EVERYTHING THE LIVE BLOCK SHOWS, brought up to date. Cheap: a tick calls it.
+function computeLive() {
+  const root = document.getElementById("rt-live");
+  const state = document.getElementById("compute-state");
+  if (state && state.textContent !== computeState().text) state.textContent = computeState().text;
+  if (!root) return;
+  computeLiveTiles(root);
+  computeLiveNow(root);
+  computeLiveList(root);
+}
+
+/// A NUMBER COUNTS to its new value instead of jumping; drawn the first time as it is.
+const computeRolled = new WeakMap();
+function computeRoll(el, to, fmt) {
+  const from = computeRolled.get(el);
+  if (from === to) return;
+  computeRolled.set(el, to);
+  if (from === undefined || computeStill()) { el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    if (computeRolled.get(el) !== to) return;
+    const k = Math.min(1, (now - t0) / 700);
+    el.textContent = fmt(from + (to - from) * (1 - (1 - k) ** 3));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+/// TODAY IS THE SERVER'S COUNT (`/api/board/points` `today`): this list keeps
+/// the last fifty tasks of one browser, and a machine finishes hundreds a day.
+/// Points still flying to the tile are held back until they land.
+let computeInFlight = 0;
+function computeLiveTiles(root) {
+  const day = (devicePoints && devicePoints.today) || { tasks: 0, ms: 0, points: 0 };
+  const tile = (k) => root.querySelector(`[data-tile="${k}"]`);
+  computeRoll(tile("tasks"), Number(day.tasks || 0), computeCount);
+  const pts = tile("points");
+  const held = Number(day.points || 0) - computeInFlight;
+  computeRoll(pts, computeInFlight ? Math.max(held, computeRolled.get(pts) || 0) : held, (x) => `+${computeCount(Math.round(x))}`);
+  computeRoll(tile("ms"), Number(day.ms || 0), computeTook);
+}
+
+/// THE TASK BEING COMPUTED: one card that stays while computing is on, task or
+/// none — only what is in it changes. A task just finished holds it, full and
+/// green, for `COMPUTE_DONE_MS` before it drops into the list, even when the
+/// next one has already begun: cut short, the finish was never seen.
+const COMPUTE_DONE_MS = 1400;
+let computeJustDone = null;
+const computeSubOf = (t, w) => (t.kind === "board" ? [computeRulerName(t.ruler), w && t.mode ? modeLabel(w, t.mode) : t.mode].filter(Boolean).join(" · ")
+  : t.kind === "riven_gain" ? [tr("Riven gain"), computeRulerName(t.ruler)].filter(Boolean).join(" · ") : "");
+const computeRulerName = (id) => { const b = (META.benchmarks || []).find((x) => x.id === id); return b ? tr(b.name).split(" · ")[0] : id || ""; };
+const computeWeaponOf = (t) => (t && t.weapon ? (META.weapons || []).find((x) => x.id === t.weapon) : null);
+function computeLiveNow(root) {
+  const slot = root.querySelector("[data-now]");
+  if (!(WASM && !onPhone() && boardVerifyOn())) { slot.replaceChildren(); return; }
+  let card = slot.firstElementChild;
+  if (!card) {
+    slot.innerHTML = `<div class="rt-now idle"><img alt="" hidden><div style="min-width:0"><div class="rt-eyebrow"><span class="rt-dot"></span><span data-k="eyebrow"></span></div>
+      <div class="rt-now-name" data-k="name"></div><div class="rt-now-sub" data-k="sub"></div><div class="rt-bar"><i></i></div><div class="rt-lanes" data-lanes></div></div>
+      <div class="rt-now-side"><div class="rt-pct" data-k="pct"></div><div class="rt-t" data-k="t"></div></div></div>`;
+    card = slot.firstElementChild;
+  }
+  const done = computeJustDone && Date.now() < computeJustDone.until ? computeJustDone.task : null;
+  const n = done ? null : computeNow;
+  const t = done || n, w = computeWeaponOf(t);
+  const f = n ? computeFraction() : done ? 1 : 0;
+  card.className = `rt-now ${n ? "computing" : done ? "done" : "idle"}${n && f === null ? " unknown" : ""}`;
+  const set = (k, v) => { const e = card.querySelector(`[data-k="${k}"]`); if (e.textContent !== v) e.textContent = v; };
+  const img = card.querySelector("img");
+  if (w && w.image) { const src = IMG(w.image); if (img.getAttribute("src") !== src) img.src = src; img.hidden = false; }
+  else if (t) img.hidden = true;
+  // A NEW TASK'S BAR STARTS EMPTY, never drawn back from the last one's end.
+  const bar = card.querySelector(".rt-bar i");
+  const id = t ? String(t.started) : "";
+  if (card.dataset.task !== id) { card.dataset.task = id; bar.style.transition = "none"; bar.style.width = "0%"; void bar.offsetWidth; bar.style.transition = ""; }
+  bar.style.width = `${Math.round(100 * (f || 0))}%`;
+  computeLanes(card.querySelector("[data-lanes]"), n && n.search && n.search.starts || []);
+  set("eyebrow", n ? tr("Computing") : done ? tr("Computed — another computer checks it next") : computeState().text);
+  set("name", t ? (w ? tr(w.name) : tr(computeKind(t).name)) : "");
+  set("sub", t ? computeSubOf(t, w) : "");
+  set("pct", n ? (f === null ? computeTook(Date.now() - n.started) : `${Math.round(100 * f)}%`) : done ? "100%" : "");
+  set("t", n ? (f === null ? (n.done ? tr("{n} fights").replace("{n}", computeCount(n.done)) : "") : computeTook(Date.now() - n.started))
+    : done ? computeTook(done.ms || 0) : "");
+}
+
+/// A SEARCH'S STARTS, one lane each, in the words the optimizer's own progress
+/// uses (80-optimizer-preset.js `renderOptProgress`): where each start is in
+/// its round, and which have settled.
+function computeLanes(box, starts) {
+  if (box.children.length !== starts.length) box.innerHTML = starts.map(() => `<div class="rt-lane"><span></span><i><b></b></i></div>`).join("");
+  starts.forEach((s, i) => {
+    const el = box.children[i];
+    const text = `${tr("start")} ${i + 1} · ${s.settled ? tr("settled")
+      : s.round === 0 ? tr("filling {k} of {n}").replace("{k}", s.at + 1).replace("{n}", s.of)
+      : tr("round {r}, position {k} of {n}").replace("{r}", s.round).replace("{k}", s.at + 1).replace("{n}", s.of)}`;
+    const label = el.querySelector("span");
+    if (label.textContent !== text) label.textContent = text;
+    el.classList.toggle("settled", !!s.settled);
+    el.querySelector("b").style.width = `${s.settled ? 100 : Math.round((100 * (s.at + 1)) / Math.max(1, s.of))}%`;
+  });
+}
+
+/// THE LIST, keyed by task: a new card slides in at the top and the ones under
+/// it glide down to make room; a card whose state changed changes in place.
+const computeKeyOf = (t) => (t.identity ? taskKey(t) : `${t.kind}|${t.at}`);
+const computeCardState = (t) => (t.kind === "board" && t.identity ? t.state || "waiting" : "local");
+function computePillHtml(t, fresh) {
+  const n = computeCount;
+  const s = computeCardState(t);
+  if (s === "local") return `<span class="rt-pill rt-gone">${escHtml(tr("≈ {n} points").replace("{n}", n(taskPts(t))))}</span>`;
+  if (s === "confirmed") return `<span class="rt-pill rt-ok${fresh ? " rt-fresh" : ""}"><svg class="rt-tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.2 10 3"/></svg>${
+    escHtml(tr("confirmed +{n}").replace("{n}", n(taskPts(t))))}</span>`;
+  if (s === "checking") return `<span class="rt-pill rt-check">${aT("results differ — the server is checking")}</span>`;
+  if (s === "gone") return `<span class="rt-pill rt-gone">${aT("not counted — the row was no longer owed")}</span>`;
+  return `<span class="rt-pill rt-wait"><span class="rt-dot"></span>${escHtml(tr("waiting for another computer · about +{n}").replace("{n}", n(taskPts(t))))}</span>`;
+}
+function computeCardEl(t) {
+  const w = computeWeaponOf(t);
+  const tpl = document.createElement("template");
+  tpl.innerHTML = `<div class="rt-card" data-auth="compute-task" data-key="${escHtml(computeKeyOf(t))}" data-state="${escHtml(computeCardState(t))}" role="button" tabindex="0">
+    ${w && w.image ? `<img src="${IMG(w.image)}" alt="">` : "<span></span>"}
+    <div style="min-width:0"><div class="rt-name">${escHtml(w ? tr(w.name) : tr(computeKind(t).name))}</div>
+      <div class="rt-sub">${escHtml(computeSubOf(t, w))}</div>
+      ${t.score != null ? `<div class="rt-result">${escHtml(tr("computed {s}").replace("{s}", fmtScore(t.score)))} ${escHtml(metricLabel(metricOf(t.metric)))}</div>` : ""}</div>
+    <div class="rt-side"><span data-pill>${computePillHtml(t, false)}</span><div class="rt-when" data-when></div></div></div>`;
+  return tpl.content.firstElementChild;
+}
+let computeDetail = null;
+function computeLiveList(root) {
+  const list = root.querySelector("[data-list]");
+  const held = computeJustDone && Date.now() < computeJustDone.until ? computeJustDone.task.at : null;
+  const log = computeLog().filter((t) => t.at !== held);
+  root.querySelector("[data-empty]").hidden = log.length > 0 || held !== null;
+  const have = new Map([...list.querySelectorAll(":scope > .rt-card")].map((el) => [el.dataset.key, el]));
+  const first = !list.dataset.drawn;
+  list.dataset.drawn = "1";
+  const tops = new Map([...have.values()].map((el) => [el, el.getBoundingClientRect().top]));
+  const still = computeStill();
+  const want = [];
+  let lands = 0;
+  for (const t of log) {
+    const key = computeKeyOf(t);
+    let el = have.get(key);
+    if (!el) {
+      el = computeCardEl(t);
+      if (!first && !still && Date.now() - t.at < 60_000) {
+        el.classList.add("rt-arrive");
+        el.addEventListener("animationend", () => el.classList.remove("rt-arrive"), { once: true });
+      }
+    } else if (el.dataset.state !== computeCardState(t)) {
+      el.dataset.state = computeCardState(t);
+      const fresh = el.dataset.state === "confirmed";
+      el.querySelector("[data-pill]").innerHTML = computePillHtml(t, fresh && !still);
+      if (fresh) computeCelebrate(el, t, lands++);
+    }
+    const when = `${computeAgo(t.at)} · ${computeTook(t.ms || 0)}`;
+    const w = el.querySelector("[data-when]");
+    if (w.textContent !== when) w.textContent = when;
+    const open = computeOpenTask === key;
+    el.classList.toggle("rt-open", open);
+    want.push(el);
+    const weapon = computeWeaponOf(t);
+    if (open && weapon && t.record) {
+      const sig = `${key}|${t.state}`;
+      if (!computeDetail || computeDetail.sig !== sig) {
+        const tpl = document.createElement("template");
+        tpl.innerHTML = computeTaskDetail(t, weapon).trim();
+        computeDetail = { sig, el: tpl.content.firstElementChild };
+      }
+      want.push(computeDetail.el);
+    }
+  }
+  if (!computeOpenTask) computeDetail = null;
+  let cur = list.firstElementChild;
+  for (const el of want) {
+    if (el === cur) cur = cur.nextElementSibling;
+    else list.insertBefore(el, cur);
+  }
+  while (cur) { const next = cur.nextElementSibling; cur.remove(); cur = next; }
+  if (still) return;
+  for (const [el, top] of tops) {
+    if (!el.isConnected) continue;
+    const dy = top - el.getBoundingClientRect().top;
+    if (Math.abs(dy) > 1) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 450, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+}
+/// CONFIRMED: the card lights, and its points fly to today's gold tile, which
+/// counts them in as they land — several at once go one after another.
+function computeCelebrate(el, t, order) {
+  el.classList.add("rt-lit");
+  setTimeout(() => el.classList.remove("rt-lit"), 1600 + order * 160);
+  devicePointsAt = 0;
+  const asked = loadDevicePoints();
+  const glow = () => {
+    const g = document.querySelector("#rt-live [data-gold]");
+    if (!g) return;
+    g.classList.add("rt-glow");
+    setTimeout(() => g.classList.remove("rt-glow"), 900);
+  };
+  const pill = el.querySelector("[data-pill]"), target = document.querySelector('#rt-live [data-tile="points"]');
+  const pts = taskPts(t);
+  if (computeStill() || !pill || !target || !pts) { Promise.resolve(asked).then(() => { computeLive(); glow(); }); return; }
+  computeInFlight += pts;
+  const a = pill.getBoundingClientRect(), b = target.getBoundingClientRect();
+  const fly = document.createElement("div");
+  fly.className = "rt-fly";
+  fly.textContent = `+${computeCount(pts)}`;
+  fly.style.left = `${a.left + a.width / 2 - 14}px`;
+  fly.style.top = `${a.top - 6}px`;
+  document.body.append(fly);
+  const dx = b.left + 10 - (a.left + a.width / 2 - 14), dy = b.top - (a.top - 6);
+  fly.animate([
+    { transform: "translate(0,0) scale(1)", opacity: 0 },
+    { transform: "translate(0,-14px) scale(1.15)", opacity: 1, offset: 0.18 },
+    { transform: `translate(${dx}px,${dy}px) scale(.8)`, opacity: 0.9 },
+  ], { duration: 950, delay: order * 160, easing: "cubic-bezier(.5,0,.3,1)", fill: "backwards" }).finished
+    .catch(() => null)
+    .then(() => Promise.resolve(asked))
+    .then(() => { fly.remove(); computeInFlight = Math.max(0, computeInFlight - pts); computeLive(); glow(); });
 }
 /// ONE TASK OPENED: how far it has come, the fight, the build as the builder
 /// draws it, and the way into both.
@@ -342,22 +555,28 @@ function computeTaskDetail(t, w) {
   const third = st === "checking" ? step(true, "the server is checking", "") : st === "gone" ? step(false, "no longer owed", "")
     : step(st === "confirmed", "another volunteer confirmed", st === "confirmed" ? `${clock(t.confirmedAt)} · ${tr("another owner, another network")}` : tr("waiting"));
   const bench = (META.benchmarks || []).find((b) => b.id === t.ruler);
-  const sim = `${weaponPath(w.id)}/simulator?task=${encodeURIComponent(taskKey(t))}`;
+  const sim = `${weaponPath(w.id)}/simulator?task=${encodeURIComponent(computeKeyOf(t))}`;
+  // A SEARCH SHOWS WHAT IT TRIED AND WHAT IT CONCLUDED: the same build card, as its answer.
+  const search = t.kind === "riven_gain";
+  const mode = t.mode || (t.record && t.record.mode);
+  const here = search ? step(true, "searched here", `${clock(t.at)} · ${computeTook(t.ms || 0)}${t.search ? ` · ${
+    tr("{b} builds, {s} fights").replace("{b}", computeCount(t.search.builds)).replace("{s}", computeCount(t.search.fights))}` : ""}`)
+    : step(true, "computed here", `${clock(t.at)} · ${computeTook(t.ms || 0)}`);
   return `<div class="rt-detail"><div class="rt-h">${aT("Progress")}</div><div class="tl">
-      ${step(true, "task taken", clock(t.started))}${step(true, "computed here", `${clock(t.at)} · ${computeTook(t.ms || 0)}`)}${third}
+      ${step(true, "task taken", clock(t.started))}${here}${third}
       ${step(st === "confirmed", "points credited", st === "confirmed" ? `+${taskPts(t)}` : st === "gone" ? tr("none") : "")}</div>
     <div class="rt-h">${aT("The fight")}</div><dl class="rt-fight">
       <dt>${aT("Ruler")}</dt><dd>${escHtml(bench ? tr(bench.name) : t.ruler)}</dd>
-      <dt>${aT("Mode")}</dt><dd>${escHtml(modeLabel(w, t.mode))}</dd>
+      ${mode ? `<dt>${aT("Mode")}</dt><dd>${escHtml(modeLabel(w, mode))}</dd>` : ""}
       ${t.score != null ? `<dt>${aT("Result")}</dt><dd><b>${escHtml(fmtScore(t.score))}</b> ${escHtml(metricLabel(metricOf(t.metric)))}</dd>` : ""}</dl>
-    <div class="rt-h">${aT("The build")}</div>${cardOfState(boardRowState(w, taskRow(t)), w)}
+    <div class="rt-h">${aT(search ? "The answer: the best build the search found for this riven" : "The build")}</div>${cardOfState(boardRowState(w, taskRow(t)), w)}
     <div class="rt-acts"><a class="run-btn btn-sm" href="${escHtml(sim)}">${aT("Open this build in the simulator")}</a>
       <a class="ghost-btn btn-sm" href="${escHtml(weaponPath(w.id))}/benchmark">${aT("See this weapon's board")}</a></div></div>`;
 }
 /// A TASK OPENED FROM ITS LINK (`?task=`): its ruler's fight and its build, in
 /// the simulator, from this browser's own list.
 async function openComputeTask(w, key) {
-  const t = computeLog().find((x) => x.identity && taskKey(x) === key);
+  const t = computeLog().find((x) => computeKeyOf(x) === key);
   if (!t || t.weapon !== w.id || !t.record) return false;
   await agentDo("shell.preset.open", { bar: "scenario", preset: t.ruler }).catch(() => null);
   restoreState(boardRowState(w, taskRow(t)), w.id);
@@ -384,11 +603,23 @@ function computeDemandHtml() {
     ["a ruler's first pass over older builds {n}", d.owed.sweeps], ["riven gains {n}", d.riven_gains]]
     .filter(([, v]) => v).map(([s, v]) => escHtml(tr(s).replace("{n}", n(v)))).join(" · ");
   const hours = done ? owed / done : null;
+  // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
+  // weapon, how many are confirmed and how many begun.
+  const goals = (d.surveys || []).map((g) => {
+    const w = (META && META.weapons || []).find((x) => x.id === g.weapon);
+    const pct = (x) => (g.shapes ? Math.min(100, (100 * x) / g.shapes) : 0).toFixed(1);
+    return `<div class="goal">${w && w.image ? `<img src="${IMG(w.image)}" alt="">` : "<span></span>"}<div style="min-width:0">
+      <div class="goal-h"><b>${escHtml(tr("Every riven of {w}").replace("{w}", w ? tr(w.name) : g.weapon))}</b>
+        <span>${escHtml(tr("{a} of {n} confirmed").replace("{a}", n(g.agreed)).replace("{n}", n(g.shapes)))}</span></div>
+      <div class="goal-bar"><i class="begun" style="width:${pct(g.started)}%"></i><i style="width:${pct(g.agreed)}%"></i></div>
+      <div class="set-note">${escHtml(tr("{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}</div></div></div>`;
+  }).join("");
   const eta = hours === null || !owed ? "" : hours < 1 ? tr("under an hour") : tr("about {n} hours").replace("{n}", n(Math.round(hours)));
   return `<div class="block"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All computers together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("computers")}</dd></div>
     <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
+    ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
       <div class="demand-bar"><div style="width:${share}%"></div></div>
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
@@ -436,8 +667,15 @@ function computePage() {
 /// redraw does.
 let computeTimer = null;
 let computeAskedFor = null;
+let computeClock = null;
 function computeOpened() {
-  loadDevicePoints();
+  Promise.resolve(loadDevicePoints()).then(computeLive);
+  computeLive();
+  // THE CLOCKS ON THE PAGE — a task's time, each card's age — every second.
+  if (!computeClock) computeClock = setInterval(() => {
+    if (authKindOf(location.pathname) !== "compute") { clearInterval(computeClock); computeClock = null; return; }
+    computeLive();
+  }, 1000);
   const who = accountState.account && accountState.account.id;
   if (who && computeAskedFor !== who) { computeAskedFor = who; computeRefresh(); }
   // ONCE A VISIT, NEVER A RENDER: this runs on every redraw, and a redraw asked
