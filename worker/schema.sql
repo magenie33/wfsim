@@ -396,6 +396,6 @@ CREATE TABLE IF NOT EXISTS fissures (
   tier          TEXT NOT NULL,
   mission       TEXT,
   node          TEXT NOT NULL,
-  started_at_ms INTEGER NOT NULL,
-  ends_at_ms    INTEGER NOT NULL
+  started_at    TEXT NOT NULL,
+  ends_at       TEXT NOT NULL
 );

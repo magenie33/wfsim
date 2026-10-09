@@ -81,6 +81,9 @@ jobs:
       # browser, so it sits beside the parser check at the front.
       - name: Prose states the current rule
         run: node scripts/check_comment_style.mjs
+      # A TIME IS STORED ONE WAY: ISO 8601 to the millisecond, or a day.
+      - name: Every stored time is one format
+        run: node scripts/check_time_storage.mjs
       # APP.JS IS ITS PARTS, joined in filename order: nothing else sits beside
       # them, no part outgrows the ceiling, and no whole app.js competes.
       - name: app.js is its parts

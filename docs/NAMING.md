@@ -141,6 +141,24 @@ type nor the vendor is in the name: the type lives in the config key
 store's name must be DNS-compatible. An environment joins the name only when a
 second one exists.
 
+## 9. A TIME IS STORED ONE WAY
+
+| what | stored as | column |
+| --- | --- | --- |
+| an instant | UTC ISO 8601 to the millisecond, `new Date().toISOString()` — `2026-10-09T06:07:00.370Z` | `<event>_at`, `at`, `<event>_until` |
+| a calendar day | `YYYY-MM-DD`, UTC | `day` |
+| a duration | a number with its unit | `_ms`, `_seconds` |
+
+ONE FORMAT, because the stores compare times as strings: `…:31Z` sorts after
+`…:31.000Z` of the same second, and an integer sorts before every string, so
+two formats in one comparison are wrong in silence. A day is not a truncated
+instant: it is for a count by the day, and for the anonymous store, which keeps
+the day and nothing finer (docs/BOARD.md) and holds it under the frozen name
+`at`. A wire value may be another form — a sync cursor travels as a number —
+and converts at the boundary. `scripts/check_time_storage.mjs` refuses the
+rest; its exempt lists name the columns not on the standard yet, and only
+shrink.
+
 ---
 
 ## A name may be long; it may not be vague

@@ -168,7 +168,7 @@ async function claim(env, account, b) {
   await env.ACCOUNTS.prepare(
     `INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?1, ?2, ?3, ?4)
      ON CONFLICT (verifier) DO UPDATE SET account = ?2, claimed_at = ?3, label = ?4 WHERE account != ?2`,
-  ).bind(b.verifier, account, now().slice(0, 10), labelOf(b.label)).run();
+  ).bind(b.verifier, account, now(), labelOf(b.label)).run();
   return json({ ok: true });
 }
 
@@ -196,7 +196,7 @@ async function choose(env, account, b) {
   if (typeof named !== "boolean") return no("bad_choice");
   await env.ACCOUNTS.prepare(
     `INSERT INTO contribution_choice (account, named, chosen_at) VALUES (?1, ?2, ?3)
-     ON CONFLICT (account) DO UPDATE SET named = ?2, chosen_at = ?3`).bind(account, named ? 1 : 0, now().slice(0, 10)).run();
+     ON CONFLICT (account) DO UPDATE SET named = ?2, chosen_at = ?3`).bind(account, named ? 1 : 0, now()).run();
   return json({ ok: true });
 }
 

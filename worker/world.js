@@ -74,9 +74,10 @@ async function worldRelay(request, env) {
 /// which era opens which mission type — and of how often each comes.
 async function fissureLog(env, items) {
   if (!env.LIBRARY) return;
-  const insert = env.LIBRARY.prepare("INSERT OR IGNORE INTO fissures (id, list, tier, mission, node, started_at_ms, ends_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)");
+  const insert = env.LIBRARY.prepare("INSERT OR IGNORE INTO fissures (id, list, tier, mission, node, started_at, ends_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)");
   const rows = items.filter((x) => x.kind === "fissure" && x.id).map((x) => insert.bind(x.id,
-    x.attributes.list, x.attributes.tier, x.attributes.mission, x.attributes.node, x.started_at_ms, x.ends_at_ms));
+    x.attributes.list, x.attributes.tier, x.attributes.mission, x.attributes.node,
+    new Date(x.started_at_ms).toISOString(), new Date(x.ends_at_ms).toISOString()));
   if (rows.length) await env.LIBRARY.batch(rows);
 }
 
