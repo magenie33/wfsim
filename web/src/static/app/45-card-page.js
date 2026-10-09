@@ -163,3 +163,54 @@ async function renderCardPage(w, ask) {
     : new Promise((ok) => { im.onload = ok; im.onerror = ok; }))));
   document.body.dataset.cardReady = "1";
 }
+
+/// THE CONTRIBUTORS' LONG IMAGE: `/contributors/card?n=` the three rankings'
+/// first `n`, or `?name=` one person's place and points on each — the rows
+/// drawn as the ranking page draws them (`17-account.js`), a name only for an
+/// account that agreed to show it.
+async function renderContributorsCard() {
+  const box = $("card-page");
+  if (!box) return;
+  document.body.removeAttribute("data-card-ready");
+  const p = new URLSearchParams(location.search);
+  const name = (p.get("name") || "").trim();
+  const n = Math.max(1, Math.min(CARD_MAX, Math.round(Number(p.get("n"))) || 5));
+  const get = (q) => fetch(`/api/contributors${q}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const periods = [["all", "points", "All-time ranking"], ["recent", "recent", "Monthly ranking"], ["week", "week", "Weekly ranking"]];
+  const num = (x) => escHtml((x || 0).toLocaleString(accountLocale()));
+  const honour = (c) => (c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "");
+  const who = (c) => (c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
+    : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`);
+  let title, body, computing = 0;
+  if (name) {
+    const r = await get(`?name=${encodeURIComponent(name)}`);
+    const me = r && r.person;
+    computing = (r && r.computing) || 0;
+    title = trF("{name}'s contribution", { name });
+    body = !me ? `<p class="sim-empty">${escHtml(tr("Nobody on the ranking shows that name."))}</p>`
+      : `<div class="rank-who lc-sub">${honour(me)}${extHookNow("contributorMark", me.mark) || ""}</div>`
+        + periods.map(([id, key, label]) => cardBox(`<span class="sb-h">${aT(label)}</span>`,
+          me.ranks[id] ? `<div class="lc-head"><b class="lc-rank">#${me.ranks[id]}</b><b class="lc-score">${num(me[key])}</b><span class="sb-empty">${aT("Points")}</span></div>`
+            : `<p class="sb-empty">${aT("Not on this ranking yet.")}</p>`)).join("");
+  } else {
+    const all = await Promise.all(periods.map(([id]) => get(id === "all" ? "" : `?period=${id}`)));
+    computing = (all[0] && all[0].computing) || 0;
+    title = tr("Contribution ranking");
+    body = periods.map(([, key, label], i) => {
+      const rows = ((all[i] && all[i].contributors) || []).slice(0, n);
+      return cardBox(`<span class="sb-h">${aT(label)}</span>`, rows.length
+        ? `<ol class="rank-list">${rows.map((c, k) => `<li class="rank-row${k < 3 ? " top" : ""}"><span class="rank-n">${k + 1}</span>`
+          + `<span class="rank-who">${who(c)}${honour(c)}</span><span class="rank-pts">${num(c[key])}</span></li>`).join("")}</ol>`
+        : `<p class="sb-empty">${aT("Nobody yet.")}</p>`);
+    }).join("");
+  }
+  const link = `${LIVE_ORIGIN}/contributors`;
+  const qr = await api("/api/qr", { text: link });
+  box.innerHTML = `<header class="lc-top"><span class="brand">WF<span>Sim</span></span><span class="sb-empty">wfsim.app</span></header>
+    <h1 class="lc-title">${escHtml(title)}</h1>
+    <div class="sb-empty lc-sub">${computing ? escHtml(trF("{n} computers are computing for WFSim right now", { n: computing })) : ""}</div>
+    ${body}
+    <footer class="lc-foot"><div class="lc-qr">${qr && qr.svg ? qr.svg.replace(/^<\?xml[^>]*>/, "") : ""}</div>
+      <div><b class="lc-slogan">${escHtml(tr("The real Simulacrum Prime."))}</b><div class="sb-empty">wfsim.app</div></div></footer>`;
+  document.body.dataset.cardReady = "1";
+}

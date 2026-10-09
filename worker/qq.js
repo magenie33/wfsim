@@ -7,7 +7,8 @@
 const KINDS = new Set(["C2C_MESSAGE_CREATE", "GROUP_AT_MESSAGE_CREATE", "GROUP_MESSAGE_CREATE"]);
 /// A COMMAND WITHOUT THE @: the word, then a space or the weapon's own script —
 /// "fx 托里德", "zk托里德" — so "fxxk" and a bare "fx" in passing are chat.
-const COMMAND = /^\s*[/／]?\s*(?:fx|zk|pz)(?:\s+\S|[^\x00-\x7F])|^\s*[/／]\s*帮助/i;
+/// `gx` is also chat's "恭喜", so without the @ only its slash form is one.
+const COMMAND = /^\s*[/／]?\s*(?:fx|zk|pz)(?:\s+\S|[^\x00-\x7F])|^\s*[/／]\s*(?:帮助|gx\b)/i;
 
 /// WHAT IS KEPT: a private chat, an @, and — in a group whose owner gave the bot
 /// every message, where an @ arrives as GROUP_MESSAGE_CREATE too — an @ of this

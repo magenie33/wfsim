@@ -2532,6 +2532,19 @@ ui:
   "Monthly ranking": 月榜
   "All-time ranking": 总榜
   "Show me on the card": 在卡片上展示我
+  "Contribution ranking": 贡献榜
+  "{name}'s contribution": "{name} 的贡献"
+  "{n} computers are computing for WFSim right now": "此刻有 {n} 台电脑在为 WF模拟 计算"
+  "Nobody on the ranking shows that name.": 排行榜上没有叫这个名字的人。
+  "Not on this ranking yet.": 暂未上榜。
+  "the compute contribution rankings": 算力贡献榜
+  "Contribution": 贡献
+  "gx [name]: the compute contribution rankings — all time, this month, this week; with the name the ranking shows, that person's place on each.": "gx [名字]：算力贡献榜，总榜、月榜、周榜都有；后面加上排行榜上显示的名字，就看这个人在三个榜上的位置。"
+  "Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)": "九九刚才没连上排行榜。等一下再试试。(＞﹏＜)"
+  "Nobody on the ranking shows the name “{name}”. A name appears there only once its owner chooses to show it. (＞﹏＜)": "排行榜上没有叫“{name}”的人。名字要本人选择公开才会出现。(＞﹏＜)"
+  "{name}'s place on the three rankings. (*/ω＼*)": "{name} 在三个榜上的位置。(*/ω＼*)"
+  "The contribution rankings — all time, this month, this week. {n} computers are computing right now. (￣ー￣)ゞ": "贡献榜，总榜、月榜、周榜都在这了。此刻有 {n} 台电脑在算。(￣ー￣)ゞ"
+  "The contribution rankings — all time, this month, this week. (￣ー￣)ゞ": "贡献榜，总榜、月榜、周榜都在这了。(￣ー￣)ゞ"
   "Points count verified compute and nothing else. A membership adds none.": "积分只计验证通过的计算量，会员没有任何加成。"
   "Signed in, the board compute your browser does counts under your name.": "登录后，你的浏览器为榜单做的计算会记在你的名下。"
   "Your points": 你的积分

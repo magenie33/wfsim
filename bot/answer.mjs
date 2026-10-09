@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A CHAT MESSAGE IN, A REPLY OUT — docs/AGENT.md §"The QQ bot". Commands are
-// `zk` (rivens) and `pz` (builds), a trailing number is how many to show. Every
+// `zk` (rivens), `pz` (builds) and `gx` (the compute rankings), a trailing
+// number is how many to show. Every
 // number comes from the headless table; this only reads the words and lays the
 // answer out, in the language overlay's words (`ui` keyed by English) and in
 // Nona's voice (docs/NONA.md §"Her voice"): the line calm, the kaomoji her.
@@ -35,10 +36,10 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// as `/zk`, so a leading slash, either width, is the same command.
   function parse(text) {
     let s = String(text || "").replace(/<@!?[^>]*>/g, " ").trim();
-    const m = s.match(/^[/／]?\s*(zk|pz|fx|帮助|help|\?|？)\s*/i);
+    const m = s.match(/^[/／]?\s*(zk|pz|fx|gx|帮助|help|\?|？)\s*/i);
     const cmd = m ? m[1].toLowerCase() : "";
     if (m) s = s.slice(m[0].length);
-    return { cmd: ["zk", "pz", "fx"].includes(cmd) ? cmd : cmd ? "help" : "", rest: s.trim() };
+    return { cmd: ["zk", "pz", "fx", "gx"].includes(cmd) ? cmd : cmd ? "help" : "", rest: s.trim() };
   }
   /// THE COUNT, read AFTER the weapon: "夜语者77" is a weapon and "77" in it is not
   /// a count. Whatever number ends what is left, spaced or not, held to 1–10.
@@ -76,6 +77,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     t("zk weapon [ruler] [stats] [count]: the rivens the board has measured for this weapon, against its best build without one."),
     t("pz weapon [ruler] [riven] [count]: the best builds the board has measured for this weapon; add riven for builds that carry one."),
     t("fx weapon [ruler] each stat with its number: the gain of your own riven — the community's computers search its best build."),
+    t("gx [name]: the compute contribution rankings — all time, this month, this week; with the name the ranking shows, that person's place on each."),
     t("For example: {a}, or {b}", { a: "zk 托里德 双暴 负任意 5", b: "pz 托里德 爆破使 紫卡 3" }),
   ].join("\n");
   const UNREAD = "I could not read “{word}”… Write a stat as the card does, or as short as 双暴, 暴伤 or 负任意. (・_・;)";
@@ -136,6 +138,39 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
       .concat(top.map(line)).join("\n");
     return { line: t("These are {w}'s rivens under {ruler}, against the best build without one. I ran every one. (*/ω＼*)",
       { w: weaponName(hit.w), ruler: t(g.ruler).split(" · ")[0] }), card, text };
+  }
+
+  /// GX: THE COMPUTE RANKINGS, all three — or, after it, the exact name the
+  /// ranking shows someone under (spaces and case as shown), their place on
+  /// each. A number alone is how many rows a ranking shows. An anonymous
+  /// contributor is never found by anything.
+  async function gx(rest) {
+    const ask = rest.trim();
+    const count = /^\d+$/.test(ask) ? Math.max(1, Math.min(MAX_SHOWN, Number(ask))) : null;
+    const name = count === null ? ask : "";
+    const get = (q) => fetch(`${SITE}/api/contributors${q}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const periods = [["all", "points", "All-time ranking"], ["recent", "recent", "Monthly ranking"], ["week", "week", "Weekly ranking"]];
+    const num = (x) => (x || 0).toLocaleString("en-US");
+    if (name) {
+      const r = await get(`?name=${encodeURIComponent(name)}`);
+      if (!r) return t("Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)");
+      const p = r.person;
+      if (!p) return t("Nobody on the ranking shows the name “{name}”. A name appears there only once its owner chooses to show it. (＞﹏＜)", { name });
+      const card = `${SITE}/contributors/card?name=${encodeURIComponent(name)}`;
+      const text = [t("{name}'s contribution", { name })].concat(periods.map(([id, key, label]) => `${t(label)}: ${
+        p.ranks[id] ? `#${p.ranks[id]} · ${num(p[key])}` : t("Not on this ranking yet.")}`)).join("\n");
+      return { line: t("{name}'s place on the three rankings. (*/ω＼*)", { name }), card, text };
+    }
+    const all = await Promise.all(periods.map(([id]) => get(id === "all" ? "" : `?period=${id}`)));
+    if (!all[0]) return t("Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)");
+    const n = count || 5;
+    const card = `${SITE}/contributors/card?n=${n}`;
+    const text = periods.map(([, key, label], i) => [t(label)].concat(((all[i] && all[i].contributors) || []).slice(0, n)
+      .map((c, k) => `#${k + 1} ${c.name === null ? t("Anonymous contributor") : c.name} · ${num(c[key])}`)).join("\n")).join("\n\n");
+    const computing = all[0].computing || 0;
+    return { line: computing
+      ? t("The contribution rankings — all time, this month, this week. {n} computers are computing right now. (￣ー￣)ゞ", { n: computing })
+      : t("The contribution rankings — all time, this month, this week. (￣ー￣)ゞ"), card, text };
   }
 
   /// FX: THE ASKER'S OWN RIVEN, appraised by whoever opens its link — docs/AGENT.md
@@ -206,7 +241,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// `line` under it, and `text` the answer in words if the image cannot be made.
   async function answer(text, ctx) {
     const p = parse(text);
-    const r = p.cmd === "zk" ? await zk(p.rest) : p.cmd === "pz" ? await pz(p.rest) : p.cmd === "fx" ? await fx(p.rest, ctx) : help();
+    const r = p.cmd === "zk" ? await zk(p.rest) : p.cmd === "pz" ? await pz(p.rest) : p.cmd === "fx" ? await fx(p.rest, ctx)
+      : p.cmd === "gx" ? await gx(p.rest) : help();
     return typeof r === "string" ? { text: r } : r;
   }
   /// WHAT NONA SAYS WITH AN APPRAISAL'S ANSWER: the replayed number, its gain on

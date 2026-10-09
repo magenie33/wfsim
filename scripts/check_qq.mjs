@@ -55,9 +55,11 @@ const room = async (id, d) => {
 check("in a group giving every message, an @ of the bot is kept",
   await room("g-at", { content: "<@!b> zk 托里德", mentions: [{ is_you: true }] }));
 check("…and a command without the @, spaced or not",
-  await room("g-fx", { content: "fx 托里德 暴伤160.9 多重120.7" }) && await room("g-zk", { content: "zk托里德" }) && await room("g-slash", { content: "/帮助" }));
+  await room("g-fx", { content: "fx 托里德 暴伤160.9 多重120.7" }) && await room("g-zk", { content: "zk托里德" }) && await room("g-slash", { content: "/帮助" })
+  && await room("g-gx", { content: "/gx" }) && await room("g-gx-name", { content: "/gx 梅吉捏" }));
 check("…and the room's own talk is not",
   !(await room("g-chat", { content: "今天刷什么" })) && !(await room("g-word", { content: "fxxk" })) && !(await room("g-bare", { content: "fx" }))
+  && !(await room("g-congrats", { content: "gx" })) && !(await room("g-congrats-2", { content: "gx 大佬" }))
   && !(await room("g-other", { content: "<@!c> 你好", mentions: [{ is_you: false }] })));
 db.prepare("DELETE FROM bot_inbox WHERE id LIKE 'g-%'").run();
 

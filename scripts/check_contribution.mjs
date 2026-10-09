@@ -129,6 +129,17 @@ check("an account learns its place on each ranking, and none where it has nothin
   && JSON.stringify((await mine(bob)).ranks) === JSON.stringify({ all: 3, recent: 1, week: null }),
   `${JSON.stringify((await mine(ann)).ranks)} ${JSON.stringify((await mine(bob)).ranks)}`);
 
+const who = (name) => call(`/api/contributors?name=${encodeURIComponent(name)}`);
+const found = await who("bob");
+check("a named person is found by the name the ranking shows, with their place on all three",
+  JSON.stringify(found.person) === JSON.stringify({ name: "bob", points: 3, recent: 3, week: 0, ranks: { all: 3, recent: 1, week: null } }),
+  JSON.stringify(found));
+check("...never an anonymous one, by name or by handle", (await who("cy")).person === null && (await who("Ann")).person === null);
+library.raw.prepare("UPDATE verifiers SET last_at = ? WHERE id = ?").run(new Date().toISOString().slice(0, 19) + "Z", X);
+library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00Z' WHERE id = ?").run(Y);
+check("both say how many browsers are computing now, an old answer not counted",
+  found.computing === 0 && (await who("bob")).computing === 1 && (await call("/api/contributors")).computing === 1);
+
 check("a browser asks what it earned by its own id, and is told whether it is claimed",
   JSON.stringify(await points(X)) === JSON.stringify({ status: 200, ok: true, points: 5, recent: 2, week: 2, claimed: true }),
   JSON.stringify(await points(X)));

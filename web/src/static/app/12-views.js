@@ -47,6 +47,13 @@ async function route() {
   // A RIVEN APPRAISAL'S LINK (81-appraisal.js) becomes its weapon's optimizer.
   const appraiseCode = location.pathname.match(/^\/appraise\/([A-Za-z0-9]{3,12})\/?$/);
   if (appraiseCode) { await openAppraisal(appraiseCode[1], new URLSearchParams(location.search).has("freeze")); return; }
+  // THE CONTRIBUTORS' LONG IMAGE (45-card-page.js), a card of no weapon.
+  if (/^\/contributors\/card\/?$/.test(location.pathname)) {
+    document.body.classList.add("on-card");
+    document.documentElement.dataset.theme = "light";
+    await renderContributorsCard();
+    return;
+  }
   // A SHARED LINK is answered before anything else on the page is drawn for
   // it, and the query is stripped afterwards so a refresh does not import the
   // same build a second time. `?b=` only ever ADDS — see importShare.

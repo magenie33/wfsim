@@ -13,7 +13,10 @@
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
 //   POST /api/board/points           { verifier } → { points, recent, claimed }
-//   GET  /api/contributors[?period=recent|week] → { period, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
+//   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
+//   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, mark?, volunteer? } | null }
+//        — `computing` is how many browsers answered in the last `COMPUTING_MS`;
+//        a person is found by the exact name the ranking shows, never an anonymous one.
 //        — `name` (the display name, else the username) is null for an account
 //        that did not agree, and `mark` is the paid half's, for a named one only.
 //
@@ -223,6 +226,33 @@ async function standings(env) {
 const ordered = (list, key) => list.filter((e) => e[key] > 0)
   .sort((x, y) => y[key] - x[key] || y.points - x.points || (x.id < y.id ? -1 : 1));
 
+/// HOW MANY BROWSERS ARE COMPUTING NOW: those that answered an order within
+/// this long, refused ones aside — a count, never who.
+const COMPUTING_MS = 10 * 60_000;
+async function computingNow(env) {
+  if (!env.LIBRARY) return 0;
+  const from = new Date(Date.now() - COMPUTING_MS).toISOString().slice(0, 19) + "Z";
+  const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
+  return (r && r.n) || 0;
+}
+
+/// ONE PERSON, by the exact name the ranking shows them under — an account
+/// that agreed to be named, the most points first where two share one — with
+/// their points and place on each ranking.
+async function person(env, name) {
+  const everyone = await standings(env);
+  const hit = everyone.filter((e) => e.named && e.name === name).sort((x, y) => y.points - x.points)[0];
+  if (!hit) return json({ ok: true, computing: await computingNow(env), person: null });
+  const ranks = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => {
+    const at = ordered(everyone, key).findIndex((e) => e.id === hit.id);
+    return [period, at < 0 ? null : at + 1];
+  }));
+  const marks = await cloudMarks(env, [hit.id]);
+  return json({ ok: true, computing: await computingNow(env), person: { name: hit.name, points: hit.points,
+    recent: hit.recent, week: hit.week, ranks, ...(hit.volunteer ? { volunteer: true } : {}),
+    ...(marks[hit.id] ? { mark: marks[hit.id] } : {}) } });
+}
+
 /// THE RANKING the page shows, its first `RANKED`. A name and a handle leave
 /// here only for an account that agreed; the reader's own row is marked `you`,
 /// to them alone.
@@ -238,7 +268,7 @@ async function ranking(env, period, me) {
     if (e.id === me) e.you = true;
     delete e.id;
   }
-  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), contributors });
+  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing: await computingNow(env), contributors });
 }
 
 /// The response for a contribution path, or null for a path that is not one.
@@ -247,7 +277,10 @@ export async function contributionRoute(request, env, path) {
     if (request.method !== "GET") return no("method", 405);
     if (!env.ACCOUNTS) return json({ ok: true, contributors: [] });
     const me = env.AUTH_SECRET ? await sessionAccount(env, request) : null;
-    return ranking(env, new URL(request.url).searchParams.get("period"), me);
+    const q = new URL(request.url).searchParams;
+    const name = (q.get("name") || "").trim();
+    if (name) return person(env, name);
+    return ranking(env, q.get("period"), me);
   }
   if (path === "/api/board/points") {
     if (request.method !== "POST") return no("method", 405);
