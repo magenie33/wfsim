@@ -7,7 +7,7 @@
 // device is on the public ranking, ANONYMOUS until it agrees to show its name
 // (`contribution_choice`): publishing a name is the person's choice, asked once.
 //
-//   GET  /api/account/devices        → { devices: [{ id, label, claimed_at, points, recent, week, last_at, now }], points, recent, week, ranks, named, decided, volunteer }
+//   GET  /api/account/devices        → { devices: [{ id, label, claimed_at, points, recent, week, last_at, now }], points, recent, week, ranks, contributor_rank, named, decided, volunteer }
 //   POST /api/account/devices/claim  { verifier, label? } → { ok }
 //   POST /api/account/devices/label  { id, label }        → { ok }
 //   POST /api/account/devices/remove { id }               → { ok }
@@ -16,8 +16,8 @@
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }], per_hour: { volunteers, official } }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
-//   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
-//   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, mark?, volunteer? } | null }
+//   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, contributor_rank, mark?, volunteer?, you? }] }
+//   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, contributor_rank, mark?, volunteer? } | null }
 //        — `computing` is how many browsers answered in the last `COMPUTING_MS`;
 //        a person is found by the exact name the ranking shows, never an anonymous one.
 //        — `name` (the display name, else the username) is null for an account
@@ -46,6 +46,22 @@ const labelOf = (s) => (typeof s === "string" && LABEL.test(s.trim()) ? s.trim()
 const PER_STATEMENT = 90;
 
 const points = (work) => Math.floor(work / WORK_PER_POINT);
+
+/// THE CONTRIBUTOR RANK, an account's all-time points on Warframe's Mastery
+/// Rank curve: rank n is reached at 2,500·n² experience up to 30, and every
+/// 147,500 past rank 30's 2,250,000 is one rank more, without end
+/// (wiki "Mastery Rank": "2,500 × Rank²"; Legendary ranks "147,500 each").
+/// `xp_at_rank` and `xp_at_next` bound the rank the account holds, for its bar.
+export const POINTS_PER_XP = 10;
+const XP_PAST_30 = 147_500;
+const xpAt = (n) => (n <= 30 ? 2500 * n * n : 2_250_000 + (n - 30) * XP_PAST_30);
+export function contributorRank(pts) {
+  const xp = Math.floor(Math.max(0, pts) / POINTS_PER_XP);
+  let rank = xp < xpAt(30) ? Math.floor(Math.sqrt(xp / 2500)) : 30 + Math.floor((xp - xpAt(30)) / XP_PAST_30);
+  // A square root a hair under an integer must not hold a rank back a step.
+  while (xpAt(rank + 1) <= xp) rank++;
+  return { rank, xp, xp_at_rank: xpAt(rank), xp_at_next: xpAt(rank + 1) };
+}
 
 /// WHO OWNS EACH OF `ids`, from the devices their owners claimed
 /// (`worker/accounts.js` §devices) — an unclaimed one is absent, its own owner.
@@ -151,6 +167,7 @@ async function devices(env, account) {
   return json({ ok: true, named, decided: !!choice, shown: named, volunteer: volunteerSince(list),
     points: points(list.reduce((s, d) => s + d.work, 0)), recent: points(list.reduce((s, d) => s + d.recent, 0)),
     week: points(list.reduce((s, d) => s + d.week, 0)), ranks,
+    contributor_rank: contributorRank(points(list.reduce((s, d) => s + d.work, 0))),
     devices: list.map(({ work: w, recent: r, week: k, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r), week: points(k) })) });
 }
 
@@ -262,7 +279,7 @@ async function person(env, name) {
   }));
   const marks = await cloudMarks(env, [hit.id]);
   return json({ ok: true, computing: await computingNow(env), person: { name: hit.name, points: hit.points,
-    recent: hit.recent, week: hit.week, ranks, ...(hit.volunteer ? { volunteer: true } : {}),
+    recent: hit.recent, week: hit.week, ranks, contributor_rank: contributorRank(hit.points), ...(hit.volunteer ? { volunteer: true } : {}),
     ...(marks[hit.id] ? { mark: marks[hit.id] } : {}) } });
 }
 
@@ -273,6 +290,7 @@ async function ranking(env, period, me) {
   const key = PERIODS[period] || "points";
   const contributors = ordered(await standings(env), key).slice(0, RANKED)
     .map((e) => ({ id: e.id, name: e.named ? e.name : null, points: e.points, recent: e.recent, week: e.week,
+      contributor_rank: contributorRank(e.points),
       // THE HONOUR travels with a name only: an anonymous row says nothing more.
       ...(e.named && e.volunteer ? { volunteer: true } : {}) }));
   const marks = await cloudMarks(env, contributors.filter((e) => e.name !== null).map((e) => e.id));

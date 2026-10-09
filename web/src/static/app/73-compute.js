@@ -267,7 +267,8 @@ function computeDevicesHtml() {
   }).join("");
   const total = `${computePts(s.points)} · ${escHtml(tr("{n} in the last 30 days").replace("{n}", Number(s.recent || 0).toLocaleString(accountLocale())))}`;
   return `<div class="block"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb">${rows
-    ? `<dl class="kvs">${rows}${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>`
+    ? `<dl class="kvs">${s.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(s.contributor_rank)}</dd></div>` : ""}${
+      rows}${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>`
     : `<p class="set-note" style="margin:0">${aT("No device yet: leave WFSim open on a computer while you are signed in.")}</p>`}</div></div>`;
 }
 

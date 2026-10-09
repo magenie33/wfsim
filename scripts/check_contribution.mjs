@@ -10,7 +10,7 @@
 //   node scripts/check_contribution.mjs
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
-import { contributionRoute } from "../worker/contribution.js";
+import { contributionRoute, contributorRank } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
 
 let failures = 0;
@@ -89,7 +89,8 @@ check("an account's points are its devices' credited work", a.points === 8 && a.
 check("...and its last thirty days, the days before them left out", a.recent === 5, JSON.stringify(a));
 check("...and its page never sees a device's whole id", a.devices.every((d) => d.id.length === 6));
 check("an account is on the ranking once it claims a device, ANONYMOUS and not yet asked",
-  a.named === false && a.decided === false && JSON.stringify(await ranking()) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2 }]),
+  a.named === false && a.decided === false && JSON.stringify(await ranking()) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2,
+    contributor_rank: { rank: 0, xp: 0, xp_at_rank: 0, xp_at_next: 2500 } }]),
   JSON.stringify(await ranking()));
 
 await claim(bob, Y);
@@ -132,8 +133,19 @@ check("an account learns its place on each ranking, and none where it has nothin
 const who = (name) => call(`/api/contributors?name=${encodeURIComponent(name)}`);
 const found = await who("bob");
 check("a named person is found by the name the ranking shows, with their place on all three",
-  JSON.stringify(found.person) === JSON.stringify({ name: "bob", points: 3, recent: 3, week: 0, ranks: { all: 3, recent: 1, week: null } }),
+  JSON.stringify(found.person) === JSON.stringify({ name: "bob", points: 3, recent: 3, week: 0, ranks: { all: 3, recent: 1, week: null },
+    contributor_rank: { rank: 0, xp: 0, xp_at_rank: 0, xp_at_next: 2500 } }),
   JSON.stringify(found));
+// THE CONTRIBUTOR RANK: Mastery Rank's curve on all-time points, ten to one experience.
+const crAt = (pts) => { const c = contributorRank(pts); return `${c.rank}:${c.xp}:${c.xp_at_rank}:${c.xp_at_next}`; };
+check("a contributor rank is 2,500·n² experience to 30, ten points to one experience",
+  crAt(24_999) === "0:2499:0:2500" && crAt(25_000) === "1:2500:2500:10000" && crAt(124_353) === "2:12435:10000:22500"
+  && crAt(22_499_999) === "29:2249999:2102500:2250000" && crAt(22_500_000) === "30:2250000:2250000:2397500",
+  [24_999, 25_000, 124_353, 22_499_999, 22_500_000].map(crAt).join(" "));
+check("...and 147,500 a rank past 30, without end", crAt(23_975_000) === "31:2397500:2397500:2545000"
+  && crAt(27_000_000) === "33:2700000:2692500:2840000" && contributorRank(1e9).rank === 692, [23_975_000, 27_000_000, 1e9].map(crAt).join(" "));
+check("...carried on every ranking row and on the account's own answer",
+  (await ranking()).every((e) => e.contributor_rank && e.contributor_rank.rank === 0) && (await mine(bob)).contributor_rank.xp_at_next === 2500);
 check("...never an anonymous one, by name or by handle", (await who("cy")).person === null && (await who("Ann")).person === null);
 library.raw.prepare("UPDATE verifiers SET last_at = ? WHERE id = ?").run(new Date().toISOString(), X);
 library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(Y);

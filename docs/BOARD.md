@@ -817,6 +817,12 @@ each machine's share is counted under its owner's name. Eight rules:
    **WFSim Volunteer** — an honour earned by computing, never sold — shown on
    the account page, the compute page, and beside a name on the ranking, never
    on an anonymous row.
+   Every account also holds a **CONTRIBUTOR RANK**, Warframe's Mastery Rank
+   curve on its all-time points: ten points are one experience, rank n is
+   reached at 2,500·n² up to 30, and every 147,500 past that is one rank more,
+   without end. The server computes it (`contributorRank`) beside every points
+   figure it returns; the page and Nona draw it and never
+   derive it, so a curve change is one edit.
 7. **A MARK NEVER MOVES A PLACE.** A named row carries the mark its account
    carries on a signed share, proved by the paid half and attached by the
    server (`cloudMarks`), drawn by the extension (`contributorMark`); the order

@@ -493,6 +493,21 @@ function contributionNameButton(d) {
 /// place: the order is the points alone.
 let contributorsPeriod = "all";
 let devicesAskedFor = null;
+/// THE CONTRIBUTOR RANK, as the server computes it (worker/contribution.js
+/// `contributorRank`): the page draws it and never derives it from points.
+const contributorRankBadge = (cr) => (cr && Number.isFinite(cr.rank)
+  ? `<span class="cr-badge${cr.rank >= 30 ? " cr-30" : ""}" title="${escHtml(tr("Contributor rank {n}").replace("{n}", cr.rank))}">${cr.rank}</span>` : "");
+/// …AND THE WAY TO THE NEXT ONE, in experience.
+function contributorRankBar(cr) {
+  if (!cr || !Number.isFinite(cr.rank)) return "";
+  const n = (x) => Number(x).toLocaleString(accountLocale());
+  const span = Math.max(1, cr.xp_at_next - cr.xp_at_rank);
+  const pct = Math.max(0, Math.min(100, ((cr.xp - cr.xp_at_rank) * 100) / span));
+  return `<div class="cr-line">${contributorRankBadge(cr)}<div class="cr-to"><div class="cr-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+    aria-valuenow="${Math.round(pct)}"><i style="width:${pct.toFixed(1)}%"></i></div><span class="set-note">${escHtml(tr("{x} / {y} experience to rank {n}")
+    .replace("{x}", n(cr.xp)).replace("{y}", n(cr.xp_at_next)).replace("{n}", cr.rank + 1))}</span></div></div>`;
+}
+
 function contributorsPage() {
   const list = contributorsState;
   // THE COLUMN EACH RANKING ORDERS ON, and its heading (worker/contribution.js `PERIODS`).
@@ -502,7 +517,7 @@ function contributorsPage() {
     : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`);
   const honour = (c) => (c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "");
   const rows = (list || []).map((c, i) => `<li class="rank-row${i < 3 ? " top" : ""}${c.you ? " you" : ""}">
-      <span class="rank-n">${i + 1}</span><span class="rank-who">${who(c)}${honour(c)}${
+      <span class="rank-n">${i + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who(c)}${honour(c)}${
       c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${n(c[col[0]] || 0)}</span></li>`).join("");
   const head = `<li class="rank-row rank-head" aria-hidden="true"><span class="rank-n">#</span><span class="rank-who">${
     aT("Contributor")}</span><span class="rank-pts">${aT(col[1])}</span></li>`;
@@ -513,7 +528,8 @@ function contributorsPage() {
     ${contributorsYouHtml()}
     <div class="block"><div class="bh"><span class="oseg">${tab("all", "All-time ranking")} ${tab("recent", "Monthly ranking")} ${tab("week", "Weekly ranking")}</span></div><div class="bb">${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
-    <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}</p></div></div>`;
+    <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
+      ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does, past 30 without end.")}</p></div></div>`;
 }
 
 /// THE READER'S OWN LINE: signed out, how to be on it; signed in and not yet
@@ -536,7 +552,7 @@ function contributorsYouHtml() {
   }
   return `<div class="block"><div class="bb"><dl class="kvs"><div class="kv"><dt>${aT("Your points")}</dt>
       <dd>${escHtml(d.points.toLocaleString(accountLocale()))} · ${aT(d.named ? "Your name is shown" : "Anonymous")}</dd>
-      ${contributionNameButton(d)}</div></dl></div></div>`;
+      ${contributionNameButton(d)}</div>${d.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(d.contributor_rank)}</dd></div>` : ""}</dl></div></div>`;
 }
 
 function accountDataBlock() {
