@@ -277,7 +277,11 @@ CREATE TABLE IF NOT EXISTS verifiers (
   --   ALTER TABLE verifiers ADD COLUMN refusals INTEGER NOT NULL DEFAULT 0;
   --   ALTER TABLE verifiers ADD COLUMN refused_until INTEGER;
   refusals      INTEGER NOT NULL DEFAULT 0,
-  refused_until INTEGER
+  refused_until INTEGER,
+  -- …and the facts it has been part of since its last refusal, which forgive
+  -- one each `FACTS_PER_REFUSAL_FORGIVEN` (worker/verify.js):
+  --   ALTER TABLE verifiers ADD COLUMN clean INTEGER NOT NULL DEFAULT 0;
+  clean         INTEGER NOT NULL DEFAULT 0
 );
 
 -- THE SAME WORK BY THE DAY IT WAS CREDITED, for the ranking's last thirty days

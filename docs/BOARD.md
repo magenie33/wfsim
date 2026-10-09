@@ -694,9 +694,10 @@ row at a time, so the board's growth is more orders, never a heavier client.
   client the server disproves — the first result, the second, or both — is
   refused: what it agreed to is withdrawn and opened again, its points for
   those agreements are taken back, and what it measured first is measured
-  again. A REFUSAL IS A COOL-DOWN, never for good — a day, then a week, then a
-  month (`ban`, `verifiers.refusals` and `refused_until`) — after which
-  the client works again. Only for an order of the engine the server runs.
+  again. A REFUSAL IS A COOL-DOWN, never for good: a day, then three times as
+  long each time with no ceiling (`coolDownMs`, `verifiers.refusals` and
+  `refused_until`), after which the client works again — and every thousand
+  facts it is part of afterwards take one refusal off (`clean`), back to none. Only for an order of the engine the server runs.
   A top-ten order the scorer already measured is settled unfought.
 - **Nobody online** costs nothing. An order younger than `HOLD_SECONDS` is
   the clients' alone. An older one is offered to the clients as before, and

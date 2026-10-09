@@ -12,8 +12,8 @@
 // handed one until its release (scripts/fetch_queue.sh). A claimed order the
 // scorer reproduces to the same bits pays its clients (scripts/order_credit.mjs).
 //   node scripts/check_board_verify.mjs
-import { verifyRoute, LEASE_MS, PROTOCOL } from "../worker/verify.js";
-import { creditConfirmed } from "./order_credit.mjs";
+import { verifyRoute, LEASE_MS, PROTOCOL, FACTS_PER_REFUSAL_FORGIVEN } from "../worker/verify.js";
+import { creditConfirmed, coolDownMs } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
@@ -443,6 +443,25 @@ check("...and asking again opens nothing", backfill() === 0);
   await elsewhere.answer(w3.work, N3);
   check("...and the networks are forgotten once the order is a fact", row("desk").state === "verified" && row("desk").clients_nets === "",
     `${row("desk").state} ${row("desk").clients_nets}`);
+}
+
+// A REFUSAL COOLS A CLIENT DOWN A DAY, THREE TIMES AS LONG EACH TIME, NO CEILING;
+// and every thousand facts it is part of afterwards take one refusal off.
+{
+  const day = 86_400_000;
+  check("a cool-down is a day, then three times as long each time, with no ceiling",
+    JSON.stringify([0, 1, 2, 3, 6].map((n) => coolDownMs(n) / day)) === JSON.stringify([1, 3, 9, 27, 729]));
+  db.prepare("UPDATE orders SET state = 'settled'").run();
+  order("redeem", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: "7".repeat(24), clients: "7".repeat(24) });
+  const OLD = "7".repeat(24), NEW = "8".repeat(24);
+  db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(OLD);
+  db.prepare("UPDATE verifiers SET refusals = 2, clean = ? WHERE id = ?").run(FACTS_PER_REFUSAL_FORGIVEN - 1, OLD);
+  const w = (await work(NEW)).work;
+  await answer(w, NEW, SCORE);
+  const v = (id) => db.prepare("SELECT refusals, clean FROM verifiers WHERE id = ?").get(id);
+  check("the thousandth fact after a refusal takes one off and starts the count again",
+    row("redeem").state === "verified" && v(OLD).refusals === 1 && v(OLD).clean === 0, JSON.stringify(v(OLD)));
+  check("...and a client with none on record counts nothing", v(NEW).refusals === 0 && v(NEW).clean === 0, JSON.stringify(v(NEW)));
 }
 
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");

@@ -24,6 +24,14 @@ export async function d1(sql, params = []) {
   return j.result[0].results;
 }
 
+/// HOW LONG A REFUSAL COOLS A CLIENT DOWN, by how many it has on record: the
+/// first days, then the factor times as long each time, with no ceiling
+/// (scripts/live_orders.mjs `ban`). Honest work takes refusals off again
+/// (worker/verify.js `FACTS_PER_REFUSAL_FORGIVEN`).
+export const COOL_DOWN_FIRST_DAYS = 1;
+export const COOL_DOWN_FACTOR = 3;
+export const coolDownMs = (refusals) => COOL_DOWN_FIRST_DAYS * 86_400_000 * COOL_DOWN_FACTOR ** Math.max(0, refusals || 0);
+
 /// EVERY CLIENT THAT MEASURED AN ORDER, in the order their results came.
 export const clientsOf = (o) => (o.clients || [o.produced_by, o.verifier].filter(Boolean).join(",")).split(",").filter(Boolean);
 
