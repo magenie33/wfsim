@@ -202,6 +202,25 @@ mod tests {
                 }));
                 acc = serde_json::from_str(&step["acc"].to_string()).unwrap();
             }
+            // …AND SO IS THE SAME ROW FOUGHT ON MANY LANES: its runs fought out
+            // of order as unmerged shards, then folded as `pieces` in run order.
+            let mut shards: Vec<Value> = Vec::new();
+            for from in [6u32, 3, 0] {
+                let got = wfsim_webapi::board_rows::board_runs_json(&json!({
+                    "request": req, "from": from, "count": 3,
+                }));
+                let mut got: Vec<Value> = serde_json::from_str(&got["shards"].to_string()).unwrap();
+                got.extend(shards);
+                shards = got;
+            }
+            let mut lanes_acc = Value::Null;
+            for chunk in shards.chunks(4) {
+                let step = wfsim_webapi::board_rows::board_fold_json(&json!({
+                    "request": req, "acc": lanes_acc, "pieces": chunk,
+                }));
+                lanes_acc = serde_json::from_str(&step["acc"].to_string()).unwrap();
+            }
+            assert_eq!(lanes_acc, acc, "the {mode} runs folded from lanes are not the runs folded in one");
             let scored = wfsim_webapi::board_rows::board_score_json(&json!({
                 "ruler": ruler, "request": req, "acc": acc,
             }));

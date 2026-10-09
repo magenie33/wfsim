@@ -151,8 +151,8 @@ const c = await evaluate(`(async () => {
   const cores = detectedCores().n;
   localStorage.removeItem("wfsim-community-share");
   lastTouched = Date.now(); out.busyLanes = communityLanes();
-  lastTouched = 0; out.idleLanes = communityLanes(); out.want30 = Math.max(1, Math.floor(cores * 0.3));
-  setCommunityShare(50); out.idle50 = communityLanes(); out.want50 = Math.max(1, Math.floor(cores * 0.5));
+  lastTouched = 0; out.idleLanes = communityLanes(); out.want30 = Math.max(1, Math.ceil(cores * 0.3));
+  setCommunityShare(50); out.idle50 = communityLanes(); out.want50 = Math.max(1, Math.ceil(cores * 0.5));
   localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
   // AN OLDER YES IS NO ANSWER to a statement that now says more.
   localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V - 1, on: true, at: new Date().toISOString() }));
@@ -210,5 +210,37 @@ check("...a search between calls holds it, and so does another tab computing", y
 check("...but a scan or a search that stopped answering never holds it for good, in this tab or any other",
   yr.searchLatched && yr.scanLatched, y);
 check("...work waiting on the reader resumes the moment nothing of theirs runs", yr.waits && yr.resumes, y);
+
+// A BOARD ORDER FIGHTS ON EVERY LANE ITS SHARE BUYS (69-board-work.js
+// `measureRow`), and its score, metric and work are the single fold's to the
+// bit: the shards are folded in run order however the lanes raced.
+const f = await evaluate(`(async () => {
+  const out = { wasm: !!WASM };
+  if (!WASM) return JSON.stringify(out);
+  const rows = await (await fetch("/board/braton_prime.json")).json();
+  const row = rows.find((r) => r.benchmark === "standard_single_target" && (r.mode || "base") === "base" && !(r.mods || []).includes("riven"));
+  const record = { weapon: "braton_prime" };
+  for (const k of ["mods", "evolutions", "arcanes", "valence", "exilus"]) if (row[k] !== undefined) record[k] = row[k];
+  const order = await api("/api/board/order", { record, ruler: "standard_single_target", mode: "base" });
+  const request = { ...order.request, runs: 48 };
+  const one = await api("/api/board/fold", { request, from: 0, count: 48 });
+  const want = await api("/api/board/score", { ruler: "standard_single_target", request, acc: one.acc });
+  setCommunityShare(100); lastTouched = 0;
+  const used = new Set();
+  (await lanes(communityLanes(true))).forEach((l, i) => {
+    const call = l.call;
+    l.call = (p, b, x, c) => { if (p === "/api/board/runs") used.add(i); return call(p, b, x, c); };
+  });
+  const got = await measureRow(request, "standard_single_target", () => true);
+  localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
+  out.lanes = communityLanes(true); out.used = used.size;
+  out.same = !!got && got.score === want.score && got.metric === want.metric && got.work === want.work;
+  out.got = got && [got.score, got.metric, got.work]; out.want = [want.score, want.metric, want.work];
+  return JSON.stringify(out);
+})()`);
+const fr = JSON.parse(f);
+check("[built site] a board order fights on more than one lane when its share buys them",
+  !fr.wasm || fr.lanes < 2 || fr.used >= 2, f);
+check("...and its score, metric and work are the single fold's to the bit", !fr.wasm || fr.same, f);
 
 await app.finish("the compute page shows what each device does, by kind, and nothing private");

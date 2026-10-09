@@ -671,11 +671,12 @@ row at a time, so the board's growth is more orders, never a heavier client.
   threw away a third of what the volunteers computed.
 - **Fighting.** The client asks `/api/board/order` for the fight off the record
   (the scorer's `scored_build` and `row_requests`, a riven's rolls included),
-  folds it with `/api/board/fold` and ends it with `/api/board/score`
-  (`69-board-work.js`) — `a_compute_order_is_the_scorers_row` holds the path.
-  It sends what the pieces took (`compute_ms`): kept per order in
-  `clients_compute_ms`, beside `clients`, and summed per client in
-  `verifiers.compute_ms`. A fact's `cost_seconds` stays 0, since the scorer
+  fights its runs on every community lane with `/api/board/runs` (a shard per
+  run), folds them IN RUN ORDER with `/api/board/fold` and ends it with
+  `/api/board/score` (`69-board-work.js`) — `a_compute_order_is_the_scorers_row`
+  holds the path, lanes included. It sends what the pieces took, summed over
+  its lanes (`compute_ms`): kept per order in `clients_compute_ms`, beside
+  `clients`, and summed per client in `verifiers.compute_ms`. A fact's `cost_seconds` stays 0, since the scorer
   sizes its shards from that column in its own runners' seconds.
 - **`CLIENTS_PER_FACT` results** (`worker/verify.js`, 2). The first makes the
   order `fresh`; the server ranks it (`live_orders.mjs rank`) and it becomes
@@ -748,8 +749,8 @@ each machine's share is counted under its owner's name. Eight rules:
    with the task, the settings menu holds a pause, and
    it holds itself on battery or with the browser's data saver on. It takes
    one core while the reader is at the computer and, once it is idle, the
-   share of its cores they pick in the compute menu — 30% unless they do
-   (`communityLanes`); the statement says so. Running a
+   share of its cores they pick in the compute menu, rounded up — 30% unless
+   they do (`communityLanes`); the statement says so. Running a
    stranger's computer without that yes is controlling it, whatever it
    computes.
 1. **ONLY A FACT SCORES.** A client is credited an order's work when the order

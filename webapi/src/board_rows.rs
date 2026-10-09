@@ -2,9 +2,10 @@
 //! The rows a build owes the board, said ONCE for every party that measures
 //! one: `wfsim-intake` (what a submission becomes in the library), the scorer
 //! (what a library record fights under each ruler) and the page, which runs
-//! the same fights for a compute order (`/api/board/order`, `/api/board/fold`,
-//! `/api/board/score`). A client that built its own request would be measuring
-//! a second fight under the first one's name — docs/BOARD.md §"Compute orders".
+//! the same fights for a compute order (`/api/board/order`, `/api/board/runs`,
+//! `/api/board/fold`, `/api/board/score`). A client that built its own request
+//! would be measuring a second fight under the first one's name —
+//! docs/BOARD.md §"Compute orders".
 
 use serde_json::{json, Value};
 use wfsim_engine::board::builds::ValidBuild;
@@ -276,9 +277,29 @@ pub fn board_order_json(v: &Value) -> Value {
     }
 }
 
+/// `/api/board/runs` — `{request, from, count}` → `{shards}`: runs
+/// `from..from+count`, ONE SHARD A RUN and none of them merged, so a row's runs
+/// can be fought on every lane at once and still fold in the scorer's order.
+pub fn board_runs_json(v: &Value) -> Value {
+    let req = v.get("request").cloned().unwrap_or(Value::Null);
+    let from = v.get("from").and_then(Value::as_u64).unwrap_or(0) as u32;
+    let count = v.get("count").and_then(Value::as_u64).unwrap_or(0) as u32;
+    let mut shards = Vec::with_capacity(count as usize);
+    for k in from..from.saturating_add(count) {
+        let piece = simulate_shard_json(&req, k, 1, &mut |_, _| {});
+        if serde_json::from_value::<wfsim_engine::fight::Shard>(piece.clone()).is_err() {
+            return piece;
+        }
+        shards.push(piece);
+    }
+    json!({ "ok": true, "shards": shards })
+}
+
 /// `/api/board/fold` — `{request, from, count, acc?}` → `{acc}`. The page
 /// carries `acc` between calls so a long row yields to the reader between
-/// pieces and still folds exactly as the scorer does.
+/// pieces and still folds exactly as the scorer does. With `pieces` — the
+/// `/api/board/runs` shards of the runs after `acc`, IN RUN ORDER — it merges
+/// those instead of fighting: the same merges in the same order, so the same bits.
 pub fn board_fold_json(v: &Value) -> Value {
     let req = v.get("request").cloned().unwrap_or(Value::Null);
     let mut acc: wfsim_engine::fight::Shard = match v.get("acc") {
@@ -288,6 +309,15 @@ pub fn board_fold_json(v: &Value) -> Value {
             Err(e) => return crate::request::err_json(format!("acc: {e}")),
         },
     };
+    if let Some(pieces) = v.get("pieces").and_then(Value::as_array) {
+        for p in pieces {
+            match serde_json::from_value::<wfsim_engine::fight::Shard>(p.clone()) {
+                Ok(s) => acc.merge(&s),
+                Err(e) => return crate::request::err_json(format!("piece: {e}")),
+            }
+        }
+        return json!({ "ok": true, "acc": acc });
+    }
     let from = v.get("from").and_then(Value::as_u64).unwrap_or(0) as u32;
     let count = v.get("count").and_then(Value::as_u64).unwrap_or(0) as u32;
     if let Err(piece) = fold_runs(&req, &mut acc, from, count) {

@@ -80,6 +80,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/targets", targets_json),
     ("/api/board/check", board_check_json),
     ("/api/board/order", board_rows::board_order_json),
+    ("/api/board/runs", board_rows::board_runs_json),
     ("/api/board/fold", board_rows::board_fold_json),
     ("/api/board/score", board_rows::board_score_json),
     ("/api/build/keys", build_keys_json),

@@ -6,9 +6,9 @@
 /// that confirms one, this side cannot tell and does not need to.
 ///
 /// THE SCORER'S PATH, NOT A COPY OF IT. `/api/board/order` names the fight off
-/// the library's record, `/api/board/fold` folds its runs one at a time and
-/// `/api/board/score` ends it the scorer's way — all `webapi::board_rows` — so
-/// the number sent is the scorer's to the bit.
+/// the library's record, `/api/board/runs` fights its runs, `/api/board/fold`
+/// folds them in run order and `/api/board/score` ends it the scorer's way —
+/// all `webapi::board_rows` — so the number sent is the scorer's to the bit.
 ///
 /// THE READER GOES FIRST. Every piece waits on `yieldToReader` — ANY computing
 /// of the reader's, in this tab or another — and is sized to about `PIECE_MS`,
@@ -18,44 +18,72 @@
 const PIECE_MS = 250;
 const onPhone = () => !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
 
-/// ONE ROW, MEASURED: its runs folded in pieces, then scored, with what the
-/// pieces took in ms (`compute_ms`) — the waits between them are the reader's.
-/// `null` when the engine refused or `live()` went false between pieces.
+/// ONE ROW, MEASURED: its runs fought on the community's lanes, folded in run
+/// order, then scored, with what the pieces took in ms summed over the lanes
+/// (`compute_ms`) — the waits between them are the reader's. `null` when the
+/// engine refused or `live()` went false between pieces.
+///
+/// EVERY LANE FIGHTS, ONE MERGES. A run depends on its index alone, so lanes
+/// pull pieces off one cursor (`/api/board/runs`, a shard per run) and the
+/// shards are folded as `pieces` strictly in run order — the scorer's merges in
+/// the scorer's order, so the bits are the scorer's however the lanes raced.
+/// A lane past `communityLanes()` — the reader came back — takes no new piece.
 async function measureRow(request, ruler, live, onPiece = () => {}) {
   const runs = Number(request.runs) || 0;
+  const ls = await lanes(communityLanes(true));
+  let cursor = 0, est = null, failed = false, spent = 0, folded = 0;
+  const ready = new Map();
   let acc = null;
-  let from = 0;
-  let count = 1;
-  let spent = 0;
-  while (from < runs) {
-    await yieldToReader(live);
-    if (!live()) return null;
-    const n = Math.min(count, runs - from);
-    const began = performance.now();
-    const step = await api("/api/board/fold", { request, acc, from, count: n }, null, { community: true });
-    // THE READER'S STOP TOOK THE POOL, and this piece with it: asked again,
-    // since `acc` holds every piece before it and the fold is deterministic.
-    if (step && step.cancelled) continue;
-    if (!step || !step.ok) return null;
-    acc = step.acc;
-    from += n;
-    // THE NEXT PIECE IS SIZED FROM THIS ONE, so a crowd fight and a single
-    // target both come out at about a quarter second a call.
-    const ms = Math.max(1, performance.now() - began);
-    spent += ms;
-    onPiece(from, runs);
-    count = Math.max(1, Math.min(1000, Math.round((n * PIECE_MS) / ms)));
-  }
-  let s = null;
-  let began = 0;
-  do {
-    await yieldToReader(live);
-    if (!live()) return null;
-    began = performance.now();
-    s = await api("/api/board/score", { ruler, request, acc }, null, { community: true });
-  } while (s && s.cancelled);
+  let merging = Promise.resolve();
+  // ONE CALL ON A LANE, asked again on a fresh worker when a Stop or a lost
+  // worker took it: the range is the same, so the answer is too.
+  const ask = async (k, path, body) => {
+    for (let tries = 0; tries < 3; tries++) {
+      await yieldToReader(live);
+      if (!live()) return null;
+      const r = await laneAt(k).call(path, body, null, true);
+      if (!(r && (r.cancelled || r.worker_dead))) return r && r.ok ? r : null;
+    }
+    return null;
+  };
+  const fold = () => {
+    const pieces = [];
+    while (ready.has(folded + pieces.length)) pieces.push(ready.get(folded + pieces.length));
+    pieces.forEach((_, i) => ready.delete(folded + i));
+    if (!pieces.length) return;
+    folded += pieces.length;
+    merging = merging.then(async () => {
+      if (failed) return;
+      const step = await ask(0, "/api/board/fold", { request, acc, pieces });
+      if (step) { acc = step.acc; onPiece(Math.min(runs, folded), runs); } else failed = true;
+    });
+  };
+  await Promise.all(ls.map(async (_, k) => {
+    while (!failed && cursor < runs) {
+      await yieldToReader(live);
+      if (!live()) { failed = true; return; }
+      if (k >= communityLanes()) { await new Promise((r) => setTimeout(r, PIECE_MS)); continue; }
+      const left = runs - cursor;
+      const want = est ? Math.max(1, Math.round(PIECE_MS / est)) : 1;
+      const count = Math.max(1, Math.min(want, 1000, Math.ceil(left / ls.length), left));
+      const from = cursor;
+      cursor += count;
+      const began = performance.now();
+      const r = await ask(k, "/api/board/runs", { request, from, count });
+      if (!r || !Array.isArray(r.shards) || r.shards.length !== count) { failed = true; return; }
+      const ms = Math.max(1, performance.now() - began);
+      spent += ms;
+      est = est === null ? ms / count : est * 0.7 + (ms / count) * 0.3;
+      r.shards.forEach((x, i) => ready.set(from + i, x));
+      fold();
+    }
+  }));
+  await merging;
+  if (failed || folded !== runs) return null;
+  const began = performance.now();
+  const s = await ask(0, "/api/board/score", { ruler, request, acc });
   spent += performance.now() - began;
-  return s && s.ok && Number.isFinite(s.score) ? { ...s, compute_ms: Math.round(spent) } : null;
+  return s && Number.isFinite(s.score) ? { ...s, compute_ms: Math.round(spent) } : null;
 }
 
 /// WHO IS WORKING: a random id this browser makes for itself, joined to no
@@ -124,9 +152,11 @@ function communityShare() {
 function setCommunityShare(pct) {
   try { localStorage.setItem(COMMUNITY_SHARE_KEY, String(pct)); } catch (_) { /* this page only */ }
 }
-function communityLanes() {
-  const idle = (document.hidden || Date.now() - lastTouched > COMMUNITY_IDLE_MS) && !readerBusy();
-  return idle ? Math.max(1, Math.floor((detectedCores().n * communityShare()) / 100)) : 1;
+/// ROUNDED UP, so every share is at least one core and 30% of eight is three.
+/// `ceiling` asks for the lanes the share buys whether or not the reader is here.
+function communityLanes(ceiling = false) {
+  const idle = ceiling || ((document.hidden || Date.now() - lastTouched > COMMUNITY_IDLE_MS) && !readerBusy());
+  return idle ? Math.max(1, Math.ceil((detectedCores().n * communityShare()) / 100)) : 1;
 }
 
 /// …AND EVEN WITH A YES, NOT NOW: paused for this tab by the reader, on a

@@ -372,8 +372,8 @@ const laneAt = (i) => {
 /// refusing the eleventh. One lane first puts the module in the HTTP cache, and
 /// the rest are served from it — the same total bytes over the wire, one
 /// request instead of N.
-const lanes = async () => {
-  const n = poolSize();
+/// `n` is for the community's work, sized by its own share (69-board-work.js).
+const lanes = async (n = poolSize()) => {
   const first = laneAt(0);
   if (n > 1 && !first.warm) await first.warmed();
   // N LIVE LANES, DENSE BY CONSTRUCTION. `laneAt` already replaces a slot that
