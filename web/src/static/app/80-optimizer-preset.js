@@ -241,6 +241,12 @@ let optSaveTimer = null;
 // up front) and can /api/optimize/cancel. On page reload, init() reattaches
 // to a still-running job via a no-id status call.
 let optJobId = null;
+/// WHEN THE POLL LAST HEARD FROM THE JOB. `optJobId` is cleared by `optFinish`
+/// alone, so an exit that skips it latches it; the community's work asks
+/// `optIsLive` instead, which expires (69-board-work.js `ownTabBusy`).
+let optHeardAt = 0;
+const OPT_STALE_MS = 15000;
+const optIsLive = () => optJobId !== null && Date.now() - optHeardAt < OPT_STALE_MS;
 let optPollTimer = null;
 let optCancelling = false; // survives the poll's 500 ms re-renders
 let optLastStatus = null; // the running job's last poll, which the door reads
@@ -293,7 +299,7 @@ async function runOptimize() {
       optFinish(`<div class="error">optimize failed: ${r ? r.error : "no data"}</div>`);
       return;
     }
-    optJobId = r.job_id;
+    optJobId = r.job_id; optHeardAt = Date.now();
     pollOptimize();
   } catch (e) {
     optFinish(`<div class="error">optimize failed: ${e}</div>`);
@@ -321,7 +327,7 @@ async function pollOptimize() {
     optFinish(`<div class="error">optimize failed: ${st ? st.error : "no data"}</div>`);
     return;
   }
-  optJobId = st.job_id;
+  optJobId = st.job_id; optHeardAt = Date.now();
   optLastStatus = st;
   if (st.phase === "error") {
     optFinish(`<div class="error">optimize failed: ${(st.result && st.result.error) || "unknown error"}</div>`);
@@ -406,7 +412,7 @@ async function reattachOptimize() {
   try {
     const st = await postJson("/api/optimize/status", {});
     if (st && st.ok !== false && (st.phase === "enumerating" || st.phase === "running")) {
-      optJobId = st.job_id;
+      optJobId = st.job_id; optHeardAt = Date.now();
       $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
       renderOptProgress(st);
       optPollTimer = setTimeout(pollOptimize, 500);
@@ -476,7 +482,7 @@ async function resumeOptimize(saved) {
       optFinish(`<div class="error">resume failed: ${r ? r.error : "no data"}</div>`);
       return;
     }
-    optJobId = r.job_id;
+    optJobId = r.job_id; optHeardAt = Date.now();
     pollOptimize();
   } catch (e) {
     optFinish(`<div class="error">resume failed: ${e}</div>`);

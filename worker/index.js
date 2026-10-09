@@ -790,7 +790,7 @@ export default {
     if (path === "/api/qq" || path.startsWith("/api/qq/")) return qqRoute(request, env, path);
     if (path === "/api/world" || path.startsWith("/api/world/")) return worldRoute(request, env, ctx, path);
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path);
-    if (path === "/api/board/work" || path === "/api/board/verify") return verifyRoute(request, env, path);
+    if (path === "/api/board/work" || path === "/api/board/verify" || path === "/api/board/release") return verifyRoute(request, env, path);
     if (path.startsWith("/api/board/live/")) return pushLive(request, env, path.slice("/api/board/live/".length));
     {
       const key = liveKey(path);

@@ -61,6 +61,10 @@ async function rankFresh() {
   if (fresh.length) console.error(`orders: ranked ${fresh.length}, ${to.arbiter.length} kept for the server`);
 }
 
+/// ONE FIGHT MAY NOT HOLD SETTLING: past this it is killed, the row is tried
+/// again on a later cycle, and the rows behind it are settled meanwhile.
+const SETTLE_FIGHT_MS = 15 * 60_000;
+
 /// THE SCORER'S OWN FACT for one order — its score and its work — shipped to
 /// `scores`.
 function fight(o) {
@@ -71,7 +75,7 @@ function fight(o) {
   writeFileSync(join(dir, "q.ndjson"), JSON.stringify({ build_id: o.identity, ruler: o.ruler, mode: o.mode }) + "\n");
   execFileSync(join(arg, "wfsim-board"), [o.ruler, join(dir, "board"), "--facts", join(dir, "facts.ndjson"),
     "--measured-by", readFileSync(join(arg, "VERSION"), "utf8").trim(), "--queue-in", join(dir, "q.ndjson")],
-  { input: readFileSync(join(dir, "lib.json")), stdio: ["pipe", "ignore", "ignore"] });
+  { input: readFileSync(join(dir, "lib.json")), stdio: ["pipe", "ignore", "ignore"], timeout: SETTLE_FIGHT_MS });
   const got = lines(join(dir, "facts.ndjson")).find((f) => key(f) === key(o));
   if (!got) return null;
   execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "ignore", "inherit"] });
@@ -110,7 +114,7 @@ async function settle() {
                           AND q.mode = orders.mode) RETURNING identity`);
   if (gone.length) console.error(`orders: settled ${gone.length} top-ten order(s) the scorer already measured`);
   const todo = await d1(`SELECT identity, ruler, mode, record, score, work, engine, state, produced_by, verifier, disputed, clients
-                         FROM orders WHERE state IN ('arbiter', 'dispute', 'spot') ORDER BY state LIMIT ?`, [SETTLE_PER_CYCLE]);
+                         FROM orders WHERE state IN ('arbiter', 'dispute', 'spot') ORDER BY state, random() LIMIT ?`, [SETTLE_PER_CYCLE]);
   for (const o of todo) {
     let got = null;
     try { got = fight(o); } catch (e) { console.error(`orders: ${o.identity.slice(0, 8)} did not fight — ${e.message}`); }
@@ -122,16 +126,18 @@ async function settle() {
     // WHOEVER THE SERVER DISAGREES WITH WAS WRONG: every client that sent the
     // order's number, the one that disputed it, or all of them. A dispute's
     // client is the last to have answered.
+    // A REFUSAL NEEDS THE SAME ENGINE — another one may differ honestly — but
+    // AGREEMENT DOES NOT: bits the server reproduces are its own answer.
     let paid = [];
+    const ids = clientsOf(o);
+    const disputer = o.state === "dispute" ? ids.pop() : null;
     if (o.engine === engine) {
-      const ids = clientsOf(o);
-      const disputer = o.state === "dispute" ? ids.pop() : null;
       if (!claimed) for (const id of ids) await ban(id);
       if (disputer && truth !== o.disputed) await ban(disputer);
-      // …AND WHOEVER IT AGREES WITH EARNED IT, work included: a spot was
-      // credited when it became a fact, an arbiter or disputed order never was.
-      if (claimed && o.state !== "spot" && got.work && got.work === o.work) paid = ids;
     }
+    // …AND WHOEVER IT AGREES WITH EARNED IT, work included: a spot was
+    // credited when it became a fact, an arbiter or disputed order never was.
+    if (claimed && o.state !== "spot" && got.work && got.work === o.work) paid = ids;
     const state = claimed ? "verified" : "rejected";
     await d1(`UPDATE orders SET state = ? ${where}`, [state, ...keyOf(o)]);
     await credit(d1, paid, o.work);

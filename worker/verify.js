@@ -11,6 +11,7 @@
 //        — or `work: { kind: "riven_gain", lease, code, weapon, ruler, request, context }`, a
 //        riven gain someone is waiting on (worker/appraise.js §"Volunteer work").
 //   POST /api/board/verify  { lease, verifier, engine, score, metric, work, compute_ms }  → { ok }
+//   POST /api/board/release { lease, verifier }                                          → { ok }
 //
 // EQUAL means the score, the metric AND the work (`Shard::work`): a fact
 // credits that work to every client that measured it, and the clients of one
@@ -311,9 +312,23 @@ async function fact(db, key, o, clients, compute, last, spent) {
   ]);
 }
 
+/// A LEASE GIVEN BACK by a page that will not answer — closed, reloaded, paused,
+/// its fight refused, its lease about to run out. The order is anyone's again at
+/// once and this client may take another, instead of both waiting `LEASE_MS`:
+/// every release reloads every page that is computing, so that wait was paid
+/// by every computer at once.
+async function release(request, env) {
+  const { b, err } = await read(request);
+  if (err) return err;
+  if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "")) return json({ ok: false, error: "bad request" }, 400);
+  await env.LIBRARY.prepare(`UPDATE orders SET ${done} WHERE lease = ? AND leased_to = ?`).bind(b.lease, b.verifier).run();
+  return json({ ok: true });
+}
+
 export async function verifyRoute(request, env, path) {
   if (!env.LIBRARY) return json({ ok: false, error: "the library is not configured" }, 503);
   if (path === "/api/board/work") return work(request, env);
   if (path === "/api/board/verify") return verify(request, env);
+  if (path === "/api/board/release") return release(request, env);
   return json({ ok: false, error: "not found" }, 404);
 }

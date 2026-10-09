@@ -203,6 +203,13 @@ async function renew(request, env, code) {
   try { b = await request.json(); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if (!VERIFIER_ID.test(b.verifier || "") || !LEASE_ID.test(b.lease || "")) return json({ ok: false, error: "bad renew" }, 400);
   const now = Date.now();
+  // `release: true` GIVES IT BACK: a computer that stopped says so, and the
+  // person waiting in the chat is not left behind a lease nobody is working.
+  if (b.release === true) {
+    await env.LIBRARY.prepare(`UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL
+        WHERE code = ? AND lease = ? AND leased_to = ? AND agreed_at IS NULL`).bind(code, b.lease, b.verifier).run();
+    return json({ ok: true, held: false });
+  }
   const r = await env.LIBRARY.prepare(`UPDATE appraisals SET lease_until = ?
       WHERE code = ? AND lease = ? AND leased_to = ? AND lease_until >= ? AND agreed_at IS NULL`)
     .bind(now + RIVEN_LEASE_MS, code, b.lease, b.verifier, now).run();

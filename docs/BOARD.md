@@ -689,17 +689,22 @@ row at a time, so the board's growth is more orders, never a heavier client.
 - **Nobody online** costs nothing. An order younger than `HOLD_SECONDS` is
   the clients' alone. An older one is offered to the clients as before, and
   goes to whichever reaches it first — **NEVER TO BOTH.** A `scores.yml` run
-  CLAIMS before it reads (`fetch_queue.sh`): every old `todo` or `open` order
-  no client holds a live lease on becomes `scoring:todo` / `scoring:open`,
-  which no lease seeks, and the run reads only those and the rows with no order
-  a client could take. A row a client holds stays the client's and the run
+  CLAIMS before it reads (`fetch_queue.sh`): every old `open` order, and the
+  old `todo` orders beyond the CLIENTS' RESERVE — `RESERVE_FACTOR` hours of the
+  facts they made in the last hour, never fewer than `RESERVE_MIN` — that no
+  client holds a live lease on become `scoring:todo` / `scoring:open`, which no
+  lease seeks, and the run reads only those (claimed `open` first) and the rows
+  with no order a client could take. A row a client holds stays the client's and the run
   skips it. The run's last job releases what it claimed back to its state, and
   the next run's claim releases first, so a run that died strands nothing.
   A claimed `open` order the run measured to the client's own bits becomes
   `verified` and pays its client (§"Contribution" rule 1); one it did not
   goes back with the release, unpaid.
   The orders table is the one dispatcher: nothing computes a row it was not
-  handed by it.
+  handed by it. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page that will
+  not answer — closed, reloaded, paused, its fight refused, its lease near its
+  end — calls `/api/board/release` (by beacon on `pagehide`), so neither the
+  order nor the computer waits out `LEASE_MS`.
 
 **THE CLIENT IS AN ID** its browser made for itself, joined to no submission,
 kept in `verifiers` so a refusal has something to hold, and joined to an
@@ -731,7 +736,9 @@ each machine's share is counted under its owner's name. Eight rules:
    is nobody's. THE SERVER IS A WITNESS TOO: a client result the official
    machines reproduce bit for bit — a claimed order the scorer measured
    (`order_credit.mjs`), or a disputed or top-ten order `settle` confirms —
-   is credited to the clients it agrees with, exactly as a second client's yes.
+   is credited to the clients it agrees with, exactly as a second client's yes,
+   whatever engine id either side carries: the bits are the witness. A refusal
+   still needs the same engine, since another one may differ honestly.
 2. **THE SAME WORK IS THE SAME POINTS ON EVERY MACHINE.** The engine counts its
    own work: `Shard::work`, the shard's whole-number counters
    (`WORK_COUNTERS`) times `WORK_WEIGHTS`. A client's `compute_ms` is its

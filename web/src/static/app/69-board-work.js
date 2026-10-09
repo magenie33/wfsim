@@ -182,11 +182,36 @@ async function loadDevicePoints() {
   renderBoardConsent();
 }
 
+/// EVERY ASK HAS A CLOCK: one call that never answers — a laptop waking on a
+/// dead connection — would otherwise hold the work loop for good.
+const BOARD_ASK_MS = 30_000;
+const boardSignal = () => (typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(BOARD_ASK_MS) : undefined);
 const postBoardWork = (path, body) => fetch(path, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),
+  signal: boardSignal(),
 }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+/// THE LEASE THIS PAGE HOLDS, given back on every way out that is not an
+/// answer — and on the page's own exit, by beacon — so neither the order nor
+/// this computer waits out a lease nobody is working (worker/verify.js
+/// `release`). Every release reloads every computing page, which made that
+/// wait everyone's at once.
+let heldLease = null;
+function giveBack(beacon = false) {
+  const h = heldLease;
+  heldLease = null;
+  if (!h) return;
+  const path = h.code ? `/api/appraise/${encodeURIComponent(h.code)}/renew` : "/api/board/release";
+  const body = { lease: h.lease, verifier: h.verifier, ...(h.code ? { release: true } : {}) };
+  if (beacon && navigator.sendBeacon) navigator.sendBeacon(path, JSON.stringify(body));
+  else postBoardWork(path, body);
+}
+addEventListener("pagehide", () => giveBack(true));
+/// A LEASE RUNS `LEASE_MS` (30 min) on the server; past this share of it the
+/// fight stops and the lease is given back, since an answer after it is dropped.
+const LEASE_SAFE_MS = 27 * 60_000;
 
 /// A NEWER RELEASE IS OUT (`stale`): this page's engine is given no more work,
 /// so a machine left computing would idle for ever. It reloads itself — the
@@ -206,7 +231,7 @@ for (const ev of ["pointerdown", "keydown", "wheel", "touchstart"]) {
 /// which an exit nobody thought of latches: a latched flag held this tab and,
 /// through the channel below, every other one off the community's work for good.
 function ownTabBusy() {
-  return foregroundHeld > 0 || readerInFlight > 0 || optJobId !== null || scanIsLive() || shapleyIsLive();
+  return foregroundHeld > 0 || readerInFlight > 0 || optIsLive() || scanIsLive() || shapleyIsLive();
 }
 /// …AND ANOTHER TAB SAYS SO every second while it is, each word good for two:
 /// a Run in one tab holds the community's work in all of them.
@@ -247,6 +272,7 @@ function maybeReloadForRelease() {
 /// computing off stops it, and the lease lapses to another computer.
 const RIVEN_RENEW_MS = 2 * 60_000;
 async function rivenGainOnce(w, id) {
+  heldLease = { code: w.code, lease: w.lease, verifier: id };
   computeStart({ kind: "riven_gain", weapon: w.weapon, ruler: w.ruler });
   const began = performance.now();
   const job = quickFleet(w.request, communityLanes(), () => yieldToReader());
@@ -257,13 +283,14 @@ async function rivenGainOnce(w, id) {
     if (performance.now() - said > RIVEN_RENEW_MS) {
       said = performance.now();
       const r = await postBoardWork(`/api/appraise/${encodeURIComponent(w.code)}/renew`, { lease: w.lease, verifier: id });
-      if (r && r.held === false) lost = true;
+      if (r && r.held === false) { lost = true; heldLease = null; }
     }
     // …AND IT STOPS THE MOMENT THE READER COMPUTES: its workers are its own, so
     // waiting between rounds would leave them on the reader's cores for a round.
     if (lost || !boardVerifyOn() || computeHeld() || readerBusy()) {
       job.cancelled = true;
       job.workers.forEach((x) => x.terminate());
+      giveBack();
       computeEnd(null);
       return true;
     }
@@ -273,19 +300,21 @@ async function rivenGainOnce(w, id) {
   }
   const r = job.result;
   const best = r && r.ok !== false && (r.results || []).find((x) => x && (x.mods || []).length);
-  if (!best) { computeEnd(null); return true; }
+  if (!best) { giveBack(); computeEnd(null); return true; }
   const sent = await fetch(`/api/appraise/${encodeURIComponent(w.code)}/result`, {
     method: "POST",
+    signal: boardSignal(),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ build: boardPayloadFromResult(best, w.context), lease: w.lease, verifier: id,
       score: Number(best.kill_progress) || 0, work: r.work || 0 }),
   }).then((x) => x.ok).catch(() => false);
+  if (sent) heldLease = null; else giveBack();
   computeEnd(sent ? { ms: Math.round(performance.now() - began), work: r.work || 0 } : null);
   return true;
 }
 
 /// ONE ORDER, fought here and answered — `true` when there was one. The answer
-/// never says whether it agreed; a lease this browser leaves lapses on its own.
+/// never says whether it agreed; a lease it does not answer is given back.
 async function workOnce() {
   // NO LEASE WHILE THE READER COMPUTES: one taken now would sit idle under it.
   if (!boardVerifyOn() || onPhone() || computeHeld() || readerBusy()) return false;
@@ -300,13 +329,16 @@ async function workOnce() {
   const w = ask && ask.work;
   if (!w) return false;
   if (w.kind === "riven_gain") return rivenGainOnce(w, id);
+  heldLease = { lease: w.lease, verifier: id };
+  const until = Date.now() + LEASE_SAFE_MS;
   const order = await api("/api/board/order", { record: w.record, ruler: w.ruler, mode: w.mode }, null, { community: true });
-  if (!order || !order.ok) return true;
+  if (!order || !order.ok) { giveBack(); return true; }
   computeStart({ kind: "board", weapon: w.record.weapon, ruler: w.ruler, mode: w.mode });
-  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld(), computeProgress);
-  if (!s) { computeEnd(null); return true; }
+  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && Date.now() < until, computeProgress);
+  if (!s) { giveBack(); computeEnd(null); return true; }
   const sent = await postBoardWork("/api/board/verify",
     { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms });
+  if (sent) heldLease = null; else giveBack();
   computeEnd(sent ? { ms: s.compute_ms, work: s.work } : null);
   if (!sent) return true;
   try { localStorage.setItem(VERIFIED_KEY, String(boardVerifiedCount() + 1)); } catch (_) { /* private mode */ }
@@ -330,7 +362,7 @@ if (WASM) {
   (async () => {
     for (;;) {
       let worked = false;
-      try { worked = await workOnce(); } catch (_) { /* the next ask tries again */ }
+      try { worked = await workOnce(); } catch (_) { giveBack(); /* the next ask tries again */ }
       if (!worked) await new Promise((r) => setTimeout(r, ASK_EVERY_MS));
     }
   })();

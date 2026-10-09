@@ -57,7 +57,9 @@ d1() {
 # `HOLD_SECONDS` LEAVES A YOUNG COMPUTE ORDER TO THE CLIENTS, and an old one to
 # whoever reaches it first (docs/BOARD.md §"Compute orders"). A run CLAIMS the
 # old ones before it reads (`claim_body`), and reads only what it claimed or
-# what has no order the clients could take, so no row is fought twice. Unset,
+# what has no order the clients could take, so no row is fought twice — a
+# claimed OPEN order first, since one fight settles it and pays its client,
+# and one the run does not reach waits another hour. Unset,
 # every owed row is read — which is what a reconciliation needs.
 page_body() {
   if [ -n "${HOLD_SECONDS:-}" ]; then
@@ -65,12 +67,13 @@ page_body() {
       {
         sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
               + " JOIN batches b ON b.id = q.batch"
+              + " LEFT JOIN orders c ON c.identity = q.build_id AND c.ruler = q.ruler AND c.mode = q.mode"
               + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id"
               + " AND o.ruler = q.ruler AND o.mode = q.mode"
               + " AND (o.at > (unixepoch() - ?) * 1000 OR o.state IN (?, ?)))"
-              + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode"
+              + " ORDER BY (c.state IS ?) DESC, b.at, q.batch, q.build_id, q.ruler, q.mode"
               + " LIMIT ? OFFSET ?"),
-        params: [$hold, "todo", "open", $limit, $offset]
+        params: [$hold, "todo", "open", "scoring:open", $limit, $offset]
       }'
     return
   fi

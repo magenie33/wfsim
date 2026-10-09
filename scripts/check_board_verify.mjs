@@ -314,6 +314,21 @@ check("...the clients keep two hours of what they made, never fewer than 500, an
   JSON.stringify([rowsFor(6000, 6500, 300), rowsFor(6000, 6500, 0), rowsFor(100, 300, 50), rowsFor(6000, 6500, 3500)]));
 sql(body("release")).run(...body("release").params);
 
+// A LEASE GIVEN BACK is anyone's at once, and its client may take another.
+db.prepare("UPDATE orders SET state = 'settled'").run();
+order("given"); order("next");
+const GB = "q".repeat(24);
+const gbFirst = (await work(GB)).work;
+const gbHeld = (await work(GB)).work;
+const gbTaken = row("given").leased_to === GB ? "given" : "next";
+await call("/api/board/release", { lease: gbFirst.lease, verifier: GB });
+check("a lease given back frees its order and its client at once",
+  gbFirst && gbHeld === null && row(gbTaken).lease === null && !!(await work(GB)).work, `${gbTaken} ${row(gbTaken).lease}`);
+const gbSpare = (await work(Y)).work;
+check("...and a client cannot give back a lease it does not hold",
+  (await call("/api/board/release", { lease: (gbSpare || {}).lease || "c".repeat(32), verifier: GB })).ok
+  && (!gbSpare || db.prepare("SELECT leased_to FROM orders WHERE lease = ?").get(gbSpare.lease).leased_to === Y));
+
 // THE SCORER'S FACT PAYS THE CLIENT IT REPRODUCES, once, and no other.
 const q = async (s, p = []) => (/^\s*select|returning/i.test(s) ? db.prepare(s).all(...p) : (db.prepare(s).run(...p), []));
 const Z = "z".repeat(24);
@@ -326,10 +341,12 @@ const scorer = (identity, score = SCORE, w = WORK) => ({ identity, ruler: "stand
 const facts = [scorer("same"), scorer("otherscore", SCORE + 1), scorer("otherwork", SCORE, WORK + 1), scorer("otherengine")];
 const paid = [await creditConfirmed(q, facts.slice(0, 3), "e1"), await creditConfirmed(q, facts.slice(3), "e1")];
 check("a client result the scorer reproduces is paid to its client",
-  paid[0] === 1 && row("same").state === "verified" && workOf(Z) === WORK, `${paid} ${row("same").state} ${workOf(Z)}`);
-check("...never one that differs in score, work or engine",
-  paid[1] === 0 && ["otherscore", "otherwork", "otherengine"].every((id) => row(id).state === "scoring:open"));
-check("...and only once", (await creditConfirmed(q, facts, "e1")) === 0 && workOf(Z) === WORK);
+  paid[0] === 1 && row("same").state === "verified", `${paid} ${row("same").state} ${workOf(Z)}`);
+check("...never one that differs in score or work",
+  ["otherscore", "otherwork"].every((id) => row(id).state === "scoring:open"));
+check("...and one of another engine id with the same bits is paid too: the bits are the witness",
+  paid[1] === 1 && row("otherengine").state === "verified" && workOf(Z) === 2 * WORK, `${paid} ${row("otherengine").state} ${workOf(Z)}`);
+check("...and only once", (await creditConfirmed(q, facts, "e1")) === 0 && workOf(Z) === 2 * WORK);
 
 // A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS (scripts/ship_queue.sh);
 // a rescore's batch asks for scored rows too.

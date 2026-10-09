@@ -41,8 +41,10 @@ export async function credit(q, ids, work) {
 
 const KEYS_PER_STATEMENT = Math.floor((100 - 1) / 3);
 
-/// EVERY CLAIMED OPEN ORDER THE SCORER MEASURED TO THE SAME BITS — engine,
-/// score, metric and work — becomes `verified` and its clients are credited.
+/// EVERY CLAIMED OPEN ORDER THE SCORER MEASURED TO THE SAME BITS — score,
+/// metric and work — becomes `verified` and its clients are credited. The
+/// engine id is not asked: it moves with any edit to the engine's sources, and
+/// a client whose bits the scorer reproduces computed the scorer's own answer.
 /// The state moves before the credit, so a retry never credits twice; one that
 /// differs is left for the release and settled unpaid, like any row nobody owes.
 export async function creditConfirmed(q, facts, engine) {
@@ -56,7 +58,7 @@ export async function creditConfirmed(q, facts, engine) {
     part.flatMap((f) => [f.identity, f.ruler, f.mode]));
     for (const o of orders) {
       const f = byKey.get(`${o.identity}|${o.ruler}|${o.mode}`);
-      if (o.engine !== engine || f.score !== o.score || f.metric !== o.metric || !f.work || f.work !== o.work) continue;
+      if (f.score !== o.score || f.metric !== o.metric || !f.work || f.work !== o.work) continue;
       const took = await q(`UPDATE orders SET state = 'verified' WHERE identity = ? AND ruler = ? AND mode = ? AND state = 'scoring:open'
                             RETURNING identity`, [o.identity, o.ruler, o.mode]);
       if (!took.length) continue;

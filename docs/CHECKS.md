@@ -214,9 +214,13 @@ nothing, and the yes it sent is kept on its row; a client is written once a
 day. A scorer run's claim (`fetch_queue.sh`, run as the statements it sends)
 takes every old order, open or not, that no client holds, leaves a held one and
 a young one alone, reads exactly what it claimed, hands no client a claimed
-order, and its release puts each back in the state it was in. A claimed
-order the scorer reproduces — engine, score, metric and work — pays its clients
-once (`order_credit.mjs`), and one that differs in any of them pays nothing.
+order, and its release puts each back in the state it was in; with no share of
+the unmeasured it still takes every old open order, and the reserve's
+arithmetic is asserted on four cases. A claimed order the scorer reproduces —
+score, metric and work, whatever the engine id — pays its clients once
+(`order_credit.mjs`), and one that differs in score or work pays nothing. A
+lease given back frees its order and its client at once, and only its holder
+can give it back.
 
 ## `check_compute`
 
