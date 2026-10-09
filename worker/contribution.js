@@ -13,6 +13,7 @@
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
 //   POST /api/board/points           { verifier } → { points, recent, claimed }
+//   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, per_hour: { volunteers, official } }
 //   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, mark?, volunteer? } | null }
 //        — `computing` is how many browsers answered in the last `COMPUTING_MS`;
@@ -271,6 +272,37 @@ async function ranking(env, period, me) {
   return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing: await computingNow(env), contributors });
 }
 
+/// WHAT THE BOARD ASKS FOR AND WHAT IS ANSWERING IT, for the compute page's
+/// "Demand and compute" (73-compute.js): owed rows by why, a row asked twice
+/// counted as the first of a new build's, a rescore's, an old build's sweep for
+/// a ruler it lacks — the riven gains handed
+/// to the community in the last day and not done, the scores written in the last
+/// hour by the volunteers and by the official machines, and how many browsers
+/// are computing. Totals only, kept a minute per isolate.
+const DEMAND_KEEP_MS = 60_000;
+let demandKept = null;
+async function demand(env) {
+  if (demandKept && Date.now() - demandKept.at < DEMAND_KEEP_MS) return json(demandKept.body);
+  if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0 }, riven_gains: 0, per_hour: { volunteers: 0, official: 0 } });
+  const t = Date.now(), hour = new Date(t - 3_600_000).toISOString().slice(0, 19) + "Z";
+  const db = env.LIBRARY;
+  const [owed, done, gains] = await db.batch([
+    db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN o.priority = 0 THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 ELSE 2 END) AS k
+                FROM queue q JOIN batches b ON b.id = q.batch
+                LEFT JOIN orders o ON o.identity = q.build_id AND o.ruler = q.ruler AND o.mode = q.mode
+                GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
+    db.prepare(`SELECT SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official
+                FROM scores WHERE finished_at >= ?`).bind(hour),
+    db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ?").bind(t - 86_400_000),
+  ]);
+  const by = Object.fromEntries(owed.results.map((r) => [r.k, r.n]));
+  const h = done.results[0] || {};
+  const body = { ok: true, computing: await computingNow(env), owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0 },
+    riven_gains: (gains.results[0] || {}).n || 0, per_hour: { volunteers: h.volunteers || 0, official: h.official || 0 } };
+  demandKept = { at: t, body };
+  return json(body);
+}
+
 /// The response for a contribution path, or null for a path that is not one.
 export async function contributionRoute(request, env, path) {
   if (path === "/api/contributors") {
@@ -281,6 +313,10 @@ export async function contributionRoute(request, env, path) {
     const name = (q.get("name") || "").trim();
     if (name) return person(env, name);
     return ranking(env, q.get("period"), me);
+  }
+  if (path === "/api/board/demand") {
+    if (request.method !== "GET") return no("method", 405);
+    return demand(env);
   }
   if (path === "/api/board/points") {
     if (request.method !== "POST") return no("method", 405);

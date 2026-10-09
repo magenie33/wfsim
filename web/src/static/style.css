@@ -1958,6 +1958,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rank-head .rank-pts{font-weight:400}
 .rank-row.you{background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .rank-you{font-size:12px;color:var(--muted)}
+/* THE COMPUTE PAGE'S DEMAND: who is computing now, and the volunteers' share of an hour. */
+.online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#58d68d;box-shadow:0 0 0 4px rgba(88,214,141,.18);margin-right:8px;vertical-align:middle}
+.demand-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 6px;background:color-mix(in srgb,var(--text) 22%,transparent)}
+.demand-bar>div{background:var(--accent)}
+.demand-key{opacity:.5}
+.demand-key.on{opacity:1;color:var(--accent)}
 .contrib-volunteer{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);color:var(--accent)}
 .set-side .me{display:flex;gap:10px;align-items:center;padding:0 6px 14px}
 .set-side .me div b{display:block;font-size:14px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

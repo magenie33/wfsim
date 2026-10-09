@@ -2533,6 +2533,24 @@ ui:
   "All-time ranking": 总榜
   "Show me on the card": 在卡片上展示我
   "Contribution ranking": 贡献榜
+  "Demand and compute": 需求与算力
+  "All computers together · updated every minute": 所有电脑合计 · 每分钟更新
+  "Computing now": 此刻在算
+  "computers": 台电脑
+  "Queued": 排队中
+  "rows of scores": 行成绩
+  "new builds {n}": "新提交的配装 {n}"
+  "rescores after a model change {n}": "模型更新后重算 {n}"
+  "a ruler's first pass over older builds {n}": "老配装补算新标尺 {n}"
+  "riven gains {n}": "裂罅收益 {n} 个"
+  "Done per hour": 每小时完成
+  "volunteers {n} ({p}%)": "志愿者 {n}（{p}%）"
+  "official machines {n} ({p}%)": "官方服务器 {n}（{p}%）"
+  "Cleared in": 预计清空
+  "under an hour": 不到 1 小时
+  "about {n} hours": "约 {n} 小时"
+  "at the last hour's pace": 按最近一小时的速度估算
+  "Nothing yet.": 还没有。
   "{name}'s contribution": "{name} 的贡献"
   "{n} computers are computing for WFSim right now": "此刻有 {n} 台电脑在为 WF模拟 计算"
   "Nobody on the ranking shows that name.": 排行榜上没有叫这个名字的人。

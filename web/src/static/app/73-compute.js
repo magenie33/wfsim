@@ -250,11 +250,44 @@ function computeRecentHtml() {
     : `<p class="set-note" style="margin:0">${aT("Nothing yet.")}</p>`}</div></div>`;
 }
 
+/// THE WHOLE PICTURE, above this browser's own: what the board asks for and
+/// what is answering it (`/api/board/demand`), asked when the page opens and on
+/// every refresh, signed in or not. Nothing is drawn until it has answered.
+let computeDemand = null;
+async function loadComputeDemand() {
+  const r = await accountCall("GET", "/api/board/demand");
+  computeDemand = r && r.ok ? r : null;
+}
+function computeDemandHtml() {
+  const d = computeDemand;
+  if (!d) return "";
+  const n = (x) => Number(x || 0).toLocaleString(accountLocale());
+  const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
+  const owed = d.owed.new_builds + d.owed.rescores + d.owed.sweeps;
+  const done = d.per_hour.volunteers + d.per_hour.official;
+  const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
+  const parts = [["new builds {n}", d.owed.new_builds], ["rescores after a model change {n}", d.owed.rescores],
+    ["a ruler's first pass over older builds {n}", d.owed.sweeps], ["riven gains {n}", d.riven_gains]]
+    .filter(([, v]) => v).map(([s, v]) => escHtml(tr(s).replace("{n}", n(v)))).join(" · ");
+  const hours = done ? owed / done : null;
+  const eta = hours === null || !owed ? "" : hours < 1 ? tr("under an hour") : tr("about {n} hours").replace("{n}", n(Math.round(hours)));
+  return `<div class="block"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
+    aT("All computers together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
+    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(n(d.computing))} ${aT("computers")}</dd></div>
+    <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
+    <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
+      <div class="demand-bar"><div style="width:${share}%"></div></div>
+      <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
+        &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}</div></dd></div>
+    ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the last hour's pace")}</div></dd></div>` : ""}
+  </dl></div></div>`;
+}
+
 function computePage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute")}</h1>
     <p class="set-note">${aT("What this browser computes is free for everyone, never sold, and never runs a paid feature. It runs only while a WFSim page is open on a computer, steps aside the moment you run something yourself, never runs on a phone, and one click turns it off.")}
       <a href="/contributors">${aT("Contributors")}</a></p>
-    ${computeHereHtml()}${computeDevicesHtml()}${computeRecentHtml()}</div></div>`;
+    ${computeDemandHtml()}${computeHereHtml()}${computeDevicesHtml()}${computeRecentHtml()}</div></div>`;
 }
 
 /// DRAWN: this browser's points asked, the account's devices asked once per
@@ -266,13 +299,15 @@ let computeTimer = null;
 let computeAskedFor = null;
 function computeOpened() {
   loadDevicePoints();
+  if (!computeDemand) loadComputeDemand().then(computeRedraw);
   const who = accountState.account && accountState.account.id;
   if (who && computeAskedFor !== who) { computeAskedFor = who; computeRefresh(); }
   if (!computeTimer) computeTimer = setInterval(computeRefresh, 30000);
 }
 async function computeRefresh() {
   if (authKindOf(location.pathname) !== "compute") { clearInterval(computeTimer); computeTimer = null; computeAskedFor = null; return; }
-  if (!accountState.account) return;
+  await loadComputeDemand();
+  if (!accountState.account) return computeRedraw();
   await loadDevices();
   const own = computeOwnId();
   const mine = devicesState && devicesState.devices.find((d) => d.id === own && !d.label);

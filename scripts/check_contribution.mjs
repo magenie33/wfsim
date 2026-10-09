@@ -137,6 +137,27 @@ check("a named person is found by the name the ranking shows, with their place o
 check("...never an anonymous one, by name or by handle", (await who("cy")).person === null && (await who("Ann")).person === null);
 library.raw.prepare("UPDATE verifiers SET last_at = ? WHERE id = ?").run(new Date().toISOString().slice(0, 19) + "Z", X);
 library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00Z' WHERE id = ?").run(Y);
+// THE DEMAND: owed rows by why — a new build's, a sweep's, a rescore's, one row
+// owed by two batches counted once — riven gains waiting, and the last hour's
+// scores by who measured them.
+{
+  const L = library.raw, now = Date.now(), ago = (ms) => new Date(now - ms).toISOString().slice(0, 19) + "Z";
+  L.prepare("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', 'x', 'x', 3), ('rescore-x', 'x', 'x', 2)").run();
+  for (const [b, id] of [["arrivals-2026-03-01", "n1"], ["arrivals-2026-03-01", "s1"], ["arrivals-2026-03-01", "r1"], ["rescore-x", "r1"], ["rescore-x", "r2"]]) {
+    L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'heavy_gunner', 'base')").run(b, id);
+  }
+  L.prepare("INSERT INTO orders (identity, ruler, mode, record, state, slot, at, priority) VALUES ('n1', 'heavy_gunner', 'base', '{}', 'todo', 1, 0, 0)").run();
+  L.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES
+    ('a', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?), ('b', 'r', 'base', 'abc123', 1, 'kpm', 0, 'T', ?),
+    ('c', 'r', 'base', 'abc123', 1, 'kpm', 0, 'T', ?), ('d', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`)
+    .run(ago(60_000), ago(120_000), ago(180_000), ago(7_200_000));
+  L.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request) VALUES
+    ('A1', 'qq', 'c', 'a', 'r', 'torid', 'x', '{}', ?, '{}'), ('A2', 'qq', 'c', 'a', 'r', 'torid', 'x', '{}', ?, '{}')`).run(now - 60_000, now - 2 * 86_400_000);
+  const d = await call("/api/board/demand");
+  check("the demand counts owed rows by why, one row once, the last hour's scores by who, and riven gains of the last day",
+    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1 }, { volunteers: 1, official: 2 }, 1]),
+    JSON.stringify(d));
+}
 check("both say how many browsers are computing now, an old answer not counted",
   found.computing === 0 && (await who("bob")).computing === 1 && (await call("/api/contributors")).computing === 1);
 
