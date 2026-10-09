@@ -18,7 +18,7 @@ const KEEP_MS = 86_400_000;
 /// to tell), kept a week, handed out after a new build's rows and before the
 /// rest (worker/verify.js `work`), and its agreed builds sent to the board.
 export const SURVEY_CHANNEL = "survey";
-const SURVEY_KEEP_MS = 7 * 86_400_000;
+export const SURVEY_KEEP_MS = 7 * 86_400_000;
 const keepFor = (a) => (a.channel === SURVEY_CHANNEL ? SURVEY_KEEP_MS : KEEP_MS);
 /// A build handed back and not judged within this is handed to the bot again.
 const RECLAIM_MS = 120_000;
@@ -167,6 +167,10 @@ const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
   : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(",")}}`
   : JSON.stringify(v));
 
+/// A SURVEY'S ANSWERED ONES GO FIRST instead: nobody waits on a first answer
+/// there, and one answered and never confirmed is work no one is credited for.
+/// The rows this client may not answer — its own, its network's — are left out
+/// in the query, or eight of them filled the window and it was given nothing.
 /// THE TASK FOR `verifier` on the served `engine`, leased, or null. `owners(ids)`
 /// answers who owns each device (worker/verify.js `ownersOf`).
 /// ANY FROZEN QUESTION IS SERVED, whatever engine froze it: the request is the
@@ -185,8 +189,11 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1, which 
       WHERE a.request IS NOT NULL AND a.agreed_at IS NULL AND (a.channel = ?) = ?
         AND a.at > CASE WHEN a.channel = ? THEN ? ELSE ? END
         AND (a.lease_until IS NULL OR a.lease_until < ?)
-      ORDER BY (answered = 0) DESC, a.at LIMIT 8`)
-    .bind(engine, SURVEY_CHANNEL, which === "survey" ? 1 : 0, SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - KEEP_MS), iso(now)).all();
+        AND NOT EXISTS (SELECT 1 FROM appraisal_results m WHERE m.code = a.code AND m.verifier IS NOT NULL AND m.engine IS ?
+                          AND (m.verifier = ? OR (? != '' AND m.net = ?)))
+      ORDER BY CASE WHEN ? THEN answered > 0 ELSE answered = 0 END DESC, a.at LIMIT 8`)
+    .bind(engine, SURVEY_CHANNEL, which === "survey" ? 1 : 0, SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - KEEP_MS), iso(now),
+      engine, verifier, net, net, which === "survey" ? 1 : 0).all();
   for (const a of results) {
     if (a.answered >= RIVEN_ANSWERS) continue;
     if (a.answered === 0 && lanes < rivenLanesNeeded(now - Date.parse(a.at))) continue;

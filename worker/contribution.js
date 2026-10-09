@@ -14,7 +14,7 @@
 //   POST /api/account/contribution   { named }    → { ok }
 //   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
-//   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, per_hour: { volunteers, official } }
+//   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }], per_hour: { volunteers, official } }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
 //   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, mark?, volunteer? } | null }
@@ -29,6 +29,7 @@
 import { json, no, now, sameSite, sessionAccount } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
+import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 
 /// `WORK_WEIGHTS` counts in billionths of a point.
 const WORK_PER_POINT = 1e9;
@@ -294,22 +295,28 @@ const DEMAND_KEEP_MS = 60_000;
 let demandKept = null;
 async function demand(env) {
   if (demandKept && Date.now() - demandKept.at < DEMAND_KEEP_MS) return json(demandKept.body);
-  if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0 }, riven_gains: 0, per_hour: { volunteers: 0, official: 0 } });
+  if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0 }, riven_gains: 0, surveys: [], per_hour: { volunteers: 0, official: 0 } });
   const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
-  const [owed, done, gains] = await db.batch([
+  const [owed, done, gains, surveys] = await db.batch([
     db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN o.priority = 0 THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 ELSE 2 END) AS k
                 FROM queue q JOIN batches b ON b.id = q.batch
                 LEFT JOIN orders o ON o.identity = q.build_id AND o.ruler = q.ruler AND o.mode = q.mode
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
     db.prepare(`SELECT SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official
                 FROM scores WHERE finished_at >= ?`).bind(hour),
-    db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ?").bind(iso(t - 86_400_000)),
+    db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
+      .bind(iso(t - 86_400_000), SURVEY_CHANNEL),
+    // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
+    // many two owners have agreed on and how many anyone has begun.
+    db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(agreed_at IS NOT NULL) AS agreed, SUM(started_at IS NOT NULL) AS started
+                FROM appraisals WHERE channel = ? AND request IS NOT NULL AND at > ? GROUP BY weapon, ruler ORDER BY MIN(at), weapon`)
+      .bind(SURVEY_CHANNEL, iso(t - SURVEY_KEEP_MS)),
   ]);
   const by = Object.fromEntries(owed.results.map((r) => [r.k, r.n]));
   const h = done.results[0] || {};
   const body = { ok: true, computing: await computingNow(env), owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0 },
-    riven_gains: (gains.results[0] || {}).n || 0, per_hour: { volunteers: h.volunteers || 0, official: h.official || 0 } };
+    riven_gains: (gains.results[0] || {}).n || 0, surveys: surveys.results, per_hour: { volunteers: h.volunteers || 0, official: h.official || 0 } };
   demandKept = { at: t, body };
   return json(body);
 }

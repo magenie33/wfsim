@@ -153,7 +153,13 @@ library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' W
     .run(ago(60_000), ago(120_000), ago(180_000), ago(7_200_000));
   L.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request) VALUES
     ('A1', 'qq', 'c', 'a', 'r', 'torid', 'x', '{}', ?, '{}'), ('A2', 'qq', 'c', 'a', 'r', 'torid', 'x', '{}', ?, '{}')`).run(ago(60_000), ago(2 * 86_400_000));
+  L.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, started_at, agreed_at) VALUES
+    ('S1', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', ?, ?), ('S2', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', ?, NULL),
+    ('S3', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', NULL, NULL), ('S4', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', NULL, NULL)`)
+    .run(ago(60_000), ago(0), ago(0), ago(60_000), ago(0), ago(60_000), ago(8 * 86_400_000));
   const d = await call("/api/board/demand");
+  check("each survey is a goal: its shapes, how many are agreed and begun, a lapsed one gone, none counted as a chat's riven gain",
+    JSON.stringify(d.surveys) === JSON.stringify([{ weapon: "furis", ruler: "x", shapes: 3, agreed: 1, started: 2 }]), JSON.stringify(d.surveys));
   check("the demand counts owed rows by why, one row once, the last hour's scores by who, and riven gains of the last day",
     JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1 }, { volunteers: 1, official: 2 }, 1]),
     JSON.stringify(d));
