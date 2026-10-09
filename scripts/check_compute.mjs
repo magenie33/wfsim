@@ -180,12 +180,15 @@ const y = await evaluate(`(async () => {
   const theirs = api("/api/meta", null, null, { community: true });
   out.community = readerInFlight === 0 && !readerBusy();
   await theirs;
-  optJobId = 12345; out.search = readerBusy(); optJobId = null;
+  optJobId = 12345; optHeardAt = Date.now(); out.search = readerBusy();
+  optHeardAt = Date.now() - 60000; out.searchLatched = !readerBusy(); optJobId = null;
+  const scan = gainScan.running; gainScan.running = true; gainScan.beat = 0;
+  out.scanLatched = !readerBusy(); gainScan.running = scan;
   const other = new BroadcastChannel("wfsim-reader-busy");
   other.postMessage({ until: Date.now() + 2000 }); await sleep(100);
   out.otherTab = readerBusy(); other.close(); otherTabBusyUntil = 0;
   let waiting = true;
-  optJobId = 1;
+  optJobId = 1; optHeardAt = Date.now();
   const held = yieldToReader().then(() => { waiting = false; });
   await sleep(200); out.waits = waiting;
   optJobId = null; await held; out.resumes = !waiting;
@@ -195,6 +198,8 @@ const yr = JSON.parse(y);
 check("[built site] the reader's own call on the pool holds the community's work, and a community call does not",
   yr.idle && yr.reader && yr.after && yr.community, y);
 check("...a search between calls holds it, and so does another tab computing", yr.search && yr.otherTab, y);
+check("...but a scan or a search that stopped answering never holds it for good, in this tab or any other",
+  yr.searchLatched && yr.scanLatched, y);
 check("...work waiting on the reader resumes the moment nothing of theirs runs", yr.waits && yr.resumes, y);
 
 await app.finish("the compute page shows what each device does, by kind, and nothing private");
