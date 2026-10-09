@@ -455,13 +455,15 @@ check("...and asking again opens nothing", backfill() === 0);
   order("redeem", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: "7".repeat(24), clients: "7".repeat(24) });
   const OLD = "7".repeat(24), NEW = "8".repeat(24);
   db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(OLD);
-  db.prepare("UPDATE verifiers SET refusals = 2, clean = ? WHERE id = ?").run(FACTS_PER_REFUSAL_FORGIVEN - 1, OLD);
+  db.prepare("UPDATE verifiers SET refusals = 2, clean = ? WHERE id = ?").run(2 * FACTS_PER_REFUSAL_FORGIVEN - 1, OLD);
+  db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(NEW);
+  db.prepare("UPDATE verifiers SET refusals = 2, clean = ? WHERE id = ?").run(FACTS_PER_REFUSAL_FORGIVEN - 1, NEW);
   const w = (await work(NEW)).work;
   await answer(w, NEW, SCORE);
   const v = (id) => db.prepare("SELECT refusals, clean FROM verifiers WHERE id = ?").get(id);
-  check("the thousandth fact after a refusal takes one off and starts the count again",
+  check("with two refusals on record, the two-thousandth fact after takes one off and starts the count again",
     row("redeem").state === "verified" && v(OLD).refusals === 1 && v(OLD).clean === 0, JSON.stringify(v(OLD)));
-  check("...and a client with none on record counts nothing", v(NEW).refusals === 0 && v(NEW).clean === 0, JSON.stringify(v(NEW)));
+  check("...while one thousand is not yet enough for two", v(NEW).refusals === 2 && v(NEW).clean === FACTS_PER_REFUSAL_FORGIVEN, JSON.stringify(v(NEW)));
 }
 
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");

@@ -33,9 +33,10 @@ export const CLIENTS_PER_FACT = 2;
 /// The share of facts the server recomputes anyway, which is what makes
 /// two colluding clients a gamble rather than a method.
 export const SPOT_SHARE = 0.05;
-/// A REFUSAL IS FORGIVEN BY HONEST WORK: each this many facts a refused client
-/// is part of afterwards — results other volunteers confirmed — takes one
-/// refusal off, so its next cool-down is a third as long (scripts/live_orders.mjs).
+/// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has
+/// one taken off by k times this many facts it is part of afterwards — results
+/// other volunteers confirmed — so four take ten thousand to clear, and each
+/// one off shortens its next cool-down a step (scripts/live_orders.mjs).
 export const FACTS_PER_REFUSAL_FORGIVEN = 1000;
 /// The range an order's `slot` is drawn from (`ship_queue.sh`).
 const SLOT_SPAN = 2147483647;
@@ -357,8 +358,8 @@ async function fact(db, key, o, clients, compute, last, spent) {
     // Every expression reads the row as it was, so the count and the forgiving
     // agree: the thousandth fact takes a refusal off and starts the count again.
     ...clients.map((c) => db.prepare(`UPDATE verifiers SET
-        refusals = CASE WHEN refusals > 0 AND clean + 1 >= ? THEN refusals - 1 ELSE refusals END,
-        clean = CASE WHEN refusals = 0 OR clean + 1 >= ? THEN 0 ELSE clean + 1 END WHERE id = ?`)
+        refusals = CASE WHEN refusals > 0 AND clean + 1 >= refusals * ? THEN refusals - 1 ELSE refusals END,
+        clean = CASE WHEN refusals = 0 OR clean + 1 >= refusals * ? THEN 0 ELSE clean + 1 END WHERE id = ?`)
       .bind(FACTS_PER_REFUSAL_FORGIVEN, FACTS_PER_REFUSAL_FORGIVEN, c)),
     ...clients.map((c) => db.prepare(
       `INSERT INTO verifier_days (verifier, day, work) VALUES (?, ?, ?)
