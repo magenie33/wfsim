@@ -183,6 +183,16 @@ function record(b) {
   return { rec };
 }
 
+/// A BUILD INTO THE BOARD'S DOOR from inside the worker — an agreed riven gain
+/// (appraise.js) — checked and stored exactly as a reader's submission is.
+export async function submitRecord(env, build) {
+  const built = record(build || {});
+  if (built.err || !env.LIBRARY) return false;
+  await env.LIBRARY.prepare("INSERT INTO inbox (id, at, record) VALUES (?, ?, ?)")
+    .bind(crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec)).run();
+  return true;
+}
+
 async function submit(request, env) {
   if (!env.LIBRARY) return bad("the library is not configured", 503);
   const { b, err } = await body(request);

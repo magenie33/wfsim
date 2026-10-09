@@ -152,5 +152,53 @@ LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_
 check("a question frozen on an older engine is still handed out after a release, its old answers not counted against it",
   (await work(D, "e1", 8) || {}).code === older);
 
+// A SURVEY: riven gains the owner opens in bulk go after a new build's board rows
+// and after a chat's; like every riven gain they need another owner AND another
+// network to agree, and the agreed build goes into the board's door.
+{
+  const L = LIBRARY.raw, now = Date.now(), ago = (ms) => new Date(now - ms).toISOString();
+  L.prepare("UPDATE appraisals SET agreed_at = ?").run(ago(0));
+  L.prepare("UPDATE orders SET state = 'settled', lease = NULL, lease_until = NULL, leased_to = NULL").run();
+  const from = (ip) => ({
+    work: async (v) => (await (await verifyRoute(new Request("https://x/api/board/work", { method: "POST", headers: { "cf-connecting-ip": ip },
+      body: JSON.stringify({ verifier: v, engine: "e1", protocol: PROTOCOL, consent: { v: 1, at: "2026-10-08T08:00:00.000Z" }, lanes: 8 }) }),
+      env, "/api/board/work")).json()).work,
+    answer: async (c, t, v, build) => (await appraiseRoute(new Request(`https://x/api/appraise/${c}/result`, { method: "POST",
+      headers: { "cf-connecting-ip": ip }, body: JSON.stringify({ build, lease: t.lease, verifier: v, score: 9, work: 5e9, engine: "e1" }) }),
+      env, `/api/appraise/${c}/result`)).json(),
+  });
+  const home = from("203.0.113.7"), there = from("198.51.100.9"), third = from("192.0.2.4");
+  L.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine)
+    VALUES ('SV1', 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1')`).run(ago(10 * 86_400_000 / 10), JSON.stringify(FROZEN));
+  L.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at, priority) VALUES
+    ('new1', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 1, ?, 0)`).run(ago(0));
+  L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-x', 'new1', 'standard_single_target', 'base')").run();
+  const E = "e".repeat(24), F = "f".repeat(24), G = "g".repeat(24);
+  for (const v of [E, F, G]) L.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
+  const first = await home.work(E);
+  check("a new build's board row goes before a survey's riven gain", first && first.kind !== "riven_gain" && first.record && first.record.weapon === "furis",
+    JSON.stringify(first));
+  L.prepare("UPDATE orders SET state = 'settled', lease = NULL, lease_until = NULL, leased_to = NULL").run();
+  const s1 = await home.work(E);
+  check("...and with none left, the survey's is handed out", s1 && s1.kind === "riven_gain" && s1.code === "SV1", JSON.stringify(s1));
+  const build = { weapon: "furis", mods: ["serration", "riven"], riven_pos: ["critical_damage", "multishot"], riven_neg: "zoom" };
+  await home.answer("SV1", s1, E, build);
+  check("a further answer never goes to the network of the first", ((await home.work(F)) || {}).code !== "SV1");
+  const s2 = await there.work(G);
+  check("...but to another", s2 && s2.code === "SV1", JSON.stringify(s2));
+  const inboxBefore = L.prepare("SELECT COUNT(*) AS n FROM inbox").get().n;
+  await there.answer("SV1", s2, G, build);
+  const row = L.prepare("SELECT record FROM inbox ORDER BY rowid DESC LIMIT 1").get();
+  check("two owners on two networks agreeing send the build to the board's door, as a reader's submission",
+    L.prepare("SELECT agreed_at FROM appraisals WHERE code = 'SV1'").get().agreed_at
+    && L.prepare("SELECT COUNT(*) AS n FROM inbox").get().n === inboxBefore + 1 && JSON.parse(row.record).weapon === "furis", row && row.record);
+  L.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine)
+    VALUES ('SV2', 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1'),
+           ('QQ1', 'qq', '{}', 'someone', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1')`)
+    .run(ago(3_600_000), JSON.stringify(FROZEN), ago(600_000), JSON.stringify(FROZEN));
+  const chat = await third.work("h".repeat(24));
+  check("a riven gain someone waits on in a chat goes before a survey's", chat && chat.code === "QQ1", JSON.stringify(chat));
+}
+
 console.log(failures ? `\n${failures} failed` : "\na riven gain is run by the community and credited when two owners agree");
 process.exitCode = failures ? 1 : 0;

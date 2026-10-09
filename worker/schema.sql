@@ -383,6 +383,8 @@ CREATE TABLE IF NOT EXISTS appraisals (
 --   ALTER TABLE appraisals ADD COLUMN request TEXT;  (and engine, lease, leased_to TEXT;
 --   lease_until, agreed_at, started_at, started_told TEXT) — the live table was made before them.
 CREATE INDEX IF NOT EXISTS appraisals_by_asker ON appraisals (channel, asker, at);
+-- `net` is the salted hash of the network an answer came from (verify.js `netOf`):
+--   ALTER TABLE appraisal_results ADD COLUMN net TEXT NOT NULL DEFAULT '';
 CREATE TABLE IF NOT EXISTS appraisal_results (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   code       TEXT NOT NULL,
@@ -398,6 +400,7 @@ CREATE TABLE IF NOT EXISTS appraisal_results (
   score      REAL,
   work       INTEGER,
   key        TEXT,
+  net        TEXT NOT NULL DEFAULT '',
   -- THE ENGINE IT RAN ON, which the cap on answers counts by (appraise.js `rivenTask`).
   engine     TEXT
 );

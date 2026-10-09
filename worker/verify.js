@@ -135,7 +135,7 @@ async function admit(db, id, now) {
 /// from the network of the one it confirms: two browsers on one desk agreeing
 /// are one witness counted twice. Kept on an open order and cleared with it;
 /// "" when the address is unknown, which excludes nothing.
-async function netOf(request, env) {
+export async function netOf(request, env) {
   const ip = (request.headers.get("cf-connecting-ip") || "").trim();
   if (!ip) return "";
   const net = ip.includes(":") ? ip.split(":").slice(0, 4).join(":") : ip;
@@ -205,8 +205,18 @@ async function work(request, env) {
     // HOW MANY CORES IT CAN GIVE NOW (69-board-work.js `communityLanes`), which
     // decides whether a riven gain someone waits on is its to take.
     const lanes = Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-    const riven = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes);
+    const net = await netOf(request, env);
+    const riven = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "chat", net);
     if (riven) return json({ ok: true, release, work: riven });
+    // …THEN A NEW BUILD'S ROWS, then a SURVEY's riven gains (appraise.js
+    // `SURVEY_CHANNEL`), then everything else: nobody waits on a survey, and a
+    // player waits on their build.
+    const fresh = await db.prepare(`SELECT 1 FROM orders WHERE priority = 0 AND state IN ('todo', 'open')
+      AND (lease_until IS NULL OR lease_until < ?) LIMIT 1`).bind(now).first();
+    if (!fresh) {
+      const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net);
+      if (survey) return json({ ok: true, release, work: survey });
+    }
   }
   // A FURTHER RESULT COMES FROM ANOTHER OWNER: one person's machines agreeing
   // with each other would be one witness counted twice.

@@ -385,8 +385,12 @@ question (docs/BOARD.md §"The Riven Analyst").
    answered before any board order, on the served engine only, and its page
    runs the request through a search of its own (`quickFleet`, the reader's
    optimizer untouched) and sends the build under its lease with the search's
-   work. Then it goes to a computer of another owner; two owners' answers
-   equal in build, score and work credit both, as a board fact does. The
+   work. Then it goes to a computer of another owner on another network; two
+   such answers equal in build, score and work credit both, as a board fact
+   does, and the agreed build goes into the board's door as a reader's
+   submission would (`submitRecord`). A SURVEY is the same task opened in bulk
+   by the owner — every riven shape of a weapon, channel `survey`, kept a week —
+   handed out after a chat's and after a new build's board rows. The
    search is deterministic for a frozen request, so honest computers agree to
    the bit. The chat is told the community is on it, and the link stays as
    the asker's own faster way. A computer still searching renews its lease

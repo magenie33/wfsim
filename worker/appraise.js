@@ -8,10 +8,18 @@
 // CHANNEL-BLIND: `chat` is where the answer goes, written and read only by that
 // channel's bot (QQ today, Discord later); this file never looks inside it.
 import { iso, msOf } from "./instant.js";
+import { submitRecord } from "./index.js";
+import { netOf } from "./verify.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
 const CODE_LEN = 5;
 const KEEP_MS = 86_400_000;
+/// A SURVEY: every riven shape of a weapon, opened in bulk by the owner (no chat
+/// to tell), kept a week, handed out after a new build's rows and before the
+/// rest (worker/verify.js `work`), and its agreed builds sent to the board.
+export const SURVEY_CHANNEL = "survey";
+const SURVEY_KEEP_MS = 7 * 86_400_000;
+const keepFor = (a) => (a.channel === SURVEY_CHANNEL ? SURVEY_KEEP_MS : KEEP_MS);
 /// A build handed back and not judged within this is handed to the bot again.
 const RECLAIM_MS = 120_000;
 /// How many appraisals one asker / one room may open in an hour.
@@ -86,8 +94,9 @@ async function open(request, env) {
   }
   const db = env.LIBRARY, now = Date.now();
   const room = typeof b.room === "string" ? b.room : "";
-  await db.prepare("DELETE FROM appraisals WHERE at < ?").bind(iso(now - KEEP_MS)).run();
-  await db.prepare("DELETE FROM appraisal_results WHERE at < ?").bind(iso(now - KEEP_MS)).run();
+  await db.prepare("DELETE FROM appraisals WHERE at < ? AND channel != ?").bind(iso(now - KEEP_MS), SURVEY_CHANNEL).run();
+  await db.prepare("DELETE FROM appraisals WHERE at < ? AND channel = ?").bind(iso(now - SURVEY_KEEP_MS), SURVEY_CHANNEL).run();
+  await db.prepare("DELETE FROM appraisal_results WHERE at < ? AND code NOT IN (SELECT code FROM appraisals)").bind(iso(now - KEEP_MS)).run();
   const [byAsker, byRoom] = await db.batch([
     db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND asker = ? AND at > ?").bind(b.channel, b.asker, iso(now - HOUR)),
     db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND room = ? AND room != '' AND at > ?").bind(b.channel, room, iso(now - HOUR)),
@@ -165,7 +174,7 @@ const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
 /// engine waited for ever behind the first release after it. The cap on answers
 /// counts the served engine's alone, so a release opens it again; agreement is
 /// still the bits, across engines (`volunteerAnswer`).
-export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
+export async function rivenTask(env, verifier, engine, owners, lanes = 1, which = "chat", net = "") {
   const db = env.LIBRARY, now = Date.now();
   const held = await db.prepare("SELECT 1 FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, iso(now)).first();
   if (held) return null;
@@ -173,15 +182,20 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
     `SELECT a.code, a.weapon, a.ruler, a.request, a.at,
             (SELECT count(*) FROM appraisal_results r WHERE r.code = a.code AND r.verifier IS NOT NULL AND r.engine IS ?) AS answered
        FROM appraisals a
-      WHERE a.request IS NOT NULL AND a.at > ? AND a.agreed_at IS NULL
+      WHERE a.request IS NOT NULL AND a.agreed_at IS NULL AND (a.channel = ?) = ?
+        AND a.at > CASE WHEN a.channel = ? THEN ? ELSE ? END
         AND (a.lease_until IS NULL OR a.lease_until < ?)
-      ORDER BY (answered = 0) DESC, a.at LIMIT 8`).bind(engine, iso(now - KEEP_MS), iso(now)).all();
+      ORDER BY (answered = 0) DESC, a.at LIMIT 8`)
+    .bind(engine, SURVEY_CHANNEL, which === "survey" ? 1 : 0, SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - KEEP_MS), iso(now)).all();
   for (const a of results) {
     if (a.answered >= RIVEN_ANSWERS) continue;
     if (a.answered === 0 && lanes < rivenLanesNeeded(now - Date.parse(a.at))) continue;
-    const by = (await db.prepare("SELECT verifier FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL AND engine IS ?")
-      .bind(a.code, engine).all()).results.map((r) => r.verifier);
+    const rows = (await db.prepare("SELECT verifier, net FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL AND engine IS ?")
+      .bind(a.code, engine).all()).results;
+    const by = rows.map((r) => r.verifier);
     if (by.includes(verifier)) continue;
+    // …AND NEVER FROM THE NETWORK OF AN ANSWER IT WOULD CONFIRM (verify.js `netOf`).
+    if (net && rows.some((r) => r.net === net)) continue;
     if (by.length) {
       const own = await owners([verifier, ...by]);
       const mine = own.get(verifier);
@@ -227,7 +241,7 @@ async function renew(request, env, code) {
 
 /// A VOLUNTEER'S ANSWER, under its lease: kept like any build handed back, and
 /// once two owners' answers agree, the work credited to both.
-async function volunteerAnswer(env, a, b, now, owners) {
+async function volunteerAnswer(env, a, b, now, owners, net = "") {
   if (!VERIFIER_ID.test(b.verifier || "") || !LEASE_ID.test(b.lease || "")
       || !Number.isSafeInteger(b.work) || b.work < 0 || typeof b.score !== "number" || !Number.isFinite(b.score)) {
     return json({ ok: false, error: "bad answer" }, 400);
@@ -236,19 +250,20 @@ async function volunteerAnswer(env, a, b, now, owners) {
   if (a.lease !== b.lease || a.leased_to !== b.verifier || !(Date.parse(a.lease_until) >= now)) return json({ ok: true, first: false });
   const key = canon(b.build);
   await db.batch([
-    db.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?)`)
+    db.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine, net) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?)`)
       .bind(a.code, JSON.stringify(b.build), iso(now), b.verifier, b.score, b.work, key,
-        typeof b.engine === "string" && ENGINE_ID.test(b.engine) ? b.engine : null),
+        typeof b.engine === "string" && ENGINE_ID.test(b.engine) ? b.engine : null, net),
     db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE code = ?").bind(a.code),
   ]);
   const { results } = await db.prepare(
-    "SELECT verifier, score, work, key FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();
+    "SELECT verifier, score, work, key, net, build FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();
   const own = await owners(results.map((r) => r.verifier));
   const ownerOf = (v) => own.get(v) || v;
   for (let i = 0; i < results.length; i++) {
     for (let j = i + 1; j < results.length; j++) {
       const x = results[i], y = results[j];
       if (x.key !== y.key || x.score !== y.score || x.work !== y.work || ownerOf(x.verifier) === ownerOf(y.verifier)) continue;
+      if (x.net && x.net === y.net) continue;
       const won = await db.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL").bind(iso(now), a.code).run();
       if (!won.meta.changes) return json({ ok: true, first: !a.done_at });
       await db.batch([x, y].flatMap((r) => [
@@ -256,6 +271,8 @@ async function volunteerAnswer(env, a, b, now, owners) {
         db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
           ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, iso(now).slice(0, 13), r.work),
       ]));
+      // …AND THE AGREED BUILD GOES TO THE BOARD, through the reader's own door.
+      try { await submitRecord(env, JSON.parse(x.build)); } catch (_) { /* the answer stands without it */ }
       return json({ ok: true, first: !a.done_at });
     }
   }
@@ -277,9 +294,9 @@ async function handBack(request, env, code, owners = async () => new Map()) {
   try { b = JSON.parse(text); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if (!b.build || typeof b.build !== "object" || !Array.isArray(b.build.mods)) return json({ ok: false, error: "needs build" }, 400);
   const db = env.LIBRARY, now = Date.now();
-  const a = await db.prepare("SELECT code, done_at, at, lease, lease_until, leased_to FROM appraisals WHERE code = ?").bind(code).first();
-  if (!a || Date.parse(a.at) < now - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
-  if (b.lease !== undefined) return volunteerAnswer(env, a, b, now, owners);
+  const a = await db.prepare("SELECT code, channel, done_at, at, lease, lease_until, leased_to FROM appraisals WHERE code = ?").bind(code).first();
+  if (!a || Date.parse(a.at) < now - keepFor(a)) return json({ ok: false, error: "no such appraisal" }, 404);
+  if (b.lease !== undefined) return volunteerAnswer(env, a, b, now, owners, await netOf(request, env));
   await db.prepare("INSERT INTO appraisal_results (code, build, thanks, at) VALUES (?, ?, ?, ?)")
     .bind(code, JSON.stringify(b.build), cleanThanks(b.thanks), iso(now)).run();
   return json({ ok: true, first: !a.done_at });
