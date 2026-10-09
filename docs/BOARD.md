@@ -654,9 +654,14 @@ row at a time, so the board's growth is more orders, never a heavier client.
   submitted that day or the one before — an older build asked for a ruler it
   lacks lands in the same batch and is a sweep), then a rescore's or a sweep's: someone is waiting to see a new build ranked, and nobody is waiting
   on a rescore. One lease a client, thirty minutes long; a row no longer owed
-  is settled where it is found. ONLY THE SERVED ENGINE LEASES: the worker reads
-  `engine` from the site's `release.json`, and a page of any other gets no order
-  and its answers are dropped.
+  is settled where it is found. A CLIENT THAT ASKS IS WORKING ON NOTHING: a
+  browser computes in one tab (a Web Lock) and asks only between tasks, so
+  whatever its id still holds was lost — a crash, a reload, an old page — and
+  is taken back as it asks, never waited out. ONLY THE SERVED ENGINE LEASES: the
+  worker reads `engine` from the site's `release.json`, and a page of any other
+  gets no order and its answers are dropped. Every answer names the `release`
+  too, and a page of an older one reloads into it once left idle, so a machine
+  left computing for weeks takes every fix without anyone touching it.
 - **A release carries a result.** An order holding an older engine's result is
   opened for the served one with its clients kept (`carried_from` names the
   engine they used). A client of the new engine that reproduces the bits makes

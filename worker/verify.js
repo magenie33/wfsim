@@ -38,7 +38,7 @@ const SLOT_SPAN = 2147483647;
 /// WHAT A PAGE THAT CAN FILL AN ORDER SENDS. A tab opened before orders existed
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.
-export const PROTOCOL = 5;
+export const PROTOCOL = 6;
 
 const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
 const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
@@ -74,16 +74,23 @@ async function read(request) {
 /// then nobody works: an order answered by an unknown engine proves nothing.
 const served = new WeakMap();
 async function servedEngine(env) {
-  if (!env.ASSETS) return null;
+  return (await servedRelease(env)).engine;
+}
+/// …AND THE RELEASE, told with every answer so a page left computing for weeks
+/// reloads into each new one (69-board-work.js `releaseNewer`), not only into a
+/// new engine.
+async function servedRelease(env) {
+  if (!env.ASSETS) return { engine: null, release: null };
   if (served.has(env.ASSETS)) return served.get(env.ASSETS);
-  let engine = null;
+  let out = { engine: null, release: null };
   try {
     const r = await env.ASSETS.fetch(new Request("https://wfsim.app/release.json"));
-    const e = r.ok ? (await r.json()).engine : null;
-    if (typeof e === "string" && ENGINE_ID.test(e)) engine = e;
+    const j = r.ok ? await r.json() : {};
+    out = { engine: typeof j.engine === "string" && ENGINE_ID.test(j.engine) ? j.engine : null,
+      release: typeof j.release === "string" && ENGINE_ID.test(j.release) ? j.release : null };
   } catch { /* unread: nobody works until it is */ }
-  if (engine) served.set(env.ASSETS, engine);
-  return engine;
+  if (out.engine) served.set(env.ASSETS, out);
+  return out;
 }
 
 /// A RELEASE CARRIES A RESULT, IT DOES NOT ERASE IT: an order an older engine
@@ -145,7 +152,7 @@ async function work(request, env) {
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
   if (b.protocol !== PROTOCOL) return json({ ok: true, work: null, stale: true });
-  const engine = await servedEngine(env);
+  const { engine, release } = await servedRelease(env);
   if (!engine) return json({ ok: true, work: null });
   if (b.engine !== engine) return json({ ok: true, work: null, stale: true });
   const db = env.LIBRARY, now = Date.now();
@@ -160,10 +167,15 @@ async function work(request, env) {
   if (!(await admit(db, b.verifier))) return json({ ok: true, work: null, banned: true });
   await db.prepare(`UPDATE verifiers SET consent_v = ?, consent_at = ? WHERE id = ? AND (consent_v IS NOT ? OR consent_at IS NOT ?)`)
     .bind(c.v, c.at, b.verifier, c.v, c.at).run();
-  // ONE AT A TIME: a client holding a live lease gets nothing more.
-  const held = await db.prepare("SELECT 1 AS x FROM orders WHERE leased_to = ? AND lease_until > ? LIMIT 1")
-    .bind(b.verifier, now).first();
-  if (held) return json({ ok: true, work: null });
+  // A CLIENT THAT ASKS IS WORKING ON NOTHING: one browser computes in one tab
+  // (69-board-work.js, a Web Lock) and asks only between tasks, so a lease it
+  // still holds is one its page lost — a crash, a reload, an old page — and is
+  // handed back here rather than waited out for half an hour.
+  await db.batch([
+    db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, now),
+    db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?")
+      .bind(b.verifier, now),
+  ]);
   // A RIVEN GAIN FIRST: someone is waiting on it in a chat. It holds its own
   // lease, so a client on one gets nothing more here either.
   {
@@ -171,9 +183,7 @@ async function work(request, env) {
     // decides whether a riven gain someone waits on is its to take.
     const lanes = Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
     const riven = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes);
-    if (riven) return json({ ok: true, work: riven });
-    const busy = await db.prepare("SELECT 1 FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(b.verifier, now).first();
-    if (busy) return json({ ok: true, work: null });
+    if (riven) return json({ ok: true, release, work: riven });
   }
   // A FURTHER RESULT COMES FROM ANOTHER OWNER: one person's machines agreeing
   // with each other would be one witness counted twice.
@@ -212,10 +222,10 @@ async function work(request, env) {
           AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?)`)
       .bind(lease, now + LEASE_MS, b.verifier, ...key, o.state, now, b.verifier, now, b.verifier, now).run();
     if (took.meta && took.meta.changes) {
-      return json({ ok: true, work: { lease, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
+      return json({ ok: true, release, work: { lease, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
     }
   }
-  return json({ ok: true, work: null });
+  return json({ ok: true, release, work: null });
 }
 
 /// WHAT THE CLIENT MEASURED. The answer is always `ok`: a client learns

@@ -46,7 +46,7 @@ const stmt = (sql, args = []) => ({
   each: async () => (/^\s*select/i.test(sql) ? { results: db.prepare(sql).all(...args) } : { meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
 });
 /// THE SITE'S `release.json`, naming the engine it serves.
-const site = (engine) => ({ fetch: async () => new Response(JSON.stringify({ engine })) });
+const site = (engine, release = "r1") => ({ fetch: async () => new Response(JSON.stringify({ engine, release })) });
 const env = { LIBRARY: { prepare: (sql) => stmt(sql), batch: async (ss) => Promise.all(ss.map((x) => x.each())) }, ASSETS: site("e1"),
   ACCOUNTS: { prepare: (sql) => stmtIn(accounts)(sql) } };
 const WORK = 7_000_000_000;
@@ -80,8 +80,16 @@ const first = await work(A);
 check("...and the yes it sent is kept on its row, the statement and when",
   JSON.stringify(db.prepare("SELECT consent_v AS v, consent_at AS at FROM verifiers WHERE id = ?").get(A)) === JSON.stringify(YES));
 check("an order is handed out as its build", first.work && first.work.record.weapon === "braton_prime", JSON.stringify(first));
-check("...one lease at a time", (await work(A)).work === null);
+// A CLIENT THAT ASKS AGAIN IS WORKING ON NOTHING: what it held is taken back and
+// handed out anew, and an answer under the lost lease counts for nothing.
+const again = await work(A);
+check("a client asking again gets its lost order back under a new lease, never a second one",
+  again.work && again.work.lease !== first.work.lease && row("one").lease === again.work.lease
+  && db.prepare("SELECT COUNT(*) AS n FROM orders WHERE leased_to = ?").get(A).n === 1, JSON.stringify(again));
 await answer(first.work, A, SCORE);
+check("...and the lost lease's answer is dropped", row("one").state === "todo" && row("one").score === null);
+check("every answer names the release the site serves", again.release === "r1", JSON.stringify(again));
+await answer(again.work, A, SCORE);
 check("the first result makes it fresh, kept with who measured it and on which engine",
   row("one").state === "fresh" && row("one").score === SCORE && row("one").produced_by === A && row("one").engine === "e1");
 check("...and no fact yet", !fact("one"));
@@ -333,11 +341,10 @@ db.prepare("UPDATE orders SET state = 'settled'").run();
 order("given"); order("next");
 const GB = "q".repeat(24);
 const gbFirst = (await work(GB)).work;
-const gbHeld = (await work(GB)).work;
 const gbTaken = row("given").leased_to === GB ? "given" : "next";
 await call("/api/board/release", { lease: gbFirst.lease, verifier: GB });
 check("a lease given back frees its order and its client at once",
-  gbFirst && gbHeld === null && row(gbTaken).lease === null && !!(await work(GB)).work, `${gbTaken} ${row(gbTaken).lease}`);
+  gbFirst && row(gbTaken).lease === null && !!(await work(GB)).work, `${gbTaken} ${row(gbTaken).lease}`);
 const gbSpare = (await work(Y)).work;
 check("...and a client cannot give back a lease it does not hold",
   (await call("/api/board/release", { lease: (gbSpare || {}).lease || "c".repeat(32), verifier: GB })).ok

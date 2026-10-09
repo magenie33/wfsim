@@ -220,6 +220,9 @@ const LEASE_SAFE_MS = 27 * 60_000;
 /// switch says so. Not in the desktop shell, whose updater swaps the files.
 const IDLE_RELOAD_MS = 10 * 60_000;
 let boardStale = false;
+/// …OR ONLY A NEWER RELEASE, the engine unchanged: this page still works, and
+/// reloads into it on the same terms, so a fix reaches a machine left alone.
+let releaseNewer = false;
 /// THE SERVER REFUSED THIS BROWSER (worker/verify.js `admit`): its results
 /// disagreed with the server's own, so it is handed nothing, and the page says so.
 let boardBanned = false;
@@ -258,7 +261,7 @@ function reloadForRelease() {
   location.reload();
 }
 function maybeReloadForRelease() {
-  if (!boardStale || window.__WFSIM_DESKTOP__ || readerBusy() || Date.now() - lastTouched < IDLE_RELOAD_MS) return;
+  if ((!boardStale && !releaseNewer) || window.__WFSIM_DESKTOP__ || readerBusy() || Date.now() - lastTouched < IDLE_RELOAD_MS) return;
   // ONE TRY AN HOUR: a CDN still serving the old files must not make a loop.
   try {
     if (Date.now() - Number(sessionStorage.getItem("wfsim-release-reload") || 0) < 3_600_000) return;
@@ -326,8 +329,9 @@ async function workOnce() {
   await claimDevice(id);
   const c = computeConsent();
   const ask = await postBoardWork("/api/board/work",
-    { verifier: id, engine: ENGINE_ID, protocol: 5, consent: { v: c.v, at: c.at }, lanes: communityLanes() });
+    { verifier: id, engine: ENGINE_ID, protocol: 6, consent: { v: c.v, at: c.at }, lanes: communityLanes() });
   if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
+  if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
   if (ask && !!ask.banned !== boardBanned) { boardBanned = !!ask.banned; computeRedraw(); computeChrome(); }
   maybeReloadForRelease();
   const w = ask && ask.work;
@@ -363,13 +367,18 @@ if (WASM) {
     else setTimeout(askWhenReady, 500);
   })();
   addEventListener("popstate", () => setTimeout(computeChrome, 0));
-  (async () => {
+  // ONE TAB OF A BROWSER COMPUTES: its tabs share one id, and the server takes
+  // back whatever an asking id still holds, so two tabs asking would take each
+  // other's orders. The tab holding the lock works until it closes; the next waits.
+  const computeLoop = async () => {
     for (;;) {
       let worked = false;
       try { worked = await workOnce(); } catch (_) { giveBack(); /* the next ask tries again */ }
       if (!worked) await new Promise((r) => setTimeout(r, ASK_EVERY_MS));
     }
-  })();
+  };
+  if (navigator.locks && navigator.locks.request) navigator.locks.request("wfsim-community-compute", computeLoop);
+  else computeLoop();
 }
 
 /// THE SWITCH, stated beside the board's own in the consent box.
