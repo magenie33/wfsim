@@ -26,7 +26,9 @@ directory, that no two share a prefix, that no part runs past the line ceiling
 Every stored instant is UTC ISO 8601 to the millisecond (docs/NAMING.md §9).
 It reads the schemas and the code that writes them: an instant column that is
 not TEXT, an `_at_ms` column, a day cut from `now()`, a day written under an
-instant's name outside the anonymous store, and a write to the second. The
+instant's name outside the anonymous store, a write to the second, and a
+clock bound to a statement as a number, which an ISO column compares as
+smaller than every string. The
 private worker's schemas and sources are read where it is checked out. No
 browser.
 

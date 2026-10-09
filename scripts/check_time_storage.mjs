@@ -33,12 +33,39 @@ function schema(path) {
 
 const sources = (dir, ext) => readdirSync(resolve(ROOT, dir)).filter((f) => ext.test(f) && !f.startsWith("check_")).map((f) => join(dir, f).replace(/\\/g, "/"));
 
+/// The index of the parenthesis closing the one at `open`.
+function close(s, open) {
+  let depth = 0, k = open;
+  for (; k < s.length; k++) {
+    if (s[k] === "(") depth++;
+    else if (s[k] === ")" && --depth === 0) break;
+  }
+  return k;
+}
+/// `s` with every call of `fn` replaced by a placeholder: what it returns is not a number.
+function unwrap(s, fn) {
+  let out = "", i = 0;
+  for (let j = s.indexOf(`${fn}(`); j >= 0; j = s.indexOf(`${fn}(`, i)) {
+    out += `${s.slice(i, j)}_`;
+    i = close(s, j + fn.length) + 1;
+  }
+  return out + s.slice(i);
+}
+
 function writers(path) {
   const s = read(path);
   // A DAY CUT FROM `now()` is an instant someone meant to store and truncated.
   for (const m of s.matchAll(/\bnow\(\)\.slice\(0, 10\)/g)) failures.push(`${path}:${s.slice(0, m.index).split("\n").length}: now().slice(0, 10) — store now(), or name the column day`);
   // AN INSTANT TO THE SECOND sorts after the same second to the millisecond.
   for (const m of s.matchAll(/toISOString\(\)\.slice\(0, 19\)|%Y-%m-%dT%H:%M:%SZ/g)) failures.push(`${path}:${s.slice(0, m.index).split("\n").length}: an instant written to the second; write toISOString() whole`);
+  // A CLOCK BOUND AS A NUMBER: against an ISO column it compares as smaller
+  // than every string, so `lease_until < ?` is false for every leased row.
+  for (let i = s.indexOf(".bind("); i >= 0; i = s.indexOf(".bind(", i + 1)) {
+    const args = unwrap(unwrap(unwrap(s.slice(i + 6, close(s, i + 5)), "iso"), "Date.parse"), "new Date");
+    if (/\bnow\b(?!\s*\()|Date\.now\(\)/.test(args)) {
+      failures.push(`${path}:${s.slice(0, i).split("\n").length}: a clock bound as a number; bind iso(…)`);
+    }
+  }
   // A DAY UNDER AN INSTANT'S NAME, outside the anonymous store.
   for (const m of s.matchAll(/INTO (\w+) \(([^)]*)\)/g)) {
     for (const col of m[2].split(",").map((x) => x.trim())) {
