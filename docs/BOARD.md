@@ -643,12 +643,16 @@ row at a time, so the board's growth is more orders, never a heavier client.
   row is asked for only where `scores` holds no score: a resubmission the page
   did not recognise is the same build, and asking again would fight it again.
   A rescore's batch asks for scored rows on purpose.
+  EVERY OWED ROW HAS AN ORDER: the reconciliation opens one for any row without
+  (`ship_queue.sh --backfill`), since a run stopped between writing the queue and
+  its orders leaves rows only the scorer is ever handed.
 - **Leasing.** `/api/board/work` (`worker/verify.js`) hands a client one
   order — its library RECORD, a ruler and a mode, never a number — chosen from
   a random `slot` on an index, so a lease reads a few rows however long the
   book is. An order waiting for a further result goes first, then the rows a
-  NEW BUILD owes (`priority` 0, an `arrivals-` batch), then a rescore's or a
-  sweep's: someone is waiting to see a new build ranked, and nobody is waiting
+  NEW BUILD owes (`priority` 0: an `arrivals-` batch's row whose build was
+  submitted that day or the one before — an older build asked for a ruler it
+  lacks lands in the same batch and is a sweep), then a rescore's or a sweep's: someone is waiting to see a new build ranked, and nobody is waiting
   on a rescore. One lease a client, thirty minutes long; a row no longer owed
   is settled where it is found. ONLY THE SERVED ENGINE LEASES: the worker reads
   `engine` from the site's `release.json`, and a page of any other gets no order

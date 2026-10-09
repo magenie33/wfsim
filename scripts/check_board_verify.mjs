@@ -356,19 +356,39 @@ const shipped = (what, batch) => execFileSync("bash", ["scripts/ship_queue.sh", 
   { encoding: "utf8" }).split("\n").filter(Boolean).map((l) => JSON.parse(l));
 const run = (what, batch) => { for (const b of shipped(what, batch)) sql(b).run(...b.params); };
 db.prepare("DELETE FROM queue").run();
-db.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('arrivals-t', '2026-01-01', 'check', 2), ('rescore-t', '2026-01-01', 'check', 2)").run();
+db.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('arrivals-2026-01-01', '2026-01-01', 'check', 2), ('rescore-t', '2026-01-01', 'check', 2)").run();
 for (const id of ["scored", "unscored"]) db.prepare("INSERT INTO builds (id, at, record) VALUES (?, '2026-01-01', ?)").run(id, JSON.stringify({ weapon: "braton_prime" }));
 order("scored", "verified", { score: SCORE, metric: "kpm", engine: "e1", produced_by: R, clients: R });
 db.prepare("DELETE FROM queue").run();
 db.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
             VALUES ('scored', 'standard_single_target', 'base', 'verified:e1', ?, 'kpm', 0, 'T0', 'T1')`).run(SCORE);
-run("queue", "arrivals-t"); run("orders", "arrivals-t");
+run("queue", "arrivals-2026-01-01"); run("orders", "arrivals-2026-01-01");
 const queued = () => db.prepare("SELECT DISTINCT build_id FROM queue ORDER BY build_id").all().map((r) => r.build_id).join(",");
 check("a resubmitted build's scored row is not asked for again, its order left as it was",
   queued() === "unscored" && row("scored").state === "verified" && row("unscored").state === "todo" && row("unscored").priority === 0,
   `${queued()} ${row("scored").state}`);
 run("queue", "rescore-t"); run("orders", "rescore-t");
-check("...while a rescore asks for it", queued() === "scored,unscored" && row("scored").state === "todo");
+check("...while a rescore asks for it", queued() === "scored,unscored" && row("scored").state === "todo"
+  && row("scored").priority === 1);
+
+// AN OLD BUILD ASKED FOR A RULER IT LACKS lands in the day's arrivals batch and
+// is a sweep; EVERY OWED ROW GETS ITS ORDER, once (scripts/ship_queue.sh).
+db.prepare("UPDATE orders SET state = 'settled'").run();
+db.prepare("DELETE FROM queue").run();
+db.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', '2026-03-01', 'check', 3)").run();
+for (const [id, at] of [["old", "2026-01-01"], ["new", "2026-03-01"], ["held", "2026-03-01"]]) {
+  db.prepare("INSERT OR IGNORE INTO builds (id, at, record) VALUES (?, ?, ?)").run(`bf-${id}`, at, JSON.stringify({ weapon: "braton_prime" }));
+  db.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-2026-03-01', ?, 'heavy_gunner', 'base')").run(`bf-${id}`);
+}
+db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES ('bf-held', 'heavy_gunner', 'base', '{}', 'open', 1, 0)`).run();
+const backfill = () => { const b = JSON.parse(execFileSync("bash", ["scripts/ship_queue.sh", "--body", "backfill"], { encoding: "utf8" }));
+  return Number(sql(b).run(...b.params).changes); };
+const bf = (id) => db.prepare("SELECT state, priority FROM orders WHERE identity = ? AND ruler = 'heavy_gunner'").get(`bf-${id}`);
+const opened = backfill();
+check("an owed row with no order is given one — a new build's first, an old build's as a sweep — and one that has an order is left",
+  opened === 2 && bf("new").state === "todo" && bf("new").priority === 0 && bf("old").priority === 1 && bf("held").state === "open",
+  `${opened} ${JSON.stringify([bf("new"), bf("old"), bf("held")])}`);
+check("...and asking again opens nothing", backfill() === 0);
 
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;

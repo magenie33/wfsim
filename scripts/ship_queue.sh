@@ -2,6 +2,7 @@
 # WHAT NOBODY HAS ASKED FOR YET, ASKED FOR.
 #
 #   scripts/ship_queue.sh <batch-id> <why> missing.ndjson
+#   scripts/ship_queue.sh --backfill                  an order for every owed row that has none
 #   scripts/ship_queue.sh --self-test
 #
 # The reconciliation's write half. `wfsim-board --queue-missing` walks the
@@ -82,6 +83,43 @@ queue_batches() {
   ' "$2"
 }
 
+# A NEW BUILD'S ROWS ARE LEASED BEFORE A RESCORE'S (`priority` 0): an `arrivals-`
+# batch's row whose build was submitted that day or the one before. An older
+# build asked for a ruler it lacks lands in the same daily batch, and is a sweep.
+# Prints the SQL expression; `$1` is the batch (a column or `?`, bound twice).
+priority_of() {
+  echo "CASE WHEN $1 LIKE 'arrivals-%' AND $2 >= date(substr($1, 10), '-1 day') THEN 0 ELSE 1 END"
+}
+
+# EVERY OWED ROW HAS AN ORDER, or the clients are never handed it and only the
+# scorer measures it: a run stopped between the queue's write and the orders'
+# leaves exactly that, and no later run wrote either again. A row is owed while
+# its batch stands; these statements open what is missing, a few thousand at a
+# time, until none is.
+BACKFILL_ROWS=2000
+backfill_body() {
+  jq -n -c --argjson n "$BACKFILL_ROWS" --arg priority "$(priority_of q.batch b.at)" '
+    {
+      sql: ("INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority)"
+            + " SELECT q.build_id, q.ruler, q.mode, b.record, ?, ?, abs(random()) % 2147483647, unixepoch() * 1000,"
+            + " MIN(" + $priority + ")"
+            + " FROM queue q JOIN batches t ON t.id = q.batch JOIN builds b ON b.id = q.build_id"
+            + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id AND o.ruler = q.ruler AND o.mode = q.mode)"
+            + " GROUP BY q.build_id, q.ruler, q.mode LIMIT ?"),
+      params: ["todo", "", $n]
+    }'
+}
+backfill() {
+  local opened=0 n i
+  for i in $(seq 1 200); do
+    d1 "$(backfill_body)" || { echo "::warning::queue: the order backfill was refused [HTTP $D1_CODE]"; return 0; }
+    n=$(jq -r '.result[0].meta.changes // 0' < "$D1_OUT")
+    opened=$((opened + n))
+    [ "$n" -gt 0 ] || break
+  done
+  echo "queue: $opened owed row(s) had no order, now opened"
+}
+
 # A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS: a resubmission the
 # page did not recognise — a board copy that lagged, a row under the entry line
 # it never saw — is the same build, and reopening it fought it again. A
@@ -96,12 +134,9 @@ owed_only() {
 # …AND A COMPUTE ORDER BESIDE EVERY ROW, built from the library's record of the
 # build (docs/BOARD.md §"Compute orders"). One the queue asks for again — a
 # rescore, a sweep — is opened afresh unless clients or the server are still
-# working on it. Three bound parameters a row, so the same chunk fits. A new
-# build's rows (an `arrivals-` batch) are leased before a rescore's (`priority`).
+# working on it. Three bound parameters a row, so the same chunk fits.
 orders_batches() {
-  local priority=1
-  case "${2:-}" in arrivals-*) priority=0 ;; esac
-  jq -R -s -c --argjson n "$QUEUE_BATCH" --argjson priority "$priority" --arg owed "$(owed_only "${2:-}" v.column1 v.column2 v.column3)" '
+  jq -R -s -c --argjson n "$QUEUE_BATCH" --arg batch "${2:-}" --arg priority "$(priority_of "?" b.at)" --arg owed "$(owed_only "${2:-}" v.column1 v.column2 v.column3)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
@@ -109,7 +144,7 @@ orders_batches() {
     | {
         sql: ("INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority)"
               + " SELECT v.column1, v.column2, v.column3, b.record, ?, ?,"
-              + " abs(random()) % 2147483647, unixepoch() * 1000, ?"
+              + " abs(random()) % 2147483647, unixepoch() * 1000, " + $priority
               + " FROM (VALUES " + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AS v"
               + " JOIN builds b ON b.id = v.column1 WHERE " + $owed
               + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET state = ?, engine = ?,"
@@ -118,7 +153,7 @@ orders_batches() {
               + " lease_until = NULL, leased_to = NULL, at = excluded.at,"
               + " priority = excluded.priority, carried_from = NULL"
               + " WHERE orders.state IN (?, ?, ?)"),
-        params: (["todo", "", $priority] + [$chunk[] | .build_id, .ruler, .mode]
+        params: (["todo", "", $batch, $batch] + [$chunk[] | .build_id, .ruler, .mode]
                  + ["todo", "", "verified", "rejected", "settled"])
       }
   ' "$1"
@@ -284,12 +319,16 @@ DEAD
 
 if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
 # THE STATEMENTS THEMSELVES, for check_board_verify.mjs to run against the schema.
-if [ "${1:-}" = "--body" ]; then "${2:?queue|orders}_batches" "${@:3}"; exit $?; fi
+if [ "${1:-}" = "--body" ]; then
+  if [ "${2:-}" = "backfill" ]; then backfill_body; else "${2:?queue|orders|backfill}_batches" "${@:3}"; fi
+  exit $?
+fi
 
 if ! configured; then
   echo "queue: no database configured, nothing asked for"
   exit 0
 fi
+if [ "${1:-}" = "--backfill" ]; then backfill; exit 0; fi
 ship "${1:?usage: ship_queue.sh <batch-id> <why> <missing.ndjson>}" \
      "${2:?usage: ship_queue.sh <batch-id> <why> <missing.ndjson>}" \
      "${3:?usage: ship_queue.sh <batch-id> <why> <missing.ndjson>}"

@@ -64,6 +64,9 @@ done
 bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
   "builds nothing had asked for yet" "$missing"
 rm -f "$missing"
+# …AND EVERY ROW OWED HAS ITS ORDER, whichever run wrote the row and however it
+# ended (`ship_queue.sh --backfill`).
+bash scripts/ship_queue.sh --backfill
 
 # …AND THE OTHER HALF OF THE SAME DEFINITION. The loop above adds every
 # (build, ruler, mode) that should exist and does not; this forgets the ones
