@@ -2526,6 +2526,11 @@ ui:
   "Nobody yet.": 还没有人。
   "All time": 全部
   "Last 30 days": 近 30 天
+  "Last 7 days": 近 7 天
+  "Weekly ranking": 周榜
+  "Monthly ranking": 月榜
+  "All-time ranking": 总榜
+  "Show me on the card": 在卡片上展示我
   "Points count verified compute and nothing else. A membership adds none.": "积分只计验证通过的计算量，会员没有任何加成。"
   "Signed in, the board compute your browser does counts under your name.": "登录后，你的浏览器为榜单做的计算会记在你的名下。"
   "Your points": 你的积分

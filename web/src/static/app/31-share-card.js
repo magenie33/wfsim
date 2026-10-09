@@ -409,8 +409,49 @@ function cardImages(w) {
   return Promise.all(list.map(loadImg)).then((ims) => new Map(list.map((k, i) => [k, ims[i]])));
 }
 
+/// THE SHOWCASE, under the head: who shared it and what they gave the board —
+/// `s.name`, `s.volunteer`, the signed link's `s.mark`, and the figures the
+/// sharer picked, `s.stats` as `[value, label]`. The honour is filled and a
+/// paid mark only outlined, so what was computed reads first.
+const SHOWCASE_H = 150;
+function cardShowcase(c, t, s, y0) {
+  const g = c.g, x = CARD_PAD, y = y0 + 8, w = CARD_W - 2 * CARD_PAD, h = SHOWCASE_H - 24;
+  g.fillStyle = t.panel; roundRect(g, x, y, w, h, 14); g.fill();
+  g.strokeStyle = t.line; g.lineWidth = 1; roundRect(g, x + .5, y + .5, w - 1, h - 1, 14); g.stroke();
+  g.fillStyle = t.gold; roundRect(g, x, y + 18, 4, h - 36, 2); g.fill();
+  const lx = x + 32;
+  g.font = `13px ${t.body}`; g.fillStyle = t.muted; g.fillText(tr("Shared by"), lx, y + 34);
+  g.font = `700 32px ${t.display}`; g.fillStyle = t.text; g.fillText(s.name, lx, y + 74);
+  let bx = lx;
+  const pill = (text, filled) => {
+    g.font = `600 13px ${t.body}`;
+    const pw = g.measureText(text).width + 22;
+    if (filled) { g.fillStyle = t.gold; roundRect(g, bx, y + 88, pw, 24, 12); g.fill(); g.fillStyle = t.bg; }
+    else { g.strokeStyle = t.gold; roundRect(g, bx + .5, y + 88.5, pw - 1, 23, 12); g.stroke(); g.fillStyle = t.gold; }
+    g.fillText(text, bx + 11, y + 105);
+    bx += pw + 8;
+  };
+  if (s.volunteer) pill(tr("WFSim Volunteer"), true);
+  if (s.mark) pill(s.mark, false);
+  let rx = x + w - 32;
+  g.textAlign = "right";
+  for (let i = s.stats.length - 1; i >= 0; i--) {
+    const [v, label] = s.stats[i];
+    g.font = `700 34px ${t.display}`; const vw = g.measureText(v).width;
+    g.font = `13px ${t.body}`; const lw = g.measureText(label).width;
+    g.font = `700 34px ${t.display}`; g.fillStyle = i === 0 ? t.gold : t.text; g.fillText(v, rx, y + 74);
+    g.font = `13px ${t.body}`; g.fillStyle = t.muted; g.fillText(label, rx, y + 100);
+    rx -= Math.max(vw, lw) + 44;
+    if (i > 0) { g.strokeStyle = t.line; g.beginPath(); g.moveTo(rx + 22.5, y + 40); g.lineTo(rx + 22.5, y + 104); g.stroke(); }
+  }
+  g.textAlign = "left";
+  return SHOWCASE_H;
+}
+
 /// THE CARD. `opts.measured` is the sharer's result or null; `opts.by` the
-/// signer's name and mark when the link is signed.
+/// signer's name and mark when the link is signed; `opts.showcase` what the
+/// sharer chose to show of themselves (`cardShowcase`), which then names them
+/// and the foot does not.
 async function drawShareCard(canvas, url, opts = {}) {
   const t = CARD_THEMES[opts.theme] || CARD_THEMES.default;
   const w = weaponInfo($("weapon").value);
@@ -430,7 +471,7 @@ async function drawShareCard(canvas, url, opts = {}) {
   const rowH = rows.map((row) => Math.max(...row.map((b) => b.height(colW(row)))));
   const qc = qrCanvas(url);
   const QR = 120;
-  const H = 320 + (opts.measured ? 112 : 0) + 24 + rowH.reduce((a, h) => a + h + GAP_Y, 0) + QR + 56;
+  const H = 320 + (opts.showcase ? SHOWCASE_H : 0) + (opts.measured ? 112 : 0) + 24 + rowH.reduce((a, h) => a + h + GAP_Y, 0) + QR + 56;
 
   canvas.width = CARD_W * CARD_DPR; canvas.height = H * CARD_DPR;
   const g = canvas.getContext("2d");
@@ -439,6 +480,7 @@ async function drawShareCard(canvas, url, opts = {}) {
   g.textBaseline = "alphabetic";
   g.fillStyle = t.bg; g.fillRect(0, 0, CARD_W, H);
   let y = cardHead(c, t, w);
+  if (opts.showcase) y += cardShowcase(c, t, opts.showcase, y);
   if (opts.measured) y += cardResult(c, t, opts.measured, y);
   y += 24;
   rows.forEach((row, k) => {
@@ -457,7 +499,7 @@ async function drawShareCard(canvas, url, opts = {}) {
   g.fillStyle = t.gold; g.fillText("Sim", CARD_PAD + g.measureText("WF").width, fy + 40);
   g.font = `14px ${t.body}`; g.fillStyle = t.muted;
   g.fillText(tr("Every number here is the WFSim engine's — open the link to run it yourself."), CARD_PAD, fy + 70);
-  if (opts.by) {
+  if (opts.by && !opts.showcase) {
     g.font = `14px ${t.body}`; g.fillStyle = t.muted;
     const lead = tr("Shared by") + " ";
     g.fillText(lead, CARD_PAD, fy + 98);

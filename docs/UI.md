@@ -551,6 +551,15 @@ Forma head the block, and a riven's own rolls stand beside the grid.
 `/api/cloud/share/<sig>` answers for that link. The foot carries the QR,
 because a phone cannot click a picture.
 
+**THE SHOWCASE IS THE SHARER'S, UNDER THE HEAD** (`cardShowcase`): their name,
+the WFSim Volunteer honour, a signed link's mark, and the figures they tick —
+points and their place on the weekly, monthly and all-time rankings — read from
+`/api/account/devices` for the account signed in. It is offered only to an
+account named on the ranking with points, the consent the ranking already
+asks; before the sharer picks, it shows points and the best place, a tie going to
+the longer ranking. With it on, the foot does not name the sharer again. The
+honour is filled and a paid mark only outlined: what was computed reads first.
+
 **A THEME IS TOKENS, NEVER LAYOUT** (`CARD_THEMES`): colours and fonts. The
 blocks and their order are the build's.
 

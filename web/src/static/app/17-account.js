@@ -495,22 +495,23 @@ let contributorsPeriod = "all";
 let devicesAskedFor = null;
 function contributorsPage() {
   const list = contributorsState;
-  const recent = contributorsPeriod === "recent";
+  // THE COLUMN EACH RANKING ORDERS ON, and its heading (worker/contribution.js `PERIODS`).
+  const col = { all: ["points", "Points"], recent: ["recent", "Last 30 days"], week: ["week", "Last 7 days"] }[contributorsPeriod];
   const n = (x) => escHtml(x.toLocaleString(accountLocale()));
   const who = (c) => (c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
     : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`);
   const honour = (c) => (c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "");
   const rows = (list || []).map((c, i) => `<li class="rank-row${i < 3 ? " top" : ""}${c.you ? " you" : ""}">
       <span class="rank-n">${i + 1}</span><span class="rank-who">${who(c)}${honour(c)}${
-      c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${n(recent ? c.recent : c.points)}</span></li>`).join("");
+      c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${n(c[col[0]] || 0)}</span></li>`).join("");
   const head = `<li class="rank-row rank-head" aria-hidden="true"><span class="rank-n">#</span><span class="rank-who">${
-    aT("Contributor")}</span><span class="rank-pts">${aT(recent ? "Last 30 days" : "Points")}</span></li>`;
+    aT("Contributor")}</span><span class="rank-pts">${aT(col[1])}</span></li>`;
   const tab = (id, label) => `<button class="seg${contributorsPeriod === id ? " on" : ""}" data-auth="contributors-period"
       data-period="${id}" aria-pressed="${contributorsPeriod === id}">${aT(label)}</button>`;
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Contributors")}</h1>
     <p class="set-note">${aT("The people whose computers help run what WFSim gives everyone for free — the leaderboard first among them. What they compute is free for everyone, never sold, and never runs a paid feature. It runs only while a WFSim page is open on a computer, steps aside the moment you run something yourself, never runs on a phone, and one click turns it off.")}</p>
     ${contributorsYouHtml()}
-    <div class="block"><div class="bh"><span class="oseg">${tab("all", "All time")} ${tab("recent", "Last 30 days")}</span></div><div class="bb">${list == null ? ""
+    <div class="block"><div class="bh"><span class="oseg">${tab("all", "All-time ranking")} ${tab("recent", "Monthly ranking")} ${tab("week", "Weekly ranking")}</span></div><div class="bb">${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
     <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}</p></div></div>`;
 }
@@ -596,7 +597,7 @@ function renderAuthPage(kind) {
     if (contributorsState === null) {
       contributorsState = undefined;
       const period = contributorsPeriod;
-      accountCall("GET", period === "recent" ? "/api/contributors?period=recent" : "/api/contributors").then((r) => {
+      accountCall("GET", period === "all" ? "/api/contributors" : `/api/contributors?period=${period}`).then((r) => {
         if (period !== contributorsPeriod) return;
         contributorsState = (r && r.ok && r.contributors) || [];
         if (authKindOf(location.pathname) === "contributors") renderAuthPage(kind);
@@ -758,7 +759,7 @@ async function authAct(el) {
       return renderAuthPage(kind);
     }
     if (what === "contributors-period") {
-      contributorsPeriod = el.dataset.period === "recent" ? "recent" : "all";
+      contributorsPeriod = ["recent", "week"].includes(el.dataset.period) ? el.dataset.period : "all";
       contributorsState = null;
       return renderAuthPage(kind);
     }

@@ -2,7 +2,8 @@
 // §"Contribution". A signed-in browser claims its device and the last claim owns
 // it; an account's points are its devices' credited work, a refused device's
 // counting for nothing; the ranking lists every account with a claimed device,
-// most first, by all their points or the last thirty days', ANONYMOUS until
+// most first, by all their points, the last thirty days' or the last seven,
+// and each account learns its place on all three; ANONYMOUS until
 // the account agrees to show its name; a browser can
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
@@ -88,7 +89,7 @@ check("an account's points are its devices' credited work", a.points === 8 && a.
 check("...and its last thirty days, the days before them left out", a.recent === 5, JSON.stringify(a));
 check("...and its page never sees a device's whole id", a.devices.every((d) => d.id.length === 6));
 check("an account is on the ranking once it claims a device, ANONYMOUS and not yet asked",
-  a.named === false && a.decided === false && JSON.stringify(await ranking()) === JSON.stringify([{ name: null, points: 8, recent: 5 }]),
+  a.named === false && a.decided === false && JSON.stringify(await ranking()) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2 }]),
   JSON.stringify(await ranking()));
 
 await claim(bob, Y);
@@ -120,9 +121,16 @@ check("an answer that is not one is refused", (await call("/api/account/contribu
 const recent = await ranking("", "?period=recent");
 check("the last thirty days rank by those days, and an account with none there is not on it",
   recent.map((e) => `${e.name}:${e.recent}`).join(" ") === "bob:3 null:2", JSON.stringify(recent));
+const week = await call("/api/contributors?period=week");
+check("the last seven days rank by those days, a week ago already outside them",
+  week.period === "week" && week.contributors.map((e) => `${e.name}:${e.week}`).join(" ") === "null:2", JSON.stringify(week));
+check("an account learns its place on each ranking, and none where it has nothing",
+  JSON.stringify((await mine(ann)).ranks) === JSON.stringify({ all: 2, recent: 2, week: 1 })
+  && JSON.stringify((await mine(bob)).ranks) === JSON.stringify({ all: 3, recent: 1, week: null }),
+  `${JSON.stringify((await mine(ann)).ranks)} ${JSON.stringify((await mine(bob)).ranks)}`);
 
 check("a browser asks what it earned by its own id, and is told whether it is claimed",
-  JSON.stringify(await points(X)) === JSON.stringify({ status: 200, ok: true, points: 5, recent: 2, claimed: true }),
+  JSON.stringify(await points(X)) === JSON.stringify({ status: 200, ok: true, points: 5, recent: 2, week: 2, claimed: true }),
   JSON.stringify(await points(X)));
 check("...an id nobody claimed or credited earns nothing", (await points("q".repeat(24))).points === 0
   && (await points("q".repeat(24))).claimed === false);

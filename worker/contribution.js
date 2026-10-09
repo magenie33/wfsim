@@ -7,17 +7,19 @@
 // device is on the public ranking, ANONYMOUS until it agrees to show its name
 // (`contribution_choice`): publishing a name is the person's choice, asked once.
 //
-//   GET  /api/account/devices        → { devices: [{ id, label, claimed_at, points, recent, last_at, now }], points, recent, named, decided, volunteer }
+//   GET  /api/account/devices        → { devices: [{ id, label, claimed_at, points, recent, week, last_at, now }], points, recent, week, ranks, named, decided, volunteer }
 //   POST /api/account/devices/claim  { verifier, label? } → { ok }
 //   POST /api/account/devices/label  { id, label }        → { ok }
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
 //   POST /api/board/points           { verifier } → { points, recent, claimed }
-//   GET  /api/contributors[?period=recent] → { contributors: [{ name, points, recent, mark?, volunteer?, you? }] }
+//   GET  /api/contributors[?period=recent|week] → { period, contributors: [{ name, points, recent, week, mark?, volunteer?, you? }] }
 //        — `name` (the display name, else the username) is null for an account
 //        that did not agree, and `mark` is the paid half's, for a named one only.
 //
-// `recent` is the last `RECENT_DAYS` days, so a newcomer can lead somewhere.
+// `recent` is the last `RECENT_DAYS` days and `week` the last `WEEK_DAYS`, so a
+// newcomer can lead somewhere; `ranks` is the account's place on each of the
+// three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 
@@ -25,6 +27,7 @@ import { cloudMarks } from "./cloud.js";
 const WORK_PER_POINT = 1e9;
 /// The ranking's other column: the days counted back from today, today included.
 export const RECENT_DAYS = 30;
+export const WEEK_DAYS = 7;
 /// How many names the ranking shows.
 export const RANKED = 100;
 const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
@@ -48,29 +51,31 @@ export async function ownersOf(env, ids) {
 }
 
 
-const since = () => new Date(Date.now() - (RECENT_DAYS - 1) * 86_400_000).toISOString().slice(0, 10);
+const since = (days) => new Date(Date.now() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
 
-/// THE WORK EACH OF `ids` IS CREDITED — `{ work, recent }`, all of it and the
-/// last `RECENT_DAYS` days — a refused client's counting for nothing.
+/// THE WORK EACH OF `ids` IS CREDITED — `{ work, recent, week }`, all of it,
+/// the last `RECENT_DAYS` days and the last `WEEK_DAYS` — a refused client's
+/// counting for nothing.
 async function workOf(env, ids) {
   const out = new Map();
   if (!env.LIBRARY) return out;
-  const from = since();
+  const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
     const marks = part.map(() => "?").join(", ");
     const [all, recent] = await env.LIBRARY.batch([
       env.LIBRARY.prepare(`SELECT id, work, consent_at FROM verifiers WHERE banned = 0 AND id IN (${marks})`).bind(...part),
       env.LIBRARY.prepare(
-        `SELECT d.verifier AS id, SUM(d.work) AS work FROM verifier_days d JOIN verifiers v ON v.id = d.verifier
-          WHERE v.banned = 0 AND d.day >= ? AND d.verifier IN (${marks}) GROUP BY d.verifier`).bind(from, ...part),
+        `SELECT d.verifier AS id, SUM(d.work) AS work, SUM(CASE WHEN d.day >= ? THEN d.work ELSE 0 END) AS week
+          FROM verifier_days d JOIN verifiers v ON v.id = d.verifier
+          WHERE v.banned = 0 AND d.day >= ? AND d.verifier IN (${marks}) GROUP BY d.verifier`).bind(week, from, ...part),
     ]);
-    for (const r of all.results) out.set(r.id, { work: r.work || 0, recent: 0, consent_at: r.consent_at || null });
-    for (const r of recent.results) if (out.has(r.id)) out.get(r.id).recent = r.work || 0;
+    for (const r of all.results) out.set(r.id, { work: r.work || 0, recent: 0, week: 0, consent_at: r.consent_at || null });
+    for (const r of recent.results) if (out.has(r.id)) Object.assign(out.get(r.id), { recent: r.work || 0, week: r.week || 0 });
   }
   return out;
 }
-const NONE = { work: 0, recent: 0, consent_at: null };
+const NONE = { work: 0, recent: 0, week: 0, consent_at: null };
 
 /// A VOLUNTEER: a device that said yes to computing and has had work credited
 /// for it — an honour earned by computing, not by a click, and never sold.
@@ -127,12 +132,18 @@ async function devices(env, account) {
   const [work, doing] = await Promise.all([workOf(env, ids), activityOf(env, ids)]);
   const choice = await env.ACCOUNTS.prepare("SELECT named FROM contribution_choice WHERE account = ?1").bind(account).first();
   const named = !!(choice && choice.named);
+  const everyone = await standings(env);
+  const ranks = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => {
+    const at = ordered(everyone, key).findIndex((e) => e.id === account);
+    return [period, at < 0 ? null : at + 1];
+  }));
   const list = results.map((d) => ({ id: d.verifier.slice(0, 6), label: d.label || null, claimed_at: d.claimed_at,
     ...(doing.get(d.verifier) || { last_at: null, now: null }), ...(work.get(d.verifier) || NONE) }));
   // `shown` is `named` for a page from before the ranking was anonymous.
   return json({ ok: true, named, decided: !!choice, shown: named, volunteer: volunteerSince(list),
     points: points(list.reduce((s, d) => s + d.work, 0)), recent: points(list.reduce((s, d) => s + d.recent, 0)),
-    devices: list.map(({ work: w, recent: r, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r) })) });
+    week: points(list.reduce((s, d) => s + d.week, 0)), ranks,
+    devices: list.map(({ work: w, recent: r, week: k, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r), week: points(k) })) });
 }
 
 /// WHAT ONE BROWSER HAS EARNED, asked by the browser itself: its id is a secret
@@ -142,7 +153,7 @@ async function devicePoints(env, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
   const w = (await workOf(env, [b.verifier])).get(b.verifier) || NONE;
   const claimed = !!(env.ACCOUNTS && await env.ACCOUNTS.prepare("SELECT 1 FROM devices WHERE verifier = ?1").bind(b.verifier).first());
-  return json({ ok: true, points: points(w.work), recent: points(w.recent), claimed });
+  return json({ ok: true, points: points(w.work), recent: points(w.recent), week: points(w.week), claimed });
 }
 
 /// A DEVICE BELONGS TO THE LAST ACCOUNT TO CLAIM IT, and its work goes with it:
@@ -184,39 +195,50 @@ async function choose(env, account, b) {
   return json({ ok: true });
 }
 
-/// THE RANKING: every account with a claimed device, by the work its devices
-/// were credited — all of it, or the last `RECENT_DAYS` days — most first. A
-/// name and a handle leave here only for an account that agreed; the reader's
-/// own row is marked `you`, to them alone.
-async function ranking(env, period, me) {
+/// THE THREE RANKINGS, by the column each orders on: all of it, the last
+/// `RECENT_DAYS` days, the last `WEEK_DAYS`.
+const PERIODS = { all: "points", recent: "recent", week: "week" };
+
+/// EVERY ACCOUNT WITH A CLAIMED DEVICE and what its devices were credited, in
+/// points — the one list every ranking and every account's place is cut from.
+async function standings(env) {
   const { results } = await env.ACCOUNTS.prepare(
     `SELECT a.id, a.username, a.display_name, c.named, d.verifier FROM devices d JOIN accounts a ON a.id = d.account
        LEFT JOIN contribution_choice c ON c.account = d.account`).all();
   const work = await workOf(env, results.map((r) => r.verifier));
   const by = new Map();
   for (const r of results) {
-    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: r.display_name || r.username, username: r.username, work: 0, recent: 0, ws: [] };
+    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: r.display_name || r.username, work: 0, recent: 0, week: 0, ws: [] };
     const w = work.get(r.verifier) || NONE;
     e.work += w.work;
     e.recent += w.recent;
+    e.week += w.week;
     e.ws.push(w);
     by.set(r.id, e);
   }
-  const key = period === "recent" ? "recent" : "points";
-  const contributors = [...by.values()]
-    .map((e) => ({ id: e.id, name: e.named ? e.name : null, points: points(e.work), recent: points(e.recent),
+  return [...by.values()].map((e) => ({ id: e.id, named: e.named, name: e.name, points: points(e.work),
+    recent: points(e.recent), week: points(e.week), volunteer: !!volunteerSince(e.ws) }));
+}
+/// ONE RANKING: everyone with any of `key`, most first.
+const ordered = (list, key) => list.filter((e) => e[key] > 0)
+  .sort((x, y) => y[key] - x[key] || y.points - x.points || (x.id < y.id ? -1 : 1));
+
+/// THE RANKING the page shows, its first `RANKED`. A name and a handle leave
+/// here only for an account that agreed; the reader's own row is marked `you`,
+/// to them alone.
+async function ranking(env, period, me) {
+  const key = PERIODS[period] || "points";
+  const contributors = ordered(await standings(env), key).slice(0, RANKED)
+    .map((e) => ({ id: e.id, name: e.named ? e.name : null, points: e.points, recent: e.recent, week: e.week,
       // THE HONOUR travels with a name only: an anonymous row says nothing more.
-      ...(e.named && volunteerSince(e.ws) ? { volunteer: true } : {}) }))
-    .filter((e) => e[key] > 0)
-    .sort((x, y) => y[key] - x[key] || y.points - x.points || (x.id < y.id ? -1 : 1))
-    .slice(0, RANKED);
+      ...(e.named && e.volunteer ? { volunteer: true } : {}) }));
   const marks = await cloudMarks(env, contributors.filter((e) => e.name !== null).map((e) => e.id));
   for (const e of contributors) if (marks[e.id]) e.mark = marks[e.id];
   for (const e of contributors) {
     if (e.id === me) e.you = true;
     delete e.id;
   }
-  return json({ ok: true, period: key === "recent" ? "recent" : "all", contributors });
+  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), contributors });
 }
 
 /// The response for a contribution path, or null for a path that is not one.

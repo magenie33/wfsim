@@ -753,9 +753,9 @@ each machine's share is counted under its owner's name. Eight rules:
    and public facts alone; a device is renamed or removed there. This
    browser's own task list stays in this browser.
 6. **EVERYONE IS RANKED; A NAME IS SHOWN ONLY BY CONSENT.** `/contributors`
-   lists every account with a claimed device, by all their points or the last
-   thirty days' (`verifier_days`, credited with the total and read through the
-   same ban). A row is anonymous until its account agrees to show its name
+   lists every account with a claimed device, by all their points, the last
+   thirty days' or the last seven (`verifier_days`, credited with the total and
+   read through the same ban), and tells each account its place on all three. A row is anonymous until its account agrees to show its name
    (`contribution_choice`, asked once, inline, where the reader sees their
    points); then it is the display name, else the username, and nothing else.
    An anonymous row's name and tier never leave the server; the reader's own

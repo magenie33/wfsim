@@ -613,9 +613,42 @@ async function openSharePanel(bar, from = "bar", build = null) {
   await draw();
 }
 
+/// WHAT A SHARER MAY SHOW OF THEMSELVES on the card (`cardShowcase`): name,
+/// honour and the figures they pick, read from the server for the account
+/// signed in, and offered only to one named on the ranking with points — the
+/// same consent the ranking asks. Which figures is remembered in this browser.
+const SHOWCASE_PICK = "wfsim-card-showcase";
+const SHOWCASE_ITEMS = [["points", "Points"], ["week", "Weekly ranking"], ["recent", "Monthly ranking"], ["all", "All-time ranking"]];
+async function showcaseStanding() {
+  if (!accountState.account) return null;
+  await loadDevices();
+  const d = devicesState;
+  return d && d.named && d.points > 0
+    ? { name: accountName(accountState.account), volunteer: !!d.volunteer, points: d.points, ranks: d.ranks || {} } : null;
+}
+/// THE SHARER'S PICK, or the default: their points and their best place.
+function showcasePick(st) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SHOWCASE_PICK) || "null");
+    if (saved && Array.isArray(saved.items)) return { on: saved.on !== false, items: saved.items };
+  } catch (_) { /* no pick kept */ }
+  // A TIE GOES TO THE LONGER RANKING: all time outweighs a month, a month a week.
+  const best = ["all", "recent", "week"].filter((k) => st.ranks[k]).sort((a, b) => st.ranks[a] - st.ranks[b])[0];
+  return { on: true, items: ["points", ...(best ? [best] : [])] };
+}
+function showcaseOf(st, pick, mark) {
+  if (!pick.on) return null;
+  const stats = SHOWCASE_ITEMS.filter(([k]) => pick.items.includes(k))
+    .map(([k, label]) => (k === "points" ? [st.points.toLocaleString(accountLocale()), tr(label)]
+      : st.ranks[k] ? [`#${st.ranks[k]}`, tr(label)] : null))
+    .filter(Boolean);
+  return { name: st.name, volunteer: st.volunteer, mark: mark || "", stats };
+}
+
 /// THE CARD: a picture of this build, to paste into a chat window — with the
-/// sharer's result when the panel is sending one, and their name when the link
-/// is signed, drawn from the paid half's answer for that link and nothing else.
+/// sharer's result when the panel is sending one, their name when the link is
+/// signed, drawn from the paid half's answer for that link and nothing else,
+/// and the showcase the sharer chose.
 async function openShareClaim(panel, url, measured) {
   const more = panel.querySelector(".sh-more");
   if (!more) return;
@@ -632,11 +665,36 @@ async function openShareClaim(panel, url, measured) {
   const urlBox = more.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
   const canvas = more.querySelector(".sh-canvas");
-  await drawShareCard(canvas, url, {
+  const standing = await showcaseStanding();
+  let pick = standing && showcasePick(standing);
+  const draw = () => drawShareCard(canvas, url, {
     measured: measured && measured.card,
     by: by && { name: by.name, mark: by.mark || "" },
     theme: (by && by.theme) || "",
+    showcase: standing && showcaseOf(standing, pick, by && by.mark),
   });
+  if (standing) {
+    const box = (id, label, on, off) => `<label class="sh-opt"><input type="checkbox" data-showcase="${id}"${
+      on ? " checked" : ""}${off ? " disabled" : ""}> ${escHtml(tr(label))}</label>`;
+    const row = document.createElement("div");
+    row.className = "sh-row sh-showcase";
+    const paint = () => {
+      row.innerHTML = box("on", "Show me on the card", pick.on, false) + SHOWCASE_ITEMS
+        .filter(([k]) => k === "points" || standing.ranks[k])
+        .map(([k, label]) => box(k, label, pick.items.includes(k), !pick.on)).join("");
+    };
+    paint();
+    row.onchange = async (e) => {
+      const k = e.target.dataset.showcase;
+      if (k === "on") pick = { ...pick, on: e.target.checked };
+      else pick = { ...pick, items: e.target.checked ? [...pick.items, k] : pick.items.filter((x) => x !== k) };
+      try { localStorage.setItem(SHOWCASE_PICK, JSON.stringify(pick)); } catch (_) { /* this page only */ }
+      paint();
+      await draw();
+    };
+    canvas.before(row);
+  }
+  await draw();
 
   // SCOPED TO `more`, NOT TO THE PANEL: the build link above has a `.sh-copy`
   // of its own, and a panel-wide lookup finds THAT one — which would leave the
