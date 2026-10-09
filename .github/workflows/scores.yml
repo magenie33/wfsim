@@ -116,10 +116,12 @@ env:
   # the clients and this run reaches it first, never to both (`fetch_queue.sh`
   # claims what this run reads, and the last job releases what it left).
   HOLD_SECONDS: 14400
-  # …AND HOW MANY OF THE OLD ONES ONE RUN MAY TAKE, first in the queue's order.
-  # The rest stay the clients': a run that claimed every old row left them only
-  # the young ones, and a backlog meant computers online with nothing to do.
-  CLAIM_ROWS: 3000
+  # …AND WHAT THE CLIENTS KEEP OF THE OLD ONES: this many hours of what they
+  # made in the last hour, never fewer than this many orders. The run claims
+  # only beyond it (`fetch_queue.sh` `claim_rows`), so the computers online are
+  # never left with nothing while a backlog sits claimed.
+  RESERVE_FACTOR: 2
+  RESERVE_MIN: 500
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------

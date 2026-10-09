@@ -84,13 +84,43 @@ page_body() {
     }'
 }
 
-# THE CLAIM: up to `CLAIM_ROWS` old `todo` or `open` orders no client holds a
-# live lease on, first in the queue's own order, become `scoring:<state>`,
-# which no lease seeks (worker/verify.js reads those two states only), so a
-# client is never handed a row this run is fighting. The rest stay the
-# clients': a claim of every old row left them nothing but the young ones.
+# THE CLIENTS' RESERVE, asked before the claim: how many orders a client could
+# take now (`todo` or `open`, young or old, no live lease), how many of those
+# are old enough for this run, and how many facts the clients made in the last
+# hour. The run leaves them `RESERVE_FACTOR` hours of that, never fewer than
+# `RESERVE_MIN` orders, and claims only the old orders beyond it — so when many
+# computers are on, they keep most of the work, and at night the run takes it.
+reserve_body() {
+  jq -n -c --argjson hold "$HOLD_SECONDS" '
+    {
+      sql: ("SELECT"
+            + " (SELECT COUNT(*) FROM orders WHERE state IN (?, ?) AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS open_to_clients,"
+            + " (SELECT COUNT(*) FROM orders WHERE state IN (?, ?) AND at <= (unixepoch() - ?) * 1000"
+            + "   AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS old,"
+            + " (SELECT COUNT(*) FROM scores WHERE measured_by LIKE ?"
+            + "   AND finished_at >= strftime(?, unixepoch() - 3600, ?)) AS facts_last_hour"),
+      params: ["todo", "open", "todo", "open", $hold, "verified:%", "%Y-%m-%dT%H:%M:%SZ", "unixepoch"]
+    }'
+}
+
+# HOW MANY TO CLAIM, from the reserve's three numbers (`old open facts`).
+claim_rows() {
+  local old="$1" open="$2" facts="$3"
+  local reserve; reserve=$(awk -v f="$facts" -v k="${RESERVE_FACTOR:-2}" -v m="${RESERVE_MIN:-500}" \
+    'BEGIN { r = int(f * k + 0.5); print (r < m ? m : r) }')
+  local take=$(( open - reserve ))
+  [ "$take" -gt "$old" ] && take=$old
+  [ "$take" -lt 0 ] && take=0
+  echo "$take"
+}
+
+# THE CLAIM: the first `rows` old `todo` or `open` orders no client holds a live
+# lease on, in the queue's own order, become `scoring:<state>`, which no lease
+# seeks (worker/verify.js reads those two states only), so a client is never
+# handed a row this run is fighting. What the queue asks for last is what the
+# clients keep.
 claim_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" --argjson rows "${CLAIM_ROWS:-3000}" '
+  jq -n -c --argjson hold "$HOLD_SECONDS" --argjson rows "${1:?rows}" '
     {
       sql: ("UPDATE orders SET state = ? || state WHERE rowid IN ("
             + "SELECT o.rowid FROM orders o JOIN queue q ON q.build_id = o.identity"
@@ -229,6 +259,13 @@ if ! configured; then
 fi
 if [ -n "${HOLD_SECONDS:-}" ]; then
   send_one "$(release_body)" "release of a claim left over"
-  send_one "$(claim_body)" "claim"
+  if ! d1 "$(reserve_body)"; then
+    echo "::error::queue: the database refused the reserve [HTTP $D1_CODE]"
+    exit 1
+  fi
+  read -r open old facts < <(jq -r '.result[0].results[0] | "\(.open_to_clients) \(.old) \(.facts_last_hour)"' < "$D1_OUT")
+  rows=$(claim_rows "$old" "$open" "$facts")
+  echo "queue: the clients made $facts fact(s) in the last hour; $open order(s) open to them, $old old — this run claims $rows"
+  send_one "$(claim_body "$rows")" "claim"
 fi
 fetch "${1:?usage: fetch_queue.sh <out.ndjson>}"
