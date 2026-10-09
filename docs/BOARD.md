@@ -762,7 +762,10 @@ each machine's share is counted under its owner's name. Eight rules:
    (the browser's coarse guess until renamed), when it last answered
    (`verifiers.last_at`) and the task it holds a lease on, named by its KIND
    and public facts alone; a device is renamed or removed there. This
-   browser's own task list stays in this browser.
+   browser's own task list stays in this browser. Above it, for anyone, the
+   whole picture (`/api/board/demand`): browsers computing now, owed rows by
+   why, riven gains waiting, and the last hour's scores by the volunteers and
+   by the official machines — totals, never a device or a person.
 6. **EVERYONE IS RANKED; A NAME IS SHOWN ONLY BY CONSENT.** `/contributors`
    lists every account with a claimed device, by all their points, the last
    thirty days' or the last seven (`verifier_days`, credited with the total and
