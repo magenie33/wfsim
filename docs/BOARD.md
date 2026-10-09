@@ -683,8 +683,9 @@ row at a time, so the board's growth is more orders, never a heavier client.
   handed it. `TOP` there is 0 — THE SERVER ONLY BACKS THE CLIENTS UP; raised, an
   order in its group's top `TOP` becomes `arbiter`, the server's alone. When
   `CLIENTS_PER_FACT` clients sent equal bits — score and metric — it goes into
-  `scores` as `verified:<engine>` unless a fact is there, stamped when the last
-  of them answered, and its queue row is deleted; at 1 the first result is the
+  `scores` as `verified:<engine>` — replacing the old number of a row a rescore
+  asked for again, as the scorer's fact would — stamped when the last of them
+  answered, and its queue row is deleted; at 1 the first result is the
   fact. `clients` names every one of them, in order. One fact in twenty is a
   `spot` the server recomputes. A difference is a `dispute`. The answer never
   says which.

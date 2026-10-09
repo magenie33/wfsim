@@ -492,5 +492,31 @@ check("...and asking again opens nothing", backfill() === 0);
     (theirs.orders || []).every((o) => o.state === "gone" && !o.at), JSON.stringify(theirs));
 }
 
+// A RESCORE THE VOLUNTEERS COMPUTE REPLACES THE OLD NUMBER: the clients' fact is
+// the board's, for a row still owed; one no longer owed keeps the fact it has.
+{
+  const P1 = "c1".repeat(12), P2 = "c2".repeat(12), P3 = "c3".repeat(12);
+  const NEW = SCORE * 2, OLD = SCORE;
+  const scoreRow = (id) => db.prepare("SELECT score, measured_by FROM scores WHERE identity = ?").get(id);
+  const oldFact = (id) => db.prepare(`INSERT OR REPLACE INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+    VALUES (?, 'standard_single_target', 'base', 'abc1234', ?, 'kpm', 1, 'T0', 'T1')`).run(id, OLD);
+  db.prepare("UPDATE orders SET state = 'settled'").run();
+  order("again", "open", { score: NEW, metric: "kpm", engine: "e1", produced_by: P1, clients: P1 });
+  oldFact("again");
+  only("again");
+  await answer((await work(P2)).work, P2, NEW);
+  check("a rescore the volunteers agree on replaces the old score on the board",
+    scoreRow("again").score === NEW && scoreRow("again").measured_by === "verified:e1", JSON.stringify(scoreRow("again")));
+  db.prepare("UPDATE orders SET state = 'settled'").run();
+  order("kept", "open", { score: NEW, metric: "kpm", engine: "e1", produced_by: P1, clients: P1 });
+  oldFact("kept");
+  only("kept");
+  const w = (await work(P3)).work;
+  db.prepare("DELETE FROM queue WHERE build_id = 'kept'").run();
+  await answer(w, P3, NEW);
+  check("...while a row no longer owed keeps the fact it has", scoreRow("kept").score === OLD && scoreRow("kept").measured_by === "abc1234",
+    JSON.stringify(scoreRow("kept")));
+}
+
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;

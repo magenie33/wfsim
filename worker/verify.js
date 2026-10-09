@@ -350,11 +350,17 @@ async function fact(db, key, o, clients, compute, last, spent) {
     db.prepare(`UPDATE orders SET state = ?, score = ?, metric = ?, engine = ?, produced_by = ?, verifier = ?, clients = ?,
                 clients_compute_ms = ?, clients_nets = '', ${done} WHERE identity = ? AND ruler = ? AND mode = ?`)
       .bind(state, o.score, o.metric, o.engine, o.produced_by, last, clients.join(","), compute.join(","), ...key),
-    // A FACT THE SCORER ALREADY HOLDS STANDS: the clients fill a row nobody
-    // measured, and never replace one somebody did.
+    // THE CLIENTS' FACT IS THE BOARD'S, as the scorer's is: a row still owed —
+    // a rescore asked for it again — takes the new number over the old, and one
+    // no longer owed keeps the fact it has. Left alone, a rescore the volunteers
+    // computed deleted its queue row and kept the old score.
     db.prepare(
-      `INSERT OR IGNORE INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`).bind(...key, `verified:${o.engine}`, o.score, o.metric, at, at),
+      `INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+       ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by, score = excluded.score,
+         metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at
+       WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
+      .bind(...key, `verified:${o.engine}`, o.score, o.metric, at, at),
     // …AND THE ROW IS NO LONGER OWED, the same delete `ship_facts.sh` makes.
     db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(...key),
     db.prepare("UPDATE verifiers SET agreed = agreed + 1 WHERE id = ?").bind(last),
