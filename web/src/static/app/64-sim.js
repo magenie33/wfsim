@@ -108,8 +108,8 @@ function partChipsOf(weaponId, grip, loader) {
 
 /// THE CURRENT WEAPON'S EVOLUTIONS AS CHIPS, tier first — by id, so a board
 /// row's list and the live selection read the same way.
-function evoChipsOf(ids) {
-  return weaponEvos().map((t) => {
+function evoChipsOf(ids, weaponId) {
+  return weaponEvos(weaponId).map((t) => {
     const o = t.options.find((x) => ids.includes(x.id));
     return o ? { img: o.icon ? IMG(o.icon) : null, label: `${t.tier} · ${o.name}`, key: "evo:" + o.id } : null;
   }).filter(Boolean);
@@ -128,7 +128,13 @@ function evoChipsOf(ids) {
 /// A BUILD STATE AS THE SIMULATOR'S CARD — the one brief every surface that
 /// shows a build draws: the simulator's own, and the optimizer's starts. `fixed`
 /// (a set of `mods:i` / `arcane:i` keys) marks the positions a start pins.
+/// A BUILD OF ANY WEAPON, drawn with THAT weapon's mods: `modById` reads the open
+/// weapon's pool, and a card of another — a computed task on /compute — showed
+/// only the cards the two pools share.
 function cardOfState(st, w, fixed) {
+  return withPoolOf(w, () => cardOfStateHere(st, w, fixed));
+}
+function cardOfStateHere(st, w, fixed) {
   const pinned = (k) => (fixed && fixed.has(k) ? "fixed" : "");
   const arcs = st.arcane || [];
   const ranks = st.arcaneRank || [];
@@ -151,7 +157,7 @@ function cardOfState(st, w, fixed) {
       }).filter(Boolean)
       : null,
     parts: st.assembly ? partChipsOf(w.id, st.assembly.grip, st.assembly.loader) : null,
-    evolutions: w.uses_evo2 ? evoChipsOf(Object.values(st.evoSel || {}).filter(Boolean)) : null,
+    evolutions: w.uses_evo2 ? evoChipsOf(Object.values(st.evoSel || {}).filter(Boolean), w.id) : null,
     valence: valenceSpec(w.id) && st.valence
       ? `${DT(st.valence.element)} +${Math.round(st.valence.bonus * 1000) / 10}%` : null,
   });

@@ -122,6 +122,14 @@ const defaultEvolutions = (weaponId, sel) => Object.fromEntries(weaponEvos(weapo
 /// AN INDEX OVER `poolWithRivens()`: a board's rows look up every mod they name,
 /// thousands on one card. Only a riven id (`isRivenId`) reads the saved rivens.
 let modIndex = { pool: null, map: null };
+/// `fn` run with `w`'s mod pool in place of the open weapon's, and that one back after.
+function withPoolOf(w, fn) {
+  if (!w || !META || w.id === ($("weapon") || {}).value) return fn();
+  const byId = new Map(Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]));
+  const saved = currentPool;
+  currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
+  try { return fn(); } finally { currentPool = saved; }
+}
 const modById = (id) => {
   if (isRivenId(id)) return rivenMods().find((m) => m.id === id);
   if (modIndex.pool !== currentPool) {
