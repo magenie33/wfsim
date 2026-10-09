@@ -287,11 +287,12 @@ order("oldheld", "todo", { leased_to: X, lease: "b".repeat(32), lease_until: Dat
 order("young");
 db.prepare("UPDATE orders SET at = ? WHERE identity = 'young'").run(Date.now() - 60_000);
 const reserve = sql(body("reserve")).get(...body("reserve").params);
-check("the reserve counts what a client could take now, young or old, and what of it is old",
-  reserve.open_to_clients === 3 && reserve.old === 2
+check("the reserve counts the unmeasured orders a client could take now, young or old, and what of them is old",
+  reserve.open_to_clients === 2 && reserve.old === 1
   && reserve.facts_last_hour === db.prepare("SELECT COUNT(*) AS n FROM scores WHERE measured_by LIKE 'verified:%'").get().n
   && reserve.facts_last_hour > 0, JSON.stringify(reserve));
-sql(body("claim", "100")).run(...body("claim", "100").params);
+sql(body("claim", "open")).run(...body("claim", "open").params);
+sql(body("claim", "todo", "100")).run(...body("claim", "todo", "100").params);
 check("a run claims every old order no client holds, open or not",
   row("old").state === "scoring:todo" && row("oldopen").state === "scoring:open", `${row("old").state} ${row("oldopen").state}`);
 check("...and leaves a held one and a young one to the clients", row("oldheld").state === "todo" && row("young").state === "todo");
@@ -302,10 +303,10 @@ const wy = await work(W);
 check("no client is handed a claimed order", wy.work && row("young").leased_to === W && (await work(Y)).work === null);
 sql(body("release")).run(...body("release").params);
 check("the release hands what the run left back as it was", row("old").state === "todo" && row("oldopen").state === "open");
-const capped = body("claim", "1");
-sql(capped).run(...capped.params);
-const claimedNow = ["old", "oldopen"].filter((id) => row(id).state.startsWith("scoring:"));
-check("a run claims no more than its share, so old rows are left for the clients", claimedNow.length === 1, JSON.stringify(claimedNow));
+sql(body("claim", "open")).run(...body("claim", "open").params);
+sql(body("claim", "todo", "0")).run(...body("claim", "todo", "0").params);
+check("a run with no share of the unmeasured still takes every old open order, which no lone computer can settle",
+  row("old").state === "todo" && row("oldopen").state === "scoring:open", `${row("old").state} ${row("oldopen").state}`);
 const rowsFor = (old, open, facts) => Number(execFileSync("bash", ["-c", `source <(sed -n "/^claim_rows() {/,/^}/p" scripts/fetch_queue.sh); claim_rows ${old} ${open} ${facts}`],
   { encoding: "utf8" }).trim());
 check("...the clients keep two hours of what they made, never fewer than 500, and the run takes only the old beyond it",

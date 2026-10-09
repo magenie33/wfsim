@@ -84,22 +84,22 @@ page_body() {
     }'
 }
 
-# THE CLIENTS' RESERVE, asked before the claim: how many orders a client could
-# take now (`todo` or `open`, young or old, no live lease), how many of those
-# are old enough for this run, and how many facts the clients made in the last
-# hour. The run leaves them `RESERVE_FACTOR` hours of that, never fewer than
-# `RESERVE_MIN` orders, and claims only the old orders beyond it — so when many
-# computers are on, they keep most of the work, and at night the run takes it.
+# THE CLIENTS' RESERVE, asked before the claim: how many unmeasured orders a
+# client could take now (`todo`, young or old, no live lease), how many of
+# those are old enough for this run, and how many facts the clients made in the
+# last hour. The run leaves them `RESERVE_FACTOR` hours of that, never fewer
+# than `RESERVE_MIN` orders, and claims only the old `todo` beyond it — so when
+# many computers are on they keep most of the work, and at night the run takes it.
 reserve_body() {
   jq -n -c --argjson hold "$HOLD_SECONDS" '
     {
       sql: ("SELECT"
-            + " (SELECT COUNT(*) FROM orders WHERE state IN (?, ?) AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS open_to_clients,"
-            + " (SELECT COUNT(*) FROM orders WHERE state IN (?, ?) AND at <= (unixepoch() - ?) * 1000"
+            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS open_to_clients,"
+            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND at <= (unixepoch() - ?) * 1000"
             + "   AND (lease_until IS NULL OR lease_until < unixepoch() * 1000)) AS old,"
             + " (SELECT COUNT(*) FROM scores WHERE measured_by LIKE ?"
             + "   AND finished_at >= strftime(?, unixepoch() - 3600, ?)) AS facts_last_hour"),
-      params: ["todo", "open", "todo", "open", $hold, "verified:%", "%Y-%m-%dT%H:%M:%SZ", "unixepoch"]
+      params: ["todo", "todo", $hold, "verified:%", "%Y-%m-%dT%H:%M:%SZ", "unixepoch"]
     }'
 }
 
@@ -114,21 +114,25 @@ claim_rows() {
   echo "$take"
 }
 
-# THE CLAIM: the first `rows` old `todo` or `open` orders no client holds a live
-# lease on, in the queue's own order, become `scoring:<state>`, which no lease
-# seeks (worker/verify.js reads those two states only), so a client is never
-# handed a row this run is fighting. What the queue asks for last is what the
-# clients keep.
+# THE CLAIM makes an order `scoring:<state>`, which no lease seeks
+# (worker/verify.js reads `todo` and `open` only), so a client is never handed
+# a row this run is fighting. Two of them:
+# - EVERY old `open` order — one result in and no second client after the hold,
+#   which a lone computer can never give itself; one fight here settles it and
+#   pays that client (`order_credit.mjs`). Kept back, it would wait for ever.
+# - the first `rows` old `todo` orders in the queue's own order; what the queue
+#   asks for last is what the clients keep.
+# Neither takes an order a client holds a live lease on.
 claim_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" --argjson rows "${1:?rows}" '
+  jq -n -c --argjson hold "$HOLD_SECONDS" --arg state "${1:?state}" --argjson rows "${2:--1}" '
     {
       sql: ("UPDATE orders SET state = ? || state WHERE rowid IN ("
             + "SELECT o.rowid FROM orders o JOIN queue q ON q.build_id = o.identity"
             + " AND q.ruler = o.ruler AND q.mode = o.mode JOIN batches b ON b.id = q.batch"
-            + " WHERE o.state IN (?, ?) AND o.at <= (unixepoch() - ?) * 1000"
+            + " WHERE o.state = ? AND o.at <= (unixepoch() - ?) * 1000"
             + " AND (o.lease_until IS NULL OR o.lease_until < unixepoch() * 1000)"
             + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode LIMIT ?)"),
-      params: ["scoring:", "todo", "open", $hold, $rows]
+      params: ["scoring:", $state, $hold, $rows]
     }'
 }
 
@@ -265,7 +269,8 @@ if [ -n "${HOLD_SECONDS:-}" ]; then
   fi
   read -r open old facts < <(jq -r '.result[0].results[0] | "\(.open_to_clients) \(.old) \(.facts_last_hour)"' < "$D1_OUT")
   rows=$(claim_rows "$old" "$open" "$facts")
-  echo "queue: the clients made $facts fact(s) in the last hour; $open order(s) open to them, $old old — this run claims $rows"
-  send_one "$(claim_body "$rows")" "claim"
+  echo "queue: the clients made $facts fact(s) in the last hour; $open unmeasured order(s) open to them, $old old — this run claims $rows"
+  send_one "$(claim_body open)" "claim of every old open order"
+  send_one "$(claim_body todo "$rows")" "claim"
 fi
 fetch "${1:?usage: fetch_queue.sh <out.ndjson>}"
