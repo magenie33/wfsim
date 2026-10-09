@@ -618,31 +618,36 @@ async function openSharePanel(bar, from = "bar", build = null) {
 /// signed in, and offered only to one named on the ranking with points — the
 /// same consent the ranking asks. Which figures is remembered in this browser.
 const SHOWCASE_PICK = "wfsim-card-showcase";
-const SHOWCASE_ITEMS = [["points", "Points"], ["week", "Weekly ranking"], ["recent", "Monthly ranking"], ["all", "All-time ranking"]];
+const SHOWCASE_ITEMS = [["rank", "Contributor rank"], ["points", "Points"], ["week", "Weekly ranking"], ["recent", "Monthly ranking"], ["all", "All-time ranking"]];
 async function showcaseStanding() {
   if (!accountState.account) return null;
   await loadDevices();
   const d = devicesState;
   return d && d.named && d.points > 0
-    ? { name: accountName(accountState.account), volunteer: !!d.volunteer, points: d.points, ranks: d.ranks || {} } : null;
+    ? { name: accountName(accountState.account), volunteer: !!d.volunteer, points: d.points, ranks: d.ranks || {},
+      contributor_rank: d.contributor_rank || null } : null;
 }
-/// THE SHARER'S PICK, or the default: their points and their best place.
+/// THE SHARER'S PICK, or the default: their rank, their points and their best
+/// place. A pick kept from before the rank was offered gains it once (`ranked`).
 function showcasePick(st) {
   try {
     const saved = JSON.parse(localStorage.getItem(SHOWCASE_PICK) || "null");
-    if (saved && Array.isArray(saved.items)) return { on: saved.on !== false, items: saved.items };
+    if (saved && Array.isArray(saved.items)) {
+      return { on: saved.on !== false, ranked: true, items: saved.ranked ? saved.items : ["rank", ...saved.items.filter((k) => k !== "rank")] };
+    }
   } catch (_) { /* no pick kept */ }
   // A TIE GOES TO THE LONGER RANKING: all time outweighs a month, a month a week.
   const best = ["all", "recent", "week"].filter((k) => st.ranks[k]).sort((a, b) => st.ranks[a] - st.ranks[b])[0];
-  return { on: true, items: ["points", ...(best ? [best] : [])] };
+  return { on: true, ranked: true, items: ["rank", "points", ...(best ? [best] : [])] };
 }
 function showcaseOf(st, pick, mark) {
   if (!pick.on) return null;
-  const stats = SHOWCASE_ITEMS.filter(([k]) => pick.items.includes(k))
+  const stats = SHOWCASE_ITEMS.filter(([k]) => k !== "rank" && pick.items.includes(k))
     .map(([k, label]) => (k === "points" ? [st.points.toLocaleString(accountLocale()), tr(label)]
       : st.ranks[k] ? [`#${st.ranks[k]}`, tr(label)] : null))
     .filter(Boolean);
-  return { name: st.name, volunteer: st.volunteer, mark: mark || "", stats };
+  const rank = pick.items.includes("rank") && st.contributor_rank ? st.contributor_rank.rank : null;
+  return { name: st.name, volunteer: st.volunteer, mark: mark || "", rank, stats };
 }
 
 /// THE CARD: a picture of this build, to paste into a chat window — with the
@@ -680,7 +685,7 @@ async function openShareClaim(panel, url, measured) {
     row.className = "sh-row sh-showcase";
     const paint = () => {
       row.innerHTML = box("on", "Show me on the card", pick.on, false) + SHOWCASE_ITEMS
-        .filter(([k]) => k === "points" || standing.ranks[k])
+        .filter(([k]) => k === "points" || (k === "rank" ? standing.contributor_rank : standing.ranks[k]))
         .map(([k, label]) => box(k, label, pick.items.includes(k), !pick.on)).join("");
     };
     paint();

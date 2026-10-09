@@ -411,8 +411,9 @@ function cardImages(w) {
 
 /// THE SHOWCASE, under the head: who shared it and what they gave the board —
 /// `s.name`, `s.volunteer`, the signed link's `s.mark`, and the figures the
-/// sharer picked, `s.stats` as `[value, label]`. The honour is filled and a
-/// paid mark only outlined, so what was computed reads first.
+/// sharer picked, `s.stats` as `[value, label]`, and `s.rank`, their
+/// contributor rank or null. The rank and the honour are filled and a paid
+/// mark only outlined, so what was computed reads first.
 const SHOWCASE_H = 150;
 function cardShowcase(c, t, s, y0) {
   const g = c.g, x = CARD_PAD, y = y0 + 8, w = CARD_W - 2 * CARD_PAD, h = SHOWCASE_H - 24;
@@ -423,14 +424,16 @@ function cardShowcase(c, t, s, y0) {
   g.font = `13px ${t.body}`; g.fillStyle = t.muted; g.fillText(tr("Shared by"), lx, y + 34);
   g.font = `700 32px ${t.display}`; g.fillStyle = t.text; g.fillText(s.name, lx, y + 74);
   let bx = lx;
-  const pill = (text, filled) => {
+  const pill = (text, filled, ink) => {
     g.font = `600 13px ${t.body}`;
     const pw = g.measureText(text).width + 22;
-    if (filled) { g.fillStyle = t.gold; roundRect(g, bx, y + 88, pw, 24, 12); g.fill(); g.fillStyle = t.bg; }
+    if (ink) { g.fillStyle = t.line; roundRect(g, bx, y + 88, pw, 24, 12); g.fill(); g.fillStyle = ink; }
+    else if (filled) { g.fillStyle = t.gold; roundRect(g, bx, y + 88, pw, 24, 12); g.fill(); g.fillStyle = t.bg; }
     else { g.strokeStyle = t.gold; roundRect(g, bx + .5, y + 88.5, pw - 1, 23, 12); g.stroke(); g.fillStyle = t.gold; }
     g.fillText(text, bx + 11, y + 105);
     bx += pw + 8;
   };
+  if (s.rank != null) pill(tr("Contributor rank {n}").replace("{n}", s.rank), true, t.text);
   if (s.volunteer) pill(tr("WFSim Volunteer"), true);
   if (s.mark) pill(s.mark, false);
   let rx = x + w - 32;

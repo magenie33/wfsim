@@ -821,7 +821,7 @@ each machine's share is counted under its owner's name. Eight rules:
    curve on its all-time points: ten points are one experience, rank n is
    reached at 2,500·n² up to 30, and every 147,500 past that is one rank more,
    without end. The server computes it (`contributorRank`) beside every points
-   figure it returns; the page and Nona draw it and never
+   figure it returns; the page, the share card and Nona draw it and never
    derive it, so a curve change is one edit.
 7. **A MARK NEVER MOVES A PLACE.** A named row carries the mark its account
    carries on a signed share, proved by the paid half and attached by the

@@ -188,7 +188,7 @@ async function renderContributorsCard() {
     computing = (r && r.computing) || 0;
     title = trF("{name}'s contribution", { name });
     body = !me ? `<p class="sim-empty">${escHtml(tr("Nobody on the ranking shows that name."))}</p>`
-      : `<div class="rank-who lc-sub">${honour(me)}${extHookNow("contributorMark", me.mark) || ""}</div>`
+      : `<div class="lc-sub">${contributorRankBar(me.contributor_rank)}</div><div class="rank-who lc-sub">${honour(me)}${extHookNow("contributorMark", me.mark) || ""}</div>`
         + periods.map(([id, key, label]) => cardBox(`<span class="sb-h">${aT(label)}</span>`,
           me.ranks[id] ? `<div class="lc-head"><b class="lc-rank">#${me.ranks[id]}</b><b class="lc-score">${num(me[key])}</b><span class="sb-empty">${aT("Points")}</span></div>`
             : `<p class="sb-empty">${aT("Not on this ranking yet.")}</p>`)).join("");
@@ -200,7 +200,7 @@ async function renderContributorsCard() {
       const rows = ((all[i] && all[i].contributors) || []).slice(0, n);
       return cardBox(`<span class="sb-h">${aT(label)}</span>`, rows.length
         ? `<ol class="rank-list">${rows.map((c, k) => `<li class="rank-row${k < 3 ? " top" : ""}"><span class="rank-n">${k + 1}</span>`
-          + `<span class="rank-who">${who(c)}${honour(c)}</span><span class="rank-pts">${num(c[key])}</span></li>`).join("")}</ol>`
+          + `<span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who(c)}${honour(c)}</span><span class="rank-pts">${num(c[key])}</span></li>`).join("")}</ol>`
         : `<p class="sb-empty">${aT("Nobody yet.")}</p>`);
     }).join("");
   }
