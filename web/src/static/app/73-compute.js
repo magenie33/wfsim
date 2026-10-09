@@ -167,6 +167,7 @@ function computeHereHtml() {
   const state = !WASM ? tr("This copy of WFSim does not compute; the site at wfsim.app does.")
     : onPhone() ? tr("Phones never compute.")
     : !on ? tr("Computing is off in this browser.")
+    : boardBanned ? tr("This browser is given no more work: a result it sent differed from the server's own.")
     : held === "paused" ? tr("Paused in this tab.")
     : held === "battery" ? tr("Paused while this computer runs on battery.")
     : held === "data" ? tr("Paused while the browser saves data.")

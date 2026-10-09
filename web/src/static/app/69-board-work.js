@@ -220,6 +220,9 @@ const LEASE_SAFE_MS = 27 * 60_000;
 /// switch says so. Not in the desktop shell, whose updater swaps the files.
 const IDLE_RELOAD_MS = 10 * 60_000;
 let boardStale = false;
+/// THE SERVER REFUSED THIS BROWSER (worker/verify.js `admit`): its results
+/// disagreed with the server's own, so it is handed nothing, and the page says so.
+let boardBanned = false;
 let lastTouched = Date.now();
 for (const ev of ["pointerdown", "keydown", "wheel", "touchstart"]) {
   addEventListener(ev, () => { lastTouched = Date.now(); }, { passive: true, capture: true });
@@ -305,7 +308,7 @@ async function rivenGainOnce(w, id) {
     method: "POST",
     signal: boardSignal(),
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ build: boardPayloadFromResult(best, w.context), lease: w.lease, verifier: id,
+    body: JSON.stringify({ build: boardPayloadFromResult(best, w.context), lease: w.lease, verifier: id, engine: ENGINE_ID,
       score: Number(best.kill_progress) || 0, work: r.work || 0 }),
   }).then((x) => x.ok).catch(() => false);
   if (sent) heldLease = null; else giveBack();
@@ -325,6 +328,7 @@ async function workOnce() {
   const ask = await postBoardWork("/api/board/work",
     { verifier: id, engine: ENGINE_ID, protocol: 5, consent: { v: c.v, at: c.at }, lanes: communityLanes() });
   if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
+  if (ask && !!ask.banned !== boardBanned) { boardBanned = !!ask.banned; computeRedraw(); computeChrome(); }
   maybeReloadForRelease();
   const w = ask && ask.work;
   if (!w) return false;

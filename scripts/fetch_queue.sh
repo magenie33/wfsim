@@ -71,9 +71,9 @@ page_body() {
               + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id"
               + " AND o.ruler = q.ruler AND o.mode = q.mode"
               + " AND (o.at > (unixepoch() - ?) * 1000 OR o.state IN (?, ?)))"
-              + " ORDER BY (c.state IS ?) DESC, b.at, q.batch, q.build_id, q.ruler, q.mode"
+              + " ORDER BY (c.state IN (?, ?)) DESC, b.at, q.batch, q.build_id, q.ruler, q.mode"
               + " LIMIT ? OFFSET ?"),
-        params: [$hold, "todo", "open", "scoring:open", $limit, $offset]
+        params: [$hold, "todo", "open", "scoring:open", "scoring:fresh", $limit, $offset]
       }'
     return
   fi
@@ -123,6 +123,8 @@ claim_rows() {
 # - EVERY old `open` order — one result in and no second client after the hold,
 #   which a lone computer can never give itself; one fight here settles it and
 #   pays that client (`order_credit.mjs`). Kept back, it would wait for ever.
+#   …AND every old `fresh` one, a first result the live loop has not ranked:
+#   that loop runs on one server, and a result must not wait on it being up.
 # - the first `rows` old `todo` orders in the queue's own order; what the queue
 #   asks for last is what the clients keep.
 # Neither takes an order a client holds a live lease on.
@@ -143,7 +145,7 @@ claim_body() {
 # Run when the run ends, and before every claim, since runs are serialized and
 # a claim left over is one whose run died.
 release_body() {
-  jq -n -c '{ sql: "UPDATE orders SET state = substr(state, 9) WHERE state IN (?, ?)", params: ["scoring:todo", "scoring:open"] }'
+  jq -n -c '{ sql: "UPDATE orders SET state = substr(state, 9) WHERE state IN (?, ?, ?)", params: ["scoring:todo", "scoring:open", "scoring:fresh"] }'
 }
 
 fetch() {
@@ -274,6 +276,7 @@ if [ -n "${HOLD_SECONDS:-}" ]; then
   rows=$(claim_rows "$old" "$open" "$facts")
   echo "queue: the clients made $facts fact(s) in the last hour; $open unmeasured order(s) open to them, $old old — this run claims $rows"
   send_one "$(claim_body open)" "claim of every old open order"
+  send_one "$(claim_body fresh)" "claim of every old unranked first result"
   send_one "$(claim_body todo "$rows")" "claim"
 fi
 fetch "${1:?usage: fetch_queue.sh <out.ndjson>}"

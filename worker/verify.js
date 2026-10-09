@@ -155,7 +155,9 @@ async function work(request, env) {
   // client's row the first time it is seen and whenever it changes.
   const c = b.consent;
   if (!c || !Number.isInteger(c.v) || c.v < 1 || typeof c.at !== "string" || !ISO.test(c.at)) return json({ ok: true, work: null });
-  if (!(await admit(db, b.verifier))) return json({ ok: true, work: null });
+  // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
+  // task for ever and its reader would never learn why.
+  if (!(await admit(db, b.verifier))) return json({ ok: true, work: null, banned: true });
   await db.prepare(`UPDATE verifiers SET consent_v = ?, consent_at = ? WHERE id = ? AND (consent_v IS NOT ? OR consent_at IS NOT ?)`)
     .bind(c.v, c.at, b.verifier, c.v, c.at).run();
   // ONE AT A TIME: a client holding a live lease gets nothing more.
@@ -175,11 +177,19 @@ async function work(request, env) {
   }
   // A FURTHER RESULT COMES FROM ANOTHER OWNER: one person's machines agreeing
   // with each other would be one witness counted twice.
-  const open = (await candidates(db, "open", engine, now, 4)).filter((o) => !clientsOf(o).includes(b.verifier));
-  const owners = await ownersOf(env, [b.verifier, ...open.flatMap(clientsOf)]);
-  const mine = owners.get(b.verifier);
+  // …AND A WINDOW THAT HELD ONLY ITS OWN is not the end: up to three random
+  // windows are read, so a client is never told "nothing" while a row it may
+  // take waits further along.
+  let mineOpen = [];
+  for (let tries = 0; tries < 3 && !mineOpen.length; tries++) {
+    const open = (await candidates(db, "open", engine, now, 8)).filter((o) => !clientsOf(o).includes(b.verifier));
+    if (!open.length) continue;
+    const owners = await ownersOf(env, [b.verifier, ...open.flatMap(clientsOf)]);
+    const mine = owners.get(b.verifier);
+    mineOpen = open.filter((o) => !mine || !clientsOf(o).some((c) => owners.get(c) === mine));
+  }
   const pool = [
-    ...open.filter((o) => !mine || !clientsOf(o).some((c) => owners.get(c) === mine)).map((o) => ({ ...o, state: "open" })),
+    ...mineOpen.map((o) => ({ ...o, state: "open" })),
     ...(await candidates(db, "todo", "", now, 4)).map((o) => ({ ...o, state: "todo" })),
   ];
   for (const o of pool) {
@@ -192,11 +202,15 @@ async function work(request, env) {
       continue;
     }
     const lease = [...crypto.getRandomValues(new Uint8Array(16))].map((x) => x.toString(16).padStart(2, "0")).join("");
-    // THE RACE IS THE DATABASE'S: two clients reaching one order take it once.
+    // THE RACE IS THE DATABASE'S: two clients reaching one order take it once —
+    // and ONE CLIENT TAKES ONE ORDER, in the same statement, so two tabs of one
+    // browser asking at once cannot both win (the check above reads first).
     const took = await db.prepare(
       `UPDATE orders SET lease = ?, lease_until = ?, leased_to = ?
-        WHERE identity = ? AND ruler = ? AND mode = ? AND state = ? AND (lease_until IS NULL OR lease_until < ?)`)
-      .bind(lease, now + LEASE_MS, b.verifier, ...key, o.state, now).run();
+        WHERE identity = ? AND ruler = ? AND mode = ? AND state = ? AND (lease_until IS NULL OR lease_until < ?)
+          AND NOT EXISTS (SELECT 1 FROM orders h WHERE h.leased_to = ? AND h.lease_until > ?)
+          AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?)`)
+      .bind(lease, now + LEASE_MS, b.verifier, ...key, o.state, now, b.verifier, now, b.verifier, now).run();
     if (took.meta && took.meta.changes) {
       return json({ ok: true, work: { lease, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode } });
     }

@@ -146,7 +146,8 @@ order("eight");
 await work(J);
 db.prepare("UPDATE verifiers SET banned = 1 WHERE id = ?").run(J);
 db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
-check("a banned client is handed nothing", (await work(J)).work === null);
+const refused = await work(J);
+check("a banned client is handed nothing, and told why", refused.work === null && refused.banned === true, JSON.stringify(refused));
 const seen = db.prepare("SELECT seen FROM verifiers WHERE id = ?").get(A).seen;
 check("a client is written once a day, not once a poll", seen === new Date().toISOString().slice(0, 10)
   && db.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE id = ?").get(A).n === 1);
@@ -313,6 +314,19 @@ check("...the clients keep two hours of what they made, never fewer than 500, an
   rowsFor(6000, 6500, 300) === 5900 && rowsFor(6000, 6500, 0) === 6000 && rowsFor(100, 300, 50) === 0 && rowsFor(6000, 6500, 3500) === 0,
   JSON.stringify([rowsFor(6000, 6500, 300), rowsFor(6000, 6500, 0), rowsFor(100, 300, 50), rowsFor(6000, 6500, 3500)]));
 sql(body("release")).run(...body("release").params);
+
+// A FIRST RESULT THE LIVE LOOP NEVER RANKED is claimed after the hold and,
+// reproduced by the scorer, pays its client like any agreement.
+db.prepare("UPDATE orders SET state = 'settled'").run();
+const UR = "u".repeat(24);
+db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(UR);
+order("unranked", "fresh", { score: SCORE, metric: "kpm", engine: "e1", produced_by: UR, clients: UR });
+sql(body("claim", "fresh")).run(...body("claim", "fresh").params);
+const urPaid = await creditConfirmed(async (s2, p2 = []) => (/^\s*select|returning/i.test(s2) ? db.prepare(s2).all(...p2) : (db.prepare(s2).run(...p2), [])),
+  [{ identity: "unranked", ruler: "standard_single_target", mode: "base", score: SCORE, metric: "kpm", work: WORK }], "e1");
+check("a first result the live loop never ranked is claimed after the hold, and paid once the scorer reproduces it",
+  urPaid === 1 && row("unranked").state === "verified" && db.prepare("SELECT work FROM verifiers WHERE id = ?").get(UR).work === WORK,
+  `${urPaid} ${row("unranked").state}`);
 
 // A LEASE GIVEN BACK is anyone's at once, and its client may take another.
 db.prepare("UPDATE orders SET state = 'settled'").run();

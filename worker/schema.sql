@@ -378,9 +378,11 @@ CREATE TABLE IF NOT EXISTS appraisal_results (
   verifier   TEXT,
   score      REAL,
   work       INTEGER,
-  key        TEXT
+  key        TEXT,
+  -- THE ENGINE IT RAN ON, which the cap on answers counts by (appraise.js `rivenTask`).
+  engine     TEXT
 );
---   ALTER TABLE appraisal_results ADD COLUMN verifier TEXT;  (and key TEXT; score REAL; work INTEGER)
+--   ALTER TABLE appraisal_results ADD COLUMN verifier TEXT;  (and key TEXT; score REAL; work INTEGER; engine TEXT)
 CREATE INDEX IF NOT EXISTS appraisal_results_by_code ON appraisal_results (code);
 
 -- EVERY VOID FISSURE THE GAME OPENS, from the world state the bot server relays

@@ -693,7 +693,9 @@ row at a time, so the board's growth is more orders, never a heavier client.
 - **Nobody online** costs nothing. An order younger than `HOLD_SECONDS` is
   the clients' alone. An older one is offered to the clients as before, and
   goes to whichever reaches it first — **NEVER TO BOTH.** A `scores.yml` run
-  CLAIMS before it reads (`fetch_queue.sh`): every old `open` order, and the
+  CLAIMS before it reads (`fetch_queue.sh`): every old `open` order and every
+  old `fresh` one the live loop has not ranked (that loop runs on one server,
+  and a first result must not wait on it being up), and the
   old `todo` orders beyond the CLIENTS' RESERVE — `RESERVE_FACTOR` hours of the
   facts they made in the last hour, never fewer than `RESERVE_MIN` — that no
   client holds a live lease on become `scoring:todo` / `scoring:open`, which no
@@ -708,7 +710,11 @@ row at a time, so the board's growth is more orders, never a heavier client.
   handed by it. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page that will
   not answer — closed, reloaded, paused, its fight refused, its lease near its
   end — calls `/api/board/release` (by beacon on `pagehide`), so neither the
-  order nor the computer waits out `LEASE_MS`.
+  order nor the computer waits out `LEASE_MS`. One client holds one lease,
+  decided in the statement that takes it, so two tabs asking at once cannot
+  both win; a refused client is told `banned` rather than handed nothing in
+  silence. A frozen riven gain is served whatever engine froze it, and its cap
+  on answers counts the served engine's alone.
 
 **THE CLIENT IS AN ID** its browser made for itself, joined to no submission,
 kept in `verifiers` so a refusal has something to hold, and joined to an

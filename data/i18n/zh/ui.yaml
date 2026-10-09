@@ -2635,6 +2635,7 @@ ui:
   "Computing paused": 计算已暂停
   "resume": 继续
   "Paused in this tab.": 已在这个标签页暂停。
+  "This browser is given no more work: a result it sent differed from the server's own.": 这个浏览器不再分配任务：它交回的一个结果与服务器自己算出的不一致。
   "Paused while this computer runs on battery.": 电脑在用电池，已暂停。
   "Paused while the browser saves data.": 浏览器开启了省流量，已暂停。
   "Honour": 荣誉

@@ -159,22 +159,27 @@ const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
 
 /// THE TASK FOR `verifier` on the served `engine`, leased, or null. `owners(ids)`
 /// answers who owns each device (worker/verify.js `ownersOf`).
+/// ANY FROZEN QUESTION IS SERVED, whatever engine froze it: the request is the
+/// page's, every release moves the engine id, and a question kept to its own
+/// engine waited for ever behind the first release after it. The cap on answers
+/// counts the served engine's alone, so a release opens it again; agreement is
+/// still the bits, across engines (`volunteerAnswer`).
 export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
   const db = env.LIBRARY, now = Date.now();
   const held = await db.prepare("SELECT 1 FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, now).first();
   if (held) return null;
   const { results } = await db.prepare(
     `SELECT a.code, a.weapon, a.ruler, a.request, a.at,
-            (SELECT count(*) FROM appraisal_results r WHERE r.code = a.code AND r.verifier IS NOT NULL) AS answered
+            (SELECT count(*) FROM appraisal_results r WHERE r.code = a.code AND r.verifier IS NOT NULL AND r.engine IS ?) AS answered
        FROM appraisals a
-      WHERE a.request IS NOT NULL AND a.engine = ? AND a.at > ? AND a.agreed_at IS NULL
+      WHERE a.request IS NOT NULL AND a.at > ? AND a.agreed_at IS NULL
         AND (a.lease_until IS NULL OR a.lease_until < ?)
       ORDER BY (answered = 0) DESC, a.at LIMIT 8`).bind(engine, now - KEEP_MS, now).all();
   for (const a of results) {
     if (a.answered >= RIVEN_ANSWERS) continue;
     if (a.answered === 0 && lanes < rivenLanesNeeded(now - a.at)) continue;
-    const by = (await db.prepare("SELECT verifier FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL")
-      .bind(a.code).all()).results.map((r) => r.verifier);
+    const by = (await db.prepare("SELECT verifier FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL AND engine IS ?")
+      .bind(a.code, engine).all()).results.map((r) => r.verifier);
     if (by.includes(verifier)) continue;
     if (by.length) {
       const own = await owners([verifier, ...by]);
@@ -182,10 +187,13 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1) {
       if (mine && by.some((v) => own.get(v) === mine)) continue;
     }
     const lease = [...crypto.getRandomValues(new Uint8Array(16))].map((x) => x.toString(16).padStart(2, "0")).join("");
+    // ONE TASK A CLIENT, in the same statement as the race (worker/verify.js).
     const took = await db.prepare(`UPDATE appraisals SET lease = ?, lease_until = ?, leased_to = ?,
         started_at = COALESCE(started_at, ?)
-        WHERE code = ? AND (lease_until IS NULL OR lease_until < ?)`)
-      .bind(lease, now + RIVEN_LEASE_MS, verifier, now, a.code, now).run();
+        WHERE code = ? AND (lease_until IS NULL OR lease_until < ?)
+          AND NOT EXISTS (SELECT 1 FROM appraisals h WHERE h.leased_to = ? AND h.lease_until > ?)
+          AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.leased_to = ? AND o.lease_until > ?)`)
+      .bind(lease, now + RIVEN_LEASE_MS, verifier, now, a.code, now, verifier, now, verifier, now).run();
     if (took.meta.changes) {
       const { request, context } = JSON.parse(a.request);
       return { kind: "riven_gain", lease, code: a.code, weapon: a.weapon, ruler: a.ruler, request, context };
@@ -227,8 +235,9 @@ async function volunteerAnswer(env, a, b, now, owners) {
   if (a.lease !== b.lease || a.leased_to !== b.verifier || !(a.lease_until >= now)) return json({ ok: true, first: false });
   const key = canon(b.build);
   await db.batch([
-    db.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key) VALUES (?, ?, '', ?, ?, ?, ?, ?)`)
-      .bind(a.code, JSON.stringify(b.build), now, b.verifier, b.score, b.work, key),
+    db.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?)`)
+      .bind(a.code, JSON.stringify(b.build), now, b.verifier, b.score, b.work, key,
+        typeof b.engine === "string" && ENGINE_ID.test(b.engine) ? b.engine : null),
     db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE code = ?").bind(a.code),
   ]);
   const { results } = await db.prepare(

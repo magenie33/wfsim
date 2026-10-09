@@ -220,7 +220,9 @@ arithmetic is asserted on four cases. A claimed order the scorer reproduces —
 score, metric and work, whatever the engine id — pays its clients once
 (`order_credit.mjs`), and one that differs in score or work pays nothing. A
 lease given back frees its order and its client at once, and only its holder
-can give it back.
+can give it back. A first result the live loop never ranked is claimed after
+the hold and paid once the scorer reproduces it, and a banned client is told
+why it is handed nothing.
 
 ## `check_compute`
 
@@ -253,7 +255,8 @@ offering few cores is not handed a fresh one until it has waited two minutes,
 then any is; unequal
 answers credit nobody and a third computer is asked; two owners' equal answers
 credit both, the work and the day, and not the one that differed; after which
-it is handed out no more.
+it is handed out no more. A question frozen on an older engine is still handed
+out after a release, its old answers not counted against the cap.
 
 ## `check_contribution`
 

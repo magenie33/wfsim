@@ -98,7 +98,7 @@ LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_
 
 const BUILD = { weapon: "torid", mods: ["serration", "riven"], riven_pos: ["critical_damage", "multishot"], riven_neg: "" };
 const answer = (t, v, extra = {}) => appraise("POST", `/api/appraise/${code}/result`,
-  { build: BUILD, lease: t.lease, verifier: v, score: 12.5, work: 4e9, ...extra });
+  { build: BUILD, lease: t.lease, verifier: v, engine: "e1", score: 12.5, work: 4e9, ...extra });
 check("an answer under another computer's lease is not kept", (await answer(t1, B)).body.first === false
   && !LIBRARY.raw.prepare("SELECT 1 FROM appraisal_results WHERE verifier = ?").get(B));
 const a1 = await answer(t1, A);
@@ -135,6 +135,22 @@ check("...still not one core in its first two minutes", (await work(D, "e1", 1) 
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
 LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(Date.now() - 3 * 60_000, late);
 check("...but past them, any computer takes it", (await work(D, "e1", 1) || {}).code === late);
+
+// A QUESTION FROZEN BEFORE A RELEASE is still served after it, and its cap on
+// answers counts the served engine's alone: three answers of the old engine
+// that never agreed do not shut it.
+LIBRARY.raw.prepare("UPDATE appraisals SET agreed_at = 1 WHERE code != ?").run("none");
+const older = await open("asker3");
+await appraise("POST", `/api/appraise/${older}/request`, { ...FROZEN, engine: "e0" }, bot);
+LIBRARY.raw.prepare("UPDATE appraisals SET at = ? WHERE code = ?").run(Date.now() - 3 * 60_000, older);
+for (const [v, k] of [["x1", "a"], ["x2", "b"], ["x3", "c"]]) {
+  LIBRARY.raw.prepare("INSERT INTO appraisal_results (code, build, at, verifier, score, work, key, engine) VALUES (?, '{}', ?, ?, 1, 1, ?, 'e0')")
+    .run(older, Date.now(), v.repeat(8), k);
+}
+LIBRARY.raw.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
+LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
+check("a question frozen on an older engine is still handed out after a release, its old answers not counted against it",
+  (await work(D, "e1", 8) || {}).code === older);
 
 console.log(failures ? `\n${failures} failed` : "\na riven gain is run by the community and credited when two owners agree");
 process.exitCode = failures ? 1 : 0;

@@ -41,7 +41,7 @@ export async function credit(q, ids, work) {
 
 const KEYS_PER_STATEMENT = Math.floor((100 - 1) / 3);
 
-/// EVERY CLAIMED OPEN ORDER THE SCORER MEASURED TO THE SAME BITS — score,
+/// EVERY CLAIMED OPEN OR UNRANKED ORDER THE SCORER MEASURED TO THE SAME BITS — score,
 /// metric and work — becomes `verified` and its clients are credited. The
 /// engine id is not asked: it moves with any edit to the engine's sources, and
 /// a client whose bits the scorer reproduces computed the scorer's own answer.
@@ -54,13 +54,13 @@ export async function creditConfirmed(q, facts, engine) {
   for (let i = 0; i < keys.length; i += KEYS_PER_STATEMENT) {
     const part = keys.slice(i, i + KEYS_PER_STATEMENT);
     const orders = await q(`SELECT identity, ruler, mode, score, metric, work, engine, produced_by, verifier, clients FROM orders
-                            WHERE state = 'scoring:open' AND (identity, ruler, mode) IN (VALUES ${part.map(() => "(?, ?, ?)").join(", ")})`,
+                            WHERE state IN ('scoring:open', 'scoring:fresh') AND (identity, ruler, mode) IN (VALUES ${part.map(() => "(?, ?, ?)").join(", ")})`,
     part.flatMap((f) => [f.identity, f.ruler, f.mode]));
     for (const o of orders) {
       const f = byKey.get(`${o.identity}|${o.ruler}|${o.mode}`);
       if (f.score !== o.score || f.metric !== o.metric || !f.work || f.work !== o.work) continue;
-      const took = await q(`UPDATE orders SET state = 'verified' WHERE identity = ? AND ruler = ? AND mode = ? AND state = 'scoring:open'
-                            RETURNING identity`, [o.identity, o.ruler, o.mode]);
+      const took = await q(`UPDATE orders SET state = 'verified' WHERE identity = ? AND ruler = ? AND mode = ?
+                            AND state IN ('scoring:open', 'scoring:fresh') RETURNING identity`, [o.identity, o.ruler, o.mode]);
       if (!took.length) continue;
       await credit(q, clientsOf(o), o.work);
       credited++;
