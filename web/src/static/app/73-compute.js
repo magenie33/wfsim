@@ -278,6 +278,8 @@ let computeDemand = null;
 async function loadComputeDemand() {
   const r = await accountCall("GET", "/api/board/demand");
   computeDemand = r && r.ok ? r : null;
+  // ONE NUMBER ON ONE PAGE: the bar's count takes the page's, read the same moment.
+  if (computeDemand && typeof computeDemand.computing === "number") navComputingPaint(computeDemand.computing);
 }
 function computeDemandHtml() {
   const d = computeDemand;
@@ -307,13 +309,20 @@ function computeDemandHtml() {
 /// THE NAV'S COUNT: how many computers are computing for WFSim now, asked when
 /// the page starts and each minute it stays in view — the number as it is,
 /// zero too, and nothing where the site has no such count (a dev server).
+/// ASKED PAST THE BROWSER'S CACHE (`no-cache` revalidates with the edge): the
+/// edge's minute is the one delay, not that minute plus the browser's own.
 async function navComputing() {
   const el = document.getElementById("compute-count");
   if (!el || document.hidden) return;
-  const r = await fetch("/api/board/computing").then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  const r = await fetch("/api/board/computing", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || typeof r.computing !== "number") return;
-  el.innerHTML = `<span class="online-dot"></span>${escHtml(r.computing.toLocaleString(accountLocale()))}`;
-  el.title = tr("{n} computers computing for WFSim now").replace("{n}", r.computing.toLocaleString(accountLocale()));
+  navComputingPaint(r.computing);
+}
+function navComputingPaint(n) {
+  const el = document.getElementById("compute-count");
+  if (!el) return;
+  el.innerHTML = `<span class="online-dot"></span>${escHtml(n.toLocaleString(accountLocale()))}`;
+  el.title = tr("{n} computers computing for WFSim now").replace("{n}", n.toLocaleString(accountLocale()));
   el.hidden = false;
 }
 navComputing();
