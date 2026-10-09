@@ -1,8 +1,10 @@
 -- ONE-OFF: the compute tables' times become ISO 8601 to the millisecond
--- (docs/NAMING.md ¡ì9), from epoch milliseconds and from whole seconds. In
+-- (docs/NAMING.md Â§9), from epoch milliseconds and from whole seconds. In
 -- place, so no hot table is rebuilt: a live column declared INTEGER holds the
 -- text as text. Run once the worker that writes them as text is live, and again
 -- a minute later for a straggler; it changes only what is not converted yet.
+-- A large table takes it a statement at a time, in rowid batches: the whole
+-- file at once resets the database and changes nothing.
 --
 --   npx wrangler d1 execute wfsim --remote --file worker/schema-compute-instants.sql
 UPDATE orders SET lease_until = strftime('%Y-%m-%dT%H:%M:%S.', lease_until / 1000, 'unixepoch') || printf('%03dZ', lease_until % 1000) WHERE typeof(lease_until) = 'integer';
