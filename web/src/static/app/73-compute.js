@@ -435,11 +435,14 @@ let computeTimer = null;
 let computeAskedFor = null;
 function computeOpened() {
   loadDevicePoints();
-  loadTaskStates().then(computeRedraw);
-  if (!computeDemand) Promise.all([loadComputeDemand(), navComputing()]).then(computeRedraw);
   const who = accountState.account && accountState.account.id;
   if (who && computeAskedFor !== who) { computeAskedFor = who; computeRefresh(); }
-  if (!computeTimer) computeTimer = setInterval(computeRefresh, 30000);
+  // ONCE A VISIT, NEVER A RENDER: this runs on every redraw, and a redraw asked
+  // for here redrew for ever — the page froze.
+  if (!computeTimer) {
+    computeTimer = setInterval(computeRefresh, 30000);
+    Promise.all([loadComputeDemand(), navComputing(), loadTaskStates()]).then(computeRedraw);
+  }
 }
 async function computeRefresh() {
   if (authKindOf(location.pathname) !== "compute") { clearInterval(computeTimer); computeTimer = null; computeAskedFor = null; return; }
