@@ -365,7 +365,8 @@ function computeLiveTiles(root) {
   const pts = tile("points");
   const held = Number(day.points || 0) - computeInFlight;
   computeRoll(pts, computeInFlight ? Math.max(held, computeRolled.get(pts) || 0) : held, (x) => `+${computeCount(Math.round(x))}`);
-  computeRoll(tile("ms"), Number(day.ms || 0), computeTook);
+  // NONE IS NONE: `computeTook` never says less than a second.
+  computeRoll(tile("ms"), Number(day.ms || 0), (x) => (x < 500 ? "0" : computeTook(x)));
 }
 
 /// THE TASK BEING COMPUTED: one card that stays while computing is on, task or
