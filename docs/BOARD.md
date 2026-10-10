@@ -644,7 +644,7 @@ appraisal"); the official machines are witnesses of the same factory
 deadline and what only they may settle.
 
 - **ORDER.** A question a person waits on now first, then earliest deadline
-  first: a chat's in two minutes, a new build's row in an hour, a survey shape
+  first: a chat's in two minutes, a new build's row in six hours, a survey shape
   in a day, a rescore's or a sweep's in a week (`DEADLINE_MS` — the dispatch
   policy, stated once). A deadline alone is not enough: a survey's thousand
   shapes are a thousand deadlines passed together, and by deadline alone a
@@ -687,7 +687,7 @@ never a heavier client.
   --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from a scorer
   run's reconciliation. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
-  (due in an hour), `sweep` for a rescore's or a sweep's (due in a week). An
+  (due in six hours), `sweep` for a rescore's or a sweep's (due in a week). An
   arrival's row the board already scored is not asked: a resubmission the page
   did not recognise is the same build. EVERY OWED ROW IS ASKED FOR: the
   backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked

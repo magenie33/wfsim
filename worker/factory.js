@@ -10,11 +10,13 @@ import { cloudTell } from "./cloud.js";
 import { iso } from "./instant.js";
 
 /// HOW LONG EACH ASK MAY WAIT, which orders every hand-out: earliest deadline
-/// first, so a survey shape a day overdue goes before a new build's row due in an
-/// hour, and nothing waits for ever behind a kind that keeps arriving.
+/// first, so a survey shape a day overdue goes before a new build's row due in
+/// six hours, and nothing waits for ever behind a kind that keeps arriving. It is
+/// also when the official machines may take a question: one due sooner than the
+/// volunteers can drain it hands their work to a runner.
 export const DEADLINE_MS = {
   chat: 2 * 60_000,
-  new_build: 3_600_000,
+  new_build: 6 * 3_600_000,
   survey: 86_400_000,
   sweep: 7 * 86_400_000,
 };
