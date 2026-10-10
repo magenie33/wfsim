@@ -53,7 +53,7 @@ const PRODUCERS = {
   q: { on_fact: async (env, d, fact) => { told.push({ ref: d.ref, canon: fact.canon }); } },
 };
 
-console.log("liveness: handed nothing only when nothing may be answered, else the earliest deadline");
+console.log("liveness: handed nothing only when nothing may be answered, else the waited-on, then the earliest deadline");
 {
   let bad = 0, first = "";
   for (let t = 0; t < TRIALS && bad < 3; t++) {
@@ -69,9 +69,10 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
       const lanes = r() < 0.4 ? [{ lanes: 8, after_ms: 0 }, { lanes: 4, after_ms: 10_000 }, { lanes: 1, after_ms: 120_000 }] : null;
       const opened = NOW - Math.floor(r() * 300_000), due = NOW + Math.floor((r() - 0.5) * 7_200_000);
       const leased = r() < 0.2 ? pick(r, [NOW + 60_000, NOW - 60_000]) : null;
-      db.raw.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to)
-        VALUES (?, ?, '{}', ?, ?, ?, ?, ?, ?, ?)`).run(id, verb, state, iso(due), iso(opened), lanes && JSON.stringify(lanes),
-        leased ? "l" : null, leased ? iso(leased) : null, leased ? "dx" : null);
+      const waits = r() < 0.2 ? 1 : 0;
+      db.raw.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to, waits)
+        VALUES (?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, verb, state, iso(due), iso(opened), lanes && JSON.stringify(lanes),
+        leased ? "l" : null, leased ? iso(leased) : null, leased ? "dx" : null, waits);
       db.raw.prepare("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)")
         .run(id, id, iso(opened), iso(due));
       const answers = [];
@@ -81,24 +82,25 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
           .run(id, a.engine, a.device, a.owner, a.net, iso(NOW));
         answers.push(a);
       }
-      qs.push({ id, state, lanes, opened, due, leased, answers });
+      qs.push({ id, state, lanes, opened, due, leased, answers, waits });
     }
-    const me = pick(r, devices), lanes = pick(r, [1, 2, 4, 8]);
+    const me = pick(r, devices), lanes = pick(r, [0, 1, 2, 4, 8]), before = r() < 0.3 ? NOW + Math.floor((r() - 0.5) * 3_600_000) : null;
     const siblings = devices.filter((d) => d.owner === me.owner).map((d) => d.device);
     // THE RULE, said again the slow way.
     const may = (q) => q.state === "open" && !(q.leased && q.leased > NOW)
       && (!q.lanes || q.answers.length > 0
         || lanes >= Math.min(...q.lanes.filter((x) => x.after_ms <= NOW - q.opened).map((x) => x.lanes)))
+      && (before === null || q.due < before)
       && !q.answers.some((a) => a.engine === "e1" && (siblings.includes(a.device) || a.owner === me.owner || (me.net && a.net === me.net)));
-    const eligible = qs.filter(may).sort((a, b) => a.due - b.due || (a.id < b.id ? -1 : 1));
-    const got = await f.next(env, { device: me.device, owner: me.owner, siblings, net: me.net, lanes, most: 99 }, "e1", NOW);
+    const eligible = qs.filter(may).sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1));
+    const got = await f.next(env, { device: me.device, owner: me.owner, siblings, net: me.net, lanes, most: 99, before: before === null ? null : iso(before) }, "e1", NOW);
     const want = eligible[0] ? eligible[0].id : null;
     if ((got ? got.question : null) !== want) {
       bad++;
       first ||= `trial ${t}: got ${got && got.question}, want ${want}`;
     }
   }
-  check(`${TRIALS} random books: next() is exactly the earliest eligible question, or null when there is none`, !bad, first);
+  check(`${TRIALS} random books: next() is exactly the first eligible question in order, or null when there is none`, !bad, first);
 }
 
 console.log("\ntermination: every question ends a fact or withdrawn");
@@ -166,7 +168,7 @@ console.log("\nthe cases that failed in production");
 {
   const db = d1(), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { throw new Error(`refused ${a.device}`); } });
-  // A WINDOW FULL OF ANSWERED-OUT QUESTIONS (2026-10-10): nine optimize questions
+  // A WINDOW FULL OF ANSWERED-OUT QUESTIONS: nine optimize questions
   // three different owners each answered, never agreeing, then one more.
   for (let i = 0; i < 9; i++) {
     const id = await f.demand(env, { producer: "p", ref: `full${i}`, verb: "optimize", request: { full: i }, due_in_ms: -1000 }, "e1", NOW);
@@ -224,6 +226,36 @@ console.log("\nthe cases that failed in production");
     (await f2.next(env, { device: "a" }, "e1", NOW)) === null);
   const id = await questionId("simulate", { row: 2 });
   check("...which is withdrawn there", db.raw.prepare("SELECT state FROM questions WHERE id = ?").get(id).state === "withdrawn");
+}
+
+console.log("\nthe watchdog");
+{
+  // A STALL: a survey's shapes overdue, volunteers at work on
+  // other things, and not one answer to any shape for over an hour.
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS });
+  const later = NOW + 3_600_000;
+  db.raw.prepare("INSERT INTO verifiers (id, seen, last_at) VALUES ('busy', 'x', ?)").run(iso(later - 60_000));
+  await f.demand(env, { producer: "p", ref: "shape", verb: "optimize", request: { shape: 1 }, due_in_ms: 1000 }, "e1", NOW);
+  await f.demand(env, { producer: "q", ref: "row", verb: "simulate", request: { row: 1 }, due_in_ms: 10 * 3_600_000 }, "e1", NOW);
+  const found = await f.audit(env, later);
+  check("a kind whose overdue questions got no answer in half an hour, while witnesses worked, is a stall",
+    found.length === 1 && found[0].kind === "stalled:p", JSON.stringify(found));
+  const q = await f.next(env, { device: "busy", owner: "o", net: "n" }, "e1", later - 5 * 60_000);
+  await f.answer(env, { device: "busy", owner: "o", net: "n" }, { lease: q.lease, engine: "e1", result: { build: "b", score: 1 }, work: 1 }, later - 5 * 60_000);
+  check("...and one answer to it is not", !(await f.audit(env, later)).some((x) => x.kind === "stalled:p"));
+  check("a healthy factory has nothing to say", (await f.audit(env, later)).length === 0, JSON.stringify(await f.audit(env, later)));
+  db.raw.prepare("UPDATE questions SET state = 'disputed', opened_at = ?").run(iso(NOW - 2 * 3_600_000));
+  check("a dispute nobody settled in an hour is said", (await f.audit(env, later)).some((x) => x.kind === "unsettled"));
+  // SAID ONCE, then again only once it has stood six hours.
+  const said = [];
+  const { watchdog } = await import("../worker/factory.js");
+  const tell = { LIBRARY: db, CLOUD: { fetch: async (r) => { said.push(await r.json()); return new Response('{"ok":true}'); } } };
+  await watchdog(tell, later);
+  await watchdog(tell, later + 600_000);
+  check("the watchdog tells the owner once", said.length === 1 && /unsettled/.test(said[0].text), JSON.stringify(said));
+  await watchdog(tell, later + 7 * 3_600_000);
+  check("...and again once it has stood six hours", said.length === 2);
 }
 
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");

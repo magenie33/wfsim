@@ -33,7 +33,7 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
-import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
+import { SURVEY_CHANNEL, SURVEY_KEEP_MS, RIVEN_PRODUCERS } from "./appraise.js";
 import { shownName } from "./names.js";
 
 /// `WORK_WEIGHTS` counts in billionths of a point.
@@ -180,8 +180,10 @@ async function activityOf(env, ids) {
       env.LIBRARY.prepare(`SELECT id, last_at FROM verifiers WHERE id IN (${marks})`).bind(...part),
       env.LIBRARY.prepare(`SELECT leased_to, record, ruler, mode FROM orders WHERE lease_until > ? AND leased_to IN (${marks})`)
         .bind(iso(t), ...part),
-      env.LIBRARY.prepare(`SELECT leased_to, weapon, ruler FROM appraisals WHERE lease_until > ? AND leased_to IN (${marks})`)
-        .bind(iso(t), ...part),
+      // A QUESTION OF THE FACT FACTORY, named by the producer that asked it.
+      env.LIBRARY.prepare(`SELECT q.leased_to, d.producer, d.payload FROM questions q
+          JOIN demands d ON d.question = q.id AND d.state = 'live'
+          WHERE q.lease_until > ? AND q.leased_to IN (${marks})`).bind(iso(t), ...part),
     ]);
     for (const r of seen.results) out.set(r.id, { last_at: r.last_at || null, now: null });
     for (const r of held.results) {
@@ -192,8 +194,11 @@ async function activityOf(env, ids) {
       out.set(r.leased_to, e);
     }
     for (const r of gains.results) {
+      if (!RIVEN_PRODUCERS[r.producer]) continue;
+      let p = {};
+      try { p = JSON.parse(r.payload); } catch (_) { /* a payload that is not one names nothing */ }
       const e = out.get(r.leased_to) || { last_at: null, now: null };
-      e.now = { kind: "riven_gain", weapon: r.weapon, ruler: r.ruler };
+      e.now = { kind: "riven_gain", weapon: p.weapon || null, ruler: p.ruler || null };
       out.set(r.leased_to, e);
     }
   }

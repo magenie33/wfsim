@@ -380,27 +380,29 @@ question (docs/BOARD.md §"The Riven Analyst").
    (`boardBuildContext`). The bot opens it right after the appraisal, in a
    browser context of its own with no storage (`bot/render.mjs`
    `freezeRequest`), and stores it once (`/api/appraise/<code>/request`).
-3. ANY COMPUTER COMPUTING FOR THE BOARD runs it (worker/appraise.js
-   §"Volunteer work"): `/api/board/work` hands a frozen riven gain nobody has
-   answered before any board order, on the served engine only, and its page
-   runs the request through a search of its own (`quickFleet`, the reader's
+3. ANY COMPUTER COMPUTING FOR THE BOARD runs it. Freezing it is an ASK of the
+   fact factory (docs/BOARD.md §"The fact factory"; worker/appraise.js
+   §"Volunteer work"): a chat's, someone waiting on it, due in two minutes and
+   handed out before anything else; a SURVEY's — every riven shape of a weapon
+   the owner opens in bulk, channel `survey`, kept a week — due in a day.
+   `/api/board/work` hands it out on the served engine only, and its page runs
+   the request through a search of its own (`quickFleet`, the reader's
    optimizer untouched) and sends the build under its lease with the search's
    work. Then it goes to a computer of another owner on another network; two
-   such answers equal in build, score and work credit both, as a board fact
-   does, and the agreed build goes into the board's door as a reader's
-   submission would (`submitRecord`). A SURVEY is the same task opened in bulk
-   by the owner — every riven shape of a weapon, channel `survey`, kept a week —
-   handed out after a chat's and after a new build's board rows. The
-   search is deterministic for a frozen request, so honest computers agree to
-   the bit. The chat is told the community is on it, and the link stays as
-   the asker's own faster way. A computer still searching renews its lease
-   every two minutes (`/api/appraise/<code>/renew`), so a slow one is never
-   overtaken by its own lease, and stops when told the task went elsewhere;
-   A riven gain nobody has answered goes to a computer offering idle cores by
-   tier (`RIVEN_LANE_TIERS`; the ask carries `lanes`) — eight at once, four
-   after ten seconds, any after two minutes — since a search is many short steps
-   in a row, so cores on one computer, not more computers, are what make it
-   quick. Once one has taken it the chat is told so.
+   such answers equal in build, score and work credit both, and the agreed build
+   goes into the board's door as a reader's submission would (`submitRecord`).
+   One frozen request asked twice — a chat asking for a shape a survey already
+   agreed — is one question, answered at once. The search is deterministic for
+   a frozen request, so honest computers agree to the bit. The chat is told the
+   community is on it, and the link stays as the asker's own faster way. A
+   computer still searching renews its lease every two minutes
+   (`/api/appraise/<code>/renew`), so a slow one is never overtaken by its own
+   lease, and stops when told the task went elsewhere. A chat's riven gain
+   nobody has answered goes to a computer offering idle cores by tier
+   (`RIVEN_LANE_TIERS`; the ask carries `lanes`) — eight at once, four after ten
+   seconds, any after two minutes — since a search is many short steps in a
+   row, so cores on one computer, not more computers, are what make it quick.
+   Once one has taken it the chat is told so.
 4. The channel's bot claims what came back (`/api/appraise/claim`), replays the
    build itself with the card's real rolls, and the first build it accepts
    wins once; later ones are kept on the board and not announced. It answers

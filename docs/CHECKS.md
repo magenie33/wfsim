@@ -264,22 +264,40 @@ between calls: the same build, the same number and the same work each time,
 since two volunteers' answers are confirmed only to the bit. A search run to keep its workers hands them back,
 and the next one starts on them.
 
+## `check_tasks`
+
+Plain node against `worker/schema.sql`: the fact factory (`worker/tasks.js`)
+on random books. LIVENESS — a witness is handed exactly the first question it
+may answer in order (a waited-on one, then the earliest deadline), compared
+with a slow scan of the rule, and nothing only when nothing is eligible.
+TERMINATION — honest, lying and non-deterministic witnesses answering at
+random leave no question waiting once the official machines have had their
+turn, and no honest witness is refused. Then the production cases one each:
+nine answered-out questions do not starve a tenth, three answers differing
+only in work are an engine fault and refuse nobody, two producers asking one
+thing share one computation credited once, a fact is told at once to a later
+ask and opens again on another engine, a withdrawn ask is handed to nobody;
+and the watchdog says a stalled kind, a dispute nobody settled, once a cause.
+
 ## `check_riven_gain`
 
 Plain node against `worker/schema.sql` and `worker/accounts.sql`, the served
-engine stubbed. Only the bot freezes a riven gain's question, and only once; a
-computer asking for work is handed a frozen one nobody answered before any
-board order, only on the served engine, and nobody else holds it meanwhile; an
-answer counts only under its own lease; one answer credits nobody; the second
-run never goes to a computer of the same owner but does to another's; a
-computer still searching keeps its lease running on and one that does not hold
-it changes nothing; the chat is told once that a computer took it; a computer
-offering few cores is not handed a fresh one until it has waited two minutes,
-then any is; unequal
-answers credit nobody and a third computer is asked; two owners' equal answers
-credit both, the work and the day, and not the one that differed; after which
-it is handed out no more. A question frozen on an older engine is still handed
-out after a release, its old answers not counted against the cap.
+engine stubbed: a riven gain as a producer of the fact factory. Only the bot
+freezes its question, once, and freezing it is the ask; a computer asking for
+work is handed it only on the served engine, and nobody else holds it
+meanwhile; a computer offering few cores is not handed a fresh one someone
+waits on until it has waited two minutes; a lease runs on while its holder
+says so; the chat is told once that a computer took it; an answer counts only
+under its own lease and is kept as a build the bot may judge; one answer
+credits nobody, the second run never goes to the same owner nor the same
+network, unequal answers credit nobody, and two owners' equal answers credit
+both, the work and the hour, agree the appraisal and send its build to the
+board's door. Beside the board's orders the order is a chat's, then a new
+build's row before a survey shape due in a day, an overdue shape before that
+row, and a shape before a rescore. A question frozen on an older engine is
+still handed out; a chat asking what a survey agreed is answered at once with
+a build to tell; and an appraisal frozen before the factory is adopted once,
+due as of when it was opened, its answers carried.
 
 ## `check_contribution`
 

@@ -30,6 +30,7 @@ import { popularity } from "./popularity.js";
 import { qqRoute } from "./qq.js";
 import { worldRoute } from "./world.js";
 import { appraiseRoute } from "./appraise.js";
+import { watchdog, WATCHDOG_CRON } from "./factory.js";
 import { verifyRoute } from "./verify.js";
 import { contributionRoute } from "./contribution.js";
 import { clanRoute } from "./clan.js";
@@ -728,8 +729,8 @@ async function agentPage(request, env, twin) {
 }
 
 export default {
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(rollupUsage(env));
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(event.cron === WATCHDOG_CRON ? watchdog(env) : rollupUsage(env));
   },
   async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;

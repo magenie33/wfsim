@@ -434,8 +434,10 @@ CREATE TABLE IF NOT EXISTS questions (
   request     TEXT NOT NULL,
   -- open | fact | spot | disputed | nondeterministic | withdrawn (worker/tasks.js §"States").
   state       TEXT NOT NULL,
-  -- THE EARLIEST DEADLINE of its live demands: dispatch is earliest-deadline-first.
+  -- THE EARLIEST DEADLINE of its live demands, and 1 when a person waits on one
+  -- now: dispatch is the waited-on first, then earliest deadline first.
   due_at      TEXT NOT NULL,
+  waits       INTEGER NOT NULL DEFAULT 0,
   opened_at   TEXT NOT NULL,
   -- The cores a first answer needs, relaxing with age: [{ lanes, after_ms }], or null.
   lanes       TEXT,
@@ -449,7 +451,7 @@ CREATE TABLE IF NOT EXISTS questions (
   -- 1 when its answers were found not deterministic: settled, nobody refused, said aloud.
   odd         INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS questions_pick ON questions (state, due_at);
+CREATE INDEX IF NOT EXISTS questions_pick ON questions (state, waits, due_at);
 CREATE INDEX IF NOT EXISTS questions_holder ON questions (leased_to);
 CREATE INDEX IF NOT EXISTS questions_lease ON questions (lease);
 CREATE TABLE IF NOT EXISTS demands (
@@ -460,6 +462,7 @@ CREATE TABLE IF NOT EXISTS demands (
   state       TEXT NOT NULL,
   asked_at    TEXT NOT NULL,
   due_at      TEXT NOT NULL,
+  waits       INTEGER NOT NULL DEFAULT 0,
   -- What the producer's consumer needs back, which the factory never reads.
   payload     TEXT NOT NULL DEFAULT '{}',
   served_at   TEXT,
@@ -488,3 +491,9 @@ CREATE TABLE IF NOT EXISTS answers (
 );
 CREATE INDEX IF NOT EXISTS answers_by_question ON answers (question, engine);
 CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);
+-- WHAT THE WATCHDOG LAST SAID, per cause (worker/factory.js `watchdog`), so a
+-- cause is said once until it has stood six hours.
+CREATE TABLE IF NOT EXISTS watchdog_told (
+  cause   TEXT PRIMARY KEY,
+  told_at TEXT NOT NULL
+);

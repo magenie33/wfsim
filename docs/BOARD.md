@@ -628,6 +628,46 @@ client result not yet a fact (§"Compute orders") and stays on the server.
 day for people and for the record; the worker reads it only until the first
 live stamp exists, and never again after.
 
+## The fact factory
+
+**ONE THING IS DONE WITH THE VOLUNTEERS' COMPUTERS: A QUESTION BECOMES A
+FACT** (`worker/tasks.js`). A QUESTION is a verb on a canonical request, its id
+the hash of both; an ANSWER is one witness's canonical result; a FACT is enough
+independent witnesses with equal bits — two owners on two networks, or the
+official machines alone. Whatever asks is a PRODUCER: it `demand`s a question
+with a deadline and is told the fact (`on_fact`); the factory names none of
+them, so a new kind of task is a new producer (`worker/factory.js`) and the
+factory does not change. Riven gains — a chat's and a survey's — are its
+producers today; board orders are not yet questions, and `/api/board/work`
+orders the two by deadline (worker/verify.js `work`).
+
+- **ORDER.** A question a person waits on now first, then earliest deadline
+  first: a chat's in two minutes, a new build's row in an hour, a survey shape
+  in a day, a rescore's or a sweep's in a week (`DEADLINE_MS` — the dispatch
+  policy, stated once). A deadline alone is not enough: a survey's thousand
+  shapes are a thousand deadlines passed together, and by deadline alone a
+  person in a chat would wait behind every one.
+- **ELIGIBILITY IS ONE QUERY.** What a witness may answer — not its own, its
+  owner's other devices', nor its network's, with the cores a waited-on
+  question needs at its age — is decided in the SQL that picks it, never by a
+  filter after a `LIMIT`, so a witness is handed nothing only when nothing
+  exists it may answer (`check_tasks`, LIVENESS).
+- **EVERY STATE HAS AN EXIT** (TERMINATION). Answers to the verb's cap that
+  never agreed are `disputed`, or `nondeterministic` when every one differs from
+  every other — an engine fault, refusing nobody; both, and a `spot` check of a
+  fact, wait for the official machines, who refuse a witness they disprove only
+  in a dispute or a spot check. A question nobody asks for any more is
+  `withdrawn`.
+- **ONE COMPUTATION, CREDITED ONCE.** Two producers asking one thing share one
+  question; the fact goes to both, and its witnesses are credited its work once.
+  A fact the served engine already holds is told to a later ask at once; one of
+  another engine opens again, its answers carried for the new engine to
+  reproduce or replace.
+- **THE WATCHDOG** (`watchdog`, every ten minutes): a producer whose overdue
+  questions got no answer in half an hour while witnesses worked, a
+  non-deterministic question, or a dispute nobody settled in an hour is said to
+  the owner, once a cause until it has stood six hours.
+
 ## Compute orders
 
 **EVERY OWED ROW IS AN ORDER, AND THE MACHINES WITH THE SITE OPEN FILL THEM.**
@@ -652,8 +692,8 @@ row at a time, so the board's growth is more orders, never a heavier client.
   book is. An order waiting for a further result goes first, then the rows a
   NEW BUILD owes (`priority` 0: an `arrivals-` batch's row whose build was
   submitted that day or the one before — an older build asked for a ruler it
-  lacks lands in the same batch and is a sweep), then a rescore's or a sweep's: someone is waiting to see a new build ranked, and nobody is waiting
-  on a rescore. One lease a client, thirty minutes long; a row no longer owed
+  lacks lands in the same batch and is a sweep), then a rescore's or a sweep's,
+  each beside the fact factory's questions by deadline (§"The fact factory"). One lease a client, thirty minutes long; a row no longer owed
   is settled where it is found. A CLIENT THAT ASKS IS WORKING ON NOTHING: a
   browser computes in one tab (a Web Lock) and asks only between tasks, so
   whatever its id still holds was lost — a crash, a reload, an old page — and

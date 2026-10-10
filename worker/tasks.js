@@ -13,6 +13,11 @@
 //   TERMINATION  every question ends `fact`, `withdrawn` or with the official
 //                machines (`disputed`, `spot`, `nondeterministic`): none waits on
 //                answers that will never come.
+//
+// ORDER: a question a person is waiting on now first, then earliest deadline
+// first. A deadline alone is not enough: a survey of a thousand shapes asked at
+// once is a thousand deadlines passed together, and by deadline alone a person
+// asking in a chat would wait behind every one of them.
 import { iso } from "./instant.js";
 
 /// HOW STATES LEAVE (§"States"). `open` takes volunteers' answers; the cap on
@@ -47,7 +52,7 @@ export async function witnessOf(env, device) {
 }
 
 /// THE FACTORY, given what varies: `verbs` — how each is answered
-/// ({ cap, lease_ms, canon(result, work) }) — `producers` — who asks and who is
+/// ({ cap, lease_ms, canon(result, work), spot? }) — `producers` — who asks and who is
 /// told ({ still_wanted?, on_answer?, on_fact }) — the trust a fact needs
 /// (`threshold`, a volunteer counting one and the official machines all of it),
 /// the share of facts the official machines check again (`spot`), and what
@@ -65,22 +70,24 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
 
   /// A PRODUCER ASKS. The question is opened, or shared when another producer
   /// asked it already; a fact the served engine already holds is told at once.
-  async function demand(env, { producer, ref, verb, request, due_in_ms, payload = {}, lanes = null }, engine, now = Date.now()) {
+  /// `waits`: a person is waiting on it now — §"Order".
+  async function demand(env, { producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false }, engine, now = Date.now()) {
     if (!verbs[verb]) throw new Error(`no verb ${verb}`);
     producerOf(producer);
     const db = env.LIBRARY, id = await questionId(verb, request), due = iso(now + due_in_ms);
     await db.batch([
-      db.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes) VALUES (?, ?, ?, 'open', ?, ?, ?)
+      db.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits) VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
                   ON CONFLICT (id) DO UPDATE SET
                     state = CASE WHEN state = 'withdrawn' THEN 'open' ELSE state END,
                     opened_at = CASE WHEN state = 'withdrawn' THEN excluded.opened_at ELSE opened_at END,
                     due_at = CASE WHEN state = 'withdrawn' OR excluded.due_at < due_at THEN excluded.due_at ELSE due_at END,
+                    waits = CASE WHEN state = 'withdrawn' THEN excluded.waits ELSE max(waits, excluded.waits) END,
                     lanes = COALESCE(lanes, excluded.lanes)`)
-        .bind(id, verb, canon(request), due, iso(now), lanes ? JSON.stringify(lanes) : null),
-      db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES (?, ?, ?, 'live', ?, ?, ?)
+        .bind(id, verb, canon(request), due, iso(now), lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0),
+      db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
                   ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
-                    due_at = excluded.due_at, payload = excluded.payload, served_at = NULL`)
-        .bind(producer, ref, id, iso(now), due, JSON.stringify(payload)),
+                    due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
+        .bind(producer, ref, id, iso(now), due, waits ? 1 : 0, JSON.stringify(payload)),
     ]);
     const q = await db.prepare("SELECT * FROM questions WHERE id = ?").bind(id).first();
     if (q.state === "fact" || q.state === "spot") {
@@ -106,18 +113,21 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   }
 
   async function restate(db, id, now) {
-    const left = await db.prepare("SELECT min(due_at) AS due, count(*) AS n FROM demands WHERE question = ? AND state = 'live'").bind(id).first();
+    const left = await db.prepare("SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n FROM demands WHERE question = ? AND state = 'live'")
+      .bind(id).first();
     if (left.n) {
-      await db.prepare("UPDATE questions SET due_at = ? WHERE id = ?").bind(left.due, id).run();
+      await db.prepare("UPDATE questions SET due_at = ?, waits = ? WHERE id = ?").bind(left.due, left.waits, id).run();
     } else {
       await db.prepare("UPDATE questions SET state = 'withdrawn', lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ? AND state = 'open'")
         .bind(id).run();
     }
   }
 
-  /// THE QUESTION THIS WITNESS ANSWERS NEXT, leased, or null — earliest deadline
-  /// first among exactly the questions it may answer. `w`: { device, owner,
-  /// siblings, net, lanes, official, most }.
+  /// THE QUESTION THIS WITNESS ANSWERS NEXT, leased, or null — §"Order" among
+  /// exactly the questions it may answer. `w`: { device, owner,
+  /// siblings, net, lanes, official, most, before }: `lanes` 0 is a witness with
+  /// no cores free now (asking ahead), which a question someone waits on is never
+  /// handed; `before` keeps to questions due before then.
   async function next(env, w, engine, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), most = w.most ?? 1;
     for (let tries = 0; tries < 8; tries++) {
@@ -144,8 +154,12 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
             AND (SELECT count(*) FROM questions h WHERE h.leased_to = ? AND h.lease_until > ?) < ?`)
         .bind(lease, iso(now + verbs[q.verb].lease_ms), w.device, q.id, q.state, at, w.device, at, most).run();
       if (took.meta.changes) {
+        for (const d of wanted) {
+          const p = producerOf(d.producer);
+          if (p.on_lease) await p.on_lease(env, { ...d, payload: JSON.parse(d.payload) }, now);
+        }
         return { lease, question: q.id, verb: q.verb, request: JSON.parse(q.request), due_at: q.due_at,
-          producers: [...new Set(wanted.map((d) => d.producer))] };
+          demands: wanted.map((d) => ({ producer: d.producer, ref: d.ref, payload: JSON.parse(d.payload) })) };
       }
       const held = await db.prepare("SELECT count(*) AS n FROM questions WHERE leased_to = ? AND lease_until > ?").bind(w.device, at).first();
       if (held.n >= most) return null;
@@ -198,7 +212,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     await db.batch(writes);
     for (const d of await liveDemands(db, q.id)) {
       const p = producerOf(d.producer);
-      if (p.on_answer) await p.on_answer(env, d, { question: q.id, device: w.device, result, work, official: !!official });
+      if (p.on_answer) {
+        await p.on_answer(env, { ...d, payload: JSON.parse(d.payload) },
+          { question: q.id, device: w.device, net: w.net || "", engine, result, work, official: !!official, at });
+      }
     }
     await settle(env, q.id, engine, now);
     return { taken: true };
@@ -245,7 +262,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       const group = independent([...equal.filter((a) => a.engine === engine), ...equal.filter((a) => a.engine !== engine)]);
       if (group.length < threshold) continue;
       await credit(db, group, now);
-      const state = random() < spot ? "spot" : "fact";
+      const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
       await db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ?")
         .bind(state, lead.canon, engine, iso(now), id).run();
       await deliver(env, { ...q, canon: lead.canon }, now, lead);
@@ -303,26 +320,37 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     }
   }
 
-  /// WHAT IS WRONG RIGHT NOW, for the watchdog: questions long past their
-  /// deadline while witnesses were at work, and questions that were not
-  /// deterministic. Empty when the factory is healthy.
+  /// WHAT IS WRONG RIGHT NOW, for the watchdog: a kind whose overdue questions
+  /// went unanswered while witnesses were at work, questions that were not
+  /// deterministic, and disputes nobody settled. Empty when the factory is healthy.
   async function audit(env, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), recent = iso(now - 30 * 60_000);
     const active = (await db.prepare("SELECT count(*) AS n FROM verifiers WHERE last_at > ?").bind(recent).first()).n;
-    const late = (await db.prepare(
-      `SELECT count(*) AS n, min(due_at) AS oldest FROM questions
-        WHERE state = 'open' AND due_at < ?
-          AND julianday(?) - julianday(due_at) > julianday(due_at) - julianday(opened_at)
-          AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = questions.id AND a.at > ?)`).bind(at, at, recent).first());
+    // A PRODUCER WHOSE OVERDUE QUESTIONS GOT NO ANSWER AT ALL in half an hour
+    // while witnesses were at work: something hands them out to nobody. One
+    // overdue question waiting its turn is a queue; a whole kind silent is a stall.
+    const { results: stalled } = await db.prepare(
+      `SELECT d.producer, count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
+         FROM demands d JOIN questions q ON q.id = d.question
+        WHERE d.state = 'live' AND q.state = 'open' AND d.due_at < ?
+        GROUP BY d.producer
+       HAVING NOT EXISTS (SELECT 1 FROM demands e JOIN answers a ON a.question = e.question
+                           WHERE e.producer = d.producer AND a.at > ?)`).bind(at, recent).all();
     const odd = (await db.prepare("SELECT count(*) AS n FROM questions WHERE state = 'nondeterministic' OR (odd = 1 AND fact_at > ?)")
       .bind(iso(now - 24 * 3_600_000)).first()).n;
+    // WAITING ON THE OFFICIAL MACHINES for over an hour: a dispute nobody settles
+    // is the one place a question can still wait for ever.
+    const unsettled = (await db.prepare(
+      `SELECT count(*) AS n FROM questions WHERE state IN (${OFFICIAL_STATES.map(() => "?").join(", ")}) AND opened_at < ?`)
+      .bind(...OFFICIAL_STATES, iso(now - 3_600_000)).first()).n;
     const out = [];
-    if (active && late.n) out.push({ kind: "stalled", questions: late.n, oldest_due: late.oldest, witnesses_active: active });
+    if (active) for (const p of stalled) out.push({ kind: `stalled:${p.producer}`, ...p, witnesses_active: active });
     if (odd) out.push({ kind: "nondeterministic", questions: odd });
+    if (unsettled) out.push({ kind: "unsettled", questions: unsettled });
     return out;
   }
 
-  return { demand, withdraw, next, renew, release, releaseAll, answer, audit };
+  return { demand, withdraw, next, renew, release, releaseAll, answer, settle, audit };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK (worker/verify.js, the same number).
@@ -343,8 +371,9 @@ function eligibleSql(official) {
                      WHERE json_extract(t.value, '$.after_ms') <= (julianday(?1) - julianday(q.opened_at)) * 86400000.0))
       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?4
             AND (a.device IN (SELECT value FROM json_each(?5)) OR a.owner = ?6 OR (?7 != '' AND a.net = ?7)))
-    ORDER BY q.due_at, q.id LIMIT 1`;
+      AND (?8 IS NULL OR q.due_at < ?8)
+    ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1`;
 }
 function eligibleArgs(w, engine, at) {
-  return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || ""];
+  return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null];
 }

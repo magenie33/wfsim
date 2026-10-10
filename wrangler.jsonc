@@ -109,5 +109,7 @@
   // KEEPING THE USAGE DAYS (worker/usage_days.js): after midnight UTC, so the
   // day before is finished. Reads the dataset with the secrets USAGE_ACCOUNT and
   // USAGE_READ_TOKEN (Account Analytics: Read); without them it does nothing.
-  "triggers": { "crons": ["30 0 * * *"] }
+  // AND THE FACT FACTORY'S WATCHDOG every ten minutes (worker/factory.js
+  // `watchdog`): a stall said to the owner within the hour, not by a player.
+  "triggers": { "crons": ["30 0 * * *", "*/10 * * * *"] }
 }

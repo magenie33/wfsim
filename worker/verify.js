@@ -22,7 +22,9 @@
 // an older one would answer it with the old arithmetic.
 
 import { ownersOf } from "./contribution.js";
-import { rivenTask } from "./appraise.js";
+import { rivenWork } from "./appraise.js";
+import { witnessOf } from "./tasks.js";
+import { facts, DEADLINE_MS } from "./factory.js";
 import { iso } from "./instant.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest.
@@ -85,7 +87,7 @@ async function servedEngine(env) {
 /// …AND THE RELEASE, told with every answer so a page left computing for weeks
 /// reloads into each new one (69-board-work.js `releaseNewer`), not only into a
 /// new engine.
-async function servedRelease(env) {
+export async function servedRelease(env) {
   if (!env.ASSETS) return { engine: null, release: null };
   if (served.has(env.ASSETS)) return served.get(env.ASSETS);
   let out = { engine: null, release: null };
@@ -198,37 +200,39 @@ async function work(request, env) {
   // further, and never a riven gain someone waits on, which goes to a computer
   // free now. Every answer says `ahead`, so the page asks for no more than that.
   const ahead = b.ahead === true;
+  const held = async () => (await db.prepare(`SELECT (SELECT count(*) FROM orders WHERE leased_to = ?1 AND lease_until > ?2)
+      + (SELECT count(*) FROM questions WHERE leased_to = ?1 AND lease_until > ?2) AS n`).bind(b.verifier, iso(now)).first()).n;
   if (ahead) {
-    const held = await db.prepare(`SELECT (SELECT count(*) FROM orders WHERE leased_to = ?1 AND lease_until > ?2)
-      + (SELECT count(*) FROM appraisals WHERE leased_to = ?1 AND lease_until > ?2) AS n`).bind(b.verifier, iso(now)).first();
-    if (!held || held.n < 1 || held.n > TASKS_AHEAD) return json({ ok: true, release, ahead: TASKS_AHEAD, work: null });
+    const n = await held();
+    if (n < 1 || n > TASKS_AHEAD) return json({ ok: true, release, ahead: TASKS_AHEAD, work: null });
   } else {
-    await db.batch([
-      db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, iso(now)),
-      db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?")
-        .bind(b.verifier, iso(now)),
-    ]);
+    await db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, iso(now)).run();
+    await facts().releaseAll(env, b.verifier, now);
   }
   const most = ahead ? TASKS_AHEAD + 1 : 1;
-  // A RIVEN GAIN FIRST: someone is waiting on it in a chat. It holds its own
-  // lease, so a client on one gets nothing more here either.
-  {
-    // HOW MANY CORES IT CAN GIVE NOW (69-board-work.js `communityLanes`), which
-    // decides whether a riven gain someone waits on is its to take.
-    const lanes = Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-    const net = await netOf(request, env);
-    const riven = ahead ? null : await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "chat", net);
-    if (riven) return json({ ok: true, release, ahead: TASKS_AHEAD, work: riven });
-    // …THEN A NEW BUILD'S ROWS THIS CLIENT MAY TAKE, then a SURVEY's riven gains
-    // (appraise.js `SURVEY_CHANNEL`), then rescores. Asked per client: a global
-    // "any new build row left?" held the survey back from every client while
-    // the only rows left were ones that client could not confirm.
-    const first = await boardWork(env, db, b, engine, now, net, [0], most);
-    if (first) return json({ ok: true, release, ahead: TASKS_AHEAD, work: first });
-    const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net, most);
-    if (survey) return json({ ok: true, release, ahead: TASKS_AHEAD, work: survey });
-    return json({ ok: true, release, ahead: TASKS_AHEAD, work: await boardWork(env, db, b, engine, now, net, [1], most) });
-  }
+  const net = await netOf(request, env);
+  // HOW MANY CORES IT CAN GIVE NOW (69-board-work.js `communityLanes`), which
+  // decides whether a question someone waits on is its to take — none, when it
+  // asks ahead: a riven gain someone waits on goes to a computer free now.
+  const lanes = ahead ? 0 : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
+  const who = await witnessOf(env, b.verifier);
+  const witness = { device: b.verifier, owner: who.owner, siblings: who.siblings, net, lanes };
+  // EARLIEST DEADLINE FIRST (worker/factory.js `DEADLINE_MS`), across the fact
+  // factory's questions and the board's orders, which are not yet questions:
+  // the factory's due within a new build's hour, then a new build's row, then
+  // the factory's due later, then a rescore's or a sweep's row.
+  const fromFactory = async (before) => {
+    // The factory counts the questions a client holds; the orders it holds are
+    // taken off what it may.
+    const orders = (await db.prepare("SELECT count(*) AS n FROM orders WHERE leased_to = ? AND lease_until > ?")
+      .bind(b.verifier, iso(now)).first()).n;
+    const q = await facts().next(env, { ...witness, before, most: most - orders }, engine, now);
+    return q && rivenWork(q);
+  };
+  const order = async (priorities) => boardWork(env, db, b, engine, now, net, priorities, most);
+  const soon = iso(now + DEADLINE_MS.new_build);
+  const work = await fromFactory(soon) || await order([0]) || await fromFactory(null) || await order([1]);
+  return json({ ok: true, release, ahead: TASKS_AHEAD, work });
 }
 
 /// HOW MANY TASKS A CLIENT MAY HOLD BESIDE THE ONE IT IS COMPUTING, asked near
@@ -274,7 +278,7 @@ async function boardWork(env, db, b, engine, now, net, priorities, most = 1) {
       `UPDATE orders SET lease = ?, lease_until = ?, leased_to = ?
         WHERE identity = ? AND ruler = ? AND mode = ? AND state = ? AND (lease_until IS NULL OR lease_until < ?)
           AND (SELECT count(*) FROM orders h WHERE h.leased_to = ? AND h.lease_until > ?)
-            + (SELECT count(*) FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?) < ?`)
+            + (SELECT count(*) FROM questions p WHERE p.leased_to = ? AND p.lease_until > ?) < ?`)
       .bind(lease, iso(now + LEASE_MS), b.verifier, ...key, o.state, iso(now), b.verifier, iso(now), b.verifier, iso(now), most).run();
     if (took.meta && took.meta.changes) {
       return { lease, identity: o.identity, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode };
@@ -418,6 +422,7 @@ async function release(request, env) {
   if (err) return err;
   if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "")) return json({ ok: false, error: "bad request" }, 400);
   await env.LIBRARY.prepare(`UPDATE orders SET ${done} WHERE lease = ? AND leased_to = ?`).bind(b.lease, b.verifier).run();
+  await facts().release(env, b.verifier, b.lease);
   return json({ ok: true });
 }
 
