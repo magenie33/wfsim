@@ -46,8 +46,13 @@ function renderUsageNote() {
 /// navigation type when it is not a fresh one ("reload", "back_forward"), else
 /// where the reader came from — "from_site", "direct", or "from_<host>". The
 /// referrer's HOST and never its path: which site sent someone, not which page.
+/// A reload a new release caused says so (`reloadForRelease`), read once.
+const USAGE_ARRIVAL = "wfsim-arrival";
 function usageArrival() {
   const nav = (performance.getEntriesByType("navigation")[0] || {}).type || "navigate";
+  let told = null;
+  try { told = sessionStorage.getItem(USAGE_ARRIVAL); sessionStorage.removeItem(USAGE_ARRIVAL); } catch (_) { /* none */ }
+  if (nav === "reload" && /^release_[a-z]+$/.test(told || "")) return told;
   if (nav !== "navigate") return nav.replace(/[^a-z_]/g, "_");
   let host = "";
   try { host = document.referrer ? new URL(document.referrer).hostname : ""; } catch (_) { /* none */ }

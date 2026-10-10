@@ -324,8 +324,13 @@ function readerBusy() {
 async function yieldToReader(live) {
   while (readerBusy() && (!live || live())) await new Promise((r) => setTimeout(r, 25));
 }
-function reloadForRelease() {
-  try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) { /* nothing to keep */ }
+/// `how` is what the next page's `app.boot` says it arrived by (`usageArrival`):
+/// `idle` when the page reloaded itself, `asked` when the reader clicked.
+function reloadForRelease(how = "asked") {
+  try {
+    sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState()));
+    sessionStorage.setItem(USAGE_ARRIVAL, `release_${how}`);
+  } catch (_) { /* nothing to keep */ }
   location.reload();
 }
 function maybeReloadForRelease() {
@@ -335,7 +340,7 @@ function maybeReloadForRelease() {
     if (Date.now() - Number(sessionStorage.getItem("wfsim-release-reload") || 0) < 3_600_000) return;
     sessionStorage.setItem("wfsim-release-reload", String(Date.now()));
   } catch (_) { return; }
-  reloadForRelease();
+  reloadForRelease("idle");
 }
 
 /// A LANE THAT WILL NOT LOAD MAY BE A PAGE LEFT BEHIND: a release keeps only
@@ -343,13 +348,27 @@ function maybeReloadForRelease() {
 /// worker the site no longer serves, and nothing it computes can finish. The
 /// release is asked at most once a minute, since a dropped network fails lanes
 /// in bursts; a newer one is said on the page and reloaded into once idle.
-let releaseAskedAt = 0;
-async function releaseAfterLaneFailed() {
-  if (!WASM || RELEASE_ID === "dev" || window.__WFSIM_DESKTOP__ || Date.now() - releaseAskedAt < 60_000) return;
+/// THE ANSWER NAMES THE FAILURE in `engine.fail`: `worker_load_stale` when a newer
+/// release left the page behind, `worker_load_offline` when the site itself did
+/// not answer, `worker_load` when it did and the download failed all the same.
+let releaseAskedAt = 0, releaseVerdict = "worker_load";
+async function releaseAfterLaneFailed(ms) {
+  if (!WASM || RELEASE_ID === "dev" || window.__WFSIM_DESKTOP__ || Date.now() - releaseAskedAt < 60_000) {
+    track("engine.fail", releaseVerdict, ms);
+    return;
+  }
   releaseAskedAt = Date.now();
   let j = null;
-  try { j = await fetch("/release.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)); } catch (_) { return; }
-  if (!j || typeof j.release !== "string" || j.release === RELEASE_ID || releaseNewer) return;
+  try {
+    j = await fetch("/release.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null));
+  } catch (_) {
+    track("engine.fail", "worker_load_offline", ms);
+    return;
+  }
+  const newer = !!j && typeof j.release === "string" && j.release !== RELEASE_ID;
+  releaseVerdict = newer ? "worker_load_stale" : "worker_load";
+  track("engine.fail", releaseVerdict, ms);
+  if (!newer || releaseNewer) return;
   releaseNewer = true;
   releaseNotice();
   setInterval(maybeReloadForRelease, 60_000);

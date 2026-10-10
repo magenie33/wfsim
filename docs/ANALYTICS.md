@@ -69,10 +69,10 @@ with this thing, not how many times: forty edits to one build are one build.
 
 | event | fires when | subject | `n` |
 | --- | --- | --- | --- |
-| `app.boot` | the engine has answered `/api/meta` | how the page was reached: `reload`, `back_forward`, `from_site`, `direct` or `from_<referrer host>` | ms since navigation |
+| `app.boot` | the engine has answered `/api/meta` | how the page was reached: `reload`, `back_forward`, `from_site`, `direct` or `from_<referrer host>`; a reload a newer release caused is `release_idle` (the page reloaded itself) or `release_asked` (the reader clicked) | ms since navigation |
 | `app.view` | a page was drawn | page kind (`home`, `weapon_builder`, `weapon_simulator`, `warframe`, …); each account page is its own kind — `login`, `signup`, `reset`, `account`, `account_sync` (`AUTH_VIEWS`) — and a page an extension mounts names its own (`authView`) | — |
 | `app.error` | this page's own code failed uncaught — another origin's script (an extension) is not counted | `boot` (the app did not start), `script`, `promise`, then where in our own file — `<kind>_<app\|nona\|page>_<line>_<column>`, read against that release's committed `site/asset/` bundle: a place, never the message | ms since navigation |
-| `engine.fail` | an engine worker failed to load, or stopped answering | `worker_load` / `worker_silent` | ms since navigation (load only) |
+| `engine.fail` | an engine worker failed to load, or stopped answering | why — `worker_load_stale` (a newer release no longer serves this page's files), `worker_load_offline` (the site did not answer either), `worker_load` (it did, and the download failed anyway), `worker_load_timeout` (never said a word), `worker_silent` (stopped answering after it had) | ms since navigation |
 | `builder.weapon` | the weapon panel computed a build with ≥1 mod | weapon id | — |
 | `builder.warframe` | the Warframe panel computed a build with anything set — a mod, arcane, shard or Helminth ability | frame id | — |
 | `builder.operator` | the Operator page answered with a Focus school chosen or an Artifact card seated | — | — |
@@ -132,6 +132,24 @@ It also ranks the **most active visitors** — by days seen, then results — un
 the first eight characters of their id. A visitor is a browser and nothing
 more; it becomes a person only if they tell us the id `/support` shows them,
 and then `python scripts/usage.py --visitor <id>` lists everything it sent.
+
+## Community compute
+
+The machines that compute the board are read from the server's own tables, never
+from points — `verifiers` and `verifier_hours` already hold every result a device
+sent (docs/BOARD.md §"Contribution"):
+
+```
+python scripts/compute.py            # every day verifier_hours holds
+```
+
+Per UTC day: devices that sent results, those new that day, results, the hours
+their fights took, the work credited, and each device's hours online. Then how
+many of each day's new devices came back, how concentrated the work is, and the
+devices computing in each hour of the day. Totals only: it reads the device ids
+to count them, prints none, and never opens the accounts database. It runs
+through `npx wrangler d1 execute --remote`, read-only, so it needs the wrangler
+login the deploys use.
 
 ## Retention
 

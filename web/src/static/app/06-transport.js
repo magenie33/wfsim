@@ -214,7 +214,7 @@ function watchSilence(giveUp) {
         looked = now;
         const cap = spoke ? LANE_WATCHDOG.stall : LANE_WATCHDOG.loading;
         if (!owed) { disarm(); return; }
-        if (quiet > cap) { clear(); giveUp(); }
+        if (quiet > cap) { clear(); giveUp(spoke); }
       }, LANE_WATCHDOG.tick);
     },
   };
@@ -246,7 +246,12 @@ function makeLane() {
     pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
     pending.clear(); progress.clear(); wd.clear(); busy = 0; settleReaders();
   };
-  const wd = watchSilence(() => { track("engine.fail", "worker_silent"); perish("worker stopped answering"); });
+  // A WORKER THAT NEVER SPOKE NEVER LOADED: `worker.js` says it is downloading
+  // every few seconds, so silence from the start is a load, not a stall.
+  const wd = watchSilence((spoke) => {
+    track("engine.fail", spoke ? "worker_silent" : "worker_load_timeout", Math.round(performance.now()));
+    perish("worker stopped answering");
+  });
   // A LANE THAT CANNOT LOAD IS A LANE, NOT A DEAD PAGE.
   //
   // `worker.js` fetches a ~6 MB wasm module, and a fetch can fail — a flaky
@@ -265,9 +270,8 @@ function makeLane() {
   w.onerror = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     dead = true;
-    track("engine.fail", "worker_load", Math.round(performance.now()));
     perish(String((e && e.message) || "worker failed to load"));
-    releaseAfterLaneFailed();
+    releaseAfterLaneFailed(Math.round(performance.now()));
   };
   w.onmessage = (e) => {
     // ANY word from the worker is proof of life, including one about a request
