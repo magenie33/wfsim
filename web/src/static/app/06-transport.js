@@ -163,7 +163,8 @@ let readerInFlight = 0;
 ///
 /// Lowered by `check_calc_recovers.mjs`, which has to wedge a worker and then
 /// outlive the window to prove the recovery happens at all.
-const LANE_WATCHDOG = { loading: 90000, stall: 45000 };
+/// `tick` is how often it looks.
+const LANE_WATCHDOG = { loading: 90000, stall: 45000, tick: 5000 };
 
 /// A WORKER THAT NEITHER ANSWERS NOR FAILS, watched — ONE implementation, used
 /// by both fleets.
@@ -191,22 +192,30 @@ function watchSilence(giveUp) {
   // wanting the same pool.
   //
   // A worker that is talking is alive, whatever it is talking about.
-  let owed = 0, last = 0, dog = null, spoke = false;
+
+  // SILENCE IS COUNTED ONLY WHILE THE PAGE RUNS. A frozen tab or a sleeping
+  // machine stops the worker with it, and the wall clock read on waking would
+  // kill every lane of a machine left computing; a look adds at most two ticks.
+  let owed = 0, quiet = 0, looked = 0, dog = null, spoke = false;
   const disarm = () => { if (dog) { clearInterval(dog); dog = null; } };
   const clear = () => { owed = 0; disarm(); };
   return {
     clear,
-    heard() { spoke = true; last = Date.now(); },
-    done() { owed = Math.max(0, owed - 1); last = Date.now(); if (!owed) disarm(); },
+    heard() { spoke = true; quiet = 0; },
+    done() { owed = Math.max(0, owed - 1); quiet = 0; if (!owed) disarm(); },
     start() {
       owed += 1;
-      last = Date.now();
+      quiet = 0;
       if (dog) return;
+      looked = Date.now();
       dog = setInterval(() => {
+        const now = Date.now();
+        quiet += Math.min(now - looked, 2 * LANE_WATCHDOG.tick);
+        looked = now;
         const cap = spoke ? LANE_WATCHDOG.stall : LANE_WATCHDOG.loading;
         if (!owed) { disarm(); return; }
-        if (Date.now() - last > cap) { clear(); giveUp(); }
-      }, 5000);
+        if (quiet > cap) { clear(); giveUp(); }
+      }, LANE_WATCHDOG.tick);
     },
   };
 }
@@ -258,6 +267,7 @@ function makeLane() {
     dead = true;
     track("engine.fail", "worker_load", Math.round(performance.now()));
     perish(String((e && e.message) || "worker failed to load"));
+    releaseAfterLaneFailed();
   };
   w.onmessage = (e) => {
     // ANY word from the worker is proof of life, including one about a request

@@ -661,7 +661,9 @@ row at a time, so the board's growth is more orders, never a heavier client.
   worker reads `engine` from the site's `release.json`, and a page of any other
   gets no order and its answers are dropped. Every answer names the `release`
   too, and a page of an older one reloads into it once left idle, so a machine
-  left computing for weeks takes every fix without anyone touching it.
+  left computing for weeks takes every fix without anyone touching it. A page
+  whose engine lane fails to load asks `release.json` too, since two releases
+  on, the worker it names is no longer served.
 - **A release carries a result.** An order holding an older engine's result is
   opened for the served one with its clients kept (`carried_from` names the
   engine they used). A client of the new engine that reproduces the bits makes

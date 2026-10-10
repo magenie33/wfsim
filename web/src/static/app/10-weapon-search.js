@@ -288,6 +288,29 @@ applyCommunityOrder();
   $("theme-toggle").addEventListener("click", () => flipTheme());
 })();
 
+/// THE ENGINE'S FIRST ANSWER, asked until it comes or plainly cannot.
+///
+/// `api` already re-asks on a fresh lane, but a download the network dropped
+/// fails every lane in the same second; a pause between rounds outlasts a
+/// blip. Read without an answer, `META.defaults` threw a TypeError the reader
+/// saw as "could not start" over a stack, so the failure says what it is.
+async function bootMeta() {
+  let r = null;
+  for (const wait of [0, 2000, 5000]) {
+    if (wait) await new Promise((res) => setTimeout(res, wait));
+    r = await api("/api/meta");
+    if (r && Array.isArray(r.weapons) && r.defaults) return r;
+  }
+  bootReported = true;
+  if (window.__wfsimBootFailed) {
+    window.__wfsimBootFailed(
+      "The engine could not start — usually the network dropped its download. Reload the page to try again. / 计算引擎没能启动，通常是网络中断了它的下载。请刷新页面重试。",
+      String((r && r.error) || "no answer from the engine"),
+    );
+  }
+  throw new Error("engine did not answer /api/meta");
+}
+
 async function init() {
   // BEFORE ANYTHING TOUCHES THE DOM: a page from another build has markup
   // this file does not know, and the failure that produces is unreadable.
@@ -301,7 +324,7 @@ async function init() {
       el.title = `commit ${BUILD_SHA} · release ${RELEASE_ID} · page ${BUILD_ID}`;
     }
   }
-  META = await api("/api/meta");
+  META = await bootMeta();
   // …AND THE FLOOR THE ARENA DRAWS ON IS THE ENGINE'S, before anything is drawn.
   adoptBodyRadius(META);
   {

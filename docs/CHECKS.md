@@ -651,6 +651,15 @@ worker's fetch), and the lane must report `worker_dead` well inside the 90 s
 loading watchdog, which is how long a reader whose download failed would
 otherwise wait.
 
+**A FROZEN PAGE IS NOT A SILENT WORKER.** A lane holding a request nobody
+answers is frozen through `Page.setWebLifecycleState` for longer than its stall
+window; it must be alive on waking and dead once silence runs on while awake,
+because the watchdog counts silence only in the looks it actually takes.
+
+**A BOOT WITH NO ENGINE SAYS SO.** Reloaded with the wasm still blocked, the
+page's banner must name the engine, never a `TypeError` from reading the
+engine's first answer when there was none.
+
 ## `check_build_finder`
 
 **THE FINDER FINDS, THE BAR HOLDS.** The build finder is a query over the

@@ -289,6 +289,32 @@ check(
   `answered ${slowLane.meta}, worker_dead ${slowLane.dead}, timed out ${slowLane.timedOut}, ${slowLane.ms} ms`,
 );
 
+// A FROZEN PAGE IS NOT A SILENT WORKER. A background tab or a sleeping machine
+// stops the worker with the page, and silence read off the wall clock on waking
+// killed every lane of a machine left computing. A request nobody answers is
+// held across a freeze far longer than the stall window: the lane must live
+// through the waking, and still die once silence runs on while awake.
+await evaluate(`(() => {
+  LANE_WATCHDOG.stall = 8000;
+  LANE_WATCHDOG.tick = 500;
+  window.__frozenLane = makeLane();
+  return window.__frozenLane.call('/api/meta').then(() => { window.__frozenLane.send({ kind: 'never-answered' }); });
+})()`);
+await send("Page.setWebLifecycleState", { state: "frozen" });
+await sleep(12000);
+await send("Page.setWebLifecycleState", { state: "active" });
+// PAST A LOOK AT THE OLD FIVE-SECOND TICK, so a wall clock would have fired.
+await sleep(5500);
+const thawed = await evaluate(`window.__frozenLane.dead`);
+await sleep(7000);
+const lapsed = await evaluate(`window.__frozenLane.dead`);
+await evaluate(`LANE_WATCHDOG.stall = 45000; LANE_WATCHDOG.tick = 5000;`);
+check(
+  "a lane waiting through a frozen page lives through the waking, and still dies of silence awake",
+  thawed === false && lapsed === true,
+  `dead on waking ${thawed}, dead after silence awake ${lapsed}`,
+);
+
 // A MODULE THAT WILL NOT DOWNLOAD IS A FAILURE NOW, not after the 90 s watchdog
 // — the wait a reader on a bad connection closed the tab during. Last, because
 // it blocks the wasm for the rest of the page. BLOCKED IN EACH WORKER'S OWN
@@ -314,5 +340,18 @@ check(
   "a worker whose wasm cannot download fails its lane at once, not on the watchdog",
   m.dead && !m.timedOut && m.ms < 15000,
   `worker_dead ${m.dead}, still silent at 20 s ${m.timedOut}, ${m.ms} ms`,
+);
+// …AND A PAGE THAT BOOTS WITH IT BLOCKED SAYS THE ENGINE DID NOT START. Read
+// without an answer, the engine's first reply threw a TypeError the reader saw
+// as "could not start" over a stack. The guard below this file's own reads
+// would latch it as a broken boot, which here is the subject.
+app.bootBroken = true;
+await send("Page.reload", {});
+await sleep(25000);
+const note = await evaluate(`(document.getElementById('boot-note') || {}).textContent || ''`);
+check(
+  "a boot whose engine cannot download says the engine did not start, not a crash reading its answer",
+  /engine could not start/.test(note) && !/Cannot read properties/.test(note),
+  note.replace(/\s+/g, " ").slice(0, 160),
 );
 process.exit(0);

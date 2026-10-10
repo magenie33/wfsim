@@ -305,6 +305,35 @@ function maybeReloadForRelease() {
   reloadForRelease();
 }
 
+/// A LANE THAT WILL NOT LOAD MAY BE A PAGE LEFT BEHIND: a release keeps only
+/// the previous generation's files, so a page two releases old asks for a
+/// worker the site no longer serves, and nothing it computes can finish. The
+/// release is asked at most once a minute, since a dropped network fails lanes
+/// in bursts; a newer one is said on the page and reloaded into once idle.
+let releaseAskedAt = 0;
+async function releaseAfterLaneFailed() {
+  if (!WASM || RELEASE_ID === "dev" || window.__WFSIM_DESKTOP__ || Date.now() - releaseAskedAt < 60_000) return;
+  releaseAskedAt = Date.now();
+  let j = null;
+  try { j = await fetch("/release.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)); } catch (_) { return; }
+  if (!j || typeof j.release !== "string" || j.release === RELEASE_ID || releaseNewer) return;
+  releaseNewer = true;
+  releaseNotice();
+  setInterval(maybeReloadForRelease, 60_000);
+}
+/// SAID AT THE TOP OF WHATEVER PAGE IS OPEN, with the reload one click away.
+function releaseNotice() {
+  if (!document.body || $("release-note")) return;
+  const el = document.createElement("div");
+  el.id = "release-note";
+  el.className = "page-note rem-note";
+  el.innerHTML = `${escHtml(tr("A new version is out; this page refreshes itself once it is left idle."))}<a href="#">${escHtml(tr("refresh now"))}</a>`;
+  el.addEventListener("click", (e) => {
+    if (e.target.closest("a")) { e.preventDefault(); reloadForRelease(); } else el.remove();
+  });
+  document.body.appendChild(el);
+}
+
 /// A RIVEN GAIN, run here for someone waiting in a chat (worker/appraise.js
 /// §"Volunteer work"): the frozen request through a search of its own
 /// (`quickFleet`, one worker, the reader's optimizer untouched), paced so the
