@@ -99,7 +99,9 @@ questions:
 - **`manifest`** — the digest of the manifest's own bytes. *Is this the same set
   of files on disk?* It is what the updater fetches and checks against.
 
-The file list is declared once, in `desktop/payload.lst`, and read by both
+What the client leaves out of `site/` is declared once, in `desktop/payload.lst`
+— everything else ships, so a file the site gains is a file the client has —
+and read by both
 `desktop/build.rs` (which packs it into the binary) and
 `scripts/payload_manifest.py` (which describes it to the channel without a Tauri
 toolchain). `ship.py` holds the two outputs against each other on every run.

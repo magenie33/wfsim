@@ -37,12 +37,12 @@ const old = await as("2026.9.20 52e99d11");
 check("a shell older than the minimum is offered the download", old.bar && /pan\.quark\.cn/.test(old.href), JSON.stringify(old));
 const bare = await as("none");
 check("...and so is one too old to state its build", bare.bar, JSON.stringify(bare));
-const now = await as("2026.10.3 aecc2363");
+const now = await as("2026.10.10 7f87e1da");
 check("the current shell is offered nothing", !now.bar, JSON.stringify(now));
 
 const dlOld = await as("2026.9.20 52e99d11", "/download");
 check("/download in an old shell offers the file", /dl-btn/.test(dlOld.offer || ""), dlOld.offer);
-const dlNow = await as("2026.10.3 aecc2363", "/download");
+const dlNow = await as("2026.10.10 7f87e1da", "/download");
 check("/download in the current shell says there is nothing to install",
   !/dl-btn/.test(dlNow.offer || "") && /nothing to download/.test(dlNow.offer || ""), dlNow.offer);
 

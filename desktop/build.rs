@@ -16,26 +16,35 @@
 use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 
-/// WHAT GOES IN, read from the one file that declares it — `desktop/payload.lst`,
+/// WHAT STAYS OUT, read from the one file that declares it — `desktop/payload.lst`,
 /// which `scripts/payload_manifest.py` reads too. Embedded rather than opened at
 /// build time so a missing list is a compile error and not an empty payload.
 const PAYLOAD_LIST: &str = include_str!("payload.lst");
 
-/// The list, split into single files and whole trees. A trailing `/` is a tree.
-fn declared() -> (Vec<String>, Vec<String>) {
-    let mut files = Vec::new();
-    let mut dirs = Vec::new();
-    for line in PAYLOAD_LIST.lines() {
-        let line = line.trim();
+/// Whether a path under `site/` (slash-separated) is left out — the list's
+/// lines, and the generation rule the list's header states.
+fn excluded(rel: &str, current: &dyn Fn(&str) -> Option<Vec<String>>) -> bool {
+    for line in PAYLOAD_LIST.lines().map(str::trim) {
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        match line.strip_suffix('/') {
-            Some(d) => dirs.push(d.to_string()),
-            None => files.push(line.to_string()),
+        let hit = if let Some(any) = line.strip_prefix('*') {
+            rel.ends_with(any)
+        } else if line.ends_with('/') {
+            rel.starts_with(line)
+        } else {
+            rel == line
+        };
+        if hit {
+            return true;
         }
     }
-    (files, dirs)
+    // Each directory on the way down that names a generation admits only it.
+    let segs: Vec<&str> = rel.split('/').collect();
+    (0..segs.len()).any(|i| {
+        current(&segs[..i].join("/"))
+            .is_some_and(|names| segs[i] != "generation.json" && !names.iter().any(|n| n == segs[i]))
+    })
 }
 
 fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -66,11 +75,20 @@ fn main() {
     }
     println!("cargo:rerun-if-changed=../site");
 
-    let (root_files, root_dirs) = declared();
-    let mut files: Vec<PathBuf> = root_files.iter().map(|f| site.join(f)).collect();
-    for d in &root_dirs {
-        walk(&site.join(d), &mut files);
-    }
+    let generation = |dir: &str| -> Option<Vec<String>> {
+        let body = std::fs::read(site.join(dir).join("generation.json")).ok()?;
+        let v: serde_json::Value = serde_json::from_slice(&body).ok()?;
+        Some(v["names"].as_array()?.iter().filter_map(|n| n.as_str().map(str::to_string)).collect())
+    };
+    let mut all = Vec::new();
+    walk(&site, &mut all);
+    let files: Vec<PathBuf> = all
+        .into_iter()
+        .filter(|p| {
+            let rel = p.strip_prefix(&site).unwrap().to_string_lossy().replace(char::from(92), "/");
+            !excluded(&rel, &generation)
+        })
+        .collect();
 
     let mut index = Vec::new();
     let mut blob = Vec::new();
@@ -109,6 +127,21 @@ fn main() {
         .unwrap_or_else(|| "undated".into());
     println!("cargo:rustc-env=WFSIM_SHELL_BUILD={date} {version}");
 
+    // THE PAGES THE SITE'S WORKER FILLS, read from the worker's own list: the
+    // shell asks the site for them (`protocol::SITE_PAGES`), and a copy of the
+    // list kept here would be a second answer to "which pages are the site's".
+    let docs_js = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../worker/ext_documents.js");
+    println!("cargo:rerun-if-changed={}", docs_js.display());
+    let docs = std::fs::read_to_string(&docs_js).unwrap_or_else(|e| panic!("{}: {e}", docs_js.display()));
+    let set = docs
+        .split_once("EXT_DOCUMENTS = new Set([")
+        .and_then(|(_, rest)| rest.split_once("])"))
+        .map(|(list, _)| list)
+        .unwrap_or_else(|| panic!("{}: no `EXT_DOCUMENTS = new Set([…])`", docs_js.display()));
+    let pages: Vec<&str> = set.split(',').map(|s| s.trim().trim_matches('"')).filter(|s| s.starts_with('/')).collect();
+    assert!(!pages.is_empty(), "{}: EXT_DOCUMENTS names no page", docs_js.display());
+    println!("cargo:rustc-env=WFSIM_SITE_PAGES={}", pages.join(","));
+
     let manifest = serde_json::json!({ "version": version, "files": index });
     let head = serde_json::to_vec(&manifest).unwrap();
 
@@ -125,7 +158,7 @@ fn main() {
     std::fs::write(&dest, &out).unwrap();
 
     // THE FILE LIST IS DECLARED ONCE — here — and the release job reads it back
-    // out rather than keeping a second copy of `ROOT_FILES`/`ROOT_DIRS`. Two
+    // out rather than keeping a second copy of the exclusions. Two
     // lists that must agree are two lists that will not: a file added to one
     // and not the other is a client that either downloads something it cannot
     // use or is missing something it needs, and neither fails loudly.

@@ -37,46 +37,90 @@ fn mime_of(path: &str) -> &'static str {
 /// about a minute.
 const BOARD_LANES: usize = 8;
 
-/// Where the board lives. The client is served from `wfsim.localhost`, so the
-/// page's own same-origin `/api/board/…` cannot reach it without this.
-const BOARD_ORIGIN: &str = "https://wfsim.app";
+/// Where the site lives. The client is served from `wfsim.localhost`, so the
+/// page's own same-origin `/api/…` cannot reach it without the proxy below.
+pub const SITE_ORIGIN: &str = "https://wfsim.app";
 
-/// The only paths forwarded to the network. NOT `/api/` — every other endpoint
-/// is answered by the wasm engine inside the page, and forwarding a wider
-/// prefix would turn this into an open proxy for whatever a link can address.
-const PROXIED: &str = "/api/board/";
+/// WHAT IS FORWARDED: the site's whole api, and nothing outside it. Every
+/// engine call is answered by the wasm inside the page and never reaches the
+/// protocol, so what arrives here is the SITE — the board, the account, cloud
+/// sync, the extension script — and leaving any of it out is a feature the
+/// browser has and the client silently does not. The target is fixed, so a
+/// link cannot address anything but `wfsim.app`.
+const PROXIED: &str = "/api/";
+
+/// …AND THE PAGES THE SITE'S WORKER FILLS (`worker/ext_documents.js`, read at
+/// build time). The privacy, terms and refunds pages carry sections the
+/// worker writes in; the copy in `site/` has empty slots where those are, so
+/// served from disk the client would show terms that are not the site's.
+const SITE_PAGES: &str = env!("WFSIM_SITE_PAGES");
 
 pub fn is_proxied(req: &Request<Vec<u8>>) -> bool {
-    req.uri().path().starts_with(PROXIED)
+    let path = req.uri().path();
+    path.starts_with(PROXIED) || SITE_PAGES.split(',').any(|p| path.trim_end_matches('/') == p)
 }
 
-/// Forward one board request and return what the server said.
+/// The headers worth forwarding. NOT `Origin`: the page's is
+/// `wfsim.localhost`, which the site's `sameSite` refuses, and a request this
+/// shell sends on the page's behalf is the site's own client.
+const FORWARDED: [&str; 4] = ["content-type", "accept", "accept-language", "user-agent"];
+
+/// A redirect is never followed here: the WEBVIEW follows it, so a sign-in
+/// that leaves for a provider leaves in the window and its cookies stay ours.
+fn agent() -> &'static ureq::Agent {
+    static AGENT: std::sync::OnceLock<ureq::Agent> = std::sync::OnceLock::new();
+    AGENT.get_or_init(|| {
+        ureq::AgentBuilder::new()
+            .redirects(0)
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+    })
+}
+
+/// A redirect back to the site is a redirect back INTO the app.
+pub fn local_target(location: &str) -> String {
+    match location.strip_prefix(SITE_ORIGIN) {
+        Some(rest) if rest.is_empty() || rest.starts_with('/') || rest.starts_with('?') => {
+            if rest.starts_with('/') { rest.to_string() } else { format!("/{rest}") }
+        }
+        _ => location.to_string(),
+    }
+}
+
+fn failed(status: StatusCode, error: &str) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(status)
+        .header("Content-Type", "application/json")
+        .body(serde_json::json!({ "ok": false, "error": error }).to_string().into_bytes())
+        .expect("proxy error response")
+}
+
+/// Forward one request to the site and return what it said.
 ///
-/// THE BOARD IS A SERVICE, NOT A CALCULATION — the one thing the engine in the
+/// THE SITE IS A SERVICE, NOT A CALCULATION — the one thing the engine in the
 /// page cannot answer, and `app.js` fetches it same-origin deliberately (a
-/// second DNS name is a second thing that can be blocked). Inside this app
-/// "same origin" is a custom protocol, so without this the SPA fallback answers
-/// a submission with `index.html` and **HTTP 200**, which `res.ok` reads as
-/// success: the page says 已发送 having sent nothing. That is the failure mode
-/// `wrangler.jsonc` was already written about — "a 200 carrying the wrong
-/// content type is the quietest possible failure" — reappearing one layer down.
+/// second DNS name is a second thing that can be blocked). Without this the SPA
+/// fallback answers with `index.html` and **HTTP 200**, which `res.ok` reads
+/// as success — and `/api/account` answered that way is a page that says
+/// accounts are not available here.
 ///
 /// A FAILURE HERE MUST LOOK LIKE A FAILURE. Anything that goes wrong answers
 /// 502 with a JSON body, because the page's only test is `res.ok`.
-pub fn proxy(req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
-    let url = format!("{BOARD_ORIGIN}{}", req.uri().path());
+pub fn proxy(req: &Request<Vec<u8>>, jar: &crate::session::Jar) -> Response<Vec<u8>> {
+    let path = req.uri().path_and_query().map_or(req.uri().path(), |p| p.as_str());
+    let url = format!("{SITE_ORIGIN}{path}");
     let method = req.method().as_str().to_ascii_uppercase();
-    let call = ureq::request(&method, &url)
-        .timeout(std::time::Duration::from_secs(30))
-        .set(
-            "Content-Type",
-            req.headers()
-                .get("content-type")
-                .and_then(|v| v.to_str().ok())
-                .unwrap_or("application/json"),
-        );
+    let mut call = agent().request(&method, &url);
+    for name in FORWARDED {
+        if let Some(v) = req.headers().get(name).and_then(|v| v.to_str().ok()) {
+            call = call.set(name, v);
+        }
+    }
+    if let Some(c) = jar.header() {
+        call = call.set("Cookie", &c);
+    }
 
-    let result = if method == "GET" {
+    let result = if method == "GET" || method == "HEAD" {
         call.call()
     } else {
         call.send_bytes(req.body())
@@ -87,33 +131,51 @@ pub fn proxy(req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
     let resp = match result {
         Ok(r) => r,
         Err(ureq::Error::Status(_, r)) => r,
-        Err(e) => {
-            return Response::builder()
-                .status(StatusCode::BAD_GATEWAY)
-                .header("Content-Type", "application/json")
-                .body(format!("{{\"ok\":false,\"error\":\"{e}\"}}").into_bytes())
-                .expect("proxy error response")
-        }
+        Err(e) => return failed(StatusCode::BAD_GATEWAY, &e.to_string()),
     };
+    jar.take(resp.all("set-cookie"));
 
     let status = resp.status();
+    if (300..400).contains(&status) {
+        let to = local_target(resp.header("location").unwrap_or("/"));
+        // A NAVIGATION IS REDIRECTED BY A PAGE, not by a 302: a redirect
+        // answered through a custom protocol is not one every webview
+        // follows, and a sign-in that stops on a blank page is a sign-in that
+        // failed with nothing to say so.
+        let navigating = req
+            .headers()
+            .get("accept")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|a| a.contains("text/html"));
+        if navigating {
+            let to = serde_json::Value::from(to).to_string();
+            return Response::builder()
+                .header("Content-Type", "text/html; charset=utf-8")
+                .header("Cache-Control", "no-store")
+                .body(format!("<!doctype html><meta charset=utf-8><script>location.replace({to})</script>").into_bytes())
+                .expect("redirect page");
+        }
+        return Response::builder()
+            .status(StatusCode::from_u16(status).unwrap_or(StatusCode::FOUND))
+            .header("Location", to)
+            .body(Vec::new())
+            .expect("redirect response");
+    }
+
     let ctype = resp.content_type().to_string();
     let mut body = Vec::new();
     let mut reader = resp.into_reader();
-    if std::io::Read::take(&mut reader, 4 * 1024 * 1024)
+    if std::io::Read::take(&mut reader, 16 * 1024 * 1024)
         .read_to_end(&mut body)
         .is_err()
     {
-        return Response::builder()
-            .status(StatusCode::BAD_GATEWAY)
-            .header("Content-Type", "application/json")
-            .body(br#"{"ok":false,"error":"truncated response"}"#.to_vec())
-            .expect("proxy error response");
+        return failed(StatusCode::BAD_GATEWAY, "truncated response");
     }
 
     Response::builder()
         .status(StatusCode::from_u16(status).unwrap_or(StatusCode::BAD_GATEWAY))
         .header("Content-Type", ctype)
+        .header("Cache-Control", "no-store")
         .body(body)
         .expect("proxy response")
 }
@@ -185,7 +247,7 @@ fn manifest_of(meta: &[u8]) -> Option<(Manifest, String)> {
 /// rest. Writing the stamp first would make that gap invisible for ever.
 pub fn refresh_board(live: &Path) -> Result<Option<String>, String> {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-    let meta = fetch(&format!("{BOARD_ORIGIN}/board.meta.json"))?;
+    let meta = fetch(&format!("{SITE_ORIGIN}/board.meta.json"))?;
     let (files, want) = manifest_of(&meta).ok_or("board.meta.json names no manifest")?;
 
     let dir = live.join("board");
@@ -208,7 +270,7 @@ pub fn refresh_board(live: &Path) -> Result<Option<String>, String> {
             s.spawn(|| loop {
                 let i = next.fetch_add(1, Ordering::Relaxed);
                 let Some((name, sha)) = due.get(i) else { break };
-                let landed = fetch(&format!("{BOARD_ORIGIN}/board/{name}.json")).and_then(|body| {
+                let landed = fetch(&format!("{SITE_ORIGIN}/board/{name}.json")).and_then(|body| {
                     // A PUBLISH BETWEEN THE STAMP AND THIS FILE IS A TORN READ,
                     // not a corrupt one: the next pass fetches it against the
                     // newer stamp.
@@ -317,6 +379,18 @@ pub fn serve(root: &Path, live: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u
         println!("[serve] {rel} -> {}", body.as_ref().map_or("MISS".into(), |b| format!("{} bytes", b.len())));
     }
 
+    // A MISSING FILE IS A 404, never the SPA: `index.html` served under a
+    // script's name is executed as one, and the page's boot reports a syntax
+    // error as "WFSim could not start". The SPA answers only for a ROUTE.
+    if body.is_none() && is_file_path(&rel) {
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("Content-Type", "text/plain; charset=utf-8")
+            .header("Cache-Control", "no-store")
+            .body(format!("{rel}: not in this copy of the app").into_bytes())
+            .expect("missing file");
+    }
+
     let (bytes, mime) = match body {
         Some(b) => (b, mime_of(&rel)),
         // SPA fallback — `/weapons/<Wiki_Name>` is a client-side route, so
@@ -342,6 +416,15 @@ pub fn serve(root: &Path, live: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u
         .header("Cache-Control", "no-store")
         .body(bytes)
         .expect("response")
+}
+
+/// Whether a path names a FILE rather than a route: its last segment carries
+/// a type this protocol serves. Routes are wiki names, which carry none.
+fn is_file_path(rel: &str) -> bool {
+    let last = rel.rsplit('/').next().unwrap_or("");
+    last.rsplit_once('.').is_some_and(|(stem, ext)| {
+        !stem.is_empty() && ext != "html" && (mime_of(last) != "application/octet-stream" || ext == "onnx" || ext == "txt")
+    })
 }
 
 /// Paths reach us encoded (`/weapons/Kuva_Nukor`, and any weapon whose wiki
@@ -390,6 +473,31 @@ mod tests {
             "",
         ] {
             assert_eq!(live_path(no), None, "{no} must not be served from live/");
+        }
+    }
+
+    /// THE SITE SENDING A READER HOME SENDS THEM HOME IN THE APP, and nowhere
+    /// else is touched: a provider's sign-in page is still the provider's.
+    #[test]
+    fn a_redirect_to_the_site_lands_in_the_app() {
+        assert_eq!(local_target("https://wfsim.app/account?auth=signed_in"), "/account?auth=signed_in");
+        assert_eq!(local_target("https://wfsim.app"), "/");
+        assert_eq!(local_target("https://wfsim.app?auth=linked"), "/?auth=linked");
+        assert_eq!(local_target("/login?auth_error=state"), "/login?auth_error=state");
+        for away in ["https://discord.com/oauth2/authorize?x=1", "https://wfsim.app.example.com/"] {
+            assert_eq!(local_target(away), away);
+        }
+    }
+
+    /// A FILE THE APP DOES NOT HAVE IS NOT A ROUTE, and a route is not a file.
+    #[test]
+    fn only_a_route_falls_back_to_the_app() {
+        for file in ["lib/ua-parser-1.0.41.min.js", "asset/app.0123.js", "pkg/x_bg.wasm", "ocr/a.onnx",
+                     "ocr/ppocr-keys-v1.txt", "img/w/braton.webp", "style.css"] {
+            assert!(is_file_path(file), "{file} is a file");
+        }
+        for route in ["weapons/Kuva_Nukor", "download", "", "weapons/Braton", "account/billing", "index.html"] {
+            assert!(!is_file_path(route), "{route} is a route");
         }
     }
 

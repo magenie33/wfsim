@@ -1,36 +1,39 @@
-# THE CLIENT'S SLICE OF `site/`, declared ONCE and read by both things that
-# need it: `desktop/build.rs`, which packs it into the binary, and
+# WHAT THE CLIENT LEAVES OUT OF `site/`, declared ONCE and read by both things
+# that need it: `desktop/build.rs`, which packs the rest into the binary, and
 # `scripts/payload_manifest.py`, which describes it to the update channel.
 #
-# Two hand-maintained lists that must agree will not: a file added to one and
-# not the other is a client that either downloads something it cannot use or is
-# missing something it needs, and neither fails loudly.
+# THE CLIENT IS THE SITE, so this lists exclusions and not inclusions. A list of
+# what goes in is a list somebody has to remember to extend: a directory the
+# site gained and the list did not (`lib/`, `ocr/`) was a feature the client
+# silently lacked, and a script the page loads by address answered with nothing.
+# Here a new file ships by default, and a difference has to be written down
+# with its reason.
 #
-# WHAT IS NOT HERE. `site/` is 67 MB and 38 MB of it exists for CRAWLERS — `og/`
-# is link-preview cards, `weapons/` is one prerendered shell per weapon so a
-# search engine sees text. A desktop app has neither, so both are dropped.
+# A trailing `/` is a whole tree; `*/name` is that file in any directory below
+# the root; anything else is one file. Blank lines and `#` lines are ignored.
 #
-# A trailing `/` means the whole tree. Blank lines and `#` lines are ignored.
+# AND ONE RULE NO LINE STATES: a directory holding `generation.json` ships only
+# the names it lists. The site keeps the PREVIOUS build's content-addressed
+# files for a browser still holding a page from before the deploy; the client
+# swaps its whole directory at once and has no such page, and the wasm alone
+# is 10 MB.
 
-index.html
-logo.svg
-nona.svg
+# THE LIVE DATA PLANE — the board is rescored every hour against a release that
+# moves on a code change. Inside the payload it would bank a new immortal blob
+# each rescore and hand every client a file it replaces before reading it. The
+# shell fetches it and keeps it beside the release — docs/DISTRIBUTION.md.
+board/
+board.meta.json
 
-# THE BOARD IS NOT HERE, and must never be. It is 4.3 MB rescored three times an
-# hour against a release that moves on a code change: inside the payload it
-# banks a new immortal blob every twenty minutes and hands every client a
-# download for a file it replaces before it reads it. The shell fetches it and
-# keeps it beside the release — docs/DISTRIBUTION.md §The data plane.
+# CLOUDFLARE'S OWN CONFIGURATION, which the CDN reads and never serves.
+_headers
+_redirects
 
-# `asset/` is app.js, style.css and worker.js under CONTENT-ADDRESSED names, and
-# it is a TREE for the same reason `pkg/` is: the names carry a digest that
-# changes every release, so a list naming them by hand would go stale on the
-# first build and no one would find out until a client started missing files.
-#
-# `pkg/` is the wasm module, `pol/` the polarity icons, `img/` the weapon and mod
-# art the same-origin rule put in the repository. The art ships rather than
-# streams because "installed means offline" is the whole point of the client.
-asset/
-pkg/
-pol/
-img/
+# FOR CRAWLERS AND AGENTS, never requested by the page. `*/index.html` is each
+# page's prerendered copy (the app draws every page from the root
+# `index.html`), `og/` the link-preview cards, `weapons/` the markdown twins.
+# The three legal pages are not served from here either way: the site's worker
+# fills them, and the shell asks it for them (`protocol::SITE_PAGES`).
+*/index.html
+og/
+weapons/

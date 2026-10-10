@@ -10,6 +10,8 @@
 mod layout;
 mod payload;
 mod protocol;
+mod session;
+mod settings;
 mod update;
 
 use std::sync::Arc;
@@ -180,6 +182,78 @@ fn update_apply(state: tauri::State<Arc<Layout>>) -> Result<(), String> {
     state.promote().map_err(|e| e.to_string())
 }
 
+/// The reader's choices about the program, held for the life of the process
+/// and written to `desktop.json` on every change.
+type Prefs = std::sync::Mutex<settings::Settings>;
+
+#[tauri::command]
+fn desktop_settings(prefs: tauri::State<Prefs>) -> settings::Settings {
+    *prefs.lock().expect("settings")
+}
+
+/// One switch. The startup entry is changed FIRST and the file only after it
+/// took, so the page never shows a switch on that Windows does not have.
+#[tauri::command]
+fn desktop_set(
+    key: String,
+    on: bool,
+    prefs: tauri::State<Prefs>,
+    state: tauri::State<Arc<Layout>>,
+) -> Result<settings::Settings, String> {
+    if SELFTEST.load(std::sync::atomic::Ordering::Relaxed) {
+        return Err("not during a selftest".into());
+    }
+    let mut held = prefs.lock().expect("settings");
+    let mut next = *held;
+    next.set(&key, on)?;
+    if key == "autostart" {
+        settings::apply_autostart(on)?;
+    }
+    next.save(&state.settings())?;
+    *held = next;
+    Ok(next)
+}
+
+#[tauri::command]
+fn open_data_dir(state: tauri::State<Arc<Layout>>) -> Result<(), String> {
+    std::process::Command::new("explorer")
+        .arg(state.root())
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+/// Remove everything and exit — `settings::uninstall` is the list.
+#[tauri::command]
+fn uninstall(app: tauri::AppHandle, state: tauri::State<Arc<Layout>>) -> Result<(), String> {
+    if SELFTEST.load(std::sync::atomic::Ordering::Relaxed) {
+        return Err("not during a selftest".into());
+    }
+    let webview = tauri::Manager::path(&app).app_local_data_dir().ok();
+    settings::uninstall(state.root(), webview)?;
+    app.exit(0);
+    Ok(())
+}
+
+/// THE TRAY MENU SPEAKS THE PAGE'S LANGUAGE. The shell has no strings of its
+/// own to translate; the page names the two items once it knows its language.
+struct TrayMenu([tauri::menu::MenuItem<tauri::Wry>; 3]);
+
+#[tauri::command]
+fn tray_labels(open: String, settings: String, quit: String, menu: tauri::State<TrayMenu>) {
+    for (item, text) in menu.0.iter().zip([open, settings, quit]) {
+        let _ = item.set_text(text);
+    }
+}
+
+fn show_main<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(w) = tauri::Manager::get_webview_window(app, "main") {
+        let _ = w.show();
+        let _ = w.unminimize();
+        let _ = w.set_focus();
+    }
+}
+
 /// Runs the app headlessly, reports what it found and exits non-zero on any
 /// failure. The shell has to be verifiable WITHOUT a person watching a window:
 /// "it opened and looked right" is not a check that can run twice the same way.
@@ -250,27 +324,31 @@ const SELFTEST_PROBE: &str = r#"
       catch (e) { check('board honest', false, e.message); }
       try { const r = await fetch('/weapons/Torid'); const b = await r.text(); check('spa fallback', r.ok && b.includes('<'), 'HTTP ' + r.status + ', ' + b.length + ' bytes'); }
       catch (e) { check('spa fallback', false, e.message); }
+      // A SCRIPT THE PAGE LOADS BY ADDRESS IS IN THE PAYLOAD, asked by the
+      // page's own constant; and one that is not is a 404, never `index.html`,
+      // which the page would run and report as "could not start".
+      try {
+        const lib = await fetch(DEVICE_LIB);
+        const gone = await fetch('/lib/not-a-file.js');
+        check('scripts by address', lib.ok && /javascript/.test(lib.headers.get('content-type') || '') && gone.status === 404,
+              DEVICE_LIB + ' HTTP ' + lib.status + ', a missing one HTTP ' + gone.status);
+      } catch (e) { check('scripts by address', false, e.message); }
       try { localStorage.setItem('wfsim-selftest', '1'); localStorage.removeItem('wfsim-selftest'); check('localStorage', true, 'writable'); }
       catch (e) { check('localStorage', false, e.message); }
       // An external link must be handed to the OS, and an in-app one must NOT
       // be — a handler that grabs every click would break SPA routing, which
       // is the same anchor element with a relative href.
-      // THE PAGE'S OWN ANSWER, not the value that was injected. app.js keeps
-      // the ceiling in a module const, but the compute picker's face states
-      // what the current share BUYS as `lanes/cores`, and its menu names the
-      // lane count of every share — including 100%, which is the only one that
-      // can tell a raised ceiling from the old 16.
+      // THE PAGE'S OWN ANSWER, asked of `computeSteps` rather than read off
+      // the picker, whose wording moves with the design. Its last step is
+      // 100%, the only share that can tell a raised ceiling from the old 16.
       try {
-        const host = document.getElementById('compute-select');
-        const html = host ? host.outerHTML : '';
-        rep('PICKER ' + html.slice(0, 600));
-        const face = (host && host.textContent) || '';
-        const m = face.match(/(\d+)\s*\/\s*(\d+)/);
+        const steps = computeSteps();
+        const top = steps[steps.length - 1];
         const cores = navigator.hardwareConcurrency;
         // 100% must buy EVERY logical processor. Under the old cap this reads
         // 16 on any machine larger than that.
-        check('no lane ceiling', !!m && Number(m[1]) === cores && Number(m[2]) === cores,
-              'at 100% the picker buys ' + (m ? m[1] : '?') + ' of ' + cores + ' cores');
+        check('no lane ceiling', top.pct === 100 && top.lanes === cores,
+              'at ' + top.pct + '% the page buys ' + top.lanes + ' of ' + cores + ' cores');
       } catch (e) { check('lane ceiling', false, e.message); }
       try {
         const mk = (href) => { const a = document.createElement('a'); a.href = href; a.textContent = 'x'; document.body.appendChild(a); return a; };
@@ -312,6 +390,12 @@ const SELFTEST_PROBE: &str = r#"
               !host ? 'element missing'
                 : btn ? 'OFFERS ONE: ' + btn.textContent.trim()
                 : 'says ' + JSON.stringify(host.textContent.trim().slice(0, 40)));
+        // …AND IT IS WHERE THE PROGRAM IS CONFIGURED: the shell's settings,
+        // drawn through its own command. Drawn without them, the page tells
+        // the reader to download the build they are running.
+        const box = document.querySelector('#dl-settings [data-dt="close_to_tray"]');
+        check('desktop settings', !!box, box ? 'drawn, close to tray ' + box.checked
+              : 'not drawn: ' + JSON.stringify((document.getElementById('dl-settings') || {}).textContent || '').slice(0, 60));
         history.pushState({}, '', '/'); route();
         await new Promise((r) => setTimeout(r, 200));
       } catch (e) { check('no download offer', false, e.message); }
@@ -343,6 +427,46 @@ const SELFTEST_PROBE: &str = r#"
         check('board accepts POST', !r.ok && !body.includes('<!doctype'),
               'HTTP ' + r.status + ' ' + ct.split(';')[0] + ' — ' + body.slice(0, 50));
       } catch (e) { check('board accepts POST', false, e.message); }
+      // THE ACCOUNT IS THE SITE'S TOO. Answered by the SPA fallback, the page
+      // reads no providers and draws "accounts are not available here" — the
+      // client then lacks sign-in, sync and every extension page, and says so
+      // in words that sound deliberate. The site names its ways in.
+      try {
+        const r = await fetch('/api/account');
+        const j = await r.json();
+        check('account reaches out', r.ok && j.ok && Array.isArray(j.providers) && j.providers.length > 0,
+              'HTTP ' + r.status + ' providers ' + JSON.stringify(j.providers));
+      } catch (e) { check('account reaches out', false, e.message); }
+      // THE LEGAL PAGES ARE THE SITE'S: its worker fills every `data-ext` slot
+      // or removes it, so a slot still standing is the copy on disk.
+      try {
+        const r = await fetch('/privacy', { headers: { accept: 'text/html' } });
+        const b = await r.text();
+        check('legal pages from the site', r.ok && b.includes('<h1>') && !b.includes('data-ext='),
+              'HTTP ' + r.status + ', ' + (b.includes('data-ext=') ? 'UNFILLED SLOTS' : b.length + ' bytes'));
+      } catch (e) { check('legal pages from the site', false, e.message); }
+      // …AND SO IS WHAT A DEPLOYMENT MOUNTS (`01-ext.js`): its pages and the
+      // entries the top bar draws for them come through the same door.
+      try {
+        await extReady;
+        const n = Object.keys(EXT.pages).length;
+        check('extension mounted', n > 0, n + ' pages');
+        // A PAGE REACHED BY A LINK INSIDE THE APP asks for its data as one
+        // opened cold does; drawn from nothing, a priced page says nothing is
+        // on sale.
+        for (const p of Object.values(EXT.pages).filter((x) => x.open && x.load)) {
+          const real = p.load;
+          let asked = 0;
+          p.load = () => { asked++; return real(); };
+          nav('/');
+          await new Promise((r) => setTimeout(r, 200));
+          nav(p.path);
+          await new Promise((r) => setTimeout(r, 1500));
+          p.load = real;
+          check('ext page loads ' + p.path, asked > 0, asked + ' asks');
+        }
+        nav('/');
+      } catch (e) { check('extension mounted', false, e.message); }
       // THE SOURCE OFFER IS A LICENCE OBLIGATION, so it is asserted rather than
       // documented. It must name the version actually running — this client
       // conveys itself a new binary on every update, and a link to "latest"
@@ -369,7 +493,10 @@ const SELFTEST_PROBE: &str = r#"
           if (s.phase !== 'checking') break;
         }
         const phase = s ? s.phase : 'no status';
-        check('update channel', phase === 'uptodate' || phase === 'available',
+        // DOWNLOADING AND READY PASS TOO: the page's own updater starts a
+        // download once it sees one, and a download begins only after the
+        // manifest verified.
+        check('update channel', ['uptodate', 'available', 'downloading', 'ready'].includes(phase),
               phase + (s && s.version ? ' @ ' + s.version : '') + (s && s.message ? ' — ' + s.message : ''));
       } catch (e) { check('update channel', false, e.message); }
     } catch (e) {
@@ -499,8 +626,17 @@ const UPDATE_PROBE: &str = r#"
 /// before app.js's own handlers, several of which call stopPropagation on the
 /// link itself (`wl()` does, so a wiki link inside a mod card does not also
 /// select the card).
+/// Where the page is served from: Tauri maps a custom scheme to
+/// `http://<scheme>.localhost` on Windows, and keeps the scheme elsewhere.
+#[cfg(windows)]
+const APP_ORIGIN: &str = "http://wfsim.localhost";
+#[cfg(not(windows))]
+const APP_ORIGIN: &str = "wfsim://localhost";
+
 const LINK_HANDOFF: &str = r#"
-document.addEventListener('click', (e) => {
+// THE APP'S OWN PAGES ONLY. A sign-in leaves for a provider in this window,
+// and a link on the provider's page is the provider's business.
+if (location.hostname === 'wfsim.localhost' || location.protocol === 'wfsim:') document.addEventListener('click', (e) => {
   const a = e.target && e.target.closest && e.target.closest('a[href]');
   if (!a) return;
   const href = a.getAttribute('href') || '';
@@ -604,6 +740,21 @@ fn main() {
         return;
     }
 
+    // `--uninstall`: the same removal as the settings page, for a program that
+    // will not open far enough to show it.
+    if std::env::args().any(|a| a == "--uninstall") {
+        let root = layout::data_root();
+        let webview = root.parent().map(|p| p.join("app.wfsim.desktop"));
+        match settings::uninstall(&root, webview) {
+            Ok(()) => println!("uninstalling: {} and this program are removed in a moment", root.display()),
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     let update_test = std::env::args().any(|a| a == "--selftest-update");
     let expect_refused = std::env::args().any(|a| a == "--expect-refused");
     let selftest = std::env::args().any(|a| a == "--selftest") || measure_lanes.is_some() || update_test;
@@ -617,13 +768,16 @@ fn main() {
         println!("reset: removed {}", dir.display());
     }
     let layout = Arc::new(Layout::open().expect("could not prepare the app directory"));
-    let rolled_back = layout.boot_begin();
+    // A SECOND LAUNCH TOUCHES NOTHING: it hands over to the first
+    // (`tauri_plugin_single_instance`) and exits, so it neither counts a boot
+    // nor fetches a board.
+    let rolled_back = layout.primary && layout.boot_begin();
     let root = layout.current();
     let live = layout.live();
     // THE BOARD IS FETCHED, NOT SHIPPED. On its own thread from the start: the
     // window must never wait on a network, and a client that cannot reach one
     // shows the seed the release carried — docs/DISTRIBUTION.md §The data plane.
-    {
+    if layout.primary {
         let live = live.clone();
         std::thread::spawn(move || loop {
             let wait = match protocol::refresh_board(&live) {
@@ -689,19 +843,51 @@ TIMEOUT: the page never reported after {secs}s
         None => init,
     };
 
-    tauri::Builder::default()
+    let jar = Arc::new(session::Jar::open(layout.session()));
+    let prefs = settings::Settings::load(&layout.settings());
+    // WRITTEN AGAIN WHILE ON — see `settings::apply_autostart`.
+    if prefs.autostart && !selftest && layout.primary {
+        if let Err(e) = settings::apply_autostart(true) {
+            eprintln!("autostart: {e}");
+        }
+    }
+    let hidden = !selftest
+        && prefs.start_minimized
+        && std::env::args().any(|a| a == settings::AUTOSTART_ARG);
+    let mut builder = tauri::Builder::default();
+    // NOT IN A CHECK: a selftest run beside the reader's own copy would find
+    // it, hand over, and exit having checked nothing.
+    if !selftest {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| show_main(app)));
+    }
+    builder
         .manage(layout)
+        .manage(Prefs::new(prefs))
         .invoke_handler(tauri::generate_handler![
             mark_healthy, app_version, open_external,
-            update_check, update_download, update_status, update_apply, source_url
+            update_check, update_download, update_status, update_apply, source_url,
+            desktop_settings, desktop_set, open_data_dir, uninstall, tray_labels
         ])
+        // THE CLOSE BUTTON HIDES, when the reader chose that and there is a
+        // tray icon to come back through — never a window gone with no way back.
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let app = tauri::Manager::app_handle(window);
+                let to_tray = tauri::Manager::state::<Prefs>(window).lock().is_ok_and(|p| p.close_to_tray);
+                if to_tray && app.tray_by_id("main").is_some() {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         // ASYNCHRONOUS, because one of these paths goes to the network. A board
         // submission is an HTTP round trip to wfsim.app, and answering it from
         // the synchronous handler would block whatever thread Tauri calls it on
         // for as long as that takes.
         .register_asynchronous_uri_scheme_protocol("wfsim", move |_ctx, req, responder| {
             if protocol::is_proxied(&req) {
-                std::thread::spawn(move || responder.respond(protocol::proxy(&req)));
+                let jar = jar.clone();
+                std::thread::spawn(move || responder.respond(protocol::proxy(&req, &jar)));
             } else {
                 responder.respond(protocol::serve(&root, &live, &req));
             }
@@ -712,7 +898,43 @@ TIMEOUT: the page never reported after {secs}s
                 .title("WFSim")
                 .inner_size(1440.0, 920.0)
                 .min_inner_size(960.0, 600.0)
+                .visible(!hidden)
                 .center();
+            if !selftest {
+                use tauri::menu::{Menu, MenuItem};
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+                let open = MenuItem::with_id(app, "open", "Open WFSim", true, None::<&str>)?;
+                let settings = MenuItem::with_id(app, "settings", "Desktop settings", true, None::<&str>)?;
+                let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&open, &settings, &quit])?;
+                let mut tray = TrayIconBuilder::with_id("main")
+                    .tooltip("WFSim")
+                    .menu(&menu)
+                    .show_menu_on_left_click(false)
+                    .on_menu_event(|app, e| match e.id().as_ref() {
+                        "open" => show_main(app),
+                        // AN IN-PAGE ROUTE, not a navigation: a reload would
+                        // throw away a search or a fight the reader left running.
+                        "settings" => {
+                            show_main(app);
+                            if let Some(w) = tauri::Manager::get_webview_window(app, "main") {
+                                let _ = w.eval("typeof nav === 'function' ? nav('/download') : (location.href = '/download')");
+                            }
+                        }
+                        "quit" => app.exit(0),
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, e| {
+                        if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+                            show_main(tray.app_handle());
+                        }
+                    });
+                if let Some(icon) = app.default_window_icon() {
+                    tray = tray.icon(icon.clone());
+                }
+                tray.build(app)?;
+                tauri::Manager::manage(app, TrayMenu([open, settings, quit]));
+            }
             if selftest {
                 // A CHECK MUST NOT EDIT THE READER'S SETTINGS. The probe writes
                 // localStorage (it has to — the compute share lives there), and
@@ -723,6 +945,27 @@ TIMEOUT: the page never reported after {secs}s
                 let _ = std::fs::remove_dir_all(&dir);
                 win = win.data_directory(dir);
             }
+            // THE SITE, REACHED IN THIS WINDOW, IS THE APP. A provider sends a
+            // sign-in back to `wfsim.app/api/auth/…/callback`; opened there it
+            // would finish in the webview's own cookies, which the shell never
+            // sends, and leave the reader on the remote site. Opened here it
+            // passes through the proxy and lands the session where it is used.
+            let handle = app.handle().clone();
+            win = win.on_navigation(move |url| {
+                if url.scheme() != "https" || url.host_str() != Some("wfsim.app") {
+                    return true;
+                }
+                let query = url.query().map(|q| format!("?{q}")).unwrap_or_default();
+                if let Ok(here) = tauri::Url::parse(&format!("{APP_ORIGIN}{}{query}", url.path())) {
+                    let handle = handle.clone();
+                    std::thread::spawn(move || {
+                        if let Some(w) = tauri::Manager::get_webview_window(&handle, "main") {
+                            let _ = w.navigate(here);
+                        }
+                    });
+                }
+                false
+            });
             win
                 .initialization_script(&init)
                 .build()?;

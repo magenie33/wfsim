@@ -25,7 +25,11 @@ sha2 = "0.10"
 serde_json = "1"
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
+# ONE PROCESS PER READER. With a tray, a second launch is a reader looking for
+# the window they closed; two processes would be two cookie jars and two
+# updaters writing one directory.
+tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
@@ -42,7 +46,8 @@ getrandom = "0.2"
 # only: every other platform hands the URL to xdg-open or open, which needs no
 # crate at all.
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation"] }
+# The registry, for the one entry this program writes: starting with Windows.
+windows-sys = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation", "Win32_System_Registry"] }
 
 [profile.release]
 # The shell ships as one file the reader downloads once; size is worth more

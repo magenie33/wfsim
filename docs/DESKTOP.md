@@ -10,11 +10,18 @@ Every simulation runs on the reader's own CPU, so the client works offline, and
 it has its own profile, so presets in `localStorage` survive clearing the
 browser's data.
 
-**It is not faster to compute with, and that is deliberate.** The engine could
-be called natively instead of through wasm, worth perhaps 20–50%, but then the
-shell would depend on `engine/` and every formula change would mean
-re-downloading the whole 34 MB executable instead of swapping a file. This
-project releases too often for that trade: see "two layers" below.
+**THE CLIENT IS THE SITE, and differs only in where it runs.** Every page,
+every account feature and every number is the browser's; what the client adds
+is what a browser tab cannot give — content already on disk, a profile of its
+own, and computing that no browser puts to sleep. A feature only the client
+has, or one only the browser has, is a debt both copies then carry.
+
+**IT COMPUTES WITH THE SAME WASM, NEVER A NATIVE ENGINE**, and speed does not
+buy that back. A native build is perhaps 20–50% faster, but two engines are two
+answers: `exp`/`pow` from the platform's maths library need not agree with
+wasm's to the last bit, and the board's verification and `one_fight`'s "a moved
+answer is a bug" both rest on one binary computing one number. The same answer
+everywhere is worth more than the speed.
 
 ## Shape
 
@@ -39,6 +46,17 @@ The window is a Tauri 2 webview pointed at a **custom protocol** that reads
 firewall prompt on every install. `protocol.rs` serves files with
 `Cache-Control: no-store` — `index.html` and `app.js` keep their names across a
 swap, so the webview would happily serve its own cached copy of the old one.
+
+**The site's api reaches through the shell.** Every engine call is answered by
+the wasm in the page, so a request reaching `/api/` is the SITE — board,
+account, sync, the extension script — and `protocol::proxy` forwards all of it
+to `wfsim.app`. Without it the SPA fallback answers `/api/account` with
+`index.html`, and the page says accounts are not available here. The shell, not
+the webview, keeps the site's cookies (`session.rs`, `session.json` beside
+`current/`): the page lives at `wfsim.localhost` and the cookies belong to
+`wfsim.app`. A sign-in leaves for its provider in the window, and the
+provider's redirect back to `wfsim.app` is caught by `on_navigation` and
+replayed through the proxy, so the session lands in the shell.
 
 Three planes travel this way and only one of them is a release; which file
 belongs to which, and why the board is not one of them, is
@@ -125,11 +143,19 @@ desktop/target/debug/wfsim-desktop.exe --reset     # forget current/ and unpack 
 ```
 
 `site/` must be built first (`python scripts/build_site_app.py`); `build.rs`
-refuses otherwise. The payload is the client's slice of `site/` — 764 files,
-29.2 MB — and it drops `og/` and `weapons/`, which are 38 MB of link-preview
-cards and prerendered crawler pages that a desktop app has no use for.
+refuses otherwise. **The payload is all of `site/` less what
+`desktop/payload.lst` excludes**, each line with its reason: the board (live
+data), Cloudflare's configuration, the pages for crawlers and agents, and the
+previous build's content-addressed files. Listing exclusions rather than
+inclusions is the parity: a file the site gains ships without anyone
+remembering to add it, which is how the riven reader's `ocr/` and the scripts
+under `lib/` were once missing from the client.
 
-**The file list is declared once**, in `build.rs`, which writes what it built to
+The three legal pages are not served from disk either way: the site's worker
+fills sections into them (`worker/ext_documents.js`, read by `build.rs`), so the
+shell asks the site for them as it does for `/api/`.
+
+**What was packed is written once**, by `build.rs`, to
 `desktop/target/payload-manifest.json`; the release script reads that back
 rather than keeping a second copy.
 

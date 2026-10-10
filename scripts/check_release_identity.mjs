@@ -131,9 +131,10 @@ check(/^\/pkg\/\*$/m.test(read("_headers"))
 // Nothing breaks if it goes back in, which is why this is asserted.
 const list = readFileSync(resolve(ROOT, "desktop/payload.lst"), "utf8")
   .split(NL).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
-const carried = list.filter((l) => l.startsWith("board.") || l.startsWith("board/"));
-check(carried.length === 0, "the board is not in the payload",
-  `desktop/payload.lst carries ${carried.join(" ")}`);
+// The list names what stays OUT, so the board must be named in it.
+const missing = ["board/", "board.meta.json"].filter((l) => !list.includes(l));
+check(missing.length === 0, "the board is not in the payload",
+  `desktop/payload.lst does not exclude ${missing.join(" ")}`);
 
 // EVERY ASSET THE PAGE NAMES IS IMMUTABLE, which is the whole of the caching
 // model: the HTML is the one mutable file a release has, it names digests of

@@ -276,13 +276,17 @@
     <!-- The button and the source it comes from, drawn by `renderDownloadPage`
          so that one function answers the machine asking. -->
     <div class="dl-offer" id="dl-offer"></div>
+    <!-- INSIDE THE CLIENT this page is where the program is configured:
+         `renderDesktopSettings` draws here, and the sections that answer a
+         downloader (`data-dl-web`) step aside. -->
+    <div id="dl-settings" hidden></div>
 
     <!-- FIRST, because it is the first thing that happens and the most common
          reason a download is abandoned. The wording matches the notes file that
          ships beside the binary (`build_desktop.py`); it is on the page as well
          because a warning you meet before you have read the notes is a warning
          with no answer next to it. -->
-    <section class="block">
+    <section class="block" data-dl-web>
       <div class="bh"><h2 data-i18n>The first time you open it</h2></div>
       <div class="bb">
         <ul class="sup-costs">
@@ -293,7 +297,7 @@
       </div>
     </section>
 
-    <section class="block">
+    <section class="block" data-dl-web>
       <div class="bh"><h2 data-i18n>What it does</h2></div>
       <div class="bb">
         <ul class="sup-costs">
@@ -309,8 +313,8 @@
       <div class="bh"><h2 data-i18n>Install and uninstall</h2></div>
       <div class="bb">
         <ul class="sup-costs">
-          <li data-i18n>No installer: it needs no administrator rights and writes nothing to the registry.</li>
-          <li data-i18n>To uninstall, delete the file. Its data is in %LOCALAPPDATA%\WFSim.</li>
+          <li data-i18n>No installer: it needs no administrator rights, and writes to the registry only if you turn on starting with Windows.</li>
+          <li data-i18n>To uninstall, use Uninstall in the program's own settings: it removes the file and everything it kept in %LOCALAPPDATA%\WFSim.</li>
         </ul>
       </div>
     </section>

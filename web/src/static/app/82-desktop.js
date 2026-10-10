@@ -94,7 +94,7 @@ function downloadFor(ua) {
 /// download fixes something only a download can. Raise it when a released shell
 /// changes behaviour a reader would notice, and only once that file is on the
 /// drive `DOWNLOADS` points at — or the notice sends readers to the old one.
-const SHELL_MINIMUM = [2026, 10, 3];
+const SHELL_MINIMUM = [2026, 10, 10];
 /// Whether the running shell predates it. A shell too old to state its build
 /// predates everything.
 function shellIsOld() {
@@ -116,11 +116,13 @@ function renderDownloadPage() {
   if (window.__WFSIM_DESKTOP__ && shellIsOld()) {
     host.innerHTML = downloadOffer(DOWNLOADS[0]) + `<span class="dl-why">${escHtml(
       tr("This copy of the program is older than the current one. Download the new WFSim.exe and use it in place of this one — your saved builds stay."))}</span>`;
+    renderDesktopSettings();
     return;
   }
   if (window.__WFSIM_DESKTOP__) {
     host.innerHTML = `<span class="dl-why">${escHtml(
       tr("You are running the Windows app. It updates itself — there is nothing to download here."))}</span>`;
+    renderDesktopSettings();
     return;
   }
   const mine = downloadFor(navigator.userAgent);
@@ -134,9 +136,95 @@ function renderDownloadPage() {
       tr("This is a Windows program — it will not run on the machine you are reading this on."))}</span>`);
 }
 
+/// INSIDE THE CLIENT, /download IS ITS SETTINGS, and the way in says so: the
+/// settings menu's row, its icon and the page's heading. Rewritten in the
+/// English source while app.js loads, before the page is translated, so the
+/// one translation path covers it.
+if (window.__WFSIM_DESKTOP__) {
+  const link = document.querySelector(".dl-link"), label = link && link.querySelector(".tbl");
+  if (link) {
+    link.title = "Desktop settings";
+    const svg = link.querySelector("svg path");
+    if (svg) svg.setAttribute("d", "M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM19.4 13.5l1.6 1.2-1.8 3.1-1.9-.7a7 7 0 0 1-1.7 1l-.3 2h-3.6l-.3-2a7 7 0 0 1-1.7-1l-1.9.7-1.8-3.1 1.6-1.2a7 7 0 0 1 0-2l-1.6-1.2 1.8-3.1 1.9.7a7 7 0 0 1 1.7-1l.3-2h3.6l.3 2a7 7 0 0 1 1.7 1l1.9-.7 1.8 3.1-1.6 1.2a7 7 0 0 1 0 2z");
+  }
+  if (label) label.textContent = "Desktop settings";
+  const h = $("h-download");
+  if (h) h.textContent = "Desktop settings";
+}
+
+/// THE PROGRAM'S OWN SETTINGS, on the client's /download — the page a browser
+/// reader downloads from is, inside the client, where it is configured. The
+/// shell holds them (`desktop/src/settings.rs`), because starting hidden is
+/// decided before any page exists; a shell too old to have them says so.
+const DESKTOP_SWITCHES = [
+  ["autostart", "Start with Windows", "Opens WFSim when you sign in to Windows."],
+  ["start_minimized", "Start in the tray", "When Windows starts it, stay in the tray instead of opening a window."],
+  ["close_to_tray", "Close to the tray",
+    "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
+];
+/// What the shell last said: null before asking, false for a shell without them.
+let desktopPrefs = null;
+let desktopError = "";
+/// THE UNINSTALL IS TWO CLICKS, the second beside what it destroys: it
+/// deletes every build saved in this profile, and no native dialog is allowed.
+let uninstallAsked = false;
+
+async function renderDesktopSettings() {
+  const host = $("dl-settings");
+  if (!host || !window.__TAURI_INTERNALS__) return;
+  const invoke = (cmd, args = {}) => window.__TAURI_INTERNALS__.invoke(cmd, args);
+  for (const el of document.querySelectorAll("#download-page [data-dl-web]")) el.hidden = true;
+  host.hidden = false;
+  if (desktopPrefs === null) {
+    try { desktopPrefs = await invoke("desktop_settings"); } catch (_) { desktopPrefs = false; }
+  }
+  const section = (title, body) => `<section class="block"><div class="bh"><h2>${escHtml(tr(title))}</h2></div><div class="bb">${body}</div></section>`;
+  if (!desktopPrefs) {
+    host.innerHTML = section("Settings", `<p class="dl-why">${escHtml(tr("These settings need the new version of the program."))}</p>`
+      + `<div class="dl-offer">${downloadOffer(DOWNLOADS[0])}</div>`);
+    return;
+  }
+  const p = desktopPrefs;
+  const switches = DESKTOP_SWITCHES.map(([key, name, says]) => {
+    const off = key === "start_minimized" && !p.autostart;
+    return `<label class="dt-sw"><input type="checkbox" data-dt="${key}"${p[key] ? " checked" : ""}${off ? " disabled" : ""}>`
+      + `<b>${escHtml(tr(name))}</b><small>${escHtml(tr(says))}</small></label>`;
+  }).join("");
+  const uninstall = uninstallAsked
+    ? `<p class="dt-err">${escHtml(tr("This turns off starting with Windows and deletes the program, its data and everything saved in it. Builds, scenarios and rivens not synced to an account are lost: to keep them, export them first from Saved items in the settings menu."))}</p>`
+      + `<div class="dt-acts"><button type="button" class="btn-danger" data-dt-a="uninstall-go">${escHtml(tr("Uninstall for good"))}</button>`
+      + `<button type="button" class="ghost-btn btn-sm" data-dt-a="uninstall-no">${escHtml(tr("Cancel"))}</button></div>`
+    : `<div class="dt-acts"><button type="button" class="ghost-btn btn-sm" data-dt-a="uninstall">${escHtml(tr("Uninstall"))}</button></div>`;
+  host.innerHTML = section("Settings", switches
+      + `<div class="dt-acts"><button type="button" class="ghost-btn btn-sm" data-dt-a="folder">${escHtml(tr("Open the data folder"))}</button></div>`
+      + (desktopError ? `<p class="dt-err">${escHtml(desktopError)}</p>` : ""))
+    + section("Uninstall", `<p class="dl-why">${escHtml(tr("Removes this program and everything it keeps on this computer."))}</p>${uninstall}`);
+  host.onchange = async (e) => {
+    const box = e.target.closest && e.target.closest("[data-dt]");
+    if (!box) return;
+    try {
+      desktopPrefs = await invoke("desktop_set", { key: box.getAttribute("data-dt"), on: box.checked });
+      desktopError = "";
+    } catch (err) { desktopError = String(err); }
+    renderDesktopSettings();
+  };
+  host.onclick = async (e) => {
+    const b = e.target.closest && e.target.closest("[data-dt-a]");
+    if (!b) return;
+    const a = b.getAttribute("data-dt-a");
+    if (a === "folder") invoke("open_data_dir").catch((err) => { desktopError = String(err); renderDesktopSettings(); });
+    if (a === "uninstall" || a === "uninstall-no") { uninstallAsked = a === "uninstall"; renderDesktopSettings(); }
+    if (a === "uninstall-go") {
+      try { await invoke("uninstall"); } catch (err) { desktopError = String(err); uninstallAsked = false; renderDesktopSettings(); }
+    }
+  };
+}
+
 function mountDesktopUpdater() {
   if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
   const invoke = (cmd, args = {}) => window.__TAURI_INTERNALS__.invoke(cmd, args);
+
+  invoke("tray_labels", { open: tr("Open WFSim"), settings: tr("Desktop settings"), quit: tr("Quit") }).catch(() => { /* an older shell has no tray */ });
 
   const bar = document.createElement("div");
   bar.className = "dtup";
@@ -262,7 +350,7 @@ function offerNewShell() {
   const d = DOWNLOADS[0];
   const bar = document.createElement("div");
   bar.className = "dtup dtup-shell";
-  bar.innerHTML = `<span class="dtup-t">${escHtml(tr("A new version of the program is out — the board loads faster and survives a dropped connection."))}</span>`
+  bar.innerHTML = `<span class="dtup-t">${escHtml(tr("A new version of the program is out — you can sign in to your account, and it can start with Windows, sit in the tray and uninstall itself."))}</span>`
     + `<a class="dtup-b" href="${escHtml(d.source.url)}" target="_blank" rel="noopener">${escHtml(tr("Download"))}</a>`
     + `<button class="dtup-x" title="${escHtml(tr("Later"))}">×</button>`;
   bar.querySelector(".dtup-b").addEventListener("click", () => track("desktop.download"));

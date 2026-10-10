@@ -7,8 +7,8 @@ release has no reason to install. So the LIST is declared once
 (`desktop/payload.lst`, read by both) and this reproduces the description of it.
 
 WHAT IT MUST MATCH, byte for byte: `serde_json` sorts map keys, so the encoding
-here is compact and key-sorted, and the file ORDER is the walk order — the
-declared root files first, then each declared tree, path-sorted. `ship.py`
+here is compact and key-sorted, and the file ORDER is the walk order — all of
+`site/`, path-sorted, less what the list excludes. `ship.py`
 asserts the two agree on every run rather than trusting this comment, because
 two producers of one artefact are exactly the thing that drifts silently.
 
@@ -26,14 +26,35 @@ SITE = ROOT / "site"
 LIST = ROOT / "desktop" / "payload.lst"
 
 
-def declared() -> tuple[list[str], list[str]]:
-    files, dirs = [], []
-    for line in LIST.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        (dirs if line.endswith("/") else files).append(line.rstrip("/"))
-    return files, dirs
+def rules() -> list[str]:
+    return [line.strip() for line in LIST.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")]
+
+
+def generation(d: pathlib.Path) -> list[str] | None:
+    try:
+        return json.loads((d / "generation.json").read_text(encoding="utf-8"))["names"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def excluded(rel: str) -> bool:
+    """`build.rs`'s `excluded`: the list's lines, then the generation rule."""
+    for line in rules():
+        if line.startswith("*"):
+            hit = rel.endswith(line[1:])
+        elif line.endswith("/"):
+            hit = rel.startswith(line)
+        else:
+            hit = rel == line
+        if hit:
+            return True
+    segs = rel.split("/")
+    for i in range(len(segs)):
+        names = generation(SITE.joinpath(*segs[:i]))
+        if names is not None and segs[i] != "generation.json" and segs[i] not in names:
+            return True
+    return False
 
 
 def walk(d: pathlib.Path) -> list[pathlib.Path]:
@@ -54,10 +75,7 @@ def version() -> str:
 
 
 def build() -> bytes:
-    root_files, root_dirs = declared()
-    paths = [SITE / f for f in root_files]
-    for d in root_dirs:
-        paths.extend(walk(SITE / d))
+    paths = [p for p in walk(SITE) if not excluded(p.relative_to(SITE).as_posix())]
 
     index = []
     for p in paths:

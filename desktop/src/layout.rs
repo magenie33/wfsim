@@ -36,6 +36,26 @@ struct Boot {
 
 pub struct Layout {
     root: PathBuf,
+    /// Whether this process holds the directory. Only the first instance may
+    /// change it: a second launch discarding `next/` deleted the update the
+    /// first had just downloaded, and the restart then had nothing to promote.
+    pub primary: bool,
+    /// Held open for the life of the process; the claim IS this handle.
+    _claim: Option<std::fs::File>,
+}
+
+/// Claim the directory for this process, or learn another one holds it.
+/// An exclusive open on Windows; elsewhere there is no claim and every launch
+/// is the first, as before.
+fn claim(root: &Path) -> Option<std::fs::File> {
+    let mut o = std::fs::OpenOptions::new();
+    o.write(true).create(true).truncate(false);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        o.share_mode(0);
+    }
+    o.open(root.join("instance.lock")).ok()
 }
 
 /// Where this app keeps the copy of the site it serves.
@@ -47,6 +67,18 @@ pub struct Layout {
 /// The name differs with the convention too: `WFSim` where directories are
 /// capitalised, `wfsim` where they are not.
 pub fn data_root() -> PathBuf {
+    let root = platform_root();
+    // A CHECK RUNS IN A DIRECTORY OF ITS OWN. `--reset --selftest` removes the
+    // directory it uses, and with the reader's own that was the reader's
+    // install — a downloaded update, the session — under a running app.
+    let check = std::env::args().any(|a| a.starts_with("--selftest") || a == "--measure-lanes");
+    match (check, root.file_name()) {
+        (true, Some(n)) => root.with_file_name(format!("{}-selftest", n.to_string_lossy())),
+        _ => root,
+    }
+}
+
+fn platform_root() -> PathBuf {
     #[cfg(windows)]
     {
         std::env::var("LOCALAPPDATA")
@@ -74,14 +106,34 @@ pub fn data_root() -> PathBuf {
 
 impl Layout {
     pub fn open() -> std::io::Result<Self> {
-        let me = Self { root: data_root() };
-        std::fs::create_dir_all(&me.root)?;
+        let root = data_root();
+        std::fs::create_dir_all(&root)?;
+        let lock = claim(&root);
+        let me = Self { root, primary: lock.is_some(), _claim: lock };
         std::fs::create_dir_all(me.live())?;
+        if !me.primary {
+            return Ok(me);
+        }
 
         // A `next/` left behind is an update that died partway. It is never
         // salvageable — the manifest check that would have promoted it never
         // ran — so it is discarded rather than resumed.
         let _ = std::fs::remove_dir_all(me.next());
+
+        // A NEW EXECUTABLE STARTS ON THE CONTENT IT WAS BUILT WITH. Unpacked
+        // only on a first launch, a downloaded shell ran the old content in
+        // `current/` — the new shell's own pages missing until a release
+        // carried them. The old content becomes `prev/`, the way back, and the
+        // updater takes it from there.
+        let built = payload::digest();
+        let fresh = std::fs::read_to_string(me.unpacked_file()).ok().as_deref() != Some(built.as_str());
+        if fresh && me.current().join("index.html").exists() {
+            let _ = std::fs::remove_dir_all(me.next());
+            std::fs::create_dir_all(me.next())?;
+            let m = payload::unpack_to(&me.next())?;
+            std::fs::write(me.next().join(".manifest.json"), serde_json::to_vec_pretty(&m)?)?;
+            me.promote()?;
+        }
 
         if !me.current().join("index.html").exists() {
             if me.prev().join("index.html").exists() {
@@ -93,6 +145,7 @@ impl Layout {
                 me.write_manifest(&payload::manifest())?;
             }
         }
+        std::fs::write(me.unpacked_file(), built)?;
         Ok(me)
     }
 
@@ -102,8 +155,15 @@ impl Layout {
     /// every hour and a release does not, so it survives an update
     /// instead of being replaced by one — docs/DISTRIBUTION.md §The data plane.
     pub fn live(&self) -> PathBuf { self.root.join("live") }
+    /// The site's cookies, which the shell keeps for the page (`session.rs`).
+    pub fn session(&self) -> PathBuf { self.root.join("session.json") }
+    /// The reader's choices about the program itself (`settings.rs`).
+    pub fn settings(&self) -> PathBuf { self.root.join("desktop.json") }
+    pub fn root(&self) -> &Path { &self.root }
     fn prev(&self) -> PathBuf { self.root.join("prev") }
     fn boot_file(&self) -> PathBuf { self.root.join("boot.json") }
+    /// The digest of the executable whose content was last unpacked here.
+    fn unpacked_file(&self) -> PathBuf { self.root.join("unpacked.txt") }
     fn manifest_file(&self) -> PathBuf { self.current().join(".manifest.json") }
 
     pub fn manifest(&self) -> payload::Manifest {

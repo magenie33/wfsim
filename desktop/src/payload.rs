@@ -7,6 +7,8 @@
 //! reads that directory, never this.
 use std::path::Path;
 
+use sha2::Digest;
+
 use serde::{Deserialize, Serialize};
 
 /// Built by `build.rs`: u32 LE manifest length, manifest JSON, then every
@@ -43,6 +45,14 @@ fn split() -> (Manifest, &'static [u8]) {
 
 pub fn manifest() -> Manifest {
     split().0
+}
+
+/// WHICH EXECUTABLE'S CONTENT THIS IS: a digest of the embedded manifest's own
+/// bytes. Not the commit — two builds of one commit from different trees carry
+/// different files, and this has to tell them apart.
+pub fn digest() -> String {
+    let len = u32::from_le_bytes(PAYLOAD[0..4].try_into().expect("payload header")) as usize;
+    format!("{:x}", sha2::Sha256::digest(&PAYLOAD[4..4 + len]))
 }
 
 /// Write the embedded app into `dir`, creating it. Any existing content is
