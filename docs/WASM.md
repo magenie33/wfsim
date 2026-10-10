@@ -155,7 +155,9 @@ into steps the PAGE drives (`woptQuickFleet`):
    PAUSES and the next start runs, so one call returns every start's next
    batch: `{ pending: [...] }`. An item is a build, or `{build, runs}` — a
    step screen's short measurement (docs/OPTIMIZER.md, "Each step is
-   screened"), answered `rough: true`; the page passes both through unread.
+   screened"), answered `rough: true` with its runs (`shards`), or `{build,
+   shards}`, a full measurement that continues them, answered with its best
+   order's runs (`shard`); the page passes all of it through unread.
 2. The page splits the batch across all workers, the leader included:
    `quick_fleet: { score: [...] }` → each build's score and the element order
    it scored best at.

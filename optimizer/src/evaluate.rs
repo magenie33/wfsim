@@ -5,7 +5,7 @@
 use std::sync::atomic::Ordering;
 
 use wfsim_engine::arena::Arena;
-use wfsim_engine::fight::{monte_carlo, FightParams, Summary};
+use wfsim_engine::fight::{monte_carlo, shard_onto, FightParams, Shard, Summary};
 use wfsim_engine::model::StackPolicy;
 
 use crate::{Candidate, FunnelState, RoundBoardFn};
@@ -55,6 +55,25 @@ pub fn evaluate(c: &Candidate, ai: usize, s: &Scenario, runs: u32, seed: u64) ->
         Some(p) => monte_carlo(&p, runs, seed),
         None => Summary::refused(s.arena.duration_seconds),
     }
+}
+
+/// [`evaluate`] to `runs`, keeping the runs `prior` already fought — the first
+/// `prior.runs` of the same stream — and handing back the shard, so a longer
+/// measurement can keep these in turn. The summary is [`evaluate`]'s to the bit
+/// (`shard_onto`). A refused build has no shard.
+pub fn evaluate_onto(
+    c: &Candidate,
+    ai: usize,
+    s: &Scenario,
+    runs: u32,
+    seed: u64,
+    prior: Option<&Shard>,
+) -> (Summary, Option<Shard>) {
+    let Some(p) = (s.params)(c, ai) else { return (Summary::refused(s.arena.duration_seconds), None) };
+    let acc = prior.filter(|x| x.runs <= runs).cloned().unwrap_or_default();
+    let from = acc.runs;
+    let sh = shard_onto(&p, acc, from, runs - from, seed, false, &mut |_| {});
+    (sh.clone().finish(&p, runs).0, Some(sh))
 }
 
 /// One evaluation job: a candidate paired with an arcane INDEX into the

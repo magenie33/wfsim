@@ -475,6 +475,18 @@ pub fn evaluate_paired(
     par_map(jobs, |(c, ai)| evaluate(c, *ai, scenario, runs, seed))
 }
 
+/// [`evaluate_paired`], each job continuing the shard of the runs it already
+/// fought on the same stream ([`crate::evaluate::evaluate_onto`]).
+pub fn evaluate_paired_onto(
+    jobs: &[(&Candidate, usize, Option<&wfsim_engine::fight::Shard>)],
+    scenario: &Scenario,
+    runs: u32,
+    seed: u64,
+) -> Vec<(Summary, Option<wfsim_engine::fight::Shard>)> {
+    let seed = job_seed(seed, 0, 0);
+    par_map(jobs, |(c, ai, prior)| crate::evaluate::evaluate_onto(c, *ai, scenario, runs, seed, *prior))
+}
+
 fn eval_point(
     p: &Point,
     expand: &Expand<'_>,

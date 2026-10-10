@@ -1480,6 +1480,9 @@ pub fn grade_optimize(
             mod_slots: build_size.min(8),
             screen_ratio: replay_base.get("screen_ratio").and_then(Value::as_f64).unwrap_or(quick::SCREEN_RATIO),
             keep_ratio: replay_base.get("keep_ratio").and_then(Value::as_f64).unwrap_or(quick::KEEP_RATIO),
+            orders_of: Default::default(),
+            screened_runs: Default::default(),
+            best_runs: Default::default(),
         };
         let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
         let (sj, stats, _) = quick::run_quick(&ctx, st, search_evals, None, 0, 1, space.len(), finalists);
@@ -1998,6 +2001,9 @@ pub fn run_optimize_resumable(
             mod_slots: build_size.min(8),
             screen_ratio: replay_base.get("screen_ratio").and_then(Value::as_f64).unwrap_or(quick::SCREEN_RATIO),
             keep_ratio: replay_base.get("keep_ratio").and_then(Value::as_f64).unwrap_or(quick::KEEP_RATIO),
+            orders_of: Default::default(),
+            screened_runs: Default::default(),
+            best_runs: Default::default(),
         };
             // A FLEET WORKER'S SHARE: score these builds and nothing else.
             if let Some(builds) = fleet.get("score").and_then(Value::as_array) {

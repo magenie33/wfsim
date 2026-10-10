@@ -537,7 +537,23 @@ pub fn shard(
     keep: bool,
     on_run: &mut impl FnMut(u32),
 ) -> Shard {
-    let mut a = Shard { runs, ..Shard::default() };
+    shard_onto(params, Shard::default(), from, runs, seed, keep, on_run)
+}
+
+/// …ADDED ONTO `a`, the shard of the runs before `from`. The accumulator walks
+/// the runs in the same order either way, so continuing a shard of runs 0..k
+/// with k..n is the shard of 0..n to the bit — what lets a longer measurement
+/// keep a shorter one's runs instead of fighting them again.
+pub fn shard_onto(
+    params: &FightParams,
+    mut a: Shard,
+    from: u32,
+    runs: u32,
+    seed: u64,
+    keep: bool,
+    on_run: &mut impl FnMut(u32),
+) -> Shard {
+    a.runs += runs;
     for i in from..from + runs {
         // EACH RUN'S OWN DICE, derived from the fight's seed and the run's
         // INDEX. It was one Rng chain threaded through every run, so run i

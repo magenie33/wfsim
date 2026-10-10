@@ -1713,3 +1713,24 @@ fn the_tail_drains_the_crowd_and_not_only_the_aimed_body() {
          aimed {aimed} against {behind} behind (ratio {ratio})",
     );
 }
+
+/// A SHORT MEASUREMENT CONTINUED IS THE LONG ONE, to the bit: the optimizer's
+/// screen fights the first runs of a candidate's stream and its full
+/// measurement keeps them (`shard_onto`) rather than fighting them again.
+#[test]
+fn a_shard_continued_is_the_whole_run_to_the_bit() {
+    let base = crate::model::WeaponBase::from_data("torid", false, &[]);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let specs = crate::data::enemies::all();
+    let unit = specs.iter().find(|e| e.id == "corrupted_heavy_gunner").unwrap();
+    let mut arena = crate::arena::Arena::training(20.0);
+    arena.target = unit
+        .target_params(30, false, false, TargetMode::InstantRespawn)
+        .expect("a level 30 unit is legal");
+    let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    const SEED: u64 = 0xBEEF_CAFE;
+    let whole = monte_carlo(&p, 10, SEED);
+    let short = shard(&p, 0, 2, SEED, false, &mut |_| {});
+    let (cont, _) = shard_onto(&p, short, 2, 8, SEED, false, &mut |_| {}).finish(&p, 10);
+    assert_eq!(format!("{cont:?}"), format!("{whole:?}"));
+}

@@ -610,6 +610,13 @@ they are never a move and never on the list. Both ratios are 0.2
 `candidate_runs` under 6 there is no screen. On the fleet a short measurement
 is a pending item of its own, `{build, runs}`, answered `rough`.
 
+**A FULL MEASUREMENT KEEPS THE SHORT ONE'S RUNS.** They are the first runs of
+the same paired stream, so the full count continues them (`shard_onto`) rather
+than fighting them again, and lands on the same bits; on the fleet the short
+answer carries its runs per element order (`shards`) and the leader hands them
+to whichever worker measures that build in full. A contender's summary is its
+full measurement's own runs, never a second fight of them.
+
 Measured over Rubico Prime, Torid, Kuva Nukor, Sancti Magistar and Acceltra
 Prime at 10 runs: every answer was the unscreened search's own, for 23–36% of
 its full evaluations (CPU, measured at a keep of 0.25: 26–39% less).
