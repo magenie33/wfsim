@@ -108,6 +108,47 @@ for (const v of (desk.slotIdx >= 0 ? [desk, phone] : [])) {
   );
 }
 
+// …AND ITS RANK STEPPER RANKS THE CARD. The engine prints and fights a riven at
+// its spec's rank, so a stepper that wrote the slot moved the drain alone: the
+// lines kept their max-rank values and so did the fight. Down to R0, each line
+// is a ninth of what it was, the card itself says 0, and the drain is DE's 2.
+const ranked = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const at = slots.findIndex((s) => s.mod && String(s.mod).startsWith('riven:'));
+  if (at < 0) return null;
+  const cell = () => document.querySelectorAll('#mod-slots > .slot')[at];
+  const nums = () => Array.from(cell().querySelectorAll('.me > div'))
+    .map((d) => parseFloat((d.textContent.match(/[0-9.]+/) || [])[0])).filter((x) => !isNaN(x));
+  const before = nums();
+  for (let k = 0; k < 8; k++) {
+    cell().querySelector('.rk[data-d="-1"]').click();
+    await sleep(600);
+  }
+  await sleep(1500);
+  const id = slots[at].mod;
+  const card = loadPresetList(RIVENS).find((p) => 'riven:' + p.id === id);
+  const sent = rivenPayload().find((r) => 'riven:' + r.id === id);
+  return { before, after: nums(), rank: card && card.state.rank, sent: sent && sent.spec.rank,
+    drain: modDrain(modById(id), slots[at].rank),
+    shown: (cell().querySelector('.rank b') || {}).textContent };
+})()`);
+check(
+  "the riven slot's stepper takes the CARD to R0",
+  ranked && ranked.rank === 0 && ranked.shown === "R0/8" && ranked.sent === 0,
+  JSON.stringify(ranked && { rank: ranked.rank, shown: ranked.shown, sent: ranked.sent }),
+);
+check(
+  "…and every printed line follows, at (0 + 1) / 9 of its max-rank value",
+  ranked && ranked.before.length > 0 && ranked.after.length === ranked.before.length
+    && ranked.before.every((v, k) => Math.abs(ranked.after[k] * 9 - v) <= Math.max(0.15, v * 0.01)),
+  JSON.stringify(ranked && { before: ranked.before, after: ranked.after }),
+);
+check(
+  "…and it drains 2, DE's rank-0 riven",
+  ranked && ranked.drain === 2,
+  `drain ${ranked && ranked.drain}`,
+);
+
 // …AND THE SAME PAGE RELOADED WITH THAT RIVEN ALREADY IN STORAGE.
 //
 // A DIFFERENT PATH, not a second opinion: with a riven saved,

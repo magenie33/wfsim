@@ -698,6 +698,27 @@ function saveRivenSoon() {
     }
   }, 250);
 }
+/// A RIVEN SLOT'S RANK STEPPER WRITES THE CARD, because a riven's rank lives on
+/// its card: the engine prints and fights the spec's rank, and a rank kept on
+/// the slot instead moved the drain while the lines and the fight stood still.
+/// Every build seating this card follows, as every one does in game.
+function setRivenRank(rid, rank) {
+  const ps = loadPresetList(RIVENS);
+  const p = ps.find((x) => RIVEN_PREFIX + x.id === rid);
+  if (!p) return;
+  p.state = { ...(p.state || {}), rank };
+  storePresetList(RIVENS, ps);
+  if (riven && activeRivenId() === p.id) {
+    riven.rank = rank;
+    if ($("rv-rank")) { $("rv-rank").value = rank; $("rv-rank-n").textContent = rank; }
+    resolveRiven();
+  }
+  rivenModCache = { key: null, list: [] };
+  renderMods();
+  refreshPanel();
+  refreshRivenNames();
+}
+
 // The saved shape keeps `bonuses`/`malus` at the top level — that is what
 // the engine reads — and carries the other three drafts alongside so a
 // reload does not flatten them back into one.

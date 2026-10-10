@@ -7,7 +7,10 @@ function slotDrain(base, modPol, slotPol) {
 }
 
 // Drain at a given rank: rises 1 per rank from rank 0 (= max-rank drain − max_rank).
+// A RIVEN rises 2 per rank and is always at its own card's rank, which
+// `m.drain` already prices, so the slot's rank does not enter.
 function modDrain(m, rank) {
+  if (m.riven) return m.drain;
   const r = rank == null ? m.max_rank : Math.max(0, Math.min(m.max_rank, rank));
   return m.drain - m.max_rank + r;
 }

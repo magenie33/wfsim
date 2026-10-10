@@ -64,6 +64,10 @@ function rivenMods() {
       polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
       drain: 2 + 2 * (st.rank ?? 8),
       max_rank: 8,
+      // THE CARD'S RANK IS THE SLOT'S. The engine prints and fights a riven at
+      // the rank its spec carries and never reads a slot rank for one, so the
+      // slot shows this and its stepper writes it (`setRivenRank`).
+      riven_rank: st.rank ?? 8,
       exilus: false,
       // The VEILED riven card — DE's own image for every riven type
       // (`imageName` on the riven mod item), and the one on the CDN like

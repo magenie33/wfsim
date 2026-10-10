@@ -547,7 +547,7 @@ function buildSlot(i) {
   // labelled, and the picker calls it "exilus" rather than a number.
   if (m) {
     el.className = "slot filled" + (m.rarity ? " rar-" + m.rarity : "");
-    const r = s.rank == null ? m.max_rank : s.rank;
+    const r = m.riven ? m.riven_rank : s.rank == null ? m.max_rank : s.rank;
     const base = modDrain(m, r);
     const eff = slotDrain(base, m.polarity, s.pol);
     const lowered = r < m.max_rank;
@@ -581,6 +581,7 @@ function buildSlot(i) {
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       const nr = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
+      if (m.riven) { setRivenRank(m.id, nr); return; }
       equipMod(i, slots[i].mod, nr); renderMods();
     }));
   } else {
