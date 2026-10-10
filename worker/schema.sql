@@ -421,3 +421,70 @@ CREATE TABLE IF NOT EXISTS fissures (
   started_at    TEXT NOT NULL,
   ends_at       TEXT NOT NULL
 );
+
+-- THE FACT FACTORY (worker/tasks.js; docs/BOARD.md §"Compute orders"): every
+-- computed answer the volunteers and the official machines give, whatever asked
+-- for it. A QUESTION is a verb on a canonical request, its id the hash of both,
+-- so two producers asking one thing share it. A DEMAND is one producer's ask for
+-- it, with the deadline that orders the dispatch. An ANSWER is one witness's
+-- canonical result. Added to a live database with these statements alone.
+CREATE TABLE IF NOT EXISTS questions (
+  id          TEXT PRIMARY KEY,
+  verb        TEXT NOT NULL,
+  request     TEXT NOT NULL,
+  -- open | fact | spot | disputed | nondeterministic | withdrawn (worker/tasks.js §"States").
+  state       TEXT NOT NULL,
+  -- THE EARLIEST DEADLINE of its live demands: dispatch is earliest-deadline-first.
+  due_at      TEXT NOT NULL,
+  opened_at   TEXT NOT NULL,
+  -- The cores a first answer needs, relaxing with age: [{ lanes, after_ms }], or null.
+  lanes       TEXT,
+  lease       TEXT,
+  lease_until TEXT,
+  leased_to   TEXT,
+  -- THE FACT: the canonical answer, the engine it holds for, and when.
+  canon       TEXT,
+  fact_engine TEXT,
+  fact_at     TEXT,
+  -- 1 when its answers were found not deterministic: settled, nobody refused, said aloud.
+  odd         INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS questions_pick ON questions (state, due_at);
+CREATE INDEX IF NOT EXISTS questions_holder ON questions (leased_to);
+CREATE INDEX IF NOT EXISTS questions_lease ON questions (lease);
+CREATE TABLE IF NOT EXISTS demands (
+  producer    TEXT NOT NULL,
+  ref         TEXT NOT NULL,
+  question    TEXT NOT NULL,
+  -- live | served | withdrawn
+  state       TEXT NOT NULL,
+  asked_at    TEXT NOT NULL,
+  due_at      TEXT NOT NULL,
+  -- What the producer's consumer needs back, which the factory never reads.
+  payload     TEXT NOT NULL DEFAULT '{}',
+  served_at   TEXT,
+  PRIMARY KEY (producer, ref)
+);
+CREATE INDEX IF NOT EXISTS demands_by_question ON demands (question, state);
+CREATE TABLE IF NOT EXISTS answers (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  question    TEXT NOT NULL,
+  engine      TEXT NOT NULL,
+  -- THE WITNESS: its device id, its owner then (the device itself when unclaimed),
+  -- the salted hash of its network (verify.js `netOf`), and whether it is official.
+  device      TEXT NOT NULL,
+  owner       TEXT NOT NULL,
+  net         TEXT NOT NULL DEFAULT '',
+  official    INTEGER NOT NULL DEFAULT 0,
+  -- The verb's canonical answer, which agreement compares byte for byte, and the
+  -- whole result the consumers read (a build, a score).
+  canon       TEXT NOT NULL,
+  result      TEXT NOT NULL,
+  work        INTEGER NOT NULL,
+  compute_ms  INTEGER,
+  at          TEXT NOT NULL,
+  -- Set when it is one of a fact's witnesses, credited.
+  credited    INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS answers_by_question ON answers (question, engine);
+CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);

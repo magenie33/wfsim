@@ -138,6 +138,8 @@ jobs:
         run: node scripts/check_board_verify.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
+      - name: Every question becomes a fact, and nobody waits on one that cannot
+        run: node scripts/check_tasks.mjs
       - name: A riven gain is run by the community and credited when two owners agree
         run: node scripts/check_riven_gain.mjs
       - name: The site reads the live board, and the committed one only until it exists
