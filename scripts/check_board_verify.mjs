@@ -1,23 +1,24 @@
-// COMPUTE ORDERS' DOOR (worker/verify.js), with no network: an order is handed
-// out as a build and never a number; its first result waits for the server's
-// rank; each further one must come from another client of the same engine;
-// CLIENTS_PER_FACT equal results make a fact naming every client and settle the
-// queue row, anything else is a dispute, and the
-// answer never says which; a row nobody owes, a top-ten row, a live lease and a
-// banned client get nothing; only the engine `release.json` names works, and
-// what each fight cost its client is kept beside it. Equal includes the WORK,
-// which a fact credits to every client that measured it; and a further result
-// never comes from a device of the same owner (docs/BOARD.md §"Contribution").
-// A scorer run's claim takes the old rows no client holds, and no client is
-// handed one until its release (scripts/fetch_queue.sh). A claimed order the
-// scorer reproduces to the same bits pays its clients (scripts/order_credit.mjs).
+// A BOARD ROW AS A QUESTION OF THE FACT FACTORY (worker/board_tasks.js,
+// worker/verify.js, worker/factory.js), with no network: an owed row is asked
+// for by a new build's producer or a sweep's, and handed out as its build, never
+// a number; a further result comes only from another owner on another network
+// of the served engine; CLIENTS_PER_FACT equal results — score, metric AND work
+// — make a fact naming its witnesses, written to `scores`, the queue row settled
+// and the work credited; anything else is a dispute, and the answer never says
+// which. The official machines take what is past its deadline and what only
+// they may settle; their fact credits whom it agrees with and refuses whom a
+// dispute or a spot check disproves, withdrawing what that client agreed to. The
+// scorer's claim, read and release (scripts/fetch_queue.sh), its answers
+// (scripts/order_credit.mjs), the queue's ask (scripts/ship_queue.sh) and the
+// orders open before the factory (`/api/board/adopt`) are held here too.
 //   node scripts/check_board_verify.mjs
-import { verifyRoute, LEASE_MS, PROTOCOL, FACTS_PER_REFUSAL_FORGIVEN, TASKS_AHEAD } from "../worker/verify.js";
-import { creditConfirmed, coolDownMs } from "./order_credit.mjs";
+import { verifyRoute, LEASE_MS, PROTOCOL, TASKS_AHEAD } from "../worker/verify.js";
+import { boardTasksRoute } from "../worker/board_tasks.js";
+import { officialRoute } from "../worker/factory.js";
+import { coolDownMs } from "../worker/tasks.js";
+import { tell } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 let failures = 0;
@@ -26,519 +27,237 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-const db = new DatabaseSync(":memory:");
-db.exec(readFileSync(new URL("../worker/schema.sql", import.meta.url), "utf8"));
-const accounts = new DatabaseSync(":memory:");
-accounts.exec(readFileSync(new URL("../worker/accounts.sql", import.meta.url), "utf8"));
-const stmtIn = (base) => function stmt(sql, args = []) {
-  return {
+const d1 = (file) => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(readFileSync(new URL(`../worker/${file}`, import.meta.url), "utf8"));
+  const stmt = (sql, args = []) => ({
+    sql, args,
     bind: (...a) => stmt(sql, a),
-    first: async () => base.prepare(sql).get(...args) ?? null,
-    all: async () => ({ results: base.prepare(sql).all(...args) }),
-    run: async () => ({ meta: { changes: Number(base.prepare(sql).run(...args).changes) } }),
-  };
+    first: async () => db.prepare(sql).get(...args) ?? null,
+    all: async () => ({ results: db.prepare(sql).all(...args) }),
+    run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
+  });
+  return { raw: db, prepare: (sql) => stmt(sql),
+    batch: async (ss) => ss.map((s) => (/^\s*select/i.test(s.sql) ? { results: db.prepare(s.sql).all(...s.args) }
+      : { meta: { changes: Number(db.prepare(s.sql).run(...s.args).changes) } })) };
 };
-const stmt = (sql, args = []) => ({
-  bind: (...a) => stmt(sql, a),
-  first: async () => db.prepare(sql).get(...args) ?? null,
-  all: async () => ({ results: db.prepare(sql).all(...args) }),
-  run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
-  each: async () => (/^\s*select/i.test(sql) ? { results: db.prepare(sql).all(...args) } : { meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
-});
+const LIBRARY = d1("schema.sql"), ACCOUNTS = d1("accounts.sql"), L = LIBRARY.raw;
 /// THE SITE'S `release.json`, naming the engine it serves.
 const site = (engine, release = "r1") => ({ fetch: async () => new Response(JSON.stringify({ engine, release })) });
-const env = { LIBRARY: { prepare: (sql) => stmt(sql), batch: async (ss) => Promise.all(ss.map((x) => x.each())) }, ASSETS: site("e1"),
-  ACCOUNTS: { prepare: (sql) => stmtIn(accounts)(sql) } };
-const WORK = 7_000_000_000;
-const callIn = async (e, path, body) =>
-  (await verifyRoute(new Request(`https://x${path}`, { method: "POST", body: JSON.stringify(body) }), e, path)).json();
-const call = (path, body) => callIn(env, path, body);
-const order = (identity, state = "todo", extra = {}) => {
-  db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES (?, 'standard_single_target', 'base', ?, ?, ?, '1970-01-01T00:00:00.000Z')`)
-    .run(identity, JSON.stringify({ weapon: "braton_prime", mods: ["serration"] }), state, Math.floor(Math.random() * 1e9));
-  db.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals', ?, 'standard_single_target', 'base')").run(identity);
-  if (extra.score !== undefined && extra.work === undefined) extra = { ...extra, work: WORK };
-  const sets = Object.keys(extra);
-  if (sets.length) db.prepare(`UPDATE orders SET ${sets.map((k) => `${k} = ?`).join(", ")} WHERE identity = ?`).run(...Object.values(extra), identity);
-};
-const row = (identity) => db.prepare("SELECT * FROM orders WHERE identity = ?").get(identity);
-const fact = (identity) => db.prepare("SELECT * FROM scores WHERE identity = ?").get(identity);
-const only = (identity) => db.prepare("UPDATE orders SET slot = CASE WHEN identity = ? THEN 1 ELSE slot END").run(identity);
+const env = { LIBRARY, ACCOUNTS, ASSETS: site("e1"), FACTORY_TOKEN: "ft" };
+const TOKEN = { authorization: "Bearer ft" };
+const post = async (route, path, body, headers = {}) =>
+  (await route(new Request(`https://x${path}`, { method: "POST", headers, body: JSON.stringify(body) }), env, path)).json();
+const WORK = 7_000_000_000, SCORE = 1.1070976928071055;
 const YES = { v: 1, at: "2026-10-08T08:00:00.000Z" };
-const work = (v, engine = "e1", protocol = PROTOCOL, consent = YES) => call("/api/board/work", { verifier: v, engine, protocol, consent });
-const answer = (w, v, score, metric = "kpm", engine = "e1", compute_ms = 1000, work = WORK) =>
-  call("/api/board/verify", { lease: w.lease, verifier: v, engine, score, metric, work, compute_ms });
-const A = "a".repeat(24), B = "b".repeat(24), C = "c".repeat(24), D = "d".repeat(24);
-const SCORE = 1.1070976928071055;
-Math.random = () => 0.5;  // no spot check unless a test asks for one
-
-order("one");
-check("a page that cannot fill an order is handed none", (await work(A, "e1", null)).work === null && row("one").lease === null);
-check("a computer that never said yes is handed nothing", (await work(A, "e1", PROTOCOL, null)).work === null
-  && (await work(A, "e1", PROTOCOL, { v: 1, at: "yesterday" })).work === null);
-const first = await work(A);
-check("...and the yes it sent is kept on its row, the statement and when",
-  JSON.stringify(db.prepare("SELECT consent_v AS v, consent_at AS at FROM verifiers WHERE id = ?").get(A)) === JSON.stringify(YES));
-check("an order is handed out as its build", first.work && first.work.record.weapon === "braton_prime", JSON.stringify(first));
-// A CLIENT THAT ASKS AGAIN IS WORKING ON NOTHING: what it held is taken back and
-// handed out anew, and an answer under the lost lease counts for nothing.
-const again = await work(A);
-check("a client asking again gets its lost order back under a new lease, never a second one",
-  again.work && again.work.lease !== first.work.lease && row("one").lease === again.work.lease
-  && db.prepare("SELECT COUNT(*) AS n FROM orders WHERE leased_to = ?").get(A).n === 1, JSON.stringify(again));
-await answer(first.work, A, SCORE);
-check("...and the lost lease's answer is dropped", row("one").state === "todo" && row("one").score === null);
-check("every answer names the release the site serves", again.release === "r1", JSON.stringify(again));
-await answer(again.work, A, SCORE);
-check("the first result makes it fresh, kept with who measured it and on which engine",
-  row("one").state === "fresh" && row("one").score === SCORE && row("one").produced_by === A && row("one").engine === "e1");
-check("...and no fact yet", !fact("one"));
-check("a fresh order waits for the server's rank and is handed to nobody", (await work(B)).work === null);
-
-db.prepare("UPDATE orders SET state = 'open' WHERE identity = 'one'").run();
-check("an open order is never handed back to the client that measured it", (await work(A)).work === null);
-check("...nor to a client of another engine", (await work(C, "e2")).work === null);
-const second = await work(B);
-check("...but to another client of its engine", second.work && second.work.record.weapon === "braton_prime" && !second.stale);
-check("...and NOT with the number to agree with", second.work && !JSON.stringify(second.work).includes(String(SCORE)));
-const agreed = await answer(second.work, B, SCORE);
-check("equal bits make a fact", fact("one") && fact("one").score === SCORE && fact("one").measured_by === "verified:e1", JSON.stringify(fact("one")));
-check("...the order is verified by the second client", row("one").state === "verified" && row("one").verifier === B);
-check("...and the queue no longer owes the row", !db.prepare("SELECT 1 FROM queue WHERE build_id = 'one'").get());
-
-order("two", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: A });
-only("two");
-const w2 = await work(C);
-const disagreed = await answer(w2.work, C, SCORE * 2);
-check("a different number makes a dispute, and no fact", row("two").state === "dispute" && !fact("two") && row("two").disputed === SCORE * 2);
-check("...and the answer is the same one an agreement gets", JSON.stringify(disagreed) === JSON.stringify(agreed));
-
-order("three", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: A });
-only("three");
-const w3 = await work(D);
-await answer(w3.work, D, SCORE, "dps");
-check("the same number in another metric is a dispute", row("three").state === "dispute");
-
-order("four");
-db.prepare("DELETE FROM queue WHERE build_id = 'four'").run();
-only("four");
-check("an order nobody owes any more is handed to nobody", (await work("e".repeat(24))).work === null);
-check("...and is settled where it was found", row("four").state === "settled");
-
-order("five", "arbiter", { score: SCORE, metric: "kpm", engine: "e1", produced_by: A });
-only("five");
-check("a top-ten order is the server's, never a client's", (await work("f".repeat(24))).work === null);
-
-order("six");
-only("six");
-const G = "g".repeat(24), H = "h".repeat(24);
-const w6 = await work(G);
-db.prepare("UPDATE orders SET lease_until = ? WHERE identity = 'six'").run(new Date(Date.now() - 1).toISOString());
-await answer(w6.work, G, SCORE);
-check("an answer on an expired lease is nobody's", row("six").state === "todo" && row("six").score === null);
-const w6b = await work(H);
-check("...and the order goes to the next client", w6b.work && row("six").leased_to === H);
-
-order("seven", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: A });
-only("seven");
-const I = "i".repeat(24);
-const w7 = await work(I);
-Math.random = () => 0;
-await answer(w7.work, I, SCORE);
-check("an agreement the dice pick is a spot check: a fact now, recomputed by the server",
-  row("seven").state === "spot" && fact("seven") && fact("seven").score === SCORE);
-Math.random = () => 0.5;
-
-const J = "j".repeat(24);
-order("eight");
-await work(J);
-const coolUntil = new Date(Date.now() + 3_600_000).toISOString();
-db.prepare("UPDATE verifiers SET banned = 1, refusals = 1, refused_until = ? WHERE id = ?").run(coolUntil, J);
-db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
-const refused = await work(J);
-check("a client in its cool-down is handed nothing, and told why and until when",
-  refused.work === null && refused.banned === true && refused.until === coolUntil, JSON.stringify(refused));
-db.prepare("UPDATE verifiers SET refused_until = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), J);
-db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'eight'").run();
-const lifted = await work(J);
-check("...and once it is over, it works again and the refusal is lifted",
-  !lifted.banned && db.prepare("SELECT banned FROM verifiers WHERE id = ?").get(J).banned === 0, JSON.stringify(lifted));
-const seen = db.prepare("SELECT seen FROM verifiers WHERE id = ?").get(A).seen;
-check("a client is written once a day, not once a poll", seen === new Date().toISOString().slice(0, 10)
-  && db.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE id = ?").get(A).n === 1);
-check("a malformed id is refused", (await verifyRoute(new Request("https://x/api/board/work",
-  { method: "POST", body: JSON.stringify({ verifier: "x", engine: "e1" }) }), env, "/api/board/work")).status === 400);
-check("a lease is held for longer than the slowest row", LEASE_MS >= 20 * 60_000);
-
-check("a fact names every client that measured it, first to last", row("one").clients === `${A},${B}`, row("one").clients);
-
-// CLIENTS_PER_FACT: how many different clients must send the same bits.
-const callWith = async (n, path, body) => (await verifyRoute(new Request(`https://x${path}`,
-  { method: "POST", body: JSON.stringify(body) }), { ...env, CLIENTS_PER_FACT: n }, path)).json();
-const workWith = (n, v) => callWith(n, "/api/board/work", { verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES });
-const answerWith = (n, w, v) => callWith(n, "/api/board/verify", { lease: w.lease, verifier: v, engine: "e1", score: SCORE, metric: "kpm", work: WORK });
-const K = "k".repeat(24), L = "l".repeat(24), M = "m".repeat(24), N = "n".repeat(24);
-
-db.prepare("UPDATE orders SET state = 'settled'").run();  // the orders above are not these checks
-order("solo");
-only("solo");
-await answerWith(1, await workWith(1, K).then((r) => r.work), K);
-check("with one client a fact, the first result is the fact", fact("solo") && row("solo").clients === K && row("solo").state === "verified");
-
-order("trio", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: L, clients: L });
-only("trio");
-await answerWith(3, (await workWith(3, M)).work, M);
-check("with three, a second agreement is not yet a fact", !fact("trio") && row("trio").state === "open" && row("trio").clients === `${L},${M}`);
-check("...and the order goes to neither client again", (await workWith(3, L)).work === null && (await workWith(3, M)).work === null);
-await answerWith(3, (await workWith(3, N)).work, N);
-check("...the third makes it", fact("trio") && row("trio").clients === `${L},${M},${N}` && row("trio").verifier === N);
-
-// THE ENGINE LOCK, and what a fight cost.
-db.prepare("UPDATE orders SET state = 'settled'").run();
-order("lock");
-only("lock");
-const P = "p".repeat(24), Q = "q".repeat(24);
-check("a tab of an engine the site does not serve is handed nothing", (await work("o".repeat(24), "e0")).work === null);
-check("...and is told it is stale, so a machine left computing reloads", (await work("o".repeat(24), "e0")).stale === true
-  && (await work("o".repeat(24), "e1", PROTOCOL - 1)).stale === true);
-const blind = { ...env, ASSETS: { fetch: async () => new Response("missing", { status: 404 }) } };
-check("...and nobody is while the served engine cannot be read",
-  (await callIn(blind, "/api/board/work", { verifier: P, engine: "e1", protocol: PROTOCOL, consent: YES })).work === null);
-await answer((await work(P)).work, P, SCORE, "kpm", "e0");
-check("an answer from another engine is dropped, and the order handed out again",
-  row("lock").state === "todo" && row("lock").lease === null && row("lock").score === null);
-await answer((await work(P)).work, P, SCORE, "kpm", "e1", 4321);
-check("what the fight cost is kept beside the client that fought it",
-  row("lock").clients_compute_ms === "4321"
-  && db.prepare("SELECT compute_ms FROM verifiers WHERE id = ?").get(P).compute_ms === 4321);
-check("...and both agreeing clients' costs are kept on a fact, in order", row("one").clients_compute_ms === "1000,1000",
-  row("one").clients_compute_ms);
-db.prepare("UPDATE orders SET state = 'open' WHERE identity = 'lock'").run();
-// A RELEASE CARRIES A RESULT: the new engine's client confirms it or replaces it.
-const released = (e) => {
-  const at = { ...env, ASSETS: site(e) };
-  return {
-    work: (v) => callIn(at, "/api/board/work", { verifier: v, engine: e, protocol: PROTOCOL, consent: YES }),
-    answer: (w, v, score, w2 = WORK) => callIn(at, "/api/board/verify", { lease: w.lease, verifier: v, engine: e, score, metric: "kpm", work: w2, compute_ms: 1000 }),
-  };
+const work = (v, { ip = "", engine = "e1", protocol = PROTOCOL, consent = YES, ahead = false } = {}) =>
+  post(verifyRoute, "/api/board/work", { verifier: v, engine, protocol, consent, lanes: 4, ...(ahead ? { ahead } : {}) }, ip ? { "cf-connecting-ip": ip } : {});
+const answer = (w, v, { score = SCORE, metric = "kpm", engine = "e1", work: wk = WORK, ip = "", extra = {} } = {}) =>
+  post(verifyRoute, "/api/board/verify", { lease: w.lease, verifier: v, engine, score, metric, work: wk, compute_ms: 1000, ...extra },
+    ip ? { "cf-connecting-ip": ip } : {});
+const today = new Date().toISOString().slice(0, 10);
+const build = (id, at = new Date().toISOString(), weapon = "braton_prime") =>
+  L.prepare("INSERT INTO builds (id, at, record) VALUES (?, ?, ?)").run(id, at, JSON.stringify({ weapon, mods: ["serration", id] }));
+const queue = (batch, ...ids) => {
+  L.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES (?, ?, 'test', 0)").run(batch, batch);
+  for (const id of ids) L.prepare("INSERT OR IGNORE INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'standard_single_target', 'base')").run(batch, id);
 };
-const e9 = released("e9");
-const carried = await e9.work(Q);
-check("once the site serves a new engine, an open result of the old one is carried to it, clients and all",
-  row("lock").state === "open" && row("lock").engine === "e9" && row("lock").carried_from === "e1" && row("lock").clients === P
-  && row("lock").score === SCORE && carried.work && row("lock").leased_to === Q, JSON.stringify(row("lock")));
-await e9.answer(carried.work, Q, SCORE);
-check("...and the new engine reproducing its bits makes the fact, both clients on it",
-  row("lock").state === "verified" && row("lock").clients === `${P},${Q}` && fact("lock") && fact("lock").measured_by === "verified:e9");
-const REPLACER = "1".repeat(24);
-db.prepare("UPDATE orders SET state = 'settled'").run();
-order("moved", "open", { score: SCORE, metric: "kpm", engine: "e9", produced_by: P, clients: P });
-const e8 = released("e8");
-const moved = await e8.work(REPLACER);
-await e8.answer(moved.work, REPLACER, SCORE * 3);
-check("...one it does not reproduce is replaced by the new result as the first, and nobody is refused",
-  row("moved").state === "fresh" && row("moved").score === SCORE * 3 && row("moved").clients === REPLACER && row("moved").produced_by === REPLACER
-  && row("moved").carried_from === null && !fact("moved")
-  && !db.prepare("SELECT banned FROM verifiers WHERE id = ?").get(P).banned, JSON.stringify(row("moved")));
+const ask = (batch, ...ids) => post(boardTasksRoute, "/api/board/ask",
+  { batch, rows: ids.map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) }, TOKEN);
+const demand = (id) => L.prepare("SELECT * FROM demands WHERE ref = ?").get(`${id}|standard_single_target|base`);
+const question = (id) => L.prepare("SELECT q.* FROM questions q JOIN demands d ON d.question = q.id WHERE d.ref = ?").get(`${id}|standard_single_target|base`);
+const fact = (id) => L.prepare("SELECT * FROM scores WHERE identity = ?").get(id);
+const owed = (id) => !!L.prepare("SELECT 1 FROM queue WHERE build_id = ?").get(id);
+const credited = (v) => (L.prepare("SELECT work FROM verifiers WHERE id = ?").get(v) || {}).work || 0;
+const free = () => L.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
+/// ONLY ONE ROW IN PLAY: every other question is withdrawn for the test at hand.
+const only = (...ids) => {
+  const keep = ids.map((id) => question(id).id);
+  L.prepare(`UPDATE questions SET state = 'withdrawn' WHERE state = 'open' AND id NOT IN (${keep.map(() => "?").join(", ")})`).run(...keep);
+};
+const A = "a".repeat(24), B = "b".repeat(24), C = "c".repeat(24), D = "d".repeat(24), E = "e".repeat(24), F = "f".repeat(24);
+for (const v of [A, B, C, D, E, F]) L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
+// A and D are one person's computers.
+ACCOUNTS.raw.exec(`INSERT INTO accounts (id, created_at, username) VALUES ('ann', 'x', 'ann');
+  INSERT INTO devices (verifier, account, claimed_at) VALUES ('${A}', 'ann', 'x'), ('${D}', 'ann', 'x');`);
 
-// A NEW BUILD'S ROWS ARE LEASED BEFORE A RESCORE'S.
-db.prepare("UPDATE orders SET state = 'settled'").run();
-order("rescore");
-order("arrival", "todo", { priority: 0 });
-db.prepare("UPDATE orders SET slot = CASE identity WHEN 'rescore' THEN 1 ELSE 2000000000 END").run();
-const EARLY = "2".repeat(24);
-check("a new build's row is leased before a rescore's, wherever their slots fall",
-  (await e8.work(EARLY)).work && row("arrival").leased_to === EARLY && row("rescore").leased_to === null);
-db.prepare("UPDATE orders SET state = 'settled' WHERE identity = 'arrival'").run();
-const LATER = "3".repeat(24);
-check("...and a rescore's when no new build's is left", (await e8.work(LATER)).work && row("rescore").leased_to === LATER);
+console.log("asked for");
+build("one"); build("old", "2020-01-01T00:00:00.000Z"); build("scored");
+const arrivals = `arrivals-${today}`;
+queue(arrivals, "one", "old", "scored");
+L.prepare("INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('scored', 'standard_single_target', 'base', 'v', 1, 'kpm', 0, 'x', 'x')").run();
+check("only the factory's secret asks", (await post(boardTasksRoute, "/api/board/ask", { batch: arrivals, rows: [] })).ok === false);
+const asked = await ask(arrivals, "one", "old", "scored");
+check("an owed row is asked for as a question, an arrival's scored row not again", asked.asked === 2 && asked.skipped === 1, JSON.stringify(asked));
+check("...a new build's by `new_build`, an old build's in the same batch by `sweep`",
+  demand("one").producer === "new_build" && demand("old").producer === "sweep");
+check("...and its question is the build's record on the ruler, simulated",
+  question("one").verb === "simulate" && JSON.parse(question("one").request).record.weapon === "braton_prime");
+queue("rescore-x", "scored");
+await ask("rescore-x", "scored");
+check("a rescore asks for a scored row on purpose", demand("scored") && demand("scored").producer === "sweep");
+build("lost");
+queue(arrivals, "lost");
+const back = await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
+check("an owed row nobody asked for is asked by the backfill", back.asked === 1 && back.left === 0 && demand("lost"), JSON.stringify(back));
+check("...and asking again asks nothing", (await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN)).asked === 0);
 
-// THE WORK, and the owners.
-const credited = (v) => db.prepare("SELECT work FROM verifiers WHERE id = ?").get(v).work;
-check("a fact credits its work to every client that measured it, once a fact",
-  credited(B) === WORK && credited(I) === WORK && credited(A) === 2 * WORK, `${credited(A)} ${credited(B)} ${credited(I)}`);
-const creditedToday = (v) => db.prepare("SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ? AND substr(hour, 1, 10) = ?")
-  .get(v, new Date().toISOString().slice(0, 10)).w;
-check("every result is counted in its hour, with what its fight took, for its browser's own today",
-  (db.prepare("SELECT SUM(tasks) AS t, SUM(ms) AS ms FROM verifier_hours WHERE verifier = ?").get(A).t || 0) > 0
-  && (db.prepare("SELECT SUM(ms) AS ms FROM verifier_hours WHERE verifier = ?").get(A).ms || 0) > 0);
-check("...and the same work under the day it was credited, for the ranking's last thirty days",
-  creditedToday(A) === 2 * WORK && creditedToday(B) === WORK && creditedToday(I) === WORK,
-  `${creditedToday(A)} ${creditedToday(B)} ${creditedToday(I)}`);
-check("...and a disputed one to nobody", credited(C) === 0 && credited(D) === 0);
-db.prepare("UPDATE orders SET state = 'settled'").run();
-order("worked", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: A, clients: A });
-only("worked");
-const R = "r".repeat(24);
-await answer((await work(R)).work, R, SCORE, "kpm", "e1", 1000, WORK + 1);
-check("the same score with other work is a dispute", row("worked").state === "dispute" && !fact("worked"));
-check("a result that does not say its work is refused", (await verifyRoute(new Request("https://x/api/board/verify",
-  { method: "POST", body: JSON.stringify({ lease: "a".repeat(32), verifier: R, engine: "e1", score: SCORE, metric: "kpm" }) }),
-env, "/api/board/verify")).status === 400);
+console.log("\nhanded out, answered");
+check("a page that cannot fill a task is handed none", (await work(A, { protocol: null })).work === null);
+check("a computer that never said yes is handed nothing", (await work(A, { consent: null })).work === null);
+check("a tab of an engine the site does not serve is told it is stale", (await work(A, { engine: "e0" })).stale === true);
+const first = await work(A, { ip: "203.0.113.1" });
+check("a new build's row goes first, handed out as its build and never a number",
+  first.work && first.work.identity === "one" && first.work.record.weapon === "braton_prime" && first.work.ruler === "standard_single_target"
+  && first.release === "r1", JSON.stringify(first));
+const again = await work(A, { ip: "203.0.113.1" });
+check("a client asking again gets a task under a new lease, its lost one given back",
+  again.work && again.work.lease !== first.work.lease, JSON.stringify(again));
+free();
+only("one");
+const w1 = await work(A, { ip: "203.0.113.1" });
+await answer(w1.work, A, { ip: "203.0.113.1", extra: { counts: { runs: 10, shots: 900, bogus: -1 }, lanes: 4 } });
+check("one result is no fact", !fact("one") && question("one").state === "open");
+const kept = L.prepare("SELECT counts, lanes, compute_ms FROM answers WHERE device = ?").get(A);
+check("...and what it cost is kept beside it: its counts, its cores, its time", kept.counts === '{"runs":10,"shots":900}'
+  && kept.lanes === 4 && kept.compute_ms === 1000, JSON.stringify(kept));
+check("...its browser's task says it waits", (await post(verifyRoute, "/api/board/mine",
+  { verifier: A, orders: [{ identity: "one", ruler: "standard_single_target", mode: "base" }] })).orders[0].state === "waiting");
+check("a further result never comes from the same client", (await work(A, { ip: "203.0.113.9" })).work === null);
+check("...nor from another device of its owner", (await work(D, { ip: "203.0.113.8" })).work === null);
+check("...nor from its network", (await work(B, { ip: "203.0.113.1" })).work === null);
+const w2 = await work(B, { ip: "198.51.100.2" });
+check("...but from another owner on another network, without the number to agree with",
+  w2.work && w2.work.identity === "one" && !JSON.stringify(w2).includes(String(SCORE)), JSON.stringify(w2));
+const agreed = await answer(w2.work, B, { ip: "198.51.100.2" });
+check("equal bits make a fact, written to the board as the clients'", fact("one") && fact("one").score === SCORE
+  && fact("one").measured_by === "verified:e1", JSON.stringify(fact("one")));
+check("...the queue no longer owes the row", !owed("one"));
+check("...and both clients are credited its work, once", credited(A) === WORK && credited(B) === WORK);
+check("...and their tasks say confirmed", (await post(verifyRoute, "/api/board/mine",
+  { verifier: B, orders: [{ identity: "one", ruler: "standard_single_target", mode: "base" }] })).orders[0].state === "confirmed");
 
-const S = "s".repeat(24), T = "t".repeat(24), U = "u".repeat(24), V = "v".repeat(24);
-for (const [id, name] of [["acct1", "one"], ["acct2", "two"]]) {
-  accounts.prepare("INSERT INTO accounts (id, created_at, username) VALUES (?, '2026-01-01', ?)").run(id, `owner_${name}`);
-}
-const own = (v, a) => accounts.prepare("INSERT INTO devices (verifier, account, claimed_at) VALUES (?, ?, '2026-01-01')").run(v, a);
-own(S, "acct1"); own(T, "acct1"); own(U, "acct2");
-db.prepare("UPDATE orders SET state = 'settled'").run();
-order("owned", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: S, clients: S });
-only("owned");
-check("a further result never comes from another device of the same owner", (await work(T)).work === null);
-const wu = await work(U);
-check("...but from another owner's", wu.work && row("owned").leased_to === U);
-db.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE identity = 'owned'").run();
-check("...or from a device nobody claimed", (await work(V)).work && row("owned").leased_to === V);
+build("two");
+queue(arrivals, "two");
+await ask(arrivals, "two");
+free(); only("two");
+const w3 = await work(C, { ip: "192.0.2.3" });
+await answer(w3.work, C, { ip: "192.0.2.3" });
+const w4 = await work(E, { ip: "192.0.2.4" });
+const disagreed = await answer(w4.work, E, { ip: "192.0.2.4", work: WORK + 1 });
+check("the same score with other work is a dispute, and no fact", question("two").state === "disputed" && !fact("two"));
+check("...and the answer is the one an agreement gets", JSON.stringify(disagreed) === JSON.stringify(agreed));
+check("...its clients' tasks say it is being checked", (await post(verifyRoute, "/api/board/mine",
+  { verifier: C, orders: [{ identity: "two", ruler: "standard_single_target", mode: "base" }] })).orders[0].state === "checking");
+check("...and nobody is credited", credited(C) === 0 && credited(E) === 0);
 
-// THE CLAIM (scripts/fetch_queue.sh): an old order nobody holds is the scorer
-// run's, and while it is no client is handed it; one a client holds stays its.
-const body = (...a) => JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", ...a],
-  { env: { ...process.env, HOLD_SECONDS: "14400" }, encoding: "utf8" }));
-const sql = (b) => db.prepare(b.sql.replaceAll("unixepoch()", String(Math.floor(Date.now() / 1000))));
-const W = "w".repeat(24), X = "x".repeat(24), Y = "y".repeat(24);
-db.prepare("UPDATE orders SET state = 'settled'").run();
-db.prepare("DELETE FROM queue").run();
-db.prepare("INSERT INTO batches (id, at, why, total) VALUES ('arrivals', '2026-01-01', 'check', 4)").run();
-order("old");
-order("oldopen", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: R, clients: R });
-order("oldheld", "todo", { leased_to: X, lease: "b".repeat(32), lease_until: new Date(Date.now() + LEASE_MS).toISOString() });
-order("young");
-db.prepare("UPDATE orders SET at = ? WHERE identity = 'young'").run(new Date(Date.now() - 60_000).toISOString());
-const reserve = sql(body("reserve")).get(...body("reserve").params);
-check("the reserve counts the unmeasured orders a client could take now, young or old, and what of them is old",
-  reserve.open_to_clients === 2 && reserve.old === 1
-  && reserve.facts_last_hour === db.prepare("SELECT COUNT(*) AS n FROM scores WHERE measured_by LIKE 'verified:%'").get().n
-  && reserve.facts_last_hour > 0, JSON.stringify(reserve));
-sql(body("claim", "open")).run(...body("claim", "open").params);
-sql(body("claim", "todo", "100")).run(...body("claim", "todo", "100").params);
-check("a run claims every old order no client holds, open or not",
-  row("old").state === "scoring:todo" && row("oldopen").state === "scoring:open", `${row("old").state} ${row("oldopen").state}`);
-check("...and leaves a held one and a young one to the clients", row("oldheld").state === "todo" && row("young").state === "todo");
-const page = body("page", "100", "0");
-const read = sql(page).all(...page.params).map((r) => r.build_id).sort();
-check("...and reads exactly what it claimed", JSON.stringify(read) === JSON.stringify(["old", "oldopen"]), JSON.stringify(read));
-const wy = await work(W);
-check("no client is handed a claimed order", wy.work && row("young").leased_to === W && (await work(Y)).work === null);
-sql(body("release")).run(...body("release").params);
-check("the release hands what the run left back as it was", row("old").state === "todo" && row("oldopen").state === "open");
-sql(body("claim", "open")).run(...body("claim", "open").params);
-sql(body("claim", "todo", "0")).run(...body("claim", "todo", "0").params);
-check("a run with no share of the unmeasured still takes every old open order, which no lone computer can settle",
-  row("old").state === "todo" && row("oldopen").state === "scoring:open", `${row("old").state} ${row("oldopen").state}`);
-const rowsFor = (old, open, facts) => Number(execFileSync("bash", ["-c", `source <(sed -n "/^claim_rows() {/,/^}/p" scripts/fetch_queue.sh); claim_rows ${old} ${open} ${facts}`],
-  { encoding: "utf8" }).trim());
-check("...the clients keep two hours of what they made, never fewer than 500, and the run takes only the old beyond it",
-  rowsFor(6000, 6500, 300) === 5900 && rowsFor(6000, 6500, 0) === 6000 && rowsFor(100, 300, 50) === 0 && rowsFor(6000, 6500, 3500) === 0,
-  JSON.stringify([rowsFor(6000, 6500, 300), rowsFor(6000, 6500, 0), rowsFor(100, 300, 50), rowsFor(6000, 6500, 3500)]));
-sql(body("release")).run(...body("release").params);
+console.log("\nthe official machines");
+check("only the factory's secret speaks for them", (await post(officialRoute, "/api/tasks/official/claim", { witness: "official:live", engine: "e1" })).ok === false);
+const settle = await post(officialRoute, "/api/tasks/official/claim",
+  { witness: "official:live", engine: "e1", states: ["disputed", "spot", "nondeterministic"], producers: ["new_build", "sweep"], max: 3 }, TOKEN);
+check("the live loop claims what only it may settle", settle.tasks.length === 1 && settle.tasks[0].demands[0].payload.identity === "two",
+  JSON.stringify(settle));
+const told = await tell([{ identity: "two", ruler: "standard_single_target", mode: "base", score: SCORE, metric: "kpm", work: WORK }], "e1",
+  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN));
+check("its fact settles the dispute", told === 1 && question("two").state === "fact");
+check("...crediting the client it agrees with", credited(C) === WORK);
+const cooled = L.prepare("SELECT banned, refusals, refused_until FROM verifiers WHERE id = ?").get(E);
+check("...and refusing the one it disproves, for a day", cooled.banned === 1 && cooled.refusals === 1
+  && Math.abs(Date.parse(cooled.refused_until) - Date.now() - coolDownMs(0)) < 60_000, JSON.stringify(cooled));
+const banned = await work(E, { ip: "192.0.2.4" });
+check("a refused client is handed nothing, and told why and until when", banned.work === null && banned.banned === true && banned.until);
+check("a cool-down is a day, then three times as long each time", coolDownMs(0) === 86_400_000 && coolDownMs(2) === 9 * 86_400_000);
 
-// A FIRST RESULT THE LIVE LOOP NEVER RANKED is claimed after the hold and,
-// reproduced by the scorer, pays its client like any agreement.
-db.prepare("UPDATE orders SET state = 'settled'").run();
-const UR = "u".repeat(24);
-db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(UR);
-order("unranked", "fresh", { score: SCORE, metric: "kpm", engine: "e1", produced_by: UR, clients: UR });
-sql(body("claim", "fresh")).run(...body("claim", "fresh").params);
-const urPaid = await creditConfirmed(async (s2, p2 = []) => (/^\s*select|returning/i.test(s2) ? db.prepare(s2).all(...p2) : (db.prepare(s2).run(...p2), [])),
-  [{ identity: "unranked", ruler: "standard_single_target", mode: "base", score: SCORE, metric: "kpm", work: WORK }], "e1");
-check("a first result the live loop never ranked is claimed after the hold, and paid once the scorer reproduces it",
-  urPaid === 1 && row("unranked").state === "verified" && db.prepare("SELECT work FROM verifiers WHERE id = ?").get(UR).work === WORK,
-  `${urPaid} ${row("unranked").state}`);
+// A REFUSED CLIENT'S AGREEMENTS ARE WITHDRAWN: a spot check that disproves the
+// two who agreed takes the clients' number off the board, owes the row again,
+// and takes back what they were paid.
+build("three");
+queue(arrivals, "three");
+await ask(arrivals, "three");
+free(); only("three");
+const G = "g".repeat(24), H = "h".repeat(24);
+for (const v of [G, H]) L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
+const real = Math.random;
+Math.random = () => 0;  // the dice pick this agreement for a spot check
+await answer((await work(G, { ip: "192.0.2.7" })).work, G, { ip: "192.0.2.7", score: 9 });
+await answer((await work(H, { ip: "192.0.2.8" })).work, H, { ip: "192.0.2.8", score: 9 });
+Math.random = real;
+check("an agreement the dice pick is a spot check: a fact now, the clients paid", question("three").state === "spot" && fact("three")
+  && credited(G) === WORK);
+const spot = await post(officialRoute, "/api/tasks/official/claim",
+  { witness: "official:live", engine: "e1", states: ["spot"], producers: ["new_build", "sweep"], max: 3 }, TOKEN);
+await tell([{ identity: "three", ruler: "standard_single_target", mode: "base", score: SCORE, metric: "kpm", work: WORK }], "e1",
+  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN));
+check("a spot check that disproves them refuses both and takes back what they were paid",
+  spot.tasks.length === 1 && credited(G) === 0 && credited(H) === 0
+  && L.prepare("SELECT banned FROM verifiers WHERE id = ?").get(G).banned === 1);
+check("...and the official fact stands", question("three").state === "fact"
+  && L.prepare("SELECT count(*) AS n FROM answers WHERE void = 1 AND question = ?").get(question("three").id).n === 2);
 
-// A LEASE GIVEN BACK is anyone's at once, and its client may take another.
-db.prepare("UPDATE orders SET state = 'settled'").run();
-order("given"); order("next");
-const GB = "q".repeat(24);
-const gbFirst = (await work(GB)).work;
-const gbTaken = row("given").leased_to === GB ? "given" : "next";
-await call("/api/board/release", { lease: gbFirst.lease, verifier: GB });
-check("a lease given back frees its order and its client at once",
-  gbFirst && row(gbTaken).lease === null && !!(await work(GB)).work, `${gbTaken} ${row(gbTaken).lease}`);
-const gbSpare = (await work(Y)).work;
-check("...and a client cannot give back a lease it does not hold",
-  (await call("/api/board/release", { lease: (gbSpare || {}).lease || "c".repeat(32), verifier: GB })).ok
-  && (!gbSpare || db.prepare("SELECT leased_to FROM orders WHERE lease = ?").get(gbSpare.lease).leased_to === Y));
+// THE SCORER: past their deadline, a row is its to claim; it reads exactly what
+// it claimed and what nobody asked the factory for, and its answer pays a client
+// whose bits it reproduces.
+build("late"); build("young"); build("orphan");
+queue(arrivals, "late", "young", "orphan");
+await ask(arrivals, "late", "young");
+free(); only("late", "young");
+L.prepare("UPDATE questions SET due_at = '2000-01-01T00:00:00.000Z' WHERE id = ?").run(question("late").id);
+await answer((await work(F, { ip: "192.0.2.9" })).work, F, { ip: "192.0.2.9", score: 3 });
+check("a late row's single result is open", question("late").state === "open" && L.prepare("SELECT count(*) AS n FROM answers WHERE question = ?").get(question("late").id).n === 1);
+const claim = await post(officialRoute, "/api/tasks/official/claim",
+  { witness: "official:scorer", engine: "e1", states: ["open"], producers: ["new_build", "sweep"], max: 100 }, TOKEN);
+check("the scorer claims what is past its deadline and leaves a young row to the clients",
+  claim.tasks.map((t) => t.demands[0].payload.identity).join() === "late" && question("young").leased_to === null, JSON.stringify(claim.tasks.length));
+check("no client is handed a claimed row", (await work(C, { ip: "192.0.2.30" })).work.identity === "young");
+free();
+L.prepare("UPDATE questions SET lease = 'x', lease_until = '2999-01-01T00:00:00.000Z', leased_to = 'official:scorer' WHERE id = ?").run(question("late").id);
+const page = JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", "page", "100", "0"],
+  { env: { ...process.env, CLAIMED: "1", WITNESS: "official:scorer" } }).toString());
+const read = L.prepare(page.sql).all(...page.params).map((r) => r.build_id).sort();
+check("...it reads exactly what it claimed and what nobody asked for", JSON.stringify(read) === JSON.stringify(["late", "orphan"]), JSON.stringify(read));
+await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", score: 3, metric: "kpm", work: WORK }], "e1",
+  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN));
+check("...and its answer is the fact, paying the client whose bits it reproduced", question("late").state === "fact" && credited(F) === WORK);
+check("...whose number the scorer itself writes to the board", !fact("late"));
+await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer" }, TOKEN);
+check("the release hands back what the run held", !L.prepare("SELECT 1 FROM questions WHERE leased_to = 'official:scorer'").get());
 
-// THE SCORER'S FACT PAYS THE CLIENT IT REPRODUCES, once, and no other.
-const q = async (s, p = []) => (/^\s*select|returning/i.test(s) ? db.prepare(s).all(...p) : (db.prepare(s).run(...p), []));
-const Z = "z".repeat(24);
-db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(Z);
-const workOf = (v) => db.prepare("SELECT work FROM verifiers WHERE id = ?").get(v).work;
-for (const id of ["same", "otherscore", "otherwork", "otherengine"]) {
-  order(id, "scoring:open", { score: SCORE, metric: "kpm", engine: id === "otherengine" ? "e0" : "e1", produced_by: Z, clients: Z });
-}
-const scorer = (identity, score = SCORE, w = WORK) => ({ identity, ruler: "standard_single_target", mode: "base", score, metric: "kpm", work: w });
-const facts = [scorer("same"), scorer("otherscore", SCORE + 1), scorer("otherwork", SCORE, WORK + 1), scorer("otherengine")];
-const paid = [await creditConfirmed(q, facts.slice(0, 3), "e1"), await creditConfirmed(q, facts.slice(3), "e1")];
-check("a client result the scorer reproduces is paid to its client",
-  paid[0] === 1 && row("same").state === "verified", `${paid} ${row("same").state} ${workOf(Z)}`);
-check("...never one that differs in score or work",
-  ["otherscore", "otherwork"].every((id) => row(id).state === "scoring:open"));
-check("...and one of another engine id with the same bits is paid too: the bits are the witness",
-  paid[1] === 1 && row("otherengine").state === "verified" && workOf(Z) === 2 * WORK, `${paid} ${row("otherengine").state} ${workOf(Z)}`);
-check("...and only once", (await creditConfirmed(q, facts, "e1")) === 0 && workOf(Z) === 2 * WORK);
+console.log("\nleases, ahead, engines");
+free(); only("young");
+const wy = await work(C, { ip: "192.0.2.30" });
+const ahead = await work(C, { ip: "192.0.2.30", ahead: true });
+check("a client near the end of a task may ask ahead, and holds no more than TASKS_AHEAD more", TASKS_AHEAD >= 1 && ahead.ahead === TASKS_AHEAD);
+await post(verifyRoute, "/api/board/release", { lease: wy.work.lease, verifier: C });
+check("a lease given back frees its row at once", question("young").leased_to === null);
+check("a lease is held for longer than the slowest row", LEASE_MS >= 20 * 60_000);
+const stale = await work(B, { ip: "198.51.100.40" });
+const dropped = await answer(stale.work, B, { engine: "e2", ip: "198.51.100.40" });
+check("an answer from another engine is dropped, and the row handed out again", dropped.ok
+  && L.prepare("SELECT count(*) AS n FROM answers WHERE question = ?").get(question("young").id).n === 0 && question("young").leased_to === null);
 
-// A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS (scripts/ship_queue.sh);
-// a rescore's batch asks for scored rows too.
-const rows = join(mkdtempSync(join(tmpdir(), "owed-")), "rows.ndjson");
-writeFileSync(rows, ["scored", "unscored"].map((id) => JSON.stringify({ build_id: id, ruler: "standard_single_target", mode: "base" })).join("\n") + "\n");
-const shipped = (what, batch) => execFileSync("bash", ["scripts/ship_queue.sh", "--body", what, ...(what === "queue" ? [batch, rows] : [rows, batch])],
-  { encoding: "utf8" }).split("\n").filter(Boolean).map((l) => JSON.parse(l));
-const run = (what, batch) => { for (const b of shipped(what, batch)) sql(b).run(...b.params); };
-db.prepare("DELETE FROM queue").run();
-db.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('arrivals-2026-01-01', '2026-01-01', 'check', 2), ('rescore-t', '2026-01-01', 'check', 2)").run();
-for (const id of ["scored", "unscored"]) db.prepare("INSERT INTO builds (id, at, record) VALUES (?, '2026-01-01', ?)").run(id, JSON.stringify({ weapon: "braton_prime" }));
-order("scored", "verified", { score: SCORE, metric: "kpm", engine: "e1", produced_by: R, clients: R });
-db.prepare("DELETE FROM queue").run();
-db.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-            VALUES ('scored', 'standard_single_target', 'base', 'verified:e1', ?, 'kpm', 0, 'T0', 'T1')`).run(SCORE);
-run("queue", "arrivals-2026-01-01"); run("orders", "arrivals-2026-01-01");
-const queued = () => db.prepare("SELECT DISTINCT build_id FROM queue ORDER BY build_id").all().map((r) => r.build_id).join(",");
-check("a resubmitted build's scored row is not asked for again, its order left as it was",
-  queued() === "unscored" && row("scored").state === "verified" && row("unscored").state === "todo" && row("unscored").priority === 0,
-  `${queued()} ${row("scored").state}`);
-run("queue", "rescore-t"); run("orders", "rescore-t");
-check("...while a rescore asks for it", queued() === "scored,unscored" && row("scored").state === "todo"
-  && row("scored").priority === 1);
-
-// AN OLD BUILD ASKED FOR A RULER IT LACKS lands in the day's arrivals batch and
-// is a sweep; EVERY OWED ROW GETS ITS ORDER, once (scripts/ship_queue.sh).
-db.prepare("UPDATE orders SET state = 'settled'").run();
-db.prepare("DELETE FROM queue").run();
-db.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', '2026-03-01', 'check', 3)").run();
-for (const [id, at] of [["old", "2026-01-01"], ["new", "2026-03-01"], ["held", "2026-03-01"]]) {
-  db.prepare("INSERT OR IGNORE INTO builds (id, at, record) VALUES (?, ?, ?)").run(`bf-${id}`, at, JSON.stringify({ weapon: "braton_prime" }));
-  db.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-2026-03-01', ?, 'heavy_gunner', 'base')").run(`bf-${id}`);
-}
-db.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at) VALUES ('bf-held', 'heavy_gunner', 'base', '{}', 'open', 1, '1970-01-01T00:00:00.000Z')`).run();
-const backfill = () => { const b = JSON.parse(execFileSync("bash", ["scripts/ship_queue.sh", "--body", "backfill"], { encoding: "utf8" }));
-  return Number(sql(b).run(...b.params).changes); };
-const bf = (id) => db.prepare("SELECT state, priority FROM orders WHERE identity = ? AND ruler = 'heavy_gunner'").get(`bf-${id}`);
-const opened = backfill();
-check("an owed row with no order is given one — a new build's first, an old build's as a sweep — and one that has an order is left",
-  opened === 2 && bf("new").state === "todo" && bf("new").priority === 0 && bf("old").priority === 1 && bf("held").state === "open",
-  `${opened} ${JSON.stringify([bf("new"), bf("old"), bf("held")])}`);
-check("...and asking again opens nothing", backfill() === 0);
-
-// A FURTHER RESULT NEVER COMES FROM THE FIRST ONE'S NETWORK: two browsers on one
-// desk agreeing are one witness counted twice. The network is a salted hash,
-// cleared when the order becomes a fact.
+console.log("\norders open before the factory");
 {
-  const from = (ip) => ({
-    work: async (v) => (await verifyRoute(new Request("https://x/api/board/work", { method: "POST", headers: { "cf-connecting-ip": ip },
-      body: JSON.stringify({ verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES }) }), env, "/api/board/work")).json(),
-    answer: async (w, v) => (await verifyRoute(new Request("https://x/api/board/verify", { method: "POST", headers: { "cf-connecting-ip": ip },
-      body: JSON.stringify({ lease: w.lease, verifier: v, engine: "e1", score: SCORE, metric: "kpm", work: WORK, compute_ms: 1000 }) }), env, "/api/board/verify")).json(),
-  });
-  db.prepare("UPDATE orders SET state = 'settled'").run();
-  order("desk");
-  const N1 = "4".repeat(24), N2 = "5".repeat(24), N3 = "6".repeat(24);
-  const home = from("203.0.113.7"), elsewhere = from("198.51.100.9");
-  await home.answer((await home.work(N1)).work, N1);
-  db.prepare("UPDATE orders SET state = 'open' WHERE identity = 'desk'").run();
-  const nets = row("desk").clients_nets;
-  check("the first result's network is kept on the order as a salted hash, never the address",
-    /^[0-9a-f]{12}$/.test(nets) && !nets.includes("203"), nets);
-  check("a further result is never handed to a browser on the same network", (await home.work(N2)).work === null);
-  const w3 = await elsewhere.work(N3);
-  check("...but to one on another", w3.work && row("desk").leased_to === N3);
-  await elsewhere.answer(w3.work, N3);
-  check("...and the networks are forgotten once the order is a fact", row("desk").state === "verified" && row("desk").clients_nets === "",
-    `${row("desk").state} ${row("desk").clients_nets}`);
+  const at = "2026-10-09T00:00:00.000Z";
+  build("legacy");
+  queue("rescore-y", "legacy");
+  L.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority, score, metric, work, produced_by, clients, lease, lease_until, leased_to)
+    VALUES ('legacy', 'standard_single_target', 'base', ?, 'open', 'e1', 1, ?, 1, ?, 'kpm', ?, ?, ?, NULL, NULL, NULL)`)
+    .run(L.prepare("SELECT record FROM builds WHERE id = 'legacy'").get().record, at, SCORE, WORK, B, B);
+  L.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority, lease, lease_until, leased_to)
+    VALUES ('gone', 'standard_single_target', 'base', '{}', 'todo', '', 2, ?, 0, NULL, NULL, NULL)`).run(at);
+  check("only the factory's secret adopts", (await post(boardTasksRoute, "/api/board/adopt", {})).ok === false);
+  const r = await post(boardTasksRoute, "/api/board/adopt", {}, TOKEN);
+  check("an open order is asked of the factory, as of when it was opened, and nothing is left", r.left === 0 && demand("legacy")
+    && demand("legacy").asked_at === at, JSON.stringify(r));
+  check("...its client's result carried", L.prepare("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?").get(question("legacy").id, B).n === 1);
+  check("...and an order nobody owes any more is settled where it is found", L.prepare("SELECT state FROM orders WHERE identity = 'gone'").get().state === "settled");
+  free(); only("legacy");
+  check("its client is not asked again", (await work(B, { ip: "198.51.100.50" })).work === null);
+  const before = credited(B);
+  const wl = await work(C, { ip: "192.0.2.50" });
+  await answer(wl.work, C, { ip: "192.0.2.50" });
+  check("...another agreeing with the carried result makes the fact and credits both", fact("legacy") && credited(B) === before + WORK);
 }
 
-// A REFUSAL COOLS A CLIENT DOWN A DAY, THREE TIMES AS LONG EACH TIME, NO CEILING;
-// and every thousand facts it is part of afterwards take one refusal off.
-{
-  const day = 86_400_000;
-  check("a cool-down is a day, then three times as long each time, with no ceiling",
-    JSON.stringify([0, 1, 2, 3, 6].map((n) => coolDownMs(n) / day)) === JSON.stringify([1, 3, 9, 27, 729]));
-  db.prepare("UPDATE orders SET state = 'settled'").run();
-  order("redeem", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: "7".repeat(24), clients: "7".repeat(24) });
-  const OLD = "7".repeat(24), NEW = "8".repeat(24);
-  db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(OLD);
-  db.prepare("UPDATE verifiers SET refusals = 2, clean = ? WHERE id = ?").run(2 * FACTS_PER_REFUSAL_FORGIVEN - 1, OLD);
-  db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-01-01')").run(NEW);
-  db.prepare("UPDATE verifiers SET refusals = 2, clean = ? WHERE id = ?").run(FACTS_PER_REFUSAL_FORGIVEN - 1, NEW);
-  const w = (await work(NEW)).work;
-  await answer(w, NEW, SCORE);
-  const v = (id) => db.prepare("SELECT refusals, clean FROM verifiers WHERE id = ?").get(id);
-  check("with two refusals on record, the two-thousandth fact after takes one off and starts the count again",
-    row("redeem").state === "verified" && v(OLD).refusals === 1 && v(OLD).clean === 0, JSON.stringify(v(OLD)));
-  check("...while one thousand is not yet enough for two", v(NEW).refusals === 2 && v(NEW).clean === FACTS_PER_REFUSAL_FORGIVEN, JSON.stringify(v(NEW)));
-}
-
-// A BROWSER ASKS WHERE ITS OWN RESULTS STAND, by its own id, and learns nothing
-// about anyone else's (73-compute.js, the recent tasks).
-{
-  const M = "9".repeat(24), OTHER = "a1".repeat(12);
-  db.prepare("UPDATE orders SET state = 'settled'").run();
-  order("m-wait", "open", { score: SCORE, metric: "kpm", engine: "e1", produced_by: M, clients: M });
-  order("m-ok", "verified", { score: SCORE, metric: "kpm", engine: "e1", produced_by: M, clients: `${M},${OTHER}` });
-  db.prepare(`INSERT OR REPLACE INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-              VALUES ('m-ok', 'standard_single_target', 'base', 'verified:e1', ?, 'kpm', 0, 'T0', '2026-10-09T08:00:00Z')`).run(SCORE);
-  order("m-check", "dispute", { score: SCORE, metric: "kpm", engine: "e1", produced_by: M, clients: `${M},${OTHER}` });
-  order("m-gone", "settled", { score: SCORE, metric: "kpm", engine: "e1", produced_by: OTHER, clients: OTHER });
-  const ask = (v, ids) => call("/api/board/mine", { verifier: v, orders: ids.map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) });
-  const r = await ask(M, ["m-wait", "m-ok", "m-check", "m-gone"]);
-  const got = Object.fromEntries((r.orders || []).map((o) => [o.identity, o.at ? `${o.state}@${o.at}` : o.state]));
-  const st = Object.fromEntries(["m-wait", "m-ok", "m-check", "m-gone"].map((k) => [k, got[k]]));
-  check("a browser learns where each of its results stands: waiting, confirmed and when, being checked, or no longer its",
-    JSON.stringify(st) === JSON.stringify({ "m-wait": "waiting", "m-ok": "confirmed@2026-10-09T08:00:00Z", "m-check": "checking", "m-gone": "gone" }),
-    JSON.stringify(r));
-  const fifty = await ask(M, Array.from({ length: 50 }, (_, i) => `m-${String(i).padStart(30, "0")}`));
-  check("...a browser's whole list of fifty tasks is asked in one go", fifty.ok === true, JSON.stringify(fifty).slice(0, 120));
-  const theirs = await ask("b2".repeat(12), ["m-wait", "m-ok"]);
-  check("...and another browser asking about them learns only that they are not its",
-    (theirs.orders || []).every((o) => o.state === "gone" && !o.at), JSON.stringify(theirs));
-}
-
-// A RESCORE THE VOLUNTEERS COMPUTE REPLACES THE OLD NUMBER: the clients' fact is
-// the board's, for a row still owed; one no longer owed keeps the fact it has.
-{
-  const P1 = "c1".repeat(12), P2 = "c2".repeat(12), P3 = "c3".repeat(12);
-  const NEW = SCORE * 2, OLD = SCORE;
-  const scoreRow = (id) => db.prepare("SELECT score, measured_by FROM scores WHERE identity = ?").get(id);
-  const oldFact = (id) => db.prepare(`INSERT OR REPLACE INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-    VALUES (?, 'standard_single_target', 'base', 'abc1234', ?, 'kpm', 1, 'T0', 'T1')`).run(id, OLD);
-  db.prepare("UPDATE orders SET state = 'settled'").run();
-  order("again", "open", { score: NEW, metric: "kpm", engine: "e1", produced_by: P1, clients: P1 });
-  oldFact("again");
-  only("again");
-  await answer((await work(P2)).work, P2, NEW);
-  check("a rescore the volunteers agree on replaces the old score on the board",
-    scoreRow("again").score === NEW && scoreRow("again").measured_by === "verified:e1", JSON.stringify(scoreRow("again")));
-  db.prepare("UPDATE orders SET state = 'settled'").run();
-  order("kept", "open", { score: NEW, metric: "kpm", engine: "e1", produced_by: P1, clients: P1 });
-  oldFact("kept");
-  only("kept");
-  const w = (await work(P3)).work;
-  db.prepare("DELETE FROM queue WHERE build_id = 'kept'").run();
-  await answer(w, P3, NEW);
-  check("...while a row no longer owed keeps the fact it has", scoreRow("kept").score === OLD && scoreRow("kept").measured_by === "abc1234",
-    JSON.stringify(scoreRow("kept")));
-}
-
-// ASKING AHEAD (worker/verify.js `work`): near the end of a task a client asks
-// for its next, keeping the one it holds; `TASKS_AHEAD` more and no further.
-{
-  const H = "ah".repeat(12);
-  const ahead = (v) => call("/api/board/work", { verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES, ahead: true });
-  const held = (v) => db.prepare("SELECT COUNT(*) AS n FROM orders WHERE leased_to = ? AND lease_until > ?").get(v, new Date().toISOString()).n;
-  db.prepare("UPDATE orders SET state = 'settled'").run();
-  for (let i = 0; i < TASKS_AHEAD + 3; i++) order(`q${i}`);
-  const none = await ahead(H);
-  check("a client holding nothing is given nothing ahead", none.work === null && held(H) === 0, JSON.stringify(none));
-  const plain = await work(H), now1 = plain.work;
-  check("every answer says how many tasks a client may ask ahead", plain.ahead === TASKS_AHEAD && TASKS_AHEAD >= 1, JSON.stringify(plain));
-  const next = [];
-  for (let i = 0; i < TASKS_AHEAD; i++) next.push((await ahead(H)).work);
-  check("a client holding one task is given its next ahead, and keeps the first",
-    now1 && next.every((w) => w && w.identity !== now1.identity) && held(H) === TASKS_AHEAD + 1 && row(now1.identity).lease === now1.lease);
-  check("...and never more than that", (await ahead(H)).work === null && held(H) === TASKS_AHEAD + 1);
-  check("asking plainly again hands both back and takes one", (await work(H)).work && held(H) === 1);
-}
-
-console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");
+console.log(failures ? `\n${failures} failed` : "\na board row reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;

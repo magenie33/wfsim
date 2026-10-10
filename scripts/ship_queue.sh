@@ -86,41 +86,37 @@ queue_batches() {
   ' "$2"
 }
 
-# A NEW BUILD'S ROWS ARE LEASED BEFORE A RESCORE'S (`priority` 0): an `arrivals-`
-# batch's row whose build was submitted that day or the one before. An older
-# build asked for a ruler it lacks lands in the same daily batch, and is a sweep.
-# Prints the SQL expression; `$1` is the batch (a column or `?`, bound twice).
-priority_of() {
-  echo "CASE WHEN $1 LIKE 'arrivals-%' AND $2 >= date(substr($1, 10), '-1 day') THEN 0 ELSE 1 END"
+# THE FACT FACTORY ASKS FOR EACH ROW (docs/BOARD.md §"The fact factory"):
+# the site's worker turns a row into its question — the build's record, the
+# ruler, the mode — and decides which producer asks, a new build's or a sweep's.
+# `FACTORY_TOKEN` is the factory's own secret.
+FACTORY_ORIGIN="${FACTORY_ORIGIN:-https://wfsim.app}"
+ASK_ROWS=200
+ASK_OUT=""
+ASK_CODE=""
+factory_ask() {
+  [ -n "$ASK_OUT" ] || ASK_OUT=$(mktemp)
+  ASK_CODE=$(curl -s --connect-timeout 15 --max-time 180 -o "$ASK_OUT" -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer ${FACTORY_TOKEN:-x}" \
+    -H "content-type: application/json" \
+    -H "user-agent: wfsim-queue" \
+    --data-binary "$1" \
+    "$FACTORY_ORIGIN/api/board/ask") || ASK_CODE="000"
+  [ "$ASK_CODE" = "200" ]
 }
 
-# EVERY OWED ROW HAS AN ORDER, or the clients are never handed it and only the
-# scorer measures it: a run stopped between the queue's write and the orders'
-# leaves exactly that, and no later run wrote either again. A row is owed while
-# its batch stands; these statements open what is missing, a few thousand at a
-# time, until none is.
-BACKFILL_ROWS=2000
-backfill_body() {
-  jq -n -c --argjson n "$BACKFILL_ROWS" --arg now "$ISO_NOW" --arg priority "$(priority_of q.batch b.at)" '
-    {
-      sql: ("INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority)"
-            + " SELECT q.build_id, q.ruler, q.mode, b.record, ?, ?, abs(random()) % 2147483647, " + $now + ","
-            + " MIN(" + $priority + ")"
-            + " FROM queue q JOIN batches t ON t.id = q.batch JOIN builds b ON b.id = q.build_id"
-            + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id AND o.ruler = q.ruler AND o.mode = q.mode)"
-            + " GROUP BY q.build_id, q.ruler, q.mode LIMIT ?"),
-      params: ["todo", "", $n]
-    }'
-}
+# EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
+# scorer measures it: a run stopped between the queue's write and the ask
+# leaves exactly that. The worker asks for a few hundred a call, until none is.
 backfill() {
-  local opened=0 n i
-  for i in $(seq 1 200); do
-    d1 "$(backfill_body)" || { echo "::warning::queue: the order backfill was refused [HTTP $D1_CODE]"; return 0; }
-    n=$(jq -r '.result[0].meta.changes // 0' < "$D1_OUT")
-    opened=$((opened + n))
-    [ "$n" -gt 0 ] || break
+  local asked=0 n i
+  for i in $(seq 1 500); do
+    factory_ask '{"backfill":true}' || { echo "::warning::queue: the backfill ask was refused [HTTP $ASK_CODE]"; return 0; }
+    n=$(jq -r '.asked // 0' < "$ASK_OUT")
+    asked=$((asked + n))
+    [ "$(jq -r '.left' < "$ASK_OUT")" = "0" ] && break
   done
-  echo "queue: $opened owed row(s) had no order, now opened"
+  echo "queue: $asked owed row(s) nobody had asked for, now asked"
 }
 
 # A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS: a resubmission the
@@ -134,31 +130,13 @@ owed_only() {
   esac
 }
 
-# …AND A COMPUTE ORDER BESIDE EVERY ROW, built from the library's record of the
-# build (docs/BOARD.md §"Compute orders"). One the queue asks for again — a
-# rescore, a sweep — is opened afresh unless clients or the server are still
-# working on it. Three bound parameters a row, so the same chunk fits.
-orders_batches() {
-  jq -R -s -c --argjson n "$QUEUE_BATCH" --arg now "$ISO_NOW" --arg batch "${2:-}" --arg priority "$(priority_of "?" b.at)" --arg owed "$(owed_only "${2:-}" v.column1 v.column2 v.column3)" '
+# …AND EVERY ROW ASKED OF THE FACT FACTORY, `ASK_ROWS` a call.
+ask_batches() {
+  jq -R -s -c --argjson n "$ASK_ROWS" --arg batch "$2" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
-    | $all[$i : $i + $n] as $chunk
-    | {
-        sql: ("INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority)"
-              + " SELECT v.column1, v.column2, v.column3, b.record, ?, ?,"
-              + " abs(random()) % 2147483647, " + $now + ", " + $priority
-              + " FROM (VALUES " + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AS v"
-              + " JOIN builds b ON b.id = v.column1 WHERE " + $owed
-              + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET state = ?, engine = ?,"
-              + " slot = excluded.slot, record = excluded.record, score = NULL, metric = NULL,"
-              + " produced_by = NULL, verifier = NULL, disputed = NULL, lease = NULL,"
-              + " lease_until = NULL, leased_to = NULL, at = excluded.at,"
-              + " priority = excluded.priority, carried_from = NULL"
-              + " WHERE orders.state IN (?, ?, ?)"),
-        params: (["todo", "", $batch, $batch] + [$chunk[] | .build_id, .ruler, .mode]
-                 + ["todo", "", "verified", "rejected", "settled"])
-      }
+    | { batch: $batch, rows: [$all[$i : $i + $n][] | { identity: .build_id, ruler, mode }] }
   ' "$1"
 }
 
@@ -208,11 +186,13 @@ ship() {
   set -- $r
   echo "queue: $n row(s) asked for in $1 statement(s), $2 refused"
   [ "$2" = "0" ] || return 1
-  # AN ORDER THAT DID NOT OPEN COSTS SPEED, NEVER A ROW: the queue still owes
-  # it and the scorer measures it as it always has.
-  r=$(orders_batches "$file" "$batch" | send "compute order")
-  set -- $r
-  [ "$2" = "0" ] || echo "::warning::queue: $2 compute-order statement(s) refused — the scorer will measure those rows"
+  # A ROW NOT ASKED COSTS SPEED, NEVER A ROW: the queue still owes it, the
+  # backfill asks for it later, and the scorer measures it meanwhile.
+  local body refused=0
+  while IFS= read -r body; do
+    factory_ask "$body" || refused=$((refused + 1))
+  done < <(ask_batches "$file" "$batch")
+  [ "$refused" = "0" ] || echo "::warning::queue: $refused ask(s) of the fact factory refused [HTTP $ASK_CODE] — the backfill asks again"
 }
 
 # ---- self-test ------------------------------------------------------------
@@ -296,6 +276,7 @@ OK
   b=$(grep -n "INTO queue" sent.log | head -1 | cut -d: -f1)
   [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] \
     && say ok "...naming the batch before the rows in it" || say FAIL "the rows went first"
+  grep -q '"rows":\[{"identity":"h1"' sent.log     && say ok "...and asks the fact factory for each row" || say FAIL "no ask was sent"
 
   cat > "$DIR/bin/curl" <<'DEAD'
 #!/usr/bin/env bash
@@ -323,7 +304,7 @@ DEAD
 if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
 # THE STATEMENTS THEMSELVES, for check_board_verify.mjs to run against the schema.
 if [ "${1:-}" = "--body" ]; then
-  if [ "${2:-}" = "backfill" ]; then backfill_body; else "${2:?queue|orders|backfill}_batches" "${@:3}"; fi
+  "${2:?queue|ask}_batches" "${@:3}"
   exit $?
 fi
 

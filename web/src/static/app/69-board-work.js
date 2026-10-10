@@ -18,8 +18,9 @@
 const PIECE_MS = 250;
 
 /// ONE ROW, MEASURED: its runs fought on the together lanes, folded in run
-/// order, then scored, with what the pieces took in ms summed over the lanes
-/// (`compute_ms`) — the rests between them (`communityRest`) are not in it.
+/// order, then scored, with what the pieces and the folds took in ms summed over
+/// the lanes (`compute_ms`) — the rests between them (`communityRest`) are not
+/// in it — and how many lanes there were (`lanes`).
 /// `null` when the engine refused or `live()` went false between pieces.
 ///
 /// EVERY LANE FIGHTS, ONE MERGES. A run depends on its index alone, so lanes
@@ -52,7 +53,9 @@ async function measureRow(request, ruler, live, onPiece = () => {}) {
     folded += pieces.length;
     merging = merging.then(async () => {
       if (failed) return;
+      const began = performance.now();
       const step = await ask(0, "/api/board/fold", { request, acc, pieces });
+      spent += performance.now() - began;
       if (step) { acc = step.acc; onPiece(Math.min(runs, folded), runs); } else failed = true;
     });
   };
@@ -82,7 +85,7 @@ async function measureRow(request, ruler, live, onPiece = () => {}) {
   const began = performance.now();
   const s = await ask(0, "/api/board/score", { ruler, request, acc });
   spent += performance.now() - began;
-  return s && Number.isFinite(s.score) ? { ...s, compute_ms: Math.round(spent) } : null;
+  return s && Number.isFinite(s.score) ? { ...s, compute_ms: Math.round(spent), lanes: ls.length } : null;
 }
 
 /// WHO IS WORKING: a random id this browser makes for itself, joined to no
@@ -467,7 +470,9 @@ async function rivenGainOnce(w, id) {
     signal: boardSignal(),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ build: boardPayloadFromResult(best, w.context), lease: w.lease, verifier: id, engine: ENGINE_ID,
-      score: Number(best.kill_progress) || 0, work: r.work || 0 }),
+      score: Number(best.kill_progress) || 0, work: r.work || 0,
+      // WHAT THE SEARCH COST, kept beside the answer to fit what a point is worth (never credited).
+      compute_ms: r.cpu_ms, lanes: communityLanes(), counts: { builds: r.builds || 0, fights: r.fights || 0, steps: r.steps || 0 } }),
   }).then((x) => x.ok).catch(() => false);
   if (sent) { heldLease = null; computeFinished += 1; } else giveBack();
   // …AND WHAT IT FOUND, for this browser's own list: the build, its number, what the search took.
@@ -515,7 +520,8 @@ async function workOnce() {
   });
   if (!s) { giveBack(); computeEnd(null); return true; }
   const sent = await postBoardWork("/api/board/verify",
-    { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms });
+    { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms,
+      counts: s.counts, lanes: s.lanes });
   if (sent) { heldLease = null; computeFinished += 1; } else giveBack();
   computeEnd(sent ? { ms: Date.now() - began, cpu_ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric } : null);
   if (!sent) return true;

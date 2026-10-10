@@ -28,7 +28,7 @@ FACTS="${2:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjso
 OUT="${3:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>}"
 BOARD="${WFSIM_BOARD:-./target/release/wfsim-board}"
 # EVERY OWED ROW, whoever is measuring it: a hold here would claim and hide rows.
-unset HOLD_SECONDS
+unset CLAIMED
 
 bash scripts/fetch_queue.sh "$OUT"
 

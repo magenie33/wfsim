@@ -326,7 +326,7 @@ pub fn board_fold_json(v: &Value) -> Value {
     json!({ "ok": true, "acc": acc })
 }
 
-/// `/api/board/score` — `{ruler, request, acc}` → `{score, metric, work}`, the
+/// `/api/board/score` — `{ruler, request, acc}` → `{score, metric, work, counts}`, the
 /// scorer's own ending: the report, then the ruler's metric — and the WORK the
 /// fold held (`Shard::work`), which a compute order's clients must agree on
 /// beside the score (docs/BOARD.md §"Contribution").
@@ -343,5 +343,9 @@ pub fn board_score_json(v: &Value) -> Value {
     if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
         return out;
     }
-    json!({ "ok": true, "score": row_score(bench, &out), "metric": bench.metric().id, "work": acc.work() })
+    // …AND THE COUNTS THE WORK WAS WEIGHED FROM, which the fact factory keeps
+    // beside the answer to fit what a point is worth (never credited).
+    let counts: serde_json::Map<String, Value> =
+        wfsim_engine::fight::WORK_COUNTERS.iter().zip(acc.work_counts()).map(|(k, n)| ((*k).to_string(), json!(n))).collect();
+    json!({ "ok": true, "score": row_score(bench, &out), "metric": bench.metric().id, "work": acc.work(), "counts": counts })
 }

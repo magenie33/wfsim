@@ -204,7 +204,8 @@ library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' W
   for (const [b, id] of [["arrivals-2026-03-01", "n1"], ["arrivals-2026-03-01", "s1"], ["arrivals-2026-03-01", "r1"], ["rescore-x", "r1"], ["rescore-x", "r2"]]) {
     L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'heavy_gunner', 'base')").run(b, id);
   }
-  L.prepare("INSERT INTO orders (identity, ruler, mode, record, state, slot, at, priority) VALUES ('n1', 'heavy_gunner', 'base', '{}', 'todo', 1, '1970-01-01T00:00:00.000Z', 0)").run();
+  // n1 IS A NEW BUILD'S ROW, as the fact factory's `new_build` asks for it.
+  L.prepare("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('new_build', 'n1|heavy_gunner|base', 'qn1', 'live', 'x', 'x')").run();
   L.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES
     ('a', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?), ('b', 'r', 'base', 'abc123', 1, 'kpm', 0, 'T', ?),
     ('c', 'r', 'base', 'abc123', 1, 'kpm', 0, 'T', ?), ('d', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`)
@@ -255,10 +256,14 @@ const P = "p".repeat(24), Q = "q2".repeat(12);
 device(P, 4 * POINT); device(Q, 1 * POINT); credit(P, 60, 4 * POINT); credit(Q, 60, 1 * POINT);
 await claim(ed, P, "Mac · Chrome"); await claim(ed, Q, "\u0007bell");
 library.raw.prepare("UPDATE verifiers SET last_at = '2026-10-08T06:00:00.000Z' WHERE id = ?").run(P);
-library.raw.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, lease, lease_until, leased_to, at)
-  VALUES ('b1', 'standard_single_target', 'base', '{"weapon":"torid","mods":["x"]}', 'todo', 1, 'l', ?, ?, '1970-01-01T00:00:00.000Z')`).run(new Date(Date.now() + 60000).toISOString(), P);
-library.raw.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, lease, lease_until, leased_to, at)
-  VALUES ('b2', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 2, 'm', ?, ?, '1970-01-01T00:00:00.000Z')`).run(new Date(Date.now() - 60000).toISOString(), Q);
+// TWO BOARD ROWS OF THE FACT FACTORY, one leased now and one whose lease ran out.
+for (const [id, weapon, until, who] of [["b1", "torid", Date.now() + 60000, P], ["b2", "furis", Date.now() - 60000, Q]]) {
+  library.raw.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lease, lease_until, leased_to)
+    VALUES (?, 'simulate', ?, 'open', 'x', 'x', 'l', ?, ?)`).run(id, JSON.stringify({ record: { weapon, mods: ["x"] }, ruler: "standard_single_target", mode: "base" }),
+    new Date(until).toISOString(), who);
+  library.raw.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES ('new_build', ?, ?, 'live', 'x', 'x', ?)`)
+    .run(`${id}|standard_single_target|base`, id, JSON.stringify({ identity: id, ruler: "standard_single_target", mode: "base" }));
+}
 const eds = (await mine(ed)).devices;
 const p6 = P.slice(0, 6), q6 = Q.slice(0, 6);
 const dp = eds.find((d) => d.id === p6), dq = eds.find((d) => d.id === q6);

@@ -57,7 +57,7 @@ export async function witnessOf(env, device) {
 /// (`threshold`, a volunteer counting one and the official machines all of it),
 /// the share of facts the official machines check again (`spot`), and what
 /// happens to a witness they disprove (`on_disproved`).
-export function factory({ verbs, producers, threshold = 2, spot = 0.05, random = Math.random, on_disproved = async () => {} }) {
+export function factory({ verbs, producers, threshold = 2, spot = 0.05, random = () => Math.random(), on_disproved = null }) {
   const producerOf = (name) => {
     const p = producers[name];
     if (!p) throw new Error(`no producer ${name}`);
@@ -139,7 +139,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       const wanted = [];
       for (const d of live) {
         const p = producerOf(d.producer);
-        if (!p.still_wanted || await p.still_wanted(env, d)) wanted.push(d);
+        if (!p.still_wanted || await p.still_wanted(env, { ...d, payload: JSON.parse(d.payload) })) wanted.push(d);
         else await db.prepare("UPDATE demands SET state = 'withdrawn' WHERE producer = ? AND ref = ?").bind(d.producer, d.ref).run();
       }
       if (q.state === "open" && !wanted.length) {
@@ -188,18 +188,37 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   }
 
   /// A WITNESS ANSWERS, under its lease. `w`: { device, owner, net, official }.
+  /// `counts`, `lanes` and `compute_ms` are what the answer cost and on how many
+  /// cores — kept beside it to fit what a point is worth, never credited.
   /// Returns `{ taken }`: whether the lease was still its own.
-  async function answer(env, w, { lease, engine, result, work, compute_ms = null }, now = Date.now()) {
-    const db = env.LIBRARY, at = iso(now);
-    const q = await db.prepare("SELECT * FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ?").bind(lease, w.device, at).first();
+  async function answer(env, w, { lease, ...a }, now = Date.now()) {
+    const q = await env.LIBRARY.prepare("SELECT * FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
+      .bind(lease, w.device, iso(now)).first();
     if (!q) return { taken: false };
+    await record(env, q, w, a, now);
+    return { taken: true };
+  }
+
+  /// THE OFFICIAL MACHINES ANSWER WITHOUT A LEASE: they are trusted, and what they
+  /// measured is the fact whoever held the question. Returns the question's
+  /// state after it, or null for a question that does not exist.
+  async function answerOfficial(env, w, { question, ...a }, now = Date.now()) {
+    const q = await env.LIBRARY.prepare("SELECT * FROM questions WHERE id = ?").bind(question).first();
+    if (!q) return null;
+    await record(env, q, { ...w, official: true }, a, now);
+    return (await env.LIBRARY.prepare("SELECT state FROM questions WHERE id = ?").bind(question).first()).state;
+  }
+
+  async function record(env, q, w, { engine, result, work, compute_ms = null, counts = null, lanes = null }, now) {
+    const db = env.LIBRARY, at = iso(now);
     const c = verbs[q.verb].canon(result, work);
     const official = w.official ? 1 : 0;
     const writes = [
-      db.prepare(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(q.id, engine, w.device, w.owner, w.net || "", official, c, JSON.stringify(result), work, compute_ms, at),
-      db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ?").bind(q.id),
+      db.prepare(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(q.id, engine, w.device, w.owner || w.device, w.net || "", official, c, JSON.stringify(result), work, compute_ms,
+          counts ? JSON.stringify(counts) : null, lanes, at),
+      db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ? AND leased_to = ?").bind(q.id, w.device),
     ];
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md §"Contribution").
@@ -218,14 +237,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       }
     }
     await settle(env, q.id, engine, now);
-    return { taken: true };
   }
 
   /// WHAT THE ANSWERS NOW MAKE OF A QUESTION (§"States").
   async function settle(env, id, engine, now) {
     const db = env.LIBRARY;
     const q = await db.prepare("SELECT * FROM questions WHERE id = ?").bind(id).first();
-    const all = (await db.prepare("SELECT * FROM answers WHERE question = ? ORDER BY id").bind(id).all()).results;
+    const all = (await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 ORDER BY id").bind(id).all()).results;
     const served = all.filter((a) => a.engine === engine);
     const officialSays = served.filter((a) => a.official).at(-1);
 
@@ -233,9 +251,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
       // volunteers who gave its bits are credited; those it disproves on its own
       // engine are refused — unless the question was not deterministic.
-      const volunteers = served.filter((a) => !a.official);
-      const agree = independent(volunteers.filter((a) => a.canon === officialSays.canon));
-      const wrong = volunteers.filter((a) => a.canon !== officialSays.canon);
+      // BITS ARE THE WITNESS: a volunteer of any engine that gave their bits
+      // agreed; a refusal needs the same engine, since another may differ honestly.
+      const agree = independent(all.filter((a) => !a.official && a.canon === officialSays.canon));
+      const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon);
       const moved = q.canon !== null && q.canon !== officialSays.canon;
       // A DISPUTE THE OFFICIAL MACHINES SIDE WITH NOBODY IN is not a liar found:
       // every answer differs from every other, theirs too, and that is an engine
@@ -247,7 +266,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       // ONLY A DISPUTE OR A SPOT CHECK REFUSES: an open question past its deadline
       // that they answered differently is measured again, its answer unpaid —
       // one witness against them is not yet a witness found lying.
-      if (!odd && (q.state === "disputed" || q.state === "spot")) for (const a of wrong) await on_disproved(env, a);
+      if (!odd && (q.state === "disputed" || q.state === "spot")) {
+        for (const a of wrong) await (on_disproved ? on_disproved(env, a) : refuse(env, a.device, now));
+      }
       if (q.state !== "spot" || moved) await deliver(env, { ...q, canon: officialSays.canon }, now, officialSays);
       return;
     }
@@ -313,11 +334,75 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     const answerOf = by || await db.prepare("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1")
       .bind(q.id, q.canon).first();
     const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon,
-      result: answerOf ? JSON.parse(answerOf.result) : null, work: answerOf ? answerOf.work : 0 };
+      result: answerOf ? JSON.parse(answerOf.result) : null, work: answerOf ? answerOf.work : 0,
+      engine: answerOf ? answerOf.engine : null, official: !!(answerOf && answerOf.official) };
     for (const d of await liveDemands(db, q.id)) {
       await producerOf(d.producer).on_fact(env, { ...d, payload: JSON.parse(d.payload) }, fact);
       await db.prepare("UPDATE demands SET state = 'served', served_at = ? WHERE producer = ? AND ref = ?").bind(iso(now), d.producer, d.ref).run();
     }
+  }
+
+  /// THE OFFICIAL MACHINES TAKE A BATCH: up to `max` questions past their
+  /// deadline (`open`) or theirs alone (`OFFICIAL_STATES`), as `states` says, of
+  /// the given producers, leased for `lease_ms` in one statement. Each comes
+  /// with its demands, the live ones first, which say what to compute — a fact
+  /// checked again has only served ones.
+  async function claim(env, w, { states = ["open", ...OFFICIAL_STATES], producers = null, max = 100, lease_ms = 6 * 3_600_000 }, engine, now = Date.now()) {
+    const db = env.LIBRARY, at = iso(now);
+    const open = states.includes("open") ? 1 : 0;
+    const theirs = states.filter((x) => OFFICIAL_STATES.includes(x));
+    const { results } = await db.prepare(
+      `UPDATE questions SET lease = lower(hex(randomblob(16))), lease_until = ?1, leased_to = ?2
+        WHERE id IN (SELECT q.id FROM questions q
+          WHERE ((?3 = 1 AND q.state = 'open' AND q.due_at < ?4) OR q.state IN (SELECT value FROM json_each(?5)))
+            AND (q.lease_until IS NULL OR q.lease_until < ?4)
+            AND (?6 IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
+                                       AND d.producer IN (SELECT value FROM json_each(?6))))
+            AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2 AND a.engine = ?7)
+          ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8)
+        RETURNING id, verb, request, state, lease`)
+      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max).all();
+    if (!results.length) return [];
+    const { results: ds } = await db.prepare(
+      `SELECT question, producer, ref, payload FROM demands WHERE state != 'withdrawn' AND question IN (SELECT value FROM json_each(?))
+        ORDER BY state = 'live' DESC`)
+      .bind(JSON.stringify(results.map((q) => q.id))).all();
+    return results.map((q) => ({ question: q.id, verb: q.verb, state: q.state, lease: q.lease, request: JSON.parse(q.request),
+      demands: ds.filter((d) => d.question === q.id).map((d) => ({ producer: d.producer, ref: d.ref, payload: JSON.parse(d.payload) })) }));
+  }
+
+  /// A WITNESS THE OFFICIAL MACHINES DISPROVED, refused — for a cool-down, never
+  /// for good (`coolDownMs`). Its answers stop counting; what it was credited is
+  /// taken back, in its hour; a fact it witnessed that the official machines
+  /// never checked is opened again, and its producers told it no longer stands
+  /// (`on_retract`).
+  async function refuse(env, device, now = Date.now()) {
+    const db = env.LIBRARY, at = iso(now);
+    const v = await db.prepare("SELECT refusals FROM verifiers WHERE id = ?").bind(device).first();
+    const cool = coolDownMs(v && v.refusals);
+    const paid = (await db.prepare("SELECT coalesce(sum(work), 0) AS w FROM answers WHERE device = ? AND credited = 1 AND official = 0")
+      .bind(device).first()).w;
+    const { results: touched } = await db.prepare(
+      `SELECT DISTINCT q.id, q.state FROM answers a JOIN questions q ON q.id = a.question
+        WHERE a.device = ? AND a.void = 0 AND a.official = 0 AND q.state IN ('fact', 'spot')
+          AND NOT EXISTS (SELECT 1 FROM answers o WHERE o.question = q.id AND o.official = 1 AND o.void = 0)`).bind(device).all();
+    await db.batch([
+      db.prepare("UPDATE verifiers SET banned = 1, refusals = refusals + 1, clean = 0, refused_until = ? WHERE id = ?").bind(iso(now + cool), device),
+      db.prepare("UPDATE verifiers SET work = max(0, work - ?) WHERE id = ?").bind(paid, device),
+      db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
+                  ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(device, at.slice(0, 13), -paid),
+      db.prepare("UPDATE answers SET void = 1, credited = 0 WHERE device = ? AND official = 0").bind(device),
+    ]);
+    for (const q of touched) {
+      await db.prepare("UPDATE questions SET state = 'open', canon = NULL, fact_engine = NULL, fact_at = NULL WHERE id = ?").bind(q.id).run();
+      const { results: served } = await db.prepare("SELECT * FROM demands WHERE question = ? AND state = 'served'").bind(q.id).all();
+      for (const d of served) {
+        const p = producerOf(d.producer);
+        if (p.on_retract) await p.on_retract(env, { ...d, payload: JSON.parse(d.payload) });
+        await db.prepare("UPDATE demands SET state = 'live', served_at = NULL WHERE producer = ? AND ref = ?").bind(d.producer, d.ref).run();
+      }
+    }
+    return { cool_ms: cool, taken_back: paid, reopened: touched.length };
   }
 
   /// WHAT IS WRONG RIGHT NOW, for the watchdog: a kind whose overdue questions
@@ -350,11 +435,14 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     return out;
   }
 
-  return { demand, withdraw, next, renew, release, releaseAll, answer, settle, audit };
+  return { demand, withdraw, next, renew, release, releaseAll, answer, answerOfficial, claim, refuse, settle, audit };
 }
 
-/// A REFUSAL IS FORGIVEN BY HONEST WORK (worker/verify.js, the same number).
+/// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has
+/// one taken off by k times this many facts it is part of afterwards.
 export const FACTS_PER_REFUSAL_FORGIVEN = 1000;
+/// HOW LONG A REFUSAL LASTS: a day, three times as long at each one before it.
+export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals || 0);
 
 /// ONE QUERY DECIDES WHAT A WITNESS MAY ANSWER (the LIVENESS property): a
 /// volunteer takes an open question it has not answered — nor any device of its

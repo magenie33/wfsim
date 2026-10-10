@@ -33,7 +33,8 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
-import { SURVEY_CHANNEL, SURVEY_KEEP_MS, RIVEN_PRODUCERS } from "./appraise.js";
+import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
+import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
 
 /// `WORK_WEIGHTS` counts in billionths of a point.
@@ -176,29 +177,20 @@ async function activityOf(env, ids) {
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
     const marks = part.map(() => "?").join(", ");
-    const [seen, held, gains] = await env.LIBRARY.batch([
+    const [seen, held] = await env.LIBRARY.batch([
       env.LIBRARY.prepare(`SELECT id, last_at FROM verifiers WHERE id IN (${marks})`).bind(...part),
-      env.LIBRARY.prepare(`SELECT leased_to, record, ruler, mode FROM orders WHERE lease_until > ? AND leased_to IN (${marks})`)
-        .bind(iso(t), ...part),
       // A QUESTION OF THE FACT FACTORY, named by the producer that asked it.
-      env.LIBRARY.prepare(`SELECT q.leased_to, d.producer, d.payload FROM questions q
+      env.LIBRARY.prepare(`SELECT q.leased_to, q.request, d.producer, d.payload FROM questions q
           JOIN demands d ON d.question = q.id AND d.state = 'live'
           WHERE q.lease_until > ? AND q.leased_to IN (${marks})`).bind(iso(t), ...part),
     ]);
     for (const r of seen.results) out.set(r.id, { last_at: r.last_at || null, now: null });
     for (const r of held.results) {
-      let weapon = null;
-      try { weapon = JSON.parse(r.record).weapon || null; } catch (_) { /* a record that is not one names nothing */ }
+      let kind = null;
+      try { kind = kindOf(r.producer, JSON.parse(r.request), JSON.parse(r.payload)); } catch (_) { /* a row that is not one names nothing */ }
+      if (!kind) continue;
       const e = out.get(r.leased_to) || { last_at: null, now: null };
-      e.now = { kind: "board", weapon, ruler: r.ruler, mode: r.mode };
-      out.set(r.leased_to, e);
-    }
-    for (const r of gains.results) {
-      if (!RIVEN_PRODUCERS[r.producer]) continue;
-      let p = {};
-      try { p = JSON.parse(r.payload); } catch (_) { /* a payload that is not one names nothing */ }
-      const e = out.get(r.leased_to) || { last_at: null, now: null };
-      e.now = { kind: "riven_gain", weapon: p.weapon || null, ruler: p.ruler || null };
+      e.now = kind;
       out.set(r.leased_to, e);
     }
   }
@@ -430,9 +422,9 @@ async function demand(env) {
   const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
   const [owed, done, gains, surveys] = await db.batch([
-    db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN o.priority = 0 THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 ELSE 2 END) AS k
+    db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.producer = 'new_build' THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 ELSE 2 END) AS k
                 FROM queue q JOIN batches b ON b.id = q.batch
-                LEFT JOIN orders o ON o.identity = q.build_id AND o.ruler = q.ruler AND o.mode = q.mode
+                LEFT JOIN demands d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode AND d.producer = 'new_build' AND d.state = 'live'
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
     db.prepare(`SELECT SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official
                 FROM scores WHERE finished_at >= ?`).bind(hour),

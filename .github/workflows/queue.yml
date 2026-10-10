@@ -123,6 +123,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
@@ -151,6 +152,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
@@ -196,6 +198,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           # HOW OLD IS STALE, and the only reason it is an input: the sweep
           # cannot be exercised on demand otherwise — a manual trigger asks
           # the question the clock already asked and gets the same answer.
@@ -262,6 +265,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           # THE INPUT NEVER REACHES THE SHELL AS TEXT. A `workflow_dispatch`
           # string interpolated into `run:` is executed by it; through the
           # environment it is only ever a value.

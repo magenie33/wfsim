@@ -2,7 +2,7 @@
 // question of the fact factory (worker/tasks.js, whose own properties
 // check_tasks.mjs holds), with no network: only the bot freezes its question,
 // once, and freezing it is the ask; a computer asking for work is handed it on
-// the engine the site serves, in deadline order beside the board's orders; a
+// the engine the site serves, in deadline order beside the board's rows; a
 // second goes only to another owner's computer on another network; an answer
 // counts only under its own lease and is kept as a build the bot may judge; two
 // owners' equal answers credit both, once, and send the build to the board; one
@@ -11,6 +11,7 @@
 //   node scripts/check_riven_gain.mjs
 import { appraiseRoute } from "../worker/appraise.js";
 import { verifyRoute, PROTOCOL } from "../worker/verify.js";
+import { boardTasksRoute } from "../worker/board_tasks.js";
 import { canon } from "../worker/tasks.js";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
@@ -37,7 +38,7 @@ const d1 = (file) => {
 };
 const LIBRARY = d1("schema.sql"), ACCOUNTS = d1("accounts.sql");
 const site = (engine) => ({ fetch: async () => new Response(JSON.stringify({ engine })) });
-const env = { BOT_RELAY_TOKEN: "relay", LIBRARY, ACCOUNTS, ASSETS: site("e1") };
+const env = { BOT_RELAY_TOKEN: "relay", FACTORY_TOKEN: "ft", LIBRARY, ACCOUNTS, ASSETS: site("e1") };
 const L = LIBRARY.raw;
 
 const appraise = async (method, path, body, headers = {}) => {
@@ -61,7 +62,6 @@ const credited = (v) => (L.prepare("SELECT work FROM verifiers WHERE id = ?").ge
 const today = (v) => (L.prepare("SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?").get(v) || {}).w || 0;
 const questionOf = (code) => L.prepare("SELECT question FROM demands WHERE ref = ?").get(code).question;
 const freeLeases = () => {
-  L.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
   L.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
 };
 /// A question asked `ms` ago: its age (the cores it needs) and its deadline move back.
@@ -179,7 +179,7 @@ check("a question frozen on an older engine is still handed out after a release,
 freeLeases();
 L.prepare("UPDATE questions SET state = 'withdrawn'").run();
 
-// EARLIEST DEADLINE FIRST, beside the board's orders: a chat's two minutes, a new
+// EARLIEST DEADLINE FIRST, beside the board's rows: a chat's two minutes, a new
 // build's hour, a survey's day, a rescore's week.
 {
   const ago = (ms) => new Date(Date.now() - ms).toISOString();
@@ -189,11 +189,16 @@ L.prepare("UPDATE questions SET state = 'withdrawn'").run();
     if (agoMs) age(c, agoMs);
     return c;
   };
-  L.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, at, priority) VALUES
-    ('new1', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 1, ?, 0),
-    ('old1', 'standard_single_target', 'base', '{"weapon":"furis"}', 'todo', 2, ?, 1)`).run(ago(0), ago(0));
-  L.prepare(`INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-x', 'new1', 'standard_single_target', 'base'),
-    ('rescore-x', 'old1', 'standard_single_target', 'base')`).run();
+  // A NEW BUILD'S ROW AND A RESCORE'S, asked of the factory as the queue asks.
+  const day = new Date().toISOString().slice(0, 10);
+  for (const id of ["new1", "old1"]) L.prepare("INSERT INTO builds (id, at, record) VALUES (?, ?, ?)").run(id, ago(0), JSON.stringify({ weapon: "furis", mods: [id] }));
+  L.prepare("INSERT INTO batches (id, at, why, total) VALUES (?, 'x', 'x', 1), ('rescore-x', 'x', 'x', 1)").run(`arrivals-${day}`);
+  L.prepare(`INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, 'new1', 'standard_single_target', 'base'),
+    ('rescore-x', 'old1', 'standard_single_target', 'base')`).run(`arrivals-${day}`);
+  const askRows = (batch, identity) => boardTasksRoute(new Request("https://x/api/board/ask", { method: "POST", headers: { authorization: "Bearer ft" },
+    body: JSON.stringify({ batch, rows: [{ identity, ruler: "standard_single_target", mode: "base" }] }) }), env, "/api/board/ask");
+  await askRows(`arrivals-${day}`, "new1");
+  await askRows("rescore-x", "old1");
   const E = "e".repeat(24), F = "f".repeat(24), G = "g".repeat(24), H = "h".repeat(24);
   for (const v of [E, F, G, H]) L.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
   const fresh = await shape("fresh", 0);
@@ -212,7 +217,7 @@ L.prepare("UPDATE questions SET state = 'withdrawn'").run();
   check("a riven gain someone waits on in a chat goes before them all", third && third.code === qq, JSON.stringify(third));
   freeLeases();
   L.prepare("UPDATE questions SET state = 'withdrawn' WHERE id = ?").run(questionOf(qq));
-  L.prepare("UPDATE orders SET state = 'settled' WHERE identity = 'new1'").run();
+  L.prepare("UPDATE questions SET state = 'withdrawn' WHERE id = (SELECT question FROM demands WHERE ref = 'new1|standard_single_target|base')").run();
   L.prepare("UPDATE questions SET state = 'withdrawn' WHERE id = ?").run(questionOf(overdue));
   const fourth = await work(E, "e1", 8, "203.0.113.7");
   check("a survey shape due in a day goes before a rescore due in a week", fourth && fourth.code === fresh, JSON.stringify(fourth));
@@ -253,7 +258,7 @@ console.log("\nfrozen before the factory");
   check("...its answer carried", L.prepare("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?").get(questionOf("OLD01"), A).n === 1);
   check("...and a second adoption adds nothing", (await appraise("POST", "/api/appraise/adopt", {}, bot)).body.adopted === 0);
   freeLeases();
-  L.prepare("UPDATE orders SET state = 'settled'").run();
+  L.prepare("UPDATE questions SET state = 'withdrawn' WHERE id IN (SELECT question FROM demands WHERE producer IN ('new_build', 'sweep'))").run();
   check("its owner's computers are not asked again", (await work(D, "e1", 8, "198.51.100.77") || {}).code !== "OLD01");
   freeLeases();
   const t = await work(C, "e1", 8, "198.51.100.78");

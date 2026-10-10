@@ -58,26 +58,26 @@ d1() {
 # A ROW WHOSE BATCH IS GONE IS NOT READ. An inner join, so deleting a batch is
 # the whole of cancelling it: the rows stop being asked for and nothing has to
 # go and find them.
-# `HOLD_SECONDS` LEAVES A YOUNG COMPUTE ORDER TO THE CLIENTS, and an old one to
-# whoever reaches it first (docs/BOARD.md §"Compute orders"). A run CLAIMS the
-# old ones before it reads (`claim_body`), and reads only what it claimed or
-# what has no order the clients could take, so no row is fought twice — a
-# claimed OPEN order first, since one fight settles it and pays its client,
-# and one the run does not reach waits another hour. Unset,
-# every owed row is read — which is what a reconciliation needs.
+# A CLAIMED RUN READS WHAT IT CLAIMED (docs/BOARD.md §"The fact factory"): the
+# official machines take only questions past their deadline, so a young row is
+# the clients' and an overdue one this run's — claimed from the factory before
+# it reads (`claim`), never a row a client holds. It also reads what nobody
+# asked the factory for, which no client can be handed. `CLAIMED` unset, every
+# owed row is read — which is what a reconciliation needs.
 page_body() {
-  if [ -n "${HOLD_SECONDS:-}" ]; then
-    jq -n -c --argjson limit "$1" --argjson offset "$2" --argjson hold "$HOLD_SECONDS" --arg now "$ISO_NOW" --arg ago "$ISO_AGO" '
+  if [ -n "${CLAIMED:-}" ]; then
+    jq -n -c --argjson limit "$1" --argjson offset "$2" --arg witness "$WITNESS" '
       {
         sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
               + " JOIN batches b ON b.id = q.batch"
-              + " LEFT JOIN orders c ON c.identity = q.build_id AND c.ruler = q.ruler AND c.mode = q.mode"
-              + " WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.identity = q.build_id"
-              + " AND o.ruler = q.ruler AND o.mode = q.mode"
-              + " AND (o.at > " + $ago + " OR o.state IN (?, ?)))"
-              + " ORDER BY (c.state IN (?, ?)) DESC, b.at, q.batch, q.build_id, q.ruler, q.mode"
+              + " WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode"
+              + " AND d.producer IN (?, ?))"
+              + " OR EXISTS (SELECT 1 FROM demands d JOIN questions x ON x.id = d.question"
+              + " WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode AND d.producer IN (?, ?)"
+              + " AND d.state = ? AND x.leased_to = ?)"
+              + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode"
               + " LIMIT ? OFFSET ?"),
-        params: [$hold, "todo", "open", "scoring:open", "scoring:fresh", $limit, $offset]
+        params: ["|", "|", "new_build", "sweep", "|", "|", "new_build", "sweep", "live", $witness, $limit, $offset]
       }'
     return
   fi
@@ -91,65 +91,43 @@ page_body() {
     }'
 }
 
-# THE CLIENTS' RESERVE, asked before the claim: how many unmeasured orders a
-# client could take now (`todo`, young or old, no live lease), how many of
-# those are old enough for this run, and how many facts the clients made in the
-# last hour. The run leaves them `RESERVE_FACTOR` hours of that, never fewer
-# than `RESERVE_MIN` orders, and claims only the old `todo` beyond it — so when
-# many computers are on they keep most of the work, and at night the run takes it.
-reserve_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" --arg now "$ISO_NOW" --arg ago "$ISO_AGO" '
-    {
-      sql: ("SELECT"
-            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND (lease_until IS NULL OR lease_until < " + $now + ")) AS open_to_clients,"
-            + " (SELECT COUNT(*) FROM orders WHERE state = ? AND at <= " + $ago
-            + "   AND (lease_until IS NULL OR lease_until < " + $now + ")) AS old,"
-            + " (SELECT COUNT(*) FROM scores WHERE measured_by LIKE ?"
-            + "   AND finished_at >= strftime(?, unixepoch() - 3600, ?)) AS facts_last_hour"),
-      params: ["todo", "todo", $hold, "verified:%", "%Y-%m-%dT%H:%M:%fZ", "unixepoch"]
-    }'
+# THE OFFICIAL WITNESS (worker/factory.js `officialRoute`), one per run — runs
+# are serialized — speaking to the factory with its own secret.
+FACTORY_ORIGIN="${FACTORY_ORIGIN:-https://wfsim.app}"
+WITNESS="${WITNESS:-official:scorer}"
+CLAIM_PAGE=2000
+CLAIM_MAX="${CLAIM_MAX:-40000}"
+F_OUT=""
+F_CODE=""
+factory() {
+  [ -n "$F_OUT" ] || F_OUT=$(mktemp)
+  F_CODE=$(curl -s --connect-timeout 15 --max-time 180 -o "$F_OUT" -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer ${FACTORY_TOKEN:-x}" -H "content-type: application/json" -H "user-agent: wfsim-scorer" \
+    --data-binary "$2" "$FACTORY_ORIGIN/api/tasks/official/$1") || F_CODE="000"
+  [ "$F_CODE" = "200" ]
 }
-
-# HOW MANY TO CLAIM, from the reserve's three numbers (`old open facts`).
-claim_rows() {
-  local old="$1" open="$2" facts="$3"
-  local reserve; reserve=$(awk -v f="$facts" -v k="${RESERVE_FACTOR:-2}" -v m="${RESERVE_MIN:-500}" \
-    'BEGIN { r = int(f * k + 0.5); print (r < m ? m : r) }')
-  local take=$(( open - reserve ))
-  [ "$take" -gt "$old" ] && take=$old
-  [ "$take" -lt 0 ] && take=0
-  echo "$take"
-}
-
-# THE CLAIM makes an order `scoring:<state>`, which no lease seeks
-# (worker/verify.js reads `todo` and `open` only), so a client is never handed
-# a row this run is fighting. Two of them:
-# - EVERY old `open` order — one result in and no second client after the hold,
-#   which a lone computer can never give itself; one fight here settles it and
-#   pays that client (`order_credit.mjs`). Kept back, it would wait for ever.
-#   …AND every old `fresh` one, a first result the live loop has not ranked:
-#   that loop runs on one server, and a result must not wait on it being up.
-# - the first `rows` old `todo` orders in the queue's own order; what the queue
-#   asks for last is what the clients keep.
-# Neither takes an order a client holds a live lease on.
 claim_body() {
-  jq -n -c --argjson hold "$HOLD_SECONDS" --arg now "$ISO_NOW" --arg ago "$ISO_AGO" --arg state "${1:?state}" --argjson rows "${2:--1}" '
-    {
-      sql: ("UPDATE orders SET state = ? || state WHERE rowid IN ("
-            + "SELECT o.rowid FROM orders o JOIN queue q ON q.build_id = o.identity"
-            + " AND q.ruler = o.ruler AND q.mode = o.mode JOIN batches b ON b.id = q.batch"
-            + " WHERE o.state = ? AND o.at <= " + $ago
-            + " AND (o.lease_until IS NULL OR o.lease_until < " + $now + ")"
-            + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode LIMIT ?)"),
-      params: ["scoring:", $state, $hold, $rows]
-    }'
+  jq -n -c --arg witness "$WITNESS" --arg engine "${ENGINE:-unknown}" --argjson max "$CLAIM_PAGE" \
+    '{ witness: $witness, engine: $engine, states: ["open"], producers: ["new_build", "sweep"], max: $max, lease_ms: 43200000 }'
 }
+release_body() { jq -n -c --arg witness "$WITNESS" '{ witness: $witness }'; }
 
-# THE RELEASE: what a run claimed and did not settle goes back to the clients.
-# Run when the run ends, and before every claim, since runs are serialized and
-# a claim left over is one whose run died.
-release_body() {
-  jq -n -c '{ sql: "UPDATE orders SET state = substr(state, 9) WHERE state IN (?, ?, ?)", params: ["scoring:todo", "scoring:open", "scoring:fresh"] }'
+# THE CLAIM, a page at a time until the factory has nothing past its deadline
+# or `CLAIM_MAX` is reached: every question the run fights is one no client is
+# handed meanwhile, and one it does not reach is the clients' again at release.
+claim() {
+  local total=0 got
+  while [ "$total" -lt "$CLAIM_MAX" ]; do
+    factory claim "$(claim_body)" || { echo "::error::queue: the factory refused the claim [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
+    got=$(jq -r '.tasks | length' < "$F_OUT")
+    total=$((total + got))
+    [ "$got" -lt "$CLAIM_PAGE" ] && break
+  done
+  echo "queue: claimed $total question(s) past their deadline"
+}
+release() {
+  factory release "$(release_body)" || { echo "::error::queue: the factory refused the release [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
+  echo "queue: released what $WITNESS held"
 }
 
 fetch() {
@@ -250,17 +228,9 @@ if [ "${1:-}" = "--body" ]; then "${2:?claim|release|page}_body" "${@:3}"; exit 
 
 # A RELEASE OR A CLAIM THAT FAILS FAILS THE RUN: a read without its claim is a
 # list the clients are still being handed, which is every row fought twice.
-send_one() {
-  if ! d1 "$1"; then
-    echo "::error::queue: the database refused the $2 [HTTP $D1_CODE]"
-    [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
-    return 1
-  fi
-  echo "queue: $2 — $(jq -r '.result[0].meta.changes // 0' < "$D1_OUT") order(s)"
-}
 if [ "${1:-}" = "--release" ]; then
-  configured || { echo "queue: no database configured, nothing to release"; exit 0; }
-  send_one "$(release_body)" "release"; exit $?
+  [ -n "${FACTORY_TOKEN:-}" ] || { echo "queue: no factory token, nothing to release"; exit 0; }
+  release; exit $?
 fi
 
 if ! configured; then
@@ -270,17 +240,8 @@ if ! configured; then
   echo "queue: no database configured, nothing owed"
   exit 0
 fi
-if [ -n "${HOLD_SECONDS:-}" ]; then
-  send_one "$(release_body)" "release of a claim left over"
-  if ! d1 "$(reserve_body)"; then
-    echo "::error::queue: the database refused the reserve [HTTP $D1_CODE]"
-    exit 1
-  fi
-  read -r open old facts < <(jq -r '.result[0].results[0] | "\(.open_to_clients) \(.old) \(.facts_last_hour)"' < "$D1_OUT")
-  rows=$(claim_rows "$old" "$open" "$facts")
-  echo "queue: the clients made $facts fact(s) in the last hour; $open unmeasured order(s) open to them, $old old — this run claims $rows"
-  send_one "$(claim_body open)" "claim of every old open order"
-  send_one "$(claim_body fresh)" "claim of every old unranked first result"
-  send_one "$(claim_body todo "$rows")" "claim"
+if [ -n "${CLAIMED:-}" ]; then
+  release
+  claim
 fi
 fetch "${1:?usage: fetch_queue.sh <out.ndjson>}"

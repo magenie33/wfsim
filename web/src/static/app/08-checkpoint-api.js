@@ -145,7 +145,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   const lanesNow = () => Math.max(1, Math.floor(typeof n === "function" ? n() : n) || 1);
   const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
     cancelled: false, shards: lanesNow(), t0: Date.now() };
-  const done = { builds: 0, fights: 0, work: 0 };
+  // …AND WHAT IT TOOK: every call's own time summed over the workers, the rests
+  // between calls not in it (`cpu_ms`), and how many rounds the leader ran.
+  const done = { builds: 0, fights: 0, work: 0, cpu_ms: 0, steps: 0 };
   const live = [];
   // Where each start stands, as the leader last reported it.
   let starts = [];
@@ -189,7 +191,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   const timed = async (i, b, onProgress) => {
     const t = performance.now();
     const o = await call(i, b, onProgress);
-    if (o) await pause(i, performance.now() - t);
+    const ms = performance.now() - t;
+    done.cpu_ms += ms;
+    if (o) await pause(i, ms);
     return o;
   };
   const grow = (k) => { while (job.workers.length < k) job.workers.push(fleetKept.pop() || new Worker("/worker.js")); };
@@ -204,7 +208,11 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       const r = await timed(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
         (p) => { if (p.rounds) job.status = p; });
       if (!r || job.cancelled) return;
-      if (!r.pending) { job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights }; stop(true); return; }
+      if (!r.pending) {
+        job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights, builds: done.builds, steps: step, cpu_ms: Math.round(done.cpu_ms) };
+        stop(true);
+        return;
+      }
       starts = r.progress || starts;
       const k = Math.min(lanesNow(), r.pending.length);
       grow(k);

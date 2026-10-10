@@ -56,18 +56,18 @@ MACHINES FIRST AND THE OFFICIAL ONES SECOND.** Five rules, and everything below
 is how they are kept:
 
 1. **ONE WAY IN.** Anything that needs a score — a submission, a rescore after
-   the code moved, the nightly sweep, a new ruler — opens orders
+   the code moved, the nightly sweep, a new ruler — asks the fact factory
    (§"Compute orders"). Nothing computes a board number another way.
-2. **ONE WAY OUT.** An order becomes a fact in `scores` when `CLIENTS_PER_FACT`
+2. **ONE WAY OUT.** A row becomes a fact in `scores` when `CLIENTS_PER_FACT`
    clients sent the same bits; nothing short of that reaches the public board.
 3. **TWO KINDS OF COMPUTE, WITH FIXED JOBS.** The clients — browsers with the
-   site open — are the first choice for every order. The official machines (the
-   bot server, `scores.yml`) do three things only: the FALLBACK for an order
-   the clients did not finish in time, the VERDICT when clients disagree, and
+   site open — are the first choice for every row. The official machines (the
+   bot server, `scores.yml`) do three things only: the FALLBACK for a row the
+   clients did not finish by its deadline, the VERDICT when clients disagree, and
    the SPOT CHECK that keeps colluding clients a gamble.
 4. **THREE DIALS.** `CLIENTS_PER_FACT` (how many clients must agree),
-   `SPOT_SHARE` (how many facts the server recomputes anyway) and the hold
-   (`HOLD_SECONDS` in `scores.yml`, how long an order is the clients' alone
+   `SPOT_SHARE` (how many facts the server recomputes anyway) and the deadlines
+   (`DEADLINE_MS` in `worker/factory.js`, how long a row is the clients' alone
    before the fallback may take it). Changing how the board runs is turning one
    of them.
 5. **ONE ENGINE.** A client works only while its page runs the engine the site
@@ -637,9 +637,11 @@ independent witnesses with equal bits — two owners on two networks, or the
 official machines alone. Whatever asks is a PRODUCER: it `demand`s a question
 with a deadline and is told the fact (`on_fact`); the factory names none of
 them, so a new kind of task is a new producer (`worker/factory.js`) and the
-factory does not change. Riven gains — a chat's and a survey's — are its
-producers today; board orders are not yet questions, and `/api/board/work`
-orders the two by deadline (worker/verify.js `work`).
+factory does not change. Its producers are the board's rows (§"Compute
+orders") and riven gains, a chat's and a survey's (docs/AGENT.md §"Riven
+appraisal"); the official machines are witnesses of the same factory
+(`/api/tasks/official/*`, the factory's secret), taking what is past its
+deadline and what only they may settle.
 
 - **ORDER.** A question a person waits on now first, then earliest deadline
   first: a chat's in two minutes, a new build's row in an hour, a survey shape
@@ -670,112 +672,93 @@ orders the two by deadline (worker/verify.js `work`).
 
 ## Compute orders
 
-**EVERY OWED ROW IS AN ORDER, AND THE MACHINES WITH THE SITE OPEN FILL THEM.**
-Nothing about a submission is computed by the person who sent it: the build
-goes into the library, and every (ruler, mode) it owes becomes a row in `queue`
-and, beside it, an order in `orders` (`ship_queue.sh`) — the same for a sweep
-or a rescore. However many rulers and modes there are, a machine is handed one
-row at a time, so the board's growth is more orders, never a heavier client.
+**EVERY OWED ROW IS A QUESTION, AND THE MACHINES WITH THE SITE OPEN ANSWER
+THEM** (§"The fact factory"; `worker/board_tasks.js`). Nothing about a
+submission is computed by the person who sent it: the build goes into the
+library, and every (ruler, mode) it owes becomes a row in `queue` and is asked
+of the factory — verb `simulate`, request the build's record on that ruler and
+mode, the demand's `ref` its key. However many rulers and modes there are, a
+machine is handed one row at a time, so the board's growth is more questions,
+never a heavier client.
 
-- **Taking in.** The bot server takes a submission in the moment it lands
-  (`live_board.sh`: `wfsim-intake --orders`, `ship_builds.sh`,
-  `ship_queue.sh`); `queue.yml`'s hourly intake is the fallback. A new build's
-  row is asked for only where `scores` holds no score: a resubmission the page
-  did not recognise is the same build, and asking again would fight it again.
-  A rescore's batch asks for scored rows on purpose.
-  EVERY OWED ROW HAS AN ORDER: the reconciliation opens one for any row without
-  (`ship_queue.sh --backfill`), since a run stopped between writing the queue and
-  its orders leaves rows only the scorer is ever handed.
-- **Leasing.** `/api/board/work` (`worker/verify.js`) hands a client one
-  order — its library RECORD, a ruler and a mode, never a number — chosen from
-  a random `slot` on an index, so a lease reads a few rows however long the
-  book is. An order waiting for a further result goes first, then the rows a
-  NEW BUILD owes (`priority` 0: an `arrivals-` batch's row whose build was
-  submitted that day or the one before — an older build asked for a ruler it
-  lacks lands in the same batch and is a sweep), then a rescore's or a sweep's,
-  each beside the fact factory's questions by deadline (§"The fact factory"). One lease a client, thirty minutes long; a row no longer owed
-  is settled where it is found. A CLIENT THAT ASKS IS WORKING ON NOTHING: a
-  browser computes in one tab (a Web Lock) and asks only between tasks, so
-  whatever its id still holds was lost — a crash, a reload, an old page — and
-  is taken back as it asks, never waited out. UNLESS IT ASKS AHEAD: once a
-  task is 80% done (a search, past 80% of the last one's time) the page asks
-  `ahead`, keeps what it holds and may take `TASKS_AHEAD` more (worker/verify.js),
-  never a riven gain someone waits on, so the next task starts the moment this
-  one ends; every answer says the number, and the page asks no more than that.
-  A background search takes the cores the reader leaves it at every round and
-  hands its workers to the next (08-checkpoint-api.js `quickFleet`); its
-  answer is the same on any number of cores (`check_quick_fleet`). ONLY THE SERVED ENGINE LEASES: the
-  worker reads `engine` from the site's `release.json`, and a page of any other
-  gets no order and its answers are dropped. Every answer names the `release`
-  too, and a page of an older one reloads into it once left idle, so a machine
-  left computing for weeks takes every fix without anyone touching it. A page
-  whose engine lane fails to load asks `release.json` too, since two releases
-  on, the worker it names is no longer served.
-- **A release carries a result.** An order holding an older engine's result is
-  opened for the served one with its clients kept (`carried_from` names the
-  engine they used). A client of the new engine that reproduces the bits makes
-  the fact and every client is credited; one that does not replaces the result
-  as the first, and nobody is refused, since the release moved the number.
-  Most releases move few numbers, and opening every such order from nothing
-  threw away a third of what the volunteers computed.
+- **Asking.** `ship_queue.sh` writes the batch and its queue rows, then asks
+  the factory for each (`/api/board/ask`, the factory's secret) — from the bot
+  server the moment a submission lands (`live_board.sh`: `wfsim-intake
+  --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from a scorer
+  run's reconciliation. The worker decides who asks: `new_build` for an
+  `arrivals-` batch's row whose build was submitted that day or the one before
+  (due in an hour), `sweep` for a rescore's or a sweep's (due in a week). An
+  arrival's row the board already scored is not asked: a resubmission the page
+  did not recognise is the same build. EVERY OWED ROW IS ASKED FOR: the
+  backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked
+  for, since a run stopped between writing the queue and asking leaves rows
+  only the scorer is ever handed.
+- **Leasing.** `/api/board/work` (`worker/verify.js`) hands a client the
+  factory's next question it may answer — a board row as its library RECORD, a
+  ruler and a mode, never a number — in the factory's order. One lease a
+  client, thirty minutes long; a row no longer owed is withdrawn where it is
+  found. A CLIENT THAT ASKS IS WORKING ON NOTHING: a browser computes in one
+  tab (a Web Lock) and asks only between tasks, so whatever its id still holds
+  was lost — a crash, a reload, an old page — and is taken back as it asks,
+  never waited out. UNLESS IT ASKS AHEAD: once a task is 80% done (a search,
+  past 80% of the last one's time) the page asks `ahead`, keeps what it holds
+  and may take `TASKS_AHEAD` more, never a riven gain someone waits on, so the
+  next task starts the moment this one ends; every answer says the number, and
+  the page asks no more than that. A background search takes the cores the
+  reader leaves it at every round and hands its workers to the next
+  (08-checkpoint-api.js `quickFleet`); its answer is the same on any number of
+  cores (`check_quick_fleet`). ONLY THE SERVED ENGINE LEASES: the worker reads
+  `engine` from the site's `release.json`, and a page of any other gets no task
+  and its answers are dropped. Every answer names the `release` too, and a
+  page of an older one reloads into it once left idle, so a machine left
+  computing for weeks takes every fix without anyone touching it. A page whose
+  engine lane fails to load asks `release.json` too, since two releases on, the
+  worker it names is no longer served.
+- **A release carries a result.** An answer of an older engine stays with its
+  question: a client of the new engine that reproduces its bits makes the fact
+  and both are credited; one that does not starts the new engine's own count,
+  and nobody is refused, since the release moved the number.
 - **Fighting.** The client asks `/api/board/order` for the fight off the record
   (the scorer's `scored_build` and `row_requests`, a riven's rolls included),
   fights its runs on every community lane with `/api/board/runs` (a shard per
   run), folds them IN RUN ORDER with `/api/board/fold` and ends it with
   `/api/board/score` (`69-board-work.js`) — `a_compute_order_is_the_scorers_row`
-  holds the path, lanes included. It sends what the pieces took, summed over
-  its lanes (`compute_ms`): kept per order in `clients_compute_ms`, beside
-  `clients`, and summed per client in `verifiers.compute_ms`. A fact's `cost_seconds` stays 0, since the scorer
-  sizes its shards from that column in its own runners' seconds.
-- **`CLIENTS_PER_FACT` results** (`worker/verify.js`, 2). The first makes the
-  order `fresh`; the server ranks it (`live_orders.mjs rank`) and it becomes
-  `open`: only a client of the same `ENGINE_ID` that has not measured it is
-  handed it. `TOP` there is 0 — THE SERVER ONLY BACKS THE CLIENTS UP; raised, an
-  order in its group's top `TOP` becomes `arbiter`, the server's alone. When
-  `CLIENTS_PER_FACT` clients sent equal bits — score and metric — it goes into
-  `scores` as `verified:<engine>` — replacing the old number of a row a rescore
-  asked for again, as the scorer's fact would — stamped when the last of them
-  answered, and its queue row is deleted; at 1 the first result is the
-  fact. `clients` names every one of them, in order. One fact in twenty is a
-  `spot` the server recomputes. A difference is a `dispute`. The answer never
-  says which.
-- **Settling.** `live_orders.mjs settle` fights every `arbiter`, `dispute` and
-  `spot` order with the scorer itself and ships the fact, in a loop beside the
-  live cycle so a heavy row never holds intake, ranking or the site's board. A
-  client the server disproves — the first result, the second, or both — is
-  refused: what it agreed to is withdrawn and opened again, its points for
-  those agreements are taken back, and what it measured first is measured
-  again. A REFUSAL IS A COOL-DOWN, never for good: a day, then three times as
-  long each time with no ceiling (`coolDownMs`, `verifiers.refusals` and
+  holds the path, lanes included. It sends what the pieces and folds took,
+  summed over its lanes (`compute_ms`), how many lanes, and the engine's work
+  counts — kept on the answer to fit what a point is worth, never credited.
+- **`CLIENTS_PER_FACT` results** (`worker/verify.js`, 2). Equal bits — score,
+  metric and work — from different owners on different networks make the fact:
+  written to `scores` as `verified:<engine>` — replacing the old number of a
+  row a rescore asked for again, as the scorer's fact would — and the queue row
+  deleted. One fact in twenty is a `spot` the server checks again. A
+  difference is a `dispute`. The answer never says which.
+- **Settling.** `live_orders.mjs settle` claims what only the official machines
+  may settle — `disputed`, `spot`, `nondeterministic` — as `official:live`,
+  fights each with the scorer itself, ships the fact and tells the factory, in
+  a loop beside the live cycle so a heavy row never holds intake or the site's
+  board. The factory credits whom the fact agrees with and refuses a client a
+  dispute or a spot check disproves: its answers stop counting, what it was
+  paid is taken back, and a fact it witnessed that nobody official checked is
+  opened again, its number taken off the board and its row owed again. A
+  REFUSAL IS A COOL-DOWN, never for good: a day, then three times as long each
+  time with no ceiling (`coolDownMs`, `verifiers.refusals` and
   `refused_until`), after which the client works again — and a client with k
   refusals has one taken off by k thousand facts it is part of afterwards
-  (`clean`), back to none. Only for an order of the engine the server runs.
-  A top-ten order the scorer already measured is settled unfought.
-- **Nobody online** costs nothing. An order younger than `HOLD_SECONDS` is
-  the clients' alone. An older one is offered to the clients as before, and
-  goes to whichever reaches it first — **NEVER TO BOTH.** A `scores.yml` run
-  CLAIMS before it reads (`fetch_queue.sh`): every old `open` order and every
-  old `fresh` one the live loop has not ranked (that loop runs on one server,
-  and a first result must not wait on it being up), and the
-  old `todo` orders beyond the CLIENTS' RESERVE — `RESERVE_FACTOR` hours of the
-  facts they made in the last hour, never fewer than `RESERVE_MIN` — that no
-  client holds a live lease on become `scoring:todo` / `scoring:open`, which no
-  lease seeks, and the run reads only those (claimed `open` first) and the rows
-  with no order a client could take. A row a client holds stays the client's and the run
-  skips it. The run's last job releases what it claimed back to its state, and
-  the next run's claim releases first, so a run that died strands nothing.
-  A claimed `open` order the run measured to the client's own bits becomes
-  `verified` and pays its client (§"Contribution" rule 1); one it did not
-  goes back with the release, unpaid.
-  The orders table is the one dispatcher: nothing computes a row it was not
-  handed by it. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page that will
-  not answer — closed, reloaded, paused, its fight refused, its lease near its
-  end — calls `/api/board/release` (by beacon on `pagehide`), so neither the
-  order nor the computer waits out `LEASE_MS`. One client holds one lease,
-  decided in the statement that takes it, so two tabs asking at once cannot
-  both win; a refused client is told `banned` rather than handed nothing in
-  silence. A frozen riven gain is served whatever engine froze it, and its cap
-  on answers counts the served engine's alone.
+  (`clean`), back to none. A refusal needs the same engine; agreement does not.
+- **Nobody online** costs nothing. A row past its deadline is the official
+  machines' too: a `scores.yml` run CLAIMS from the factory every board
+  question past its deadline that no client holds (`fetch_queue.sh`, as
+  `official:scorer`) before it reads, and reads only what it claimed and the
+  rows nobody asked the factory for — so a row never goes to both. Its facts are
+  its answers (`order_credit.mjs`): a client whose bits it reproduced is paid
+  (§"Contribution" rule 1), one it did not is not, and the run's last job
+  releases what it left. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page
+  that will not answer — closed, reloaded, paused, its fight refused, its lease
+  near its end — calls `/api/board/release` (by beacon on `pagehide`), so
+  neither the row nor the computer waits out the lease. One client holds one
+  lease, decided in the statement that takes it, so two tabs asking at once
+  cannot both win; a refused client is told `banned` rather than handed nothing
+  in silence.
 
 **THE CLIENT IS AN ID** its browser made for itself, joined to no submission,
 kept in `verifiers` so a refusal has something to hold, and joined to an
@@ -817,12 +800,13 @@ a change to it is a new statement, asked again. Eight rules:
    what it holds at once (`freeze`), so no task sleeps on a sleeping device.
    The statement names its tasks by kind — simulation and optimization — so a
    new task of either kind needs no new statement; a third kind does.
-1. **ONLY A FACT SCORES.** A client is credited an order's work when the order
-   becomes a fact, and every client in that agreement is credited all of it. A
-   result that never becomes a fact earns nothing; the official machines' work
-   is nobody's. THE SERVER IS A WITNESS TOO: a client result the official
-   machines reproduce bit for bit — a claimed order the scorer measured
-   (`order_credit.mjs`), or a disputed or top-ten order `settle` confirms —
+1. **ONLY A FACT SCORES.** A client is credited a question's work when it
+   becomes a fact, and every client in that agreement is credited all of it,
+   once, however many producers asked. A result that never becomes a fact earns
+   nothing; the official machines' work is nobody's. THE SERVER IS A WITNESS
+   TOO: a client result the official machines reproduce bit for bit — a row the
+   scorer claimed and measured (`order_credit.mjs`), or a disputed or spot row
+   `settle` confirms —
    is credited to the clients it agrees with, exactly as a second client's yes,
    whatever engine id either side carries: the bits are the witness. A refusal
    still needs the same engine, since another one may differ honestly.

@@ -111,17 +111,10 @@ env:
   # the error bar on that estimate, and a run that hits it is a finding rather
   # than a number to raise. What a run does not reach stays owed.
   SCORE_DEADLINE_MINUTES: 30
-  # THE HOLD, the board's third dial (docs/BOARD.md §"Compute orders"): an order
-  # younger than this is the clients' alone; an older one goes to whichever of
-  # the clients and this run reaches it first, never to both (`fetch_queue.sh`
-  # claims what this run reads, and the last job releases what it left).
-  HOLD_SECONDS: 86400
-  # …AND WHAT THE CLIENTS KEEP OF THE OLD ONES: this many hours of what they
-  # made in the last hour, never fewer than this many orders. The run claims
-  # only beyond it (`fetch_queue.sh` `claim_rows`), so the computers online are
-  # never left with nothing while a backlog sits claimed.
-  RESERVE_FACTOR: 2
-  RESERVE_MIN: 500
+  # A RUN TAKES WHAT IS PAST ITS DEADLINE (docs/BOARD.md §"The fact factory"):
+  # it claims those questions from the factory before it reads, so no row goes
+  # to both it and a client, and the last job releases what it left.
+  CLAIMED: "1"
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------
@@ -213,6 +206,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
@@ -235,6 +229,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           FLOOR: ${{ steps.floor.outputs.floor }}
         run: |
           set -euo pipefail
@@ -293,6 +288,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
@@ -320,17 +316,19 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
           bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
-          # …AND WHAT THIS RUN TAKES IS WHAT IT CLAIMED: an old order no client
-          # is fighting, moved out of the clients' reach before it is read
-          # (docs/BOARD.md §"Compute orders"). The reconciliation above read
+          # …AND WHAT THIS RUN TAKES IS WHAT IT CLAIMED: a question past its
+          # deadline that no client is fighting, moved out of the clients' reach
+          # before it is read (docs/BOARD.md §"The fact factory"). The reconciliation above read
           # every row, because what is owed does not depend on who measures it.
-          bash scripts/fetch_queue.sh queue.ndjson
+          ENGINE=$(python3 -c "import sys; sys.path.insert(0, 'scripts'); from build_site_app import engine_id; print(engine_id())")
+          ENGINE="$ENGINE" bash scripts/fetch_queue.sh queue.ndjson
 
       # …AND HANDED TO EVERY JOB BELOW, so the database is read ONCE a run.
       - uses: actions/upload-artifact@v4
@@ -562,6 +560,7 @@ jobs:
           # and green, which is how a whole shard's rows went nowhere.
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           BYRULER: ${{ needs.submissions.outputs.byruler }}
 
   # ---- 3. what this run claimed and did not settle goes back ----------------
@@ -579,6 +578,7 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')

@@ -9,7 +9,7 @@
 // channel's bot (QQ today, Discord later); this file never looks inside it.
 import { iso, msOf } from "./instant.js";
 import { submitRecord } from "./index.js";
-import { netOf, servedRelease } from "./verify.js";
+import { netOf, servedRelease, countsOf } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
 
@@ -246,7 +246,9 @@ async function volunteerAnswer(request, env, b) {
   const net = await netOf(request, env);
   const engine = typeof b.engine === "string" && ENGINE_ID.test(b.engine) ? b.engine : "";
   const { taken } = await facts().answer(env, { device: b.verifier, owner: who.owner, net },
-    { lease: b.lease, engine, result: { build: b.build, score: b.score }, work: b.work });
+    { lease: b.lease, engine, result: { build: b.build, score: b.score }, work: b.work,
+      compute_ms: Number.isSafeInteger(b.compute_ms) && b.compute_ms >= 0 ? b.compute_ms : null,
+      counts: countsOf(b.counts), lanes: Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : null });
   return json({ ok: true, first: taken });
 }
 

@@ -8,11 +8,12 @@
 # the library, every row it owes into the queue and opened as a compute order
 # (`ship_queue.sh`) — the rows `scores` gained are read, and the boards move:
 # `verified/`, `scores` alone, pushed to R2 for the site; `board/`, with every
-# client result not yet a fact, for the owner and the bot. New first results are
-# ranked each cycle; the server's own orders settle in a loop beside it
-# (`live_orders.mjs`). docs/BOARD.md §"Compute orders", §"The live board".
+# client result not yet a fact, for the owner and the bot. What only the server
+# may settle is settled in a loop beside it (`live_orders.mjs`). docs/BOARD.md
+# §"The fact factory", §"The live board".
 #
-# Needs CF_ACCOUNT, CF_TOKEN (D1) and CF_D1_DATABASE, and BOARD_PUSH_TOKEN.
+# Needs CF_ACCOUNT, CF_TOKEN (D1) and CF_D1_DATABASE, BOARD_PUSH_TOKEN, and
+# FACTORY_TOKEN (the fact factory's secret: ship_queue.sh, live_orders.mjs).
 set -euo pipefail
 
 WORK="${1:?usage: live_board.sh <work-dir> <bin-dir>}"
@@ -186,12 +187,6 @@ while true; do
     fi
   fi
   read_unverified || echo "live: the open orders could not be read" >&2
-  # RANKED BEFORE THE PROJECTIONS, against the site's board as last pushed —
-  # what a top ten is a top ten of — so a first result is open to a second
-  # client within a cycle of landing, however long this cycle's projections take.
-  if [ -d verified ]; then
-    node "$HERE/live_orders.mjs" rank "$WORK" || echo "live: ranking failed; the next cycle asks again" >&2
-  fi
   if [ -s library.json ] && { [ "$whole" = 1 ] || [ "$facts_moved" = 1 ] || [ -s touched-ids.txt ] \
        || [ ! -d verified ] || [ ! -d board ]; }; then
     library_live

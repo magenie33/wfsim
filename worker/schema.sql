@@ -486,8 +486,14 @@ CREATE TABLE IF NOT EXISTS answers (
   work        INTEGER NOT NULL,
   compute_ms  INTEGER,
   at          TEXT NOT NULL,
-  -- Set when it is one of a fact's witnesses, credited.
-  credited    INTEGER NOT NULL DEFAULT 0
+  -- Set when it is one of a fact's witnesses, credited; `void` when its witness
+  -- was refused, after which it counts for nothing.
+  credited    INTEGER NOT NULL DEFAULT 0,
+  void        INTEGER NOT NULL DEFAULT 0,
+  -- WHAT IT COST, to fit what a point is worth and never credited: the engine's
+  -- work counts (`WORK_COUNTERS`, and a search's own), and the cores it ran on.
+  counts      TEXT,
+  lanes       INTEGER
 );
 CREATE INDEX IF NOT EXISTS answers_by_question ON answers (question, engine);
 CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);

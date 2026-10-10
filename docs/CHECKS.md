@@ -205,35 +205,25 @@ in any one axis are two records.
 
 ## `check_board_verify`
 
-Plain node against `worker/schema.sql` on node's sqlite. An order is handed out
-as a build and never a number; its first result waits for the server's rank;
-each further one comes only from a client of the same engine that has not
-measured it; `CLIENTS_PER_FACT` equal results (checked at 1, 2 and 3) make a
-`verified:` fact naming every client and delete the queue row, a difference
-(score, metric or work) is a dispute and the answer is the same either way; a
-fact credits its work to each of its clients, by the day too, and a dispute to none; a result
-that does not name its work is refused; a further result never goes to another
-device of the same owner, and does go to another owner's or an unclaimed one;
-a row nobody owes, a server's order, a live lease and a banned client get
-nothing; a page of an engine the site no longer serves, or of an older
-protocol, is told it is stale; a release carries an open result to the new
-engine with its clients, whose reproduction makes the fact and whose
-difference replaces it unrefused; a new build's row is leased before a
-rescore's, and a new build's row that already has a score is not asked for
-again while a rescore's is; a computer that never said yes is handed
-nothing, and the yes it sent is kept on its row; a client is written once a
-day. A scorer run's claim (`fetch_queue.sh`, run as the statements it sends)
-takes every old order, open or not, that no client holds, leaves a held one and
-a young one alone, reads exactly what it claimed, hands no client a claimed
-order, and its release puts each back in the state it was in; with no share of
-the unmeasured it still takes every old open order, and the reserve's
-arithmetic is asserted on four cases. A claimed order the scorer reproduces —
-score, metric and work, whatever the engine id — pays its clients once
-(`order_credit.mjs`), and one that differs in score or work pays nothing. A
-lease given back frees its order and its client at once, and only its holder
-can give it back. A first result the live loop never ranked is claimed after
-the hold and paid once the scorer reproduces it, and a banned client is told
-why it is handed nothing.
+Plain node against `worker/schema.sql` on node's sqlite: a board row as a
+question of the fact factory. Only the factory's secret asks; an owed row is
+asked by `new_build` (an arrival's own build) or `sweep`, an arrival's scored
+row not again, a rescore's on purpose, and the backfill asks what nobody did.
+A row is handed out as its build and never a number; a page of an older
+protocol, of another engine, or without the reader's yes is handed nothing; a
+further result never comes from the same client, another device of its owner
+or its network; equal bits make a `verified:` fact, settle the queue row and
+credit both clients once, and their tasks say confirmed; other work is a
+dispute, answered as an agreement is, its tasks "checking". The official
+machines: the live loop claims a dispute and its fact credits the one it agrees
+with and refuses the other for a day (told `banned`); a spot check that
+disproves an agreement refuses both, takes back their pay and voids their
+answers; the scorer claims only what is past its deadline, no client is handed
+it, `fetch_queue.sh` reads exactly that and the rows nobody asked for, and its
+answer pays a client whose bits it reproduced; the release hands the rest back.
+A task asked ahead, a lease given back, an answer of another engine dropped;
+what an answer cost (its counts, lanes and time) is kept; and an order open
+before the factory is adopted once, as of when it opened, its result carried.
 
 ## `check_compute`
 
