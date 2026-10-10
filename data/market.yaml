@@ -30,12 +30,16 @@ mods:
   aerial_ace: aerial_ace
   aero_periphery: aero_periphery
   agile_aim: agile_aim
+  amars_contempt: amars_contempt
+  ambush_optics: ambush_optics
   ammo_chain: ammo_chain
   ammo_drum: ammo_drum
   ammo_stock: ammo_stock
   anemic_agility: anemic_agility
   archgun_ace: archgun_ace
   argon_scope: argon_scope
+  astral_twilight: astral_twilight
+  atlantis_vulcan: atlantis_vulcan
   atomic_fallout: atomic_fallout
   auger_strike: auger_strike
   augur_pact: augur_pact
@@ -45,23 +49,33 @@ mods:
   bane_of_corpus: bane_of_corpus
   bane_of_grineer: bane_of_grineer
   bane_of_infested: bane_of_infested
-  bane_of_orokin: bane_of_corrupted
+  bane_of_orokin: bane_of_orokin
   bane_of_the_murmur: bane_of_the_murmur
   barrel_diffusion: barrel_diffusion
   berserker_fury: berserker_fury
   bhisaj_bal: bhisaj_bal
+  biotic_rounds: biotic_rounds
   bladed_rounds: bladed_rounds
   blaze: blaze
+  bleeding_willow: bleeding_willow
+  blind_justice: blind_justice
   blood_rush: blood_rush
   blunderbuss: blunderbuss
   body_count: body_count
   bore: bore
+  brain_storm: brain_storm
   breach_loader: breach_loader
   broad_eye: broad_eye
+  brutal_tide: brutal_tide
+  bullet_dance: bullet_dance
   burdened_magazine: burdened_magazine
+  burning_wasp: burning_wasp
+  bursting_mass: bursting_mass
+  butchers_revelry: butchers_revelry
   buzz_kill: buzz_kill
   carnis_mandible: carnis_mandible
   carnis_stinger: carnis_stinger
+  carving_mantis: carving_mantis
   catalyzer_link: catalyzer_link
   cautious_shot: cautious_shot
   charged_bullets: charged_bullets
@@ -69,13 +83,17 @@ mods:
   charged_shell: charged_shell
   chilling_grasp: chilling_grasp
   chilling_reload: chilling_reload
+  clashing_forest: clashing_forest
   cleanse_corpus: cleanse_corpus
   cleanse_grineer: cleanse_grineer
   cleanse_infested: cleanse_infested
-  cleanse_orokin: cleanse_corrupted
+  cleanse_orokin: cleanse_orokin
   cleanse_the_murmur: cleanse_the_murmur
+  cleaving_whirlwind: cleaving_whirlwind
   clip_delegation: clip_delegation
+  coiling_viper: coiling_viper
   collision_force: collision_force
+  combat_reload: combat_reload
   combustion_beam: combustion_beam
   combustion_rounds: combustion_rounds
   comet_blast: comet_blast
@@ -91,14 +109,25 @@ mods:
   counterbalance: counterbalance
   crash_course: crash_course
   creeping_bullseye: creeping_bullseye
+  crimson_dervish: crimson_dervish
   critical_deceleration: critical_deceleration
   critical_delay: critical_delay
   critical_focus: critical_focus
+  critical_mutation: critical_mutation
+  critical_precision: critical_precision
+  crossing_snakes: crossing_snakes
   crushing_ruin: crushing_ruin
   cryo_rounds: cryo_rounds
+  cyclone_kraken: cyclone_kraken
+  damzav_vati: damzav_vati
   deadly_efficiency: deadly_efficiency
+  deadly_maneuvers: deadly_maneuvers
   deadly_sequence: deadly_sequence
+  decisive_judgement: decisive_judgement
   deep_freeze: deep_freeze
+  defiled_snapdragon: defiled_snapdragon
+  directed_convergence: directed_convergence
+  disarming_purity: disarming_purity
   disciplines_merit: disciplines_merit
   dispatch_overdrive: dispatch_overdrive
   disruptor: disruptor
@@ -110,35 +139,50 @@ mods:
   drifting_contact: drifting_contact
   dual_rounds: dual_rounds
   eagle_eye: eagle_eye
+  efficient_beams: efficient_beams
   eject_magazine: eject_magazine
   electrified_barrel: electrified_barrel
+  eleventh_storm: eleventh_storm
   embedded_catalyzer: embedded_catalyzer
   enduring_affliction: enduring_affliction
   enduring_strike: enduring_strike
   energy_channel: energy_channel
+  entropy_burst: entropy_burst
+  entropy_spike: entropy_spike
+  eroding_blight: eroding_blight
   eximus_advantage: eximus_advantage
   expel_corpus: expel_corpus
   expel_grineer: expel_grineer
   expel_infested: expel_infested
-  expel_orokin: expel_corrupted
+  expel_orokin: expel_orokin
   expel_the_murmur: expel_the_murmur
+  exposing_harpoon: exposing_harpoon
   fanged_fusillade: fanged_fusillade
   fass_canticle: fass_canticle
   fast_hands: fast_hands
   fatal_acceleration: fatal_acceleration
   fever_strike: fever_strike
+  final_harbinger: final_harbinger
   finishing_touch: finishing_touch
   firestorm: firestorm
+  flailing_branch: flailing_branch
   flechette: flechette
+  flux_overdrive: flux_overdrive
   focus_energy: focus_energy
   focus_radon: focus_radon
+  focused_acceleration: focused_acceleration
   focused_defense: focused_defense
+  fomorian_accelerant: fomorian_accelerant
+  four_riders: four_riders
+  fracturing_wind: fracturing_wind
   frail_momentum: frail_momentum
   frigid_blast: frigid_blast
   frostbite: frostbite
   full_contact: full_contact
   fulmination: fulmination
   fury: fury
+  gaias_tragedy: gaias_tragedy
+  galeforce_dawn: galeforce_dawn
   galvanized_acceleration: galvanized_acceleration
   galvanized_aptitude: galvanized_aptitude
   galvanized_chamber: galvanized_chamber
@@ -154,6 +198,9 @@ mods:
   gladiator_might: gladiator_might
   gladiator_rush: gladiator_rush
   gladiator_vice: gladiator_vice
+  gleaming_talon: gleaming_talon
+  gnashing_payara: gnashing_payara
+  grim_fury: grim_fury
   guardian_derision: guardian_derision
   guided_ordnance: guided_ordnance
   gun_glide: gun_glide
@@ -169,9 +216,12 @@ mods:
   hellfire: hellfire
   hells_chamber: hells_chamber
   hemorrhage: hemorrhage
+  higasa_serration: higasa_serration
+  high_noon: high_noon
   high_voltage: high_voltage
   hollow_point: hollow_point
   hollowed_bullets: hollowed_bullets
+  homing_fang: homing_fang
   hornet_strike: hornet_strike
   hunter_munitions: hunter_munitions
   hunter_track: hunter_track
@@ -182,6 +232,7 @@ mods:
   incendiary_coat: incendiary_coat
   infected_clip: infected_clip
   internal_bleeding: internal_bleeding
+  iron_phoenix: iron_phoenix
   jagged_edge: jagged_edge
   jahu_canticle: jahu_canticle
   jolt: jolt
@@ -189,8 +240,11 @@ mods:
   jugulus_spines: jugulus_spines
   khra_canticle: khra_canticle
   killing_blow: killing_blow
+  kinetic_ricochet: kinetic_ricochet
   laser_sight: laser_sight
+  lasting_purity: lasting_purity
   lasting_sting: lasting_sting
+  leaded_gas: leaded_gas
   lethal_momentum: lethal_momentum
   lethal_torrent: lethal_torrent
   life_strike: life_strike
@@ -208,6 +262,7 @@ mods:
   magnum_force: magnum_force
   maim: maim
   maiming_strike: maiming_strike
+  malicious_raptor: malicious_raptor
   malignant_force: malignant_force
   marked_target: marked_target
   masters_edge: masters_edge
@@ -216,23 +271,30 @@ mods:
   merciless_gunfight: merciless_gunfight
   metal_auger: metal_auger
   metamorphic_magazine: metamorphic_magazine
+  meticulous_aim: meticulous_aim
   modified_munitions: modified_munitions
   molten_impact: molten_impact
   motus_impact: motus_impact
   motus_setup: motus_setup
+  mountains_edge: mountains_edge
   nano_applicator: nano_applicator
+  napalm_grenades: napalm_grenades
   narrow_barrel: narrow_barrel
+  necrophagic_vigor: necrophagic_vigor
   netra_invocation: netra_invocation
   neutralizing_justice: neutralizing_justice
   nightwatch_napalm: nightwatch_napalm
   north_wind: north_wind
   opportunitys_reach: opportunitys_reach
   organ_shatter: organ_shatter
+  overpressured_rounds: overpressured_rounds
   overview: overview
+  pain_points: pain_points
   parallax_scope: parallax_scope
   parry: parry
   pathogen_rounds: pathogen_rounds
   perpetual_agony: perpetual_agony
+  photon_overcharge: photon_overcharge
   piercing_caliber: piercing_caliber
   piercing_hit: piercing_hit
   pistol_acuity: pistol_acuity
@@ -242,7 +304,9 @@ mods:
   pistol_pestilence: pistol_pestilence
   point_blank: point_blank
   point_strike: point_strike
+  pointed_wind: pointed_wind
   polar_magazine: polar_magazine
+  precision_strike: precision_strike
   pressure_point: pressure_point
   pressurized_magazine: pressurized_magazine
   primary_acuity: primary_acuity
@@ -251,7 +315,7 @@ mods:
   primed_bane_of_corpus: primed_bane_of_corpus
   primed_bane_of_grineer: primed_bane_of_grineer
   primed_bane_of_infested: primed_bane_of_infested
-  primed_bane_of_orokin: primed_bane_of_corrupted
+  primed_bane_of_orokin: primed_bane_of_orokin
   primed_bane_of_the_murmur: primed_bane_of_the_murmur
   primed_chamber: primed_chamber
   primed_charged_shell: primed_charged_shell
@@ -259,7 +323,7 @@ mods:
   primed_cleanse_corpus: primed_cleanse_corpus
   primed_cleanse_grineer: primed_cleanse_grineer
   primed_cleanse_infested: primed_cleanse_infested
-  primed_cleanse_orokin: primed_cleanse_corrupted
+  primed_cleanse_orokin: primed_cleanse_orokin
   primed_cleanse_the_murmur: primed_cleanse_the_murmur
   primed_combustion_rounds: primed_combustion_rounds
   primed_convulsion: primed_convulsion
@@ -270,7 +334,7 @@ mods:
   primed_expel_corpus: primed_expel_corpus
   primed_expel_grineer: primed_expel_grineer
   primed_expel_infested: primed_expel_infested
-  primed_expel_orokin: primed_expel_corrupted
+  primed_expel_orokin: primed_expel_orokin
   primed_expel_the_murmur: primed_expel_the_murmur
   primed_fast_hands: primed_fast_hands
   primed_fever_strike: primed_fever_strike
@@ -292,7 +356,7 @@ mods:
   primed_shotgun_ammo_mutation: primed_shotgun_ammo_mutation
   primed_slip_magazine: primed_slip_magazine
   primed_smite_corpus: primed_smite_corpus
-  primed_smite_corrupted: primed_smite_corrupted
+  primed_smite_corrupted: primed_smite_orokin
   primed_smite_grineer: primed_smite_grineer
   primed_smite_infested: primed_smite_infested
   primed_smite_the_murmur: primed_smite_the_murmur
@@ -303,18 +367,22 @@ mods:
   primed_venomous_clip: primed_venomous_clip
   proton_jet: proton_jet
   proton_snap: proton_snap
+  prototype_shock_coils: prototype_shock_coils
   pummel: pummel
   quasar_drill: quasar_drill
   quick_reload: quick_reload
   quickdraw: quickdraw
   quickening: quickening
   radiated_reload: radiated_reload
+  range_advantage: range_advantage
   ravage: ravage
   razor_shot: razor_shot
   reach: reach
+  reaping_spiral: reaping_spiral
   reflex_coil: reflex_coil
   reflex_draw: reflex_draw
   relentless_combination: relentless_combination
+  rending_crane: rending_crane
   rending_strike: rending_strike
   repeater_clip: repeater_clip
   resolute_focus: resolute_focus
@@ -336,11 +404,14 @@ mods:
   seeker: seeker
   seeking_force: seeking_force
   seeking_fury: seeking_fury
+  seismic_palm: seismic_palm
   seismic_wave: seismic_wave
   semi_pistol_cannonade: semi_pistol_cannonade
   semi_rifle_cannonade: semi_rifle_cannonade
-  semi_shotgun_cannonade: shotgun_cannonade
+  semi_shotgun_cannonade: semi_shotgun_cannonade
+  sentient_barrage: sentient_barrage
   sentient_surge: sentient_surge
+  sequence_burn: sequence_burn
   serration: serration
   sharpened_bullets: sharpened_bullets
   shattering_impact: shattering_impact
@@ -349,43 +420,57 @@ mods:
   shell_compression: shell_compression
   shell_rush: shell_rush
   shell_shock: shell_shock
+  shimmering_blight: shimmering_blight
   shivering_contagion: shivering_contagion
   shocking_touch: shocking_touch
   shotgun_ammo_mutation: shotgun_ammo_mutation
   shotgun_barrage: shotgun_barrage
   shotgun_elementalist: shotgun_elementalist
   shotgun_savvy: shotgun_savvy
+  shrapnel_rounds: shrapnel_rounds
   shrapnel_shot: shrapnel_shot
   shred: shred
   shredder: shredder
   silent_battery: silent_battery
   sinister_reach: sinister_reach
+  sinking_talon: sinking_talon
+  skull_shots: skull_shots
+  slicing_feathers: slicing_feathers
   slip_magazine: slip_magazine
   smite_corpus: smite_corpus
   smite_grineer: smite_grineer
   smite_infested: smite_infested
-  smite_orokin: smite_corrupted
+  smite_orokin: smite_orokin
   smite_the_murmur: smite_the_murmur
   snap_shot: snap_shot
   soft_hands: soft_hands
   sovereign_outcast: sovereign_outcast
   spectral_serration: spectral_serration
   speed_trigger: speed_trigger
+  spinning_needle: spinning_needle
   split_chamber: split_chamber
   split_flights: split_flights
   spoiled_strike: spoiled_strike
+  spontaneous_singularity: spontaneous_singularity
   spring_loaded_blade: spring_loaded_blade
+  spring_loaded_broadhead: spring_loaded_broadhead
   spring_loaded_chamber: spring_loaded_chamber
   stabilizer: stabilizer
+  stalking_fan: stalking_fan
   steady_hands: steady_hands
+  stinging_thorn: stinging_thorn
+  stinging_truth: stinging_truth
   stockpiled_blight: stockpiled_blight
   stormbringer: stormbringer
   strain_infection: strain_infection
   stunning_speed: stunning_speed
   sundering_strike: sundering_strike
+  sundering_weave: sundering_weave
   suppress: suppress
   sure_shot: sure_shot
   sweeping_serration: sweeping_serration
+  swirling_tiger: swirling_tiger
+  swooping_falcon: swooping_falcon
   synth_charge: synth_charge
   tactical_pump: tactical_pump
   tactical_reload: tactical_reload
@@ -394,16 +479,25 @@ mods:
   target_cracker: target_cracker
   targeting_subsystem: targeting_subsystem
   tek_gravity: tek_gravity
+  tempo_royale: tempo_royale
   terminal_velocity: terminal_velocity
+  tether_grenades: tether_grenades
+  thermagnetic_shells: thermagnetic_shells
   thermite_rounds: thermite_rounds
   toxic_barrage: toxic_barrage
+  toxic_sequence: toxic_sequence
+  tranquil_cleave: tranquil_cleave
   trick_mag: trick_mag
   true_punishment: true_punishment
   true_steel: true_steel
   truths_flame: truths_flame
+  twirling_spire: twirling_spire
   twitch: twitch
   unseen_dread: unseen_dread
+  velox_conclusion: velox_conclusion
+  vengeful_revenant: vengeful_revenant
   venomous_clip: venomous_clip
+  vermillion_storm: vermillion_storm
   vicious_frost: vicious_frost
   vicious_spread: vicious_spread
   vigilante_armaments: vigilante_armaments
@@ -411,16 +505,24 @@ mods:
   vigilante_offense: vigilante_offense
   vigilante_supplies: vigilante_supplies
   vile_acceleration: vile_acceleration
+  vile_discharge: vile_discharge
   vile_precision: vile_precision
   virulent_scourge: virulent_scourge
   vital_sense: vital_sense
+  volatile_variant: volatile_variant
   volcanic_edge: volcanic_edge
+  voltage_sequence: voltage_sequence
   voltaic_strike: voltaic_strike
   vome_invocation: vome_invocation
+  votive_onslaught: votive_onslaught
+  vulpine_mask: vulpine_mask
   weeping_wounds: weeping_wounds
+  wild_frenzy: wild_frenzy
   wildfire: wildfire
   winds_of_purity: winds_of_purity
+  wise_razor: wise_razor
   xata_invocation: xata_invocation
+  zazvat_kar: zazvat_kar
   zodiac_shred: zodiac_shred
 
 weapons:
@@ -439,15 +541,19 @@ weapons:
   akvasto_prime: akvasto_prime_set
   alternox_prime: alternox_prime_set
   ambassador: ambassador_set
+  ankyros_prime: ankyros_prime_set
+  arum_spinosa: arum_spinosa_set
   astilla_prime: astilla_prime_set
   athodai: athodai_set
   athodai_prime: athodai_prime_set
   ballistica_prime: ballistica_prime_set
   baza_prime: baza_prime_set
+  bo_prime: bo_prime_set
   boar_prime: boar_prime_set
   boltor_prime: boltor_prime_set
   braton_prime: braton_prime_set
   braton_vandal: braton_vandal_set
+  broken_war: broken_war_set
   bronco_prime: bronco_prime_set
   burston_prime: burston_prime_set
   carmine_penta: carmine_penta_set
@@ -455,74 +561,123 @@ weapons:
   cedo_prime: cedo_prime_set
   cernos_prime: cernos_prime_set
   cinta: cinta_set
+  cobra_and_crane_prime: cobra_and_crane_prime_set
   corinth_prime: corinth_prime_set
   cortege: cortege_set
+  corufell: corufell_set
+  corufell_prime: corufell_prime_set
   corvas: corvas_set
   corvas_prime: corvas_prime_set
   cyngas: cyngas_set
   daikyu_prime: daikyu_prime_set
+  dakra_prime: dakra_prime_set
   dera_vandal: dera_vandal_set
+  destreza_prime: destreza_prime_set
   dual_decurion: dual_decurion_set
+  dual_kamas_prime: dual_kamas_prime_set
+  dual_keres_prime: dual_keres_prime_set
+  dual_viciss: dual_viciss_set
+  dual_zoren_prime: dual_zoren_prime_set
   efv_5_jupiter: efv_5_jupiter_set
   efv_8_mars: efv_8_mars_set
   epitaph: epitaph_set
   epitaph_prime: epitaph_prime_set
   euphona_prime: euphona_prime_set
+  fang_prime: fang_prime_set
   fluctus: fluctus_set
+  fragor_prime: fragor_prime_set
   fulmin_prime: fulmin_prime_set
+  furax_wraith: furax_wraith_set
+  galatine_prime: galatine_prime_set
+  ghoulsaw: ghoulsaw_set
+  glaive_prime: glaive_prime_set
   glaxion_vandal: glaxion_vandal
   gorgon_wraith: gorgon_wraith_set
   gotva_prime: gotva_prime
+  gram_prime: gram_prime_set
+  guandao_prime: guandao_prime_set
+  gunsen_prime: gunsen_prime_set
+  halikar_wraith: halikar_wraith
+  hespar: hespar_set
   hikou_prime: hikou_prime_set
   hystrix_prime: hystrix_prime_set
   imperator_vandal: imperator_vandal_set
   karak_wraith: karak_wraith_set
+  karyst_prime: karyst_prime_set
+  kestrel_prime: kestrel_prime_set
   knell_prime: knell_prime_set
+  kogake_prime: kogake_prime_set
   kompressa_prime: kompressa_prime_set
+  kronen_prime: kronen_prime_set
   larkspur_prime: larkspur_prime_set
   lato_vandal: lato_vandal_set
   latron_prime: latron_prime_set
   latron_wraith: latron_wraith_set
   lex_prime: lex_prime_set
+  machete_wraith: machete_wraith
   magnus_prime: magnus_prime_set
   mandonel: mandonel_set
   mara_detron: mara_detron
+  masseter_prime: masseter_prime_set
   morgha: morgha_set
   nagantaka_prime: nagantaka_prime_set
+  nami_skyla_prime: nami_skyla_prime_set
+  nikana_prime: nikana_prime_set
+  ninkondi_prime: ninkondi_prime_set
+  okina_prime: okina_prime_set
   opticor_vandal: opticor_vandal
+  orthos_prime: orthos_prime_set
   pandero_prime: pandero_prime_set
+  pangolin_prime: pangolin_prime_set
   panthera_prime: panthera_prime_set
   paris_prime: paris_prime_set
+  pathocyst: pathocyst_set
   perigale: perigale_set
   perigale_prime: perigale_prime_set
   phaedra: phaedra_set
   phantasma_prime: phantasma_prime_set
   prisma_angstrum: prisma_angstrum
   prisma_burst_laser: prisma_burst_laser
+  prisma_dual_cleavers: prisma_dual_cleavers
   prisma_dual_decurions: prisma_dual_decurions
   prisma_gorgon: prisma_gorgon
   prisma_grakata: prisma_grakata
   prisma_grinlok: prisma_grinlok
   prisma_lenz: prisma_lenz
+  prisma_machete: prisma_machete
+  prisma_obex: prisma_obex
+  prisma_ohma: prisma_ohma
+  prisma_skana: prisma_skana
   prisma_tetra: prisma_tetra
   prisma_twin_gremlins: prisma_twin_gremlins
+  prova_vandal: prova_vandal
   purgator_1: purgator_1_set
   pyrana_prime: pyrana_prime_set
   quanta_vandal: quanta_vandal
+  quassus_prime: quassus_prime_set
   rakta_ballistica: rakta_ballistica
   rakta_cernos: rakta_cernos
+  rakta_dark_dagger: rakta_dark_dagger
   rauta: rauta_set
+  reaper_prime: reaper_prime_set
   reconifex: reconifex_set
+  redeemer_prime: redeemer_prime_set
   riot_848: riot_848_set
   rubico_prime: rubico_prime_set
   sancti_castanas: sancti_castanas
   sancti_magistar: sancti_magistar
   sancti_tigris: sancti_tigris
+  sarofang: sarofang_set
+  sarofang_prime: sarofang_prime_set
+  scindo_prime: scindo_prime_set
   scourge_prime: scourge_prime_set
   secura_dual_cestra: secura_dual_cestra
+  secura_lecta: secura_lecta
   secura_penta: secura_penta
   shedu: shedu_set
+  sheev: sheev_set
   sicarus_prime: sicarus_prime_set
+  silva_and_aegis_prime: silva_and_aegis_prime_set
   snipetron_vandal: snipetron_vandal_set
   soma_prime: soma_prime_set
   spectra_vandal: spectra_vandal_set
@@ -531,30 +686,43 @@ weapons:
   stahlta: stahlta_set
   steflos: steflos_set
   stradavar_prime: stradavar_prime_set
+  stropha: stropha_set
   strun_prime: strun_prime_set
   strun_wraith: strun_wraith_set
   supra_vandal: supra_vandal
   sybaris_prime: sybaris_prime_set
   synoid_gammacor: synoid_gammacor
+  synoid_heliocor: synoid_heliocor
   synoid_simulor: synoid_simulor
+  tatsu_prime: tatsu_prime_set
+  tekko_prime: tekko_prime_set
   telos_akbolto: telos_akbolto
+  telos_boltace: telos_boltace
   telos_boltor: telos_boltor
   tenora_prime: tenora_prime_set
   tiberon_prime: tiberon_prime_set
   tigris_prime: tigris_prime_set
+  tipedo_prime: tipedo_prime_set
   trumna_prime: trumna_prime_set
   twin_vipers_wraith: twin_vipers_wraith_set
   vadarya_prime: vadarya_prime_set
+  vastilok: vastilok
   vasto_prime: vasto_prime_set
   vaykor_hek: vaykor_hek
   vaykor_marelok: vaykor_marelok
+  vaykor_sydon: vaykor_sydon
   vectis_prime: vectis_prime_set
   velocitus: velocitus_set
   velox: velox_set
   velox_prime: velox_prime_set
+  venato_prime: venato_prime_set
+  venka_prime: venka_prime_set
+  vericres: vericres
   vesper_77: vesper_77_set
   viper_wraith: viper_wraith
+  volnus_prime: volnus_prime_set
   vulkar_wraith: vulkar_wraith
+  wolf_sledge: wolf_sledge_set
   zakti_prime: zakti_prime_set
   zhuge_prime: zhuge_prime_set
   zylok: zylok
@@ -608,6 +776,7 @@ lich_weapons:
   kuva_bramma: kuva_bramma
   kuva_chakkhurr: kuva_chakkhurr
   kuva_drakgoon: kuva_drakgoon
+  kuva_ghoulsaw: kuva_ghoulsaw
   kuva_grattler: kuva_grattler
   kuva_hek: kuva_hek
   kuva_hind: kuva_hind
@@ -618,6 +787,7 @@ lich_weapons:
   kuva_ogris: kuva_ogris
   kuva_quartakk: kuva_quartakk
   kuva_seer: kuva_seer
+  kuva_shildeg: kuva_shildeg
   kuva_sobek: kuva_sobek
   kuva_tonkor: kuva_tonkor
   kuva_twin_stubbas: kuva_twin_stubbas
@@ -637,6 +807,8 @@ sister_weapons:
   tenet_tetra: tenet_tetra
 
 riven_families:
+  "Cobra & Crane": cobra_and_crane
+  "Silva & Aegis": silva_and_aegis
   AX-52: ax_52
   Acceltra: acceltra
   Acrid: acrid
@@ -659,6 +831,7 @@ riven_families:
   Ambassador: ambassador
   Amprex: amprex
   Angstrum: angstrum
+  Ankyros: ankyros
   Arbucep: arbucep
   Arca Plasmor: arca_plasmor
   Arca Scisco: arca_scisco
@@ -673,7 +846,9 @@ riven_families:
   Basmu: basmu
   Battacor: battacor
   Baza: baza
+  Bo: bo
   Boar: boar
+  Boltace: boltace
   Bolto: bolto
   Boltor: boltor
   Brakk: brakk
@@ -687,6 +862,7 @@ riven_families:
   Castanas: castanas
   Catabolyst: catabolyst
   Catchmoon: catchmoon
+  Caustacyst: caustacyst
   Cedo: cedo
   Cernos: cernos
   Cestra: cestra
@@ -695,23 +871,30 @@ riven_families:
   Convectrix: convectrix
   Corinth: corinth
   Cortege: cortege
+  Corufell: corufell
   Corvas: corvas
   Cryotra: cryotra
   Cyanex: cyanex
   Cycron: cycron
   Cyngas: cyngas
   Daikyu: daikyu
+  Dark Dagger: dark_dagger
   Deconstructor: deconstructor
   Dera: dera
   Despair: despair
+  Destreza: destreza
   Deth Machine Rifle: deth_machine_rifle
   Detron: detron
   Drakgoon: drakgoon
   Dread: dread
   Dual Cestra: dual_cestra
+  Dual Cleavers: dual_cleavers
   Dual Coda Torxica: dual_coda_torxica
   Dual Decurion: dual_decurion
+  Dual Kamas: dual_kamas
+  Dual Keres: dual_keres
   Dual Toxocyst: dual_toxocyst
+  Dual Zoren: dual_zoren
   EFV-5 Jupiter: efv_5_jupiter
   EFV-8 Mars: efv_8_mars
   Embolist: embolist
@@ -720,76 +903,106 @@ riven_families:
   Euphona Prime: euphona_prime
   Evensong: evensong
   Exergis: exergis
+  Fang: fang
   Felarx: felarx
   Ferrox: ferrox
   Fluctus: fluctus
   Flux Rifle: flux_rifle
+  Fragor: fragor
   Fulmin: fulmin
+  Furax: furax
   Furis: furis
   Fusilai: fusilai
+  Galatine: galatine
   Gammacor: gammacor
   Gaze: gaze
+  Ghoulsaw: ghoulsaw
+  Glaive: glaive
   Glaxion: glaxion
   Gorgon: gorgon
   Gotva Prime: gotva_prime
   Grakata: grakata
+  Gram: gram
   Grattler: grattler
   Grimoire: grimoire
   Grinlok: grinlok
+  Guandao: guandao
+  Gunsen: gunsen
   Haalvu: haalvu
+  Halikar: halikar
   Harpak: harpak
   Hek: hek
+  Heliocor: heliocor
   Helstrum: helstrum
   Hema: hema
   Higasa: higasa
   Hikou: hikou
   Hind: hind
+  Hirudo: hirudo
   Hystrix: hystrix
   Ignis: ignis
   Imperator: imperator
   Javlok: javlok
   Karak: karak
+  Karyst: karyst
+  Kestrel: kestrel
   Knell: knell
+  Kogake: kogake
   Kohm: kohm
   Kohmak: kohmak
   Komorex: komorex
   Kompressa: kompressa
   Kraken: kraken
+  Kronen: kronen
   Kulstar: kulstar
   Kunai: kunai
   Kuva Ayanga: kuva_ayanga
   Kuva Bramma: kuva_bramma
   Kuva Chakkhurr: kuva_chakkhurr
   Kuva Twin Stubbas: kuva_twin_stubbas
+  Lacera: lacera
   Laetum: laetum
   Lanka: lanka
   Larkspur: larkspur
   Laser Rifle: laser_rifle
   Lato: lato
   Latron: latron
+  Lecta: lecta
   Lenz: lenz
   Lex: lex
+  Machete: machete
   Magistar: magistar
   Magnus: magnus
   Mandonel: mandonel
   Marelok: marelok
+  Masseter: masseter
   Mausolon: mausolon
+  Mire: mire
   Miter: miter
   Morgha: morgha
   Multron: multron
   Mutalist Cernos: mutalist_cernos
   Mutalist Quanta: mutalist_quanta
   Nagantaka: nagantaka
+  Nami Skyla: nami_skyla
   Nataruk: nataruk
+  Nikana: nikana
+  Ninkondi: ninkondi
   Nukor: nukor
+  Obex: obex
   Ocucor: ocucor
   Ogris: ogris
+  Ohma: ohma
+  Okina: okina
   Onos: onos
   Opticor: opticor
+  Orthos: orthos
   Pandero: pandero
+  Pangolin Sword: pangolin_sword
   Panthera: panthera
   Paracyst: paracyst
   Paris: paris
+  Pathocyst: pathocyst
   Penta: penta
   Perigale: perigale
   Phaedra: phaedra
@@ -799,18 +1012,23 @@ riven_families:
   Plinx: plinx
   Pox: pox
   Proboscis Cernos: proboscis_cernos
+  Prova: prova
   Purgator 1: purgator_1
   Pyrana: pyrana
   Quanta: quanta
   Quartakk: quartakk
+  Quassus: quassus
   Quatz: quatz
   Quellor: quellor
   Rattleguts: rattleguts
   Rauta: rauta
   Reconifex: reconifex
+  Redeemer: redeemer
   Riot-848: riot_848
   Rubico: rubico
   Sagek Prime: sagek_prime
+  Sarofang: sarofang
+  Scindo: scindo
   Scourge: scourge
   Scyotid: scyotid
   Seer: seer
@@ -818,6 +1036,7 @@ riven_families:
   Shedu: shedu
   Sicarus: sicarus
   Simulor: simulor
+  Skana: skana
   Snipetron: snipetron
   Sobek: sobek
   Soma: soma
@@ -837,9 +1056,12 @@ riven_families:
   Supra: supra
   Sweeper: sweeper
   Sybaris: sybaris
+  Sydon: sydon
   Synapse: synapse
   Talons: talons
+  Tatsu: tatsu
   Tazicor: tazicor
+  Tekko: tekko
   Tenet Diplos: tenet_diplos
   Tenet Envoy: tenet_envoy
   Tenet Spirex: tenet_spirex
@@ -848,6 +1070,7 @@ riven_families:
   Thornbak: thornbak
   Tiberon: tiberon
   Tigris: tigris
+  Tipedo: tipedo
   Tombfinger: tombfinger
   Tonkor: tonkor
   Torid: torid
@@ -864,29 +1087,141 @@ riven_families:
   Veldt: veldt
   Velocitus: velocitus
   Velox: velox
+  Venato: venato
+  Venka: venka
   Verglas: verglas
   Vermisplicer: vermisplicer
   Vesper 77: vesper_77
   Vinquibus: vinquibus
   Viper: viper
+  Volnus: volnus
   Vulcax: vulcax
   Vulkar: vulkar
   Vulklok: vulklok
+  War: war
   Zakti: zakti
   Zarr: zarr
   Zenith: zenith
   Zhuge: zhuge
   Zylok: zylok
   Zymos: zymos
+  ack_and_brunt: ack_and_brunt
+  aksondol: aksondol
+  amanata: amanata
+  amphis: amphis
+  anku: anku
+  arca_titron: arca_titron
+  argo_and_vel: argo_and_vel
+  arum_spinosa: arum_spinosa
+  atterax: atterax
+  azothane: azothane
+  broken_scepter: broken_scepter
+  broken_war: broken_war
+  cadus: cadus
+  cassowar: cassowar
+  ceramic_dagger: ceramic_dagger
+  cerata: cerata
+  coda_motovore: coda_motovore
+  cronus: cronus
+  dakra_prime: dakra_prime
+  dark_split_sword: dark_split_sword_(dual_swords)
+  dark_sword: dark_sword
+  dex_dakra: dex_dakra
+  dorrclave: dorrclave
+  dragon_nikana: dragon_nikana
+  dual_ether: dual_ether
+  dual_heat_swords: dual_heat_swords
+  dual_ichor: dual_ichor
+  dual_raza: dual_raza
+  dual_skana: dual_skana
+  dual_viciss: dual_viciss
+  edun: edun
+  ekhein: ekhein
+  endura: endura
+  ether_daggers: ether_daggers
+  ether_reaper: ether_reaper
+  ether_sword: ether_sword
+  falcor: falcor
+  galariak_prime: galariak_prime
+  galvacord: galvacord
+  gazal_machete: gazal_machete
+  harmony: harmony
+  hate: hate
+  heat_dagger: heat_dagger
+  heat_sword: heat_sword
+  hespar: hespar
+  innodem: innodem
+  jat_kittag: jat_kittag
+  jat_kusar: jat_kusar
+  jaw_sword: jaw_sword
+  kama: kama
+  keratinos: keratinos
+  kesheg: kesheg
+  korrudo: korrudo
+  korumm: korumm
+  kreska: kreska
+  krohkur: krohkur
+  kuva_shildeg: kuva_shildeg
+  lesion: lesion
+  mios: mios
+  nami_solo: nami_solo
+  nepheri: nepheri
+  nunchasa: nunchasa
+  orvius: orvius
+  paracesis: paracesis
+  pennant: pennant
+  plasma_sword: plasma_sword
   praedos: praedos
+  pride: pride
+  pulmonars: pulmonars
+  pupacyst: pupacyst
+  reaper_prime: reaper_prime
+  ripkas: ripkas
+  rumblejack: rumblejack
+  ruvox: ruvox
+  sampotes: sampotes
+  sarpa: sarpa
+  scoliac: scoliac
+  serro: serro
+  shaku: shaku
+  sheev: sheev
+  sibear: sibear
+  sigma_and_octantis: sigma_and_octantis
+  skiajati: skiajati
+  slaytra: slaytra
+  spinnerex: spinnerex
+  stropha: stropha
+  sun_and_moon: sun_and_moon
+  syam: syam
+  tak_and_lug: tak_and_lug
+  tenet_agendus: tenet_agendus
+  tenet_exec: tenet_exec
+  tenet_grigori: tenet_grigori
+  tenet_livia: tenet_livia
+  thalys: thalys
+  tonbo: tonbo
+  tonkkatt: tonkkatt
+  twin_basolk: twin_basolk
+  twin_krohkur: twin_krohkur
+  vastilok: vastilok
+  verdilac: verdilac
+  vericres: vericres
+  vitrica: vitrica
+  wolf_sledge: wolf_sledge
+  wrath: wrath
+  xoris: xoris
+  zenistar: zenistar
 
 riven_stats:
   additional_combo_count_chance: chance_to_gain_extra_combo_count
+  ammo_efficiency: ammo_efficiency
   ammo_maximum: ammo_maximum
   attack_speed: fire_rate_/_attack_speed
+  blast: blast
   chance_to_gain_combo_count: chance_to_gain_combo_count
   cold: cold_damage
   combo_duration: combo_duration
+  corrosive: corrosive
   critical_chance: critical_chance
   critical_chance_for_slide_attack: critical_chance_on_slide_attack
   critical_damage: critical_damage
@@ -894,24 +1229,39 @@ riven_stats:
   damage_to_corpus: damage_vs_corpus
   damage_to_grineer: damage_vs_grineer
   damage_to_infested: damage_vs_infested
+  damage_to_orokin: damage_to_orokin
+  damage_to_scaldra: damage_to_scaldra
+  damage_to_techrot: damage_to_techrot
   electricity: electric_damage
   finisher_damage: finisher_damage
   fire_rate: fire_rate_/_attack_speed
+  gas: gas
   heat: heat_damage
   heavy_attack_efficiency: channeling_efficiency
+  heavy_attack_wind_up_speed: heavy_attack_wind_up_speed
   impact: impact_damage
   initial_combo: channeling_damage
   magazine_capacity: magazine_capacity
+  magnetic: magnetic
   melee_damage: base_damage_/_melee_damage
+  melee_damage_on_heavy_attack: melee_damage_on_heavy_attack
   multishot: multishot
+  parry_angle: parry_angle
   projectile_speed: projectile_speed
   punch_through: punch_through
   puncture: puncture_damage
+  radiation: radiation
   range: range
   reload_speed: reload_speed
+  reload_while_holstered: magazine_reloaded_s_when_holstered
+  slam_attack_damage: slam_attack_damage
   slash: slash_damage
   status_chance: status_chance
+  status_damage: status_damage
   status_duration: status_duration
   toxin: toxin_damage
+  viral: viral
+  weak_point_critical_chance: weak_point_critical_chance
+  weak_point_damage: weak_point_damage
   weapon_recoil: recoil
   zoom: zoom

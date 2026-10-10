@@ -86,8 +86,10 @@ def riven_families(weapon_refs, errors):
     generated file, where a new form silently gets no link until someone
     remembers to re-run this.
 
-    The family's slug is whichever member they DO list, and a family that
-    resolves to two of them is refused rather than guessed at.
+    The family's slug is whichever member they DO list. WM may list a
+    variant as its own riven weapon (Dex Nikana) where the wiki files it under
+    the family; the wiki wins, so the slug is the member NAMED as the family,
+    and a family with no such member among several slugs is refused.
     """
     out = {}
     for f in sorted(ROOT.glob("data/weapons/**/*.yaml")):
@@ -102,11 +104,19 @@ def riven_families(weapon_refs, errors):
             continue
         # A weapon declaring no family is its own — the entry means "no
         # variants", not "no riven".
-        out.setdefault(fam.group(1) if fam else f.stem, set()).add(weapon_refs[ref.group(1)])
-    for fam, slugs in sorted(out.items()):
-        if len(slugs) > 1:
-            errors.append(f"riven_families: {fam} resolves to several slugs: {sorted(slugs)}")
-    return {fam: sorted(slugs)[0] for fam, slugs in sorted(out.items())}
+        name = re.search(r"^name:\s*([^#\n]+?)\s*(?:#.*)?$", text, re.M)
+        out.setdefault(fam.group(1) if fam else f.stem, {})[weapon_refs[ref.group(1)]] = name and name.group(1)
+    picked = {}
+    for fam, members in sorted(out.items()):
+        if len(members) == 1:
+            picked[fam] = next(iter(members))
+            continue
+        named = [slug for slug, n in members.items() if n == fam]
+        if len(named) == 1:
+            picked[fam] = named[0]
+        else:
+            errors.append(f"riven_families: {fam} resolves to several slugs: {sorted(members)}")
+    return picked
 
 
 def resolve(ours, theirs, label, errors):
@@ -158,7 +168,14 @@ def main():
 
     attrs = fetch("/riven/attributes")
     by_tag = {a["gameRef"]: a["slug"] for a in attrs if a.get("gameRef")}
-    by_fragments = {(a["prefix"].lower(), a["suffix"].lower()): a["slug"] for a in attrs if a.get("prefix")}
+    # A FRAGMENT PAIR WM GIVES TO TWO ATTRIBUTES IS NO KEY: it fills the
+    # splicer's stats with placeholders ("Laci Nus" on five melee ones), and
+    # keeping the last of them pairs a stat with a stranger's slug.
+    pairs = {}
+    for a in attrs:
+        if a.get("prefix"):
+            pairs.setdefault((a["prefix"].lower(), a["suffix"].lower()), set()).add(a["slug"])
+    by_fragments = {k: next(iter(v)) for k, v in pairs.items() if len(v) == 1}
     ours = riven_stats()
     stats = {}
     for ident, variants in sorted(ours.items()):
@@ -235,7 +252,7 @@ def main():
         + table("riven_stats", stats)
     )
     if "--write" in sys.argv:
-        OUT.write_text(text, encoding="utf-8")
+        OUT.write_text(text, encoding="utf-8", newline="\n")
         print(f"wrote {OUT}")
     else:
         print("(--write to commit it)")
