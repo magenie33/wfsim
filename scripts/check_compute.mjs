@@ -46,6 +46,13 @@ const r = await evaluate(`(async () => {
       else devices = devices.filter((d) => d.id !== b.id);
       return reply({ ok: true });
     }
+    // A RIVEN GAIN ASKS WHERE IT STANDS as a board order does: the newer one is credited.
+    if (path === "/api/appraise/mine") {
+      const b = JSON.parse(o.body);
+      const newest = Math.max(...b.tasks.map((t) => t.at));
+      return reply({ ok: true, tasks: b.tasks.map((t) => (t.at === newest
+        ? { at: t.at, code: "AB12", state: "confirmed", agreed_at: new Date().toISOString() } : { at: t.at, code: "CD34", state: "waiting" })) });
+    }
     if (path === "/api/board/points") return reply({ ok: true, points: 12, recent: 12, claimed: !!account });
     if (path === "/api/cloud/sync") return reply({ ok: true, full: false, entries: [], next: null, cursor: 0 });
     return realFetch(url, o);
@@ -109,6 +116,8 @@ check("this browser's tasks are drawn by kind, a board order as its weapon and r
 check("...a simulation says what it computed, a search the best it found among the builds it tried",
   r.recent[0] && r.recent[0].includes("computed 123.4567 KPM")
   && r.recent[2] && r.recent[2].startsWith("OptimizeFuris") && r.recent[2].includes("best 254.3244 KPM · 1,840 builds"), JSON.stringify(r.recent));
+check("a riven gain asks the server where it stands: one credited says confirmed, one not yet waits for another computer",
+  r.recent[2] && r.recent[2].includes("confirmed +1") && r.recent[3] && r.recent[3].includes("waiting for another computer"), JSON.stringify(r.recent));
 check("...and a search's stored 0, a misread row, is drawn as no number at all", r.recent[3] && r.recent[3].startsWith("Optimize") && !r.recent[3].includes("KPM"),
   JSON.stringify(r.recent));
 check("...opened, linked to that weapon's board, and its mods never drawn closed", r.link === "/weapons/Torid/benchmark" && !r.secret && r.closed,

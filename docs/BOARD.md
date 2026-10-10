@@ -791,8 +791,10 @@ each machine's share is counted under its owner's name. Eight rules:
    why, riven gains waiting, and the last hour's scores by the volunteers and
    by the official machines — totals, never a device or a person.
    Below it this browser's recent tasks, each with the build, the fight, the
-   number it computed and where it stands (`/api/board/mine`, asked by the
-   browser's own id: waiting, checking, confirmed or no longer owed), opened
+   number it computed and where it stands, asked by the browser's own id —
+   a board order of `/api/board/mine` (waiting, checking, confirmed or no
+   longer owed), a riven gain of `/api/appraise/mine` (waiting, confirmed once
+   its answer is one of the pair credited, or not counted) — opened
    in place and into the simulator. Each is marked by its verb: a board order
    SIMULATES one build and shows its score; a riven gain OPTIMIZES and shows
    the best it found and how many builds it tried.

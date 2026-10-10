@@ -275,19 +275,27 @@ function computeDevicesHtml() {
 /// WHAT THIS BROWSER DID, newest first, with the points each will add once
 /// another computer's answer agrees.
 /// WHERE EACH RECENT RESULT STANDS, asked of the server by this browser's own id
-/// (`/api/board/mine`) for the ones still open, and kept on the entry once it is
-/// final — confirmed or gone — so the list says it after the order is long done.
+/// for the ones still open — a board order of `/api/board/mine`, a riven gain of
+/// `/api/appraise/mine` — and kept on the entry once it is final, confirmed or
+/// gone, so the list says it after the task is long done.
 const taskKey = (t) => `${t.identity}|${t.ruler}|${t.mode}`;
+const taskOpen = (t) => !["confirmed", "gone"].includes(t.state);
 async function loadTaskStates() {
   const id = typeof verifierId === "function" ? verifierId() : null;
-  const open = computeLog().filter((t) => t.kind === "board" && t.identity && !["confirmed", "gone"].includes(t.state));
-  if (!id || !open.length) return;
-  const r = await postBoardWork("/api/board/mine", { verifier: id, orders: open.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })) });
-  if (!(r && r.ok)) return;
-  const by = new Map(r.orders.map((o) => [taskKey(o), o]));
+  if (!id) return;
+  const orders = computeLog().filter((t) => t.kind === "board" && t.identity && taskOpen(t));
+  const gains = computeLog().filter((t) => t.kind === "riven_gain" && taskOpen(t));
+  const [o, g] = await Promise.all([
+    orders.length ? postBoardWork("/api/board/mine", { verifier: id, orders: orders.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })) }) : null,
+    gains.length ? postBoardWork("/api/appraise/mine", { verifier: id, tasks: gains.map(({ code, weapon, at }) => ({ code, weapon, at })) }) : null,
+  ]);
+  const byOrder = new Map(o && o.ok ? o.orders.map((x) => [taskKey(x), { state: x.state, at: x.at }]) : []);
+  const byGain = new Map(g && g.ok ? g.tasks.map((x) => [x.at, { state: x.state, at: x.agreed_at, code: x.code }]) : []);
+  if (!byOrder.size && !byGain.size) return;
   const log = computeLog().map((t) => {
-    const o = t.identity && by.get(taskKey(t));
-    return o ? { ...t, state: o.state, ...(o.at ? { confirmedAt: Date.parse(o.at) } : {}), changedAt: o.state !== t.state ? Date.now() : t.changedAt } : t;
+    const s = t.kind === "riven_gain" ? byGain.get(t.at) : t.identity && byOrder.get(taskKey(t));
+    return s ? { ...t, state: s.state, ...(s.code && !t.code ? { code: s.code } : {}), ...(s.at ? { confirmedAt: Date.parse(s.at) } : {}),
+      changedAt: s.state !== t.state ? Date.now() : t.changedAt } : t;
   });
   try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify(log)); } catch (_) { /* this page only */ }
 }
@@ -447,7 +455,7 @@ function computeLanes(box, starts) {
 /// THE LIST, keyed by task: a new card slides in at the top and the ones under
 /// it glide down to make room; a card whose state changed changes in place.
 const computeKeyOf = (t) => (t.identity ? taskKey(t) : `${t.kind}|${t.at}`);
-const computeCardState = (t) => (t.kind === "board" && t.identity ? t.state || "waiting" : "local");
+const computeCardState = (t) => ((t.kind === "board" && t.identity) || t.kind === "riven_gain" ? t.state || "waiting" : "local");
 function computePillHtml(t, fresh) {
   const n = computeCount;
   const s = computeCardState(t);

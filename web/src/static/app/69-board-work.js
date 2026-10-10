@@ -314,7 +314,7 @@ function maybeReloadForRelease() {
 const RIVEN_RENEW_MS = 2 * 60_000;
 async function rivenGainOnce(w, id) {
   heldLease = { code: w.code, lease: w.lease, verifier: id };
-  computeStart({ kind: "riven_gain", weapon: w.weapon, ruler: w.ruler });
+  computeStart({ kind: "riven_gain", code: w.code, weapon: w.weapon, ruler: w.ruler });
   const began = performance.now();
   const job = quickFleet(w.request, communityLanes(), () => yieldToReader());
   // STILL AT IT, said every `RIVEN_RENEW_MS` so the lease runs on while the

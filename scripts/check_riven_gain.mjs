@@ -105,6 +105,9 @@ const a1 = await answer(t1, A);
 check("an answer under its lease is kept, and is the first", a1.body.ok && a1.body.first === true
   && !!LIBRARY.raw.prepare("SELECT 1 FROM appraisal_results WHERE verifier = ?").get(A));
 check("...and one answer credits nobody", credited(A) === 0);
+const mine = async (v, tasks) => (await appraise("POST", "/api/appraise/mine", { verifier: v, tasks })).body.tasks || [];
+const stateOf = async (v, task) => ((await mine(v, [task]))[0] || {}).state;
+check("...and its task says it waits for another computer", await stateOf(A, { code, at: 1 }) === "waiting");
 
 check("the second run never goes to a computer of the same owner", (await work(D) || {}).kind !== "riven_gain");
 LIBRARY.raw.prepare("UPDATE orders SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
@@ -120,6 +123,14 @@ check("two owners' equal answers credit both — the work, and the day — and n
   credited(A) === 4e9 && credited(C) === 4e9 && credited(B) === 0 && today(A) === 4e9 && today(C) === 4e9,
   `${credited(A)} ${credited(B)} ${credited(C)}`);
 check("...after which it is handed out no more", (await work(D) || {}).kind !== "riven_gain");
+check("a browser's own riven gain says confirmed once its answer is credited, and gone when it was not",
+  await stateOf(A, { code, at: 1 }) === "confirmed" && await stateOf(C, { code, at: 1 }) === "confirmed" && await stateOf(B, { code, at: 1 }) === "gone");
+const weaponOf = LIBRARY.raw.prepare("SELECT weapon FROM appraisals WHERE code = ?").get(code).weapon;
+const answeredAt = Date.parse(LIBRARY.raw.prepare("SELECT at FROM appraisal_results WHERE verifier = ?").get(C).at);
+const legacy = await mine(C, [{ weapon: weaponOf, at: answeredAt + 3000 }]);
+check("...a task stored without its code is matched to its answer by weapon and time",
+  legacy.length === 1 && legacy[0].code === code && legacy[0].state === "confirmed", JSON.stringify(legacy));
+check("...and it says nothing about another browser's", !(await mine(D, [{ code, at: 1 }])).length);
 
 const late = await open("asker2");
 await appraise("POST", `/api/appraise/${late}/request`, FROZEN, bot);

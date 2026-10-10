@@ -74,6 +74,7 @@ export async function appraiseRoute(request, env, path) {
   if (!env.LIBRARY) return json({ ok: false, error: "not offered here" }, 501);
   if (path === "/api/appraise/new") return open(request, env);
   if (path === "/api/appraise/claim") return claim(request, env);
+  if (path === "/api/appraise/mine") return mine(request, env, (ids) => ownersOf(env, ids));
   const m = path.match(/^\/api\/appraise\/([A-Za-z0-9]{3,12})(\/result|\/request|\/renew)?$/);
   if (!m) return json({ ok: false, error: "not found" }, 404);
   const code = m[1].toUpperCase();
@@ -265,25 +266,78 @@ async function volunteerAnswer(env, a, b, now, owners, net = "") {
   const { results } = await db.prepare(
     "SELECT verifier, score, work, key, net, build FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();
   const own = await owners(results.map((r) => r.verifier));
-  const ownerOf = (v) => own.get(v) || v;
+  const pair = agreeingPair(results, (v) => own.get(v) || v);
+  if (!pair) return json({ ok: true, first: !a.done_at });
+  const won = await db.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL").bind(iso(now), a.code).run();
+  if (!won.meta.changes) return json({ ok: true, first: !a.done_at });
+  await db.batch(pair.flatMap((r) => [
+    db.prepare("UPDATE verifiers SET work = work + ? WHERE id = ?").bind(r.work, r.verifier),
+    db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
+      ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, iso(now).slice(0, 13), r.work),
+  ]));
+  // …AND THE AGREED BUILD GOES TO THE BOARD, through the reader's own door.
+  try { await submitRecord(env, JSON.parse(pair[0].build)); } catch (_) { /* the answer stands without it */ }
+  return json({ ok: true, first: !a.done_at });
+}
+
+/// THE TWO ANSWERS CREDITED, in answer order: the first two that agree on the
+/// build, its score and its work, from two owners on two networks — or null.
+/// The credit and a browser's own list (`mine`) both read it, so a card never
+/// says "confirmed" for an answer that was not paid.
+function agreeingPair(results, ownerOf) {
   for (let i = 0; i < results.length; i++) {
     for (let j = i + 1; j < results.length; j++) {
       const x = results[i], y = results[j];
       if (x.key !== y.key || x.score !== y.score || x.work !== y.work || ownerOf(x.verifier) === ownerOf(y.verifier)) continue;
       if (x.net && x.net === y.net) continue;
-      const won = await db.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL").bind(iso(now), a.code).run();
-      if (!won.meta.changes) return json({ ok: true, first: !a.done_at });
-      await db.batch([x, y].flatMap((r) => [
-        db.prepare("UPDATE verifiers SET work = work + ? WHERE id = ?").bind(r.work, r.verifier),
-        db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
-          ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(r.verifier, iso(now).slice(0, 13), r.work),
-      ]));
-      // …AND THE AGREED BUILD GOES TO THE BOARD, through the reader's own door.
-      try { await submitRecord(env, JSON.parse(x.build)); } catch (_) { /* the answer stands without it */ }
-      return json({ ok: true, first: !a.done_at });
+      return [x, y];
     }
   }
-  return json({ ok: true, first: !a.done_at });
+  return null;
+}
+
+/// WHERE EACH OF A BROWSER'S RIVEN GAINS STANDS, asked by its own secret id —
+/// the riven-gain twin of worker/verify.js `mine`: `confirmed` (with when) once
+/// its answer is one of the pair credited, `gone` when the question was agreed
+/// without it or is no longer kept, `waiting` otherwise. A task names its `code`;
+/// one stored before tasks carried it names its weapon and when it ended, and is
+/// matched to this browser's nearest answer on that weapon.
+const MINE_MAX = 60, MINE_NEAR_MS = 10 * 60_000;
+async function mine(request, env, owners) {
+  if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
+  let b;
+  try { b = await request.json(); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
+  if (!VERIFIER_ID.test(b.verifier || "") || !Array.isArray(b.tasks)) return json({ ok: false, error: "bad request" }, 400);
+  const tasks = b.tasks.slice(0, MINE_MAX).filter((t) => t && Number.isFinite(t.at) && (typeof t.code === "string" || typeof t.weapon === "string"));
+  if (!tasks.length) return json({ ok: true, tasks: [] });
+  const db = env.LIBRARY;
+  const since = iso(Math.min(...tasks.map((t) => t.at)) - MINE_NEAR_MS);
+  const { results: answers } = await db.prepare(
+    `SELECT r.code, r.at, a.weapon, a.agreed_at FROM appraisal_results r LEFT JOIN appraisals a ON a.code = r.code
+      WHERE r.verifier = ? AND r.at >= ? ORDER BY r.at LIMIT 400`).bind(b.verifier, since).all();
+  const used = new Set(), out = [];
+  for (const t of tasks) {
+    let r = typeof t.code === "string" ? answers.find((x) => x.code === t.code) : null;
+    if (!r && typeof t.code !== "string") {
+      let best = MINE_NEAR_MS;
+      for (const x of answers) {
+        const d = Math.abs(Date.parse(x.at) - t.at);
+        if (x.weapon === t.weapon && !used.has(x.code) && d <= best) { best = d; r = x; }
+      }
+    }
+    if (!r) continue;
+    used.add(r.code);
+    let state = r.weapon == null ? "gone" : "waiting";
+    if (r.agreed_at) {
+      const { results } = await db.prepare(
+        "SELECT verifier, score, work, key, net FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(r.code).all();
+      const own = await owners(results.map((x) => x.verifier));
+      const pair = agreeingPair(results, (v) => own.get(v) || v);
+      state = pair && pair.some((x) => x.verifier === b.verifier) ? "confirmed" : "gone";
+    }
+    out.push({ at: t.at, code: r.code, state, ...(state === "confirmed" ? { agreed_at: r.agreed_at } : {}) });
+  }
+  return json({ ok: true, tasks: out });
 }
 
 /// A BUILD HANDED BACK: `{ build, thanks }`, a board record and an optional name.
