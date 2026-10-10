@@ -184,20 +184,22 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1, which 
   const db = env.LIBRARY, now = Date.now();
   const held = await db.prepare("SELECT count(*) AS n FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, iso(now)).first();
   if (held && held.n >= most) return null;
+  // …AND ONE ANSWERED ENOUGH IS LEFT OUT IN THE QUERY TOO: eight answered
+  // ones that never agreed filled the window, and the survey handed out nothing.
   const { results } = await db.prepare(
-    `SELECT a.code, a.weapon, a.ruler, a.request, a.at,
+    `SELECT * FROM (SELECT a.code, a.weapon, a.ruler, a.request, a.at,
             (SELECT count(*) FROM appraisal_results r WHERE r.code = a.code AND r.verifier IS NOT NULL AND r.engine IS ?) AS answered
        FROM appraisals a
       WHERE a.request IS NOT NULL AND a.agreed_at IS NULL AND (a.channel = ?) = ?
         AND a.at > CASE WHEN a.channel = ? THEN ? ELSE ? END
         AND (a.lease_until IS NULL OR a.lease_until < ?)
         AND NOT EXISTS (SELECT 1 FROM appraisal_results m WHERE m.code = a.code AND m.verifier IS NOT NULL AND m.engine IS ?
-                          AND (m.verifier = ? OR (? != '' AND m.net = ?)))
-      ORDER BY CASE WHEN ? THEN answered > 0 ELSE answered = 0 END DESC, a.at LIMIT 8`)
+                          AND (m.verifier = ? OR (? != '' AND m.net = ?))))
+      WHERE answered < ?
+      ORDER BY CASE WHEN ? THEN answered > 0 ELSE answered = 0 END DESC, at LIMIT 8`)
     .bind(engine, SURVEY_CHANNEL, which === "survey" ? 1 : 0, SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - KEEP_MS), iso(now),
-      engine, verifier, net, net, which === "survey" ? 1 : 0).all();
+      engine, verifier, net, net, RIVEN_ANSWERS, which === "survey" ? 1 : 0).all();
   for (const a of results) {
-    if (a.answered >= RIVEN_ANSWERS) continue;
     if (a.answered === 0 && lanes < rivenLanesNeeded(now - Date.parse(a.at))) continue;
     const rows = (await db.prepare("SELECT verifier, net FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL AND engine IS ?")
       .bind(a.code, engine).all()).results;

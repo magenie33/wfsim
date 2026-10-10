@@ -232,6 +232,19 @@ check("a question frozen on an older engine is still handed out after a release,
   }
   const k = await from("192.0.2.77").work(K);
   check("...and a client whose own answers fill the first rows is still given one it may take", k && k.kind === "riven_gain" && !/^SX/.test(k.code), JSON.stringify(k));
+  // …NOR A WINDOW FULL OF SHAPES ANSWERED AS OFTEN AS ANY IS, which never agreed.
+  const M = "m".repeat(24);
+  L.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(M);
+  for (let i = 0; i < 9; i++) {
+    L.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine)
+      VALUES (?, 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1')`).run(`SY${i}`, ago(4 * 86_400_000), JSON.stringify(FROZEN));
+    for (let j = 0; j < 3; j++) {
+      L.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine, net)
+        VALUES (?, '{}', '', ?, ?, 9, ?, 'k', 'e1', ?)`).run(`SY${i}`, ago(0), `${"y".repeat(23)}${j}`, 5e9 + j, `y${j}`);
+    }
+  }
+  const m = await from("192.0.2.78").work(M);
+  check("...nor one whose first rows were answered as often as any is", m && m.kind === "riven_gain" && !/^SY/.test(m.code), JSON.stringify(m));
 }
 
 console.log(failures ? `\n${failures} failed` : "\na riven gain is run by the community and credited when two owners agree");

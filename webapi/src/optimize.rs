@@ -3025,11 +3025,14 @@ mod whole_scope_tests {
     /// (worker/appraise.js §"Volunteer work").
     #[test]
     fn a_search_costs_the_same_work_however_the_fleet_splits_it() {
-        let start = json!({ "slots": [], "evolutions": [], "arcane": [], "fixed": [] });
+        // Two starts, each seeded with an element, with the step screen on: the
+        // descents meet the same cards in other slot orders, so one batch can
+        // ask for one build twice, and only an item a key keeps slicing out of it.
+        let start = |m: &str| json!({ "slots": [m], "evolutions": [], "arcane": [], "fixed": [{ "kind": "mods", "idx": 0 }] });
         let req = json!({
             "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
-            "duration": 2.0, "runs": 2, "finalists": 2,
-            "candidate_runs": 2, "strategy": "quick", "starts": [start],
+            "duration": 2.0, "runs": 10, "finalists": 2,
+            "candidate_runs": 10, "strategy": "quick", "starts": [start("hellfire"), start("infected_clip")],
         });
         let with = |fleet: Value| {
             let mut r = req.clone();
@@ -3052,7 +3055,9 @@ mod whole_scope_tests {
         };
         let one = total(1);
         assert!(one > 0, "a search that fought costs work");
-        assert_eq!(total(3), one);
+        for parts in [2, 3, 5] {
+            assert_eq!(total(parts), one, "split {parts} ways");
+        }
     }
 
     /// THE ROW IS THE SIMULATOR'S NUMBER: a row's `replay`, simulated, answers

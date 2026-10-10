@@ -559,8 +559,11 @@ impl QuickSpace for QuickCtx<'_> {
                     Some(&(s, _, _)) => out.push(s),
                     None => {
                         f.missed = true;
-                        if !f.pending.iter().any(|(x, _)| x == b) {
-                            f.pending.push((b.clone(), self.key(b)));
+                        // ONE ITEM A KEY: the same cards in another slot order are
+                        // the same build, and two items of it split work by slicing.
+                        let key = self.key(b);
+                        if !f.pending.iter().any(|(_, k)| *k == key) {
+                            f.pending.push((b.clone(), key));
                         }
                         out.push(None);
                     }
@@ -593,7 +596,7 @@ impl QuickSpace for QuickCtx<'_> {
                     Some(&s) => out.push(s),
                     None => {
                         f.missed = true;
-                        if !f.pending_rough.iter().any(|(x, _)| x == b) {
+                        if !f.pending_rough.iter().any(|(x, _)| self.key(x) == self.key(b)) {
                             f.pending_rough.push((b.clone(), short));
                         }
                         out.push(None);
