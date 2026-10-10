@@ -294,6 +294,13 @@ check(
 // killed every lane of a machine left computing. A request nobody answers is
 // held across a freeze far longer than the stall window: the lane must live
 // through the waking, and still die once silence runs on while awake.
+// EVERY engine.fail THE PAGE SAYS, by subject: off the live host `track` sends
+// nothing, so it is wrapped here to be read.
+await evaluate(`(() => {
+  window.__fails = [];
+  const sent = track;
+  track = (e, s, n) => { if (e === 'engine.fail') window.__fails.push(s); return sent(e, s, n); };
+})()`);
 await evaluate(`(() => {
   LANE_WATCHDOG.stall = 8000;
   LANE_WATCHDOG.tick = 500;
@@ -314,6 +321,8 @@ check(
   thawed === false && lapsed === true,
   `dead on waking ${thawed}, dead after silence awake ${lapsed}`,
 );
+const silentSaid = await evaluate(`window.__fails.slice()`);
+check("…and says it fell silent after speaking", JSON.stringify(silentSaid) === '["worker_silent"]', JSON.stringify(silentSaid));
 
 // A MODULE THAT WILL NOT DOWNLOAD IS A FAILURE NOW, not after the 90 s watchdog
 // — the wait a reader on a bad connection closed the tab during. Last, because
@@ -341,6 +350,25 @@ check(
   m.dead && !m.timedOut && m.ms < 15000,
   `worker_dead ${m.dead}, still silent at 20 s ${m.timedOut}, ${m.ms} ms`,
 );
+// …SAYING WHY: the site answered with this page's own release, so the download
+// itself failed; and once the site names a newer one, the page was left behind.
+await sleep(2000);
+const loadSaid = await evaluate(`window.__fails.slice(1)`);
+const staleSaid = await evaluate(`(async () => {
+  const real = window.fetch;
+  window.fetch = (u, o) => (String(u).endsWith('/release.json')
+    ? Promise.resolve(new Response(JSON.stringify({ release: 'newer' + RELEASE_ID })))
+    : real(u, o));
+  releaseAskedAt = 0;
+  window.__fails.length = 0;
+  await makeLane().call('/api/meta');
+  await new Promise((res) => setTimeout(res, 2000));
+  window.fetch = real;
+  return window.__fails.slice();
+})()`);
+check("a lane that will not load says whether the download failed or a newer release left the page behind",
+  JSON.stringify(loadSaid) === '["worker_load"]' && JSON.stringify(staleSaid) === '["worker_load_stale"]',
+  `same release ${JSON.stringify(loadSaid)}, newer ${JSON.stringify(staleSaid)}`);
 // …AND A PAGE THAT BOOTS WITH IT BLOCKED SAYS THE ENGINE DID NOT START. Read
 // without an answer, the engine's first reply threw a TypeError the reader saw
 // as "could not start" over a stack. The guard below this file's own reads
