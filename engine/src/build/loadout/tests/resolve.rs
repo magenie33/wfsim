@@ -2389,3 +2389,20 @@ fn damzav_vatis_viral_stands_beside_the_hierarchy() {
     assert!((p.damage.get(Viral) - 2.4 * b).abs() < 1e-6, "{} vs {}", p.damage.get(Viral), 2.4 * b);
     assert!((p.damage.get(Toxin) - toxin * b).abs() < 1e-6);
 }
+
+/// THE TWO KINDS OF PUNCH THROUGH STAY APART on the panel. The Exergis states
+/// both — *"Innate Infinite Body Punch Through, and 0.5 meter punch through for
+/// surfaces"* — and a mod adds to the metres while the body class is untouched.
+#[test]
+fn a_punch_through_mod_adds_metres_beside_the_body_class() {
+    let base = crate::model::WeaponBase::from_data("exergis", false, &[]);
+    let bare = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    assert_eq!(bare.punch_through_m, 0.5, "the surface figure");
+    assert!(bare.infinite_body_punch_through, "the body class");
+    let pool = crate::data::mods::pool_for_weapon("exergis");
+    let force = pool.iter().find(|m| m.id == "seeking_force").expect("seeking_force is in the pool");
+    let with = crate::build::loadout::resolve(&base, &[force], crate::model::StackPolicy::Emergent);
+    assert!(with.punch_through_m > 0.5, "the mod's metres join the weapon's: {}", with.punch_through_m);
+    assert!(with.punch_through_m < crate::rules::space::INFINITE_PUNCH_THROUGH_M);
+    assert!(with.infinite_body_punch_through);
+}

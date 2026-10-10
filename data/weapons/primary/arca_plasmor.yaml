@@ -71,7 +71,8 @@ attack:
   status_chance: 0.28
   # "Innate Infinite Body Punch Through", under this weapon's Advantages, and
   # the page's own list names it. see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 30.0 m", Projectile at 60 m/s — and the disadvantages say the
   # same thing in words, which is not true of the Tenet variant.

@@ -76,7 +76,8 @@ attack:
   # It is also why Dual-Mode Chamber's +4 m adds nothing — not a gap, a
   # CEILING already reached — an unmodelled admission only while the arena has
   # one body.
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler
   range_m: 300.0

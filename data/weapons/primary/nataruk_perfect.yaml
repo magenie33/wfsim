@@ -35,7 +35,10 @@ attack:
   crit_chance: 0.6
   crit_multiplier: 2.4
   status_chance: 0.5
+  # "Both Charged and Perfect Shots feature a significantly larger projectile
+  # and Infinite Body Punch Through" (wiki Nataruk). see notes: infinite_body_punch_through
   punch_through_m: 0.0
+  infinite_body_punch_through: true
   # see notes: no_range_row_attack
   damage: { puncture: 648, slash: 252 }   # total 900
 

@@ -178,9 +178,11 @@ notes:
     INNATE INFINITE BODY PUNCH THROUGH — the punch-through page's own class,
     "weapons that shoot wide projectiles or a stream of particles … pierce an
     unlimited amount of enemies, but NOT level geometry, objects, or barriers".
-    The qualifier costs nothing here: this arena has no geometry, so everything
-    the ray meets is a body. `infinite` is the spelling; what the engine holds
-    is `space::INFINITE_BODY_PUNCH_THROUGH_M`.
+    `infinite_body_punch_through: true` is the spelling, and bodies then cost
+    nothing (`space::Pierce`). `punch_through_m` beside it stays the arsenal's
+    metres — the surface figure where a page states one, 0 where none does —
+    and is what mods add to. `punch_through_m: infinite` is the other kind,
+    through any material (the Zenith).
   death_knell_weakpoint_stacks: |
     DEATH KNELL. A weak-point hit grants a stack: +0.5x on the FINISHED
     critical multiplier and +20% on the FINISHED status chance apiece, plus
@@ -218,11 +220,8 @@ notes:
     enemies" — and the Punch Through page's own definition of the class is
     "weapons that shoot wide projectiles … pierce an unlimited amount of
     enemies, but not level geometry", which is what an X-shaped projectile is.
-    That page's list omits this weapon and lists the Dread's and the Paris
-    family's Incarnon forms; five bodies in a line were measured on the Prime
-    (M67), so the omission is the list's. Written as a number the sim can hold,
-    and the BODIES-only qualifier costs nothing here: this arena has no
-    geometry, so everything the ray meets is a body.
+    That page's list names "Ballistica Incarnon Genesis … Incarnon Form", and
+    five bodies in a line were measured on the Prime (M67).
   one_target_is_not_an_edge: |
     ONE TARGET IS A SCENARIO, NOT AN EDGE. `out_of_scope` says a clause can
     NEVER pay out here; these said it because the fight had one body, and the

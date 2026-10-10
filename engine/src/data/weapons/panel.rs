@@ -622,6 +622,7 @@ pub fn base_panel_assembled(
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
         punch_through_m: s.attack.punch_through_m,
+        infinite_body_punch_through: s.attack.infinite_body_punch_through,
         projectile_width_m: s.attack.projectile_width_m,
         // ONE FACT, TWO SPELLINGS, resolved here rather than left to a reader
         // to notice. `beam.range_m` has carried a beam's reach since the block

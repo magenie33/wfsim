@@ -26,7 +26,8 @@ attack:
   status_chance: 0.20
   # The page's own list names it: "Corvas Prime".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 1.4
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column, UNCHARGED block: "Range: 60.0 m" (the charged one is 70)
   range_m: 60.0

@@ -71,7 +71,8 @@ attack:
   # "an energy projectile with Infinite Body Punch Through" (wiki Catchmoon).
   # Module:Modular/data states no depth, which is why the chamber leaves this alone.
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # "Limited range of 42 meters."
   range_m: 42
   # "linear damage falloff from 100% to 5.84% from 20m to 40m" — the module's

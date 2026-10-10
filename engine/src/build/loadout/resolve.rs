@@ -1451,6 +1451,7 @@ pub fn resolve_for(
         slot: base.slot,
         mod_pools: base.mod_pools,
         punch_through_m,
+        infinite_body_punch_through: base.infinite_body_punch_through,
         projectile_width_m: base.projectile_width_m,
         range_m: beam_range_m,
         damage,

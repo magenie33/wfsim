@@ -312,6 +312,9 @@ pub struct ResolvedPanel {
     /// mod, riven and evolution that grants one, and ZERO on an attack that
     /// cannot use it. See [`crate::rules::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
+    /// Bodies cost none of it — see [`WeaponBase::infinite_body_punch_through`].
+    /// No mod grants it, so it arrives here unchanged.
+    pub infinite_body_punch_through: bool,
     /// How wide the projectile is — see [`WeaponBase::projectile_width_m`]. No
     /// mod moves it, so it arrives here unchanged.
     pub projectile_width_m: f64,

@@ -632,7 +632,6 @@ ui:
   "Hildryn's signature bonus is not modelled: carried by her, it holds 700 reserve ammo instead of 400.": "Hildryn 的专属加成未建模：由她携带时备弹为 700 而不是 400。"
   "Holstered Reload/s": 收枪装填/秒
   "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting.": 武器怎么打属于参赛条目，而不属于这把尺子：有灵化形态的武器会上榜两次，一次走灵化循环，一次全程不转变。
-  "It has 1.1 m of punch through plus unlimited penetration of bodies (page). Only the 1.1 m is entered, spent per body like any other weapon, so the slug stops after two enemies where in game it crosses the whole line.": "它有 1.1 米穿透，并且对身体无限穿透（页面）。这里只录入了 1.1 米，和其他武器一样每穿过一个身体就消耗一段，所以弹丸穿过两个敌人就停了，而游戏里会穿过整排。"
   "Incarnon Form": 灵化形态
   "Ghosts": 灵体
   "at once": 同时在场
@@ -773,6 +772,7 @@ ui:
   "Procs": 触发数量
   "Projectile Speed": 抛射物飞行速度
   "Punch Through": 穿透
+  "Body Punch Through": 躯体穿透
   "QQ group": QQ官方交流群
   "Quick calc": 快速计算
   "every rank": 全等级
@@ -1488,7 +1488,6 @@ ui:
   "The alt-fire detonates the arrow mid-flight; the sim lets it land, so choosing when to burst it is not modelled.": "副射击可以让箭在半空引爆；模拟让它落地，所以「何时引爆」这个选择未建模。"
   "The area damage can headshot, which the page marks as a bug; the sim applies headshots to the direct hit only, so the blast is never a headshot here.": "范围伤害可以爆头，页面把它标为 bug；模拟只对直击应用爆头，所以这里的爆炸不会算爆头。"
   "The arrow also throws appendages that grab enemies within 9 m and drag them in, dealing 90 damage each (module). The engine carries one explosion per attack, so neither the pull nor the damage is counted.": "这支箭还会甩出触手，抓住 9 米内的敌人并拖过来，每个造成 90 伤害（模块）。引擎每次攻击只带一次爆炸，所以拖拽和伤害都未计入。"
-  "The atmospheric beam's infinite body punch through is not modelled; there is one target, with nothing behind it.": "大气形态光束自带的无限躯体穿透未建模；这里只有一个目标，后面没有东西。"
   "The barb's 0.9 s eruption delay is not modelled: the explosion arrives with the shot, so a short fight gets its damage early.": "倒刺 0.9 秒的爆发延迟未建模：爆炸与命中同时到达，所以短时间的战斗拿到伤害的时间偏早。"
   "The beacon exists to grant the primary fire +50% absolute critical chance and homing, which the engine cannot carry from one mode to another. On its own it is a three-damage dart.": "信标的作用是给主射击 +50% 绝对暴击率和追踪，而引擎无法把它们从一个模式带到另一个模式。单独使用时，它只是一根 3 点伤害的飞镖。"
   "the beam CHAINS to 2 more enemies within 9 m at 50% of the main beam's damage each — one target here, so it is worth exactly nothing (UNMODELLED.md §one target). It is the largest thing this weapon does in a room and the reason it was nerfed from 4 chains to 2": 光束会连锁到 9 米内另外 2 个敌人，各承受主光束 50% 的伤害 —— 这里只有一个目标，所以它的价值恰好为零（UNMODELLED.md §单目标）。这是这把武器在一个房间里最大的作用，也是它从 4 段连锁被削到 2 段的原因
@@ -1531,7 +1530,7 @@ ui:
   "The card omits a requirement: the +33% Direct Damage per Status Type pays only with Energy Max 200 or higher, and nothing below it.": "卡面漏写了一个条件：每种异况 +33% 直接伤害只在能量上限 200 或以上时生效，低于 200 完全不生效。"
   "The card says Sprint Speed 1.2 or higher; the effect requires 1.1, so it pays on Warframes the card excludes. Amalgam Serration alone carries any Warframe past it.": "卡面写冲刺速度 1.2 或以上，实际只需 1.1，所以在卡面排除的战甲上也生效。单装「并合 膛线」就能让任何战甲达标。"
   "the card states this and the game does not do it — measured, and the simulation matches the game rather than the card": 卡面写了这一条，而游戏并不执行 —— 实测所得，模拟器跟随的是游戏而不是卡面
-  "The charged shot has infinite body punch through and travels 26 m (wiki). Neither is entered: punch through is left at zero, so against a line it reaches only the first enemy.": "蓄力射击有无限躯体穿透，飞行 26 米（wiki）。两者都未录入：穿透为零，所以面对一排敌人时只命中第一个。"
+  "The charged shot travels 26 m (wiki), which is not entered, so it reaches a target at any distance.": "蓄力射击飞行 26 米（wiki），这一点未录入，所以任何距离的目标都能命中。"
   "The cloud confuses enemies in it, turning them on each other (wiki); crowd control, and enemies here neither turn nor stop.": "毒云会让其中的敌人陷入混乱、互相攻击（wiki）；这是控制效果，这里的敌人既不会倒戈也不会停下。"
   "The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it.": "毒云在飞镖落地 1 秒后才出现（wiki）；这里命中即结算，所以没有东西能走出去。"
   "The cloud's Condition Overload term is 50 against its own base of 20, the catalog's 250%; that is not entered here, so it takes 100% and a status-stacking build reads low on it.": "毒云的异况超量为 50，而它自身的基础值是 20，即目录中的 250%；这一点这里没有录入，所以按 100% 计算，堆异况的配装在它身上数字偏低。"

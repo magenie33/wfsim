@@ -68,6 +68,7 @@ impl Default for FightParams {
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
             // shot every golden value was calibrated against.
             punch_through_m: 0.0,
+            infinite_body_punch_through: false,
             projectile_width_m: 0.0,
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),

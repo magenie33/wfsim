@@ -85,7 +85,8 @@ attack:
   status_chance: 0.34
   # The page's list names it: "Tenet Arca Plasmor (infinite body punch
   # through)". see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 44.4 m", Projectile.
   #

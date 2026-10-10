@@ -61,7 +61,8 @@ attack:
   status_chance: 0.2
   # The page's own list names it: "Mk1-Paris (Incarnon Form)".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   damage: { impact: 50, heat: 250 }   # total 300
 
 # incarnon_evolutions: see data/weapons/primary/mk1_paris.yaml (shared group)

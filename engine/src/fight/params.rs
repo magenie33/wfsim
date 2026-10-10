@@ -639,6 +639,8 @@ pub struct FightParams {
     /// PUNCH-THROUGH DEPTH in metres of material — innate plus mods, and 0 on
     /// an attack that cannot use it. See [`crate::rules::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
+    /// Bodies cost none of it — see `build::loadout::WeaponBase::infinite_body_punch_through`.
+    pub infinite_body_punch_through: bool,
     /// How wide the projectile is — see `build::loadout::WeaponBase::projectile_width_m`.
     pub projectile_width_m: f64,
     /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.

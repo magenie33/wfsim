@@ -2,10 +2,9 @@ id: exergis
 name: Exergis
 slot: primary
 weapon_type: primary
-# ONE SHELL IN THE CHAMBER AND 540 DAMAGE IN IT — three pellets of 180 across
-# four damage types, one of them Radiation, and then a reload. It also carries
-# half a metre of innate punch through, which the arena has had something to
-# spend since the formation landed.
+# ONE SHELL IN THE CHAMBER AND 1620 DAMAGE IN IT — three pellets of 540 across
+# four damage types, one of them Radiation, and then a reload. Every pellet
+# crosses every body on its line.
 class: shotgun
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -46,16 +45,18 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 100
   fire_rate: 3.33
-  # "Innate multishot of 3 pellets", 180 apiece.
+  # "Innate multishot of 3 pellets", 540 apiece.
   multishot: 3.0
   ammo_cost: 1
   crit_chance: 0.08
   crit_multiplier: 1.4
   status_chance: 0.36
-  # Innate half a metre — the module's PunchThrough on this attack. One body
-  # costs `space::BODY_MATERIAL_M`, so it reaches the second of two enemies
-  # standing against each other.
+  # "Innate Infinite Body Punch Through, and 0.5 meter punch through for
+  # surfaces" (wiki Exergis), and the Punch Through page lists it in both
+  # classes. The module's PunchThrough 0.5 is the SURFACE half, which this
+  # arena has nothing to spend on. see notes: infinite_body_punch_through
   punch_through_m: 0.5
+  infinite_body_punch_through: true
   # see notes: no_range_row_attack_3
   falloff:
     start_m: 30.0

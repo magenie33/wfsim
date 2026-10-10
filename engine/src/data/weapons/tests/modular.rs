@@ -246,8 +246,8 @@ fn a_beam_kitguns_reach_is_its_grips() {
     let a = Assembly { chamber: "catchmoon".into(), grip: "brash".into(), loader: "bellows".into() };
     let s = spec_assembled(spec("catchmoon_primary").unwrap(), Some(&a)).expect("composes");
     assert_eq!(s.attack.range_m.as_ref().map(super::RangeSpec::metres), Some(42.0));
-    // …AND THE PAGE'S INFINITE PUNCH THROUGH SURVIVES a module that states none.
-    assert_eq!(s.attack.punch_through_m, crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M);
+    // …AND THE PAGE'S INFINITE BODY PUNCH THROUGH SURVIVES a module that states none.
+    assert!(s.attack.infinite_body_punch_through);
 }
 /// PAX CHARGE REMOVES THE RELOAD, and this is that end to end: the arcane
 /// grants nothing but a reload-speed bonus and a flag, the CHAMBER states

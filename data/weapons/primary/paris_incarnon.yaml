@@ -57,7 +57,8 @@ attack:
   status_chance: 0.2
   # The page's own list names it: "Paris (Incarnon Form)".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   damage: { impact: 95, heat: 365 }   # total 460
 
 # incarnon_evolutions: see data/weapons/primary/paris.yaml (shared group)

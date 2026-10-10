@@ -1587,6 +1587,14 @@ fn form_section(
                 "sources": sources("indirect", Some(stat.label())),
             }));
         }
+        // THE OTHER KIND, on its own row: it is the weapon's, no mod moves it,
+        // and folding it into the metres above is what hid them.
+        if panel.infinite_body_punch_through {
+            indirect_rows.push(json!({
+                "key": "indirect", "label": "Body Punch Through", "base": "infinite",
+                "final": "infinite", "sources": [],
+            }));
+        }
     }
 
     // A weapon is the GUN plus the PROJECTILE(s) it launches: the gun carries cadence and capacity, each projectile

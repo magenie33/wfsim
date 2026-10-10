@@ -46,7 +46,10 @@ attack:
   crit_chance: 0.31
   crit_multiplier: 2.3
   status_chance: 0.19
+  # "Innate 1.1 meter punch through and Infinite Body Punch Through" (wiki
+  # Purgator 1); the module's 1.1 is the surface half. see notes: infinite_body_punch_through
   punch_through_m: 1.1
+  infinite_body_punch_through: true
   # ONE GUARANTEED IMPACT PROC a slug — the module's ForcedProcs.
   forced_procs: [impact]
   # NO RANGE ROW on this attack — Projectile at 200 m/s. See
@@ -55,7 +58,6 @@ attack:
 
 unmodeled:
   - "An enemy killed directly by it leaves a Gas cloud whose ticks deal half the killing shot's damage (wiki). The engine has no hit that exists only after a kill, so against anything that dies the number reads low by roughly a third."
-  - "It has 1.1 m of punch through plus unlimited penetration of bodies (page). Only the 1.1 m is entered, spent per body like any other weapon, so the slug stops after two enemies where in game it crosses the whole line."
 
 source:
   url: https://wiki.warframe.com/w/Purgator_1

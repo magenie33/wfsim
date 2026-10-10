@@ -39,7 +39,10 @@ attack:
   crit_chance: 0.3
   crit_multiplier: 2.2
   status_chance: 0.16
-  punch_through_m: 0.0
+  # Semi-auto mode: "Innate 3 meter punch through against bodies" (wiki
+  # Fulmin). The module reads 0; the Punch Through page's list says
+  # infinite, and the weapon's own number is the one carried.
+  punch_through_m: 3.0
   # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
   forced_procs: [impact]
   # see notes: no_range_row_attack

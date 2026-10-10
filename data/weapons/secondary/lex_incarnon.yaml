@@ -52,7 +52,8 @@ attack:
   status_chance: 0.22
   # The page's own list names it: "Lex (Incarnon Form)".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 1.4
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 28 meters (affected by Projectile Speed)", Projectile
   range_m: 28.0

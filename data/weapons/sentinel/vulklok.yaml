@@ -38,9 +38,10 @@ attack:
   crit_chance: 0.35
   crit_multiplier: 2.5
   status_chance: 0.25
-  # Module:Weapons/data, Normal Attack. Read 0.0 — an unfilled field, the
-  # same class of omission as the ten Incarnon forms fixed the same day.
+  # "Innate Infinite Body Punchthrough and 1.5 meters Punch Through" (wiki
+  # Vulklok); the 1.5 is the surface half. see notes: infinite_body_punch_through
   punch_through_m: 1.5
+  infinite_body_punch_through: true
   damage: { electricity: 175.0 }
 unmodeled:
   - reason: companion_fires_it

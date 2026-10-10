@@ -55,7 +55,8 @@ attack:
   forced_procs: [impact]
   # The page's own list names it: "Lex Prime (Incarnon Form)".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 1.4
+  infinite_body_punch_through: true
   # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 10

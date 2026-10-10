@@ -52,7 +52,10 @@ attack:
   crit_chance: 0.14
   crit_multiplier: 2.2
   status_chance: 0.3
+  # "Primary fire: Innate Infinite Body Punch Through" (wiki Alternox).
+  # see notes: infinite_body_punch_through
   punch_through_m: 0.0
+  infinite_body_punch_through: true
   # see notes: no_range_row_attack
   damage: { electricity: 62 }   # total 62
 

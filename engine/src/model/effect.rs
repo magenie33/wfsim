@@ -987,7 +987,7 @@ impl IndirectStat {
         // sentinel (see it for why) and no reader is shown it. `>=`, because
         // mods add to it — a Seeker takes the total to 1001.4.
         if *self == IndirectStat::PunchThrough
-            && v >= crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M
+            && v >= crate::rules::space::INFINITE_PUNCH_THROUGH_M
         {
             return "infinite".to_string();
         }
@@ -1558,7 +1558,7 @@ mod infinite_punch_through_display {
     #[test]
     fn infinite_punch_through_reads_as_a_word_and_only_for_that_stat() {
         let pt = IndirectStat::PunchThrough;
-        let inf = crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M;
+        let inf = crate::rules::space::INFINITE_PUNCH_THROUGH_M;
         assert_eq!(pt.format(inf), "infinite");
         assert_eq!(pt.format(inf + 2.4), "infinite", "a Seeker on top is still infinite");
         // …and an ordinary depth is still metres.

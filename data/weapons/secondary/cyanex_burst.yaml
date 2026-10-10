@@ -28,7 +28,10 @@ attack:
   crit_chance: 0.08
   crit_multiplier: 1.4
   status_chance: 0.32
+  # Alt-Fire burst: "Innate 0.5 meter punch through and Infinite Body Punch
+  # Through" (wiki Cyanex); the 0.5 is the surface half. see notes: infinite_body_punch_through
   punch_through_m: 0.5
+  infinite_body_punch_through: true
   # see notes: no_range_row_attack
   damage: { impact: 2.88, puncture: 30.24, slash: 38.88 }   # total 72
   # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot

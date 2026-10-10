@@ -60,9 +60,10 @@ attack:
   crit_chance: 0.60
   crit_multiplier: 3.6
   status_chance: 0.25
-  # The page's own list names it: "Velocitus".
-  # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  # "Innate punch through: Infinite against bodies in Archwing Mode. 5 meters
+  # in Atmospheric Mode" (wiki Velocitus). This entry is the atmosphere column;
+  # the Punch Through page's unqualified list entry is the Archwing one.
+  punch_through_m: 5.0
   # FORCED IMPACT on the ground column — a type that always lands is also a
   # permanent +1 to Condition Overload's count.
   forced_procs: [impact]

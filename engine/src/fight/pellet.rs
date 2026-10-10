@@ -778,7 +778,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 crate::rules::space::muzzle(params.player_at, aim),
                 aim,
                 &bodies,
-                params.punch_through_m,
+                params.pierce(),
                 params.projectile_width_m,
             ),
             height_m: det.height_m,

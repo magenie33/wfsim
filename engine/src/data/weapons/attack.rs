@@ -72,11 +72,11 @@ impl RangeSpec {
 
 /// METRES OF MATERIAL, OR THE WORD FOR ANY AMOUNT OF IT.
 ///
-/// `punch_through_m: infinite` is the wiki's own class — *"weapons that shoot
-/// wide projectiles or a stream of particles … pierce an unlimited amount of
-/// enemies, but not level geometry"* — and it is a STATEMENT where a big
-/// number is a guess someone has to re-derive. Held as
-/// [`crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M`] rather than as a true
+/// `punch_through_m: infinite` is punch through with no limit on ANY material,
+/// walls included (the Zenith) — a STATEMENT where a big number is a guess.
+/// The class that pierces only bodies is not this; it is
+/// [`AttackSpec::infinite_body_punch_through`]. Held as
+/// [`crate::rules::space::INFINITE_PUNCH_THROUGH_M`] rather than as a true
 /// infinity, because a budget that survives every body is spent as FLIGHT
 /// (`rules::space::dissipation_point`) and `0.0 * f64::INFINITY` is NaN.
 pub(super) fn punch_through_metres<'de, D>(d: D) -> Result<f64, D::Error>
@@ -90,7 +90,7 @@ where
         // unrecognised word is a data error, and the alternative is a weapon
         // that silently reaches through everything.
         serde_norway::Value::String(w) if w == "infinite" => {
-            Ok(crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M)
+            Ok(crate::rules::space::INFINITE_PUNCH_THROUGH_M)
         }
         v => Err(D::Error::custom(format!("punch_through_m: a number or `infinite`, got {v:?}"))),
     }
@@ -360,11 +360,9 @@ pub struct AttackSpec {
     /// then it changed no number, which is why an unread field was the honest
     /// place for it rather than an invented one.
     ///
-    /// WHAT IT COSTS is [`crate::rules::space::BODY_MATERIAL_M`] per body crossed.
-    /// `999.0` is how INFINITE BODY punch-through is written (the Fluctus, the
-    /// Phantasma): the page's qualifier on it — *"innate punch through does not
-    /// apply to surfaces"* — separates bodies from geometry, and this arena has
-    /// no geometry, so unlimited through bodies is the whole of it here.
+    /// WHAT IT COSTS is [`crate::rules::space::BODY_MATERIAL_M`] per body crossed,
+    /// unless [`Self::infinite_body_punch_through`] makes bodies free. It is the
+    /// arsenal's figure — the surface one, where a page states both.
     ///
     /// AN AoE ATTACK IGNORES THIS AND EVERY MOD, which is the punch-through
     /// page's own catalog rule and is applied in `build::loadout::resolve` rather than
@@ -374,6 +372,13 @@ pub struct AttackSpec {
     /// cannot have their Punch Through stat modified"*.
     #[serde(default, deserialize_with = "punch_through_metres")]
     pub punch_through_m: f64,
+    /// INFINITE BODY PUNCH THROUGH — the punch-through page's own class:
+    /// *"pierce an unlimited amount of enemies, but not level geometry,
+    /// objects, or barriers"*. Bodies cost nothing; [`Self::punch_through_m`]
+    /// is still the depth for everything else, and what mods add to.
+    /// see `rules::space::Pierce`
+    #[serde(default)]
+    pub infinite_body_punch_through: bool,
     /// HOW WIDE THE PROJECTILE IS, in metres — 0 is a ray, which is every
     /// weapon that has not been measured. The class is the punch-through
     /// page's own ("weapons that shoot wide projectiles"), the width of one is

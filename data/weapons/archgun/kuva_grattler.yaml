@@ -71,7 +71,8 @@ attack:
   status_chance: 0.27
   # The page's own list names it: "Kuva Grattler".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile
   range_m: 225.0

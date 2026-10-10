@@ -67,7 +67,8 @@ attack:
   # The page's own list names it: "Grattler".
   # see notes: infinite_body_punch_through
   # An AoE weapon ON the exception list, which is what the list is for.
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 225.0 m". A PROJECTILE with a range row, where the Dread and the Kuva Bramma have none — the case that killed the class rule
   range_m: 225.0

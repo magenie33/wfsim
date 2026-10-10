@@ -33,9 +33,10 @@ attack:
   crit_chance: 0.30
   crit_multiplier: 2.0
   status_chance: 0.25
-  # The page's own list names it: "Velocitus".
-  # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  # "Innate punch through: Infinite against bodies in Archwing Mode. 5 meters
+  # in Atmospheric Mode" (wiki Velocitus). This entry is the atmosphere column;
+  # the Punch Through page's unqualified list entry is the Archwing one.
+  punch_through_m: 5.0
   damage: { impact: 300.0, puncture: 300.0, slash: 300.0, magnetic: 300.0 }  # 1200
 
 unmodeled:

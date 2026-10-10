@@ -538,15 +538,37 @@ pub struct Traversal {
     pub left_m: f64,
 }
 
-/// WHAT "INFINITE BODY PUNCH THROUGH" IS WORTH IN METRES OF MATERIAL.
-///
-/// The class pierces every enemy and no geometry, and this arena has no
-/// geometry — so the number only has to outlast the deepest line of bodies a
-/// formation can build, which it does by three orders of magnitude at
-/// [`BODY_MATERIAL_M`] apiece. FINITE on purpose: what a shot does not spend
-/// crossing bodies is spent as flight (`dissipation_point`), and an infinity
-/// there is a NaN epicentre.
-pub const INFINITE_BODY_PUNCH_THROUGH_M: f64 = 999.0;
+/// WHAT "INFINITE PUNCH THROUGH" IS WORTH IN METRES OF MATERIAL — the kind
+/// that passes walls as well as bodies (the Zenith's, module 99999). It only
+/// has to outlast the deepest line a formation can build. FINITE on purpose:
+/// what a shot does not spend crossing bodies is spent as flight
+/// (`dissipation_point`), and an infinity there is a NaN epicentre.
+pub const INFINITE_PUNCH_THROUGH_M: f64 = 999.0;
+
+/// WHAT A SHOT MAY PASS THROUGH — two facts the game keeps apart, and the
+/// Exergis states both: *"Innate Infinite Body Punch Through, and 0.5 meter
+/// punch through for surfaces"*. `metres` is the arsenal's figure, the one
+/// every mod adds to, spent on any material; `every_body` crosses enemies
+/// without spending it. One number cannot hold both: the body class written as
+/// 999 m hid the weapon's own metres and piled every Shred onto a sentinel.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Pierce {
+    pub metres: f64,
+    pub every_body: bool,
+}
+
+impl From<f64> for Pierce {
+    fn from(metres: f64) -> Self {
+        Pierce { metres, every_body: false }
+    }
+}
+
+impl Pierce {
+    /// Whether the shot can go on past the first body it meets.
+    pub fn passes_a_body(&self) -> bool {
+        self.every_body || self.metres > 0.0
+    }
+}
 
 /// EVERY BODY A SHOT PASSES THROUGH, and where it ran out — ONE walk, because
 /// two readers of it must not be able to disagree.
@@ -558,17 +580,16 @@ pub const INFINITE_BODY_PUNCH_THROUGH_M: f64 = 999.0;
 /// — and each one after it is paid for by crossing the one in front, at
 /// [`material_at`] of wherever the ray crossed it.
 ///
-/// THE ARENA HAS NO COVER, which is what makes the model complete rather than
-/// approximate here: the page's one qualifier on innate punch-through — *"does
-/// not apply to surfaces"* — separates bodies from geometry, and this floor has
-/// no geometry. Everything the ray meets is a body.
+/// THE ARENA HAS NO COVER, so everything the ray meets is a body: it costs its
+/// chord of `pierce.metres`, or nothing to an [`Pierce::every_body`] shot.
 pub fn traverse(
     muzzle: Vec2,
     dir: Vec2,
     bodies: &[Vec2],
-    punch_through_m: f64,
+    pierce: impl Into<Pierce>,
     width_m: f64,
 ) -> Traversal {
+    let pierce = pierce.into();
     let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
         return Traversal { struck: Vec::new(), stopped_in: None, left_m: 0.0 };
@@ -604,11 +625,11 @@ pub fn traverse(
     on_line.sort_by(|a, b| {
         a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1))
     });
-    let mut budget = punch_through_m.max(0.0);
+    let mut budget = pierce.metres.max(0.0);
     let mut struck = Vec::with_capacity(on_line.len());
     for (_, i, perp) in &on_line {
         struck.push(*i);
-        let cost = material_at(*perp);
+        let cost = if pierce.every_body { 0.0 } else { material_at(*perp) };
         if budget + 1e-9 < cost {
             return Traversal { struck, stopped_in: Some(*i), left_m: 0.0 };
         }
@@ -623,10 +644,10 @@ pub fn struck_along(
     muzzle: Vec2,
     dir: Vec2,
     bodies: &[Vec2],
-    punch_through_m: f64,
+    pierce: impl Into<Pierce>,
     width_m: f64,
 ) -> Vec<usize> {
-    traverse(muzzle, dir, bodies, punch_through_m, width_m).struck
+    traverse(muzzle, dir, bodies, pierce, width_m).struck
 }
 
 /// WHERE A TERMINAL BLAST GOES OFF — `data::weapons::BlastKind::Terminal`.
@@ -659,16 +680,17 @@ pub fn dissipation_point(
     muzzle: Vec2,
     aim_at: Vec2,
     bodies: &[Vec2],
-    punch_through_m: f64,
+    pierce: impl Into<Pierce>,
     width_m: f64,
 ) -> Vec2 {
+    let pierce = pierce.into();
     let (dx, dy) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
     let len = dx.hypot(dy);
-    if len <= 0.0 || punch_through_m <= 0.0 {
+    if len <= 0.0 || !pierce.passes_a_body() {
         return contact;
     }
     let (ux, uy) = (dx / len, dy / len);
-    let t = traverse(muzzle, Vec2::new(dx, dy), bodies, punch_through_m, width_m);
+    let t = traverse(muzzle, Vec2::new(dx, dy), bodies, pierce, width_m);
     if let Some(i) = t.stopped_in {
         // IT RAN OUT INSIDE THIS ONE. The epicentre is its surface facing the
         // shooter — the convention the contact case uses, so a round that
@@ -949,6 +971,21 @@ mod tests {
         assert_eq!(struck_along(muzzle, dir, &bodies, 0.5, 0.0), vec![1, 2]);
         // …and none at all is the shot this engine has always fired.
         assert_eq!(struck_along(muzzle, dir, &bodies, 0.0, 0.0), vec![1]);
+    }
+
+    /// INFINITE BODY PUNCH THROUGH SPENDS NO METRES. With none of its own the
+    /// class still crosses every body, and what it has is all left over.
+    #[test]
+    fn a_body_piercing_shot_crosses_every_body_for_nothing() {
+        let muzzle = Vec2::new(0.0, BODY_RADIUS_M);
+        let dir = Vec2::new(0.0, 1.0);
+        let bodies = [Vec2::new(0.0, 3.0), Vec2::new(0.0, 6.0), Vec2::new(0.0, 9.0)];
+        let t = traverse(muzzle, dir, &bodies, Pierce { metres: 0.0, every_body: true }, 0.0);
+        assert_eq!((t.struck, t.stopped_in), (vec![0, 1, 2], None));
+        let t = traverse(muzzle, dir, &bodies, Pierce { metres: 0.5, every_body: true }, 0.0);
+        assert!((t.left_m - 0.5).abs() < 1e-12, "the 0.5 m is untouched: {}", t.left_m);
+        // The same 0.5 m WITHOUT the class pays for one crossing and no more.
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.5, 0.0), vec![0, 1]);
     }
 
     /// A BODY OFF THE LINE IS NOT CROSSED however much punch through is on the

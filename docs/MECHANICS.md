@@ -3480,16 +3480,34 @@ bounded by the weapon's own punch through.
 
 ### The exception list is a real catalog, and it has an Arch-Gun section
 
-**Infinite body punch-through** is written `999.0`. Its one qualifier —
-*"innate punch through does not apply to surfaces"* — separates bodies from
-geometry, and this arena has no geometry, so unlimited-through-bodies is the
-whole of the mechanic here.
+**PUNCH THROUGH IS TWO FACTS, AND THE DATA KEEPS THEM APART.** The Exergis
+states both in one line — *"Innate Infinite Body Punch Through, and 0.5 meter
+punch through for surfaces"*:
+
+- `punch_through_m` is the METRES the arsenal shows, spent on any material, and
+  the number every mod adds to. Where a page gives a surface figure beside the
+  body class, this is it; where it gives none, it is 0.
+- `infinite_body_punch_through: true` is the class: bodies cost nothing, and
+  the metres are left for everything else. No mod grants it.
+
+`rules::space::Pierce` carries the pair into the walk. One number cannot hold
+both: written as a 999 m sentinel, the class hid the weapon's own metres and
+stacked every Shred onto the sentinel. `punch_through_m: infinite` is the
+OTHER kind — any material, walls included — and only the Zenith's semi-auto
+carries it.
+
+**The weapon's own page beats the list.** The Velocitus is on the infinite list
+unqualified, and its page says *"Infinite against bodies in Archwing Mode. 5
+meters in Atmospheric Mode"*: this arena is the atmosphere, so it is 5 m. The
+Fulmin's semi-auto is listed too, and its page says *"Innate 3 meter punch
+through against bodies"*: 3 m.
 
 The page carries the list per CLASS, and the Arch-Gun section is the one worth
 naming because nothing else on the page hints at it: **Cortege (Primary Fire),
 Corvas (Atmospheric Mode), Corvas Prime, Grattler, Kuva Grattler, Mandonel,
-Velocitus**. Four of those are AoE weapons, which is what the list is FOR — they
-are the *"very few exceptions"* the class rule points at.
+Velocitus** (whose page puts it in the Archwing column only). Four of those
+are AoE weapons, which is what the list is FOR — they are the *"very few
+exceptions"* the class rule points at.
 
 **Read the qualifiers as written.** The page restricts where it means to —
 "Cortege (Primary Fire)", "Quellor (Alt-Fire)", "Corvas (Atmospheric Mode)",
@@ -3499,8 +3517,8 @@ is the two-column Arch-Gun trap again: this arena is on the ground.
 
 **A weapon can be on BOTH lists**, and it is not a contradiction: the finite
 figure is the GEOMETRY column and the infinite one is bodies. Corvas Prime is
-1.4 m and unlimited; the Lanka is 5 m and unlimited. In this arena only the
-second half exists.
+1.4 m and unlimited; the Lanka is 5 m and unlimited. Both halves are carried;
+in this arena, which has no walls, only the second decides who is struck.
 
 **What the audit found**:
 the Fluctus read `999.0` under a comment calling it *"INFINITE"* and it is on

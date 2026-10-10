@@ -1470,7 +1470,7 @@ fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
         at: crate::rules::space::Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M * 2.0),
     }];
     let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
-    assert!(p.punch_through_m > 0.0, "the innate punch through reaches it");
+    assert!(p.infinite_body_punch_through, "the innate body punch through reaches it");
     let r = run_once(&p, &mut Rng::new(0x5EED));
     let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);
     assert!(behind > 0.0, "the beam reaches the body behind at all");

@@ -50,7 +50,10 @@ attack:
   crit_chance: 0.11
   crit_multiplier: 2.0
   status_chance: 0.27
+  # "Innate Infinite Body Punch Through" (wiki Ignis): the flame crosses every
+  # body and its blast lands where the beam ends. see notes: infinite_body_punch_through
   punch_through_m: 0.0
+  infinite_body_punch_through: true
   # THE BEAM AND ITS SPHERE. "The zone of impact or maximum beam range has a
   # spherical blast radius of 3 meters, allowing it to hit multiple enemies at
   # once", and it benefits from Firestorm. NO chain.

@@ -75,7 +75,8 @@ attack:
   status_chance: 0.40
   # The page's list names it: "Coda Bassocyst (infinite body punch through)".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Normal Attack: "Range: 49.6 m", Projectile at 62 m/s.
   #

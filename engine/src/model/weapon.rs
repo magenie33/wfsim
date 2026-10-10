@@ -724,6 +724,8 @@ pub struct WeaponBase {
     /// PUNCH-THROUGH DEPTH the WEAPON brings, in metres of material — see
     /// [`crate::data::weapons::AttackSpec::punch_through_m`].
     pub punch_through_m: f64,
+    /// [`crate::data::weapons::AttackSpec::infinite_body_punch_through`].
+    pub infinite_body_punch_through: bool,
     /// [`crate::data::weapons::AttackSpec::projectile_width_m`] — 0 is a ray.
     pub projectile_width_m: f64,
     /// [`crate::data::weapons::AttackSpec::range_m`] — `INFINITY` when the

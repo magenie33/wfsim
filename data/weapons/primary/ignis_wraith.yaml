@@ -51,7 +51,10 @@ attack:
   crit_chance: 0.17
   crit_multiplier: 2.5
   status_chance: 0.29
+  # "Innate Infinite Body Punch Through" (wiki Ignis Wraith): the flame crosses
+  # every body and its blast lands where the beam ends. see notes: infinite_body_punch_through
   punch_through_m: 0.0
+  infinite_body_punch_through: true
   # THE BEAM AND ITS SPHERE. Same 3 m radius as the ordinary Ignis, on a beam
   # that reaches 27 m rather than 20 — "+3m blast radius at the endpoint
   # resulting in a total range of 30m" is the page's own arithmetic. NO chain.

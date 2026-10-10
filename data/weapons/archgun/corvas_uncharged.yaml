@@ -32,7 +32,8 @@ attack:
   status_chance: 0.013
   # The page's own list names it: "Corvas (Atmospheric Mode)".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 2.4
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column, uncharged block: "Range: 300.0 m", Hit-Scan
   range_m: 300.0

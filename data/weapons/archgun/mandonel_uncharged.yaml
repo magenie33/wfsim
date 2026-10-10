@@ -39,7 +39,8 @@ attack:
   status_chance: 0.15
   # The page's own list names it: "Mandonel".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
   damage: { impact: 50.0, puncture: 30.0, slash: 20.0, radiation: 80.0 }   # 180 each
 
 unmodeled:

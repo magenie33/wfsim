@@ -46,9 +46,11 @@ fn main() {
         // at all: the same shot, still travelling (MECHANICS §13). It reaches a
         // formation with no radius, no chain and no tendril, which is why the
         // tally under-reported by 29 entries until it was listed.
-        if a.punch_through_m > 0.0 {
-            how.push(if a.punch_through_m >= 999.0 {
-                "punches through bodies without limit".to_string()
+        if a.infinite_body_punch_through {
+            how.push("punches through bodies without limit".to_string());
+        } else if a.punch_through_m > 0.0 {
+            how.push(if a.punch_through_m >= wfsim_engine::rules::space::INFINITE_PUNCH_THROUGH_M {
+                "punches through any material without limit".to_string()
             } else {
                 format!(
                     "punches {:.1} m of material ({} bodies)",
@@ -71,7 +73,7 @@ fn main() {
             "tendrils"
         } else if a.radial.is_some() || a.lingering.is_some() {
             "explosive"
-        } else if a.punch_through_m > 0.0 {
+        } else if a.punch_through_m > 0.0 || a.infinite_body_punch_through {
             "punch"
         } else {
             "single"

@@ -60,9 +60,11 @@ attack:
   status_chance: 0.2
   # see notes: guaranteed_impact_every_shot
   forced_procs: [impact]
-  # The page's own list names it: "Felarx".
+  # The page's own list names it: "Felarx". The metres are the page's EVO
+  # table: "fires large energy projectiles with … 0.5 meter punch through".
   # see notes: infinite_body_punch_through
-  punch_through_m: infinite
+  punch_through_m: 0.5
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 56.0 m", Projectile — a real reach, and NOT an AoE sub-block (checked, because the base Felarx is 300)
   range_m: 56.0

@@ -788,8 +788,16 @@ impl FightParams {
         v
     }
 
+    /// What this attack's shot may pass through — see `rules::space::Pierce`.
+    pub fn pierce(&self) -> crate::rules::space::Pierce {
+        crate::rules::space::Pierce {
+            metres: self.punch_through_m,
+            every_body: self.infinite_body_punch_through,
+        }
+    }
+
     pub fn struck_bodies(&self) -> Vec<usize> {
-        if self.punch_through_m <= 0.0 || self.others.is_empty() {
+        if !self.pierce().passes_a_body() || self.others.is_empty() {
             return vec![0];
         }
         let aim = self.aim_point();
@@ -799,7 +807,7 @@ impl FightParams {
         bodies.extend(self.others.iter().map(|f| f.at));
         let dir = crate::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
         let hit = crate::rules::space::struck_along(
-            muzzle, dir, &bodies, self.punch_through_m, self.projectile_width_m,
+            muzzle, dir, &bodies, self.pierce(), self.projectile_width_m,
         );
         // THE AIMED BODY IS STRUCK BY DEFINITION. The ray is cast at the aim
         // point, and `webapi` has already resolved which body that is — so a
@@ -1397,6 +1405,7 @@ impl FightParams {
             tendril_max: panel.tendril_max,
             target_id,
             punch_through_m: panel.punch_through_m,
+            infinite_body_punch_through: panel.infinite_body_punch_through,
             projectile_width_m: panel.projectile_width_m,
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,

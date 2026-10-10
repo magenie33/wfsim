@@ -61,8 +61,9 @@ attack:
   status_chance: 0.20
   # The page's own list names it: "Corvas Prime".
   # see notes: infinite_body_punch_through
-  # The infobox's 1.4 m is the GEOMETRY figure and is not this.
-  punch_through_m: infinite
+  # The metres are the infobox's 1.4 m, the GEOMETRY figure.
+  punch_through_m: 1.4
+  infinite_body_punch_through: true
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: uncharged "Range: 60.0 m", CHARGED "Range: 70.0 m",
   # both Projectile. THIS ENTRY IS THE CHARGED SHOT (`form: charged`,

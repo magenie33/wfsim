@@ -72,8 +72,9 @@ attack:
   status_chance: 0.25
   # The page's own list names it: "Lanka".
   # see notes: infinite_body_punch_through
-  # The infobox's 5 m is the GEOMETRY figure and is not this.
-  punch_through_m: infinite
+  # The metres are the infobox's 5 m, "for surfaces" (page).
+  punch_through_m: 5.0
+  infinite_body_punch_through: true
   damage: { electricity: 525.0 }
 unmodeled:
   - reason: sniper_combo_miss
