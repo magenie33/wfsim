@@ -980,6 +980,27 @@ the home page offers nothing on every user agent it drives, and that /download
 is the one surface telling a Mac, Linux or phone reader it will not run there.
 See `docs/DESKTOP.md`.
 
+## Page titles
+
+**EVERY TITLE HAS ONE SHAPE**: `<subject> — <what it is> | WFSim`. The brand
+ends every one, so a reader learns one mark from every tab and result; a page
+whose subject already names it (/support, /download) does not repeat it.
+
+**THE SERVED TITLE IS BILINGUAL.** A page ships in English, while most of its
+readers search in Chinese, and Baidu reads only what is served. So the site
+build (`build_site_app.py`, `titled_page`) writes the English, then the
+Chinese a search types: a weapon's Chinese name from `names.yaml`, and 配卡
+(the players' word for a build) and 星际战甲 from `ui.yaml` — a missing
+overlay fails the build. The home page carries the brand in both scripts,
+`WFSim (WF模拟)`.
+
+**THE APP KEEPS THE SERVED TITLE ON THE PAGE IT WAS SERVED FOR**
+(`servedTitleKept`): Google indexes the title it rendered, so replacing it on
+boot would hand the crawler a one-language title. Every page reached inside
+the app takes the same shape in the reader's language. A URL meant to be found
+or pasted gets its own served file (`shell_pages`): a path left to the SPA
+fallback previews and indexes as the home page.
+
 ## Utility
 
 **/UTILITY IS THE GAME'S LIVE STATE AND THE READER'S REMINDERS ON IT**, and

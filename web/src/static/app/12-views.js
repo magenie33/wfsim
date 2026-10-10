@@ -37,6 +37,18 @@ function nav(path) {
   // for on top of a navigation.
   if (moved) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 }
+/// THE SERVED TITLE STAYS while the reader is still on the page it was served
+/// for. The SPA fallback's canonical is "/", so every other address it answers
+/// takes the app's own title, and so does every page after the first.
+const SERVED_PATH = (() => {
+  try { return new URL(document.querySelector('link[rel="canonical"]').href).pathname; } catch (_) { return null; }
+})();
+let servedTitleLeft = false;
+function servedTitleKept() {
+  if (!servedTitleLeft && location.pathname === SERVED_PATH) return true;
+  servedTitleLeft = true;
+  return false;
+}
 let routeGen = 0;
 async function route() {
   // BOOT DRAWS THE FIRST PAGE, from whatever address a redirect left by then.
@@ -199,21 +211,27 @@ async function route() {
   const community = $("community-toggle");
   if (community) community.classList.toggle("sel", ["compute", "contributors", "clan"].includes(authKind));
   document.querySelector(".config-page").hidden = !w;
-  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens", "riven-analyst": " · Riven Analyst", enemies: " · Enemies", benchmark: " · Benchmark" }[mod] || "";
-  // The home title carries the SEARCH TERMS, not the headline: nobody looks
-  // for "Simulacrum Prime", and the tab/result/share-card is the one place
-  // that has to be found rather than enjoyed. The joke
-  // stays on the page, which is where a player meets it.
-  document.title = authKind ? `${tr({ login: "Sign in", signup: "Create an account", reset: "Reset your password",
-    account: "Account settings", sync: "Cloud sync" }[authKind] || (EXT.pages[authKind] || {}).title || "")} — WFSim`
-    : support ? `${tr("Support")} — WFSim`
-    : dl ? `${tr("WFSim for Windows")} — WFSim`
-    : bench ? `${tr("Benchmark")} — WFSim`
-    : util ? `${tr(utilityTitle(util))} — WFSim`
-    : wfHit ? `${wfHit.name} — WFSim`
-    : compHit ? `${compHit.name} — WFSim`
-    : opRoute ? `${tr("Operator")} — WFSim`
-    : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
+  const modName = { simulator: "Simulator", optimizer: "Optimizer", rivens: "Rivens", "riven-analyst": "Riven Analyst", enemies: "Enemies", benchmark: "Benchmark" }[mod];
+  const modTitle = modName ? ` · ${tr(modName)}` : "";
+  // A TITLE CARRIES THE SEARCH TERMS, not the headline: nobody looks for
+  // "Simulacrum Prime", and the tab/result/share-card is the one place that
+  // has to be found rather than enjoyed. ONE SHAPE, "<subject> — <what it
+  // is> | WFSim"; the document a crawler was served keeps its own, the
+  // bilingual title the site build wrote, because Google indexes the title
+  // it rendered, not the one it fetched (docs/UI.md §Page titles).
+  const what = { w: tr("Warframe build & DPS"), wf: tr("Warframe build"), comp: tr("Companion") };
+  const title = authKind ? `${tr({ login: "Sign in", signup: "Create an account", reset: "Reset your password",
+    account: "Account settings", sync: "Cloud sync", compute: "Compute together",
+    contributors: "Contributors", clan: "Clan" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
+    : support ? `${tr("Support WFSim")}`
+    : dl ? `${tr("Download WFSim for Windows")}`
+    : bench ? `${tr("Benchmark")} | WFSim`
+    : util ? `${tr(utilityTitle(util))} | WFSim`
+    : wfHit ? `${wfHit.name} — ${what.wf} | WFSim`
+    : compHit ? `${compHit.name} — ${what.comp} | WFSim`
+    : opRoute ? `${tr("Operator")} | WFSim`
+    : w ? `${w.name}${modTitle} — ${what.w} | WFSim` : `WFSim — ${tr("Warframe Calculator")}`;
+  if (!servedTitleKept()) document.title = title;
   trailPush();
   // A REMINDER IS WATCHED FROM EVERY PAGE, not only from /utility.
   reminderWatch();

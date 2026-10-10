@@ -864,7 +864,7 @@ def guard_board_files() -> None:
 # answers every route, so all five ship in every page and exactly one of them is
 # the heading of the page being served. `w-name` is the weapon route's, empty in
 # the shell and filled by `app.js` on boot.
-ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-utility", "h-support", "w-name", "wf-name", "op-name")
+ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-utility", "h-support", "w-name", "wf-name", "comp-name", "op-name")
 
 
 def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
@@ -1228,7 +1228,7 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
         sys.exit("index.html: ld+json block not found — per-page structured data not set")
     # The weapon route's heading is the weapon, so it is filled rather than
     # left as the shell's placeholder; every other route spells its own out.
-    page = one_h1(lded, keep_h1, name if keep_h1 in ("w-name", "wf-name") else None)
+    page = one_h1(lded, keep_h1, name if keep_h1 in ("w-name", "wf-name", "comp-name") else None)
     # A WEAPON PAGE'S ANSWER IS CONTENT, NOT A FALLBACK. It goes into the
     # layout, under the weapon, and nothing removes it — the renderer that
     # decides whether this page is found indexes what it rendered, so a block
@@ -1299,6 +1299,28 @@ def weapon_facts(spec: dict) -> str:
             f"Mastery Rank {spec.get('mastery_rank', 0)}")
 
 
+@functools.cache
+def zh_ui_table() -> dict:
+    return yload((ROOT / "data" / "i18n" / "zh" / "ui.yaml").read_text(encoding="utf-8"))["ui"]
+
+
+def zh_ui(english: str) -> str:
+    """The Chinese overlay of one UI string, for the half of a <title> a Chinese
+    search reads. Missing is a build failure: a title would ship English-only."""
+    ui = zh_ui_table()
+    if english not in ui:
+        sys.exit(f"title: data/i18n/zh/ui.yaml has no {english!r}")
+    return str(ui[english])
+
+
+def titled_page(subject: str, what: str | None = None, zh: str | None = None) -> str:
+    """ONE SHAPE for every served title: "<subject> — <what> · <中文> | WFSim".
+    English leads, as the page is English; the Chinese half is what most of
+    its readers search with. docs/UI.md §Page titles."""
+    tail = " · ".join(x for x in (what, zh) if x)
+    return f"{subject}{' — ' + tail if tail else ''} | WFSim"
+
+
 def prerender(flagged: str) -> None:
     """Write a real HTML file per weapon, plus robots.txt and sitemap.xml.
 
@@ -1341,7 +1363,9 @@ def prerender(flagged: str) -> None:
             f"{atk['crit_chance'] * 100:g}% crit chance, {atk['crit_multiplier']:g}x crit "
             f"multiplier, {atk['status_chance'] * 100:g}% status chance"
         )
-        title = f"{name} — Warframe build, damage & DPS | WFSim"
+        # THE CHINESE NAME BESIDE THE ENGLISH: it is what a Chinese search types.
+        title = titled_page(f"{name} {cn}" if cn and cn != name else name,
+                            "Warframe build & DPS", zh_ui("Warframe build & DPS"))
         # THE ANSWER GOES IN THE DESCRIPTION, because that is the one place
         # nothing can hide it: the `w-brief` fold ships SHUT for the reader who
         # opens this page every day, and a result page shows this line whether
@@ -1420,7 +1444,8 @@ def prerender(flagged: str) -> None:
     (APP / "weapons").mkdir(parents=True, exist_ok=True)
     put(APP / "weapons" / "index.html", shell(
         flagged,
-        f"All {len(roster())} Warframe weapons | WFSim",
+        titled_page(f"All {len(roster())} Warframe weapons", None,
+                    zh_ui("All {n} Warframe weapons").replace("{n}", str(len(roster())))),
         wl_desc,
         SITE + "/weapons",
         f"{SITE}/logo.svg",
@@ -1440,33 +1465,56 @@ def prerender(flagged: str) -> None:
     # exists, and nothing anywhere would have said so.
     shell_pages = [
         (
-            "support", "Support WFSim", "h-support", "Support",
+            "support", f"Support WFSim · {zh_ui('Support WFSim')}", "h-support", "Support",
             "How WFSim works, why its numbers can be checked, and what it counts. "
             "WFSim is a free, open-source Warframe calculator, AGPL-3.0.",
         ),
         (
-            "download", "Download WFSim for Windows", "h-download", "Download",
+            "download", f"Download WFSim for Windows · {zh_ui('Download WFSim for Windows')}",
+            "h-download", "Download",
             "WFSim as a Windows app: the same calculator and the same engine as "
             "the site, on your own machine. It opens instantly, works offline and "
             "updates itself. Free and open source, AGPL-3.0.",
         ),
         (
-            "utility/fissures", "Void Fissures — live, with Steel Path and Void Storms | WFSim", "h-utility", "Utility",
+            "utility/fissures", titled_page(f"Void Fissures {zh_ui('Void Fissures')}",
+                                            "live, with Steel Path and Void Storms"), "h-utility", "Utility",
             "Every Void Fissure open in Warframe now: the star chart, the Steel Path and "
             "Railjack's Void Storms, with each one's mission, node and time left, and "
             "reminders when the one you want opens.",
         ),
         (
-            "utility/arbitrations", "Arbitrations — this hour and the next two weeks | WFSim", "h-utility", "Utility",
+            "utility/arbitrations", titled_page(f"Arbitrations {zh_ui('Arbitrations')}",
+                                                "this hour and the next two weeks"), "h-utility", "Utility",
             "Warframe's Arbitration this hour and every hour of the next fourteen days: "
             "mission, node and faction, filtered to the ones you play, with reminders "
             "when the one you want opens.",
         ),
         (
-            "operator", "Operator — Focus school for a Warframe build | WFSim", "op-name", "Operator",
+            "operator", titled_page(f"Operator {zh_ui('Operator')}", "Focus school for a Warframe build"),
+            "op-name", "Operator",
             "The Operator a Warframe build refers to: the active Focus school, and which "
             "of its nodes that need an Operator action to count as running. Every node "
             "that reaches the Warframe, quoted from the wiki.",
+        ),
+        (
+            "benchmark", titled_page(f"Benchmark {zh_ui('Benchmark')}", "every Warframe weapon under one ruler"),
+            "h-benchmark", "Benchmark",
+            "One ruler, every weapon: each Warframe weapon's best build, ranked under the "
+            "same fight, every score computed by the WFSim engine.",
+        ),
+        # NO ROUTE HEADING: these two draw theirs in the app, so the shell keeps none.
+        (
+            "compute", titled_page(f"Compute together {zh_ui('Compute together')}",
+                                   "volunteers computing WFSim"), None, "Compute together",
+            "The volunteers' devices compute WFSim's free features together. Everything "
+            "they compute is free for every player, and WFSim never makes money from it.",
+        ),
+        (
+            "contributors", titled_page(f"Contributors {zh_ui('Contributors')}",
+                                        "the volunteers computing WFSim"), None, "Contributors",
+            "The volunteers whose devices compute WFSim's free features together. Everything "
+            "they compute is free for every player, and WFSim never makes money from it.",
         ),
     ]
     for path, title, hero, nav, desc in shell_pages:
@@ -1501,7 +1549,8 @@ def prerender(flagged: str) -> None:
                 "and a Helminth infusion, with the stats and abilities they resolve to.")
         out = APP / file / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
-        put(out, shell(flagged, f"{name} — Warframe build | WFSim", desc, SITE + path,
+        put(out, shell(flagged, titled_page(name, "Warframe build", zh_ui("Warframe build")),
+                       desc, SITE + path,
                        f"{SITE}/logo.svg", f"    <p>{html_mod.escape(desc)}</p>\n",
                        "wf-name", name))
         frame_urls.append(SITE + path)
@@ -1518,7 +1567,8 @@ def prerender(flagged: str) -> None:
                 "Warframe that owns it, whose aura and archon shards the weapon takes.")
         out = APP / file / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
-        put(out, shell(flagged, f"{name} — companion | WFSim", desc, SITE + path,
+        put(out, shell(flagged, titled_page(name, "companion", zh_ui("Companion")),
+                       desc, SITE + path,
                        f"{SITE}/logo.svg", f"    <p>{html_mod.escape(desc)}</p>\n",
                        "comp-name", name))
         companion_urls.append(SITE + path)
@@ -2353,9 +2403,19 @@ def main() -> None:
     # longer what was hashed.
     flagged = publish_hashed(flagged)
     # THE HOME PAGE IS ITS OWN ROUTE and does not go through `shell` — it keeps
-    # the shell's title, description and canonical as written. It still owes the
+    # the shell's description and canonical as written. It still owes the
     # one-<h1> rule: `Benchmark` is a section of this page, not its subject.
-    (APP / "index.html").write_text(one_h1(flagged, "h-home"),
+    # Its TITLE is set here: the brand in both scripts — WF模拟 is what Chinese
+    # players search for — and the Chinese search terms.
+    home_title = html_mod.escape(f"WFSim (WF模拟) — Warframe Calculator · {zh_ui('Warframe Calculator')}")
+    home = flagged
+    for old, new in (("<title>WFSim — Warframe Calculator</title>", f"<title>{home_title}</title>"),
+                     ('<meta property="og:title" content="WFSim — Warframe Calculator" />',
+                      f'<meta property="og:title" content="{home_title}" />')):
+        if old not in home:
+            sys.exit(f"index.html: {old} not found — the home page would keep the English-only title")
+        home = home.replace(old, new, 1)
+    (APP / "index.html").write_text(one_h1(home, "h-home"),
                                     encoding="utf-8", newline="\n")
     ship_edge_config()
     ship_art()

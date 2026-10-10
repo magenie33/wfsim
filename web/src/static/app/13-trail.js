@@ -21,7 +21,8 @@ function trailRead() {
 function trailPush() {
   if (EMBED) return;
   const path = location.pathname;
-  const title = path === "/" ? tr("Home") : document.title.replace(/ — WFSim$/, "");
+  // The SUBJECT of the title, before its " — what it is | WFSim".
+  const title = path === "/" ? tr("Home") : document.title.replace(/ \| WFSim$/, "").split(" — ")[0];
   const list = [{ path, title }, ...trailRead().filter((x) => x.path !== path)];
   try { sessionStorage.setItem(TRAIL_KEY, JSON.stringify(list.slice(0, TRAIL_LEN + 1))); } catch (_) { /* no trail */ }
   renderTrail();

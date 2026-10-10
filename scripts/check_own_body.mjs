@@ -49,7 +49,6 @@ for (const [route, id] of Object.entries(PAGES)) {
 // …AND EACH OF THE FOUR KEEPS ITS OWN, because that document IS that page and
 // a reader served it with an empty main would see nothing at all.
 for (const [route, id] of Object.entries(PAGES)) {
-  if (route === "/benchmark") continue;   // no prerendered page; the shell serves it
   const own = page(`${route.slice(1)}/index.html`);
   check(`${route} ships its own body`, (bodyOf(own, id) || "").length > 100,
     `${(bodyOf(own, id) || "").length} chars`);

@@ -884,6 +884,13 @@ ui:
   "Submit": 提交
   "Support WFSim": 支持 WFSim
   "Support": 支持
+  # PAGE TITLES: what a Chinese search types. 配卡 is the players' word for a
+  # build, and 星际战甲 the game's Chinese name; the site build reads these too.
+  "Warframe Calculator": 星际战甲配卡与 DPS 计算器
+  "Warframe build & DPS": 星际战甲配卡与 DPS
+  "Warframe build": 星际战甲配卡
+  "All {n} Warframe weapons": 星际战甲全部 {n} 把武器
+  "Download WFSim for Windows": 下载 WFSim Windows 桌面版
   "Sustained DPS": 持续 DPS
   "Tau's status effect is not modelled. Tau's neutral damage is applied correctly, but its proc raises the status chance the target takes from every other source by 10% a stack, up to ten (wiki). With other statuses stacked, the number reads low.": "Tau 的异况效果未建模。Tau 对各类生命都是中性伤害，这一点处理正确；但它的触发效果会让目标受到的其他所有来源的触发几率每层 +10%，最多十层（wiki）。堆其他异况时数字偏低。"
   "Pressing reload again 22-38% into a reload cuts it to 1 s and loads Heat rounds with +25% damage and guaranteed status (wiki). It is a timed input the sim does not press, so every reload is the full 5 s with ordinary rounds, and the number reads well low.": "在换弹进行到 22%–38% 时再按一次换弹，换弹缩短到 1 秒，并装入 +25% 伤害、必定触发的火焰弹（wiki）。这是一个有时机的按键，模拟不会按，所以每次都是完整的 5 秒换弹和普通子弹，数字明显偏低。"
@@ -2645,7 +2652,6 @@ ui:
   "A new version is out; this page refreshes itself once it is left idle.": "有新版本了，这个页面闲置一会儿后会自动刷新。"
   "refresh now": 立即刷新
   # The compute page (/compute): this browser, the account's devices, recent tasks.
-  "Compute": 计算
   "Leaderboard order": 榜单订单
   "Task": 任务
   "Computer": "设备"

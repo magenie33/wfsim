@@ -729,7 +729,7 @@ setInterval(navComputing, 60_000);
 addEventListener("visibilitychange", navComputing);
 
 function computePage() {
-  return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute")}</h1>
+  return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute together")}</h1>
     <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}
       <a href="/contributors">${aT("Contributors")}</a></p>
     ${computeDemandHtml()}${computeHereHtml()}${computeDevicesHtml()}${computeRecentHtml()}</div></div>`;

@@ -188,6 +188,8 @@ jobs:
       # neither shows up as an error anywhere else.
       - name: A document carries its own page
         run: node scripts/check_own_body.mjs
+      - name: Every page is titled in both languages
+        run: node scripts/check_page_titles.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two

@@ -1304,6 +1304,16 @@ absence aged by hand, `judgeBackground` says `kept`, `stopped` and `idle` for a
 finished task, no beat and beats without a task, `frozen` after a `freeze`
 event, and nothing for three minutes.
 
+## `check_page_titles`
+
+**A TITLE SAYS WHAT THE PAGE IS, IN BOTH LANGUAGES.** Every page a search finds
+or a reader pastes is served a title with Chinese in it and the brand, an
+`og:title` equal to it, and exactly one `<h1>` (none on /compute and
+/contributors, which draw theirs). A weapon's carries its Chinese name. In the
+browser, /weapons/Torid keeps the title it was served, and a page reached inside
+the app — the simulator tab, /compute, and Torid again — takes
+`<subject> — <what> | WFSim` instead. docs/UI.md §Page titles.
+
 ---
 
 ## A check cleans up after itself

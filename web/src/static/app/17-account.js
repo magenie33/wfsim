@@ -477,7 +477,7 @@ function accountComputeBlock() {
   return `<div class="block" id="compute"><div class="bh"><h2>${aT("Board compute")}</h2></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Points")}</dt><dd>${escHtml(d.points.toLocaleString(accountLocale()))} · ${
       escHtml((n === 1 ? tr("{n} device") : tr("{n} devices")).replace("{n}", String(n)))}</dd>
-      <a class="ghost-btn btn-sm" href="/compute">${aT("Compute")}</a>
+      <a class="ghost-btn btn-sm" href="/compute">${aT("Compute together")}</a>
       <a class="ghost-btn btn-sm" href="/contributors">${aT("Ranking")}</a></div>
     <div class="kv"><dt>${aT("On the ranking")}</dt><dd>${aT(d.named ? "Your name is shown" : "Anonymous")}</dd>
       ${contributionNameButton(d)}</div>${computeHonourHtml(d)}</dl>

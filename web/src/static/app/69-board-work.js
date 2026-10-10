@@ -610,7 +610,7 @@ function boardPointsHtml(on) {
       <button class="ghost-btn small" id="board-name-yes">${escHtml(tr("Show my name"))}</button>
       <button class="ghost-btn small" id="board-name-no">${escHtml(tr("Keep it anonymous"))}</button> ·`
     : "";
-  return `${earned}${join}${ask} <a href="/compute">${escHtml(tr("Compute"))}</a> · <a href="/contributors">${escHtml(tr("Contributors"))}</a>`;
+  return `${earned}${join}${ask} <a href="/compute">${escHtml(tr("Compute together"))}</a> · <a href="/contributors">${escHtml(tr("Contributors"))}</a>`;
 }
 function wireBoardVerify() {
   const b = $("board-verify-flip");
