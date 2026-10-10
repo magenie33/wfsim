@@ -1301,7 +1301,8 @@ desktop profile, and as `touch_narrow_wechat` once CDP emulates touch, a phone's
 width and WeChat's user agent; its cores go out as one of the steps. **COMPUTING
 OUT OF SIGHT IS JUDGED BY WHAT HAPPENED**: with `document.hidden` stubbed and the
 absence aged by hand, `judgeBackground` says `kept`, `stopped` and `idle` for a
-finished task, no beat and beats without a task, and nothing for three minutes.
+finished task, no beat and beats without a task, `frozen` after a `freeze`
+event, and nothing for three minutes.
 
 ---
 

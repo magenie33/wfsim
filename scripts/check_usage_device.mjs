@@ -6,7 +6,8 @@
 //   - the cores go out rounded down to a step, never the exact count;
 //   - `judgeBackground` says `kept` when a task finished out of sight,
 //     `stopped` when the page made no beat, `idle` when it beat and finished
-//     nothing, and nothing at all for a short absence.
+//     nothing, `frozen` when the browser froze it, and nothing at all for a
+//     short absence.
 //
 //   node scripts/check_usage_device.mjs
 import { openApp } from "./cdp.mjs";
@@ -35,8 +36,6 @@ check("the same page under touch, a phone's width and WeChat is touch_narrow_wec
   phone.subject === "touch_narrow_wechat", JSON.stringify(phone));
 await send("Emulation.clearDeviceMetricsOverride", {});
 await send("Emulation.setTouchEmulationEnabled", { enabled: false });
-await sleep(300);
-check("…and with touch off again the page is not a phone, so it may compute", await evaluate(`!onPhone()`));
 
 // THE JUDGEMENT, driven by hand: the page is hidden and shown through a stubbed
 // `document.hidden`, the absence aged past the window, and `track` read.
@@ -57,8 +56,12 @@ const said = await evaluate(`(() => {
   away(30, 4, 1);
   away(30, 0, 0);
   away(30, 9, 0);
+  hidden = true; judgeBackground();
+  hiddenFrom.at -= 30 * 60000;
+  document.dispatchEvent(new Event('freeze'));
+  hidden = false; judgeBackground();
   return out;
 })()`);
-check("out of sight long enough, the page says kept, stopped or idle by what it did, and nothing for a short absence",
-  JSON.stringify(said) === JSON.stringify(["kept:30", "stopped:30", "idle:30"]), JSON.stringify(said));
+check("out of sight long enough, the page says kept, stopped, idle or frozen by what it did, and nothing for a short absence",
+  JSON.stringify(said) === JSON.stringify(["kept:30", "stopped:30", "idle:30", "frozen:30"]), JSON.stringify(said));
 process.exit(0);

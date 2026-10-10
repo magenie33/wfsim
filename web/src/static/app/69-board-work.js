@@ -529,20 +529,23 @@ async function workOnce() {
 /// assumed: many freeze or throttle a hidden tab, and that decides what leaving
 /// a machine computing is worth. Judged when the page comes back after at least
 /// `BACKGROUND_JUDGED_MS` hidden in the tab that holds the work, as
-/// `compute.background`: `kept` (a task was finished), `stopped` (at most one
-/// beat — an ask, a folded piece, a search's round — so the page itself was
-/// held), `idle` (it kept beating and finished nothing); `n` minutes.
+/// `compute.background`: `kept` (a task was finished), `frozen` (none, and the
+/// browser froze the page), `stopped` (none, at most one beat — an ask, a folded
+/// piece, a search's round — so it was held without a word), `idle` (it kept
+/// beating and finished nothing); `n` minutes.
 const BACKGROUND_JUDGED_MS = 10 * 60_000;
-let computeHolder = false, computeBeats = 0, computeFinished = 0, hiddenFrom = null;
+let computeHolder = false, computeBeats = 0, computeFinished = 0, computeFreezes = 0, hiddenFrom = null;
+document.addEventListener("freeze", () => { computeFreezes += 1; });
 function judgeBackground() {
   if (document.hidden) {
-    hiddenFrom = computeHolder && boardVerifyOn() && !onPhone() ? { at: Date.now(), beats: computeBeats, done: computeFinished } : null;
+    hiddenFrom = computeHolder && boardVerifyOn() ? { at: Date.now(), beats: computeBeats, done: computeFinished, freezes: computeFreezes } : null;
     return;
   }
   const h = hiddenFrom;
   hiddenFrom = null;
   if (!h || Date.now() - h.at < BACKGROUND_JUDGED_MS) return;
-  const how = computeFinished > h.done ? "kept" : computeBeats - h.beats <= 1 ? "stopped" : "idle";
+  const how = computeFinished > h.done ? "kept" : computeFreezes > h.freezes ? "frozen"
+    : computeBeats - h.beats <= 1 ? "stopped" : "idle";
   track("compute.background", how, Math.min(1440, Math.round((Date.now() - h.at) / 60_000)));
 }
 

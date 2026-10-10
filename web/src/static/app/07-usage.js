@@ -66,7 +66,7 @@ function usageArrival() {
 /// clicked, room for the editor, cores for the community's work, an in-app
 /// browser that limits downloads. COARSE CLASSES ONLY, so the point cannot
 /// single a device out: `<input>_<width>_<browser>` as `app.device`'s subject,
-/// the cores rounded down to a step as its `n`. `touch` is what `onPhone` reads.
+/// the cores rounded down to a step as its `n`.
 const USAGE_CORES = [1, 2, 4, 6, 8, 12, 16, 24, 32];
 function usageDevice() {
   const q = (m) => !!(window.matchMedia && matchMedia(m).matches);
