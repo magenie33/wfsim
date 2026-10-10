@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Benchmark 基准榜 — every Warframe weapon under one ruler | WFSim</title>
+  <meta name="description" content="One ruler, every weapon: each Warframe weapon&#x27;s best build, ranked under the same fight, every score computed by the WFSim engine." />
+  
+  <meta property="og:type" content="website" />
+  
+  <link rel="canonical" href="https://wfsim.app/benchmark" />
+  <meta property="og:site_name" content="WFSim" />
+  <meta property="og:title" content="Benchmark 基准榜 — every Warframe weapon under one ruler | WFSim" />
+  <meta property="og:description" content="One ruler, every weapon: each Warframe weapon&#x27;s best build, ranked under the same fight, every score computed by the WFSim engine." />
+  <meta property="og:url" content="https://wfsim.app/benchmark" />
+  <meta property="og:image" content="https://wfsim.app/logo.svg" />
+  
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Benchmark","description":"One ruler, every weapon: each Warframe weapon's best build, ranked under the same fight, every score computed by the WFSim engine.","url":"https://wfsim.app/benchmark","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Benchmark","item":"https://wfsim.app/benchmark"}]},"dateModified":"2026-10-10"}</script>
+  <meta name="twitter:card" content="summary" />
+  
+  <link rel="stylesheet" href="/asset/style.add9b9361eb0.css" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
+  
+  <script>
+    // NO BACKSLASH ESCAPES IN HERE, deliberately. This block is written and
+    // rewritten by tooling that passes it through several quoting layers, and a
+    // newline escape that does not survive one of them lands inside a string
+    // literal and stops the whole guard from parsing — which is exactly what
+    // happened the first time it was added, leaving the silent blank page it
+    // exists to prevent. NL is built from its code point instead.
+    (function () {
+      var NL = String.fromCharCode(10);
+      var shown = false;
+      function say(kind, detail) {
+        if (shown) return;
+        shown = true;
+        var el = document.createElement("div");
+        el.id = "boot-note";
+        el.setAttribute("style",
+          "position:fixed;left:0;right:0;top:0;z-index:9999;padding:14px 16px;" +
+          "font:14px/1.6 system-ui,sans-serif;background:#2a1416;color:#f3d9d9;" +
+          "border-bottom:1px solid #6b2b2b;white-space:pre-wrap;word-break:break-word");
+        el.textContent = kind + NL + NL + detail + NL + NL + navigator.userAgent;
+        function put() { document.body.appendChild(el); }
+        if (document.body) put();
+        else document.addEventListener("DOMContentLoaded", put);
+      }
+      window.__wfsimBootFailed = say;
+      window.addEventListener("error", function (e) {
+        var where = (e && e.filename) ? NL + e.filename + ":" + e.lineno : "";
+        say("WFSim could not start on this browser. / 这个浏览器打不开 WFSim。",
+            String((e && (e.message || (e.error && e.error.message))) || "script error") + where);
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e && e.reason;
+        say("WFSim failed while loading. / WFSim 加载时出错。",
+            String((r && (r.stack || r.message)) || r || "unknown"));
+      });
+      // THE ENGINE'S DOWNLOAD, counted by worker.js and drawn under the first
+      // paint, so a slow line reads as progress rather than as a hang.
+      var heard = 0, best = 0;
+      var mb = function (n) { return (n / 1048576).toFixed(1); };
+      window.__wfsimBootProgress = function (got, total) {
+        heard = Date.now();
+        if (got < best) return;
+        best = got;
+        var el = document.getElementById("boot-progress");
+        if (!el) return;
+        el.textContent = "下载计算引擎 · Downloading the engine  " + mb(got) +
+          (total > 0 ? " / " + mb(total) + " MB  " + Math.min(100, Math.round(got * 100 / total)) + "%" : " MB");
+      };
+      // ...and the case with no error at all: the app never finishes starting.
+      // Twenty seconds with no byte arriving is a failure whatever caused it,
+      // and a reader who can see this line can tell us what their network did.
+      // A download still arriving is not stuck, so the banner waits on it.
+      var watch = function () {
+        if (window.__wfsimReady) return;
+        if (heard && Date.now() - heard < 20000) { setTimeout(watch, 5000); return; }
+        say("WFSim is still loading. / WFSim 还在加载。",
+            (best ? "The engine download stopped at " + mb(best) + " MB. / 计算引擎下载停在 " + mb(best) + " MB。" + NL :
+              "It has not finished starting after 20 seconds — usually a slow or blocked network." +
+              NL + "启动超过 20 秒还没完成，通常是网络慢或被拦截。"));
+      };
+      setTimeout(watch, 20000);
+    })();
+  </script>
+</head>
+<body>
+  <div id="seo-fallback">
+    <p>One ruler, every weapon: each Warframe weapon&#x27;s best build, ranked under the same fight, every score computed by the WFSim engine.</p>
+    <p><a href="https://wfsim.app/">wfsim.app</a></p>
+  </div>
+  <script>document.getElementById('seo-fallback').remove()</script>
+  
+  <div id="booting" class="booting">WFSim<span class="bdot">·</span><span class="bdot">·</span><span class="bdot">·</span><span id="boot-progress" class="boot-progress"></span></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">WF<span>Sim</span></a>
+      
+      <div class="wsearch">
+        <input id="wsearch-input" type="text" autocomplete="off" />
+        <div id="wsearch-panel" class="wsearch-panel" hidden>
+          <div class="wsearch-head"><span id="wsearch-count"></span><button type="button" id="wsearch-close" class="ghost-btn btn-sm">Close</button></div>
+          <div id="wsearch-list" class="combo-menu"></div>
+        </div>
+      </div>
+      <select id="weapon" hidden></select>
+
+      <a id="compute-count" class="tcount compute-online" href="/compute" hidden></a>
+      
+      <a id="compute-mark" class="compute-mark" href="/compute" hidden aria-label="Compute together"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="cm-track" cx="12" cy="12" r="9" pathLength="100"/><circle class="cm-arc" cx="12" cy="12" r="9" pathLength="100"/></svg></a>
+      <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false"
+              aria-controls="topmenu" aria-label="Menu" title="Menu" data-i18n-title>☰</button>
+      <div id="topmenu" class="topmenu">
+        
+        <nav class="topnav">
+          
+          <a class="tnav" data-nav="home" href="/weapons" data-i18n>Weapons</a>
+          <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
+          
+          <a class="tnav" data-nav="utility" href="/utility/fissures" data-i18n>Utility<span id="utility-badge" class="tbadge" hidden></span></a>
+          
+          <div class="tbmore tbgroup" id="community-menu">
+            <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false"
+                    aria-controls="community-panel" aria-haspopup="true" data-i18n>Community</button>
+            <div class="tbmore-panel" id="community-panel">
+              <a class="tbmenu-link" data-nav="compute" href="/compute"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/><path d="M12 4a8 8 0 0 1 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="tbl" data-i18n>Help compute WFSim</span></a>
+              <a class="tbmenu-link" data-nav="contributors" href="/contributors"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg><span class="tbl" data-i18n>Contributors</span></a>
+              <span class="tbmenu-sep"></span>
+              <span class="tbcomm" id="community-primary">
+                <a class="dc-link ghost-btn" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener" title="Join the Discord" data-i18n-title aria-label="Discord"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.54 4.94A16.3 16.3 0 0 0 15.5 3.7a.06.06 0 0 0-.06.03c-.17.31-.37.72-.5 1.03a15.1 15.1 0 0 0-4.5 0 10.4 10.4 0 0 0-.51-1.03.06.06 0 0 0-.06-.03A16.26 16.26 0 0 0 5.83 4.94a.06.06 0 0 0-.03.02C3.24 8.77 2.54 12.48 2.89 16.14a.07.07 0 0 0 .03.05 16.4 16.4 0 0 0 4.94 2.5.06.06 0 0 0 .07-.02c.38-.52.72-1.07 1.01-1.64a.06.06 0 0 0-.03-.09c-.54-.2-1.05-.45-1.54-.73a.06.06 0 0 1 0-.11l.3-.24a.06.06 0 0 1 .07 0 11.7 11.7 0 0 0 9.94 0 .06.06 0 0 1 .07 0l.3.24a.06.06 0 0 1 0 .11c-.5.29-1 .53-1.55.73a.06.06 0 0 0-.03.09c.3.57.63 1.12 1 1.64a.06.06 0 0 0 .08.02 16.35 16.35 0 0 0 4.95-2.5.06.06 0 0 0 .02-.05c.42-4.23-.67-7.9-2.85-11.18a.05.05 0 0 0-.03-.02zM9.68 13.91c-.97 0-1.78-.9-1.78-2s.79-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.79 2-1.78 2zm6.57 0c-.98 0-1.78-.9-1.78-2s.78-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.78 2-1.78 2z"/></svg><span class="tbl">Discord</span></a>
+              </span>
+              <span class="tbcomm" id="community-alt">
+                <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg><span class="tbl" data-i18n>QQ group</span></a>
+              </span>
+              
+              <span class="clan-row">
+                <a class="tbmenu-link clan-link" data-nav="clan" href="/clan"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 3l7 3v5.5c0 4.3-2.9 7.9-7 9.5-4.1-1.6-7-5.2-7-9.5V6z"/></svg><span data-i18n>Clan</span><span class="clan-name">WFSim#582</span></a>
+                <button id="clan-copy" class="qq-copy-btn" title="copy the clan name" data-i18n-title>⧉</button>
+              </span>
+              <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="tbl">GitHub</span></a>
+            </div>
+          </div>
+        </nav>
+        <span id="trail" class="trail" hidden></span>
+        <div class="tblinks">
+          
+          <a class="sup-link ghost-btn" href="/support" title="Support WFSim" data-i18n-title aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl" data-i18n>Support</span></a>
+          
+          <div class="tbmore" id="tbmore">
+            <button id="tbmore-toggle" class="ghost-btn tbmore-btn" aria-expanded="false"
+                    aria-controls="tbmore-panel" aria-haspopup="true"
+                    title="Settings" data-i18n-title aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h10m4 0h2M4 17h4m4 0h8M14 4.5v5M8 14.5v5"/></svg></button>
+            <div class="tbmore-panel" id="tbmore-panel">
+              <div class="tbmore-row">
+                <span class="tbl" data-i18n>Language</span>
+                <span id="lang-select"></span>
+              </div>
+              <div class="tbmore-row">
+                <span class="tbl" data-i18n>Theme</span>
+                <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
+              </div>
+              <div class="tbmore-row tbmore-stack">
+                <span class="tbl" data-i18n>Processing power</span>
+                <div id="compute-select" class="cs"></div>
+              </div>
+              
+              <label class="tbmore-row" id="market-row"
+                     title="show a link to warframe.market beside every tradeable card" data-i18n-title>
+                <span class="tbl" data-i18n>Prices</span>
+                <input type="checkbox" id="market-on" checked>
+              </label>
+              
+              <div class="tbmore-row" id="saves-row">
+                <span class="tbl" data-i18n>Saved items</span>
+                <span class="saves-acts"><button type="button" class="ghost-btn btn-sm" data-saves="export" data-i18n>Export</button><button type="button" class="ghost-btn btn-sm" data-saves="import" data-i18n>Import</button></span>
+              </div>
+              <span class="tbmenu-sep"></span>
+              <a class="dl-link ghost-btn" href="/download" title="Download the Windows app" data-i18n-title aria-label="Download"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v11m0 0-4-4m4 4 4-4M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg><span class="tbl" data-i18n>Windows app</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="account" id="account" hidden></div>
+    </div>
+  </header>
+
+  <main id="download-page" class="dl-page" hidden></main>
+
+  <main id="home-page" class="home-page" hidden>
+    
+    <h2 id="h-home" class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h2>
+    
+    <p class="hero-stance" data-i18n>Every hit counts.</p>
+    <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
+    
+    <div id="home-tally" hidden>
+      <p class="hero-stance" data-i18n>The first build leaderboard computed by its players.</p>
+      <div class="hero-facts" id="home-tally-n"></div>
+    </div>
+    <div class="hero-facts" id="home-facts" hidden></div>
+    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support" data-i18n>How to check it</a></p>
+    
+    <div id="home-nav" class="snav"></div>
+    
+    <section id="home-hot" class="wgroup" hidden></section>
+    <div id="home-sections"></div>
+  </main>
+
+  <main id="utility-page" class="home-page" hidden>
+    <h2 id="h-utility" class="home-h">Void Fissures</h2>
+    <nav id="utility-tabs" class="module-tabs"></nav>
+    <section id="utility-fissures">
+      <div id="fissure-filters"></div>
+      <div id="fissure-list"></div>
+      <p class="bench-note" data-i18n>Read from DE's world state each minute. China's own servers are not covered.</p>
+    </section>
+    <section id="utility-arbitrations" hidden>
+      <div id="arbitration-filters"></div>
+      <div id="arbitration-list"></div>
+      <p class="bench-note" data-i18n>The schedule is computed ahead from the game's rotation and published by browse.wf; DE does not publish it. Times are in your time zone.</p>
+    </section>
+    <section id="utility-reminders" hidden></section>
+  </main>
+
+  <main id="bench-page" class="home-page" hidden>
+    <h1 id="h-benchmark" class="home-h" data-i18n>Benchmark</h1>
+    
+    <p class="bench-sub" data-i18n>One ruler, every weapon.</p>
+    <div id="bench-picker"></div>
+    
+    <p class="bench-note" data-i18n>A score is this engine's measurement of a build under the benchmark's fixed terms. Nobody submits a number.</p>
+    <div id="bench-rules"></div>
+    
+    <details id="bench-arena-fold" class="bench-arena-fold"><summary data-i18n>The fight</summary>
+    <div id="bench-arena" class="arena ar-ro"></div>
+    </details>
+    <div id="bench-filters"></div>
+    <div id="bench-board"></div>
+  </main>
+
+  <main id="auth-page" hidden></main>
+
+  <main id="support-page" class="support-page" hidden></main>
+
+  <main class="config-page" hidden>
+    <div class="wstrip">
+      <img id="w-img" alt="" />
+      <div>
+        <h2 id="w-name">—</h2>
+        <div id="w-tags" class="tags"></div>
+        
+        <div id="w-passives" class="wpassives" hidden></div>
+      </div>
+    </div>
+
+    <div id="doc" class="doc" hidden></div>
+
+    <nav class="module-tabs" id="module-tabs"></nav>
+
+    <section class="block wbench" data-module="benchmark" id="wbench-block">
+      <div class="bh"><h2 data-i18n>Benchmark</h2><span class="sub" id="wbench-sub"></span></div>
+      <div class="bb"><div id="wbench"></div></div>
+    </section>
+
+    <section class="finder fold shut" id="build-finder" data-fold="build-finder" aria-label="Build finder"></section>
+    
+    <div id="share-by" class="share-by" hidden></div>
+    <div class="preset-bar" id="preset-bar-builder-builds"></div>
+    
+    <section class="block start-edit" id="start-edit-banner" data-module="builder" hidden></section>
+    
+    <section class="fold sect shut forma-block" id="forma-block" data-fold="forma-plan" aria-label="Forma plan">
+      <h3 class="sim-h fold-h" data-i18n>Forma plan <span class="sim-hint" data-i18n>your rules, and the builds that share these polarities</span></h3>
+      <div id="forma-plan" class="forma-plan"></div>
+    </section>
+
+    <div class="quick-calc" id="quick-calc"></div>
+
+    <section class="block" data-module="builder" id="mode-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mode</h2><span class="sub" id="mode-sub"></span></div>
+      <div class="bb"><div id="mode-row" class="field-grid"></div></div>
+    </section>
+
+    <section class="block" data-module="builder" id="assembly-block" hidden>
+      <div class="bh"><span class="n">0</span><h2 data-i18n>Parts</h2><span class="sub" id="assembly-sub"></span></div>
+      <div class="bb"><div id="assembly-row" class="field-grid"></div></div>
+    </section>
+
+    <section class="block" data-module="builder" id="mod-block">
+      <div class="bh"><span class="n">2</span><h2 id="mod-block-h" data-i18n>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="capacity">0 / 0</span>
+          <span class="forma" id="forma">0 Forma</span>
+          <button id="auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma" data-i18n-title>auto</button>
+          <button id="clear-mods" class="ghost-btn small">clear</button>
+        </span>
+      </div>
+      <div class="bb">
+        
+        <div id="stance-block">
+          <div class="exlabel" data-i18n>Stance</div>
+          <div id="stance" class="slots"></div>
+          <div class="exhint" data-i18n>A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.</div>
+        </div>
+        <div id="mod-slots" class="slots"></div>
+        
+        <div id="exilus-block">
+          <div class="exlabel" data-i18n>Exilus</div>
+          <div id="exilus" class="slots"></div>
+          
+          <div class="exhint" data-i18n>A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-module="builder" id="arcane-block">
+      <div class="bh"><span class="n">3</span><h2 data-i18n>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
+      <div class="bb"><div id="arcane-slots" class="slots one"></div></div>
+    </section>
+
+    <section class="block" data-module="builder" id="element-block" hidden>
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Valence</h2><span class="sub" id="valence-sub"></span></div>
+      <div class="bb"><div id="element-cfg" class="field-grid"></div></div>
+    </section>
+
+    <section class="block" data-module="builder" id="evo-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Evolution</h2><span class="sub" data-i18n>Incarnon Genesis</span></div>
+      <div class="bb"><div id="evo-rows"></div></div>
+    </section>
+
+    <section class="block shut" data-module="builder" id="wielder-block">
+      <div class="bh"><span class="n">0</span><h2 data-i18n>Wielder</h2><span class="sub" id="wielder-sub"></span></div>
+      <div class="bb"><div id="wielder-row" class="field-grid"></div><div id="wielder-detail" class="wielder-detail"></div></div>
+    </section>
+
+    <section class="block" data-module="builder" id="stats-block">
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2><span class="sub" id="stats-sub"></span></div>
+      <div class="bb">
+        
+        <div id="stats-passive" class="unmodeled-banner" hidden></div>
+        
+        <div id="stats-livebug" class="unmodeled-banner livebug-banner" hidden></div>
+        <div id="stats-rows"></div>
+        <div id="stats-damage"></div>
+        <div id="stats-conditionals"></div>
+      </div>
+    </section>
+
+    <section class="block" data-module="simulator" id="sim-build-block">
+      <div class="bh"><span class="n">≡</span><h2 data-i18n>Build</h2><span class="sub" id="sim-build-sub"></span></div>
+      <div class="bb"><div id="sim-build-info"></div></div>
+    </section>
+
+    <section class="block" data-module="simulator" id="sim-block">
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
+      <div class="bb">
+
+        <div class="preset-bar" id="preset-bar-simulator-scenarios"></div>
+        
+        <div id="sim-official" class="official-note" hidden></div>
+        
+        <div id="board-consent" class="official-note" hidden></div>
+        <div class="fold sect" data-fold="sim-fight">
+          <h3 class="sim-h fold-h" data-i18n>1 · The fight <span class="sim-hint" data-i18n>who you are shooting at, where, and for how long</span></h3>
+          <div id="sim-target" class="sub-block"></div>
+        </div>
+        
+        <div class="fold sect" data-fold="sim-wielder">
+          <h3 class="sim-h fold-h" data-i18n>2 · External bonuses <span class="sim-hint" data-i18n>what the wielder is doing, and what others hand them — a ticked number replaces the wielder's own</span></h3>
+          <div id="sim-technique" class="field-grid"></div>
+          
+          <div id="sim-squad" class="sub-block"></div>
+          
+          <div id="sim-roster" class="sub-block"></div>
+        </div>
+        
+        <div class="fold sect" data-fold="sim-limits">
+          <h3 class="sim-h fold-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
+          <div id="sim-limits" class="field-grid"></div>
+        </div>
+        
+        <div class="fold sect" data-fold="sim-buffs">
+          <h3 class="sim-h fold-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
+            <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
+          <div id="sim-buffs"></div>
+        </div>
+        
+        <div class="fold sect" data-fold="sim-extra">
+          <h3 class="sim-h fold-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
+          <div id="sim-extra" class="field-grid"></div>
+        </div>
+        
+        <div class="fold sect" id="wfbuff-block" data-fold="sim-wfbuffs">
+          <h3 class="sim-h fold-h" data-i18n>6 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
+            <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
+          <div id="sim-wfbuffs"></div>
+        </div>
+        <div class="fold sect" data-fold="sim-measure">
+          <h3 class="sim-h fold-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
+          <div id="sim-run" class="field-grid"></div>
+        </div>
+        
+        <div id="sim-runs-block" class="runs-row"></div>
+        
+        <details id="sim-whole-fight" class="whole-fight">
+          <summary data-i18n>The whole fight — every field, including the ones this weapon hides</summary>
+          <div id="sim-whole-fight-body"></div>
+        </details>
+        <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
+      </div>
+    </section>
+
+    <section class="block" data-module="simulator" id="sim-results-block" hidden>
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Result</h2><span class="sub" id="sim-results-sub"></span><button class="ghost-btn small sim-share" id="sim-share" type="button" data-i18n>share</button></div>
+      <div class="bb"><div class="sim-viewing" id="sim-viewing" hidden></div><div id="sim-results"></div><div id="sim-history"></div></div>
+    </section>
+
+    <section class="block shut" data-module="simulator" id="shapley-block">
+      <div class="bh"><span class="n">φ</span><h2 data-i18n>Shapley analysis</h2><span class="sub" data-i18n>what each part multiplies the result by</span></div>
+      <div class="bb"><div id="shapley"></div></div>
+    </section>
+
+    <section class="block" data-module="rivens" id="riven-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Rivens</h2><span class="sub" id="riven-sub"></span></div>
+      <div class="bb">
+        
+        <div class="cu-tools" id="riven-tools"></div>
+        
+        <input type="file" id="riven-ocr-file" accept="image/*" hidden>
+        <div id="riven-ocr" class="rv-ocr"></div>
+        
+        <div id="riven-editor">
+          <div id="riven-shape" class="rv-shape"></div>
+          <div id="riven-stats"></div>
+          <div id="riven-foot" class="rv-foot"></div>
+          <div id="riven-card" class="rv-card"></div>
+        </div>
+        <div class="fold sect" data-fold="riven-all">
+          <h3 class="sim-h fold-h" id="riven-all-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven you have made for this weapon, with what it actually rolls</span></h3>
+          <div id="riven-all"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-module="riven-analyst" id="riven-analyst-block">
+      <div class="bh"><h2 data-i18n>Riven Analyst</h2><span class="sub" data-i18n>every riven the board has measured, against its best riven-free build</span></div>
+      <div class="bb"><div id="riven-analyst"></div></div>
+    </section>
+
+    <section class="block" data-module="enemies" id="enemy-block">
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Enemies</h2><span class="sub" id="enemy-sub"></span></div>
+      <div class="bb">
+        <div class="cu-tools" id="enemy-tools"></div>
+        <div id="enemy-form"></div>
+        <div class="fold sect" data-fold="enemy-all">
+          <h3 class="sim-h fold-h" id="enemy-all-h" data-i18n>All targets <span class="sim-hint" data-i18n>every enemy you have made — pick one in the simulator's target list like any other</span></h3>
+          <div id="enemy-all"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-module="optimizer" id="opt-block">
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>The search</h2><span class="sub" data-i18n>the starts and the limits — what a search preset saves, with the runs per candidate</span></div>
+      <div class="bb">
+        <div class="preset-bar" id="preset-bar-optimizer"></div>
+        <div id="opt-builtin" class="official-note" hidden></div>
+        <div class="fold sect" data-fold="opt-starts">
+          <h3 class="sim-h fold-h" data-i18n>① Starts</h3>
+          <div id="opt-starts"></div>
+        </div>
+        
+        <div class="fold sect shut" data-fold="opt-limits">
+          <h3 class="sim-h fold-h" data-i18n>② Limits <span class="sim-hint" data-i18n>none by default — click an option to exclude it; a start that pins an excluded option cannot run, one that only holds it has it replaced</span></h3>
+          <div id="opt-limits"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-module="optimizer" id="opt-fight-block">
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>The fight</h2><span class="sub" data-i18n>the simulator's — every candidate is scored under it, and it is edited over there</span></div>
+      <div class="bb">
+        <div class="preset-bar" id="opt-scenario-ref"></div>
+        <div id="opt-fight-brief"></div>
+      </div>
+    </section>
+
+    <section class="block" data-module="optimizer" id="opt-run-block">
+      <div class="bh"><span class="n">★</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>each start improved by the quick calc until nothing helps</span></div>
+      <div class="bb">
+        <div class="opt-runbar" id="opt-runbar">
+          <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
+          <label data-i18n>How many results <input id="opt-finalists" type="number" min="1" max="100" step="1"></label>
+          <label data-i18n>Runs per candidate <select id="opt-cand-runs"><option value="1">1</option><option value="10">10</option></select></label>
+          <div id="opt-estimate" class="opt-est"></div>
+        </div>
+        <div id="opt-results"></div>
+      </div>
+    </section>
+  </main>
+
+  <main id="warframe-page" class="config-page" hidden>
+    <div class="wstrip">
+      <img id="wf-img" alt="" />
+      <div>
+        <h2 id="wf-name">—</h2>
+        <div id="wf-tags" class="tags"></div>
+        <div id="wf-passive" class="wpassives"></div>
+      </div>
+    </div>
+    
+    <div id="wf-caps" class="wf-caps"></div>
+    
+    <div id="wf-gate" class="wf-gate"></div>
+    <div class="preset-bar" id="preset-bar-warframes"></div>
+    
+    <section class="fold sect shut forma-block" id="wf-forma-block" data-fold="wf-forma-plan" aria-label="Forma plan">
+      <h3 class="sim-h fold-h" data-i18n>Forma plan <span class="sim-hint" data-i18n>your rules, and the builds that share these polarities</span></h3>
+      <div id="wf-forma-plan" class="forma-plan"></div>
+    </section>
+
+    <section class="block" id="wf-mod-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="wf-capacity">0 / 0</span>
+          <span class="forma" id="wf-forma">0 Forma</span>
+          <button id="wf-auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma" data-i18n-title>auto</button>
+          <button id="wf-clear" class="ghost-btn small">clear</button>
+        </span>
+      </div>
+      <div class="bb">
+        
+        <div id="wf-aura-block">
+          <div class="exlabel" data-i18n>Aura</div>
+          <div id="wf-aura" class="slots"></div>
+          <div class="exhint" data-i18n>An aura hands capacity back instead of costing it: twice its drain on its own polarity, 80% of it rounded down on another. A polarity moves between all ten slots, the aura's included.</div>
+        </div>
+        <div id="wf-mod-slots" class="slots"></div>
+        <div id="wf-exilus-block">
+          <div class="exlabel" data-i18n>Exilus</div>
+          <div id="wf-exilus" class="slots"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="wf-arcane-block">
+      <div class="bh"><span class="n">2</span><h2 data-i18n>Arcanes</h2></div>
+      <div class="bb"><div id="wf-arcane-slots" class="slots"></div></div>
+    </section>
+
+    <section class="block" id="wf-shard-block">
+      <div class="bh"><span class="n">3</span><h2 data-i18n>Archon Shards</h2></div>
+      <div class="bb"><div id="wf-shards" class="wf-shards"></div></div>
+    </section>
+
+    <section class="block" id="wf-operator-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Operator</h2></div>
+      <div class="bb"><div id="wf-operator" class="wf-operator"></div></div>
+    </section>
+
+    <section class="block" id="wf-stats-block">
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2></div>
+      <div class="bb"><div id="wf-stats"></div><div id="wf-admissions"></div></div>
+    </section>
+
+    <section class="block" id="wf-ability-block">
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Abilities</h2></div>
+      <div class="bb">
+        <div id="wf-helminth" class="wf-helminth"></div>
+        <div id="wf-abilities" class="wf-abilities"></div>
+      </div>
+    </section>
+  </main>
+
+  <main id="companion-page" class="config-page" hidden>
+    <div class="wstrip">
+      <div>
+        <h2 id="comp-name">—</h2>
+        <div id="comp-tags" class="tags"></div>
+      </div>
+    </div>
+    <div class="preset-bar" id="preset-bar-companions"></div>
+    <section class="block" id="comp-mods-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="comp-capacity">0 / 0</span>
+          <span class="forma" id="comp-forma">0 Forma</span>
+        </span>
+      </div>
+      <div class="bb">
+        <div id="comp-mod-slots" class="slots"></div>
+        <div class="exhint" data-i18n>Nothing a companion seats moves a weapon's numbers yet: no robotic weapon reads its wielder's stats, and no precept is run. What this answers is capacity and Forma.</div>
+      </div>
+    </section>
+  </main>
+
+  <main id="operator-page" class="config-page" hidden>
+    <div class="wstrip">
+      <div>
+        <h2 id="op-name" data-i18n>Operator</h2>
+        <div class="wpassives"><div data-i18n>Only the active school's nodes apply. A node that needs an Operator action counts only when you say it is running.</div></div>
+      </div>
+    </div>
+    <div class="preset-bar" id="preset-bar-operators"></div>
+    <section class="block" id="op-school-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Focus school</h2></div>
+      <div class="bb"><div id="op-schools" class="op-schools"></div></div>
+    </section>
+    <section class="block" id="op-artifact-block" hidden>
+      <div class="bh"><span class="n">2</span><h2 data-i18n>Tektolyst Artifact</h2></div>
+      <div class="bb"><div id="op-artifact" class="op-artifact"></div></div>
+    </section>
+    <section class="block" id="op-node-block">
+      <div class="bh"><span class="n">3</span><h2 data-i18n>What reaches the Warframe</h2></div>
+      <div class="bb"><div id="op-nodes" class="op-nodes"></div></div>
+    </section>
+  </main>
+
+  <div id="wf-popover" class="popover" hidden>
+    <div class="addbar"><input id="wf-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
+    <div id="wf-menu" class="combo-menu"></div>
+  </div>
+  <div id="mod-popover" class="popover" hidden>
+    <div class="addbar"><input id="mod-search" type="text" placeholder="Search a mod…" data-i18n-ph autocomplete="off" /></div>
+    <div id="picker-tools" class="picker-tools"></div>
+    <div id="mod-menu" class="combo-menu"></div>
+  </div>
+
+  <main id="card-page" class="card-page"></main>
+  <div id="riven-ocr-win" class="rv-ocr-win" hidden></div>
+  <div id="riven-popover" class="popover" hidden>
+    <div class="addbar"><input id="riven-search" type="text" placeholder="Search a riven stat…" data-i18n-ph autocomplete="off" /></div>
+    <div id="riven-menu" class="combo-menu"></div>
+  </div>
+  <div id="slot-menu" class="popover menu" hidden></div>
+  
+  <div id="dd-popover" class="popover" hidden>
+    <div class="addbar" id="dd-addbar"><input id="dd-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
+    <div id="dd-menu" class="combo-menu"></div>
+  </div>
+  <div id="enemy-popover" class="popover" hidden>
+    <div class="addbar"><input id="enemy-search" type="text" placeholder="Search a target…" data-i18n-ph autocomplete="off" /></div>
+    <div id="enemy-menu" class="combo-menu"></div>
+  </div>
+  
+  <div id="rank-popover" class="popover" hidden>
+    <div class="addbar"><input id="rank-search" type="text" placeholder="Search a mod or arcane…" data-i18n-ph autocomplete="off" /></div>
+    <div id="rank-menu" class="combo-menu"></div>
+  </div>
+  <div id="arcane-popover" class="popover" hidden>
+    <div class="addbar"><input id="arcane-search" type="text" placeholder="Search arcane / effect…" data-i18n-ph autocomplete="off" /></div>
+    <div id="arcane-menu" class="combo-menu"></div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span data-i18n>WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.</span>
+    <span data-i18n>Game data derived from the community</span>
+    <a href="https://wiki.warframe.com/" target="_blank" rel="noopener">Warframe Wiki</a> (CC BY-NC-SA 3.0) ·
+    <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a> · AGPL-3.0-or-later ·
+    <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="join via QQ" data-i18n-title><span data-i18n>QQ group</span> 995078378</a><button id="qq-copy-foot" class="qq-copy-btn" title="copy the group number" data-i18n-title>⧉</button> ·
+    <a href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener" title="join the Discord" data-i18n-title>Discord</a> ·
+    
+    <a href="/support" title="Support WFSim" data-i18n-title data-i18n>Support</a> ·
+    <a href="/support#usage" data-i18n>Usage statistics</a>
+    
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">5ef7ed70</span>
+    </div>
+  </footer>
+
+  <script>window.WFSIM_WASM = true;</script>
+
+  <script src="/asset/app.27116dad7050.js"></script>
+  <script type="module" src="/asset/nona.c70ed3980e7d/index.js"></script>
+
+<div class="calc-status" id="calc-status" hidden></div>
+
+<div class="jump" id="jump" hidden>
+  <button type="button" class="jump-grip" id="jump-grip" title="drag to move — click to open or close" data-i18n-title><span class="jg-h">⠿</span><span class="jg-i">☰</span><span class="jg-n" id="jump-now"></span></button>
+  <div class="jump-panel">
+    <div class="jump-head" id="jump-head" title="drag to move — click to open or close" data-i18n-title>
+      <span class="jg-h">⠿</span><span class="jh-t" data-i18n>On this page</span>
+      <button type="button" class="jump-x" id="jump-x" title="close the menu" data-i18n-title>✕</button>
+    </div>
+    <div class="jump-body" id="jump-body"></div>
+  </div>
+</div>
+</body>
+</html>
