@@ -115,7 +115,7 @@ env:
   # younger than this is the clients' alone; an older one goes to whichever of
   # the clients and this run reaches it first, never to both (`fetch_queue.sh`
   # claims what this run reads, and the last job releases what it left).
-  HOLD_SECONDS: 14400
+  HOLD_SECONDS: 86400
   # …AND WHAT THE CLIENTS KEEP OF THE OLD ONES: this many hours of what they
   # made in the last hour, never fewer than this many orders. The run claims
   # only beyond it (`fetch_queue.sh` `claim_rows`), so the computers online are
