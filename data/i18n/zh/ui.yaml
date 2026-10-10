@@ -2521,6 +2521,8 @@ ui:
   # The contribution block on /account, and the public ranking at /contributors.
   "Board compute": 榜单计算
   "Points": 积分
+  "{t} of core time": "各核心合计 {t}"
+  "core time today": 今日核心时间
   "{n} device": "{n} 台设备"
   "{n} devices": "{n} 台设备"
   "Ranking": 排行
@@ -2541,7 +2543,6 @@ ui:
   "Demand and compute": 需求与算力
   "tasks finished today": "今天算完的任务"
   "points credited today": "今天到账的积分"
-  "computed today": "今天算了多久"
   "≈ {n} points": "约 {n} 分"
   "confirmed +{n}": "已确认 +{n}"
   "results differ — the server is checking": "结果不一致，服务器核对中"

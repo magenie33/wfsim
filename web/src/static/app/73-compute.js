@@ -155,7 +155,8 @@ function computeEnd(result) {
   computeNow = null;
   if (t && result) {
     const { done: _d, total: _t, search: _s, ...facts } = t;
-    const entry = { ...facts, at: Date.now(), ms: result.ms, work: result.work, score: result.score, metric: result.metric,
+    const entry = { ...facts, at: Date.now(), ms: result.ms, ...(result.cpu_ms != null ? { cpu_ms: result.cpu_ms } : {}),
+      work: result.work, score: result.score, metric: result.metric,
       ...(result.record ? { record: result.record } : {}), ...(result.search ? { search: result.search } : {}) };
     try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify([entry, ...computeLog()].slice(0, COMPUTE_LOG_MAX))); } catch (_) { /* this page only */ }
     // …HELD FULL ON THE CARD a moment, then into the list, today's count asked again.
@@ -200,6 +201,16 @@ const computeAgo = (iso) => {
 const computeTook = (ms) => (ms < 60000 ? tr("{n} s").replace("{n}", String(Math.max(1, Math.round(ms / 1000))))
   : tr("{n} min").replace("{n}", String(Math.round(ms / 60000))));
 const computePts = (n) => escHtml(Number(n || 0).toLocaleString(accountLocale()));
+/// HOW LONG A TASK TOOK is the clock from taken to done. A board order's
+/// `cpu_ms` is its pieces' time SUMMED OVER ITS CORES — six cores for five
+/// seconds is thirty — said as core time beside it, never as how long it took.
+/// An entry kept before `cpu_ms` held that sum in `ms`.
+const taskWallMs = (t) => (t.started && t.at > t.started ? t.at - t.started : t.ms || 0);
+const taskCoreMs = (t) => (t.kind === "board" ? Number(t.cpu_ms ?? t.ms) || 0 : 0);
+function computeTookHtml(t) {
+  const wall = taskWallMs(t), core = taskCoreMs(t);
+  return `${computeTook(wall)}${core > 1.5 * wall ? ` · ${tr("{t} of core time").replace("{t}", computeTook(core))}` : ""}`;
+}
 function computeTaskHtml(t) {
   const k = computeKind(t);
   const what = escHtml(k.what(t));
@@ -331,7 +342,7 @@ function computeRecentHtml() {
   return `<div class="block" id="rt-live"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">
     <div class="rt-today"><div class="rt-tile"><b data-tile="tasks"></b><span>${aT("tasks finished today")}</span></div>
       <div class="rt-tile gold" data-gold><b data-tile="points"></b><span>${aT("points credited today")}</span></div>
-      <div class="rt-tile"><b data-tile="ms"></b><span>${aT("computed today")}</span></div></div>
+      <div class="rt-tile"><b data-tile="ms"></b><span>${aT("core time today")}</span></div></div>
     <div data-now></div><div class="rt-list" data-list></div>
     <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
     <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another computer, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
@@ -441,7 +452,7 @@ function computeLiveNow(root) {
   set("sub", t ? computeSubOf(t, w) : "");
   set("pct", n ? (f === null ? computeTook(Date.now() - n.started) : `${Math.round(100 * f)}%`) : done ? "100%" : "");
   set("t", n ? (f === null ? (n.done ? tr("{n} fights").replace("{n}", computeCount(n.done)) : "") : computeTook(Date.now() - n.started))
-    : done ? computeTook(done.ms || 0) : "");
+    : done ? computeTook(taskWallMs(done)) : "");
 }
 
 /// A SEARCH'S STARTS, one lane each, in the words the optimizer's own progress
@@ -514,7 +525,7 @@ function computeLiveList(root) {
       el.querySelector("[data-pill]").innerHTML = computePillHtml(t, fresh && !still);
       if (fresh) computeCelebrate(el, t, lands++);
     }
-    const when = `${computeAgo(t.at)} · ${computeTook(t.ms || 0)}`;
+    const when = `${computeAgo(t.at)} · ${computeTook(taskWallMs(t))}`;
     const w = el.querySelector("[data-when]");
     if (w.textContent !== when) w.textContent = when;
     const open = computeOpenTask === key;
@@ -592,9 +603,9 @@ function computeTaskDetail(t, w) {
   // A SEARCH SHOWS WHAT IT TRIED AND WHAT IT CONCLUDED: the same build card, as its answer.
   const search = t.kind === "riven_gain";
   const mode = t.mode || (t.record && t.record.mode);
-  const here = search ? step(true, "searched here", `${clock(t.at)} · ${computeTook(t.ms || 0)}${t.search ? ` · ${
+  const here = search ? step(true, "searched here", `${clock(t.at)} · ${computeTookHtml(t)}${t.search ? ` · ${
     tr("{b} builds, {s} fights").replace("{b}", computeCount(t.search.builds)).replace("{s}", computeCount(t.search.fights))}` : ""}`)
-    : step(true, "computed here", `${clock(t.at)} · ${computeTook(t.ms || 0)}`);
+    : step(true, "computed here", `${clock(t.at)} · ${computeTookHtml(t)}`);
   return `<div class="rt-detail"><div class="rt-h">${aT("Progress")}</div><div class="tl">
       ${step(true, "task taken", clock(t.started))}${here}${third}
       ${step(st === "confirmed", "points credited", st === "confirmed" ? `+${taskPts(t)}` : st === "gone" ? tr("none") : "")}</div>

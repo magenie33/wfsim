@@ -20,7 +20,7 @@ const r = await evaluate(`(async () => {
   const own = "ownown" + "0".repeat(18);
   localStorage.setItem("wfsim-verifier", own);
   localStorage.setItem("wfsim-compute-log", JSON.stringify([
-    { kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base", mods: ["secret"], at: Date.now() - 120000, ms: 12000, work: 3400000000,
+    { kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base", mods: ["secret"], at: Date.now() - 120000, started: Date.now() - 125000, ms: 32000, work: 3400000000,
       identity: "b1", state: "confirmed", score: 123.4567, metric: "kpm", record: { weapon: "torid", mods: ["serration"] } },
     { kind: "appraise", at: Date.now() - 7200000, ms: 90000, work: 1e9 },
     { kind: "riven_gain", weapon: "furis", ruler: "standard_single_target", at: Date.now() - 10800000, ms: 95000, work: 1e9,
@@ -81,6 +81,7 @@ const r = await evaluate(`(async () => {
   // node is the same one after the page is drawn again around it.
   const live = document.getElementById("rt-live");
   cards()[0].click(); await sleep(300);
+  out.took = (page().querySelector("#rt-live .rt-detail") || { textContent: "" }).textContent.replace(/\\s+/g, " ");
   out.link = (page().querySelector('#rt-live .rt-detail a[href$="/benchmark"]') || { getAttribute: () => null }).getAttribute("href");
   out.kept = document.getElementById("rt-live") === live;
   cards()[0].click(); await sleep(200);
@@ -125,6 +126,8 @@ check("this browser's tasks are drawn by kind, a board order as its weapon and r
 check("...a simulation says what it computed, a search the best it found among the builds it tried",
   r.recent[0] && r.recent[0].includes("computed 123.4567 KPM")
   && r.recent[2] && r.recent[2].startsWith("OptimizeFuris") && r.recent[2].includes("best 254.3244 KPM · 1,840 builds"), JSON.stringify(r.recent));
+check("a task says how long it took by the clock, its cores' summed time beside it as core time",
+  r.recent[0].includes("· 5 s") && r.took.includes("5 s · 32 s of core time"), JSON.stringify([r.recent[0], r.took.slice(0, 200)]));
 check("every block of the compute page folds as the site's do", r.folds.length >= 3 && r.folds.every(([, c]) => c), JSON.stringify(r.folds));
 check("...and a folded one stays folded, with one caret, when the page is drawn again", r.shut && r.stillShut);
 check("a riven gain asks the server where it stands: one credited says confirmed, one not yet waits for another computer",

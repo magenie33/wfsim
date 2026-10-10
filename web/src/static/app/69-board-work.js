@@ -454,6 +454,7 @@ async function workOnce() {
   const order = await api("/api/board/order", { record: w.record, ruler: w.ruler, mode: w.mode }, null, { community: true });
   if (!order || !order.ok) { giveBack(); return true; }
   computeStart({ kind: "board", weapon: w.record.weapon, ruler: w.ruler, mode: w.mode, identity: w.identity, record: w.record });
+  const began = Date.now();
   const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && Date.now() < until, (done, total) => {
     computeProgress(done, total);
     if (total && done >= AHEAD_AT * total) askAhead(id, w.lease);
@@ -462,7 +463,7 @@ async function workOnce() {
   const sent = await postBoardWork("/api/board/verify",
     { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms });
   if (sent) heldLease = null; else giveBack();
-  computeEnd(sent ? { ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric } : null);
+  computeEnd(sent ? { ms: Date.now() - began, cpu_ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric } : null);
   if (!sent) return true;
   try { localStorage.setItem(VERIFIED_KEY, String(boardVerifiedCount() + 1)); } catch (_) { /* private mode */ }
   renderBoardConsent();
