@@ -172,19 +172,22 @@ function initWeaponSearch() {
 // style); the footer's ⧉ copies the raw number for manual in-QQ search.
 // Feedback is inline: no native dialogs.
 const QQ_GROUP = "995078378";
-(function () {
-  const btn = $("qq-copy-foot");
+const CLAN_NAME = "WFSim#582";
+function bindCopyButton(id, text) {
+  const btn = $(id);
   if (!btn) return;
   btn.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(QQ_GROUP); } catch (_) {
+    try { await navigator.clipboard.writeText(text); } catch (_) {
       const ta = document.createElement("textarea");
-      ta.value = QQ_GROUP; document.body.appendChild(ta);
+      ta.value = text; document.body.appendChild(ta);
       ta.select(); document.execCommand("copy"); ta.remove();
     }
     btn.textContent = "✓";
     setTimeout(() => { btn.textContent = "⧉"; }, 1200);
   });
-})();
+}
+bindCopyButton("qq-copy-foot", QQ_GROUP);
+bindCopyButton("clan-copy", CLAN_NAME);
 
 // The phone's topbar menu. It opens ONE container that holds the real
 // controls — see index.html — so there is nothing here to keep in sync with a

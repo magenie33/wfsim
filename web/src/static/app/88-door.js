@@ -340,6 +340,7 @@ const AGENT_EXEMPT = [
   { sel: "#compute-ask", kind: "reader", why: "computing together is the reader's own yes, never an agent's" },
   { sel: "#w-name a", kind: "outward", why: "links to the wiki and the market" },
   { sel: "#qq-copy-foot", kind: "outward", why: "copies the community group number" },
+  { sel: "#clan-copy", kind: "outward", why: "copies the in-game clan's name" },
   { sel: ".pop.ren", kind: "reader", why: "renaming a build is the reader's" },
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },

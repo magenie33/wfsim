@@ -773,6 +773,15 @@ ui:
   "Punch Through": 穿透
   "Body Punch Through": 躯体穿透
   "QQ group": QQ官方交流群
+  "Clan": 游戏内氏族
+  "Sign in, then leave your in-game name to be invited.": 登录后留下你的游戏 ID，就会收到邀请。
+  "Leave your in-game name to be invited.": 留下你的游戏 ID，就会收到邀请。
+  "Sent. You will be invited in game.": 已提交，邀请会在游戏里发给你。
+  "In-game name": 游戏 ID
+  "Request an invite": 申请邀请
+  "It reaches WFSim as a Discord message, with your username. Nothing is kept here.": 游戏 ID 会连同你的用户名，以 Discord 消息发给 WFSim，这里不保存。
+  "That is not an in-game name.": 这不是一个游戏 ID。
+  "It could not be sent. Try again later.": 没能发送，请稍后再试。
   "Quick calc": 快速计算
   "every rank": 全等级
   "cards every list offers at each of their ranks, not only at max — a card whose lower rank can beat its max, like Status Duration beside a malus": "这些卡在每个列表里按每个等级各出一行，而不只是满级 —— 用于低等级可能胜过满级的卡，比如带负面时的触发时间卡"
@@ -1031,6 +1040,7 @@ ui:
   "include my result in this scenario": 附上我在当前场景下的结果
   "the link still opens the build alone; your result travels beside it, shown as yours": 链接打开后仍然只导入配装；你的结果随链接一起显示，并注明是你测得的
   "copy the group number": 复制群号
+  "copy the clan name": 复制氏族名
   "In game the chain can pass through corpses (page); here a body that dies is removed.": "游戏里连锁可以经由尸体继续跳（页面）；这里死掉的目标会被移除。"
   "In game the chain can pass through corpses (page); here a body that dies is removed, so a chain that would hop through a corpse to an enemy behind it finds nothing.": "游戏里连锁可以经由尸体继续跳（页面）；这里死掉的目标会被移除，所以本该穿过尸体连到后方敌人的连锁什么也找不到。"
   "On a kill the body follows the dart, damaging anyone in its path (page). There is no ragdoll here, so against a crowd the number reads low.": "击杀时尸体会跟着飞镖飞出，伤害沿途的敌人（页面）。这里没有布娃娃物理，所以面对人群时数字偏低。"

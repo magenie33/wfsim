@@ -179,6 +179,15 @@ change that page in the commit that changes what is kept.
   Both pages promise that nothing about the reader travels with them, and the
   session cookie reaching those endpoints is never read by them.
 
+## Clan invites
+
+`/clan` is the in-game clan's door: a clan joins by invitation only, so a
+signed-in reader leaves an in-game name there and is invited in game.
+`worker/clan.js` sends it with the username as one Discord message to the
+owner, through the paid half's bot (`cloudTell`, `/internal/tell`), and stores
+nothing — so there is nothing to export or delete. `CLAN_LIMIT` allows one per
+account a minute.
+
 ## Offered screenshots
 
 A riven screenshot is read in the reader's browser (`25-riven-ocr.js`) and does

@@ -1926,6 +1926,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .field input:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 13%,transparent)}
 .auth-card .hint{font-size:12px;color:var(--muted);margin-top:-9px}
 .auth-card .run-btn,.inline-code .run-btn{margin-top:5px;min-height:42px}
+/* A run-btn that is a LINK (/clan signed out) reads as the button it stands for. */
+a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
 .auth-foot{text-align:center;font-size:13px;color:var(--text-2)}
 .auth-foot a{color:var(--accent);text-decoration:none;font-weight:600}
 .auth-foot .muted{color:var(--muted)}
@@ -2159,6 +2161,9 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .tbmenu-link:hover{background:var(--plane)}
 .tbmenu-link svg{flex:0 0 auto;margin-right:9px;color:var(--text-2)}
 .tbmenu-sep{height:1px;margin:4px 6px;background:var(--line)}
+.clan-row{display:flex;align-items:center}
+.clan-row .tbmenu-link{flex:1 1 auto;white-space:nowrap}
+.clan-name{margin-left:6px;color:var(--text-2)}
 /* IN A MENU THE COMMUNITY'S MARKS KEEP THE MARKUP'S ORDER: the bar's own
    `order:4` on them would sort them after GitHub. */
 .topbar-inner .tbmore-panel .tbcomm>*{order:0}

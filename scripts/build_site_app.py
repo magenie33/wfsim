@@ -1740,6 +1740,9 @@ and moves only if you remove it from one and add it to another.</p>
 role in the WFSim Discord server that matches your account — Verified, and WFSim
 Member or WFSim Patron while you hold one — and takes it back within a day of
 your removing Discord or deleting the account.</p>
+<p>If you ask for an invite to WFSim's in-game clan, the in-game name you type
+is sent with your username to WFSim as a Discord message. WFSim keeps no copy of
+it.</p>
 
 <h2>Nona</h2>
 <p>Nona, the assistant in the page, runs on an AI service you choose and a key

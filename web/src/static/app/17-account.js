@@ -17,13 +17,13 @@ const ACCOUNT_SLOTS = [
   { id: "email", name: "Email" },
 ];
 const AUTH_PATHS = { "/login": "login", "/signup": "signup", "/reset": "reset", "/account": "account",
-  "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute" };
+  "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan" };
 /// …and the pages an extension mounts (`EXT.pages`), routed the same way.
 const authKindOf = (path) => AUTH_PATHS[path.replace(/\/$/, "")] || extKindOf(path.replace(/\/$/, ""));
 /// EACH PAGE ITS OWN `app.view` KIND, so the way in can be read step by step;
 /// the settings pages carry `account_`, since `sync` alone could be any sync.
 const AUTH_VIEWS = { login: "login", signup: "signup", reset: "reset",
-  account: "account", sync: "account_sync", contributors: "contributors", compute: "compute" };
+  account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan" };
 const authView = (kind) => AUTH_VIEWS[kind] || (EXT.pages[kind] || {}).view || "other";
 /// The pages of a signed-in account; every other kind is a way in.
 const isSettings = (kind) => kind === "account" || kind === "sync" || !!(EXT.pages[kind] || {}).settings;
@@ -57,6 +57,8 @@ const ACCOUNT_SAYS = {
   too_many_attempts: "Too many wrong codes. Ask for a new one.",
   last_slot: "This is your last way to sign in. Disconnecting it deletes the account — do that below if you mean to.",
   bad_username: "A username is 3 to 20 letters, digits or underscores.",
+  bad_ign: "That is not an in-game name.",
+  tell_failed: "It could not be sent. Try again later.",
   username_reserved: "That username is reserved.",
   username_taken: "That username is taken.",
   rename_too_soon: "A username can change once a day.",
@@ -587,6 +589,21 @@ function accountPage(a) {
 }
 
 // ---- drawing a page ------------------------------------------------------------------------
+/// THE IN-GAME CLAN'S DOOR (worker/clan.js): a signed-in reader leaves a name
+/// and is invited in game. Signed out, the page is the way to sign in first.
+let clanSent = false;
+function clanPage() {
+  const { account, providers } = accountState;
+  const body = !providers.length ? `<p class="lede">${aT("Sign in on wfsim.app.")}</p>`
+    : !account ? `<p class="lede">${aT("Sign in, then leave your in-game name to be invited.")}</p>
+      <a class="run-btn" href="/login?return=${encodeURIComponent("/clan")}">${aT("Sign in")}</a>`
+    : clanSent ? `<p class="lede">${aT("Sent. You will be invited in game.")}</p>`
+    : `<p class="lede">${aT("Leave your in-game name to be invited.")}</p>
+      ${authError()}${authField("clan-ign", "In-game name", "text", "off")}
+      <button class="run-btn" data-auth="clan-request">${aT("Request an invite")}</button>
+      <div class="fine">${aT("It reaches WFSim as a Discord message, with your username. Nothing is kept here.")}</div>`;
+  return `<div class="auth-page"><div class="auth-card" data-auth-kind="clan"><h2>WFSim#582</h2>${body}</div></div>`;
+}
 
 function renderAuthPage(kind) {
   const main = $("auth-page");
@@ -600,6 +617,12 @@ function renderAuthPage(kind) {
   // THE COMPUTE PAGE IS EVERYONE'S TOO: this browser's half needs no account.
   if (kind === "compute") {
     computeDraw(main);
+    return;
+  }
+  if (kind === "clan") {
+    main.innerHTML = clanPage();
+    const box = $("clan-ign");
+    if (box) { box.maxLength = 40; box.focus(); }
     return;
   }
   // THE RANKING IS EVERYONE'S, signed in or not.
@@ -774,6 +797,12 @@ async function authAct(el) {
       if (!(r && r.ok)) return fail(r);
       presetToast(tr("Disconnected."));
       await loadAgents();
+      return renderAuthPage(kind);
+    }
+    if (what === "clan-request") {
+      const r = await accountCall("POST", "/api/clan/request", { name: authVal("clan-ign"), lang: LANG });
+      if (!(r && r.ok)) return fail(r);
+      clanSent = true;
       return renderAuthPage(kind);
     }
     if (what === "contributors-period") {

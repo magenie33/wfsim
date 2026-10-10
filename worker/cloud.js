@@ -42,6 +42,19 @@ async function internal(env, what, account) {
   return r.json();
 }
 
+/// A WORD TO THE OWNER, as a Discord message from the paid half's bot. False
+/// with no paid half bound, or when it could not be sent.
+export async function cloudTell(env, text) {
+  if (!env.CLOUD) return false;
+  try {
+    const r = await env.CLOUD.fetch(new Request("https://cloud.internal/internal/tell", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }));
+    return (await r.json()).ok === true;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// BEFORE AN ACCOUNT IS DELETED its subscriptions end, or it would go on being
 /// charged. False when the paid half could not end them — and then the account
 /// is kept. With no paid half bound there is nothing to end.

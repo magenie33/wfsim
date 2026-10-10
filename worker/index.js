@@ -32,6 +32,7 @@ import { worldRoute } from "./world.js";
 import { appraiseRoute } from "./appraise.js";
 import { verifyRoute } from "./verify.js";
 import { contributionRoute } from "./contribution.js";
+import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
@@ -757,6 +758,10 @@ export default {
     }
     {
       const r = await contributionRoute(request, env, path);
+      if (r) return r;
+    }
+    {
+      const r = await clanRoute(request, env, path);
       if (r) return r;
     }
     if (path.startsWith("/api/auth/") || path === "/api/account" || path.startsWith("/api/account/")) {

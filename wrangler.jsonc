@@ -92,7 +92,9 @@
   "ratelimits": [
     { "name": "AUTH_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     // HOW OFTEN ONE ADDRESS MAY OFFER A SCREENSHOT (worker/ocr_samples.js).
-    { "name": "OCR_LIMIT", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
+    { "name": "OCR_LIMIT", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } },
+    // HOW OFTEN ONE ACCOUNT MAY ASK FOR A CLAN INVITE (worker/clan.js).
+    { "name": "CLAN_LIMIT", "namespace_id": "1003", "simple": { "limit": 1, "period": 60 } }
   ],
   // THE PRODUCT'S ONE BUCKET (docs/NAMING.md §8): the screenshots readers offer,
   // under `ocr-samples/`, kept 365 days by the bucket's own lifecycle rule —

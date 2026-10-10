@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { accountRoute } from "../worker/accounts.js";
 import { cloudRoute, cloudPath } from "../worker/cloud.js";
 import { agentRoute, MCP_LIMITS } from "../worker/agents.js";
+import { clanRoute } from "../worker/clan.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -307,6 +308,42 @@ check("an account header a browser sends is dropped", seen.at(-1).account === nu
 const before = seen.length;
 const crossed = await cloud(payer, "POST", "/api/billing/checkout", { price: "member_month" }, { origin: "https://evil.example" });
 check("a paid call from another site never reaches the paid half", crossed.status === 403 && seen.length === before);
+
+// ---- a clan invite: one message to the owner, and nothing kept -----------------------
+
+const clan = async (b, body, headers = {}) => {
+  const r = await clanRoute(new Request(SITE + "/api/clan/request", { method: "POST",
+    headers: { cookie: Object.entries(b.jar).map(([k, v]) => `${k}=${v}`).join("; "),
+      "content-type": "application/json", origin: SITE, ...headers }, body: JSON.stringify(body) }), env, "/api/clan/request");
+  return { status: r.status, ...(await r.json()) };
+};
+const told = () => seen.filter((x) => x.path === "/internal/tell");
+const rows = () => env.ACCOUNTS.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()
+  .reduce((n, t) => n + env.ACCOUNTS.raw.prepare(`SELECT COUNT(*) n FROM "${t.name}"`).get().n, 0);
+const clanBefore = { told: told().length, rows: rows() };
+check("a signed-out reader cannot ask for a clan invite",
+  (await clan(browser(), { name: "Tenno" })).reason === "not_signed_in" && told().length === clanBefore.told);
+check("a clan invite asked from another site is refused",
+  (await clan(payer, { name: "Tenno" }, { origin: "https://evil.example" })).status === 403 && told().length === clanBefore.told);
+check("an empty or over-long in-game name is refused",
+  (await clan(payer, { name: "  " })).reason === "bad_ign" && (await clan(payer, { name: "x".repeat(41) })).reason === "bad_ign"
+    && told().length === clanBefore.told);
+const payerName = env.ACCOUNTS.raw.prepare("SELECT username FROM accounts WHERE id = ?").get(payerId).username;
+const asked = await clan(payer, { name: " Te`nno ", lang: "zh" });
+const said = told().at(-1) && JSON.parse(told().at(-1).body).text;
+check("a clan invite reaches the owner with the name and the username",
+  asked.ok && said && said.includes("`Tenno`") && said.includes(payerName) && said.includes("(zh)"), JSON.stringify([asked, said]));
+check("a clan invite stores nothing", rows() === clanBefore.rows, `${clanBefore.rows} -> ${rows()}`);
+const cloudFetch = env.CLOUD.fetch;
+env.CLOUD = { fetch: async (req) => new URL(req.url).pathname === "/internal/tell"
+  ? new Response(JSON.stringify({ ok: false })) : cloudFetch(req) };
+check("a message the bot could not send is said to have failed", (await clan(payer, { name: "Tenno" })).reason === "tell_failed");
+env.CLOUD = { fetch: cloudFetch };
+let clanTaken = 0;
+env.CLAN_LIMIT = { limit: async () => ({ success: clanTaken++ < 1 }) };
+check("one account asks for a clan invite once a minute",
+  (await clan(payer, { name: "Tenno" })).ok && (await clan(payer, { name: "Tenno" })).reason === "rate_limited");
+delete env.CLAN_LIMIT;
 const raw = '{"id":"evt_1","type":"invoice.paid"}';
 await cloud(payer, "POST", "/api/stripe/webhook", raw, { "content-type": "application/json", origin: "https://stripe.com" });
 check("Stripe's webhook goes through as sent, and as nobody",
