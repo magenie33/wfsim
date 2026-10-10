@@ -193,11 +193,23 @@ async function work(request, env) {
   // (69-board-work.js, a Web Lock) and asks only between tasks, so a lease it
   // still holds is one its page lost — a crash, a reload, an old page — and is
   // handed back here rather than waited out for half an hour.
-  await db.batch([
-    db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, iso(now)),
-    db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?")
-      .bind(b.verifier, iso(now)),
-  ]);
+  // …UNLESS IT ASKS AHEAD: near the end of a task it asks for the next, so no
+  // time passes between the two. It may then hold `TASKS_AHEAD` more and no
+  // further, and never a riven gain someone waits on, which goes to a computer
+  // free now. Every answer says `ahead`, so the page asks for no more than that.
+  const ahead = b.ahead === true;
+  if (ahead) {
+    const held = await db.prepare(`SELECT (SELECT count(*) FROM orders WHERE leased_to = ?1 AND lease_until > ?2)
+      + (SELECT count(*) FROM appraisals WHERE leased_to = ?1 AND lease_until > ?2) AS n`).bind(b.verifier, iso(now)).first();
+    if (!held || held.n < 1 || held.n > TASKS_AHEAD) return json({ ok: true, release, ahead: TASKS_AHEAD, work: null });
+  } else {
+    await db.batch([
+      db.prepare(`UPDATE orders SET ${done} WHERE leased_to = ? AND lease_until > ?`).bind(b.verifier, iso(now)),
+      db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?")
+        .bind(b.verifier, iso(now)),
+    ]);
+  }
+  const most = ahead ? TASKS_AHEAD + 1 : 1;
   // A RIVEN GAIN FIRST: someone is waiting on it in a chat. It holds its own
   // lease, so a client on one gets nothing more here either.
   {
@@ -205,22 +217,28 @@ async function work(request, env) {
     // decides whether a riven gain someone waits on is its to take.
     const lanes = Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
     const net = await netOf(request, env);
-    const riven = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "chat", net);
-    if (riven) return json({ ok: true, release, work: riven });
+    const riven = ahead ? null : await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "chat", net);
+    if (riven) return json({ ok: true, release, ahead: TASKS_AHEAD, work: riven });
     // …THEN A NEW BUILD'S ROWS THIS CLIENT MAY TAKE, then a SURVEY's riven gains
     // (appraise.js `SURVEY_CHANNEL`), then rescores. Asked per client: a global
     // "any new build row left?" held the survey back from every client while
     // the only rows left were ones that client could not confirm.
-    const first = await boardWork(env, db, b, engine, now, net, [0]);
-    if (first) return json({ ok: true, release, work: first });
-    const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net);
-    if (survey) return json({ ok: true, release, work: survey });
-    return json({ ok: true, release, work: await boardWork(env, db, b, engine, now, net, [1]) });
+    const first = await boardWork(env, db, b, engine, now, net, [0], most);
+    if (first) return json({ ok: true, release, ahead: TASKS_AHEAD, work: first });
+    const survey = await rivenTask(env, b.verifier, engine, (ids) => ownersOf(env, ids), lanes, "survey", net, most);
+    if (survey) return json({ ok: true, release, ahead: TASKS_AHEAD, work: survey });
+    return json({ ok: true, release, ahead: TASKS_AHEAD, work: await boardWork(env, db, b, engine, now, net, [1], most) });
   }
 }
 
-/// ONE BOARD ORDER OF THE GIVEN `priorities` LEASED TO THIS CLIENT, or null.
-async function boardWork(env, db, b, engine, now, net, priorities) {
+/// HOW MANY TASKS A CLIENT MAY HOLD BESIDE THE ONE IT IS COMPUTING, asked near
+/// its end (`work`, `ahead`). More hides more of a slow round trip; each is a
+/// lease no other computer can take while it waits.
+export const TASKS_AHEAD = 1;
+
+/// ONE BOARD ORDER OF THE GIVEN `priorities` LEASED TO THIS CLIENT, or null —
+/// while it holds fewer than `most` tasks.
+async function boardWork(env, db, b, engine, now, net, priorities, most = 1) {
   // A FURTHER RESULT COMES FROM ANOTHER OWNER: one person's machines agreeing
   // with each other would be one witness counted twice.
   // …AND A WINDOW THAT HELD ONLY ITS OWN is not the end: up to three random
@@ -250,14 +268,14 @@ async function boardWork(env, db, b, engine, now, net, priorities) {
     }
     const lease = [...crypto.getRandomValues(new Uint8Array(16))].map((x) => x.toString(16).padStart(2, "0")).join("");
     // THE RACE IS THE DATABASE'S: two clients reaching one order take it once —
-    // and ONE CLIENT TAKES ONE ORDER, in the same statement, so two tabs of one
-    // browser asking at once cannot both win (the check above reads first).
+    // and A CLIENT HOLDS AT MOST `most` TASKS, in the same statement, so two tabs
+    // of one browser asking at once cannot both win (the check above reads first).
     const took = await db.prepare(
       `UPDATE orders SET lease = ?, lease_until = ?, leased_to = ?
         WHERE identity = ? AND ruler = ? AND mode = ? AND state = ? AND (lease_until IS NULL OR lease_until < ?)
-          AND NOT EXISTS (SELECT 1 FROM orders h WHERE h.leased_to = ? AND h.lease_until > ?)
-          AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?)`)
-      .bind(lease, iso(now + LEASE_MS), b.verifier, ...key, o.state, iso(now), b.verifier, iso(now), b.verifier, iso(now)).run();
+          AND (SELECT count(*) FROM orders h WHERE h.leased_to = ? AND h.lease_until > ?)
+            + (SELECT count(*) FROM appraisals p WHERE p.leased_to = ? AND p.lease_until > ?) < ?`)
+      .bind(lease, iso(now + LEASE_MS), b.verifier, ...key, o.state, iso(now), b.verifier, iso(now), b.verifier, iso(now), most).run();
     if (took.meta && took.meta.changes) {
       return { lease, identity: o.identity, record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode };
     }

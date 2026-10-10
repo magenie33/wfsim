@@ -347,15 +347,14 @@ function wireFolds(root) {
   });
 }
 
-/// THE PAGE'S OWN BLOCKS FOLD TOO, from the header they already have. They are
-/// in the markup and outlive every render, so this runs once at boot; the
-/// result panel's `foldBlock`s are rebuilt on each render and rewired there.
-function wireStaticFolds() {
-  document.querySelectorAll(".config-page section.block").forEach((b) => {
+/// A `.block` FOLDS FROM THE HEADER IT ALREADY HAS, its own id its fold id — a
+/// block that is renamed or added needs nothing said here or in `index.html`.
+/// Wiring one twice is a no-op, so a page that redraws (`/compute`) calls it
+/// after every draw.
+function wireBlockFolds(blocks) {
+  blocks.forEach((b) => {
     const h = b.querySelector(":scope > .bh");
-    if (!h) return;
-    // The block's own id IS its fold id — a block that is renamed or added
-    // needs nothing said here or in `index.html`.
+    if (!h || !b.id || b.dataset.fold === b.id) return;
     b.dataset.fold = b.id;
     h.insertBefore(foldCaret(), h.firstChild);
     b.classList.toggle("shut", folded(b.id, b.classList.contains("shut")));
@@ -365,6 +364,13 @@ function wireStaticFolds() {
       renderJump();
     });
   });
+}
+
+/// THE PAGE'S OWN BLOCKS FOLD TOO. They are in the markup and outlive every
+/// render, so this runs once at boot; the result panel's `foldBlock`s are
+/// rebuilt on each render and rewired there.
+function wireStaticFolds() {
+  wireBlockFolds(document.querySelectorAll(".config-page section.block"));
   wireFolds();
 }
 

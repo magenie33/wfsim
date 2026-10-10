@@ -657,7 +657,14 @@ row at a time, so the board's growth is more orders, never a heavier client.
   is settled where it is found. A CLIENT THAT ASKS IS WORKING ON NOTHING: a
   browser computes in one tab (a Web Lock) and asks only between tasks, so
   whatever its id still holds was lost — a crash, a reload, an old page — and
-  is taken back as it asks, never waited out. ONLY THE SERVED ENGINE LEASES: the
+  is taken back as it asks, never waited out. UNLESS IT ASKS AHEAD: once a
+  task is 80% done (a search, past 80% of the last one's time) the page asks
+  `ahead`, keeps what it holds and may take `TASKS_AHEAD` more (worker/verify.js),
+  never a riven gain someone waits on, so the next task starts the moment this
+  one ends; every answer says the number, and the page asks no more than that.
+  A background search takes the cores the reader leaves it at every round and
+  hands its workers to the next (08-checkpoint-api.js `quickFleet`); its
+  answer is the same on any number of cores (`check_quick_fleet`). ONLY THE SERVED ENGINE LEASES: the
   worker reads `engine` from the site's `release.json`, and a page of any other
   gets no order and its answers are dropped. Every answer names the `release`
   too, and a page of an older one reloads into it once left idle, so a machine
@@ -778,16 +785,24 @@ each machine's share is counted under its owner's name. Eight rules:
    network a result came from (`netOf`: a salted hash of the address, kept on
    the open order and cleared with it), so two browsers on one desk are one
    witness.
-5. **A DEVICE HAS ONE OWNER.** A signed-in page claims its browser's id
-   (`/api/account/devices/claim`, `devices` in the accounts database); the
-   last account to claim it owns it, and its work goes with it. A signed-in page
-   claims its browser once a load, the server's row the only record of it, so a
-   browser stops counting for an account by signing out there. A client in
+5. **A DEVICE'S WORK IS WHOSE IT WAS WHEN IT WAS EARNED.** A signed-in page
+   claims its browser's id (`/api/account/devices/claim`, `devices` in the
+   accounts database), and from the next hour that account holds what the
+   device earns (`device_spans` over `verifier_hours`, worker/contribution.js
+   §"Spans"). What it earned before anyone held it — its notebook — goes to
+   its first claim at once, and the browser's own count is empty after.
+   Another account signing in there holds what comes next and takes nothing
+   already earned; removing a device closes its span and keeps its points.
+   ONLY THAT BROWSER CAN CLAIM IT: its full id is a secret it alone keeps, and
+   no answer carries one (`check_contribution`). A signed-in page claims its
+   browser once a load, the server's row the only record of it, so a browser
+   stops counting for an account by signing out there. A client in
    its cool-down is off the ranking until it ends.
    The owner sees every device of theirs at `/compute`: the name they call it
    (the browser's coarse guess until renamed), when it last answered
    (`verifiers.last_at`) and the task it holds a lease on, named by its KIND
-   and public facts alone; a device is renamed or removed there. This
+   and public facts alone; a device is renamed or removed there, and every
+   block of the page folds as the site's blocks do. This
    browser's own task list stays in this browser. Above it, for anyone, the
    whole picture (`/api/board/demand`): browsers computing now, owed rows by
    why, riven gains waiting, and the last hour's scores by the volunteers and

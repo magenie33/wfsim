@@ -12,7 +12,7 @@
 // handed one until its release (scripts/fetch_queue.sh). A claimed order the
 // scorer reproduces to the same bits pays its clients (scripts/order_credit.mjs).
 //   node scripts/check_board_verify.mjs
-import { verifyRoute, LEASE_MS, PROTOCOL, FACTS_PER_REFUSAL_FORGIVEN } from "../worker/verify.js";
+import { verifyRoute, LEASE_MS, PROTOCOL, FACTS_PER_REFUSAL_FORGIVEN, TASKS_AHEAD } from "../worker/verify.js";
 import { creditConfirmed, coolDownMs } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
@@ -518,6 +518,26 @@ check("...and asking again opens nothing", backfill() === 0);
   await answer(w, P3, NEW);
   check("...while a row no longer owed keeps the fact it has", scoreRow("kept").score === OLD && scoreRow("kept").measured_by === "abc1234",
     JSON.stringify(scoreRow("kept")));
+}
+
+// ASKING AHEAD (worker/verify.js `work`): near the end of a task a client asks
+// for its next, keeping the one it holds; `TASKS_AHEAD` more and no further.
+{
+  const H = "ah".repeat(12);
+  const ahead = (v) => call("/api/board/work", { verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES, ahead: true });
+  const held = (v) => db.prepare("SELECT COUNT(*) AS n FROM orders WHERE leased_to = ? AND lease_until > ?").get(v, new Date().toISOString()).n;
+  db.prepare("UPDATE orders SET state = 'settled'").run();
+  for (let i = 0; i < TASKS_AHEAD + 3; i++) order(`q${i}`);
+  const none = await ahead(H);
+  check("a client holding nothing is given nothing ahead", none.work === null && held(H) === 0, JSON.stringify(none));
+  const plain = await work(H), now1 = plain.work;
+  check("every answer says how many tasks a client may ask ahead", plain.ahead === TASKS_AHEAD && TASKS_AHEAD >= 1, JSON.stringify(plain));
+  const next = [];
+  for (let i = 0; i < TASKS_AHEAD; i++) next.push((await ahead(H)).work);
+  check("a client holding one task is given its next ahead, and keeps the first",
+    now1 && next.every((w) => w && w.identity !== now1.identity) && held(H) === TASKS_AHEAD + 1 && row(now1.identity).lease === now1.lease);
+  check("...and never more than that", (await ahead(H)).work === null && held(H) === TASKS_AHEAD + 1);
+  check("asking plainly again hands both back and takes one", (await work(H)).work && held(H) === 1);
 }
 
 console.log(failures ? `\n${failures} failed` : "\nan order reaches the board when CLIENTS_PER_FACT clients measured the same bits");

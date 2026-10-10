@@ -191,7 +191,7 @@ async function claimDevice(id) {
   const account = accountState.account && accountState.account.id;
   if (!account || claimedFor === `${account}:${id}`) return;
   const r = await accountCall("POST", "/api/account/devices/claim", { verifier: id, label: computeDeviceGuess() });
-  if (r && r.ok) claimedFor = `${account}:${id}`;
+  if (r && r.ok) { claimedFor = `${account}:${id}`; devicePointsAt = 0; }
 }
 
 /// WHAT THIS BROWSER HAS EARNED — `{ points, recent, claimed }`, asked by its
@@ -232,16 +232,49 @@ const postBoardWork = (path, body) => fetch(path, {
 /// `release`). Every release reloads every computing page, which made that
 /// wait everyone's at once.
 let heldLease = null;
-function giveBack(beacon = false) {
-  const h = heldLease;
-  heldLease = null;
-  if (!h) return;
+const releaseLease = (h, beacon) => {
   const path = h.code ? `/api/appraise/${encodeURIComponent(h.code)}/renew` : "/api/board/release";
   const body = { lease: h.lease, verifier: h.verifier, ...(h.code ? { release: true } : {}) };
   if (beacon && navigator.sendBeacon) navigator.sendBeacon(path, JSON.stringify(body));
   else postBoardWork(path, body);
+};
+function giveBack(beacon = false) {
+  const h = heldLease;
+  heldLease = null;
+  if (h) releaseLease(h, beacon);
 }
-addEventListener("pagehide", () => giveBack(true));
+addEventListener("pagehide", () => { giveBack(true); giveBackAhead(true); });
+
+/// THE NEXT TASKS, ASKED BEFORE THIS ONE ENDS (worker/verify.js, asking ahead):
+/// once a task is `AHEAD_AT` done, so the next starts the moment it ends and no
+/// core waits on a round trip and the server's choosing. As many as the server
+/// says (`ahead`, its `TASKS_AHEAD`) and no more, asked once per task.
+const AHEAD_AT = 0.8;
+let tasksAhead = 0;
+let aheadAsks = [], aheadAskedFor = null;
+function askAhead(id, task) {
+  if (aheadAskedFor === task || !tasksAhead || !boardVerifyOn() || computeHeld() || readerBusy()) return;
+  aheadAskedFor = task;
+  const c = computeConsent();
+  const at = Date.now();
+  for (let i = aheadAsks.length; i < tasksAhead; i++) {
+    const entry = { held: null };
+    entry.ask = postBoardWork("/api/board/work",
+      { verifier: id, engine: ENGINE_ID, protocol: 6, consent: { v: c.v, at: c.at }, lanes: communityLanes(), ahead: true })
+      .then((r) => {
+        const w = r && r.work;
+        entry.held = w ? { code: w.kind === "riven_gain" ? w.code : null, lease: w.lease, verifier: id } : null;
+        return r && { ...r, asked_at: at };
+      });
+    aheadAsks.push(entry);
+  }
+}
+/// …GIVEN BACK on every way out that does not start them.
+function giveBackAhead(beacon = false) {
+  const all = aheadAsks;
+  aheadAsks = [];
+  all.forEach((e) => { if (e.held) releaseLease(e.held, beacon); });
+}
 /// A LEASE RUNS `LEASE_MS` (30 min) on the server; past this share of it the
 /// fight stops and the lease is given back, since an answer after it is dropped.
 const LEASE_SAFE_MS = 27 * 60_000;
@@ -341,11 +374,13 @@ function releaseNotice() {
 /// the page that froze it would have sent — with the search's work. Turning
 /// computing off stops it, and the lease lapses to another computer.
 const RIVEN_RENEW_MS = 2 * 60_000;
+let rivenTookMs = 0;
 async function rivenGainOnce(w, id) {
   heldLease = { code: w.code, lease: w.lease, verifier: id };
   computeStart({ kind: "riven_gain", code: w.code, weapon: w.weapon, ruler: w.ruler });
   const began = performance.now();
-  const job = quickFleet(w.request, communityLanes(), () => yieldToReader());
+  // THE CORES IT MAY TAKE ARE ASKED EVERY ROUND, and its workers kept for the next one (`quickFleet`).
+  const job = quickFleet(w.request, () => communityLanes(), () => yieldToReader(), { keep: true });
   // STILL AT IT, said every `RIVEN_RENEW_MS` so the lease runs on while the
   // search does; told the task went elsewhere, it stops (worker/appraise.js `renew`).
   let lost = false, said = performance.now();
@@ -366,8 +401,11 @@ async function rivenGainOnce(w, id) {
     }
     const s = job.status || {};
     computeProgress(s.sims_done || 0, 0, s);
+    // A SEARCH'S LENGTH IS NOT KNOWN AHEAD, so the last one's stands for it.
+    if (rivenTookMs && performance.now() - began > AHEAD_AT * rivenTookMs) askAhead(id, w.lease);
     await new Promise((r) => setTimeout(r, 1000));
   }
+  rivenTookMs = performance.now() - began;
   const r = job.result;
   const best = r && r.ok !== false && (r.results || []).find((x) => x && (x.mods || []).length);
   if (!best) { giveBack(); computeEnd(null); return true; }
@@ -391,13 +429,17 @@ async function rivenGainOnce(w, id) {
 /// never says whether it agreed; a lease it does not answer is given back.
 async function workOnce() {
   // NO LEASE WHILE THE READER COMPUTES: one taken now would sit idle under it.
-  if (!boardVerifyOn() || onPhone() || computeHeld() || readerBusy()) return false;
+  if (!boardVerifyOn() || onPhone() || computeHeld() || readerBusy()) { giveBackAhead(); return false; }
   const id = verifierId();
   if (!id) return false;
   await claimDevice(id);
   const c = computeConsent();
-  const ask = await postBoardWork("/api/board/work",
+  // THE FIRST TASK ASKED AHEAD that holds one, when there is one; else asked now.
+  let pre = null;
+  while (aheadAsks.length && !(pre && pre.work)) pre = await aheadAsks.shift().ask;
+  const ask = pre && pre.work ? pre : await postBoardWork("/api/board/work",
     { verifier: id, engine: ENGINE_ID, protocol: 6, consent: { v: c.v, at: c.at }, lanes: communityLanes() });
+  if (ask && Number.isInteger(ask.ahead) && ask.ahead >= 0) tasksAhead = ask.ahead;
   if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
   if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
   if (ask && (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil)) {
@@ -408,11 +450,14 @@ async function workOnce() {
   if (!w) return false;
   if (w.kind === "riven_gain") return rivenGainOnce(w, id);
   heldLease = { lease: w.lease, verifier: id };
-  const until = Date.now() + LEASE_SAFE_MS;
+  const until = (ask.asked_at || Date.now()) + LEASE_SAFE_MS;
   const order = await api("/api/board/order", { record: w.record, ruler: w.ruler, mode: w.mode }, null, { community: true });
   if (!order || !order.ok) { giveBack(); return true; }
   computeStart({ kind: "board", weapon: w.record.weapon, ruler: w.ruler, mode: w.mode, identity: w.identity, record: w.record });
-  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && Date.now() < until, computeProgress);
+  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && Date.now() < until, (done, total) => {
+    computeProgress(done, total);
+    if (total && done >= AHEAD_AT * total) askAhead(id, w.lease);
+  });
   if (!s) { giveBack(); computeEnd(null); return true; }
   const sent = await postBoardWork("/api/board/verify",
     { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms });
@@ -470,7 +515,7 @@ function boardVerifyHtml() {
 /// browser, or — signed out — the one line saying signing in puts it there.
 /// Signed in with points and never asked, the one question: show the name?
 function boardPointsHtml(on) {
-  const d = on && devicePoints;
+  const d = on && devicePoints && !devicePoints.claimed && devicePoints;
   const earned = d ? ` <span class="board-state">${escHtml(tr("This browser: {n} points.")
     .replace("{n}", d.points.toLocaleString(accountLocale())))}</span>` : "";
   const join = on && !accountState.account

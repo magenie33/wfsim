@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // THE COMPUTE A READER'S MACHINES GIVE THE BOARD, counted under their name —
 // docs/BOARD.md §"Contribution". A signed-in page claims the browser it runs
-// in (its verifier id, `69-board-work.js`); the work every fact credited to that
-// id (`verifiers.work`, worker/verify.js) is then the account's. Only the owner
-// is joined to a device, never a submission. Every account with a claimed
+// in (its verifier id, `69-board-work.js`); from then on the work every fact
+// credits to that id (`verifier_hours`, worker/verify.js) is the account's, and
+// what it earned before anyone claimed it goes to its first claim (§"Spans").
+// Only the owner is joined to a device, never a submission. Every account with a claimed
 // device is on the public ranking, ANONYMOUS until it agrees to show its name
 // (`contribution_choice`): publishing a name is the person's choice, asked once.
 //
-//   GET  /api/account/devices        → { devices: [{ id, label, claimed_at, points, recent, week, last_at, now }], points, recent, week, ranks, contributor_rank, named, decided, volunteer }
+//   GET  /api/account/devices        → { devices: [{ id, label, claimed_at, points, recent, week, last_at, now }], removed: { count, points }, points, recent, week, ranks, contributor_rank, named, decided, volunteer }
 //   POST /api/account/devices/claim  { verifier, label? } → { ok }
 //   POST /api/account/devices/label  { id, label }        → { ok }
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
-//   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour
+//   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour;
+//        the points are what no account holds yet, so 0 once it is claimed
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }], per_hour: { volunteers, official } }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
@@ -101,6 +103,59 @@ async function workOf(env, ids) {
 }
 const NONE = { work: 0, recent: 0, week: 0, consent_at: null };
 
+// ---- Spans ---------------------------------------------------------------------
+//
+// A DEVICE'S WORK IS WHOSE IT WAS WHEN IT WAS EARNED, never whose it is now.
+// A claim opens a span (`device_spans`) and the account holds the device's
+// `verifier_hours` in it. The first claim's span reaches back to the device's
+// first hour: what it earned unclaimed goes to that account once, and the
+// browser's own count is empty after. A later claim by another account closes
+// the open span and opens its own, and a removal closes it, so points never
+// move between accounts: signing in once on someone's computer takes nothing
+// they earned, and a machine passed around carries no points to anyone. A span
+// ends at the NEXT hour, so a credit already made is never taken back.
+const nextHour = () => iso(Date.now() + 3_600_000).slice(0, 13);
+const spanAll = (s) => !s.from_hour && s.until_hour == null;
+
+/// THE WORK IN EACH OF `spans` — `{ work, recent, week, consent_at }` in order —
+/// a whole device's from `workOf`, a bounded span's summed over its hours.
+async function spanWork(env, spans) {
+  const whole = await workOf(env, [...new Set(spans.map((s) => s.verifier))]);
+  const out = spans.map((s) => ({ ...(whole.get(s.verifier) || NONE) }));
+  const cut = spans.map((s, i) => [s, i]).filter(([s]) => !spanAll(s));
+  if (!env.LIBRARY || !cut.length) return out;
+  const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
+  for (let i = 0; i < cut.length; i += PER_STATEMENT) {
+    const part = cut.slice(i, i + PER_STATEMENT);
+    const rows = await env.LIBRARY.batch(part.map(([s]) => env.LIBRARY.prepare(
+      `SELECT SUM(work) AS work, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS recent, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS week
+         FROM verifier_hours WHERE verifier = ? AND hour >= ? AND (? IS NULL OR hour < ?)`)
+      .bind(from, week, s.verifier, s.from_hour, s.until_hour, s.until_hour)));
+    part.forEach(([s, k], j) => {
+      const r = rows[j].results[0] || {};
+      // A REFUSED CLIENT counts for nothing, as `workOf` says by leaving it out.
+      out[k] = whole.has(s.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0 } : { ...NONE };
+    });
+  }
+  return out;
+}
+
+/// WHAT `verifier` EARNED THAT NO ACCOUNT HOLDS: everything after its last
+/// span, or all of it when it never had one; nothing while one is open.
+async function unheld(env, verifier) {
+  const last = env.ACCOUNTS && await env.ACCOUNTS.prepare(
+    "SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(verifier).first();
+  if (last && last.until_hour == null) return { ...NONE, held: true };
+  const [w] = await spanWork(env, [{ verifier, from_hour: last ? last.until_hour : "", until_hour: null }]);
+  return { ...w, held: false };
+}
+
+/// CLOSE `verifier`'S OPEN SPAN at `at`; one that closes empty is dropped.
+const closeSpan = (env, verifier, at) => env.ACCOUNTS.batch([
+  env.ACCOUNTS.prepare("UPDATE device_spans SET until_hour = ?1 WHERE verifier = ?2 AND until_hour IS NULL").bind(at, verifier),
+  env.ACCOUNTS.prepare("DELETE FROM device_spans WHERE verifier = ?1 AND until_hour = from_hour").bind(verifier),
+]);
+
 /// A VOLUNTEER: a device that said yes to computing and has had work credited
 /// for it — an honour earned by computing, not by a click, and never sold.
 /// `since` is the earliest such yes.
@@ -152,8 +207,18 @@ async function ownDevice(env, account, id) {
 async function devices(env, account) {
   const { results } = await env.ACCOUNTS.prepare(
     "SELECT verifier, claimed_at, label FROM devices WHERE account = ?1 ORDER BY claimed_at").bind(account).all();
+  const { results: spans } = await env.ACCOUNTS.prepare(
+    "SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(account).all();
   const ids = results.map((d) => d.verifier);
-  const [work, doing] = await Promise.all([workOf(env, ids), activityOf(env, ids)]);
+  const [held, doing] = await Promise.all([spanWork(env, spans), activityOf(env, ids)]);
+  // EACH DEVICE'S SHARE IS WHAT ITS SPANS OF THIS ACCOUNT HOLD; a removed one's still counts.
+  const work = new Map();
+  spans.forEach((s, i) => {
+    const e = work.get(s.verifier) || NONE, w = held[i];
+    work.set(s.verifier, { work: e.work + w.work, recent: e.recent + w.recent, week: e.week + w.week, consent_at: w.consent_at });
+  });
+  const current = new Set(ids);
+  const gone = [...work].filter(([v]) => !current.has(v)).map(([, w]) => w);
   const choice = await env.ACCOUNTS.prepare("SELECT named FROM contribution_choice WHERE account = ?1").bind(account).first();
   const named = !!(choice && choice.named);
   const everyone = await standings(env);
@@ -163,21 +228,24 @@ async function devices(env, account) {
   }));
   const list = results.map((d) => ({ id: d.verifier.slice(0, 6), label: d.label || null, claimed_at: d.claimed_at,
     ...(doing.get(d.verifier) || { last_at: null, now: null }), ...(work.get(d.verifier) || NONE) }));
+  const all = [...work.values()];
+  const sum = (k) => all.reduce((t, w) => t + w[k], 0);
   // `shown` is `named` for a page from before the ranking was anonymous.
-  return json({ ok: true, named, decided: !!choice, shown: named, volunteer: volunteerSince(list),
-    points: points(list.reduce((s, d) => s + d.work, 0)), recent: points(list.reduce((s, d) => s + d.recent, 0)),
-    week: points(list.reduce((s, d) => s + d.week, 0)), ranks,
-    contributor_rank: contributorRank(points(list.reduce((s, d) => s + d.work, 0))),
+  return json({ ok: true, named, decided: !!choice, shown: named, volunteer: volunteerSince(all),
+    points: points(sum("work")), recent: points(sum("recent")), week: points(sum("week")), ranks,
+    contributor_rank: contributorRank(points(sum("work"))),
+    removed: { count: gone.length, points: points(gone.reduce((t, w) => t + w.work, 0)) },
     devices: list.map(({ work: w, recent: r, week: k, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r), week: points(k) })) });
 }
 
-/// WHAT ONE BROWSER HAS EARNED, asked by the browser itself: its id is a secret
-/// only it holds, so this tells nobody else anything. `claimed` says whether
-/// an account owns it, and never which.
+/// WHAT ONE BROWSER HOLDS, asked by the browser itself: its id is a secret only
+/// it holds, so this tells nobody else anything. Its points are what no account
+/// holds yet (`unheld`) — all it earned until its first claim, nothing while an
+/// account holds it. `claimed` says whether one does, and never which.
 async function devicePoints(env, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
-  const w = (await workOf(env, [b.verifier])).get(b.verifier) || NONE;
-  const claimed = !!(env.ACCOUNTS && await env.ACCOUNTS.prepare("SELECT 1 FROM devices WHERE verifier = ?1").bind(b.verifier).first());
+  const w = await unheld(env, b.verifier);
+  const claimed = w.held;
   // ITS OWN "TODAY": the whole UTC hours from the one the page names as its
   // midnight — results sent, what they took, and the points credited in them.
   let today = null;
@@ -189,19 +257,28 @@ async function devicePoints(env, b) {
   return json({ ok: true, points: points(w.work), recent: points(w.recent), week: points(w.week), claimed, ...(today ? { today } : {}) });
 }
 
-/// A DEVICE BELONGS TO THE LAST ACCOUNT TO CLAIM IT, and its work goes with it:
-/// the id is a secret only that browser holds, so whoever sends it is at it.
+/// A DEVICE WORKS FOR THE ACCOUNT SIGNED IN ON IT, from the next hour on
+/// (§"Spans"), and what it earned before anyone held it comes with the first
+/// claim. ONLY THAT BROWSER CAN CLAIM IT: the full id is a secret it alone
+/// keeps, and no endpoint sends it back (an owner's list shows six characters).
 async function claim(env, account, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
-  await env.ACCOUNTS.prepare(
-    `INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?1, ?2, ?3, ?4)
-     ON CONFLICT (verifier) DO UPDATE SET account = ?2, claimed_at = ?3, label = ?4 WHERE account != ?2`,
-  ).bind(b.verifier, account, now(), labelOf(b.label)).run();
+  const v = b.verifier, db = env.ACCOUNTS;
+  const owner = await db.prepare("SELECT account FROM devices WHERE verifier = ?1").bind(v).first();
+  if (owner && owner.account === account) return json({ ok: true });
+  await closeSpan(env, v, nextHour());
+  const last = await db.prepare("SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(v).first();
+  await db.batch([
+    db.prepare("INSERT OR IGNORE INTO device_spans (verifier, account, from_hour) VALUES (?1, ?2, ?3)").bind(v, account, last ? last.until_hour : ""),
+    db.prepare(`INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?1, ?2, ?3, ?4)
+      ON CONFLICT (verifier) DO UPDATE SET account = ?2, claimed_at = ?3, label = ?4`).bind(v, account, now(), labelOf(b.label)),
+  ]);
   return json({ ok: true });
 }
 
-/// WHAT THE OWNER CALLS IT, or — removed — not theirs any more: its work leaves
-/// the account with it, and the browser counts for nobody until it is claimed.
+/// WHAT THE OWNER CALLS IT, or — removed — off their list: its span closes and
+/// what it earned in it stays theirs, so a browser whose cookies were cleared
+/// is removed without losing a point. Signed in there again, it is claimed again.
 async function relabel(env, account, b) {
   const v = await ownDevice(env, account, b.id);
   if (!v) return no("not_your_device", 404);
@@ -213,6 +290,7 @@ async function relabel(env, account, b) {
 async function release(env, account, b) {
   const v = await ownDevice(env, account, b.id);
   if (!v) return no("not_your_device", 404);
+  await closeSpan(env, v, nextHour());
   await env.ACCOUNTS.prepare("DELETE FROM devices WHERE verifier = ?1").bind(v).run();
   return json({ ok: true });
 }
@@ -236,13 +314,13 @@ const PERIODS = { all: "points", recent: "recent", week: "week" };
 /// points — the one list every ranking and every account's place is cut from.
 async function standings(env) {
   const { results } = await env.ACCOUNTS.prepare(
-    `SELECT a.id, a.username, a.display_name, c.named, d.verifier FROM devices d JOIN accounts a ON a.id = d.account
-       LEFT JOIN contribution_choice c ON c.account = d.account`).all();
-  const work = await workOf(env, results.map((r) => r.verifier));
+    `SELECT a.id, a.username, a.display_name, c.named, s.verifier, s.from_hour, s.until_hour FROM device_spans s
+       JOIN accounts a ON a.id = s.account LEFT JOIN contribution_choice c ON c.account = s.account`).all();
+  const work = await spanWork(env, results);
   const by = new Map();
-  for (const r of results) {
+  for (const [i, r] of results.entries()) {
     const e = by.get(r.id) || { id: r.id, named: !!r.named, name: r.display_name || r.username, work: 0, recent: 0, week: 0, ws: [] };
-    const w = work.get(r.verifier) || NONE;
+    const w = work[i];
     e.work += w.work;
     e.recent += w.recent;
     e.week += w.week;

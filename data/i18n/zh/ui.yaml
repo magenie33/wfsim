@@ -2646,7 +2646,10 @@ ui:
   "Last answered {when}": "最后完成于 {when}"
   "Nothing computed yet": 还没有算过
   "Rename": 改名
-  "Remove it? Its points leave your account, and it computes for nobody until it is claimed again.": "确定移除吗？它的积分会从你的账号移走；重新认领之前，它算的不记在任何人名下。"
+  "Remove it from this list? Its points stay yours; signed in on it again, it is listed again.": "从列表中移除吗？它的积分仍归你；在它上面再次登录时，它会重新出现在列表里。"
+  "Everything this browser computes counts under the account signed in on it.": "这个浏览器算的每一分，都直接记在登录在它上面的账号名下。"
+  "Kept for this browser until you sign in here; the first account to sign in takes them all.": "在你登录之前先记在这个浏览器上；第一个在这里登录的账号会一次性拿走全部。"
+  "{n} removed devices, their {p} points still counted": "已移除 {n} 台设备，它们的 {p} 积分仍计入总分"
   "All together": 合计
   "No device yet: leave WFSim open on a computer while you are signed in.": "还没有设备：登录后在电脑上开着 WF模拟 就行。"
   "Recent tasks on this browser": 这个浏览器最近的任务

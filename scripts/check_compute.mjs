@@ -67,6 +67,15 @@ const r = await evaluate(`(async () => {
   history.pushState({}, "", "/compute"); route(); await loadAccount(); await sleep(500);
   const cards = () => [...page().querySelectorAll("#rt-live .rt-card")];
   out.recent = cards().map((k) => k.textContent.replace(/\\s+/g, " ").trim());
+  // EVERY BLOCK FOLDS, the site's way, and stays folded when the page is drawn again.
+  out.folds = [...page().querySelectorAll(".block[id]")].map((b) => [b.id, !!b.querySelector(":scope > .bh > .fold-c")]);
+  const demand = document.getElementById("compute-browser");
+  demand.querySelector(":scope > .bh").click();
+  out.shut = demand.classList.contains("shut");
+  renderAuthPage("compute"); await sleep(200);
+  out.stillShut = document.getElementById("compute-browser").classList.contains("shut")
+    && document.getElementById("compute-browser").querySelectorAll(":scope > .bh > .fold-c").length === 1;
+  document.getElementById("compute-browser").querySelector(":scope > .bh").click();
   out.secret = page().textContent.includes("secret");
   // OPENED, a task shows its build and the way to its weapon's board; the list
   // node is the same one after the page is drawn again around it.
@@ -102,7 +111,7 @@ const r = await evaluate(`(async () => {
   page().querySelector('[data-auth="device-rename-save"]').click(); await sleep(400);
   out.renamed = rowsOf("Your devices").map((k) => k.querySelector("dt").textContent.replace(/\\s+/g, " ").trim());
   page().querySelector('[data-auth="device-remove"][data-id="abcdef"]').click(); await sleep(200);
-  out.asks = page().textContent.includes("Remove it?");
+  out.asks = page().textContent.includes("Remove it from this list? Its points stay yours");
   page().querySelector('[data-auth="device-remove-confirm"]').click(); await sleep(400);
   out.after = rowsOf("Your devices").length;
   out.posted = posted;
@@ -116,6 +125,8 @@ check("this browser's tasks are drawn by kind, a board order as its weapon and r
 check("...a simulation says what it computed, a search the best it found among the builds it tried",
   r.recent[0] && r.recent[0].includes("computed 123.4567 KPM")
   && r.recent[2] && r.recent[2].startsWith("OptimizeFuris") && r.recent[2].includes("best 254.3244 KPM · 1,840 builds"), JSON.stringify(r.recent));
+check("every block of the compute page folds as the site's do", r.folds.length >= 3 && r.folds.every(([, c]) => c), JSON.stringify(r.folds));
+check("...and a folded one stays folded, with one caret, when the page is drawn again", r.shut && r.stillShut);
 check("a riven gain asks the server where it stands: one credited says confirmed, one not yet waits for another computer",
   r.recent[2] && r.recent[2].includes("confirmed +1") && r.recent[3] && r.recent[3].includes("waiting for another computer"), JSON.stringify(r.recent));
 check("...and a search's stored 0, a misread row, is drawn as no number at all", r.recent[3] && r.recent[3].startsWith("Optimize") && !r.recent[3].includes("KPM"),

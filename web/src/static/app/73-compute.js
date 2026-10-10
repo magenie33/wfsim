@@ -214,11 +214,15 @@ function computeHereHtml() {
   const flip = WASM && !onPhone()
     ? ` <button class="ghost-btn btn-sm" data-auth="compute-flip">${aT(on ? "stop computing" : "start computing")}</button>` : "";
   const again = on && boardStale ? ` <button class="ghost-btn btn-sm" data-auth="compute-reload">${aT("refresh now")}</button>` : "";
+  // ITS POINTS ARE ITS NOTEBOOK: what no account holds yet, empty once one does (worker/contribution.js §"Spans").
   const d = devicePoints;
-  const pts = d ? `<div class="kv"><dt>${aT("Points")}</dt><dd>${computePts(d.points)} · ${
-    escHtml(tr("{n} in the last 30 days").replace("{n}", Number(d.recent || 0).toLocaleString(accountLocale())))}${
-    accountState.account ? "" : ` · <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in to count it under your name")}</a>`}</dd></div>` : "";
-  return `<div class="block"><div class="bh"><h2>${aT("This browser")}</h2></div><div class="bb"><dl class="kvs">
+  const pts = !d ? "" : d.claimed
+    ? `<div class="kv"><dt>${aT("Points")}</dt><dd>${aT("Everything this browser computes counts under the account signed in on it.")}</dd></div>`
+    : `<div class="kv"><dt>${aT("Points")}</dt><dd>${computePts(d.points)} · ${
+      escHtml(tr("{n} in the last 30 days").replace("{n}", Number(d.recent || 0).toLocaleString(accountLocale())))}<br><span class="set-note">${
+      aT("Kept for this browser until you sign in here; the first account to sign in takes them all.")}</span>${
+      accountState.account ? "" : ` <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in to count it under your name")}</a>`}</dd></div>`;
+  return `<div class="block" id="compute-browser"><div class="bh"><h2>${aT("This browser")}</h2></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("State")}</dt><dd><span id="compute-state">${escHtml(state)}</span>${on ? `<br><span class="set-note">${
       escHtml(tr("{pct}% of this computer's cores while it is idle, one core while you use it.").replace("{pct}", communityShare()))}</span>` : ""}</dd>${flip}${again}</div>${pts}</dl></div></div>`;
 }
@@ -238,7 +242,7 @@ function computeHonourHtml(d) {
 function computeDevicesHtml() {
   if (!accountState.providers.length) return "";
   if (!accountState.account) {
-    return `<div class="block"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${
+    return `<div class="block" id="compute-devices"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${
       aT("Signed in, every computer you leave computing shows here together, and its work counts under your name.")}
       <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in")}</a></p></div></div>`;
   }
@@ -257,7 +261,7 @@ function computeDevicesHtml() {
         <button class="ghost-btn btn-sm" data-auth="device-rename-cancel">${aT("Cancel")}</button></div>`;
     }
     if (computeRemoving === d.id) {
-      return `<div class="kv"><dt>${escHtml(name)}</dt><dd>${aT("Remove it? Its points leave your account, and it computes for nobody until it is claimed again.")}</dd>
+      return `<div class="kv"><dt>${escHtml(name)}</dt><dd>${aT("Remove it from this list? Its points stay yours; signed in on it again, it is listed again.")}</dd>
         <button class="btn-danger btn-sm" data-auth="device-remove-confirm" data-id="${d.id}">${aT("Remove")}</button>
         <button class="ghost-btn btn-sm" data-auth="device-remove-cancel">${aT("Cancel")}</button></div>`;
     }
@@ -266,9 +270,12 @@ function computeDevicesHtml() {
       <button class="ghost-btn btn-sm" data-auth="device-remove" data-id="${d.id}">${aT("Remove")}</button></div>`;
   }).join("");
   const total = `${computePts(s.points)} · ${escHtml(tr("{n} in the last 30 days").replace("{n}", Number(s.recent || 0).toLocaleString(accountLocale())))}`;
-  return `<div class="block"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb">${rows
+  // A REMOVED DEVICE'S POINTS ARE STILL IN THE TOTAL, and the list says so (worker/contribution.js `release`).
+  const removed = s.removed && s.removed.count ? `<p class="set-note" style="margin:4px 0 0">${escHtml(tr("{n} removed devices, their {p} points still counted")
+    .replace("{n}", Number(s.removed.count).toLocaleString(accountLocale())).replace("{p}", Number(s.removed.points).toLocaleString(accountLocale())))}</p>` : "";
+  return `<div class="block" id="compute-devices"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb">${rows
     ? `<dl class="kvs">${s.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(s.contributor_rank)}</dd></div>` : ""}${
-      rows}${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>`
+      rows}${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>${removed}`
     : `<p class="set-note" style="margin:0">${aT("No device yet: leave WFSim open on a computer while you are signed in.")}</p>`}</div></div>`;
 }
 
@@ -348,6 +355,8 @@ function computeDraw(main) {
       if (after) col.append(el); else col.insertBefore(el, live);
     }
   } else main.replaceChildren(t.content);
+  // EVERY BLOCK FOLDS, as the rest of the site's do (70-result-panel.js `wireBlockFolds`).
+  wireBlockFolds(main.querySelectorAll(".block[id]"));
   computeOpened();
 }
 /// EVERYTHING THE LIVE BLOCK SHOWS, brought up to date. Cheap: a tick calls it.
@@ -639,7 +648,7 @@ function computeDemandHtml() {
       <div class="set-note">${escHtml(tr("{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}</div></div></div>`;
   }).join("");
   const eta = hours === null || !owed ? "" : hours < 1 ? tr("under an hour") : tr("about {n} hours").replace("{n}", n(Math.round(hours)));
-  return `<div class="block"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
+  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All computers together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("computers")}</dd></div>
     <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>

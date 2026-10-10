@@ -130,6 +130,18 @@ CREATE TABLE IF NOT EXISTS devices (
   -- What the owner calls it: the browser's own coarse guess ("Mac · Chrome") until renamed.
   label      TEXT
 );
+-- WHOSE A DEVICE'S WORK WAS, hour by hour (worker/contribution.js §"Spans"):
+-- `verifier_hours` from `from_hour` (empty: its first) up to `until_hour`
+-- (null: still theirs). A deleted account's spans keep their hours, unowned,
+-- so the next claim cannot take them.
+CREATE TABLE IF NOT EXISTS device_spans (
+  verifier   TEXT NOT NULL,
+  account    TEXT REFERENCES accounts (id) ON DELETE SET NULL,
+  from_hour  TEXT NOT NULL,
+  until_hour TEXT,
+  PRIMARY KEY (verifier, from_hour)
+);
+CREATE INDEX IF NOT EXISTS device_spans_by_account ON device_spans (account);
 CREATE INDEX IF NOT EXISTS devices_by_account ON devices (account);
 
 -- WHETHER AN ACCOUNT AGREED TO SHOW ITS NAME ON THE CONTRIBUTION RANKING. An

@@ -115,27 +115,52 @@ function woptQuickFleet(body, n) {
   return { ok: true, job_id: job.id };
 }
 
+/// WORKERS A BACKGROUND SEARCH HANDS BACK, for the next one to start on: a
+/// new worker does nothing until its 10 MB engine has loaded, and a
+/// volunteer's searches come one after another. Kept a minute idle, then let go.
+const FLEET_KEEP_MS = 60_000;
+const fleetKept = [];
+let fleetReap = null;
+function fleetKeep(workers) {
+  workers.forEach((w) => { w.onmessage = null; w.onerror = null; fleetKept.push(w); });
+  clearTimeout(fleetReap);
+  fleetReap = setTimeout(() => fleetKept.splice(0).forEach((w) => w.terminate()), FLEET_KEEP_MS);
+}
+
 /// …ONE SUCH SEARCH, as a job object of its own: the reader's optimizer holds
 /// one (`wopt`), and a riven gain run for someone else holds another, so
 /// neither waits on the other. `pace` is awaited before every round — the
 /// background's way to let the reader go first. The result carries `work`:
 /// what every scorer's fights and the final round cost (`Shard::work`).
-function quickFleet(body, n, pace = async () => {}) {
+///
+/// `n` IS A NUMBER OR A FUNCTION asked before every round, so a background
+/// search takes the cores the reader leaves it now, not the ones it had when it
+/// began. A round's builds are dealt in slices a free worker pulls, so one slow
+/// slice does not hold every other core idle; the scores go back in the order
+/// of the builds, which is all the leader reads, so the answer is the same
+/// however many workers scored it. `keep` hands the workers back (`fleetKeep`).
+function quickFleet(body, n, pace = async () => {}, { keep = false } = {}) {
+  const lanesNow = () => Math.max(1, Math.floor(typeof n === "function" ? n() : n) || 1);
   const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
-    cancelled: false, shards: n, t0: Date.now() };
+    cancelled: false, shards: lanesNow(), t0: Date.now() };
   const done = { builds: 0, fights: 0, work: 0 };
-  const live = new Array(n).fill(null);
+  const live = [];
   // Where each start stands, as the leader last reported it.
   let starts = [];
+  let round = { builds: 0, fights: 0 };
   const show = () => {
     const cur = live.filter(Boolean);
     job.status = { phase: "searching", round: 0, rounds: 0, round_jobs: 0, round_runs: 0, sims_planned: 0, notes: [],
-      workers: n, starts,
-      enumerated: done.builds + cur.reduce((a, s) => a + (s.enumerated || 0), 0),
-      sims_done: done.fights + cur.reduce((a, s) => a + (s.sims_done || 0), 0) };
+      workers: job.workers.length, starts,
+      enumerated: done.builds + round.builds + cur.reduce((a, s) => a + (s.enumerated || 0), 0),
+      sims_done: done.fights + round.fights + cur.reduce((a, s) => a + (s.sims_done || 0), 0) };
   };
-  const stop = () => { job.workers.forEach((w) => w && w.terminate()); job.workers = []; };
-  const fail = (why) => { if (!job.result) job.result = { ok: false, error: why }; stop(); };
+  const stop = (finished) => {
+    const ws = job.workers;
+    job.workers = [];
+    if (finished && keep) fleetKeep(ws); else ws.forEach((w) => w && w.terminate());
+  };
+  const fail = (why) => { if (!job.result) job.result = { ok: false, error: why }; stop(false); };
   // One call to one worker; its progress, if any, to `onProgress`.
   const call = (i, b, onProgress) => new Promise((resolve) => {
     const w = job.workers[i];
@@ -150,7 +175,8 @@ function quickFleet(body, n, pace = async () => {}) {
     w.postMessage({ kind: "optimize", body: b });
     wd.start();
   });
-  for (let i = 0; i < n; i++) job.workers.push(new Worker("/worker.js"));
+  const grow = (k) => { while (job.workers.length < k) job.workers.push(fleetKept.pop() || new Worker("/worker.js")); };
+  grow(job.shards);
   show();
   (async () => {
     let scores = [];
@@ -161,22 +187,38 @@ function quickFleet(body, n, pace = async () => {}) {
       const r = await call(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
         (p) => { if (p.rounds) job.status = p; });
       if (!r || job.cancelled) return;
-      if (!r.pending) { job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights }; stop(); return; }
+      if (!r.pending) { job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights }; stop(true); return; }
       starts = r.progress || starts;
-      const per = Math.ceil(r.pending.length / n);
-      const outs = await Promise.all(Array.from({ length: n }, (_, i) => {
-        const part = r.pending.slice(i * per, (i + 1) * per);
-        return part.length
-          ? call(i, { ...body, quick_fleet: { score: part } }, (s) => { live[i] = s; show(); })
-          : Promise.resolve({ scores: [] });
+      const k = Math.min(lanesNow(), r.pending.length);
+      grow(k);
+      // TWO SLICES A WORKER: enough that a fast one takes a slow one's share,
+      // few enough that each call's fixed cost stays small beside its fights.
+      const size = Math.max(1, Math.ceil(r.pending.length / (k * 2)));
+      const slices = [];
+      for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
+      const outs = new Array(slices.length).fill(null);
+      let next = 0, broken = false;
+      round = { builds: 0, fights: 0 };
+      await Promise.all(Array.from({ length: k }, async (_, i) => {
+        while (!broken && !job.cancelled && next < slices.length) {
+          const at = next++;
+          const o = await call(i, { ...body, quick_fleet: { score: slices[at] } }, (st) => { live[i] = st; show(); });
+          live[i] = null;
+          if (!o) { broken = true; return; }
+          outs[at] = o;
+          round.builds += (o.scores || []).length;
+          round.fights += o.fights || 0;
+          show();
+        }
       }));
-      if (outs.some((o) => !o) || job.cancelled) return;
+      if (broken || outs.some((o) => !o) || job.cancelled) return;
       const bad = outs.find((o) => o.ok === false);
       if (bad) { fail(bad.error || "a worker could not score its share"); return; }
       scores = outs.flatMap((o) => o.scores || []);
       done.builds += scores.length;
       done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
       done.work += outs.reduce((a, o) => a + (o.work || 0), 0);
+      round = { builds: 0, fights: 0 };
       live.fill(null);
       show();
     }

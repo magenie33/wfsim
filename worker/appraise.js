@@ -179,10 +179,11 @@ const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
 /// engine waited for ever behind the first release after it. The cap on answers
 /// counts the served engine's alone, so a release opens it again; agreement is
 /// still the bits, across engines (`volunteerAnswer`).
-export async function rivenTask(env, verifier, engine, owners, lanes = 1, which = "chat", net = "") {
+/// `most`: the tasks this client may hold with this one (worker/verify.js, asking ahead).
+export async function rivenTask(env, verifier, engine, owners, lanes = 1, which = "chat", net = "", most = 1) {
   const db = env.LIBRARY, now = Date.now();
-  const held = await db.prepare("SELECT 1 FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, iso(now)).first();
-  if (held) return null;
+  const held = await db.prepare("SELECT count(*) AS n FROM appraisals WHERE leased_to = ? AND lease_until > ?").bind(verifier, iso(now)).first();
+  if (held && held.n >= most) return null;
   const { results } = await db.prepare(
     `SELECT a.code, a.weapon, a.ruler, a.request, a.at,
             (SELECT count(*) FROM appraisal_results r WHERE r.code = a.code AND r.verifier IS NOT NULL AND r.engine IS ?) AS answered
@@ -210,13 +211,13 @@ export async function rivenTask(env, verifier, engine, owners, lanes = 1, which 
       if (mine && by.some((v) => own.get(v) === mine)) continue;
     }
     const lease = [...crypto.getRandomValues(new Uint8Array(16))].map((x) => x.toString(16).padStart(2, "0")).join("");
-    // ONE TASK A CLIENT, in the same statement as the race (worker/verify.js).
+    // AT MOST `most` TASKS A CLIENT, in the same statement as the race (worker/verify.js).
     const took = await db.prepare(`UPDATE appraisals SET lease = ?, lease_until = ?, leased_to = ?,
         started_at = COALESCE(started_at, ?)
         WHERE code = ? AND (lease_until IS NULL OR lease_until < ?)
-          AND NOT EXISTS (SELECT 1 FROM appraisals h WHERE h.leased_to = ? AND h.lease_until > ?)
-          AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.leased_to = ? AND o.lease_until > ?)`)
-      .bind(lease, iso(now + RIVEN_LEASE_MS), verifier, iso(now), a.code, iso(now), verifier, iso(now), verifier, iso(now)).run();
+          AND (SELECT count(*) FROM appraisals h WHERE h.leased_to = ? AND h.lease_until > ?)
+            + (SELECT count(*) FROM orders o WHERE o.leased_to = ? AND o.lease_until > ?) < ?`)
+      .bind(lease, iso(now + RIVEN_LEASE_MS), verifier, iso(now), a.code, iso(now), verifier, iso(now), verifier, iso(now), most).run();
     if (took.meta.changes) {
       const { request, context } = JSON.parse(a.request);
       return { kind: "riven_gain", lease, code: a.code, weapon: a.weapon, ruler: a.ruler, request, context };
@@ -262,6 +263,8 @@ async function volunteerAnswer(env, a, b, now, owners, net = "") {
       .bind(a.code, JSON.stringify(b.build), iso(now), b.verifier, b.score, b.work, key,
         typeof b.engine === "string" && ENGINE_ID.test(b.engine) ? b.engine : null, net),
     db.prepare("UPDATE appraisals SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE code = ?").bind(a.code),
+    // …AND WHEN IT LAST ANSWERED, which its owner's device list says (worker/contribution.js).
+    db.prepare("UPDATE verifiers SET last_at = ? WHERE id = ?").bind(iso(now), b.verifier),
   ]);
   const { results } = await db.prepare(
     "SELECT verifier, score, work, key, net, build FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();

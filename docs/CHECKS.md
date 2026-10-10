@@ -254,6 +254,14 @@ battery holds it; and it takes one
 core while the reader is at the computer and the picked share, 30% unless
 changed, of the cores once idle.
 
+## `check_quick_fleet`
+
+A frozen survey question, cut short, searched in the page by `quickFleet` on
+one worker, on three, and on a count that changes every round: the same build,
+the same number and the same work each time, since two volunteers' answers are
+confirmed only to the bit. A search run to keep its workers hands them back,
+and the next one starts on them.
+
 ## `check_riven_gain`
 
 Plain node against `worker/schema.sql` and `worker/accounts.sql`, the served

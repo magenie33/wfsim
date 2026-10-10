@@ -1,5 +1,5 @@
 // THE CONTRIBUTION RANKING (worker/contribution.js), with no network — docs/BOARD.md
-// §"Contribution". A signed-in browser claims its device and the last claim owns
+// §"Contribution". A signed-in browser claims its device and the first claim owns
 // it; an account's points are its devices' credited work, a refused device's
 // counting for nothing; the ranking lists every account with a claimed device,
 // most first, by all their points, the last thirty days' or the last seven,
@@ -93,8 +93,24 @@ check("an account is on the ranking once it claims a device, ANONYMOUS and not y
     contributor_rank: { rank: 0, xp: 0, xp_at_rank: 0, xp_at_next: 2500 } }]),
   JSON.stringify(await ranking()));
 
-await claim(bob, Y);
-check("the last claim owns a device, and its work goes with it", (await mine(ann)).points === 5 && (await mine(bob)).points === 3);
+check("a device claimed takes what it earned unclaimed, and the browser's own count is empty after",
+  (await points(Y)).points === 0 && (await points(Y)).claimed === true);
+const taken = await claim(bob, Y);
+const annAfter = await mine(ann), bobAfter = await mine(bob);
+check("signed in on someone's device, another account takes nothing it earned: the points stay where they were earned",
+  taken.ok && annAfter.points === 8 && bobAfter.points === 0 && bobAfter.devices.length === 1
+  && annAfter.devices.length === 1 && annAfter.removed.count === 1 && annAfter.removed.points === 3,
+  JSON.stringify({ ann: annAfter.points, bob: bobAfter.points, removed: annAfter.removed }));
+const nextHour = new Date(Date.now() + 3_600_000).toISOString().slice(0, 13);
+library.raw.prepare("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)").run(Y, nextHour, 2 * POINT);
+library.raw.prepare("UPDATE verifiers SET work = work + ? WHERE id = ?").run(2 * POINT, Y);
+check("...and what the device earns from the next hour is the new account's",
+  (await mine(bob)).points === 2 && (await mine(ann)).points === 8, `${(await mine(bob)).points} ${(await mine(ann)).points}`);
+library.raw.prepare("DELETE FROM verifier_hours WHERE verifier = ? AND hour = ?").run(Y, nextHour);
+library.raw.prepare("UPDATE verifiers SET work = work - ? WHERE id = ?").run(2 * POINT, Y);
+// FROM HERE Y IS BOB'S OWN BROWSER, as though bob had claimed it first.
+accounts.raw.prepare("DELETE FROM device_spans WHERE verifier = ?").run(Y);
+accounts.raw.prepare("INSERT INTO device_spans (verifier, account, from_hour) VALUES (?, 'acct-bob', '')").run(Y);
 
 await claim(cy, Z); await claim(cy, W);
 const r = await ranking();
@@ -180,8 +196,13 @@ check("the nav asks the same count alone", (await call("/api/board/computing")).
 check("both say how many browsers are computing now, an old answer not counted",
   found.computing === 0 && (await who("bob")).computing === 1 && (await call("/api/contributors")).computing === 1);
 
-check("a browser asks what it earned by its own id, and is told whether it is claimed",
-  JSON.stringify(await points(X)) === JSON.stringify({ status: 200, ok: true, points: 5, recent: 2, week: 2, claimed: true }),
+const N = "n".repeat(24);
+device(N, 6 * POINT); credit(N, 0, 6 * POINT);
+check("a browser nobody claimed asks what it earned by its own id: its whole notebook, unclaimed",
+  JSON.stringify(await points(N)) === JSON.stringify({ status: 200, ok: true, points: 6, recent: 6, week: 6, claimed: false }),
+  JSON.stringify(await points(N)));
+check("...and a claimed one holds nothing of its own, every point its account's",
+  JSON.stringify(await points(X)) === JSON.stringify({ status: 200, ok: true, points: 0, recent: 0, week: 0, claimed: true }),
   JSON.stringify(await points(X)));
 check("...an id nobody claimed or credited earns nothing", (await points("q".repeat(24))).points === 0
   && (await points("q".repeat(24))).claimed === false);
@@ -201,7 +222,7 @@ check("deleting an account releases its devices, its place and its answer",
 // AN OWNER'S DEVICES, each with its name, what it last did and what it holds now.
 const ed = await person("acct-ed", "ed"), fay = await person("acct-fay", "fay");
 const P = "p".repeat(24), Q = "q2".repeat(12);
-device(P, 4 * POINT); device(Q, 1 * POINT);
+device(P, 4 * POINT); device(Q, 1 * POINT); credit(P, 60, 4 * POINT); credit(Q, 60, 1 * POINT);
 await claim(ed, P, "Mac · Chrome"); await claim(ed, Q, "\u0007bell");
 library.raw.prepare("UPDATE verifiers SET last_at = '2026-10-08T06:00:00.000Z' WHERE id = ?").run(P);
 library.raw.prepare(`INSERT INTO orders (identity, ruler, mode, record, state, slot, lease, lease_until, leased_to, at)
@@ -235,8 +256,17 @@ check("...shown beside a name on the ranking", withEd.some((e) => e.name === "ed
 await choose(ed, false);
 check("...and never on an anonymous row", (await ranking()).every((e) => e.name !== null || !("volunteer" in e)));
 
-check("removed, a device and its work leave the account", (await remove(ed, q6)).ok
-  && (await mine(ed)).devices.length === 1 && (await mine(ed)).points === 4);
+const before = await mine(ed);
+const gone = (await remove(ed, q6)).ok && await mine(ed);
+check("removed, a device leaves the list and its points stay the account's, said as removed",
+  gone && gone.devices.length === 1 && gone.points === before.points && gone.removed.count === 1 && gone.removed.points === 1,
+  JSON.stringify(gone && { devices: gone.devices.length, points: gone.points, before: before.points, removed: gone.removed }));
+check("...and still on the ranking", (await ranking(ed)).find((e) => e.you).points === before.points);
+check("...and signed in there again it is claimed again, its points not counted twice",
+  (await claim(ed, Q)).ok && (await mine(ed)).devices.length === 2 && (await mine(ed)).points === before.points,
+  JSON.stringify(await mine(ed)));
+const leaks = JSON.stringify([await mine(ed), await ranking(ed), await call("/api/contributors?name=ed")]);
+check("no answer carries a device's full id, the one thing a claim needs", ![P, Q, X, Y, Z].some((v) => leaks.includes(v)));
 
 console.log(failures ? `\n${failures} failed` : "\nan account's points are the work its devices were credited");
 process.exitCode = failures ? 1 : 0;
