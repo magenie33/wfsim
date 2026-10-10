@@ -483,7 +483,7 @@ async function accountView(env, account) {
     "SELECT provider, label, linked_at, password_hash IS NOT NULL AS has_password FROM identities WHERE account = ?1",
   ).bind(account).all();
   return { id: a.id, created_at: a.created_at, username: a.username, display_name: a.display_name,
-    rename_after: renameAfter(a),
+    display_name_hidden: !!a.display_name && nameBlocked(a.display_name), rename_after: renameAfter(a),
     identities: SLOTS.map((s) => results.find((r) => r.provider === s)).filter(Boolean)
       .map(({ has_password, ...r }) => (r.provider === "email" ? { ...r, has_password: !!has_password } : r)) };
 }

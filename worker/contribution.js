@@ -32,6 +32,7 @@ import { json, no, now, sameSite, sessionAccount } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
+import { shownName } from "./names.js";
 
 /// `WORK_WEIGHTS` counts in billionths of a point.
 const WORK_PER_POINT = 1e9;
@@ -319,7 +320,7 @@ async function standings(env) {
   const work = await spanWork(env, results);
   const by = new Map();
   for (const [i, r] of results.entries()) {
-    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: r.display_name || r.username, work: 0, recent: 0, week: 0, ws: [] };
+    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: shownName(r.display_name, r.username), work: 0, recent: 0, week: 0, ws: [] };
     const w = work[i];
     e.work += w.work;
     e.recent += w.recent;

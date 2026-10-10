@@ -131,6 +131,12 @@ check("...a named row carries the mark the paid half proves, and only named rows
   JSON.stringify(named[1].mark) === JSON.stringify({ tier: "member", titles: [] }) && !("mark" in named[0]) && !("mark" in named[2])
   && !askedCloud.includes("acct-cy"), `${JSON.stringify(named)} ${askedCloud}`);
 check("...and a no is kept, so it is not asked again", (await mine(cy)).decided === true && (await mine(cy)).named === false);
+accounts.raw.prepare("UPDATE accounts SET display_name = 'wf.jiuuvd.cn' WHERE id = 'acct-ann'").run();
+check("a display name set before the rule that refuses it is shown as the username, and kept",
+  (await ranking()).some((e) => e.name === "ann") && !(await ranking()).some((e) => e.name === "wf.jiuuvd.cn")
+  && accounts.raw.prepare("SELECT display_name FROM accounts WHERE id = 'acct-ann'").get().display_name === "wf.jiuuvd.cn",
+  JSON.stringify(await ranking()));
+accounts.raw.prepare("UPDATE accounts SET display_name = 'Ann' WHERE id = 'acct-ann'").run();
 await choose(ann, false);
 check("taken back, the name leaves the ranking", !(await ranking()).some((e) => e.name === "Ann") && (await mine(ann)).named === false);
 check("an answer that is not one is refused", (await call("/api/account/contribution", { cookie: ann, body: { named: "yes" } })).reason === "bad_choice");

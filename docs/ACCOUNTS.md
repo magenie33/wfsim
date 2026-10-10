@@ -54,6 +54,8 @@ shows everywhere at once.
 | the first change is at once; each later one waits a day after the last | `renameAfter`, `username_changed_at` |
 | a name given up, or a deleted account's, is held seven days for its old owner, who may take it back | `username_holds`, `holdUsername` |
 | a display name is free text, at most 32 characters, unique to nobody; empty shows the username | `profile` |
+| a name says who someone is and points nowhere else: no link, contact details, offer to trade or claim to speak for WFSim, and no word from the bundled list; any handle passes, a Bilibili one included | `nameBlocked` in `worker/names.js` |
+| a display name set before a rule that refuses it is kept and hidden: others see the username, and the account page says why | `shownName`, `display_name_hidden` |
 
 `POST /api/account/profile` `{username?, display_name?}` changes either; the
 `/account` page's Profile block is the form, and the top bar shows the display

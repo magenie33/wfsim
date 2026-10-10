@@ -61,7 +61,7 @@ const ACCOUNT_SAYS = {
   username_taken: "That username is taken.",
   rename_too_soon: "A username can change once a day.",
   bad_display_name: "A display name is at most 32 characters.",
-  name_not_allowed: "That name cannot be used.",
+  name_not_allowed: "That name cannot be used. A name cannot carry a link, contact details or trading.",
   needs_consent: "Tick the box above to agree first.",
 };
 const accountSaid = (key) => tr(ACCOUNT_SAYS[key] || key);
@@ -150,8 +150,9 @@ function authReturn() {
 }
 const authStart = (p, intent, back) =>
   `/api/auth/${p}/start?intent=${intent}&return=${encodeURIComponent(back)}`;
-/// WHAT THE SITE CALLS AN ACCOUNT: its display name, or its username.
-const accountName = (a) => (a && (a.display_name || a.username)) || "WFSim";
+/// WHAT THE SITE CALLS AN ACCOUNT: its display name, or its username where
+/// there is none or the server hides it (worker/names.js `shownName`).
+const accountName = (a) => (a && ((!a.display_name_hidden && a.display_name) || a.username)) || "WFSim";
 const accountInitial = (a) => (accountName(a).replace(/[^\p{L}\p{N}]/gu, "")[0] || "W").toUpperCase();
 const aT = (s) => escHtml(tr(s));
 const accountLocale = () => (LANG === "zh" ? "zh-CN" : "en-US");
@@ -169,7 +170,7 @@ function renderAccountEntry() {
   if (box.hidden) return;
   const here = location.pathname + location.search;
   box.innerHTML = account
-    ? `<button class="avatar" id="account-toggle" aria-haspopup="menu" aria-expanded="false" title="${aT("Account")}">${escHtml(accountInitial(account))}</button>
+    ? `<button class="avatar${account.display_name_hidden ? " noted" : ""}" id="account-toggle" aria-haspopup="menu" aria-expanded="false" title="${aT("Account")}">${escHtml(accountInitial(account))}</button>
       <div class="acct-menu" id="acct-menu" role="menu" hidden>
         <div class="who"><span class="avatar">${escHtml(accountInitial(account))}</span><div><b>${escHtml(accountName(account))}</b>
           <span>@${escHtml(account.username || "")}</span></div></div>
@@ -352,7 +353,9 @@ function accountProfileBlock(a) {
     : `<dl class="kvs"><div class="kv"><dt>${aT("Username")}</dt><dd>@${escHtml(a.username)}${
         a.username.startsWith("user_") ? ` <span class="tag muted">${aT("not chosen yet")}</span>` : ""}</dd>
         <button class="ghost-btn btn-sm" data-auth="open" data-open="profile">${aT("Edit")}</button></div>
-      <div class="kv"><dt>${aT("Display name")}</dt><dd>${a.display_name ? escHtml(a.display_name) : `<span class="set-note">${aT("Not set — the username is shown")}</span>`}</dd><span></span></div></dl>`;
+      <div class="kv"><dt>${aT("Display name")}</dt><dd>${a.display_name ? escHtml(a.display_name) : `<span class="set-note">${aT("Not set — the username is shown")}</span>`}${
+        a.display_name_hidden ? ` <span class="tag warn">${aT("hidden")}</span>` : ""}</dd><span></span></div></dl>${
+      a.display_name_hidden ? `<p class="set-note">${aT("Others see your username: a name cannot carry a link, contact details or trading.")}</p>` : ""}`;
   return `<div class="block" id="profile"><div class="bh"><h2>${aT("Profile")}</h2></div><div class="bb">${body}</div></div>`;
 }
 
