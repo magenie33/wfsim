@@ -4,7 +4,7 @@ Chinese name: 晚祷
 
 Bow · Primary · Mastery Rank 10. 500 base damage (puncture 150, slash 350), 25% crit chance, 2.2x crit multiplier, 38% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

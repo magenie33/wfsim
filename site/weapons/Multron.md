@@ -4,7 +4,7 @@ Chinese name: 多连穿甲枪
 
 Sentinel Weapon · Sentinel · Mastery Rank 3. 10 base damage (puncture 10), 15% crit chance, 2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

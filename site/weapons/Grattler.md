@@ -4,7 +4,7 @@ Chinese name: 葛拉特勒
 
 Archgun · Archgun · Mastery Rank 4. 225 base damage (impact 22.5, puncture 180, slash 22.5), 25% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

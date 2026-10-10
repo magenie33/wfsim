@@ -4,7 +4,7 @@ Chinese name: 赤毒·预言者
 
 Pistol · Secondary · Mastery Rank 15. 131 base damage (impact 26.2, puncture 68.12, slash 36.68), 21% crit chance, 1.9x crit multiplier, 33% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 布莱顿 Prime
 
 Rifle · Primary · Mastery Rank 8. 35 base damage (impact 1.75, puncture 12.25, slash 21), 12% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

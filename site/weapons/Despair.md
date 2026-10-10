@@ -4,7 +4,7 @@ Chinese name: 绝望
 
 Pistol · Secondary · Mastery Rank 4. 58 base damage (impact 2.9, puncture 46.4, slash 8.7), 16% crit chance, 1.6x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 幻离子 Prime
 
 Shotgun · Primary · Mastery Rank 14. 15 base damage x6 multishot (impact 5, radiation 10), 11% crit chance, 1.9x crit multiplier, 22.2% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

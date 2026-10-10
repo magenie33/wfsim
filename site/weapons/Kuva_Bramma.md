@@ -4,7 +4,7 @@ Chinese name: 赤毒·布拉玛
 
 Bow · Primary · Mastery Rank 15. 187 base damage (impact 187), 35% crit chance, 2.1x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

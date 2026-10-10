@@ -4,7 +4,7 @@ Chinese name: 勇气·玛瑞火枪
 
 Pistol · Secondary · Mastery Rank 10. 160 base damage (impact 96, puncture 16, slash 48), 20% crit chance, 1.5x crit multiplier, 35% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

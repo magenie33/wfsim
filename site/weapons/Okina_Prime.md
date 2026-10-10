@@ -4,7 +4,7 @@ Chinese name: 翁 Prime
 
 Dual Daggers · Melee · Mastery Rank 12. 184 base damage (impact 9.2, puncture 64.4, slash 110.4), 30% crit chance, 2.6x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

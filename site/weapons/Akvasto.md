@@ -4,7 +4,7 @@ Chinese name: 瓦斯托双枪
 
 Dual Pistols · Secondary · Mastery Rank 8. 90 base damage (impact 22.5, puncture 22.5, slash 45), 16% crit chance, 1.8x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

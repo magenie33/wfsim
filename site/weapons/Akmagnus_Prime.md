@@ -4,7 +4,7 @@ Chinese name: 麦格努斯双枪 Prime
 
 Dual Pistols · Secondary · Mastery Rank 15. 98 base damage (impact 44.1, puncture 26.95, slash 26.95), 28% crit chance, 2.8x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

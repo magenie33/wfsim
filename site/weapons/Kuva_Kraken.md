@@ -4,7 +4,7 @@ Chinese name: 赤毒·北海巨妖
 
 Pistol · Secondary · Mastery Rank 15. 43 base damage (impact 32.25, puncture 5.375, slash 5.375), 21% crit chance, 2.3x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

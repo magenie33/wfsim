@@ -4,7 +4,7 @@ Chinese name: 信条·漫射者
 
 Pistol · Secondary · Mastery Rank 6. 70 base damage (heat 30, puncture 40), 44% crit chance, 3x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

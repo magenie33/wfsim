@@ -4,7 +4,7 @@ Chinese name: MK1-斯特朗
 
 Shotgun · Primary · Mastery Rank 0. 18 base damage x10 multishot (impact 9.9, puncture 2.7, slash 5.4), 7.5% crit chance, 2x crit multiplier, 6% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

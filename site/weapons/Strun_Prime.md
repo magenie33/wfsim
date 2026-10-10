@@ -4,7 +4,7 @@ Chinese name: 斯特朗 Prime
 
 Shotgun · Primary · Mastery Rank 14. 54 base damage x12 multishot (impact 24.3, puncture 8.1, slash 21.6), 24% crit chance, 2.2x crit multiplier, 6.67% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

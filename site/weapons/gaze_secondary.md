@@ -4,7 +4,7 @@ Chinese name: 凝目
 
 Pistol · Secondary · Mastery Rank 0. 18 base damage (puncture 7, radiation 11), 25% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

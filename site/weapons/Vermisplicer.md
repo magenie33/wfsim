@@ -4,7 +4,7 @@ Chinese name: 虫置
 
 Rifle · Primary · Mastery Rank 0. 33 base damage (impact 5, puncture 6, slash 10, toxin 12), 25% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

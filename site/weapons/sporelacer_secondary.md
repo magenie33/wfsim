@@ -4,7 +4,7 @@ Chinese name: 孢射
 
 Pistol · Secondary · Mastery Rank 0. 0 base damage (), 21% crit chance, 3x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

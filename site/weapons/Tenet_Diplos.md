@@ -4,7 +4,7 @@ Chinese name: 信条·纵横双枪
 
 Dual Pistols · Secondary · Mastery Rank 16. 28 base damage (impact 11.2, puncture 9, slash 7.8), 36% crit chance, 2.2x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

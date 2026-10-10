@@ -4,7 +4,7 @@ Chinese name: 棱晶·特拉
 
 Rifle · Primary · Mastery Rank 4. 38 base damage (impact 7.6, puncture 30.4), 10% crit chance, 2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

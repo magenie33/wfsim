@@ -4,7 +4,7 @@ Chinese name: 血肢
 
 Rifle · Primary · Mastery Rank 7. 47 base damage (viral 47), 11% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

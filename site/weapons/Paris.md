@@ -4,7 +4,7 @@ Chinese name: 帕里斯
 
 Bow · Primary · Mastery Rank 0. 320 base damage (impact 16, puncture 256, slash 48), 30% crit chance, 2x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

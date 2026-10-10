@@ -4,7 +4,7 @@ Chinese name: 信条·典客
 
 Launcher · Primary · Mastery Rank 16. 100 base damage (impact 100), 28% crit chance, 2.6x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.7471 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-05 08:22 UTC · 58033b199a |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.7471 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-05 15:58 UTC · 4d57cccc45 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4246 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-05 08:03 UTC · 58033b199a |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.3202 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-08 21:08 UTC · 531aca13c9 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.9464 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-09 01:21 UTC · d90905f83b |
 
 ## Not modelled here
 

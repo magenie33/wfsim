@@ -4,7 +4,7 @@ Chinese name: 双簧管 Prime
 
 Rifle · Primary · Mastery Rank 14. 28 base damage (impact 8.4, puncture 11.2, slash 8.4), 30% crit chance, 2.2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 终幕·米尔
 
 Sword · Melee · Mastery Rank 17. 235 base damage (impact 45, puncture 45, slash 66, toxin 79), 18% crit chance, 2.4x crit multiplier, 40% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

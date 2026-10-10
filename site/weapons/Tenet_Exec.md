@@ -4,7 +4,7 @@ Chinese name: 信条·枢密
 
 Heavy Blade · Melee · Mastery Rank 16. 190 base damage (impact 102.6, slash 87.4), 38% crit chance, 2.4x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,6 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.2704 | Primed Fever Strike, Sacrificial Pressure, Sacrificial Steel, Blood Rush, Galvanized Reflex, Gladiator Might, Seismic Wave, Corrupt Charge, Rending Crane, Dispatch Overdrive, Melee Exposure | 2026-10-05 14:26 UTC · 4d57cccc45 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.2704 | Primed Fever Strike, Sacrificial Pressure, Sacrificial Steel, Blood Rush, Galvanized Reflex, Gladiator Might, Seismic Wave, Corrupt Charge, Rending Crane, Dispatch Overdrive, Melee Exposure | 2026-10-06 03:15 UTC · 38faffec31 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.01751 | Primed Fever Strike, Sacrificial Pressure, Sacrificial Steel, Blood Rush, Galvanized Reflex, Gladiator Might, Seismic Wave, Corrupt Charge, Rending Crane, Dispatch Overdrive, Melee Exposure | 2026-10-05 14:03 UTC · 4d57cccc45 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy | 0.1247 | Primed Fever Strike, Sacrificial Pressure, Sacrificial Steel, Blood Rush, Galvanized Reflex, Gladiator Might, Seismic Wave, Corrupt Charge, Rending Crane, Dispatch Overdrive, Melee Exposure | 2026-10-09 09:30 UTC |
 
 ## Not modelled here
 

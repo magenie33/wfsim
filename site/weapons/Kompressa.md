@@ -4,7 +4,7 @@ Chinese name: 卡帕压力枪
 
 Pistol · Secondary · Mastery Rank 8. 2 base damage x4 multishot (viral 2), 6% crit chance, 1.8x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

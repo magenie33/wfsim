@@ -4,7 +4,7 @@ Chinese name: 逐枭
 
 Shotgun · Primary · Mastery Rank 14. 190 base damage x4 multishot (impact 38, puncture 68.4, slash 83.6), 20% crit chance, 2x crit multiplier, 5.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

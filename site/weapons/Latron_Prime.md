@@ -4,7 +4,7 @@ Chinese name: 拉特昂 Prime
 
 Rifle · Primary · Mastery Rank 10. 90 base damage (impact 9, puncture 72, slash 9), 22% crit chance, 2.8x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

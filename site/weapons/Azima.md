@@ -4,7 +4,7 @@ Chinese name: 方位角
 
 Pistol · Secondary · Mastery Rank 6. 20 base damage (impact 2, puncture 5, slash 13), 16% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.4876 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Secondary Fortifier | 2026-10-06 08:10 UTC · 7a445cac9c |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.4876 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Secondary Fortifier | 2026-10-06 08:14 UTC · 7a445cac9c |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4492 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-05 18:16 UTC · 40071ee3b3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.6064 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Primed Steady Hands, Secondary Enervate | 2026-10-08 23:00 UTC · c9a903ca56 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.2780 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-09 10:49 UTC · 8f3e6a5978 |
 
 ## Not modelled here
 

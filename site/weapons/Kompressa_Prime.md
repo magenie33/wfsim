@@ -4,7 +4,7 @@ Chinese name: 卡帕压力枪 Prime
 
 Pistol · Secondary · Mastery Rank 13. 2 base damage x4 multishot (viral 2), 16% crit chance, 1.8x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.0830 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-05 17:09 UTC · 052c2ed8c6 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.9585 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-05 18:35 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3342 | Jolt, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Secondary Enervate | 2026-10-05 17:58 UTC · 40071ee3b3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.1220 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-08 22:50 UTC · c9a903ca56 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.0830 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-09 22:05 UTC · 77fd7f0324 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.9585 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-09 22:03 UTC · 77fd7f0324 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3342 | Jolt, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Secondary Enervate | 2026-10-09 23:44 UTC · 77fd7f0324 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.1220 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-09 21:51 UTC · 77fd7f0324 |
 
 ## Not modelled here
 

@@ -4,7 +4,7 @@ Chinese name: 棱晶·楞次弓
 
 Bow · Primary · Mastery Rank 12. 56 base damage (impact 56), 50% crit chance, 2.8x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

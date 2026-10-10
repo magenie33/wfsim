@@ -4,7 +4,7 @@ Chinese name: 侦察者
 
 Rifle · Primary · Mastery Rank 14. 40 base damage (impact 16, puncture 24), 28% crit chance, 2.8x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.9415 | Hellfire, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-07 20:13 UTC · a7836d0380 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.3486 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Vigilante Supplies, Primary Frostbite | 2026-10-07 17:13 UTC · 65db03e106 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2657 | Hellfire, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-07 19:56 UTC · a7836d0380 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.9415 | Hellfire, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-09 17:53 UTC · 77fd7f0324 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.3486 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Vigilante Supplies, Primary Frostbite | 2026-10-09 16:52 UTC · ca98611dee |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2657 | Hellfire, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-09 16:45 UTC · ca98611dee |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.2012 | Hellfire, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-09 16:47 UTC · ca98611dee |
 
 ## Not modelled here
 

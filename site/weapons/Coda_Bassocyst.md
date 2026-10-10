@@ -4,7 +4,7 @@ Chinese name: 终幕·低音爆囊
 
 Shotgun · Primary · Mastery Rank 17. 808 base damage (blast 789, radiation 19), 18% crit chance, 2.2x crit multiplier, 40% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

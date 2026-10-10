@@ -4,7 +4,7 @@ Chinese name: 歌颂
 
 Pistol · Secondary · Mastery Rank 10. 90 base damage (puncture 27, slash 63), 18% crit chance, 2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

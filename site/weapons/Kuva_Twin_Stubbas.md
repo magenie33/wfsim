@@ -4,7 +4,7 @@ Chinese name: 赤毒·双子史度巴
 
 Dual Pistols · Secondary · Mastery Rank 13. 27 base damage (impact 11.61, puncture 2.7, slash 12.69), 23% crit chance, 1.9x crit multiplier, 31% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

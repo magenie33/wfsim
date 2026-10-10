@@ -4,7 +4,7 @@ Chinese name: 豪猪 Prime
 
 Pistol · Secondary · Mastery Rank 12. 46 base damage (impact 2.76, puncture 39.56, slash 3.68), 28% crit chance, 2.2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

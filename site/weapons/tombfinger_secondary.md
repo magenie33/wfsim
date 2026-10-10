@@ -4,7 +4,7 @@ Chinese name: 墓指
 
 Pistol · Secondary · Mastery Rank 0. 43.9257 base damage (impact 18.67, puncture 11.67, radiation 13.5856), 24% crit chance, 2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,6 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6204 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Creeping Bullseye, Pax Charge, Secondary Fortifier | 2026-09-23 16:57 UTC · cfbae3af23 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6204 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Creeping Bullseye, Pax Charge, Secondary Fortifier | 2026-10-05 23:52 UTC · 40071ee3b3 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2267 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Creeping Bullseye, Pax Charge, Secondary Fortifier | 2026-09-23 16:41 UTC · cfbae3af23 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.7346 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Creeping Bullseye, Pax Charge, Secondary Fortifier | 2026-10-09 03:06 UTC · d90905f83b |
 
 ## Not modelled here
 

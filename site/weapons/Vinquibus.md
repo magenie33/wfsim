@@ -4,7 +4,7 @@ Chinese name: 制胜者
 
 Rifle · Primary · Mastery Rank 14. 400 base damage (puncture 280, slash 120), 40% crit chance, 3.2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

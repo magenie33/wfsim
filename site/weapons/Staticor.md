@@ -4,7 +4,7 @@ Chinese name: 静电能量导引枪
 
 Pistol · Secondary · Mastery Rank 10. 44 base damage (radiation 44), 14% crit chance, 2.2x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

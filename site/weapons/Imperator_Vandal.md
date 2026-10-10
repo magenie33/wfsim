@@ -4,7 +4,7 @@ Chinese name: 凯旋将军·破坏者
 
 Archgun · Archgun · Mastery Rank 5. 100 base damage (impact 40, puncture 35, slash 25), 28% crit chance, 2.4x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 23.4939 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-09-30 18:07 UTC · 1d3b5bc87a |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 68.1640 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-10-06 08:07 UTC · 7a445cac9c |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.3992 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-09-30 17:44 UTC · 1d3b5bc87a |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 13.3348 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-08 21:14 UTC · 531aca13c9 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 23.4939 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-10-10 00:08 UTC · 77fd7f0324 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 68.1640 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-10-09 23:59 UTC · 77fd7f0324 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.3992 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-10-09 23:42 UTC · 77fd7f0324 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 14.1451 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-10-09 17:43 UTC · 77fd7f0324 |
 
 ## Not modelled here
 

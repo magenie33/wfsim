@@ -4,7 +4,7 @@ Chinese name: 绯红·西诺斯
 
 Bow · Primary · Mastery Rank 12. 470 base damage (impact 423, puncture 23.5, slash 23.5), 35% crit chance, 2x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 棘背
 
 Rifle · Primary · Mastery Rank 0. 28 base damage (impact 9.3324, puncture 9.3324, slash 9.3352), 6% crit chance, 1.4x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

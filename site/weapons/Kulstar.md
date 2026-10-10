@@ -4,7 +4,7 @@ Chinese name: 杀星
 
 Pistol · Secondary · Mastery Rank 5. 200 base damage (impact 200), 17% crit chance, 2.3x crit multiplier, 19% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

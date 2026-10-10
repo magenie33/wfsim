@@ -4,7 +4,7 @@ Chinese name: 猎豹 Prime
 
 Rifle · Primary · Mastery Rank 14. 100 base damage (impact 20, puncture 10, slash 70), 18% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

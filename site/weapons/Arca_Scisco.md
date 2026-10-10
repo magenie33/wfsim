@@ -4,7 +4,7 @@ Chinese name: 弧电探知者
 
 Pistol · Secondary · Mastery Rank 10. 60 base damage (puncture 36, slash 24), 18% crit chance, 1.6x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

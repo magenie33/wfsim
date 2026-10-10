@@ -4,7 +4,7 @@ Chinese name: 拉托 Prime
 
 Pistol · Secondary · Mastery Rank 14. 60 base damage (impact 6, puncture 12, slash 42), 30% crit chance, 2.6x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

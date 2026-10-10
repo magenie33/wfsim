@@ -4,7 +4,7 @@ Chinese name: 食人女魔
 
 Launcher · Primary · Mastery Rank 9. 100 base damage (blast 100), 5% crit chance, 2x crit multiplier, 35% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

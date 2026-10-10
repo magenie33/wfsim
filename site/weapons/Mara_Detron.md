@@ -4,7 +4,7 @@ Chinese name: 苦痛·德特昂
 
 Shotgun Sidearm · Secondary · Mastery Rank 9. 40 base damage x7 multishot (radiation 40), 8% crit chance, 1.5x crit multiplier, 13.71% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

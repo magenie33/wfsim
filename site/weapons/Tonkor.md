@@ -4,7 +4,7 @@ Chinese name: 征服榴炮
 
 Launcher · Primary · Mastery Rank 5. 75 base damage (puncture 75), 25% crit chance, 2.5x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

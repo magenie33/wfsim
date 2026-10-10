@@ -4,7 +4,7 @@ Chinese name: 安柏勒斯
 
 Pistol · Secondary · Mastery Rank 9. 35 base damage (toxin 35), 3% crit chance, 1.5x crit multiplier, 41% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 蛇发女妖
 
 Rifle · Primary · Mastery Rank 3. 25 base damage (impact 18.75, puncture 3.75, slash 2.5), 17% crit chance, 1.5x crit multiplier, 9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

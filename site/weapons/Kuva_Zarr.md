@@ -4,7 +4,7 @@ Chinese name: 赤毒·沙皇
 
 Launcher · Primary · Mastery Rank 15. 50 base damage (impact 50), 25% crit chance, 2.5x crit multiplier, 31% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 11.3616 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-09-29 13:18 UTC · 601279c5f9 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 53.4179 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-06 07:25 UTC · 47e30f0f40 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.9918 | Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-09-29 12:55 UTC · 601279c5f9 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 1.9407 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-08 21:10 UTC · 531aca13c9 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 4.3342 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-09 04:52 UTC · fbe3cdc38c |
 
 ## Not modelled here
 

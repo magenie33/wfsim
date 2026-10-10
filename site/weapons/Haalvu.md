@@ -4,7 +4,7 @@ Chinese name: 哈尔武
 
 Rifle · Primary · Mastery Rank 14. 33 base damage (tau 33), 25% crit chance, 2.5x crit multiplier, 19% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

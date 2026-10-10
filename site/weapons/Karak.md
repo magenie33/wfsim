@@ -4,7 +4,7 @@ Chinese name: 卡拉克
 
 Rifle · Primary · Mastery Rank 1. 29 base damage (impact 13.05, puncture 8.7, slash 7.25), 9% crit chance, 1.5x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 魔典
 
 Pistol · Secondary · Mastery Rank 10. 100 base damage (electricity 100), 20% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.4147 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-09-27 18:06 UTC · 5def63ce3b |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.4147 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-10-06 01:31 UTC · 4f892ee6e4 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5400 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-09-27 17:49 UTC · 5def63ce3b |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.5515 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Magnetic Might, Cascadia Flare | 2026-10-08 19:58 UTC · 531aca13c9 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.6311 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-10-09 03:57 UTC · 2d508675f2 |
 
 ## Not modelled here
 

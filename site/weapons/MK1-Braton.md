@@ -4,7 +4,7 @@ Chinese name: MK1-布莱顿
 
 Rifle · Primary · Mastery Rank 0. 18 base damage (impact 4.5, puncture 4.5, slash 9), 8% crit chance, 1.5x crit multiplier, 5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 狙击特昂·破坏者
 
 Sniper · Primary · Mastery Rank 5. 200 base damage (impact 10, puncture 180, slash 10), 28% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

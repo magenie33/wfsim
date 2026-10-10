@@ -4,7 +4,7 @@ Chinese name: 伊格尼斯·亡魂
 
 Rifle · Primary · Mastery Rank 9. 35 base damage (heat 35), 17% crit chance, 2.5x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

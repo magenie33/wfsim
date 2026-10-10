@@ -4,7 +4,7 @@ Chinese name: 草原猎手
 
 Rifle · Primary · Mastery Rank 8. 90 base damage (impact 23.4, puncture 23.4, slash 43.2), 22% crit chance, 2.2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

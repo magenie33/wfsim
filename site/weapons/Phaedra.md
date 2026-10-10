@@ -4,7 +4,7 @@ Chinese name: 菲德菈
 
 Archgun · Archgun · Mastery Rank 3. 116 base damage (impact 29, puncture 75.4, slash 11.6), 14% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

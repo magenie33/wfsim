@@ -4,7 +4,7 @@ Chinese name: 席芭莉丝 Prime
 
 Rifle · Primary · Mastery Rank 12. 88 base damage (impact 29.04, puncture 29.04, slash 29.92), 30% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

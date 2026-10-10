@@ -4,7 +4,7 @@ Chinese name: 冰凇 Prime
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 32 base damage (cold 32), 14% crit chance, 2.2x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

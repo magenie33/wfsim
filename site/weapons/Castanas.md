@@ -4,7 +4,7 @@ Chinese name: 雷爆信镖
 
 Pistol · Secondary · Mastery Rank 3. 160 base damage (electricity 160), 8% crit chance, 1.5x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

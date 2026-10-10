@@ -4,7 +4,7 @@ Chinese name: 枢议·重力奇点拟成枪
 
 Rifle · Primary · Mastery Rank 12. 0 base damage (impact 0), 0% crit chance, 1x crit multiplier, 0% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

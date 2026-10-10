@@ -4,7 +4,7 @@ Chinese name: 特拉
 
 Rifle · Primary · Mastery Rank 3. 32 base damage (impact 6.4, puncture 25.6), 4% crit chance, 1.5x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-09
+## Best riven-free build on the WFSim board, as of 2026-10-10
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
