@@ -1962,6 +1962,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rank-pts{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .rank-head .rank-pts{font-weight:400}
 .rank-row.you{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.rank-list li[data-key]{transition:transform .6s ease}
 .rank-you{font-size:12px;color:var(--muted)}
 /* THE COMPUTE PAGE'S DEMAND: who is computing now, and the volunteers' share of an hour. */
 /* THE RECENT TASKS: today's three figures, a card per task, opened in place. */
@@ -2792,6 +2793,11 @@ a.dtup-b{text-decoration:none}
 .dl-src:hover{color:var(--text-2)}
 .dl-src svg{flex:none;opacity:.85}
 .dl-why{color:var(--text-2);font-size:13px;margin-top:6px}
+.dt-sw{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline;padding:8px 0;font-size:13px;cursor:pointer}
+.dt-sw small{grid-column:2;color:var(--text-2)}
+.dt-sw:has(input:disabled){opacity:.5;cursor:default}
+.dt-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.dt-err{color:var(--critical);font-size:13px;margin:8px 0 0}
 
 /* /download — a reading page, so it takes the support page's measure and its
    list styling rather than growing a second set. */
