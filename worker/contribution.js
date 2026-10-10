@@ -317,7 +317,7 @@ const PERIODS = { all: "points", recent: "recent", week: "week" };
 
 /// EVERY ACCOUNT WITH A CLAIMED DEVICE and what its devices were credited, in
 /// points — the one list every ranking and every account's place is cut from.
-async function standings(env) {
+async function standings(env, day = keyDay()) {
   const { results } = await env.ACCOUNTS.prepare(
     `SELECT a.id, a.username, a.display_name, c.named, s.verifier, s.from_hour, s.until_hour FROM device_spans s
        JOIN accounts a ON a.id = s.account LEFT JOIN contribution_choice c ON c.account = s.account`).all();
@@ -332,7 +332,7 @@ async function standings(env) {
     e.ws.push(w);
     by.set(r.id, e);
   }
-  return Promise.all([...by.values()].map(async (e) => ({ id: e.id, key: await rowKey(env, e.id), named: e.named, name: e.name,
+  return Promise.all([...by.values()].map(async (e) => ({ id: e.id, key: await rowKey(env, e.id, day), named: e.named, name: e.name,
     points: points(e.work), recent: points(e.recent), week: points(e.week), volunteer: !!volunteerSince(e.ws) })));
 }
 /// ONE RANKING: everyone with any of `key`, most first, a tie by the row key
@@ -372,16 +372,18 @@ async function person(env, name) {
 /// to them alone.
 async function ranking(request, env, period, limit, me) {
   const key = PERIODS[period] || "points";
-  const { everyone, computing } = await kept(request, env);
-  const mine = me && await rowKey(env, me);
+  const { everyone, computing, day } = await kept(request, env);
+  const mine = me && await rowKey(env, me, day);
   const all = ordered(everyone, key);
   const contributors = all.slice(0, limit).map((e) => ({ ...e, ...(e.key === mine ? { you: true } : {}) }));
   return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors });
 }
 
-/// A ROW'S KEY, for the page to follow it as it moves: its account's id hashed
-/// with the server's secret, the same in every answer and no way back.
-const rowKey = async (env, id) => (await sha256(`${env.AUTH_SECRET || ""}:contributor:${id}`)).slice(0, 16);
+/// A ROW'S KEY, for the page to follow it as it moves: its account's id and
+/// the UTC day hashed with the server's secret. A new day is a new key, so a
+/// row is followed within a day and never linked across days by its key.
+const keyDay = () => new Date().toISOString().slice(0, 10);
+const rowKey = async (env, id, day) => (await sha256(`${env.AUTH_SECRET || ""}:contributor:${day}:${id}`)).slice(0, 16);
 
 /// EVERY ROW AS IT MAY BE SERVED, and the count, kept a minute at the edge:
 /// every open ranking asks again each minute and `standings` reads every
@@ -393,7 +395,7 @@ async function kept(request, env) {
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
   const hit = cache && await cache.match(at);
   if (hit) return hit.json();
-  const rows = await standings(env);
+  const day = keyDay(), rows = await standings(env, day);
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
   const named = rows.filter((e) => e.named).map((e) => e.id), parts = [];
   for (let i = 0; i < named.length; i += PER_STATEMENT) parts.push(cloudMarks(env, named.slice(i, i + PER_STATEMENT)));
@@ -402,7 +404,7 @@ async function kept(request, env) {
     points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
-  const body = { everyone, computing: await computingNow(env) };
+  const body = { everyone, day, computing: await computingNow(env) };
   if (cache) await cache.put(at, new Response(JSON.stringify(body),
     { headers: { "content-type": "application/json", "cache-control": `public, max-age=${KEPT_SECONDS}` } }));
   return body;

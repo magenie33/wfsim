@@ -849,8 +849,8 @@ a change to it is a new statement, asked again. Eight rules:
    at the edge with nothing in them an answer may not carry. Each number rolls
    from what was shown to the new answer, never past it, and the order is the
    numbers as shown, so a row slides past another when its number does. A
-   row's `key`, its account's id hashed with the server's secret, is how the
-   page follows it.
+   row's `key`, its account's id and the UTC day hashed with the server's
+   secret, is how the page follows it, and a new day is a new key.
    A RIVEN GAIN (docs/AGENT.md §"Riven appraisal") is credited the same way:
    its search's work, summed by the engine (`Summary::work`, the scorers'
    `work` and the final round's `final_work`), to the two owners' computers

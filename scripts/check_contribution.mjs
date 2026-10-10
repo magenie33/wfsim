@@ -164,6 +164,17 @@ check("...a row's key is the same in every answer and every period, and one row'
   && whole.contributors.every((e) => /^[A-Za-z0-9_-]{16}$/.test(e.key)), JSON.stringify(whole.contributors));
 check("...and says nothing of the account behind it",
   !JSON.stringify(whole).includes("acct-"), JSON.stringify(whole));
+// A DAY LATER every key is another, so no key follows a row past its day.
+const RealDate = Date;
+globalThis.Date = class extends RealDate {
+  constructor(...a) { super(...(a.length ? a : [RealDate.now() + 86_400_000])); }
+  static now() { return RealDate.now() + 86_400_000; }
+};
+const tomorrow = await call("/api/contributors");
+globalThis.Date = RealDate;
+check("...and is another the next day, no key of one day in the next",
+  tomorrow.contributors.length === 3 && !tomorrow.contributors.some((e) => whole.contributors.some((w) => w.key === e.key)),
+  JSON.stringify([whole.contributors.map((e) => e.key), tomorrow.contributors.map((e) => e.key)]));
 
 const who = (name) => call(`/api/contributors?name=${encodeURIComponent(name)}`);
 const found = await who("bob");

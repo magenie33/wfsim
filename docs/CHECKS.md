@@ -293,7 +293,7 @@ until it agrees, when it shows the display name or else the username and the
 mark the paid half proves; a no is kept, a yes can be taken back, and the
 reader's own row is marked to them alone; a ranking answers the rows asked
 for and how many there are, each with a key that is the same in every answer
-and period and carries no account id; a yes and work credited make the
+and period, carries no account id and is another the next day; a yes and work credited make the
 account a volunteer, since that yes, shown beside a name and never on an
 anonymous row; a browser asked by its own id is told
 what it earned and whether it is claimed, a refused one nothing; nothing is
