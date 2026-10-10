@@ -54,8 +54,9 @@ effects:
   # >= 200" — which the file already carried as an unverified candidate cause,
   # recorded rather than modelled because nothing had measured the same weapon
   # on a frame above 200. It explains the measurements exactly instead of
-  # contradicting them: the neutral Tenno this repo ships has 150 max energy, so
-  # every run that found nothing was made UNDER the threshold.
+  # contradicting them: every run that found nothing was made UNDER the
+  # threshold, and the Prototype (data/tenno/default.yaml) has 0 max energy, so
+  # the board never pays this clause.
   #
   # The difference to a reader is the whole point. `live_bug` says "do not pick
   # this perk for that half, and a hotfix will change it"; a gate says "it pays
