@@ -125,6 +125,7 @@ function loadAccount() {
     // page only once it says it is available.
     if (accountState.account && isSettings(at)) await Promise.all([loadAgents(), loadDevices(), ...extLoads()]);
     else if ((EXT.pages[at] || {}).open) await Promise.all(extLoads(at));
+    authArrival = { kind: at, ready: true };
     renderAccountEntry();
     const kind = authKindOf(location.pathname);
     if (kind) renderAuthPage(kind);
@@ -609,6 +610,14 @@ function clanPage() {
   return `<div class="auth-page"><div class="auth-card" data-auth-kind="clan"><h2>WFSim#582</h2>${body}</div></div>`;
 }
 
+/// WHAT THIS ARRIVAL HAS ASKED FOR. EVERY ARRIVAL ASKS, however the reader
+/// came: asked only by `loadAccount` at boot, a page reached by a link inside
+/// the app was drawn from nothing — the membership page said "not on sale"
+/// with every price on the server. `route` starts an arrival; the page then
+/// draws once its data has answered.
+let authArrival = { kind: null, ready: false };
+const authArrive = () => { authArrival = { kind: null, ready: false }; };
+
 function renderAuthPage(kind) {
   const main = $("auth-page");
   if (!main) return;
@@ -657,6 +666,18 @@ function renderAuthPage(kind) {
   if (!account && isSettings(kind)) {
     history.replaceState(null, "", `/login?return=${encodeURIComponent(location.pathname)}`); route(); return;
   }
+  if (authArrival.kind !== kind) {
+    authArrival = { kind, ready: false };
+    const loads = account && isSettings(kind) ? [loadAgents(), loadDevices(), ...extLoads()]
+      : ext && ext.open ? extLoads(kind) : [];
+    if (!loads.length) authArrival.ready = true;
+    else Promise.all(loads).finally(() => {
+      if (authArrival.kind !== kind) return;
+      authArrival.ready = true;
+      if (authKindOf(location.pathname) === kind) renderAuthPage(kind);
+    });
+  }
+  if (!authArrival.ready) { main.innerHTML = ""; return; }
   // AN EXTENSION PAGE THAT IS NOT AVAILABLE IS NOT A PAGE: the reader is on
   // the account page instead.
   if (ext && ext.available && !ext.available()) { history.replaceState(null, "", "/account"); route(); return; }

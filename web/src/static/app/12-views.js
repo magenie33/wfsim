@@ -247,6 +247,7 @@ async function route() {
     await showOperator();
     if (gen !== routeGen) return;
   } else if (authKind) {
+    authArrive();
     renderAuthPage(authKind);
   } else if (support) {
     renderSupport();
