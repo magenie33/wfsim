@@ -69,6 +69,12 @@ concurrency:
   group: board-queue
   cancel-in-progress: false
 
+env:
+  # THE FACTORY IS REACHED AT workers.dev, outside the wfsim.app zone: a zone
+  # bot setting challenges datacenter IPs, a runner's among them, and a free-plan
+  # rule cannot exempt a path — the challenge answers 403 and the run fails.
+  FACTORY_ORIGIN: https://wfsim.mgnmz1999.workers.dev
+
 jobs:
   take-in:
     runs-on: ubuntu-latest
