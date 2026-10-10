@@ -843,6 +843,14 @@ a change to it is a new statement, asked again. Eight rules:
    An anonymous row's name and tier never leave the server; the reader's own
    row is marked to them alone. A browser asks what it earned by its own id
    (`/api/board/points`).
+   **THE RANKING MOVES WHILE IT IS READ, AND NEVER AHEAD OF THE SERVER.** The
+   page asks for the rows it has scrolled to, a hundred more as the end comes
+   near, and asks again each minute, the server keeping the standings a minute
+   at the edge with nothing in them an answer may not carry. Each number rolls
+   from what was shown to the new answer, never past it, and the order is the
+   numbers as shown, so a row slides past another when its number does. A
+   row's `key`, its account's id hashed with the server's secret, is how the
+   page follows it.
    A RIVEN GAIN (docs/AGENT.md §"Riven appraisal") is credited the same way:
    its search's work, summed by the engine (`Summary::work`, the scorers'
    `work` and the final round's `final_work`), to the two owners' computers

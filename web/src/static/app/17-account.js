@@ -514,17 +514,146 @@ function contributorRankBar(cr) {
     .replace("{x}", n(cr.xp)).replace("{y}", n(cr.xp_at_next)).replace("{n}", cr.rank + 1))}</span></div></div>`;
 }
 
+/// THE COLUMN EACH RANKING ORDERS ON, and its heading (worker/contribution.js `PERIODS`).
+const contributorsColumn = () => ({ all: ["points", "Points"], recent: ["recent", "Last 30 days"], week: ["week", "Last 7 days"] }[contributorsPeriod]);
+
+/// THE RANKING MOVES WHILE IT IS READ. It is asked again every
+/// `CONTRIBUTORS_EVERY_MS` (the server keeps it as long), and each number rolls
+/// from what the page showed to the new answer over the next one — never past
+/// a value the server gave, so a row never shows points it has not earned. The
+/// order is the numbers as shown, ties by the server's place, so a row slides
+/// past another when its number does and comes to rest in the server's order.
+const CONTRIBUTORS_PAGE = 100, CONTRIBUTORS_MOST = 2000, CONTRIBUTORS_EVERY_MS = 60_000;
+let contributorsTotal = 0, contributorsLimit = CONTRIBUTORS_PAGE, contributorsAt = 0, contributorsLoading = false;
+let contributorsFrom = new Map(), contributorsTick = 0, contributorsMore = null;
+function contributorShown(c) {
+  const to = c[contributorsColumn()[0]] || 0;
+  if (!contributorsFrom.has(c.key)) return to;
+  const from = contributorsFrom.get(c.key), f = Math.min(1, (Date.now() - contributorsAt) / CONTRIBUTORS_EVERY_MS);
+  return Math.round(from + (to - from) * f);
+}
+const contributorsOrdered = () => (contributorsState || []).map((c, i) => ({ c, i, v: contributorShown(c) }))
+  .sort((x, y) => y.v - x.v || x.i - y.i);
+
+function contributorRowInner(c, at, shown) {
+  const who = c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
+    : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`;
+  const honour = c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "";
+  return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${honour}${
+    c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${escHtml(shown.toLocaleString(accountLocale()))}</span>`;
+}
+const contributorRowClass = (c, at) => `rank-row${at < 3 ? " top" : ""}${c.you ? " you" : ""}`;
+
+async function contributorsLoad() {
+  if (contributorsLoading) return;
+  contributorsLoading = true;
+  const period = contributorsPeriod, limit = contributorsLimit;
+  const r = await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`);
+  contributorsLoading = false;
+  if (period !== contributorsPeriod) return;
+  // WHAT EACH ROW SHOWS NOW is where it rolls from.
+  contributorsFrom = new Map((contributorsState || []).map((c) => [c.key, contributorShown(c)]));
+  contributorsState = (r && r.ok && r.contributors) || contributorsState || [];
+  contributorsTotal = (r && r.ok && r.total) || contributorsState.length;
+  contributorsAt = Date.now();
+  if (authKindOf(location.pathname) !== "contributors") return;
+  if (!contributorsPatch()) renderAuthPage("contributors");
+}
+
+/// THE LIST CHANGES IN PLACE: each row keeps its element, so it can slide.
+/// False when there is no list on the page to change.
+function contributorsPatch() {
+  const ol = document.querySelector(".rank-list");
+  if (!ol || !contributorsState || !contributorsState.length) return false;
+  const have = new Map([...ol.querySelectorAll("li[data-key]")].map((li) => [li.dataset.key, li]));
+  const want = new Set(contributorsState.map((c) => c.key));
+  for (const [k, li] of have) if (!want.has(k)) li.remove();
+  const ordered = contributorsOrdered();
+  ordered.forEach(({ c, v }, at) => {
+    let li = have.get(c.key);
+    if (!li) { li = document.createElement("li"); li.dataset.key = c.key; ol.appendChild(li); }
+    li.className = contributorRowClass(c, at);
+    li.innerHTML = contributorRowInner(c, at, v);
+  });
+  contributorsMove(ol, ordered);
+  contributorsWatchMore();
+  return true;
+}
+
+/// EACH QUARTER SECOND the numbers roll, and a row whose number passed
+/// another's slides to its new place.
+function contributorsStep() {
+  const ol = document.querySelector(".rank-list");
+  if (!ol || !contributorsState) return;
+  const ordered = contributorsOrdered();
+  const rows = new Map([...ol.querySelectorAll("li[data-key]")].map((li) => [li.dataset.key, li]));
+  for (const { c, v } of ordered) {
+    const pts = rows.get(c.key) && rows.get(c.key).querySelector(".rank-pts");
+    const text = v.toLocaleString(accountLocale());
+    if (pts && pts.textContent !== text) pts.textContent = text;
+  }
+  contributorsMove(ol, ordered);
+}
+/// A MOVE IS A SLIDE (FLIP): each row is put in its new place, then drawn
+/// from where it was and let go, so the rows between move with it.
+function contributorsMove(ol, ordered) {
+  const lis = [...ol.querySelectorAll("li[data-key]")];
+  if (lis.map((li) => li.dataset.key).join() === ordered.map(({ c }) => c.key).join()) return;
+  const byKey = new Map(lis.map((li) => [li.dataset.key, li]));
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const before = still ? null : new Map(lis.map((li) => [li, li.getBoundingClientRect().top]));
+  ordered.forEach(({ c }, at) => {
+    const li = byKey.get(c.key);
+    if (!li) return;
+    ol.appendChild(li);
+    li.className = contributorRowClass(c, at);
+    const n = li.querySelector(".rank-n");
+    if (n && n.textContent !== String(at + 1)) n.textContent = at + 1;
+  });
+  if (still) return;
+  const moved = [];
+  for (const [li, top] of before) {
+    const dy = top - li.getBoundingClientRect().top;
+    if (!dy) continue;
+    li.style.transition = "none";
+    li.style.transform = `translateY(${dy}px)`;
+    moved.push(li);
+  }
+  void ol.offsetHeight;
+  for (const li of moved) { li.style.transition = ""; li.style.transform = ""; }
+}
+
+/// THE NEXT PAGE is asked when the end of the list comes near.
+function contributorsWatchMore() {
+  const end = $("rank-more");
+  if (contributorsMore) contributorsMore.disconnect();
+  contributorsMore = null;
+  if (!end || !contributorsState || contributorsState.length >= contributorsTotal || contributorsLimit >= CONTRIBUTORS_MOST) return;
+  contributorsMore = new IntersectionObserver((seen) => {
+    if (!seen.some((e) => e.isIntersecting) || contributorsLoading || contributorsState.length < contributorsLimit) return;
+    contributorsLimit = Math.min(CONTRIBUTORS_MOST, contributorsLimit + CONTRIBUTORS_PAGE);
+    contributorsLoad();
+  }, { rootMargin: "400px" });
+  contributorsMore.observe(end);
+}
+
+/// THE CLOCK runs only while the ranking is on screen: a hidden tab asks and
+/// draws nothing, and leaving the page stops it.
+function contributorsClock() {
+  if (contributorsTick) return;
+  contributorsTick = setInterval(() => {
+    if (authKindOf(location.pathname) !== "contributors") { clearInterval(contributorsTick); contributorsTick = 0; return; }
+    if (document.hidden || contributorsState == null) return;
+    if (Date.now() - contributorsAt >= CONTRIBUTORS_EVERY_MS) contributorsLoad();
+    contributorsStep();
+  }, 250);
+}
+
 function contributorsPage() {
   const list = contributorsState;
-  // THE COLUMN EACH RANKING ORDERS ON, and its heading (worker/contribution.js `PERIODS`).
-  const col = { all: ["points", "Points"], recent: ["recent", "Last 30 days"], week: ["week", "Last 7 days"] }[contributorsPeriod];
-  const n = (x) => escHtml(x.toLocaleString(accountLocale()));
-  const who = (c) => (c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
-    : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`);
-  const honour = (c) => (c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "");
-  const rows = (list || []).map((c, i) => `<li class="rank-row${i < 3 ? " top" : ""}${c.you ? " you" : ""}">
-      <span class="rank-n">${i + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who(c)}${honour(c)}${
-      c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${n(c[col[0]] || 0)}</span></li>`).join("");
+  const col = contributorsColumn();
+  const rows = contributorsOrdered().map(({ c, v }, at) => `<li class="${contributorRowClass(c, at)}" data-key="${escHtml(c.key)}">${
+    contributorRowInner(c, at, v)}</li>`).join("");
   const head = `<li class="rank-row rank-head" aria-hidden="true"><span class="rank-n">#</span><span class="rank-who">${
     aT("Contributor")}</span><span class="rank-pts">${aT(col[1])}</span></li>`;
   const tab = (id, label) => `<button class="seg${contributorsPeriod === id ? " on" : ""}" data-auth="contributors-period"
@@ -533,7 +662,7 @@ function contributorsPage() {
     <p class="set-note">${aT("The volunteers whose devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p>
     ${contributorsYouHtml()}
     <div class="block"><div class="bh"><span class="oseg">${tab("all", "All-time ranking")} ${tab("recent", "Monthly ranking")} ${tab("week", "Weekly ranking")}</span></div><div class="bb">${list == null ? ""
-      : rows ? `<ol class="rank-list">${head}${rows}</ol>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
+      : rows ? `<ol class="rank-list">${head}${rows}</ol><div id="rank-more"></div>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
     <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
       ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.")}</p></div></div>`;
 }
@@ -650,13 +779,12 @@ function renderAuthPage(kind) {
     }
     if (contributorsState === null) {
       contributorsState = undefined;
-      const period = contributorsPeriod;
-      accountCall("GET", period === "all" ? "/api/contributors" : `/api/contributors?period=${period}`).then((r) => {
-        if (period !== contributorsPeriod) return;
-        contributorsState = (r && r.ok && r.contributors) || [];
-        if (authKindOf(location.pathname) === "contributors") renderAuthPage(kind);
-      });
+      contributorsLimit = CONTRIBUTORS_PAGE;
+      contributorsFrom = new Map();
+      contributorsLoad();
     }
+    contributorsWatchMore();
+    contributorsClock();
     return;
   }
   const { account, providers } = accountState;

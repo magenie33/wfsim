@@ -18,7 +18,9 @@
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }], per_hour: { volunteers, official } }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
-//   GET  /api/contributors[?period=recent|week] → { period, computing, contributors: [{ name, points, recent, week, contributor_rank, mark?, volunteer?, you? }] }
+//   GET  /api/contributors[?period=recent|week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, contributor_rank, mark?, volunteer?, you? }] }
+//        — the first `limit` rows (default `PAGE`, at most `MOST`) of `total`; `key` is the row's
+//        own for the page to follow it as it moves, and says nothing of the account behind it.
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, contributor_rank, mark?, volunteer? } | null }
 //        — `computing` is how many browsers answered in the last `COMPUTING_MS`;
 //        a person is found by the exact name the ranking shows, never an anonymous one.
@@ -28,7 +30,7 @@
 // `recent` is the last `RECENT_DAYS` days and `week` the last `WEEK_DAYS`, so a
 // newcomer can lead somewhere; `ranks` is the account's place on each of the
 // three, for the showcase a share card draws (`31-share-card.js`).
-import { json, no, now, sameSite, sessionAccount } from "./accounts.js";
+import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
@@ -39,8 +41,10 @@ const WORK_PER_POINT = 1e9;
 /// The ranking's other column: the days counted back from today, today included.
 export const RECENT_DAYS = 30;
 export const WEEK_DAYS = 7;
-/// How many names the ranking shows.
-export const RANKED = 100;
+/// THE RANKING IS EVERYONE, served `PAGE` rows at a time as the page scrolls,
+/// and asked again whole each minute, so `MOST` bounds what one answer carries.
+export const PAGE = 100;
+export const MOST = 2000;
 const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
 /// What the owner calls a device: one short line, no control characters.
 const LABEL = /^[^\u0000-\u001f\u007f]{1,40}$/u;
@@ -328,12 +332,13 @@ async function standings(env) {
     e.ws.push(w);
     by.set(r.id, e);
   }
-  return [...by.values()].map((e) => ({ id: e.id, named: e.named, name: e.name, points: points(e.work),
-    recent: points(e.recent), week: points(e.week), volunteer: !!volunteerSince(e.ws) }));
+  return Promise.all([...by.values()].map(async (e) => ({ id: e.id, key: await rowKey(env, e.id), named: e.named, name: e.name,
+    points: points(e.work), recent: points(e.recent), week: points(e.week), volunteer: !!volunteerSince(e.ws) })));
 }
-/// ONE RANKING: everyone with any of `key`, most first.
+/// ONE RANKING: everyone with any of `key`, most first, a tie by the row key
+/// so every answer and every place agree.
 const ordered = (list, key) => list.filter((e) => e[key] > 0)
-  .sort((x, y) => y[key] - x[key] || y.points - x.points || (x.id < y.id ? -1 : 1));
+  .sort((x, y) => y[key] - x[key] || y.points - x.points || (x.key < y.key ? -1 : 1));
 
 /// HOW MANY BROWSERS ARE COMPUTING NOW: those that answered an order within
 /// this long, refused ones aside — a count, never who.
@@ -362,23 +367,45 @@ async function person(env, name) {
     ...(marks[hit.id] ? { mark: marks[hit.id] } : {}) } });
 }
 
-/// THE RANKING the page shows, its first `RANKED`. A name and a handle leave
+/// THE RANKING the page shows, its first `limit`. A name and a handle leave
 /// here only for an account that agreed; the reader's own row is marked `you`,
 /// to them alone.
-async function ranking(env, period, me) {
+async function ranking(request, env, period, limit, me) {
   const key = PERIODS[period] || "points";
-  const contributors = ordered(await standings(env), key).slice(0, RANKED)
-    .map((e) => ({ id: e.id, name: e.named ? e.name : null, points: e.points, recent: e.recent, week: e.week,
-      contributor_rank: contributorRank(e.points),
-      // THE HONOUR travels with a name only: an anonymous row says nothing more.
-      ...(e.named && e.volunteer ? { volunteer: true } : {}) }));
-  const marks = await cloudMarks(env, contributors.filter((e) => e.name !== null).map((e) => e.id));
-  for (const e of contributors) if (marks[e.id]) e.mark = marks[e.id];
-  for (const e of contributors) {
-    if (e.id === me) e.you = true;
-    delete e.id;
-  }
-  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing: await computingNow(env), contributors });
+  const { everyone, computing } = await kept(request, env);
+  const mine = me && await rowKey(env, me);
+  const all = ordered(everyone, key);
+  const contributors = all.slice(0, limit).map((e) => ({ ...e, ...(e.key === mine ? { you: true } : {}) }));
+  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors });
+}
+
+/// A ROW'S KEY, for the page to follow it as it moves: its account's id hashed
+/// with the server's secret, the same in every answer and no way back.
+const rowKey = async (env, id) => (await sha256(`${env.AUTH_SECRET || ""}:contributor:${id}`)).slice(0, 16);
+
+/// EVERY ROW AS IT MAY BE SERVED, and the count, kept a minute at the edge:
+/// every open ranking asks again each minute and `standings` reads every
+/// claimed device. Only what an answer may carry is kept — no account id, and
+/// an anonymous row's name never.
+const KEPT_SECONDS = 60;
+async function kept(request, env) {
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const at = new Request(new URL("/api/contributors/kept", request.url).toString());
+  const hit = cache && await cache.match(at);
+  if (hit) return hit.json();
+  const rows = await standings(env);
+  // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
+  const named = rows.filter((e) => e.named).map((e) => e.id), parts = [];
+  for (let i = 0; i < named.length; i += PER_STATEMENT) parts.push(cloudMarks(env, named.slice(i, i + PER_STATEMENT)));
+  const marks = Object.assign({}, ...(await Promise.all(parts)));
+  const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
+    points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
+    // THE HONOUR travels with a name only: an anonymous row says nothing more.
+    ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
+  const body = { everyone, computing: await computingNow(env) };
+  if (cache) await cache.put(at, new Response(JSON.stringify(body),
+    { headers: { "content-type": "application/json", "cache-control": `public, max-age=${KEPT_SECONDS}` } }));
+  return body;
 }
 
 /// WHAT THE BOARD ASKS FOR AND WHAT IS ANSWERING IT, for the compute page's
@@ -478,7 +505,8 @@ export async function contributionRoute(request, env, path) {
     const q = new URL(request.url).searchParams;
     const name = (q.get("name") || "").trim();
     if (name) return person(env, name);
-    return ranking(env, q.get("period"), me);
+    const limit = Math.min(MOST, Math.max(1, parseInt(q.get("limit"), 10) || PAGE));
+    return ranking(request, env, q.get("period"), limit, me);
   }
   if (path === "/api/board/computing") {
     if (request.method !== "GET") return no("method", 405);

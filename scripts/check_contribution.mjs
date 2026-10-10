@@ -89,7 +89,7 @@ check("an account's points are its devices' credited work", a.points === 8 && a.
 check("...and its last thirty days, the days before them left out", a.recent === 5, JSON.stringify(a));
 check("...and its page never sees a device's whole id", a.devices.every((d) => d.id.length === 6));
 check("an account is on the ranking once it claims a device, ANONYMOUS and not yet asked",
-  a.named === false && a.decided === false && JSON.stringify(await ranking()) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2,
+  a.named === false && a.decided === false && JSON.stringify((await ranking()).map(({ key, ...e }) => e)) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2,
     contributor_rank: { rank: 0, xp: 0, xp_at_rank: 0, xp_at_next: 2500 } }]),
   JSON.stringify(await ranking()));
 
@@ -151,6 +151,19 @@ check("an account learns its place on each ranking, and none where it has nothin
   JSON.stringify((await mine(ann)).ranks) === JSON.stringify({ all: 2, recent: 2, week: 1 })
   && JSON.stringify((await mine(bob)).ranks) === JSON.stringify({ all: 3, recent: 1, week: null }),
   `${JSON.stringify((await mine(ann)).ranks)} ${JSON.stringify((await mine(bob)).ranks)}`);
+
+// THE RANKING IS EVERYONE, a page at a time, each row with a key the page
+// follows as it moves.
+const firstOne = await call("/api/contributors?limit=1"), whole = await call("/api/contributors");
+check("a ranking answers the rows asked for and how many there are",
+  firstOne.contributors.length === 1 && firstOne.total === 3 && whole.contributors.length === 3 && whole.total === 3,
+  JSON.stringify([firstOne, whole]));
+const keyOf = (list, name) => (list.find((e) => e.name === name) || {}).key;
+check("...a row's key is the same in every answer and every period, and one row's alone",
+  keyOf(whole.contributors, "bob") === keyOf(recent, "bob") && new Set(whole.contributors.map((e) => e.key)).size === 3
+  && whole.contributors.every((e) => /^[A-Za-z0-9_-]{16}$/.test(e.key)), JSON.stringify(whole.contributors));
+check("...and says nothing of the account behind it",
+  !JSON.stringify(whole).includes("acct-"), JSON.stringify(whole));
 
 const who = (name) => call(`/api/contributors?name=${encodeURIComponent(name)}`);
 const found = await who("bob");

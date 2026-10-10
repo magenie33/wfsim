@@ -1962,6 +1962,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rank-pts{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .rank-head .rank-pts{font-weight:400}
 .rank-row.you{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.rank-list li[data-key]{transition:transform .6s ease}
 .rank-you{font-size:12px;color:var(--muted)}
 /* THE COMPUTE PAGE'S DEMAND: who is computing now, and the volunteers' share of an hour. */
 /* THE RECENT TASKS: today's three figures, a card per task, opened in place. */
