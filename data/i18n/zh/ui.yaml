@@ -2616,7 +2616,7 @@ ui:
   "Contributor rank": 贡献段位
   "Contributor rank {n}": "贡献段位 {n}"
   "{x} / {y} experience to rank {n}": "{x} / {y} 经验，升到 {n} 段"
-  "The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does, past 30 without end.": "名字前的徽章是贡献段位：10 积分算 1 经验，升段方式和游戏的段位一样，30 段之后继续往上，没有上限。"
+  "The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.": "名字前的徽章是贡献段位：10 积分算 1 经验，升段方式和游戏的段位一样。"
   "{n} devices are computing WFSim together right now": "此刻有 {n} 台设备在一起算 WF模拟"
   "Nobody on the ranking shows that name.": 排行榜上没有叫这个名字的人。
   "Not on this ranking yet.": 暂未上榜。

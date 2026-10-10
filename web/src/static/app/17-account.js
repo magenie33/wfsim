@@ -534,7 +534,7 @@ function contributorsPage() {
     <div class="block"><div class="bh"><span class="oseg">${tab("all", "All-time ranking")} ${tab("recent", "Monthly ranking")} ${tab("week", "Weekly ranking")}</span></div><div class="bb">${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
     <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
-      ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does, past 30 without end.")}</p></div></div>`;
+      ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.")}</p></div></div>`;
 }
 
 /// THE READER'S OWN LINE: signed out, how to be on it; signed in and not yet
