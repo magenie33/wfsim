@@ -591,13 +591,17 @@ function accountPage(a) {
 // ---- drawing a page ------------------------------------------------------------------------
 /// THE IN-GAME CLAN'S DOOR (worker/clan.js): a signed-in reader leaves a name
 /// and is invited in game. Signed out, the page is the way to sign in first.
-let clanSent = false;
+/// The name last sent from this page, shown back so a typo can be caught and
+/// sent again — the owner's message then says it replaces the first.
+let clanSent = "";
+let clanChanging = false;
 function clanPage() {
   const { account, providers } = accountState;
   const body = !providers.length ? `<p class="lede">${aT("Sign in on wfsim.app.")}</p>`
     : !account ? `<p class="lede">${aT("Sign in, then leave your in-game name to be invited.")}</p>
       <a class="run-btn" href="/login?return=${encodeURIComponent("/clan")}">${aT("Sign in")}</a>`
-    : clanSent ? `<p class="lede">${aT("Sent. You will be invited in game.")}</p>`
+    : clanSent && !clanChanging ? `<p class="lede">${escHtml(tr("Sent: {name}. You will be invited in game.")).replace("{name}", `<b>${escHtml(clanSent)}</b>`)}</p>
+      <div class="auth-foot">${aT("Wrong name?")} <a href="#" data-auth="clan-change">${aT("Change it")}</a></div>`
     : `<p class="lede">${aT("Leave your in-game name to be invited.")}</p>
       ${authError()}${authField("clan-ign", "In-game name", "text", "off")}
       <button class="run-btn" data-auth="clan-request">${aT("Request an invite")}</button>
@@ -622,7 +626,7 @@ function renderAuthPage(kind) {
   if (kind === "clan") {
     main.innerHTML = clanPage();
     const box = $("clan-ign");
-    if (box) { box.maxLength = 40; box.focus(); }
+    if (box) { box.maxLength = 40; if (clanChanging) box.value = clanSent; box.focus(); }
     return;
   }
   // THE RANKING IS EVERYONE'S, signed in or not.
@@ -800,9 +804,15 @@ async function authAct(el) {
       return renderAuthPage(kind);
     }
     if (what === "clan-request") {
-      const r = await accountCall("POST", "/api/clan/request", { name: authVal("clan-ign"), lang: LANG });
+      const name = authVal("clan-ign");
+      const r = await accountCall("POST", "/api/clan/request", { name, lang: LANG, replaces: !!clanSent });
       if (!(r && r.ok)) return fail(r);
-      clanSent = true;
+      clanSent = name;
+      clanChanging = false;
+      return renderAuthPage(kind);
+    }
+    if (what === "clan-change") {
+      clanChanging = true;
       return renderAuthPage(kind);
     }
     if (what === "contributors-period") {

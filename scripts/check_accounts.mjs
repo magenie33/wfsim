@@ -334,15 +334,23 @@ const said = told().at(-1) && JSON.parse(told().at(-1).body).text;
 check("a clan invite reaches the owner with the name and the username",
   asked.ok && said && said.includes("`Tenno`") && said.includes(payerName) && said.includes("(zh)"), JSON.stringify([asked, said]));
 check("a clan invite stores nothing", rows() === clanBefore.rows, `${clanBefore.rows} -> ${rows()}`);
+check("a first clan invite does not claim to replace one", !said.includes("replaces"), said);
+await clan(payer, { name: "Tenn0", replaces: true });
+const fixed = JSON.parse(told().at(-1).body).text;
+check("a name sent again says it replaces the first", fixed.includes("`Tenn0`") && fixed.includes("replaces their previous one"), fixed);
 const cloudFetch = env.CLOUD.fetch;
 env.CLOUD = { fetch: async (req) => new URL(req.url).pathname === "/internal/tell"
   ? new Response(JSON.stringify({ ok: false })) : cloudFetch(req) };
 check("a message the bot could not send is said to have failed", (await clan(payer, { name: "Tenno" })).reason === "tell_failed");
 env.CLOUD = { fetch: cloudFetch };
 let clanTaken = 0;
-env.CLAN_LIMIT = { limit: async () => ({ success: clanTaken++ < 1 }) };
-check("one account asks for a clan invite once a minute",
-  (await clan(payer, { name: "Tenno" })).ok && (await clan(payer, { name: "Tenno" })).reason === "rate_limited");
+const wrangler = readFileSync(resolve(ROOT, "wrangler.jsonc"), "utf8");
+const clanAllowance = Number((/"name": "CLAN_LIMIT"[^}]*"limit": (\d+)/.exec(wrangler) || [])[1]);
+check("a clan invite can be corrected at once: the allowance is two a minute", clanAllowance === 2, clanAllowance);
+env.CLAN_LIMIT = { limit: async () => ({ success: clanTaken++ < clanAllowance }) };
+check("past its allowance an account is told to wait",
+  (await clan(payer, { name: "Tenno" })).ok && (await clan(payer, { name: "Tenno" })).ok
+    && (await clan(payer, { name: "Tenno" })).reason === "rate_limited");
 delete env.CLAN_LIMIT;
 const raw = '{"id":"evt_1","type":"invoice.paid"}';
 await cloud(payer, "POST", "/api/stripe/webhook", raw, { "content-type": "application/json", origin: "https://stripe.com" });

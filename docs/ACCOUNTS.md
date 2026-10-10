@@ -185,8 +185,9 @@ change that page in the commit that changes what is kept.
 signed-in reader leaves an in-game name there and is invited in game.
 `worker/clan.js` sends it with the username as one Discord message to the
 owner, through the paid half's bot (`cloudTell`, `/internal/tell`), and stores
-nothing — so there is nothing to export or delete. `CLAN_LIMIT` allows one per
-account a minute.
+nothing — so there is nothing to export or delete. A name sent again from the
+page says it replaces the first; `CLAN_LIMIT` allows two per account a minute,
+so a typo is corrected at once.
 
 ## Offered screenshots
 

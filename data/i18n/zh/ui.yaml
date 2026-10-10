@@ -776,7 +776,9 @@ ui:
   "Clan": 游戏内氏族
   "Sign in, then leave your in-game name to be invited.": 登录后留下你的游戏 ID，就会收到邀请。
   "Leave your in-game name to be invited.": 留下你的游戏 ID，就会收到邀请。
-  "Sent. You will be invited in game.": 已提交，邀请会在游戏里发给你。
+  "Sent: {name}. You will be invited in game.": 已提交：{name}。邀请会在游戏里发给你。
+  "Wrong name?": 填错了？
+  "Change it": 修改
   "In-game name": 游戏 ID
   "Request an invite": 申请邀请
   "It reaches WFSim as a Discord message, with your username. Nothing is kept here.": 游戏 ID 会连同你的用户名，以 Discord 消息发给 WFSim，这里不保存。

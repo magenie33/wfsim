@@ -15,7 +15,8 @@ export async function clanRoute(request, env, path) {
   if (!env.ACCOUNTS) return no("unavailable", 503);
   const account = await sessionAccount(env, request);
   if (!account) return no("not_signed_in", 401);
-  // ONE MESSAGE A MINUTE PER ACCOUNT, so a held key cannot flood the owner's DMs.
+  // TWO MESSAGES A MINUTE PER ACCOUNT (a name and its correction), so a held
+  // key cannot flood the owner's DMs.
   if (env.CLAN_LIMIT && !(await env.CLAN_LIMIT.limit({ key: "clan" + account })).success) {
     return no("rate_limited", 429);
   }
@@ -26,6 +27,8 @@ export async function clanRoute(request, env, path) {
   if (!name || name.length > NAME_MAX) return no("bad_ign");
   const row = await env.ACCOUNTS.prepare("SELECT username FROM accounts WHERE id = ?1").bind(account).first();
   const lang = b.lang === "zh" ? "zh" : "en";
-  const sent = await cloudTell(env, `Clan invite: \`${name}\` — WFSim user ${row ? row.username : "?"} (${lang})`);
+  // A NAME SENT AGAIN from the page corrects the first, and says so.
+  const again = b.replaces === true ? " — replaces their previous one" : "";
+  const sent = await cloudTell(env, `Clan invite: \`${name}\` — WFSim user ${row ? row.username : "?"} (${lang})${again}`);
   return sent ? json({ ok: true }) : no("tell_failed", 502);
 }
