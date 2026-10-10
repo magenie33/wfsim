@@ -57,14 +57,16 @@ impl ModEffect {
             GrantsStackingBuff(b) => format!(
                 "{} {} per stack, up to {} ({}), for {}s — earned {}",
                 match b.grant {
-                    BuffGrant::MeleeRange => format!("+{} m", b.per_stack),
+                    BuffGrant::MeleeRange | BuffGrant::PunchThrough => format!("+{} m", b.per_stack),
                     BuffGrant::InitialCombo => format!("+{}", b.per_stack),
                     _ => pct(b.per_stack),
                 },
                 b.grant.label(),
                 b.max_stacks,
                 match b.grant {
-                    BuffGrant::MeleeRange => format!("+{} m", b.per_stack * f64::from(b.max_stacks)),
+                    BuffGrant::MeleeRange | BuffGrant::PunchThrough => {
+                        format!("+{} m", b.per_stack * f64::from(b.max_stacks))
+                    }
                     BuffGrant::InitialCombo => format!("+{}", b.per_stack * f64::from(b.max_stacks)),
                     _ => pct(b.per_stack * f64::from(b.max_stacks)),
                 },

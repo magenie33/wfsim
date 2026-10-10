@@ -36,6 +36,7 @@ mod radials_roster_targets;
 mod reload_grenade;
 mod replay_debilitate_misc;
 mod replay_reads_every_buff;
+mod ripper_rounds;
 mod sniper_combo_fight;
 mod spliced_riven;
 mod status_crit_parts;

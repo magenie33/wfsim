@@ -275,7 +275,8 @@ pub(super) fn open<'a>(
         _ => None,
     };
     // …AND WHO IS ON THE LINE, for the same reason: nobody moves, so the bodies
-    // a shot passes through are the same for every pellet of every shot.
+    // a shot passes through are the same for every pellet of every shot — until
+    // a live punch-through grant adds metres, which each shot walks (`flight`).
     let struck = params.struck_bodies();
     // …AND THE BASE FORM'S OWN LINE. Punch through is a property of the FORM
     // rather than of the weapon — the Latron's base form pierces and its

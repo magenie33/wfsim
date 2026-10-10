@@ -791,14 +791,28 @@ impl FightParams {
 
     /// What this attack's shot may pass through — see `rules::space::Pierce`.
     pub fn pierce(&self) -> crate::rules::space::Pierce {
+        self.pierce_with(0.0)
+    }
+
+    /// …with `extra_m` on top: the metres a live buff adds at this shot
+    /// (`BuffGrant::PunchThrough`), the way `melee_struck` takes its reach.
+    pub fn pierce_with(&self, extra_m: f64) -> crate::rules::space::Pierce {
         crate::rules::space::Pierce {
-            metres: self.punch_through_m,
+            metres: self.punch_through_m + extra_m,
             every_body: self.infinite_body_punch_through,
         }
     }
 
     pub fn struck_bodies(&self) -> Vec<usize> {
-        if !self.pierce().passes_a_body() || self.others.is_empty() {
+        self.struck_bodies_with(0.0)
+    }
+
+    /// WHO IS ON THE LINE with `extra_m` of live punch through — the
+    /// engagement's list when no buff adds any, walked again per shot while
+    /// one does.
+    pub fn struck_bodies_with(&self, extra_m: f64) -> Vec<usize> {
+        let pierce = self.pierce_with(extra_m);
+        if !pierce.passes_a_body() || self.others.is_empty() {
             return vec![0];
         }
         let aim = self.aim_point();
@@ -808,7 +822,7 @@ impl FightParams {
         bodies.extend(self.others.iter().map(|f| f.at));
         let dir = crate::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
         let hit = crate::rules::space::struck_along(
-            muzzle, dir, &bodies, self.pierce(), self.projectile_width_m,
+            muzzle, dir, &bodies, pierce, self.projectile_width_m,
         );
         // THE AIMED BODY IS STRUCK BY DEFINITION. The ray is cast at the aim
         // point, and `webapi` has already resolved which body that is — so a

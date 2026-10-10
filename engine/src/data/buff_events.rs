@@ -56,7 +56,7 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         "frenzy" => "headshot",
         // An evolution's CO-shaped multishot counts the statuses ON THE TARGET.
         "on_status_multishot" => "hit_enemy_with_status",
-        "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "tendrils"
+        "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "on_kill_punch_through" | "tendrils"
         | "kill_streak" | "kill_streak_summon" => "kill",
         "on_headshot_kill_cc" => "headshot_kill",
         // An Eximus weak point is a weak point.

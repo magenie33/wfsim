@@ -252,6 +252,7 @@ pub(super) fn stacking_card_id(
         (T::ReloadComplete, G::BaseDamage) => "on_reload_damage",
         (T::ReloadComplete, G::FireRate) => "on_reload_fire_rate",
         (T::Kill, G::FlatBaseDamage) => "on_kill_damage",
+        (T::Kill, G::PunchThrough) => "on_kill_punch_through",
         (T::ReloadFromEmpty, G::FlatBaseDamage) => "on_empty_reload_damage",
         (T::ReloadFromEmpty, G::BaseCritDamage) => "on_empty_reload_crit_damage",
         (T::PunchThrough, G::CritChance) => "on_punch_through_crit_chance",

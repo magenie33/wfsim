@@ -8,18 +8,16 @@ description: "On Kill: +3 Punch Through for 7s."
 selection: choose_one
 
 effects:
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. Punch through moves damage to
-  # enemies BEHIND the first, and this arena has one target; that is true
-  # whatever else gets modelled. It is also CONDITIONAL, so it could not join
-  # the flat indirect bucket even if a second body existed — that bucket is
-  # unconditional, and a build that has not killed anything does not have this
-  # (the rule the mods follow, see data/mods/rifle/twitch.yaml).
-  #
-  # The SHAPE is recorded in the clause so nothing is lost: a 7-second window
-  # opened by a kill, worth 3 m.
-  # see notes: one_target_is_not_an_edge
+  # One stack, refreshed by every kill: the window a kill opens, worth 3 m on
+  # the shot's punch through while it is up. A ricochet does not inherit it
+  # (MECHANICS §Ricochet).
   # from: "On Kill: +3m Punch Through for 7 seconds"
-  - kind: unmodelled_punch_through_on_kill_for_a_window
+  - kind: stacking_buff
+    trigger: kill
+    grants: punch_through
+    per_stack: 3.0
+    max_stacks: 1
+    duration_seconds: 7.0
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis

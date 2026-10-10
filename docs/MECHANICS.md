@@ -1152,7 +1152,9 @@ spawns its own ricochets. Terrain hits never ricochet; **corpse hits DO**
 Incarnon 10-12 m, ...); Neutralizer's range scales with Ability Range and
 prioritizes weak points. DT-specific: ricochets can headshot (20% of
 arrivals, M111) and trigger Frenzy; ragdolled enemies cannot be ricochet
-targets.
+targets. **A ricochet does not punch through** (the owner's in-game
+observation on the DT Incarnon): its damage area is a slightly thicker line,
+not a field, so Ripper Rounds' metres reach the aimed line and never a bounce.
 
 **Bounce** (wiki `Bounce` — the PROJECTILE half, and a different mechanic
 from Ricochet above however often the community uses one word for both:
@@ -1287,6 +1289,9 @@ How the sim runs it (`engine::fight::flight`):
   grants, the gauge, every spread to the bodies around it, and
   the record's timestamps. Stats are rolled when the round is fired; the live
   state it lands into is read when it lands.
+- **A LIVE PUNCH-THROUGH GRANT IS THE ROUND'S, set as it is fired.** Ripper
+  Rounds' kill window reaches the rounds pulled after the kill LANDS; one
+  pulled while the killing round flew leaves without the metres.
 - **ONE LANDING PER SHOT, timed to the aimed body.** A punched body behind it
   and an explosion's neighbours are struck at the same instant — the extra
   metres to them are not flown.

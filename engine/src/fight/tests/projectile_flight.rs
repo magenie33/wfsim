@@ -129,3 +129,58 @@ fn a_kill_is_made_when_the_round_arrives() {
     let at = run_once(&p, &mut Rng::new(1)).first_kill_at.expect("a kill");
     assert!((at - 0.2).abs() < 1e-9, "killed at {at}");
 }
+
+/// AN ON-KILL PUNCH THROUGH GRANT (Ripper Rounds' shape) REACHES THE ROUNDS
+/// PULLED AFTER THE KILL LANDS. A frail target at 17 m (0.2 s of flight) with a
+/// dummy 3 m behind it: a round pulled while the killing one flew leaves the
+/// muzzle without the metres and stops in the target, and the first pull after
+/// the kill lands is the first to reach the body behind.
+#[test]
+fn an_on_kill_punch_through_window_opens_at_the_landing() {
+    let mut p = fight("boltor", &[], 17.0);
+    assert_eq!(p.punch_through_m, 0.0);
+    p.foe = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+    p.body_parts = mono_body(1.0);
+    p.others = vec![crate::formation::FoeSpec {
+        id: String::new(),
+        params: Foe::training_dummy(),
+        body_parts: mono_body(1.0),
+        at: Vec2::new(p.target_at.x, p.target_at.y + 3.0),
+    }];
+    p.stacking_buffs = vec![crate::model::StackingBuff {
+        id: "on_kill_punch_through",
+        trigger: crate::model::BuffTrigger::Kill,
+        grant: crate::model::BuffGrant::PunchThrough,
+        chance: 1.0,
+        decay: crate::model::BuffDecay::LoseOneAndReset,
+        per_stack: 3.0,
+        max_stacks: 1,
+        duration: 7.0,
+        initial_stacks: 0,
+        stacks_per_trigger: 1,
+        per_shell: false,
+        cleared_by: crate::model::ClearedBy::Nothing,
+        card_opens_full: false,
+    }];
+    p.duration_seconds = 2.0;
+    let rec = record(&p, Rng::new(1).state(), 0.0, p.duration_seconds, 100_000, 0);
+    let kill = run_once(&p, &mut Rng::new(1)).first_kill_at.expect("the target dies");
+    let (mut pulls, mut reached) = (Vec::new(), None);
+    for e in rec.events() {
+        match &e.kind {
+            Kind::Strike { .. } => pulls.push(e.t),
+            Kind::Damage(d) if d.origin == Origin::PunchThrough && e.subject == Some(1) => {
+                reached.get_or_insert(e.t);
+            }
+            _ => {}
+        }
+    }
+    let pulled_before = pulls.iter().filter(|&&t| t < kill && t > kill - 0.2).count();
+    assert!(pulled_before > 0, "a round is pulled while the killing one flies: {kill} {pulls:?}");
+    let first_after = pulls.iter().copied().find(|&t| t >= kill).expect("a pull after the kill");
+    let reached = reached.expect("the window reaches the body behind");
+    assert!(
+        (reached - (first_after + 0.2)).abs() < 1e-9,
+        "the first round through is the first pulled after the kill at {kill}:          landed {reached}, pulls {pulls:?}"
+    );
+}

@@ -37,6 +37,10 @@ pub(super) struct Landing {
     pub(super) tennokai_heavy: bool,
     pub(super) tennokai_kill_mark: u32,
     pub(super) melee_struck: Vec<usize>,
+    /// THE PUNCH THROUGH A LIVE GRANT GAVE THE ROUND AS IT LEFT THE MUZZLE
+    /// (Ripper Rounds' kill window): a property of the projectile, so a kill
+    /// that lands while it flies does not lengthen it.
+    pub(super) pierce_live_m: f64,
     pub(super) effective_cc: f64,
     pub(super) crit_chance_relative: f64,
     pub(super) flat_crit: f64,
@@ -120,8 +124,14 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let t = l.t;
     let active = l.active(me.params);
     // …AND WHO IS ON THE LINE IS THE FIRING FORM'S ANSWER TOO: a form's punch
-    // through is its own (`open`).
+    // through is its own (`open`). A live grant's metres walk the line again
+    // for this shot; with none, the engagement's list stands.
+    let struck_live: Vec<usize>;
     let struck: &[usize] = match &me.fixed.base_struck {
+        _ if l.pierce_live_m > 0.0 => {
+            struck_live = active.struck_bodies_with(l.pierce_live_m);
+            &struck_live
+        }
         Some(b) if l.base_form => b,
         _ => &me.fixed.struck,
     };
@@ -167,6 +177,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             tennokai_heavy: l.tennokai_heavy,
             melee_struck: &l.melee_struck,
             struck,
+            pierce_live_m: l.pierce_live_m,
             body_at: g.body_at,
             bounce_bodies: g.bounce_bodies,
             chain_layout: &me.fixed.chain_layout,

@@ -1789,6 +1789,10 @@ pub fn resolve_for(
                     // multiplier it is worth. Same reason as the two above: the
                     // sim adds it to a total the mods are already inside.
                     BuffGrant::BaseCritDamage => b.per_stack * (1.0 + cd),
+                    // …and a punch-through grant obeys the rule the static
+                    // metres do: an attack that takes no punch-through mods
+                    // takes none from a card either (`takes_mods` above).
+                    BuffGrant::PunchThrough if !takes_mods => 0.0,
                     _ => b.per_stack,
                 },
                 // …and the same conversion for HOW MANY a trigger grants: 0

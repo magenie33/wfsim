@@ -275,14 +275,6 @@ applying either unconditionally overstates the build. Both also land on the
 Laetum's Incarnon magazine, which is charge-backed and takes no efficiency at
 all.
 
-### One-stack stacking buffs
-
-A "timed buff" is a stacking buff with ONE stack — same trigger, same window —
-so it uses that vocabulary and lands here when its PAYLOAD is one the engine
-does not model. The label names the payload, which is what tells the two apart.
-
-- **Ripper Rounds** — punch through, multi-target only.
-
 ### The Furis Genesis
 
 Five of its eight perks, each written under a kind this loader does not know.

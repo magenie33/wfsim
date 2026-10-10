@@ -301,6 +301,10 @@ pub enum BuffGrant {
     /// status-damage bucket the Elementalist cards feed, read as of the hit a
     /// status lands with.
     StatusDamage,
+    /// Ripper Rounds: *"On Kill: +3 Punch Through for 7s"* — FLAT METRES on the
+    /// panel's `punch_through_m`, read at the shot so a window a kill opened
+    /// reaches the bodies behind the target (`FightParams::struck_bodies_with`).
+    PunchThrough,
 }
 
 #[wfsim_gas_macro::metered]
@@ -326,6 +330,7 @@ impl BuffGrant {
             BuffGrant::InitialCombo => "initial_combo",
             BuffGrant::MeleeRange => "melee_range",
             BuffGrant::StatusDamage => "status_damage",
+            BuffGrant::PunchThrough => "punch_through",
         }
     }
 
@@ -335,7 +340,7 @@ impl BuffGrant {
         [
             G::BaseDamage, G::FlatBaseDamage, G::BaseMultishot, G::Multishot, G::FlatMultishot, G::ReloadSpeed,
             G::FireRate, G::BaseCritDamage, G::CritDamage, G::CritChance, G::StatusChance, G::AmmoEfficiency, G::HeadshotDamage,
-            G::InitialCombo, G::MeleeRange, G::StatusDamage,
+            G::InitialCombo, G::MeleeRange, G::StatusDamage, G::PunchThrough,
         ]
         .into_iter()
         .find(|g| g.id() == id)
@@ -368,6 +373,7 @@ impl BuffGrant {
             BuffGrant::InitialCombo => "initial_combo",
             BuffGrant::MeleeRange => "melee_range",
             BuffGrant::StatusDamage => "status_damage",
+            BuffGrant::PunchThrough => "punch_through",
         }
     }
 
@@ -393,6 +399,7 @@ impl BuffGrant {
             BuffGrant::InitialCombo => "Initial Combo",
             BuffGrant::MeleeRange => "Range",
             BuffGrant::StatusDamage => "Status Damage",
+            BuffGrant::PunchThrough => "Punch Through",
         }
     }
 }

@@ -41,6 +41,9 @@ pub(super) struct Strike<'a> {
     pub(super) tennokai_heavy: bool,
     pub(super) melee_struck: &'a [usize],
     pub(super) struck: &'a [usize],
+    /// The metres a live grant added to this shot's punch through — see
+    /// `Landing::pierce_live_m`.
+    pub(super) pierce_live_m: f64,
     pub(super) body_at: &'a [crate::rules::space::Vec2],
     pub(super) bounce_bodies: &'a [crate::rules::space::Vec2],
     pub(super) chain_layout: &'a Option<crate::rules::chain::Layout>,
@@ -182,6 +185,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         tennokai_heavy,
         melee_struck,
         struck,
+        pierce_live_m,
         body_at,
         bounce_bodies,
         chain_layout,
@@ -781,7 +785,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 crate::rules::space::muzzle(params.player_at, aim),
                 aim,
                 &bodies,
-                params.pierce(),
+                // …WITH WHAT A LIVE GRANT ADDS, the line `land_the_shot`
+                // walked for this shot's `struck`.
+                params.pierce_with(pierce_live_m),
                 params.projectile_width_m,
             ),
             height_m: det.height_m,

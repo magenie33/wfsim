@@ -970,6 +970,7 @@ pub fn run_once_traced(
             tennokai_heavy,
             tennokai_kill_mark,
             melee_struck,
+            pierce_live_m: buff_total(active, crate::model::BuffGrant::PunchThrough, &mut me.buff_stacks, t),
             effective_cc,
             crit_chance_relative,
             flat_crit,
