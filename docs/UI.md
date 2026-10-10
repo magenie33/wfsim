@@ -961,6 +961,11 @@ a slider being dragged is never redrawn. It shows percentages of processing
 power, never core counts. The rules behind it are docs/BOARD.md §"Contribution"
 rule 0.
 
+A device is first called what its system, browser and — on a phone — maker and
+model say (`deviceGuessReady`: ua-parser-js, pinned in `web/lib/pins.json` and
+served from `/lib/` like the OCR runtime, plus the browser's client hints for a
+model the user agent hides); the owner's own name always replaces it.
+
 ## A page that is not a module is a shell page
 
 **A PAGE THAT IS NOT A MODULE IS A SHELL PAGE** — /support, /benchmark,

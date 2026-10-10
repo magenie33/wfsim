@@ -323,4 +323,15 @@ check("a page the browser freezes hands back what it holds at once",
   z.held === null && z.beacons.some(([p, b]) => p === "/api/board/release" && b.includes("f".repeat(32))), JSON.stringify(z));
 check("...woken, it asks for work at once, and /compute says the browser put it to sleep", z.frozen && z.woke && z.slept && z.note, JSON.stringify(z));
 
+// WHAT A DEVICE IS CALLED until its owner names it (73-compute.js
+// \`deviceGuessReady\`): the pinned library, served from this origin, reads the
+// system, the browser and a phone's model — a browser inside WeChat too.
+const WECHAT = "Mozilla/5.0 (Linux; Android 13; V2227A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.116 Mobile Safari/537.36 XWEB/5235 MMWEBSDK/20230805 MicroMessenger/8.0.42.2460(0x28002A35) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64";
+const here = JSON.parse(await evaluate(`(async () => JSON.stringify({ label: await deviceGuessReady(), lib: typeof UAParser === "function" }))()`));
+await app.send("Emulation.setUserAgentOverride", { userAgent: WECHAT });
+const wx = await evaluate(`(async () => { deviceGuess = null; deviceGuessing = null; return await deviceGuessReady(); })()`);
+check("a device is first called by its system and browser, read by the library this site serves itself",
+  here.lib && / · /.test(here.label), JSON.stringify(here));
+check("...and a phone by its maker and model, a browser inside WeChat by WeChat", wx === "Vivo V2227A · WeChat", wx);
+
 await app.finish("the compute page shows what each device does, by kind, and nothing private");

@@ -12,6 +12,8 @@
   Cache-Control: public, max-age=31536000, immutable
 /ocr/*
   Cache-Control: public, max-age=31536000, immutable
+/lib/*
+  Cache-Control: public, max-age=31536000, immutable
 /asset/*
   Cache-Control: public, max-age=31536000, immutable
 /board/*

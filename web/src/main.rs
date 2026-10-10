@@ -267,17 +267,19 @@ fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
     respond(stream, "404 Not Found", "text/plain; charset=utf-8", b"not cached: run scripts/fetch_images.py")
 }
 
-/// The OCR runtime and models: served from web/cache/ocr/ (gitignored, filled by
-/// scripts/fetch_ocr.py). Only a name `web/ocr/pins.json` lists, or the
-/// licenses beside them, is ever read — the pin file is the allowlist.
+/// The pinned third-party files: the OCR runtime and models (`/ocr/`) and the
+/// page's own libraries (`/lib/`), served from web/cache/<kind>/ (gitignored,
+/// filled by scripts/fetch_ocr.py). Only a name its `web/<kind>/pins.json`
+/// lists, or the licenses beside them, is ever read — the pin file is the allowlist.
 const OCR_PINS: &str = include_str!("../ocr/pins.json");
+const LIB_PINS: &str = include_str!("../lib/pins.json");
 
-fn ocr_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
-    let pinned = serde_json::from_str::<Value>(OCR_PINS).ok().and_then(|v| {
+fn pinned_response(stream: &mut TcpStream, kind: &str, pins: &str, name: &str) -> std::io::Result<()> {
+    let pinned = serde_json::from_str::<Value>(pins).ok().and_then(|v| {
         v["files"].as_array().map(|a| a.iter().any(|f| f["name"].as_str() == Some(name)))
     });
     if pinned == Some(true) || name == "LICENSES.txt" {
-        let path = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/cache/ocr")).join(name);
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("cache").join(kind).join(name);
         if let Ok(bytes) = std::fs::read(&path) {
             let ct = match name.rsplit('.').next() {
                 Some("js" | "mjs") => "text/javascript; charset=utf-8",
@@ -340,7 +342,8 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             None => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
         },
         ("GET", p) if p.starts_with("/img/") => img_response(&mut stream, &p[5..]),
-        ("GET", p) if p.starts_with("/ocr/") => ocr_response(&mut stream, &p[5..]),
+        ("GET", p) if p.starts_with("/ocr/") => pinned_response(&mut stream, "ocr", OCR_PINS, &p[5..]),
+        ("GET", p) if p.starts_with("/lib/") => pinned_response(&mut stream, "lib", LIB_PINS, &p[5..]),
         ("GET", p) if p == "/board.json" || p == "/board.meta.json" || p.starts_with("/board/") => {
             board_response(&mut stream, p)
         }

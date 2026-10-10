@@ -214,7 +214,8 @@ let claimedFor = null;
 async function claimDevice(id) {
   const account = accountState.account && accountState.account.id;
   if (!account || claimedFor === `${account}:${id}`) return;
-  const r = await accountCall("POST", "/api/account/devices/claim", { verifier: id, label: computeDeviceGuess() });
+  const label = await Promise.race([deviceGuessReady(), new Promise((ok) => setTimeout(() => ok(computeDeviceGuess()), 3000))]);
+  const r = await accountCall("POST", "/api/account/devices/claim", { verifier: id, label });
   if (r && r.ok) { claimedFor = `${account}:${id}`; devicePointsAt = 0; }
 }
 

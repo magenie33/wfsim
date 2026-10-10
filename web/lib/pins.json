@@ -1,0 +1,7 @@
+{
+  "files": [
+    { "name": "ua-parser-1.0.41.min.js", "package": "ua-parser-js", "version": "1.0.41",
+      "path": "package/dist/ua-parser.min.js",
+      "sha256": "506462f545eb810192aa0cd26fd880d7234c62d0878969cc079981481d9fa2ea" }
+  ]
+}

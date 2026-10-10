@@ -318,6 +318,8 @@ EDGE_HEADERS = """\
   Cache-Control: public, max-age=31536000, immutable
 /ocr/*
   Cache-Control: public, max-age=31536000, immutable
+/lib/*
+  Cache-Control: public, max-age=31536000, immutable
 /asset/*
   Cache-Control: public, max-age=31536000, immutable
 /board/*
@@ -712,33 +714,34 @@ def derive_art(src: Path, dst: Path) -> Path:
     return dst
 
 
-def ship_ocr() -> None:
-    """Derive `site/ocr/` from the OCR cache: the runtime and models a riven
-    screenshot is read with, SAME-ORIGIN like the art, and nothing else.
+def ship_pinned(kind: str, part: str) -> None:
+    """Derive `site/<kind>/` from its pinned cache, SAME-ORIGIN like the art,
+    and nothing else: `ocr` the runtime and models a riven screenshot is read
+    with, `lib` the page's own third-party libraries.
 
-    Every name carries its version (`web/ocr/pins.json`), so the edge may keep
+    Every name carries its version (`web/<kind>/pins.json`), so the edge may keep
     it for ever. A file missing, or not the bytes it was pinned at, stops the
     build; the directory is generated in full, so a retired pin leaves no ghost.
     """
-    cache = ROOT / "web" / "cache" / "ocr"
-    pins = json.loads((ROOT / "web" / "ocr" / "pins.json").read_text(encoding="utf-8"))["files"]
+    cache = ROOT / "web" / "cache" / kind
+    pins = json.loads((ROOT / "web" / kind / "pins.json").read_text(encoding="utf-8"))["files"]
     bad = [p["name"] for p in pins if not (cache / p["name"]).exists()
            or hashlib.sha256((cache / p["name"]).read_bytes()).hexdigest() != p["sha256"]]
     if bad:
-        sys.exit(f"{len(bad)} OCR files are not the pinned bytes ({', '.join(bad)}) — "
+        sys.exit(f"{len(bad)} {kind} files are not the pinned bytes ({', '.join(bad)}) — "
                  "run `python scripts/fetch_ocr.py`")
     # THE PAGE ASKS FOR EACH PIN BY NAME, so a renamed pin is a 404 nobody sees
-    # until a reader reads a screenshot.
-    page = (ROOT / "web" / "src" / "static" / "app" / "25-riven-ocr.js").read_text(encoding="utf-8")
+    # until a reader needs it.
+    page = (ROOT / "web" / "src" / "static" / "app" / part).read_text(encoding="utf-8")
     unasked = [p["name"] for p in pins if p["name"] not in page]
     if unasked:
-        sys.exit(f"25-riven-ocr.js does not ask for {', '.join(unasked)} — web/ocr/pins.json and the page disagree")
-    out = APP / "ocr"
+        sys.exit(f"{part} does not ask for {', '.join(unasked)} — web/{kind}/pins.json and the page disagree")
+    out = APP / kind
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
     for p in pins:
         shutil.copy2(cache / p["name"], out / p["name"])
-    shutil.copy2(ROOT / "web" / "ocr" / "LICENSES.txt", out / "LICENSES.txt")
+    shutil.copy2(ROOT / "web" / kind / "LICENSES.txt", out / "LICENSES.txt")
 
 
 def ship_art() -> None:
@@ -2353,7 +2356,8 @@ def main() -> None:
                                     encoding="utf-8", newline="\n")
     ship_edge_config()
     ship_art()
-    ship_ocr()
+    ship_pinned("ocr", "25-riven-ocr.js")
+    ship_pinned("lib", "73-compute.js")
     guard_board_files()
     run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
     prerender(flagged)

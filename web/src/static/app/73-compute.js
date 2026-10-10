@@ -169,15 +169,53 @@ function computeRedraw(tick) {
   renderAuthPage("compute");
 }
 
-/// WHAT A DEVICE IS CALLED until its owner names it: the coarse family of its
-/// system and browser, read from the browser itself.
+/// WHAT A DEVICE IS CALLED until its owner names it — the owner's own name
+/// always wins (`device-rename`). Read the way account pages everywhere read it:
+/// ua-parser-js (MIT, pinned and served same-origin, web/lib/pins.json) for the
+/// system, the browser — WeChat's, QQ's, Quark, UC among them — and a phone's
+/// model, the browser's own client hints for the model a reduced user agent
+/// hides ("K"), and an iPad told from the Mac it claims to be by its touch.
+/// `deviceGuessReady()` loads it once; until then, and where it cannot load,
+/// the coarse family from the user agent stands in.
+const DEVICE_LIB = "/lib/ua-parser-1.0.41.min.js";
+let deviceGuess = null, deviceGuessing = null;
+const deviceLabelOf = (thing, browser) => [thing, browser].filter(Boolean).join(" · ").slice(0, 40) || tr("Device");
+function deviceGuessReady() {
+  if (deviceGuessing) return deviceGuessing;
+  deviceGuessing = (async () => {
+    try {
+      if (typeof UAParser !== "function") {
+        await new Promise((ok, no) => {
+          const el = document.createElement("script");
+          el.src = DEVICE_LIB; el.async = true; el.onload = ok; el.onerror = no;
+          document.head.appendChild(el);
+        });
+      }
+      const r = new UAParser(navigator.userAgent).getResult();
+      let model = r.device.model && r.device.model !== "K" ? r.device.model : "";
+      const hints = navigator.userAgentData;
+      if (!model && hints && hints.getHighEntropyValues) {
+        try { model = (await hints.getHighEntropyValues(["model"])).model || ""; } catch (_) { /* refused: no model */ }
+      }
+      const ipad = r.os.name === "Mac OS" && navigator.maxTouchPoints > 1;
+      const os = ipad ? "iPadOS" : r.os.name === "Mac OS" ? "macOS" : r.os.name || "";
+      const kind = ipad ? "iPad" : r.device.model === "iPhone" ? "iPhone" : "";
+      const thing = kind || (model ? [r.device.vendor, model].filter(Boolean).join(" ") : os);
+      deviceGuess = deviceLabelOf(thing, (r.browser.name || "").replace(/^Mobile /, ""));
+    } catch (_) { deviceGuess = null; }
+    return computeDeviceGuess();
+  })();
+  return deviceGuessing;
+}
 function computeDeviceGuess() {
+  if (deviceGuess) return deviceGuess;
   const ua = navigator.userAgent || "";
-  const os = /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /CrOS/.test(ua) ? "ChromeOS"
-    : /Linux/.test(ua) ? "Linux" : tr("Device");
-  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome"
-    : /Safari\//.test(ua) ? "Safari" : "";
-  return browser ? `${os} · ${browser}` : os;
+  const os = /Android/.test(ua) ? "Android" : /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad"
+    : /Macintosh|Mac OS X/.test(ua) ? (navigator.maxTouchPoints > 1 ? "iPad" : "macOS") : /Windows/.test(ua) ? "Windows"
+    : /CrOS/.test(ua) ? "ChromeOS" : /Linux/.test(ua) ? "Linux" : "";
+  const browser = /MicroMessenger/.test(ua) ? "WeChat" : /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox"
+    : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+  return deviceLabelOf(os, browser);
 }
 const computeOwnId = () => { try { return (localStorage.getItem(VERIFIER_KEY) || "").slice(0, 6); } catch (_) { return ""; } };
 
@@ -714,6 +752,7 @@ function computeOpened() {
     computeLive();
   }, 1000);
   const who = accountState.account && accountState.account.id;
+  if (who) deviceGuessReady();
   if (who && computeAskedFor !== who) { computeAskedFor = who; computeRefresh(); }
   // ONCE A VISIT, NEVER A RENDER: this runs on every redraw, and a redraw asked
   // for here redrew for ever — the page froze.
@@ -730,7 +769,7 @@ async function computeRefresh() {
   const own = computeOwnId();
   const mine = devicesState && devicesState.devices.find((d) => d.id === own && !d.label);
   if (mine) {
-    await accountCall("POST", "/api/account/devices/label", { id: own, label: computeDeviceGuess() });
+    await accountCall("POST", "/api/account/devices/label", { id: own, label: await deviceGuessReady() });
     await loadDevices();
   }
   computeRedraw();
