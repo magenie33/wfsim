@@ -218,11 +218,17 @@ function watchSilence(giveUp) {
   };
 }
 
+/// WHERE A WORKER'S LOAD BROKE, as `worker.js` says it in `load_failed`, and the
+/// suffix of the `engine.fail` subject (docs/ANALYTICS.md): `glue` the script
+/// beside the module, `network` the module's fetch, `http` its status, `cut` its
+/// body mid-download, `compile` the bytes, `memory` an instance it could not have.
+const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "unclassified"];
+
 function makeLane() {
   const w = new Worker("/worker.js");
   const pending = new Map();
   const progress = new Map();
-  let seq = 0, dead = false, busy = 0, warm = false, warming = null;
+  let seq = 0, dead = false, busy = 0, warm = false, warming = null, loadCause = null;
   // WHEN THIS WORKER LAST SAID ANYTHING ABOUT A REQUEST — id to timestamp.
   //
   // A WORKER THAT NEITHER ANSWERS NOR FAILS was the one hang nothing caught.
@@ -269,12 +275,16 @@ function makeLane() {
     if (e && e.preventDefault) e.preventDefault();
     dead = true;
     perish(String((e && e.message) || "worker failed to load"));
-    releaseAfterLaneFailed(Math.round(performance.now()));
+    releaseAfterLaneFailed(Math.round(performance.now()), () => loadCause);
   };
   w.onmessage = (e) => {
     // ANY word from the worker is proof of life, including one about a request
     // whose progress nobody asked to see.
     wd.heard();
+    if (e.data.kind === "load_failed") {
+      loadCause = LOAD_CAUSES.includes(e.data.cause) ? e.data.cause : null;
+      return;
+    }
     // THE ENGINE'S DOWNLOAD, for the boot screen (index.html).
     if (e.data.kind === "loading") {
       if (window.__wfsimBootProgress) window.__wfsimBootProgress(e.data.got, e.data.total);

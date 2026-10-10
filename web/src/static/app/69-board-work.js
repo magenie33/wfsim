@@ -386,11 +386,16 @@ function maybeReloadForRelease() {
 /// in bursts; a newer one is said on the page and reloaded into once idle.
 /// THE ANSWER NAMES THE FAILURE in `engine.fail`: `worker_load_stale` when a newer
 /// release left the page behind, `worker_load_offline` when the site itself did
-/// not answer, `worker_load` when it did and the download failed all the same.
-let releaseAskedAt = 0, releaseVerdict = "worker_load";
-async function releaseAfterLaneFailed(ms) {
+/// not answer, else `worker_load_<cause>` where the worker said its `LOAD_CAUSES`
+/// one, and `worker_load` where it said nothing. `cause` is read after a wait:
+/// the worker's word and its error event arrive by different task sources.
+let releaseAskedAt = 0, releaseLeftBehind = false;
+async function releaseAfterLaneFailed(ms, cause) {
+  const said = () => (releaseLeftBehind ? "worker_load_stale"
+    : cause() ? `worker_load_${cause()}` : "worker_load");
   if (!WASM || RELEASE_ID === "dev" || window.__WFSIM_DESKTOP__ || Date.now() - releaseAskedAt < 60_000) {
-    track("engine.fail", releaseVerdict, ms);
+    await new Promise((res) => setTimeout(res, 0));
+    track("engine.fail", said(), ms);
     return;
   }
   releaseAskedAt = Date.now();
@@ -402,8 +407,8 @@ async function releaseAfterLaneFailed(ms) {
     return;
   }
   const newer = !!j && typeof j.release === "string" && j.release !== RELEASE_ID;
-  releaseVerdict = newer ? "worker_load_stale" : "worker_load";
-  track("engine.fail", releaseVerdict, ms);
+  releaseLeftBehind = newer;
+  track("engine.fail", said(), ms);
   if (!newer || releaseNewer) return;
   releaseNewer = true;
   releaseNotice();

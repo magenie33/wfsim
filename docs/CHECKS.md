@@ -677,8 +677,8 @@ window; it must be alive on waking and dead once silence runs on while awake,
 because the watchdog counts silence only in the looks it actually takes.
 
 **A FAILED LANE SAYS WHY.** With `track` wrapped to be read, the frozen lane's
-death is `worker_silent`, the blocked download's is `worker_load` while the site
-names this page's release, and `worker_load_stale` once `/release.json` names
+death is `worker_silent`, the blocked download's is `worker_load_network` while
+the site names this page's release, and `worker_load_stale` once `/release.json` names
 a newer one (docs/ANALYTICS.md).
 
 **A BOOT WITH NO ENGINE SAYS SO.** Reloaded with the wasm still blocked, the

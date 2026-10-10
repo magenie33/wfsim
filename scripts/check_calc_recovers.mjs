@@ -351,7 +351,8 @@ check(
   `worker_dead ${m.dead}, still silent at 20 s ${m.timedOut}, ${m.ms} ms`,
 );
 // …SAYING WHY: the site answered with this page's own release, so the download
-// itself failed; and once the site names a newer one, the page was left behind.
+// itself failed, at the fetch; and once the site names a newer one, the page was
+// left behind.
 await sleep(2000);
 const loadSaid = await evaluate(`window.__fails.slice(1)`);
 const staleSaid = await evaluate(`(async () => {
@@ -367,7 +368,7 @@ const staleSaid = await evaluate(`(async () => {
   return window.__fails.slice();
 })()`);
 check("a lane that will not load says whether the download failed or a newer release left the page behind",
-  JSON.stringify(loadSaid) === '["worker_load"]' && JSON.stringify(staleSaid) === '["worker_load_stale"]',
+  JSON.stringify(loadSaid) === '["worker_load_network"]' && JSON.stringify(staleSaid) === '["worker_load_stale"]',
   `same release ${JSON.stringify(loadSaid)}, newer ${JSON.stringify(staleSaid)}`);
 // …AND A PAGE THAT BOOTS WITH IT BLOCKED SAYS THE ENGINE DID NOT START. Read
 // without an answer, the engine's first reply threw a TypeError the reader saw

@@ -11,7 +11,16 @@
 //   `checkpoint` (a JSON string from a previous session) RESUMES that run.
 // The optimize call blocks this worker until done — that is the design: the
 // page runs it in a DEDICATED worker and cancels by terminating it.
-importScripts("pkg/wfsim_wasm.js");
+// A LOAD THAT FAILS SAYS WHERE before it throws: `{ kind: "load_failed", cause }`,
+// one of `LOAD_CAUSES` in 06-transport.js. The throw stays, because the
+// optimizer's fleets settle on `onerror` alone and know no such message.
+const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
+try {
+  importScripts("pkg/wfsim_wasm.js");
+} catch (err) {
+  loadFailed("glue");
+  throw err;
+}
 
 // A MODULE THAT WILL NOT DOWNLOAD IS SAID OUT LOUD, after one retry. A rejected
 // `ready` only rejects each message's await, which the page never sees, so the
@@ -22,15 +31,34 @@ importScripts("pkg/wfsim_wasm.js");
 // `WASM_BYTES` is the module's size, written in by build_site_app.py; 0 on the
 // dev server, where the page shows the bytes alone.
 const WASM_BYTES = 0;
+// WHERE THE DOWNLOAD BROKE is noted at the break, since what reaches `ready`'s
+// catch is the compiler's rewrapping of it; what the compiler throws itself
+// (`CompileError`, a `RangeError` for memory it cannot have) is read off the error.
+let downloadBroke = null;
 const counted = async () => {
-  const r = await fetch("pkg/wfsim_wasm_bg.wasm");
-  if (!r.ok || !r.body) return r;
+  downloadBroke = null;
+  let r;
+  try {
+    r = await fetch("pkg/wfsim_wasm_bg.wasm");
+  } catch (err) {
+    downloadBroke = "network";
+    throw err;
+  }
+  if (!r.ok) { downloadBroke = "http"; throw new Error(`wasm ${r.status}`); }
+  if (!r.body) return r;
   const reader = r.body.getReader();
   let got = 0, said = 0;
   const say = () => { said = Date.now(); postMessage({ kind: "loading", got, total: WASM_BYTES }); };
   return new Response(new ReadableStream({
     async pull(c) {
-      const { done, value } = await reader.read();
+      let part;
+      try {
+        part = await reader.read();
+      } catch (err) {
+        downloadBroke = "cut";
+        throw err;
+      }
+      const { done, value } = part;
       if (done) { say(); c.close(); return; }
       got += value.byteLength;
       if (Date.now() - said > 250) say();
@@ -41,7 +69,12 @@ const counted = async () => {
 };
 const load = () => wasm_bindgen({ module_or_path: counted() });
 const ready = load().catch(load);
-ready.catch((err) => setTimeout(() => { throw err; }));
+ready.catch((err) => {
+  loadFailed(downloadBroke
+    || (err instanceof WebAssembly.CompileError ? "compile"
+      : err instanceof RangeError ? "memory" : "unclassified"));
+  setTimeout(() => { throw err; });
+});
 // …AND ONE THAT IS STILL DOWNLOADING SAYS SO, so a slow line is not taken for a
 // dead lane: the page's watchdog resets on any word. It says so for five
 // minutes at most, so a download that has truly stalled still ends.
