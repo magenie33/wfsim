@@ -248,18 +248,20 @@ its guess; a device is renamed inline and removed after an inline question.
 Built site only: nothing computes until a card asks and is answered — an old
 default's yes and a yes to an older statement are no answer — a no is kept, a
 card page never carries it, a yes turns it on with the statement and when; the
-top bar's ring says a task runs and the pause holds it, keeps its size and the
-search's when the task ends, and leaves only when computing is turned off; a
-battery holds it; and it takes one
-core while the reader is at the computer and the picked share, 30% unless
-changed, of the cores once idle.
+top bar's ring says a task runs, keeps its size and the search's when the task
+ends, and leaves only when computing is turned off; a battery holds it unless
+the reader allows it; together takes its share of the device whether or not
+the reader is at it, as lanes running that share of the time, and past 100%
+with solo, while the reader computes, the two share in proportion; solo and
+together are two sliders in the menu, a slider let go sets its share, and the
+sum is said.
 
 ## `check_quick_fleet`
 
 A frozen survey question, cut short, searched in the page by `quickFleet` on
-one worker, on three, and on a count that changes every round: the same build,
-the same number and the same work each time, since two volunteers' answers are
-confirmed only to the bit. A search run to keep its workers hands them back,
+one worker, on three, on a count that changes every round and on workers resting
+between calls: the same build, the same number and the same work each time,
+since two volunteers' answers are confirmed only to the bit. A search run to keep its workers hands them back,
 and the next one starts on them.
 
 ## `check_riven_gain`

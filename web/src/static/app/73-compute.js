@@ -56,12 +56,14 @@ function computeResultHtml(t) {
 /// in the corner, never a dialog, never on a card page a bot photographs, and
 /// gone once answered either way. Its words are the statement consented to —
 /// change them and `COMPUTE_CONSENT_V` with them.
-const computeAskable = () => WASM && !onPhone() && computeConsent() === null
+const computeAskable = () => WASM && computeConsent() === null
   && !/\/card$|^\/appraise\//.test(location.pathname);
 function computeAskHtml() {
-  return `<b>${aT("Help compute WFSim's free features?")}</b>
-    <p>${aT("This computer would compute the leaderboard and riven gains for everyone, only while a WFSim page is open. While you use the computer it takes one core and steps aside the moment you use the calculator; left idle, it takes up to 30% of its cores, which you can change in the compute menu at the top. It pauses on battery, never runs on a phone, and stops with one click. Nothing it computes is sold, and you are not paid. The work is counted to this browser, and to your name only if you choose.")}</p>
-    <div class="ca-acts"><button class="run-btn btn-sm" data-compute-ask="yes">${aT("Turn on")}</button>
+  return `<b>${aT("Compute WFSim together?")}</b>
+    <p>${aT("Turned on, this device joins the other volunteers in running WFSim's simulation and optimization tasks for every player. A result counts only when two volunteers compute it separately and get exactly the same answer, and your device is one of them.")}</p>
+    <p>${aT("It takes 30% of this device's processing power by default, only while a WFSim page is open. You can set it from 10% to 100% in the compute menu at the top, beside Solo, the share your own calculations take (50% by default); past 100% together, the two share it in proportion while both run. It pauses on battery unless you change that in the menu; while it runs the device uses more power and runs warmer, and one click stops it.")}</p>
+    <p>${aT("It is a voluntary contribution: everything it computes is free for every player, WFSim never makes money from it, and it is unpaid. Your contribution is counted to this browser, and, if you like, under your name on the contributors' ranking.")}</p>
+    <div class="ca-acts"><button class="run-btn btn-sm" data-compute-ask="yes">${aT("Join")}</button>
       <button class="ghost-btn btn-sm" data-compute-ask="no">${aT("No thanks")}</button>
       <a href="/compute">${aT("Learn more")}</a></div>`;
 }
@@ -69,7 +71,7 @@ function computeAskHtml() {
 /// work nobody can see is work nobody agreed to keep doing. It is drawn at a
 /// fixed size whenever computing is on, so a task starting or ending fills
 /// it rather than moving the bar; it links to this page, and the settings
-/// menu holds the pause (10-weapon-search.js `renderComputePicker`).
+/// menu holds the switch (10-weapon-search.js `renderComputePicker`).
 function computeChrome() {
   let ask = document.getElementById("compute-ask");
   if (computeAskable()) {
@@ -90,7 +92,7 @@ function computeChrome() {
   } else if (ask) ask.remove();
   const mark = document.getElementById("compute-mark");
   if (!mark) return;
-  mark.hidden = !(WASM && !onPhone() && boardVerifyOn());
+  mark.hidden = !(WASM && boardVerifyOn());
   if (!mark.hidden) computeMarkPaint(mark);
 }
 function computeMarkPaint(mark) {
@@ -103,29 +105,19 @@ function computeMarkPaint(mark) {
   mark.title = label;
   mark.setAttribute("aria-label", label);
 }
-/// THE READER'S PAUSE, for this tab, from the settings menu.
-function computeTogglePause() {
-  computePaused = !computePaused;
-  computeChrome();
-  computeRedraw();
-  renderComputePicker();
-}
 /// THE STATE, one answer for the ring and the page's own line: `{ key, text }`,
 /// where `key` is what the ring draws — computing, waiting, paused, held or off.
 function computeState() {
   const held = computeHeld();
   const s = (key, text) => ({ key, text: tr(text) });
   if (!WASM) return s("off", "This copy of WFSim does not compute; the site at wfsim.app does.");
-  if (onPhone()) return s("off", "Phones never compute.");
   if (!boardVerifyOn()) return s("off", "Computing is off in this browser.");
   if (boardBanned) return { key: "off", text: tr("This browser is given no work until {t}: a result it sent differed from the server's own.")
     .replace("{t}", new Date(boardBannedUntil).toLocaleString(accountLocale())) };
-  if (held === "paused") return s("paused", "Paused in this tab.");
-  if (held === "battery") return s("held", "Paused while this computer runs on battery.");
+  if (held === "battery") return s("held", "Paused while this device runs on battery.");
   if (held === "data") return s("held", "Paused while the browser saves data.");
   if (boardStale) return s("held", "A new version is out; this page refreshes itself once it is left idle.");
   if (computeNow) return s("computing", "Computing now.");
-  if (readerBusy()) return s("held", "Paused while you use the calculator.");
   return s("waiting", "Waiting for the next task.");
 }
 /// HOW FAR THE TASK IS, 0..1, or null when its size is not known (a riven gain).
@@ -182,7 +174,7 @@ function computeRedraw(tick) {
 function computeDeviceGuess() {
   const ua = navigator.userAgent || "";
   const os = /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /CrOS/.test(ua) ? "ChromeOS"
-    : /Linux/.test(ua) ? "Linux" : tr("Computer");
+    : /Linux/.test(ua) ? "Linux" : tr("Device");
   const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome"
     : /Safari\//.test(ua) ? "Safari" : "";
   return browser ? `${os} · ${browser}` : os;
@@ -222,8 +214,6 @@ function computeTaskHtml(t) {
 function computeHereHtml() {
   const on = boardVerifyOn();
   const state = computeState().text;
-  const flip = WASM && !onPhone()
-    ? ` <button class="ghost-btn btn-sm" data-auth="compute-flip">${aT(on ? "stop computing" : "start computing")}</button>` : "";
   const again = on && boardStale ? ` <button class="ghost-btn btn-sm" data-auth="compute-reload">${aT("refresh now")}</button>` : "";
   // ITS POINTS ARE ITS NOTEBOOK: what no account holds yet, empty once one does (worker/contribution.js §"Spans").
   const d = devicePoints;
@@ -233,9 +223,11 @@ function computeHereHtml() {
       escHtml(tr("{n} in the last 30 days").replace("{n}", Number(d.recent || 0).toLocaleString(accountLocale())))}<br><span class="set-note">${
       aT("Kept for this browser until you sign in here; the first account to sign in takes them all.")}</span>${
       accountState.account ? "" : ` <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in to count it under your name")}</a>`}</dd></div>`;
-  return `<div class="block" id="compute-browser"><div class="bh"><h2>${aT("This browser")}</h2></div><div class="bb"><dl class="kvs">
+  return `<div class="block" id="compute-browser"><div class="bh"><h2>${aT("This device")}</h2></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("State")}</dt><dd><span id="compute-state">${escHtml(state)}</span>${on ? `<br><span class="set-note">${
-      escHtml(tr("{pct}% of this computer's cores while it is idle, one core while you use it.").replace("{pct}", communityShare()))}</span>` : ""}</dd>${flip}${again}</div>${pts}</dl></div></div>`;
+      escHtml(tr("Computing together with the volunteers, with {pct}% of this device's processing power.").replace("{pct}", communityShare()))}</span>` : ""}</dd>${again}</div>
+    <div class="kv"><dt>${aT("Processing power")}</dt><dd><div class="cs"></div></dd></div>${pts}</dl>${on && computeSlept ? `<p class="set-note" style="margin:8px 0 0">${
+      aT("The browser put this page to sleep a moment ago, and computing together stopped while it slept. To keep it computing while you are away, add wfsim.app to the sites your browser keeps active: in Edge, Settings › System and performance › Never put these sites to sleep; in Chrome, Settings › Performance › Always keep these sites active.")}</p>` : ""}</div></div>`;
 }
 
 /// THE HONOUR, once earned: a device of the account said yes and has been
@@ -245,7 +237,7 @@ function computeHonourHtml(d) {
   const v = d.volunteer;
   return `<div class="kv"><dt>${aT("Honour")}</dt><dd>${v
     ? `<b>${aT("WFSim Volunteer")}</b> · ${escHtml(tr("since {date}").replace("{date}", new Date(v).toLocaleDateString(accountLocale())))}`
-    : aT("WFSim Volunteer, once a computer you turned on has computed its first task")}</dd></div>`;
+    : aT("WFSim Volunteer, once a device you turned on has computed its first task")}</dd></div>`;
 }
 
 /// EVERY DEVICE OF THE ACCOUNT — the server's word on what each last did and
@@ -254,7 +246,7 @@ function computeDevicesHtml() {
   if (!accountState.providers.length) return "";
   if (!accountState.account) {
     return `<div class="block" id="compute-devices"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb"><p class="set-note" style="margin:0">${
-      aT("Signed in, every computer you leave computing shows here together, and its work counts under your name.")}
+      aT("Signed in, every device you leave computing shows here together, and its work counts under your name.")}
       <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in")}</a></p></div></div>`;
   }
   const s = devicesState;
@@ -287,7 +279,7 @@ function computeDevicesHtml() {
   return `<div class="block" id="compute-devices"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb">${rows
     ? `<dl class="kvs">${s.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(s.contributor_rank)}</dd></div>` : ""}${
       rows}${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>${removed}`
-    : `<p class="set-note" style="margin:0">${aT("No device yet: leave WFSim open on a computer while you are signed in.")}</p>`}</div></div>`;
+    : `<p class="set-note" style="margin:0">${aT("No device yet: leave WFSim open on a device while you are signed in.")}</p>`}</div></div>`;
 }
 
 /// WHAT THIS BROWSER DID, newest first, with the points each will add once
@@ -345,7 +337,7 @@ function computeRecentHtml() {
       <div class="rt-tile"><b data-tile="ms"></b><span>${aT("core time today")}</span></div></div>
     <div data-now></div><div class="rt-list" data-list></div>
     <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
-    <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another computer, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
+    <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another device, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
 }
 /// THE PAGE DRAWN AGAIN AROUND THE LIVE BLOCK: every other block is replaced,
 /// the live one is never taken out of the page — moving it would restart what
@@ -368,6 +360,7 @@ function computeDraw(main) {
   } else main.replaceChildren(t.content);
   // EVERY BLOCK FOLDS, as the rest of the site's do (70-result-panel.js `wireBlockFolds`).
   wireBlockFolds(main.querySelectorAll(".block[id]"));
+  renderComputePicker();
   computeOpened();
 }
 /// EVERYTHING THE LIVE BLOCK SHOWS, brought up to date. Cheap: a tick calls it.
@@ -424,7 +417,7 @@ const computeRulerName = (id) => { const b = (META.benchmarks || []).find((x) =>
 const computeWeaponOf = (t) => (t && t.weapon ? (META.weapons || []).find((x) => x.id === t.weapon) : null);
 function computeLiveNow(root) {
   const slot = root.querySelector("[data-now]");
-  if (!(WASM && !onPhone() && boardVerifyOn())) { slot.replaceChildren(); return; }
+  if (!(WASM && boardVerifyOn())) { slot.replaceChildren(); return; }
   let card = slot.firstElementChild;
   if (!card) {
     slot.innerHTML = `<div class="rt-now idle"><img alt="" hidden><div style="min-width:0"><div class="rt-eyebrow"><span class="rt-dot"></span><span data-k="eyebrow"></span></div>
@@ -447,7 +440,7 @@ function computeLiveNow(root) {
   if (card.dataset.task !== id) { card.dataset.task = id; bar.style.transition = "none"; bar.style.width = "0%"; void bar.offsetWidth; bar.style.transition = ""; }
   bar.style.width = `${Math.round(100 * (f || 0))}%`;
   computeLanes(card.querySelector("[data-lanes]"), n && n.search && n.search.starts || []);
-  set("eyebrow", n ? tr("Computing") : done ? tr("Computed — another computer checks it next") : computeState().text);
+  set("eyebrow", n ? tr("Computing") : done ? tr("Computed — another device checks it next") : computeState().text);
   set("name", t ? (w ? tr(w.name) : tr(computeKind(t).name)) : "");
   set("sub", t ? computeSubOf(t, w) : "");
   set("pct", n ? (f === null ? computeTook(Date.now() - n.started) : `${Math.round(100 * f)}%`) : done ? "100%" : "");
@@ -484,7 +477,7 @@ function computePillHtml(t, fresh) {
     escHtml(tr("confirmed +{n}").replace("{n}", n(taskPts(t))))}</span>`;
   if (s === "checking") return `<span class="rt-pill rt-check">${aT("results differ — the server is checking")}</span>`;
   if (s === "gone") return `<span class="rt-pill rt-gone">${aT("not counted — the row was no longer owed")}</span>`;
-  return `<span class="rt-pill rt-wait"><span class="rt-dot"></span>${escHtml(tr("waiting for another computer · about +{n}").replace("{n}", n(taskPts(t))))}</span>`;
+  return `<span class="rt-pill rt-wait"><span class="rt-dot"></span>${escHtml(tr("waiting for another device · about +{n}").replace("{n}", n(taskPts(t))))}</span>`;
 }
 function computeCardEl(t) {
   const w = computeWeaponOf(t);
@@ -660,8 +653,8 @@ function computeDemandHtml() {
   }).join("");
   const eta = hours === null || !owed ? "" : hours < 1 ? tr("under an hour") : tr("about {n} hours").replace("{n}", n(Math.round(hours)));
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
-    aT("All computers together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
-    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("computers")}</dd></div>
+    aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
+    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
@@ -689,7 +682,7 @@ async function navComputing() {
   computingCount = r.computing;
   const n = computingCount.toLocaleString(accountLocale());
   el.innerHTML = `<span class="online-dot"></span>${escHtml(n)}`;
-  el.title = tr("{n} computers computing for WFSim now").replace("{n}", n);
+  el.title = tr("{n} devices computing WFSim together now").replace("{n}", n);
   el.hidden = false;
   computeRedraw();
 }
@@ -699,7 +692,7 @@ addEventListener("visibilitychange", navComputing);
 
 function computePage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute")}</h1>
-    <p class="set-note">${aT("What this browser computes is free for everyone, never sold, and never runs a paid feature. It runs only while a WFSim page is open on a computer, steps aside the moment you run something yourself, never runs on a phone, and one click turns it off.")}
+    <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}
       <a href="/contributors">${aT("Contributors")}</a></p>
     ${computeDemandHtml()}${computeHereHtml()}${computeDevicesHtml()}${computeRecentHtml()}</div></div>`;
 }
@@ -746,8 +739,7 @@ async function computeRefresh() {
 /// THE PAGE'S BUTTONS, through the account pages' one click handler.
 async function computeAct(el, what) {
   const id = el.dataset.id;
-  if (what === "compute-flip") setBoardVerify(!boardVerifyOn());
-  else if (what === "compute-reload") return reloadForRelease();
+  if (what === "compute-reload") return reloadForRelease();
   else if (what === "device-rename") computeEditing = id;
   else if (what === "device-rename-cancel" || what === "device-remove-cancel") { computeEditing = null; computeRemoving = null; }
   else if (what === "device-remove") computeRemoving = id;

@@ -208,7 +208,7 @@ async function renderContributorsCard() {
   const qr = await api("/api/qr", { text: link });
   box.innerHTML = `<header class="lc-top"><span class="brand">WF<span>Sim</span></span><span class="sb-empty">wfsim.app</span></header>
     <h1 class="lc-title">${escHtml(title)}</h1>
-    <div class="sb-empty lc-sub">${computing ? escHtml(trF("{n} computers are computing for WFSim right now", { n: computing })) : ""}</div>
+    <div class="sb-empty lc-sub">${computing ? escHtml(trF("{n} devices are computing WFSim together right now", { n: computing })) : ""}</div>
     ${body}
     <footer class="lc-foot"><div class="lc-qr">${qr && qr.svg ? qr.svg.replace(/^<\?xml[^>]*>/, "") : ""}</div>
       <div><b class="lc-slogan">${escHtml(tr("The real Simulacrum Prime."))}</b><div class="sb-empty">wfsim.app</div></div></footer>`;

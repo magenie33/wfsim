@@ -2,6 +2,7 @@
 // wfsim wasm worker (docs/WASM.md phase 4). Owns one wasm engine instance.
 // Protocol (from app.js's api() shim):
 //   { id, kind: "api", path, body }  → { id, payload }          (quick endpoints)
+//   { id?, kind: "rest", ms }          → { id, kind: "rested", payload }   (a pause, no wasm)
 //   { kind: "optimize", body, checkpoint? }
 //                                    → { kind: "progress",   payload }*
 //                                      { kind: "checkpoint", payload }*
@@ -10,7 +11,7 @@
 //   `checkpoint` (a JSON string from a previous session) RESUMES that run.
 // The optimize call blocks this worker until done — that is the design: the
 // page runs it in a DEDICATED worker and cancels by terminating it.
-importScripts("/pkg/wfsim_wasm.463e4d900df9.js");
+importScripts("/pkg/wfsim_wasm.184e27d33791.js");
 
 // A MODULE THAT WILL NOT DOWNLOAD IS SAID OUT LOUD, after one retry. A rejected
 // `ready` only rejects each message's await, which the page never sees, so the
@@ -20,9 +21,9 @@ importScripts("/pkg/wfsim_wasm.463e4d900df9.js");
 // rather than a blank page and then a banner (index.html's boot guard).
 // `WASM_BYTES` is the module's size, written in by build_site_app.py; 0 on the
 // dev server, where the page shows the bytes alone.
-const WASM_BYTES = 10196327;
+const WASM_BYTES = 10197271;
 const counted = async () => {
-  const r = await fetch("/pkg/wfsim_wasm_bg.463e4d900df9.wasm");
+  const r = await fetch("/pkg/wfsim_wasm_bg.184e27d33791.wasm");
   if (!r.ok || !r.body) return r;
   const reader = r.body.getReader();
   let got = 0, said = 0;
@@ -78,6 +79,11 @@ onmessage = async (e) => {
           postMessage({ id: msg.id, kind: "progress", done, total }))
       : wasm_bindgen.api(msg.path, body);
     postMessage({ id: msg.id, payload: JSON.parse(out) });
+  } else if (msg.kind === "rest") {
+    // A REST BETWEEN PIECES, so a lane runs the share of the time its owner set
+    // (69-board-work.js `communityRest`). Kept here, not on the page: a page in
+    // the background has its timers slowed, a worker does not.
+    setTimeout(() => postMessage({ id: msg.id, kind: "rested", payload: { ok: true } }), Math.max(0, Math.min(30000, msg.ms || 0)));
   } else if (msg.kind === "optimize") {
     const onProgress = (p) => postMessage({ kind: "progress", payload: JSON.parse(p) });
     // Emitted after every completed round; the page persists it so a reload

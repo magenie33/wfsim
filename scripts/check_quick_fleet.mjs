@@ -1,6 +1,7 @@
 // THE QUICK DESCENT ACROSS THE FLEET answers the same whatever cores score it
 // (08-checkpoint-api.js `quickFleet`): one worker, three, and a count that
-// changes every round give the same build, the same number and the same work.
+// changes every round give the same build, the same number and the same work,
+// and so do workers that rest between calls (a share below 100%).
 // Two volunteers' answers agree only to the bit (worker/appraise.js), so a
 // search that depended on its slicing would never be confirmed. A second
 // background search starts on the workers the first handed back.
@@ -26,12 +27,15 @@ const r = await evaluate(`(async () => {
   const kept = fleetKept.length;
   let flip = 0;
   const changing = await run(() => (flip++ % 2 ? 4 : 1), { keep: true });
-  return { one, three, kept, changing, keptAfter: fleetKept.length };
+  const keptAfter = fleetKept.length;
+  const rested = await run(2, { rest: (ms) => Math.min(20, ms) });
+  return { one, three, kept, changing, keptAfter, rested };
 })()`, 600000);
 
 const same = (a, b) => a.ok && b.ok && a.work === b.work && a.kill === b.kill && a.mods === b.mods && a.arcanes === b.arcanes;
 check("the search finds a build", r.one.ok && r.one.mods && r.one.mods !== "[]" && r.one.work > 0, JSON.stringify(r.one));
 check("three workers give the same build, number and work as one", same(r.one, r.three), JSON.stringify([r.one, r.three]));
 check("...and a count that changes every round gives them too", same(r.one, r.changing), JSON.stringify([r.one, r.changing]));
+check("...and so do workers resting between calls, as a share below 100% has them", same(r.one, r.rested), JSON.stringify([r.one, r.rested]));
 check("a background search hands its workers back for the next one", r.kept === 3 && r.keptAfter >= 3, JSON.stringify(r));
 await app.finish("a quick search answers the same on any number of cores, and a volunteer's next one starts warm");

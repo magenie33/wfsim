@@ -76,7 +76,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     t("I am Nona, WFSim's assistant. Send zk or pz… not that I was waiting for you. (⁄ ⁄•⁄ω⁄•⁄ ⁄)"),
     t("zk weapon [ruler] [stats] [count]: the rivens the board has measured for this weapon, against its best build without one."),
     t("pz weapon [ruler] [riven] [count]: the best builds the board has measured for this weapon; add riven for builds that carry one."),
-    t("fx weapon [ruler] each stat with its number: the gain of your own riven — the community's computers search its best build."),
+    t("fx weapon [ruler] each stat with its number: the gain of your own riven — the volunteers' devices search its best build together."),
     t("gx [name]: the compute contribution rankings — all time, this month, this week; with the name the ranking shows, that person's place on each."),
     t("For example: {a}, or {b}", { a: "zk 托里德 双暴 负任意 5", b: "pz 托里德 爆破使 紫卡 3" }),
   ].join("\n");
@@ -171,7 +171,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
         c.contributor_rank ? ` [${c.contributor_rank.rank}]` : ""} · ${num(c[key])}`)).join("\n")).join("\n\n");
     const computing = all[0].computing || 0;
     return { line: computing
-      ? t("The contribution rankings — all time, this month, this week. {n} computers are computing right now. (￣ー￣)ゞ", { n: computing })
+      ? t("The contribution rankings — all time, this month, this week. {n} devices are computing together right now. (￣ー￣)ゞ", { n: computing })
       : t("The contribution rankings — all time, this month, this week. (￣ー￣)ゞ"), card, text };
   }
 
@@ -232,12 +232,12 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     }
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
     const line = rolled.map((x) => `${x.malus ? "−" : "+"}${statZh(cls, x.id)} ×${x.roll.toFixed(2)}`).join(" ");
-    return { line: t("Nona read it. The community's computers are working on it — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own computer, riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
+    return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }
 
   /// …AND WHILE IT WAITS: a computer has taken it.
-  const started = (s) => t("A community computer has taken riven gain {code} — usually a few minutes. Nona will post the answer here. (｀・ω・´)", { code: s.code });
+  const started = (s) => t("A volunteer's device has taken riven gain {code} — usually a few minutes. Nona will post the answer here. (｀・ω・´)", { code: s.code });
 
   /// `{ text }`, or `{ line, card, text }` — the long image at `card` with
   /// `line` under it, and `text` the answer in words if the image cannot be made.
@@ -256,7 +256,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const gain = typeof v.gain === "number" ? `${v.gain >= 0 ? "+" : "−"}${Math.abs(v.gain * 100).toFixed(1)}%` : "—";
     const said = t("{w} with this riven: {shown}, {gain} against the best build without one. Thanks to {who} for searching it! (⁄ ⁄•⁄ω⁄•⁄ ⁄)",
       { w: weaponName(w), shown: v.shown || "—", gain,
-        who: item.thanks || (item.volunteer ? t("the community's computers") : t("a kind someone in the chat")) });
+        who: item.thanks || (item.volunteer ? t("the volunteers' devices") : t("a kind someone in the chat")) });
     return late ? `${t("The riven gain from earlier is in.")} ${said}` : said;
   };
   /// The long image of an appraisal's answer — the page that replays it.

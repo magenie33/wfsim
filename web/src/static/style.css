@@ -2166,6 +2166,21 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .tbmore-row{flex-direction:row}
 .tbmore-row input[type="checkbox"]{width:auto;margin:0}
 .topbar-inner .tbmore-row .ghost-btn{width:auto;height:26px;padding:0 8px;justify-content:center;border-color:var(--line)}
+/* SOLO AND TOGETHER (10-weapon-search.js `computeSharesHtml`): a row that holds
+   a panel stacks, and the panel is the same in the menu and on /compute. */
+.tbmore-row.tbmore-stack{flex-direction:column;align-items:stretch;height:auto;padding:6px 8px;gap:4px}
+.cs{display:flex;flex-direction:column;gap:10px;min-width:240px}
+.cs-row{display:flex;flex-direction:column;gap:3px}
+.cs-h{display:flex;align-items:center;gap:8px;font-size:13px}
+.cs-v{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text)}
+.cs-row small{font-size:11px;color:var(--text-2);line-height:1.4}
+.cs input[type="range"]{width:100%;margin:0;accent-color:var(--accent)}
+.cs-row.cs-off input[type="range"],.cs-row.cs-off .cs-v{opacity:.45}
+.cs label.cs-on,.cs label.cs-bat{display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;
+  gap:5px;font-size:12px;color:var(--text-2);cursor:pointer;white-space:nowrap;width:auto;height:auto;padding:0}
+.cs label.cs-bat{align-self:flex-start}
+.cs label input[type="checkbox"]{width:auto;margin:0}
+.cs-sum{font-size:12px;color:var(--text-2)}
 /* THE RIGHT-HAND GROUP is pushed over by its first box: the computers-online
    count, else the compute ring, else Support. The count and the ring are
    direct children of the bar and sort first among the right-hand boxes by

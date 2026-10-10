@@ -138,8 +138,10 @@ function fleetKeep(workers) {
 /// began. A round's builds are dealt in slices a free worker pulls, so one slow
 /// slice does not hold every other core idle; the scores go back in the order
 /// of the builds, which is all the leader reads, so the answer is the same
-/// however many workers scored it. `keep` hands the workers back (`fleetKeep`).
-function quickFleet(body, n, pace = async () => {}, { keep = false } = {}) {
+/// however many workers scored it. `keep` hands the workers back (`fleetKeep`);
+/// `rest(ms)` is how long a worker rests after a call that took `ms`, so a
+/// background search runs the share of the time its owner set.
+function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0 } = {}) {
   const lanesNow = () => Math.max(1, Math.floor(typeof n === "function" ? n() : n) || 1);
   const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
     cancelled: false, shards: lanesNow(), t0: Date.now() };
@@ -175,6 +177,21 @@ function quickFleet(body, n, pace = async () => {}, { keep = false } = {}) {
     w.postMessage({ kind: "optimize", body: b });
     wd.start();
   });
+  const pause = (i, ms) => {
+    const r = rest(ms);
+    if (!(r > 0) || !job.workers[i]) return Promise.resolve();
+    return new Promise((resolve) => {
+      const w = job.workers[i];
+      w.onmessage = (e) => { if (e.data.kind === "rested") resolve(); };
+      w.postMessage({ kind: "rest", ms: r });
+    });
+  };
+  const timed = async (i, b, onProgress) => {
+    const t = performance.now();
+    const o = await call(i, b, onProgress);
+    if (o) await pause(i, performance.now() - t);
+    return o;
+  };
   const grow = (k) => { while (job.workers.length < k) job.workers.push(fleetKept.pop() || new Worker("/worker.js")); };
   grow(job.shards);
   show();
@@ -184,7 +201,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false } = {}) {
       await pace();
       if (job.cancelled || job.result) return;
       // The leader's own progress matters only once it reaches the final round.
-      const r = await call(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
+      const r = await timed(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
         (p) => { if (p.rounds) job.status = p; });
       if (!r || job.cancelled) return;
       if (!r.pending) { job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights }; stop(true); return; }
@@ -202,7 +219,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false } = {}) {
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
           const at = next++;
-          const o = await call(i, { ...body, quick_fleet: { score: slices[at] } }, (st) => { live[i] = st; show(); });
+          const o = await timed(i, { ...body, quick_fleet: { score: slices[at] } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }
           outs[at] = o;

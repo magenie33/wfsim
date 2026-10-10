@@ -137,9 +137,9 @@ function renderHomeTally() {
   const b = (n) => `<b>${escHtml(n.toLocaleString())}</b>`;
   const line = (s, n, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
     escHtml(tr(s)).replace("{n}", b(n))}</span>`;
-  el.innerHTML = line("{n} scores computed by players' machines, each agreed by two", tallyShown.volunteers)
+  el.innerHTML = line("{n} scores computed by players' devices, each agreed by two", tallyShown.volunteers)
     + line("{n} by the official servers", tallyShown.official)
-    + (tallyShown.computing ? line("{n} computers computing now", tallyShown.computing, true) : "");
+    + (tallyShown.computing ? line("{n} devices computing together now", tallyShown.computing, true) : "");
   box.hidden = false;
 }
 loadHomeTally();

@@ -107,11 +107,9 @@ const computeSteps = () => {
 /// it was set to rescue. Dropping the pool is safe at any moment — every waiter
 /// is settled with `cancelled` and the callers that can re-ask do (`laneAsk`).
 function setComputePct(pct) {
-  const want = Math.max(10, Math.min(100, Math.round(Number(pct) / 10) * 10));
-  // ONTO AN OFFERED STEP, so the list always has the current value in it — a
-  // share that buys the same lanes as a cheaper one is that cheaper one.
-  const step = computeSteps().find((s) => s.pct >= want) || computeSteps().slice(-1)[0];
-  const n = step ? step.pct : want;
+  // THE STEP IT WAS SET TO, kept as set: a slider that jumped to the next share
+  // buying a different lane count would not be where the reader let it go.
+  const n = Math.max(10, Math.min(100, Math.round(Number(pct) / 10) * 10));
   if (!Number.isFinite(n) || n === computePct) return;
   computePct = n;
   try { localStorage.setItem(COMPUTE_KEY, String(n)); } catch (_) { /* private mode */ }
@@ -396,6 +394,18 @@ const lanes = async (n = poolSize()) => {
   // back an `undefined` when the pool was sparse, which every caller then
   // treated as a lane and crashed on.
   return Array.from({ length: n }, (_, i) => laneAt(i));
+};
+/// THE COMMUNITY'S OWN LANES (69-board-work.js `measureRow`): workers apart from
+/// the reader's, so neither share queues behind the other's calls.
+let boardPool = [];
+const boardLaneAt = (i) => {
+  if (!boardPool[i] || boardPool[i].dead) boardPool[i] = makeLane();
+  return boardPool[i];
+};
+const boardLanes = async (n) => {
+  const first = boardLaneAt(0);
+  if (n > 1 && !first.warm) await first.warmed();
+  return Array.from({ length: n }, (_, i) => boardLaneAt(i));
 };
 /// THE LANE THAT WILL ANSWER SOONEST, and a NEW one only when every lane that
 /// exists is already working. One rpc worker meant a long simulate held up every

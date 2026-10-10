@@ -447,7 +447,6 @@ ui:
   "Combat Reload, the Tigris-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Combat Reload」，Tigris 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Condition Overload bracket": 异况超量档
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超量按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
-  "Cores": 算力
   "Depth": 深度
   "builds scoring at least {p}% of their group's leader": "分数不低于同组第一名 {p}% 的配装"
   "every build the board has scored": 榜单算过的全部配装
@@ -746,7 +745,7 @@ ui:
   "One ruler, every weapon.": 一把尺子，量全部武器。
   "A score is this engine's measurement of a build under the benchmark's fixed terms. Nobody submits a number.": "分数是本引擎在该基准的固定条件下测出的。没有人提交数字。"
   "Only builds scoring at least {share}% of their group's leader are listed.": "只列出分数达到所在分组榜首 {share}% 以上的配装。"
-  "Your browser helps compute what WFSim gives everyone for free, in the background ({n} so far).": "你的浏览器在后台帮 WF模拟 计算所有人都能免费使用的功能（已完成 {n} 个）。"
+  "This device computes WFSim together with the volunteers, in the background ({n} so far).": "这台设备正在后台和志愿者们一起算 WF模拟（已完成 {n} 个）。"
   "Your browser does not compute the board's scores.": "你的浏览器不帮榜单计算分数。"
   "stop computing": "停止计算"
   "start computing": "开始计算"
@@ -1851,7 +1850,7 @@ ui:
   "{w} · Riven gain": "{w} · 裂罅收益"
   "Riven gain code": "收益码"
   "Scan the code below: your own browser searches this riven's best build, and Nona posts the result in the chat.": "扫下面的二维码：你的浏览器会搜出这张裂罅的最佳配装，九九再把结果发到群里。"
-  "fx weapon [ruler] each stat with its number: the gain of your own riven — the community's computers search its best build.": "fx 武器名 [基准] 每条词条加卡上的数值：算你自己的裂罅收益，社区的电脑会帮你搜出最佳配装。"
+  "fx weapon [ruler] each stat with its number: the gain of your own riven — the volunteers' devices search its best build together.": "fx 武器名 [基准] 每条词条加卡上的数值：算你自己的裂罅收益，志愿者的设备会一起搜出最佳配装。"
   "Each stat needs the number on the card, like {e}. (・_・;)": "每条词条后面要跟上卡上的数值，比如 {e}。(・_・;)"
   "“{word}” names more than one stat; give each its own number. (・_・;)": "「{word}」包含不止一条词条，每条要分开写各自的数值。(・_・;)"
   "A riven has two or three positive stats and at most one negative. (・_・;)": "裂罅是两到三条正面词条，最多一条负面。(・_・;)"
@@ -1859,7 +1858,7 @@ ui:
   "{stat} {value} is outside this weapon's range ({lo}–{hi}); the card may be from before a disposition change. (￣^￣)": "{stat} {value} 超出了这把武器裂罅的范围（{lo}–{hi}）；可能是倾向调整之前的旧卡。(￣^￣)"
   "Nona is still busy with your earlier ones. Try again in a while. (´；ω；`)": "九九还在忙你之前发的那几张，过一会儿再来吧。(´；ω；`)"
   "Nona could not start the riven gain just now. Try again in a moment. (＞﹏＜)": "九九刚才没能开始计算裂罅收益，稍等一下再试试。(＞﹏＜)"
-  "Nona read it. The community's computers are working on it — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own computer, riven gain {code}. (๑•̀ㅂ•́)و✧": "九九认出来了，社区的电脑正在帮你算，一般一两分钟，算完九九直接发到这里。等不及也可以扫码用自己的电脑算，收益码 {code}。(๑•̀ㅂ•́)و✧"
+  "Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧": "九九认出来了，志愿者的设备正在一起算，一般一两分钟，算完九九直接发到这里。等不及也可以扫码用自己的设备算，收益码 {code}。(๑•̀ㅂ•́)و✧"
   "Setting up the search…": "正在准备搜索……"
   "Someone asked Nona about this riven in a chat. Your browser is finding its best build — a minute or a few. When it finishes, the build goes back to the chat and onto the board.": "有人在聊天群里请九九算这张裂罅的收益。你的浏览器正在为它找最佳配装，大约一到几分钟。算完后配装会发回群里，并收进榜单。"
   "Sending the build back…": "正在把配装发回去……"
@@ -2353,9 +2352,9 @@ ui:
   "evaluations computed":
     "次测评已算出"
   "The first build leaderboard computed by its players.": "第一个由玩家算出来的配装排行榜。"
-  "{n} scores computed by players' machines, each agreed by two": "{n} 个成绩由玩家的电脑算出，每个都经两台一致确认"
+  "{n} scores computed by players' devices, each agreed by two": "{n} 个成绩由玩家的设备算出，每个都经两台一致确认"
   "{n} by the official servers": "{n} 个由官方服务器算出"
-  "{n} computers computing now": "此刻 {n} 台电脑在算"
+  "{n} devices computing together now": "此刻 {n} 台设备在一起算"
   "How it works":
     "它是怎么算的"
   "How much of a grenade's damage was the impact and how much was the cloud it left behind is something the fight works out. It is not a ratio you type in.":
@@ -2521,6 +2520,27 @@ ui:
   # The contribution block on /account, and the public ranking at /contributors.
   "Board compute": 榜单计算
   "Points": 积分
+  "Paused while this device runs on battery.": "设备在使用电池，已暂停。"
+  "Device": "设备"
+  "Processing power": 算力
+  "The browser put this page to sleep a moment ago, and computing together stopped while it slept. To keep it computing while you are away, add wfsim.app to the sites your browser keeps active: in Edge, Settings › System and performance › Never put these sites to sleep; in Chrome, Settings › Performance › Always keep these sites active.": "浏览器刚才让这个页面休眠了，休眠期间一起算停了下来。想在你离开时也继续算，可以把 wfsim.app 加入浏览器的保持活动名单：Edge 在“设置 › 系统和性能 › 从不让这些站点进入睡眠状态”，Chrome 在“设置 › 性能 › 始终让这些网站保持活动状态”。"
+  "the volunteers' devices": "志愿者的设备"
+  "Solo": "自己算"
+  "Compute together": "一起算"
+  "on": "开"
+  "When you press Run, it computes your own builds": "你按下运行时，计算你自己的配卡"
+  "With the volunteers, it runs simulation and optimization tasks for every player": "和志愿者们一起，为所有玩家运行模拟类和优化类任务"
+  "Also compute together on battery": "使用电池时也一起算"
+  "{sum}% in all · the two never touch": "合计 {sum}% · 两边互不影响"
+  "{sum}% in all · while both run, they share in proportion": "合计 {sum}% · 同时运行时按比例分配"
+  "Computing together with the volunteers, with {pct}% of this device's processing power.": "正在和志愿者们一起算，使用这台设备 {pct}% 的处理能力。"
+  "Compute WFSim together?": "一起算出 WF模拟 吗？"
+  "Join": "加入一起算"
+  "Turned on, this device joins the other volunteers in running WFSim's simulation and optimization tasks for every player. A result counts only when two volunteers compute it separately and get exactly the same answer, and your device is one of them.": "打开后，这台设备会和其他志愿者一起，为所有玩家运行 WF模拟 的模拟类任务和优化类任务。每一个结果都要两位志愿者各自算出、完全一致才算数，你的设备就是其中一位。"
+  "It takes 30% of this device's processing power by default, only while a WFSim page is open. You can set it from 10% to 100% in the compute menu at the top, beside Solo, the share your own calculations take (50% by default); past 100% together, the two share it in proportion while both run. It pauses on battery unless you change that in the menu; while it runs the device uses more power and runs warmer, and one click stops it.": "它默认使用这台设备 30% 的处理能力，只在 WF模拟 页面开着时运行。你可以在顶部的计算菜单里设为 10% 到 100%，旁边是“自己算”，也就是你自己计算所用的比例（默认 50%）；两者合计超过 100% 时，同时运行的两边按比例分配。使用电池时默认暂停，可在菜单里改；运行时设备会多耗电、多发热，一键就能关闭。"
+  "It is a voluntary contribution: everything it computes is free for every player, WFSim never makes money from it, and it is unpaid. Your contribution is counted to this browser, and, if you like, under your name on the contributors' ranking.": "这是自愿的公益贡献：算出的一切都免费给所有玩家，WF模拟 不会拿它赚钱，参与也没有报酬。你的贡献会记在这个浏览器上，你愿意的话，也会以你的名字出现在贡献榜上。"
+  "The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.": "志愿者们的设备一起算出了 WF模拟 给所有人的免费功能。算出的一切免费给所有玩家，WF模拟 不会拿它赚钱。"
+  "The volunteers whose devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.": "这些志愿者的设备一起算出了 WF模拟 给所有人的免费功能。算出的一切免费给所有玩家，WF模拟 不会拿它赚钱。"
   "{t} of core time": "各核心合计 {t}"
   "core time today": 今日核心时间
   "{n} device": "{n} 台设备"
@@ -2530,7 +2550,6 @@ ui:
   "Your name is shown": 显示你的名字
   "A browser you are signed in on counts its compute here, and it is on the public ranking without your name unless you choose to show it. What it computes is free for everyone and never sold.": "登录了这个账号的浏览器，计算量记在这里，并以匿名方式出现在公开的贡献榜上，除非你选择显示名字。它算出来的东西对所有人免费，永远不会卖钱。"
   "Contributors": 贡献者
-  "The people whose computers help run what WFSim gives everyone for free — the leaderboard first among them. What they compute is free for everyone, never sold, and never runs a paid feature. It runs only while a WFSim page is open on a computer, steps aside the moment you run something yourself, never runs on a phone, and one click turns it off.": "这些人用自己的电脑，帮 WF模拟 运行所有人都能免费使用的功能，排行榜就是其中之一。算出来的东西对所有人免费，永远不会卖钱，也不会用于任何付费功能。只在电脑上开着 WF模拟 页面时才计算，你自己一开始计算它就立刻让路，手机上从不运行，一键就能关闭。"
   "Nobody yet.": 还没有人。
   "All time": 全部
   "Last 30 days": 近 30 天
@@ -2547,7 +2566,7 @@ ui:
   "confirmed +{n}": "已确认 +{n}"
   "results differ — the server is checking": "结果不一致，服务器核对中"
   "not counted — the row was no longer owed": "未计分 · 这一行后来不用算了"
-  "waiting for another computer · about +{n}": "等另一台电脑确认 · 约 +{n}"
+  "waiting for another device · about +{n}": "等另一台设备确认 · 约 +{n}"
   "computed {s}": "算出 {s}"
   "best {s}": "最佳 {s}"
   "Progress": "进度"
@@ -2557,15 +2576,15 @@ ui:
   "another owner, another network": "不同主人、不同网络"
   "waiting": "等待中"
   "task taken": "领到任务"
-  "computed here": "这台电脑算完"
+  "computed here": "这台设备算完"
   "points credited": "积分到账"
   "The build": "这个配装"
   "Open this build in the simulator": "在模拟器里打开这个配装"
   "See this weapon's board": "看这把武器的榜单"
-  "A result counts once another computer, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.": "每个结果都要另一台不同主人、不同网络的电脑算出一模一样的数，才会到账。点开一个任务，就能看到它算的配装和战斗。这个列表只存在这个浏览器里。"
-  "All computers together · updated every minute": 所有电脑合计 · 每分钟更新
+  "A result counts once another device, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.": "每个结果都要另一台不同主人、不同网络的设备算出一模一样的数，才会到账。点开一个任务，就能看到它算的配装和战斗。这个列表只存在这个浏览器里。"
+  "All devices together · updated every minute": "所有设备合计 · 每分钟更新"
   "Computing now": 此刻在算
-  "computers": 台电脑
+  "devices": "台设备"
   "Queued": 排队中
   "rows of scores": 行成绩
   "new builds {n}": "新提交的配装 {n}"
@@ -2585,7 +2604,7 @@ ui:
   "Contributor rank {n}": "贡献段位 {n}"
   "{x} / {y} experience to rank {n}": "{x} / {y} 经验，升到 {n} 段"
   "The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does, past 30 without end.": "名字前的徽章是贡献段位：10 积分算 1 经验，升段方式和游戏的段位一样，30 段之后继续往上，没有上限。"
-  "{n} computers are computing for WFSim right now": "此刻有 {n} 台电脑在为 WF模拟 计算"
+  "{n} devices are computing WFSim together right now": "此刻有 {n} 台设备在一起算 WF模拟"
   "Nobody on the ranking shows that name.": 排行榜上没有叫这个名字的人。
   "Not on this ranking yet.": 暂未上榜。
   "the compute contribution rankings": 算力贡献榜
@@ -2594,7 +2613,7 @@ ui:
   "Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)": "九九刚才没连上排行榜。等一下再试试。(＞﹏＜)"
   "Nobody on the ranking shows the name “{name}”. A name appears there only once its owner chooses to show it. (＞﹏＜)": "排行榜上没有叫“{name}”的人。名字要本人选择公开才会出现。(＞﹏＜)"
   "{name}'s place on the three rankings. (*/ω＼*)": "{name} 在三个榜上的位置。(*/ω＼*)"
-  "The contribution rankings — all time, this month, this week. {n} computers are computing right now. (￣ー￣)ゞ": "贡献榜，总榜、月榜、周榜都在这了。此刻有 {n} 台电脑在算。(￣ー￣)ゞ"
+  "The contribution rankings — all time, this month, this week. {n} devices are computing together right now. (￣ー￣)ゞ": "贡献榜，总榜、月榜、周榜都在这了。此刻有 {n} 台设备在一起算。(￣ー￣)ゞ"
   "The contribution rankings — all time, this month, this week. (￣ー￣)ゞ": "贡献榜，总榜、月榜、周榜都在这了。(￣ー￣)ゞ"
   "Points count verified compute and nothing else. A membership adds none.": "积分只计验证通过的计算量，会员没有任何加成。"
   "Signed in, the board compute your browser does counts under your name.": "登录后，你的浏览器为榜单做的计算会记在你的名下。"
@@ -2616,18 +2635,16 @@ ui:
   "Compute": 计算
   "Leaderboard order": 榜单订单
   "Task": 任务
-  "Computer": 电脑
+  "Computer": "设备"
   "just now": 刚刚
   "{n} min ago": "{n} 分钟前"
   "{n} h ago": "{n} 小时前"
   "{n} s": "{n} 秒"
   "This copy of WFSim does not compute; the site at wfsim.app does.": "这个版本的 WF模拟 不参与计算，wfsim.app 网站版才会。"
-  "Phones never compute.": 手机上从不计算。
   "Computing is off in this browser.": 这个浏览器已关闭计算。
   "Computing now.": 正在计算。
-  "Paused while you use the calculator.": 你正在使用计算器，计算暂停让路。
   "Waiting for the next task.": 等待下一个任务。
-  "Computed — another computer checks it next": "已算完 · 交给另一台电脑核对"
+  "Computed — another device checks it next": "已算完 · 交给另一台设备核对"
   "{n} fights": "{n} 场战斗"
   "Goals": 目标
   "searched here": 在这里搜索
@@ -2640,7 +2657,7 @@ ui:
   "This browser": 这个浏览器
   "State": 状态
   "Your devices": 我的设备
-  "Signed in, every computer you leave computing shows here together, and its work counts under your name.": "登录后，你开着计算的每台电脑都会集中显示在这里，计算量记在你的名下。"
+  "Signed in, every device you leave computing shows here together, and its work counts under your name.": "登录后，你开着计算的每台设备都会集中显示在这里，计算量记在你的名下。"
   "Device {id}": "设备 {id}"
   "(this browser)": （这个浏览器）
   "Computing": 正在计算
@@ -2652,46 +2669,31 @@ ui:
   "Kept for this browser until you sign in here; the first account to sign in takes them all.": "在你登录之前先记在这个浏览器上；第一个在这里登录的账号会一次性拿走全部。"
   "{n} removed devices, their {p} points still counted": "已移除 {n} 台设备，它们的 {p} 积分仍计入总分"
   "All together": 合计
-  "No device yet: leave WFSim open on a computer while you are signed in.": "还没有设备：登录后在电脑上开着 WF模拟 就行。"
+  "No device yet: leave WFSim open on a device while you are signed in.": "还没有设备：登录后在设备上开着 WF模拟 就行。"
   "Recent tasks on this browser": 这个浏览器最近的任务
-  "A task's points count once another computer's answer agrees with it. This list stays in this browser.": "每个任务的积分，要等另一台电脑算出一致的结果后才计入。这份清单只保存在这个浏览器里。"
-  "What this browser computes is free for everyone, never sold, and never runs a paid feature. It runs only while a WFSim page is open on a computer, steps aside the moment you run something yourself, never runs on a phone, and one click turns it off.": "这个浏览器算出来的东西对所有人免费，永远不会卖钱，也不会用于任何付费功能。只在电脑上开着 WF模拟 页面时才计算，你自己一开始计算它就立刻让路，手机上从不运行，一键就能关闭。"
+  "A task's points count once another device's answer agrees with it. This list stays in this browser.": "每个任务的积分，要等另一台设备算出一致的结果后才计入。这份清单只保存在这个浏览器里。"
   "That name cannot be used.": 这个名字不能用。
-  "Help compute WFSim: on": 帮 WF模拟 计算：开
-  "Help compute WFSim: off": 帮 WF模拟 计算：关
-  "Community computing": 社区计算
   "Contributor": 贡献者
-  "Help compute WFSim: {pct}% of cores when idle": "帮 WF模拟 计算：空闲时 {pct}% 核心"
-  "{pct}% of this computer's cores while it is idle, one core while you use it.": "电脑空闲时使用 {pct}% 的核心，你使用电脑时只用一个核心。"
-  "A community computer has taken riven gain {code} — usually a few minutes. Nona will post the answer here. (｀・ω・´)": "已经有一台社区电脑接手收益码 {code} 了，一般需要几分钟，算完九九直接发到这里。(｀・ω・´)"
-  "the community's computers": 社区的电脑
+  "A volunteer's device has taken riven gain {code} — usually a few minutes. Nona will post the answer here. (｀・ω・´)": "已经有一台志愿者的设备接手收益码 {code} 了，一般需要几分钟，算完九九直接发到这里。(｀・ω・´)"
   "Nona's answers are generated by AI. Check the numbers that matter in the simulator.": "九九的回答由 AI 生成，重要的数字请以模拟器为准。"
   ", and agree that a new account is kept outside mainland China.": "，并同意新账号的数据存储在中国大陆以外。"
   "I have read the": 我已阅读
   " and agree that my account is kept by Cloudflare outside mainland China.": "，并同意我的账号数据由 Cloudflare 存储在中国大陆以外。"
   "Tick the box above to agree first.": 请先勾选上面的同意框。
   # The question asked once before a computer computes, the mark while it does, and the honour.
-  "Help compute WFSim's free features?": 要帮 WF模拟 计算免费功能吗？
-  "This computer would compute the leaderboard and riven gains for everyone, only while a WFSim page is open. While you use the computer it takes one core and steps aside the moment you use the calculator; left idle, it takes up to 30% of its cores, which you can change in the compute menu at the top. It pauses on battery, never runs on a phone, and stops with one click. Nothing it computes is sold, and you are not paid. The work is counted to this browser, and to your name only if you choose.": "这台电脑会为所有人计算排行榜和裂罅收益，只在开着 WF模拟 页面时运行。你在用电脑时它只占一个核心，你一使用计算器就立刻让路；电脑空闲时最多使用 30% 的处理器核心，可在顶部的计算菜单里调整。用电池时暂停，手机上从不运行，一键就能关闭。算出的东西不出售，你也不会因此获得报酬。计算量记在这个浏览器上，只有你选择时才记在你的名下。"
-  "Turn on": 开启
   "No thanks": 不用了
   "Learn more": 了解更多
-  "Paused in this tab.": 已在这个标签页暂停。
   # The top bar's groups, and the settings menu's pause.
   "Community": 社区
-  "Help compute WFSim": 帮 WF模拟 计算
-  "{n} computers computing for WFSim now": "{n} 台电脑正在帮 WF模拟 计算"
+  "{n} devices computing WFSim together now": "{n} 台设备正在一起算 WF模拟"
   "Language": 语言
   "Theme": 主题
-  "Resume computing in this tab": 在这个标签页继续计算
-  "Pause computing in this tab": 在这个标签页暂停计算
   "This browser is given no work until {t}: a result it sent differed from the server's own.": "{t} 之前不再给这个浏览器分配任务：它交回的一个结果与服务器自己算出的不一致。"
-  "Paused while this computer runs on battery.": 电脑在用电池，已暂停。
   "Paused while the browser saves data.": 浏览器开启了省流量，已暂停。
   "Honour": 荣誉
   "WFSim Volunteer": WFSim 志愿者
   "since {date}": "自 {date} 起"
-  "WFSim Volunteer, once a computer you turned on has computed its first task": "开启计算的电脑完成第一个任务后，你将获得「WFSim 志愿者」称号"
+  "WFSim Volunteer, once a device you turned on has computed its first task": "开启一起算的设备完成第一个任务后，你将获得「WFSim 志愿者」称号"
   "An AI agent connects by asking you for a code WFSim mails to your address. Disconnecting it stops its key at once.": "AI agent 需要向你索要 WFSim 发到你邮箱的验证码才能连接。断开后，它的 key 立即失效。"
   "Profile": "个人资料"
   "Username": "用户名"

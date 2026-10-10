@@ -2,6 +2,7 @@
 // wfsim wasm worker (docs/WASM.md phase 4). Owns one wasm engine instance.
 // Protocol (from app.js's api() shim):
 //   { id, kind: "api", path, body }  → { id, payload }          (quick endpoints)
+//   { id?, kind: "rest", ms }          → { id, kind: "rested", payload }   (a pause, no wasm)
 //   { kind: "optimize", body, checkpoint? }
 //                                    → { kind: "progress",   payload }*
 //                                      { kind: "checkpoint", payload }*
@@ -78,6 +79,11 @@ onmessage = async (e) => {
           postMessage({ id: msg.id, kind: "progress", done, total }))
       : wasm_bindgen.api(msg.path, body);
     postMessage({ id: msg.id, payload: JSON.parse(out) });
+  } else if (msg.kind === "rest") {
+    // A REST BETWEEN PIECES, so a lane runs the share of the time its owner set
+    // (69-board-work.js `communityRest`). Kept here, not on the page: a page in
+    // the background has its timers slowed, a worker does not.
+    setTimeout(() => postMessage({ id: msg.id, kind: "rested", payload: { ok: true } }), Math.max(0, Math.min(30000, msg.ms || 0)));
   } else if (msg.kind === "optimize") {
     const onProgress = (p) => postMessage({ kind: "progress", payload: JSON.parse(p) });
     // Emitted after every completed round; the page persists it so a reload

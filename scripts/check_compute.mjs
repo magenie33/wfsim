@@ -131,7 +131,7 @@ check("a task says how long it took by the clock, its cores' summed time beside 
 check("every block of the compute page folds as the site's do", r.folds.length >= 3 && r.folds.every(([, c]) => c), JSON.stringify(r.folds));
 check("...and a folded one stays folded, with one caret, when the page is drawn again", r.shut && r.stillShut);
 check("a riven gain asks the server where it stands: one credited says confirmed, one not yet waits for another computer",
-  r.recent[2] && r.recent[2].includes("confirmed +1") && r.recent[3] && r.recent[3].includes("waiting for another computer"), JSON.stringify(r.recent));
+  r.recent[2] && r.recent[2].includes("confirmed +1") && r.recent[3] && r.recent[3].includes("waiting for another device"), JSON.stringify(r.recent));
 check("...and a search's stored 0, a misread row, is drawn as no number at all", r.recent[3] && r.recent[3].startsWith("Optimize") && !r.recent[3].includes("KPM"),
   JSON.stringify(r.recent));
 check("...opened, linked to that weapon's board, and its mods never drawn closed", r.link === "/weapons/Torid/benchmark" && !r.secret && r.closed,
@@ -155,7 +155,7 @@ check("...and removed after an inline question", r.asks && r.after === 1
 // default's "yes" is no answer; a no is kept and not asked again; a yes turns
 // it on with the statement and the time; a card page a bot photographs never
 // carries it; and while it is on a ring in the top bar says so, at one size
-// whether a task runs or not, and the pause holds it.
+// whether a task runs or not. Solo and together are two sliders in the menu.
 const c = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const out = { wasm: WASM };
@@ -180,21 +180,34 @@ const c = await evaluate(`(async () => {
   computeStart({ kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base" });
   out.mark = mark().hidden ? "" : mark().getAttribute("aria-label");
   out.during = bar();
-  computeTogglePause(); await sleep(50);
-  out.paused = mark().getAttribute("aria-label"); out.held = computeHeld();
-  computeTogglePause(); await sleep(50);
   computeEnd(null);
   out.after = bar(); out.idle = mark().dataset.state;
   setBoardVerify(false); out.off = mark().hidden; setBoardVerify(true);
   computeBattery = { charging: false }; out.battery = computeHeld(); computeBattery = null;
-  // HOW MUCH: one core while the reader is at the computer, the share they
-  // picked (30% unless they did) of its cores once it is idle.
+  computeBattery = { charging: false }; setComputeOnBattery(true); out.batteryAllowed = computeHeld();
+  setComputeOnBattery(false); computeBattery = null;
+  // HOW MUCH (69-board-work.js \`communityPower\`): the together share of the
+  // device whether or not the reader is at it, as lanes each running a share of
+  // the time; past 100% with solo, while the reader computes, the two in proportion.
   const cores = detectedCores().n;
   localStorage.removeItem("wfsim-community-share");
-  lastTouched = Date.now(); out.busyLanes = communityLanes();
-  lastTouched = 0; out.idleLanes = communityLanes(); out.want30 = Math.max(1, Math.ceil(cores * 0.3));
-  setCommunityShare(50); out.idle50 = communityLanes(); out.want50 = Math.max(1, Math.ceil(cores * 0.5));
-  localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
+  lastTouched = Date.now(); out.power30 = communityPower(); out.want30 = cores * 0.3;
+  out.lanes30 = communityLanes(); out.duty30 = communityDuty();
+  setCommunityShare(100); setComputePct(100);
+  out.alone100 = communityPower();
+  readerInFlight += 1; out.shared100 = communityPower(); readerInFlight -= 1;
+  setCommunityShare(30); setComputePct(50);
+  readerInFlight += 1; out.under100 = communityPower(); readerInFlight -= 1;
+  out.cores = cores;
+  // THE TWO SLIDERS (10-weapon-search.js \`computeSharesHtml\`), in the menu.
+  renderComputePicker();
+  const cs = document.getElementById("compute-select");
+  out.sliders = cs ? cs.querySelectorAll('input[type="range"]').length : 0;
+  const tog = cs && cs.querySelector('[data-cs="together"]');
+  if (tog) { tog.value = "60"; tog.dispatchEvent(new Event("change", { bubbles: true })); }
+  out.set60 = communityShare() === 60;
+  out.sum = cs ? (cs.querySelector("[data-cs-sum]") || {}).textContent : "";
+  localStorage.removeItem("wfsim-community-share"); renderComputePicker();
   // AN OLDER YES IS NO ANSWER to a statement that now says more.
   localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V - 1, on: true, at: new Date().toISOString() }));
   out.oldYes = !boardVerifyOn();
@@ -206,18 +219,23 @@ check("[built site] nothing computes until asked: a card asks, and an old defaul
 check("...a no is kept and not asked again", k.no, c);
 check("...a card page a bot photographs never carries it", k.cardPage, c);
 check("...a yes turns it on, kept with the statement and when", k.yes, c);
-check("while it runs the top bar's ring says so, and the pause holds it", /Computing now/.test(k.mark) && /Paused/.test(k.paused) && k.held === "paused", c);
+check("while it runs the top bar's ring says so", /Computing now/.test(k.mark), c);
 check("...the ring keeps its size when the task ends, so nothing on the bar moves",
   k.during[0] > 0 && k.during[0] === k.after[0] && k.during[1] === k.after[1] && k.idle === "waiting", c);
-check("...it leaves only when computing is turned off, and a battery holds it", k.off && k.battery === "battery", c);
-check("one core while the reader is at the computer, 30% of its cores once idle, or the share they picked",
-  k.busyLanes === 1 && k.idleLanes === k.want30 && k.idle50 === k.want50, c);
+check("...it leaves only when computing is turned off, and a battery holds it unless the reader allows it",
+  k.off && k.battery === "battery" && k.batteryAllowed === "", c);
+check("together takes its share of the device whether or not the reader is at it, as lanes running that share of the time",
+  Math.abs(k.power30 - k.want30) < 1e-9 && k.lanes30 === Math.ceil(k.want30 - 1e-9) && Math.abs(k.duty30 * k.lanes30 - k.want30) < 1e-9, c);
+check("...past 100% with solo, while the reader computes, the two share the device in proportion; within it, they never touch",
+  k.alone100 === k.cores && Math.abs(k.shared100 - k.cores / 2) < 1e-9 && Math.abs(k.under100 - k.want30) < 1e-9, c);
+check("solo and together are two sliders in the menu, together's set where it is let go, and the sum said",
+  k.sliders === 2 && k.set60 && /110% in all/.test(k.sum), c);
 check("...and a yes to an older statement is asked again", k.oldYes, c);
 
-// THE READER GOES FIRST, WHATEVER THEY RUN (69-board-work.js `readerBusy`): a
-// call of theirs on the pool holds the community's work and a community call
-// does not, a search between calls holds it, another tab's word holds it, and
-// work waiting on it resumes the moment nothing does.
+// WHEN THE READER COMPUTES, WHATEVER THEY RUN (69-board-work.js `readerBusy`),
+// which is when solo and together past 100% share in proportion: a call of
+// theirs counts and a together call does not, a search between calls counts,
+// and so does another tab's word.
 const y = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const out = {};
@@ -237,20 +255,14 @@ const y = await evaluate(`(async () => {
   const other = new BroadcastChannel("wfsim-reader-busy");
   other.postMessage({ until: Date.now() + 2000 }); await sleep(100);
   out.otherTab = readerBusy(); other.close(); otherTabBusyUntil = 0;
-  let waiting = true;
-  optJobId = 1; optHeardAt = Date.now();
-  const held = yieldToReader().then(() => { waiting = false; });
-  await sleep(200); out.waits = waiting;
-  optJobId = null; await held; out.resumes = !waiting;
   return JSON.stringify(out);
 })()`);
 const yr = JSON.parse(y);
-check("[built site] the reader's own call on the pool holds the community's work, and a community call does not",
+check("[built site] the reader's own call counts as their computing, and a together call does not",
   yr.idle && yr.reader && yr.after && yr.community, y);
-check("...a search between calls holds it, and so does another tab computing", yr.search && yr.otherTab, y);
-check("...but a scan or a search that stopped answering never holds it for good, in this tab or any other",
+check("...a search between calls counts, and so does another tab computing", yr.search && yr.otherTab, y);
+check("...but a scan or a search that stopped answering never counts for good, in this tab or any other",
   yr.searchLatched && yr.scanLatched, y);
-check("...work waiting on the reader resumes the moment nothing of theirs runs", yr.waits && yr.resumes, y);
 
 // A BOARD ORDER FIGHTS ON EVERY LANE ITS SHARE BUYS (69-board-work.js
 // `measureRow`), and its score, metric and work are the single fold's to the
@@ -268,13 +280,13 @@ const f = await evaluate(`(async () => {
   const want = await api("/api/board/score", { ruler: "standard_single_target", request, acc: one.acc });
   setCommunityShare(100); lastTouched = 0;
   const used = new Set();
-  (await lanes(communityLanes(true))).forEach((l, i) => {
+  (await boardLanes(communityLanes())).forEach((l, i) => {
     const call = l.call;
     l.call = (p, b, x, c) => { if (p === "/api/board/runs") used.add(i); return call(p, b, x, c); };
   });
   const got = await measureRow(request, "standard_single_target", () => true);
   localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
-  out.lanes = communityLanes(true); out.used = used.size;
+  out.lanes = communityLanes(); out.used = used.size;
   out.same = !!got && got.score === want.score && got.metric === want.metric && got.work === want.work;
   out.got = got && [got.score, got.metric, got.work]; out.want = [want.score, want.metric, want.work];
   return JSON.stringify(out);
@@ -283,5 +295,32 @@ const fr = JSON.parse(f);
 check("[built site] a board order fights on more than one lane when its share buys them",
   !fr.wasm || fr.lanes < 2 || fr.used >= 2, f);
 check("...and its score, metric and work are the single fold's to the bit", !fr.wasm || fr.same, f);
+
+// A PAGE THE BROWSER FREEZES (69-board-work.js `computeFrozen`): what it holds
+// goes back at once, by beacon, and woken it asks for work at once and /compute
+// says the browser put it to sleep, with how to keep the site awake. Frozen and
+// woken here as the browser does, by its own lifecycle.
+await evaluate(`(() => {
+  window.__beacons = [];
+  navigator.sendBeacon = (path, body) => { window.__beacons.push([path, String(body)]); return true; };
+  localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
+  heldLease = { lease: "f".repeat(32), verifier: "z".repeat(24) };
+  window.__woke = false; computeWake = () => { window.__woke = true; };
+  return true;
+})()`);
+await app.send("Page.setWebLifecycleState", { state: "frozen" });
+await app.sleep(300);
+await app.send("Page.setWebLifecycleState", { state: "active" });
+await app.sleep(300);
+const z = JSON.parse(await evaluate(`(async () => {
+  const out = { beacons: window.__beacons, frozen: computeFrozen, woke: window.__woke, slept: computeSlept, held: heldLease };
+  history.pushState({}, "", "/compute"); route(); await new Promise((ok) => setTimeout(ok, 400));
+  out.note = (document.getElementById("compute-browser") || { textContent: "" }).textContent.includes("put this page to sleep");
+  localStorage.removeItem("wfsim-compute-consent");
+  return JSON.stringify(out);
+})()`));
+check("a page the browser freezes hands back what it holds at once",
+  z.held === null && z.beacons.some(([p, b]) => p === "/api/board/release" && b.includes("f".repeat(32))), JSON.stringify(z));
+check("...woken, it asks for work at once, and /compute says the browser put it to sleep", z.frozen && z.woke && z.slept && z.note, JSON.stringify(z));
 
 await app.finish("the compute page shows what each device does, by kind, and nothing private");

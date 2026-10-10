@@ -1,9 +1,13 @@
 {
  "names": [
+<<<<<<< HEAD
   "app.bb9fe0f727c2.js",
+=======
+  "app.9ad220d33bf8.js",
+>>>>>>> bb3c82512f (compute: solo and together - two sliders, 10-100% each and together with its own switch, the same control in the menu and on /compute; together takes its share of the device's processing power whether or not the reader is at it, as lanes resting in their workers for the time the share leaves, so 30% is 30% on any device and a hidden page computes as fast; within 100% the two never touch and past it they share in proportion while both run; nothing pauses for the reader, no rule names a kind of device, battery holds it unless the reader allows it, and a page the browser freezes hands back what it holds and asks again the moment it wakes; the statement, asked again, says all of it and names its tasks by kind)
   "nona.c70ed3980e7d",
   "pages.35f589c06f36.json",
-  "style.296a9bd88f58.css",
-  "worker.a753e12f65c3.js"
+  "style.12e1b9650512.css",
+  "worker.862f89a954ce.js"
  ]
 }

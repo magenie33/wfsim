@@ -1,69 +1,67 @@
 // ---- topbar weapon search: one box, rows navigate ----------------------
-/// THE COMPUTE PICKER, in the topbar beside the language.
-///
-/// In the TOPBAR because it is the page's setting rather than any module's —
-/// the same place the language and the theme live, and the same reason.
-///
-/// EVERY ROW NAMES THE LANE COUNT IT BUYS, because a percentage alone is not
-/// something a reader can act on: "50%" says nothing until it says "4 of 8".
-/// The button shows the LANES rather than the share, for the same reason —
-/// that is the number that decides how hot the phone gets.
-///
-/// …AND IT SAYS WHEN IT IS GUESSING. A browser that will not report its core
-/// count (iOS Safari 11–15.3, or a privacy mode) gets a fallback of 4 and a
-/// line saying so, rather than a confident number nobody measured.
-function renderComputePicker() {
-  const host = $("compute-select");
-  if (!host) return;
-  const { n: cores, known } = detectedCores();
-  const steps = computeSteps();
-  // LANES OVER CORES on the face — `14/28` states the setting and its ceiling
-  // in one, and it is plain text: an emoji or a dingbat is the one glyph the
-  // platform draws in its own colour and its own shape, which is why this
-  // topbar has none.
-  const face = known ? `${poolSize()}/${cores}` : `${poolSize()}/?`;
-  host.outerHTML = ddButton("compute-select", {
-    value: String(computePct),
-    title: known
-      ? tr("how much of this machine the page may use — it changes how FAST an answer arrives, never what the answer is")
-      : tr("this browser will not say how many cores it has, so 4 is assumed — the share still applies"),
-    // A LANE COUNT, not a share: it is what the setting actually does.
-    placeholder: face,
-    items: steps.map((s) => ({
-      value: String(s.pct),
-      label: `${s.pct}%`,
-      hint: known
-        ? tr("{n} of {c} cores").replace("{n}", s.lanes).replace("{c}", cores)
-        : tr("{n} lanes · cores unknown, assuming {c}")
-            .replace("{n}", s.lanes).replace("{c}", cores),
-    })).concat(WASM && !onPhone() ? [
-      // …AND THE COMMUNITY'S SHARE, the same switch as the compute page's
-      // (69-board-work.js `setBoardVerify`), here on every page, signed in or not.
-      ...COMMUNITY_SHARES.map((pct) => ({ value: `community:${pct}`,
-        label: tr("Help compute WFSim: {pct}% of cores when idle").replace("{pct}", pct), group: tr("Community computing"),
-        hint: boardVerifyOn() && communityShare() === pct ? tr("current") : "" })),
-      { value: "community:off", label: tr("Help compute WFSim: off"), group: tr("Community computing"),
-        hint: boardVerifyOn() ? "" : tr("current") },
-      // …AND THE PAUSE, for this tab only, wherever the ring is.
-      ...(boardVerifyOn() ? [{ value: "community:pause", group: tr("Community computing"),
-        label: computePaused ? tr("Resume computing in this tab") : tr("Pause computing in this tab") }] : []),
-    ] : []),
-    onPick: (v) => {
-      // PICKING A SHARE IS SAYING YES, to the statement the card shows.
-      if (v === "community:pause") { computeTogglePause(); return; }
-      if (v.startsWith("community:")) {
-        if (v !== "community:off") setCommunityShare(Number(v.slice(10)));
-        setBoardVerify(v !== "community:off");
-        return;
-      }
-      setComputePct(v);
-    },
-  });
-  // The face shows the LANES; the list shows the shares.
-  const btn = $("compute-select");
-  const el = btn && btn.querySelector(".dd-v");
-  if (el) el.textContent = face;
+/// SOLO AND TOGETHER, TWO SLIDERS (docs/UI.md §"Compute: solo and together"): the share of the
+/// device the reader's own computing takes, and the share computing together
+/// takes, each 10–100%, together with its switch and the battery choice. One
+/// control wherever a `.cs` host is — the top bar's menu and the compute page —
+/// drawn once into an empty host and PAINTED in place after, so a slider being
+/// dragged is never redrawn under the pointer. A percentage, never a core
+/// count: the together share is the share on any device (`communityPower`).
+function computeSharesHtml() {
+  const row = (key, name, note, extra = "") => `<div class="cs-row" data-cs-row="${key}">
+    <div class="cs-h"><b>${escHtml(tr(name))}</b>${extra}<span class="cs-v" data-cs-v="${key}"></span></div>
+    <input type="range" min="10" max="100" step="10" data-cs="${key}" aria-label="${escHtml(tr(name))}">
+    <small>${escHtml(tr(note))}</small></div>`;
+  return row("solo", "Solo", "When you press Run, it computes your own builds")
+    + (WASM ? row("together", "Compute together", "With the volunteers, it runs simulation and optimization tasks for every player",
+      `<label class="cs-on"><input type="checkbox" data-cs="on">${escHtml(tr("on"))}</label>`)
+      + `<label class="cs-bat"><input type="checkbox" data-cs="battery"> ${escHtml(tr("Also compute together on battery"))}</label>
+        <div class="cs-sum" data-cs-sum></div>` : "");
 }
+function paintComputeShares(host, solo = computePct, together = communityShare()) {
+  const on = boardVerifyOn();
+  const set = (sel, f) => host.querySelectorAll(sel).forEach(f);
+  set('[data-cs="solo"]', (el) => { if (document.activeElement !== el) el.value = String(solo); });
+  set('[data-cs="together"]', (el) => { if (document.activeElement !== el) el.value = String(together); el.disabled = !on; });
+  set('[data-cs="on"]', (el) => { el.checked = on; });
+  set('[data-cs="battery"]', (el) => { el.checked = computeOnBattery(); el.disabled = !on; });
+  set('[data-cs-v="solo"]', (el) => { el.textContent = `${solo}%`; });
+  set('[data-cs-v="together"]', (el) => { el.textContent = on ? `${together}%` : tr("off"); });
+  set('[data-cs-row="together"]', (el) => el.classList.toggle("cs-off", !on));
+  const sum = solo + (on ? together : 0);
+  set("[data-cs-sum]", (el) => {
+    el.textContent = !on ? "" : tr(sum <= 100 ? "{sum}% in all · the two never touch" : "{sum}% in all · while both run, they share in proportion")
+      .replace("{sum}", sum);
+  });
+}
+/// DRAWN AGAIN only when its words changed — the language's strings arrive after
+/// the menu is first drawn — so a drag in progress is never cut off by a paint.
+function renderComputePicker() {
+  const words = tr("Solo");
+  document.querySelectorAll(".cs").forEach((host) => {
+    if (!host.firstElementChild || host.dataset.words !== words) { host.innerHTML = computeSharesHtml(); host.dataset.words = words; }
+    paintComputeShares(host);
+  });
+}
+/// …AND WHAT IT DOES: a slider moved is said at once, and set when it is let go
+/// — solo's share drops the reader's pool (`setComputePct`), so not on every
+/// step of a drag. Switching together on is the yes to the statement the card
+/// shows (`setBoardVerify`), as it always was in this menu.
+document.addEventListener("input", (e) => {
+  const el = e.target.closest && e.target.closest('.cs input[type="range"]');
+  if (!el) return;
+  const host = el.closest(".cs"), v = Number(el.value);
+  paintComputeShares(host, el.dataset.cs === "solo" ? v : computePct, el.dataset.cs === "together" ? v : communityShare());
+});
+document.addEventListener("change", (e) => {
+  const el = e.target.closest && e.target.closest(".cs [data-cs]");
+  if (!el) return;
+  const k = el.dataset.cs;
+  if (k === "solo") setComputePct(Number(el.value));
+  else if (k === "together") setCommunityShare(Number(el.value));
+  else if (k === "on") setBoardVerify(el.checked);
+  else if (k === "battery") setComputeOnBattery(el.checked);
+  renderComputePicker();
+});
 
 /// How long typing must pause before the list is drawn again: a list of every
 /// weapon redrawn per keystroke is what made typing stutter on a phone.

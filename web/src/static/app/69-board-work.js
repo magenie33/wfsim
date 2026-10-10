@@ -10,27 +10,26 @@
 /// folds them in run order and `/api/board/score` ends it the scorer's way —
 /// all `webapi::board_rows` — so the number sent is the scorer's to the bit.
 ///
-/// THE READER GOES FIRST. Every piece waits on `yieldToReader` — ANY computing
-/// of the reader's, in this tab or another — and is sized to about `PIECE_MS`,
-/// so whatever the reader starts waits for one piece at most.
-/// Not on a phone: minutes of background work on a battery is a cost the reader
-/// never agreed to.
+/// SOLO AND TOGETHER, SIDE BY SIDE (docs/BOARD.md §"Contribution" rule 0): the
+/// reader's own computing takes its share (06-transport.js `computePct`) and
+/// this takes the together share (`communityShare`), each on workers of its own,
+/// and neither pauses for the other. A piece is sized to about `PIECE_MS`, so a
+/// changed share takes hold within one; what the pieces take is `communityPower`.
 const PIECE_MS = 250;
-const onPhone = () => !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
 
-/// ONE ROW, MEASURED: its runs fought on the community's lanes, folded in run
+/// ONE ROW, MEASURED: its runs fought on the together lanes, folded in run
 /// order, then scored, with what the pieces took in ms summed over the lanes
-/// (`compute_ms`) — the waits between them are the reader's. `null` when the
-/// engine refused or `live()` went false between pieces.
+/// (`compute_ms`) — the rests between them (`communityRest`) are not in it.
+/// `null` when the engine refused or `live()` went false between pieces.
 ///
 /// EVERY LANE FIGHTS, ONE MERGES. A run depends on its index alone, so lanes
 /// pull pieces off one cursor (`/api/board/runs`, a shard per run) and the
 /// shards are folded as `pieces` strictly in run order — the scorer's merges in
 /// the scorer's order, so the bits are the scorer's however the lanes raced.
-/// A lane past `communityLanes()` — the reader came back — takes no new piece.
+/// A lane past `communityLanes()` — the share was lowered — takes no new piece.
 async function measureRow(request, ruler, live, onPiece = () => {}) {
   const runs = Number(request.runs) || 0;
-  const ls = await lanes(communityLanes(true));
+  const ls = await boardLanes(communityLanes());
   let cursor = 0, est = null, failed = false, spent = 0, folded = 0;
   const ready = new Map();
   let acc = null;
@@ -39,9 +38,8 @@ async function measureRow(request, ruler, live, onPiece = () => {}) {
   // worker took it: the range is the same, so the answer is too.
   const ask = async (k, path, body) => {
     for (let tries = 0; tries < 3; tries++) {
-      await yieldToReader(live);
       if (!live()) return null;
-      const r = await laneAt(k).call(path, body, null, true);
+      const r = await boardLaneAt(k).call(path, body, null, true);
       if (!(r && (r.cancelled || r.worker_dead))) return r && r.ok ? r : null;
     }
     return null;
@@ -60,7 +58,6 @@ async function measureRow(request, ruler, live, onPiece = () => {}) {
   };
   await Promise.all(ls.map(async (_, k) => {
     while (!failed && cursor < runs) {
-      await yieldToReader(live);
       if (!live()) { failed = true; return; }
       if (k >= communityLanes()) { await new Promise((r) => setTimeout(r, PIECE_MS)); continue; }
       const left = runs - cursor;
@@ -76,6 +73,8 @@ async function measureRow(request, ruler, live, onPiece = () => {}) {
       est = est === null ? ms / count : est * 0.7 + (ms / count) * 0.3;
       r.shards.forEach((x, i) => ready.set(from + i, x));
       fold();
+      const rest = communityRest(ms);
+      if (rest) await boardLaneAt(k).send({ kind: "rest", ms: rest }, null, true);
     }
   }));
   await merging;
@@ -114,7 +113,7 @@ function verifierId() {
 /// again. Running a stranger's computer without that is what the law calls
 /// controlling it, whatever it computes (docs/BOARD.md §"Contribution").
 const CONSENT_KEY = "wfsim-compute-consent";
-const COMPUTE_CONSENT_V = 2;
+const COMPUTE_CONSENT_V = 3;
 function computeConsent() {
   try {
     const c = JSON.parse(localStorage.getItem(CONSENT_KEY) || "null");
@@ -135,14 +134,12 @@ function setBoardVerify(on) {
   renderComputePicker();
 }
 
-/// HOW MUCH OF THE COMPUTER, when it is idle: a share of its cores the reader
-/// picks in the compute menu (`COMMUNITY_SHARES`), 30% unless they do. While the
-/// reader is using it — touched in the last minute with the page in view, or
-/// running something of their own — it takes one core. The statement they
-/// agreed to says both.
+/// HOW MUCH OF THE DEVICE: a share of its processing power the reader sets in
+/// the compute menu (`COMMUNITY_SHARES`), 30% unless they do, whether or not
+/// they are using it — the shape of their own share, with off beside it. The
+/// statement they agreed to says so (`COMPUTE_CONSENT_V`).
 const COMMUNITY_SHARE_KEY = "wfsim-community-share";
 const COMMUNITY_SHARES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-const COMMUNITY_IDLE_MS = 60_000;
 function communityShare() {
   try {
     const n = Number(localStorage.getItem(COMMUNITY_SHARE_KEY));
@@ -152,16 +149,44 @@ function communityShare() {
 function setCommunityShare(pct) {
   try { localStorage.setItem(COMMUNITY_SHARE_KEY, String(pct)); } catch (_) { /* this page only */ }
 }
-/// ROUNDED UP, so every share is at least one core and 30% of eight is three.
-/// `ceiling` asks for the lanes the share buys whether or not the reader is here.
-function communityLanes(ceiling = false) {
-  const idle = ceiling || ((document.hidden || Date.now() - lastTouched > COMMUNITY_IDLE_MS) && !readerBusy());
-  return idle ? Math.max(1, Math.ceil((detectedCores().n * communityShare()) / 100)) : 1;
+/// THE PROCESSING POWER IT TAKES NOW, in cores, fractional. Solo and together
+/// add up to no more than 100% by default and then never touch; past it, while
+/// the reader's own work runs, the two share the device in proportion — solo
+/// counted at what it really holds (`poolSize`, whole lanes), since a lane
+/// does not rest.
+function communityPower() {
+  const cores = detectedCores().n, together = communityShare();
+  const solo = (100 * Math.min(cores, poolSize())) / cores;
+  const share = readerBusy() && solo + together > 100 ? (100 * together) / (solo + together) : together;
+  return (cores * share) / 100;
 }
+/// …AS LANES, rounded up, each running `communityDuty()` of the time: 30% of
+/// eight cores is three lanes at 80%, and 30% of one core is one lane at 30%,
+/// so the share is the share on any device. A lane rests after each piece for
+/// as long as the duty asks (`communityRest`), in its worker, where a page in
+/// the background does not slow the clock.
+function communityLanes() {
+  return Math.max(1, Math.ceil(communityPower() - 1e-9));
+}
+const communityDuty = () => Math.min(1, communityPower() / communityLanes());
+/// The rest after `ms` of work, capped well inside a lane's silence watch.
+const communityRest = (ms) => {
+  const d = communityDuty();
+  return d >= 0.999 ? 0 : Math.min(30_000, Math.round((ms * (1 - d)) / d));
+};
 
-/// …AND EVEN WITH A YES, NOT NOW: paused for this tab by the reader, on a
-/// battery, or with the browser's data saver on. `why` says which.
-let computePaused = false;
+/// …AND EVEN WITH A YES, NOT NOW: on battery unless the reader allows it
+/// (`computeOnBattery`), or with the browser's data saver on. `why` says which.
+/// A device that does not report its power counts as on power: the reader
+/// decides whether it computes, not a guess at what kind of device it is.
+const BATTERY_KEY = "wfsim-compute-battery";
+function computeOnBattery() {
+  try { return localStorage.getItem(BATTERY_KEY) === "yes"; } catch (_) { return false; }
+}
+function setComputeOnBattery(on) {
+  try { localStorage.setItem(BATTERY_KEY, on ? "yes" : "no"); } catch (_) { /* this page only */ }
+  computeRedraw(); computeChrome(); renderComputePicker();
+}
 let computeBattery = null;
 try {
   if (navigator.getBattery) {
@@ -172,8 +197,7 @@ try {
   }
 } catch (_) { /* no battery API: a desktop, as far as this can tell */ }
 function computeHeld() {
-  if (computePaused) return "paused";
-  if (computeBattery && !computeBattery.charging) return "battery";
+  if (computeBattery && !computeBattery.charging && !computeOnBattery()) return "battery";
   if (navigator.connection && navigator.connection.saveData) return "data";
   return "";
 }
@@ -244,6 +268,17 @@ function giveBack(beacon = false) {
   if (h) releaseLease(h, beacon);
 }
 addEventListener("pagehide", () => { giveBack(true); giveBackAhead(true); });
+/// A PAGE LEFT OPEN COMPUTES, in front or not: a hidden page's timers are slowed
+/// by the browser and its workers are not, which is why a lane's rest is kept in
+/// the worker. Only a page the browser FREEZES computes nothing until it wakes,
+/// so what it holds goes back at once — a task someone waits on never sleeps on
+/// a sleeping device for a lease's length — and woken, it asks for work at once
+/// (`computeWake`), the task it was on dropped with its lease. That the browser
+/// put it to sleep, here or by discarding it, is said on /compute
+/// (`computeSlept`), with how to keep the site awake.
+let computeFrozen = false, computeSlept = !!document.wasDiscarded, computeWake = null;
+document.addEventListener("freeze", () => { computeFrozen = true; giveBack(true); giveBackAhead(true); });
+document.addEventListener("resume", () => { computeSlept = true; if (computeWake) computeWake(); computeRedraw(); });
 
 /// THE NEXT TASKS, ASKED BEFORE THIS ONE ENDS (worker/verify.js, asking ahead):
 /// once a task is `AHEAD_AT` done, so the next starts the moment it ends and no
@@ -253,7 +288,7 @@ const AHEAD_AT = 0.8;
 let tasksAhead = 0;
 let aheadAsks = [], aheadAskedFor = null;
 function askAhead(id, task) {
-  if (aheadAskedFor === task || !tasksAhead || !boardVerifyOn() || computeHeld() || readerBusy()) return;
+  if (aheadAskedFor === task || !tasksAhead || !boardVerifyOn() || computeHeld()) return;
   aheadAskedFor = task;
   const c = computeConsent();
   const at = Date.now();
@@ -320,9 +355,6 @@ if (READER_CHANNEL) {
 }
 function readerBusy() {
   return ownTabBusy() || Date.now() < otherTabBusyUntil;
-}
-async function yieldToReader(live) {
-  while (readerBusy() && (!live || live())) await new Promise((r) => setTimeout(r, 25));
 }
 /// `how` is what the next page's `app.boot` says it arrived by (`usageArrival`):
 /// `idle` when the page reloaded itself, `asked` when the reader clicked.
@@ -399,7 +431,7 @@ async function rivenGainOnce(w, id) {
   computeStart({ kind: "riven_gain", code: w.code, weapon: w.weapon, ruler: w.ruler });
   const began = performance.now();
   // THE CORES IT MAY TAKE ARE ASKED EVERY ROUND, and its workers kept for the next one (`quickFleet`).
-  const job = quickFleet(w.request, () => communityLanes(), () => yieldToReader(), { keep: true });
+  const job = quickFleet(w.request, () => communityLanes(), undefined, { keep: true, rest: communityRest });
   // STILL AT IT, said every `RIVEN_RENEW_MS` so the lease runs on while the
   // search does; told the task went elsewhere, it stops (worker/appraise.js `renew`).
   let lost = false, said = performance.now();
@@ -409,9 +441,9 @@ async function rivenGainOnce(w, id) {
       const r = await postBoardWork(`/api/appraise/${encodeURIComponent(w.code)}/renew`, { lease: w.lease, verifier: id });
       if (r && r.held === false) { lost = true; heldLease = null; }
     }
-    // …AND IT STOPS THE MOMENT THE READER COMPUTES: its workers are its own, so
-    // waiting between rounds would leave them on the reader's cores for a round.
-    if (lost || !boardVerifyOn() || computeHeld() || readerBusy()) {
+    // …AND IT STOPS WHEN COMPUTING IS TURNED OFF OR HELD, the lease handed back.
+    if (computeFrozen) { lost = true; heldLease = null; }
+    if (lost || !boardVerifyOn() || computeHeld()) {
       job.cancelled = true;
       job.workers.forEach((x) => x.terminate());
       giveBack();
@@ -447,8 +479,8 @@ async function rivenGainOnce(w, id) {
 /// ONE ORDER, fought here and answered — `true` when there was one. The answer
 /// never says whether it agreed; a lease it does not answer is given back.
 async function workOnce() {
-  // NO LEASE WHILE THE READER COMPUTES: one taken now would sit idle under it.
-  if (!boardVerifyOn() || onPhone() || computeHeld() || readerBusy()) { giveBackAhead(); return false; }
+  computeFrozen = false;
+  if (!boardVerifyOn() || computeHeld()) { giveBackAhead(); return false; }
   const id = verifierId();
   if (!id) return false;
   await claimDevice(id);
@@ -474,7 +506,7 @@ async function workOnce() {
   if (!order || !order.ok) { giveBack(); return true; }
   computeStart({ kind: "board", weapon: w.record.weapon, ruler: w.ruler, mode: w.mode, identity: w.identity, record: w.record });
   const began = Date.now();
-  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && Date.now() < until, (done, total) => {
+  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && !computeFrozen && Date.now() < until, (done, total) => {
     computeProgress(done, total);
     if (total && done >= AHEAD_AT * total) askAhead(id, w.lease);
   });
@@ -509,7 +541,8 @@ if (WASM) {
     for (;;) {
       let worked = false;
       try { worked = await workOnce(); } catch (_) { giveBack(); /* the next ask tries again */ }
-      if (!worked) await new Promise((r) => setTimeout(r, ASK_EVERY_MS));
+      if (!worked) await new Promise((r) => { computeWake = r; setTimeout(r, ASK_EVERY_MS); });
+      computeWake = null;
     }
   };
   if (navigator.locks && navigator.locks.request) navigator.locks.request("wfsim-community-compute", computeLoop);
@@ -520,7 +553,7 @@ if (WASM) {
 function boardVerifyHtml() {
   const on = boardVerifyOn();
   const text = on
-    ? tr("Your browser helps compute what WFSim gives everyone for free, in the background ({n} so far).")
+    ? tr("This device computes WFSim together with the volunteers, in the background ({n} so far).")
       .replace("{n}", String(boardVerifiedCount()))
     : tr("Your browser does not compute the board's scores.");
   const stale = on && boardStale

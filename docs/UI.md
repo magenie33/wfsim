@@ -950,6 +950,17 @@ animation in it. A progress tick changes that block alone.
   words, and opened, the build it concluded on as the builder's card.
 - With reduced motion asked for, only colours and numbers change.
 
+## Compute: solo and together
+
+The page names its two shares SOLO and TOGETHER (自己算 and 一起算), never
+"help" or "community computing", and says DEVICE, never computer, phone or
+tablet, so a new kind of device changes no word. They are two sliders, 10–100%,
+together with its own switch and the battery choice beside it: one control
+(`computeSharesHtml`) in the settings menu and on `/compute`, painted in place so
+a slider being dragged is never redrawn. It shows percentages of processing
+power, never core counts. The rules behind it are docs/BOARD.md §"Contribution"
+rule 0.
+
 ## A page that is not a module is a shell page
 
 **A PAGE THAT IS NOT A MODULE IS A SHELL PAGE** — /support, /benchmark,

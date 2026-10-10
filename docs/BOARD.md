@@ -740,28 +740,43 @@ row at a time, so the board's growth is more orders, never a heavier client.
 **THE CLIENT IS AN ID** its browser made for itself, joined to no submission,
 kept in `verifiers` so a refusal has something to hold, and joined to an
 account only by that account claiming it (§"Contribution"). Working is OFF
-until the reader says yes (rule 0 below); a phone never works.
+until the reader says yes (rule 0 below).
 
 ## Contribution
 
-**WHAT THE COMMUNITY'S MACHINES COMPUTE IS WHAT WFSIM GIVES EVERYONE FOR FREE —
-THE BOARD FIRST — AND NEVER ANYTHING SOLD**: no paid feature runs on it, and
-each machine's share is counted under its owner's name. Eight rules:
+**WHAT THE VOLUNTEERS' DEVICES COMPUTE TOGETHER IS FREE FOR EVERY PLAYER, AND
+WFSIM NEVER MAKES MONEY FROM IT**: no paid feature runs on it, and each device's
+share is counted under its owner's name. The statement promises exactly that;
+a change to it is a new statement, asked again. Eight rules:
 
-0. **NOTHING IS COMPUTED WITHOUT THE READER'S YES.** Computing is off until
-   the reader turns it on in answer to one statement, asked once in a card on
-   a computer that can compute (`COMPUTE_CONSENT_V`, 73-compute.js); a yes or
-   a no is kept with when, a new statement asks again, and every ask for work
-   carries the yes, which the server keeps on the client's row
+0. **NOTHING IS COMPUTED WITHOUT THE READER'S YES.** Computing together is
+   off until the reader turns it on in answer to one statement, asked once in
+   a card on any device that can compute (`COMPUTE_CONSENT_V`, 73-compute.js);
+   a yes or a no is kept with when, a new statement asks again, and every ask
+   for work carries the yes, which the server keeps on the client's row
    (`verifiers.consent_v`, `consent_at`) and without which it hands nothing
-   out. While it is on, a ring of fixed size in the top bar says so and fills
-   with the task, the settings menu holds a pause, and
-   it holds itself on battery or with the browser's data saver on. It takes
-   one core while the reader is at the computer and, once it is idle, the
-   share of its cores they pick in the compute menu, rounded up — 30% unless
-   they do (`communityLanes`); the statement says so. Running a
-   stranger's computer without that yes is controlling it, whatever it
-   computes.
+   out. Running a stranger's device without that yes is controlling it,
+   whatever it computes. While it is on, a ring of fixed size in the top bar
+   says so and fills with the task.
+   **SOLO AND TOGETHER** are the two words the page says, never "help" or
+   "community computing": SOLO is the share the reader's own calculations
+   take (10–100%, 50% unless set, `computePct`), TOGETHER the share computing
+   together takes (10–100%, 30% unless set, with its own switch,
+   `communityShare`) — two sliders, the same control in the settings menu and
+   on `/compute`. Neither pauses for the other. A share is of the device's
+   PROCESSING POWER, not its core count: together runs as lanes each resting
+   between pieces for the share of the time the setting leaves
+   (`communityPower`, `communityRest`, the rest kept in the worker), so 30% is
+   30% on one core or thirty-two; solo runs whole lanes, since the reader is
+   waiting. Within 100% together the two never touch; past it, while the
+   reader computes, they share in proportion, solo counted at the lanes it
+   holds. Together holds itself on battery unless the reader allows it
+   (`computeOnBattery`), and with the browser's data saver on; a device that
+   reports no power state counts as on power. NO RULE NAMES A KIND OF DEVICE:
+   the reader decides where it runs. A page the browser freezes hands back
+   what it holds at once (`freeze`), so no task sleeps on a sleeping device.
+   The statement names its tasks by kind — simulation and optimization — so a
+   new task of either kind needs no new statement; a third kind does.
 1. **ONLY A FACT SCORES.** A client is credited an order's work when the order
    becomes a fact, and every client in that agreement is credited all of it. A
    result that never becomes a fact earns nothing; the official machines' work
