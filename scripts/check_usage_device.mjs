@@ -17,6 +17,8 @@ await evaluate(`localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')`)
 await send("Page.navigate", { url: BASE });
 await sleep(12000);
 
+await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+await sleep(300);
 const desk = await evaluate(`usageDevice()`);
 check("a desktop page is a mouse on a wide screen in a browser", desk.subject === "mouse_wide_browser", JSON.stringify(desk));
 check("…its cores sent as a step, not the exact count",
@@ -33,6 +35,8 @@ check("the same page under touch, a phone's width and WeChat is touch_narrow_wec
   phone.subject === "touch_narrow_wechat", JSON.stringify(phone));
 await send("Emulation.clearDeviceMetricsOverride", {});
 await send("Emulation.setTouchEmulationEnabled", { enabled: false });
+await sleep(300);
+check("…and with touch off again the page is not a phone, so it may compute", await evaluate(`!onPhone()`));
 
 // THE JUDGEMENT, driven by hand: the page is hidden and shown through a stubbed
 // `document.hidden`, the absence aged past the window, and `track` read.
@@ -43,7 +47,6 @@ const said = await evaluate(`(() => {
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
   computeHolder = true;
   boardVerifyOn = () => true;
-  onPhone = () => false;
   const away = (minutes, beats, finished) => {
     hidden = true; judgeBackground();
     hiddenFrom.at -= minutes * 60000;
