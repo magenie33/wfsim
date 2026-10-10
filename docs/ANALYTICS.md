@@ -41,6 +41,13 @@ well". Both come from the usage points below.
   sync turned on, a payment: the accounts database already holds each one, and
   a second count of it is two numbers that disagree. A point counts only what
   the server cannot see — a page opened, a form left half done.
+- **A DEVICE IS ITS TRAITS, NEVER ITS MODEL.** A user agent or a model list goes
+  stale with every new device, and the questions are about traits: tapped or
+  clicked, room for the editor, cores for the community's work, an in-app
+  browser that limits downloads. Each trait is a handful of classes, so a point
+  cannot single a device out; the user agent is read for the two in-app
+  browsers alone and never sent. What a device DOES is measured where it can
+  be — `compute.background` — rather than inferred from what it says it is.
 - **No PII, no cookies, no accounts.** One random `wfsim-cid` in localStorage,
   clearable like every other `wfsim-*` key. No IP, no user agent is written.
 - **Global Privacy Control or Do Not Track set: nothing is sent.** Nor after
@@ -72,6 +79,7 @@ with this thing, not how many times: forty edits to one build are one build.
 | `app.boot` | the engine has answered `/api/meta` | how the page was reached: `reload`, `back_forward`, `from_site`, `direct` or `from_<referrer host>`; a reload a newer release caused is `release_idle` (the page reloaded itself) or `release_asked` (the reader clicked) | ms since navigation |
 | `app.view` | a page was drawn | page kind (`home`, `weapon_builder`, `weapon_simulator`, `warframe`, …); each account page is its own kind — `login`, `signup`, `reset`, `account`, `account_sync` (`AUTH_VIEWS`) — and a page an extension mounts names its own (`authView`) | — |
 | `app.error` | this page's own code failed uncaught — another origin's script (an extension) is not counted | `boot` (the app did not start), `script`, `promise`, then where in our own file — `<kind>_<app\|nona\|page>_<line>_<column>`, read against that release's committed `site/asset/` bundle: a place, never the message | ms since navigation |
+| `app.device` | the engine has answered `/api/meta` | what the device can do, in coarse classes: `<input>_<width>_<browser>` — input `touch`, `mouse`, `touchmouse` (touch first, a mouse too), `mousetouch`, `nopointer`; width `narrow` (≤640 px), `medium` (≤1024), `wide`; browser `wechat`, `qq` (their in-app browsers) or `browser` | the logical cores, rounded down to 1, 2, 4, 6, 8, 12, 16, 24 or 32 |
 | `engine.fail` | an engine worker failed to load, or stopped answering | why — `worker_load_stale` (a newer release no longer serves this page's files), `worker_load_offline` (the site did not answer either), `worker_load` (it did, and the download failed anyway), `worker_load_timeout` (never said a word), `worker_silent` (stopped answering after it had) | ms since navigation |
 | `builder.weapon` | the weapon panel computed a build with ≥1 mod | weapon id | — |
 | `builder.warframe` | the Warframe panel computed a build with anything set — a mod, arcane, shard or Helminth ability | frame id | — |
@@ -83,6 +91,7 @@ with this thing, not how many times: forty edits to one build are one build.
 | `simulator.run` | a Run Sim finished (not stopped) | weapon id | runs |
 | `optimizer.start` | a search began, or resumed | weapon id | — |
 | `optimizer.run` | a search finished (not cancelled) | weapon id | seconds |
+| `compute.background` | the page holding this browser's community work came back after 10 minutes or more out of sight | `kept` (a task finished meanwhile), `stopped` (the page itself was held: at most one beat of work), `idle` (it ran and was handed nothing) | minutes out of sight |
 | `share.create` | a build left the page | weapon id | how, the first way per load: 1 link, 2 text, 3 share sheet |
 | `share.entry` | a build left the page | where the panel was opened: `bar` (the build bar's button), `finder` (a board build in the finder), `optimizer` (a search's finalist), `simulator` (the result) | — |
 | `share.open` | a shared build landed in a reader's app | weapon id | — |

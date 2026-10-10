@@ -1294,6 +1294,15 @@ them. CI reads the range a push or pull request adds; locally it reads
 (`.githooks/commit-msg`, `git config core.hooksPath .githooks`), which deletes
 the lines before the commit exists. A human `Co-authored-by:` passes.
 
+## `check_usage_device`
+
+**A DEVICE IS ITS TRAITS.** The page reads as `mouse_wide_browser` on the
+desktop profile, and as `touch_narrow_wechat` once CDP emulates touch, a phone's
+width and WeChat's user agent; its cores go out as one of the steps. **COMPUTING
+OUT OF SIGHT IS JUDGED BY WHAT HAPPENED**: with `document.hidden` stubbed and the
+absence aged by hand, `judgeBackground` says `kept`, `stopped` and `idle` for a
+finished task, no beat and beats without a task, and nothing for three minutes.
+
 ---
 
 ## A check cleans up after itself

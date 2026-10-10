@@ -452,6 +452,7 @@ async function rivenGainOnce(w, id) {
       return true;
     }
     const s = job.status || {};
+    computeBeats += 1;
     computeProgress(s.sims_done || 0, 0, s);
     // A SEARCH'S LENGTH IS NOT KNOWN AHEAD, so the last one's stands for it.
     if (rivenTookMs && performance.now() - began > AHEAD_AT * rivenTookMs) askAhead(id, w.lease);
@@ -468,7 +469,7 @@ async function rivenGainOnce(w, id) {
     body: JSON.stringify({ build: boardPayloadFromResult(best, w.context), lease: w.lease, verifier: id, engine: ENGINE_ID,
       score: Number(best.kill_progress) || 0, work: r.work || 0 }),
   }).then((x) => x.ok).catch(() => false);
-  if (sent) heldLease = null; else giveBack();
+  if (sent) { heldLease = null; computeFinished += 1; } else giveBack();
   // …AND WHAT IT FOUND, for this browser's own list: the build, its number, what the search took.
   // A search row carries `kill_progress`, never `score`, and the duration is the answer's.
   const v = kpm(best.kill_progress ?? best.kills, r.duration);
@@ -508,19 +509,41 @@ async function workOnce() {
   computeStart({ kind: "board", weapon: w.record.weapon, ruler: w.ruler, mode: w.mode, identity: w.identity, record: w.record });
   const began = Date.now();
   const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && !computeFrozen && Date.now() < until, (done, total) => {
+    computeBeats += 1;
     computeProgress(done, total);
     if (total && done >= AHEAD_AT * total) askAhead(id, w.lease);
   });
   if (!s) { giveBack(); computeEnd(null); return true; }
   const sent = await postBoardWork("/api/board/verify",
     { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms });
-  if (sent) heldLease = null; else giveBack();
+  if (sent) { heldLease = null; computeFinished += 1; } else giveBack();
   computeEnd(sent ? { ms: Date.now() - began, cpu_ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric } : null);
   if (!sent) return true;
   try { localStorage.setItem(VERIFIED_KEY, String(boardVerifiedCount() + 1)); } catch (_) { /* private mode */ }
   renderBoardConsent();
   loadDevicePoints();
   return true;
+}
+
+/// DOES THIS BROWSER KEEP COMPUTING WITH THE PAGE OUT OF SIGHT — measured, not
+/// assumed: many freeze or throttle a hidden tab, and that decides what leaving
+/// a machine computing is worth. Judged when the page comes back after at least
+/// `BACKGROUND_JUDGED_MS` hidden in the tab that holds the work, as
+/// `compute.background`: `kept` (a task was finished), `stopped` (at most one
+/// beat — an ask, a folded piece, a search's round — so the page itself was
+/// held), `idle` (it kept beating and finished nothing); `n` minutes.
+const BACKGROUND_JUDGED_MS = 10 * 60_000;
+let computeHolder = false, computeBeats = 0, computeFinished = 0, hiddenFrom = null;
+function judgeBackground() {
+  if (document.hidden) {
+    hiddenFrom = computeHolder && boardVerifyOn() && !onPhone() ? { at: Date.now(), beats: computeBeats, done: computeFinished } : null;
+    return;
+  }
+  const h = hiddenFrom;
+  hiddenFrom = null;
+  if (!h || Date.now() - h.at < BACKGROUND_JUDGED_MS) return;
+  const how = computeFinished > h.done ? "kept" : computeBeats - h.beats <= 1 ? "stopped" : "idle";
+  track("compute.background", how, Math.min(1440, Math.round((Date.now() - h.at) / 60_000)));
 }
 
 /// ONLY THE DEPLOYED SITE WORKS: the dev server has no orders to hand out.
@@ -538,9 +561,12 @@ if (WASM) {
   // ONE TAB OF A BROWSER COMPUTES: its tabs share one id, and the server takes
   // back whatever an asking id still holds, so two tabs asking would take each
   // other's orders. The tab holding the lock works until it closes; the next waits.
+  addEventListener("visibilitychange", judgeBackground);
   const computeLoop = async () => {
+    computeHolder = true;
     for (;;) {
       let worked = false;
+      computeBeats += 1;
       try { worked = await workOnce(); } catch (_) { giveBack(); /* the next ask tries again */ }
       if (!worked) await new Promise((r) => { computeWake = r; setTimeout(r, ASK_EVERY_MS); });
       computeWake = null;

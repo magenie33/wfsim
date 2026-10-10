@@ -61,6 +61,27 @@ function usageArrival() {
   return ("from_" + host.replace(/^www\./, "").replace(/[^a-z0-9]+/g, "_")).slice(0, 64);
 }
 
+/// WHAT THIS DEVICE CAN DO, never what it is: a model or a user agent goes stale
+/// with every new device, and the questions are about traits — tapped or
+/// clicked, room for the editor, cores for the community's work, an in-app
+/// browser that limits downloads. COARSE CLASSES ONLY, so the point cannot
+/// single a device out: `<input>_<width>_<browser>` as `app.device`'s subject,
+/// the cores rounded down to a step as its `n`. `touch` is what `onPhone` reads.
+const USAGE_CORES = [1, 2, 4, 6, 8, 12, 16, 24, 32];
+function usageDevice() {
+  const q = (m) => !!(window.matchMedia && matchMedia(m).matches);
+  const coarse = q("(any-pointer: coarse)"), fine = q("(any-pointer: fine)");
+  const input = q("(pointer: none)") ? "nopointer"
+    : q("(pointer: coarse)") ? (fine ? "touchmouse" : "touch")
+    : coarse ? "mousetouch" : "mouse";
+  const w = innerWidth;
+  const width = w <= 640 ? "narrow" : w <= 1024 ? "medium" : "wide";
+  const ua = navigator.userAgent || "";
+  const browser = /MicroMessenger\//.test(ua) ? "wechat" : /\sQQ\//.test(ua) ? "qq" : "browser";
+  const cores = USAGE_CORES.filter((c) => c <= (navigator.hardwareConcurrency || 0)).pop() || 0;
+  return { subject: `${input}_${width}_${browser}`, cores };
+}
+
 /// AN UNCAUGHT FAILURE IN THIS PAGE'S OWN CODE, as `app.error`: `boot` before the
 /// app is ready (the reader sees "could not start"), `script` or `promise`
 /// after — and WHERE in our own file, as `<kind>_<file>_<line>_<column>`, which
