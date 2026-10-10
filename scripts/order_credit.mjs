@@ -13,8 +13,8 @@ import { pathToFileURL } from "node:url";
 
 const ORIGIN = process.env.FACTORY_ORIGIN || "https://wfsim.app";
 const WITNESS = process.env.WITNESS || "official:scorer";
-/// The board's producers, whose demands a fact line answers.
-const PRODUCERS = ["new_build", "sweep"];
+/// The board's producers, whose demands a fact line answers (worker/board_tasks.js `BOARD_PRODUCERS`).
+export const BOARD_KINDS = ["new_build", "refresh", "sweep"];
 const PER_CALL = 200;
 
 /// ONE CALL TO THE OFFICIAL WITNESS'S DOOR (worker/factory.js `officialRoute`).
@@ -35,7 +35,7 @@ export async function tell(facts, engine, call = official) {
   let made = 0;
   for (let i = 0; i < facts.length; i += PER_CALL) {
     const part = facts.slice(i, i + PER_CALL);
-    const { states } = await call("answer", { engine, producers: PRODUCERS, answers: part.map((f) => ({
+    const { states } = await call("answer", { engine, producers: BOARD_KINDS, answers: part.map((f) => ({
       ref: `${f.identity}|${f.ruler}|${f.mode}`, result: { score: f.score, metric: f.metric }, work: f.work || 0 })) });
     made += states.filter((s) => s === "fact").length;
   }

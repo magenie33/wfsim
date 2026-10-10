@@ -195,13 +195,13 @@ check("...carried on every ranking row and on the account's own answer",
 check("...never an anonymous one, by name or by handle", (await who("cy")).person === null && (await who("Ann")).person === null);
 library.raw.prepare("UPDATE verifiers SET last_at = ? WHERE id = ?").run(new Date().toISOString(), X);
 library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(Y);
-// THE DEMAND: owed rows by why — a new build's, a sweep's, a rescore's, one row
+// THE DEMAND: owed rows by why — a new build's, a sweep's, a rescore's, a refresh's, one row
 // owed by two batches counted once — riven gains waiting, and the last hour's
 // scores by who measured them.
 {
   const L = library.raw, now = Date.now(), ago = (ms) => new Date(now - ms).toISOString();
-  L.prepare("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', 'x', 'x', 3), ('rescore-x', 'x', 'x', 2)").run();
-  for (const [b, id] of [["arrivals-2026-03-01", "n1"], ["arrivals-2026-03-01", "s1"], ["arrivals-2026-03-01", "r1"], ["rescore-x", "r1"], ["rescore-x", "r2"]]) {
+  L.prepare("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', 'x', 'x', 3), ('rescore-x', 'x', 'x', 2), ('refresh-2026-03-01', 'x', 'x', 1)").run();
+  for (const [b, id] of [["arrivals-2026-03-01", "n1"], ["arrivals-2026-03-01", "s1"], ["arrivals-2026-03-01", "r1"], ["rescore-x", "r1"], ["rescore-x", "r2"], ["refresh-2026-03-01", "f1"]]) {
     L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'heavy_gunner', 'base')").run(b, id);
   }
   // n1 IS A NEW BUILD'S ROW, as the fact factory's `new_build` asks for it.
@@ -220,7 +220,7 @@ library.raw.prepare("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' W
   check("each survey is a goal: its shapes, how many are agreed and begun, a lapsed one gone, none counted as a chat's riven gain",
     JSON.stringify(d.surveys) === JSON.stringify([{ weapon: "furis", ruler: "x", shapes: 3, agreed: 1, started: 2 }]), JSON.stringify(d.surveys));
   check("the demand counts owed rows by why, one row once, the last hour's scores by who, and riven gains of the last day",
-    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1 }, { volunteers: 1, official: 2 }, 1]),
+    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1, refreshes: 1 }, { volunteers: 1, official: 2 }, 1]),
     JSON.stringify(d));
 }
 check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);

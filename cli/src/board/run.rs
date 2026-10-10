@@ -13,7 +13,7 @@ use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactL
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
 use super::publish::{write_pages, Row, RowRiven};
 use super::queue::{
-    builds_with_a_row_owed, charge, load_queue, unmeasured_row_seconds, write_missing, write_orphans,
+    builds_with_a_row_owed, charge, load_queue, owed_again, unmeasured_row_seconds, write_missing, write_orphans,
 };
 use super::state::record_state;
 
@@ -88,6 +88,10 @@ pub fn run() {
         .and_then(|p| std::fs::read_to_string(&p).ok())
         .map(|t| t.lines().map(str::trim).filter(|l| !l.is_empty()).map(String::from).collect())
         .unwrap_or_default();
+    // …AND THE ROWS WHOSE FACT FINISHED BEFORE THIS INSTANT, the refresh's
+    // (`queue::owed_again`): a row is asked again by its own age, not its
+    // weapon's, so a weapon's file may rank two engines for the days between.
+    let older: Option<String> = flag("--queue-older");
     // …AND THE QUEUE ROWS NOTHING IN THE LIBRARY CAN PAY, for the
     // reconciliation to forget (`scripts/purge_orphans.sh`). A row is deleted
     // beside the fact that settles it, so one no build can settle is owed for
@@ -371,7 +375,8 @@ pub fn run() {
             // is what this said before there was one.
             let current = if take { None } else { facts.get(&key) };
             if missing_out.is_some()
-                && (sweep.contains(&v.weapon) || !facts.contains_key(&key))
+                && (sweep.contains(&v.weapon)
+                    || owed_again(facts.get(&key).map(|f| f.finished_at.as_str()), older.as_deref()))
                 && !owed.as_ref().is_some_and(|o| o.contains(&asked))
             {
                 // HELD, NOT WRITTEN. The entry line needs every group's leader

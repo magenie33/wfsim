@@ -15,8 +15,8 @@ name: publish
 
 on:
   schedule:
-    # ONCE A DAY, AT 00:00 UTC — 08:00 in China, after the nightly sweep the
-    # scorer spends the small hours on. A snapshot moves when the board did.
+    # ONCE A DAY, AT 00:00 UTC — 08:00 in China. A snapshot moves when the
+    # board did.
     - cron: "0 0 * * *"
   workflow_dispatch:
 

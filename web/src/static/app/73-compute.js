@@ -671,11 +671,12 @@ function computeDemandHtml() {
   if (!d) return "";
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
-  const owed = d.owed.new_builds + d.owed.rescores + d.owed.sweeps;
+  const owed = d.owed.new_builds + d.owed.rescores + d.owed.sweeps + (d.owed.refreshes || 0);
   const done = d.per_hour.volunteers + d.per_hour.official;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
   const parts = [["new builds {n}", d.owed.new_builds], ["rescores after a model change {n}", d.owed.rescores],
-    ["a ruler's first pass over older builds {n}", d.owed.sweeps], ["riven gains {n}", d.riven_gains]]
+    ["a ruler's first pass over older builds {n}", d.owed.sweeps], ["scores three days old, measured again {n}", d.owed.refreshes],
+    ["riven gains {n}", d.riven_gains]]
     .filter(([, v]) => v).map(([s, v]) => escHtml(tr(s).replace("{n}", n(v)))).join(" · ");
   const hours = done ? owed / done : null;
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one

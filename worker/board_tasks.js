@@ -2,8 +2,9 @@
 // THE BOARD AS A PRODUCER of the fact factory (worker/tasks.js; docs/BOARD.md
 // §"Compute orders"). Every owed row — `queue` holds what is owed — is a
 // question: verb `simulate`, request `{ record, ruler, mode }`, asked by
-// `new_build` (a new build's row, someone waiting to see it ranked) or `sweep`
-// (a rescore's or a sweep's), whose deadlines are worker/factory.js
+// `new_build` (a new build's row, someone waiting to see it ranked), `refresh`
+// (a row measured three days ago) or `sweep` (a rescore's, or an older build's
+// first pass on a ruler), whose deadlines are worker/factory.js
 // `DEADLINE_MS`. What a row is FOR stays here: an agreed number written to
 // `scores` and the row no longer owed.
 //
@@ -27,11 +28,21 @@ const boardProducer = {
   still_wanted: async (env, d) => !!(await env.LIBRARY.prepare(owedSql).bind(d.payload.identity, d.payload.ruler, d.payload.mode).first()),
   // THE CLIENTS' FACT IS THE BOARD'S, as the scorer's is: a row still owed — a
   // rescore asked for it again — takes the new number over the old, and one no
-  // longer owed keeps the fact it has. The official machines' own fact is
-  // written by the scorer (`ship_facts.sh`), which owns `scores` for its rows.
+  // longer owed keeps the fact it has. The official machines' own number is
+  // written by the scorer (`ship_facts.sh`), which owns `scores` for its rows;
+  // one delivered again — a refresh on the engine that made it — only says the
+  // row was measured now, or it is asked again every hour.
   on_fact: async (env, d, fact) => {
-    if (fact.official || !fact.result) return;
+    if (!fact.result) return;
     const { identity, ruler, mode } = d.payload, at = iso(Date.now()), db = env.LIBRARY;
+    if (fact.official) {
+      await db.batch([
+        db.prepare("UPDATE scores SET finished_at = ? WHERE identity = ? AND ruler = ? AND mode = ? AND score = ? AND finished_at < ?")
+          .bind(at, identity, ruler, mode, fact.result.score, at),
+        db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(identity, ruler, mode),
+      ]);
+      return;
+    }
     await db.batch([
       db.prepare(
         `INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
@@ -54,7 +65,9 @@ const boardProducer = {
     ]);
   },
 };
-export const BOARD_PRODUCERS = { new_build: boardProducer, sweep: boardProducer };
+export const BOARD_PRODUCERS = { new_build: boardProducer, refresh: boardProducer, sweep: boardProducer };
+/// THE BOARD'S KINDS as an SQL list, for a query over its demands.
+export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ")})`;
 
 /// THE TASK THE FACTORY LEASED, in the shape the page fights a board row in.
 export function boardWork(leased) {
@@ -63,10 +76,11 @@ export function boardWork(leased) {
 }
 
 /// WHICH PRODUCER ASKS FOR A ROW: a new build's — an `arrivals-` batch's row
-/// whose build came that day or the one before — or a rescore's or a sweep's.
-/// An older build asked for a ruler it lacks lands in the same daily batch, and
-/// is a sweep.
+/// whose build came that day or the one before — a `refresh-` batch's, or a
+/// sweep's. An older build asked for a ruler it lacks lands in the same daily
+/// batch, and is a sweep.
 const producerOf = (batch, builtAt) => {
+  if (batch.startsWith("refresh-")) return "refresh";
   const day = batch.startsWith("arrivals-") && batch.slice(9, 19);
   return day && builtAt && builtAt.slice(0, 10) >= iso(Date.parse(day) - 86_400_000).slice(0, 10) ? "new_build" : "sweep";
 };
@@ -98,7 +112,7 @@ async function ask(request, env) {
       `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at
          FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
         WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                            AND d.producer IN ('new_build', 'sweep') AND d.state = 'live')
+                            AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live')
         GROUP BY q.build_id, q.ruler, q.mode LIMIT ?`).bind(ASK_MAX).all();
     for (const r of results) await askRow(env, r.batch, r, r.record, r.at, engine, now);
     return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });
@@ -135,7 +149,7 @@ async function adopt(request, env) {
   const { results } = await db.prepare(
     `SELECT o.*, (SELECT min(q.batch) FROM queue q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode) AS batch
        FROM orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode
-         AND d.producer IN ('new_build', 'sweep')) LIMIT ?`).bind(ADOPT_BATCH).all();
+         AND d.producer IN ${BOARD_KINDS_SQL}) LIMIT ?`).bind(ADOPT_BATCH).all();
   for (const o of results) {
     const ref = rowRef(o.identity, o.ruler, o.mode);
     // A ROW NOBODY OWES is settled where it is found, as a lease once settled it.
@@ -169,7 +183,7 @@ async function adopt(request, env) {
   }
   const left = await db.prepare(
     `SELECT count(*) AS n FROM orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM demands d
-       WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode AND d.producer IN ('new_build', 'sweep'))
+       WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode AND d.producer IN ${BOARD_KINDS_SQL})
        AND EXISTS (SELECT 1 FROM queue q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode)`).first();
   return json({ ok: true, adopted: results.length, left: left.n });
 }

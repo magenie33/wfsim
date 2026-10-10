@@ -258,7 +258,7 @@ console.log("\nfrozen before the factory");
   check("...its answer carried", L.prepare("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?").get(questionOf("OLD01"), A).n === 1);
   check("...and a second adoption adds nothing", (await appraise("POST", "/api/appraise/adopt", {}, bot)).body.adopted === 0);
   freeLeases();
-  L.prepare("UPDATE questions SET state = 'withdrawn' WHERE id IN (SELECT question FROM demands WHERE producer IN ('new_build', 'sweep'))").run();
+  L.prepare("UPDATE questions SET state = 'withdrawn' WHERE id IN (SELECT question FROM demands WHERE producer IN ('new_build', 'refresh', 'sweep'))").run();
   check("its owner's computers are not asked again", (await work(D, "e1", 8, "198.51.100.77") || {}).code !== "OLD01");
   freeLeases();
   const t = await work(C, "e1", 8, "198.51.100.78");

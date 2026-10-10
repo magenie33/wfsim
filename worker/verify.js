@@ -24,6 +24,7 @@
 import { witnessOf } from "./tasks.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf } from "./factory.js";
+import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest.
@@ -237,7 +238,7 @@ async function mine(request, env) {
               (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS credited,
               (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS mine
          FROM demands d JOIN questions q ON q.id = d.question
-        WHERE d.ref = ?2 AND d.producer IN ('new_build', 'sweep') ORDER BY d.asked_at DESC LIMIT 1`)
+        WHERE d.ref = ?2 AND d.producer IN ${BOARD_KINDS_SQL} ORDER BY d.asked_at DESC LIMIT 1`)
       .bind(b.verifier, `${k.identity}|${k.ruler}|${k.mode}`).first();
     if (!r) continue;
     const state = !r.mine ? "gone" : r.credited ? "confirmed"

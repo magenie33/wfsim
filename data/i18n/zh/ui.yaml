@@ -2625,6 +2625,7 @@ ui:
   "new builds {n}": "新提交的配装 {n}"
   "rescores after a model change {n}": "模型更新后重算 {n}"
   "a ruler's first pass over older builds {n}": "老配装补算新标尺 {n}"
+  "scores three days old, measured again {n}": "满三天的分数定期刷新 {n}"
   "riven gains {n}": "裂罅收益 {n} 个"
   "Done per hour": 每小时完成
   "volunteers {n} ({p}%)": "志愿者 {n}（{p}%）"

@@ -219,6 +219,16 @@ await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", s
   (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN));
 check("...and its answer is the fact, paying the client whose bits it reproduced", question("late").state === "fact" && credited(F) === WORK);
 check("...whose number the scorer itself writes to the board", !fact("late"));
+L.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+  VALUES ('late', 'standard_single_target', 'base', 'abc123', 3, 'kpm', 1, 'x', '2026-01-01T00:00:00.000Z')`).run();
+queue(`refresh-${today}`, "late");
+await ask(`refresh-${today}`, "late");
+const refreshed = L.prepare("SELECT * FROM demands WHERE producer = 'refresh' AND ref = ?").get("late|standard_single_target|base");
+check("a `refresh-` batch's row is asked by `refresh`, due four days later",
+  refreshed && Math.abs(Date.parse(refreshed.due_at) - Date.parse(refreshed.asked_at) - 4 * 86_400_000) < 1000, JSON.stringify(refreshed));
+check("...and one whose official fact is on the served engine costs nothing: the row is measured now, its number kept",
+  !owed("late") && fact("late").finished_at > "2026-01-01T00:00:00.000Z" && fact("late").measured_by === "abc123" && fact("late").score === 3,
+  JSON.stringify(fact("late")));
 await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer" }, TOKEN);
 check("the release hands back what the run held", !L.prepare("SELECT 1 FROM questions WHERE leased_to = 'official:scorer'").get());
 

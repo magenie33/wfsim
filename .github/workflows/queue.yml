@@ -23,13 +23,10 @@
 # is an hour's lump once a day and two or three minutes on the hour. The same
 # work, paid in a size that fits beside everything else.
 #
-# ONCE A NIGHT IT ALSO SWEEPS. Nothing in this pipeline retires a fact on its
-# own — a board is a claim about what the code computes TODAY, and a row nobody
-# has looked at since an engine six weeks ago is a claim nobody has checked. The
-# sweep asks for the weapons that have gone longest — five days unmeasured, a
-# tenth of the library a night — so forgetting to rescore by hand costs weeks
-# rather than months. It only ever ADDS to the queue; the hourly scorer pays for it in the
-# hours after.
+# AND EVERY HOUR IT REFRESHES. A board is a claim about what the code computes
+# TODAY, so a row measured three days ago is asked for again, due four days
+# later (worker/factory.js `DEADLINE_MS`): the volunteers take it when nothing
+# due sooner is open, and the official machines when it is past due.
 name: queue
 
 on:
@@ -37,16 +34,8 @@ on:
     # ON THE HOUR. The scheduler slips about fifteen minutes whatever minute is
     # named, so an off-the-hour one buys a precision this does not have.
     - cron: "0 * * * *"
-    # …AND ONCE A NIGHT, THE SWEEP. 16:00 UTC is midnight in China, the quiet
-    # hour: a night's batch is up to a TENTH of the library and the hourly
-    # scorer spends the rest of the night on it.
-    - cron: "0 16 * * *"
   workflow_dispatch:
     inputs:
-      sweep:
-        description: "also enqueue the nightly sweep"
-        type: boolean
-        default: false
       rescore:
         description: "ask for EVERY row of one ruler again (a benchmark id)"
         type: string
@@ -55,9 +44,6 @@ on:
         description: "…of these weapons only (space-separated ids; blank = every weapon)"
         type: string
         default: ""
-      stale_days:
-        description: "how many days unmeasured counts as stale (blank = 3)"
-        type: string
         default: ""
 
 # ONE AT A TIME, AND THE RUNNING ONE WINS. Two of these would both read the same
@@ -171,91 +157,56 @@ jobs:
           # a reader has to be able to see it did something.
           echo "::notice::$(grep -c . queue.ndjson || echo 0) row(s) owed after this hour"
 
-      # ---- …AND ONCE A NIGHT, WHAT HAS GONE LONGEST -----------------------
+      # ---- …AND WHAT WAS MEASURED THREE DAYS AGO ------------------------
       #
-      # THE SAFETY NET, AND IT SAYS NOTHING ABOUT WHETHER A NUMBER IS WRONG. A
-      # board is a claim about what this code computes TODAY, and a row measured
-      # under an engine six weeks old is a claim nobody has checked since. What
-      # retires a fact on purpose is still a person deleting or enqueueing it;
-      # this is what happens when nobody remembers to be that person.
+      # ROW BY ROW, by each row's own age (`--queue-older`), so a weapon's file
+      # may rank two engines for the days between. ITS OWN BATCH, NAMED FOR
+      # THE DAY, which is what makes its rows the `refresh` producer's.
       #
-      # WHOLE WEAPONS, up to a TENTH of the library a night — a weapon's file is
-      # written whole, so half of one re-measured ranks two generations against
-      # each other, and a tenth a night crosses all of it in ten. It only ever
-      # ADDS to the queue; the hourly scorer pays for it in the hours after,
-      # which is what spreads the bill.
+      # THE OLDEST FIRST, `REFRESH_PER_HOUR` an hour: an hour's asks have to
+      # fit the job's clock, and what is left is asked the next hour. A row's
+      # four days count from when it is asked.
       #
-      # THE SWEEP IS TWO THIRDS OF EVERYTHING THIS BOARD SPENDS — 6,635 of 9,722
-      # owed rows on the day it was counted, against 2,200 from arrivals — and
-      # what it buys is the ONE automatic path a model correction has to the
-      # board. So the cadence is a trade with two ends: slower, and a fix waits
-      # longer; faster, and the whole library is re-measured for nothing.
-      #
-      # ITS OWN BATCH, NAMED FOR THE NIGHT, so a person can see it, reorder it
-      # ahead of the arrivals, or drop it — `DELETE FROM batches WHERE id = ?`.
-      #
-      # AND IT OBEYS THE ENTRY LINE (`--gate`), which is where that line pays
-      # for itself: arrivals are a one-off bill and this one recurs every five
-      # nights for ever, so a build nothing would publish would be re-measured
-      # for the life of the board.
-      - name: ask for what has gone longest
+      # AND IT OBEYS THE ENTRY LINE (`--gate`): a build nothing would publish
+      # is not re-measured every few days for the life of the board.
+      - name: ask for what was measured three days ago
         if: steps.wired.outputs.yes == 'true'
-          && (github.event.schedule == '0 16 * * *' || inputs.sweep)
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-          # HOW OLD IS STALE, and the only reason it is an input: the sweep
-          # cannot be exercised on demand otherwise — a manual trigger asks
-          # the question the clock already asked and gets the same answer.
-          # Blank on a schedule, so the number here is the nightly one.
-          STALE_DAYS: ${{ inputs.stale_days || 5 }}
-          SWEEP_SHARE: 10
+          REFRESH_PER_HOUR: 10000
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          # A NUMBER, AND ONLY A NUMBER. The input reaches a shell argument,
-          # so it is checked the way the ruler id below is rather than trusted.
-          case "$STALE_DAYS" in
-            ''|*[!0-9]*) echo "::error::not a number of days: $STALE_DAYS"; exit 1 ;;
-          esac
-          bash scripts/pick_stale.sh "$STALE_DAYS" "$SWEEP_SHARE" > weapons.txt
-          if [ ! -s weapons.txt ]; then
-            echo "::notice::sweep: nothing has gone $STALE_DAYS days unmeasured"
-            exit 0
-          fi
-          : > sweep.ndjson
+          older=$(date -u -d '3 days ago' +'%Y-%m-%dT%H:%M:%S.000Z')
+          : > refresh-all.ndjson
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            ./target/release/wfsim-board "$id" \
-              --dry-run \
-              --gate \
-              --facts-in facts-known.ndjson \
-              --queue-in queue.ndjson \
-              --queue-weapons weapons.txt \
-              --queue-missing "sweep-$id.ndjson" \
-              < library.json > /dev/null
-            cat "sweep-$id.ndjson" >> sweep.ndjson
+            ./target/release/wfsim-board "$id"               --dry-run               --gate               --facts-in facts-known.ndjson               --queue-in queue.ndjson               --queue-older "$older"               --queue-missing "refresh-$id.ndjson"               < library.json > /dev/null
+            cat "refresh-$id.ndjson" >> refresh-all.ndjson
           done
-          bash scripts/ship_queue.sh "sweep-$(date -u +'%Y-%m-%d')" \
-            "$(wc -l < weapons.txt) weapon(s) nobody had measured in $STALE_DAYS days" \
-            sweep.ndjson
-          echo "::notice::sweep: $(grep -c . sweep.ndjson || echo 0) row(s) from $(wc -l < weapons.txt) weapon(s)"
+          python3 scripts/oldest_rows.py facts-known.ndjson refresh-all.ndjson "$REFRESH_PER_HOUR" > refresh.ndjson
+          if [ ! -s refresh.ndjson ]; then
+            echo "::notice::refresh: nothing measured before $older"
+            exit 0
+          fi
+          bash scripts/ship_queue.sh "refresh-$(date -u +'%Y-%m-%d')"             "rows measured before $older, asked again" refresh.ndjson
+          echo "::notice::refresh: $(grep -c . refresh.ndjson) of $(grep -c . refresh-all.ndjson) row(s) measured before $older"
 
       # ---- …AND A RULER WHOSE MODEL MOVED --------------------------------
       #
       # A MEASUREMENT CORRECTS THE MODEL AND EVERY ROW UNDER IT IS OWED AGAIN,
       # and nothing else asks for those. A stored score is reused because it
       # EXISTS — no clock, no fingerprint, no binary in the key — and the
-      # nightly sweep only reaches what has gone STALE_DAYS unmeasured, which a
-      # row measured this week has not. This is the button docs/BOARD.md means
-      # by "what retires a fact is a person".
+      # refresh only reaches a row three days after it was measured. This is
+      # the button docs/BOARD.md means by "what retires a fact is a person",
+      # and its rows are due in a week like any rescore's.
       #
       # ONE RULER, EVERY WEAPON. A model change is not a property of a weapon,
       # so half a board re-measured is a ranking of two generations against each
-      # other — the same reason the sweep takes whole weapons.
+      # other.
       #
       # IT ONLY ADDS. The old numbers stay published until a new one replaces
       # each row, so asking costs the board nothing while it is being paid; the

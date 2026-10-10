@@ -157,6 +157,13 @@ pub(crate) fn write_orphans(
     eprintln!("queue: {} row(s) owed on {bench_id} that no build can pay", rows.len());
 }
 
+/// WHETHER A ROW IS OWED AGAIN: it has no fact, or its fact finished before the
+/// refresh's instant (`--queue-older`). Facts are ISO-ms UTC, so the text order
+/// is the time order.
+pub(crate) fn owed_again(finished_at: Option<&str>, older: Option<&str>) -> bool {
+    finished_at.is_none_or(|f| older.is_some_and(|t| f < t))
+}
+
 /// WHAT NOTHING HAS ASKED FOR YET, written and flushed before anything reads
 /// the file. The reconciliation is the reason a hand-written queue cannot
 /// quietly lose a row, so the count is said out loud on every run: a number
@@ -205,6 +212,19 @@ pub(crate) fn write_missing(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **A ROW IS OWED AGAIN BY ITS OWN AGE.** No fact is owed; a fact is owed
+    /// only once a refresh names an instant after it finished.
+    #[test]
+    fn a_row_is_owed_again_once_its_fact_is_older_than_the_refresh() {
+        let t = Some("2026-10-08T00:00:00.000Z");
+        assert!(owed_again(None, None));
+        assert!(owed_again(None, t));
+        assert!(!owed_again(Some("2026-10-01T00:00:00.000Z"), None));
+        assert!(owed_again(Some("2026-10-07T23:59:59.999Z"), t));
+        assert!(!owed_again(Some("2026-10-08T00:00:00.000Z"), t));
+        assert!(!owed_again(Some("2026-10-10T12:00:00.000Z"), t));
+    }
 
     /// **A ROW NO BUILD CAN PAY IS AN ORPHAN, AND ONLY THAT.** The case that
     /// found it: rows queued under a build id the identity rule has since moved

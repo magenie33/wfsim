@@ -66,18 +66,19 @@ d1() {
 # owed row is read — which is what a reconciliation needs.
 page_body() {
   if [ -n "${CLAIMED:-}" ]; then
-    jq -n -c --argjson limit "$1" --argjson offset "$2" --arg witness "$WITNESS" '
+    jq -n -c --argjson limit "$1" --argjson offset "$2" --arg witness "$WITNESS" --argjson kinds "$BOARD_KINDS" '
+      ("(" + ([$kinds[] | "?"] | join(", ")) + ")") as $in |
       {
         sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
               + " JOIN batches b ON b.id = q.batch"
               + " WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode"
-              + " AND d.producer IN (?, ?))"
+              + " AND d.producer IN " + $in + ")"
               + " OR EXISTS (SELECT 1 FROM demands d JOIN questions x ON x.id = d.question"
-              + " WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode AND d.producer IN (?, ?)"
+              + " WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode AND d.producer IN " + $in
               + " AND d.state = ? AND x.leased_to = ?)"
               + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode"
               + " LIMIT ? OFFSET ?"),
-        params: ["|", "|", "new_build", "sweep", "|", "|", "new_build", "sweep", "live", $witness, $limit, $offset]
+        params: (["|", "|"] + $kinds + ["|", "|"] + $kinds + ["live", $witness, $limit, $offset])
       }'
     return
   fi
@@ -94,6 +95,9 @@ page_body() {
 # THE OFFICIAL WITNESS (worker/factory.js `officialRoute`), one per run — runs
 # are serialized — speaking to the factory with its own secret.
 FACTORY_ORIGIN="${FACTORY_ORIGIN:-https://wfsim.app}"
+# THE BOARD'S KINDS (worker/board_tasks.js `BOARD_PRODUCERS`): every question a
+# board row is, whoever asked it.
+BOARD_KINDS='["new_build","refresh","sweep"]'
 WITNESS="${WITNESS:-official:scorer}"
 CLAIM_PAGE=2000
 CLAIM_MAX="${CLAIM_MAX:-40000}"
@@ -108,7 +112,7 @@ factory() {
 }
 claim_body() {
   jq -n -c --arg witness "$WITNESS" --arg engine "${ENGINE:-unknown}" --argjson max "$CLAIM_PAGE" \
-    '{ witness: $witness, engine: $engine, states: ["open"], producers: ["new_build", "sweep"], max: $max, lease_ms: 43200000 }'
+    --argjson kinds "$BOARD_KINDS" '{ witness: $witness, engine: $engine, states: ["open"], producers: $kinds, max: $max, lease_ms: 43200000 }'
 }
 release_body() { jq -n -c --arg witness "$WITNESS" '{ witness: $witness }'; }
 

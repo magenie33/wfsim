@@ -233,7 +233,7 @@ check(!pub.some((l, i) => /name:\s*store/.test(l)
 // `--gate` is what stops a build that reaches a tenth of no group's leader from
 // being asked for more fights, and forgetting it on ONE path is silent: the
 // other paths still gate, the run still goes green, and the bill comes back
-// through whichever path was left open. The nightly sweep is the one that
+// through whichever path was left open. The hourly refresh is the one that
 // matters most — it recurs for the life of the board where arrivals are a
 // one-off — and it is also the easiest to miss, because it lives in a workflow
 // rather than beside the reconciliation.
@@ -258,9 +258,9 @@ const step = (name) => {
 const reconcile = readFileSync(resolve(ROOT, "scripts/reconcile_queue.sh"), "utf8");
 check(passesGate(reconcile), "the arrivals reconciliation obeys the entry line",
   "every build that ever arrives would be asked for every ruler and every mode");
-check(passesGate(step("ask for what has gone longest")),
-  "…and so does the nightly sweep",
-  "a build nothing would publish is re-measured every five nights for ever, "
+check(passesGate(step("ask for what was measured three days ago")),
+  "…and so does the refresh",
+  "a build nothing would publish is re-measured every few days for ever, "
     + "which is the recurring half of the bill the line exists to stop");
 const rescore = step("ask for every row of one ruler again");
 check(rescore !== null && !passesGate(rescore),

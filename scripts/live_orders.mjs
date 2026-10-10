@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { official, tell } from "./order_credit.mjs";
+import { official, tell, BOARD_KINDS } from "./order_credit.mjs";
 
 const SETTLE_PER_CYCLE = 3;
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -65,7 +65,7 @@ async function settle() {
   const engine = existsSync(join(arg, "ENGINE")) ? readFileSync(join(arg, "ENGINE"), "utf8").trim() : "";
   if (!engine) { console.error("orders: no ENGINE beside the scorer, nothing settled"); return; }
   const { tasks } = await official("claim", { engine, states: ["disputed", "spot", "nondeterministic"],
-    producers: ["new_build", "sweep"], max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+    producers: BOARD_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
   const facts = [];
   for (const t of tasks) {
     const d = t.demands[0];
@@ -86,7 +86,7 @@ async function settle() {
 async function unverified() {
   const rows = await d1(`SELECT d.payload, a.result, a.engine FROM demands d JOIN questions q ON q.id = d.question
                           JOIN answers a ON a.id = (SELECT min(x.id) FROM answers x WHERE x.question = q.id AND x.void = 0 AND x.official = 0)
-                         WHERE d.state = 'live' AND d.producer IN ('new_build', 'sweep')
+                         WHERE d.state = 'live' AND d.producer IN (${BOARD_KINDS.map((k) => `'${k}'`).join(", ")})
                            AND q.state IN ('open', 'disputed', 'nondeterministic')`);
   const at = new Date().toISOString();
   writeFileSync(arg, rows.map((r) => {

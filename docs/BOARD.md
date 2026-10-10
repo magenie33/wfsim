@@ -56,7 +56,7 @@ MACHINES FIRST AND THE OFFICIAL ONES SECOND.** Five rules, and everything below
 is how they are kept:
 
 1. **ONE WAY IN.** Anything that needs a score — a submission, a rescore after
-   the code moved, the nightly sweep, a new ruler — asks the fact factory
+   the code moved, a refresh, a new ruler — asks the fact factory
    (§"Compute orders"). Nothing computes a board number another way.
 2. **ONE WAY OUT.** A row becomes a fact in `scores` when `CLIENTS_PER_FACT`
    clients sent the same bits; nothing short of that reaches the public board.
@@ -272,47 +272,26 @@ measuring" is otherwise a floor no run can lower. A fight that RAN and dealt
 nothing is a measurement and is banked as 0 (the entry line keeps it off the
 page); only a fight that did not run is refused.
 
-**AND ONCE A NIGHT, WHAT HAS GONE LONGEST IS ASKED FOR AGAIN.** Nothing here
+**AND EVERY HOUR, WHAT WAS MEASURED THREE DAYS AGO IS ASKED FOR AGAIN** — the
+`refresh` producer (`queue.yml`, `wfsim-board --queue-older`). Nothing here
 retires a fact on its own: a board is a claim about what the code computes
-TODAY, and a row measured under an engine six weeks old is a claim nobody has
-checked. The sweep says nothing about whether that number is WRONG — it says
-nobody has looked.
+TODAY, and a row is wrong the moment its engine moves. A refresh says nothing
+about whether a number is WRONG — it says nobody has looked since.
 
-**THREE DAYS IS THE THRESHOLD, and `stale_days` on the dispatch can name
-another.** It is not a claim about how fast a number goes wrong — a row is
-wrong the moment its engine moves — it is how long nobody has to notice before
-the sweep goes looking. It is an input because otherwise the sweep cannot be
-EXERCISED: a `scores` row is replaced rather than appended, so a week of hand
-rescoring leaves nothing stale and every manual trigger asks the question the
-clock already asked and gets the same empty answer.
-
-**WHOLE WEAPONS, AND A TENTH OF THE LIBRARY IS A TARGET RATHER THAN A CEILING.**
-A weapon's file is written whole, so half of one re-measured ranks two
-generations against each other — splitting one is off the table. Weapons go in
-until the share is PASSED, which makes every night a little over it, by at most
-the last weapon in. Used as a ceiling instead, a weapon bigger than a tenth
-would fit no night ever, and that would be the BIGGEST weapon: the one most
-people submit to.
-
-**WHICH ONES IS A DRAW, NOT A SORT.** Everything in the pool has already passed
-the age threshold, so which of them goes tonight has no right answer — and the
-same answer every night means the same weapons are always sampled and the rest
-reached only when those go quiet. `scripts/pick_stale.sh` draws them WEIGHTED BY
-HOW OVERDUE: uniformly random, a weapon can be unlucky for a month; weighted,
-the longer one waits the harder it is to keep missing. `SWEEP_SEED` pins a draw,
-because a run nobody can reproduce is a run nobody can ask "why that weapon".
-
-A tenth a night crosses the library in ten, and the pool is what has gone five
-days unmeasured. It only ADDS to the queue — the hourly scorer pays for it in
-the hours after, which is what spreads the bill.
-
-**THE CADENCE IS THE BOARD'S BIGGEST BILL.** What the sweep buys is the only
-AUTOMATIC path a model correction has to the board — a code change re-scores
-nothing on its own — so the number is a trade between how long a fix waits and
-how much is re-measured for nothing.
-
-**IT LANDS IN ITS OWN BATCH**, named for the night, so it can be reordered ahead
-of the arrivals or dropped — `DELETE FROM batches WHERE id = ?`.
+- **ROW BY ROW, by its own age**, so a weapon's file may rank two engines for
+  the days between rather than wait for its oldest row.
+- **DUE FOUR DAYS AFTER IT IS ASKED**, the latest deadline the volunteers are
+  handed, so it is handed only when nothing due sooner is open: idle machines
+  keep the board three days fresh, busy ones let it age, and past seven days the
+  official machines measure it like any question past its deadline. No rate,
+  no share — the deadline is the whole policy (worker/factory.js `DEADLINE_MS`).
+- **A ROW ON THE ENGINE THAT MADE ITS FACT COSTS NOTHING**: the factory answers
+  it from that fact at once, and the row counts as measured now.
+- **THE OLDEST FIRST, `REFRESH_PER_HOUR` an hour**, so an hour's asks fit the
+  job's clock; what is left is asked the next hour.
+- **IT LANDS IN ITS OWN BATCH**, `refresh-<day>`, which is what makes its rows
+  the `refresh` producer's and lets a person drop it — `DELETE FROM batches
+  WHERE id = ?`.
 
 **THE PUBLISH DOES NOT CARE WHAT IS BEING COMPUTED.** It reads the table, ranks
 it, writes the files and commits if they moved. A scoring run may be halfway
@@ -645,7 +624,7 @@ deadline and what only they may settle.
 
 - **ORDER.** A question a person waits on now first, then earliest deadline
   first: a chat's in two minutes, a new build's row in six hours, a survey shape
-  in a day, a rescore's or a sweep's in a week (`DEADLINE_MS` — the dispatch
+  in a day, a refresh in four, a rescore's or a sweep's in a week (`DEADLINE_MS` — the dispatch
   policy, stated once). A deadline alone is not enough: a survey's thousand
   shapes are a thousand deadlines passed together, and by deadline alone a
   person in a chat would wait behind every one.
@@ -687,7 +666,8 @@ never a heavier client.
   --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from a scorer
   run's reconciliation. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
-  (due in six hours), `sweep` for a rescore's or a sweep's (due in a week). An
+  (due in six hours), `refresh` for a `refresh-` batch's (due in four days),
+  `sweep` for a rescore's or an older build's first pass (due in a week). An
   arrival's row the board already scored is not asked: a resubmission the page
   did not recognise is the same build. EVERY OWED ROW IS ASKED FOR: the
   backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked
@@ -1298,8 +1278,8 @@ itself, with nobody having to know which build to look for. The cost is one
 fight per submission, which is the cost the first fight always is.
 
 **EVERY OTHER PATH OBEYS THE LINE AND THE RESCORE BUTTON DOES NOT.** `--gate` is
-passed by the arrivals reconciliation and by the nightly sweep, which is where
-the line pays for itself: a first measurement is a one-off bill and the sweep
+passed by the arrivals reconciliation and by the refresh, which is where the
+line pays for itself: a first measurement is a one-off bill and the refresh
 recurs for the life of the board. A person asking for a ruler again after a model
 correction is the other path that may reach a parked build, and
 `check_rescore_paths.mjs` asserts every one of them.
