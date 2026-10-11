@@ -91,6 +91,10 @@ pub struct Foe {
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
     /// shift is a mission-spawn effect — pick `level` accordingly.
     pub steel_path: bool,
+    /// A mission's Empowered Enemies and the squad size it reads
+    /// ([`scaling::Empowered`]). Overguard is untouched: no source says the
+    /// modifier reaches it.
+    pub empowered: Option<(scaling::Empowered, u32)>,
     /// Eximus variant: boosted base health + overguard (wiki `Eximus`). Only
     /// legal when `can_be_eximus` — the combination is validated at spawn.
     pub eximus: bool,
@@ -324,6 +328,7 @@ impl Foe {
             stack_caps: None,
             cannot_be_frozen: false,
             steel_path: false,
+            empowered: None,
             eximus: false,
             can_be_eximus: false,
             guardian_aura: false,
@@ -365,14 +370,14 @@ impl Foe {
     /// the bonus Health given to enemies in The Steel Path, Archon Hunt, Deep
     /// Archimedea, and similar modes."* So a percentage of "maximum Health"
     /// there means the unit's own scaled maximum before the multiplier the
-    /// MODE applies — which is this, and it is `max_health()` on any fight that
-    /// is not one of those modes.
+    /// MODE applies (Steel Path's or Empowered Enemies') — which is this, and
+    /// it is `max_health()` on any fight that is not one of those modes.
     pub fn max_health_before_steel_path(&self) -> f64 {
         let delta = self.level.saturating_sub(self.base_level) as f64;
         self.effective_base_health() * self.health_curve.multiplier(delta)
     }
 
-    /// Scaled max health at `level` (Steel Path ×2.5 applied).
+    /// Scaled max health at `level` (Steel Path ×2.5 and Empowered applied).
     pub fn max_health(&self) -> f64 {
         let delta = self.level.saturating_sub(self.base_level) as f64;
         let sp = if self.steel_path {
@@ -380,13 +385,20 @@ impl Foe {
         } else {
             1.0
         };
-        self.effective_base_health() * self.health_curve.multiplier(delta) * sp
+        self.effective_base_health() * self.health_curve.multiplier(delta) * sp * self.empowered_mults().0
+    }
+
+    /// `(health and shields, armor)` from the mission's Empowered Enemies.
+    fn empowered_mults(&self) -> (f64, f64) {
+        self.empowered.map_or((1.0, 1.0), |(e, squad)| e.multipliers(squad))
     }
 
     /// Scaled armor (spawn minimum 200, cap 2,700; Steel Path does not touch
-    /// armor since U36).
+    /// armor since U36). The Icebind's multiplier lands on the scaled value and
+    /// the cap still holds: no source lets an enemy's armor exceed 2,700.
     pub fn armor(&self) -> f64 {
-        scaling::armor_at(self.base_armor, self.level, self.base_level)
+        let a = scaling::armor_at(self.base_armor, self.level, self.base_level);
+        (a * self.empowered_mults().1).min(scaling::ARMOR_CAP)
     }
 
     /// Scaled max shields (Steel Path ×2.5, like health).
@@ -397,7 +409,7 @@ impl Foe {
         } else {
             1.0
         };
-        self.base_shield * self.shield_curve.multiplier(delta) * sp
+        self.base_shield * self.shield_curve.multiplier(delta) * sp * self.empowered_mults().0
     }
 
     /// Scaled overguard (uses `level − 1`; no Steel Path bonus documented).
@@ -632,6 +644,8 @@ impl crate::data::enemies::EnemySpec {
             // filled by the caller rather than read off the spec.
             spectral: None,
             steel_path,
+            // OFF UNLESS THE FIGHT ASKS: a property of the mission, not the unit.
+            empowered: None,
             eximus,
             can_be_eximus: self.can_be_eximus,
             // OFF UNLESS THE FIGHT ASKS, the same way `spectral` is: whether a
@@ -701,5 +715,24 @@ impl crate::data::enemies::EnemySpec {
                 })
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// THE ICEBIND MULTIPLIES ARMOR BELOW THE CAP AND NOT PAST IT.
+    #[test]
+    fn empowered_armor_multiplies_then_caps() {
+        let foe = |armor: f64| Foe {
+            base_armor: armor,
+            empowered: Some((scaling::Empowered::Icebind, 6)),
+            ..Foe::training_dummy()
+        };
+        assert_eq!(foe(200.0).armor(), 1800.0);
+        assert_eq!(foe(1000.0).armor(), scaling::ARMOR_CAP);
+        let arch = Foe { empowered: Some((scaling::Empowered::Archimedea, 4)), ..foe(200.0) };
+        assert_eq!(arch.armor(), 200.0, "Archimedea leaves armor alone");
     }
 }

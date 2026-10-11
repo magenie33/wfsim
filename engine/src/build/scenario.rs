@@ -244,6 +244,9 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     // Burston's page, which is the whole point of it.
     ScenarioAxis { id: "class_rules", kind: AxisKind::Structured, group: Group::Engagement, requires: FREE },
     ScenarioAxis { id: "steel_path", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
+    // WHICH MISSION'S EMPOWERED ENEMIES, if any: `archimedea` or `icebind`
+    // (`rules::scaling::Empowered`), sized by `squad_size`.
+    ScenarioAxis { id: "empowered", kind: AxisKind::Id, group: Group::Target, requires: FREE },
     // NULL is a real third state — "whatever this unit is by default" — so the
     // page stores it as `null | true | false`. Only an explicit choice is
     // stored, which is what keeps switching targets giving the elite unit

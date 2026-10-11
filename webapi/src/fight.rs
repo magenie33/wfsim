@@ -515,7 +515,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // names four is asking what one weapon takes off the Demolisher a full
     // squad meets. That is a real fight and a stated one; it is not a claim
     // about squad DPS.
-    let squad_size = get_u32(v, "squad_size", 1).clamp(1, 4);
+    //
+    // SIX is the Icebind's squad. Past four the ammo table has no column and
+    // reads the four-player one (`rules::ammo::on_kill`).
+    let squad_size = get_u32(v, "squad_size", 1).clamp(1, 6);
+    let empowered = empowered_from(v, squad_size)?;
     // A SENTINEL'S HEADSHOT RATE IS NOT THE PLAYER'S TO SET. Its companion
     // picks its own targets and never aims for a head, so this is 0 whatever
     // the request says — the same shape as `tenno_from` forcing its stance.
@@ -684,6 +688,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // carries it exactly as it carries the unit's own health. A unit with no
     // ladder multiplies by 1 and this line is not a special case for it.
     target.base_health *= spec.squad_health_multiplier(squad_size);
+    target.empowered = empowered;
     // THE SECOND HALF OF A THRAX'S DEATH, and the fight's own switch. OFF by
     // default, which is what every number this app has published assumes: the
     // physical form falls and that is the kill. Ticked, the kill — and with it
@@ -719,7 +724,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         Vec::new()
     };
 
-    let formation = formation_from(v, &specs, enemy_id, level, steel_path, headshot_pct)?;
+    let formation = formation_from(v, &specs, enemy_id, level, steel_path, empowered, headshot_pct)?;
 
     let aim_at = v
         .get("aim_at")
@@ -1037,6 +1042,21 @@ fn ability_picks(v: &Value) -> Vec<wfsim_engine::data::abilities::AbilityPick<'_
         .unwrap_or_default()
 }
 
+/// THE MISSION'S EMPOWERED ENEMIES: `empowered` names which (`archimedea`,
+/// `icebind`), absent or null is none, and `squad_size` sizes it. An unknown
+/// id refuses the fight rather than running it as an ordinary one.
+pub(crate) fn empowered_from(
+    v: &Value,
+    squad_size: u32,
+) -> Result<Option<(wfsim_engine::rules::scaling::Empowered, u32)>, Value> {
+    match v.get("empowered").and_then(Value::as_str).filter(|s| !s.is_empty()) {
+        None => Ok(None),
+        Some(id) => wfsim_engine::rules::scaling::Empowered::from_id(id)
+            .map(|e| Some((e, squad_size)))
+            .ok_or_else(|| err_json(format!("empowered: no mission named '{id}' (archimedea, icebind)"))),
+    }
+}
+
 /// THE FORMATION: every OTHER body on the floor.
 ///
 /// Each entry is wholly its own: its own unit, its own
@@ -1052,6 +1072,7 @@ fn formation_from(
     enemy_id: &str,
     level: u32,
     steel_path: bool,
+    empowered: Option<(wfsim_engine::rules::scaling::Empowered, u32)>,
     headshot_pct: f64,
 ) -> Result<Vec<wfsim_engine::formation::FoeSpec>, Value> {
     let mut formation: Vec<wfsim_engine::formation::FoeSpec> = Vec::new();
@@ -1094,10 +1115,12 @@ fn formation_from(
                 .get("eximus")
                 .and_then(Value::as_bool)
                 .unwrap_or(es.can_be_eximus);
-            let tp = match es.target_params(lv, steel_path, ex, TargetMode::InstantRespawn) {
+            let mut tp = match es.target_params(lv, steel_path, ex, TargetMode::InstantRespawn) {
                 Ok(t) => t,
                 Err(err) => return Err(err_json(format!("enemy {}: {err}", i + 1))),
             };
+            // THE MISSION'S, so every body in it carries it.
+            tp.empowered = empowered;
             let at = e
                 .get("at")
                 .and_then(Value::as_array)
@@ -1399,5 +1422,56 @@ mod the_demolisher_ruler {
         v["weapon"] = serde_json::json!("braton");
         let f = super::parse_fight(&v).expect("the heavy gunner fight parses");
         assert!(f.arena.target.eximus && f.arena.target.overguard() > 0.0);
+    }
+}
+
+/// **EMPOWERED ENEMIES REACH EVERY BODY, AND ARMOR STOPS AT THE CAP.** The
+/// wiki's tables through `parse_fight`: Archimedea moves health and shields and
+/// leaves armor, the Icebind moves all three and still ends at 2,700, and the
+/// formation carries the mission's modifier like the aimed body does.
+#[cfg(test)]
+mod empowered_enemies {
+    use serde_json::json;
+
+    fn fight(enemy: &str, level: u32, empowered: Option<&str>, squad: u32) -> super::Fight {
+        let mut v = json!({
+            "weapon": "braton", "enemy": enemy, "level": level,
+            "steel_path": false, "squad_size": squad, "duration": 10,
+            "formation": [{ "at": [0, 3] }],
+        });
+        if let Some(e) = empowered {
+            v["empowered"] = json!(e);
+        }
+        super::parse_fight(&v).expect("the fight parses")
+    }
+
+    #[test]
+    fn the_published_multipliers_land_on_the_right_pools() {
+        let pools = |f: &super::Fight| {
+            let t = &f.arena.target;
+            (t.max_health(), t.max_shield(), t.armor(), t.overguard())
+        };
+        let (hp, sh, _, _) = pools(&fight("crewman", 1, None, 4));
+        let (hp4, sh4, _, _) = pools(&fight("crewman", 1, Some("archimedea"), 4));
+        let (hp9, sh9, _, _) = pools(&fight("crewman", 1, Some("icebind"), 6));
+        assert!(sh > 0.0 && (hp4 / hp - 4.0).abs() < 1e-9 && (sh4 / sh - 4.0).abs() < 1e-9);
+        assert!((hp9 / hp - 9.0).abs() < 1e-9 && (sh9 / sh - 9.0).abs() < 1e-9);
+
+        let (_, _, ar, og) = pools(&fight("corrupted_heavy_gunner", 40, None, 4));
+        let (_, _, ar4, og4) = pools(&fight("corrupted_heavy_gunner", 40, Some("archimedea"), 4));
+        let (_, _, ar9, og9) = pools(&fight("corrupted_heavy_gunner", 40, Some("icebind"), 6));
+        assert!(ar < 2700.0 && ar4 == ar, "Archimedea leaves armor alone");
+        assert_eq!(ar9, 2700.0, "the Icebind's x9 stops at the cap: {ar} -> {ar9}");
+        assert!(og4 == og && og9 == og, "no source says Empowered reaches Overguard");
+
+        let f = fight("crewman", 1, Some("icebind"), 6);
+        let body = &f.arena.others[0].params;
+        assert!((body.max_health() - f.arena.target.max_health()).abs() < 1e-9, "the formation is in the same mission");
+    }
+
+    #[test]
+    fn an_unknown_mission_refuses_the_fight() {
+        let v = json!({ "weapon": "braton", "empowered": "sortie", "duration": 10 });
+        assert!(super::parse_fight(&v).is_err());
     }
 }

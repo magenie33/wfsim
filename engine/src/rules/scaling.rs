@@ -37,6 +37,50 @@ pub const STEEL_PATH_LEVEL_BONUS: u32 = 100;
 pub const STEEL_PATH_HEALTH_MULT: f64 = 2.5;
 pub const STEEL_PATH_SHIELD_MULT: f64 = 2.5;
 
+/// EMPOWERED ENEMIES — a mission's own multiplier, IN PLACE OF Steel Path's.
+///
+/// VERBATIM (wiki `Empowered_Enemies`): *"Missions with Empowered Enemies are
+/// not considered Steel Path"*, and stacking the two at Netracell's release
+/// *"was recognized as a bug and was fixed later"*. A fight that sets both gets
+/// both, because the engine computes what it is told; a ruler states only
+/// missions that exist. Values: [`Empowered::multipliers`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Empowered {
+    /// Deep and Temporal Archimedea; Netracells and Archon Hunts use the same.
+    Archimedea,
+    /// The Icebind, the six-player mission.
+    Icebind,
+}
+
+impl Empowered {
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "archimedea" => Some(Self::Archimedea),
+            "icebind" => Some(Self::Icebind),
+            _ => None,
+        }
+    }
+
+    /// `(health and shields, armor)` multipliers for a squad of `squad`.
+    ///
+    /// VERBATIM, Archimedea: *"Enemy Health and Shields increased by 100% and
+    /// an additional 50% for each squad member, stacking to a maximum of
+    /// 300%."* The Icebind (Update 44.1.0 notes): *"Enemy Health and Shields
+    /// and Armor increased by 200% and an additional 100% for each squad
+    /// member, stacking to a maximum of 800%."* Armor still ends at
+    /// [`ARMOR_CAP`], which no source raises — see `Foe::armor`.
+    pub fn multipliers(self, squad: u32) -> (f64, f64) {
+        let n = squad.max(1) as f64;
+        match self {
+            Self::Archimedea => (1.0 + (1.0 + 0.5 * n).min(3.0), 1.0),
+            Self::Icebind => {
+                let m = 1.0 + (2.0 + n).min(8.0);
+                (m, m)
+            }
+        }
+    }
+}
+
 /// One two-curve scaling rule.
 #[derive(Debug, Clone, Copy)]
 pub struct Curve {
@@ -237,6 +281,17 @@ pub fn armor_damage_reduction(armor: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The wiki's own tables (`Empowered_Enemies`): 2.5/3.0/3.5/4.0 for one to
+    /// four players in Archimedea, 4.0 to 9.0 for one to six in the Icebind.
+    #[test]
+    fn empowered_multipliers_are_the_published_tables() {
+        let hs = |e: Empowered, n| e.multipliers(n).0;
+        assert_eq!([1, 2, 3, 4, 5].map(|n| hs(Empowered::Archimedea, n)), [2.5, 3.0, 3.5, 4.0, 4.0]);
+        assert_eq!([1, 2, 3, 4, 5, 6, 7].map(|n| hs(Empowered::Icebind, n)), [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 9.0]);
+        assert_eq!(Empowered::Archimedea.multipliers(4).1, 1.0, "Archimedea leaves armor alone");
+        assert_eq!(Empowered::Icebind.multipliers(6).1, 9.0);
+    }
 
     fn approx(a: f64, b: f64, rel: f64) -> bool {
         (a - b).abs() <= rel * b.abs().max(1.0)

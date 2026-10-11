@@ -599,6 +599,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
         stack_caps: None,
         cannot_be_frozen: false,
         steel_path: false,
+        empowered: None,
         eximus: false,
         can_be_eximus: false,
         status_immunities: Vec::new(),

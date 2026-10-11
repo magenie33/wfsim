@@ -156,19 +156,26 @@ pub fn board_check_json(v: &Value) -> Value {
 /// answer waiting to drift. The same `target_params` the fight uses builds
 /// these, so what the picker promises is what the sim delivers.
 ///
-/// Takes the fight's `level`, `steel_path` and — per unit — the same Eximus
+/// Takes the fight's `level`, `steel_path`, `empowered`, `squad_size` and — per unit — the same Eximus
 /// default `parse_fight` applies, so the row reads as what you would get by
 /// picking it.
 pub fn targets_json(v: &Value) -> Value {
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
+    let squad_size = get_u32(v, "squad_size", 1).clamp(1, 6);
+    let empowered = match crate::fight::empowered_from(v, squad_size) {
+        Ok(e) => e,
+        Err(e) => return e,
+    };
     let rows: Vec<Value> = enemies()
         .iter()
         .map(|e| {
             // The unit's own default, the one `parse_fight` would pick.
             let eximus = e.can_be_eximus;
             match e.target_params(level, steel_path, eximus, TargetMode::InstantRespawn) {
-                Ok(t) => {
+                Ok(mut t) => {
+                    t.base_health *= e.squad_health_multiplier(squad_size);
+                    t.empowered = empowered;
                     let armor = t.armor();
                     json!({
                         "id": e.id,

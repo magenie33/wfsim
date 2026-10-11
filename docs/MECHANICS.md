@@ -2548,6 +2548,23 @@ Simulacrum's "The Steel Path" toggle was described at introduction (U33.5) as
 "+250% Health, Armor, and Shields" — whether its armor bonus also went away
 with U36 must be **measured**.
 
+**Empowered Enemies** (wiki `Empowered_Enemies`; Update 44.1.0 notes) — a
+mission's own multiplier, and **not Steel Path**: *"Missions with Empowered
+Enemies are not considered Steel Path"*; stacking the two at Netracell's release
+*"was recognized as a bug and was fixed later"*. The fight field `empowered`
+names the mission and `squad_size` (1–6) sizes it (`rules::scaling::Empowered`):
+
+| mission | health and shields | armor |
+| --- | --- | --- |
+| `archimedea` — Deep and Temporal Archimedea, Netracells, Archon Hunts | ×(2 + 0.5n), at most ×4 | untouched |
+| `icebind` — The Icebind | ×(3 + n), at most ×9 | ×(3 + n), then the 2,700 cap |
+
+Armor is multiplied on the scaled value and still ends at 2,700, which no
+source raises. Overguard is untouched: no source says the modifier reaches it.
+The engine computes what it is told, so a fight setting both `steel_path` and
+`empowered` gets both; a ruler states only missions that exist. Past four
+players the ammo-drop table has no column and the four-player one is read.
+
 **Simulacrum limits** (for golden-test planning): enemy level can only be set
 up to `5 × Mastery Rank + 30` (+25 in some Simulacrum variants) — nowhere
 near 9999, so level-cap behavior is only verifiable in endless missions.
