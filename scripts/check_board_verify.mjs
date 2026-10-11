@@ -15,6 +15,7 @@
 import { verifyRoute, LEASE_MS, PROTOCOL, TASKS_AHEAD } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { officialRoute } from "../worker/factory.js";
+import { opsRoute } from "../worker/ops.js";
 import { coolDownMs } from "../worker/tasks.js";
 import { tell } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";
@@ -267,6 +268,27 @@ console.log("\norders open before the factory");
   const wl = await work(C, { ip: "192.0.2.50" });
   await answer(wl.work, C, { ip: "192.0.2.50" });
   check("...another agreeing with the carried result makes the fact and credits both", fact("legacy") && credited(B) === before + WORK);
+}
+
+{
+  // THE OWNER'S DASHBOARD tells a computing machine from an idle one and from
+  // one on an engine no longer served, and shows nothing without its secret.
+  env.OPS_TOKEN = "ot";
+  check("the dashboard's numbers need its secret", (await post(opsRoute, "/api/ops/pulse", {}, TOKEN)).ok === false);
+  free();
+  const O = "0".repeat(24);
+  L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(O);
+  await work(O, { engine: "old" });
+  await work(F, { ip: "203.0.113.77" });
+  L.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ?").run(F);
+  L.prepare("UPDATE questions SET lease = 'x', lease_until = ?, leased_to = ? WHERE id = (SELECT id FROM questions LIMIT 1)")
+    .run(new Date(Date.now() + 60_000).toISOString(), A);
+  const p = await post(opsRoute, "/api/ops/pulse", {}, { authorization: "Bearer ot" });
+  const state = (v) => (p.devices.find((d) => d.id === v.slice(0, 8)) || {}).state;
+  check("a machine holding a lease is computing, one asking with none is idle, one on an old engine is stale",
+    p.ok && state(A) === "computing" && state(F) === "idle" && state(O) === "stale", JSON.stringify(p.devices));
+  check("...and its cores are counted", p.summary.idle.cores >= 4, JSON.stringify(p.summary));
+  free();
 }
 
 console.log(failures ? `\n${failures} failed` : "\na board row reaches the board when CLIENTS_PER_FACT clients measured the same bits");

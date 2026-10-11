@@ -281,7 +281,15 @@ CREATE TABLE IF NOT EXISTS verifiers (
   -- …and the facts it has been part of since its last refusal, which forgive
   -- one each `FACTS_PER_REFUSAL_FORGIVEN` (worker/verify.js):
   --   ALTER TABLE verifiers ADD COLUMN clean INTEGER NOT NULL DEFAULT 0;
-  clean         INTEGER NOT NULL DEFAULT 0
+  clean         INTEGER NOT NULL DEFAULT 0,
+  -- WHEN IT LAST ASKED FOR WORK, on which engine and with how many cores free,
+  -- to the minute — what tells an idle page from a closed one (worker/ops.js):
+  --   ALTER TABLE verifiers ADD COLUMN asked_at TEXT;
+  --   ALTER TABLE verifiers ADD COLUMN asked_engine TEXT;
+  --   ALTER TABLE verifiers ADD COLUMN asked_lanes INTEGER;
+  asked_at      TEXT,
+  asked_engine  TEXT,
+  asked_lanes   INTEGER
 );
 
 -- THE SAME WORK BY THE DAY IT WAS CREDITED, for the ranking's last thirty days

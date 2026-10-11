@@ -648,6 +648,11 @@ deadline and what only they may settle.
   questions got no answer in half an hour while witnesses worked, a
   non-deterministic question, or a dispute nobody settled in an hour is said to
   the owner, once a cause until it has stood six hours.
+- **THE DASHBOARD** (`worker/ops.js`, `/api/ops`, the secret `OPS_TOKEN` in
+  `private/ops.env`): the machines on now — computing (a live lease), idle
+  (asked in the last three minutes, holding none) or on an engine no longer
+  served — with their cores, the queue by kind and the last hour's results. An
+  ask is recorded once a minute (`verifiers.asked_at`), so idle is to the minute.
 
 ## Compute orders
 

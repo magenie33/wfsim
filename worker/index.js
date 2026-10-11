@@ -33,6 +33,7 @@ import { appraiseRoute } from "./appraise.js";
 import { watchdog, WATCHDOG_CRON, officialRoute } from "./factory.js";
 import { boardTasksRoute } from "./board_tasks.js";
 import { verifyRoute } from "./verify.js";
+import { opsRoute } from "./ops.js";
 import { contributionRoute } from "./contribution.js";
 import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
@@ -810,6 +811,7 @@ export default {
     if (["/api/board/work", "/api/board/verify", "/api/board/release", "/api/board/mine"].includes(path)) return verifyRoute(request, env, path);
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path.startsWith("/api/tasks/official/")) return officialRoute(request, env, path);
+    if (path === "/api/ops" || path === "/api/ops/pulse") return opsRoute(request, env, path);
     if (path.startsWith("/api/board/live/")) return pushLive(request, env, path.slice("/api/board/live/".length));
     {
       const key = liveKey(path);

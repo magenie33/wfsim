@@ -117,6 +117,7 @@ async function work(request, env) {
   const { b, err } = await read(request);
   if (err) return err;
   if (!VERIFIER_ID.test(b.verifier || "") || !ENGINE_ID.test(b.engine || "")) return json({ ok: false, error: "bad request" }, 400);
+  await askedNow(env.LIBRARY, b, Date.now());
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
   if (b.protocol !== PROTOCOL) return json({ ok: true, work: null, stale: true });
@@ -159,6 +160,18 @@ async function work(request, env) {
   const leased = await facts().next(env, { device: b.verifier, owner: who.owner, siblings: who.siblings,
     net: await netOf(request, env), lanes, most: ahead ? TASKS_AHEAD + 1 : 1 }, engine, now);
   return json({ ok: true, release, ahead: TASKS_AHEAD, work: leased && workOf(leased) });
+}
+
+/// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
+/// free cores kept for the owner's dashboard (worker/ops.js) — written at most
+/// once a minute, or a page asking every ten seconds is a write each time.
+export const ASKED_EVERY_MS = 60_000;
+async function askedNow(db, b, now) {
+  const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
+  const lanes = b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
+  await db.prepare(`UPDATE verifiers SET asked_at = ?1, asked_engine = ?2, asked_lanes = coalesce(?3, asked_lanes)
+      WHERE id = ?4 AND (asked_at IS NULL OR asked_at < ?5 OR asked_engine IS NOT ?2 OR (?3 IS NOT NULL AND asked_lanes IS NOT ?3))`)
+    .bind(iso(now), engine, lanes, b.verifier, iso(now - ASKED_EVERY_MS)).run();
 }
 
 /// HOW MANY TASKS A CLIENT MAY HOLD BESIDE THE ONE IT IS COMPUTING, asked near
