@@ -155,8 +155,12 @@ function computeEnd(result) {
     // …HELD FULL ON THE CARD a moment, then into the list, today's count asked again.
     computeJustDone = { task: entry, until: Date.now() + COMPUTE_DONE_MS };
     setTimeout(computeLive, COMPUTE_DONE_MS + 20);
-    devicePointsAt = 0;
-    Promise.resolve(loadDevicePoints()).then(computeLive);
+    // A PACK'S ROW NOT SENT YET has changed nothing the server counts: its
+    // points are asked when the pack's answers go (69-board-work.js `sendAnswers`).
+    if (!result.unsent) {
+      devicePointsAt = 0;
+      Promise.resolve(loadDevicePoints()).then(computeLive);
+    }
   }
   computeRedraw();
   computeChrome();
