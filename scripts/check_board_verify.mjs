@@ -187,7 +187,7 @@ build("three");
 queue(arrivals, "three");
 await ask(arrivals, "three");
 free(); only("three");
-const G = "g".repeat(24), H = "h".repeat(24);
+const G = "7".repeat(24), H = "6".repeat(24);
 for (const v of [G, H]) L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
 const real = Math.random;
 Math.random = () => 0;  // the dice pick this agreement for a spot check
@@ -265,7 +265,7 @@ console.log("\npacks");
   queue(arrivals, ...ids);
   await ask(arrivals, ...ids);
   free(); only(...ids);
-  const P = "p".repeat(24), Q = "q".repeat(24);
+  const P = "5".repeat(24), Q = "4".repeat(24);
   for (const v of [P, Q]) L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
   check("a pack is a minute of the computer's pace, a fair share of what is open, PACK_FIRST before its pace is known",
     packSize(20_000, 4000, 10) === 3 && packSize(1000, 4000, 10) === PACK_MAX && packSize(null, 4000, 10) === PACK_FIRST
@@ -351,6 +351,24 @@ console.log("\norders open before the factory");
   check("a page's ask for work is recorded, with its engine and its cores", v.asked_at && v.asked_engine === "old" && v.asked_lanes === 4, JSON.stringify(v));
   await work(O, { engine: "old", protocol: PROTOCOL - 1 });
   check("...and an older protocol is marked on it", L.prepare("SELECT asked_engine FROM verifiers WHERE id = ?").get(O).asked_engine === `old/p${PROTOCOL - 1}`);
+  free();
+}
+
+{
+  // THE PROTOCOL BEFORE IS STILL SERVED: a client a release did not reach — a
+  // program somebody else wrote — is handed a pack of one as one order, and its
+  // answer counts as any page's.
+  build("p6"); queue(arrivals, "p6"); await ask(arrivals, "p6");
+  free(); only("p6");
+  const w6 = await work(B, { ip: "198.51.100.66", protocol: 6 });
+  check("a client of the protocol before gets one order, as it did", w6.work && w6.work.identity === "p6" && w6.work.lease && !w6.pack, JSON.stringify(w6));
+  const before = credited(B);
+  await post(verifyRoute, "/api/board/verify", { lease: w6.work.lease, verifier: B, engine: "e1", score: SCORE, metric: "kpm", work: WORK, compute_ms: 1000 },
+    { "cf-connecting-ip": "198.51.100.66" });
+  const w7 = await work(C, { ip: "192.0.2.66" });
+  await answer(task(w7), C, { ip: "192.0.2.66" });
+  check("...and its answer, agreed with by a page of this one, makes the fact and is credited", fact("p6") && credited(B) === before + WORK);
+  check("...while a protocol older still is told it is stale", (await work(B, { protocol: 5 })).stale === true);
   free();
 }
 

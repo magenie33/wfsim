@@ -714,6 +714,10 @@ questions, never a heavier client.
   A CLIENT IS ONE THE SITE KNOWS: its id is the page's 24 hex, which simfleet,
   a community client, also makes. Any other is handed no work and its answers
   are not taken (`unrecognised_client`, with whom to ask); what it earned stays.
+  A RELEASE STOPS NO CLIENT: the protocol before the current one is served too
+  (`PROTOCOLS_SERVED`), its answers taken as any page's, until nobody has asked
+  with it for a week — a page reloads into a release, a program somebody else
+  wrote runs on until its author ships.
 - **A release carries a result.** An answer of an older engine stays with its
   question: a client of the new engine that reproduces its bits makes the fact
   and both are credited; one that does not starts the new engine's own count,

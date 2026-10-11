@@ -12,6 +12,9 @@
 //        (worker/appraise.js §"Volunteer work"), `pack: null`.
 //   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done? } → { ok }
 //   POST /api/board/release { lease, verifier }                                     → { ok }
+//   …and PROTOCOL 6, the one before (`PROTOCOLS_SERVED`): `/work` hands a pack of one
+//   as `work: { lease, identity, record, ruler, mode }`, answered by
+//   POST /api/board/verify { lease, verifier, engine, score, metric, work, compute_ms, counts?, lanes? } → { ok }
 //   POST /api/board/mine    { verifier, orders: [{ identity, ruler, mode }] }       → { orders: [{ …, state, at? }] }
 //
 // EQUAL means the score, the metric AND the work (`Shard::work`): a fact
@@ -41,6 +44,11 @@ export const SPOT_SHARE = 0.05;
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.
 export const PROTOCOL = 7;
+/// THE PROTOCOL BEFORE IS SERVED TOO, so a release stops no client: a page
+/// reloads into the new one, but a program somebody else wrote (simfleet) runs
+/// on until its author ships. Dropped once nobody has asked with it for a week
+/// (`verifiers.asked_engine` marks it).
+export const PROTOCOLS_SERVED = new Set([PROTOCOL, 6]);
 
 const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
 /// A CLIENT THE SITE KNOWS makes its id as the page does — 24 hex
@@ -147,7 +155,8 @@ async function work(request, env) {
   const asked = askedOf(db, b, now);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
-  if (b.protocol !== PROTOCOL) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
+  if (!PROTOCOLS_SERVED.has(b.protocol)) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
+  const single = b.protocol !== PROTOCOL;
   const { engine, release } = await servedRelease(env);
   if (!engine) { await asked.run(); return json({ ok: true, work: null, pack: null }); }
   if (b.engine !== engine) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
@@ -202,9 +211,13 @@ async function work(request, env) {
     return json({ ok: true, release, work: leased && workOf(leased), pack: null });
   }
   const { open, asking } = fair.results[0];
-  const n = packSize(pace, open, asking), lease_ms = packLeaseMs(n, pace);
+  const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : packLeaseMs(n, pace);
   const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1 }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
+  if (single) {
+    const t = tasks[0];
+    return json({ ok: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
+  }
   return json({ ok: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null });
 }
 
@@ -258,6 +271,21 @@ async function answers(request, env) {
 }
 /// A full pack's answers, each about three hundred bytes.
 const ANSWERS_BODY = 32_768;
+
+/// PROTOCOL 6'S ANSWER: one row under the lease of its pack of one, whose
+/// question the lease names.
+async function verify(request, env) {
+  const { b, err } = await read(request, 4096);
+  if (err) return err;
+  if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "")) return json({ ok: false, error: "bad request" }, 400);
+  const refused = unrecognised(b.verifier);
+  if (refused) return refused;
+  const q = await env.LIBRARY.prepare("SELECT id FROM questions WHERE lease = ? AND leased_to = ? LIMIT 1").bind(b.lease, b.verifier).first();
+  if (!q) return json({ ok: true });
+  const { lease, verifier, engine, ...a } = b;
+  return answers(new Request(request.url, { method: "POST", headers: request.headers,
+    body: JSON.stringify({ lease, verifier, engine, done: true, answers: [{ ...a, question: q.id }] }) }), env);
+}
 
 /// WHAT A TASK COST, as a page reports it: named whole counts, kept beside the
 /// answer to fit what a point is worth — never credited, so only their shape is checked.
@@ -322,6 +350,7 @@ export async function verifyRoute(request, env, path) {
   if (!env.LIBRARY) return json({ ok: false, error: "the library is not configured" }, 503);
   if (path === "/api/board/work") return work(request, env);
   if (path === "/api/board/answers") return answers(request, env);
+  if (path === "/api/board/verify") return verify(request, env);
   if (path === "/api/board/release") return release(request, env);
   if (path === "/api/board/mine") return mine(request, env);
   return json({ ok: false, error: "not found" }, 404);
