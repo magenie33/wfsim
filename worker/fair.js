@@ -26,6 +26,8 @@ export const ESTABLISHED_MS = 24 * 3_600_000;
 /// read a page that rests between rows as twice what it does, and both are
 /// only the client's word; credited work was checked by a second witness, and
 /// a best hour is not lowered by a short spell of being held back here.
+/// ONLY WHOLE HOURS ON THE SERVED ENGINE: a new engine may price a row anew, so
+/// the day restarts at its first answer and the rate now stands in meanwhile.
 export const CAPACITY_HOURS = 24;
 
 export const accountOf = (whose, device) => (!whose || whose === device ? WALK_INS : whose);
@@ -82,7 +84,8 @@ export async function tableOf(env, engine, now) {
       .bind(JSON.stringify(devices), iso(now - FAIR_WINDOW_MS), engine),
     db.prepare("SELECT id FROM verifiers WHERE id IN (SELECT value FROM json_each(?)) AND work > 0").bind(JSON.stringify([...owned.keys()])),
     db.prepare(`SELECT verifier, max(work) AS best FROM verifier_hours WHERE verifier IN (SELECT value FROM json_each(?1))
-                 AND hour >= ?2 GROUP BY 1`).bind(on, iso(now - CAPACITY_HOURS * 3_600_000).slice(0, 13)),
+                 AND hour >= max(?2, (SELECT strftime('%Y-%m-%dT%H', min(at), '+1 hour') FROM answers WHERE engine = ?3))
+               GROUP BY 1`).bind(on, iso(now - CAPACITY_HOURS * 3_600_000).slice(0, 13), engine),
   ]);
   const credited = new Set(paid.results.map((r) => owned.get(r.id)));
   const by = new Map();

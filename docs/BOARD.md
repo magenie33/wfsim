@@ -699,7 +699,9 @@ questions, never a heavier client.
   nothing on an ask with probability 1 − target / received. CAPACITY IS
   WORK DELIVERED, so a fast machine is never held back for being fast: a
   device's best credited hour of the last day (`CAPACITY_HOURS`), or its
-  credited rate over the window if that is more. A device with nothing
+  credited rate over the window if that is more; only whole hours after the
+  served engine's first answer count, since a new engine may price a row
+  anew. A device with nothing
   credited yet counts at the median. Cores × speed counts a page that rests
   between rows as twice what it does, and both are only the client's word.
   Credited work was checked by a second witness. A big account

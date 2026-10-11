@@ -291,7 +291,8 @@ two rows open: an account that took the whole window is handed an ordinary
 nothing (not stale, not banned) while the walk-ins get a pack. With 400 rows
 open, the same account gets a full pack. Capacity is work delivered: the best
 credited hour, or the credited rate now if that is more. Uncredited work never
-counts, and a machine with nothing credited counts at the median.
+counts, a machine with nothing credited counts at the median, and a best hour
+from before the served engine's first answer counts for nothing.
 
 ## `check_riven_gain`
 

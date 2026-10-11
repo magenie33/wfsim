@@ -106,11 +106,20 @@ Math.random = random;
     LIB.raw.prepare(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at, credited)
                      VALUES ('q', 'e1', ?, ?, 'k', '{}', ?, 1, ?, ?)`).run(dev, `acc-${name}`, recent || 1e9, iso(now - 60_000), recent ? 1 : 0);
   }
+  // THE ENGINE HAS BEEN SERVED SINCE TEN HOURS AGO, so the three-hour-old best hours count.
+  LIB.raw.prepare(`INSERT INTO answers (question, engine, device, owner, canon, result, work, at) VALUES ('q0', 'e1', 'x', 'x', 'k', '{}', 1, ?)`)
+    .run(iso(now - 10 * 3_600_000));
   const tb = await tableOf({ LIBRARY: LIB, ACCOUNTS: ACC }, "e1", now);
   const r = (a) => tb[`acc-${a}`].target / tb["acc-slow"].target;
   check("capacity is the best credited hour, so a machine that delivered twice as much has twice the target", close(r("mid"), 2), JSON.stringify(tb));
   check("...or the credited rate now if that is more, and a machine with nothing credited counts at the median",
     close(r("busy"), 18) && close(r("fresh"), 2), JSON.stringify(tb));
+  // A NEW ENGINE first answered a minute ago: no whole hour of it yet, so the
+  // old best hours are another unit and count for nothing.
+  LIB.raw.prepare("UPDATE answers SET engine = 'e2' WHERE question = 'q'").run();
+  const t2 = await tableOf({ LIBRARY: LIB, ACCOUNTS: ACC }, "e2", now);
+  check("a best hour from before the served engine's first answer counts for nothing",
+    close(t2["acc-mid"].target, t2["acc-slow"].target) && close(t2["acc-busy"].target / t2["acc-slow"].target, 1), JSON.stringify(t2));
 }
 
 console.log(failures ? `\n${failures} failed` : "\nan account past its share waits while work is short, and only then");

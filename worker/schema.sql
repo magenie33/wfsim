@@ -509,6 +509,9 @@ CREATE TABLE IF NOT EXISTS answers (
 );
 CREATE INDEX IF NOT EXISTS answers_by_question ON answers (question, engine);
 CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);
+-- WHEN AN ENGINE'S UNIT OF WORK BEGAN, one seek (worker/fair.js `tableOf`):
+--   CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
+CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
 -- WHAT THE WATCHDOG LAST SAID, per cause (worker/factory.js `watchdog`), so a
 -- cause is said once until it has stood six hours.
 CREATE TABLE IF NOT EXISTS watchdog_told (
