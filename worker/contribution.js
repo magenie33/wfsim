@@ -16,7 +16,7 @@
 //   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour;
 //        the points are what no account holds yet, so 0 once it is claimed
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
-//   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }], per_hour: { volunteers, official } }
+//   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }] (unfinished), per_hour: { volunteers, official } }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
 //   GET  /api/contributors[?period=recent|week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, contributor_rank, mark?, volunteer?, you? }] }
 //        — the first `limit` rows (default `PAGE`, at most `MOST`) of `total`; `key` is the row's
@@ -438,9 +438,11 @@ async function demand(request, env) {
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
       .bind(iso(t - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
-    // many two owners have agreed on and how many anyone has begun.
+    // many two owners have agreed on and how many anyone has begun. A survey
+    // whose every shape is agreed is reached, and no longer a goal.
     db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(agreed_at IS NOT NULL) AS agreed, SUM(started_at IS NOT NULL) AS started
-                FROM appraisals WHERE channel = ? AND request IS NOT NULL AND at > ? GROUP BY weapon, ruler ORDER BY MIN(at), weapon`)
+                FROM appraisals WHERE channel = ? AND request IS NOT NULL AND at > ? GROUP BY weapon, ruler
+                HAVING SUM(agreed_at IS NOT NULL) < COUNT(*) ORDER BY MIN(at), weapon`)
       .bind(SURVEY_CHANNEL, iso(t - SURVEY_KEEP_MS)),
   ]);
   const by = Object.fromEntries(owed.results.map((r) => [r.k, r.n]));
