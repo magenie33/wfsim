@@ -283,13 +283,15 @@ once a cause.
 ## `check_fair`
 
 Plain node against `worker/schema.sql` and `worker/accounts.sql`: fair share
-while work is short (`worker/fair.js`). The targets are 0.7 by cores asking and
-0.3 equal among established accounts, so with 80% of the cores against four
+while work is short (`worker/fair.js`). The targets are 0.7 by capacity asking (work delivered) and
+0.3 equal among established accounts, so with 80% of the capacity against four
 accounts of 5% the targets are 62% and 9.5%. A new account shares by its cores
 alone. Every unclaimed browser is one account. Then through `/api/board/work`,
 two rows open: an account that took the whole window is handed an ordinary
 nothing (not stale, not banned) while the walk-ins get a pack. With 400 rows
-open, the same account gets a full pack.
+open, the same account gets a full pack. Capacity is work delivered: the best
+credited hour, or the credited rate now if that is more. Uncredited work never
+counts, and a machine with nothing credited counts at the median.
 
 ## `check_riven_gain`
 

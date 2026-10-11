@@ -692,11 +692,17 @@ questions, never a heavier client.
   most their number over the computers asking, so the last rows of a batch go
   to many computers, never to one fast one while others wait. AND BY ACCOUNT
   (`worker/fair.js`): while that cap binds, each account's target share of
-  the hand-out is 70% by the cores it has asking and 30% equal among
+  the hand-out is 70% by the capacity it has asking and 30% equal among
   established accounts (a day old and credited once; every unclaimed browser
   together is one, the walk-ins). An account that received more than its
   target in the last ten minutes, in `work` on the served engine, is handed
-  nothing on an ask with probability 1 − target / received. A big account
+  nothing on an ask with probability 1 − target / received. CAPACITY IS
+  WORK DELIVERED, so a fast machine is never held back for being fast: a
+  device's best credited hour of the last day (`CAPACITY_HOURS`), or its
+  credited rate over the window if that is more. A device with nothing
+  credited yet counts at the median. Cores × speed counts a page that rests
+  between rows as twice what it does, and both are only the client's word.
+  Credited work was checked by a second witness. A big account
   still takes the most, but a small one is never starved while work is short.
   While work is plentiful none of this runs. A question
   someone waits on, and a riven gain, goes ALONE, to a computer free now. A row

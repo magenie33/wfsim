@@ -1,10 +1,10 @@
 // FAIR SHARE WHILE WORK IS SHORT (worker/fair.js, worker/verify.js `work`): the
-// targets are 0.7 by cores asking and 0.3 equal among established accounts, every
+// targets are 0.7 by capacity asking (work delivered) and 0.3 equal among established accounts, every
 // unclaimed browser counts as one account, a new account shares only by its
 // cores, and an account past its target is handed nothing on an ask — only
 // while the open rows are fewer than the asking would take.
 //   node scripts/check_fair.mjs
-import { shares, throttled, accountOf, WALK_INS } from "../worker/fair.js";
+import { shares, throttled, accountOf, tableOf, WALK_INS } from "../worker/fair.js";
 import { verifyRoute, PROTOCOL } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { DatabaseSync } from "node:sqlite";
@@ -18,16 +18,16 @@ const check = (what, ok, detail = "") => {
 const close = (x, y) => Math.abs(x - y) < 1e-9;
 
 // ---- the targets ----
-const big = { account: "big", lanes: 80, received: 0, established: true };
-const small = (i) => ({ account: `s${i}`, lanes: 5, received: 0, established: true });
+const big = { account: "big", capacity: 80, received: 0, established: true };
+const small = (i) => ({ account: `s${i}`, capacity: 5, received: 0, established: true });
 let t = shares([big, small(1), small(2), small(3), small(4)]);
-check("one account with 80% of the cores and four with 5%: 62% and 9.5% each",
+check("one account with 80% of the capacity and four with 5%: 62% and 9.5% each",
   close(t.big.target, 0.62) && close(t.s1.target, 0.095), JSON.stringify(t));
 t = shares([big, { ...small(1), established: false }]);
-check("a new account shares only by its cores, and the equal part goes to the established",
+check("a new account shares only by its capacity, and the equal part goes to the established",
   close(t.s1.target, 0.7 * 5 / 85) && close(t.big.target, 0.7 * 80 / 85 + 0.3), JSON.stringify(t));
 t = shares([{ ...big, established: false }, { ...small(1), established: false }]);
-check("with nobody established the targets are the cores alone", close(t.big.target, 80 / 85), JSON.stringify(t));
+check("with nobody established the targets are the capacity alone", close(t.big.target, 80 / 85), JSON.stringify(t));
 t = shares([{ ...big, received: 90 }, { ...small(1), received: 10 }, small(2), small(3), small(4)]);
 check("an account past its target is held back on about 1 − 1/ratio of its asks, one under it never",
   t.big.ratio > 1 && throttled(t, "big", () => 0.99) && !throttled(t, "big", () => 0.5 / t.big.ratio) && !throttled(t, "s2", () => 0.99),
@@ -88,6 +88,30 @@ await ask(400);
 const plenty = await work(BIG);
 check("while work is plentiful the same account is handed a full pack", !!(plenty.pack && plenty.pack.tasks.length >= 10), JSON.stringify(plenty).slice(0, 200));
 Math.random = random;
+
+// ---- capacity is work delivered ----
+// Four machines asking. One delivered 1000 in its best credited hour, one 2000.
+// One delivered 3000 in the last ten minutes, an hourly rate of 18000. One has
+// nothing credited, and it counts at the median, 2000.
+{
+  const LIB = d1("schema.sql"), ACC = d1("accounts.sql");
+  const hour = iso(now - 3 * 3_600_000).slice(0, 13);
+  for (const [name, best, recent] of [["slow", 1000, 0], ["mid", 2000, 0], ["busy", 0, 3000], ["fresh", 0, 0]]) {
+    const dev = name.padEnd(24, "0");
+    ACC.raw.prepare("INSERT INTO accounts (id, created_at, username) VALUES (?, ?, ?)").run(`acc-${name}`, iso(now), name);
+    ACC.raw.prepare("INSERT INTO devices (verifier, account, claimed_at) VALUES (?, ?, 'x')").run(dev, `acc-${name}`);
+    LIB.raw.prepare("INSERT INTO verifiers (id, seen, asked_at, asked_engine, asked_lanes) VALUES (?, 'x', ?, 'e1', 4)").run(dev, iso(now - 30_000));
+    if (best) LIB.raw.prepare("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)").run(dev, hour, best);
+    // UNCREDITED WORK NEVER COUNTS AS CAPACITY: anyone can claim it.
+    LIB.raw.prepare(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at, credited)
+                     VALUES ('q', 'e1', ?, ?, 'k', '{}', ?, 1, ?, ?)`).run(dev, `acc-${name}`, recent || 1e9, iso(now - 60_000), recent ? 1 : 0);
+  }
+  const tb = await tableOf({ LIBRARY: LIB, ACCOUNTS: ACC }, "e1", now);
+  const r = (a) => tb[`acc-${a}`].target / tb["acc-slow"].target;
+  check("capacity is the best credited hour, so a machine that delivered twice as much has twice the target", close(r("mid"), 2), JSON.stringify(tb));
+  check("...or the credited rate now if that is more, and a machine with nothing credited counts at the median",
+    close(r("busy"), 18) && close(r("fresh"), 2), JSON.stringify(tb));
+}
 
 console.log(failures ? `\n${failures} failed` : "\nan account past its share waits while work is short, and only then");
 process.exitCode = failures ? 1 : 0;
