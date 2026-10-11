@@ -244,6 +244,13 @@ same again on a fresh instance and cut five ways — one run a shard over lanes,
 seven, asked last first, two halves carried — and the work is gas.rs's price
 of the count. It failed with one weight changed in the wasm build only.
 
+## `check_clients_doc`
+
+Plain node. Every key of docs/CLIENTS.md's `Values` block is the constant it
+names, read from the worker and engine/src/fight/gas.rs (every file defining
+it), a key nobody reads fails, and a key it reads that the block leaves out
+fails. It failed with `run_price` changed in the doc, and with a key added.
+
 ## `check_compute`
 
 The `/compute` page, the account answered by interception. This browser's tasks

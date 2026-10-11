@@ -37,7 +37,7 @@ import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
 
-/// `WORK_WEIGHTS` counts in billionths of a point.
+/// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
 /// The ranking's other column: the days counted back from today, today included.
 export const RECENT_DAYS = 30;

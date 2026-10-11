@@ -160,6 +160,8 @@ jobs:
         run: node scripts/check_board_verify.mjs
       - name: Every item on a fight's path is metered
         run: node scripts/check_gas.mjs
+      - name: The clients' contract states the values the code holds
+        run: node scripts/check_clients_doc.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot

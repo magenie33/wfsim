@@ -23,7 +23,7 @@ Read the row for what you are about to touch before the code, not after.
 | a number that has to match the game | `docs/MEASUREMENTS.md` |
 | the page — presets, customs, share links, the arena, /support | `docs/UI.md` |
 | the combat record, damage pops, the ledger | `docs/RECORD.md` |
-| the leaderboard, a ruler, a scenario's legality | `docs/BOARD.md` |
+| the leaderboard, a ruler, a scenario's legality | `docs/BOARD.md` · clients `docs/CLIENTS.md` |
 | the search | `docs/OPTIMIZER.md` |
 | adding or fixing a weapon | `docs/WEAPON_INTAKE.md` |
 | a per-weapon published table (Condition Overload, Primary Compression) | `docs/CATALOGS.md` |
