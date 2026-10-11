@@ -44,7 +44,6 @@ on:
         description: "…of these weapons only (space-separated ids; blank = every weapon)"
         type: string
         default: ""
-        default: ""
 
 # ONE AT A TIME, AND THE RUNNING ONE WINS. Two of these would both read the same
 # inbox and derive the same builds — writing one row twice, which is harmless —
