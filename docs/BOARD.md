@@ -775,8 +775,11 @@ until the reader says yes (rule 0 below).
 
 **WHAT THE VOLUNTEERS' DEVICES COMPUTE TOGETHER IS FREE FOR EVERY PLAYER, AND
 WFSIM NEVER MAKES MONEY FROM IT**: no paid feature runs on it, and each device's
-share is counted under its owner's name. The statement promises exactly that;
-a change to it is a new statement, asked again. Eight rules:
+share is counted under its owner's name. The statement promises exactly that.
+A CHANGE THAT ASKS FOR MORE — more of the device, a new kind of task, more
+sent, another use — is a new statement (`COMPUTE_CONSENT_V`), asked again; one
+that asks for no more, a rewording or a narrowing, keeps its version and every
+yes, since each ask again is a reader interrupted. Eight rules:
 
 0. **NOTHING IS COMPUTED WITHOUT THE READER'S YES.** Computing together is
    off until the reader turns it on in answer to one statement, asked once in
