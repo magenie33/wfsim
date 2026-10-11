@@ -50,7 +50,7 @@ export function throttled(table, account, random = Math.random) {
   return !!a && a.ratio > 1 && random() > 1 / a.ratio;
 }
 
-async function tableOf(env, engine, now) {
+export async function tableOf(env, engine, now) {
   const db = env.LIBRARY;
   const { results: asking } = await db.prepare("SELECT id, asked_lanes FROM verifiers WHERE asked_at > ?")
     .bind(iso(now - ASKING_MS)).all();
