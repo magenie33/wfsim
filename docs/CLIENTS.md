@@ -202,8 +202,11 @@ simulation runs on a worker fleet").
 - **WORK** is `Shard::work`: `floor(gas · GAS_PRICE_PER_MILLION / 10^6) + runs ·
   RUN_PRICE`, integer arithmetic, `gas` the meter's count over the row's runs
   (`counts.gas`), `runs` the request's. A client never computes it itself: it
-  is what `/api/board/score` returns, and an answer whose work differs from the
-  served engine's is a wrong answer.
+  is what `/api/board/score` returns. An answer with the right score and other
+  work agrees with no other client, so it waits for the official machines; they
+  pay it the official work and refuse nobody for work alone. Until then it
+  earns nothing, and it holds the row's other clients back too, so an engine
+  that counts other work is a client to fix.
 - **NATIVE OR WASM, THE SAME BITS.** The meter's weights are counted from the
   source, so a native build of the served commit counts what the wasm counts;
   `scripts/check_gas.mjs` holds native and wasm to the same gas, work and score

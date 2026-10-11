@@ -475,12 +475,17 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // engine are refused — unless the question was not deterministic.
     // BITS ARE THE WITNESS: a volunteer of any engine that gave their bits
     // agreed; a refusal needs the same engine, since another may differ honestly.
-    // Another engine prices work in its own units, so there the score alone is
-    // the bits: a dispute answered before a release and settled after it.
-    const gave = (a) => (a.engine === engine ? a.canon === officialSays.canon : sansWork(a.canon) === sansWork(officialSays.canon));
-    const agree = independent(all.filter((a) => !a.official && gave(a)));
+    // THE SCORE IS THE WITNESS AND THE OFFICIAL WORK IS THE PAY: a volunteer
+    // who gave the official score agreed, whatever work it counted, and on the
+    // official engine is paid the official work - an engine counting other work
+    // is a client to fix, not a liar, and over-counting earns nothing. Another
+    // engine prices work in its own units, so there it keeps its own.
+    const gave = (a) => sansWork(a.canon) === sansWork(officialSays.canon);
+    const officialWork = JSON.parse(officialSays.canon).work;
+    const agree = independent(all.filter((a) => !a.official && gave(a)))
+      .map((a) => (a.engine === engine && Number.isSafeInteger(officialWork) ? { ...a, work: officialWork } : a));
     const near = verbs[q.verb].near || (() => false);
-    const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon && !near(a.canon, officialSays.canon));
+    const wrong = served.filter((a) => !a.official && !gave(a) && !near(a.canon, officialSays.canon));
     const moved = q.canon !== null && q.canon !== officialSays.canon;
     // A DISPUTE THE OFFICIAL MACHINES SIDE WITH NOBODY IN is not a liar found:
     // every answer differs from every other, theirs too, and that is an engine

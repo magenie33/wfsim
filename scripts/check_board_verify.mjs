@@ -162,8 +162,8 @@ free(); only("two");
 const w3 = await work(C, { ip: "192.0.2.3" });
 await answer(task(w3), C, { ip: "192.0.2.3" });
 const w4 = await work(E, { ip: "192.0.2.4" });
-const disagreed = await answer(task(w4), E, { ip: "192.0.2.4", work: WORK + 1 });
-check("the same score with other work is a dispute, and no fact", question("two").state === "disputed" && !fact("two"));
+const disagreed = await answer(task(w4), E, { ip: "192.0.2.4", score: SCORE + 1 });
+check("another score is a dispute, and no fact", question("two").state === "disputed" && !fact("two"));
 check("...and the answer is the one an agreement gets", JSON.stringify(disagreed) === JSON.stringify(agreed));
 check("...its clients' tasks say it is being checked", (await post(verifyRoute, "/api/board/mine",
   { verifier: C, orders: [{ identity: "two", ruler: "standard_single_target", mode: "base" }] })).orders[0].state === "checking");

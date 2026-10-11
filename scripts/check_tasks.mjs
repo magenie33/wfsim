@@ -401,7 +401,10 @@ console.log("\na score a few ULP off, its work equal, is unpaid but never refuse
   }
   check("an ULP off with equal work is not refused", !refused.includes("b-ulp"), JSON.stringify(refused));
   check("...nor paid", !db.raw.prepare("SELECT credited FROM answers WHERE device = 'b-ulp'").get().credited);
-  check("...while another work, or a score further off, is refused", refused.includes("b-work") && refused.includes("b-far"), JSON.stringify(refused));
+  check("...while a score further off is refused", refused.includes("b-far"), JSON.stringify(refused));
+  check("the official score with other work agrees, never refused and paid the official work",
+    !refused.includes("b-work") && db.raw.prepare("SELECT sum(work) AS w FROM verifier_hours WHERE verifier = 'b-work'").get().w === 100,
+    JSON.stringify({ refused, v: db.raw.prepare("SELECT sum(work) AS w FROM verifier_hours WHERE verifier = 'b-work'").get() }));
 }
 {
   // A DISPUTE OF ONE RELEASE SETTLED ON THE NEXT, whose work is in other units.
@@ -446,7 +449,8 @@ console.log("\nan official answer without work witnesses the score alone");
   await volunteer("v-lied", 999);
   await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: null }, NOW);
   await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: 100 }, NOW);
-  check("...or refuses one whose work it disproves", refused.includes("v-lied") && !paid("v-lied"), JSON.stringify(refused));
+  check("...and one whose work it disproves is paid the official work, never refused", !refused.includes("v-lied") && paid("v-lied"),
+    JSON.stringify(refused));
 }
 
 console.log("\na recheck: one more independent volunteer before a fact");
