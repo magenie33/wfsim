@@ -58,6 +58,8 @@ export async function witnessOf(env, device) {
 /// the share of facts the official machines check again (`spot`), and what
 /// happens to a witness they disprove (`on_disproved`).
 export function factory({ verbs, producers, threshold = 2, spot = 0.05, random = () => Math.random(), on_disproved = null }) {
+  /// THE VERBS A PACK MAY CARRY (`pack: true`): short, many, nobody waiting on one.
+  const PACKABLE = JSON.stringify(Object.keys(verbs).filter((v) => verbs[v].pack));
   const producerOf = (name) => {
     const p = producers[name];
     if (!p) throw new Error(`no producer ${name}`);
@@ -184,6 +186,57 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     return null;
   }
 
+  /// A PACK: up to `n` questions of a packable verb, in the order `next` hands
+  /// them, leased together under one lease for `lease_ms` — one statement, so a
+  /// pack costs the database what one question did. A question someone waits on
+  /// is never in one: it goes alone to a computer free now (`next`). `most` is
+  /// how many packs the witness may then hold. Each comes with its live demands;
+  /// a row no longer wanted is withdrawn where it is found and left out.
+  async function nextPack(env, w, engine, { n, lease_ms, most = 1 }, now = Date.now()) {
+    const db = env.LIBRARY, at = iso(now), lease = newLease();
+    const [taken, ds] = await db.batch([
+      db.prepare(`UPDATE questions SET lease = ?9, lease_until = ?10, leased_to = ?11
+          WHERE id IN (SELECT q.id ${eligibleFrom(false)} AND q.waits = 0 AND q.verb IN (SELECT value FROM json_each(?12)) ${ORDER} LIMIT ?13)
+            AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11 AND h.lease_until > ?1 AND h.lease != ?9) < ?14
+          RETURNING id, verb, request, due_at`)
+        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most),
+      db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
+          WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live'`).bind(lease, w.device),
+    ]);
+    if (!taken.results.length) return null;
+    const demands = ds.results.map((d) => ({ ...d, payload: JSON.parse(d.payload) }));
+    // A ROW NOBODY OWES ANY MORE, asked of its producer for the whole pack at once.
+    const unwanted = new Set();
+    for (const name of new Set(demands.map((d) => d.producer))) {
+      const p = producerOf(name), mine = demands.filter((d) => d.producer === name);
+      if (p.wanted_many) {
+        const keep = await p.wanted_many(env, mine);
+        for (const d of mine) if (!keep.has(d.ref)) unwanted.add(d);
+      } else if (p.still_wanted) {
+        for (const d of mine) if (!(await p.still_wanted(env, d))) unwanted.add(d);
+      }
+    }
+    for (const d of unwanted) {
+      await db.prepare("UPDATE demands SET state = 'withdrawn' WHERE producer = ? AND ref = ?").bind(d.producer, d.ref).run();
+      await restate(db, d.question, now);
+    }
+    const wanted = demands.filter((d) => !unwanted.has(d));
+    const gone = taken.results.filter((q) => !wanted.some((d) => d.question === q.id)).map((q) => q.id);
+    if (gone.length) {
+      await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+          WHERE id IN (SELECT value FROM json_each(?)) AND lease = ?`).bind(JSON.stringify(gone), lease).run();
+    }
+    for (const d of wanted) {
+      const p = producerOf(d.producer);
+      if (p.on_lease) await p.on_lease(env, d, now);
+    }
+    const questions = taken.results.filter((q) => !gone.includes(q.id))
+      .sort((a, b) => (a.due_at < b.due_at ? -1 : a.due_at > b.due_at ? 1 : a.id < b.id ? -1 : 1))
+      .map((q) => ({ question: q.id, verb: q.verb, request: JSON.parse(q.request), due_at: q.due_at,
+        demands: wanted.filter((d) => d.question === q.id).map(({ producer, ref, payload }) => ({ producer, ref, payload })) }));
+    return questions.length ? { lease, lease_ms, questions } : null;
+  }
+
   /// A LEASE KEPT while its witness is still at it, or given back.
   async function renew(env, device, lease, now = Date.now()) {
     const q = await env.LIBRARY.prepare("SELECT verb FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
@@ -200,9 +253,15 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   /// EVERYTHING A WITNESS HOLDS goes back: one that asks for work again is
   /// working on nothing (worker/verify.js, asking ahead).
   async function releaseAll(env, device, now = Date.now()) {
-    await env.LIBRARY.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?")
-      .bind(device, iso(now)).run();
+    await releaseAllOf(env, device, now).run();
   }
+  /// …AS ONE STATEMENT, and the head of a witness's order as another, for a
+  /// caller to read in its own batch: an ask is then one round trip, not five.
+  const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
+    "UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?").bind(device, iso(now));
+  const headOf = (env, w, engine, now = Date.now()) => env.LIBRARY.prepare(eligibleSql(w.official)).bind(...eligibleArgs(w, engine, iso(now)));
+  /// WHETHER A HEAD GOES IN A PACK, or alone (`next`).
+  const packable = (q) => !q.waits && !!(verbs[q.verb] || {}).pack;
 
   /// A WITNESS ANSWERS, under its lease. `w`: { device, owner, net, official }.
   /// `counts`, `lanes` and `compute_ms` are what the answer cost and on how many
@@ -212,8 +271,23 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     const q = await env.LIBRARY.prepare("SELECT * FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
       .bind(lease, w.device, iso(now)).first();
     if (!q) return { taken: false };
-    await record(env, q, w, a, now);
+    await recordMany(env, w, [{ q, a }], now);
     return { taken: true };
+  }
+
+  /// A PACK'S ANSWERS, together: those whose question the pack still holds are
+  /// recorded and settled in a few round trips, whatever their number; `done`
+  /// gives back the rest of the pack. Returns the questions taken.
+  async function answerPack(env, w, { lease, engine, answers, done = false }, now = Date.now()) {
+    const db = env.LIBRARY;
+    const { results: held } = await db.prepare(
+      "SELECT * FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ? AND id IN (SELECT value FROM json_each(?))")
+      .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question))).all();
+    const byId = new Map(held.map((q) => [q.id, q]));
+    const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
+    if (items.length) await recordMany(env, w, items, now);
+    if (done) await release(env, w.device, lease);
+    return { taken: items.map((x) => x.q.id) };
   }
 
   /// THE OFFICIAL MACHINES ANSWER WITHOUT A LEASE: they are trusted, and what they
@@ -222,78 +296,82 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   async function answerOfficial(env, w, { question, ...a }, now = Date.now()) {
     const q = await env.LIBRARY.prepare("SELECT * FROM questions WHERE id = ?").bind(question).first();
     if (!q) return null;
-    await record(env, q, { ...w, official: true }, a, now);
+    await recordMany(env, { ...w, official: true }, [{ q, a }], now);
     return (await env.LIBRARY.prepare("SELECT state FROM questions WHERE id = ?").bind(question).first()).state;
   }
 
-  async function record(env, q, w, { engine, result, work, compute_ms = null, counts = null, lanes = null }, now) {
-    const db = env.LIBRARY, at = iso(now);
-    const c = verbs[q.verb].canon(result, work);
-    const official = w.official ? 1 : 0;
-    const writes = [
-      db.prepare(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(q.id, engine, w.device, w.owner || w.device, w.net || "", official, c, JSON.stringify(result), work, compute_ms,
-          counts ? JSON.stringify(counts) : null, lanes, at),
-    ];
+  /// ONE WITNESS'S ANSWERS `[{ q, a }]`, all of one engine: written in one round
+  /// trip, then settled together (`settleMany`).
+  async function recordMany(env, w, items, now) {
+    const db = env.LIBRARY, at = iso(now), official = w.official ? 1 : 0, engine = items[0].a.engine;
+    const writes = items.map(({ q, a }) => db.prepare(
+      `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
+        a.work, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md §"Contribution").
+      const ms = items.reduce((t, { a }) => t + (a.compute_ms || 0), 0);
       writes.push(
-        db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?").bind(compute_ms || 0, at, w.device),
-        db.prepare(`INSERT INTO verifier_hours (verifier, hour, tasks, ms) VALUES (?, ?, 1, ?)
-                    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = tasks + 1, ms = ms + excluded.ms`)
-          .bind(w.device, at.slice(0, 13), compute_ms || 0));
+        db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?").bind(ms, at, w.device),
+        db.prepare(`INSERT INTO verifier_hours (verifier, hour, tasks, ms) VALUES (?, ?, ?, ?)
+                    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = tasks + excluded.tasks, ms = ms + excluded.ms`)
+          .bind(w.device, at.slice(0, 13), items.length, ms));
     }
     await db.batch(writes);
-    for (const d of await liveDemands(db, q.id)) {
-      const p = producerOf(d.producer);
-      if (p.on_answer) {
-        await p.on_answer(env, { ...d, payload: JSON.parse(d.payload) },
-          { question: q.id, device: w.device, net: w.net || "", engine, result, work, official: !!official, at });
-      }
-    }
-    await settle(env, q.id, engine, now);
-    // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED: the answered question
-    // heads every witness's order, so freed before it became a fact it was
-    // taken at once and answered again for nothing.
-    await db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ? AND leased_to = ?").bind(q.id, w.device).run();
+    const answered = new Map(items.map(({ q, a }) => [q.id,
+      { question: q.id, device: w.device, net: w.net || "", engine: a.engine, result: a.result, work: a.work, official: !!official, at }]));
+    const ids = JSON.stringify([...answered.keys()]);
+    // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED, in the settling's own
+    // write: the answered question heads every witness's order, so freed before
+    // it became a fact it was taken at once and answered again for nothing.
+    await settleMany(env, [...answered.keys()], engine, now, { answered, after: [
+      db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+                   WHERE id IN (SELECT value FROM json_each(?)) AND leased_to = ?`).bind(ids, w.device)] });
   }
 
   /// WHAT THE ANSWERS NOW MAKE OF A QUESTION (§"States").
   async function settle(env, id, engine, now) {
-    const db = env.LIBRARY;
-    const q = await db.prepare("SELECT * FROM questions WHERE id = ?").bind(id).first();
-    const all = (await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 ORDER BY id").bind(id).all()).results;
-    const served = all.filter((a) => a.engine === engine);
-    const officialSays = served.filter((a) => a.official).at(-1);
+    await settleMany(env, [id], engine, now);
+  }
 
-    if (officialSays) {
-      // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
-      // volunteers who gave its bits are credited; those it disproves on its own
-      // engine are refused — unless the question was not deterministic.
-      // BITS ARE THE WITNESS: a volunteer of any engine that gave their bits
-      // agreed; a refusal needs the same engine, since another may differ honestly.
-      const agree = independent(all.filter((a) => !a.official && a.canon === officialSays.canon));
-      const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon);
-      const moved = q.canon !== null && q.canon !== officialSays.canon;
-      // A DISPUTE THE OFFICIAL MACHINES SIDE WITH NOBODY IN is not a liar found:
-      // every answer differs from every other, theirs too, and that is an engine
-      // whose answer is not deterministic. Nobody is refused; the watchdog says so.
-      const odd = q.state === "nondeterministic" || (q.state === "disputed" && !agree.length);
-      await credit(db, agree, now);
-      await db.prepare("UPDATE questions SET state = 'fact', canon = ?, fact_engine = ?, fact_at = ?, odd = ? WHERE id = ?")
-        .bind(officialSays.canon, engine, iso(now), odd ? 1 : 0, id).run();
-      // ONLY A DISPUTE OR A SPOT CHECK REFUSES: an open question past its deadline
-      // that they answered differently is measured again, its answer unpaid —
-      // one witness against them is not yet a witness found lying.
-      if (!odd && (q.state === "disputed" || q.state === "spot")) {
-        for (const a of wrong) await (on_disproved ? on_disproved(env, a) : refuse(env, a.device, now));
+  /// …OF MANY QUESTIONS AT ONCE: read in one round trip, decided here, written in
+  /// one more. Every write is guarded — a state moves only from `open`, an answer
+  /// is credited only once — so two witnesses settling one question at the same
+  /// moment cannot both count. `answered` tells each question's producers of the
+  /// answer just recorded (`on_answer`); `after` is written with the rest.
+  async function settleMany(env, ids, engine, now, { answered = null, after = [] } = {}) {
+    const db = env.LIBRARY, list = JSON.stringify([...new Set(ids)]);
+    const [qs, as, ds] = await db.batch([
+      db.prepare("SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?))").bind(list),
+      db.prepare("SELECT * FROM answers WHERE question IN (SELECT value FROM json_each(?)) AND void = 0 ORDER BY id").bind(list),
+      db.prepare("SELECT * FROM demands WHERE question IN (SELECT value FROM json_each(?)) AND state = 'live'").bind(list),
+    ]);
+    const writes = [], later = [];
+    for (const q of qs.results) {
+      const demands = ds.results.filter((d) => d.question === q.id);
+      const told = answered && answered.get(q.id);
+      if (told) {
+        for (const d of demands) {
+          const p = producerOf(d.producer);
+          if (p.on_answer) await p.on_answer(env, { ...d, payload: JSON.parse(d.payload) }, told);
+        }
       }
-      if (q.state !== "spot" || moved) await deliver(env, { ...q, canon: officialSays.canon }, now, officialSays);
-      return;
+      const all = as.results.filter((a) => a.question === q.id);
+      const served = all.filter((a) => a.engine === engine);
+      const officialSays = served.filter((a) => a.official).at(-1);
+      if (officialSays) await settleOfficial(env, q, all, served, officialSays, engine, now);
+      else if (q.state === "open") decide(env, q, all, served, demands, engine, now, writes, later);
     }
-    if (q.state !== "open") return;
+    writes.push(...after);
+    if (writes.length) await db.batch(writes);
+    for (const f of later) await f();
+  }
 
+  /// AN OPEN QUESTION'S VOLUNTEER ANSWERS, judged — a fact, the cap reached, or
+  /// still open — its writes added to `writes`.
+  function decide(env, q, all, served, demands, engine, now, writes, later) {
+    const db = env.LIBRARY;
     // A GROUP OF EQUAL ANSWERS holds one of the served engine; an older engine's
     // answer joins one (a release that did not move the bits) and never starts one.
     for (const lead of served) {
@@ -302,11 +380,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       const equal = all.filter((a) => a.canon === lead.canon);
       const group = independent([...equal.filter((a) => a.engine === engine), ...equal.filter((a) => a.engine !== engine)]);
       if (group.length < threshold) continue;
-      await credit(db, group, now);
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
-      await db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ?")
-        .bind(state, lead.canon, engine, iso(now), id).run();
-      await deliver(env, { ...q, canon: lead.canon }, now, lead);
+      writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
+        .bind(state, lead.canon, engine, iso(now), q.id));
+      writes.push(...creditWrites(db, group, now));
+      deliverPlan(env, { ...q, canon: lead.canon }, now, lead, demands, writes, later);
       return;
     }
     // ONLY WITNESSES FILL THE CAP: a browser claimed by an owner after it took
@@ -314,9 +392,35 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     const cap = verbs[q.verb].cap, witnesses = independent(served);
     if (witnesses.length >= cap) {
       const distinct = new Set(witnesses.map((a) => a.canon)).size === witnesses.length;
-      await db.prepare("UPDATE questions SET state = ? WHERE id = ? AND state = 'open'")
-        .bind(distinct && witnesses.length >= 3 ? "nondeterministic" : "disputed", id).run();
+      writes.push(db.prepare("UPDATE questions SET state = ? WHERE id = ? AND state = 'open'")
+        .bind(distinct && witnesses.length >= 3 ? "nondeterministic" : "disputed", q.id));
     }
+  }
+
+  async function settleOfficial(env, q, all, served, officialSays, engine, now) {
+    const db = env.LIBRARY, id = q.id;
+    // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
+    // volunteers who gave its bits are credited; those it disproves on its own
+    // engine are refused — unless the question was not deterministic.
+    // BITS ARE THE WITNESS: a volunteer of any engine that gave their bits
+    // agreed; a refusal needs the same engine, since another may differ honestly.
+    const agree = independent(all.filter((a) => !a.official && a.canon === officialSays.canon));
+    const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon);
+    const moved = q.canon !== null && q.canon !== officialSays.canon;
+    // A DISPUTE THE OFFICIAL MACHINES SIDE WITH NOBODY IN is not a liar found:
+    // every answer differs from every other, theirs too, and that is an engine
+    // whose answer is not deterministic. Nobody is refused; the watchdog says so.
+    const odd = q.state === "nondeterministic" || (q.state === "disputed" && !agree.length);
+    await credit(db, agree, now);
+    await db.prepare("UPDATE questions SET state = 'fact', canon = ?, fact_engine = ?, fact_at = ?, odd = ? WHERE id = ?")
+      .bind(officialSays.canon, engine, iso(now), odd ? 1 : 0, id).run();
+    // ONLY A DISPUTE OR A SPOT CHECK REFUSES: an open question past its deadline
+    // that they answered differently is measured again, its answer unpaid —
+    // one witness against them is not yet a witness found lying.
+    if (!odd && (q.state === "disputed" || q.state === "spot")) {
+      for (const a of wrong) await (on_disproved ? on_disproved(env, a) : refuse(env, a.device, now));
+    }
+    if (q.state !== "spot" || moved) await deliver(env, { ...q, canon: officialSays.canon }, now, officialSays);
   }
 
   /// THE ANSWERS THAT COUNT AS WITNESSES, in the order they came: no owner and no
@@ -334,20 +438,24 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
 
   /// ONLY A FACT SCORES, once per answer: its work to its device, in its hour,
   /// and one fact toward forgiving a refusal (docs/BOARD.md §"Contribution").
-  async function credit(db, answers, now) {
-    const due = answers.filter((a) => !a.official && !a.credited);
-    if (!due.length) return;
-    const hour = iso(now).slice(0, 13);
-    await db.batch(due.flatMap((a) => [
-      db.prepare("UPDATE answers SET credited = 1 WHERE id = ?").bind(a.id),
-      db.prepare("UPDATE verifiers SET work = work + ?, agreed = agreed + 1 WHERE id = ?").bind(a.work, a.device),
+  /// Each write holds only while the answer is still unpaid, so a fact settled
+  /// twice at once pays once.
+  function creditWrites(db, answers, now) {
+    const hour = iso(now).slice(0, 13), unpaid = "EXISTS (SELECT 1 FROM answers WHERE id = ? AND credited = 0)";
+    return answers.filter((a) => !a.official && !a.credited).flatMap((a) => [
+      db.prepare(`UPDATE verifiers SET work = work + ?, agreed = agreed + 1 WHERE id = ? AND ${unpaid}`).bind(a.work, a.device, a.id),
       db.prepare(`UPDATE verifiers SET
           refusals = CASE WHEN refusals > 0 AND clean + 1 >= refusals * ? THEN refusals - 1 ELSE refusals END,
-          clean = CASE WHEN refusals = 0 OR clean + 1 >= refusals * ? THEN 0 ELSE clean + 1 END WHERE id = ?`)
-        .bind(FACTS_PER_REFUSAL_FORGIVEN, FACTS_PER_REFUSAL_FORGIVEN, a.device),
-      db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
-                  ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(a.device, hour, a.work),
-    ]));
+          clean = CASE WHEN refusals = 0 OR clean + 1 >= refusals * ? THEN 0 ELSE clean + 1 END WHERE id = ? AND ${unpaid}`)
+        .bind(FACTS_PER_REFUSAL_FORGIVEN, FACTS_PER_REFUSAL_FORGIVEN, a.device, a.id),
+      db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) SELECT ?, ?, ? WHERE ${unpaid}
+                  ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(a.device, hour, a.work, a.id),
+      db.prepare("UPDATE answers SET credited = 1 WHERE id = ?").bind(a.id),
+    ]);
+  }
+  async function credit(db, answers, now) {
+    const writes = creditWrites(db, answers, now);
+    if (writes.length) await db.batch(writes);
   }
 
   /// EVERY LIVE DEMAND IS TOLD THE FACT, once.
@@ -355,12 +463,24 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     const db = env.LIBRARY;
     const answerOf = by || await db.prepare("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1")
       .bind(q.id, q.canon).first();
+    const writes = [], later = [];
+    deliverPlan(env, q, now, answerOf, await liveDemands(db, q.id), writes, later);
+    if (writes.length) await db.batch(writes);
+    for (const f of later) await f();
+  }
+  /// …AS WRITES where the producer states its own (`on_fact_writes`), so a whole
+  /// pack's facts land in one round trip; a producer that must call out is told
+  /// after them (`later`).
+  function deliverPlan(env, q, now, answerOf, demands, writes, later) {
+    const db = env.LIBRARY;
     const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon,
       result: answerOf ? JSON.parse(answerOf.result) : null, work: answerOf ? answerOf.work : 0,
       engine: answerOf ? answerOf.engine : null, official: !!(answerOf && answerOf.official) };
-    for (const d of await liveDemands(db, q.id)) {
-      await producerOf(d.producer).on_fact(env, { ...d, payload: JSON.parse(d.payload) }, fact);
-      await db.prepare("UPDATE demands SET state = 'served', served_at = ? WHERE producer = ? AND ref = ?").bind(iso(now), d.producer, d.ref).run();
+    for (const d of demands) {
+      const p = producerOf(d.producer), told = { ...d, payload: JSON.parse(d.payload) };
+      const served = db.prepare("UPDATE demands SET state = 'served', served_at = ? WHERE producer = ? AND ref = ?").bind(iso(now), d.producer, d.ref);
+      if (p.on_fact_writes) writes.push(...p.on_fact_writes(env, told, fact), served);
+      else later.push(async () => { await p.on_fact(env, told, fact); await served.run(); });
     }
   }
 
@@ -457,7 +577,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, renew, release, releaseAll, answer, answerOfficial, claim, refuse, settle, audit };
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has
@@ -471,8 +591,8 @@ export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals |
 /// owner, nor its network — on the served engine, with the cores a first answer
 /// needs at the question's age; the official machines take what is past its
 /// deadline and what only they may settle.
-function eligibleSql(official) {
-  return `SELECT q.id, q.verb, q.request, q.state, q.due_at FROM questions q
+function eligibleFrom(official) {
+  return `FROM questions q
     WHERE ${official ? `((q.state = 'open' AND q.due_at < ?1) OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
       : "q.state = 'open'"}
       AND (q.lease_until IS NULL OR q.lease_until < ?1)
@@ -481,8 +601,11 @@ function eligibleSql(official) {
                      WHERE json_extract(t.value, '$.after_ms') <= (julianday(?1) - julianday(q.opened_at)) * 86400000.0))
       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?4
             AND (a.device IN (SELECT value FROM json_each(?5)) OR a.owner = ?6 OR (?7 != '' AND a.net = ?7)))
-      AND (?8 IS NULL OR q.due_at < ?8)
-    ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1`;
+      AND (?8 IS NULL OR q.due_at < ?8)`;
+}
+const ORDER = "ORDER BY q.waits DESC, q.due_at, q.id";
+function eligibleSql(official) {
+  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${eligibleFrom(official)} ${ORDER} LIMIT 1`;
 }
 function eligibleArgs(w, engine, at) {
   return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null];

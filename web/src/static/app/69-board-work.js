@@ -254,22 +254,43 @@ const postBoardWork = (path, body) => fetch(path, {
   signal: boardSignal(),
 }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
-/// THE LEASE THIS PAGE HOLDS, given back on every way out that is not an
-/// answer — and on the page's own exit, by beacon — so neither the order nor
-/// this computer waits out a lease nobody is working (worker/verify.js
-/// `release`). Every release reloads every computing page, which made that
-/// wait everyone's at once.
-let heldLease = null;
+/// WHAT THIS PAGE HOLDS, given back on every way out that is not an answer —
+/// and on the page's own exit, by beacon — so neither the work nor this computer
+/// waits out a lease nobody is working (worker/verify.js `release`). A riven gain
+/// is held alone (`heldLease`); board rows come in a PACK (`heldPack`), whose
+/// answers go back together (`sendAnswers`) every `ANSWER_EVERY_MS` and as it
+/// ends, the last send giving back the rows it did not reach.
+let heldLease = null, heldPack = null;
 const releaseLease = (h, beacon) => {
   const path = h.code ? `/api/appraise/${encodeURIComponent(h.code)}/renew` : "/api/board/release";
   const body = { lease: h.lease, verifier: h.verifier, ...(h.code ? { release: true } : {}) };
   if (beacon && navigator.sendBeacon) navigator.sendBeacon(path, JSON.stringify(body));
   else postBoardWork(path, body);
 };
+const ANSWER_EVERY_MS = 30_000;
+/// A PACK'S ANSWERS SO FAR, sent; `done` gives back the rest of it. Its rows
+/// leave the "not sent" state in this browser's list either way: a send that
+/// failed is the server's to say (`/api/board/mine`), and it says `gone`.
+function sendAnswers(p, done, beacon = false) {
+  const body = { lease: p.lease, verifier: p.verifier, engine: ENGINE_ID, done, answers: p.unsent.map(({ key: _k, ...a }) => a) };
+  const keys = p.unsent.map((a) => a.key);
+  p.unsent = [];
+  p.sentAt = Date.now();
+  if (beacon && navigator.sendBeacon) navigator.sendBeacon("/api/board/answers", JSON.stringify(body));
+  const sent = beacon && navigator.sendBeacon ? Promise.resolve(true) : postBoardWork("/api/board/answers", body).then((r) => !!(r && r.ok));
+  return sent.then((ok) => { computeSent(keys); if (ok && keys.length) { devicePointsAt = 0; loadDevicePoints(); } return ok; });
+}
+async function endPack() {
+  const p = heldPack;
+  heldPack = null;
+  if (p) await sendAnswers(p, true);
+}
 function giveBack(beacon = false) {
-  const h = heldLease;
+  const h = heldLease, p = heldPack;
   heldLease = null;
+  heldPack = null;
   if (h) releaseLease(h, beacon);
+  if (p) sendAnswers(p, true, beacon);
 }
 addEventListener("pagehide", () => { giveBack(true); giveBackAhead(true); });
 /// A PAGE LEFT OPEN COMPUTES, in front or not: a hidden page's timers are slowed
@@ -284,39 +305,47 @@ let computeFrozen = false, computeSlept = !!document.wasDiscarded, computeWake =
 document.addEventListener("freeze", () => { computeFrozen = true; giveBack(true); giveBackAhead(true); });
 document.addEventListener("resume", () => { computeSlept = true; if (computeWake) computeWake(); computeRedraw(); });
 
-/// THE NEXT TASKS, ASKED BEFORE THIS ONE ENDS (worker/verify.js, asking ahead):
-/// once a task is `AHEAD_AT` done, so the next starts the moment it ends and no
-/// core waits on a round trip and the server's choosing. As many as the server
-/// says (`ahead`, its `TASKS_AHEAD`) and no more, asked once per task.
+/// THE NEXT WORK, ASKED BEFORE THIS ENDS (worker/verify.js, asking ahead): once
+/// what is left would take under `REFILL_MS` — the pack's rows left at this
+/// computer's pace, or `AHEAD_AT` of a search past the last one's time — so the
+/// next starts the moment this ends and no core waits on a round trip. Once per
+/// pack or search; the server holds a computer to `PACKS_HELD`.
 const AHEAD_AT = 0.8;
-let tasksAhead = 0;
-let aheadAsks = [], aheadAskedFor = null;
-function askAhead(id, task) {
-  if (aheadAskedFor === task || !tasksAhead || !boardVerifyOn() || computeHeld()) return;
-  aheadAskedFor = task;
-  const c = computeConsent();
-  const at = Date.now();
-  for (let i = aheadAsks.length; i < tasksAhead; i++) {
-    const entry = { held: null };
-    entry.ask = postBoardWork("/api/board/work",
-      { verifier: id, engine: ENGINE_ID, protocol: 6, consent: { v: c.v, at: c.at }, lanes: communityLanes(), ahead: true })
-      .then((r) => {
-        const w = r && r.work;
-        entry.held = w ? { code: w.kind === "riven_gain" ? w.code : null, lease: w.lease, verifier: id } : null;
-        return r && { ...r, asked_at: at };
-      });
-    aheadAsks.push(entry);
-  }
+const REFILL_MS = 15_000;
+/// A ROW'S WALL TIME HERE, rests included, smoothed — the `pace_ms` a pack is sized by.
+let boardPaceMs = 0;
+let aheadAsk = null, aheadHeld = null;
+function askAhead(id) {
+  if (aheadAsk || !boardVerifyOn() || computeHeld()) return;
+  aheadAsk = askWork(id, true).then((r) => {
+    aheadHeld = r && r.pack ? { lease: r.pack.lease, verifier: id }
+      : r && r.work ? { code: r.work.kind === "riven_gain" ? r.work.code : null, lease: r.work.lease, verifier: id } : null;
+    return r;
+  });
 }
-/// …GIVEN BACK on every way out that does not start them.
+/// …GIVEN BACK on every way out that does not start it.
 function giveBackAhead(beacon = false) {
-  const all = aheadAsks;
-  aheadAsks = [];
-  all.forEach((e) => { if (e.held) releaseLease(e.held, beacon); });
+  const h = aheadHeld;
+  aheadAsk = null;
+  aheadHeld = null;
+  if (h) releaseLease(h, beacon);
 }
-/// A LEASE RUNS `LEASE_MS` (30 min) on the server; past this share of it the
-/// fight stops and the lease is given back, since an answer after it is dropped.
-const LEASE_SAFE_MS = 27 * 60_000;
+/// ONE ASK FOR WORK, its answer heard: a newer engine or release, a refusal.
+async function askWork(id, ahead = false) {
+  const c = computeConsent();
+  if (!c) return null;
+  const at = Date.now();
+  const ask = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, consent: { v: c.v, at: c.at },
+    lanes: communityLanes(), ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}) });
+  if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
+  if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
+  if (ask && (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil)) {
+    boardBanned = !!ask.banned; boardBannedUntil = ask.until || 0; computeRedraw(); computeChrome();
+  }
+  return ask && { ...ask, asked_at: at };
+}
+/// A PACK STOPS this long before its lease ends: an answer after it is dropped.
+const LEASE_MARGIN_MS = 60_000;
 
 /// A NEWER ENGINE IS OUT (`stale`): this page is given no more work, so waiting
 /// helps nobody and it reloads itself — the build kept as a language switch
@@ -465,7 +494,7 @@ async function rivenGainOnce(w, id) {
     computeBeats += 1;
     computeProgress(s.sims_done || 0, 0, s);
     // A SEARCH'S LENGTH IS NOT KNOWN AHEAD, so the last one's stands for it.
-    if (rivenTookMs && performance.now() - began > AHEAD_AT * rivenTookMs) askAhead(id, w.lease);
+    if (rivenTookMs && performance.now() - began > AHEAD_AT * rivenTookMs) askAhead(id);
     await new Promise((r) => setTimeout(r, 1000));
   }
   rivenTookMs = performance.now() - began;
@@ -490,51 +519,60 @@ async function rivenGainOnce(w, id) {
   return true;
 }
 
-/// ONE ORDER, fought here and answered — `true` when there was one. The answer
-/// never says whether it agreed; a lease it does not answer is given back.
+/// ONE ROW, fought here — `true` when there was one. A row comes from the pack
+/// this page holds, or a new pack is asked for (the one asked ahead first); a
+/// question that goes alone (a riven gain) runs as itself. The answer never
+/// says whether it agreed; whatever the pack did not reach is given back.
 async function workOnce() {
   computeFrozen = false;
-  if (!boardVerifyOn() || computeHeld()) { giveBackAhead(); return false; }
+  if (!boardVerifyOn() || computeHeld()) { giveBack(); giveBackAhead(); return false; }
   const id = verifierId();
   if (!id) return false;
   await claimDevice(id);
-  const c = computeConsent();
-  // THE FIRST TASK ASKED AHEAD that holds one, when there is one; else asked now.
-  let pre = null;
-  while (aheadAsks.length && !(pre && pre.work)) pre = await aheadAsks.shift().ask;
-  const ask = pre && pre.work ? pre : await postBoardWork("/api/board/work",
-    { verifier: id, engine: ENGINE_ID, protocol: 6, consent: { v: c.v, at: c.at }, lanes: communityLanes() });
-  if (ask && Number.isInteger(ask.ahead) && ask.ahead >= 0) tasksAhead = ask.ahead;
-  if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
-  if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
-  if (ask && (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil)) {
-    boardBanned = !!ask.banned; boardBannedUntil = ask.until || 0; computeRedraw(); computeChrome();
+  if (!heldPack || heldPack.next >= heldPack.tasks.length || Date.now() >= heldPack.until) {
+    await endPack();
+    let ask = null;
+    if (aheadAsk) { ask = await aheadAsk; aheadAsk = null; aheadHeld = null; }
+    if (!(ask && (ask.pack || ask.work))) ask = await askWork(id);
+    maybeReloadForRelease();
+    if (ask && ask.work && ask.work.kind === "riven_gain") return rivenGainOnce(ask.work, id);
+    if (!(ask && ask.pack)) return false;
+    heldPack = { lease: ask.pack.lease, verifier: id, tasks: ask.pack.tasks, next: 0, unsent: [], sentAt: Date.now(),
+      until: ask.asked_at + ask.pack.lease_ms - LEASE_MARGIN_MS };
   }
-  maybeReloadForRelease();
-  const w = ask && ask.work;
-  if (!w) return false;
-  if (w.kind === "riven_gain") return rivenGainOnce(w, id);
-  heldLease = { lease: w.lease, verifier: id };
-  const until = (ask.asked_at || Date.now()) + LEASE_SAFE_MS;
-  const order = await api("/api/board/order", { record: w.record, ruler: w.ruler, mode: w.mode }, null, { community: true });
-  if (!order || !order.ok) { giveBack(); return true; }
-  computeStart({ kind: "board", weapon: w.record.weapon, ruler: w.ruler, mode: w.mode, identity: w.identity, record: w.record });
+  return packRowOnce(id, heldPack);
+}
+async function packRowOnce(id, p) {
+  const t = p.tasks[p.next++];
+  const live = () => boardVerifyOn() && !computeHeld() && !computeFrozen && Date.now() < p.until && heldPack === p;
+  const refill = () => { if ((p.tasks.length - p.next) * boardPaceMs <= REFILL_MS) askAhead(id); };
+  const order = await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
+  if (!order || !order.ok) return true;
+  computeStart({ kind: "board", weapon: t.record.weapon, ruler: t.ruler, mode: t.mode, identity: t.identity, record: t.record });
   const began = Date.now();
-  const s = await measureRow(order.request, w.ruler, () => boardVerifyOn() && !computeHeld() && !computeFrozen && Date.now() < until, (done, total) => {
+  const s = await measureRow(order.request, t.ruler, live, (done, total) => {
     computeBeats += 1;
     computeProgress(done, total);
-    if (total && done >= AHEAD_AT * total) askAhead(id, w.lease);
+    if (total && done >= AHEAD_AT * total) refill();
   });
-  if (!s) { giveBack(); computeEnd(null); return true; }
-  const sent = await postBoardWork("/api/board/verify",
-    { lease: w.lease, verifier: id, engine: ENGINE_ID, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms,
-      counts: s.counts, lanes: s.lanes });
-  if (sent) { heldLease = null; computeFinished += 1; } else giveBack();
-  computeEnd(sent ? { ms: Date.now() - began, cpu_ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric } : null);
-  if (!sent) return true;
+  if (!s) {
+    computeEnd(null);
+    // A ROW THE ENGINE REFUSED is left to the pack's end; a pack that may no
+    // longer run — turned off, held, frozen, out of time — ends here.
+    if (!live() && heldPack === p) await endPack();
+    return true;
+  }
+  const ms = Date.now() - began;
+  boardPaceMs = boardPaceMs ? boardPaceMs * 0.7 + ms * 0.3 : ms;
+  p.unsent.push({ key: taskKey(t), question: t.question, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms,
+    counts: s.counts, lanes: s.lanes });
+  computeFinished += 1;
+  computeEnd({ ms, cpu_ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric, unsent: true });
   try { localStorage.setItem(VERIFIED_KEY, String(boardVerifiedCount() + 1)); } catch (_) { /* private mode */ }
   renderBoardConsent();
-  loadDevicePoints();
+  refill();
+  if (p.next >= p.tasks.length) await endPack();
+  else if (Date.now() - p.sentAt >= ANSWER_EVERY_MS) await sendAnswers(p, false);
   return true;
 }
 

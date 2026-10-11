@@ -33,7 +33,7 @@ const d1 = (file) => {
     run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
   });
   return { raw: db, prepare: (sql) => stmt(sql),
-    batch: async (ss) => ss.map((s) => (/^\s*select/i.test(s.sql) ? { results: db.prepare(s.sql).all(...s.args) }
+    batch: async (ss) => ss.map((s) => (/^\s*select|\breturning\b/i.test(s.sql) ? { results: db.prepare(s.sql).all(...s.args) }
       : { meta: { changes: Number(db.prepare(s.sql).run(...s.args).changes) } })) };
 };
 const LIBRARY = d1("schema.sql"), ACCOUNTS = d1("accounts.sql");
@@ -49,7 +49,9 @@ const appraise = async (method, path, body, headers = {}) => {
 const work = async (verifier, engine = "e1", lanes = 8, ip = "") => {
   const r = await verifyRoute(new Request("https://x/api/board/work", { method: "POST", headers: ip ? { "cf-connecting-ip": ip } : {},
     body: JSON.stringify({ verifier, engine, protocol: PROTOCOL, consent: { v: 1, at: "2026-10-08T08:00:00.000Z" }, lanes }) }), env, "/api/board/work");
-  return (await r.json()).work;
+  // A RIVEN GAIN GOES ALONE; a board row comes as the first of a pack.
+  const j = await r.json();
+  return j.work || (j.pack ? { ...j.pack.tasks[0], lease: j.pack.lease } : null);
 };
 const bot = { authorization: "Bearer relay" };
 const riven = { bonuses: [{ id: "critical_damage", roll: 1.1 }, { id: "multishot", roll: 1.1 }], malus: null, rank: 8 };

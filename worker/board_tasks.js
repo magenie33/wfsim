@@ -26,24 +26,33 @@ const owedSql = "SELECT 1 AS x FROM queue WHERE build_id = ? AND ruler = ? AND m
 const boardProducer = {
   // A ROW NOBODY OWES ANY MORE — the scorer measured it — is withdrawn where it is found.
   still_wanted: async (env, d) => !!(await env.LIBRARY.prepare(owedSql).bind(d.payload.identity, d.payload.ruler, d.payload.mode).first()),
+  // …A WHOLE PACK'S ROWS IN ONE READ: the refs still owed.
+  wanted_many: async (env, ds) => {
+    const { results } = await env.LIBRARY.prepare(
+      `SELECT json_extract(k.value, '$[3]') AS ref FROM json_each(?) k
+        WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = json_extract(k.value, '$[0]')
+                        AND q.ruler = json_extract(k.value, '$[1]') AND q.mode = json_extract(k.value, '$[2]'))`)
+      .bind(JSON.stringify(ds.map((d) => [d.payload.identity, d.payload.ruler, d.payload.mode, d.ref]))).all();
+    return new Set(results.map((r) => r.ref));
+  },
   // THE CLIENTS' FACT IS THE BOARD'S, as the scorer's is: a row still owed — a
   // rescore asked for it again — takes the new number over the old, and one no
   // longer owed keeps the fact it has. The official machines' own number is
   // written by the scorer (`ship_facts.sh`), which owns `scores` for its rows;
   // one delivered again — a refresh on the engine that made it — only says the
   // row was measured now, or it is asked again every hour.
-  on_fact: async (env, d, fact) => {
-    if (!fact.result) return;
+  // Stated as writes (worker/tasks.js `deliverPlan`), so a pack's facts land in one round trip.
+  on_fact_writes: (env, d, fact) => {
+    if (!fact.result) return [];
     const { identity, ruler, mode } = d.payload, at = iso(Date.now()), db = env.LIBRARY;
     if (fact.official) {
-      await db.batch([
+      return [
         db.prepare("UPDATE scores SET finished_at = ? WHERE identity = ? AND ruler = ? AND mode = ? AND score = ? AND finished_at < ?")
           .bind(at, identity, ruler, mode, fact.result.score, at),
         db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(identity, ruler, mode),
-      ]);
-      return;
+      ];
     }
-    await db.batch([
+    return [
       db.prepare(
         `INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
@@ -52,7 +61,7 @@ const boardProducer = {
          WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
         .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at),
       db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(identity, ruler, mode),
-    ]);
+    ];
   },
   // A FACT WITHDRAWN — a witness to it refused — is the clients' number taken
   // off the board and the row owed again, in the batch that asked for it.
@@ -74,6 +83,9 @@ export function boardWork(leased) {
   const d = leased.demands[0];
   return { lease: leased.lease, identity: d.payload.identity, record: leased.request.record, ruler: leased.request.ruler, mode: leased.request.mode };
 }
+/// …ONE ROW OF A PACK, named by its question, the pack's lease being the pack's.
+export const boardPackTask = (q) => ({ question: q.question, identity: q.demands[0].payload.identity,
+  record: q.request.record, ruler: q.request.ruler, mode: q.request.mode });
 
 /// WHICH PRODUCER ASKS FOR A ROW: a new build's — an `arrivals-` batch's row
 /// whose build came that day or the one before — a `refresh-` batch's, or a

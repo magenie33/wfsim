@@ -6,10 +6,11 @@
 // owners on different networks make a fact (worker/tasks.js). Nothing here
 // computes a number, and nothing here decides an order: the factory does.
 //
-//   POST /api/board/work    { verifier, engine, protocol, consent, lanes, ahead? }   → { work: { lease, identity, record, ruler, mode } | null, stale? }
-//        — or `work: { kind: "riven_gain", lease, code, weapon, ruler, request, context }`
-//        (worker/appraise.js §"Volunteer work").
-//   POST /api/board/verify  { lease, verifier, engine, score, metric, work, compute_ms, counts?, lanes? } → { ok }
+//   POST /api/board/work    { verifier, engine, protocol, consent, lanes, pace_ms?, ahead? }
+//        → { pack: { lease, lease_ms, tasks: [{ question, identity, record, ruler, mode }] } | null, work: null }
+//        — or, for a question that goes alone, `work: { kind: "riven_gain", lease, code, weapon, ruler, request, context }`
+//        (worker/appraise.js §"Volunteer work"), `pack: null`.
+//   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done? } → { ok }
 //   POST /api/board/release { lease, verifier }                                     → { ok }
 //   POST /api/board/mine    { verifier, orders: [{ identity, ruler, mode }] }       → { orders: [{ …, state, at? }] }
 //
@@ -23,7 +24,7 @@
 
 import { witnessOf } from "./tasks.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
-import { facts, workOf } from "./factory.js";
+import { facts, workOf, packTaskOf } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
 
@@ -39,11 +40,12 @@ export const SPOT_SHARE = 0.05;
 /// WHAT A PAGE THAT CAN FILL AN ORDER SENDS. A tab opened before orders existed
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.
-export const PROTOCOL = 6;
+export const PROTOCOL = 7;
 
 const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
 const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
 const LEASE_ID = /^[a-f0-9]{32}$/;
+const QUESTION_ID = /^[a-f0-9]{32}$/;
 const METRIC_ID = /^[a-z_]{1,24}$/;
 const ISO = /^\d{4}-\d\d-\d\dT[\d:.]+Z$/;
 
@@ -82,21 +84,6 @@ export async function servedRelease(env) {
   return out;
 }
 
-/// THE CLIENT, remembered by the id it made and nothing else — written once,
-/// and again only when the day changes. `{ until }` while it is refused: a
-/// refusal is a cool-down (scripts/live_orders.mjs `ban`), lifted here once over.
-async function admit(db, id, now) {
-  const v = await db.prepare("SELECT banned, seen, refused_until FROM verifiers WHERE id = ?").bind(id).first();
-  if (!v) {
-    await db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, ?)").bind(id, day()).run();
-    return { ok: true };
-  }
-  if (v.banned && Date.parse(v.refused_until) > now) return { ok: false, until: v.refused_until };
-  if (v.banned) await db.prepare("UPDATE verifiers SET banned = 0 WHERE id = ?").bind(id).run();
-  if (v.seen !== day()) await db.prepare("UPDATE verifiers SET seen = ? WHERE id = ?").bind(day(), id).run();
-  return { ok: true };
-}
-
 /// THE NETWORK A CLIENT ASKS FROM, as a salted hash of its public address — an
 /// IPv4 address whole, an IPv6 one by its /64 — so a further result never comes
 /// from the network of the one it confirms: two browsers on one desk agreeing
@@ -111,100 +98,150 @@ export async function netOf(request, env) {
 }
 const netsOf = (o) => (o.clients_nets || "").split(",").filter(Boolean);
 
-/// ONE TASK TO RUN, the factory's next for this client — never the number to
-/// agree with.
+/// A PACK IS ABOUT A MINUTE OF A COMPUTER'S WORK: the page reports its pace
+/// (`pace_ms`, its last rows' wall time each) and is handed that many rows, so
+/// the database is asked once a minute a computer, not once a row.
+export const PACK_MS = 60_000;
+export const PACK_MAX = 20;
+/// …A COMPUTER WHOSE PACE IS NOT KNOWN YET is handed this many.
+export const PACK_FIRST = 3;
+/// A PACK IS LEASED TWICE ITS EXPECTED LENGTH, within these bounds, so a page
+/// that vanished without a word holds its rows minutes, not half an hour.
+export const PACK_LEASE_MIN_MS = 5 * 60_000;
+/// HOW MANY PACKS A CLIENT HOLDS AT MOST: the one it computes and the next,
+/// asked as this one ends (`ahead`), so no core waits on a round trip.
+export const PACKS_HELD = 2;
+/// FAIR SHARE: while the open questions are few, a pack is at most their number
+/// over the computers asking — the last rows of a batch go to many computers at
+/// once, never to one fast one while the rest wait. Counted up to this many.
+const FAIR_SCAN = 4000;
+export function packSize(pace_ms, open, asking) {
+  const byPace = pace_ms ? Math.round(PACK_MS / pace_ms) : PACK_FIRST;
+  return Math.max(1, Math.min(PACK_MAX, byPace, Math.floor(open / Math.max(1, asking))));
+}
+export const packLeaseMs = (n, pace_ms) => (pace_ms ? Math.min(LEASE_MS, Math.max(PACK_LEASE_MIN_MS, 2 * n * pace_ms)) : LEASE_MS);
+
+/// THE FACTORY'S NEXT WORK FOR THIS CLIENT — a pack of rows, or one question that
+/// goes alone — never the number to agree with. Everything the ask writes and
+/// reads before choosing is ONE batch: one round trip to the database, which
+/// every computer asking shares.
 async function work(request, env) {
   const { b, err } = await read(request);
   if (err) return err;
   if (!VERIFIER_ID.test(b.verifier || "") || !ENGINE_ID.test(b.engine || "")) return json({ ok: false, error: "bad request" }, 400);
-  await askedNow(env.LIBRARY, b, Date.now());
+  const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier;
+  const asked = askedOf(db, b, now);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
-  if (b.protocol !== PROTOCOL) return json({ ok: true, work: null, stale: true });
+  if (b.protocol !== PROTOCOL) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
   const { engine, release } = await servedRelease(env);
-  if (!engine) return json({ ok: true, work: null });
-  if (b.engine !== engine) return json({ ok: true, work: null, stale: true });
-  const db = env.LIBRARY, now = Date.now();
+  if (!engine) { await asked.run(); return json({ ok: true, work: null, pack: null }); }
+  if (b.engine !== engine) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
   // NO WORK WITHOUT THE READER'S YES — `consent: { v, at }`, the statement they
   // agreed to and when (69-board-work.js `computeConsent`) — kept on the
   // client's row the first time it is seen and whenever it changes.
   const c = b.consent;
-  if (!c || !Number.isInteger(c.v) || c.v < 1 || typeof c.at !== "string" || !ISO.test(c.at)) return json({ ok: true, work: null });
+  if (!c || !Number.isInteger(c.v) || c.v < 1 || typeof c.at !== "string" || !ISO.test(c.at)) {
+    await asked.run();
+    return json({ ok: true, work: null, pack: null });
+  }
+  // A CLIENT THAT ASKS IS WORKING ON NOTHING: one browser computes in one tab
+  // (69-board-work.js, a Web Lock) and asks only between packs, so a lease it
+  // still holds is one its page lost — a crash, a reload, an old page — and is
+  // handed back here rather than waited out. …UNLESS IT ASKS AHEAD, as its pack
+  // ends: it may then hold `PACKS_HELD` and no more, and never a question
+  // someone waits on, which goes to a computer free now (no cores: `lanes` 0).
+  const ahead = b.ahead === true;
+  const lanes = ahead ? 0 : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
+  const pace = Number.isInteger(b.pace_ms) && b.pace_ms >= 100 && b.pace_ms <= LEASE_MS ? b.pace_ms : null;
+  const who = await witnessOf(env, id);
+  const w = { device: id, owner: who.owner, siblings: who.siblings, net: await netOf(request, env), lanes };
+  const f = facts();
+  const [, , , , , held, me, fair, head] = await db.batch([
+    // THE CLIENT, remembered by the id it made and nothing else; its day kept,
+    // and a refusal — a cool-down (scripts/live_orders.mjs `ban`) — lifted once over.
+    db.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, ?)").bind(id, day()),
+    asked,
+    db.prepare("UPDATE verifiers SET consent_v = ?, consent_at = ? WHERE id = ? AND (consent_v IS NOT ? OR consent_at IS NOT ?)")
+      .bind(c.v, c.at, id, c.v, c.at),
+    db.prepare("UPDATE verifiers SET banned = 0 WHERE id = ? AND banned = 1 AND (refused_until IS NULL OR refused_until <= ?)").bind(id, at),
+    db.prepare("UPDATE verifiers SET seen = ? WHERE id = ? AND seen IS NOT ?").bind(day(), id, day()),
+    ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
+      : f.releaseAllOf(env, id, now),
+    db.prepare("SELECT banned, refused_until FROM verifiers WHERE id = ?").bind(id),
+    db.prepare(`SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
+                  AND (lease_until IS NULL OR lease_until < ?1) LIMIT ?2)) AS open,
+                (SELECT count(*) FROM verifiers WHERE asked_at > ?3) AS asking`).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
+    f.headOf(env, w, engine, now),
+  ]);
   // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
   // task for ever and its reader would never learn why.
-  const admitted = await admit(db, b.verifier, now);
-  if (!admitted.ok) return json({ ok: true, work: null, banned: true, until: admitted.until });
-  await db.prepare(`UPDATE verifiers SET consent_v = ?, consent_at = ? WHERE id = ? AND (consent_v IS NOT ? OR consent_at IS NOT ?)`)
-    .bind(c.v, c.at, b.verifier, c.v, c.at).run();
-  // A CLIENT THAT ASKS IS WORKING ON NOTHING: one browser computes in one tab
-  // (69-board-work.js, a Web Lock) and asks only between tasks, so a lease it
-  // still holds is one its page lost — a crash, a reload, an old page — and is
-  // handed back here rather than waited out for half an hour.
-  // …UNLESS IT ASKS AHEAD: near the end of a task it asks for the next, so no
-  // time passes between the two. It may then hold `TASKS_AHEAD` more and no
-  // further, and never a riven gain someone waits on, which goes to a computer
-  // free now. Every answer says `ahead`, so the page asks for no more than that.
-  const ahead = b.ahead === true;
-  if (ahead) {
-    const held = (await db.prepare("SELECT count(*) AS n FROM questions WHERE leased_to = ? AND lease_until > ?")
-      .bind(b.verifier, iso(now)).first()).n;
-    if (held < 1 || held > TASKS_AHEAD) return json({ ok: true, release, ahead: TASKS_AHEAD, work: null });
-  } else {
-    await facts().releaseAll(env, b.verifier, now);
+  const v = me.results[0] || {};
+  if (v.banned) return json({ ok: true, work: null, pack: null, banned: true, until: v.refused_until });
+  const holds = ahead ? held.results[0] : { questions: 0, packs: 0 };
+  const none = json({ ok: true, release, work: null, pack: null });
+  if (ahead && (holds.packs < 1 || holds.packs >= PACKS_HELD)) return none;
+  const first = head.results[0];
+  if (!first) return none;
+  if (!f.packable(first)) {
+    const leased = await f.next(env, { ...w, most: holds.questions + 1 }, engine, now);
+    return json({ ok: true, release, work: leased && workOf(leased), pack: null });
   }
-  // HOW MANY CORES IT CAN GIVE NOW (69-board-work.js `communityLanes`), which
-  // decides whether a question someone waits on is its to take — none, when it
-  // asks ahead: a riven gain someone waits on goes to a computer free now.
-  const lanes = ahead ? 0 : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-  const who = await witnessOf(env, b.verifier);
-  const leased = await facts().next(env, { device: b.verifier, owner: who.owner, siblings: who.siblings,
-    net: await netOf(request, env), lanes, most: ahead ? TASKS_AHEAD + 1 : 1 }, engine, now);
-  return json({ ok: true, release, ahead: TASKS_AHEAD, work: leased && workOf(leased) });
+  const { open, asking } = fair.results[0];
+  const n = packSize(pace, open, asking), lease_ms = packLeaseMs(n, pace);
+  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1 }, now);
+  const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
+  return json({ ok: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null });
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
 /// free cores kept, which tells an idle page from a closed one — written at
 /// most once a minute, or a page asking every ten seconds is a write each time.
 export const ASKED_EVERY_MS = 60_000;
-async function askedNow(db, b, now) {
+function askedOf(db, b, now) {
   const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
   const lanes = b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-  await db.prepare(`UPDATE verifiers SET asked_at = ?1, asked_engine = ?2, asked_lanes = coalesce(?3, asked_lanes)
+  return db.prepare(`UPDATE verifiers SET asked_at = ?1, asked_engine = ?2, asked_lanes = coalesce(?3, asked_lanes)
       WHERE id = ?4 AND (asked_at IS NULL OR asked_at < ?5 OR asked_engine IS NOT ?2 OR (?3 IS NOT NULL AND asked_lanes IS NOT ?3))`)
-    .bind(iso(now), engine, lanes, b.verifier, iso(now - ASKED_EVERY_MS)).run();
+    .bind(iso(now), engine, lanes, b.verifier, iso(now - ASKED_EVERY_MS));
 }
 
-/// HOW MANY TASKS A CLIENT MAY HOLD BESIDE THE ONE IT IS COMPUTING, asked near
-/// its end (`work`, `ahead`). More hides more of a slow round trip; each is a
-/// lease no other computer can take while it waits.
-export const TASKS_AHEAD = 1;
-
-/// WHAT THE CLIENT MEASURED, under its lease. The answer is always `ok`: a
-/// client learns nothing from it about whether it agreed. `counts` and `lanes`
-/// are what it cost and on how many cores (worker/tasks.js `answer`).
-async function verify(request, env) {
-  const { b, err } = await read(request, VERIFY_BODY);
+/// WHAT THE CLIENT MEASURED, a pack's rows together, under the pack's lease —
+/// sent every half minute and as the pack ends (`done`, which gives back the
+/// rows it did not answer). The answer is always `ok`: a client learns nothing
+/// from it about whether it agreed. `counts` and `lanes` are what each cost and
+/// on how many cores (worker/tasks.js `answerPack`).
+async function answers(request, env) {
+  const { b, err } = await read(request, ANSWERS_BODY);
   if (err) return err;
   if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "") || !ENGINE_ID.test(b.engine || "")
-      || !METRIC_ID.test(b.metric || "")
-      || typeof b.score !== "number" || !Number.isFinite(b.score) || b.score < 0
-      || !Number.isSafeInteger(b.work) || b.work < 0) {
+      || !Array.isArray(b.answers) || b.answers.length > PACK_MAX) {
     return json({ ok: false, error: "bad request" }, 400);
   }
-  // WHAT THE FIGHT COST THE CLIENT, as it says — a statistic about the clients'
-  // machines and never a number anything is ranked or scheduled by.
-  const ms = Number.isInteger(b.compute_ms) && b.compute_ms >= 0 && b.compute_ms <= LEASE_MS ? b.compute_ms : null;
+  const items = new Map();
+  for (const a of b.answers) {
+    if (!a || !QUESTION_ID.test(a.question || "") || !METRIC_ID.test(a.metric || "")
+        || typeof a.score !== "number" || !Number.isFinite(a.score) || a.score < 0 || !Number.isSafeInteger(a.work) || a.work < 0) {
+      return json({ ok: false, error: "bad request" }, 400);
+    }
+    // WHAT THE FIGHT COST THE CLIENT, as it says — a statistic about the clients'
+    // machines and never a number anything is ranked or scheduled by.
+    items.set(a.question, { question: a.question, result: { score: a.score, metric: a.metric }, work: a.work,
+      compute_ms: Number.isInteger(a.compute_ms) && a.compute_ms >= 0 && a.compute_ms <= LEASE_MS ? a.compute_ms : null,
+      counts: countsOf(a.counts), lanes: Number.isInteger(a.lanes) && a.lanes > 0 && a.lanes <= 256 ? a.lanes : null });
+  }
   const engine = await servedEngine(env);
   if (!engine || b.engine !== engine) {
     await facts().release(env, b.verifier, b.lease);
     return json({ ok: true });
   }
   const who = await witnessOf(env, b.verifier);
-  await facts().answer(env, { device: b.verifier, owner: who.owner, net: await netOf(request, env) },
-    { lease: b.lease, engine, result: { score: b.score, metric: b.metric }, work: b.work, compute_ms: ms,
-      counts: countsOf(b.counts), lanes: Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : null });
+  await facts().answerPack(env, { device: b.verifier, owner: who.owner, net: await netOf(request, env) },
+    { lease: b.lease, engine, answers: [...items.values()], done: b.done === true });
   return json({ ok: true });
 }
+/// A full pack's answers, each about three hundred bytes.
+const ANSWERS_BODY = 32_768;
 
 /// WHAT A TASK COST, as a page reports it: named whole counts, kept beside the
 /// answer to fit what a point is worth — never credited, so only their shape is checked.
@@ -214,7 +251,6 @@ export const countsOf = (c) => {
   for (const [k, v] of Object.entries(c).slice(0, 32)) if (/^[a-z_]{1,32}$/.test(k) && Number.isSafeInteger(v) && v >= 0) out[k] = v;
   return Object.keys(out).length ? out : null;
 };
-const VERIFY_BODY = 4096;
 
 /// A LEASE GIVEN BACK by a page that will not answer — closed, reloaded, paused,
 /// its fight refused, its lease about to run out. The order is anyone's again at
@@ -243,16 +279,20 @@ async function mine(request, env) {
   if (err) return err;
   if (!VERIFIER_ID.test(b.verifier || "") || !Array.isArray(b.orders)) return json({ ok: false, error: "bad request" }, 400);
   const keys = b.orders.slice(0, MINE_MAX).filter((k) => k && typeof k.identity === "string" && typeof k.ruler === "string" && typeof k.mode === "string");
-  const db = env.LIBRARY, out = [];
+  // WHAT THE FACTORY SAYS of this client's answer to each row's question, in one read.
+  const refs = keys.map((k) => `${k.identity}|${k.ruler}|${k.mode}`);
+  const { results } = await env.LIBRARY.prepare(
+    `SELECT k.value AS ref, q.state, q.fact_at,
+            (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS credited,
+            (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS mine
+       FROM json_each(?2) k
+       JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND d.producer IN ${BOARD_KINDS_SQL}
+                                     ORDER BY d.asked_at DESC LIMIT 1)`)
+    .bind(b.verifier, JSON.stringify(refs)).all();
+  const byRef = new Map(results.map((r) => [r.ref, r]));
+  const out = [];
   for (const k of keys) {
-    // WHAT THE FACTORY SAYS of this client's answer to that row's question.
-    const r = await db.prepare(
-      `SELECT q.state, q.fact_at,
-              (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS credited,
-              (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS mine
-         FROM demands d JOIN questions q ON q.id = d.question
-        WHERE d.ref = ?2 AND d.producer IN ${BOARD_KINDS_SQL} ORDER BY d.asked_at DESC LIMIT 1`)
-      .bind(b.verifier, `${k.identity}|${k.ruler}|${k.mode}`).first();
+    const r = byRef.get(`${k.identity}|${k.ruler}|${k.mode}`);
     if (!r) continue;
     const state = !r.mine ? "gone" : r.credited ? "confirmed"
       : ["disputed", "nondeterministic"].includes(r.state) ? "checking"
@@ -265,7 +305,7 @@ async function mine(request, env) {
 export async function verifyRoute(request, env, path) {
   if (!env.LIBRARY) return json({ ok: false, error: "the library is not configured" }, 503);
   if (path === "/api/board/work") return work(request, env);
-  if (path === "/api/board/verify") return verify(request, env);
+  if (path === "/api/board/answers") return answers(request, env);
   if (path === "/api/board/release") return release(request, env);
   if (path === "/api/board/mine") return mine(request, env);
   return json({ ok: false, error: "not found" }, 404);

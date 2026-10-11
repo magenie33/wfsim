@@ -149,7 +149,8 @@ function computeEnd(result) {
     const { done: _d, total: _t, search: _s, ...facts } = t;
     const entry = { ...facts, at: Date.now(), ms: result.ms, ...(result.cpu_ms != null ? { cpu_ms: result.cpu_ms } : {}),
       work: result.work, score: result.score, metric: result.metric,
-      ...(result.record ? { record: result.record } : {}), ...(result.search ? { search: result.search } : {}) };
+      ...(result.record ? { record: result.record } : {}), ...(result.search ? { search: result.search } : {}),
+      ...(result.unsent ? { unsent: true } : {}) };
     try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify([entry, ...computeLog()].slice(0, COMPUTE_LOG_MAX))); } catch (_) { /* this page only */ }
     // …HELD FULL ON THE CARD a moment, then into the list, today's count asked again.
     computeJustDone = { task: entry, until: Date.now() + COMPUTE_DONE_MS };
@@ -331,7 +332,8 @@ const taskOpen = (t) => !["confirmed", "gone"].includes(t.state);
 async function loadTaskStates() {
   const id = typeof verifierId === "function" ? verifierId() : null;
   if (!id) return;
-  const orders = computeLog().filter((t) => t.kind === "board" && t.identity && taskOpen(t));
+  // A ROW NOT SENT YET is the server's to know nothing of: asked, it would say `gone`.
+  const orders = computeLog().filter((t) => t.kind === "board" && t.identity && !t.unsent && taskOpen(t));
   const gains = computeLog().filter((t) => t.kind === "riven_gain" && taskOpen(t));
   const [o, g] = await Promise.all([
     orders.length ? postBoardWork("/api/board/mine", { verifier: id, orders: orders.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })) }) : null,
@@ -345,6 +347,14 @@ async function loadTaskStates() {
     return s ? { ...t, state: s.state, ...(s.code && !t.code ? { code: s.code } : {}), ...(s.at ? { confirmedAt: Date.parse(s.at) } : {}),
       changedAt: s.state !== t.state ? Date.now() : t.changedAt } : t;
   });
+  try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify(log)); } catch (_) { /* this page only */ }
+}
+
+/// A PACK'S ROWS SENT (69-board-work.js `sendAnswers`): theirs to ask about from now on.
+function computeSent(keys) {
+  if (!keys.length) return;
+  const sent = new Set(keys);
+  const log = computeLog().map((t) => (t.unsent && t.identity && sent.has(taskKey(t)) ? (({ unsent: _u, ...rest }) => rest)(t) : t));
   try { localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify(log)); } catch (_) { /* this page only */ }
 }
 

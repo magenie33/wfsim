@@ -283,7 +283,7 @@ CREATE TABLE IF NOT EXISTS verifiers (
   --   ALTER TABLE verifiers ADD COLUMN clean INTEGER NOT NULL DEFAULT 0;
   clean         INTEGER NOT NULL DEFAULT 0,
   -- WHEN IT LAST ASKED FOR WORK, on which engine and with how many cores free,
-  -- to the minute — what tells an idle page from a closed one (verify.js `askedNow`):
+  -- to the minute — what tells an idle page from a closed one (verify.js `askedOf`):
   --   ALTER TABLE verifiers ADD COLUMN asked_at TEXT;
   --   ALTER TABLE verifiers ADD COLUMN asked_engine TEXT;
   --   ALTER TABLE verifiers ADD COLUMN asked_lanes INTEGER;

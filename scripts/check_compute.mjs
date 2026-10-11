@@ -304,7 +304,8 @@ await evaluate(`(() => {
   window.__beacons = [];
   navigator.sendBeacon = (path, body) => { window.__beacons.push([path, String(body)]); return true; };
   localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
-  heldLease = { lease: "f".repeat(32), verifier: "z".repeat(24) };
+  heldPack = { lease: "f".repeat(32), verifier: "z".repeat(24), tasks: [], next: 0, sentAt: Date.now(), until: Date.now() + 60_000,
+    unsent: [{ key: "k", question: "e".repeat(32), score: 1, metric: "kpm", work: 1 }] };
   window.__woke = false; computeWake = () => { window.__woke = true; };
   return true;
 })()`);
@@ -313,14 +314,17 @@ await app.sleep(300);
 await app.send("Page.setWebLifecycleState", { state: "active" });
 await app.sleep(300);
 const z = JSON.parse(await evaluate(`(async () => {
-  const out = { beacons: window.__beacons, frozen: computeFrozen, woke: window.__woke, slept: computeSlept, held: heldLease };
+  const out = { beacons: window.__beacons, frozen: computeFrozen, woke: window.__woke, slept: computeSlept, held: heldPack };
   history.pushState({}, "", "/compute"); route(); await new Promise((ok) => setTimeout(ok, 400));
   out.note = (document.getElementById("compute-browser") || { textContent: "" }).textContent.includes("put this page to sleep");
   localStorage.removeItem("wfsim-compute-consent");
   return JSON.stringify(out);
 })()`));
-check("a page the browser freezes hands back what it holds at once",
-  z.held === null && z.beacons.some(([p, b]) => p === "/api/board/release" && b.includes("f".repeat(32))), JSON.stringify(z));
+// …ITS PACK'S ANSWERS SO FAR WITH IT, in the one beacon that gives back the rest.
+const handed = z.beacons.map(([p, b]) => [p, JSON.parse(b)]).find(([p]) => p === "/api/board/answers");
+check("a page the browser freezes hands back what it holds at once, its pack's answers so far with it",
+  z.held === null && handed && handed[1].lease === "f".repeat(32) && handed[1].done === true
+  && handed[1].answers.length === 1 && handed[1].answers[0].question === "e".repeat(32) && !("key" in handed[1].answers[0]), JSON.stringify(z));
 check("...woken, it asks for work at once, and /compute says the browser put it to sleep", z.frozen && z.woke && z.slept && z.note, JSON.stringify(z));
 
 // WHAT A DEVICE IS CALLED until its owner names it (73-compute.js

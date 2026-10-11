@@ -221,9 +221,16 @@ disproves an agreement refuses both, takes back their pay and voids their
 answers; the scorer claims only what is past its deadline, no client is handed
 it, `fetch_queue.sh` reads exactly that and the rows nobody asked for, and its
 answer pays a client whose bits it reproduced; the release hands the rest back.
-A task asked ahead, a lease given back, an answer of another engine dropped;
-what an answer cost (its counts, lanes and time) is kept; and an order open
-before the factory is adopted once, as of when it opened, its result carried.
+Rows come in PACKS: sized to a minute of the computer's pace, never past its
+fair share of what is open, `PACK_FIRST` before its pace is known, leased twice
+their length; the first rows in order under one lease; a pack asked ahead, and
+no more than `PACKS_HELD` held; answers sent before the pack ends taken, its
+other rows still its own, `done` giving back the rest and a row answered twice
+counted once; each row judged alone (a fact, a dispute) and credited once; a
+row no longer owed left out and withdrawn. A lease given back, an answer of
+another engine dropped; what an answer cost (its counts, lanes and time) is
+kept; and an order open before the factory is adopted once, as of when it
+opened, its result carried.
 
 ## `check_compute`
 
@@ -259,15 +266,19 @@ and the next one starts on them.
 Plain node against `worker/schema.sql`: the fact factory (`worker/tasks.js`)
 on random books. LIVENESS — a witness is handed exactly the first question it
 may answer in order (a waited-on one, then the earliest deadline), compared
-with a slow scan of the rule, and nothing only when nothing is eligible.
+with a slow scan of the rule, and nothing only when nothing is eligible; a
+pack is exactly the first n of them a pack may carry, none someone waits on.
 TERMINATION — honest, lying and non-deterministic witnesses answering at
 random leave no question waiting once the official machines have had their
 turn, and no honest witness is refused. Then the production cases one each:
 nine answered-out questions do not starve a tenth, three answers differing
 only in work are an engine fault and refuse nobody, two producers asking one
 thing share one computation credited once, a fact is told at once to a later
-ask and opens again on another engine, a withdrawn ask is handed to nobody;
-and the watchdog says a stalled kind, a dispute nobody settled, once a cause.
+ask and opens again on another engine, a withdrawn ask is handed to nobody.
+A pack's answers sent together, in two parts, make every state, fact, credit
+and hour that each alone makes, and two settlings of one question at once pay
+each witness once. The watchdog says a stalled kind, a dispute nobody settled,
+once a cause.
 
 ## `check_riven_gain`
 

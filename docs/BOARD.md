@@ -660,8 +660,8 @@ submission is computed by the person who sent it: the build goes into the
 library, and every (ruler, mode) it owes becomes a row in `queue` and is asked
 of the factory — verb `simulate`, request the build's record on that ruler and
 mode, the demand's `ref` its key. However many rulers and modes there are, a
-machine is handed one row at a time, so the board's growth is more questions,
-never a heavier client.
+machine is handed a minute of rows at a time, so the board's growth is more
+questions, never a heavier client.
 
 - **Asking.** `ship_queue.sh` writes the batch and its queue rows, then asks
   the factory for each (`/api/board/ask`, the factory's secret) — from the bot
@@ -676,18 +676,30 @@ never a heavier client.
   backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked
   for, since a run stopped between writing the queue and asking leaves rows
   only the scorer is ever handed.
-- **Leasing.** `/api/board/work` (`worker/verify.js`) hands a client the
-  factory's next question it may answer — a board row as its library RECORD, a
-  ruler and a mode, never a number — in the factory's order. One lease a
-  client, thirty minutes long; a row no longer owed is withdrawn where it is
-  found. A CLIENT THAT ASKS IS WORKING ON NOTHING: a browser computes in one
-  tab (a Web Lock) and asks only between tasks, so whatever its id still holds
-  was lost — a crash, a reload, an old page — and is taken back as it asks,
-  never waited out. UNLESS IT ASKS AHEAD: once a task is 80% done (a search,
-  past 80% of the last one's time) the page asks `ahead`, keeps what it holds
-  and may take `TASKS_AHEAD` more, never a riven gain someone waits on, so the
-  next task starts the moment this one ends; every answer says the number, and
-  the page asks no more than that. A background search takes the cores the
+- **Leasing, in PACKS.** `/api/board/work` (`worker/verify.js`) hands a client
+  the factory's next questions it may answer — a board row as its library
+  RECORD, a ruler and a mode, never a number — in the factory's order, as a
+  PACK: the rows of about a minute of that computer's work (`PACK_MS`, by the
+  `pace_ms` its page reports; `PACK_FIRST` before it has one, at most
+  `PACK_MAX`), under one lease twice the pack's length (`packLeaseMs`). The
+  DATABASE IS ASKED ONCE A PACK, not once a row: everything an ask writes and
+  reads before choosing is one batch, the pack one statement
+  (`worker/tasks.js` `nextPack`), and the answers come back together
+  (`/api/board/answers`, `answerPack`) every half minute and as the pack ends,
+  settled in a few round trips however many they are. A PACK IS A DISPATCH
+  UNIT ONLY: each row in it is its own question, judged, made a fact and
+  credited alone. FAIR SHARE: while the open questions are few, a pack is at
+  most their number over the computers asking, so the last rows of a batch go
+  to many computers, never to one fast one while others wait. A question
+  someone waits on, and a riven gain, goes ALONE, to a computer free now. A row
+  no longer owed is withdrawn where it is found. A CLIENT THAT ASKS IS WORKING
+  ON NOTHING: a browser computes in one tab (a Web Lock) and asks only between
+  packs, so whatever its id still holds was lost — a crash, a reload, an old
+  page — and is taken back as it asks, never waited out. UNLESS IT ASKS AHEAD:
+  once the rows left would take under fifteen seconds (a search, past 80% of the
+  last one's time) the page asks `ahead`, keeps what it holds and may hold
+  `PACKS_HELD` packs, never a question someone waits on, so the next pack
+  starts the moment this one ends. A background search takes the cores the
   reader leaves it at every round and hands its workers to the next
   (08-checkpoint-api.js `quickFleet`); its answer is the same on any number of
   cores (`check_quick_fleet`). ONLY THE SERVED ENGINE LEASES: the worker reads
@@ -738,12 +750,12 @@ never a heavier client.
   its answers (`order_credit.mjs`): a client whose bits it reproduced is paid
   (§"Contribution" rule 1), one it did not is not, and the run's last job
   releases what it left. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page
-  that will not answer — closed, reloaded, paused, its fight refused, its lease
-  near its end — calls `/api/board/release` (by beacon on `pagehide`), so
-  neither the row nor the computer waits out the lease. One client holds one
-  lease, decided in the statement that takes it, so two tabs asking at once
-  cannot both win; a refused client is told `banned` rather than handed nothing
-  in silence.
+  that stops — closed, reloaded, paused, its lease near its end — sends its
+  pack's answers so far with `done` (by beacon on `pagehide`), which gives back
+  the rows it did not reach, so neither the rows nor the computer wait out the
+  lease. How many packs a client holds is decided in the statement that takes
+  one, so two tabs asking at once cannot both win; a refused client is told
+  `banned` rather than handed nothing in silence.
 
 **THE CLIENT IS AN ID** its browser made for itself, joined to no submission,
 kept in `verifiers` so a refusal has something to hold, and joined to an

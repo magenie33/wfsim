@@ -4,7 +4,7 @@
 // producer here and in its own file; worker/tasks.js does not change.
 import { factory, canon } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
-import { BOARD_PRODUCERS, boardWork } from "./board_tasks.js";
+import { BOARD_PRODUCERS, boardWork, boardPackTask } from "./board_tasks.js";
 import { CLIENTS_PER_FACT, SPOT_SHARE } from "./verify.js";
 import { cloudTell } from "./cloud.js";
 import { iso } from "./instant.js";
@@ -28,7 +28,8 @@ export const DEADLINE_MS = {
 export const VERBS = {
   // A board row: its score, the metric it is in, and the fight's work. Two
   // answers that differ are a dispute; leased half an hour, past the slowest row.
-  simulate: { cap: 2, lease_ms: 30 * 60_000, canon: (r, work) => canon({ score: r.score, metric: r.metric, work }) },
+  // Seconds of work each, so handed out in packs (worker/verify.js `PACK_MS`).
+  simulate: { cap: 2, lease_ms: 30 * 60_000, pack: true, canon: (r, work) => canon({ score: r.score, metric: r.metric, work }) },
   // A riven gain: the quick search's best build, its score and the search's work,
   // leased a quarter of an hour and renewed while it runs. Three answers without
   // two agreeing is a dispute. No spot checks yet: no official machine runs a
@@ -47,6 +48,11 @@ export function facts() {
 export function workOf(leased) {
   const p = leased.demands[0] && leased.demands[0].producer;
   return RIVEN_PRODUCERS[p] ? rivenWork(leased) : BOARD_PRODUCERS[p] ? boardWork(leased) : null;
+}
+/// …AND ONE QUESTION OF A PACK (`nextPack`); only a board row is packed today.
+export function packTaskOf(q) {
+  const p = q.demands[0] && q.demands[0].producer;
+  return BOARD_PRODUCERS[p] ? boardPackTask(q) : null;
 }
 
 /// WHAT A LEASED QUESTION IS, for a device list: its kind and its public facts.

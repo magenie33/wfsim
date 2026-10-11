@@ -28,7 +28,7 @@ const d1 = () => {
     run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
   });
   return { raw: db, prepare: (sql) => stmt(sql),
-    batch: async (ss) => ss.map((s) => (/^\s*select/i.test(s.sql) ? { results: db.prepare(s.sql).all(...s.args) }
+    batch: async (ss) => ss.map((s) => (/^\s*select|\breturning\b/i.test(s.sql) ? { results: db.prepare(s.sql).all(...s.args) }
       : { meta: { changes: Number(db.prepare(s.sql).run(...s.args).changes) } })) };
 };
 
@@ -44,7 +44,7 @@ const iso = (ms) => new Date(ms).toISOString();
 const NOW = Date.parse("2026-10-10T12:00:00.000Z");
 
 const VERBS = {
-  simulate: { cap: 2, lease_ms: 30 * 60_000, canon: (r, work) => canon({ score: r.score, work }) },
+  simulate: { cap: 2, lease_ms: 30 * 60_000, pack: true, canon: (r, work) => canon({ score: r.score, work }) },
   optimize: { cap: 3, lease_ms: 15 * 60_000, canon: (r, work) => canon({ build: r.build, score: r.score, work }) },
 };
 const told = [];
@@ -55,7 +55,7 @@ const PRODUCERS = {
 
 console.log("liveness: handed nothing only when nothing may be answered, else the waited-on, then the earliest deadline");
 {
-  let bad = 0, first = "";
+  let bad = 0, first = "", badPack = 0, firstPack = "";
   for (let t = 0; t < TRIALS && bad < 3; t++) {
     const r = rng(t + 1), db = d1(), env = { LIBRARY: db };
     const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r });
@@ -82,7 +82,7 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
           .run(id, a.engine, a.device, a.owner, a.net, iso(NOW));
         answers.push(a);
       }
-      qs.push({ id, state, lanes, opened, due, leased, answers, waits });
+      qs.push({ id, verb, state, lanes, opened, due, leased, answers, waits });
     }
     const me = pick(r, devices), lanes = pick(r, [0, 1, 2, 4, 8]), before = r() < 0.3 ? NOW + Math.floor((r() - 0.5) * 3_600_000) : null;
     const siblings = devices.filter((d) => d.owner === me.owner).map((d) => d.device);
@@ -93,7 +93,17 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
       && (before === null || q.due < before)
       && !q.answers.some((a) => a.engine === "e1" && (siblings.includes(a.device) || a.owner === me.owner || (me.net && a.net === me.net)));
     const eligible = qs.filter(may).sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1));
-    const got = await f.next(env, { device: me.device, owner: me.owner, siblings, net: me.net, lanes, most: 99, before: before === null ? null : iso(before) }, "e1", NOW);
+    const w = { device: me.device, owner: me.owner, siblings, net: me.net, lanes, before: before === null ? null : iso(before) };
+    // A PACK, by the same rule: the first `size` it may answer of a packable
+    // verb that nobody waits on — read before `next` leases one of them.
+    const size = 1 + Math.floor(r() * 5);
+    const packWant = eligible.filter((q) => !q.waits && q.verb === "simulate").slice(0, size).map((q) => q.id);
+    const pack = await f.nextPack(env, w, "e1", { n: size, lease_ms: 60_000, most: 1 }, NOW);
+    const packGot = pack ? pack.questions.map((q) => q.question) : [];
+    const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+    if (!sameSet(packGot, packWant)) { badPack++; firstPack ||= `trial ${t}: got ${packGot}, want ${packWant}`; }
+    if (pack) db.raw.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ?").run(pack.lease);
+    const got = await f.next(env, { ...w, most: 99 }, "e1", NOW);
     const want = eligible[0] ? eligible[0].id : null;
     if ((got ? got.question : null) !== want) {
       bad++;
@@ -101,6 +111,7 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
     }
   }
   check(`${TRIALS} random books: next() is exactly the first eligible question in order, or null when there is none`, !bad, first);
+  check(`...and nextPack(n) exactly the first n of them a pack may carry — none someone waits on`, !badPack, firstPack);
 }
 
 console.log("\ntermination: every question ends a fact or withdrawn");
@@ -280,6 +291,58 @@ console.log("\nthe cases that failed in production");
   await f.answer(env, { ...d, owner: "oa" }, { lease: qd.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
   check("one owner's two answers fill no cap, and the question stays open for a second witness",
     db.raw.prepare("SELECT state FROM questions WHERE id = ?").get(id).state === "open");
+}
+
+console.log("\npacks");
+{
+  // A PACK'S ANSWERS TOGETHER ARE THE SAME AS EACH ALONE: two witnesses answer
+  // the same rows — agreeing on some, not on others — once by packs and once one
+  // by one; every state, fact and credit comes out equal.
+  const run = async (packed) => {
+    const db = d1(), env = { LIBRARY: db };
+    told.length = 0;
+    const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+    db.raw.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+    for (let i = 0; i < 9; i++) await f.demand(env, { producer: "p", ref: `row${i}`, verb: "simulate", request: { row: i }, due_in_ms: 1000 + i }, "e1", NOW);
+    for (const w of [{ device: "a", owner: "oa", net: "na" }, { device: "b", owner: "ob", net: "nb" }]) {
+      const score = (q) => (w.device === "b" && JSON.parse(db.raw.prepare("SELECT request FROM questions WHERE id = ?").get(q).request).row % 3 === 0 ? 2 : 1);
+      if (packed) {
+        // …SENT IN TWO PARTS, as a page sends them every half minute.
+        const pack = await f.nextPack(env, w, "e1", { n: 9, lease_ms: 60_000 }, NOW);
+        const rows = pack.questions.map((q) => ({ question: q.question, result: { score: score(q.question) }, work: 5 }));
+        await f.answerPack(env, w, { lease: pack.lease, engine: "e1", answers: rows.slice(0, 4) }, NOW);
+        await f.answerPack(env, w, { lease: pack.lease, engine: "e1", answers: rows.slice(4), done: true }, NOW);
+      } else {
+        for (let q; (q = await f.next(env, w, "e1", NOW));) await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score: score(q.question) }, work: 5 }, NOW);
+      }
+    }
+    return JSON.stringify({
+      questions: db.raw.prepare("SELECT id, state, canon, lease FROM questions ORDER BY id").all(),
+      paid: db.raw.prepare("SELECT id, work, agreed FROM verifiers ORDER BY id").all(),
+      hours: db.raw.prepare("SELECT verifier, tasks, work FROM verifier_hours ORDER BY verifier").all(),
+      told: [...told].sort((x, y) => (x.ref < y.ref ? -1 : 1)),
+    });
+  };
+  const alone = await run(false), together = await run(true);
+  check("a pack's answers together make every state, fact and credit that each alone makes", alone === together, `${alone}\n  ${together}`);
+  check("...three disputes and six facts among them", (JSON.parse(together).questions.filter((q) => q.state === "disputed").length === 3)
+    && JSON.parse(together).questions.filter((q) => q.state === "fact").length === 6);
+}
+{
+  // TWO WITNESSES SETTLING ONE QUESTION AT THE SAME MOMENT pay once: both read
+  // the two agreeing answers before either writes.
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  db.raw.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+  const id = await f.demand(env, { producer: "p", ref: "race", verb: "simulate", request: { race: 1 }, due_in_ms: 1000 }, "e1", NOW);
+  for (const [d, o] of [["a", "oa"], ["b", "ob"]]) {
+    db.raw.prepare(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, ?, ?, '{"score":1}', 5, ?)`)
+      .run(id, d, o, `n${d}`, canon({ score: 1, work: 5 }), iso(NOW));
+  }
+  told.length = 0;
+  await Promise.all([f.settle(env, id, "e1", NOW), f.settle(env, id, "e1", NOW)]);
+  const paid = db.raw.prepare("SELECT sum(work) AS w, sum(agreed) AS n FROM verifiers").get();
+  check("two settlings of one question at once credit each witness once", paid.w === 10 && paid.n === 2, JSON.stringify(paid));
 }
 
 console.log("\nthe watchdog");
