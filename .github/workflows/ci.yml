@@ -21,6 +21,28 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
+  # NATIVE AND WASM COUNT THE SAME WORK (docs/WASM.md §"Gas"): both built from
+  # this commit, a fixed set of rows fought by each must give the same gas,
+  # work and score — the native client and every browser are paid alike.
+  gas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          # keep in sync with mise.toml
+          toolchain: "1.97.1"
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+      - name: Native and wasm give the same gas, work and score
+        run: |
+          bindgen=$(awk '/^name = "wasm-bindgen"$/ {getline; gsub(/version = |"/, ""); print; exit}' Cargo.lock)
+          curl -sSfL "https://github.com/rustwasm/wasm-bindgen/releases/download/$bindgen/wasm-bindgen-$bindgen-x86_64-unknown-linux-musl.tar.gz" | tar xz
+          WASM_BINDGEN="$PWD/wasm-bindgen-$bindgen-x86_64-unknown-linux-musl/wasm-bindgen" node scripts/check_gas.mjs build
+
   # THE PUBLISHED SNAPSHOT IS A LEGAL BOARD — a fact about publish.yml's output,
   # so it is a job of its own: inside `test` it stopped the one run that repairs
   # it, since publish.yml waits for `test` and a tightened door leaves the
@@ -136,6 +158,8 @@ jobs:
         run: node scripts/check_appraise.mjs
       - name: A client's number reaches the board only when CLIENTS_PER_FACT clients agree
         run: node scripts/check_board_verify.mjs
+      - name: Every item on a fight's path is metered
+        run: node scripts/check_gas.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot

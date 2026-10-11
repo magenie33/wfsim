@@ -1,0 +1,225 @@
+[
+{
+"record": {
+"weapon": "acceltra",
+"mods": [
+"wildfire",
+"primary_acuity",
+"serration",
+"hunter_track",
+"rifle_elementalist",
+"vital_sense",
+"continuous_misery",
+"hush"
+],
+"evolutions": [],
+"arcanes": [
+"primary_compression"
+],
+"valence": "",
+"exilus": "vigilante_supplies"
+},
+"ruler": "demolisher",
+"mode": "base"
+},
+{
+"record": {
+"weapon": "braton_prime",
+"mods": [
+"hellfire",
+"thermite_rounds",
+"primary_acuity",
+"galvanized_aptitude",
+"hammer_shot",
+"speed_trigger",
+"vile_acceleration",
+"magnetic_capacity"
+],
+"evolutions": [
+"braton_prime_evo1_incarnon_form",
+"braton_prime_daring_reverie",
+"braton_prime_voids_guidance",
+"braton_prime_prelude_of_might"
+],
+"arcanes": [
+"primary_deadhead"
+],
+"valence": ""
+},
+"ruler": "demolisher",
+"mode": "base"
+},
+{
+"record": {
+"weapon": "burston_prime",
+"mods": [
+"primed_cryo_rounds",
+"infected_clip",
+"galvanized_chamber",
+"serration",
+"critical_delay",
+"vile_acceleration",
+"vital_sense",
+"gilded_truth"
+],
+"evolutions": [
+"burston_prime_evo1_incarnon_form",
+"burston_prime_forceful_finality",
+"burston_prime_ready_retaliation",
+"burston_prime_absolute_valor"
+],
+"arcanes": [
+"primary_deadhead"
+],
+"valence": ""
+},
+"ruler": "standard_single_target",
+"mode": "base"
+},
+{
+"record": {
+"weapon": "fulmin_prime",
+"mods": [
+"thermite_rounds",
+"primed_shred",
+"split_chamber",
+"serration",
+"hammer_shot",
+"rifle_elementalist",
+"magnetic_capacity",
+"continuous_misery@2"
+],
+"evolutions": [],
+"arcanes": [
+"primary_debilitate"
+],
+"valence": "",
+"exilus": "vigilante_supplies"
+},
+"ruler": "heavy_gunner",
+"mode": "semi_auto"
+},
+{
+"record": {
+"weapon": "kuva_hind",
+"mods": [
+"hellfire",
+"thermite_rounds",
+"serration",
+"galvanized_scope",
+"hammer_shot",
+"rifle_elementalist",
+"vile_acceleration",
+"vital_sense"
+],
+"evolutions": [],
+"arcanes": [
+"primary_crux"
+],
+"valence": "heat"
+},
+"ruler": "standard_multi_target",
+"mode": "semi_auto"
+},
+{
+"record": {
+"weapon": "larkspur_prime",
+"mods": [
+"contamination_casing",
+"hypothermic_shell",
+"primed_combustion_rounds",
+"magma_chamber",
+"primed_dual_rounds",
+"primed_rubedo_lined_barrel",
+"ammo_chain",
+"magnetized_cycle"
+],
+"evolutions": [],
+"arcanes": [
+"primary_overcharge",
+"secondary_enervate"
+],
+"valence": ""
+},
+"ruler": "standard_single_target",
+"mode": "base"
+},
+{
+"record": {
+"weapon": "phenmor",
+"mods": [
+"primed_cryo_rounds",
+"malignant_force",
+"thermite_rounds",
+"galvanized_chamber",
+"galvanized_aptitude",
+"vigilante_armaments",
+"vile_acceleration",
+"radiated_reload"
+],
+"evolutions": [
+"phenmor_evo1_incarnon_form",
+"phenmor_rapid_wrath",
+"phenmor_retributions_vessel",
+"phenmor_elemental_excess",
+"phenmor_devouring_attrition"
+],
+"arcanes": [
+"primary_debilitate"
+],
+"valence": ""
+},
+"ruler": "standard_single_target",
+"mode": "cycle"
+},
+{
+"record": {
+"weapon": "torid",
+"mods": [
+"malignant_force",
+"rime_rounds",
+"hellfire",
+"galvanized_chamber",
+"serration",
+"critical_delay",
+"vile_acceleration",
+"vital_sense"
+],
+"evolutions": [
+"torid_evo1_incarnon_form",
+"torid_final_fusillade",
+"torid_swift_deliverance",
+"torid_elemental_balance"
+],
+"arcanes": [
+"primary_merciless"
+],
+"valence": ""
+},
+"ruler": "demolisher",
+"mode": "cycle"
+},
+{
+"record": {
+"weapon": "zenith",
+"mods": [
+"hellfire",
+"thermite_rounds",
+"heavy_caliber",
+"primary_acuity",
+"primed_shred",
+"galvanized_scope",
+"vile_acceleration",
+"vital_sense"
+],
+"evolutions": [],
+"arcanes": [
+"primary_deadhead"
+],
+"valence": "",
+"exilus": "vigilante_supplies"
+},
+"ruler": "demolisher",
+"mode": "base"
+}
+]
