@@ -30,6 +30,7 @@ export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf, packTaskOf } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
+import { fairTable, throttled, accountOf } from "./fair.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest.
 export const LEASE_MS = 30 * 60_000;
@@ -211,6 +212,11 @@ async function work(request, env) {
     return json({ ok: true, release, work: leased && workOf(leased), pack: null });
   }
   const { open, asking } = fair.results[0];
+  // WHILE THE OPEN ROWS ARE FEWER THAN THE ASKING WOULD TAKE, an account past its
+  // fair share is handed nothing this ask (worker/fair.js) — and only then, so
+  // the table is never read while work is plentiful.
+  const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(PACK_MS / pace) : PACK_FIRST);
+  if (short && throttled(await fairTable(request, env, engine, now), accountOf(who.owner, id))) return none;
   const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : packLeaseMs(n, pace);
   const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1 }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];

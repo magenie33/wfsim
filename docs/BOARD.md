@@ -690,7 +690,15 @@ questions, never a heavier client.
   UNIT ONLY: each row in it is its own question, judged, made a fact and
   credited alone. FAIR SHARE: while the open questions are few, a pack is at
   most their number over the computers asking, so the last rows of a batch go
-  to many computers, never to one fast one while others wait. A question
+  to many computers, never to one fast one while others wait. AND BY ACCOUNT
+  (`worker/fair.js`): while that cap binds, each account's target share of
+  the hand-out is 70% by the cores it has asking and 30% equal among
+  established accounts (a day old and credited once; every unclaimed browser
+  together is one, the walk-ins). An account that received more than its
+  target in the last ten minutes, in `work` on the served engine, is handed
+  nothing on an ask with probability 1 − target / received. A big account
+  still takes the most, but a small one is never starved while work is short.
+  While work is plentiful none of this runs. A question
   someone waits on, and a riven gain, goes ALONE, to a computer free now. A row
   no longer owed is withdrawn where it is found. A CLIENT THAT ASKS IS WORKING
   ON NOTHING: a browser computes in one tab (a Web Lock) and asks only between

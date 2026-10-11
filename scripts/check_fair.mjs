@@ -1,0 +1,93 @@
+// FAIR SHARE WHILE WORK IS SHORT (worker/fair.js, worker/verify.js `work`): the
+// targets are 0.7 by cores asking and 0.3 equal among established accounts, every
+// unclaimed browser counts as one account, a new account shares only by its
+// cores, and an account past its target is handed nothing on an ask — only
+// while the open rows are fewer than the asking would take.
+//   node scripts/check_fair.mjs
+import { shares, throttled, accountOf, WALK_INS } from "../worker/fair.js";
+import { verifyRoute, PROTOCOL } from "../worker/verify.js";
+import { boardTasksRoute } from "../worker/board_tasks.js";
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync } from "node:fs";
+
+let failures = 0;
+const check = (what, ok, detail = "") => {
+  console.log(`  ${ok ? "ok " : "FAIL"}  ${what}${ok || !detail ? "" : `   ${detail}`}`);
+  if (!ok) failures++;
+};
+const close = (x, y) => Math.abs(x - y) < 1e-9;
+
+// ---- the targets ----
+const big = { account: "big", lanes: 80, received: 0, established: true };
+const small = (i) => ({ account: `s${i}`, lanes: 5, received: 0, established: true });
+let t = shares([big, small(1), small(2), small(3), small(4)]);
+check("one account with 80% of the cores and four with 5%: 62% and 9.5% each",
+  close(t.big.target, 0.62) && close(t.s1.target, 0.095), JSON.stringify(t));
+t = shares([big, { ...small(1), established: false }]);
+check("a new account shares only by its cores, and the equal part goes to the established",
+  close(t.s1.target, 0.7 * 5 / 85) && close(t.big.target, 0.7 * 80 / 85 + 0.3), JSON.stringify(t));
+t = shares([{ ...big, established: false }, { ...small(1), established: false }]);
+check("with nobody established the targets are the cores alone", close(t.big.target, 80 / 85), JSON.stringify(t));
+t = shares([{ ...big, received: 90 }, { ...small(1), received: 10 }, small(2), small(3), small(4)]);
+check("an account past its target is held back on about 1 − 1/ratio of its asks, one under it never",
+  t.big.ratio > 1 && throttled(t, "big", () => 0.99) && !throttled(t, "big", () => 0.5 / t.big.ratio) && !throttled(t, "s2", () => 0.99),
+  JSON.stringify(t));
+check("every unclaimed browser is one account, a claimed one its owner's", accountOf("d1", "d1") === WALK_INS && accountOf("acc", "d1") === "acc");
+
+// ---- the ask ----
+const d1 = (file) => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(readFileSync(new URL(`../worker/${file}`, import.meta.url), "utf8"));
+  const stmt = (sql, args = []) => ({
+    sql, args, bind: (...a) => stmt(sql, a),
+    first: async () => db.prepare(sql).get(...args) ?? null,
+    all: async () => ({ results: db.prepare(sql).all(...args) }),
+    run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
+  });
+  return { raw: db, prepare: (sql) => stmt(sql),
+    batch: async (ss) => ss.map((s) => (/^\s*select|\breturning\b/i.test(s.sql) ? { results: db.prepare(s.sql).all(...s.args) }
+      : { meta: { changes: Number(db.prepare(s.sql).run(...s.args).changes) } })) };
+};
+const LIBRARY = d1("schema.sql"), ACCOUNTS = d1("accounts.sql"), L = LIBRARY.raw;
+const env = { LIBRARY, ACCOUNTS, ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1" })) }, FACTORY_TOKEN: "ft" };
+const post = async (route, path, body, headers = {}) =>
+  (await route(new Request(`https://x${path}`, { method: "POST", headers, body: JSON.stringify(body) }), env, path)).json();
+const YES = { v: 1, at: "2026-10-08T08:00:00.000Z" };
+const work = (v) => post(verifyRoute, "/api/board/work", { verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES, lanes: 4, pace_ms: 3000 });
+const now = Date.now(), iso = (ms) => new Date(ms).toISOString();
+
+const BIG = "b".repeat(24), WALKER = "c".repeat(24);
+ACCOUNTS.raw.prepare("INSERT INTO accounts (id, created_at, username) VALUES ('acc-big', ?, 'big')").run(iso(now - 3 * 86_400_000));
+ACCOUNTS.raw.prepare("INSERT INTO devices (verifier, account, claimed_at) VALUES (?, 'acc-big', 'x')").run(BIG);
+for (const v of [BIG, WALKER]) L.prepare("INSERT INTO verifiers (id, seen, asked_at, asked_engine, asked_lanes, work) VALUES (?, 'x', ?, 'e1', 4, 1)").run(v, iso(now - 30_000));
+// THE BIG ACCOUNT TOOK EVERYTHING IN THE WINDOW: 100% received against a 50% target.
+L.prepare(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES ('old', 'e1', ?, 'acc-big', 'k', '{}', 1000, 1000, ?)`)
+  .run(BIG, iso(now - 60_000));
+const ask = async (n) => {
+  const ids = Array.from({ length: n }, (_, i) => `build${i}`);
+  L.prepare("INSERT OR IGNORE INTO batches (id, at, why, total) VALUES ('b1', 'b1', 'test', 0)").run();
+  for (const id of ids) {
+    L.prepare("INSERT OR IGNORE INTO builds (id, at, record) VALUES (?, ?, ?)").run(id, iso(now), JSON.stringify({ weapon: "braton_prime", mods: ["serration", id] }));
+    L.prepare("INSERT OR IGNORE INTO queue (batch, build_id, ruler, mode) VALUES ('b1', ?, 'standard_single_target', 'base')").run(id);
+  }
+  for (let i = 0; i < ids.length; i += 50) {
+    await post(boardTasksRoute, "/api/board/ask", { batch: "b1", rows: ids.slice(i, i + 50).map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) },
+      { authorization: "Bearer ft" });
+  }
+};
+const random = Math.random;
+Math.random = () => 0.99;
+await ask(2);
+const held = await work(BIG), walked = await work(WALKER);
+check("while work is short, the account past its share is handed nothing, as an ordinary nothing",
+  held.ok && held.pack === null && held.work === null && !held.stale && !held.banned, JSON.stringify(held));
+check("...and the walk-ins under theirs are handed a pack", !!(walked.pack && walked.pack.tasks.length), JSON.stringify(walked));
+
+L.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL").run();
+await ask(400);
+const plenty = await work(BIG);
+check("while work is plentiful the same account is handed a full pack", !!(plenty.pack && plenty.pack.tasks.length >= 10), JSON.stringify(plenty).slice(0, 200));
+Math.random = random;
+
+console.log(failures ? `\n${failures} failed` : "\nan account past its share waits while work is short, and only then");
+process.exitCode = failures ? 1 : 0;
