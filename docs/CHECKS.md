@@ -232,6 +232,18 @@ another engine dropped; what an answer cost (its counts, lanes and time) is
 kept; and an order open before the factory is adopted once, as of when it
 opened, its result carried.
 
+## `check_gas`
+
+Two parts. Plain node, in the light job: every top-level fn, impl and trait in
+the metered sources (`METERED`) carries `#[wfsim_gas_macro::metered]` — it
+failed with one attribute removed. With `build` (CI's `gas` job: rust, the
+wasm32 target, wasm-bindgen at Cargo.lock's version) or `native=` and `pkg=`:
+the rows of `tests/gas/rows.json`, fought by the native `wfsim-gas` and by the
+wasm engine as the page fights them, give the same gas, work and score, the
+same again on a fresh instance and cut five ways — one run a shard over lanes,
+seven, asked last first, two halves carried — and the work is gas.rs's price
+of the count. It failed with one weight changed in the wasm build only.
+
 ## `check_compute`
 
 The `/compute` page, the account answered by interception. This browser's tasks
