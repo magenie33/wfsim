@@ -208,6 +208,7 @@ path, so an entry may be renamed but never renumbered.
 | [M110](measurements/M110-tenet-exec-shockwave-width.md) | a Tenet Exec shockwave is 3 m wide; built with three blasts 5 m apart down a line (three lines from a heavy slam), with the fan, the timing and the falloff still to measure | ⚠ 2026-10-05 (owner) — open |
 | [M111](measurements/M111-dual-toxocyst-neurotoxin-and-ricochet-heads.md) | Neurotoxin adds 70% Toxin in Frenzy's and the mods' one Toxin bracket, and a Dual Toxocyst ricochet finds a head 20% of the time | ✅ 2026-10-09 (owner) |
 | [M112](measurements/M112-arbucep-volley-costs-six-rounds.md) | an Arbucep pull spends six rounds, one a missile: the 36 magazine empties in six volleys | ✅ 2026-10-12 (owner) |
+| [M113](measurements/M113-arbucep-multishot-is-a-fixed-factor-that-reaches-dots.md) | Arbucep multishot is a fixed damage factor (effective multishot over six, never rolled) on the hit and the explosion, and it reaches the DoT seed (720 explosion, ~360 Gas tick at +110%) | ✅ 2026-10-12 (owner) |
 
 ## By weapon
 
@@ -218,7 +219,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | weapon | id | entries |
 | --- | --- | --- |
 | Amprex | `amprex` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
-| Arbucep | `arbucep` | [M112](measurements/M112-arbucep-volley-costs-six-rounds.md) |
+| Arbucep | `arbucep` | [M112](measurements/M112-arbucep-volley-costs-six-rounds.md) · [M113](measurements/M113-arbucep-multishot-is-a-fixed-factor-that-reaches-dots.md) |
 | Atomos | `atomos` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
 | Ballistica Prime | `ballistica_prime` | [M66](measurements/M66-ballistica-prime-charge-x2.md) · [M67](measurements/M67-ballistica-prime-incarnon-pierce-and-perks.md) · [M80](measurements/M80-denominator-is-base-damage-only.md) · [M81](measurements/M81-independent-co-applies-after-quantization.md) |
 | Braton | `braton` | [M1](measurements/M01-toxin-shield-bypass-gate.md) |

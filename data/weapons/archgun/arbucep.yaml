@@ -66,7 +66,8 @@ attack:
   # ...AND MULTISHOT MODS DO NOT ADD A SEVENTH. VERBATIM (wiki): "Multishot
   # increases weapon damage instead of creating additional projectiles. Damage
   # bonus is multiplicative to other sources of damage." So Split Chamber is
-  # an independent damage multiplier on this weapon and nothing else.
+  # an independent damage multiplier on this weapon and nothing else: fixed,
+  # never rolled, and in the status seed too (M113).
   multishot_adds_damage: true
   pellet_elements: [blast, corrosive, gas, magnetic, radiation, viral]
   # A ROUND A MISSILE: a pull spends 6, so the 36 magazine is six volleys (M112).

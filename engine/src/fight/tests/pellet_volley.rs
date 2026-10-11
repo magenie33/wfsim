@@ -108,11 +108,6 @@ fn multishot_buys_damage_and_not_a_seventh_missile() {
         "the volley is still six: {} against {}",
         split.mean_pellets, plain.mean_pellets
     );
-    // THE HITS SCALE BY EXACTLY THE BONUS. `mean_damage` includes the DoTs
-    // the volley leaves, and a DoT's payload is computed from ModifiedBase
-    // rather than from the finished instance — so a FINAL multiplier does
-    // not reach it, here or for Double Tap or Eclipse. Taking the DoT out
-    // is what makes the assertion exact rather than approximately right.
     // THE FACTOR ITSELF, read off the hit account rather than inferred from
     // an aggregate. The account lists every factor the instance paid, in
     // the order the engine applies them, and its product IS the number
@@ -146,16 +141,12 @@ fn multishot_buys_damage_and_not_a_seventh_missile() {
         "+60% multishot is exactly +60% on the instance: {}",
         factor(&["dual_rounds"])
     );
-    // …and the run as a whole moves too, by less, because a FINAL
-    // multiplier does not reach a DoT payload (which is computed from
-    // ModifiedBase) — here, for Double Tap, and for Eclipse alike.
-    assert!(
-        (split.mean_dot_damage - plain.mean_dot_damage).abs() < 1e-9,
-        "the DoTs are untouched: {} against {}",
-        split.mean_dot_damage, plain.mean_dot_damage
-    );
+    // …AND THE DoTs TAKE IT TOO (M113): the factor is in the seed, so a tick
+    // is `(1.6 S + 1) C M` — a hair under x1.6 for the accumulator's 1.
+    let dots = split.mean_dot_damage / plain.mean_dot_damage;
+    assert!(dots > 1.55 && dots < 1.6, "the DoTs scale with the hits: x{dots:.4}");
     let whole = split.mean_damage / plain.mean_damage;
-    assert!(whole > 1.4 && whole < 1.6, "the DoTs dilute it to x{whole:.3}");
+    assert!(whole > 1.55 && whole < 1.6 + 1e-9, "the run scales whole: x{whole:.4}");
 }
 
 /// SIX MISSILES ARE SIX INSTANCES, which is the whole reason the elements

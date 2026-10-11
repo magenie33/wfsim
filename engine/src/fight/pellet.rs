@@ -1116,7 +1116,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // the ONE line that separates this card from Synth Charge,
             // whose page never says either way and which therefore
             // multiplies the instance and leaves `mb_live` alone.
-            * cc_mult;
+            * cc_mult
+            // MULTISHOT PAID IN DAMAGE REACHES THE DoT SEED, measured
+            // (M113): an Arbucep Gas tick at +110% reads 360, which is
+            // `(228 x 2.1 + 1) x 0.5 x 1.5`, against 172 without it.
+            * ms_damage;
         // WHAT A SPREAD'S STATUSES BURN OFF, and it is THIS number
         // rather than the bare `modded_base` every spread was handed.
         // `spread_hit` multiplies the arcane ratio back in, so the one
