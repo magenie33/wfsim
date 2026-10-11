@@ -206,7 +206,7 @@ async function ownDevice(env, account, id) {
   return results.length === 1 ? results[0].verifier : null;
 }
 
-async function devices(env, account) {
+async function devices(request, env, account) {
   const { results } = await env.ACCOUNTS.prepare(
     "SELECT verifier, claimed_at, label FROM devices WHERE account = ?1 ORDER BY claimed_at").bind(account).all();
   const { results: spans } = await env.ACCOUNTS.prepare(
@@ -223,9 +223,12 @@ async function devices(env, account) {
   const gone = [...work].filter(([v]) => !current.has(v)).map(([, w]) => w);
   const choice = await env.ACCOUNTS.prepare("SELECT named FROM contribution_choice WHERE account = ?1").bind(account).first();
   const named = !!(choice && choice.named);
-  const everyone = await standings(env);
+  // ITS PLACES ARE READ OFF THE RANKING'S OWN MINUTE (`kept`), found by its row
+  // key: worked out here, every open account page re-read every claimed device.
+  const { everyone, day } = await kept(request, env);
+  const mine = await rowKey(env, account, day);
   const ranks = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => {
-    const at = ordered(everyone, key).findIndex((e) => e.id === account);
+    const at = ordered(everyone, key).findIndex((e) => e.key === mine);
     return [period, at < 0 ? null : at + 1];
   }));
   const list = results.map((d) => ({ id: d.verifier.slice(0, 6), label: d.label || null, claimed_at: d.claimed_at,
@@ -541,7 +544,7 @@ export async function contributionRoute(request, env, path) {
   if (!get && !sameSite(request)) return no("cross_site", 403);
   const account = await sessionAccount(env, request);
   if (!account) return no("not_signed_in", 401);
-  if (get) return devices(env, account);
+  if (get) return devices(request, env, account);
   let b = {};
   try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
   return posts[path](env, account, b);
