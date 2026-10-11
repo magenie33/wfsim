@@ -209,6 +209,9 @@ Plain node against `worker/schema.sql` on node's sqlite: a board row as a
 question of the fact factory. Only the factory's secret asks; an owed row is
 asked by `new_build` (an arrival's own build) or `sweep`, an arrival's scored
 row not again, a rescore's on purpose, and the backfill asks what nobody did.
+A `refresh-` row is due fifteen days after its fact finished, asked at five
+days or fourteen, by the batch or the backfill (`oldest_rows.py --self-test`
+holds which rows an hour asks: the oldest, within the room, and the forced).
 A row is handed out as its build and never a number; a page of an older
 protocol, of another engine, or without the reader's yes is handed nothing; a
 further result never comes from the same client, another device of its owner
@@ -301,7 +304,10 @@ ask and opens again on another engine, a withdrawn ask is handed to nobody.
 A pack's answers sent together, in two parts, make every state, fact, credit
 and hour that each alone makes, and two settlings of one question at once pay
 each witness once. The watchdog says a stalled kind, a dispute nobody settled,
-once a cause. A recheck leaves two agreeing open, needing a third, nobody
+once a cause; a question four hours past due but not one an hour past; clients
+disagreeing with the hour's facts on the served engine, the worst owner first,
+but not a few among many, another engine's or an older hour's; and a scene's
+cell rulers still filling, measured and owed, then nothing once full. A recheck leaves two agreeing open, needing a third, nobody
 credited and nothing delivered, and settled again it stays open; no device,
 owner or network of either is the third; a third agreeing from a pack makes the
 fact and credits all three once, a third differing makes a dispute, and a

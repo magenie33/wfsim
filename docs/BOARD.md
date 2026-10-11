@@ -281,11 +281,17 @@ about whether a number is WRONG — it says nobody has looked since.
 
 - **ROW BY ROW, by its own age**, so a weapon's file may rank two engines for
   the days between rather than wait for its oldest row.
-- **DUE FOUR DAYS AFTER IT IS ASKED**, the latest deadline the volunteers are
-  handed, so it is handed only when nothing due sooner is open: idle machines
-  keep the board three days fresh, busy ones let it age, and past seven days the
-  official machines measure it like any question past its deadline. No rate,
-  no share — the deadline is the whole policy (worker/factory.js `DEADLINE_MS`).
+- **A ROW IS REFRESHED BETWEEN THREE AND FIFTEEN DAYS OLD.** It may be asked
+  from three days on, and is DUE WHEN ITS FACT IS FIFTEEN DAYS OLD however late
+  it was asked (worker/factory.js `REFRESH_WITHIN_MS`), so it is handed only
+  when nothing due sooner is open: idle machines keep the board three days
+  fresh, busy ones let it age, and past fifteen days the official machines
+  measure it like any question past its deadline.
+- **ASKED ONLY WHILE THE FACTORY HAS ROOM**: live refresh asks stay under
+  `REFRESH_LIVE_CAP`, so a second scene's rows wait their turn rather than
+  flooding the open questions every hand-out sorts; a row `REFRESH_FORCE_DAYS`
+  old is asked whatever the room, three days before it is due
+  (`scripts/oldest_rows.py`).
 - **A ROW ON THE ENGINE THAT MADE ITS FACT COSTS NOTHING**: the factory answers
   it from that fact at once, and the row counts as measured now.
 - **THE OLDEST FIRST, `REFRESH_PER_HOUR` an hour**, so an hour's asks fit the
@@ -647,8 +653,12 @@ deadline and what only they may settle.
   reproduce or replace.
 - **THE WATCHDOG** (`watchdog`, every ten minutes): a producer whose overdue
   questions got no answer in half an hour while witnesses worked, a
-  non-deterministic question, or a dispute nobody settled in an hour is said to
-  the owner, once a cause until it has stood six hours.
+  non-deterministic question, a dispute nobody settled in an hour, a backlog
+  past due (a thousand questions, or one three hours late — a refresh past due
+  is a row past fifteen days), and clients disagreeing with the hour's facts on
+  the served engine (thirty answers and 3% of them, by owner) are said to the
+  owner, once a cause until it has stood six hours. So is a scene still
+  filling, its cell rulers' rows measured and owed.
 - **WHO IS ON**: a page's ask for work is recorded once a minute
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.
@@ -670,7 +680,7 @@ questions, never a heavier client.
   --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from a scorer
   run's reconciliation. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
-  (due in six hours), `refresh` for a `refresh-` batch's (due in four days),
+  (due in six hours), `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
   `sweep` for a rescore's or an older build's first pass (due in a week). An
   arrival's row the board already scored is not asked: a resubmission the page
   did not recognise is the same build. EVERY OWED ROW IS ASKED FOR: the

@@ -58,6 +58,12 @@ export const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
 /// the witness — it is never paid as agreeing — but it is not a lie, so the
 /// official machines refuse nobody for it (`settleOfficial`).
 const SCORE_NEAR = 1e-12;
+/// WHEN THE WATCHDOG SPEAKS of a backlog past due: this many questions, or any
+/// left this long past its deadline; settling runs hourly, so less is a queue.
+const OVERDUE_MAX = 1000, OVERDUE_HOURS_MS = 3 * 3_600_000;
+/// …AND OF CLIENTS DISAGREEING: this many answers in the hour, and this share
+/// of all of them. A healthy hour runs under one in a hundred.
+const DISAGREE_MIN = 30, DISAGREE_SHARE = 0.03;
 const sansWork = (c) => { const v = JSON.parse(c); delete v.work; return canon(v); };
 export const nearAnswer = (same) => (x, y) => {
   let a, b;
@@ -636,8 +642,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// WHAT IS WRONG RIGHT NOW, for the watchdog: a kind whose overdue questions
   /// went unanswered while witnesses were at work, questions that were not
-  /// deterministic, and disputes nobody settled. Empty when the factory is healthy.
-  async function audit(env, now = Date.now()) {
+  /// deterministic, disputes nobody settled, a backlog past due, and clients
+  /// disagreeing with the facts on the served `engine`. Empty when healthy.
+  async function audit(env, now = Date.now(), engine = null) {
     const db = env.LIBRARY, at = iso(now), recent = iso(now - 30 * 60_000);
     const active = (await db.prepare("SELECT count(*) AS n FROM verifiers WHERE last_at > ?").bind(recent).first()).n;
     // A PRODUCER WHOSE OVERDUE QUESTIONS GOT NO ANSWER AT ALL in half an hour
@@ -657,10 +664,38 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const unsettled = (await db.prepare(
       `SELECT count(*) AS n FROM questions WHERE state IN (${OFFICIAL_STATES.map(() => "?").join(", ")}) AND opened_at < ?`)
       .bind(...OFFICIAL_STATES, iso(now - 3_600_000)).first()).n;
+    // PAST DUE AND STILL OPEN, by kind: the official machines take what is past
+    // due within the hour, so a pile of it, or one left hours late, is a fleet
+    // and a backstop both behind. A refresh past due is a row past fifteen days.
+    const { results: late } = await db.prepare(
+      `SELECT d.producer, count(*) AS questions, min(q.due_at) AS oldest_due
+         FROM questions q JOIN demands d ON d.question = q.id AND d.state = 'live'
+        WHERE q.state = 'open' AND q.waits IN (0, 1) AND q.due_at < ?
+        GROUP BY d.producer`).bind(at).all();
+    const lateTotal = late.reduce((n, p) => n + p.questions, 0);
+    // CLIENTS DISAGREEING WITH THE FACTS of the last hour on the served engine,
+    // and whose they are: a release or a client build that moved a number shows
+    // here before anybody complains.
+    let disagreeing = null;
+    if (engine) {
+      const { results: by } = await db.prepare(
+        `SELECT a.owner, count(*) AS answers, sum(a.canon != q.canon) AS differ, count(DISTINCT a.device) AS devices
+           FROM answers a JOIN questions q ON q.id = a.question
+          WHERE a.engine = ? AND a.at > ? AND a.official = 0 AND q.canon IS NOT NULL
+          GROUP BY a.owner`).bind(engine, iso(now - 3_600_000)).all();
+      const answers = by.reduce((n, o) => n + o.answers, 0), differ = by.reduce((n, o) => n + o.differ, 0);
+      if (differ >= DISAGREE_MIN && differ >= DISAGREE_SHARE * answers) {
+        disagreeing = { engine, answers, differ, owners: by.filter((o) => o.differ).sort((x, y) => y.differ - x.differ).slice(0, 5) };
+      }
+    }
     const out = [];
     if (active) for (const p of stalled) out.push({ kind: `stalled:${p.producer}`, ...p, witnesses_active: active });
     if (odd) out.push({ kind: "nondeterministic", questions: odd });
     if (unsettled) out.push({ kind: "unsettled", questions: unsettled });
+    if (lateTotal >= OVERDUE_MAX || late.some((p) => Date.parse(p.oldest_due) < now - OVERDUE_HOURS_MS)) {
+      out.push({ kind: "overdue", questions: lateTotal, producers: late });
+    }
+    if (disagreeing) out.push({ kind: "disagreeing", ...disagreeing });
     return out;
   }
 

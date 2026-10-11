@@ -246,8 +246,8 @@ L.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric
 queue(`refresh-${today}`, "late");
 await ask(`refresh-${today}`, "late");
 const refreshed = L.prepare("SELECT * FROM demands WHERE producer = 'refresh' AND ref = ?").get("late|standard_single_target|base");
-check("a `refresh-` batch's row is asked by `refresh`, due four days later",
-  refreshed && Math.abs(Date.parse(refreshed.due_at) - Date.parse(refreshed.asked_at) - 4 * 86_400_000) < 1000, JSON.stringify(refreshed));
+check("a `refresh-` batch's row is asked by `refresh`, due fifteen days after its fact finished",
+  refreshed && refreshed.due_at === "2026-01-16T00:00:00.000Z", JSON.stringify(refreshed));
 check("...and one whose official fact is on the served engine costs nothing: the row is measured now, its number kept",
   !owed("late") && fact("late").finished_at > "2026-01-01T00:00:00.000Z" && fact("late").measured_by === "abc123" && fact("late").score === 3,
   JSON.stringify(fact("late")));
@@ -386,6 +386,29 @@ console.log("\norders open before the factory");
   check("...and its answer, agreed with by a page of this one, makes the fact and is credited", fact("p6") && credited(B) === before + WORK);
   check("...while a protocol older still is told it is stale", (await work(B, { protocol: 5 })).stale === true);
   free();
+}
+
+{
+  // A REFRESH IS DUE BY ITS ROW'S AGE: fifteen days after its fact finished,
+  // however late it was asked — by the batch's ask and by the backfill alike.
+  const DAY = 86_400_000, now = Date.now();
+  const measured = (id, daysAgo) => {
+    build(id);
+    L.prepare(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+      VALUES (?, 'standard_single_target', 'base', 'v', 1, 'kpm', 0, 'x', ?)`).run(id, new Date(now - daysAgo * DAY).toISOString());
+  };
+  const dueIn = (id) => (Date.parse(demand(id).due_at) - now) / DAY;
+  const refresh = `refresh-${today}`;
+  measured("aged5", 5); measured("aged14", 14);
+  queue(refresh, "aged5", "aged14");
+  await ask(refresh, "aged5", "aged14");
+  check("a refresh asked at five days old is due at fifteen, ten days on",
+    demand("aged5").producer === "refresh" && Math.abs(dueIn("aged5") - 10) < 0.01, dueIn("aged5"));
+  check("...and one asked at fourteen, the next day", Math.abs(dueIn("aged14") - 1) < 0.01, dueIn("aged14"));
+  measured("aged8", 8);
+  queue(refresh, "aged8");
+  await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
+  check("...and one the backfill asks, by its own age too", demand("aged8") && Math.abs(dueIn("aged8") - 7) < 0.01, demand("aged8") && dueIn("aged8"));
 }
 
 console.log(failures ? `\n${failures} failed` : "\na board row reaches the board when CLIENTS_PER_FACT clients measured the same bits");

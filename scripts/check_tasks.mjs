@@ -384,6 +384,55 @@ console.log("\nthe watchdog");
   await watchdog(tell, later + 7 * 3_600_000);
   check("...and again once it has stood six hours", said.length === 2);
 }
+{
+  // A BACKLOG PAST DUE: one question four hours late is said, one an hour late is not.
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS });
+  await f.demand(env, { producer: "q", ref: "late", verb: "simulate", request: { late: 1 }, due_in_ms: 0 }, "e1", NOW);
+  check("a question an hour past due is a queue, not said", !(await f.audit(env, NOW + 3_600_000)).some((x) => x.kind === "overdue"));
+  const late = (await f.audit(env, NOW + 4 * 3_600_000)).find((x) => x.kind === "overdue");
+  check("...one four hours past due is said, by its kind", late && late.questions === 1 && late.producers[0].producer === "q", JSON.stringify(late));
+}
+{
+  // CLIENTS DISAGREEING with the hour's facts on the served engine are said, by
+  // whose; a few disagreeing answers among many are not.
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS });
+  const fact = canon({ score: 1, work: 5 }), other = canon({ score: 1, work: 4 });
+  let k = 0;
+  const put = (n, owner, c) => {
+    for (let i = 0; i < n; i++, k++) {
+      db.raw.prepare("INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon) VALUES (?, 'simulate', '{}', 'fact', ?, ?, ?)")
+        .run(`f${k}`, iso(NOW), iso(NOW), fact);
+      db.raw.prepare("INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, '', ?, '{}', 5, ?)")
+        .run(`f${k}`, `${owner}-d`, owner, c, iso(NOW - 60_000));
+    }
+  };
+  put(500, "fine", fact); put(10, "fine", other);
+  check("a few disagreeing answers among many are not said", !(await f.audit(env, NOW, "e1")).some((x) => x.kind === "disagreeing"));
+  put(40, "odd", other);
+  const d = (await f.audit(env, NOW, "e1")).find((x) => x.kind === "disagreeing");
+  check("...a client disagreeing with the hour's facts is said, it first",
+    d && d.differ === 50 && d.owners[0].owner === "odd" && d.owners[0].differ === 40, JSON.stringify(d));
+  check("...on the served engine only", !(await f.audit(env, NOW, "e2")).some((x) => x.kind === "disagreeing"));
+  check("...and only within the hour", !(await f.audit(env, NOW + 2 * 3_600_000, "e1")).some((x) => x.kind === "disagreeing"));
+}
+{
+  // A SCENE STILL FILLING is said with its progress, and nothing once it is full.
+  const db = d1(), said = [];
+  const { watchdog } = await import("../worker/factory.js");
+  const env = { LIBRARY: db, CLOUD: { fetch: async (r) => { said.push(await r.json()); return new Response('{"ok":true}'); } } };
+  db.raw.exec(`INSERT INTO batches (id, at, why, total) VALUES ('b', 'x', 'test', 2);
+    INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', 'x1', 'sst__sp200', 'base'), ('b', 'x2', 'sst__sp200', 'base'), ('b', 'x3', 'sst', 'base');
+    INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+      VALUES ('x0', 'sst__sp200', 'base', 'v', 1, 'kpm', 0, 'x', 'x');`);
+  const found = (await watchdog(env, NOW)).find((x) => x.kind === "cells_filling");
+  check("a scene still filling is said: measured and owed, per cell ruler",
+    found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, owed: 2 }])
+      && said.some((x) => /cells_filling/.test(x.text)), JSON.stringify(found));
+  db.raw.exec("DELETE FROM queue WHERE ruler = 'sst__sp200'");
+  check("...and nothing once it is full", !(await watchdog(env, NOW + 7 * 3_600_000)).some((x) => x.kind === "cells_filling"));
+}
 
 console.log("\na score a few ULP off, its work equal, is unpaid but never refused");
 {
