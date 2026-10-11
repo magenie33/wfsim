@@ -344,8 +344,29 @@ async function askWork(id, ahead = false) {
   }
   return ask && { ...ask, asked_at: at };
 }
-/// A PACK STOPS this long before its lease ends: an answer after it is dropped.
-const LEASE_MARGIN_MS = 60_000;
+/// A PACK'S LEASE IS A HEARTBEAT (worker/tasks.js `renewRow`): the row being
+/// computed is renewed once its lease is this close to its end — before it
+/// starts, and as its pieces come in — so a page still computing is never cut
+/// off and one that went silent loses only that row. Left minutes before the
+/// end, so a slow round trip or a few missed beats lose nothing.
+const RENEW_BEFORE_MS = 2 * 60_000;
+/// …AND A RENEWAL THAT GOT NO ANSWER is tried again this much later: a dropped
+/// connection is not a no, and the row keeps computing meanwhile.
+const RENEW_RETRY_MS = 30_000;
+function keepRow(p, t) {
+  if (p.renewing) return p.renewing.then(() => (p.renewedFor === t.question ? null : keepRow(p, t)));
+  if (Date.now() < Math.max(p.rowUntil - RENEW_BEFORE_MS, p.retryAt || 0)) return Promise.resolve();
+  const sent = Date.now();
+  p.renewedFor = t.question;
+  p.renewing = postBoardWork("/api/board/renew", { lease: p.lease, verifier: p.verifier, question: t.question }).then((r) => {
+    p.renewing = null;
+    if (r && r.ok && r.held === false) p.lost = t.question;
+    else if (p.row !== t.question) return;
+    else if (r && r.ok) p.rowUntil = sent + r.renew_ms;
+    else p.retryAt = Date.now() + RENEW_RETRY_MS;
+  });
+  return p.renewing;
+}
 
 /// A NEWER ENGINE IS OUT (`stale`): this page is given no more work, so waiting
 /// helps nobody and it reloads itself — the build kept as a language switch
@@ -529,7 +550,7 @@ async function workOnce() {
   const id = verifierId();
   if (!id) return false;
   await claimDevice(id);
-  if (!heldPack || heldPack.next >= heldPack.tasks.length || Date.now() >= heldPack.until) {
+  if (!heldPack || heldPack.next >= heldPack.tasks.length) {
     await endPack();
     let ask = null;
     if (aheadAsk) { ask = await aheadAsk; aheadAsk = null; aheadHeld = null; }
@@ -538,13 +559,19 @@ async function workOnce() {
     if (ask && ask.work && ask.work.kind === "riven_gain") return rivenGainOnce(ask.work, id);
     if (!(ask && ask.pack)) return false;
     heldPack = { lease: ask.pack.lease, verifier: id, tasks: ask.pack.tasks, next: 0, unsent: [], sentAt: Date.now(),
-      until: ask.asked_at + ask.pack.lease_ms - LEASE_MARGIN_MS };
+      until: ask.asked_at + ask.pack.lease_ms };
   }
   return packRowOnce(id, heldPack);
 }
 async function packRowOnce(id, p) {
   const t = p.tasks[p.next++];
-  const live = () => boardVerifyOn() && !computeHeld() && !computeFrozen && Date.now() < p.until && heldPack === p;
+  // A ROW NOT STARTED is held by the pack's lease alone, which may have run out
+  // while the row before ran long: renewed first, and passed by if it was taken.
+  p.row = t.question;
+  p.rowUntil = p.until;
+  await keepRow(p, t);
+  if (p.lost === t.question) return true;
+  const live = () => boardVerifyOn() && !computeHeld() && !computeFrozen && heldPack === p && p.lost !== t.question;
   const refill = () => { if ((p.tasks.length - p.next) * boardPaceMs <= REFILL_MS) askAhead(id); };
   const order = await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
   if (!order || !order.ok) return true;
@@ -552,14 +579,15 @@ async function packRowOnce(id, p) {
   const began = Date.now();
   const s = await measureRow(order.request, t.ruler, live, (done, total) => {
     computeBeats += 1;
+    keepRow(p, t);
     computeProgress(done, total);
     if (total && done >= AHEAD_AT * total) refill();
   });
   if (!s) {
     computeEnd(null);
-    // A ROW THE ENGINE REFUSED is left to the pack's end; a pack that may no
-    // longer run — turned off, held, frozen, out of time — ends here.
-    if (!live() && heldPack === p) await endPack();
+    // A ROW THE ENGINE REFUSED is left to the pack's end, and a row taken since
+    // is passed by; a pack that may no longer run — turned off, held, frozen — ends here.
+    if (!live() && p.lost !== t.question && heldPack === p) await endPack();
     return true;
   }
   const ms = Date.now() - began;

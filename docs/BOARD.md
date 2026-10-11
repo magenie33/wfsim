@@ -778,10 +778,17 @@ questions, never a heavier client.
   releases what it left. A FACT WITHOUT WORK — a native build's, which counts
   none — witnesses the score alone: the row is the fact, and one a client gave
   that score is a `spot`, its work checked by `settle` before anyone is paid. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page
-  that stops — closed, reloaded, paused, its lease near its end — sends its
-  pack's answers so far with `done` (by beacon on `pagehide`), which gives back
-  the rows it did not reach, so neither the rows nor the computer wait out the
-  lease. How many packs a client holds is decided in the statement that takes
+  that stops — closed, reloaded, paused — sends its pack's answers so far
+  with `done` (by beacon on `pagehide`), which gives back the rows it did not
+  reach, so neither the rows nor the computer wait out the lease. **A LEASE IS
+  A HEARTBEAT, NOT A DEADLINE**: a page still computing a row is never cut off.
+  Once the row's lease nears its end the page renews it (`/api/board/renew`,
+  `renewRow`, `RENEW_MS` at a time) as its pieces come in, and before starting
+  a row whose lease may have run out meanwhile — kept even then, unless another
+  computer took it, when the page passes it by. A row held past
+  `ROW_CEILING_MS` goes back as an overrun; one that overran
+  `OVERRUNS_TO_OFFICIAL` times is too heavy for a browser and goes to the
+  official machines alone, due or not. How many packs a client holds is decided in the statement that takes
   one, so two tabs asking at once cannot both win; a refused client is told
   `banned` rather than handed nothing in silence.
 

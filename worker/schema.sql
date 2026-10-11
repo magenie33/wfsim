@@ -452,6 +452,12 @@ CREATE TABLE IF NOT EXISTS questions (
   lease       TEXT,
   lease_until TEXT,
   leased_to   TEXT,
+  -- WHEN A PACK LEASED IT, and how often a page held it past `ROW_CEILING_MS`
+  -- (worker/tasks.js `renewRow`): from `OVERRUNS_TO_OFFICIAL` on, official only.
+  --   ALTER TABLE questions ADD COLUMN leased_at TEXT;
+  --   ALTER TABLE questions ADD COLUMN overran INTEGER NOT NULL DEFAULT 0;
+  leased_at   TEXT,
+  overran     INTEGER NOT NULL DEFAULT 0,
   -- THE FACT: the canonical answer, the engine it holds for, and when.
   canon       TEXT,
   fact_engine TEXT,

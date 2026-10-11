@@ -294,6 +294,16 @@ credited hour, or the credited rate now if that is more. Uncredited work never
 counts, a machine with nothing credited counts at the median, and a best hour
 from before the served engine's first answer counts for nothing.
 
+## `check_renew`
+
+Plain node against `worker/schema.sql`: a pack's lease is a heartbeat. A row
+whose lease ran out while its page computed it is kept on renewal when nobody
+took it, and its answer forty minutes in is taken. A row another computer took
+since is not kept, nor is a row outside the lease. A row held past
+`ROW_CEILING_MS` goes back with an overrun counted; after
+`OVERRUNS_TO_OFFICIAL` no volunteer is handed it, and the official claim takes
+it though it is not due.
+
 ## `check_riven_gain`
 
 Plain node against `worker/schema.sql` and `worker/accounts.sql`, the served

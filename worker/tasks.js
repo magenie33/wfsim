@@ -28,6 +28,17 @@ import { iso } from "./instant.js";
 /// official machines' alone.
 export const OFFICIAL_STATES = ["disputed", "spot", "nondeterministic"];
 
+/// A PACK'S LEASE IS A HEARTBEAT, not a deadline: a page still computing a row
+/// renews it (`renewRow`) and is never cut off; only a silent one loses it.
+/// Each renewal holds the row this much longer — a few missed beats' worth.
+export const RENEW_MS = 5 * 60_000;
+/// …UP TO THIS LONG from the lease: past it the row goes back and counts one
+/// overrun, the bound on what a page that beats but never answers can hold.
+export const ROW_CEILING_MS = 2 * 3_600_000;
+/// A ROW THAT OVERRAN THIS OFTEN is too heavy for a browser: the official
+/// machines alone take it, due or not, and no volunteer burns hours on it again.
+export const OVERRUNS_TO_OFFICIAL = 2;
+
 /// Text whose bytes two equal values share: keys sorted, at every depth.
 export const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
   : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(",")}}`
@@ -209,7 +220,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   async function nextPack(env, w, engine, { n, lease_ms, most = 1 }, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), lease = newLease();
     const [taken, ds] = await db.batch([
-      db.prepare(`UPDATE questions SET lease = ?9, lease_until = ?10, leased_to = ?11
+      db.prepare(`UPDATE questions SET lease = ?9, lease_until = ?10, leased_to = ?11, leased_at = ?1
           WHERE id IN (SELECT q.id ${eligibleFrom(false)} AND q.waits = 0 AND q.verb IN (SELECT value FROM json_each(?12)) ${ORDER} LIMIT ?13)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11 AND h.lease_until > ?1 AND h.lease != ?9) < ?14
           RETURNING id, verb, request, due_at`)
@@ -259,6 +270,22 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     await env.LIBRARY.prepare("UPDATE questions SET lease_until = ? WHERE lease = ? AND leased_to = ?")
       .bind(iso(now + verbs[q.verb].lease_ms), lease, device).run();
     return true;
+  }
+  /// ONE ROW OF A PACK KEPT while its page is computing it — renewed even once
+  /// its lease ran out, as long as nobody took it since. Returns `{ held }`, and
+  /// `overran` when the row went back for passing `ROW_CEILING_MS`.
+  async function renewRow(env, device, lease, question, now = Date.now()) {
+    const db = env.LIBRARY;
+    const [ceiling, kept] = await db.batch([
+      db.prepare(`UPDATE questions SET overran = overran + 1, lease = NULL, lease_until = NULL, leased_to = NULL
+                   WHERE id = ?1 AND lease = ?2 AND leased_to = ?3 AND leased_at < ?4 RETURNING id`)
+        .bind(question, lease, device, iso(now - ROW_CEILING_MS)),
+      db.prepare(`UPDATE questions SET lease_until = max(lease_until, ?4)
+                   WHERE id = ?1 AND lease = ?2 AND leased_to = ?3 RETURNING id`)
+        .bind(question, lease, device, iso(now + RENEW_MS)),
+    ]);
+    if (ceiling.results.length) return { held: false, overran: true };
+    return { held: kept.results.length > 0 };
   }
   async function release(env, device, lease) {
     await env.LIBRARY.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ? AND leased_to = ?")
@@ -522,14 +549,15 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     const { results } = await db.prepare(
       `UPDATE questions SET lease = lower(hex(randomblob(16))), lease_until = ?1, leased_to = ?2
         WHERE id IN (SELECT q.id FROM questions q
-          WHERE ((?3 = 1 AND q.state = 'open' AND q.due_at < ?4) OR q.state IN (SELECT value FROM json_each(?5)))
+          WHERE ((?3 = 1 AND q.state = 'open' AND (q.due_at < ?4 OR q.overran >= ?9)) OR q.state IN (SELECT value FROM json_each(?5)))
             AND (q.lease_until IS NULL OR q.lease_until < ?4)
             AND (?6 IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
                                        AND d.producer IN (SELECT value FROM json_each(?6))))
             AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2 AND a.engine = ?7)
           ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8)
         RETURNING id, verb, request, state, lease`)
-      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max).all();
+      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max,
+        OVERRUNS_TO_OFFICIAL).all();
     if (!results.length) return [];
     const { results: ds } = await db.prepare(
       `SELECT question, producer, ref, payload FROM demands WHERE state != 'withdrawn' AND question IN (SELECT value FROM json_each(?))
@@ -603,7 +631,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit };
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has
@@ -619,8 +647,9 @@ export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals |
 /// deadline and what only they may settle.
 function eligibleFrom(official) {
   return `FROM questions q
-    WHERE ${official ? `((q.state = 'open' AND q.due_at < ?1) OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
-      : "q.state = 'open'"}
+    WHERE ${official ? `((q.state = 'open' AND (q.due_at < ?1 OR q.overran >= ${OVERRUNS_TO_OFFICIAL}))
+                          OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
+      : `q.state = 'open' AND q.overran < ${OVERRUNS_TO_OFFICIAL}`}
       AND (q.lease_until IS NULL OR q.lease_until < ?1)
       AND (?2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM answers x WHERE x.question = q.id)
            OR ?3 >= (SELECT min(json_extract(t.value, '$.lanes')) FROM json_each(q.lanes) t

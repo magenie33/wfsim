@@ -12,6 +12,7 @@
 //        (worker/appraise.js §"Volunteer work"), `pack: null`.
 //   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done? } → { ok }
 //   POST /api/board/release { lease, verifier }                                     → { ok }
+//   POST /api/board/renew   { lease, verifier, question }                           → { ok, held, renew_ms }
 //   …and PROTOCOL 6, the one before (`PROTOCOLS_SERVED`): `/work` hands a pack of one
 //   as `work: { lease, identity, record, ruler, mode }`, answered by
 //   POST /api/board/verify { lease, verifier, engine, score, metric, work, compute_ms, counts?, lanes? } → { ok }
@@ -25,7 +26,7 @@
 // asked because the code that answers it is the current code, and a tab left
 // open on an older one would answer it with the old arithmetic.
 
-import { witnessOf } from "./tasks.js";
+import { witnessOf, RENEW_MS } from "./tasks.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf, packTaskOf } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
@@ -127,7 +128,8 @@ export const PACK_MAX = 20;
 /// …A COMPUTER WHOSE PACE IS NOT KNOWN YET is handed this many.
 export const PACK_FIRST = 3;
 /// A PACK IS LEASED TWICE ITS EXPECTED LENGTH, within these bounds, so a page
-/// that vanished without a word holds its rows minutes, not half an hour.
+/// that vanished without a word holds its rows minutes, not half an hour; a
+/// row that runs longer is renewed while it runs (`renew`), never cut off.
 export const PACK_LEASE_MIN_MS = 5 * 60_000;
 /// HOW MANY PACKS A CLIENT HOLDS AT MOST: the one it computes and the next,
 /// asked as this one ends (`ahead`), so no core waits on a round trip.
@@ -315,6 +317,21 @@ async function release(request, env) {
   return json({ ok: true });
 }
 
+/// THE ROW A PAGE IS COMPUTING, kept for it (worker/tasks.js `renewRow`): sent
+/// while the row runs and its lease nears its end, and before a row whose lease
+/// may have run out. `held` false — taken since, or past the ceiling — stops it.
+async function renew(request, env) {
+  const { b, err } = await read(request);
+  if (err) return err;
+  if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "") || !QUESTION_ID.test(b.question || "")) {
+    return json({ ok: false, error: "bad request" }, 400);
+  }
+  const refused = unrecognised(b.verifier);
+  if (refused) return refused;
+  const { held } = await facts().renewRow(env, b.verifier, b.lease, b.question);
+  return json({ ok: true, held, renew_ms: RENEW_MS });
+}
+
 /// WHERE EACH OF A BROWSER'S RECENT RESULTS STANDS, asked by its own secret id
 /// for the orders it names (73-compute.js, the recent tasks): `waiting` for a
 /// client of another owner and network, `checking` while the server settles a
@@ -358,6 +375,7 @@ export async function verifyRoute(request, env, path) {
   if (path === "/api/board/answers") return answers(request, env);
   if (path === "/api/board/verify") return verify(request, env);
   if (path === "/api/board/release") return release(request, env);
+  if (path === "/api/board/renew") return renew(request, env);
   if (path === "/api/board/mine") return mine(request, env);
   return json({ ok: false, error: "not found" }, 404);
 }

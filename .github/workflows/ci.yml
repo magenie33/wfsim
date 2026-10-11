@@ -142,6 +142,8 @@ jobs:
         run: node scripts/check_tasks.mjs
       - name: While work is short an account past its fair share waits, and only then
         run: node scripts/check_fair.mjs
+      - name: A row its page still computes is kept for it, and only a silent or endless one goes back
+        run: node scripts/check_renew.mjs
       - name: A riven gain is run by the community and credited when two owners agree
         run: node scripts/check_riven_gain.mjs
       - name: The site reads the live board, and the committed one only until it exists
