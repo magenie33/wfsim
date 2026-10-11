@@ -788,10 +788,11 @@ questions, never a heavier client.
   Once the row's lease nears its end the page renews it (`/api/board/renew`,
   `renewRow`, `RENEW_MS` at a time) as its pieces come in, and before starting
   a row whose lease may have run out meanwhile — kept even then, unless another
-  computer took it, when the page passes it by. A row held past
-  `ROW_CEILING_MS` goes back as an overrun; one that overran
-  `OVERRUNS_TO_OFFICIAL` times is too heavy for a browser and goes to the
-  official machines alone, due or not. How many packs a client holds is decided in the statement that takes
+  computer took it, when the page passes it by. **NOBODY IS CUT OFF**: past
+  `ROW_CEILING_MS` from its lease another computer may take the row too,
+  and whichever answers first makes it. The holder computing longest is kept
+  as the one before (`lease_prev`), its renewals held and its answer counted,
+  so a page that beats but never answers holds nothing back. How many packs a client holds is decided in the statement that takes
   one, so two tabs asking at once cannot both win; a refused client is told
   `banned` rather than handed nothing in silence.
 

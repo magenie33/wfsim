@@ -324,7 +324,7 @@ async function release(request, env) {
 
 /// THE ROW A PAGE IS COMPUTING, kept for it (worker/tasks.js `renewRow`): sent
 /// while the row runs and its lease nears its end, and before a row whose lease
-/// may have run out. `held` false — taken since, or past the ceiling — stops it.
+/// may have run out. `held` false — taken since, and not as the holder before — stops it.
 async function renew(request, env) {
   const { b, err } = await read(request);
   if (err) return err;

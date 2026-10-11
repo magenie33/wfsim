@@ -452,12 +452,17 @@ CREATE TABLE IF NOT EXISTS questions (
   lease       TEXT,
   lease_until TEXT,
   leased_to   TEXT,
-  -- WHEN A PACK LEASED IT, and how often a page held it past `ROW_CEILING_MS`
-  -- (worker/tasks.js `renewRow`): from `OVERRUNS_TO_OFFICIAL` on, official only.
+  -- WHEN A VOLUNTEER LEASED IT, and the holder before, still computing, when
+  -- another took it past `ROW_CEILING_MS` (worker/tasks.js `SUPERSEDE`).
   --   ALTER TABLE questions ADD COLUMN leased_at TEXT;
-  --   ALTER TABLE questions ADD COLUMN overran INTEGER NOT NULL DEFAULT 0;
+  --   ALTER TABLE questions ADD COLUMN lease_prev TEXT;
+  --   ALTER TABLE questions ADD COLUMN leased_to_prev TEXT;
+  --   ALTER TABLE questions ADD COLUMN lease_prev_until TEXT;
+  --   ALTER TABLE questions DROP COLUMN overran;
   leased_at   TEXT,
-  overran     INTEGER NOT NULL DEFAULT 0,
+  lease_prev  TEXT,
+  leased_to_prev TEXT,
+  lease_prev_until TEXT,
   -- THE WITNESSES IT NEEDS, when a recheck raised them past the threshold
   -- (worker/tasks.js `decide`); null is the threshold.
   --   ALTER TABLE questions ADD COLUMN needs INTEGER;

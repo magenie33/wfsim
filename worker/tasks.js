@@ -32,12 +32,21 @@ export const OFFICIAL_STATES = ["disputed", "spot", "nondeterministic"];
 /// renews it (`renewRow`) and is never cut off; only a silent one loses it.
 /// Each renewal holds the row this much longer — a few missed beats' worth.
 export const RENEW_MS = 5 * 60_000;
-/// …UP TO THIS LONG from the lease: past it the row goes back and counts one
-/// overrun, the bound on what a page that beats but never answers can hold.
+/// …AND PAST THIS LONG FROM THE LEASE another computer may take it too, the
+/// first holder computing on (`lease_prev`): whichever answers first makes it.
+/// Nobody is cut off, and a page that beats but never answers holds nothing.
 export const ROW_CEILING_MS = 2 * 3_600_000;
-/// A ROW THAT OVERRAN THIS OFTEN is too heavy for a browser: the official
-/// machines alone take it, due or not, and no volunteer burns hours on it again.
-export const OVERRUNS_TO_OFFICIAL = 2;
+/// A LEASE ANOTHER MAY TAKE: none, run out, or held past the ceiling. In SQL,
+/// against the instant bound as ?1.
+const TAKEABLE = `(lease_until IS NULL OR lease_until < ?1
+  OR leased_at < strftime('%Y-%m-%dT%H:%M:%fZ', ?1, '-${ROW_CEILING_MS / 1000} seconds'))`;
+/// …AND TAKING ONE keeps the holder computing longest as the one before, its
+/// answer still counted: one still beating there stays, else the one taken
+/// from if it still beats; a lease run out keeps nobody.
+const SUPERSEDE = `
+  lease_prev = CASE WHEN lease_prev_until >= ?1 THEN lease_prev WHEN lease_until >= ?1 THEN lease END,
+  leased_to_prev = CASE WHEN lease_prev_until >= ?1 THEN leased_to_prev WHEN lease_until >= ?1 THEN leased_to END,
+  lease_prev_until = CASE WHEN lease_prev_until >= ?1 THEN lease_prev_until WHEN lease_until >= ?1 THEN lease_until END`;
 
 /// Text whose bytes two equal values share: keys sorted, at every depth.
 export const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
@@ -193,10 +202,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const lease = newLease();
       // THE RACE IS THE DATABASE'S, and so is the cap on what one witness holds.
       const took = await db.prepare(
-        `UPDATE questions SET lease = ?, lease_until = ?, leased_to = ?
-          WHERE id = ? AND state = ? AND (lease_until IS NULL OR lease_until < ?)
-            AND (SELECT count(*) FROM questions h WHERE h.leased_to = ? AND h.lease_until > ?) < ?`)
-        .bind(lease, iso(now + verbs[q.verb].lease_ms), w.device, q.id, q.state, at, w.device, at, most).run();
+        `UPDATE questions SET ${SUPERSEDE}, lease = ?2, lease_until = ?3, leased_to = ?4, leased_at = ?1
+          WHERE id = ?5 AND state = ?6 AND ${TAKEABLE}
+            AND (SELECT count(*) FROM questions h WHERE h.leased_to = ?4 AND h.lease_until > ?1) < ?7`)
+        .bind(at, lease, iso(now + verbs[q.verb].lease_ms), w.device, q.id, q.state, most).run();
       if (took.meta.changes) {
         for (const d of wanted) {
           const p = producerOf(d.producer);
@@ -220,7 +229,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   async function nextPack(env, w, engine, { n, lease_ms, most = 1 }, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), lease = newLease();
     const [taken, ds] = await db.batch([
-      db.prepare(`UPDATE questions SET lease = ?9, lease_until = ?10, leased_to = ?11, leased_at = ?1
+      db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?9, lease_until = ?10, leased_to = ?11, leased_at = ?1
           WHERE id IN (SELECT q.id ${eligibleFrom(false)} AND q.waits = 0 AND q.verb IN (SELECT value FROM json_each(?12)) ${ORDER} LIMIT ?13)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11 AND h.lease_until > ?1 AND h.lease != ?9) < ?14
           RETURNING id, verb, request, due_at`)
@@ -272,20 +281,19 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return true;
   }
   /// ONE ROW OF A PACK KEPT while its page is computing it — renewed even once
-  /// its lease ran out, as long as nobody took it since. Returns `{ held }`, and
-  /// `overran` when the row went back for passing `ROW_CEILING_MS`.
+  /// its lease ran out, as long as nobody took it since, and as the holder
+  /// before (`SUPERSEDE`) once another took it past the ceiling. Returns `{ held }`.
   async function renewRow(env, device, lease, question, now = Date.now()) {
     const db = env.LIBRARY;
-    const [ceiling, kept] = await db.batch([
-      db.prepare(`UPDATE questions SET overran = overran + 1, lease = NULL, lease_until = NULL, leased_to = NULL
-                   WHERE id = ?1 AND lease = ?2 AND leased_to = ?3 AND leased_at < ?4 RETURNING id`)
-        .bind(question, lease, device, iso(now - ROW_CEILING_MS)),
+    const [kept, before] = await db.batch([
       db.prepare(`UPDATE questions SET lease_until = max(lease_until, ?4)
                    WHERE id = ?1 AND lease = ?2 AND leased_to = ?3 RETURNING id`)
         .bind(question, lease, device, iso(now + RENEW_MS)),
+      db.prepare(`UPDATE questions SET lease_prev_until = max(lease_prev_until, ?4)
+                   WHERE id = ?1 AND lease_prev = ?2 AND leased_to_prev = ?3 RETURNING id`)
+        .bind(question, lease, device, iso(now + RENEW_MS)),
     ]);
-    if (ceiling.results.length) return { held: false, overran: true };
-    return { held: kept.results.length > 0 };
+    return { held: kept.results.length > 0 || before.results.length > 0 };
   }
   async function release(env, device, lease) {
     await env.LIBRARY.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ? AND leased_to = ?")
@@ -322,7 +330,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   async function answerPack(env, w, { lease, engine, answers, done = false }, now = Date.now()) {
     const db = env.LIBRARY;
     const { results: held } = await db.prepare(
-      "SELECT * FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ? AND id IN (SELECT value FROM json_each(?))")
+      `SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?4))
+         AND ((lease = ?1 AND leased_to = ?2 AND lease_until >= ?3) OR (lease_prev = ?1 AND leased_to_prev = ?2))`)
       .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question))).all();
     const byId = new Map(held.map((q) => [q.id, q]));
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
@@ -555,17 +564,16 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const open = states.includes("open") ? 1 : 0;
     const theirs = states.filter((x) => OFFICIAL_STATES.includes(x));
     const { results } = await db.prepare(
-      `UPDATE questions SET lease = lower(hex(randomblob(16))), lease_until = ?1, leased_to = ?2
+      `UPDATE questions SET lease = lower(hex(randomblob(16))), lease_until = ?1, leased_to = ?2, leased_at = NULL
         WHERE id IN (SELECT q.id FROM questions q
-          WHERE ((?3 = 1 AND q.state = 'open' AND (q.due_at < ?4 OR q.overran >= ?9)) OR q.state IN (SELECT value FROM json_each(?5)))
+          WHERE ((?3 = 1 AND q.state = 'open' AND q.due_at < ?4) OR q.state IN (SELECT value FROM json_each(?5)))
             AND (q.lease_until IS NULL OR q.lease_until < ?4)
             AND (?6 IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
                                        AND d.producer IN (SELECT value FROM json_each(?6))))
             AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2 AND a.engine = ?7)
           ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8)
         RETURNING id, verb, request, state, lease`)
-      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max,
-        OVERRUNS_TO_OFFICIAL).all();
+      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max).all();
     if (!results.length) return [];
     // A SPOT NOBODY ASKS FOR ANY MORE still owes its volunteers a verdict, so it
     // comes with its withdrawn demands: without one it is claimed, skipped and
@@ -662,10 +670,9 @@ export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals |
 /// deadline and what only they may settle.
 function eligibleFrom(official) {
   return `FROM questions q
-    WHERE ${official ? `((q.state = 'open' AND (q.due_at < ?1 OR q.overran >= ${OVERRUNS_TO_OFFICIAL}))
-                          OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
-      : `q.state = 'open' AND q.overran < ${OVERRUNS_TO_OFFICIAL}`}
-      AND (q.lease_until IS NULL OR q.lease_until < ?1)
+    WHERE ${official ? `((q.state = 'open' AND q.due_at < ?1) OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
+      : "q.state = 'open'"}
+      AND ${TAKEABLE.replaceAll("lease", "q.lease")}
       AND (?2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM answers x WHERE x.question = q.id)
            OR ?3 >= (SELECT min(json_extract(t.value, '$.lanes')) FROM json_each(q.lanes) t
                      WHERE json_extract(t.value, '$.after_ms') <= (julianday(?1) - julianday(q.opened_at)) * 86400000.0))

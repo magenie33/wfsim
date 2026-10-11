@@ -304,10 +304,11 @@ from before the served engine's first answer counts for nothing.
 Plain node against `worker/schema.sql`: a pack's lease is a heartbeat. A row
 whose lease ran out while its page computed it is kept on renewal when nobody
 took it, and its answer forty minutes in is taken. A row another computer took
-since is not kept, nor is a row outside the lease. A row held past
-`ROW_CEILING_MS` goes back with an overrun counted; after
-`OVERRUNS_TO_OFFICIAL` no volunteer is handed it, and the official claim takes
-it though it is not due.
+since is not kept, nor is a row outside the lease. A row under the ceiling
+is handed to nobody else; past it the renewal still holds, another computer
+may take it too with the first kept as the holder before, a third take keeps
+the first and lets the second go, and the holder before's answer counts — one
+owner's two holders answering being one witness, credited to nobody.
 
 ## `check_riven_gain`
 

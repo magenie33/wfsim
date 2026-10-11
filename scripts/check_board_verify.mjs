@@ -21,6 +21,11 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
+// THE DICE PICK NO RECHECK AND NO SPOT CHECK unless a check below says so: an
+// agreement the 2% recheck picked waits for a third, and a check expecting a
+// fact would fail one run in fifty.
+Math.random = () => 0.5;
+
 let failures = 0;
 const check = (what, ok, detail = "") => {
   console.log(`  ${ok ? "ok " : "FAIL"}  ${what}${ok || !detail ? "" : `   ${detail}`}`);
