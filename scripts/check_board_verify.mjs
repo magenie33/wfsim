@@ -190,9 +190,12 @@ free(); only("three");
 const G = "7".repeat(24), H = "6".repeat(24);
 for (const v of [G, H]) L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
 const real = Math.random;
-Math.random = () => 0;  // the dice pick this agreement for a spot check
 await answer(task(await work(G, { ip: "192.0.2.7" })), G, { ip: "192.0.2.7", score: 9 });
-await answer(task(await work(H, { ip: "192.0.2.8" })), H, { ip: "192.0.2.8", score: 9 });
+const second = task(await work(H, { ip: "192.0.2.8" }));
+// THE DICE pass this agreement over for a recheck and pick it for a spot check.
+const rolls = [0.5];
+Math.random = () => (rolls.length ? rolls.shift() : 0);
+await answer(second, H, { ip: "192.0.2.8", score: 9 });
 Math.random = real;
 check("an agreement the dice pick is a spot check: a fact now, the clients paid", question("three").state === "spot" && fact("three")
   && credited(G) === WORK);

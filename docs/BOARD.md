@@ -65,7 +65,8 @@ is how they are kept:
    bot server, `scores.yml`) do three things only: the FALLBACK for a row the
    clients did not finish by its deadline, the VERDICT when clients disagree, and
    the SPOT CHECK that keeps colluding clients a gamble.
-4. **THREE DIALS.** `CLIENTS_PER_FACT` (how many clients must agree),
+4. **FOUR DIALS.** `CLIENTS_PER_FACT` (how many clients must agree),
+   `RECHECK_SHARE` (how many agreements one more volunteer measures first),
    `SPOT_SHARE` (how many facts the server recomputes anyway) and the deadlines
    (`DEADLINE_MS` in `worker/factory.js`, how long a row is the clients' alone
    before the fallback may take it). Changing how the board runs is turning one
@@ -750,8 +751,10 @@ questions, never a heavier client.
   metric and work — from different owners on different networks make the fact:
   written to `scores` as `verified:<engine>` — replacing the old number of a
   row a rescore asked for again, as the scorer's fact would — and the queue row
-  deleted. One fact in twenty is a `spot` the server checks again. A
-  difference is a `dispute`. The answer never says which.
+  deleted. A `RECHECK_SHARE` of agreements wait for one more independent
+  volunteer first — nothing credited meanwhile, a third who differs makes a
+  dispute — and a `SPOT_SHARE` of facts, credited at once, is a `spot` the
+  server checks again. A difference is a `dispute`. The answer never says which.
 - **Settling.** `live_orders.mjs settle` claims what only the official machines
   may settle — `disputed`, `spot`, `nondeterministic` — as `official:live`,
   fights each on the volunteers' own engine — the site's wasm under node, along
@@ -850,8 +853,8 @@ yes, since each ask again is a reader interrupted. Eight rules:
    (`WORK_COUNTERS`) times `WORK_WEIGHTS`. A client's `compute_ms` is its
    machine's speed and is never credited. One point is 10^9 of work.
 3. **THE WORK IS PART OF THE BITS.** A result names its work beside its score,
-   and a further result agrees only if the work is equal too. The server's spot
-   check holds the clients to the work as well as the score, so a claimed work
+   and a further result agrees only if the work is equal too. A recheck and the
+   server's spot check hold the clients to the work as well as the score, so a claimed work
    nobody did is a refused client.
 4. **A FACT NEEDS DIFFERENT OWNERS AND DIFFERENT NETWORKS.** A further result
    is never handed to a device of an owner whose device already measured the

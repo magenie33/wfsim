@@ -5,7 +5,7 @@
 import { factory, canon, nearAnswer } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask } from "./board_tasks.js";
-import { CLIENTS_PER_FACT, SPOT_SHARE } from "./verify.js";
+import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE } from "./verify.js";
 import { cloudTell } from "./cloud.js";
 import { iso } from "./instant.js";
 
@@ -35,14 +35,14 @@ export const VERBS = {
   // leased a quarter of an hour and renewed while it runs. Three answers without
   // two agreeing is a dispute. No spot checks yet: no official machine runs a
   // search, and a check nobody makes is a question left waiting.
-  optimize: { cap: 3, lease_ms: 15 * 60_000, spot: 0, canon: (r, work) => canon({ build: r.build, score: r.score, work }),
+  optimize: { cap: 3, lease_ms: 15 * 60_000, spot: 0, recheck: 0, canon: (r, work) => canon({ build: r.build, score: r.score, work }),
     near: nearAnswer(["build", "work"]) },
 };
 
 let made = null;
 /// THE FACTORY, made on first use: its producers' modules import this one.
 export function facts() {
-  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE });
+  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE, recheck: RECHECK_SHARE });
   return made;
 }
 

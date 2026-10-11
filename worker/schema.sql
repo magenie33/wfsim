@@ -458,6 +458,10 @@ CREATE TABLE IF NOT EXISTS questions (
   --   ALTER TABLE questions ADD COLUMN overran INTEGER NOT NULL DEFAULT 0;
   leased_at   TEXT,
   overran     INTEGER NOT NULL DEFAULT 0,
+  -- THE WITNESSES IT NEEDS, when a recheck raised them past the threshold
+  -- (worker/tasks.js `decide`); null is the threshold.
+  --   ALTER TABLE questions ADD COLUMN needs INTEGER;
+  needs       INTEGER,
   -- THE FACT: the canonical answer, the engine it holds for, and when.
   canon       TEXT,
   fact_engine TEXT,

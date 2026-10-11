@@ -120,7 +120,7 @@ console.log("\ntermination: every question ends a fact or withdrawn");
   for (let t = 0; t < Math.ceil(TRIALS / 4) && bad < 3; t++) {
     const r = rng(10_000 + t), db = d1(), env = { LIBRARY: db };
     const disproved = [];
-    const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r, spot: 0.2,
+    const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r, spot: 0.2, recheck: 0.3,
       on_disproved: async (_, a) => { disproved.push(a); } });
     // Each question's true answer, and whether it is deterministic at all.
     const truth = new Map(), odd = new Set();
@@ -430,6 +430,55 @@ console.log("\nan official answer without work witnesses the score alone");
   await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: null }, NOW);
   await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: 100 }, NOW);
   check("...or refuses one whose work it disproves", refused.includes("v-lied") && !paid("v-lied"), JSON.stringify(refused));
+}
+
+console.log("\na recheck: one more independent volunteer before a fact");
+{
+  const db = d1(), env = { LIBRARY: db };
+  let roll = 0;
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, spot: 0, recheck: 0.5, random: () => roll, on_disproved: async () => {} });
+  const ask = async (ref, due = 3_600_000) => f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: due }, "e1", NOW);
+  const row = (id) => db.raw.prepare("SELECT * FROM questions WHERE id = ?").get(id);
+  const paid = (id) => db.raw.prepare("SELECT device FROM answers WHERE question = ? AND credited = 1 ORDER BY device").all(id).map((a) => a.device).join();
+  const delivered = (ref) => told.filter((x) => x.ref === ref).length;
+  const who = (device, owner = device, net = `n${device}`, siblings = [device]) => ({ device, owner, net, siblings });
+  const volunteer = async (w, score, at = NOW) => {
+    const q = await f.next(env, w, "e1", at);
+    if (!q) return null;
+    await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score }, work: 100 }, at);
+    return q.question;
+  };
+  const agreed = await ask("agreed");
+  await volunteer(who("r1"), 7);
+  await volunteer(who("r2"), 7);
+  check("two agreeing on a row the roll picks leave it open, needing a third, nobody credited and nothing delivered",
+    row(agreed).state === "open" && row(agreed).needs === 3 && paid(agreed) === "" && !delivered("agreed"), JSON.stringify(row(agreed)));
+  await f.settle(env, agreed, "e1", NOW);
+  check("...and settled again before a third comes, it is still open, not a dispute", row(agreed).state === "open", JSON.stringify(row(agreed)));
+  check("...and no device, owner or network of either is the third",
+    !(await f.next(env, who("r1-alt", "r1", "nother", ["r1-alt", "r1"]), "e1", NOW))
+      && !(await f.next(env, who("r3", "r3", "nr2"), "e1", NOW)));
+  roll = 0.9;
+  const p = await f.nextPack(env, who("r4"), "e1", { n: 5, lease_ms: 60_000 }, NOW);
+  await f.answerPack(env, who("r4"), { lease: p.lease, engine: "e1", answers: [{ question: agreed, result: { score: 7 }, work: 100 }], done: true }, NOW);
+  check("a third agreeing, from a pack, makes it a fact: all three credited once, delivered once",
+    row(agreed).state === "fact" && paid(agreed) === "r1,r2,r4" && delivered("agreed") === 1
+      && db.raw.prepare("SELECT count(*) AS n FROM answers WHERE credited = 1").get().n === 3, `${JSON.stringify(row(agreed))} ${paid(agreed)}`);
+  roll = 0;
+  const lied = await ask("lied");
+  await volunteer(who("l1"), 5);
+  await volunteer(who("l2"), 5);
+  await volunteer(who("l3"), 6);
+  check("a third who differs makes a dispute, nobody credited", row(lied).state === "disputed" && paid(lied) === "", JSON.stringify(row(lied)));
+  const late = await ask("late", 1000);
+  await volunteer(who("t1"), 9);
+  await volunteer(who("t2"), 9);
+  roll = 0.9;
+  const claimed = await f.claim(env, { device: "official" }, { states: ["open"], max: 5 }, "e1", NOW + 2000);
+  await f.answerOfficial(env, { device: "official", owner: "official" }, { question: late, engine: "e1", result: { score: 9 }, work: 100 }, NOW + 2000);
+  check("a rechecked row past its deadline is the official machines', and they credit the two who agreed",
+    claimed.some((t) => t.question === late) && row(late).needs === 3 && row(late).state === "fact" && paid(late) === "t1,t2",
+    `${JSON.stringify(row(late))} ${paid(late)}`);
 }
 
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");

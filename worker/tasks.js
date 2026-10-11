@@ -82,7 +82,7 @@ export async function witnessOf(env, device) {
 /// (`threshold`, a volunteer counting one and the official machines all of it),
 /// the share of facts the official machines check again (`spot`), and what
 /// happens to a witness they disprove (`on_disproved`).
-export function factory({ verbs, producers, threshold = 2, spot = 0.05, random = () => Math.random(), on_disproved = null }) {
+export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null }) {
   /// THE VERBS A PACK MAY CARRY (`pack: true`): short, many, nobody waiting on one.
   const PACKABLE = JSON.stringify(Object.keys(verbs).filter((v) => verbs[v].pack));
   const producerOf = (name) => {
@@ -412,7 +412,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   /// AN OPEN QUESTION'S VOLUNTEER ANSWERS, judged — a fact, the cap reached, or
   /// still open — its writes added to `writes`.
   function decide(env, q, all, served, demands, engine, now, writes, later) {
-    const db = env.LIBRARY;
+    const db = env.LIBRARY, needs = q.needs || threshold;
     // A GROUP OF EQUAL ANSWERS holds one of the served engine; an older engine's
     // answer joins one (a release that did not move the bits) and never starts one.
     for (const lead of served) {
@@ -420,7 +420,15 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       // reproduced are credited beside it rather than instead of it.
       const equal = all.filter((a) => a.canon === lead.canon);
       const group = independent([...equal.filter((a) => a.engine === engine), ...equal.filter((a) => a.engine !== engine)]);
-      if (group.length < threshold) continue;
+      if (group.length < needs) continue;
+      // A RECHECK: one more independent volunteer before it is a fact, nothing
+      // credited meanwhile. One who differs makes it a dispute, which the
+      // official machines settle and refuse the liar in — so a recheck catches
+      // a pair agreeing on a lie whenever the third is honest.
+      if (!q.needs && group.length === threshold && random() < (verbs[q.verb].recheck ?? recheck)) {
+        writes.push(db.prepare("UPDATE questions SET needs = ? WHERE id = ? AND state = 'open' AND needs IS NULL").bind(threshold + 1, q.id));
+        return;
+      }
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
       writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
         .bind(state, lead.canon, engine, iso(now), q.id));
@@ -430,7 +438,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     }
     // ONLY WITNESSES FILL THE CAP: a browser claimed by an owner after it took
     // the question answers as that owner's second, which disagrees with nobody.
-    const cap = verbs[q.verb].cap, witnesses = independent(served);
+    const cap = Math.max(verbs[q.verb].cap, needs), witnesses = independent(served);
     if (witnesses.length >= cap) {
       const distinct = new Set(witnesses.map((a) => a.canon)).size === witnesses.length;
       writes.push(db.prepare("UPDATE questions SET state = ? WHERE id = ? AND state = 'open'")

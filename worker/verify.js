@@ -39,11 +39,14 @@ export const LEASE_MS = 30 * 60_000;
 /// fact. 1 takes the first result unchecked; each one more is one more
 /// independent client the result waits for. A check sets `env.CLIENTS_PER_FACT`.
 export const CLIENTS_PER_FACT = 2;
-/// The share of facts the server recomputes anyway, which is what makes
-/// two colluding clients a gamble rather than a method. SIZED TO WHAT THE
-/// OFFICIAL MACHINES SETTLE: a share past it is a backlog, and a spot holds
-/// its volunteers' points until it is settled.
-export const SPOT_SHARE = 0.01;
+/// THE SHARE OF FACTS ONE MORE VOLUNTEER MEASURES before they count, which is
+/// what makes two colluding clients a gamble rather than a method: a third who
+/// differs makes a dispute, and the official machines refuse the liar.
+export const RECHECK_SHARE = 0.02;
+/// …AND THE SHARE THE OFFICIAL MACHINES RECOMPUTE after the fact, for a ring
+/// large enough to be its own third. Sized to what they settle beside the
+/// disputes: a spot is credited at once, so a backlog of them is a check late.
+export const SPOT_SHARE = 0.002;
 /// WHAT A PAGE THAT CAN FILL AN ORDER SENDS. A tab opened before orders existed
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.

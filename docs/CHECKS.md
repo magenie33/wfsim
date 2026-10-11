@@ -278,7 +278,12 @@ ask and opens again on another engine, a withdrawn ask is handed to nobody.
 A pack's answers sent together, in two parts, make every state, fact, credit
 and hour that each alone makes, and two settlings of one question at once pay
 each witness once. The watchdog says a stalled kind, a dispute nobody settled,
-once a cause.
+once a cause. A recheck leaves two agreeing open, needing a third, nobody
+credited and nothing delivered, and settled again it stays open; no device,
+owner or network of either is the third; a third agreeing from a pack makes the
+fact and credits all three once, a third differing makes a dispute, and a
+rechecked row past its deadline goes to the official machines, who credit the
+two who agreed.
 
 ## `check_fair`
 
