@@ -111,6 +111,8 @@ function loadAccount() {
     accountState = r && r.ok
       ? { providers: r.providers || [], account: r.account, loaded: true }
       : { providers: [], account: null, loaded: true };
+    // SIGNED IN OR NOT, as the server answered: an unanswered call says neither.
+    if (r && r.ok) track("account.state", accountState.account ? "signed_in" : "signed_out");
     // THE CLOUD ON A CHIP is drawn from who is signed in, so a bar on screen
     // drawn before this answer is drawn again. Only one on screen: a bar whose
     // page is not open has nothing to draw from.

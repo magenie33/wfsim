@@ -100,6 +100,7 @@ with this thing, not how many times: forty edits to one build are one build.
 | `desktop.download` | a desktop download link was clicked | — | — |
 | `door.seen` | a greyed option naming another page was drawn: the share panel's, for readers it does not sign for | the way in: `share` | — |
 | `door.open` | a page was reached by a link that names its way in (`?from=`), which is then taken off the address | the way in: `topbar`, `menu`, `share`, `support`, … | — |
+| `account.state` | the server has answered whether this browser is signed in | `signed_in` or `signed_out` — never which account | — |
 | `presets.saved` | the engine has answered `/api/meta` | `presets` or `customs` | how many this browser holds, board rows opened into a bar not counted |
 | `nona.open` | Nona's panel was opened | — | 1 with a key set, 0 without |
 | `nona.ask` | a reader message was sent to her — never its text | — | which reader message of this conversation it is |
