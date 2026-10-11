@@ -4,6 +4,7 @@ use super::*;
 /// (Merciless r5 static, Conjunction Voltage stacks) and Lethal
 /// Rearmament's headshot stacks join the form's reload-speed BUCKET —
 /// time = base / (1 + bucket + live additions).
+#[wfsim_gas_macro::metered]
 pub(super) fn live_reload_time(
     form: &FightParams,
     outer: &FightParams,
@@ -30,6 +31,7 @@ pub(super) fn live_reload_time(
 /// Rescale a time already divided by `(1 + bucket)` so it also carries a
 /// LIVE addition to the same bucket — the transmute animations, which the
 /// wiki ties to reload speed.
+#[wfsim_gas_macro::metered]
 pub(super) fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
     reload_span(secs, bucket, live)
 }
@@ -48,6 +50,7 @@ pub(super) fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
 /// `secs` arrives ALREADY divided by `(1 + bucket)` — it is the modded reload —
 /// so multiplying it back out is what recovers the work, and a weapon with no
 /// live bonus at all falls straight through to `secs`.
+#[wfsim_gas_macro::metered]
 pub(super) fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
     if add <= 0.0 {
         return secs;
@@ -70,6 +73,7 @@ pub(super) fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
 /// the events that REMOVE it are the only place it is reasoned about. Four
 /// copies of one `if` is how three of them come to
 /// disagree with the fourth.
+#[wfsim_gas_macro::metered]
 pub(super) fn live_reload_speed(
     params: &FightParams,
     owner: &FightParams,

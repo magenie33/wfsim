@@ -25,6 +25,7 @@ pub struct BuffLock {
     pub mode: LockMode,
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffLock {
     pub fn permanent(buff: LockedBuff) -> Self {
         Self {

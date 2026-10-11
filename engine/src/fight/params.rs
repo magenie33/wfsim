@@ -804,6 +804,7 @@ pub struct FightParams {
     pub duration_seconds: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl FightParams {
     /// A HEAD'S MULTIPLIER BEFORE THE HEADSHOT BRACKET: the part's own plus Weak
     /// Point Damage at `weakpoint_rate`, unless the weapon overrules the part —
@@ -824,6 +825,7 @@ pub enum AbilitiesNow<'a> {
     Live(std::sync::MutexGuard<'a, Vec<crate::data::abilities::ActiveAbility>>),
 }
 
+#[wfsim_gas_macro::metered]
 impl std::ops::Deref for AbilitiesNow<'_> {
     type Target = [crate::data::abilities::ActiveAbility];
     fn deref(&self) -> &Self::Target {
@@ -834,6 +836,7 @@ impl std::ops::Deref for AbilitiesNow<'_> {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl FightParams {
     /// **EVERY ABILITY WINDOW, AS THIS RUN HAS IT** — the live set a frame casts
     /// into, or the fixed one when nothing in the fight casts.

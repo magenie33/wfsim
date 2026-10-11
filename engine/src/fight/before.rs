@@ -12,6 +12,7 @@ use super::*;
 
 /// Settle the fight up to this shot's trigger pull.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn before_the_shot(
     params: &FightParams,
     apl: &crate::data::apl::Apl,

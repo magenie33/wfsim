@@ -25,6 +25,7 @@ pub(super) const DEPTH_PROC: u32 = 2;
 pub(super) const DEPTH_DERIVED_PROC: u32 = 3;
 
 /// The faction multiplier a payload at `depth` carries.
+#[wfsim_gas_macro::metered]
 pub(super) fn faction_at(faction_multiplier: f64, depth: u32) -> f64 {
     faction_multiplier.powi(depth as i32)
 }
@@ -37,6 +38,7 @@ pub(super) fn faction_at(faction_multiplier: f64, depth: u32) -> f64 {
 /// equipped is a number nobody can trace back to a card. `mul_layers` drops a
 /// x1.00, so on every target that declares no multiplier this is one layer and
 /// reads exactly as it did before.
+#[wfsim_gas_macro::metered]
 pub(super) fn faction_layers(params: &FightParams, t: f64, depth: u32) -> [(crate::record::Factor, f64); 2] {
     [
         (crate::record::Factor::Faction, faction_at(params.faction_bracket_at(t), depth)),
@@ -51,6 +53,7 @@ pub(super) fn faction_layers(params: &FightParams, t: f64, depth: u32) -> [(crat
 ///
 /// Only the six combinations answer — a primary or a physical proc has no
 /// components, so nothing else can be split and nothing else is counted.
+#[wfsim_gas_macro::metered]
 pub(super) fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
     match t {
         DamageType::Viral => debuffs.virus.len(),
@@ -75,6 +78,7 @@ pub(super) fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
 /// entries. `combined_stacks` answers the first group; this answers both, which
 /// is what a target-conditional buff needs (Stormburst asks about Electricity,
 /// a DoT).
+#[wfsim_gas_macro::metered]
 pub(super) fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
     if combined_stacks(debuffs, t) > 0 {
         return true;
@@ -123,6 +127,7 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// Once per DAMAGE INSTANCE: "only activate once per damage instance, making it
 /// less effective than it 'should' be when used on a Beam weapon, due to how
 /// Multishot affects such weapons."
+#[wfsim_gas_macro::metered]
 pub(super) fn debilitate_split(
     landed: DamageType,
     // INCLUDING the one being applied — named so the caller cannot get the
@@ -153,6 +158,7 @@ pub(super) fn debilitate_split(
 /// body part are applied a second time and crit is inherited rather than
 /// rolled. `part_again` is the caller's, because only the caller knows whether
 /// what triggered this struck a body part at all.
+#[wfsim_gas_macro::metered]
 pub(super) fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> f64 {
     if extra_hit_damage > 0.0 {
         extra_hit_damage
@@ -162,6 +168,7 @@ pub(super) fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> 
 }
 
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn fire_extra_hits(
     // WHOSE EXTRA HIT. An ability grants it, and the ability is the seat's.
     owner: Seat,
@@ -332,6 +339,7 @@ pub(super) fn fire_extra_hits(
 /// IT IS ALSO WHAT BOUNDS THE WORK: an uncapped list grows with every proc and
 /// `process_ticks` walks it per body per shot, so a spread reaching a dozen
 /// neighbours turns a linear cost quadratic.
+#[wfsim_gas_macro::metered]
 pub(super) fn dot_cap_for(p: &Foe, dtype: DamageType) -> Option<usize> {
     // THE UNIT'S OWN CAP, where it declares one — that is a property of the
     // enemy and applies to everything it carries.
@@ -359,6 +367,7 @@ pub(super) fn dot_cap_for(p: &Foe, dtype: DamageType) -> Option<usize> {
 /// The cap is also what bounds the work, since `process_ticks` walks a body's
 /// list once per shot. Gas is the family that AREA-spreads to every neighbour,
 /// so it is the one whose list grows fastest — and the one that keeps a cap.
+#[wfsim_gas_macro::metered]
 pub(super) fn dot_family_cap(dtype: DamageType) -> Option<usize> {
     match dtype {
         DamageType::Gas => Some(TEN_STACK_CAP),
@@ -369,6 +378,7 @@ pub(super) fn dot_family_cap(dtype: DamageType) -> Option<usize> {
 #[allow(clippy::too_many_arguments)]
 // WHOSE AREAS THESE ARE — each `AreaHit` carries it, because a cloud pays out
 // to whoever stands near the body long after the proc that left it.
+#[wfsim_gas_macro::metered]
 pub(super) fn drain_area_procs(
     bodies: &mut [Body],
     params: &FightParams,
@@ -531,6 +541,7 @@ pub(super) const GAS_RADIUS_MAX_M: f64 = 6.0;
 pub(super) const TESLA_RADIUS_M: f64 = 3.0;
 
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn settle_procs(
     procs: Vec<DamageType>,
     // WHOSE PROCS THESE ARE. Every DoT they leave carries it, so the tick that
@@ -1203,6 +1214,7 @@ pub(super) fn settle_procs(
 /// adds. Returns how many of `buf` are filled; a type is never forced twice,
 /// because `procs_for_hit` copies the list through and the game applies one.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn forced_procs(
     active: &FightParams,
     rad: &Option<crate::build::loadout::ResolvedRadial>,
@@ -1253,6 +1265,7 @@ pub(super) fn forced_procs(
 /// HEMORRHAGE'S ROLL: a proc the instance already applied can bring another
 /// with it, at a chance the card doubles below a fire-rate threshold. The
 /// converted type is never added twice.
+#[wfsim_gas_macro::metered]
 pub(super) fn roll_proc_conversion(
     active: &FightParams,
     d: &mut crate::rules::rng::Draws,

@@ -45,6 +45,7 @@ pub enum DamageType {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ForcedProcs(u32);
 
+#[wfsim_gas_macro::metered]
 impl ForcedProcs {
     pub fn from_types(ts: impl IntoIterator<Item = DamageType>) -> Self {
         Self(ts.into_iter().fold(0, |m, t| m | (1 << t as u32)))
@@ -69,6 +70,7 @@ impl ForcedProcs {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl DamageType {
     /// Every damage type, in declaration order (indexes match `as usize`).
     pub const ALL: [DamageType; 17] = [
@@ -178,6 +180,7 @@ pub struct DamageVector {
     amounts: [f64; DamageType::ALL.len()],
 }
 
+#[wfsim_gas_macro::metered]
 impl DamageVector {
     pub fn new() -> Self {
         Self::default()
@@ -299,6 +302,7 @@ pub const QUANTIZATION_DENOMINATOR: f64 = 32.0;
 /// §Quantization): `round(cd × 4095/32) × 32/4095`, applied to
 /// `base_cd + weapon-flat CD` before relative mods (docs/MECHANICS.md §5).
 /// Note even a clean 2.0x is off-grid: it quantizes to ≈2.000488x.
+#[wfsim_gas_macro::metered]
 pub fn quantize_base_crit_damage(cd: f64) -> f64 {
     (cd * 4095.0 / 32.0).round() * 32.0 / 4095.0
 }

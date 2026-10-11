@@ -214,6 +214,7 @@ pub struct Shockwave {
     pub width_m: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Shockwave {
     /// Every epicentre, nearest first down each line, for a wielder at `from`
     /// facing `toward`.
@@ -335,6 +336,7 @@ pub enum FormKind {
     HeavySlam,
 }
 
+#[wfsim_gas_macro::metered]
 impl FormKind {
     /// The stable id — the wire value in an API request and in a saved preset,
     /// so these strings are durable names, not labels.
@@ -547,6 +549,7 @@ pub struct CompressionSpec {
     pub reads_radius_m: Option<f64>,
 }
 
+#[wfsim_gas_macro::metered]
 fn snapshot() -> String {
     "snapshot".to_string()
 }
@@ -651,6 +654,7 @@ pub struct KillStreakSummonSpec {
     pub fire_rate_multiplier: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl KillStreakSummonSpec {
     /// Its card, its replay row and its entry on the buff bar.
     pub const BUFF_ID: &'static str = "kill_streak_summon";
@@ -688,12 +692,14 @@ pub struct SniperCombo {
     pub seconds: f64,
 }
 
+#[wfsim_gas_macro::metered]
 fn combo_seconds_default() -> f64 {
     // "All sniper rifles have a 2 second combo duration, with the exception of
     // the Lanka" — so 2 is the rule and the Lanka states its own.
     2.0
 }
 
+#[wfsim_gas_macro::metered]
 impl SniperCombo {
     /// The damage multiplier at `hits`. 1.0 below Minimum Combo — the counter
     /// exists there and pays nothing.

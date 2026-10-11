@@ -29,6 +29,7 @@ pub(super) struct BlobPile {
 /// it does not detonate at once. The pile holds the cap and waits out its
 /// lifespan, and what was over the cap is lost. Every later shot refreshes that
 /// lifespan, so a pile fed faster than it expires does not detonate at all.
+#[wfsim_gas_macro::metered]
 pub(super) fn embed_blob(
     piles: &mut Vec<BlobPile>,
     part: crate::build::loadout::ResolvedBlob,
@@ -64,6 +65,7 @@ pub(super) fn embed_blob(
 
 /// EVERY PILE WHOSE LIFESPAN RUNS OUT BEFORE `until`, in the order they do.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn process_blobs(
     // See `process_ticks`.
     w: &CardWindows,
@@ -95,6 +97,7 @@ pub(super) fn process_blobs(
 /// A PILE GOES OFF at `at`: one stack's explosion times the stacks, on every
 /// body inside the pile's radius, falling off from the body it was embedded in.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn detonate_blob(
     w: &CardWindows,
     pile: BlobPile,

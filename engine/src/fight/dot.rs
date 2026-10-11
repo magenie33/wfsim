@@ -76,12 +76,14 @@ pub(super) struct Source {
     pub(super) faction: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Source {
     pub(super) fn at(params: &FightParams, dtype: DamageType, now: f64, w: &CardWindows) -> Self {
         Source { element: params.element_at(dtype, now, w), faction: params.faction_at_time(now) }
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Dot {
     /// WHAT THIS TICK IS WORTH RIGHT NOW.
     ///
@@ -279,10 +281,12 @@ pub(super) struct BlastStack {
 }
 
 /// A `x1` changes nothing, and a ledger that prints one is noise.
+#[wfsim_gas_macro::metered]
 pub(super) fn drop_ones(v: Vec<crate::record::Scale>) -> Vec<crate::record::Scale> {
     v.into_iter().filter(|g| (g.value - 1.0).abs() > 1e-12).collect()
 }
 
+#[wfsim_gas_macro::metered]
 impl BlastStack {
     /// THE STACK'S ONE PART — the hit's modified base and every multiplier
     /// over it, faction frozen in; the value alone where no seed was kept.

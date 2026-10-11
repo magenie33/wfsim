@@ -289,6 +289,16 @@ version = "0.0.0"
 dependencies = [
  "serde",
  "serde_norway",
+ "wfsim-gas-macro",
+]
+
+[[package]]
+name = "wfsim-gas-macro"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

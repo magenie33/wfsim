@@ -27,6 +27,7 @@ pub use text::*;
 pub use weapon::*;
 
 // serde defaults shared by the yaml shapes below.
+#[wfsim_gas_macro::metered]
 fn one() -> f64 {
     1.0
 }

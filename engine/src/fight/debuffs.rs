@@ -191,6 +191,7 @@ pub(super) const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
 /// `part_factor` at the call site would put it back into the arithmetic where
 /// nobody can see it. Heat and Blast do not come through here — Heat is a
 /// singleton accumulator with its own arm (M90) and a blast is not a DoT.
+#[wfsim_gas_macro::metered]
 pub(super) fn dot_takes_weakpoint(_t: DamageType) -> bool {
     true
 }
@@ -200,6 +201,7 @@ pub(super) fn dot_takes_weakpoint(_t: DamageType) -> bool {
 /// lists "Electricity and Gas status procs" as "always defaulting to the 1x
 /// multiplier, unaffected by acuity-like bonuses but affected by deadhead-like
 /// bonuses", and Heat, Toxin and Blast measure at the hit's part alone.
+#[wfsim_gas_macro::metered]
 pub(super) fn lands_on_a_part(t: DamageType) -> bool {
     matches!(t, DamageType::Electricity | DamageType::Gas)
 }
@@ -259,6 +261,7 @@ pub(super) const HEAT_STRIP_DECAY_INTERVAL: f64 = 1.5;
 /// Whole Heat strip steps taken after `elapsed` seconds. AN INSTANT ON A STEP
 /// HAS TAKEN IT: the +1 s tick lands on a boundary, and a bare floor put
 /// `born + 1.0 - born` at 1.9999… for ~1% of ignitions, a step short.
+#[wfsim_gas_macro::metered]
 pub(super) fn heat_strip_steps(elapsed: f64, interval: f64) -> f64 {
     (elapsed / interval + 1e-9).floor()
 }
@@ -300,6 +303,7 @@ pub(super) struct Mitigation {
 pub(super) const ENEMY_SHIELD_GATE_LEAK: f64 = 0.05;
 
 /// The +100%/+25% ten-stack amp curve shared by Disrupt and Virus.
+#[wfsim_gas_macro::metered]
 pub(super) fn ten_stack_amp(stacks: usize) -> f64 {
     if stacks == 0 {
         1.0
@@ -393,6 +397,7 @@ pub const DEBUFF_ROSTER: [(&str, Option<u32>); 18] = [
     ("knockdown", Some(1)),
 ];
 
+#[wfsim_gas_macro::metered]
 impl DebuffState {
     /// The roster's live counts at `now`, positionally matching
     /// [`DEBUFF_ROSTER`]. Expired entries are excluded rather than pruned —
@@ -463,6 +468,7 @@ impl DebuffState {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl DebuffState {
     /// FIFO push with the universal replace-oldest rule (application-time
     /// order; uniform durations make the front the oldest).

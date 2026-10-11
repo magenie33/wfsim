@@ -14,5 +14,6 @@ repository.workspace = true
 serde_norway.workspace = true
 
 [dependencies]
+wfsim-gas-macro = { path = "../tools/gas-macro" }
 serde.workspace = true
 serde_norway.workspace = true

@@ -53,6 +53,7 @@ pub struct SecondaryEnervate {
     last_trigger_seconds: Option<f64>,
 }
 
+#[wfsim_gas_macro::metered]
 impl SecondaryEnervate {
     /// Build for a specific rank (0..=[`MAX_RANK`]). Panics if `rank > MAX_RANK`.
     pub fn from_rank(rank: u8) -> Self {
@@ -103,12 +104,14 @@ impl SecondaryEnervate {
 }
 
 /// Defaults to the maximum rank — the sensible default for a real build.
+#[wfsim_gas_macro::metered]
 impl Default for SecondaryEnervate {
     fn default() -> Self {
         Self::from_rank(MAX_RANK)
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Perk for SecondaryEnervate {
     fn id(&self) -> &str {
         BUFF_ID

@@ -23,6 +23,7 @@ use crate::rules::rng::Rng;
 
 /// Number of rolled (non-forced) procs for one hit at `status_chance`
 /// (fraction; may exceed 1.0).
+#[wfsim_gas_macro::metered]
 pub fn roll_proc_count(status_chance: f64, rng: &mut Rng) -> u32 {
     let sc = status_chance.max(0.0);
     sc.floor() as u32 + rng.chance(sc.fract()) as u32
@@ -33,6 +34,7 @@ pub fn roll_proc_count(status_chance: f64, rng: &mut Rng) -> u32 {
 /// (wiki `Status_Effect` §Status Immunity Interactions) - immunity shifts
 /// probability onto the other types instead of wasting the roll.
 /// `None` if no eligible type has positive damage.
+#[wfsim_gas_macro::metered]
 pub fn draw_proc_type(
     vector: &DamageVector,
     immune: &[DamageType],
@@ -72,6 +74,7 @@ pub fn draw_proc_type(
 /// Filtered here rather than at each caller because "forced" arrives from three
 /// places — the attack part, an extra hit, a syndicate radial — and an immunity
 /// that held for two of them would be the worst kind of half-rule.
+#[wfsim_gas_macro::metered]
 pub fn procs_for_hit(
     forced: &[DamageType],
     status_chance: f64,

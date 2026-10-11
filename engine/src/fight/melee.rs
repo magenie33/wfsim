@@ -36,6 +36,7 @@ pub(super) const INITIAL_COMBO_REGEN_PER_SECOND: f64 = 40.0;
 /// wiki's own table read as a step function — and 1x is a real state rather
 /// than "no combo": a heavy attack at 1x deals its class multiplier and nothing
 /// more.
+#[wfsim_gas_macro::metered]
 pub(super) fn melee_combo_multiplier(points: f64) -> f64 {
     (1.0 + (points / MELEE_COMBO_POINTS_PER_TIER).floor()).clamp(1.0, MELEE_COMBO_MAX)
 }
@@ -47,6 +48,7 @@ pub(super) fn melee_combo_multiplier(points: f64) -> f64 {
 /// heavy attack emptied the counter — so it is a FLOOR rather than a second
 /// pool, which is what makes "spend it and it comes back" and "build on top of
 /// it" the same number.
+#[wfsim_gas_macro::metered]
 pub(super) fn melee_combo_points(held: f64, initial: f64, since_spend_seconds: f64) -> f64 {
     // IT REGENERATES FROM WHAT IS THERE, not from zero: *"Heavy attacks spend
     // initial combo, which REGENERATES at a rate of 40 combo points per
@@ -74,6 +76,7 @@ pub(super) fn melee_combo_points(held: f64, initial: f64, since_spend_seconds: f
 /// Zero on every swing that is not a heavy attack: a mode that spends the
 /// counter, or a TENNOKAI heavy on a light one — the same bucket either way,
 /// so Condition Overload and Rage dilute it as they dilute Pressure Point.
+#[wfsim_gas_macro::metered]
 pub(super) fn heavy_attack_base_damage(active: &FightParams, tennokai_heavy: bool) -> f64 {
     if active.spends_combo || tennokai_heavy { active.heavy_attack_damage } else { 0.0 }
 }
@@ -94,6 +97,7 @@ pub(super) fn heavy_attack_base_damage(active: &FightParams, tennokai_heavy: boo
 ///
 /// MULTIPLIER PER SECOND IS THE PROXY, and it UNDER-states a wait: Blood Rush
 /// reads the same counter and is not in it.
+#[wfsim_gas_macro::metered]
 pub(super) fn heavy_cycle_seconds(floor_seconds: f64, earned: f64, initial: f64) -> f64 {
     let per_second = |t: f64| melee_combo_multiplier(melee_combo_points(earned, initial, t)) / t;
     let mut best = floor_seconds.max(1e-6);
@@ -112,6 +116,7 @@ pub(super) fn heavy_cycle_seconds(floor_seconds: f64, earned: f64, initial: f64)
 /// THE CHANCE A LANDED HIT OPENS THE WINDOW: 15% base, and a card MULTIPLIES
 /// it — *"Tennokai opportunity chance is a multiplicative bonus, at max rank the
 /// chance to proc Tennokai is increased to 22.5%"* (wiki, Dreamer's Wrath).
+#[wfsim_gas_macro::metered]
 pub(super) fn tennokai_open_chance(t: &crate::model::Tennokai) -> f64 {
     TENNOKAI_BASE_CHANCE * (1.0 + t.chance)
 }
@@ -123,6 +128,7 @@ pub(super) fn tennokai_open_chance(t: &crate::model::Tennokai) -> f64 {
 /// window buys, so the light swing does not happen: a heavy attack's multiplier
 /// is the CLASS's whole total, and multiplying it by a stance row's hit count
 /// would pay the same swing five times over on a Rogue Edict spin.
+#[wfsim_gas_macro::metered]
 pub(super) fn swing_instances(hits: u32, tennokai_heavy: bool) -> u32 {
     if tennokai_heavy {
         1
@@ -155,6 +161,7 @@ pub(super) struct Landed {
 ///
 /// NO ROLL IS SPENT where neither chance is set, so a build without them draws
 /// the same random stream it always did.
+#[wfsim_gas_macro::metered]
 pub(super) fn swing_combo_gain(points: f64, base: f64, chance: f64, gain: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
     if base <= 0.0 {
         return 0.0;
@@ -180,6 +187,7 @@ pub(super) fn swing_combo_gain(points: f64, base: f64, chance: f64, gain: f64, r
 /// A HIT HOLDS THE COUNTER ONLY IF IT EARNED SOMETHING: one that came to 0 points
 /// leaves the combo timer running down (MEASUREMENTS M97). Asked of a swing that
 /// earns at all; a heavy attack keeps the refresh it had.
+#[wfsim_gas_macro::metered]
 pub(super) fn refreshes_combo_timer(landed: f64, earns: bool, gained: f64) -> bool {
     landed > 0.0 && (!earns || gained > 0.0)
 }
@@ -191,6 +199,7 @@ pub(super) fn refreshes_combo_timer(landed: f64, earns: bool, gained: f64) -> bo
 /// the counter shows SEVEN, against 4.5 proportional and 6 flat. Rounded rather
 /// than floored at one: the two agree wherever this roster can tell them apart.
 #[cfg(test)]
+#[wfsim_gas_macro::metered]
 pub(super) fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
     multiplier.ceil().max(1.0) * instances
 }
@@ -248,6 +257,7 @@ pub(super) struct MeleeState {
 }
 
 /// MELEE ANIMOSITY'S BONUS on this swing: the pile, on a heavy attack only.
+#[wfsim_gas_macro::metered]
 pub(super) fn animosity_crit(params: &FightParams, melee: &MeleeState, heavy: bool) -> f64 {
     if heavy {
         params.arcane.heavy_crit_per_input * f64::from(melee.animosity_stacks)
@@ -263,6 +273,7 @@ pub(super) fn animosity_crit(params: &FightParams, melee: &MeleeState, heavy: bo
 /// the counter. A melee Incarnon arms here too — its way in is a swing rather
 /// than a gauge.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn after_swing(
     h: &crate::model::ComboHit,
     active: &FightParams,
@@ -516,6 +527,7 @@ pub(super) fn after_swing(
 /// HOW LONG UNTIL THE NEXT SHOT — a draw, a swing's animation, or the fire
 /// rate's own interval, whichever this form pays.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn seconds_to_next_shot(
     active: &FightParams,
     rate: f64,
@@ -655,6 +667,7 @@ pub(super) struct Swung {
 /// Read the stance's next swing, spend what it spends, and fold it into the
 /// vector the instances are dealt from.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn swing_this_shot(
     params: &FightParams,
     apl: &crate::data::apl::Apl,

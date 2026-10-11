@@ -10,6 +10,7 @@
 use crate::rules::damage::{DamageType, DamageVector};
 
 /// The secondary element formed by two distinct primaries (order-free).
+#[wfsim_gas_macro::metered]
 pub fn combined_of(a: DamageType, b: DamageType) -> Option<DamageType> {
     use DamageType::*;
     match (a, b) {
@@ -29,6 +30,7 @@ pub fn combined_of(a: DamageType, b: DamageType) -> Option<DamageType> {
 /// Written as its own table rather than derived by searching `combined_of`,
 /// because the two must agree and a search that silently found nothing would
 /// read as "this element has no components" rather than as a bug.
+#[wfsim_gas_macro::metered]
 pub fn components_of(combined: DamageType) -> Option<(DamageType, DamageType)> {
     use DamageType::*;
     let pair = match combined {
@@ -68,6 +70,7 @@ pub struct ElementalInput {
     pub injected: Vec<(DamageType, f64)>,
 }
 
+#[wfsim_gas_macro::metered]
 impl ElementalInput {
     /// Add a primary at its first-placement position (rule 4).
     pub fn push(&mut self, t: DamageType, amount: f64) {
@@ -82,6 +85,7 @@ impl ElementalInput {
 /// Hierarchy rank of the innate elements among themselves — Kuva/Tenet
 /// weapons carry two (weapon + progenitor) and rule 2 breaks the tie by
 /// **HCET**: whichever comes first here sits second-to-last, the other last.
+#[wfsim_gas_macro::metered]
 fn hcet(t: DamageType) -> u8 {
     match t {
         DamageType::Heat => 0,
@@ -103,6 +107,7 @@ fn hcet(t: DamageType) -> u8 {
 ///
 /// NOT `hcet`, which looks like the same question and is not: that one orders
 /// INNATE elements under rule 2 and changes what the weapon does.
+#[wfsim_gas_macro::metered]
 pub fn wiki_order(t: DamageType) -> usize {
     // DERIVED from the declaration list rather than restated as a match, so a
     // type added to the table cannot be forgotten here and a hand-written arm
@@ -116,6 +121,7 @@ pub fn wiki_order(t: DamageType) -> usize {
 /// an odd trailing primary stays pure. Then the weapon's own innate elements
 /// (rule 2: LAST) and finally injected elements (rule 8), each merging into
 /// its element's existing position if one exists, else appended.
+#[wfsim_gas_macro::metered]
 pub fn combine(physical: &DamageVector, input: &ElementalInput) -> DamageVector {
     let mut order = input.ordered.clone();
     // Rule 2: innate elements go at the END of the mod order. Rule 3: unless a

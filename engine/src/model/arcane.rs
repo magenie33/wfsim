@@ -24,6 +24,7 @@ pub struct CastArcanes {
     pub per_kill: Option<(f64, u32, u32)>,
 }
 
+#[wfsim_gas_macro::metered]
 impl CastArcanes {
     /// A frame with none of them.
     pub const NONE: CastArcanes = CastArcanes { after_operator_ability: 0.0, per_cast_stack: None, per_kill: None };
@@ -202,6 +203,7 @@ pub struct Scale {
     pub ranks: Option<Vec<f64>>,
 }
 
+#[wfsim_gas_macro::metered]
 impl Scale {
     pub fn at(&self, rank: u32, max_rank: u32) -> f64 {
         if let Some(t) = &self.ranks {

@@ -38,6 +38,7 @@ pub struct MercyContext {
 }
 
 /// The Mercy window as a fraction of total health (0 if not eligible).
+#[wfsim_gas_macro::metered]
 pub fn mercy_threshold(ctx: &MercyContext) -> f64 {
     if !ctx.mercy_eligible {
         return 0.0;
@@ -58,6 +59,7 @@ pub fn mercy_threshold(ctx: &MercyContext) -> f64 {
 
 /// Is the Mercy prompt up right now, at `health_fraction` (0..=1) of total
 /// health?
+#[wfsim_gas_macro::metered]
 pub fn can_mercy(ctx: &MercyContext, health_fraction: f64) -> bool {
     ctx.mercy_eligible
         && ctx.shields <= 0.0

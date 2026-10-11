@@ -1,5 +1,6 @@
 use super::*;
 
+#[wfsim_gas_macro::metered]
 impl FightParams {
     /// CAN WHAT THIS BODY DROPPED BE COLLECTED? The pack lands where the body
     /// fell and the Tenno does not walk, so the answer is a distance and
@@ -1710,6 +1711,7 @@ impl FightParams {
 /// seven places, because damage lands from seven kinds of source. One method so
 /// the two can never disagree: a site that counts a kill and forgets the clock
 /// would leave `first_kill_at` reading like a weapon that never killed.
+#[wfsim_gas_macro::metered]
 impl RunResult {
     /// …and how many of them a TENDRIL took DIRECTLY, which is the one kind
     /// that spawns nothing.

@@ -11,6 +11,7 @@ use super::*;
 /// let s = monte_carlo(&params, 100, seed);
 /// let rep = replay(&params, s.median_run.rng_state, REPLAY_FRAMES);
 /// ```
+#[wfsim_gas_macro::metered]
 pub fn replay(params: &FightParams, rng_state: u64, frames: usize) -> Replay {
     // WHO IS WORTH FOLLOWING, decided by a DRY RUN of the same engagement.
     //
@@ -45,6 +46,7 @@ pub fn replay(params: &FightParams, rng_state: u64, frames: usize) -> Replay {
 /// caller asked for — every series is read against it — and the list is
 /// deduplicated and capped, since the wire's budget is a property of the
 /// REPLAY and not of who is asking.
+#[wfsim_gas_macro::metered]
 pub fn replay_following(
     params: &FightParams,
     rng_state: u64,
@@ -98,6 +100,7 @@ pub fn replay_following(
 /// stream of an ordinary fight is a few thousand events and can be handed over
 /// entire; the densest build measured deals 408,817 damage instances in 180 s, which is why the window and the cap are arguments rather than
 /// constants.
+#[wfsim_gas_macro::metered]
 pub fn record(
     params: &FightParams,
     rng_state: u64,

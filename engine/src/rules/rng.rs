@@ -11,6 +11,7 @@ pub struct Rng {
     state: u64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Rng {
     /// Create a generator from a seed.
     pub fn new(seed: u64) -> Self {
@@ -105,6 +106,7 @@ pub struct Draws {
     pub arc_landing: Rng,
 }
 
+#[wfsim_gas_macro::metered]
 impl Draws {
     /// Derive the streams from one engagement seed.
     ///

@@ -534,6 +534,7 @@ pub enum Scope {
     WarframeAbilities,
 }
 
+#[wfsim_gas_macro::metered]
 impl Scope {
     pub fn parse(s: &str) -> Option<Scope> {
         Some(match s {

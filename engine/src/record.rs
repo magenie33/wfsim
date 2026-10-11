@@ -129,6 +129,7 @@ pub enum Origin {
     Blob,
 }
 
+#[wfsim_gas_macro::metered]
 impl Origin {
     pub fn name(self) -> &'static str {
         match self {
@@ -271,6 +272,7 @@ pub enum Factor {
     HeatBurn,
 }
 
+#[wfsim_gas_macro::metered]
 impl Factor {
     /// Every factor, in the order their indices are on the wire. APPEND-ONLY
     /// for as long as a client older than the server can exist — which for a
@@ -473,6 +475,7 @@ pub struct Seed {
     pub faction: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Seed {
     /// The seed itself: the product of every field.
     pub fn value(&self) -> f64 {
@@ -599,6 +602,7 @@ pub enum Layer {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Seat(pub usize);
 
+#[wfsim_gas_macro::metered]
 impl Seat {
     /// THE BUILD THIS PANEL IS ABOUT, and index 0 for the same reason body 0
     /// is the aimed one: every fight has it, so it needs no lookup.
@@ -818,6 +822,7 @@ pub struct Record {
     seeds: Vec<Seed>,
 }
 
+#[wfsim_gas_macro::metered]
 impl Record {
     /// Not recording. Allocates nothing; every `push` is one branch.
     pub fn off() -> Self {

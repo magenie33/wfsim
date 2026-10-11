@@ -59,6 +59,7 @@ pub(super) struct FieldCtx {
     pub(super) head_landing: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl FightParams {
     /// **THE ACTION PRIORITY LIST THIS FIGHT RUNS** — the player's inserted
     /// rules above the fight's own half (`data::apl::for_fight`).
@@ -126,6 +127,7 @@ impl FightParams {
 /// the last clouds tick pushes those procs and never settles them — and the CO
 /// bonus a tick reads has to include the statuses its predecessors applied.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn process_field_ticks(
     // See `process_ticks` — a cloud reads the shooter's live windows.
     w: &CardWindows,
@@ -268,6 +270,7 @@ pub(super) fn process_field_ticks(
 /// a field has that a radial does not: it TAKES Condition Overload, on the
 /// attached target, which a single-target arena always is.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn field_tick(
     w: &CardWindows,
     owner: Seat,
@@ -310,6 +313,7 @@ pub(super) struct InfluenceSeed {
 
 /// [`field_tick`], and when `seed` is given, what it left for Melee Influence.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn field_tick_seeded(
     w: &CardWindows,
     // WHOSE CLOUD — carried from the [`FieldState`] rather than assumed, for

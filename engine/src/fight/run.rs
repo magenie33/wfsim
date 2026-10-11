@@ -11,6 +11,7 @@ use super::*;
 /// (docs/UNMODELLED.md: no distance), so every shot lands and the counter only
 /// ever decays through time. It is recorded on the weapon's card as the one
 /// way this runs generous.
+#[wfsim_gas_macro::metered]
 pub(super) fn combo_at(
     spec: Option<crate::model::SniperCombo>,
     held: bool,
@@ -34,6 +35,7 @@ pub(super) fn combo_at(
 
 /// A stacking spec's decay period, or 0 when the spec is absent.
 /// PYRANA PRIME'S STREAK, as the bar holds it: `stacks` kills on one clock.
+#[wfsim_gas_macro::metered]
 pub(super) fn kill_streak(s: crate::model::KillStreakSummonSpec, stacks: u32, t: f64) -> crate::rules::buffs::Buff {
     crate::rules::buffs::Buff {
         id: crate::model::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
@@ -46,6 +48,7 @@ pub(super) fn kill_streak(s: crate::model::KillStreakSummonSpec, stacks: u32, t:
 
 /// PYRANA PRIME'S SECOND GUN, as the bar holds it: the fire-rate half is a
 /// bar multiplier like Frenzy's, and the magazine half reads whether it is up.
+#[wfsim_gas_macro::metered]
 pub(super) fn summoned_gun(s: crate::model::KillStreakSummonSpec, t: f64) -> crate::rules::buffs::Buff {
     crate::rules::buffs::Buff {
         id: crate::model::KillStreakSummonSpec::BUFF_ID.into(),
@@ -59,10 +62,12 @@ pub(super) fn summoned_gun(s: crate::model::KillStreakSummonSpec, t: f64) -> cra
     }
 }
 
+#[wfsim_gas_macro::metered]
 pub(super) fn dur(spec: &Option<crate::model::StackSpec>) -> f64 {
     spec.as_ref().map_or(0.0, |s| s.duration)
 }
 
+#[wfsim_gas_macro::metered]
 pub fn run_once(params: &FightParams, rng: &mut Rng) -> RunResult {
     run_once_traced(params, rng, None, &mut crate::record::Record::off())
 }
@@ -78,6 +83,7 @@ pub fn run_once(params: &FightParams, rng: &mut Rng) -> RunResult {
 /// The STACKS stay shared (one buff, one count, across the whole engagement);
 /// only the conversion is per form.
 #[inline]
+#[wfsim_gas_macro::metered]
 pub(super) fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, stacks: &mut [LiveStacks], t: f64) -> f64 {
     from.stacking_buffs
         .iter()
@@ -97,6 +103,7 @@ pub(super) fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, sta
 /// needs to say how many. Reload-counting buffs are left out — they are
 /// waiting for the reload to finish, and it has not.
 #[inline]
+#[wfsim_gas_macro::metered]
 pub(super) fn bump_shells(params: &FightParams, stacks: &mut [LiveStacks], n: u32, t: f64, rng: &mut Rng) {
     for (i, b) in params.stacking_buffs.iter().enumerate() {
         if b.per_shell
@@ -128,6 +135,7 @@ pub(super) fn bump_shells(params: &FightParams, stacks: &mut [LiveStacks], n: u3
 /// up after one that did — see `ResolvedPanel::rs_on_reload`. `None` leaves it.
 #[inline]
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn magazine_refilled(
     params: &FightParams,
     ammo: &mut Ammo,
@@ -173,6 +181,7 @@ pub(super) fn magazine_refilled(
 /// `transform_end` that has just put 216 charges in an Incarnon magazine
 /// reports `base 0/12` — the one row a reader opens the record to see.
 #[inline]
+#[wfsim_gas_macro::metered]
 pub(super) fn record_weapon(
     params: &FightParams,
     rec: &mut crate::record::Record,
@@ -245,6 +254,7 @@ pub(super) fn record_weapon(
 /// mutably borrows the seats, `bodies`, `r` and `trace` at once, which a
 /// closure cannot hold together.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn sample_frames_up_to(
     until: f64,
     params: &FightParams,
@@ -330,6 +340,7 @@ pub(super) fn sample_frames_up_to(
 
 /// ONE TRIGGER'S BUFFS, bumped. The per-shell family is the other arm
 /// (`bump_shells`); this one is every buff a single event grants.
+#[wfsim_gas_macro::metered]
 pub(super) fn bump_on_trigger(
     params: &FightParams,
     stacks: &mut [LiveStacks],
@@ -349,6 +360,7 @@ pub(super) fn bump_on_trigger(
 /// A RELOAD FROM EMPTY, and what rides on it: the trigger's own buffs, and
 /// Resonant Restore, which is not a `StackingGrant` because what it grants is
 /// the capacity every other line of the loop reads.
+#[wfsim_gas_macro::metered]
 pub(super) fn bump_reload_from_empty(
     params: &FightParams,
     stacks: &mut [LiveStacks],
@@ -382,6 +394,7 @@ pub(super) fn bump_reload_from_empty(
 /// through rather than duplicating the loop is the point: a traced run and a
 /// scored run must be the same code, or the replay shows a fight that did not
 /// happen.
+#[wfsim_gas_macro::metered]
 pub fn run_once_traced(
     params: &FightParams,
     rng: &mut Rng,

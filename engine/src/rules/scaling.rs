@@ -52,6 +52,7 @@ pub enum Empowered {
     Icebind,
 }
 
+#[wfsim_gas_macro::metered]
 impl Empowered {
     pub fn from_id(id: &str) -> Option<Self> {
         match id {
@@ -93,6 +94,7 @@ pub struct Curve {
     pub hi: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Curve {
     /// Stat multiplier at a level difference `delta` (clamped at 0).
     pub fn multiplier(&self, delta: f64) -> f64 {
@@ -173,6 +175,7 @@ pub const OVERGUARD: Curve = Curve {
 
 /// Scaled armor value: two-curve multiplier, then the spawn minimum of 200,
 /// then the hard cap of 2,700.
+#[wfsim_gas_macro::metered]
 pub fn armor_at(base_armor: f64, current_level: u32, base_level: u32) -> f64 {
     if base_armor <= 0.0 {
         return 0.0;
@@ -183,6 +186,7 @@ pub fn armor_at(base_armor: f64, current_level: u32, base_level: u32) -> f64 {
 }
 
 /// Scaled overguard value (uses `current level − 1`).
+#[wfsim_gas_macro::metered]
 pub fn overguard_at(base_overguard: f64, current_level: u32) -> f64 {
     if base_overguard <= 0.0 {
         return 0.0;
@@ -220,6 +224,7 @@ pub const ENEMY_ATTACK_MULT_INFESTED: f64 = 3.0;
 /// Affinity multiplier. Special case: uses the **current level** (base level
 /// is NOT subtracted) and the final affinity value is floored when applied.
 /// Eximus replace the leading 1 with 3.
+#[wfsim_gas_macro::metered]
 pub fn affinity_multiplier(current_level: u32, eximus: bool) -> f64 {
     let lead = if eximus { 3.0 } else { 1.0 };
     lead + 0.1425 * (current_level as f64).sqrt()
@@ -232,6 +237,7 @@ pub const EXIMUS_BASE_OVERGUARD: f64 = 12.0;
 /// Eximus tab): applied to the unit's base health *before* the faction curve.
 /// `factor` is 0.25 for units with shields or armor, 0.375 for units with
 /// neither.
+#[wfsim_gas_macro::metered]
 pub fn eximus_base_health(base_health: f64, level: u32, has_shields_or_armor: bool) -> f64 {
     let factor = if has_shields_or_armor { 0.25 } else { 0.375 };
     let x = level as f64;
@@ -268,6 +274,7 @@ pub fn eximus_base_health(base_health: f64, level: u32, has_shields_or_armor: bo
 /// *"Steel Path no longer increases Armor values"* (Ver 36), the same update
 /// that brought this curve in. The branch is written because the RULE has it,
 /// not because a fight here can take it.
+#[wfsim_gas_macro::metered]
 pub fn armor_damage_reduction(armor: f64) -> f64 {
     if armor <= 0.0 {
         0.0

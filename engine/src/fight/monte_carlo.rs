@@ -258,6 +258,9 @@ impl RunKey {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Shard {
     pub runs: u32,
+    /// WHAT ITS RUNS RAN, as the metered source counts it (`super::gas`).
+    #[serde(default)]
+    pub gas: u64,
     pub(super) sum: f64,
     pub(super) sum_sq: f64,
     pub(super) min: f64,
@@ -324,6 +327,7 @@ impl Default for Shard {
     fn default() -> Self {
         Self {
             runs: 0,
+            gas: 0,
             sum: 0.0,
             sum_sq: 0.0,
             // The identities for a MIN and a MAX, so an empty shard merges into
@@ -407,7 +411,7 @@ impl Shard {
     /// THE WORK THIS SHARD HOLDS, in billionths of a point. Integer
     /// arithmetic, so it is the same number on every target.
     pub fn work(&self) -> u64 {
-        self.work_counts().iter().zip(WORK_WEIGHTS).fold(0u64, |a, (n, w)| a.saturating_add(n.saturating_mul(w)))
+        super::gas::work_of(self.gas, self.runs)
     }
 }
 
@@ -417,6 +421,7 @@ impl Shard {
     /// arrive in, which is what lets eight workers finish whenever they finish.
     pub fn merge(&mut self, o: &Shard) {
         self.runs += o.runs;
+        self.gas += o.gas;
         self.sum += o.sum;
         self.sum_sq += o.sum_sq;
         self.min = self.min.min(o.min);
@@ -554,6 +559,7 @@ pub fn shard_onto(
     on_run: &mut impl FnMut(u32),
 ) -> Shard {
     a.runs += runs;
+    let gas_before = super::gas::gas_now();
     for i in from..from + runs {
         // EACH RUN'S OWN DICE, derived from the fight's seed and the run's
         // INDEX. It was one Rng chain threaded through every run, so run i
@@ -629,6 +635,7 @@ pub fn shard_onto(
             *acc += v;
         }
     }
+    a.gas += super::gas::gas_now() - gas_before;
     a
 }
 

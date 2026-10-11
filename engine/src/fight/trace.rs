@@ -105,6 +105,7 @@ pub struct BuffSeries {
     pub value: Option<StackValue>,
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffSeries {
     /// The ordinary one: a count out of a count.
     pub(super) fn stacked(id: String, max_stacks: u32) -> Self {
@@ -153,6 +154,7 @@ pub struct Replay {
     pub frames: Vec<Frame>,
 }
 
+#[wfsim_gas_macro::metered]
 impl Replay {
     /// One seat's roster. A CALLER NAMES THE SEAT IT MEANS — there is no
     /// "the buffs" on a fight with more than one thing acting in it, and a
@@ -164,6 +166,7 @@ impl Replay {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Frame {
     /// One seat's live stacks at this instant, in [`Replay::buffs_of`]'s
     /// order for the same seat.

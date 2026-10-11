@@ -47,6 +47,7 @@ pub struct Tally {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Taken(BodyDamage);
 
+#[wfsim_gas_macro::metered]
 impl Taken {
     /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
     fn credit(&mut self, body: usize, effective: f64) {
@@ -77,6 +78,7 @@ impl Taken {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Dealt(CombatantDamage);
 
+#[wfsim_gas_macro::metered]
 impl Dealt {
     /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
     fn credit(&mut self, who: Seat, effective: f64) {
@@ -108,6 +110,7 @@ pub enum Clock {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Curve(Timeline);
 
+#[wfsim_gas_macro::metered]
 impl Curve {
     /// The buckets, for the one reader there is (`webapi`'s DPS chart).
     pub fn buckets(&self) -> &[f64] {
@@ -115,6 +118,7 @@ impl Curve {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Tally {
     /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     #[inline]

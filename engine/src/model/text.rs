@@ -12,6 +12,7 @@
 /// up to Xx." were not placeholders at all, so no value could ever be
 /// substituted and the card showed a literal X — which is exactly how
 /// Galvanized Chamber came to read "Stacks up to Xx."
+#[wfsim_gas_macro::metered]
 fn is_x_at(b: &[char], i: usize) -> bool {
     if b[i] != 'X' {
         return false;
@@ -48,6 +49,7 @@ pub enum XKind {
 }
 
 /// The kind of every `X` in a template, in order.
+#[wfsim_gas_macro::metered]
 pub fn x_kinds(template: &str) -> Vec<XKind> {
     let b: Vec<char> = template.chars().collect();
     (0..b.len())
@@ -66,6 +68,7 @@ pub fn x_kinds(template: &str) -> Vec<XKind> {
 /// about one effect — "+X% Life Steal" then "+X Purity". That makes the line
 /// the unit that says WHICH effect a placeholder is asking about, which is the
 /// only thing position cannot say.
+#[wfsim_gas_macro::metered]
 pub fn x_lines(template: &str) -> Vec<usize> {
     let mut out = Vec::new();
     let b: Vec<char> = template.chars().collect();
@@ -81,6 +84,7 @@ pub fn x_lines(template: &str) -> Vec<usize> {
 }
 
 /// Number of rank-varying `X` placeholders in a description template.
+#[wfsim_gas_macro::metered]
 pub fn count_x(template: &str) -> usize {
     let b: Vec<char> = template.chars().collect();
     (0..b.len()).filter(|&i| is_x_at(&b, i)).count()
@@ -91,6 +95,7 @@ pub fn count_x(template: &str) -> usize {
 /// ×100; in the multiplier form `xX` they render +1 (a stored 0.3 shows as
 /// `x1.3`); any other position renders the raw number. Extra `X`s beyond
 /// `vals` stay as-is (the caller's honest fallback).
+#[wfsim_gas_macro::metered]
 pub fn fill_x(template: &str, vals: &[f64]) -> String {
     let b: Vec<char> = template.chars().collect();
     let mut out = String::new();
@@ -129,6 +134,7 @@ pub fn fill_x(template: &str, vals: &[f64]) -> String {
 }
 
 /// "+60%" / "−15%" / "+109.5%" from a fraction (true minus sign).
+#[wfsim_gas_macro::metered]
 pub fn pct(x: f64) -> String {
     let p = x.abs() * 100.0;
     let s = if (p - p.round()).abs() < 1e-6 {

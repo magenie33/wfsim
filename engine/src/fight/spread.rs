@@ -41,6 +41,7 @@ pub(super) enum SpreadBy {
     FollowThrough,
 }
 
+#[wfsim_gas_macro::metered]
 impl SpreadBy {
     /// WHICH METER ROW THIS DAMAGE IS, and the split is what the reader is
     /// being told: an EXPLOSION is the radial attack part however many bodies
@@ -78,6 +79,7 @@ impl SpreadBy {
 /// exclusions include types this engine has (`Void`, `Tau`) and states it
 /// tracks outside the proc list — so a negative test would let the next
 /// `DamageType` in silently.
+#[wfsim_gas_macro::metered]
 pub(super) fn influence_can_spread(ty: DamageType) -> bool {
     matches!(
         ty,
@@ -107,6 +109,7 @@ pub(super) fn influence_can_spread(ty: DamageType) -> bool {
 /// `SpreadBy` arm. Both are the page's, and both are argued in
 /// docs/EXTRA_HIT.md §"…and the one that is not a percentage".
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_influence(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -270,6 +273,7 @@ pub(super) fn spread_from_influence(
 /// struck body alone, so `part_factor` is 1.0 here and the hit lands on the
 /// body — which is the clause that reorders builds in a crowd (MECHANICS §12).
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_hit(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -585,6 +589,7 @@ pub(super) struct SpreadStrike {
 /// nothing on a head (`Capability::AimsAtHead`). A ZERO follow through gives
 /// the aimed body alone.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_follow_through(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -660,6 +665,7 @@ pub(super) struct PunchedWeakPoints {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_punch_through(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -822,6 +828,7 @@ pub(super) fn spread_from_punch_through(
 /// It does NOT bounce off terrain (this arena has no walls) and does not return
 /// to a body it has hit, which is the chain path's rule.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_ricochet(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -922,6 +929,7 @@ pub(super) fn spread_from_ricochet(
 /// THE BODY THAT WAS HIT TAKES NOTHING EXTRA: the echo is to *"enemies within
 /// Xm"* of it, not to it.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_echo(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -1039,6 +1047,7 @@ pub(super) fn spread_from_echo(
 /// NOT PER PELLET. A tendril is its own beam, so it fires once for the shot
 /// however many pellets the main beam put out.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_tendrils(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -1145,6 +1154,7 @@ pub(super) fn spread_from_tendrils(
 /// `aim_offset` metres to one SIDE, and nothing draws which side. Putting it on
 /// the line is the only choice that invents nothing.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_blast(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -1211,6 +1221,7 @@ pub(super) fn spread_from_blast(
 /// explodes wherever it landed, which is another body entirely. Same rules from
 /// there — any body touching the sphere is caught, each reads its own falloff.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn blast_at(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -1310,6 +1321,7 @@ pub(super) fn blast_at(
 /// The aimed body's own instance is skipped in both passes: it already took the
 /// hit through the ordinary path, and the splash is not a second instance.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_from_seeds(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -1422,6 +1434,7 @@ pub(super) fn spread_from_seeds(
 /// The 25 m radius is why this lands whole: the arena's only enemy is always
 /// inside it.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn fire_syndicate_radial(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
@@ -1515,6 +1528,7 @@ pub(super) fn fire_syndicate_radial(
 
 /// WHAT DISTANCE LEAVES OF THIS INSTANCE — the explosion's own ramp from its
 /// epicentre, or the direct hit's falloff over the gap it flew.
+#[wfsim_gas_macro::metered]
 pub(super) fn falloff_factor(
     active: &FightParams,
     params: &FightParams,
@@ -1551,6 +1565,7 @@ pub(super) fn falloff_factor(
 /// a tendril is an extra BEAM rather than a spread of this one, so it neither
 /// takes the multishot nor fires per pellet.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn spread_beyond_the_target(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.

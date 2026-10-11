@@ -26,6 +26,7 @@ pub enum Faction {
     Unknown,
 }
 
+#[wfsim_gas_macro::metered]
 impl Faction {
     /// Map a data string (mod `faction:` field, enemy `combat_faction:`) to a
     /// faction. `orokin` aliases `Corrupted`; unrecognized → `Unknown`.
@@ -60,6 +61,7 @@ pub enum CondBucket {
     ReloadSpeed,
 }
 
+#[wfsim_gas_macro::metered]
 impl CondBucket {
     /// Printed on a card, so it is words and not the variant name: a
     /// conditional fire-rate buff must not read "+50% FireRate".
@@ -115,6 +117,7 @@ pub enum TennoCondition {
     SoloWeapon,
 }
 
+#[wfsim_gas_macro::metered]
 impl TennoCondition {
     /// The condition a data file's `condition:` names — the one spelling every
     /// catalog uses. `None` for a word that is not a question about the player.
@@ -862,6 +865,7 @@ pub enum IndirectStat {
     OrbDrop,
 }
 
+#[wfsim_gas_macro::metered]
 impl IndirectStat {
     /// The stat a data file names — a `grants:` on a card, or a `stat:` on an
     /// evolution's `indirect` effect. One table for both.
@@ -1027,6 +1031,7 @@ pub enum AbilityStat {
     EnergyRegen,
 }
 
+#[wfsim_gas_macro::metered]
 impl AbilityStat {
     pub fn label(self) -> &'static str {
         match self {
@@ -1149,6 +1154,7 @@ pub enum Rarity {
     Legendary,
 }
 
+#[wfsim_gas_macro::metered]
 impl ModDef {
     /// The primary element this mod adds, if any (position-sensitive).
     pub fn primary_element(&self) -> Option<DamageType> {
@@ -1320,6 +1326,7 @@ pub struct CritPerHit {
     pub max_bonus: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl CritPerHit {
     /// What `stacks` hits are worth, which is the rate until the ceiling and
     /// the ceiling afterwards.
@@ -1398,6 +1405,7 @@ pub enum CoBehavior {
     Inert,
 }
 
+#[wfsim_gas_macro::metered]
 impl CoBehavior {
     /// What a data file's `co_behavior:` names — `None` for anything else, which
     /// every reader refuses rather than guessing a class.
@@ -1427,6 +1435,7 @@ pub struct MeleeIncarnon {
     pub seconds: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl ModEffect {
     /// WHAT A SET THAT ENHANCES ITS OWN MEMBERS DOES TO ONE OF THEM.
     ///
@@ -1489,6 +1498,7 @@ pub enum ArcGrant {
     AmmoEfficiency,
 }
 
+#[wfsim_gas_macro::metered]
 impl ArcGrant {
     /// The `disables:` key this grant feeds — the same vocabulary a locking mod
     /// writes. A lock is *"set to its default ignoring other bonuses, even
@@ -1537,6 +1547,7 @@ pub enum TennoStat {
     Shields,
 }
 
+#[wfsim_gas_macro::metered]
 impl TennoStat {
     /// The stat's own name, for a card that has to say which one it reads.
     pub fn name(self) -> &'static str {
