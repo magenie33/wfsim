@@ -394,5 +394,33 @@ console.log("\na score a few ULP off, its work equal, is unpaid but never refuse
   check("...while another work, or a score further off, is refused", refused.includes("b-work") && refused.includes("b-far"), JSON.stringify(refused));
 }
 
+console.log("\nan official answer without work witnesses the score alone");
+{
+  const db = d1(), env = { LIBRARY: db }, refused = [];
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
+  const S = 3.25, OFF = { device: "official", owner: "official" };
+  const state = (id) => db.raw.prepare("SELECT state FROM questions WHERE id = ?").get(id).state;
+  const paid = (who) => !!db.raw.prepare("SELECT credited FROM answers WHERE device = ?").get(who).credited;
+  const ask = async (ref) => f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: 3_600_000 }, "e1", NOW);
+  const volunteer = async (who, work) => {
+    const w = { device: who, owner: who, net: `n${who}` };
+    const q = await f.next(env, w, "e1", NOW);
+    await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score: S }, work }, NOW);
+  };
+  const alone = await ask("alone");
+  check("with nobody else's answer it is the fact", await f.answerOfficial(env, OFF, { question: alone, engine: "e1", result: { score: S }, work: null }, NOW) === "fact");
+  const owed = await ask("owed");
+  await volunteer("v-right", 100);
+  check("a volunteer who gave its score is owed a check of the work: spot",
+    await f.answerOfficial(env, OFF, { question: owed, engine: "e1", result: { score: S }, work: null }, NOW) === "spot" && !paid("v-right"));
+  await f.answerOfficial(env, OFF, { question: owed, engine: "e1", result: { score: S }, work: 100 }, NOW);
+  check("...and the witness that counts work then pays them", state(owed) === "fact" && paid("v-right"));
+  const lied = await ask("lied");
+  await volunteer("v-lied", 999);
+  await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: null }, NOW);
+  await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: 100 }, NOW);
+  check("...or refuses one whose work it disproves", refused.includes("v-lied") && !paid("v-lied"), JSON.stringify(refused));
+}
+
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");
 process.exitCode = failures ? 1 : 0;

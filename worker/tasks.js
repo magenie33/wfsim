@@ -38,6 +38,7 @@ export const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
 /// the witness — it is never paid as agreeing — but it is not a lie, so the
 /// official machines refuse nobody for it (`settleOfficial`).
 const SCORE_NEAR = 1e-12;
+const sansWork = (c) => { const v = JSON.parse(c); delete v.work; return canon(v); };
 export const nearAnswer = (same) => (x, y) => {
   let a, b;
   try { a = JSON.parse(x); b = JSON.parse(y); } catch (_) { return false; }
@@ -321,7 +322,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
-        a.work, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
+        a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md §"Contribution").
       const ms = items.reduce((t, { a }) => t + (a.compute_ms || 0), 0);
@@ -412,6 +413,17 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
 
   async function settleOfficial(env, q, all, served, officialSays, engine, now) {
     const db = env.LIBRARY, id = q.id;
+    // AN OFFICIAL ANSWER WITHOUT WORK — a native build's, which counts no gas —
+    // witnesses the score alone: it is the fact, and a volunteer who gave the
+    // score is owed a check of the work by the witness that counts it (the
+    // wasm, scripts/live_orders.mjs), so the question is spot-checked.
+    if (JSON.parse(officialSays.canon).work === null) {
+      const owed = all.some((a) => !a.official && sansWork(a.canon) === sansWork(officialSays.canon));
+      await db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ?, odd = 0 WHERE id = ?")
+        .bind(owed ? "spot" : "fact", officialSays.canon, engine, iso(now), id).run();
+      if (q.state !== "spot") await deliver(env, { ...q, canon: officialSays.canon }, now, officialSays);
+      return;
+    }
     // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
     // volunteers who gave its bits are credited; those it disproves on its own
     // engine are refused — unless the question was not deterministic.

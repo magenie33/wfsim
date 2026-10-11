@@ -73,7 +73,8 @@ def deploy() -> None:
     deploy_live(t)
 
 
-LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/order_credit.mjs", "scripts/live_publish.mjs",
+LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
+                "scripts/live_publish.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/fetch_facts.sh",
                 "scripts/ship_facts.sh", "scripts/ship_builds.sh",
                 "scripts/ship_queue.sh"]
@@ -125,6 +126,14 @@ def deploy_live(t: dict) -> None:
          str(out / "VERSION"), str(out / "ENGINE"), f"{host}:{root}/bin/incoming/"])
     run(["ssh", *o, host, f"chmod +x {root}/bin/incoming/wfsim-*; mv -f {root}/bin/incoming/* {root}/bin/"])
     run(["scp", "-q", *o, *LIVE_SCRIPTS, f"{host}:{root}/scripts/"])
+    # THE WITNESS'S ENGINE IS THE SITE'S OWN WASM (scripts/wasm_witness.mjs): the
+    # one that counts the volunteers' work, which no native build can.
+    wasm = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))["wasm"]
+    run(["ssh", *o, host, f"rm -rf {root}/bin/witness.next && mkdir -p {root}/bin/witness.next/pkg"])
+    run(["scp", "-q", *o, "site/release.json", f"{host}:{root}/bin/witness.next/"])
+    run(["scp", "-q", *o, f"site/pkg/wfsim_wasm.{wasm}.js", f"site/pkg/wfsim_wasm_bg.{wasm}.wasm",
+         f"{host}:{root}/bin/witness.next/pkg/"])
+    run(["ssh", *o, host, f"rm -rf {root}/bin/witness && mv {root}/bin/witness.next {root}/bin/witness"])
     # RESTARTED ONLY ONCE INSTALLED: the unit and its read token are put on the
     # server by hand (`deploy/wfsim-live.service`), and until then there is
     # nothing to restart.

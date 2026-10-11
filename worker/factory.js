@@ -78,7 +78,7 @@ const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
 
 /// THE OFFICIAL WITNESS'S DOOR — worker/tasks.js `claim`, `answerOfficial`:
 ///   POST /api/tasks/official/claim    { witness, engine, states?, producers?, max, lease_ms? } → { tasks }
-///   POST /api/tasks/official/answer   { witness, engine, producers, answers: [{ ref, result, work }] } → { states }
+///   POST /api/tasks/official/answer   { witness, engine, producers, answers: [{ ref, result, work | null }] } → { states }
 ///   POST /api/tasks/official/release  { witness } → {}
 /// A witness is `official:<name>`, one per run; its answers are facts alone.
 export async function officialRoute(request, env, path) {
@@ -111,7 +111,8 @@ export async function officialRoute(request, env, path) {
       const d = a && typeof a.ref === "string" && await db.prepare(
         `SELECT question FROM demands WHERE ref = ? AND producer IN (SELECT value FROM json_each(?))
           ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers).first();
-      if (!d || !Number.isSafeInteger(a.work) || !a.result || typeof a.result !== "object") { states.push(null); continue; }
+      // `work: null` is a witness of the score alone (worker/tasks.js `settleOfficial`).
+      if (!d || !(a.work === null || Number.isSafeInteger(a.work)) || !a.result || typeof a.result !== "object") { states.push(null); continue; }
       states.push(await facts().answerOfficial(env, w, { question: d.question, engine: b.engine, result: a.result, work: a.work }));
     }
     return json({ ok: true, states });

@@ -36,7 +36,9 @@ export async function tell(facts, engine, call = official) {
   for (let i = 0; i < facts.length; i += PER_CALL) {
     const part = facts.slice(i, i + PER_CALL);
     const { states } = await call("answer", { engine, producers: BOARD_KINDS, answers: part.map((f) => ({
-      ref: `${f.identity}|${f.ruler}|${f.mode}`, result: { score: f.score, metric: f.metric }, work: f.work || 0 })) });
+      ref: `${f.identity}|${f.ruler}|${f.mode}`, result: { score: f.score, metric: f.metric },
+      // A FACT WITHOUT WORK — a native build's — witnesses the score alone.
+      work: Number.isSafeInteger(f.work) ? f.work : null })) });
     made += states.filter((s) => s === "fact").length;
   }
   return made;

@@ -7,22 +7,23 @@
 //
 // THE SERVER ONLY BACKS THE CLIENTS UP: every result waits for a second client,
 // and the server fights what only it may settle (worker/tasks.js
-// `OFFICIAL_STATES`) as the official witness `official:live`. It fights with the
-// scorer itself (`wfsim-board --queue-in`), ships the fact through
-// `ship_facts.sh`, and tells the factory, which refuses whichever client the
-// fact disproves — only on the engine this server runs (`bin/ENGINE`).
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+// `OFFICIAL_STATES`) as the official witness `official:live`. It fights on the
+// volunteers' own engine — the site's wasm kept beside the scorer
+// (`bin/witness`, scripts/wasm_witness.mjs), the only build that counts their
+// work — ships the fact through `ship_facts.sh`, and tells the factory, which
+// refuses whichever client the fact disproves, on that engine alone.
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { cpus } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { official, tell, BOARD_KINDS } from "./order_credit.mjs";
+import { witness } from "./wasm_witness.mjs";
 
 const SETTLE_PER_CYCLE = 3;
 const HERE = dirname(fileURLToPath(import.meta.url));
 const [mode, work, arg] = process.argv.slice(2);
 const WITNESS = "official:live";
-
-const lines = (p) => (existsSync(p) ? readFileSync(p, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
 
 /// ONE STATEMENT AGAINST D1's HTTP API, its rows back — a read of the factory's tables.
 async function d1(sql, params = []) {
@@ -37,46 +38,52 @@ async function d1(sql, params = []) {
   return j.result[0].results;
 }
 
-/// ONE FIGHT MAY NOT HOLD SETTLING: past this it is killed, the row is tried
-/// again on a later cycle, and the rows behind it are settled meanwhile.
+/// ONE FIGHT MAY NOT HOLD SETTLING: past this the cycle stops, the row is
+/// tried again on a later one, and the rows behind it are released meanwhile.
 const SETTLE_FIGHT_MS = 15 * 60_000;
+/// HALF THE SERVER'S CORES: the live cycle's own scorer runs beside it.
+const LATE = new Error("took too long");
+const LANES = Number(process.env.WITNESS_LANES) || Math.max(1, Math.floor(cpus().length / 2));
 
-/// THE SCORER'S OWN FACT for one row — its score and its work — shipped to `scores`.
-function fight(row) {
+/// WHAT ONLY THE SERVER MAY SETTLE, claimed from the factory a few at a time,
+/// fought, shipped to `scores` and told: the factory credits whom the fact
+/// agrees with and refuses whom it disproves. What did not fight is released
+/// for a later cycle.
+async function settle() {
+  const w = await witness({ lanes: LANES, site: join(arg, "witness") });
+  const measuredBy = readFileSync(join(arg, "VERSION"), "utf8").trim();
   const dir = join(work, "settle");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "lib.json"), JSON.stringify([row.record]));
-  writeFileSync(join(dir, "q.ndjson"), JSON.stringify({ build_id: row.identity, ruler: row.ruler, mode: row.mode }) + "\n");
-  execFileSync(join(arg, "wfsim-board"), [row.ruler, join(dir, "board"), "--facts", join(dir, "facts.ndjson"),
-    "--measured-by", readFileSync(join(arg, "VERSION"), "utf8").trim(), "--queue-in", join(dir, "q.ndjson")],
-  { input: readFileSync(join(dir, "lib.json")), stdio: ["pipe", "ignore", "ignore"], timeout: SETTLE_FIGHT_MS });
-  const key = `${row.identity}|${row.ruler}|${row.mode}`;
-  const got = lines(join(dir, "facts.ndjson")).find((f) => `${f.identity}|${f.ruler}|${f.mode}` === key);
-  if (!got) return null;
-  execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "ignore", "inherit"] });
-  return got;
-}
-
-/// WHAT ONLY THE SERVER MAY SETTLE, claimed from the factory a few at a time,
-/// fought, and told: the factory credits whom the fact agrees with and refuses
-/// whom it disproves. What did not fight is released for a later cycle.
-async function settle() {
-  const engine = existsSync(join(arg, "ENGINE")) ? readFileSync(join(arg, "ENGINE"), "utf8").trim() : "";
-  if (!engine) { console.error("orders: no ENGINE beside the scorer, nothing settled"); return; }
-  const { tasks } = await official("claim", { engine, states: ["disputed", "spot", "nondeterministic"],
-    producers: BOARD_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
   const facts = [];
-  for (const t of tasks) {
-    const d = t.demands[0];
-    if (!d) continue;
-    const row = { record: t.request.record, identity: d.payload.identity, ruler: t.request.ruler, mode: t.request.mode };
-    let got = null;
-    try { got = fight(row); } catch (e) { console.error(`orders: ${row.identity.slice(0, 8)} did not fight — ${e.message}`); }
-    if (got) facts.push(got);
-    console.error(`orders: settled ${t.state} ${row.identity.slice(0, 8)} ${row.ruler}/${row.mode}${got ? "" : " — no fact"}`);
+  try {
+    const { tasks } = await official("claim", { witness: WITNESS, engine: w.engine, states: ["disputed", "spot", "nondeterministic"],
+      producers: BOARD_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+    for (const t of tasks) {
+      const d = t.demands[0];
+      if (!d) continue;
+      const row = { record: t.request.record, identity: d.payload.identity, ruler: t.request.ruler, mode: t.request.mode };
+      const began = new Date();
+      let timer;
+      const late = new Promise((_, no) => { timer = setTimeout(() => no(LATE), SETTLE_FIGHT_MS); });
+      let got = null, stuck = false;
+      try { got = await Promise.race([w.row(row), late]); }
+      catch (e) { stuck = e === LATE; console.error(`orders: ${row.identity.slice(0, 8)} did not fight — ${e.message}`); }
+      finally { clearTimeout(timer); }
+      console.error(`orders: settled ${t.state} ${row.identity.slice(0, 8)} ${row.ruler}/${row.mode}${got ? "" : " — no fact"}`);
+      // A FIGHT STILL RUNNING holds its lanes: the rows behind it wait for a later cycle.
+      if (stuck) break;
+      if (!got) continue;
+      const done = new Date();
+      facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: measuredBy,
+        score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
+    }
+  } finally { await w.close(); }
+  if (facts.length) {
+    writeFileSync(join(dir, "facts.ndjson"), facts.map((f) => `${JSON.stringify(f)}\n`).join(""));
+    execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "ignore", "inherit"] });
+    await tell(facts, w.engine, (what, body) => official(what, { ...body, witness: WITNESS }));
   }
-  if (facts.length) await tell(facts, engine, (what, body) => official(what, { ...body, witness: WITNESS }));
   await official("release", { witness: WITNESS });
 }
 

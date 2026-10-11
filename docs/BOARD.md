@@ -754,9 +754,10 @@ questions, never a heavier client.
   difference is a `dispute`. The answer never says which.
 - **Settling.** `live_orders.mjs settle` claims what only the official machines
   may settle — `disputed`, `spot`, `nondeterministic` — as `official:live`,
-  fights each with the scorer itself, ships the fact and tells the factory, in
-  a loop beside the live cycle so a heavy row never holds intake or the site's
-  board. The factory credits whom the fact agrees with and refuses a client a
+  fights each on the volunteers' own engine — the site's wasm under node, along
+  the page's path (`wasm_witness.mjs`), since only that build counts their
+  work — ships the fact and tells the factory, in a loop beside the live cycle
+  so a heavy row never holds intake or the site's board. The factory credits whom the fact agrees with and refuses a client a
   dispute or a spot check disproves: its answers stop counting, what it was
   paid is taken back, and a fact it witnessed that nobody official checked is
   opened again, its number taken off the board and its row owed again. A score
@@ -774,7 +775,9 @@ questions, never a heavier client.
   rows nobody asked the factory for — so a row never goes to both. Its facts are
   its answers (`order_credit.mjs`): a client whose bits it reproduced is paid
   (§"Contribution" rule 1), one it did not is not, and the run's last job
-  releases what it left. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page
+  releases what it left. A FACT WITHOUT WORK — a native build's, which counts
+  none — witnesses the score alone: the row is the fact, and one a client gave
+  that score is a `spot`, its work checked by `settle` before anyone is paid. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page
   that stops — closed, reloaded, paused, its lease near its end — sends its
   pack's answers so far with `done` (by beacon on `pagehide`), which gives back
   the rows it did not reach, so neither the rows nor the computer wait out the

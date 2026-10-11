@@ -60,3 +60,4 @@ target-*/
 # `scripts/build_desktop.py`, uploaded to the network drive, never committed —
 # a 30 MB binary per release is not what a git history is for.
 /dist
+/.wasm-witness/
