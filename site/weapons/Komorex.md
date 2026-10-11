@@ -4,7 +4,7 @@ Chinese name: 猛毒
 
 Sniper · Primary · Mastery Rank 8. 97 base damage (impact 9.7, puncture 40.74, slash 46.56), 16% crit chance, 2.1x crit multiplier, 35% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-10
+## Best riven-free build on the WFSim board, as of 2026-10-11
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 17.7449 | Hellfire, Galvanized Chamber, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-07 20:59 UTC · 7972f35e80 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 21.1481 | Hellfire, Galvanized Chamber, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-07 19:58 UTC · a7836d0380 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.2458 | Thermite Rounds, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-07 17:22 UTC · 65db03e106 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.6964 | High Voltage, Malignant Force, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-09 01:27 UTC · d90905f83b |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 17.7449 | Hellfire, Galvanized Chamber, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-10 18:07 UTC · 22610331fe |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 21.1481 | Hellfire, Galvanized Chamber, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-10 17:57 UTC · 22610331fe |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.2458 | Thermite Rounds, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-10 17:04 UTC · 22610331fe |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.6964 | High Voltage, Malignant Force, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-10 21:13 UTC · 22610331fe |
 
 ## Not modelled here
 

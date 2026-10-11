@@ -2,6 +2,19 @@
 
 Bow · Primary · Mastery Rank 14. 400 base damage (cold 200, puncture 200), 32% crit chance, 2.4x crit multiplier, 32% status chance.
 
+## Best riven-free build on the WFSim board, as of 2026-10-11
+
+A score belongs to its ruler: compare it only with scores under the same ruler.
+
+Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
+
+| Ruler | Fight | Mode | Score | Build | Measured |
+| --- | --- | --- | ---: | --- | --- |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.9560 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-10 01:54 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 32.4929 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-10 01:54 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4199 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Critical Delay, Hunter Munitions, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-10 01:51 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.7023 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-10 01:55 UTC |
+
 ## Not modelled here
 
 - The alt-fire, a second charged shot, is not modelled: a weapon holds one charged form. It is 1.5 s of draw for 1,000 damage (500 Cold, 250 Puncture, 250 Slash) at 36% crit, 3.0x, 36% status and 2 m punch through, against this draw's 400 at 32% and 2.4x. It also leaves a chilling path behind the arrow with no published numbers, a trail the engine has no form for.

@@ -4,7 +4,7 @@ Chinese name: 夸塔克
 
 Rifle · Primary · Mastery Rank 10. 49 base damage (impact 18.13, puncture 14.21, slash 16.66), 19% crit chance, 2.3x crit multiplier, 27% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-10
+## Best riven-free build on the WFSim board, as of 2026-10-11
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 阿提卡
 
 Crossbow · Primary · Mastery Rank 7. 80 base damage (impact 4, puncture 60, slash 16), 25% crit chance, 3x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-10
+## Best riven-free build on the WFSim board, as of 2026-10-11
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

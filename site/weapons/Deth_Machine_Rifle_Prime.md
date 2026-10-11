@@ -4,7 +4,7 @@ Chinese name: 死亡机枪 Prime
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 20 base damage (impact 2, puncture 1, slash 17), 10% crit chance, 2x crit multiplier, 4% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-10
+## Best riven-free build on the WFSim board, as of 2026-10-11
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

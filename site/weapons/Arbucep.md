@@ -4,7 +4,7 @@ Chinese name: 蕈菇
 
 Archgun · Archgun · Mastery Rank 0. 32 base damage x6 multishot (blast 32), 10% crit chance, 2.9x crit multiplier, 34.9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-10
+## Best riven-free build on the WFSim board, as of 2026-10-11
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.6290 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-09 23:57 UTC · 77fd7f0324 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 33.1589 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Marked Target, Magnetized Cycle, Primary Crux, Secondary Fortifier | 2026-10-09 21:54 UTC · 77fd7f0324 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.9934 | Primed Venomous Clip, Charged Bullets, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-09 22:45 UTC · 77fd7f0324 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 7.5333 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-09 17:40 UTC · 77fd7f0324 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 14.4317 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-10 18:08 UTC · 22610331fe |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 39.2516 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Marked Target, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-10 17:25 UTC · 22610331fe |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 2.8928 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-10 21:57 UTC · 22610331fe |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 8.6704 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-10 16:51 UTC · 22610331fe |
 
 ## Not modelled here
 

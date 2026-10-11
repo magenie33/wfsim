@@ -4,7 +4,7 @@ Chinese name: 哈帕克
 
 Rifle · Primary · Mastery Rank 7. 50 base damage (impact 5, puncture 37.5, slash 7.5), 20% crit chance, 2.3x crit multiplier, 17% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-10
+## Best riven-free build on the WFSim board, as of 2026-10-11
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
