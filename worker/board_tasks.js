@@ -85,12 +85,12 @@ const producerOf = (batch, builtAt) => {
   return day && builtAt && builtAt.slice(0, 10) >= iso(Date.parse(day) - 86_400_000).slice(0, 10) ? "new_build" : "sweep";
 };
 
-/// ONE ROW ASKED: the question its record and ruler make, by its producer.
-async function askRow(env, batch, r, record, builtAt, engine, now) {
+/// ONE ROW'S ASK: the question its record and ruler make, by its producer.
+function rowAsk(batch, r, record, builtAt) {
   const producer = producerOf(batch, builtAt);
-  await facts().demand(env, { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
+  return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms: DEADLINE_MS[producer],
-    payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch } }, engine, now);
+    payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch } };
 }
 
 /// THE ROWS A BATCH OWES, asked of the factory (`ship_queue.sh`). An arrival's
@@ -114,7 +114,7 @@ async function ask(request, env) {
         WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                             AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live')
         GROUP BY q.build_id, q.ruler, q.mode LIMIT ?`).bind(ASK_MAX).all();
-    for (const r of results) await askRow(env, r.batch, r, r.record, r.at, engine, now);
+    await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at)), engine, now);
     return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });
   }
   const rows = Array.isArray(b.rows) ? b.rows.filter((r) => r && typeof r.identity === "string" && typeof r.ruler === "string" && typeof r.mode === "string") : [];
@@ -122,18 +122,20 @@ async function ask(request, env) {
   const { results: builds } = await db.prepare("SELECT id, record, at FROM builds WHERE id IN (SELECT value FROM json_each(?))")
     .bind(JSON.stringify([...new Set(rows.map((r) => r.identity))])).all();
   const buildOf = new Map(builds.map((x) => [x.id, x]));
-  const arrival = b.batch.startsWith("arrivals-");
-  let asked = 0, skipped = 0;
-  for (const r of rows) {
-    const bu = buildOf.get(r.identity);
-    // AN ARRIVAL'S ROW THE BOARD ALREADY SCORED is not asked: a resubmission the
-    // page did not recognise is the same build, and asking again fought it again.
-    if (!bu || (arrival && await db.prepare("SELECT 1 FROM scores WHERE identity = ? AND ruler = ? AND mode = ?")
-      .bind(r.identity, r.ruler, r.mode).first())) { skipped++; continue; }
-    await askRow(env, b.batch, r, bu.record, bu.at, engine, now);
-    asked++;
+  // AN ARRIVAL'S ROW THE BOARD ALREADY SCORED is not asked: a resubmission the
+  // page did not recognise is the same build, and asking again fought it again.
+  const scored = new Set();
+  if (b.batch.startsWith("arrivals-")) {
+    const { results: had } = await db.prepare(
+      `SELECT s.identity, s.ruler, s.mode FROM scores s JOIN json_each(?) j
+          ON s.identity = json_extract(j.value, '$.identity') AND s.ruler = json_extract(j.value, '$.ruler') AND s.mode = json_extract(j.value, '$.mode')`)
+      .bind(JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
+    for (const x of had) scored.add(rowRef(x.identity, x.ruler, x.mode));
   }
-  return json({ ok: true, asked, skipped });
+  const asks = rows.filter((r) => buildOf.has(r.identity) && !scored.has(rowRef(r.identity, r.ruler, r.mode)))
+    .map((r) => rowAsk(b.batch, r, buildOf.get(r.identity).record, buildOf.get(r.identity).at));
+  await facts().demandAll(env, asks, engine, now);
+  return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
 }
 
 /// THE ORDERS OPEN BEFORE THE FACTORY, asked of it once each with the results

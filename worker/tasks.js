@@ -71,35 +71,52 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
   /// A PRODUCER ASKS. The question is opened, or shared when another producer
   /// asked it already; a fact the served engine already holds is told at once.
   /// `waits`: a person is waiting on it now — §"Order".
-  async function demand(env, { producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false }, engine, now = Date.now()) {
-    if (!verbs[verb]) throw new Error(`no verb ${verb}`);
-    producerOf(producer);
-    const db = env.LIBRARY, id = await questionId(verb, request), due = iso(now + due_in_ms);
-    await db.batch([
-      db.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits) VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
-                  ON CONFLICT (id) DO UPDATE SET
-                    state = CASE WHEN state = 'withdrawn' THEN 'open' ELSE state END,
-                    opened_at = CASE WHEN state = 'withdrawn' THEN excluded.opened_at ELSE opened_at END,
-                    due_at = CASE WHEN state = 'withdrawn' OR excluded.due_at < due_at THEN excluded.due_at ELSE due_at END,
-                    waits = CASE WHEN state = 'withdrawn' THEN excluded.waits ELSE max(waits, excluded.waits) END,
-                    lanes = COALESCE(lanes, excluded.lanes)`)
-        .bind(id, verb, canon(request), due, iso(now), lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0),
-      db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
-                  ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
-                    due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
-        .bind(producer, ref, id, iso(now), due, waits ? 1 : 0, JSON.stringify(payload)),
-    ]);
-    const q = await db.prepare("SELECT * FROM questions WHERE id = ?").bind(id).first();
-    if (q.state === "fact" || q.state === "spot") {
+  async function demand(env, ask, engine, now = Date.now()) {
+    return (await demandAll(env, [ask], engine, now))[0];
+  }
+
+  /// MANY ASKS AT ONCE, written in a few round trips rather than three each — a
+  /// producer asking thousands an hour is otherwise slower than its own clock.
+  const DEMAND_CHUNK = 50;
+  async function demandAll(env, asks, engine, now = Date.now()) {
+    const db = env.LIBRARY, at = iso(now), ids = [];
+    for (const a of asks) {
+      if (!verbs[a.verb]) throw new Error(`no verb ${a.verb}`);
+      producerOf(a.producer);
+      ids.push(await questionId(a.verb, a.request));
+    }
+    for (let i = 0; i < asks.length; i += DEMAND_CHUNK) {
+      const writes = [];
+      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false }, k) => {
+        const id = ids[i + k], due = iso(now + due_in_ms);
+        writes.push(
+          db.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits) VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
+                      ON CONFLICT (id) DO UPDATE SET
+                        state = CASE WHEN state = 'withdrawn' THEN 'open' ELSE state END,
+                        opened_at = CASE WHEN state = 'withdrawn' THEN excluded.opened_at ELSE opened_at END,
+                        due_at = CASE WHEN state = 'withdrawn' OR excluded.due_at < due_at THEN excluded.due_at ELSE due_at END,
+                        waits = CASE WHEN state = 'withdrawn' THEN excluded.waits ELSE max(waits, excluded.waits) END,
+                        lanes = COALESCE(lanes, excluded.lanes)`)
+            .bind(id, verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0),
+          db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
+                      ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
+                        due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
+            .bind(producer, ref, id, at, due, waits ? 1 : 0, JSON.stringify(payload)));
+      });
+      await db.batch(writes);
+    }
+    const { results } = await db.prepare("SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?)) AND state IN ('fact', 'spot')")
+      .bind(JSON.stringify([...new Set(ids)])).all();
+    for (const q of results) {
       // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,
       // its answers carried for the served engine to reproduce or replace.
       if (q.fact_engine !== engine) {
-        await db.prepare("UPDATE questions SET state = 'open', opened_at = ? WHERE id = ? AND state = ?").bind(iso(now), id, q.state).run();
+        await db.prepare("UPDATE questions SET state = 'open', opened_at = ? WHERE id = ? AND state = ?").bind(at, q.id, q.state).run();
       } else {
         await deliver(env, q, now);
       }
     }
-    return id;
+    return ids;
   }
 
   /// A PRODUCER NO LONGER ASKS. A question nobody asks for any more is withdrawn,
@@ -435,7 +452,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     return out;
   }
 
-  return { demand, withdraw, next, renew, release, releaseAll, answer, answerOfficial, claim, refuse, settle, audit };
+  return { demand, demandAll, withdraw, next, renew, release, releaseAll, answer, answerOfficial, claim, refuse, settle, audit };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has

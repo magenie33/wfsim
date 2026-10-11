@@ -182,17 +182,27 @@ ship() {
     head -c 500 "$D1_OUT" || true
     return 1
   fi
-  r=$(queue_batches "$batch" "$file" | send "queue row")
-  set -- $r
-  echo "queue: $n row(s) asked for in $1 statement(s), $2 refused"
-  [ "$2" = "0" ] || return 1
+  # A CHUNK WRITTEN, THEN ASKED, THEN THE NEXT: a row written and not asked is
+  # one the scorer reads as nobody's, so a run its clock stops leaves at most
+  # one chunk of those rather than everything after the write.
   # A ROW NOT ASKED COSTS SPEED, NEVER A ROW: the queue still owes it, the
   # backfill asks for it later, and the scorer measures it meanwhile.
-  local body refused=0
-  while IFS= read -r body; do
-    factory_ask "$body" || refused=$((refused + 1))
-  done < <(ask_batches "$file" "$batch")
+  local chunk statements=0 failed=0 refused=0 body
+  chunk=$(mktemp)
+  for ((at = 1; at <= n; at += ASK_ROWS)); do
+    sed -n "${at},$((at + ASK_ROWS - 1))p" "$file" > "$chunk"
+    r=$(queue_batches "$batch" "$chunk" | send "queue row")
+    set -- $r
+    statements=$((statements + $1)); failed=$((failed + $2))
+    [ "$2" = "0" ] || break
+    while IFS= read -r body; do
+      factory_ask "$body" || refused=$((refused + 1))
+    done < <(ask_batches "$chunk" "$batch")
+  done
+  rm -f "$chunk"
+  echo "queue: $n row(s) asked for in $statements statement(s), $failed refused"
   [ "$refused" = "0" ] || echo "::warning::queue: $refused ask(s) of the fact factory refused [HTTP $ASK_CODE] — the backfill asks again"
+  [ "$failed" = "0" ]
 }
 
 # ---- self-test ------------------------------------------------------------
@@ -277,6 +287,13 @@ OK
   [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] \
     && say ok "...naming the batch before the rows in it" || say FAIL "the rows went first"
   grep -q '"rows":\[{"identity":"h1"' sent.log     && say ok "...and asks the fact factory for each row" || say FAIL "no ask was sent"
+  # A CHUNK ASKED BEFORE THE NEXT IS WRITTEN, so a stopped run leaves at most
+  # one chunk written and unasked — which the scorer would read as nobody's.
+  : > sent.log
+  ASK_ROWS=2 ship arrivals "what arrived" missing.ndjson > out.txt 2>&1
+  order=$(grep -o 'INTO queue\|"rows":' sent.log | tr '\n' ' ')
+  [ "$order" = 'INTO queue "rows": INTO queue "rows": ' ] \
+    && say ok "...a chunk at a time, each asked before the next is written" || say FAIL "order: $order"
 
   cat > "$DIR/bin/curl" <<'DEAD'
 #!/usr/bin/env bash

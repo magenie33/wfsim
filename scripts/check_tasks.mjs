@@ -228,6 +228,27 @@ console.log("\nthe cases that failed in production");
   check("...which is withdrawn there", db.raw.prepare("SELECT state FROM questions WHERE id = ?").get(id).state === "withdrawn");
 }
 
+{
+  const db = d1(), env = { LIBRARY: db };
+  told.length = 0;
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  db.raw.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+  // MANY ASKS AT ONCE ARE THE SAME AS EACH ALONE: past a chunk, one asked
+  // twice, and one whose fact on the served engine stands is delivered at once.
+  const known = await f.demand(env, { producer: "p", ref: "known", verb: "simulate", request: { n: 0 }, due_in_ms: 1000 }, "e1", NOW);
+  for (const w of [{ device: "a", owner: "oa", net: "na" }, { device: "b", owner: "ob", net: "nb" }]) {
+    const q = await f.next(env, w, "e1", NOW);
+    await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
+  }
+  told.length = 0;
+  const asks = Array.from({ length: 120 }, (_, i) => ({ producer: "q", ref: `many${i}`, verb: "simulate", request: { n: i % 119 }, due_in_ms: 86_400_000 }));
+  const ids = await f.demandAll(env, asks, "e1", NOW);
+  check("a batch of asks is a demand each, past one chunk, and one request asked twice is one question",
+    ids.length === 120 && ids[0] === known && db.raw.prepare("SELECT count(*) AS n FROM demands WHERE producer = 'q'").get().n === 120
+      && db.raw.prepare("SELECT count(*) AS n FROM questions").get().n === 119);
+  check("...and one whose fact on the served engine stands is told at once", told.some((t) => t.ref === "many0"), JSON.stringify(told));
+}
+
 console.log("\nthe watchdog");
 {
   // A STALL: a survey's shapes overdue, volunteers at work on
