@@ -323,6 +323,29 @@ impl Benchmark {
     pub fn metric(&self) -> &'static crate::rules::metrics::MetricDef {
         core_metric(&self.scenario).expect("a benchmark that loaded named its core")
     }
+
+    /// WHERE THIS CELL'S ROWS ARE PUBLISHED under the board's directory: its
+    /// rung tags, joined as its id joins them, and `None` on a base cell. One
+    /// directory per scene holds every ruler's rows in it, a file per weapon,
+    /// so a reader of the base board never meets a scene's row.
+    pub fn cell_dir(&self) -> Option<String> {
+        (!self.cell.is_empty()).then(|| self.cell.iter().map(|(_, tag)| tag.as_str()).collect::<Vec<_>>().join("__"))
+    }
+
+    /// THE RUNG THIS CELL SITS ON along each laddered axis, in `ladder` order:
+    /// the one `cell` names, or the axis's first where it names none.
+    pub fn rungs(&self) -> Vec<&'static Rung> {
+        self.ladder
+            .iter()
+            .filter_map(|id| {
+                let axis = axes().iter().find(|a| &a.id == id)?;
+                match self.cell.iter().find(|(a, _)| a == id) {
+                    Some((_, tag)) => axis.values.iter().find(|r| &r.tag == tag),
+                    None => axis.values.first(),
+                }
+            })
+            .collect()
+    }
 }
 
 /// A TEST HAS ONE CORE, and this is where that rule is applied.
@@ -736,6 +759,8 @@ mod tests {
         let c = &cells[3];
         assert_eq!((c.base.as_str(), c.primary), ("r", false));
         assert_eq!(c.cell, [("scene".to_string(), "icebind1000".to_string()), ("headshot".to_string(), "hs50".to_string())]);
+        assert_eq!(c.cell_dir().as_deref(), Some("icebind1000__hs50"));
+        assert_eq!(cells[0].cell_dir(), None, "the base cell is published where it always was");
         let get = |k: &str| c.scenario.get(k).cloned();
         assert_eq!(get("level").and_then(|v| v.as_u64()), Some(1000));
         assert_eq!(get("steel_path").and_then(|v| v.as_bool()), Some(false));

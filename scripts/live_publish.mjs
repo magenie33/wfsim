@@ -94,7 +94,10 @@ async function push() {
   // THE STAMP GOES LAST, so a reader who sees a new `meta.json` finds every file
   // it names already there — and the worker opens the live board only once one
   // exists (`worker/live_board.js`).
-  const names = readdirSync(dir).filter((n) => n.endsWith(".json") && n !== "meta.json").sort();
+  // A SCENE'S DIRECTORY IS PUSHED BENEATH ITS NAME (`Benchmark::cell_dir`).
+  const json = (sub) => readdirSync(join(dir, sub), { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".json")).map((e) => sub ? `${sub}/${e.name}` : e.name);
+  const scenes = readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
+  const names = [...json(""), ...scenes.flatMap(json)].filter((n) => n !== "meta.json").sort();
   for (const name of [...names, "meta.json"].filter((n) => existsSync(join(dir, n)))) {
     const bytes = readFileSync(join(dir, name));
     const sha = createHash("sha256").update(bytes).digest("hex");

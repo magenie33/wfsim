@@ -91,15 +91,22 @@ export const boardPackTask = (q) => ({ question: q.question, identity: q.demands
 /// whose build came that day or the one before — a `refresh-` batch's, or a
 /// sweep's. An older build asked for a ruler it lacks lands in the same daily
 /// batch, and is a sweep.
-const producerOf = (batch, builtAt) => {
+///
+/// A LADDER CELL'S ROW IS NEVER `new_build`'s: a new build waits on its base
+/// rulers' rows, and every other scene is owed it at a sweep's pace — or each
+/// scene added would multiply what must land inside six hours. A cell's id is
+/// its base's plus `__<rung>` (`engine::board::benchmarks::expand_ladder`).
+export const isLadderCell = (ruler) => ruler.includes("__");
+const producerOf = (batch, builtAt, ruler) => {
   if (batch.startsWith("refresh-")) return "refresh";
+  if (isLadderCell(ruler)) return "sweep";
   const day = batch.startsWith("arrivals-") && batch.slice(9, 19);
   return day && builtAt && builtAt.slice(0, 10) >= iso(Date.parse(day) - 86_400_000).slice(0, 10) ? "new_build" : "sweep";
 };
 
 /// ONE ROW'S ASK: the question its record and ruler make, by its producer.
 function rowAsk(batch, r, record, builtAt) {
-  const producer = producerOf(batch, builtAt);
+  const producer = producerOf(batch, builtAt, r.ruler);
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms: DEADLINE_MS[producer],
     payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch } };

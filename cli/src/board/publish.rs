@@ -229,6 +229,11 @@ pub(crate) fn write_pages(
     kept: &[Row],
     covered: Option<&std::collections::BTreeSet<String>>,
 ) {
+    // A LADDER CELL'S ROWS GO TO ITS SCENE'S DIRECTORY (`Benchmark::cell_dir`),
+    // carried there beside the other rulers' rows in that scene exactly as the
+    // base board carries its own; the base files never hold one.
+    let scene_dir = wfsim_engine::board::benchmarks::get(bench_id).and_then(|b| b.cell_dir()).map(|d| dir.join(d));
+    let dir = scene_dir.as_deref().unwrap_or(dir);
     if let Err(e) = std::fs::create_dir_all(dir) {
         panic!("{}: {e}", dir.display());
     }
@@ -367,6 +372,23 @@ mod page_row_tests {
         assert_eq!(scores("torid"), vec![2.0], "a weapon the subset did not name lost its rows");
         write_pages(&dir, ruler, &[at("braton", 3.0)], None);
         assert!(scores("torid").is_empty(), "a whole pass speaks for every weapon");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// **A SCENE'S ROWS ARE PUBLISHED IN ITS OWN DIRECTORY**, and the base
+    /// board's files never hold one: every reader of `site/board/*.json` —
+    /// the page, the stamp, the desktop shell's sync — reads the base board.
+    #[test]
+    fn a_cells_rows_are_published_under_its_scene() {
+        let dir = std::env::temp_dir().join(format!("wfsim-scene-{}", std::process::id()));
+        for b in wfsim_engine::board::benchmarks::all().iter().filter(|b| !b.cell.is_empty()) {
+            let _ = std::fs::remove_dir_all(&dir);
+            write_pages(&dir, &b.id, &[Row { weapon: "braton".into(), ..row(None) }], None);
+            let scene = dir.join(b.cell_dir().expect("a cell has a scene"));
+            let text = std::fs::read_to_string(scene.join("braton.json")).expect("the scene's file");
+            assert_eq!(serde_json::from_str::<Vec<Value>>(&text).unwrap()[0]["benchmark"], b.id.as_str());
+            assert!(!dir.join("braton.json").exists(), "{} wrote into the base board", b.id);
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 

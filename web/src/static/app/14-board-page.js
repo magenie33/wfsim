@@ -179,12 +179,15 @@ const inBenchView = (r) =>
 /// refuses to speak about — and is why the index does not join `BOARD_HAVE`.
 const benchRows = (id) => BOARD[id] || (BOARD_INDEX && BOARD_INDEX[id]) || [];
 
-const benchEntries = (id, weapons) => {
+/// …UNDER ANOTHER SCENE, its own index alone: those rows are in no weapon file.
+const benchRowsUnder = (cur, id) => (cur.cell_dir ? (SCENE_INDEX[cur.cell_dir] || {})[id] || [] : benchRows(id));
+
+const benchEntries = (cur, weapons) => {
   const out = [];
   for (const w of weapons) {
     for (const m of w.modes || ["base"]) {
-      const rows = benchRows(w.id)
-        .filter((r) => r.benchmark === id && (r.mode || "base") === m)
+      const rows = benchRowsUnder(cur, w.id)
+        .filter((r) => r.benchmark === cur.id && (r.mode || "base") === m)
         .filter(inBenchView);
       const row = rows.length ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]) : null;
       if (row || !benchMeasuredOnly) out.push({ w, mode: m, row });
@@ -325,10 +328,26 @@ function renderBenchBoard() {
     // is a list of chips rather than a stack of tables — the page shows one
     // ranking at a time because two rankings side by side is a comparison
     // nobody asked for yet.
-    picker.innerHTML = bs.map((b) => `<button type="button" class="bchip${
-      cur && b.id === cur.id ? " sel" : ""}" data-bench="${escHtml(b.id)}">${escHtml(tr(b.name))}</button>`).join("");
+    //
+    // ONE CHIP PER FIGHT, its scenes on the row below: a cell is the same
+    // ruler at another level or mode, and a chip each would bury the fights
+    // under their scenes. A fight's chip names it in the scene on show, and
+    // switching fight keeps that scene where the fight has it.
+    const inScene = (base) => (cur && bs.find((b) => b.base === base && b.cell_dir === cur.cell_dir))
+      || bs.find((b) => b.id === base);
+    picker.innerHTML = bs.filter((b) => b.id === b.base).map((b) => `<button type="button" class="bchip${
+      cur && b.id === cur.base ? " sel" : ""}" data-bench="${escHtml(b.id)}">${escHtml(tr(inScene(b.id).name))}</button>`).join("");
     picker.querySelectorAll("[data-bench]").forEach((el) => {
-      el.onclick = () => { benchPick = el.dataset.bench; benchWriteUrl(); renderBenchBoard(); };
+      el.onclick = () => { benchPick = inScene(el.dataset.bench).id; benchShowPicked(); };
+    });
+  }
+  const scenes = $("bench-scenes");
+  if (scenes) {
+    const mine = cur ? bs.filter((b) => b.base === cur.base) : [];
+    scenes.innerHTML = mine.length < 2 ? "" : mine.map((b) => `<button type="button" class="bchip${
+      b.id === cur.id ? " sel" : ""}" data-scene="${escHtml(b.id)}">${escHtml(tr(b.scene_name || b.name))}</button>`).join("");
+    scenes.querySelectorAll("[data-scene]").forEach((el) => {
+      el.onclick = () => { benchPick = el.dataset.scene; benchShowPicked(); };
     });
   }
   if (!cur) { box.innerHTML = ""; return; }
@@ -397,8 +416,9 @@ function renderBenchBoard() {
   // READ-ONLY, and doubly so: `mountArena` is told, and the scene also asks
   // `officialScenarioActive` at the gesture — a board's positions are pinned.
   benchArena(cur);
-  if (!BOARD_INDEX && (boardIndexAsk || boardIndexUnreachable)) {
-    box.innerHTML = boardIndexAsk
+  const leaders = benchIndexOf(cur);
+  if (!leaders.index && (leaders.asking || leaders.lost)) {
+    box.innerHTML = leaders.asking
       ? `<div class="sim-empty">${escHtml(tr("Loading the board…"))}</div>`
       : `<div class="sim-empty">${escHtml(tr("The board could not be reached."))} <button type="button" class="ghost-btn small" id="bench-retry">${escHtml(tr("Retry"))}</button></div>`;
     const again = $("bench-retry");
@@ -411,7 +431,7 @@ function renderBenchBoard() {
   // score, and putting it among the low ones would read as one. A RANK IS
   // COUNTED INSIDE THE LIST SHOWN, so a filtered board reads from #1.
   const metric = metricLabel(metricOf((cur.scenario || {}).metric));
-  const ranked = (weapons) => benchEntries(cur.id, weapons.filter((w) =>
+  const ranked = (weapons) => benchEntries(cur, weapons.filter((w) =>
     slotFilterMatch(benchSlotFilter, w) && nameMatches(benchQuery, w.name, w.name_en)))
     .sort((a, b) => (b.row ? b.row.score : -1) - (a.row ? a.row.score : -1));
   const head = (rows) => `<div class="bench-meta">${escHtml(
@@ -459,6 +479,14 @@ function renderBenchBoard() {
   });
 }
 const BENCH_BATCH = 60;
+
+/// A RULER OR SCENE PICKED: drawn at once, and again when its leaders land.
+function benchShowPicked() {
+  benchWriteUrl();
+  const ask = benchIndexOf(benchCurrent()).load();
+  renderBenchBoard();
+  ask.then(() => { if ($("bench-board") && !$("bench-page").hidden) renderBenchBoard(); });
+}
 let benchScroll = null;
 
 /// ONE BOARD ROW: its rank inside the list shown, the weapon and how it was

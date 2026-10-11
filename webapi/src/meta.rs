@@ -1222,6 +1222,10 @@ pub fn meta_json() -> Value {
             "base": b.base,
             "cell": b.cell.iter().map(|(axis, v)| (axis.clone(), json!(v)))
                 .collect::<serde_json::Map<_, _>>(),
+            // …WHERE ITS ROWS ARE PUBLISHED (`site/board/<cell_dir>/`, null on
+            // a base cell), and its scene in the ruler's own words.
+            "cell_dir": b.cell_dir(),
+            "scene_name": b.rungs().iter().map(|r| r.short.as_str()).collect::<Vec<_>>().join(" · "),
             // HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. Paired with
             // the library's own size (`/api/board/pending`), it is what lets a
             // STATIC board say how far behind it is — see `data::boards::Board`.

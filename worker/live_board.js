@@ -5,11 +5,12 @@
 // committed under `site/board/` is a daily snapshot for people, read here only
 // until the first live board lands (`isOpen`).
 //
-//   GET /board/<weapon|index>.json, /board.meta.json     the live board
+//   GET /board/[<scene>/]<weapon|index>.json, /board.meta.json     the live board
 //   PUT /api/board/live/<name>.json   (bearer BOARD_PUSH_TOKEN)   the server's write
 
 const PREFIX = "board/live/";
-const NAME = /^[a-z0-9_]{1,80}\.json$/;
+/// A BASE BOARD FILE, or one under a scene's directory (`Benchmark::cell_dir`).
+const NAME = /^(?:[a-z0-9_]{1,80}\/)?[a-z0-9_]{1,80}\.json$/;
 /// Long enough to spare R2 a read per page view, short enough that a row the
 /// server just published is on the page within the minute.
 const FRESH_SECONDS = 30;
@@ -21,7 +22,7 @@ const reply = (body, status) => new Response(JSON.stringify(body), {
 /// The R2 key a public path names, or null for a path that is not a board file.
 export function liveKey(path) {
   if (path === "/board.meta.json") return `${PREFIX}meta.json`;
-  const m = path.match(/^\/board\/([^/]+)$/);
+  const m = path.match(/^\/board\/((?:[^/]+\/)?[^/]+)$/);
   return m && NAME.test(m[1]) && m[1] !== "meta.json" ? PREFIX + m[1] : null;
 }
 

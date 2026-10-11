@@ -391,11 +391,37 @@ function loadFullBoard() {
   return boardIndexAsk;
 }
 
+/// EVERY OTHER SCENE'S LEADERS, by its directory (`cell_dir` in `/api/meta`):
+/// `site/board/<scene>/index.json`, `BOARD_INDEX`'s shape. A weapon page reads
+/// the base board alone, so none of this reaches `BOARD`. A scene nobody has
+/// measured has no file, and is an empty board rather than a missing one.
+///
+/// THE DESKTOP SHELL ASKS THE SITE: its offline copy holds the base board
+/// alone (`scripts/board_meta.py`), and its own 404 would read as that empty board.
+const SCENE_INDEX = {};
+const sceneIndexAsk = {};
+const sceneIndexUnreachable = {};
+function loadSceneIndex(dir) {
+  if (SCENE_INDEX[dir]) return Promise.resolve();
+  if (!sceneIndexAsk[dir]) {
+    sceneIndexUnreachable[dir] = false;
+    sceneIndexAsk[dir] = fetchJsonPatient(`${boardOffOrigin || window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : ""}/board/${dir}/index.json`)
+      .then((idx) => { SCENE_INDEX[dir] = idx || {}; }, () => { sceneIndexUnreachable[dir] = true; })
+      .finally(() => { delete sceneIndexAsk[dir]; });
+  }
+  return sceneIndexAsk[dir];
+}
+/// THE LEADERS A RULER'S RANKING READS, and the state of asking for them.
+const benchIndexOf = (cur) => (cur && cur.cell_dir
+  ? { index: SCENE_INDEX[cur.cell_dir] || null, asking: !!sceneIndexAsk[cur.cell_dir],
+    lost: !!sceneIndexUnreachable[cur.cell_dir], load: () => loadSceneIndex(cur.cell_dir) }
+  : { index: BOARD_INDEX, asking: !!boardIndexAsk, lost: boardIndexUnreachable, load: loadFullBoard });
+
 /// The benchmark page: ask first, so the first draw already knows a request is
 /// in flight, then draw again when it settles.
 function showBenchBoard() {
   benchReadUrl();
-  const ask = loadFullBoard();
+  const ask = benchIndexOf(benchCurrent()).load();
   renderBenchBoard();
   ask.then(() => {
     if ($("bench-board") && !$("bench-page").hidden) renderBenchBoard();

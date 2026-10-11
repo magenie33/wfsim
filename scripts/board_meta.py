@@ -52,7 +52,12 @@ INDEX = "index"
 
 
 def manifest() -> dict[str, str]:
-    """Every published file's own digest, by stem."""
+    """Every published file's own digest, by stem.
+
+    A SCENE'S DIRECTORY (`Benchmark::cell_dir`) IS NOT IN IT: a desktop shell
+    in the field keeps a file per stem directly under `board/` and fails its
+    whole refresh on a nested name (`desktop/src/protocol.rs` `refresh_board`).
+    """
     return {
         f.stem: hashlib.sha256(f.read_bytes()).hexdigest()
         for f in sorted(BOARD.glob("*.json"))

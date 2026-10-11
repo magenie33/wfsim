@@ -1812,6 +1812,26 @@ reads `wfsim-board --rulers`. A loop over the files skips every cell, and the
 purge built from one deletes every row owed under a cell as "retired" —
 `check_rescore_paths.mjs` refuses one.
 
+**A SCENE COSTS A BOARD, AND IS PAID FOR AFTER THE BASE.** Every build owes a
+row in every cell, so each rung multiplies the rows owed by the rulers it
+spans, and a new rung starts with every build unmeasured. A cell's row is never
+`new_build`'s: a new build is ranked first where it was always ranked, and the
+other scenes are a sweep's (`isLadderCell` in `worker/board_tasks.js`).
+
+**A SCENE'S ROWS LIVE IN ITS OWN DIRECTORY**, `site/board/<cell_dir>/` (a
+weapon file and an `index.json`, as at the top) and the live board's
+`/board/<cell_dir>/` beside it, so a reader of the base board never meets one.
+The board page offers a fight's scenes as a row of chips under its ruler, read
+from that directory's index. What reads the base board alone, today:
+
+- a weapon's page and its official builds, and the prerendered pages;
+- the stamp's manifest (`board_meta.py`), and so the desktop shell's offline
+  copy — a shell in the field cannot store a nested name, so a scene's files are
+  reached online only.
+
+The share-preview table names every cell (`ladder_cells` in
+`build_site_app.py`, a second reading of `expand_ladder`).
+
 ### A new ruler costs nothing to add
 
 Nothing on the path holds a prior board to copy or an empty file to hand-write.

@@ -979,6 +979,26 @@ def board_asof() -> str:
 
 
 @functools.lru_cache(maxsize=1)
+def ladder_cells() -> list:
+    """`(cell id, base id, [rung])` for every cell off a ruler's base — the ids
+    `engine::board::benchmarks::expand_ladder` makes: one rung per laddered
+    axis, the base cell (every first rung) left out, `__<tag>` per other rung.
+    A SECOND READING OF THAT RULE, for a build that runs no engine: change one,
+    change both."""
+    import itertools
+    axes = {f.stem: yload(f.read_text(encoding="utf-8"))
+            for f in (ROOT / "data" / "benchmarks" / "axes").glob("*.yaml")}
+    out = []
+    for f in sorted((ROOT / "data" / "benchmarks").glob("*.yaml")):
+        spec = yload(f.read_text(encoding="utf-8"))
+        ladder = spec.get("ladder") or []
+        for combo in itertools.product(*(axes[a]["values"] for a in ladder)):
+            off = [r for a, r in zip(ladder, combo) if r is not axes[a]["values"][0]]
+            if off:
+                out.append((spec["id"] + "".join(f"__{r['tag']}" for r in off), spec["id"], off))
+    return out
+
+
 def board_best() -> dict:
     """weapon id -> [(ruler name, row)], the best RIVEN-FREE row under each.
 
@@ -1341,10 +1361,16 @@ def ship_share_names() -> None:
             if isinstance(d, dict) and d.get("id") and d.get("name"):
                 out[d["id"]] = str(d["name"]).split(" · ")[0] if short else str(d["name"])
         return out
+    scenarios = titled("benchmarks", short=True)
+    # …AND EVERY OTHER SCENE OF A RULER, by its cell id: a claim naming one the
+    # table lacks is refused (`shareClaim`). Its title says the scene, since the
+    # base title — the name up to its first " · " — is every cell's.
+    for cell, base, rungs in ladder_cells():
+        scenarios[cell] = " · ".join([scenarios[base], *(r["short"] for r in rungs)])
     (APP / "share-names.json").write_text(
         json.dumps({"order": order, "names": {i: names[i] for i in order if i in names},
                     "evolution_prefixed": sorted(prefixed),
-                    "scenarios": titled("benchmarks", short=True), "enemies": titled("enemies")},
+                    "scenarios": scenarios, "enemies": titled("enemies")},
                    ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8", newline="\n")
 

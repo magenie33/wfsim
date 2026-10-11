@@ -112,6 +112,11 @@ check("...a new build's by `new_build`, an old build's in the same batch by `swe
   demand("one").producer === "new_build" && demand("old").producer === "sweep");
 check("...and its question is the build's record on the ruler, simulated",
   question("one").verb === "simulate" && JSON.parse(question("one").request).record.weapon === "braton_prime");
+build("cell");
+L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, 'cell', 'standard_single_target__sp200', 'base')").run(arrivals);
+await post(boardTasksRoute, "/api/board/ask", { batch: arrivals, rows: [{ identity: "cell", ruler: "standard_single_target__sp200", mode: "base" }] }, TOKEN);
+check("...but a new build's row under another scene of a ruler by `sweep`",
+  (L.prepare("SELECT producer FROM demands WHERE ref = 'cell|standard_single_target__sp200|base'").get() || {}).producer === "sweep");
 queue("rescore-x", "scored");
 await ask("rescore-x", "scored");
 check("a rescore asks for a scored row on purpose", demand("scored") && demand("scored").producer === "sweep");

@@ -30,7 +30,9 @@ const put = (name, body, token = "t") => pushLive(new Request(`https://x/api/boa
 check("a weapon's board is a live key", liveKey("/board/torid.json") === "board/live/torid.json");
 check("...and so are the index and the stamp",
   liveKey("/board/index.json") === "board/live/index.json" && liveKey("/board.meta.json") === "board/live/meta.json");
-check("a path that is not a board file is not", liveKey("/board/x/y.json") === null && liveKey("/board/../a.json") === null
+check("...and a scene's file", liveKey("/board/sp200/torid.json") === "board/live/sp200/torid.json");
+check("a path that is not a board file is not", liveKey("/board/x/y/z.json") === null && liveKey("/board/../a.json") === null
+  && liveKey("/board/../x/a.json") === null && liveKey("/board/x/../a.json") === null
   && liveKey("/boards.json") === null && liveKey("/board/meta.json") === null);
 
 check("before the first stamp, the committed board answers", (await get("/board/torid.json")).text === "[\"committed\"]");
