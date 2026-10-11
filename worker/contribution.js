@@ -413,11 +413,16 @@ async function kept(request, env) {
 /// a ruler it lacks, a refresh of a row three days old — the riven gains handed
 /// to the community in the last day and not done, the scores written in the last
 /// hour by the volunteers and by the official machines, and how many browsers
-/// are computing. Totals only, kept a minute per isolate.
+/// are computing. Totals only, kept a minute at the edge and per isolate: the
+/// owed count reads every queue row, and per isolate alone it ran ~25 times a minute.
 const DEMAND_KEEP_MS = 60_000;
 let demandKept = null;
-async function demand(env) {
+async function demand(request, env) {
   if (demandKept && Date.now() - demandKept.at < DEMAND_KEEP_MS) return json(demandKept.body);
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const key = new Request(new URL("/api/board/demand", request.url).toString());
+  const hit = cache && await cache.match(key);
+  if (hit) return hit;
   if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0, refreshes: 0 }, riven_gains: 0, surveys: [], per_hour: { volunteers: 0, official: 0 } });
   const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
@@ -441,6 +446,8 @@ async function demand(env) {
   const body = { ok: true, computing: await computingNow(env), owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: (gains.results[0] || {}).n || 0, surveys: surveys.results, per_hour: { volunteers: h.volunteers || 0, official: h.official || 0 } };
   demandKept = { at: t, body };
+  if (cache) await cache.put(key, new Response(JSON.stringify(body),
+    { headers: { "content-type": "application/json", "cache-control": `public, max-age=${DEMAND_KEEP_MS / 1000}` } }));
   return json(body);
 }
 
@@ -513,7 +520,7 @@ export async function contributionRoute(request, env, path) {
   }
   if (path === "/api/board/demand") {
     if (request.method !== "GET") return no("method", 405);
-    return demand(env);
+    return demand(request, env);
   }
   if (path === "/api/board/tally") {
     if (request.method !== "GET") return no("method", 405);
