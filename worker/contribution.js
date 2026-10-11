@@ -352,18 +352,18 @@ async function computingNow(env) {
 /// ONE PERSON, by the exact name the ranking shows them under — an account
 /// that agreed to be named, the most points first where two share one — with
 /// their points and place on each ranking.
-async function person(env, name) {
-  const everyone = await standings(env);
-  const hit = everyone.filter((e) => e.named && e.name === name).sort((x, y) => y.points - x.points)[0];
-  if (!hit) return json({ ok: true, computing: await computingNow(env), person: null });
+async function person(request, env, name) {
+  // READ OFF THE RANKING'S OWN MINUTE (`kept`), where only a named row carries a name.
+  const { everyone, computing } = await kept(request, env);
+  const hit = everyone.filter((e) => e.name === name).sort((x, y) => y.points - x.points)[0];
+  if (!hit) return json({ ok: true, computing, person: null });
   const ranks = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => {
-    const at = ordered(everyone, key).findIndex((e) => e.id === hit.id);
+    const at = ordered(everyone, key).findIndex((e) => e.key === hit.key);
     return [period, at < 0 ? null : at + 1];
   }));
-  const marks = await cloudMarks(env, [hit.id]);
-  return json({ ok: true, computing: await computingNow(env), person: { name: hit.name, points: hit.points,
-    recent: hit.recent, week: hit.week, ranks, contributor_rank: contributorRank(hit.points), ...(hit.volunteer ? { volunteer: true } : {}),
-    ...(marks[hit.id] ? { mark: marks[hit.id] } : {}) } });
+  return json({ ok: true, computing, person: { name: hit.name, points: hit.points,
+    recent: hit.recent, week: hit.week, ranks, contributor_rank: hit.contributor_rank, ...(hit.volunteer ? { volunteer: true } : {}),
+    ...(hit.mark ? { mark: hit.mark } : {}) } });
 }
 
 /// THE RANKING the page shows, its first `limit`. A name and a handle leave
@@ -512,7 +512,7 @@ export async function contributionRoute(request, env, path) {
     const me = env.AUTH_SECRET ? await sessionAccount(env, request) : null;
     const q = new URL(request.url).searchParams;
     const name = (q.get("name") || "").trim();
-    if (name) return person(env, name);
+    if (name) return person(request, env, name);
     const limit = Math.min(MOST, Math.max(1, parseInt(q.get("limit"), 10) || PAGE));
     return ranking(request, env, q.get("period"), limit, me);
   }
