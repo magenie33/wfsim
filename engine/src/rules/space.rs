@@ -19,8 +19,6 @@
 //! otherwise; a hitbox's height lives in [`crate::target::BodyPart`], which is a
 //! question about where on a body a pellet landed rather than where the body is.
 
-use crate::rules::math::Portable;
-
 /// A point on the arena floor, in metres.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Vec2 {
@@ -39,14 +37,14 @@ impl Vec2 {
     /// Metres between two points.
     pub fn distance(self, other: Self) -> f64 {
         let (dx, dy) = (self.x - other.x, self.y - other.y);
-        dx.hypot_portable(dy)
+        dx.hypot(dy)
     }
 
     /// This point moved `metres` of the way toward `toward`. The direction is
     /// what a body FACES, so a degenerate pair (nowhere to face) stays put.
     pub fn toward(self, toward: Self, metres: f64) -> Self {
         let (dx, dy) = (toward.x - self.x, toward.y - self.y);
-        let len = dx.hypot_portable(dy);
+        let len = dx.hypot(dy);
         if len <= 0.0 {
             return self;
         }
@@ -133,7 +131,7 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     if rad >= std::f64::consts::FRAC_PI_2 {
         range_m
     } else {
-        range_m * rad.sin_portable()
+        range_m * rad.sin()
     }
 }
 
@@ -171,12 +169,12 @@ pub fn within(value: f64, limit: f64) -> bool {
 pub fn off_axis_deg(muzzle: Vec2, aim_at: Vec2, body: Vec2) -> f64 {
     let (ax, ay) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
     let (bx, by) = (body.x - muzzle.x, body.y - muzzle.y);
-    let (la, lb) = (ax.hypot_portable(ay), bx.hypot_portable(by));
+    let (la, lb) = (ax.hypot(ay), bx.hypot(by));
     if la <= 0.0 || lb <= 0.0 {
         return 0.0;
     }
     let cos = ((ax * bx + ay * by) / (la * lb)).clamp(-1.0, 1.0);
-    cos.acos_portable().to_degrees()
+    cos.acos().to_degrees()
 }
 
 /// WHERE A PELLET PASSES a body, when the weapon is not pointed at it.
@@ -197,7 +195,7 @@ pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f6
     }
     let a = miss_distance(range_m, off_axis_deg);
     let b = miss_distance(range_m, deviation_deg);
-    let c = (phi * std::f64::consts::TAU).cos_portable();
+    let c = (phi * std::f64::consts::TAU).cos();
     (a * a + b * b - 2.0 * a * b * c).max(0.0).sqrt()
 }
 
@@ -235,7 +233,7 @@ impl Detonation {
     /// How far this explosion is from a body standing at `body`, in three
     /// dimensions — the floor gap and the height are legs of the same triangle.
     pub fn distance_to(self, body: Vec2) -> f64 {
-        self.at.distance(body).hypot_portable(self.height_m)
+        self.at.distance(body).hypot(self.height_m)
     }
 }
 
@@ -259,7 +257,7 @@ pub fn detonation_of_miss(
     phi: f64,
 ) -> Detonation {
     let (ax, ay) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
-    let la = ax.hypot_portable(ay);
+    let la = ax.hypot(ay);
     if la <= 0.0 {
         return Detonation { at: toward, height_m: 0.0 };
     }
@@ -270,7 +268,7 @@ pub fn detonation_of_miss(
     // along the ray — using `range_m` there instead was wrong by
     // `range_m(1 − cos θ)` and showed up the moment the weapon was pointed off
     // the body at all.
-    let (sin_o, cos_o) = off_axis_deg.to_radians().sin_cos_portable();
+    let (sin_o, cos_o) = off_axis_deg.to_radians().sin_cos();
     let along = range_m * cos_o;
     let o = Vec2::new(muzzle.x + dir.x * along, muzzle.y + dir.y * along);
     // …and the in-floor perpendicular, oriented TOWARD the body so that `phi`
@@ -285,7 +283,7 @@ pub fn detonation_of_miss(
     // own approximation, which is not this function's to correct.
     let a = range_m * sin_o;
     let b = miss_distance(range_m, deviation_deg);
-    let (s, c) = (phi * std::f64::consts::TAU).sin_cos_portable();
+    let (s, c) = (phi * std::f64::consts::TAU).sin_cos();
     let base = Vec2::new(o.x + u.x * a, o.y + u.y * a);
     Detonation {
         at: Vec2::new(base.x + u.x * (b * c - a), base.y + u.y * (b * c - a)),
@@ -355,7 +353,7 @@ pub fn blast_reach(centre_distance_m: f64) -> f64 {
 /// distance a shot flew is measured to.
 #[wfsim_gas_macro::metered]
 pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64)> {
-    let len = dir.x.hypot_portable(dir.y);
+    let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
         return None;
     }
@@ -612,7 +610,7 @@ pub fn traverse(
     width_m: f64,
 ) -> Traversal {
     let pierce = pierce.into();
-    let len = dir.x.hypot_portable(dir.y);
+    let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
         return Traversal { struck: Vec::new(), stopped_in: None, left_m: 0.0 };
     }
@@ -709,7 +707,7 @@ pub fn dissipation_point(
 ) -> Vec2 {
     let pierce = pierce.into();
     let (dx, dy) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
-    let len = dx.hypot_portable(dy);
+    let len = dx.hypot(dy);
     if len <= 0.0 || !pierce.passes_a_body() {
         return contact;
     }
@@ -779,7 +777,7 @@ pub fn bounce_path(
     let mut out = Vec::new();
     let Some(&hit) = bodies.get(first) else { return out };
     let inc = Vec2::new(hit.x - muzzle.x, hit.y - muzzle.y);
-    let len = inc.x.hypot_portable(inc.y);
+    let len = inc.x.hypot(inc.y);
     if len <= 1e-9 || bounces == 0 {
         return out;
     }
@@ -798,7 +796,7 @@ pub fn bounce_path(
         // REFLECT about the surface: n is the outward normal at the impact.
         let c = bodies[cur];
         let n = Vec2::new(at.x - c.x, at.y - c.y);
-        let nl = n.x.hypot_portable(n.y);
+        let nl = n.x.hypot(n.y);
         if nl <= 1e-9 {
             break; // dead centre: no surface to reflect about
         }
@@ -819,7 +817,7 @@ pub fn bounce_path(
 /// [`first_hit`], skipping the body the projectile is standing on.
 #[wfsim_gas_macro::metered]
 fn first_hit_excluding(from: Vec2, dir: Vec2, bodies: &[Vec2], skip: usize) -> Option<(usize, f64)> {
-    let len = dir.x.hypot_portable(dir.y);
+    let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
         return None;
     }

@@ -21,7 +21,10 @@ use wfsim_optimizer::FunnelState;
 /// JSON ("" or "{}" for /api/meta). Returns the response JSON as a string.
 #[wasm_bindgen]
 pub fn api(endpoint: &str, body: &str) -> String {
-    wfsim_webapi::route_text(endpoint, body)
+    let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
+    let out = wfsim_webapi::route(endpoint, &v)
+        .unwrap_or_else(|| wfsim_webapi::err_json(format!("unknown endpoint: {endpoint}")));
+    out.to_string()
 }
 
 /// A SIMULATE THAT SAYS HOW FAR IT HAS GOT.

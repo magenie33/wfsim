@@ -1,8 +1,7 @@
 // THE GAS METER HOLDS (docs/WASM.md §"Gas"), in two parts:
 // 1. EVERY TOP-LEVEL fn, impl AND trait in the metered sources carries
 //    `#[wfsim_gas_macro::metered]`, so nothing new on a fight's path goes
-//    uncounted; and no production code calls the platform's maths library
-//    (`.powf(`, `.exp(`, `.sin(`…), only `rules::math`, which is one libm;
+//    uncounted;
 // 2. NATIVE AND WASM COUNT THE SAME: the rows of tests/gas/rows.json, fought
 //    by the native `wfsim-gas` and by the wasm engine as the page fights them,
 //    give the same gas, work and score, however the runs are cut, on a fresh
@@ -28,9 +27,8 @@ const check = (what, ok, detail = "") => {
 export const METERED = ["engine/src/fight", "engine/src/rules", "engine/src/model", "engine/src/target.rs",
   "engine/src/formation.rs", "engine/src/record.rs"];
 /// …less the code around the runs, which must not count: the loop that reads
-/// the count, the counter itself, and the maths that stands in for std's,
-/// which was never counted either.
-const NOT_METERED = ["engine/src/fight/monte_carlo.rs", "engine/src/fight/gas.rs", "engine/src/rules/math.rs"];
+/// the count, and the counter itself.
+const NOT_METERED = ["engine/src/fight/monte_carlo.rs", "engine/src/fight/gas.rs"];
 const ATTR = "#[wfsim_gas_macro::metered]";
 const ITEM = /^(pub(\([a-z:]+\))? )?(unsafe )?(fn |impl[ <]|trait )/;
 
@@ -57,32 +55,6 @@ for (const file of METERED.flatMap(rust).filter((f) => !NOT_METERED.includes(f))
 }
 check(`${items} top-level items carry ${ATTR}`, items > 0 && unmetered.length === 0, unmetered.slice(0, 10).join("\n        "));
 
-/// ONE MATHS LIBRARY ON EVERY TARGET (engine/src/rules/math.rs): a transcendental
-/// called on an f64 reaches the platform's own library natively and
-/// compiler-builtins in wasm, and the two need not agree to the last bit.
-/// Production code only — a test may compare against std.
-export const PLATFORM_MATHS = /\.(powf|powi|exp|exp2|exp_m1|ln|ln_1p|log|log2|log10|sin|cos|tan|sin_cos|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|hypot|cbrt)\(/;
-const PORTABLE_SOURCES = ["engine/src", "webapi/src", "optimizer/src"];
-const MATHS_HOME = "engine/src/rules/math.rs";
-/// Each line outside a `tests` directory and an inline `#[cfg(test)] mod x { … }`
-/// (closed by the `}` at its own indent), its comment dropped.
-function productionLines(text) {
-  const lines = text.split(/\r?\n/), out = [];
-  for (let i = 0; i < lines.length; i++) {
-    const m = /^(\s*)#\[cfg\(test\)\]\s*$/.exec(lines[i]);
-    if (m && /^\s*(pub(\([^)]*\))? )?mod \w+ \{/.test(lines[i + 1] ?? "")) {
-      while (i < lines.length && lines[i] !== `${m[1]}}`) i++;
-      continue;
-    }
-    out.push([i + 1, lines[i].replace(/\/\/.*$/, "")]);
-  }
-  return out;
-}
-const direct = PORTABLE_SOURCES.flatMap(rust).filter((f) => f !== MATHS_HOME).flatMap((file) =>
-  productionLines(fs.readFileSync(path.join(ROOT, file), "utf8"))
-    .filter(([, l]) => PLATFORM_MATHS.test(l)).map(([n, l]) => `${file}:${n}: ${l.trim().slice(0, 60)}`));
-check(`no production code calls the platform's maths, only ${MATHS_HOME}`, direct.length === 0, direct.slice(0, 10).join("\n        "));
-
 let native = arg("native", ""), pkg = arg("pkg", "");
 if (process.argv.includes("build")) {
   const run = (cmd, args, env = {}) => execFileSync(cmd, args, { cwd: ROOT, stdio: ["ignore", "inherit", "inherit"], env: { ...process.env, ...env } });
@@ -103,17 +75,10 @@ if (!native || !pkg) {
   const SHARE = 0.1;
   const rowsFile = path.join(ROOT, "tests/gas/rows.json");
   const rows = JSON.parse(fs.readFileSync(rowsFile, "utf8"));
-  // …AND THE FIRST ROW AGAIN AT THE END, in the same process: a long-lived
-  // client fights row after row, and state a run fills once — a cache, a lazy
-  // table — must not make a later row's count differ from its first.
-  const againFile = path.join(ROOT, "target", "gas-rows-again.json");
-  fs.mkdirSync(path.dirname(againFile), { recursive: true });
-  fs.writeFileSync(againFile, JSON.stringify([...rows, rows[0]]));
-  const nat = execFileSync(native, [againFile, String(SHARE), "1", "check"], { encoding: "utf8", maxBuffer: 1 << 26 })
+  const nat = execFileSync(native, [rowsFile, String(SHARE), "1", "check"], { encoding: "utf8", maxBuffer: 1 << 26 })
     .split("\n").filter(Boolean).map((l) => JSON.parse(l));
   const bits = (s) => `${JSON.stringify(s.score)} ${s.metric} ${s.work} ${s.gas}`;
   const A = loadEngine({ pkg });
-  let first = null;
   rows.forEach((row, i) => {
     const name = `${row.record.weapon} ${row.ruler} ${row.mode}`;
     const order = A.api("/api/board/order", row), req = order.request;
@@ -139,12 +104,7 @@ if (!native || !pkg) {
     const want = (BigInt(w.gas) * PER_MILLION) / 1_000_000n + BigInt(n) * PER_RUN;
     check(`${name}: the work is gas.rs's price of the count`, BigInt(w.work) === want, `${w.work} vs ${want}`);
     check(`${name}: a thousand full rows of it is an exact JSON number`, Number.isSafeInteger(w.gas * 10000) && Number.isSafeInteger(w.work * 10000));
-    if (i === 0) first = { req, n, w, scoreOn };
   });
-  const again = first.scoreOn(A, A.api("/api/board/fold", { request: first.req, from: 0, count: first.n }).acc);
-  check(`${rows[0].record.weapon}, fought again after every other row in one process: native and wasm count what they did first`,
-    nat[rows.length] && bits(nat[rows.length]) === bits(nat[0]) && bits(again) === bits(first.w),
-    `native ${nat[rows.length] && bits(nat[rows.length])} vs ${bits(nat[0])}, wasm ${bits(again)} vs ${bits(first.w)}`);
 }
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

@@ -1,4 +1,3 @@
-use crate::rules::math::Portable;
 use super::*;
 
 /// Timed STATUS events due strictly before `until`, in chronological order:
@@ -708,7 +707,7 @@ pub(super) fn settle_what_is_in_the_air(
             let fresh = r.kills.saturating_sub(*strip_kills_seen);
             *strip_kills_seen = r.kills;
             if fresh > 0 && share > 0.0 {
-                let keep = (1.0 - share).powi_portable(fresh as i32);
+                let keep = (1.0 - share).powi(fresh as i32);
                 for (b, foe) in bodies.iter_mut().enumerate() {
                     let Some(spec) = params.body(b) else { continue };
                     if crate::rules::space::gap(params.player_at, spec.at) > radius {

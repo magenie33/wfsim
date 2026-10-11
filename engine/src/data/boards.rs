@@ -18,7 +18,6 @@
 //! produced by running this engine over that build under that benchmark's own
 //! pinned seed, so anyone with the repo reproduces any row exactly.
 
-use crate::rules::math::Portable;
 use std::sync::OnceLock;
 
 /// A score as it is PUBLISHED: at least four significant figures and at least
@@ -35,7 +34,7 @@ use std::sync::OnceLock;
 /// the page prints it. The number stays exact in the record; only what is shown
 /// is rounded, so two rows that tie on screen are still ordered underneath.
 pub fn format_score(v: f64) -> String {
-    let mag = if v.is_normal() { v.abs().log10_portable().floor() as i32 } else { 0 };
+    let mag = if v.is_normal() { v.abs().log10().floor() as i32 } else { 0 };
     // Four significant figures need `3 - mag` decimals; four decimals is the
     // floor, and 12 the stop so a denormal cannot ask for hundreds.
     let dp = (3 - mag).clamp(4, 12) as usize;

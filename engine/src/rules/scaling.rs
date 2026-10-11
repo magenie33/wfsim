@@ -16,8 +16,6 @@
 //! S(Δ) = 3T² − 2T³,  T = clamp((Δ − lo) / (hi − lo), 0, 1)
 //! ```
 
-use crate::rules::math::Portable;
-
 /// Enemy levels are normally capped at 9999 (exceeded only in Void Fissures).
 pub const LEVEL_CAP: u32 = 9999;
 
@@ -101,8 +99,8 @@ impl Curve {
     /// Stat multiplier at a level difference `delta` (clamped at 0).
     pub fn multiplier(&self, delta: f64) -> f64 {
         let d = delta.max(0.0);
-        let f1 = 1.0 + self.c1 * d.powf_portable(self.e1);
-        let f2 = 1.0 + self.c2 * d.powf_portable(self.e2);
+        let f1 = 1.0 + self.c1 * d.powf(self.e1);
+        let f2 = 1.0 + self.c2 * d.powf(self.e2);
         let t = ((d - self.lo) / (self.hi - self.lo)).clamp(0.0, 1.0);
         let s = 3.0 * t * t - 2.0 * t * t * t;
         f1 * (1.0 - s) + f2 * s

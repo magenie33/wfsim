@@ -3,7 +3,6 @@
 //! numbers are data on the frame (`rage:`, `data::warframes::RageSpec`) and the
 //! rule is `docs/WARFRAMES.md` §Passives.
 
-use crate::rules::math::Portable;
 use crate::data::warframes::RageSpec;
 
 /// The buff roster's id for the meter, and the buff card's.
@@ -58,12 +57,12 @@ impl Rage {
 /// curve's slope reaches the tail's, so it is derived rather than stored.
 fn decayed(s: &RageSpec, value: f64, idle: f64) -> f64 {
     let (lambda, tail) = (s.decay_rate, s.tail_per_second);
-    let knee = (lambda / tail).ln_portable() / lambda;
+    let knee = (lambda / tail).ln() / lambda;
     let at_knee = tail / lambda;
     let from = value / s.cap;
-    let placed = if from > at_knee { -from.ln_portable() / lambda } else { knee + (at_knee - from) / tail };
+    let placed = if from > at_knee { -from.ln() / lambda } else { knee + (at_knee - from) / tail };
     let t = placed + idle;
-    let d = if t <= knee { (-lambda * t).exp_portable() } else { at_knee - tail * (t - knee) };
+    let d = if t <= knee { (-lambda * t).exp() } else { at_knee - tail * (t - knee) };
     ((s.cap * 100.0 * d).floor() / 100.0).max(0.0)
 }
 

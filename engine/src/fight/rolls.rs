@@ -1,4 +1,3 @@
-use crate::rules::math::Portable;
 use super::*;
 
 /// Devouring Attrition's multiplier for ONE damage instance: a
@@ -171,7 +170,7 @@ pub(super) fn weakpoint_ammo(
 #[wfsim_gas_macro::metered]
 pub(super) fn leaves_one(active: &FightParams, from: crate::rules::space::Vec2, body: crate::rules::space::Vec2) -> bool {
     active.spawn_on_kill
-        .is_some_and(|g| (body.x - from.x).hypot_portable(body.y - from.y) <= g.range_m)
+        .is_some_and(|g| (body.x - from.x).hypot(body.y - from.y) <= g.range_m)
 }
 
 #[wfsim_gas_macro::metered]

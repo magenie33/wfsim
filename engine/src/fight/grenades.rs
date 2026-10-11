@@ -7,7 +7,6 @@
 //! one damage instance on its own clock, which an orb's detonation already
 //! shares. What is the grenade's own is where it lands and Critical Mutation.
 
-use crate::rules::math::Portable;
 use super::*;
 
 /// CRITICAL MUTATION'S PILE, one per seat — a GLOBAL buff: every crit bucket
@@ -97,7 +96,7 @@ pub(super) fn throw_reload_grenades(
     let aim = params.aim_point();
     let muzzle = crate::rules::space::muzzle(params.player_at, aim);
     let reach = muzzle.distance(aim);
-    let heading = (aim.y - muzzle.y).atan2_portable(aim.x - muzzle.x);
+    let heading = (aim.y - muzzle.y).atan2(aim.x - muzzle.x);
     let mut struck: Vec<usize> = Vec::new();
     for i in 0..g.count {
         let spread = if g.count > 1 {
@@ -106,7 +105,7 @@ pub(super) fn throw_reload_grenades(
             0.0
         };
         let a = heading + spread.to_radians();
-        let land = crate::rules::space::Vec2::new(muzzle.x + reach * a.cos_portable(), muzzle.y + reach * a.sin_portable());
+        let land = crate::rules::space::Vec2::new(muzzle.x + reach * a.cos(), muzzle.y + reach * a.sin());
         // THE CONTACT HIT lands on a body the grenade came down on, and on
         // nothing if it came down on the floor beside one.
         let hit = (0..body_at.len()).find(|&b| body_at[b].distance(land) <= crate::rules::space::BODY_RADIUS_M + 1e-9);

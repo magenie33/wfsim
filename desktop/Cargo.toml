@@ -2,9 +2,8 @@
 #
 # An INDEPENDENT workspace on purpose (the empty `[workspace]` below). This
 # crate depends on NOTHING in the engine — every simulation runs in the wasm
-# module the page carries, or in the native library the content carries and this
-# loads by a C ABI, so the shell only ever serves files, swaps a directory,
-# checks a signature and calls a door. Two things follow: the main workspace's CI
+# module the page already carries, so the shell only ever serves files, swaps a
+# directory and checks a signature. Two things follow: the main workspace's CI
 # is not made to compile Tauri on every push, and the shell has no reason to
 # change when the engine does. That second one is the whole update strategy —
 # see docs/DESKTOP.md: content updates are a file swap, shell updates are an
@@ -42,11 +41,6 @@ ureq = "2"
 # an invitation to serve a different one.
 ed25519-dalek = "2"
 getrandom = "0.2"
-# THE NATIVE ENGINE, a library the CONTENT carries (`native.rs`): loaded by its
-# C ABI, so the shell still compiles nothing of the engine. `sync` for the one
-# channel a pool thread answers a call on.
-libloading = "0.7"
-tokio = { version = "1", features = ["sync"] }
 
 # ShellExecuteW, for opening a wiki link in the reader's own browser. Windows
 # only: every other platform hands the URL to xdg-open or open, which needs no

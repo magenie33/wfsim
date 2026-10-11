@@ -82,28 +82,19 @@ fn main() {
     };
     let mut all = Vec::new();
     walk(&site, &mut all);
-    let rel_of = |root: &Path, p: &Path| p.strip_prefix(root).unwrap().to_string_lossy().replace(char::from(92), "/");
-    let mut files: Vec<(String, PathBuf)> = all
+    let files: Vec<PathBuf> = all
         .into_iter()
-        .map(|p| (rel_of(&site, &p), p))
-        .filter(|(rel, _)| !excluded(rel, &generation))
+        .filter(|p| {
+            let rel = p.strip_prefix(&site).unwrap().to_string_lossy().replace(char::from(92), "/");
+            !excluded(&rel, &generation)
+        })
         .collect();
-    // …THEN WHAT THE CLIENT ADDS, `desktop/payload/` whole (the native engine),
-    // at the paths it is served under — `scripts/payload_manifest.py` `files`.
-    let added_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("payload");
-    println!("cargo:rerun-if-changed={}", added_root.display());
-    let mut added = Vec::new();
-    walk(&added_root, &mut added);
-    for p in added {
-        let rel = rel_of(&added_root, &p);
-        assert!(!files.iter().any(|(r, _)| *r == rel), "desktop/payload/ and site/ both hold {rel}");
-        files.push((rel, p));
-    }
 
     let mut index = Vec::new();
     let mut blob = Vec::new();
-    for (rel, path) in &files {
+    for path in &files {
         let bytes = std::fs::read(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let rel = path.strip_prefix(&site).unwrap().to_string_lossy().replace(char::from(92), "/");
         index.push(serde_json::json!({
             "p": rel,
             "n": bytes.len(),

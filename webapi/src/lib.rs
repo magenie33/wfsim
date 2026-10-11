@@ -98,11 +98,3 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
 pub fn route(path: &str, body: &Value) -> Option<Value> {
     ROUTES.iter().find(|(p, _)| *p == path).map(|(_, f)| f(body))
 }
-
-/// [`route`] as text in and text out: the door the wasm module's `api` and the
-/// desktop's native library both are, so the two answer one request one way.
-/// A body that is not JSON is `null`; a path [`ROUTES`] does not hold is an error.
-pub fn route_text(path: &str, body: &str) -> String {
-    let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
-    route(path, &v).unwrap_or_else(|| err_json(format!("unknown endpoint: {path}"))).to_string()
-}

@@ -236,19 +236,13 @@ opened, its result carried.
 
 Two parts. Plain node, in the light job: every top-level fn, impl and trait in
 the metered sources (`METERED`) carries `#[wfsim_gas_macro::metered]` — it
-failed with one attribute removed; and no production line of engine/src,
-webapi/src or optimizer/src calls a transcendental on an f64 (`.powf(`,
-`.exp(`, `.sin(`, `.hypot(`…) except `rules/math.rs`, the one libm — it failed
-with one call put back in data/rage.rs and one in optimizer/src. With `build` (CI's `gas` job: rust, the
+failed with one attribute removed. With `build` (CI's `gas` job: rust, the
 wasm32 target, wasm-bindgen at Cargo.lock's version) or `native=` and `pkg=`:
 the rows of `tests/gas/rows.json`, fought by the native `wfsim-gas` and by the
 wasm engine as the page fights them, give the same gas, work and score, the
 same again on a fresh instance and cut five ways — one run a shard over lanes,
 seven, asked last first, two halves carried — and the work is gas.rs's price
-of the count; and the first row, fought again after all the others in the same
-native process and the same wasm instance, counts what it did first. It failed
-with one weight changed in the wasm build only, and with a charge made once a
-thread in `run_once`.
+of the count. It failed with one weight changed in the wasm build only.
 
 ## `check_clients_doc`
 

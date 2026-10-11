@@ -1,4 +1,3 @@
-use crate::rules::math::Portable;
 use super::*;
 
 /// WHICH MECHANISM PUT AN INSTANCE ON A BODY — one of the five in
@@ -623,7 +622,7 @@ pub(super) fn spread_from_follow_through(
     tennokai_heavy: bool,
 ) {
     for (n, &sidx) in struck.iter().enumerate().skip(1) {
-        let share = follow_through.powi_portable(n as i32);
+        let share = follow_through.powi(n as i32);
         if share <= 0.0 {
             break;
         }

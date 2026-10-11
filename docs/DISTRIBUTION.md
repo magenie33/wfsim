@@ -3,10 +3,8 @@
 ## What this answers
 
 Every simulation runs on the reader's own CPU, through the same engine compiled
-to wasm — and in the desktop client the board's rows through a native build of
-it, which computes the same bits by construction and by proof (docs/DESKTOP.md).
-So "the browser and the desktop client compute the same number" is not a
-question about the engine at all — it is a question about **which build of it
+to wasm. So "the browser and the desktop client compute the same number" is not
+a question about the engine at all — it is a question about **which build of it
 the reader is running**. Distribution is the whole of it, and this file is where
 that is decided.
 
@@ -17,7 +15,7 @@ There are three, and **a file may not travel in a plane that is not its own.**
 
 | plane | what | changes | signed | may lag |
 | --- | --- | --- | --- | --- |
-| **release** | `index.html`, `app.js`, `style.css`, `worker.js`, `pkg/`, and in the client `native/` | on a code change | **yes** — it is code | **no**: two channels on different releases give different answers |
+| **release** | `index.html`, `app.js`, `style.css`, `worker.js`, `pkg/` | on a code change | **yes** — it is code | **no**: two channels on different releases give different answers |
 | **assets** | `img/`, `pol/`, `logo.svg`, `nona.svg` | rarely, and only by addition | no — the hash is the check | yes: an asset is present and correct, or absent |
 | **data** | the board | every hour | no — it is reproducible | yes, briefly, and visibly |
 
@@ -107,15 +105,6 @@ and read by both
 `desktop/build.rs` (which packs it into the binary) and
 `scripts/payload_manifest.py` (which describes it to the channel without a Tauri
 toolchain). `ship.py` holds the two outputs against each other on every run.
-
-What the client ADDS is `desktop/payload/`, at the paths it is served under:
-`native/engine.json` and the library it names, `native/wfsim_engine.<hash>.dll`.
-**GENERATED, like `site/`, never hand-edited, and committed with it**, because
-the stage job publishes the committed tree and cannot build a Windows library.
-`build_site_app.py` writes it — on Windows, when the engine id moved; elsewhere
-it says the library is stale, and a stale one is harmless: the page uses it only
-when its engine id is the page's own. It is never deployed to the web. Both
-producers append it whole after `site/`'s files, and refuse a path both hold.
 
 Publishing is two acts, and they are kept apart because their requirements are:
 

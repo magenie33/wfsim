@@ -7,7 +7,6 @@ members = [
     "webapi",
     "web",
     "wasm",
-    "native",
     "tools/gas-macro",
 ]
 
