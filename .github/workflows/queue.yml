@@ -174,7 +174,7 @@ jobs:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-          REFRESH_PER_HOUR: 10000
+          REFRESH_PER_HOUR: 1000
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
