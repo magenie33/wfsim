@@ -774,12 +774,14 @@ ui:
   "Body Punch Through": 躯体穿透
   "QQ group": QQ官方交流群
   "Clan": 游戏内氏族
-  "Sign in, then leave your in-game name to be invited.": 登录后留下你的游戏 ID，就会收到邀请。
-  "Leave your in-game name to be invited.": 留下你的游戏 ID，就会收到邀请。
+  # 国际服 IN THE CHINESE ONLY: the clan is on the international servers, and only a Chinese reader
+  # may be on another server (国服) whose players cannot join it.
+  "Sign in, then leave your in-game name to be invited.": 登录后留下你的国际服游戏 ID，就会收到邀请。
+  "Leave your in-game name to be invited.": 留下你的国际服游戏 ID，就会收到邀请。
   "Sent: {name}. You will be invited in game.": 已提交：{name}。邀请会在游戏里发给你。
   "Wrong name?": 填错了？
   "Change it": 修改
-  "In-game name": 游戏 ID
+  "In-game name": 国际服游戏 ID
   "Request an invite": 申请邀请
   "It reaches WFSim as a Discord message, with your username. Nothing is kept here.": 游戏 ID 会连同你的用户名，以 Discord 消息发给 WFSim，这里不保存。
   "That is not an in-game name.": 这不是一个游戏 ID。
