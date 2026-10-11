@@ -1,3 +1,4 @@
+use crate::rules::math::Portable;
 use super::*;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
@@ -120,7 +121,7 @@ pub fn shield_gate_seconds(s: f64) -> f64 {
     } else if s < 53.0 {
         s / 180.0 + 1.0 / 3.0
     } else if s <= 1150.0 {
-        (s / 350.0).powf(0.65) + 1.0 / 3.0
+        (s / 350.0).powf_portable(0.65) + 1.0 / 3.0
     } else {
         2.5
     }

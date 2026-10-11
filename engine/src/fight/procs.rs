@@ -1,3 +1,4 @@
+use crate::rules::math::Portable;
 use super::*;
 
 /// Settle ONE damage instance's status procs onto the target — MECHANICS §6.
@@ -27,7 +28,7 @@ pub(super) const DEPTH_DERIVED_PROC: u32 = 3;
 /// The faction multiplier a payload at `depth` carries.
 #[wfsim_gas_macro::metered]
 pub(super) fn faction_at(faction_multiplier: f64, depth: u32) -> f64 {
-    faction_multiplier.powi(depth as i32)
+    faction_multiplier.powi_portable(depth as i32)
 }
 
 /// THE SAME NUMBER, SAID AS THE TWO THINGS A READER CAN CHECK — the shooter's

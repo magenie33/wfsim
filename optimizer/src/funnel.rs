@@ -2,6 +2,7 @@
 //! The successive-halving funnel: its schedule, its live progress, and the
 //! rounds that cull a field down to the finalists.
 
+use wfsim_engine::rules::math::Portable;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
@@ -99,8 +100,8 @@ pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32
     let mut rounds = Vec::new();
     if n_jobs > finalists {
         let ratio_total = n_jobs as f64 / finalists as f64;
-        let k = (ratio_total.ln() / 8f64.ln()).ceil().max(1.0) as usize;
-        let rho = ratio_total.powf(1.0 / k as f64);
+        let k = (ratio_total.ln_portable() / 8f64.ln_portable()).ceil().max(1.0) as usize;
+        let rho = ratio_total.powf_portable(1.0 / k as f64);
         let growth = (rho / 2.0).max(1.0);
         let cap = (final_runs / 4).max(1);
         let mut field = n_jobs as f64;
