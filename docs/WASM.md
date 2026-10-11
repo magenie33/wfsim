@@ -118,6 +118,37 @@ be made to survive; instead losing it is made cheap.
 
 ---
 
+## Gas
+
+**A FIGHT'S WORK IS WHAT ITS SOURCE RAN.** `#[wfsim_gas_macro::metered]`
+(`tools/gas-macro`) on a module's top-level fn, impl or trait makes every
+function body charge its WEIGHT once per call and every loop its body's weight
+each turn. A weight is counted from the source — its expressions and
+statements, a closure's body charged once where it is written, a loop's left
+to the loop — so the count is a property of the program, the same natively and
+in wasm, at any optimisation level, inlined or not. A body of weight 8 or less
+with no loop charges nothing. The count is per thread (`fight::gas`); a body's
+loops add to a stack tally paid in once as it returns. `shard_onto` reads it
+around its runs, a shard carries it (`Shard.gas`) and a merge sums it, so any
+split of the runs gives the same count. Work is `gas · GAS_PRICE_PER_MILLION /
+10^6 + runs · RUN_PRICE` (docs/BOARD.md §"Contribution").
+
+- **WHAT COUNTS IS WHAT A RUN EXECUTES IN THE METERED SOURCES** (`METERED` in
+  `scripts/check_gas.mjs`): fight, rules, model, the target, formations, the
+  record. Parsing, folding, data loading and the allocator are outside them
+  and never count.
+- **A NEW FUNCTION THERE CARRIES THE ATTRIBUTE**, or `check_gas` fails.
+- **A NEW VERB** whose work runs in other modules adds them to `METERED`
+  (annotating every item), and reads `gas_now()` around its unit of work the way
+  `shard_onto` does around its runs.
+- **ANY CHANGE TO METERED SOURCE CHANGES COUNTS**, like any engine change: a new
+  engine id, and work.yml refit before it ships.
+- **NATIVE AND WASM COUNT THE SAME**, held by `check_gas` on every commit; an
+  answer from the native client and one from a browser agree to the bit.
+- **Cost:** about 5% of a fight's wall time, native and wasm.
+
+---
+
 ## A size claim is made on the wire, not on disk
 
 **Images are SAME-ORIGIN, and the art ships with the site.** `site/img/` holds

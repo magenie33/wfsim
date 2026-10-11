@@ -368,6 +368,10 @@ checkout) is in `private/agents` — read its README first.
 
 ## Engine cost: `one_fight`
 
+**THE GAS METER RUNS IN EVERY BUILD** (docs/WASM.md §"Gas"), so a cost
+measured here includes it. `WFSIM_GAS_OFF=1` at BUILD time (with its own
+`CARGO_TARGET_DIR`) compiles it out, to time the engine without it.
+
 **Engine COST: `cargo run --release --bin one_fight`**, and `-- save` first.
 It diffs a saved baseline and says whether the ANSWER moved — a moved answer
 is a non-zero exit, because an optimisation that changes a number is a bug.
