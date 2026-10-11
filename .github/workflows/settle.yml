@@ -1,0 +1,69 @@
+# WHAT ONLY THE OFFICIAL MACHINES MAY SETTLE — disputes, spot checks and
+# non-deterministic rows (worker/tasks.js `OFFICIAL_STATES`), claimed from the
+# fact factory and fought on the volunteers' own engine: the site's wasm under
+# node (`live_orders.mjs settle`). docs/BOARD.md §"The fact factory".
+#
+# THE SITE IS THE CHECKED-OUT ONE, not fetched: the zone challenges a runner's
+# IP, and `site/` on main is what the site serves. A run straddling a release
+# claims with the engine it fights on, and its answers carry it.
+name: settle
+
+on:
+  schedule:
+  # ON THE HOUR, so its fighting is done before `scores.yml` fans out at :30.
+  - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: settle
+  cancel-in-progress: false
+
+env:
+  # HOW LONG A SHARD KEEPS CLAIMING. One fight may run `SETTLE_FIGHT_MS` past
+  # it (15 min), and the job's cap is above both.
+  SETTLE_MINUTES: 30
+  FACTORY_ORIGIN: https://wfsim.mgnmz1999.workers.dev
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      # FOUR, beside the scorer's 32 of the account's 40 jobs: CI keeps its slots.
+      matrix:
+        shard: [0, 1, 2, 3]
+    env:
+      CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
+      # ONE WITNESS A SHARD: a release frees every claim its witness holds.
+      WITNESS: official:settle-${{ matrix.shard }}
+      WITNESS_SITE: site
+      MEASURED_BY: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+      - name: settle
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          export WITNESS_LANES=$(nproc)
+          end=$(( $(date +%s) + SETTLE_MINUTES * 60 ))
+          mkdir -p work
+          while [ "$(date +%s)" -lt "$end" ]; do
+            code=0
+            node scripts/live_orders.mjs settle work . || code=$?
+            # 3 IS NOTHING LEFT TO CLAIM; anything else is tried again.
+            [ "$code" = 3 ] && { echo "settle: nothing left"; break; }
+            [ "$code" = 0 ] || { echo "settle: cycle failed ($code)"; sleep 30; }
+          done
+      - name: release the claim
+        if: always()
+        run: |
+          curl -fsS -X POST "$FACTORY_ORIGIN/api/tasks/official/release" \
+            -H "authorization: Bearer $FACTORY_TOKEN" -H "content-type: application/json" -H "user-agent: wfsim-scorer" \
+            -d "{\"witness\":\"$WITNESS\"}" || true

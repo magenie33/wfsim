@@ -67,7 +67,7 @@ is how they are kept:
    the SPOT CHECK that keeps colluding clients a gamble.
 4. **FOUR DIALS.** `CLIENTS_PER_FACT` (how many clients must agree),
    `RECHECK_SHARE` (how many agreements one more volunteer measures first),
-   `SPOT_SHARE` (how many facts the server recomputes anyway) and the deadlines
+   `SPOT_SHARE` (how many facts the official machines recompute anyway) and the deadlines
    (`DEADLINE_MS` in `worker/factory.js`, how long a row is the clients' alone
    before the fallback may take it). Changing how the board runs is turning one
    of them.
@@ -754,13 +754,14 @@ questions, never a heavier client.
   deleted. A `RECHECK_SHARE` of agreements wait for one more independent
   volunteer first — nothing credited meanwhile, a third who differs makes a
   dispute — and a `SPOT_SHARE` of facts, credited at once, is a `spot` the
-  server checks again. A difference is a `dispute`. The answer never says which.
-- **Settling.** `live_orders.mjs settle` claims what only the official machines
-  may settle — `disputed`, `spot`, `nondeterministic` — as `official:live`,
-  fights each on the volunteers' own engine — the site's wasm under node, along
-  the page's path (`wasm_witness.mjs`), since only that build counts their
-  work — ships the fact and tells the factory, in a loop beside the live cycle
-  so a heavy row never holds intake or the site's board. The factory credits whom the fact agrees with and refuses a client a
+  official machines check again. A difference is a `dispute`. The answer never says which.
+- **Settling.** `settle.yml`, hourly, runs `live_orders.mjs settle` on hosted
+  runners, a witness `official:settle-<shard>` each: it claims what only the
+  official machines may settle — `disputed`, `spot`, `nondeterministic` —
+  fights each on the volunteers' own engine — the checked-out site's wasm under
+  node, along the page's path (`wasm_witness.mjs`), since only that build
+  counts their work — ships the fact and tells the factory. The bot server
+  fights nothing. The factory credits whom the fact agrees with and refuses a client a
   dispute or a spot check disproves: its answers stop counting, what it was
   paid is taken back, and a fact it witnessed that nobody official checked is
   opened again, its number taken off the board and its row owed again. A score

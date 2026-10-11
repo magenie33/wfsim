@@ -44,9 +44,10 @@ export const CLIENTS_PER_FACT = 2;
 /// differs makes a dispute, and the official machines refuse the liar.
 export const RECHECK_SHARE = 0.02;
 /// …AND THE SHARE THE OFFICIAL MACHINES RECOMPUTE after the fact, for a ring
-/// large enough to be its own third. Sized to what they settle beside the
-/// disputes: a spot is credited at once, so a backlog of them is a check late.
-export const SPOT_SHARE = 0.002;
+/// large enough to be its own third: the board's authority is that an official
+/// answer can land on any fact. A spot is credited at once, so a backlog of
+/// them is a check late.
+export const SPOT_SHARE = 0.01;
 /// WHAT A PAGE THAT CAN FILL AN ORDER SENDS. A tab opened before orders existed
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.

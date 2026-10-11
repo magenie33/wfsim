@@ -8,9 +8,9 @@
 # the library, every row it owes into the queue and opened as a compute order
 # (`ship_queue.sh`) — the rows `scores` gained are read, and the boards move:
 # `verified/`, `scores` alone, pushed to R2 for the site; `board/`, with every
-# client result not yet a fact, for the owner and the bot. What only the server
-# may settle is settled in a loop beside it (`live_orders.mjs`). docs/BOARD.md
-# §"The fact factory", §"The live board".
+# client result not yet a fact, for the owner and the bot. This server fights
+# nothing: what only the official machines may settle is `settle.yml`'s.
+# docs/BOARD.md §"The fact factory", §"The live board".
 #
 # Needs CF_ACCOUNT, CF_TOKEN (D1) and CF_D1_DATABASE, BOARD_PUSH_TOKEN, and
 # FACTORY_TOKEN (the fact factory's secret: ship_queue.sh, live_orders.mjs).
@@ -147,21 +147,6 @@ read_unverified() {
   mv unverified.next unverified.ndjson
 }
 
-# THE SERVER'S OWN FIGHTS RUN BESIDE THE CYCLE, NEVER IN IT: a heavy row is
-# minutes even here, and in line it held intake, ranking and the site's board
-# for as long. A one-cycle check run by hand settles in line instead.
-settle_loop() {
-  while true; do
-    node "$HERE/live_orders.mjs" settle "$WORK" "$BIN" || echo "live: settling failed; it asks again" >&2
-    sleep 10
-  done
-}
-if [ "${ONCE:-}" != 1 ]; then
-  settle_loop &
-  settler=$!
-  trap 'kill "$settler" 2>/dev/null' EXIT
-fi
-
 last_refresh=0
 while true; do
   whole=0
@@ -214,7 +199,6 @@ while true; do
   fi
   # ONE CYCLE AND OUT, for a check run by hand.
   if [ "${ONCE:-}" = 1 ]; then
-    node "$HERE/live_orders.mjs" settle "$WORK" "$BIN" || echo "live: settling failed" >&2
     break
   fi
   sleep "$POLL_SECONDS"
