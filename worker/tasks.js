@@ -33,6 +33,19 @@ export const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
   : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(",")}}`
   : JSON.stringify(v));
 
+/// AN ANSWER A FEW ULP OFF ANOTHER, everything else equal: a score folded in
+/// another grouping (docs/WASM.md "one grouping is one answer"). Bits are still
+/// the witness — it is never paid as agreeing — but it is not a lie, so the
+/// official machines refuse nobody for it (`settleOfficial`).
+const SCORE_NEAR = 1e-12;
+export const nearAnswer = (same) => (x, y) => {
+  let a, b;
+  try { a = JSON.parse(x); b = JSON.parse(y); } catch (_) { return false; }
+  if (!a || !b || typeof a.score !== "number" || typeof b.score !== "number") return false;
+  if (!same.every((k) => canon(a[k]) === canon(b[k]))) return false;
+  return Math.abs(a.score - b.score) <= SCORE_NEAR * Math.max(Math.abs(a.score), Math.abs(b.score));
+};
+
 const hex = (buf) => [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, "0")).join("");
 /// A QUESTION'S ID IS WHAT IT ASKS: two producers asking one thing share it.
 export async function questionId(verb, request) {
@@ -405,7 +418,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
     // BITS ARE THE WITNESS: a volunteer of any engine that gave their bits
     // agreed; a refusal needs the same engine, since another may differ honestly.
     const agree = independent(all.filter((a) => !a.official && a.canon === officialSays.canon));
-    const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon);
+    const near = verbs[q.verb].near || (() => false);
+    const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon && !near(a.canon, officialSays.canon));
     const moved = q.canon !== null && q.canon !== officialSays.canon;
     // A DISPUTE THE OFFICIAL MACHINES SIDE WITH NOBODY IN is not a liar found:
     // every answer differs from every other, theirs too, and that is an engine

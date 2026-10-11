@@ -5,7 +5,7 @@
 // random, every question ends a fact or withdrawn once the official machines
 // have had their turn. Then the cases that once failed in production, one each.
 //   node scripts/check_tasks.mjs [trials=400]
-import { factory, questionId, canon } from "../worker/tasks.js";
+import { factory, questionId, canon, nearAnswer } from "../worker/tasks.js";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 
@@ -44,7 +44,7 @@ const iso = (ms) => new Date(ms).toISOString();
 const NOW = Date.parse("2026-10-10T12:00:00.000Z");
 
 const VERBS = {
-  simulate: { cap: 2, lease_ms: 30 * 60_000, pack: true, canon: (r, work) => canon({ score: r.score, work }) },
+  simulate: { cap: 2, lease_ms: 30 * 60_000, pack: true, canon: (r, work) => canon({ score: r.score, work }), near: nearAnswer(["work"]) },
   optimize: { cap: 3, lease_ms: 15 * 60_000, canon: (r, work) => canon({ build: r.build, score: r.score, work }) },
 };
 const told = [];
@@ -373,6 +373,25 @@ console.log("\nthe watchdog");
   check("the watchdog tells the owner once", said.length === 1 && /unsettled/.test(said[0].text), JSON.stringify(said));
   await watchdog(tell, later + 7 * 3_600_000);
   check("...and again once it has stood six hours", said.length === 2);
+}
+
+console.log("\na score a few ULP off, its work equal, is unpaid but never refused");
+{
+  const db = d1(), env = { LIBRARY: db }, refused = [];
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
+  const S = 6.785217593620141;
+  for (const [ref, off] of [["ulp", { score: 6.785217593620138, work: 100 }], ["work", { score: S, work: 101 }], ["far", { score: S * (1 + 1e-9), work: 100 }]]) {
+    const id = await f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: 3_600_000 }, "e1", NOW);
+    for (const [who, r] of [[`a-${ref}`, { score: S, work: 100 }], [`b-${ref}`, off]]) {
+      const w = { device: who, owner: who, net: `n${who}` };
+      const q = await f.next(env, w, "e1", NOW);
+      await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score: r.score }, work: r.work }, NOW);
+    }
+    await f.answerOfficial(env, { device: "official", owner: "official" }, { question: id, engine: "e1", result: { score: S }, work: 100 }, NOW);
+  }
+  check("an ULP off with equal work is not refused", !refused.includes("b-ulp"), JSON.stringify(refused));
+  check("...nor paid", !db.raw.prepare("SELECT credited FROM answers WHERE device = 'b-ulp'").get().credited);
+  check("...while another work, or a score further off, is refused", refused.includes("b-work") && refused.includes("b-far"), JSON.stringify(refused));
 }
 
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");

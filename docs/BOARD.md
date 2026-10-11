@@ -736,7 +736,9 @@ questions, never a heavier client.
   board. The factory credits whom the fact agrees with and refuses a client a
   dispute or a spot check disproves: its answers stop counting, what it was
   paid is taken back, and a fact it witnessed that nobody official checked is
-  opened again, its number taken off the board and its row owed again. A
+  opened again, its number taken off the board and its row owed again. A score
+  within a part in 10^12 of the fact's, its work equal, is the runs folded in
+  another grouping (docs/WASM.md): unpaid, never refused. A
   REFUSAL IS A COOL-DOWN, never for good: a day, then three times as long each
   time with no ceiling (`coolDownMs`, `verifiers.refusals` and
   `refused_until`), after which the client works again — and a client with k

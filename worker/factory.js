@@ -2,7 +2,7 @@
 // THE SITE'S FACT FACTORY (worker/tasks.js): its verbs, the deadlines that ARE
 // the dispatch policy, and the producers that ask. A new kind of task is one more
 // producer here and in its own file; worker/tasks.js does not change.
-import { factory, canon } from "./tasks.js";
+import { factory, canon, nearAnswer } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask } from "./board_tasks.js";
 import { CLIENTS_PER_FACT, SPOT_SHARE } from "./verify.js";
@@ -29,12 +29,14 @@ export const VERBS = {
   // A board row: its score, the metric it is in, and the fight's work. Two
   // answers that differ are a dispute; leased half an hour, past the slowest row.
   // Seconds of work each, so handed out in packs (worker/verify.js `PACK_MS`).
-  simulate: { cap: 2, lease_ms: 30 * 60_000, pack: true, canon: (r, work) => canon({ score: r.score, metric: r.metric, work }) },
+  simulate: { cap: 2, lease_ms: 30 * 60_000, pack: true, canon: (r, work) => canon({ score: r.score, metric: r.metric, work }),
+    near: nearAnswer(["metric", "work"]) },
   // A riven gain: the quick search's best build, its score and the search's work,
   // leased a quarter of an hour and renewed while it runs. Three answers without
   // two agreeing is a dispute. No spot checks yet: no official machine runs a
   // search, and a check nobody makes is a question left waiting.
-  optimize: { cap: 3, lease_ms: 15 * 60_000, spot: 0, canon: (r, work) => canon({ build: r.build, score: r.score, work }) },
+  optimize: { cap: 3, lease_ms: 15 * 60_000, spot: 0, canon: (r, work) => canon({ build: r.build, score: r.score, work }),
+    near: nearAnswer(["build", "work"]) },
 };
 
 let made = null;
