@@ -475,7 +475,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // engine are refused — unless the question was not deterministic.
     // BITS ARE THE WITNESS: a volunteer of any engine that gave their bits
     // agreed; a refusal needs the same engine, since another may differ honestly.
-    const agree = independent(all.filter((a) => !a.official && a.canon === officialSays.canon));
+    // Another engine prices work in its own units, so there the score alone is
+    // the bits: a dispute answered before a release and settled after it.
+    const gave = (a) => (a.engine === engine ? a.canon === officialSays.canon : sansWork(a.canon) === sansWork(officialSays.canon));
+    const agree = independent(all.filter((a) => !a.official && gave(a)));
     const near = verbs[q.verb].near || (() => false);
     const wrong = served.filter((a) => !a.official && a.canon !== officialSays.canon && !near(a.canon, officialSays.canon));
     const moved = q.canon !== null && q.canon !== officialSays.canon;

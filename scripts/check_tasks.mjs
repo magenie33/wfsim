@@ -403,6 +403,23 @@ console.log("\na score a few ULP off, its work equal, is unpaid but never refuse
   check("...nor paid", !db.raw.prepare("SELECT credited FROM answers WHERE device = 'b-ulp'").get().credited);
   check("...while another work, or a score further off, is refused", refused.includes("b-work") && refused.includes("b-far"), JSON.stringify(refused));
 }
+{
+  // A DISPUTE OF ONE RELEASE SETTLED ON THE NEXT, whose work is in other units.
+  const db = d1(), env = { LIBRARY: db }, refused = [];
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
+  const S = 6.785217593620141;
+  const id = await f.demand(env, { producer: "p", ref: "release", verb: "simulate", request: { ref: "release" }, due_in_ms: 3_600_000 }, "e1", NOW);
+  for (const [who, score] of [["a-rel", S], ["b-rel", 6.785217593620138]]) {
+    const w = { device: who, owner: who, net: `n${who}` };
+    const q = await f.next(env, w, "e1", NOW);
+    await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score }, work: 100 }, NOW);
+  }
+  await f.answerOfficial(env, { device: "official", owner: "official" }, { question: id, engine: "e2", result: { score: S }, work: 140 }, NOW);
+  check("a dispute settled on the next engine pays whoever gave its score, its work in the old units",
+    !!db.raw.prepare("SELECT credited FROM answers WHERE device = 'a-rel'").get().credited
+    && db.raw.prepare("SELECT odd FROM questions WHERE id = ?").get(id).odd === 0 && !refused.length,
+    JSON.stringify({ refused, q: db.raw.prepare("SELECT state, odd FROM questions WHERE id = ?").get(id) }));
+}
 
 console.log("\nan official answer without work witnesses the score alone");
 {
