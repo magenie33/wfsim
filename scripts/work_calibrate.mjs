@@ -5,7 +5,7 @@
 //
 //   node scripts/work_calibrate.mjs measure out=<file.json> [rows=300] [repeats=2] [share=0.25] [pkg=<dir>]
 //   node scripts/work_calibrate.mjs sample out=<file.json> [days=7] [rows=400] native=<wfsim-gas> [jobs=4]
-//   node scripts/work_calibrate.mjs fit <measure.json>... sample=<file.json> [total=1.015]
+//   node scripts/work_calibrate.mjs fit <measure.json>... sample=<file.json> [total=1.015] [prices=<gas>,<run>]
 //
 // `measure` times the engine contributors run (the site's wasm, under V8) over
 // the board's rows. `sample` reads the volunteers' credited board answers of
@@ -13,7 +13,7 @@
 // CF_D1_ACCOUNTS) and fights `rows` of their questions natively for their
 // exact count. `fit` takes the price BETWEEN the two terms from the timing,
 // and the SCALE from those answers: what they would be paid now over what they
-// were paid is `total`, held to 1.00–1.03. It reports that, each account's
+// were paid is `total`, held to 1.00–1.20. It reports that, each account's
 // ratio, and the rows that move most; no number it prints names a person.
 
 import fs from "node:fs";
@@ -237,9 +237,10 @@ function fit() {
   const raw = (q) => (gasOf(q) / 1e6) * w[0] + runsOf(q) * w[1];
   const paid = (q) => q.work * q.accounts.length;
   const target = Number(arg("total", "1.015"));
-  if (!(target >= 1 && target <= 1.03)) throw new Error("total must be within 1.00–1.03");
+  if (!(target >= 1 && target <= 1.2)) throw new Error("total must be within 1.00–1.20");
   const k = (target * priced.reduce((s, q) => s + paid(q), 0)) / priced.reduce((s, q) => s + raw(q) * q.accounts.length, 0);
-  const prices = w.map((x) => Math.round(x * k));
+  // `prices=<gas>,<run>` judges chosen prices, e.g. the fit's rounded, by the same report.
+  const prices = arg("prices", "") ? arg("prices", "").split(",").map(Number) : w.map((x) => Math.round(x * k));
   const now = (q) => (gasOf(q) * prices[0]) / 1e6 + runsOf(q) * prices[1];
   const total = priced.reduce((s, q) => s + now(q) * q.accounts.length, 0) / priced.reduce((s, q) => s + paid(q), 0);
   console.log("");

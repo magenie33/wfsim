@@ -945,11 +945,14 @@ runners, and fits the price BETWEEN a million gas and a run to each row's
 median time (non-negative least squares on relative error,
 `scripts/work_calibrate.mjs`), reporting the error on a held-out half. The
 SCALE is set on what volunteers were paid: their credited board answers of the
-last seven days, priced anew, must total `total` (1.00–1.03) times what they
+last seven days, priced anew, must total `total` (1.00–1.20) times what they
 were, an even sample fought natively for its exact count and the rest predicted
 from the counts their answers carry (`WORK_COUNTERS`, a record beside each
 answer, never priced). Its report gives that total, each account's ratio (by
-digest, under 0.95 flagged) and the twenty rows that move most.
+digest, under 0.95 flagged) and the twenty rows that move most. The prices
+shipped may be round ones near the fit, judged by the same report
+(`prices=<gas>,<run>`): their time error no worse than the fit's and their
+total within the same 1.00–1.20, so points never shrink with a new engine.
 
 ## Consent
 

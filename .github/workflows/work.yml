@@ -17,7 +17,7 @@ on:
         description: board rows to time
         default: "300"
       total:
-        description: "new total over old total of the volunteers' paid answers, 1.00-1.03"
+        description: "new total over old total of the volunteers' paid answers, 1.00-1.20"
         default: "1.015"
       days:
         description: days of paid answers the total is taken over
