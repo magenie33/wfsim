@@ -13,6 +13,7 @@ use super::*;
 /// weapon passive. Normalising them into one number is this function's whole
 /// job; nothing downstream should learn the difference.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn sample_stacks(
     params: &FightParams,
     // THE ROSTER the answer is positional against — `FightParams::buff_roster`.

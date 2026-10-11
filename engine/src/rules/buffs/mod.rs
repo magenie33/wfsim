@@ -75,6 +75,7 @@ pub struct Contributions {
     pub injected_elements: Vec<InjectedElement>,
 }
 
+#[wfsim_gas_macro::metered]
 impl Default for Contributions {
     fn default() -> Self {
         // Identities: 0 for additive buckets, 1.0 for the multiplicative bucket,
@@ -88,6 +89,7 @@ impl Default for Contributions {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Contributions {
     /// Combine two contribution sets bucket-by-bucket, each by its own rule.
     pub fn combine(mut self, other: Contributions) -> Contributions {
@@ -120,6 +122,7 @@ pub struct BuffBar {
     buffs: Vec<Buff>,
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffBar {
     pub fn new() -> Self {
         Self::default()

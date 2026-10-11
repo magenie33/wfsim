@@ -12,6 +12,7 @@ use super::*;
 
 /// Settle the shot that has just landed, and set the clock to the next one.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn after_the_shot(
     params: &FightParams,
     apl: &crate::data::apl::Apl,

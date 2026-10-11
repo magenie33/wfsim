@@ -86,6 +86,7 @@ pub struct Formation {
     pub aimed: usize,
 }
 
+#[wfsim_gas_macro::metered]
 impl Formation {
     /// The single-target arena, which is what this engine has always run.
     /// `Formation::one(..).len() == 1` and the aim policy can never fire.

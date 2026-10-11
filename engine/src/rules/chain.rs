@@ -157,6 +157,7 @@ pub struct Layout {
     beams: u32,
 }
 
+#[wfsim_gas_macro::metered]
 impl Layout {
     /// Build it for one arrangement. O(N^2) once, against O(N) per pellet.
     pub fn build(bodies: &[Vec2], splash: Splash, spec: Spec) -> Self {
@@ -210,6 +211,7 @@ impl Layout {
 ///
 /// THE RANGE IS FROM THE PLAYER and the ANGLE is from the MUZZLE, which is what
 /// each of them means: how far a beam reaches, and where the reticle points.
+#[wfsim_gas_macro::metered]
 pub fn acquired(
     bodies: &[Vec2],
     player_at: Vec2,
@@ -254,6 +256,7 @@ pub fn acquired(
 /// no walls — so a bounce that would have come off a surface finds the next
 /// body instead, and a formation of one bounces nowhere. Declared as a gap on
 /// the weapons that have it rather than guessed at.
+#[wfsim_gas_macro::metered]
 pub fn bounce_path(layout: &Layout, n: usize, from: usize, bounces: u32) -> Vec<usize> {
     let mut out = Vec::new();
     if n == 0 || from >= n {
@@ -277,6 +280,7 @@ pub fn bounce_path(layout: &Layout, n: usize, from: usize, bounces: u32) -> Vec<
 }
 
 /// [`resolve`], from a prebuilt [`Layout`] — the production path.
+#[wfsim_gas_macro::metered]
 pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Vec<Instance> {
     let mut out = Vec::new();
     if n == 0 {
@@ -361,12 +365,14 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     out
 }
 
+#[wfsim_gas_macro::metered]
 pub fn resolve(bodies: &[Vec2], struck: &[usize], splash: Splash, spec: Spec) -> Vec<Instance> {
     resolve_with(bodies, struck, splash, spec, &mut |_| 0)
 }
 
 /// [`resolve`] with the tie-break handed in — for asserting that it does not
 /// change the total, and for nothing else.
+#[wfsim_gas_macro::metered]
 pub fn resolve_with(
     bodies: &[Vec2],
     struck: &[usize],

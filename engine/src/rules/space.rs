@@ -26,6 +26,7 @@ pub struct Vec2 {
     pub y: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Vec2 {
     pub const ORIGIN: Self = Self { x: 0.0, y: 0.0 };
 
@@ -59,6 +60,7 @@ impl Vec2 {
 /// The facing is derived rather than stored: you are looking at what you are
 /// shooting at, so aiming at a second target turns you, and there is no
 /// third state to keep in sync.
+#[wfsim_gas_macro::metered]
 pub fn muzzle(shooter: Vec2, aim_at: Vec2) -> Vec2 {
     shooter.toward(aim_at, BODY_RADIUS_M)
 }
@@ -73,6 +75,7 @@ pub fn muzzle(shooter: Vec2, aim_at: Vec2) -> Vec2 {
 /// distance from a circle's CENTRE to a ray is what decides whether the ray
 /// crosses the circle — a geometric parameter that happens to have units of
 /// length, not a distance anything travels.
+#[wfsim_gas_macro::metered]
 pub fn range_to_centre(shooter: Vec2, target: Vec2) -> f64 {
     (shooter.distance(target) - BODY_RADIUS_M).max(0.0)
 }
@@ -97,6 +100,7 @@ pub fn range_to_centre(shooter: Vec2, target: Vec2) -> f64 {
 /// AND IT IS WHY CONTACT CANNOT MISS, in one step: a flight of zero leaves a
 /// cone no distance to widen over. [`miss_distance`] reaches the same answer
 /// from the other side.
+#[wfsim_gas_macro::metered]
 pub fn gap(a: Vec2, b: Vec2) -> f64 {
     (a.distance(b) - CONTACT_RANGE_M).max(0.0)
 }
@@ -121,6 +125,7 @@ pub fn gap(a: Vec2, b: Vec2) -> f64 {
 /// ray's closest approach is its own origin — no roster cone is that wide, but
 /// the formula is the ray's rather than the infinite line's, so it cannot
 /// report a hit for a shot fired backwards.
+#[wfsim_gas_macro::metered]
 pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     let rad = deviation_deg.to_radians();
     if rad >= std::f64::consts::FRAC_PI_2 {
@@ -148,6 +153,7 @@ const GEOMETRY_TIE: f64 = 1e-9;
 
 /// Is `value` within `limit`, with a tie counting as inside — see
 /// [`GEOMETRY_TIE`].
+#[wfsim_gas_macro::metered]
 pub fn within(value: f64, limit: f64) -> bool {
     value <= limit + GEOMETRY_TIE
 }
@@ -159,6 +165,7 @@ pub fn within(value: f64, limit: f64) -> bool {
 /// deviation the spread cone rolls is measured from the AIM line, and this is
 /// how far the body already is from it before a single degree of spread is
 /// added.
+#[wfsim_gas_macro::metered]
 pub fn off_axis_deg(muzzle: Vec2, aim_at: Vec2, body: Vec2) -> f64 {
     let (ax, ay) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
     let (bx, by) = (body.x - muzzle.x, body.y - muzzle.y);
@@ -181,6 +188,7 @@ pub fn off_axis_deg(muzzle: Vec2, aim_at: Vec2, body: Vec2) -> f64 {
 /// [`miss_distance`] exactly and reads no `phi` — which is what keeps every
 /// fight this engine has ever run byte-identical, and why the caller draws
 /// `phi` only when it is going to be used.
+#[wfsim_gas_macro::metered]
 pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f64, phi: f64) -> f64 {
     if off_axis_deg <= 0.0 {
         return miss_distance(range_m, deviation_deg);
@@ -220,6 +228,7 @@ pub struct Detonation {
     pub height_m: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Detonation {
     /// How far this explosion is from a body standing at `body`, in three
     /// dimensions — the floor gap and the height are legs of the same triangle.
@@ -237,6 +246,7 @@ impl Detonation {
 /// axis is any perpendicular and the answer is symmetric in `phi`, so the
 /// choice does not matter; it is taken from the aim line so it is never
 /// undefined.
+#[wfsim_gas_macro::metered]
 pub fn detonation_of_miss(
     muzzle: Vec2,
     aim_at: Vec2,
@@ -289,6 +299,7 @@ pub fn detonation_of_miss(
 /// centre put every blast half a metre deeper into the formation than it goes.
 ///
 /// Punch-through is not modelled, so a round never detonates on the FAR side.
+#[wfsim_gas_macro::metered]
 pub fn detonation_point(body: Vec2, shooter: Vec2) -> Vec2 {
     body.toward(shooter, BODY_RADIUS_M)
 }
@@ -298,6 +309,7 @@ pub fn detonation_point(body: Vec2, shooter: Vec2) -> Vec2 {
 /// So the radius a blast really covers is its own plus a body radius, and the
 /// test is on the distance between CENTRES, which is the only distance the
 /// arena stores.
+#[wfsim_gas_macro::metered]
 pub fn caught_by_blast(centre_distance_m: f64, blast_radius_m: f64) -> bool {
     centre_distance_m <= blast_radius_m + BODY_RADIUS_M + 1e-9
 }
@@ -315,6 +327,7 @@ pub fn caught_by_blast(centre_distance_m: f64, blast_radius_m: f64) -> bool {
 ///
 /// Zero once the epicentre is inside the body: it cannot reach less far than
 /// nothing.
+#[wfsim_gas_macro::metered]
 pub fn blast_reach(centre_distance_m: f64) -> f64 {
     (centre_distance_m - BODY_RADIUS_M).max(0.0)
 }
@@ -338,6 +351,7 @@ pub fn blast_reach(centre_distance_m: f64) -> f64 {
 /// Returns the body's index and how far along the ray its SURFACE is — the
 /// point of impact, which is where a damage radius is centred and where the
 /// distance a shot flew is measured to.
+#[wfsim_gas_macro::metered]
 pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64)> {
     let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
@@ -451,6 +465,7 @@ pub struct Neighbours {
     near: Vec<Vec<(f64, u32)>>,
 }
 
+#[wfsim_gas_macro::metered]
 impl Neighbours {
     /// O(N^2) once — 130k distance computations for a 361-body grid, against
     /// the millions the per-proc scan was doing.
@@ -513,6 +528,7 @@ impl Neighbours {
 /// IT TAKES THE RADIUS AS AN ARGUMENT because bodies will not all be one size. Whatever a Bombard or an Eximus turns out to measure, it
 /// is still a circle and this is still the formula; only the number changes, and
 /// it changes in one place.
+#[wfsim_gas_macro::metered]
 pub fn material_through(radius: f64, perp: f64) -> f64 {
     if radius <= 0.0 || perp >= radius {
         return 0.0;
@@ -522,6 +538,7 @@ pub fn material_through(radius: f64, perp: f64) -> f64 {
 
 /// What crossing one body of the standard size costs, at a ray passing `perp`
 /// from its centre — [`material_through`] at [`BODY_RADIUS_M`].
+#[wfsim_gas_macro::metered]
 pub fn material_at(perp: f64) -> f64 {
     material_through(BODY_RADIUS_M, perp)
 }
@@ -557,12 +574,14 @@ pub struct Pierce {
     pub every_body: bool,
 }
 
+#[wfsim_gas_macro::metered]
 impl From<f64> for Pierce {
     fn from(metres: f64) -> Self {
         Pierce { metres, every_body: false }
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Pierce {
     /// Whether the shot can go on past the first body it meets.
     pub fn passes_a_body(&self) -> bool {
@@ -582,6 +601,7 @@ impl Pierce {
 ///
 /// THE ARENA HAS NO COVER, so everything the ray meets is a body: it costs its
 /// chord of `pierce.metres`, or nothing to an [`Pierce::every_body`] shot.
+#[wfsim_gas_macro::metered]
 pub fn traverse(
     muzzle: Vec2,
     dir: Vec2,
@@ -640,6 +660,7 @@ pub fn traverse(
 
 /// Every body a shot passes through — [`traverse`]'s first answer, kept as its
 /// own name because most callers want only this.
+#[wfsim_gas_macro::metered]
 pub fn struck_along(
     muzzle: Vec2,
     dir: Vec2,
@@ -675,6 +696,7 @@ pub fn struck_along(
 ///
 /// WITH NO BUDGET THE ANSWER IS THE CONTACT POINT, unchanged, which is what
 /// keeps every weapon of this class byte-identical until a mod moves it.
+#[wfsim_gas_macro::metered]
 pub fn dissipation_point(
     contact: Vec2,
     muzzle: Vec2,
@@ -744,6 +766,7 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 /// body it is LEAVING is excluded. Velocity loss is not modelled and costs
 /// nothing, since this engine gives a projectile no travel time. `first` is the
 /// body just struck — that collision is resolved and is not in the path.
+#[wfsim_gas_macro::metered]
 pub fn bounce_path(
     muzzle: Vec2,
     bodies: &[Vec2],
@@ -792,6 +815,7 @@ pub fn bounce_path(
 }
 
 /// [`first_hit`], skipping the body the projectile is standing on.
+#[wfsim_gas_macro::metered]
 fn first_hit_excluding(from: Vec2, dir: Vec2, bodies: &[Vec2], skip: usize) -> Option<(usize, f64)> {
     let len = dir.x.hypot(dir.y);
     if len <= 0.0 {

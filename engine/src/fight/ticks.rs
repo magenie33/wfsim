@@ -22,6 +22,7 @@ pub(super) const TICK_QUEUE_MIN: usize = 32;
 
 /// ELECTRICITY AND GAS TICK AS ONE GROUP — every live stack of the type pays
 /// into one instance a second (wiki `Damage/Electricity Damage`, U33.6).
+#[wfsim_gas_macro::metered]
 pub(super) fn consolidated(t: DamageType) -> bool {
     matches!(t, DamageType::Electricity | DamageType::Gas)
 }
@@ -43,7 +44,9 @@ pub(super) struct TickKey {
     pub(super) index: u32,
 }
 
+#[wfsim_gas_macro::metered]
 impl Eq for TickKey {}
+#[wfsim_gas_macro::metered]
 impl Ord for TickKey {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // `total_cmp` because these are clock readings: never NaN, and an
@@ -54,12 +57,14 @@ impl Ord for TickKey {
             .then(self.index.cmp(&other.index))
     }
 }
+#[wfsim_gas_macro::metered]
 impl PartialOrd for TickKey {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl DebuffState {
     /// THE SHAPE OF THE SCHEDULE, as three numbers.
     ///
@@ -153,6 +158,7 @@ impl DebuffState {
 /// applied at all — and the tail drained only the aimed body, so whatever was
 /// still burning on a neighbour when firing stopped was recorded and never paid.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn settle_crowd_ticks(
     w: &CardWindows,
     bodies: &mut [Body],
@@ -178,6 +184,7 @@ pub(super) fn settle_crowd_ticks(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn process_ticks(
     // THE SHOOTER'S LIVE WINDOWS, because a burning cloud reads them: an
     // element buff strengthens what is already burning and stops the moment it
@@ -642,6 +649,7 @@ pub(super) fn process_ticks(
 /// is fired by the trigger, and each carries the same buff snapshot the shot
 /// about to go off does.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn settle_what_is_in_the_air(
     // See `process_ticks`.
     w: &CardWindows,

@@ -18,6 +18,7 @@ pub struct Mutation {
     pub bonus: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Mutation {
     /// A kill pays in AT ONCE, whatever made it — the beam or a grenade (M107) —
     /// capped on the way in.
@@ -55,6 +56,7 @@ const MUTATION_CROWD: usize = 3;
 /// outer two land beside it, and whether their explosions reach the aimed body
 /// is the geometry's answer.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn throw_reload_grenades(
     w: &CardWindows,
     owner: Seat,
@@ -143,6 +145,7 @@ pub(super) fn throw_reload_grenades(
 
 /// One grenade part on body `b` — the orb's settlement with the body chosen.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 fn settle(
     w: &CardWindows,
     owner: Seat,
@@ -171,6 +174,7 @@ fn settle(
 }
 
 /// A grenade part in the timed-part shape `field_tick` settles.
+#[wfsim_gas_macro::metered]
 pub(super) fn lingering_of(
     r: &crate::build::loadout::ResolvedRadial,
     co: Option<crate::model::CoBehavior>,

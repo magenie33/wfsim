@@ -39,6 +39,7 @@ const AMMO_EFFICIENCY_BONUS: f64 = 1.0;
 /// +100% Toxin, injected as an elemental mod at the end of the mod order.
 const TOXIN_PERCENT_OF_BASE: f64 = 1.0;
 
+#[wfsim_gas_macro::metered]
 impl Frenzy {
     /// The Frenzy buff with NO expiry — for buff-lock simulation settings
     /// (force a buff permanently active, e.g. "assume Frenzy uptime 100%").
@@ -57,6 +58,7 @@ impl Frenzy {
 #[derive(Debug, Clone, Default)]
 pub struct Frenzy;
 
+#[wfsim_gas_macro::metered]
 impl Frenzy {
     pub fn new() -> Self {
         Frenzy
@@ -77,6 +79,7 @@ impl Frenzy {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Perk for Frenzy {
     fn id(&self) -> &str {
         BUFF_ID

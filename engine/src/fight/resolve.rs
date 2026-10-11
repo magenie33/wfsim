@@ -35,6 +35,7 @@ pub(super) struct Resolved {
 
 /// Read the live bar, roll the multishot, and spend the round.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn resolve_the_shot(
     params: &FightParams,
     active: &FightParams,

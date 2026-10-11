@@ -11,6 +11,7 @@ use super::*;
 /// IT LEAVES THE MUZZLE, which is a point on the shooter's own circumference —
 /// the same place every other shot in this arena leaves from, and the reason
 /// the orb's reach is measured from somewhere real rather than from the target. A degenerate aim (nowhere to face) throws along +x.
+#[wfsim_gas_macro::metered]
 pub(super) fn throw_orb(
     o: crate::build::loadout::ResolvedOrb,
     // Whose orb it is, for the same reason a field carries it.
@@ -95,6 +96,7 @@ pub(super) struct OrbState {
     pub(super) damage_multiplier: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl OrbState {
     /// MOVE IT TO `to` at whichever speed it is travelling, noticing a contact
     /// on the way.
@@ -165,6 +167,7 @@ impl OrbState {
 /// contact it is always six — the owner's `ceil(6 - flight)` arriving on its
 /// own (MEASUREMENTS M63).
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn process_orbs(
     // See `process_ticks`.
     w: &CardWindows,
@@ -282,6 +285,7 @@ pub(super) fn process_orbs(
 /// what stops a cloud's tick and an orb's strike drifting apart on the
 /// arithmetic; WHICH body is the part an orb decides for itself.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn orb_strike(
     // See `process_ticks`.
     w: &CardWindows,
@@ -334,6 +338,7 @@ pub(super) fn orb_strike(
 /// off at a place, which may be past the body it touched and may be nowhere
 /// near anybody.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn orb_detonation(
     // See `process_ticks`.
     w: &CardWindows,

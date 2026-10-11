@@ -65,10 +65,12 @@ pub(super) struct TargetState {
 /// DIRECTLY: no sim can catch it, since every fixture that keeps health intact
 /// long enough freezes all three pools at once (`TargetMode::InfiniteHealth`),
 /// and there a wrong implementation reads the same "undamaged" a right one does.
+#[wfsim_gas_macro::metered]
 pub(super) fn target_undamaged(t: &TargetState, p: &Foe) -> bool {
     t.health >= p.max_health() - 1e-9 && t.shield >= p.max_shield() - 1e-9
 }
 
+#[wfsim_gas_macro::metered]
 impl TargetState {
     pub(super) fn spawn(p: &Foe, at: crate::rules::space::Vec2) -> Self {
         Self::spawn_at(p, 0.0, at)

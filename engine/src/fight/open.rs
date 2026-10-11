@@ -150,6 +150,7 @@ pub(super) struct Fixed<'a> {
 /// state through a struct: left to the compiler that move costs 2.7% a shot
 /// across `one_fight`'s four shapes, and inlined it is inside the noise.
 #[inline(always)]
+#[wfsim_gas_macro::metered]
 pub(super) fn open<'a>(
     params: &'a FightParams,
     // WHICH SEAT THIS IS OPENING. A fight opens one per build it was given,

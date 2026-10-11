@@ -27,6 +27,7 @@ pub(super) struct DaggerState {
 /// status procs created by daggers will"* — a dagger's own hit pauses the clock
 /// and advances `kill_mark` past what it killed ([`process_daggers`]), so what
 /// is left here is every other kill: a swing's, a status tick's, a slam's.
+#[wfsim_gas_macro::metered]
 pub(super) fn make_daggers(
     owner: Seat,
     params: &FightParams,
@@ -86,6 +87,7 @@ pub(super) fn make_daggers(
 /// be spread"*. The window is the wielder's own (`influence_until`), the one
 /// the swings read and open.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn process_daggers(
     // See `process_ticks`.
     w: &CardWindows,

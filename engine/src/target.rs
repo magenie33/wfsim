@@ -173,6 +173,7 @@ pub struct TypeShares([f64; DamageType::ALL.len()]);
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SelfDamage([f64; DamageType::ALL.len()]);
 
+#[wfsim_gas_macro::metered]
 impl SelfDamage {
     pub fn add(&mut self, t: DamageType, v: f64) {
         self.0[t as usize] += v;
@@ -208,6 +209,7 @@ impl SelfDamage {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl TypeShares {
     /// THE BIGGEST SHARE — which type a mixed instance reads AS, for DISPLAY
     /// only. Same contract as `DamageVector::dominant`, and nothing in the
@@ -307,6 +309,7 @@ impl TypeShares {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Foe {
     /// A plain training dummy: no defenses, never dies. Damage passes through
     /// unmitigated, which keeps raw-damage calibration runs simple.
@@ -531,6 +534,7 @@ pub enum Pool {
     Health,
 }
 
+#[wfsim_gas_macro::metered]
 impl Pool {
     pub fn name(self) -> &'static str {
         match self {
@@ -549,6 +553,7 @@ impl Pool {
 /// *"If the weak point is not a head, applies at normal rate"*; and a part
 /// that is no weak point at all takes none, however large its own multiplier
 /// (the Leaping Thrasher's 3x skull is strictly a bodyshot location).
+#[wfsim_gas_macro::metered]
 pub fn weak_point_damage_rate(part: &BodyPart) -> f64 {
     match (part.is_weak_point, part.is_head) {
         (true, true) => 1.5,
@@ -557,6 +562,7 @@ pub fn weak_point_damage_rate(part: &BodyPart) -> f64 {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl BodyPart {
     /// A generic humanoid: body 1x, head 3x (headshot-triggering, crit-bonus
     /// eligible), aimed at 50/50.
@@ -585,6 +591,7 @@ impl BodyPart {
 /// A CATALOG ENTRY BECOMES A TARGET here, not in the catalog: the enemy file
 /// says what a unit is, and only the layer that holds `Foe` says what
 /// the fight makes of it.
+#[wfsim_gas_macro::metered]
 impl crate::data::enemies::EnemySpec {
     /// Build the simulation target. Fails on combinations that do not exist
     /// in-game (e.g. `eximus` for a unit with no Eximus variant).

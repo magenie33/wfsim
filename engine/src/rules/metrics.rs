@@ -70,6 +70,7 @@ pub const ALL: &[MetricDef] = &[
 ];
 
 /// The metric with this id, or `None` — which every caller must answer for.
+#[wfsim_gas_macro::metered]
 pub fn get(id: &str) -> Option<&'static MetricDef> {
     ALL.iter().find(|m| m.id == id)
 }
@@ -77,6 +78,7 @@ pub fn get(id: &str) -> Option<&'static MetricDef> {
 /// The default when a scenario names none.
 pub const DEFAULT: &str = "kpm";
 
+#[wfsim_gas_macro::metered]
 impl MetricDef {
     /// The run's number IN THIS METRIC, given the raw field and the engagement.
     ///

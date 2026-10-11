@@ -18,6 +18,7 @@ use crate::rules::buffs::BuffBar;
 use crate::rules::sim::Event;
 
 /// A held capability that grants a buff on its trigger.
+#[wfsim_gas_macro::metered]
 pub trait Perk {
     /// Stable id of the perk (and of the buff it manages), e.g.
     /// `"secondary_enervate"`, `"frenzy"`.

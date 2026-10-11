@@ -347,5 +347,7 @@ pub fn board_score_json(v: &Value) -> Value {
     // beside the answer to fit what a point is worth (never credited).
     let counts: serde_json::Map<String, Value> =
         wfsim_engine::fight::WORK_COUNTERS.iter().zip(acc.work_counts()).map(|(k, n)| ((*k).to_string(), json!(n))).collect();
+    let mut counts = counts;
+    counts.insert("gas".to_string(), json!(acc.gas));
     json!({ "ok": true, "score": row_score(bench, &out), "metric": bench.metric().id, "work": acc.work(), "counts": counts })
 }

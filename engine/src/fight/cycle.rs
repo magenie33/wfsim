@@ -8,6 +8,7 @@ use crate::data::apl::Action;
 
 /// HOW LONG EACH ABILITY'S WINDOW HAS LEFT — the one fact a `buff.X.remains`
 /// rule reads. Zero for an ability nobody picked and for one already lapsed.
+#[wfsim_gas_macro::metered]
 pub(super) fn ability_remains(params: &FightParams, t: f64) -> impl Fn(&str) -> f64 + '_ {
     move |id: &str| {
         params
@@ -35,6 +36,7 @@ pub(super) enum Flow {
 /// magazine empties, and the base form's own reload — because the two share
 /// the animation, the refill and the piles either of them takes.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn charge_magazine_cycle(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
@@ -261,6 +263,7 @@ pub(super) fn charge_magazine_cycle(
 /// transmutes, which is an animation, a refill and a pile swap — the same
 /// three the way out pays (`charge_magazine_cycle`).
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn charge_the_gauge(
     params: &FightParams,
     apl: &crate::data::apl::Apl,

@@ -10,6 +10,7 @@
 /// climbs in SECONDS and holds, this moves in SHOTS and is a cadence — which is
 /// why a fire-rate mod does not buy its way out of it (the mod raises both ends
 /// together).
+#[wfsim_gas_macro::metered]
 pub(super) fn spool_factor(spec: Option<crate::model::SustainedFireRate>, shots: f64) -> f64 {
     match spec {
         Some(s) if s.over_shots > 0.0 => {
@@ -39,6 +40,7 @@ pub(super) struct BeamRamp {
     pub(super) last_tick: Option<f64>,
 }
 
+#[wfsim_gas_macro::metered]
 impl BeamRamp {
     /// The multiplier for a tick at `now`, then advance the ramp by one tick's
     /// worth of held fire. The tick landing NOW is scaled by the progress it

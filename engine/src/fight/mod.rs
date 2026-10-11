@@ -62,6 +62,7 @@ mod run;
 mod state;
 mod replay;
 mod monte_carlo;
+pub mod gas;
 pub mod ledger;
 #[cfg(test)]
 mod tests;

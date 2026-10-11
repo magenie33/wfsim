@@ -63,6 +63,7 @@ pub const SECONDARY_SHARE: f64 = 0.5;
 ///
 /// Returns how many of them are of each kind, because a caller reading only
 /// one kind still has to know the other fell (a future weapon may read both).
+#[wfsim_gas_macro::metered]
 pub fn on_kill(
     squad_size: u32,
     landscape: bool,
@@ -100,6 +101,7 @@ pub fn on_kill(
 ///    same amount.
 ///
 /// Returns 0 for a pack that is refused, unmatched and unconverted.
+#[wfsim_gas_macro::metered]
 pub fn credit(
     kind: Pickup,
     weapon_takes: Pickup,

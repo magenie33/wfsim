@@ -71,6 +71,7 @@ pub const STANCE_CAPACITY_GRANT: u32 = 5;
 /// So a wrong colour is a PENALTY and not merely the undoubled grant: 10 on a
 /// match, 5 on a bare slot, 4 on a mismatch. It is the grant's mirror of the
 /// +25% a mismatched slot charges a MOD.
+#[wfsim_gas_macro::metered]
 pub fn stance_capacity(mod_polarity: Polarity, slot_polarity: Option<Polarity>) -> u32 {
     match slot_polarity {
         // Omni is universal, so it matches whatever is in the slot.
@@ -94,6 +95,7 @@ pub struct StanceSlot {
     pub slot_polarity: Option<Polarity>,
 }
 
+#[wfsim_gas_macro::metered]
 impl StanceSlot {
     /// Does the slot already carry the stance's colour?
     fn matched(self) -> bool {
@@ -101,6 +103,7 @@ impl StanceSlot {
     }
 }
 
+#[wfsim_gas_macro::metered]
 pub fn slot_drain(base_drain: u32, mod_polarity: Polarity, slot_polarity: Option<Polarity>) -> u32 {
     match slot_polarity {
         // Omni matches ANY mod except an Umbra one, where it is simply a
@@ -120,6 +123,7 @@ pub fn slot_drain(base_drain: u32, mod_polarity: Polarity, slot_polarity: Option
 ///
 /// "Items have a limited Mod Capacity, that correlates to their Rank" and a
 /// Catalyst "doubles the available Mod capacity" (wiki `Mod Capacity`).
+#[wfsim_gas_macro::metered]
 pub fn capacity(rank: u32, catalyst: bool) -> u32 {
     if catalyst {
         rank * 2
@@ -135,6 +139,7 @@ pub fn capacity(rank: u32, catalyst: bool) -> u32 {
 /// after 5 polarizations (max rank increases by 2 per Forma added)" (wiki
 /// `Paracesis`). The `.min` says both cases at once — on a rank-30 weapon
 /// Forma adds nothing at all.
+#[wfsim_gas_macro::metered]
 pub fn rank_after(base_max_rank: u32, forma: u32) -> u32 {
     debug_assert!(base_max_rank >= 30, "a weapon starts at 30");
     (30 + 2 * forma).min(base_max_rank)
@@ -146,6 +151,7 @@ pub fn rank_after(base_max_rank: u32, forma: u32) -> u32 {
 /// Worth its own name because it is a MASTERY figure, not a capacity one: a
 /// build may fit in three, and the fifth is still what full affinity requires. It is why `polarize_to_max` is the default and why the
 /// default path never has to solve for its own capacity.
+#[wfsim_gas_macro::metered]
 pub fn forma_to_max_rank(base_max_rank: u32) -> u32 {
     base_max_rank.saturating_sub(30).div_ceil(2)
 }
@@ -171,6 +177,7 @@ pub struct Investment {
     pub use_umbra: bool,
 }
 
+#[wfsim_gas_macro::metered]
 impl Default for Investment {
     fn default() -> Self {
         Self {
@@ -191,6 +198,7 @@ pub struct FormaCost {
     pub umbra: u32,
 }
 
+#[wfsim_gas_macro::metered]
 impl FormaCost {
     pub fn total(&self) -> u32 {
         self.regular + self.omni + self.umbra
@@ -208,6 +216,7 @@ pub struct Placement {
 /// Validate a loadout against capacity. Returns the total drain, or an
 /// error naming the overflow (rigor rule: an over-capacity build is
 /// impossible in-game and must be rejected, never silently accepted).
+#[wfsim_gas_macro::metered]
 pub fn validate_loadout(cap: u32, placements: &[Placement]) -> Result<u32, String> {
     let used: u32 = placements
         .iter()
@@ -260,6 +269,7 @@ pub struct FormaPlan {
 /// `pool − matched − mod-less slots`, and it goes on the SMALLEST-drain mods.
 /// Planning as though a leftover colour vanished under-reported the drain and
 /// handed back layouts that do not fit at the Forma the plan claims.
+#[wfsim_gas_macro::metered]
 pub fn plan_forma(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -279,6 +289,7 @@ pub fn plan_forma(
 ///   pays full drain rather than blocking the build.
 /// - anything else takes a **regular** Forma, or an **Omni** one when the
 ///   player has chosen Omni — the owner's rule is all-or-nothing.
+#[wfsim_gas_macro::metered]
 pub fn plan_forma_with(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -296,6 +307,7 @@ pub fn plan_forma_with(
 /// Spending them and then not USING them was leaving capacity on the table —
 /// the same five Forma, placed on the five biggest mods instead of the two the
 /// build strictly needed, leave more room for whatever comes next..
+#[wfsim_gas_macro::metered]
 fn plan_forma_spending(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -457,6 +469,7 @@ fn plan_forma_spending(
 /// polarity and no mod in it still carries that polarity — passing only the
 /// filled slots reads as "the rest were blanked", and blanking costs a Forma.
 /// Empty slots go in with `base_drain: 0`.
+#[wfsim_gas_macro::metered]
 pub fn cost_of(innate_slots: &[Option<Polarity>], slots: &[Placement]) -> (u32, FormaCost) {
     let drain: u32 = slots
         .iter()
@@ -544,6 +557,7 @@ pub struct Fitted {
 /// takes either way. With `polarize_to_max` off the loop is real and is solved
 /// by SEARCHING the budget: for each f from 0 up, ask what the build needs at
 /// the capacity f would buy and take the first f that covers its own answer.
+#[wfsim_gas_macro::metered]
 pub fn fit(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],
@@ -576,6 +590,7 @@ pub fn fit(
 }
 
 /// One attempt, with the stance slot's own question answered inside it.
+#[wfsim_gas_macro::metered]
 fn plan(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],
@@ -596,6 +611,7 @@ fn plan(
 /// starts. So a build that is buying Forma anyway buys this one first, even
 /// where a mod-only plan would have fitted in one fewer. A build that already
 /// fits for FREE keeps its zero.
+#[wfsim_gas_macro::metered]
 fn best_stance_plan(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],
@@ -639,6 +655,7 @@ fn best_stance_plan(
 }
 
 /// [`fit`] with the switches taken literally — no Umbra fallback.
+#[wfsim_gas_macro::metered]
 fn fit_exactly(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],

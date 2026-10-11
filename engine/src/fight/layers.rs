@@ -19,6 +19,7 @@ use super::*;
 /// TWO CONSUMERS, ONE ANSWER: the replay's floating numbers and the combat
 /// record explain the same instance, so they are recorded together or not at
 /// all — otherwise they are two accounts of one hit.
+#[wfsim_gas_macro::metered]
 pub(super) fn watching<'a>(
     rec: &crate::record::Record,
     breakdown: &'a mut Breakdown,
@@ -27,6 +28,7 @@ pub(super) fn watching<'a>(
 }
 
 /// What a layer leaves the running total at.
+#[wfsim_gas_macro::metered]
 pub(super) fn layer_out(l: &crate::record::Layer) -> f64 {
     use crate::record::Layer::*;
     match l {
@@ -48,6 +50,7 @@ pub(super) fn layer_out(l: &crate::record::Layer) -> f64 {
 /// never reaches the page. The two agree on the product, which is the property
 /// `check_combat_record` already asserts of every row.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn pellet_layers(
     stage_mb: f64,
     gunco: Gunco,
@@ -192,6 +195,7 @@ pub(super) fn pellet_layers(
 /// A factor of exactly 1 is DROPPED HERE rather than at the renderer, which is
 /// the whole of the "no pile of x1.00" rule: a layer that does nothing is not a
 /// layer, and there is nowhere downstream for it to reappear from.
+#[wfsim_gas_macro::metered]
 pub(super) fn mul_layers(base: f64, steps: &[crate::record::Step]) -> Vec<crate::record::Layer> {
     let mut at = base;
     let mut out = Vec::with_capacity(steps.len());

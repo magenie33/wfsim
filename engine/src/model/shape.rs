@@ -209,6 +209,7 @@ pub enum CoStage {
     Field,
 }
 
+#[wfsim_gas_macro::metered]
 impl Default for CoBase {
     /// READS THE WHOLE BASE, which is what a weapon with no catalog row does.
     fn default() -> Self {
@@ -216,6 +217,7 @@ impl Default for CoBase {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl CoBase {
     pub fn new(absolute: f64, of: f64, stage: CoStage) -> Self {
         Self { absolute, of, stage }
@@ -266,6 +268,7 @@ impl CoBase {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl RadialBase {
     /// See [`WeaponBase::co_base_pair`] — paired, never stored.
     pub fn co_base_pair(&self) -> CoBase {
@@ -289,6 +292,7 @@ pub struct Spread {
     pub max_deg: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Spread {
     /// Can this attack miss at all? A weapon whose AIMED cone is zero cannot —
     /// the Torid's grenade is `0 / 0` and its page says "Pinpoint accuracy" in
@@ -347,6 +351,7 @@ pub struct Falloff {
     pub keep: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl Falloff {
     /// The multiplier on a direct hit that travelled `d` metres.
     pub fn factor(&self, d: f64) -> f64 {
@@ -612,10 +617,12 @@ pub struct ComboHit {
     pub sends_shockwave: bool,
 }
 
+#[wfsim_gas_macro::metered]
 fn one_hit() -> u32 {
     1
 }
 
+#[wfsim_gas_macro::metered]
 impl ComboHit {
     /// The two kinds of forced proc this swing carries, told apart by name.
     ///

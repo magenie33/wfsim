@@ -5,6 +5,7 @@ use super::*;
 /// critical instance is never eligible. Its own multiplicative bracket
 /// (wiki: "multiplicative to base damage bonuses such as Hornet Strike"),
 /// and it applies to the radial part too ("Affects both forms").
+#[wfsim_gas_macro::metered]
 pub(super) fn noncrit_mult(spec: Option<(f64, f64)>, tier: u32, rng: &mut Rng) -> f64 {
     match spec {
         Some((chance, bonus)) if tier == 0 && rng.chance(chance) => 1.0 + bonus,
@@ -17,6 +18,7 @@ pub(super) fn noncrit_mult(spec: Option<(f64, f64)>, tier: u32, rng: &mut Rng) -
 /// critical hits" — a normal hit is never promoted, so tier 0 is untouched.
 /// The tier formula does the rest: crit_multiplier = 1 + tier x (cd - 1), so one
 /// extra tier is worth exactly one more crit-damage step.
+#[wfsim_gas_macro::metered]
 pub(super) fn upgrade_crit_tier(tier: u32, chance: f64, rng: &mut Rng) -> u32 {
     if tier >= 1 && chance > 0.0 && rng.chance(chance) {
         tier + 1
@@ -26,6 +28,7 @@ pub(super) fn upgrade_crit_tier(tier: u32, chance: f64, rng: &mut Rng) -> u32 {
 }
 
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
+#[wfsim_gas_macro::metered]
 pub(super) fn roll_crit_tier(effective_cc: f64, rng: &mut Rng) -> u32 {
     let guaranteed = effective_cc.floor().max(0.0);
     let extra_chance = effective_cc - guaranteed;
@@ -50,6 +53,7 @@ pub(super) fn roll_crit_tier(effective_cc: f64, rng: &mut Rng) -> u32 {
 /// for the critical-location fold-in, what is it worth), and handing back a
 /// bare number would have made an unaimed hit a second kind of hit that
 /// answered some of them and not others.
+#[wfsim_gas_macro::metered]
 pub(super) fn unaimed_part<'a>(parts: &'a [BodyPart], head_chance: f64, rng: &mut Rng) -> &'a BodyPart {
     let head = rng.next_f64() < head_chance;
     parts
@@ -59,6 +63,7 @@ pub(super) fn unaimed_part<'a>(parts: &'a [BodyPart], head_chance: f64, rng: &mu
         .unwrap_or_else(|| parts.last().expect("dummy needs at least one body part"))
 }
 
+#[wfsim_gas_macro::metered]
 pub(super) fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
     let total: f64 = parts.iter().map(|p| p.aim_weight).sum();
     let mut x = rng.next_f64() * total;
@@ -91,6 +96,7 @@ pub(super) fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPar
 /// whole-round draw cannot clear. The two tests agree at or below one round
 /// (`ceil(x) >= 1` on any positive magazine), so only a cost above one exposes
 /// it — the Larkspur Prime's alt-fire costs TEN.
+#[wfsim_gas_macro::metered]
 pub(super) fn can_fire(magazine: f64, cost: f64) -> bool {
     cost <= (magazine - 1e-9).max(0.0).ceil() + 1e-9
 }
@@ -102,6 +108,7 @@ pub(super) fn can_fire(magazine: f64, cost: f64) -> bool {
 /// because it was written zero times inside the cycle: every draw there was
 /// free until 2026-08-04, which made the Infinite-ammo setting a no-op on every
 /// Incarnon weapon (the setting has to be adjustable).
+#[wfsim_gas_macro::metered]
 pub(super) fn draw_from(reserve: &mut f64, infinite: bool, want: f64) -> f64 {
     if infinite {
         return want;
@@ -128,6 +135,7 @@ pub(super) fn draw_from(reserve: &mut f64, infinite: bool, want: f64) -> f64 {
 /// `capacity` — which is how a −0.75 counter comes back at 4.25. And it is the
 /// GLOBAL rule: an Incarnon transform's auto-reload runs on the same mechanism
 /// rather than a separate "fill to full".
+#[wfsim_gas_macro::metered]
 pub(super) fn reload_draw(capacity: f64, current: f64) -> f64 {
     (capacity - current).floor().max(0.0)
 }
@@ -146,6 +154,7 @@ pub(super) fn reload_draw(capacity: f64, current: f64) -> f64 {
 /// Charge-backed magazines are outside the ammo economy entirely and take no
 /// efficiency at all, which is why `applies` short-circuits to zero.
 /// Death Knell's ammo half: the efficiency it grants while ANY stack is up.
+#[wfsim_gas_macro::metered]
 pub(super) fn weakpoint_ammo(
     spec: Option<crate::model::WeakpointStacksSpec>,
     pile: &mut LiveStacks,
@@ -158,11 +167,13 @@ pub(super) fn weakpoint_ammo(
 
 /// DOES A KILL HERE LEAVE ONE STANDING? The weapon has to say so, and the body
 /// has to be inside the range the card names.
+#[wfsim_gas_macro::metered]
 pub(super) fn leaves_one(active: &FightParams, from: crate::rules::space::Vec2, body: crate::rules::space::Vec2) -> bool {
     active.spawn_on_kill
         .is_some_and(|g| (body.x - from.x).hypot(body.y - from.y) <= g.range_m)
 }
 
+#[wfsim_gas_macro::metered]
 pub(super) fn ammo_efficiency(
     applies: bool,
     bar: f64,

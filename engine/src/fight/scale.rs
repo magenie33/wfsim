@@ -84,6 +84,7 @@ pub(super) struct Gunco {
 /// "a term in the same bracket as CO" — they are the same arithmetic — so this
 /// keeps the page's own word for it ("an unique multiplier") and takes the CO
 /// share out of it, which is the smaller of the two claims.
+#[wfsim_gas_macro::metered]
 pub(super) fn eclipse_at(mult: f64, co_share: f64) -> f64 {
     1.0 + (mult - 1.0) * (1.0 - co_share.clamp(0.0, 1.0))
 }
@@ -95,6 +96,7 @@ pub(super) fn eclipse_at(mult: f64, co_share: f64) -> f64 {
 /// everything but the CO share: "[(1 + Serration) x (1 + Longbow Sharpshot)] +
 /// Galvanized Aptitude" (wiki `Longbow_Sharpshot`). A Multiplying CO is a factor
 /// of its own and takes it whole.
+#[wfsim_gas_macro::metered]
 pub(super) fn beside_adding_co(mult: f64, co_share: f64, behavior: crate::model::CoBehavior) -> f64 {
     match behavior {
         crate::model::CoBehavior::AdditiveWithBaseDamage => eclipse_at(mult, co_share),
@@ -104,6 +106,7 @@ pub(super) fn beside_adding_co(mult: f64, co_share: f64, behavior: crate::model:
 
 /// Pox's row in the same catalog: "Damage recalculates on every tick".
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn gunco_bucket(
     params: &FightParams,
     active: &FightParams,
@@ -190,6 +193,7 @@ pub(super) fn gunco_bucket(
 /// MELEE CAREEN — *"The damage multiplier only affects enemies that are fully
 /// frozen, i.e. 10 Cold stacks"* (W`Melee_Careen`), on every body a melee hit
 /// or a spectral dagger reaches. 1.0 without the card or below ten.
+#[wfsim_gas_macro::metered]
 pub(super) fn careen_factor(params: &FightParams, debuffs: &mut DebuffState, t: f64) -> f64 {
     if params.arcane.frozen_multiplier != 1.0 && debuffs.cold_status_count(t) >= 10 {
         params.arcane.frozen_multiplier

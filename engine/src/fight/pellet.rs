@@ -119,6 +119,7 @@ pub(super) struct Live<'a> {
 /// since *"If a hit that would trigger an Extra Hit kills the enemy, the Extra
 /// Hit will not be triggered"*. A replay arms nothing, and a zero-damage
 /// instance (a heavy slam's empty swing) has nothing to repeat.
+#[wfsim_gas_macro::metered]
 pub(super) fn arms_replay(
     params: &FightParams,
     replay: bool,
@@ -131,6 +132,7 @@ pub(super) fn arms_replay(
     chance > 0.0 && !replay && tier == 1 && damage > 0.0 && !killed && d.spine.chance(chance)
 }
 
+#[wfsim_gas_macro::metered]
 fn weakpoint_kill(
     params: &FightParams,
     arc: &mut ArcRuntime,
@@ -159,6 +161,7 @@ fn weakpoint_kill(
 /// — with plain `#[inline]` too. Inlined always, what is left is 1-2%, which
 /// is what moving the pipeline into its own file costs.
 #[inline(always)]
+#[wfsim_gas_macro::metered]
 pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     let Strike {
         seat,

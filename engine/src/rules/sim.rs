@@ -18,6 +18,7 @@ pub struct SimConfig {
     pub fps: u32,
 }
 
+#[wfsim_gas_macro::metered]
 impl Default for SimConfig {
     fn default() -> Self {
         Self { fps: 240 }
@@ -31,6 +32,7 @@ pub struct SimClock {
     tick: u64,
 }
 
+#[wfsim_gas_macro::metered]
 impl SimClock {
     pub fn new(config: SimConfig) -> Self {
         assert!(config.fps > 0, "fps must be positive");
@@ -72,6 +74,7 @@ pub struct Hit {
     pub target_alive: bool,
 }
 
+#[wfsim_gas_macro::metered]
 impl Default for Hit {
     fn default() -> Self {
         Self {

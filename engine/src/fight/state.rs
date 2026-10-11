@@ -227,6 +227,7 @@ pub(super) struct IncarnonState {
     pub(super) base_magazine: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl IncarnonState {
     /// **WHAT THE ACTION LIST SEES RIGHT NOW** — `data::apl::Now`, built from
     /// the one state that answers its questions.
@@ -348,6 +349,7 @@ pub(super) struct CardWindows {
     pub(super) frenzy: f64,
 }
 
+#[wfsim_gas_macro::metered]
 impl CardWindows {
     /// THE ONE WRITER of [`Self::frenzy`]: the bar is the truth.
     pub(super) fn sync_frenzy(&mut self, bar: &BuffBar) {
@@ -357,6 +359,7 @@ impl CardWindows {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Ammo {
     pub(super) fn resize_for_summon(&mut self, params: &FightParams, bar: &BuffBar) {
         let ammo = self;
@@ -382,6 +385,7 @@ impl Ammo {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Ghosts {
     /// WHAT THE KILLS LEFT STANDING, as a duration. The kills were counted
     /// where they happened; this is where they become ghosts.
@@ -396,6 +400,7 @@ impl Ghosts {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl CritPerHit {
     /// HATA-SATYA'S PILE — mark-and-diff on the hits, read at the START of the
     /// shot so the hit that earns a stack does not carry it, the rule every
@@ -437,6 +442,7 @@ impl CritPerHit {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Ammo {
     /// SENTIENT SURGE'S REFILL, spent before the reload check so that a kill
     /// can genuinely save a reload — which is the whole point of the mod.
@@ -479,6 +485,7 @@ impl Ammo {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Tendrils {
     /// THE TENDRILS a reload takes away and kills grow back, re-derived before
     /// anything decides to reload. A weapon with none has `tendril_max` 0 and
@@ -507,6 +514,7 @@ impl Tendrils {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl DoubleTap {
 
     pub(super) fn swap(&mut self, now: f64) {
@@ -517,6 +525,7 @@ impl DoubleTap {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Ammo {
     /// WHAT THE BODIES DROPPED, credited to the reserve — one pickup at a
     /// time, because a pack is only worth what the reserve has room for.
@@ -555,6 +564,7 @@ impl Ammo {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Meter {
     /// THE RECHARGE METER, credited with the seconds since it was last looked
     /// at. A shot boundary is where every other clock in this loop is read,
@@ -612,6 +622,7 @@ impl Meter {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl Ammo {
     /// AN INSTANT RELOAD — the magazine the weapon is actually firing, which
     /// in a cycle is the base form's while the Incarnon one is out.
@@ -633,6 +644,7 @@ impl Ammo {
 
 /// EXACT PENANCE'S ROLL on a weak-point hit: a magazine the weapon actually
 /// has, the head it names, the kill if the card asks for one.
+#[wfsim_gas_macro::metered]
 pub(super) fn roll_instant_reload(
     active: &FightParams,
     params: &FightParams,

@@ -15,6 +15,7 @@ pub(super) struct LiveStacks {
     pub(super) all_at_once: bool,
 }
 
+#[wfsim_gas_macro::metered]
 impl LiveStacks {
     /// Apply pending decay and return the current stack count. An INFINITE
     /// expiry never falls due, which is the whole of what a locked buff is.
@@ -124,6 +125,7 @@ pub(super) struct GalStacks {
     pub(super) mutation: Mutation,
 }
 
+#[wfsim_gas_macro::metered]
 impl GalStacks {
     pub(super) fn bump_on_kill(&mut self, params: &FightParams, now: f64) {
         if let Some(spec) = &params.co_stack {
@@ -145,6 +147,7 @@ impl GalStacks {
 /// mods never.
 // WHOSE BREAK IT WAS. The tick is a share of the pool that broke, and the
 // seat that broke it is the one it pays.
+#[wfsim_gas_macro::metered]
 pub(super) fn push_break_proc(
     debuffs: &mut DebuffState,
     owner: Seat,

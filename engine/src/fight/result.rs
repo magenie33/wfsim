@@ -15,6 +15,7 @@ pub const TIMELINE_BUCKETS: usize = 600;
 #[derive(Debug, Clone, Copy)]
 pub struct Timeline(pub [f64; TIMELINE_BUCKETS]);
 
+#[wfsim_gas_macro::metered]
 impl Default for Timeline {
     fn default() -> Self {
         Timeline([0.0; TIMELINE_BUCKETS])
@@ -24,6 +25,7 @@ impl Default for Timeline {
 #[derive(Debug, Clone, Copy)]
 pub struct BodyDamage(pub [f64; crate::formation::MAX_BODIES + 1]);
 
+#[wfsim_gas_macro::metered]
 impl Default for BodyDamage {
     fn default() -> Self {
         BodyDamage([0.0; crate::formation::MAX_BODIES + 1])
@@ -60,6 +62,7 @@ pub struct SeatCounters {
     pub finishes: u32,
 }
 
+#[wfsim_gas_macro::metered]
 impl SeatCounters {
     /// The run's counters as they stand, for the before-and-after a turn is
     /// credited by. Every field here is one the loop can attribute.
@@ -121,6 +124,7 @@ pub const MAX_COMBATANTS: usize = 8;
 #[derive(Debug, Clone, Copy)]
 pub struct CombatantDamage(pub [f64; MAX_COMBATANTS]);
 
+#[wfsim_gas_macro::metered]
 impl Default for CombatantDamage {
     fn default() -> Self {
         CombatantDamage([0.0; MAX_COMBATANTS])
@@ -174,6 +178,7 @@ pub struct SourceDamage {
     pub arcane_by_type: [f64; DamageType::ALL.len()],
 }
 
+#[wfsim_gas_macro::metered]
 impl SourceDamage {
     pub(super) fn add_status(&mut self, t: DamageType, v: f64) {
         self.status[t as usize] += v;
@@ -189,6 +194,7 @@ impl SourceDamage {
 /// three additions that run on all of them. Keeping the generic part down to
 /// the booking and the branch puts the code back where it was.
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(super) fn write_row(
     rec: &mut crate::record::Record,
     t: f64,
@@ -277,6 +283,7 @@ pub(super) fn write_row(
     }
 }
 
+#[wfsim_gas_macro::metered]
 pub(super) fn add_by_type(
     dst: &mut [f64; DamageType::ALL.len()],
     v: &DamageVector,
@@ -292,6 +299,7 @@ pub(super) fn add_by_type(
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl RunResult {
     /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     #[inline]
@@ -478,6 +486,7 @@ pub struct RunResult {
 }
 
 /// The one number of a run a metric reads — here because `RunResult` is.
+#[wfsim_gas_macro::metered]
 impl RunStat {
     pub fn of(self, r: &RunResult) -> f64 {
         match self {

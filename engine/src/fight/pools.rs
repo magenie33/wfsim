@@ -90,6 +90,7 @@ pub struct Portion {
 /// A portion of nothing: the slot a [`Settled`] starts its three with. Written
 /// by hand because `DamageType` has no default and should not gain one — there
 /// is no neutral damage type, only an unused slot.
+#[wfsim_gas_macro::metered]
 impl Default for Portion {
     fn default() -> Self {
         Self {
@@ -201,6 +202,7 @@ pub struct Breakdown {
     pub(super) n_portions: u8,
 }
 
+#[wfsim_gas_macro::metered]
 impl Breakdown {
     pub fn portions(&self) -> &[Portion] {
         &self.portions[..self.n_portions as usize]

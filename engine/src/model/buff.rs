@@ -303,6 +303,7 @@ pub enum BuffGrant {
     StatusDamage,
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffGrant {
     /// THE GRANT'S ONE SPELLING — a data file's `grants:`. A bare stat is its
     /// relative bucket (`multishot` is the mods' +%), `flat_` adds to the
@@ -341,6 +342,7 @@ impl BuffGrant {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffGrant {
     /// The `disables:` key this grant feeds — the SAME vocabulary a locking
     /// mod writes ("multishot", "fire_rate"). Derived rather than listed: a
@@ -395,6 +397,7 @@ impl BuffGrant {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffTrigger {
     /// What EARNS a stack, for a card line — the trigger stated in the words
     /// the mod's own text uses.
@@ -625,6 +628,7 @@ pub const UNSIMULATED_EVENTS: &[&str] =
 // scenario's switch, a share link and a benchmark all carry it. A file that
 // spells one any other way does not load (`every_trigger_in_the_data_is_a_word`).
 
+#[wfsim_gas_macro::metered]
 impl BuffTrigger {
     /// The wire id of a data-declared trigger — what a scenario, a share link and a
     /// benchmark carry.
@@ -667,6 +671,7 @@ impl BuffTrigger {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl ArcTrigger {
     /// The same for an arcane's own vocabulary. `None` for [`ArcTrigger::Passive`]
     /// and [`ArcTrigger::ComboSwap`]: nothing in the fight grants them, so no
@@ -697,6 +702,7 @@ impl ArcTrigger {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl BuffDecay {
     /// The decay a data file's `decay:` names; absent is the Galvanized
     /// family's, which is what every buff written before the other two did.
@@ -709,6 +715,7 @@ impl BuffDecay {
     }
 }
 
+#[wfsim_gas_macro::metered]
 impl ClearedBy {
     /// What a data file's `cleared_by:` names; absent is the buff's own clock.
     pub fn from_id(id: Option<&str>) -> Self {

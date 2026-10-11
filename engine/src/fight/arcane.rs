@@ -13,6 +13,7 @@ pub(super) struct ArcState {
     pub(super) last_instance: u64,
 }
 
+#[wfsim_gas_macro::metered]
 impl ArcState {
     /// Apply pending decay per the spec's family and return live stacks.
     ///
@@ -76,6 +77,7 @@ pub(super) struct ArcRuntime {
     pub(super) rage: Option<crate::data::rage::Rage>,
 }
 
+#[wfsim_gas_macro::metered]
 impl ArcRuntime {
     pub(super) fn init(params: &FightParams) -> Self {
         Self {
