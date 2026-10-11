@@ -15,7 +15,6 @@
 import { verifyRoute, LEASE_MS, PROTOCOL, TASKS_AHEAD } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { officialRoute } from "../worker/factory.js";
-import { opsRoute } from "../worker/ops.js";
 import { coolDownMs } from "../worker/tasks.js";
 import { tell } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";
@@ -271,23 +270,15 @@ console.log("\norders open before the factory");
 }
 
 {
-  // THE OWNER'S DASHBOARD tells a computing machine from an idle one and from
-  // one on an engine no longer served, and shows nothing without its secret.
-  env.OPS_TOKEN = "ot";
-  check("the dashboard's numbers need its secret", (await post(opsRoute, "/api/ops/pulse", {}, TOKEN)).ok === false);
-  free();
+  // AN ASK IS RECORDED: when, on which engine (an older protocol marked) and
+  // with how many cores, which is what tells an idle page from a closed one.
   const O = "0".repeat(24);
   L.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(O);
   await work(O, { engine: "old" });
-  await work(F, { ip: "203.0.113.77" });
-  L.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ?").run(F);
-  L.prepare("UPDATE questions SET lease = 'x', lease_until = ?, leased_to = ? WHERE id = (SELECT id FROM questions LIMIT 1)")
-    .run(new Date(Date.now() + 60_000).toISOString(), A);
-  const p = await post(opsRoute, "/api/ops/pulse", {}, { authorization: "Bearer ot" });
-  const state = (v) => (p.devices.find((d) => d.id === v.slice(0, 8)) || {}).state;
-  check("a machine holding a lease is computing, one asking with none is idle, one on an old engine is stale",
-    p.ok && state(A) === "computing" && state(F) === "idle" && state(O) === "stale", JSON.stringify(p.devices));
-  check("...and its cores are counted", p.summary.idle.cores >= 4, JSON.stringify(p.summary));
+  const v = L.prepare("SELECT asked_at, asked_engine, asked_lanes FROM verifiers WHERE id = ?").get(O);
+  check("a page's ask for work is recorded, with its engine and its cores", v.asked_at && v.asked_engine === "old" && v.asked_lanes === 4, JSON.stringify(v));
+  await work(O, { engine: "old", protocol: PROTOCOL - 1 });
+  check("...and an older protocol is marked on it", L.prepare("SELECT asked_engine FROM verifiers WHERE id = ?").get(O).asked_engine === `old/p${PROTOCOL - 1}`);
   free();
 }
 

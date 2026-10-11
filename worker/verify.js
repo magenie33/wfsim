@@ -163,8 +163,8 @@ async function work(request, env) {
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
-/// free cores kept for the owner's dashboard (worker/ops.js) — written at most
-/// once a minute, or a page asking every ten seconds is a write each time.
+/// free cores kept, which tells an idle page from a closed one — written at
+/// most once a minute, or a page asking every ten seconds is a write each time.
 export const ASKED_EVERY_MS = 60_000;
 async function askedNow(db, b, now) {
   const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
