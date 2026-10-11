@@ -459,7 +459,11 @@ CREATE TABLE IF NOT EXISTS questions (
   -- 1 when its answers were found not deterministic: settled, nobody refused, said aloud.
   odd         INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS questions_pick ON questions (state, waits, due_at);
+-- IN THE ORDER A WITNESS IS HANDED WORK (worker/tasks.js `eligibleSql`):
+-- `waits` ascending sorted every open question on every ask, which once
+-- took half the database's time and got it reset.
+--   DROP INDEX IF EXISTS questions_pick;
+CREATE INDEX IF NOT EXISTS questions_order ON questions (state, waits DESC, due_at, id);
 CREATE INDEX IF NOT EXISTS questions_holder ON questions (leased_to);
 CREATE INDEX IF NOT EXISTS questions_lease ON questions (lease);
 CREATE TABLE IF NOT EXISTS demands (
