@@ -18,6 +18,14 @@ use super::queue::{
 use super::state::record_state;
 
 pub fn run() {
+    // EVERY RULER, one id a line — the roster a workflow loops over. A file in
+    // `data/benchmarks/` is a ruler's BASE, not the roster: its ladder makes more.
+    if std::env::args().nth(1).as_deref() == Some("--rulers") {
+        for b in wfsim_engine::board::benchmarks::all() {
+            println!("{}", b.id);
+        }
+        return;
+    }
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
             "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \

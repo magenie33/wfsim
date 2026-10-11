@@ -1720,19 +1720,47 @@ exactly like one that exercised everything.
 
 | link | how it learns of a new ruler |
 |---|---|
-| the engine | `board::benchmarks::all()` globs `data/benchmarks/*.yaml` |
+| the engine | `board::benchmarks::all()` globs `data/benchmarks/*.yaml` and expands each file's ladder |
 | `/api/meta` | maps that list |
 | the page's ruler picker, scenario bar, board page | read `META.benchmarks` |
 | the worker | validates `benchmark` as an ID, holds no whitelist |
-| the scoring workflow | `for f in data/benchmarks/*.yaml` |
+| the workflows, the reconciliation, the purge, the live board | `wfsim-board --rulers` |
 | `site/board/` | a weapon's file holds every ruler's rows, so one replaces only its own |
-| the site build | globs `data/benchmarks/*.yaml` for the roster's files |
+| the site build | reads `data/benchmarks/*.yaml` for the base rulers' sentences |
 
 **And the rules come with it.** `standard_multi_target` refuses an incomplete build with
 the same words `standard_single_target` does — "0 mods, and this benchmark wants all 8
 main slots", "0 of 4 evolution tiers" — because `validate_for_board` reads the
 `build:` block out of the yaml. A new ruler's admission standard is written, not
 coded.
+
+### A ruler's ladder: one fight, measured along axes
+
+**A FILE IS ONE FIGHT; ITS LADDER MAKES IT SEVERAL RULERS.** An axis
+(`data/benchmarks/axes/<id>.yaml`) lists RUNGS, and a rung is a CHOSEN
+combination of fight fields — `scene` names each one by its level, Steel Path
+and Empowered Enemies — never a product of them, so only the fights someone
+decided to measure exist. The FIRST rung is what each spanning ruler's own file
+states, and the build refuses a ruler that states otherwise; a rung added once
+lines up on every board. A later rung overwrites only the fields it sets, so it
+states every field in which its fight differs. A file spans axes by
+`ladder: [...]`, and `all()` expands it into one cell per combination of one
+rung per axis: the base keeps the file's id, so no stored score, link or record
+moves, and every other cell appends `__<tag>` per axis it moves
+(`standard_single_target__icebind1000`). The target stays the file's in every
+scene, a theoretical one where the game would not spawn it.
+
+**A CELL IS AN ORDINARY RULER.** It has its own facts under `(identity, ruler,
+mode)`, its own groups and so its own entry line, and a build that clears the
+line in any cell keeps earning every other. `{<axis>}` in the name, the standard
+and the rules is filled per cell — the rung's `short` in the name, its `long` in
+the prose — and a file that spans an axis may not write its base's words out
+(`a_spanned_axis_is_never_written_out`): it would publish them on every cell.
+
+**THE ROSTER IS THE SCORER'S, NEVER THE DIRECTORY'S.** Every loop over rulers
+reads `wfsim-board --rulers`. A loop over the files skips every cell, and the
+purge built from one deletes every row owed under a cell as "retired" —
+`check_rescore_paths.mjs` refuses one.
 
 ### A new ruler costs nothing to add
 

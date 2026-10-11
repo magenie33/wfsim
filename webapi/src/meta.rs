@@ -1217,6 +1217,11 @@ pub fn meta_json() -> Value {
         "benchmarks": wfsim_engine::board::benchmarks::all().iter().map(|b| json!({
             "primary": b.primary, "id": b.id,
             "name": b.name,
+            // WHICH FILE'S LADDER THIS CELL IS ON, and where on it: a page
+            // groups the cells of one fight by `base` and offers `cell`'s axes.
+            "base": b.base,
+            "cell": b.cell.iter().map(|(axis, v)| (axis.clone(), json!(v)))
+                .collect::<serde_json::Map<_, _>>(),
             // HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. Paired with
             // the library's own size (`/api/board/pending`), it is what lets a
             // STATIC board say how far behind it is — see `data::boards::Board`.

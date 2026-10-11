@@ -6,7 +6,7 @@
 #
 # A queue row is deleted in exactly one place: beside the fact that settles it,
 # after the score is banked. A retired ruler never produces a fact — nothing
-# invokes the scorer with an id `data/benchmarks/` no longer has — so its rows
+# invokes the scorer with an id `wfsim-board --rulers` no longer lists — so its rows
 # are owed for ever, and `queue: N row(s) owed` never returns to zero. That
 # count is the signal a person reads to know whether the board is behind, and a
 # floor under it that never moves is a signal that has stopped working.
@@ -48,14 +48,11 @@ d1() {
   [ "$D1_CODE" = "200" ]
 }
 
-# EVERY RULER THE ROSTER HAS, one per line. The filename IS the id — the same
-# thing `reconcile_queue.sh` and `publish.yml` both read it as.
+# EVERY RULER THE ROSTER HAS, one per line, from the engine: a file in
+# `data/benchmarks/` is only a ruler's base, and its ladder's cells are rulers
+# too. Read off the files, every row owed under a cell would be purged.
 live_rulers() {
-  local f
-  for f in data/benchmarks/*.yaml; do
-    [ -e "$f" ] || continue
-    basename "$f" .yaml
-  done
+  "${WFSIM_BOARD:-./target/release/wfsim-board}" --rulers
 }
 
 # PARAMETERS ARE BOUND, NEVER INTERPOLATED — the same rule the queue's writer
@@ -115,17 +112,26 @@ self_test() {
     && say ok "…and the ids are bound, not interpolated" \
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
 
-  # THE GUARD, which is the only way this could empty the queue.
-  ( cd "$(mktemp -d)" && mkdir -p data/benchmarks \
-      && PATH="$PATH" bash "$OLDPWD/scripts/purge_queue.sh" >/dev/null 2>&1 ) \
+  # THE GUARD, which is the only way this could empty the queue: a roster that
+  # lists nothing, and a scorer that is not there to ask.
+  local fake
+  fake=$(mktemp -d)
+  printf '#!/usr/bin/env bash\n' > "$fake/empty"
+  printf '#!/usr/bin/env bash\nprintf "a\\na__level170\\n"\n' > "$fake/two"
+  chmod +x "$fake/empty" "$fake/two"
+  WFSIM_BOARD="$fake/empty" bash scripts/purge_queue.sh >/dev/null 2>&1 \
     && say FAIL "an empty roster was accepted" \
     || say ok "an empty roster is refused rather than obeyed"
+  WFSIM_BOARD="$fake/missing" bash scripts/purge_queue.sh >/dev/null 2>&1 \
+    && say FAIL "a missing scorer was read as an empty roster" \
+    || say ok "a roster nobody can read is refused"
 
-  # …AND THE ROSTER IT WOULD ACTUALLY SEND, so a rename of the directory or of
-  # the suffix fails here rather than in production.
-  [ "$(live_rulers | grep -c .)" -ge 2 ] \
-    && say ok "the roster reads its rulers from data/benchmarks/" \
-    || say FAIL "live_rulers found $(live_rulers | grep -c .)"
+  # …AND THE ROSTER IT WOULD ACTUALLY SEND is the scorer's, cells included.
+  local roster
+  roster=$(WFSIM_BOARD="$fake/two" live_rulers | tr '\n' ' ')
+  [ "$roster" = "a a__level170 " ] \
+    && say ok "the roster is every ruler the scorer lists, a ladder's cells included" \
+    || say FAIL "live_rulers read: $roster"
 
   echo
   echo "$ok ok, $bad failed"

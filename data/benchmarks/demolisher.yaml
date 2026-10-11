@@ -34,14 +34,14 @@
 # A third unnamed difference between them would be a bug, not a ruler.
 id: demolisher
 
-name: "Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM"
+name: "Demolisher · one target · Demolisher Devourer {scene} · 4-player health · 180 s · KPM"
 
 standard: "One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon."
 
 rules:
   # MECHANICAL LANGUAGE, AND NO WEAPON IN IT — the standard all three rulers are
   # held to. These lines say what is done to EVERY entry.
-  - "The target is one Demolisher Devourer at level 9999 on Steel Path, carrying the health a four-player squad gives it. The fight lasts 180 seconds."
+  - "The target is one Demolisher Devourer {scene}, carrying the health a four-player squad gives it. The fight lasts 180 seconds."
   - "ONE WEAPON FIRES. A four-player squad is a harder TARGET here, not three more guns — this fight has one shooter — so what is ranked is how much of that Demolisher your weapon alone takes off."
   - "One target: damage that reaches other enemies counts for nothing here."
   - "Every shot is aimed and every one lands on the weak point, which is worth 3x."
@@ -65,6 +65,7 @@ build:
   exilus: optional
   valence: full
 
+ladder: [scene]
 scenario:
   # THE FIRST OF THE TWO CHANGED TERMS.
   enemy: demolisher_devourer

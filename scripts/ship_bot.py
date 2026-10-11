@@ -111,9 +111,6 @@ def deploy_live(t: dict) -> None:
     if not live_binaries(out):
         return
     root, host, o = t["root"], t["host"], ssh_opts(t)
-    rulers = out / "rulers.txt"
-    names = sorted(p.stem for p in (ROOT / "data" / "benchmarks").glob("*.yaml"))
-    rulers.write_bytes("".join(f"{n}\n" for n in names).encode("utf-8"))
     # WHICH COMMIT MEASURED A FACT THE SERVER SHIPS, and which engine it runs —
     # the page's `ENGINE_ID`: a claim of another engine settles nothing.
     (out / "VERSION").write_bytes((run(["git", "rev-parse", "HEAD"]).strip() + "\n").encode())
@@ -127,7 +124,7 @@ def deploy_live(t: dict) -> None:
     run(["scp", "-q", *o, str(out / "wfsim-intake"), str(out / "wfsim-board"),
          str(out / "VERSION"), str(out / "ENGINE"), f"{host}:{root}/bin/incoming/"])
     run(["ssh", *o, host, f"chmod +x {root}/bin/incoming/wfsim-*; mv -f {root}/bin/incoming/* {root}/bin/"])
-    run(["scp", "-q", *o, *LIVE_SCRIPTS, str(rulers), f"{host}:{root}/scripts/"])
+    run(["scp", "-q", *o, *LIVE_SCRIPTS, f"{host}:{root}/scripts/"])
     # RESTARTED ONLY ONCE INSTALLED: the unit and its read token are put on the
     # server by hand (`deploy/wfsim-live.service`), and until then there is
     # nothing to restart.

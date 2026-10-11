@@ -1,0 +1,11 @@
+# The scenes every ruler spanning this axis is measured in, chosen one by one
+# rather than multiplied out: a rung names the fields its fight sets. The FIRST
+# is what each spanning ruler's own file states — its base cell, which keeps
+# the file's id. `short` fills `{scene}` in a ruler's name, `long` in its rules.
+# A later rung sets every field in which its fight differs from the file's.
+id: scene
+values:
+  - tag: sp9999
+    set: {level: 9999, steel_path: true}
+    short: Lv 9999 SP
+    long: at level 9999 on Steel Path

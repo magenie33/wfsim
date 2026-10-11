@@ -77,8 +77,7 @@ jobs:
       - name: assemble every benchmark
         run: |
           set -euo pipefail
-          for f in data/benchmarks/*.yaml; do
-            id=$(basename "$f" .yaml)
+          for id in $(./target/release/wfsim-board --rulers); do
             # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
             # makes that a guarantee, so a shard that fell over costs a row
             # on this board rather than an hour on the merge — and the row

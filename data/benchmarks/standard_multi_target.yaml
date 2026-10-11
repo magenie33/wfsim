@@ -15,7 +15,7 @@
 # `board/benchmarks.rs` refuses it any weapon, mod, arcane or evolution id.
 id: standard_multi_target
 
-name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM"
+name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion {scene} · 180 s · KPM"
 
 # WHAT "STANDARD" CLAIMS, and it is a judgement rather than a fact — which is
 # exactly why it is written down where it can be argued with. The target half
@@ -23,7 +23,7 @@ name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 
 standard: "Standard means this fight is claimed to represent most play, not that it is the fight you play: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole."
 
 rules:
-  - "The target is a formation of 25 Thrax Centurions at level 9999 on Steel Path, a 5 by 5 grid spaced 3 metres centre to centre: the smallest odd square that holds every elemental area effect around the aimed body whole, a fully grown 6 m Gas cloud included. The fight lasts 180 seconds."
+  - "The target is a formation of 25 Thrax Centurions {scene}, a 5 by 5 grid spaced 3 metres centre to centre: the smallest odd square that holds every elemental area effect around the aimed body whole, a fully grown 6 m Gas cloud included. The fight lasts 180 seconds."
   - "A weapon's own explosion wider than about 6 m, and punch-through past five bodies, are clipped by the grid on purpose: a deeper column would rank the formation rather than the weapon."
   - "The spacing decides whether splash or single-target damage wins: 3 m is where that ordering matches play, and it is the widest whole metre at which Electricity still reaches a neighbour."
   - "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere."
@@ -48,6 +48,7 @@ build:
   exilus: optional
   valence: full
 
+ladder: [scene]
 scenario:
   enemy: thrax_centurion
   level: 9999

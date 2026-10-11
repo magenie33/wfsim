@@ -292,5 +292,17 @@ const builds = codeOf(intakeStep).indexOf("ship_builds.sh");
 check(builds >= 0 && asked > builds, "…and the build lands before the row that asks for it",
   "a queue row naming a build the library does not hold is never taken");
 
+// THE ROSTER IS THE SCORER'S, NEVER THE DIRECTORY'S. A file in data/benchmarks/
+// is a ruler's base and its ladder makes more; a loop over the files skips
+// every cell, and a purge built from one deletes every row owed under a cell.
+for (const f of [".github/workflows/scores.yml", ".github/workflows/queue.yml",
+  ".github/workflows/publish.yml", "scripts/reconcile_queue.sh", "scripts/purge_queue.sh",
+  "scripts/live_board.sh", "scripts/ship_bot.py"]) {
+  const globbed = readFileSync(resolve(ROOT, f), "utf8").split(NL)
+    .filter((l) => !l.trim().startsWith("#")
+      && (/benchmarks\/(\*|\$)/.test(l) || /"benchmarks"\)\.glob/.test(l) || l.includes("rulers.txt")));
+  check(!globbed.length, `${f} reads its rulers from wfsim-board --rulers`, globbed[0]?.trim());
+}
+
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

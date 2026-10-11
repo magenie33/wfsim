@@ -181,8 +181,7 @@ jobs:
           export CF_D1_DATABASE
           older=$(date -u -d '3 days ago' +'%Y-%m-%dT%H:%M:%S.000Z')
           : > refresh-all.ndjson
-          for f in data/benchmarks/*.yaml; do
-            id=$(basename "$f" .yaml)
+          for id in $(./target/release/wfsim-board --rulers); do
             ./target/release/wfsim-board "$id"               --dry-run               --gate               --facts-in facts-known.ndjson               --queue-in queue.ndjson               --queue-older "$older"               --queue-missing "refresh-$id.ndjson"               < library.json > /dev/null
             cat "refresh-$id.ndjson" >> refresh-all.ndjson
           done
@@ -235,7 +234,7 @@ jobs:
           case "$RULER" in
             *[!a-z0-9_]*|"") echo "::error::not a benchmark id: $RULER"; exit 1 ;;
           esac
-          [ -f "data/benchmarks/$RULER.yaml" ] \
+          ./target/release/wfsim-board --rulers | grep -qx "$RULER" \
             || { echo "::error::no such ruler: $RULER"; exit 1; }
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')

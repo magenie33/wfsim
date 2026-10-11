@@ -86,7 +86,7 @@ project_into() {
   else
     mkdir "$out.next"
   fi
-  for r in $(cat "$HERE/rulers.txt"); do
+  for r in $("$BIN/wfsim-board" --rulers); do
     code=0
     (cd "$cwd" && "$BIN/wfsim-board" "$r" "$WORK/$out.next" --project $flag --facts-in "$WORK/$facts" \
       < "$WORK/$lib" > /dev/null 2>> "$WORK/project.log") || code=$?

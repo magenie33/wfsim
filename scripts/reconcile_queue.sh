@@ -36,8 +36,7 @@ missing=$(mktemp)
 : > "$missing"
 orphans=$(mktemp)
 : > "$orphans"
-for f in data/benchmarks/*.yaml; do
-  id=$(basename "$f" .yaml)
+for id in $("$BOARD" --rulers); do
   one=$(mktemp)
   # `--gate` IS WHAT MAKES THE ARRIVALS PATH OBEY THE ENTRY LINE. A build that
   # reaches a tenth of some group's leader keeps earning every row it lacks; one

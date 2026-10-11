@@ -140,6 +140,181 @@ pub struct Benchmark {
     /// a scenario preset uses, so a field added to scenarios needs no second
     /// definition here, and the "names no weapon" check below still covers it.
     pub scenario: serde_norway::Value,
+    /// THE AXES THIS RULER IS ALSO MEASURED ALONG, by [`Axis`] id. Each one
+    /// multiplies the ruler into cells (see [`expand_ladder`]); the file's own
+    /// values are the base cell, which keeps the file's id.
+    #[serde(default)]
+    pub ladder: Vec<String>,
+    /// The id of the ruler written in the file this one was expanded from —
+    /// its own id on the base cell.
+    #[serde(skip)]
+    pub base: String,
+    /// WHERE THIS CELL SITS OFF ITS BASE: `(axis, rung tag)` for every axis
+    /// on which it is not the first rung, in `ladder` order. Empty on the base.
+    #[serde(skip)]
+    pub cell: Vec<(String, String)>,
+}
+
+/// ONE CHOSEN SETTING OF AN AXIS — a scene: the fields it sets, and what a
+/// ruler's text says for it (`short` in the name, `long` in the standard and
+/// the rules). A rung is a CHOSEN combination, not a product of its fields, so
+/// an axis lists only the fights someone decided to measure.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Rung {
+    pub tag: String,
+    pub set: serde_norway::Mapping,
+    pub short: String,
+    pub long: String,
+}
+
+/// AN AXIS A RULER MAY BE MEASURED ALONG — `data/benchmarks/axes/<id>.yaml`.
+///
+/// `values` are its rungs, and the FIRST is the setting every spanning ruler's
+/// own file states — its base cell, which keeps the file's id — so a rung added
+/// once lines up on every board. A later rung overwrites only the fields it
+/// sets, so it states every field in which its fight differs.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Axis {
+    pub id: String,
+    pub values: Vec<Rung>,
+}
+
+impl Axis {
+    fn check(&self) -> Result<(), String> {
+        use crate::build::scenario::SCENARIO_AXES;
+        if self.values.is_empty() {
+            return Err("lists no rung: the first is every spanning ruler's own".into());
+        }
+        for (i, r) in self.values.iter().enumerate() {
+            let t = &r.tag;
+            if t.is_empty() || t.contains("__") || !t.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_') {
+                return Err(format!("tag `{t}` is not lowercase letters, digits and single underscores"));
+            }
+            if self.values[..i].iter().any(|o| &o.tag == t) {
+                return Err(format!("tag `{t}` twice"));
+            }
+            if r.set.is_empty() {
+                return Err(format!("`{t}` sets no field"));
+            }
+            for k in r.set.keys() {
+                let k = k.as_str().unwrap_or("");
+                // `squad_size` is read by `parse_fight` and is not a page control.
+                if k != "squad_size" && !SCENARIO_AXES.iter().any(|a| a.id == k) {
+                    return Err(format!("`{t}` sets `{k}`, which is not a field of the fight"));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Every declared axis.
+pub fn axes() -> &'static [Axis] {
+    static A: OnceLock<Vec<Axis>> = OnceLock::new();
+    A.get_or_init(|| {
+        crate::data::files_under("benchmarks/axes/")
+            .filter(|(p, _)| p.ends_with(".yaml"))
+            .map(|(p, text)| {
+                let a: Axis = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                let stem = &p["benchmarks/axes/".len()..p.len() - ".yaml".len()];
+                assert_eq!(a.id, stem, "{p}: an axis file is named after its id");
+                a.check().unwrap_or_else(|why| panic!("{p}: {why}"));
+                a
+            })
+            .collect()
+    })
+}
+
+/// A RULER, MULTIPLIED ALONG ITS LADDER: every combination of one rung per
+/// axis, base cell first, last axis varying fastest.
+///
+/// A cell's id is the base id plus `__<tag>` for each axis it is not on the
+/// first rung of, so the base keeps the id every stored score, link and record
+/// already names. `{<axis>}` in the name, the standard and the rules is filled
+/// per cell: a cell that quoted its base's level would publish a term it is not
+/// measured at.
+fn expand_ladder(b: Benchmark, axes: &[Axis]) -> Result<Vec<Benchmark>, String> {
+    let mut lines: Vec<&Axis> = Vec::new();
+    for id in &b.ladder {
+        let axis = axes.iter().find(|a| &a.id == id).ok_or_else(|| {
+            format!("spans the axis `{id}`, which data/benchmarks/axes/ does not declare")
+        })?;
+        if lines.iter().any(|a| &a.id == id) {
+            return Err(format!("spans `{id}` twice"));
+        }
+        let first = &axis.values[0];
+        for (k, v) in &first.set {
+            if b.scenario.get(k) != Some(v) {
+                return Err(format!(
+                    "spans `{id}` and its scenario states {:?} for `{}`, but the first rung `{}` — every spanning ruler's own — sets {v:?}",
+                    b.scenario.get(k), k.as_str().unwrap_or("?"), first.tag
+                ));
+            }
+        }
+        if !b.name.contains(&format!("{{{id}}}")) {
+            return Err(format!("spans `{id}` and its name does not say where: write `{{{id}}}`"));
+        }
+        lines.push(axis);
+    }
+    let mut out = Vec::new();
+    let mut pick = vec![0usize; lines.len()];
+    loop {
+        let mut c = b.clone();
+        c.base = b.id.clone();
+        for (i, axis) in lines.iter().enumerate() {
+            let r = &axis.values[pick[i]];
+            if pick[i] > 0 {
+                c.id.push_str(&format!("__{}", r.tag));
+                if let Some(m) = c.scenario.as_mapping_mut() {
+                    for (k, v) in &r.set {
+                        m.insert(k.clone(), v.clone());
+                    }
+                }
+                c.cell.push((axis.id.clone(), r.tag.clone()));
+            }
+            let hole = format!("{{{}}}", axis.id);
+            c.name = c.name.replace(&hole, &r.short);
+            c.standard = c.standard.replace(&hole, &r.long);
+            c.rules = c.rules.iter().map(|t| t.replace(&hole, &r.long)).collect();
+        }
+        if !c.cell.is_empty() {
+            c.primary = false;
+        }
+        for text in std::iter::once(&c.name).chain(&c.rules).chain([&c.standard]) {
+            if let Some(hole) = unfilled(text) {
+                return Err(format!("says `{{{hole}}}`, which is not an axis it spans"));
+            }
+        }
+        out.push(c);
+        let mut i = lines.len();
+        loop {
+            if i == 0 {
+                return Ok(out);
+            }
+            i -= 1;
+            pick[i] += 1;
+            if pick[i] < lines[i].values.len() {
+                break;
+            }
+            pick[i] = 0;
+        }
+    }
+}
+
+/// The first `{word}` hole left in `text`, if any.
+fn unfilled(text: &str) -> Option<&str> {
+    let mut rest = text;
+    while let Some(open) = rest.find('{') {
+        let after = &rest[open + 1..];
+        let word = after.split('}').next().unwrap_or("");
+        if after.contains('}') && !word.is_empty() && word.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
+            return Some(word);
+        }
+        rest = after;
+    }
+    None
 }
 
 impl Benchmark {
@@ -243,14 +418,13 @@ fn expand_formation_grid(sc: &mut serde_norway::Value) -> Result<(), String> {
     Ok(())
 }
 
-/// Every official benchmark, parsed once, in path order.
+/// Every official ruler — every cell of every file's ladder — parsed once.
 pub fn all() -> &'static [Benchmark] {
     static B: OnceLock<Vec<Benchmark>> = OnceLock::new();
     B.get_or_init(|| {
         let mut v: Vec<Benchmark> = crate::data::files_under("benchmarks/")
-            // THIS level only. `boards/` at the root holds the measured results
-            // and is a different shape entirely — a prefix scan would try to
-            // parse a board as a benchmark and fail on a missing `id`.
+            // THIS level only: `axes/` beneath it is a different shape, and a
+            // prefix scan would parse an axis as a ruler.
             .filter(|(p, _)| p.ends_with(".yaml") && !p["benchmarks/".len()..].contains('/'))
             .map(|(p, text)| {
                 let mut b: Benchmark =
@@ -282,7 +456,14 @@ pub fn all() -> &'static [Benchmark] {
             };
             key(a).cmp(&key(b))
         });
-        v
+        // A CELL FOLLOWS ITS BASE, so the order above is still the order of
+        // the rulers a reader picks between.
+        v.into_iter()
+            .flat_map(|b| {
+                let id = b.id.clone();
+                expand_ladder(b, axes()).unwrap_or_else(|why| panic!("benchmarks/{id}.yaml {why}"))
+            })
+            .collect()
     })
 }
 
@@ -518,6 +699,110 @@ mod tests {
             );
         }
         assert!(checked > 0, "at least one ruler lays a grid, or this checks nothing");
+    }
+
+    /// A LADDER MULTIPLIES A RULER, AND THE BASE KEEPS EVERYTHING IT HAD.
+    /// On a synthetic ruler, because the shipped axes may list one rung yet and
+    /// a test that can only see one cell is not a test.
+    #[test]
+    fn a_ladder_multiplies_a_ruler_into_cells() {
+        let ruler = |name: &str, ladder: &str| -> Benchmark {
+            serde_norway::from_str(&format!(
+                "id: r\nprimary: true\nname: \"{name}\"\n\
+                 rules: [\"one target {{scene}}, {{headshot}}\"]\n\
+                 ladder: {ladder}\nscenario: {{level: 9999, steel_path: true, headshot_pct: 100, metric: kpm}}\n"
+            ))
+            .expect("parses")
+        };
+        let axis = |text: &str| -> Axis {
+            let a: Axis = serde_norway::from_str(text).expect("parses");
+            a.check().expect("valid");
+            a
+        };
+        let axes = [
+            axis("id: scene\nvalues:\n\
+                  - {tag: sp9999, set: {level: 9999, steel_path: true}, short: Lv 9999 SP, long: at level 9999 on Steel Path}\n\
+                  - {tag: icebind1000, set: {level: 1000, steel_path: false, squad_size: 6}, short: Lv 1000 Icebind, long: at level 1000 in The Icebind}\n\
+                  - {tag: sp200, set: {level: 200, steel_path: true}, short: Lv 200 SP, long: at level 200 on Steel Path}"),
+            axis("id: headshot\nvalues:\n\
+                  - {tag: hs100, set: {headshot_pct: 100}, short: all heads, long: every shot on the head}\n\
+                  - {tag: hs50, set: {headshot_pct: 50}, short: half heads, long: half on the head}"),
+        ];
+        let cells = expand_ladder(ruler("{scene} · {headshot}", "[scene, headshot]"), &axes).expect("expands");
+        let ids: Vec<&str> = cells.iter().map(|c| c.id.as_str()).collect();
+        assert_eq!(ids, [
+            "r", "r__hs50", "r__icebind1000", "r__icebind1000__hs50", "r__sp200", "r__sp200__hs50",
+        ]);
+        let c = &cells[3];
+        assert_eq!((c.base.as_str(), c.primary), ("r", false));
+        assert_eq!(c.cell, [("scene".to_string(), "icebind1000".to_string()), ("headshot".to_string(), "hs50".to_string())]);
+        let get = |k: &str| c.scenario.get(k).cloned();
+        assert_eq!(get("level").and_then(|v| v.as_u64()), Some(1000));
+        assert_eq!(get("steel_path").and_then(|v| v.as_bool()), Some(false));
+        assert_eq!(get("squad_size").and_then(|v| v.as_u64()), Some(6));
+        assert_eq!(get("metric").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("kpm"), "a field no rung sets is the file's");
+        assert_eq!(c.name, "Lv 1000 Icebind · half heads");
+        assert_eq!(c.rules, ["one target at level 1000 in The Icebind, half on the head"]);
+        assert!(cells[0].primary && cells[0].cell.is_empty() && cells[0].name == "Lv 9999 SP · all heads");
+
+        let why = |r| expand_ladder(r, &axes).expect_err("refused");
+        assert!(why(ruler("Lv 9999 · {headshot}", "[scene, headshot]")).contains("name does not say"));
+        assert!(why(ruler("{scene}", "[scene]")).contains("`{headshot}`"), "a hole no axis fills");
+        assert!(why(ruler("{scene}", "[scene, armour]")).contains("does not declare"));
+        assert!(why(ruler("{scene}", "[scene, scene]")).contains("twice"));
+        let off_base = [axis("id: scene\nvalues: [{tag: sp200, set: {level: 200}, short: a, long: b}]"), axes[1].clone()];
+        assert!(expand_ladder(ruler("{scene} {headshot}", "[scene, headshot]"), &off_base).expect_err("refused").contains("first rung"));
+
+        let bad = |text: &str| serde_norway::from_str::<Axis>(text).expect("parses").check().expect_err("refused");
+        let rung = |tag: &str, set: &str| format!("{{tag: {tag}, set: {set}, short: a, long: b}}");
+        assert!(bad("id: scene\nvalues: []").contains("no rung"));
+        assert!(bad(&format!("id: scene\nvalues: [{}, {}]", rung("a", "{level: 1}"), rung("a", "{level: 2}"))).contains("twice"));
+        assert!(bad(&format!("id: scene\nvalues: [{}]", rung("a__b", "{level: 1}"))).contains("single underscores"));
+        assert!(bad(&format!("id: scene\nvalues: [{}]", rung("a", "{}"))).contains("sets no field"));
+        assert!(bad(&format!("id: scene\nvalues: [{}]", rung("a", "{armour: 1}"))).contains("not a field"));
+    }
+
+    /// A CELL IS A RULER ID LIKE ANY OTHER: the worker's id pattern, no
+    /// version suffix for `family` to strip, and a base that is on the roster.
+    #[test]
+    fn every_cell_is_a_ruler_id_the_pipeline_accepts() {
+        let mut seen = std::collections::BTreeSet::new();
+        for b in all() {
+            assert!(seen.insert(b.id.as_str()), "{} twice", b.id);
+            assert!(b.id.len() <= 64 && b.id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+                "{}: outside the worker's id pattern", b.id);
+            assert_eq!(family(&b.id), b.id, "{}: reads as a version", b.id);
+            let base = get(&b.base).unwrap_or_else(|| panic!("{}: base {} is not a ruler", b.id, b.base));
+            assert!(base.cell.is_empty() && (b.cell.is_empty() == (b.id == b.base)), "{}", b.id);
+        }
+        assert_eq!(all().iter().filter(|b| b.primary).count(), 1, "exactly one ruler leads");
+    }
+
+    /// AN AXIS IS WRITTEN AS ITS HOLE, NEVER AS ITS BASE'S WORDS. A file that
+    /// spans `scene` and writes "9999" in its prose publishes 9999 on every
+    /// cell of its ladder, the level 200 one included.
+    #[test]
+    fn a_spanned_axis_is_never_written_out() {
+        let mut checked = 0;
+        for (path, text) in crate::data::files_under("benchmarks/") {
+            if !path.ends_with(".yaml") || path["benchmarks/".len()..].contains('/') {
+                continue;
+            }
+            let b: Benchmark = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{path}: {e}"));
+            for id in &b.ladder {
+                let first = &axes().iter().find(|a| &a.id == id).expect("validated at load").values[0];
+                // Its words, and every number it sets standing alone.
+                let numbers: Vec<String> = first.set.values().filter_map(|v| v.as_u64()).map(|n| n.to_string()).collect();
+                for line in std::iter::once(&b.name).chain(&b.rules).chain([&b.standard]) {
+                    let words: Vec<&str> = line.split(|c: char| !c.is_ascii_alphanumeric()).collect();
+                    let written = [&first.short, &first.long].into_iter().find(|w| line.contains(w.as_str()))
+                        .or_else(|| numbers.iter().find(|n| words.contains(&n.as_str())));
+                    assert!(written.is_none(), "{path}: spans `{id}` and writes {written:?} out — write `{{{id}}}`:\n  {line}");
+                }
+                checked += 1;
+            }
+        }
+        assert!(checked > 0, "some ruler spans an axis, or this checks nothing");
     }
 
     /// A TEST HAS ONE CORE, AND NOT NAMING IT IS A MISTAKE.

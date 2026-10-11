@@ -954,13 +954,23 @@ def board_best() -> dict:
     which of them happened.
     """
     rulers: dict = {}
+    axes = {f.stem: yload(f.read_text(encoding="utf-8"))
+            for f in (ROOT / "data" / "benchmarks" / "axes").glob("*.yaml")}
+
+    def said(axis: str) -> str:
+        # The base cell is the axis's first rung, and a name says its `short`.
+        return axes[axis]["values"][0]["short"]
     for f in sorted((ROOT / "data" / "benchmarks").glob("*.yaml")):
         spec = yload(f.read_text(encoding="utf-8"))
+        # A FILE IS ITS LADDER'S BASE CELL, whose name fills each `{axis}` hole
+        # (`expand_ladder`); a cell's rows are skipped below like any id this
+        # table does not hold.
+        name = re.sub(r"\{([a-z_]+)\}", lambda m: said(m.group(1)), spec["name"])
         # THE SAME READING ORDER THE ROSTER SORTS ON (`board::benchmarks::all`),
         # so the sentences arrive in the order the page lists the rulers in.
         rulers[spec["id"]] = (not spec.get("primary"),
                               not spec["id"].startswith("standard_"),
-                              "single" not in spec["id"], spec["id"], spec["name"])
+                              "single" not in spec["id"], spec["id"], name)
     files = [f for f in sorted((APP / "board").glob("*.json")) if f.stem != "index"]
     if not files:
         sys.exit("board_best: site/board/ holds no weapon file — wrong source")

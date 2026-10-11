@@ -41,7 +41,7 @@ primary: true
 # distinguishes it from a future second ruler comes FIRST (single target, as
 # against a multi-target benchmark), then the target, then the two measurement
 # terms. Truncation therefore eats the least identifying part.
-name: "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
+name: "Standard Single Target · Thrax Centurion {scene} · 180 s · KPM"
 
 # WHAT "STANDARD" CLAIMS, and it is a judgement rather than a fact — which is
 # exactly why it is written down where it can be argued with.
@@ -78,7 +78,7 @@ rules:
   # `board/benchmarks.rs` already refuses this file any weapon, mod, arcane or
   # evolution id. These lines are held to the same standard by hand: they say
   # what is done to EVERY entry, never what is done to one of them.
-  - "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds."
+  - "The target is one Thrax Centurion {scene}. The fight lasts 180 seconds."
   - "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere."
   - "Its flaws are stated rather than hidden: it carries no shield, its Overguard may sit high, and the spectral form it enters on death is switched off here."
   - "One target: damage that reaches other enemies counts for nothing here."
@@ -109,6 +109,7 @@ build:
   # the same reason every row here is scored at full Forma and every tier.
   valence: full
 
+ladder: [scene]
 scenario:
   # A single Thrax target (faction Unknown) at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated

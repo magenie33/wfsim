@@ -10,12 +10,12 @@
 # on it, and nothing in `build:` restricts a mod for that.
 id: heavy_gunner
 
-name: "Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM"
+name: "Heavy Gunner · one target · Eximus Corrupted Heavy Gunner {scene} · 180 s · KPM"
 
 standard: "One specific fight players run, measured as it is rather than as a stand-in for most play: the Eximus Corrupted Heavy Gunner of the Void Fissures, taken apart by one weapon."
 
 rules:
-  - "The target is one Eximus Corrupted Heavy Gunner at level 9999 on Steel Path. The fight lasts 180 seconds."
+  - "The target is one Eximus Corrupted Heavy Gunner {scene}. The fight lasts 180 seconds."
   - "The target is a Corrupted Heavy Gunner because it spawns in Void Fissures, it is the toughest Orokin unit, and it is one of the targets players most often test builds on. It is Orokin, so faction mods and faction bonuses read on it, and it takes Puncture and Viral at 1.5x and Radiation at 0.5x. As an Eximus it carries Overguard in front of a health pool three and a half times an ordinary Heavy Gunner's; it is armoured; its weak points are 3x on the head and 1x elsewhere."
   - "Which Eximus it is changes nothing here: no Eximus aura is applied, and no type that shields itself from weapons is used."
   - "One target: damage that reaches other enemies counts for nothing here."
@@ -37,6 +37,7 @@ build:
   exilus: optional
   valence: full
 
+ladder: [scene]
 scenario:
   enemy: corrupted_heavy_gunner
   # STATED, not left to the default — which is the same answer today
