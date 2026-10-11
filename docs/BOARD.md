@@ -711,6 +711,9 @@ questions, never a heavier client.
   touching it. A page whose
   engine lane fails to load asks `release.json` too, since two releases on, the
   worker it names is no longer served.
+  A CLIENT IS ONE THE SITE KNOWS: its id is the page's 24 hex, which simfleet,
+  a community client, also makes. Any other is handed no work and its answers
+  are not taken (`unrecognised_client`, with whom to ask); what it earned stays.
 - **A release carries a result.** An answer of an older engine stays with its
   question: a client of the new engine that reproduces its bits makes the fact
   and both are credited; one that does not starts the new engine's own count,

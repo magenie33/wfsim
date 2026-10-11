@@ -92,6 +92,12 @@ build("one"); build("old", "2020-01-01T00:00:00.000Z"); build("scored");
 const arrivals = `arrivals-${today}`;
 queue(arrivals, "one", "old", "scored");
 L.prepare("INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('scored', 'standard_single_target', 'base', 'v', 1, 'kpm', 0, 'x', 'x')").run();
+// A CLIENT WHOSE ID THE SITE DOES NOT MAKE is handed nothing, and told whom to ask.
+const stranger = "a7i8qmmcffo718dya4q5";
+const strangerAsk = await work(stranger);
+check("a client of an id the site does not make gets no work, and is told why",
+  strangerAsk.error === "unrecognised_client" && /discord\.gg/.test(strangerAsk.message) && !strangerAsk.pack, JSON.stringify(strangerAsk));
+check("...nor are its answers taken", (await answerAll("a".repeat(32), stranger, [])).error === "unrecognised_client");
 check("only the factory's secret asks", (await post(boardTasksRoute, "/api/board/ask", { batch: arrivals, rows: [] })).ok === false);
 const asked = await ask(arrivals, "one", "old", "scored");
 check("an owed row is asked for as a question, an arrival's scored row not again", asked.asked === 2 && asked.skipped === 1, JSON.stringify(asked));

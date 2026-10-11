@@ -201,7 +201,7 @@ L.prepare("UPDATE questions SET state = 'withdrawn'").run();
     body: JSON.stringify({ batch, rows: [{ identity, ruler: "standard_single_target", mode: "base" }] }) }), env, "/api/board/ask");
   await askRows(`arrivals-${day}`, "new1");
   await askRows("rescore-x", "old1");
-  const E = "e".repeat(24), F = "f".repeat(24), G = "g".repeat(24), H = "h".repeat(24);
+  const E = "e".repeat(24), F = "f".repeat(24), G = "9".repeat(24), H = "8".repeat(24);
   for (const v of [E, F, G, H]) L.prepare("INSERT OR IGNORE INTO verifiers (id, seen) VALUES (?, '2026-10-08')").run(v);
   const fresh = await shape("fresh", 0);
   const first = await work(E, "e1", 8, "203.0.113.7");

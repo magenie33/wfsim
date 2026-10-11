@@ -43,6 +43,18 @@ export const SPOT_SHARE = 0.05;
 export const PROTOCOL = 7;
 
 const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
+/// A CLIENT THE SITE KNOWS makes its id as the page does — 24 hex
+/// (69-board-work.js `verifierId`); simfleet, a community client, does too. Any
+/// other is handed no work and its answers are not taken, and is told why;
+/// what it already earned stays.
+const RECOGNISED_ID = /^[0-9a-f]{24}$/;
+const UNRECOGNISED = "这个客户端不是 WFSim 认可的客户端，已暂停派发任务。使用第三方客户端前请先联系 WFSim 作者说明情况："
+  + "QQ 群 https://qm.qq.com/q/uiXrMSTs8S 或 Discord https://discord.gg/H4BMqvYFVg 。已获得的贡献保留。"
+  + " / This client is not recognised by WFSim and receives no work. Contact the WFSim author before running a"
+  + " third-party client: QQ group https://qm.qq.com/q/uiXrMSTs8S or Discord https://discord.gg/H4BMqvYFVg."
+  + " Contribution already earned is kept.";
+export const unrecognised = (id) => (RECOGNISED_ID.test(id || "") ? null
+  : json({ ok: false, error: "unrecognised_client", message: UNRECOGNISED }, 403));
 const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
 const LEASE_ID = /^[a-f0-9]{32}$/;
 const QUESTION_ID = /^[a-f0-9]{32}$/;
@@ -129,6 +141,8 @@ async function work(request, env) {
   const { b, err } = await read(request);
   if (err) return err;
   if (!VERIFIER_ID.test(b.verifier || "") || !ENGINE_ID.test(b.engine || "")) return json({ ok: false, error: "bad request" }, 400);
+  const refused = unrecognised(b.verifier);
+  if (refused) return refused;
   const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier;
   const asked = askedOf(db, b, now);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
@@ -218,6 +232,8 @@ async function answers(request, env) {
       || !Array.isArray(b.answers) || b.answers.length > PACK_MAX) {
     return json({ ok: false, error: "bad request" }, 400);
   }
+  const refused = unrecognised(b.verifier);
+  if (refused) return refused;
   const items = new Map();
   for (const a of b.answers) {
     if (!a || !QUESTION_ID.test(a.question || "") || !METRIC_ID.test(a.metric || "")
