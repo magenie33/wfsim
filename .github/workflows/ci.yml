@@ -296,6 +296,10 @@ jobs:
         run: bash scripts/purge_orphans.sh --self-test
       - name: ...and what intake made of it reaches the library
         run: bash scripts/ship_builds.sh --self-test
+      # A REFRESH ASKS WHAT THE FACTORY HAS ROOM FOR, and a row near its fifteen
+      # days whatever the room: the oldest first, never more than an hour's.
+      - name: A refresh asks the oldest rows the room allows, and the forced ones
+        run: python3 scripts/oldest_rows.py --self-test
       # THE WHOLE HOP, IN ONE. Each end of it has its own test and all of them
       # passed on the day `mode` was in the door's key, because no test looked at
       # what came out the far end. What a player PLACES and what the library

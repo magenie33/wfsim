@@ -3,9 +3,9 @@
 // §"Compute orders"). Every owed row — `queue` holds what is owed — is a
 // question: verb `simulate`, request `{ record, ruler, mode }`, asked by
 // `new_build` (a new build's row, someone waiting to see it ranked), `refresh`
-// (a row measured three days ago) or `sweep` (a rescore's, or an older build's
-// first pass on a ruler), whose deadlines are worker/factory.js
-// `DEADLINE_MS`. What a row is FOR stays here: an agreed number written to
+// (a row measured three days ago or more, due when it is fifteen) or `sweep` (a
+// rescore's, or an older build's first pass on a ruler), whose deadlines are
+// worker/factory.js `DEADLINE_MS` and `REFRESH_WITHIN_MS`. What a row is FOR stays here: an agreed number written to
 // `scores` and the row no longer owed.
 //
 //   POST /api/board/ask    { batch, rows: [{ identity, ruler, mode }] }  → { asked, skipped }   (factory token)
@@ -13,7 +13,7 @@
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
 import { iso } from "./instant.js";
 import { witnessOf } from "./tasks.js";
-import { facts, DEADLINE_MS, VERBS, factoryAuthed } from "./factory.js";
+import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, VERBS, factoryAuthed } from "./factory.js";
 import { servedRelease } from "./verify.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -78,6 +78,20 @@ export const BOARD_PRODUCERS = { new_build: boardProducer, refresh: boardProduce
 /// THE BOARD'S KINDS as an SQL list, for a query over its demands.
 export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ")})`;
 
+/// A SCENE'S RULERS STILL FILLING, for the watchdog: per cell ruler (an id with
+/// `__`, docs/BOARD.md §"A ruler's ladder"), the rows measured and the rows
+/// still owed. Two scans of the tables, so read only when it is to be said.
+export async function cellsFilling(env) {
+  const db = env.LIBRARY;
+  const { results: owed } = await db.prepare(
+    `SELECT ruler, count(DISTINCT build_id || '|' || mode) AS owed FROM queue WHERE instr(ruler, '__') > 0 GROUP BY ruler`).all();
+  if (!owed.length) return [];
+  const { results: measured } = await db.prepare(
+    "SELECT ruler, count(*) AS measured FROM scores WHERE instr(ruler, '__') > 0 GROUP BY ruler").all();
+  const m = new Map(measured.map((r) => [r.ruler, r.measured]));
+  return owed.map((r) => ({ ruler: r.ruler, measured: m.get(r.ruler) || 0, owed: r.owed }));
+}
+
 /// THE TASK THE FACTORY LEASED, in the shape the page fights a board row in.
 export function boardWork(leased) {
   const d = leased.demands[0];
@@ -104,11 +118,16 @@ const producerOf = (batch, builtAt, ruler) => {
   return day && builtAt && builtAt.slice(0, 10) >= iso(Date.parse(day) - 86_400_000).slice(0, 10) ? "new_build" : "sweep";
 };
 
-/// ONE ROW'S ASK: the question its record and ruler make, by its producer.
-function rowAsk(batch, r, record, builtAt) {
+/// ONE ROW'S ASK: the question its record and ruler make, by its producer. A
+/// REFRESH IS DUE BY ITS ROW'S AGE, `REFRESH_WITHIN_MS` after its fact finished,
+/// however late it was asked: the bound is on how stale a row gets, not on how
+/// long an ask waits.
+export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
   const producer = producerOf(batch, builtAt, r.ruler);
+  const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
+  const due_in_ms = Number.isFinite(measured) ? measured + REFRESH_WITHIN_MS - now : DEADLINE_MS[producer];
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
-    request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms: DEADLINE_MS[producer],
+    request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,
     payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch } };
 }
 
@@ -128,12 +147,13 @@ async function ask(request, env) {
   // leaves exactly that. A few hundred a call, until none is left.
   if (b.backfill === true) {
     const { results } = await db.prepare(
-      `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at
+      `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at,
+              (SELECT s.finished_at FROM scores s WHERE s.identity = q.build_id AND s.ruler = q.ruler AND s.mode = q.mode) AS measured
          FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
         WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                             AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live')
         GROUP BY q.build_id, q.ruler, q.mode LIMIT ?`).bind(ASK_MAX).all();
-    await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at)), engine, now);
+    await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now)), engine, now);
     return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });
   }
   const rows = Array.isArray(b.rows) ? b.rows.filter((r) => r && typeof r.identity === "string" && typeof r.ruler === "string" && typeof r.mode === "string") : [];
@@ -143,16 +163,18 @@ async function ask(request, env) {
   const buildOf = new Map(builds.map((x) => [x.id, x]));
   // AN ARRIVAL'S ROW THE BOARD ALREADY SCORED is not asked: a resubmission the
   // page did not recognise is the same build, and asking again fought it again.
-  const scored = new Set();
-  if (b.batch.startsWith("arrivals-")) {
+  // A REFRESH'S ROW is due by when its fact finished.
+  const scored = new Map();
+  if (b.batch.startsWith("arrivals-") || b.batch.startsWith("refresh-")) {
     const { results: had } = await db.prepare(
-      `SELECT s.identity, s.ruler, s.mode FROM scores s JOIN json_each(?) j
+      `SELECT s.identity, s.ruler, s.mode, s.finished_at FROM scores s JOIN json_each(?) j
           ON s.identity = json_extract(j.value, '$.identity') AND s.ruler = json_extract(j.value, '$.ruler') AND s.mode = json_extract(j.value, '$.mode')`)
       .bind(JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
-    for (const x of had) scored.add(rowRef(x.identity, x.ruler, x.mode));
+    for (const x of had) scored.set(rowRef(x.identity, x.ruler, x.mode), x.finished_at);
   }
-  const asks = rows.filter((r) => buildOf.has(r.identity) && !scored.has(rowRef(r.identity, r.ruler, r.mode)))
-    .map((r) => rowAsk(b.batch, r, buildOf.get(r.identity).record, buildOf.get(r.identity).at));
+  const arrivals = b.batch.startsWith("arrivals-");
+  const asks = rows.filter((r) => buildOf.has(r.identity) && !(arrivals && scored.has(rowRef(r.identity, r.ruler, r.mode))))
+    .map((r) => rowAsk(b.batch, r, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(rowRef(r.identity, r.ruler, r.mode)), now));
   await facts().demandAll(env, asks, engine, now);
   return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
 }

@@ -24,9 +24,10 @@
 # work, paid in a size that fits beside everything else.
 #
 # AND EVERY HOUR IT REFRESHES. A board is a claim about what the code computes
-# TODAY, so a row measured three days ago is asked for again, due four days
-# later (worker/factory.js `DEADLINE_MS`): the volunteers take it when nothing
-# due sooner is open, and the official machines when it is past due.
+# TODAY, so a row measured three days ago may be asked for again, and is due
+# when it is fifteen days old (worker/factory.js `REFRESH_WITHIN_MS`): the
+# volunteers take it when nothing due sooner is open, and the official
+# machines when it is past due.
 name: queue
 
 on:
@@ -163,8 +164,11 @@ jobs:
       # THE DAY, which is what makes its rows the `refresh` producer's.
       #
       # THE OLDEST FIRST, `REFRESH_PER_HOUR` an hour: an hour's asks have to
-      # fit the job's clock, and what is left is asked the next hour. A row's
-      # four days count from when it is asked.
+      # fit the job's clock, and what is left is asked the next hour. AND ONLY
+      # WHILE THE FACTORY HAS ROOM: live refresh asks stay under
+      # `REFRESH_LIVE_CAP`, so a fleet with spare time refreshes a row at three
+      # days and a busy one lets it wait — except a row `REFRESH_FORCE_DAYS`
+      # old, asked whatever the room, three days before it is due.
       #
       # AND IT OBEYS THE ENTRY LINE (`--gate`): a build nothing would publish
       # is not re-measured every few days for the life of the board.
@@ -175,6 +179,8 @@ jobs:
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           REFRESH_PER_HOUR: 10000
+          REFRESH_LIVE_CAP: 40000
+          REFRESH_FORCE_DAYS: 12
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
@@ -185,7 +191,12 @@ jobs:
             ./target/release/wfsim-board "$id"               --dry-run               --gate               --facts-in facts-known.ndjson               --queue-in queue.ndjson               --queue-older "$older"               --queue-missing "refresh-$id.ndjson"               < library.json > /dev/null
             cat "refresh-$id.ndjson" >> refresh-all.ndjson
           done
-          python3 scripts/oldest_rows.py facts-known.ndjson refresh-all.ndjson "$REFRESH_PER_HOUR" > refresh.ndjson
+          live=$(curl -s --connect-timeout 15 --max-time 120 -X POST             -H "Authorization: Bearer $CF_TOKEN" -H "content-type: application/json"             --data-binary '{"sql":"SELECT count(*) AS n FROM demands WHERE producer = '"'"'refresh'"'"' AND state = '"'"'live'"'"'"}'             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/d1/database/$CF_D1_DATABASE/query"             | jq -r '.result[0].results[0].n // empty') || live=""
+          # NOT KNOWING THE ROOM ASKS ONLY WHAT IS FORCED: a flood is the worse mistake.
+          room=$(( ${REFRESH_LIVE_CAP} - ${live:-$REFRESH_LIVE_CAP} ))
+          force=$(date -u -d "$REFRESH_FORCE_DAYS days ago" +'%Y-%m-%dT%H:%M:%S.000Z')
+          echo "refresh: ${live:-?} live of $REFRESH_LIVE_CAP, room $room, forced before $force"
+          python3 scripts/oldest_rows.py facts-known.ndjson refresh-all.ndjson "$REFRESH_PER_HOUR" "$room" "$force" > refresh.ndjson
           if [ ! -s refresh.ndjson ]; then
             echo "::notice::refresh: nothing measured before $older"
             exit 0

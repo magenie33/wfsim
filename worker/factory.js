@@ -4,23 +4,27 @@
 // producer here and in its own file; worker/tasks.js does not change.
 import { factory, canon, nearAnswer } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
-import { BOARD_PRODUCERS, boardWork, boardPackTask } from "./board_tasks.js";
-import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING } from "./verify.js";
+import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board_tasks.js";
+import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } from "./verify.js";
 import { cloudTell } from "./cloud.js";
 import { iso } from "./instant.js";
 
 /// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY. Hand-outs go
 /// earliest deadline first, and a question past its deadline is the official
 /// machines' too, whatever its kind. A kind is only when it is asked and this;
-/// a refresh asked at three days old, due four days later, is handed out only
-/// when nothing due sooner is open, so idle volunteers keep the board fresh.
+/// a refresh is due when its row turns `REFRESH_WITHIN_MS` old, not a span after
+/// its ask, so idle volunteers take it early and a busy fleet lets it wait.
 export const DEADLINE_MS = {
   chat: 2 * 60_000,
   new_build: 6 * 3_600_000,
   survey: 86_400_000,
-  refresh: 4 * 86_400_000,
+  refresh: 12 * 86_400_000,
   sweep: 7 * 86_400_000,
 };
+/// THE OLDEST A BOARD ROW MAY GROW: its refresh is due when its fact is this old
+/// (`.github/workflows/queue.yml` asks from three days on). `DEADLINE_MS.refresh`
+/// is only for a row with no fact time.
+export const REFRESH_WITHIN_MS = 15 * 86_400_000;
 
 /// HOW A COMPUTER ANSWERS. The canonical answer is all two equal answers share —
 /// and so all of it must be deterministic under every split of the work
@@ -130,14 +134,22 @@ const RETELL_MS = 6 * 3_600_000;
 
 /// WHAT IS WRONG IS SAID TO THE OWNER (worker/tasks.js `audit`), once a cause
 /// until it has stood for `RETELL_MS`: a queue that stops moving is found by
-/// this, within the hour, and not by a player asking why.
+/// this, within the hour, and not by a player asking why. A SCENE STILL FILLING
+/// is said on the same clock, its progress read only when it is to be said.
 export async function watchdog(env, now = Date.now()) {
   if (!env.LIBRARY) return [];
-  const found = await facts().audit(env, now);
   const db = env.LIBRARY;
+  const stale = async (kind) => {
+    const told = await db.prepare("SELECT told_at FROM watchdog_told WHERE cause = ?").bind(kind).first();
+    return !told || Date.parse(told.told_at) <= now - RETELL_MS;
+  };
+  const found = await facts().audit(env, now, (await servedRelease(env)).engine);
+  if (await stale("cells_filling")) {
+    const cells = await cellsFilling(env);
+    if (cells.length) found.push({ kind: "cells_filling", cells });
+  }
   for (const f of found) {
-    const told = await db.prepare("SELECT told_at FROM watchdog_told WHERE cause = ?").bind(f.kind).first();
-    if (told && Date.parse(told.told_at) > now - RETELL_MS) continue;
+    if (!(await stale(f.kind))) continue;
     if (await cloudTell(env, `WFSim compute watchdog: ${f.kind} ${JSON.stringify(f)}`)) {
       await db.prepare(`INSERT INTO watchdog_told (cause, told_at) VALUES (?, ?)
                         ON CONFLICT (cause) DO UPDATE SET told_at = excluded.told_at`).bind(f.kind, iso(now)).run();
