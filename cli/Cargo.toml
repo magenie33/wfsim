@@ -13,6 +13,11 @@ path = "src/main.rs"
 
 # The board scorer. Its own bin because it is a BUILD step, not a user tool:
 # the scheduled job pipes submissions through it and commits the result.
+# A board row's gas, work and score, natively — the other side of check_gas.
+[[bin]]
+name = "wfsim-gas"
+path = "src/bin/wfsim-gas.rs"
+
 [[bin]]
 name = "wfsim-board"
 path = "src/bin/wfsim-board.rs"
