@@ -69,7 +69,8 @@ attack:
   # an independent damage multiplier on this weapon and nothing else.
   multishot_adds_damage: true
   pellet_elements: [blast, corrosive, gas, magnetic, radiation, viral]
-  ammo_cost: 1
+  # A ROUND A MISSILE: a pull spends 6, so the 36 magazine is six volleys (M112).
+  ammo_cost: 6
   crit_chance: 0.10
   crit_multiplier: 2.9
   status_chance: 0.349

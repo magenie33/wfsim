@@ -178,3 +178,14 @@ fn the_volley_is_six_instances_and_six_elements() {
     );
     assert!(s.mean_procs > 0.0, "a 34.9% status volley procs");
 }
+
+/// A PULL SPENDS SIX ROUNDS, one a missile (M112), so the 36 magazine is six
+/// volleys. At 1.5 a second and a 2.0 s reload a magazine is a ~6 s cycle and
+/// 30 s holds about 30 pulls; a cost of 1 would fire ~45, one reload in all.
+#[test]
+fn a_volley_spends_six_rounds() {
+    let p = arbucep(&[]);
+    assert_eq!(p.ammo_cost, 6.0);
+    let s = monte_carlo(&p, 10, 3);
+    assert!(s.mean_shots > 27.0 && s.mean_shots < 33.0, "six volleys a magazine: {} pulls in 30 s", s.mean_shots);
+}
