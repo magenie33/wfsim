@@ -682,7 +682,7 @@ questions, never a heavier client.
   RECORD, a ruler and a mode, never a number — in the factory's order, as a
   PACK: the rows of about a minute of that computer's work (`PACK_MS`, by the
   `pace_ms` its page reports; `PACK_FIRST` before it has one, at most
-  `PACK_MAX`), under one lease twice the pack's length (`packLeaseMs`). The
+  `PACK_MAX`), under one lease of a heartbeat (`PACK_LEASE_MS`). The
   DATABASE IS ASKED ONCE A PACK, not once a row: everything an ask writes and
   reads before choosing is one batch, the pack one statement
   (`worker/tasks.js` `nextPack`), and the answers come back together

@@ -12,7 +12,8 @@
 // (scripts/order_credit.mjs), the queue's ask (scripts/ship_queue.sh) and the
 // orders open before the factory (`/api/board/adopt`) are held here too.
 //   node scripts/check_board_verify.mjs
-import { verifyRoute, LEASE_MS, PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, packLeaseMs } from "../worker/verify.js";
+import { verifyRoute, LEASE_MS, PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, PACK_LEASE_MS } from "../worker/verify.js";
+import { RENEW_MS } from "../worker/tasks.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { officialRoute } from "../worker/factory.js";
 import { coolDownMs } from "../worker/tasks.js";
@@ -61,8 +62,8 @@ const work = (v, { ip = "", engine = "e1", protocol = PROTOCOL, consent = YES, a
 /// THE FIRST ROW OF A PACK with the pack's lease — what its page computes first.
 const task = (r) => (r.pack ? { ...r.pack.tasks[0], lease: r.pack.lease } : r.work);
 const none = (r) => !r.work && !r.pack;
-const answerAll = (lease, v, rows, { engine = "e1", ip = "", done = true } = {}) =>
-  post(verifyRoute, "/api/board/answers", { lease, verifier: v, engine, done, answers: rows }, ip ? { "cf-connecting-ip": ip } : {});
+const answerAll = (lease, v, rows, { engine = "e1", ip = "", done = true, keep } = {}) =>
+  post(verifyRoute, "/api/board/answers", { lease, verifier: v, engine, done, answers: rows, ...(keep ? { keep } : {}) }, ip ? { "cf-connecting-ip": ip } : {});
 const row = (t, { score = SCORE, metric = "kpm", work: wk = WORK, extra = {} } = {}) =>
   ({ question: t.question, score, metric, work: wk, compute_ms: 1000, ...extra });
 const answer = (t, v, { engine = "e1", ip = "", ...o } = {}) => answerAll(t.lease, v, [row(t, o)], { engine, ip });
@@ -278,13 +279,13 @@ console.log("\npacks");
   check("a pack is a minute of the computer's pace, a fair share of what is open, PACK_FIRST before its pace is known",
     packSize(20_000, 4000, 10) === 3 && packSize(1000, 4000, 10) === PACK_MAX && packSize(null, 4000, 10) === PACK_FIRST
     && packSize(1000, 6, 7) === 1 && packSize(1000, 40, 8) === 5);
-  check("...leased twice its length, within its bounds", packLeaseMs(3, 20_000) === 5 * 60_000 && packLeaseMs(20, 60_000) === LEASE_MS
-    && packLeaseMs(3, null) === LEASE_MS);
+  check("...leased for one heartbeat, whatever its length", PACK_LEASE_MS === RENEW_MS && PACK_LEASE_MS < LEASE_MS);
   const asking = L.prepare("SELECT count(*) AS n FROM verifiers WHERE asked_at > ?").get(new Date(Date.now() - 120_000).toISOString()).n + 1;
   const p1 = await work(P, { ip: "192.0.2.60", pace: 20_000 });
   const rows = p1.pack ? p1.pack.tasks : [];
   check("a computer is handed a pack: its rows under one lease, in the factory's order",
     rows.length === packSize(20_000, 40, asking) && rows.length > 1 && new Set(rows.map((t) => t.question)).size === rows.length
+    && p1.pack.lease_ms === PACK_LEASE_MS
     && rows.every((t) => question(t.identity).lease === p1.pack.lease && question(t.identity).leased_to === P)
     // THE FIRST IN ORDER: these forty share a deadline, so no row left open ranks before the pack's last.
     && !L.prepare("SELECT 1 FROM questions WHERE state = 'open' AND lease IS NULL AND id < ?").get(rows.map((t) => t.question).sort().at(-1)),
@@ -293,8 +294,14 @@ console.log("\npacks");
   const ahead2 = await work(P, { ip: "192.0.2.60", pace: 20_000, ahead: true });
   check("as a pack ends its next is asked ahead, and no more than PACKS_HELD are held",
     PACKS_HELD === 2 && ahead1.pack && ahead1.pack.lease !== p1.pack.lease && none(ahead2), JSON.stringify(ahead2));
+  const [kept, ...rest] = ahead1.pack.tasks;
+  await answerAll(ahead1.pack.lease, P, [], { ip: "192.0.2.60", keep: kept.question });
+  check("...and one given back frees its rows at once, but the row its page will resume (`keep`)",
+    rest.length > 0 && rest.every((t) => question(t.identity).leased_to === null) && question(kept.identity).lease === ahead1.pack.lease);
+  await post(verifyRoute, "/api/board/release", { lease: ahead1.pack.lease, verifier: P, keep: kept.question });
+  const keptStill = question(kept.identity).lease === ahead1.pack.lease;
   await post(verifyRoute, "/api/board/release", { lease: ahead1.pack.lease, verifier: P });
-  check("...and one given back frees its rows at once", ahead1.pack.tasks.every((t) => question(t.identity).leased_to === null));
+  check("...as a release keeps it, and one without `keep` gives it back too", keptStill && question(kept.identity).leased_to === null);
   await answerAll(p1.pack.lease, P, rows.slice(0, 2).map((t) => row(t)), { ip: "192.0.2.60", done: false });
   check("answers sent before the pack ends are taken, and its other rows stay its own",
     rows.slice(0, 2).every((t) => question(t.identity).leased_to === null && L.prepare("SELECT 1 FROM answers WHERE question = ? AND device = ?").get(t.question, P))

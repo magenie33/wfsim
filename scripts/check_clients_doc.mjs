@@ -30,7 +30,7 @@ const KEYS = {
   pack_ms: ["PACK_MS", ["worker/verify.js"]],
   pack_first: ["PACK_FIRST", ["worker/verify.js"]],
   pack_max: ["PACK_MAX", ["worker/verify.js"]],
-  pack_lease_min_ms: ["PACK_LEASE_MIN_MS", ["worker/verify.js"]],
+  pack_lease_ms: ["PACK_LEASE_MS", ["worker/verify.js"]],
   packs_held: ["PACKS_HELD", ["worker/verify.js"]],
   renew_ms: ["RENEW_MS", ["worker/tasks.js"]],
   row_ceiling_ms: ["ROW_CEILING_MS", ["worker/tasks.js"]],
@@ -38,9 +38,16 @@ const KEYS = {
   facts_per_refusal_forgiven: ["FACTS_PER_REFUSAL_FORGIVEN", ["worker/tasks.js"]],
 };
 
+// THE FILE A NAME IS IMPORTED FROM, so a constant set from another reads through.
+function importedFrom(name, file) {
+  const m = read(file).match(new RegExp(`^import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*"\\./([^"]+)"`, "m"));
+  return m ? `${file.slice(0, file.lastIndexOf("/") + 1)}${m[1]}` : null;
+}
+
 // A constant's value as the doc writes it: a regex by its source, a set as
 // its members joined by ", ", a number as a number.
 function valueOf(name, file) {
+  if (!file) return undefined;
   const m = read(file).match(new RegExp(`^\\s*(?:export\\s+)?(?:pub\\s+)?const\\s+${name}\\b[^=]*=\\s*(.+?);\\s*(?://.*)?$`, "m"));
   if (!m) return undefined;
   const rhs = m[1].trim();
@@ -48,7 +55,7 @@ function valueOf(name, file) {
   if (re) return re[1];
   const set = rhs.match(/^new Set\(\[(.*)\]\)$/);
   const expr = (set ? set[1] : rhs).replace(/(\d)_(?=\d)/g, "$1")
-    .replace(/\b[A-Z][A-Z0-9_]+\b/g, (n) => String(valueOf(n, file)));
+    .replace(/\b[A-Z][A-Z0-9_]+\b/g, (n) => String(valueOf(n, file) ?? valueOf(n, importedFrom(n, file))));
   if (!/^[\d\s.e+\-*,()]+$/.test(expr)) return undefined;
   const v = Function(`"use strict"; return [${expr}];`)();
   return set ? v.join(", ") : v[0];

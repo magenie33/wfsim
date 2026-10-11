@@ -296,6 +296,110 @@ check("[built site] a board order fights on more than one lane when its share bu
   !fr.wasm || fr.lanes < 2 || fr.used >= 2, f);
 check("...and its score, metric and work are the single fold's to the bit", !fr.wasm || fr.same, f);
 
+// A ROW CUT SHORT RESUMES (69-board-work.js `RESUME_KEY`): the page's own loop
+// computes a row, the page goes (`pagehide`) mid-row and keeps that row back from
+// what it gives back, and the next ask renews it before anything else and folds
+// on from where it stood — the uncut row's bits. Taken since, another engine's,
+// or computing turned off, the cut is dropped. The board's endpoints are stubbed.
+const rs = await evaluate(`(async () => {
+  const out = { wasm: !!WASM };
+  if (!WASM) return JSON.stringify(out);
+  const wait = async (ok, ms) => { const end = Date.now() + ms; while (!ok()) { if (Date.now() > end) return false; await new Promise((r) => setTimeout(r, 20)); } return true; };
+  const kick = () => { if (computeWake) computeWake(); };
+  const rows = await (await fetch("/board/braton_prime.json")).json();
+  const row = rows.find((r) => r.benchmark === "standard_single_target" && (r.mode || "base") === "base" && !(r.mods || []).includes("riven"));
+  const record = { weapon: "braton_prime" };
+  for (const k of ["mods", "evolutions", "arcanes", "valence", "exilus"]) if (row[k] !== undefined) record[k] = row[k];
+  const RUNS = 600;
+  const order = await api("/api/board/order", { record, ruler: "standard_single_target", mode: "base" });
+  const request = { ...order.request, runs: RUNS };
+  const one = await api("/api/board/fold", { request, from: 0, count: RUNS });
+  const want = await api("/api/board/score", { ruler: "standard_single_target", request, acc: one.acc });
+  const realApi = api;
+  api = (p, b, x, o) => (p === "/api/board/order" ? realApi(p, b, x, o).then((r) => (r && r.ok ? { ...r, request: { ...r.request, runs: RUNS } } : r)) : realApi(p, b, x, o));
+  const T = { question: "a".repeat(32), identity: "resume-row", record, ruler: "standard_single_target", mode: "base" };
+  const L = "b".repeat(32);
+  const calls = [];
+  let handed = false, held = true;
+  const realFetch = window.fetch;
+  window.fetch = async (url, init) => {
+    const path = typeof url === "string" ? url : url.url;
+    if (!/^\\/api\\/board\\/(work|renew|answers|release)$/.test(path)) return realFetch(url, init);
+    const body = JSON.parse(init.body);
+    calls.push([path, body]);
+    const reply = (j) => new Response(JSON.stringify(j), { status: 200, headers: { "content-type": "application/json" } });
+    if (path === "/api/board/work") {
+      if (handed || body.ahead) return reply({ ok: true, work: null, pack: null });
+      handed = true;
+      return reply({ ok: true, work: null, pack: { lease: L, lease_ms: 300000, tasks: [T] } });
+    }
+    if (path === "/api/board/renew") return reply({ ok: true, held, renew_ms: 300000 });
+    return reply({ ok: true });
+  };
+  const beacons = [];
+  navigator.sendBeacon = (path, body) => { beacons.push([path, JSON.parse(String(body))]); return true; };
+  const consent = (on) => localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on, at: new Date().toISOString() }));
+  const stored = () => JSON.parse(localStorage.getItem(RESUME_KEY) || "null");
+  setCommunityShare(100); lastTouched = 0;
+  consent(true);
+  kick();
+  // CUT SHORT a few folds in, as a reload does it: the browser's pagehide.
+  out.started = await wait(() => resumeCut && resumeCut.cut.folded > 0 && resumeCut.cut.folded < RUNS / 2, 60000);
+  dispatchEvent(new Event("pagehide"));
+  const gone = beacons.find(([p]) => p === "/api/board/answers");
+  out.keep = !!gone && gone[1].lease === L && gone[1].done === true && gone[1].keep === T.question;
+  const kept = stored();
+  out.saved = !!kept && kept.engine === ENGINE_ID && kept.lease === L && kept.task.question === T.question && kept.cut.folded > 0;
+  out.cutAt = kept && kept.cut.folded;
+  out.bytes = (localStorage.getItem(RESUME_KEY) || "").length;
+  // …AND RESUMED by the next ask: renewed first, nothing asked before it, folded on to the uncut bits.
+  const mark = calls.length;
+  kick();
+  out.answered = await wait(() => calls.some(([p, b]) => p === "/api/board/answers" && b.answers.some((a) => a.question === T.question)), 120000);
+  const after = calls.slice(mark);
+  const firstRenew = after.findIndex(([p, b]) => p === "/api/board/renew" && b.question === T.question && b.lease === L);
+  const firstWork = after.findIndex(([p]) => p === "/api/board/work");
+  out.renewedFirst = firstRenew >= 0 && (firstWork < 0 || firstRenew < firstWork);
+  out.order = after.slice(0, 4).map(([p, b]) => p.slice(11) + (b.ahead ? "+ahead" : ""));
+  const a = (after.find(([p, b]) => p === "/api/board/answers" && b.answers.some((x) => x.question === T.question)) || [null, { answers: [] }])[1];
+  const got = a.answers.find((x) => x.question === T.question);
+  out.same = !!got && a.lease === L && got.score === want.score && got.metric === want.metric && got.work === want.work;
+  out.got = got && [got.score, got.metric, got.work]; out.want = [want.score, want.metric, want.work];
+  out.cleared = stored() === null;
+  // A ROW TAKEN SINCE: the renewal says so, the cut is dropped and nothing is answered.
+  const cutOf = (question, engine = ENGINE_ID) => localStorage.setItem(RESUME_KEY, JSON.stringify({ ...kept, engine, task: { ...T, question } }));
+  held = false;
+  cutOf("c".repeat(32));
+  let m = calls.length;
+  kick();
+  out.lostRenewed = await wait(() => calls.slice(m).some(([p, b]) => p === "/api/board/renew" && b.question === "c".repeat(32)), 30000);
+  await wait(() => stored() === null, 10000);
+  out.lostDropped = stored() === null && !calls.slice(m).some(([p, b]) => p === "/api/board/answers" && b.answers.some((x) => x.question === "c".repeat(32)));
+  // ANOTHER ENGINE'S FOLD is never resumed, nor renewed.
+  held = true;
+  cutOf("d".repeat(32), "0".repeat(12));
+  m = calls.length;
+  kick();
+  await wait(() => stored() === null, 30000);
+  out.engineDropped = stored() === null && !calls.slice(m).some(([p, b]) => p === "/api/board/renew" && b.question === "d".repeat(32));
+  // COMPUTING TURNED OFF drops it.
+  consent(false);
+  cutOf("e".repeat(32));
+  m = calls.length;
+  kick();
+  await wait(() => stored() === null, 30000);
+  out.offDropped = stored() === null && !calls.slice(m).some(([p, b]) => p === "/api/board/renew" && b.question === "e".repeat(32));
+  window.fetch = realFetch; api = realApi;
+  localStorage.removeItem("wfsim-compute-consent"); localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
+  return JSON.stringify(out);
+})()`);
+const rz = JSON.parse(rs);
+check("[built site] a page that goes mid-row keeps that row back from what it gives back, its fold saved with its engine",
+  !rz.wasm || (rz.started && rz.keep && rz.saved), rs);
+check("...the next ask renews it before asking for anything, and folds on to the uncut row's bits", !rz.wasm || (rz.answered && rz.renewedFirst && rz.same && rz.cleared), rs);
+check("...a row taken since is dropped unanswered, another engine's fold never renewed, and turning computing off drops it",
+  !rz.wasm || (rz.lostRenewed && rz.lostDropped && rz.engineDropped && rz.offDropped), rs);
+
 // A PAGE THE BROWSER FREEZES (69-board-work.js `computeFrozen`): what it holds
 // goes back at once, by beacon, and woken it asks for work at once and /compute
 // says the browser put it to sleep, with how to keep the site awake. Frozen and

@@ -270,7 +270,11 @@ the reader allows it; together takes its share of the device whether or not
 the reader is at it, as lanes running that share of the time, and past 100%
 with solo, while the reader computes, the two share in proportion; solo and
 together are two sliders in the menu, a slider let go sets its share, and the
-sum is said.
+sum is said. A row cut short resumes: a page that goes mid-row keeps that row back
+from what it gives back, its fold saved with its engine; the next ask renews
+it before asking for anything and folds on to the uncut row's bits; a row
+taken since is dropped unanswered, another engine's fold never renewed, and
+turning computing off drops it.
 
 ## `check_quick_fleet`
 

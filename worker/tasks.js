@@ -295,9 +295,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     ]);
     return { held: kept.results.length > 0 || before.results.length > 0 };
   }
-  async function release(env, device, lease) {
-    await env.LIBRARY.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ? AND leased_to = ?")
-      .bind(lease, device).run();
+  /// `keep` is a row the page will resume (69-board-work.js `RESUME_KEY`): left
+  /// under the lease, which runs out unless the page comes back to renew it.
+  async function release(env, device, lease, keep = null) {
+    await env.LIBRARY.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ? AND leased_to = ? AND id IS NOT ?")
+      .bind(lease, device, keep).run();
   }
   /// EVERYTHING A WITNESS HOLDS goes back: one that asks for work again is
   /// working on nothing (worker/verify.js, asking ahead).
@@ -326,8 +328,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// A PACK'S ANSWERS, together: those whose question the pack still holds are
   /// recorded and settled in a few round trips, whatever their number; `done`
-  /// gives back the rest of the pack. Returns the questions taken.
-  async function answerPack(env, w, { lease, engine, answers, done = false }, now = Date.now()) {
+  /// gives back the rest of the pack but `keep`. Returns the questions taken.
+  async function answerPack(env, w, { lease, engine, answers, done = false, keep = null }, now = Date.now()) {
     const db = env.LIBRARY;
     const { results: held } = await db.prepare(
       `SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?4))
@@ -336,7 +338,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const byId = new Map(held.map((q) => [q.id, q]));
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
     if (items.length) await recordMany(env, w, items, now);
-    if (done) await release(env, w.device, lease);
+    if (done) await release(env, w.device, lease, keep);
     return { taken: items.map((x) => x.q.id) };
   }
 

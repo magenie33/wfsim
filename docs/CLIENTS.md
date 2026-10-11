@@ -25,7 +25,7 @@ lease_ms: 1800000
 pack_ms: 60000
 pack_first: 3
 pack_max: 20
-pack_lease_min_ms: 300000
+pack_lease_ms: 300000
 packs_held: 2
 renew_ms: 300000
 row_ceiling_ms: 7200000
@@ -134,10 +134,10 @@ score, metric, work, compute_ms?, counts?, lanes? }`.
   holds 1 pack and fewer than `PACKS_HELD`, and never gets a question someone
   waits on.
 - **PACK SIZE** is `round(PACK_MS / pace_ms)` (`PACK_FIRST` without a pace),
-  capped by `PACK_MAX` and by open rows over computers asking; lease
-  `max(PACK_LEASE_MIN_MS, 2 · n · pace_ms)` up to `LEASE_MS`.
+  capped by `PACK_MAX` and by open rows over computers asking; leased for
+  `PACK_LEASE_MS` whatever its size, every row kept by renewing it.
 - **ANSWERS** go together, `POST /api/board/answers` (body ≤ 32 768 characters,
-  ≤ `PACK_MAX` items) `{ lease, verifier, engine, done?, answers: [{ question,
+  ≤ `PACK_MAX` items) `{ lease, verifier, engine, done?, keep?, answers: [{ question,
   score, metric, work, compute_ms?, counts?, lanes? }] }`: `score` finite ≥ 0,
   `metric` `^[a-z_]{1,24}$`, `work` a safe integer ≥ 0, `counts` up to 32
   `^[a-z_]{1,32}$` keys of safe integers. The page sends every 30 s and as the
@@ -154,9 +154,14 @@ score, metric, work, compute_ms?, counts?, lanes? }`.
   may take the row too; the holder computing longest stays as the one before,
   its renewals and its answer still counted, and the first answer settles it.
 - **GIVE BACK, DON'T LAPSE.** A client that stops sends its pack's answers with
-  `done: true`, or `POST /api/board/release { lease, verifier }`; a riven gain
-  goes back with `POST /api/appraise/<code>/renew { lease, verifier,
+  `done: true`, or `POST /api/board/release { lease, verifier, keep? }`; a riven
+  gain goes back with `POST /api/appraise/<code>/renew { lease, verifier,
   release: true }`.
+- **A ROW CUT SHORT MAY RESUME.** `keep: question` on `done` or `/release`
+  leaves that row under the lease while the rest go back. The client keeps its
+  fold (`acc`, the runs folded) with the engine id, and before any plain ask —
+  which gives back everything the id holds — renews the row and folds on from
+  the next run in run order; `held: false` or another engine drops it.
 - **A RIVEN GAIN** is renewed every 2 min with the same door without `release`
   (`held: false` stops it) and answered with `POST /api/appraise/<code>/result
   { build, lease, verifier, engine, score, work, compute_ms?, counts?, lanes? }`.

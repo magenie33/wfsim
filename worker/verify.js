@@ -10,8 +10,8 @@
 //        → { pack: { lease, lease_ms, tasks: [{ question, identity, record, ruler, mode }] } | null, work: null }
 //        — or, for a question that goes alone, `work: { kind: "riven_gain", lease, code, weapon, ruler, request, context }`
 //        (worker/appraise.js §"Volunteer work"), `pack: null`.
-//   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done? } → { ok }
-//   POST /api/board/release { lease, verifier }                                     → { ok }
+//   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done?, keep? } → { ok }
+//   POST /api/board/release { lease, verifier, keep? }                              → { ok }
 //   POST /api/board/renew   { lease, verifier, question }                           → { ok, held, renew_ms }
 //   …and PROTOCOL 6, the one before (`PROTOCOLS_SERVED`): `/work` hands a pack of one
 //   as `work: { lease, identity, record, ruler, mode }`, answered by
@@ -133,10 +133,10 @@ export const PACK_MS = 60_000;
 export const PACK_MAX = 20;
 /// …A COMPUTER WHOSE PACE IS NOT KNOWN YET is handed this many.
 export const PACK_FIRST = 3;
-/// A PACK IS LEASED TWICE ITS EXPECTED LENGTH, within these bounds, so a page
-/// that vanished without a word holds its rows minutes, not half an hour; a
-/// row that runs longer is renewed while it runs (`renew`), never cut off.
-export const PACK_LEASE_MIN_MS = 5 * 60_000;
+/// A PACK IS LEASED FOR ONE HEARTBEAT, whatever its length: the row being
+/// computed is renewed while it runs (`renew`) and a row not started yet before
+/// it starts, so a page that vanished without a word holds its rows minutes.
+export const PACK_LEASE_MS = RENEW_MS;
 /// HOW MANY PACKS A CLIENT HOLDS AT MOST: the one it computes and the next,
 /// asked as this one ends (`ahead`), so no core waits on a round trip.
 export const PACKS_HELD = 2;
@@ -148,7 +148,6 @@ export function packSize(pace_ms, open, asking) {
   const byPace = pace_ms ? Math.round(PACK_MS / pace_ms) : PACK_FIRST;
   return Math.max(1, Math.min(PACK_MAX, byPace, Math.floor(open / Math.max(1, asking))));
 }
-export const packLeaseMs = (n, pace_ms) => (pace_ms ? Math.min(LEASE_MS, Math.max(PACK_LEASE_MIN_MS, 2 * n * pace_ms)) : LEASE_MS);
 
 /// THE FACTORY'S NEXT WORK FOR THIS CLIENT — a pack of rows, or one question that
 /// goes alone — never the number to agree with. Everything the ask writes and
@@ -225,7 +224,7 @@ async function work(request, env) {
   // the table is never read while work is plentiful.
   const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(PACK_MS / pace) : PACK_FIRST);
   if (short && throttled(await fairTable(request, env, engine, now), accountOf(who.owner, id))) return none;
-  const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : packLeaseMs(n, pace);
+  const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : PACK_LEASE_MS;
   const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1 }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
@@ -280,7 +279,7 @@ async function answers(request, env) {
   }
   const who = await witnessOf(env, b.verifier);
   await facts().answerPack(env, { device: b.verifier, owner: who.owner, net: await netOf(request, env) },
-    { lease: b.lease, engine, answers: [...items.values()], done: b.done === true });
+    { lease: b.lease, engine, answers: [...items.values()], done: b.done === true, keep: QUESTION_ID.test(b.keep || "") ? b.keep : null });
   return json({ ok: true });
 }
 /// A full pack's answers, each about three hundred bytes.
@@ -319,7 +318,7 @@ async function release(request, env) {
   const { b, err } = await read(request);
   if (err) return err;
   if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "")) return json({ ok: false, error: "bad request" }, 400);
-  await facts().release(env, b.verifier, b.lease);
+  await facts().release(env, b.verifier, b.lease, QUESTION_ID.test(b.keep || "") ? b.keep : null);
   return json({ ok: true });
 }
 
