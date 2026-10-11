@@ -37,6 +37,7 @@ import io
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
+import payload_manifest  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -71,9 +72,9 @@ def updatekit(*args: str) -> None:
 def source_zip() -> bytes:
     """The repository as AGPL requires it, minus what is generated.
 
-    `site/` is a build product of this very tree and 67 MB of it; shipping it
-    as "source" would be both wrong and enormous. Everything needed to rebuild
-    it is here.
+    `site/` and `desktop/payload/` are build products of this very tree, 80 MB
+    of them; shipping them as "source" would be both wrong and enormous.
+    Everything needed to rebuild them is here.
     """
     tracked = subprocess.run(
         ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True
@@ -82,7 +83,7 @@ def source_zip() -> bytes:
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for rel in tracked:
             rel = rel.strip()
-            if not rel or rel.startswith("site/") or rel.startswith("vendor/"):
+            if not rel or rel.startswith(("site/", "vendor/", "desktop/payload/")):
                 continue
             p = ROOT / rel
             if p.is_file():
@@ -121,7 +122,7 @@ def main() -> None:
         if key in have:
             kept += 1
             continue
-        body = (SITE / f["p"]).read_bytes()
+        body = payload_manifest.source(f["p"]).read_bytes()
         if hashlib.sha256(body).hexdigest() != f["h"]:
             sys.exit(f"{f['p']} does not match the manifest — rebuild the shell")
         if not dry:

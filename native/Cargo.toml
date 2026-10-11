@@ -1,0 +1,17 @@
+[package]
+name = "wfsim-native"
+description = "wfsim as a native library for the desktop shell: the wasm module's api door over a C ABI, the same webapi behind it (docs/DESKTOP.md)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wfsim-webapi = { path = "../webapi" }
+# THE LIBRARY'S OWN ALLOCATOR. Windows' process heap made a board row 1.12x the
+# wasm's speed, this 1.23x (20 rows); an allocator moves no bit of an answer.
+mimalloc = { version = "0.1", default-features = false }
