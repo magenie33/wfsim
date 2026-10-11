@@ -600,8 +600,9 @@ def quote_attr(path: str) -> str:
 
 
 # What a number is computed from, for `engine_id`: the code that computes it
-# and the data it reads — less the data no number reads.
-ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "data")
+# and the data it reads — less the data no number reads. The gas macro sets
+# the weights work is priced by, so it is the engine too.
+ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "tools/gas-macro", "data")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
                       "data/assets.yaml", "data/notes.yaml", "data/README.md")
 
