@@ -102,7 +102,7 @@ is `work_per_point` work.
   `/pkg/wfsim_wasm_bg.<wasm>.wasm`, `<wasm>` the first 12 hex of the module's
   SHA-256. The module exports `api(path, body)`, JSON text in and out.
 - `engine` is `engine_id()` in scripts/build_site_app.py: SHA-256 over
-  `engine/src`, `webapi/src`, `wasm/src`, `tools/gas-macro`, `data` (less
+  `engine/src`, `webapi/src`, `wasm/src`, `native/src`, `tools/gas-macro`, `data` (less
   `ENGINE_SOURCES_NOT`) and `Cargo.lock`, CRLF normalised, first 12 hex. A
   native build is of the commit `/release.json` names (`commit`), unmodified,
   built without `WFSIM_GAS_OFF` (which turns the meter off), and its engine id
@@ -213,7 +213,9 @@ simulation runs on a worker fleet").
 - **NATIVE OR WASM, THE SAME BITS.** The meter's weights are counted from the
   source, so a native build of the served commit counts what the wasm counts;
   `scripts/check_gas.mjs` holds native and wasm to the same gas, work and score
-  however the runs are cut.
+  however the runs are cut. The engine's transcendentals are the pure-Rust
+  `libm` crate on every target (`rules::math`), never the platform's maths
+  library, so a native build on any OS computes the wasm's last bit.
 
 ## Checks on a client
 
@@ -258,7 +260,8 @@ simulation runs on a worker fleet").
    counts.gas }` equals the site's wasm's, and `work` equals
    `floor(counts.gas · 50000 / 10^6) + request.runs · 400000`.
 8. The same row cut into one-run pieces, seven-run pieces and pieces asked last
-   first gives the same bits.
+   first gives the same bits, and so does the first row fought again after all
+   the others in the same process.
 
 **Reproducing the vectors.** The rows are inputs; their expected bits are
 whatever the served engine gives, so they are produced, not stored:

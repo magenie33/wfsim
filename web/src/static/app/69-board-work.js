@@ -30,8 +30,12 @@ const PIECE_MS = 250;
 /// A lane past `communityLanes()` — the share was lowered — takes no new piece.
 /// `from` is a fold cut short (`RESUME_KEY`): `{ acc, folded, spent }`, folded on
 /// from run `folded`; `onPiece` is handed the same after every fold.
+/// IN THE DESKTOP CLIENT THE CALLS GO NATIVE once proven (82-desktop.js
+/// `nativeBoardReady`), the same pieces in the same order; a native call that
+/// fails is asked of the lane's wasm instead, and the session stays there.
 async function measureRow(request, ruler, live, onPiece = () => {}, from = null) {
   const runs = Number(request.runs) || 0;
+  const native = await nativeBoardReady();
   const ls = await boardLanes(communityLanes());
   let cursor = from ? from.folded : 0, est = null, failed = false, spent = from ? from.spent : 0, folded = cursor;
   const ready = new Map();
@@ -40,6 +44,11 @@ async function measureRow(request, ruler, live, onPiece = () => {}, from = null)
   // ONE CALL ON A LANE, asked again on a fresh worker when a Stop or a lost
   // worker took it: the range is the same, so the answer is too.
   const ask = async (k, path, body) => {
+    if (native && !nativeOff) {
+      if (!live()) return null;
+      const r = await nativeApi(path, body);
+      if (r) return r.ok ? r : null;
+    }
     for (let tries = 0; tries < 3; tries++) {
       if (!live()) return null;
       const r = await boardLaneAt(k).call(path, body, null, true);

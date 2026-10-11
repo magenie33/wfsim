@@ -16,21 +16,34 @@ is what a browser tab cannot give — content already on disk, a profile of its
 own, and computing that no browser puts to sleep. A feature only the client
 has, or one only the browser has, is a debt both copies then carry.
 
-**IT COMPUTES WITH THE SAME WASM, NEVER A NATIVE ENGINE**, and speed does not
-buy that back. A native build is perhaps 20–50% faster, but two engines are two
-answers: `exp`/`pow` from the platform's maths library need not agree with
-wasm's to the last bit, and the board's verification and `one_fight`'s "a moved
-answer is a bug" both rest on one binary computing one number. The same answer
-everywhere is worth more than the speed.
+**THE SAME ANSWER EVERYWHERE, AND A NATIVE ENGINE ONLY ON THOSE TERMS.** The
+board's verification and `one_fight`'s "a moved answer is a bug" rest on one
+source computing one number, and that is worth more than any speed. So the
+client computes the board's rows natively — the library the release carries,
+faster than the wasm — only because both are one answer:
+
+- **by construction**: every transcendental in the engine is `rules::math`, the
+  pure-Rust `libm` on every target, so neither the platform's maths library nor
+  compiler-builtins decides a last bit; `check_gas` refuses a direct call;
+- **by proof**: `check_gas` holds native and wasm to the same gas, work and
+  score on every commit, and the page proves the library against its own wasm
+  before using it (`nativeBoardReady`, `82-desktop.js`) — the rows of
+  `tests/gas/rows.json`, a tenth of their runs, bit for bit. A difference, an
+  error, or a library of another engine id, and the session computes on wasm.
+
+Everything else — the simulator, the optimizer, a riven gain — runs on the wasm
+in the page.
 
 ## Shape
 
 ```
 desktop/                     an INDEPENDENT cargo workspace — it depends on
   build.rs                   nothing in engine/, so the main CI never compiles
-  src/                       Tauri and the shell has no reason to change when
-    main.rs                  the engine does
+  payload/                   Tauri and the shell has no reason to change when
+  src/                       the engine does; `payload/` is generated content
+    main.rs                  (docs/DISTRIBUTION.md)
     layout.rs
+    native.rs                loads the native engine, calls it on a pool
     payload.rs
     protocol.rs
     update.rs
@@ -39,6 +52,7 @@ desktop/                     an INDEPENDENT cargo workspace — it depends on
   next\                      what the updater is assembling
   prev\                      the version `current` replaced; the way back
   boot.json                  consecutive launches that never rendered
+  native/                    the native engine, copied out of `current/`
 ```
 
 The window is a Tauri 2 webview pointed at a **custom protocol** that reads
@@ -47,8 +61,9 @@ firewall prompt on every install. `protocol.rs` serves files with
 `Cache-Control: no-store` — `index.html` and `app.js` keep their names across a
 swap, so the webview would happily serve its own cached copy of the old one.
 
-**The site's api reaches through the shell.** Every engine call is answered by
-the wasm in the page, so a request reaching `/api/` is the SITE — board,
+**The site's api reaches through the shell.** Every engine call is answered in
+the page — by the wasm, or by the native library through the `engine` command —
+so a request reaching `/api/` is the SITE — board,
 account, sync, the extension script — and `protocol::proxy` forwards all of it
 to `wfsim.app`. Without it the SPA fallback answers `/api/account` with
 `index.html`, and the page says accounts are not available here. The shell, not
@@ -58,6 +73,19 @@ the webview, keeps the site's cookies (`session.rs`, `session.json` beside
 provider's redirect back to `wfsim.app` is caught by `on_navigation` and
 replayed through the proxy, so the session lands in the shell.
 
+**THE NATIVE ENGINE IS CONTENT, NOT SHELL.** `wfsim-native` (`native/`, a
+cdylib over `webapi::route_text`, the wasm `api`'s own door) ships in the
+release as `native/wfsim_engine.<hash>.dll` beside `native/engine.json`, which
+names it, its engine id and its SHA-256, so an engine change reaches every
+client as a file swap. The shell holds it by two C functions (`wfsim_api`,
+`wfsim_free`) and nothing else, so it still compiles nothing of the engine.
+`native.rs` loads it from a hashed copy under the data root, never from
+`current/`, which every update renames and a mapped library would pin; refuses
+any engine id but the one the page asks for; and runs each `engine(path, body)`
+call on a pool of one thread per core, so the board's lanes compute in parallel
+off the window's thread. A shell without the command fails the page's proof
+and computes on wasm.
+
 Three planes travel this way and only one of them is a release; which file
 belongs to which, and why the board is not one of them, is
 docs/DISTRIBUTION.md.
@@ -66,7 +94,7 @@ docs/DISTRIBUTION.md.
 
 | | changes | how it ships | what the reader sees |
 |---|---|---|---|
-| **content** — `app.js`, `pkg/*.wasm`, `img/` | on a code change | files, swapped by two renames | a notice, then a restart |
+| **content** — `app.js`, `pkg/*.wasm`, `native/*.dll`, `img/` | on a code change | files, swapped by two renames | a notice, then a restart |
 | **live data** — the board | every hour | fetched into `live/`, beside the release | nothing |
 | **shell** — the `.exe` | rarely | one file, downloaded once | a download |
 
@@ -161,9 +189,9 @@ rather than keeping a second copy.
 
 ### Checks
 
-- `--selftest` — wasm engine, page render, SPA fallback, storage, compute
-  lanes, external links (both directions), IPC, the AGPL source offer, and the
-  update channel. Run it as `dist/WFSim.exe --reset --selftest` before
+- `--selftest` — wasm engine, the native engine proven against it, page
+  render, SPA fallback, storage, compute lanes, external links (both
+  directions), IPC, the AGPL source offer, and the update channel. Run it as `dist/WFSim.exe --reset --selftest` before
   shipping. **Both flags carry their weight**: the release binary is the one
   being downloaded and is built differently from the debug one, and `--reset`
   is what makes the run about the payload just built — `Layout::open` unpacks
