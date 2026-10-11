@@ -15,7 +15,8 @@
 import { verifyRoute, LEASE_MS, PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, PACK_LEASE_MS } from "../worker/verify.js";
 import { RENEW_MS } from "../worker/tasks.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
-import { officialRoute } from "../worker/factory.js";
+import { officialRoute, refusalsFor } from "../worker/factory.js";
+refusalsFor(true);
 import { coolDownMs } from "../worker/tasks.js";
 import { tell } from "./order_credit.mjs";
 import { DatabaseSync } from "node:sqlite";

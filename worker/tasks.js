@@ -91,7 +91,7 @@ export async function witnessOf(env, device) {
 /// (`threshold`, a volunteer counting one and the official machines all of it),
 /// the share of facts the official machines check again (`spot`), and what
 /// happens to a witness they disprove (`on_disproved`).
-export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null }) {
+export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, refusing = true }) {
   /// THE VERBS A PACK MAY CARRY (`pack: true`): short, many, nobody waiting on one.
   const PACKABLE = JSON.stringify(Object.keys(verbs).filter((v) => verbs[v].pack));
   const producerOf = (name) => {
@@ -497,7 +497,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // ONLY A DISPUTE OR A SPOT CHECK REFUSES: an open question past its deadline
     // that they answered differently is measured again, its answer unpaid —
     // one witness against them is not yet a witness found lying.
-    if (!odd && (q.state === "disputed" || q.state === "spot")) {
+    if (refusing && !odd && (q.state === "disputed" || q.state === "spot")) {
       for (const a of wrong) await (on_disproved ? on_disproved(env, a) : refuse(env, a.device, now));
     }
     if (q.state !== "spot" || moved) await deliver(env, { ...q, canon: officialSays.canon }, now, officialSays);

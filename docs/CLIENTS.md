@@ -42,6 +42,9 @@ is `work_per_point` work.
 
 - **The server does not tell a compliant client from the page.** Any id of the
   recognised shape is served by the same code, and its answers judged the same.
+- **Refusals are paused while clients settle into a new engine** (`REFUSING`
+  in worker/verify.js): a disproved answer is unpaid and nothing more. When
+  they resume, the rule below applies.
 - **A penalty is a cool-down and credit taken back, never a permanent ban.**
   `coolDownMs(k)` is `86_400_000 · 3^k` for a client with `k` refusals before
   this one, with no ceiling. When it ends, the next ask lifts it

@@ -502,5 +502,23 @@ console.log("\na recheck: one more independent volunteer before a fact");
     `${JSON.stringify(row(late))} ${paid(late)}`);
 }
 
+console.log("\nrefusals paused");
+{
+  const db = d1(), env = { LIBRARY: db }, refused = [];
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, refusing: false, on_disproved: async (_, a) => { refused.push(a.device); } });
+  const id = await f.demand(env, { producer: "p", ref: "paused", verb: "simulate", request: { ref: "paused" }, due_in_ms: 3_600_000 }, "e1", NOW);
+  for (const [who, score] of [["p-right", 2], ["p-wrong", 3]]) {
+    const w = { device: who, owner: who, net: `n${who}` };
+    const q = await f.next(env, w, "e1", NOW);
+    await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score }, work: 100 }, NOW);
+  }
+  await f.answerOfficial(env, { device: "official", owner: "official" }, { question: id, engine: "e1", result: { score: 2 }, work: 100 }, NOW);
+  check("with refusals paused a disproved client is unpaid and not refused, the agreeing one paid",
+    !refused.length && !db.raw.prepare("SELECT credited FROM answers WHERE device = 'p-wrong'").get().credited
+    && !!db.raw.prepare("SELECT credited FROM answers WHERE device = 'p-right'").get().credited, JSON.stringify(refused));
+}
+
+
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");
 process.exitCode = failures ? 1 : 0;
+

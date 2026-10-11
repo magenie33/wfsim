@@ -48,6 +48,10 @@ export const RECHECK_SHARE = 0.02;
 /// answer can land on any fact. A spot is credited at once, so a backlog of
 /// them is a check late.
 export const SPOT_SHARE = 0.01;
+/// WHETHER A DISPROVED CLIENT IS REFUSED (a cool-down and its credit taken
+/// back). Off while the clients settle into a new engine: a disproved answer is
+/// still unpaid, the fact still the official machines'. docs/CLIENTS.md.
+export const REFUSING = false;
 /// WHAT A PAGE THAT CAN FILL AN ORDER SENDS. A tab opened before orders existed
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.

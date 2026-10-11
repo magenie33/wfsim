@@ -5,7 +5,7 @@
 import { factory, canon, nearAnswer } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask } from "./board_tasks.js";
-import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE } from "./verify.js";
+import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING } from "./verify.js";
 import { cloudTell } from "./cloud.js";
 import { iso } from "./instant.js";
 
@@ -39,12 +39,15 @@ export const VERBS = {
     near: nearAnswer(["build", "work"]) },
 };
 
-let made = null;
+let made = null, refusing = null;
 /// THE FACTORY, made on first use: its producers' modules import this one.
 export function facts() {
-  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE, recheck: RECHECK_SHARE });
+  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE,
+    recheck: RECHECK_SHARE, refusing: refusing ?? REFUSING });
   return made;
 }
+/// A check of the refusal path turns it on whatever `REFUSING` says.
+export function refusalsFor(on) { refusing = on; made = null; }
 
 /// A LEASED QUESTION IN THE SHAPE ITS PAGE RUNS, by the producer that asked it.
 export function workOf(leased) {
