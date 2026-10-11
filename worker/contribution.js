@@ -207,12 +207,16 @@ async function ownDevice(env, account, id) {
 }
 
 async function devices(request, env, account) {
-  const { results } = await env.ACCOUNTS.prepare(
-    "SELECT verifier, claimed_at, label FROM devices WHERE account = ?1 ORDER BY claimed_at").bind(account).all();
-  const { results: spans } = await env.ACCOUNTS.prepare(
-    "SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(account).all();
+  // ITS PLACES ARE READ OFF THE RANKING'S OWN MINUTE (`kept`), found by its row
+  // key: worked out here, every open account page re-read every claimed device.
+  const [{ results }, { results: spans }, choice, { everyone, day }] = await Promise.all([
+    env.ACCOUNTS.prepare("SELECT verifier, claimed_at, label FROM devices WHERE account = ?1 ORDER BY claimed_at").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT named FROM contribution_choice WHERE account = ?1").bind(account).first(),
+    kept(request, env),
+  ]);
   const ids = results.map((d) => d.verifier);
-  const [held, doing] = await Promise.all([spanWork(env, spans), activityOf(env, ids)]);
+  const [held, doing, mine] = await Promise.all([spanWork(env, spans), activityOf(env, ids), rowKey(env, account, day)]);
   // EACH DEVICE'S SHARE IS WHAT ITS SPANS OF THIS ACCOUNT HOLD; a removed one's still counts.
   const work = new Map();
   spans.forEach((s, i) => {
@@ -221,12 +225,7 @@ async function devices(request, env, account) {
   });
   const current = new Set(ids);
   const gone = [...work].filter(([v]) => !current.has(v)).map(([, w]) => w);
-  const choice = await env.ACCOUNTS.prepare("SELECT named FROM contribution_choice WHERE account = ?1").bind(account).first();
   const named = !!(choice && choice.named);
-  // ITS PLACES ARE READ OFF THE RANKING'S OWN MINUTE (`kept`), found by its row
-  // key: worked out here, every open account page re-read every claimed device.
-  const { everyone, day } = await kept(request, env);
-  const mine = await rowKey(env, account, day);
   const ranks = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => {
     const at = ordered(everyone, key).findIndex((e) => e.key === mine);
     return [period, at < 0 ? null : at + 1];
