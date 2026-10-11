@@ -1,12 +1,14 @@
 name: Work prices
 
-# THE REFERENCE MACHINE FOR `WORK_WEIGHTS` — what one of each counted thing
-# costs (docs/BOARD.md §"Contribution"). The engine is built from the ref this
-# runs on exactly as the site builds it (wasm-bindgen and `wasm-opt -Oz` at the
-# site's versions), four hosted runners time it over the same board rows, and a
-# row's price is fit to its MEDIAN time across them, so no one machine, and no
-# owner's machine, sets what a point is worth. Node is pinned: its V8 is the
-# wasm engine being timed. Run by hand, on a branch before its engine ships.
+# THE TWO PRICES OF A FIGHT'S WORK — a million gas and a run
+# (engine/src/fight/gas.rs, docs/WASM.md §"Gas"). The engine is built from the
+# ref this runs on exactly as the site builds it, four hosted runners time it
+# over the same board rows, and the price BETWEEN the two terms is fit to each
+# row's MEDIAN time across them, so no one machine, and no owner's machine,
+# sets it. The SCALE is set on what volunteers were paid: their credited board
+# answers of the last days, priced anew, total `total` times what they were.
+# Node is pinned: its V8 is the wasm engine being timed. Run by hand, on a
+# branch before its engine ships; it prints the two constants to paste.
 
 on:
   workflow_dispatch:
@@ -14,9 +16,15 @@ on:
       rows:
         description: board rows to time
         default: "300"
-      unit:
-        description: "keep (a point stays worth what it is) or seconds (a point is one second of the median runner)"
-        default: keep
+      total:
+        description: "new total over old total of the volunteers' paid answers, 1.00-1.03"
+        default: "1.015"
+      days:
+        description: days of paid answers the total is taken over
+        default: "7"
+      sample:
+        description: paid questions fought natively for their exact count
+        default: "400"
 
 jobs:
   build:
@@ -29,15 +37,17 @@ jobs:
           toolchain: "1.97.1"
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - name: Build the engine the site would ship
+      - name: Build the engine the site would ship, and its native twin
         run: |
           cargo build --release -p wfsim-wasm --target wasm32-unknown-unknown
+          cargo build --release -p wfsim-cli --bin wfsim-gas
           # wasm-bindgen at Cargo.lock's version; binaryen at the site build's.
           bindgen=$(awk '/^name = "wasm-bindgen"$/ {getline; gsub(/version = |"/, ""); print; exit}' Cargo.lock)
           curl -sSfL "https://github.com/rustwasm/wasm-bindgen/releases/download/$bindgen/wasm-bindgen-$bindgen-x86_64-unknown-linux-musl.tar.gz" | tar xz
           "./wasm-bindgen-$bindgen-x86_64-unknown-linux-musl/wasm-bindgen" target/wasm32-unknown-unknown/release/wfsim_wasm.wasm --target no-modules --no-typescript --out-dir pkg
           curl -sSfL https://github.com/WebAssembly/binaryen/releases/download/version_132/binaryen-version_132-x86_64-linux.tar.gz | tar xz
           ./binaryen-version_132/bin/wasm-opt -Oz -o pkg/wfsim_wasm_bg.wasm pkg/wfsim_wasm_bg.wasm
+          cp target/release/wfsim-gas pkg/
       - uses: actions/upload-artifact@v4
         with:
           name: pkg
@@ -66,8 +76,38 @@ jobs:
           name: measure-${{ matrix.machine }}
           path: measure-${{ matrix.machine }}.json
 
+  # WHAT VOLUNTEERS WERE PAID, read once and fought natively — the native
+  # engine counts what the wasm does (check_gas). Its report names no account.
+  sample:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+      - uses: actions/download-artifact@v4
+        with:
+          name: pkg
+          path: pkg
+      - name: Read and fight the paid answers
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          chmod +x pkg/wfsim-gas
+          ids=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[] | "\(.binding)=\(.database_id)"')
+          export CF_D1_DATABASE=$(echo "$ids" | sed -n 's/^LIBRARY=//p') CF_D1_ACCOUNTS=$(echo "$ids" | sed -n 's/^ACCOUNTS=//p')
+          node scripts/work_calibrate.mjs sample out=work-sample.json days=${{ inputs.days }} rows=${{ inputs.sample }} native=pkg/wfsim-gas
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample
+          path: work-sample.json
+
   fit:
-    needs: measure
+    needs: [measure, sample]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -76,11 +116,11 @@ jobs:
           node-version: "22.20.0"
       - uses: actions/download-artifact@v4
         with:
-          pattern: measure-*
+          pattern: "*"
           merge-multiple: true
       - name: Fit the prices
         run: |
-          node scripts/work_calibrate.mjs fit measure-*.json unit=${{ inputs.unit }} | tee fit.txt
+          node scripts/work_calibrate.mjs fit measure-*.json sample=work-sample.json total=${{ inputs.total }} | tee fit.txt
           { echo '```'; cat fit.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
