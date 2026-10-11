@@ -309,11 +309,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       await deliver(env, { ...q, canon: lead.canon }, now, lead);
       return;
     }
-    const cap = verbs[q.verb].cap;
-    if (served.length >= cap) {
-      const distinct = new Set(served.map((a) => a.canon)).size === served.length;
+    // ONLY WITNESSES FILL THE CAP: a browser claimed by an owner after it took
+    // the question answers as that owner's second, which disagrees with nobody.
+    const cap = verbs[q.verb].cap, witnesses = independent(served);
+    if (witnesses.length >= cap) {
+      const distinct = new Set(witnesses.map((a) => a.canon)).size === witnesses.length;
       await db.prepare("UPDATE questions SET state = ? WHERE id = ? AND state = 'open'")
-        .bind(distinct && served.length >= 3 ? "nondeterministic" : "disputed", id).run();
+        .bind(distinct && witnesses.length >= 3 ? "nondeterministic" : "disputed", id).run();
     }
   }
 

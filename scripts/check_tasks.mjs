@@ -267,6 +267,21 @@ console.log("\nthe cases that failed in production");
   check("...and is free once it is", db.raw.prepare("SELECT count(*) AS n FROM questions WHERE lease IS NOT NULL").get().n === 0);
 }
 
+{
+  const db = d1(), env = { LIBRARY: db };
+  // A BROWSER CLAIMED BY AN OWNER AFTER IT TOOK A QUESTION answers as that
+  // owner's second: the same answer twice from one owner is no dispute.
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const id = await f.demand(env, { producer: "p", ref: "claimed", verb: "simulate", request: { n: 8 }, due_in_ms: 1000 }, "e1", NOW);
+  const a = { device: "a", owner: "oa", net: "na" }, d = { device: "d", owner: "d", net: "nd" };
+  const qa = await f.next(env, a, "e1", NOW);
+  await f.answer(env, a, { lease: qa.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
+  const qd = await f.next(env, d, "e1", NOW);
+  await f.answer(env, { ...d, owner: "oa" }, { lease: qd.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
+  check("one owner's two answers fill no cap, and the question stays open for a second witness",
+    db.raw.prepare("SELECT state FROM questions WHERE id = ?").get(id).state === "open");
+}
+
 console.log("\nthe watchdog");
 {
   // A STALL: a survey's shapes overdue, volunteers at work on
