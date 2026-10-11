@@ -559,12 +559,19 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max,
         OVERRUNS_TO_OFFICIAL).all();
     if (!results.length) return [];
+    // A SPOT NOBODY ASKS FOR ANY MORE still owes its volunteers a verdict, so it
+    // comes with its withdrawn demands: without one it is claimed, skipped and
+    // released forever, ahead of every question behind it.
     const { results: ds } = await db.prepare(
-      `SELECT question, producer, ref, payload FROM demands WHERE state != 'withdrawn' AND question IN (SELECT value FROM json_each(?))
-        ORDER BY state = 'live' DESC`)
+      `SELECT question, producer, ref, payload, state FROM demands WHERE question IN (SELECT value FROM json_each(?))
+        ORDER BY state = 'live' DESC, state != 'withdrawn' DESC`)
       .bind(JSON.stringify(results.map((q) => q.id))).all();
-    return results.map((q) => ({ question: q.id, verb: q.verb, state: q.state, lease: q.lease, request: JSON.parse(q.request),
-      demands: ds.filter((d) => d.question === q.id).map((d) => ({ producer: d.producer, ref: d.ref, payload: JSON.parse(d.payload) })) }));
+    return results.map((q) => {
+      const mine = ds.filter((d) => d.question === q.id);
+      const kept = mine.some((d) => d.state !== "withdrawn") ? mine.filter((d) => d.state !== "withdrawn") : mine;
+      return { question: q.id, verb: q.verb, state: q.state, lease: q.lease, request: JSON.parse(q.request),
+        demands: kept.map((d) => ({ producer: d.producer, ref: d.ref, payload: JSON.parse(d.payload) })) };
+    });
   }
 
   /// A WITNESS THE OFFICIAL MACHINES DISPROVED, refused — for a cool-down, never

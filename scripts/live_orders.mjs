@@ -61,7 +61,7 @@ async function settle() {
       producers: BOARD_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
     for (const t of tasks) {
       const d = t.demands[0];
-      if (!d) continue;
+      if (!d) { console.error(`orders: ${t.question.slice(0, 8)} came with no demand — skipped`); continue; }
       const row = { record: t.request.record, identity: d.payload.identity, ruler: t.request.ruler, mode: t.request.mode };
       const began = new Date();
       let timer;

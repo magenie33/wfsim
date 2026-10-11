@@ -238,6 +238,16 @@ console.log("\nthe cases that failed in production");
   const id = await questionId("simulate", { row: 2 });
   check("...which is withdrawn there", db.raw.prepare("SELECT state FROM questions WHERE id = ?").get(id).state === "withdrawn");
 }
+{
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS });
+  const id = await f.demand(env, { producer: "p", ref: "spotted", verb: "simulate", request: { row: 3 }, due_in_ms: 1000 }, "e1", NOW);
+  db.raw.prepare("UPDATE questions SET state = 'spot' WHERE id = ?").run(id);
+  await f.withdraw(env, "p", "spotted", NOW);
+  const [t] = await f.claim(env, { device: "official" }, { states: ["spot"], max: 1 }, "e1", NOW);
+  check("a spot nobody asks for any more is still claimed with its demand, so the official machines can settle it",
+    t && t.question === id && t.demands.length === 1 && t.demands[0].ref === "spotted", JSON.stringify(t));
+}
 
 {
   const db = d1(), env = { LIBRARY: db };
