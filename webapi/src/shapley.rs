@@ -7,6 +7,7 @@
 //! hands the per-run series here, so nothing in this file can disagree with a
 //! number the simulator prints.
 
+use wfsim_engine::rules::math::Portable;
 use serde_json::{json, Value};
 
 use crate::request::err_json;
@@ -110,7 +111,7 @@ pub fn shapley_json(v: &Value) -> Value {
                 with.join(", ")
             ));
         }
-        ln_mean.push(mean.ln());
+        ln_mean.push(mean.ln_portable());
         ratio.push(s.iter().map(|x| x / mean).collect::<Vec<f64>>());
     }
 
@@ -169,8 +170,8 @@ pub fn shapley_json(v: &Value) -> Value {
         "ok": true,
         "runs": runs,
         "subsets": n_sub,
-        "full": ln_mean[full].exp(),
-        "empty": ln_mean[0].exp(),
+        "full": ln_mean[full].exp_portable(),
+        "empty": ln_mean[0].exp_portable(),
         "total": one(&[(full, 1.0), (0, -1.0)]),
         "participants": parts,
         "interactions": matrix,

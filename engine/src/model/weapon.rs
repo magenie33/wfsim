@@ -2,6 +2,7 @@
 //! WHAT A WEAPON IS before any card touches it: its base stats, its forms and
 //! cadences, and the per-weapon mechanics a yaml can declare.
 
+use crate::rules::math::Portable;
 use super::*;
 use crate::rules::damage::{DamageType, DamageVector};
 use serde::Deserialize;
@@ -223,7 +224,7 @@ impl Shockwave {
         from: crate::rules::space::Vec2,
         toward: crate::rules::space::Vec2,
     ) -> impl Iterator<Item = crate::rules::space::Vec2> + '_ {
-        let heading = (toward.y - from.y).atan2(toward.x - from.x);
+        let heading = (toward.y - from.y).atan2_portable(toward.x - from.x);
         (0..self.lines).flat_map(move |i| {
             let spread = if self.lines > 1 {
                 self.fan_deg * (f64::from(i) / f64::from(self.lines - 1) - 0.5)
@@ -233,7 +234,7 @@ impl Shockwave {
             let a = heading + spread.to_radians();
             (1..=self.explosions).map(move |k| {
                 let d = f64::from(k) * self.spacing_m;
-                crate::rules::space::Vec2::new(from.x + d * a.cos(), from.y + d * a.sin())
+                crate::rules::space::Vec2::new(from.x + d * a.cos_portable(), from.y + d * a.sin_portable())
             })
         })
     }

@@ -4433,12 +4433,14 @@ version = "0.0.0"
 dependencies = [
  "ed25519-dalek",
  "getrandom 0.2.17",
+ "libloading",
  "serde",
  "serde_json",
  "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-single-instance",
+ "tokio",
  "ureq",
  "windows-sys 0.61.2",
 ]

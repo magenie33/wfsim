@@ -1,13 +1,15 @@
 //! WFSim desktop — the shell.
 //!
-//! It does four things and deliberately nothing else: unpack the app on first
+//! It does five things and deliberately nothing else: unpack the app on first
 //! launch, serve `current/` to a webview, let the page swap that directory for
-//! a downloaded one, and roll back a version that will not start. Everything a
-//! reader sees is the same `site/` the browser gets, running the same wasm on
-//! the same CPU. See docs/DESKTOP.md.
+//! a downloaded one, roll back a version that will not start, and call the
+//! native engine that content carries. Everything a reader sees is the same
+//! `site/` the browser gets, computing the same bits on the same CPU. See
+//! docs/DESKTOP.md.
 #![cfg_attr(all(not(debug_assertions), windows), windows_subsystem = "windows")]
 
 mod layout;
+mod native;
 mod payload;
 mod protocol;
 mod session;
@@ -123,6 +125,14 @@ fn mark_healthy(state: tauri::State<Arc<Layout>>) {
 #[tauri::command]
 fn app_version(state: tauri::State<Arc<Layout>>) -> String {
     state.manifest().version
+}
+
+/// ONE CALL OF THE NATIVE ENGINE, the wasm module's `api(path, body)` door, on
+/// a pool thread (`native.rs`). `engine` is the page's engine id: a library
+/// built from other sources is refused, and the page computes on wasm.
+#[tauri::command]
+async fn engine(engine: String, path: String, body: String, native: tauri::State<'_, native::Native>) -> Result<String, String> {
+    native.call(engine, path, body).await
 }
 
 /// True while a check or a download is already running. Both commands return
@@ -293,6 +303,13 @@ const SELFTEST_PROBE: &str = r#"
         const n = (meta && meta.weapons && meta.weapons.length) || 0;
         check('wasm engine', n > 100, n + ' weapons in ' + Math.round(performance.now() - t0) + 'ms');
       } catch (e) { check('wasm engine', false, e.message); }
+      // THE NATIVE ENGINE THE CONTENT CARRIES, proven against that wasm the
+      // way the page proves it before computing a board row with it.
+      try {
+        const t0 = performance.now();
+        const ok = await nativeBoardReady();
+        check('native engine', ok, ok ? 'bit for bit with the wasm in ' + Math.round(performance.now() - t0) + 'ms' : nativeWhy);
+      } catch (e) { check('native engine', false, e.message); }
       const nodes = document.querySelectorAll('*').length;
       const txt = document.body.innerText || '';
       check('page rendered', nodes > 200 && !txt.includes('could not start'), nodes + ' nodes');
@@ -843,6 +860,7 @@ TIMEOUT: the page never reported after {secs}s
         None => init,
     };
 
+    let engines = native::Native::new(layout.current(), layout.root());
     let jar = Arc::new(session::Jar::open(layout.session()));
     let prefs = settings::Settings::load(&layout.settings());
     // WRITTEN AGAIN WHILE ON — see `settings::apply_autostart`.
@@ -862,11 +880,12 @@ TIMEOUT: the page never reported after {secs}s
     }
     builder
         .manage(layout)
+        .manage(engines)
         .manage(Prefs::new(prefs))
         .invoke_handler(tauri::generate_handler![
             mark_healthy, app_version, open_external,
             update_check, update_download, update_status, update_apply, source_url,
-            desktop_settings, desktop_set, open_data_dir, uninstall, tray_labels
+            desktop_settings, desktop_set, open_data_dir, uninstall, tray_labels, engine
         ])
         // THE CLOSE BUTTON HIDES, when the reader chose that and there is a
         // tray icon to come back through — never a window gone with no way back.

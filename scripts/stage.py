@@ -72,7 +72,7 @@ def main() -> None:
         key = f"blob/{f['h']}"
         if key in have:
             continue
-        blob = (SITE / f["p"]).read_bytes()
+        blob = payload_manifest.source(f["p"]).read_bytes()
         if hashlib.sha256(blob).hexdigest() != f["h"]:
             sys.exit(f"{f['p']} changed under this run — stage a tree that is holding still")
         if not args.dry_run:

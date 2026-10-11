@@ -1,3 +1,4 @@
+use crate::rules::math::Portable;
 use super::*;
 
 /// PUT AN ORB IN THE AIR at `t`, from the muzzle, along the aim.
@@ -34,7 +35,7 @@ pub(super) fn throw_orb(
     let aim = params.aim_point();
     let muzzle = crate::rules::space::muzzle(params.player_at, aim);
     let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
-    let len = dx.hypot(dy);
+    let len = dx.hypot_portable(dy);
     let dir = if len > 0.0 {
         crate::rules::space::Vec2::new(dx / len, dy / len)
     } else {

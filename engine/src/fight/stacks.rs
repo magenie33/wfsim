@@ -1,3 +1,4 @@
+use crate::rules::math::Portable;
 use super::*;
 
 /// Live on-kill stack state (Galvanized graceful decay: on timeout lose
@@ -164,7 +165,7 @@ pub(super) fn push_break_proc(
         BrokenPool::Shield => params.foe.max_shield(),
     };
     let fraction = (0.03 * stacks as f64).min(0.30);
-    let total = fraction * pool_max * params.status_damage_multiplier.powi(2);
+    let total = fraction * pool_max * params.status_damage_multiplier.powi_portable(2);
     debuffs.push_dot(Dot {
         owner,
         next_tick: now,

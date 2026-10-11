@@ -65,7 +65,8 @@ def git(*a: str) -> str:
 
 
 def verify(bot: bool = True) -> int:
-    """Hash every file the LIVE manifest names against `site/`.
+    """Hash every file the LIVE manifest names against `site/` and
+    `desktop/payload/`, the two places a payload path is read from.
 
     The manifest is fetched rather than read off disk: what a client sees is
     the bucket's copy, and a local file that was never uploaded looks identical
@@ -73,19 +74,20 @@ def verify(bot: bool = True) -> int:
     """
     with urllib.request.urlopen(f"{CHANNEL}/manifest.json", timeout=60) as r:
         live = json.loads(r.read())
+    import payload_manifest  # noqa: E402
     bad = []
     for e in live["files"]:
-        f = SITE / e["p"]
+        f = payload_manifest.source(e["p"])
         if not f.exists() or hashlib.sha256(f.read_bytes()).hexdigest() != e["h"]:
             bad.append(e["p"])
     head = git("rev-parse", "--short=8", "HEAD")
     print(f"\nchannel {live['version']}: {len(live['files'])} files   HEAD {head}")
     if bad:
-        print(f"MIRROR BROKEN — {len(bad)} file(s) differ from site/:")
+        print(f"MIRROR BROKEN — {len(bad)} file(s) differ from what this tree built:")
         for p in bad[:10]:
             print(f"  {p}")
         return 1
-    print("mirror ok — every file the channel names is the file site/ holds")
+    print("mirror ok — every file the channel names is the file this tree built")
     if verify_mcp():
         return 1
     if not bot:
@@ -131,8 +133,8 @@ def main() -> None:
     if args.verify:
         sys.exit(verify(bot=not args.no_bot))
 
-    # `site/` is a build product and is expected to differ; anything else means
-    # the tree holds work that no commit records.
+    # `site/` and `desktop/payload/` are build products and expected to differ;
+    # anything else means the tree holds work that no commit records.
     #
     # NOT `git()`, which strips: a porcelain line BEGINS with its two status
     # columns, so stripping the block eats the first line's leading space and
@@ -142,9 +144,9 @@ def main() -> None:
         ("git", "status", "--porcelain"), cwd=ROOT, capture_output=True, text=True, check=True
     ).stdout
     dirty = [ln[2:].strip() for ln in porcelain.splitlines() if ln.strip()]
-    unrecorded = [p for p in dirty if not p.startswith("site/") and p != "mcp/engine.js"]
+    unrecorded = [p for p in dirty if not p.startswith(("site/", "desktop/payload/")) and p != "mcp/engine.js"]
     if unrecorded and not args.dirty:
-        print("ship: the tree carries changes outside site/:")
+        print("ship: the tree carries changes outside site/ and desktop/payload/:")
         for p in unrecorded[:20]:
             print(f"  {p}")
         sys.exit(
@@ -183,8 +185,8 @@ def main() -> None:
     # end, arrived at from the other side.
     if not args.no_push:
         # `mcp/engine.js` names the wasm `site/pkg/` holds, so it moves with it.
-        if git("status", "--porcelain", "--", "site", "mcp/engine.js"):
-            run("git", "add", "site", "mcp/engine.js")
+        if git("status", "--porcelain", "--", "site", "desktop/payload", "mcp/engine.js"):
+            run("git", "add", "site", "desktop/payload", "mcp/engine.js")
             run("git", "commit", "-m", "site: regenerate, and the desktop channel with it")
         else:
             print("\nsite/ is unchanged — nothing to commit")

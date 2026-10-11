@@ -19,6 +19,7 @@
 //! A formation does NOT MOVE. Bodies stand where they are put, which is what
 //! makes a chain's path fixed (M52) and what the 2D arena assumes.
 
+use crate::rules::math::Portable;
 use crate::rules::space::Vec2;
 
 /// HOW MANY BODIES A FORMATION MAY HOLD — fifty.
@@ -150,7 +151,7 @@ impl Formation {
     pub fn grid_around(front_middle: Vec2, forward: Vec2, cols: usize, rows: usize, spacing: f64)
         -> Vec<Vec2>
     {
-        let len = forward.x.hypot(forward.y);
+        let len = forward.x.hypot_portable(forward.y);
         // A zero direction has no grid to build; one row deep is the same
         // arrangement whatever it points at.
         let (fx, fy) = if len > 0.0 { (forward.x / len, forward.y / len) } else { (0.0, 1.0) };

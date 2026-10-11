@@ -8,7 +8,8 @@ release has no reason to install. So the LIST is declared once
 
 WHAT IT MUST MATCH, byte for byte: `serde_json` sorts map keys, so the encoding
 here is compact and key-sorted, and the file ORDER is the walk order — all of
-`site/`, path-sorted, less what the list excludes. `ship.py`
+`site/`, path-sorted, less what the list excludes, then all of `desktop/payload/`
+(what the client adds: the native engine), path-sorted. `ship.py`
 asserts the two agree on every run rather than trusting this comment, because
 two producers of one artefact are exactly the thing that drifts silently.
 
@@ -24,6 +25,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 LIST = ROOT / "desktop" / "payload.lst"
+# WHAT THE CLIENT ADDS TO `site/`, at the paths it is served under — generated
+# by `build_site_app.py` like `site/`, and never deployed to the web.
+ADDED = ROOT / "desktop" / "payload"
 
 
 def rules() -> list[str]:
@@ -74,13 +78,28 @@ def version() -> str:
     return r.stdout.strip() if r.returncode == 0 else "nogit"
 
 
-def build() -> bytes:
-    paths = [p for p in walk(SITE) if not excluded(p.relative_to(SITE).as_posix())]
+def files() -> list[tuple[str, pathlib.Path]]:
+    """Each payload path and the file it is: `site/` less the exclusions, then
+    `desktop/payload/` whole. A path in both is refused — two files, one name."""
+    out = [(p.relative_to(SITE).as_posix(), p) for p in walk(SITE)
+           if not excluded(p.relative_to(SITE).as_posix())]
+    added = [(p.relative_to(ADDED).as_posix(), p) for p in walk(ADDED)]
+    both = {r for r, _ in out} & {r for r, _ in added}
+    if both:
+        sys.exit(f"desktop/payload/ and site/ both hold {sorted(both)}")
+    return out + added
 
+
+def source(rel: str) -> pathlib.Path:
+    """The file on disk a payload path names."""
+    added = ADDED / rel
+    return added if added.is_file() else SITE / rel
+
+
+def build() -> bytes:
     index = []
-    for p in paths:
+    for rel, p in files():
         body = p.read_bytes()
-        rel = p.relative_to(SITE).as_posix()
         index.append({"p": rel, "n": len(body), "h": hashlib.sha256(body).hexdigest()})
     return json.dumps({"version": version(), "files": index},
                       separators=(",", ":"), sort_keys=True).encode("utf-8")

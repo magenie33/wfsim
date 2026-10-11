@@ -602,7 +602,7 @@ def quote_attr(path: str) -> str:
 # What a number is computed from, for `engine_id`: the code that computes it
 # and the data it reads — less the data no number reads. The gas macro sets
 # the weights work is priced by, so it is the engine too.
-ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "tools/gas-macro", "data")
+ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "native/src", "tools/gas-macro", "data")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
                       "data/assets.yaml", "data/notes.yaml", "data/README.md")
 
@@ -625,6 +625,50 @@ def engine_id() -> str:
         h.update(rel.encode("utf-8") + bytes(1))
         h.update(p.read_bytes().replace(bytes([13, 10]), bytes([10])) + bytes(1))
     return h.hexdigest()[:12]
+
+
+# THE DESKTOP CLIENT'S NATIVE ENGINE: what the client adds to `site/`
+# (`desktop/payload/`, read by `desktop/build.rs` and `payload_manifest.py`).
+NATIVE_OUT = ROOT / "desktop" / "payload" / "native"
+NATIVE_TARGET = "x86_64-pc-windows-msvc"
+NATIVE_DLL = ROOT / "target" / NATIVE_TARGET / "release" / "wfsim_native.dll"
+
+
+def ship_native_engine() -> None:
+    """`desktop/payload/native/`: the engine as a library under a content-hashed
+    name, and `engine.json` naming it, its engine id, its SHA-256 and the rows
+    the page proves it on against the wasm before using it (`82-desktop.js`).
+
+    BUILT ONLY WHERE IT CAN BE, on Windows, and only when the engine id moved —
+    the library is committed, so an unmoved engine keeps the bytes already
+    staged. Elsewhere a stale one is said, and harmless: the page compares its
+    own engine id with the one named here and computes on wasm when they differ.
+    """
+    want = engine_id()
+    named_file = NATIVE_OUT / "engine.json"
+    named = json.loads(named_file.read_text(encoding="utf-8")) if named_file.exists() else {}
+    canary = json.loads((ROOT / "tests" / "gas" / "rows.json").read_text(encoding="utf-8"))
+    current = (named.get("engine") == want and named.get("canary") == canary
+               and (NATIVE_OUT / str(named.get("file"))).is_file())
+    if current:
+        print(f"+ native engine {want} unchanged — not rebuilt")
+        return
+    if sys.platform != "win32":
+        print(f"!! desktop/payload/native/ is engine {named.get('engine')}, this tree is {want}: "
+              "the desktop client computes on wasm until a build on Windows")
+        return
+    run("cargo", "build", "--release", "-p", "wfsim-native", "--target", NATIVE_TARGET)
+    body = NATIVE_DLL.read_bytes()
+    sha = hashlib.sha256(body).hexdigest()
+    name = f"wfsim_engine.{sha[:12]}.dll"
+    NATIVE_OUT.mkdir(parents=True, exist_ok=True)
+    for old in NATIVE_OUT.iterdir():
+        old.unlink()
+    (NATIVE_OUT / name).write_bytes(body)
+    named_file.write_text(json.dumps({"engine": want, "file": name, "sha256": sha, "canary": canary},
+                                     separators=(",", ":"), sort_keys=True) + chr(10),
+                          encoding="utf-8", newline=chr(10))
+    print(f"+ native engine {want}: {name}, {len(body) / 1e6:.1f} MB")
 
 
 def release_id() -> str:
@@ -2446,6 +2490,8 @@ def main() -> None:
                     "engine": engine_id()},
                    separators=(",", ":"), sort_keys=True),
         encoding="utf-8", newline="\n")
+
+    ship_native_engine()
 
     size = (APP / "pkg" / pkg["wasm"]).stat().st_size
     print(f"site/ ready — release {release}, wasm {size / 1e6:.1f} MB")
