@@ -318,11 +318,11 @@ function giveBackAhead(beacon = false) {
 /// fight stops and the lease is given back, since an answer after it is dropped.
 const LEASE_SAFE_MS = 27 * 60_000;
 
-/// A NEWER RELEASE IS OUT (`stale`): this page's engine is given no more work,
-/// so a machine left computing would idle for ever. It reloads itself — the
-/// build kept as a language switch keeps it — once nobody has touched it for
-/// `IDLE_RELOAD_MS` and nothing the reader started is running; until then the
-/// switch says so. Not in the desktop shell, whose updater swaps the files.
+/// A NEWER ENGINE IS OUT (`stale`): this page is given no more work, so waiting
+/// helps nobody and it reloads itself — the build kept as a language switch
+/// keeps it — as soon as nothing the reader started is running. A newer release
+/// on the same engine still works, and waits until nobody has touched the page
+/// for `IDLE_RELOAD_MS`. Not in the desktop shell, whose updater swaps the files.
 const IDLE_RELOAD_MS = 10 * 60_000;
 let boardStale = false;
 /// …OR ONLY A NEWER RELEASE, the engine unchanged: this page still works, and
@@ -370,7 +370,8 @@ function reloadForRelease(how = "asked") {
   location.reload();
 }
 function maybeReloadForRelease() {
-  if ((!boardStale && !releaseNewer) || window.__WFSIM_DESKTOP__ || readerBusy() || Date.now() - lastTouched < IDLE_RELOAD_MS) return;
+  if ((!boardStale && !releaseNewer) || window.__WFSIM_DESKTOP__ || readerBusy()) return;
+  if (!boardStale && !releaseLeftBehind && Date.now() - lastTouched < IDLE_RELOAD_MS) return;
   // ONE TRY AN HOUR: a CDN still serving the old files must not make a loop.
   try {
     if (Date.now() - Number(sessionStorage.getItem("wfsim-release-reload") || 0) < 3_600_000) return;
@@ -383,7 +384,8 @@ function maybeReloadForRelease() {
 /// the previous generation's files, so a page two releases old asks for a
 /// worker the site no longer serves, and nothing it computes can finish. The
 /// release is asked at most once a minute, since a dropped network fails lanes
-/// in bursts; a newer one is said on the page and reloaded into once idle.
+/// in bursts; a newer one is said on the page and reloaded into at once, since
+/// a page that cannot load its worker computes nothing by waiting.
 /// THE ANSWER NAMES THE FAILURE in `engine.fail`: `worker_load_stale` when a newer
 /// release left the page behind, `worker_load_offline` when the site itself did
 /// not answer, else `worker_load_<cause>` where the worker said its `LOAD_CAUSES`
@@ -420,7 +422,7 @@ function releaseNotice() {
   const el = document.createElement("div");
   el.id = "release-note";
   el.className = "page-note rem-note";
-  el.innerHTML = `${escHtml(tr("A new version is out; this page refreshes itself once it is left idle."))}<a href="#">${escHtml(tr("refresh now"))}</a>`;
+  el.innerHTML = `${escHtml(tr("A new version is out; this page refreshes itself once what you started ends."))}<a href="#">${escHtml(tr("refresh now"))}</a>`;
   el.addEventListener("click", (e) => {
     if (e.target.closest("a")) { e.preventDefault(); reloadForRelease(); } else el.remove();
   });
@@ -598,7 +600,7 @@ function boardVerifyHtml() {
       .replace("{n}", String(boardVerifiedCount()))
     : tr("Your browser does not compute the board's scores.");
   const stale = on && boardStale
-    ? ` <span class="board-state">${escHtml(tr("A new version is out; this page refreshes itself once it is left idle."))}</span>
+    ? ` <span class="board-state">${escHtml(tr("A new version is out; this page refreshes itself once what you started ends."))}</span>
       <button class="ghost-btn small" id="board-reload">${escHtml(tr("refresh now"))}</button>`
     : "";
   return ` <span class="board-state">${escHtml(text)}</span>${stale}` +

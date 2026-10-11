@@ -116,7 +116,7 @@ function computeState() {
     .replace("{t}", new Date(boardBannedUntil).toLocaleString(accountLocale())) };
   if (held === "battery") return s("held", "Paused while this device runs on battery.");
   if (held === "data") return s("held", "Paused while the browser saves data.");
-  if (boardStale) return s("held", "A new version is out; this page refreshes itself once it is left idle.");
+  if (boardStale) return s("held", "A new version is out; this page refreshes itself once what you started ends.");
   if (computeNow) return s("computing", "Computing now.");
   return s("waiting", "Waiting for the next task.");
 }

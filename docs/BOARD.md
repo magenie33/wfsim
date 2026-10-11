@@ -689,9 +689,11 @@ never a heavier client.
   (08-checkpoint-api.js `quickFleet`); its answer is the same on any number of
   cores (`check_quick_fleet`). ONLY THE SERVED ENGINE LEASES: the worker reads
   `engine` from the site's `release.json`, and a page of any other gets no task
-  and its answers are dropped. Every answer names the `release` too, and a
-  page of an older one reloads into it once left idle, so a machine left
-  computing for weeks takes every fix without anyone touching it. A page whose
+  and its answers are dropped, so a page of another engine reloads at once,
+  unless what its reader started is running. Every answer names the `release`
+  too, and a page of an older one on the same engine reloads into it once left
+  idle, so a machine left computing for weeks takes every fix without anyone
+  touching it. A page whose
   engine lane fails to load asks `release.json` too, since two releases on, the
   worker it names is no longer served.
 - **A release carries a result.** An answer of an older engine stays with its
