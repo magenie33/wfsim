@@ -20,6 +20,10 @@ The factor is the effective multishot over the six missiles, never a rolled
 count, and it sits in the instance's ModifiedBase, so the status seed carries
 it (`mb_live` in `fight::pellet`).
 
+**STATUS CHANCE DOES NOT TAKE IT** (owner): each missile still rolls its own
+34.9%. A merged beam sums its chance with its multishot; this weapon's factor
+is damage alone.
+
 **TWO STACKS FOLD INTO ONE TICK.** One Gas stack under one Viral stack also
 read **411**, a seed of 273: `(273 + 1) x 0.75 x 2 = 411`. Two Gas stacks under
 two Viral stacks read **1270**, which is that seed and the full one in one
