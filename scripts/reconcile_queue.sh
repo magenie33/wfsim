@@ -56,6 +56,17 @@ for id in $("$BOARD" --rulers); do
   rm -f "$one" "$one.orphans"
 done
 
+# A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
+# one run asking a whole board floods the factory's open questions. At most
+# `SCENE_ROWS_PER_RUN` cell rows a run, the popular weapons' best builds first;
+# the rest are still missing next run (`scene_rows.py`).
+popular=$(mktemp)
+curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > "$popular" || : > "$popular"
+paced=$(mktemp)
+python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-5000}" > "$paced"
+rm -f "$popular"
+mv "$paced" "$missing"
+
 # ONE BATCH A DAY, named by the day. An hourly clock would otherwise mint
 # twenty-four groups a day and a list nobody can read is a list nobody uses;
 # `ship_queue.sh` ADDS to a batch that already exists, so the day's arrivals are

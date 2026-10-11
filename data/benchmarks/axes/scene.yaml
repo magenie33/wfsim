@@ -9,3 +9,7 @@ values:
     set: {level: 9999, steel_path: true}
     short: Lv 9999 SP
     long: at level 9999 on Steel Path
+  - tag: sp200
+    set: {level: 200}
+    short: Lv 200 SP
+    long: at level 200 on Steel Path

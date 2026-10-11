@@ -621,6 +621,7 @@ ui:
   "Game data derived from the community": 游戏数据来自社区
   "Grineer": Grineer
   "Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM": 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 180 秒 · KPM
+  "Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 200 SP · 180 s · KPM": 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 200 级 钢铁之路 · 180 秒 · KPM
   "Headshot %": 爆头率 %
   "Headshots while charging": 攒条时全爆头
   "headshots while charging": 攒条时全爆头
@@ -741,6 +742,8 @@ ui:
   "Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low.": "光球会合并，叠满后坍缩成奇点，在 5 米内持续造成伤害（模块）。引擎逐发独立结算，所以两者都未计入；这是这把武器的主要部分，数字明显偏低。"
   "Orbs merge: a new orb joining one in the air triggers 'Orb Merging Damage' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs.": "光球会合并：新的光球并入空中已有的光球时，会在 4 米内触发「Orb Merging Damage」，伤害随合并数量增长（wiki）。引擎逐发独立结算，所以合并未计入，对堆叠光球的玩家而言数字明显偏低。"
   "Official test scenario": 官方测试场景
+  "Lv 9999 SP": 9999 级 钢铁之路
+  "Lv 200 SP": 200 级 钢铁之路
   "One Thrax Centurion at level 9999 on Steel Path, for 180 seconds. A single target, so nothing here rewards clearing a room.": 一只凶魂百夫长，9999 级，钢铁之路，打 180 秒。单体目标，所以清场能力在这里换不到任何分数。
   "One ruler, every weapon.": 一把尺子，量全部武器。
   "A score is this engine's measurement of a build under the benchmark's fixed terms. Nobody submits a number.": "分数是本引擎在该基准的固定条件下测出的。没有人提交数字。"
@@ -850,7 +853,9 @@ ui:
   "Simulate": 模拟
   "Simulator": 模拟器
   "Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM": 爆破使 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 180 秒 · KPM
+  "Demolisher · one target · Demolisher Devourer Lv 200 SP · 4-player health · 180 s · KPM": 爆破使 · 单体 · 爆破型吞噬者 200 钢铁 · 四人血量 · 180 秒 · KPM
   "Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM": 重型机枪手 · 单体 · 卓越者堕落重型机枪手 9999 钢铁 · 180 秒 · KPM
+  "Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 200 SP · 180 s · KPM": 重型机枪手 · 单体 · 卓越者堕落重型机枪手 200 钢铁 · 180 秒 · KPM
   "Measured builds": 实测配装
   "what this weapon's number does not account for": 这把武器的数字没算进去的东西
   "the board's best riven-free build for each ruler": 榜单上每把尺子下最好的无裂罅配装
@@ -860,6 +865,7 @@ ui:
   "not measured yet": 还没测过
   "No build has been measured for this weapon yet. Submitting one puts it in the queue.": "这把武器还没有任何配装被测过。提交一套就会进入队列。"
   "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 标准单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
+  "Standard Single Target · Thrax Centurion Lv 200 SP · 180 s · KPM": 标准单体 · 凶魂百夫长 200 钢铁 · 180 秒 · KPM
   "Standard means this fight is claimed to represent most play, not that it is the fight you play: one tough, unaffiliated target, and a build that beats it transfers.": 「标准」是说这场战斗被判断为能代表大多数情况，不是说你平时就在打它：一个耐打、不属于任何派系的目标，打得赢它的配装能迁移到别处。
   "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere.": 选凶魂百夫长做目标，是因为打得赢它的配装能迁移：它不属于任何派系，派系 MOD 和派系加成都对它无效；它带超宏防护，大多数战甲技能扒不掉，只能靠武器；它有护甲，够肉；它不免疫任何元素，各种触发都能正常吃到；它的弱点分布是常见的，头部 3 倍、其他部位 1 倍。
   "Its flaws are stated rather than hidden: it carries no shield, its Overguard may sit high, and the spectral form it enters on death is switched off here.": 它的缺点也写在这里，不藏着：它没有护盾，超宏防护可能偏高，死后的灵体形态在这里是关掉的。
@@ -923,6 +929,7 @@ ui:
   "The score is kills per minute across the whole formation, counting the fraction of each target already gone.": 分数是整个阵型的每分钟击杀数，并计入每个目标已被削掉的比例。
   "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces.": 射手贴身站在前排正中那个目标前，沿着该排面对的方向射击。
   "The target is a formation of 25 Thrax Centurions at level 9999 on Steel Path, a 5 by 5 grid spaced 3 metres centre to centre: the smallest odd square that holds every elemental area effect around the aimed body whole, a fully grown 6 m Gas cloud included. The fight lasts 180 seconds.": 目标是 25 个 9999 级钢铁之路凶魂百夫长组成的阵型，5×5 的方阵，圆心间隔 3 米：这是能把以被瞄准敌人为中心的所有元素范围效果完整装下的最小奇数方阵，叠满到 6 米的毒气云也在内。战斗持续 180 秒。
+  "The target is a formation of 25 Thrax Centurions at level 200 on Steel Path, a 5 by 5 grid spaced 3 metres centre to centre: the smallest odd square that holds every elemental area effect around the aimed body whole, a fully grown 6 m Gas cloud included. The fight lasts 180 seconds.": 目标是 25 个 200 级钢铁之路凶魂百夫长组成的阵型，5×5 的方阵，圆心间隔 3 米：这是能把以被瞄准敌人为中心的所有元素范围效果完整装下的最小奇数方阵，叠满到 6 米的毒气云也在内。战斗持续 180 秒。
   "A weapon's own explosion wider than about 6 m, and punch-through past five bodies, are clipped by the grid on purpose: a deeper column would rank the formation rather than the weapon.": "武器自身半径超过约 6 米的爆炸，以及超过 5 个的穿透，会被方阵有意截掉：更深的纵列排出来的是场地，而不是武器。"
   "There is no transition animation either way.": 两个方向都没有切换动作。
   "Thermagnetic Shells, the Detron family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「热磁弹壳」，Detron 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
@@ -2120,6 +2127,7 @@ ui:
   "a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot": 这是对「被射中的那个目标」的逐弹丸落点权重，不是对整发弹幕的承诺 —— 每颗弹丸各自掷一次落点，而爆炸和链打到的任何目标都不可能爆头。
   # THE BOARD'S RULES: mechanical, and naming no weapon.
   "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds.": 目标是一只 9999 级钢铁之路的 Thrax Centurion。战斗持续 180 秒。
+  "The target is one Thrax Centurion at level 200 on Steel Path. The fight lasts 180 seconds.": 目标是一只 200 级钢铁之路的 Thrax Centurion。战斗持续 180 秒。
   "One target: damage that reaches other enemies counts for nothing here.": 只有一个目标：波及其他敌人的伤害在这里不计分。
   "Every shot is aimed and lands on the weak point. That is the ceiling of aim, not a claim about how most players shoot.": 每一发都瞄准并命中弱点。这是瞄准的上限，不是说大多数人都这么打。
   "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks.": 分数是每分钟击杀数，并计入当前目标已被削去的比例。180 秒内削掉一个目标的 3%，得分 0.03，仍然进榜。
@@ -2130,12 +2138,14 @@ ui:
   "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole fight by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today.": "一个 buff 只有在它是永久的时候才以满层开局 —— 没有计时，也不会因使用而消耗。这样的 buff 任何人都能全程保持，所以按低于满层计分，等于在排「投稿者上次补层是多久以前」。其余所有 buff 从零开始，在战斗中挣得。目前数据中有两个 buff 符合。"
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的种子下算出，所以任何一行都能被拿到仓库的人精确复现。
   "The target is one Demolisher Devourer at level 9999 on Steel Path, carrying the health a four-player squad gives it. The fight lasts 180 seconds.": "目标是一只 9999 级钢铁之路的爆破型吞噬者，带着四人小队时的血量。战斗持续 180 秒。"
+  "The target is one Demolisher Devourer at level 200 on Steel Path, carrying the health a four-player squad gives it. The fight lasts 180 seconds.": "目标是一只 200 级钢铁之路的爆破型吞噬者，带着四人小队时的血量。战斗持续 180 秒。"
   "ONE WEAPON FIRES. A four-player squad is a harder TARGET here, not three more guns — this fight has one shooter — so what is ranked is how much of that Demolisher your weapon alone takes off.": "只有一把武器在开火。四人小队在这里意味着更耐打的目标，而不是多出三把枪——这个场地只有一名射手——所以排名比的是你这一把武器单独能把这只爆破使削掉多少。"
   "Every shot is aimed and every one lands on the weak point, which is worth 3x.": "每一发都瞄准，并且全部命中弱点，弱点倍率为 3 倍。"
   "Radiation cannot proc on this unit: the type is dropped from the draw, and every other type on the build gets likelier for it.": "辐射无法在这个单位上触发：抽取异常时会去掉辐射，配装上其他每种类型的触发几率都会因此变高。"
   "It can never be Frozen, so Cold climbs to its cap and stays there. An Impact proc lands and counts as a status type, and does not stagger it.": "它永远不会被冰冻，所以冷冻层数会一路叠到上限并保持。冲击异常能触发，也算作一种异常类型，但打不出硬直。"
   "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one Demolisher in 180 seconds scores 0.03 and still ranks.": "分数是每分钟击杀数，并计入当前目标已被削去的比例。180 秒内削掉一只爆破使的 3%，得分 0.03，仍然进榜。"
   "The target is one Eximus Corrupted Heavy Gunner at level 9999 on Steel Path. The fight lasts 180 seconds.": "目标是一只 9999 级钢铁之路的卓越者堕落重型机枪手。战斗持续 180 秒。"
+  "The target is one Eximus Corrupted Heavy Gunner at level 200 on Steel Path. The fight lasts 180 seconds.": "目标是一只 200 级钢铁之路的卓越者堕落重型机枪手。战斗持续 180 秒。"
   "The target is a Corrupted Heavy Gunner because it spawns in Void Fissures, it is the toughest Orokin unit, and it is one of the targets players most often test builds on. It is Orokin, so faction mods and faction bonuses read on it, and it takes Puncture and Viral at 1.5x and Radiation at 0.5x. As an Eximus it carries Overguard in front of a health pool three and a half times an ordinary Heavy Gunner's; it is armoured; its weak points are 3x on the head and 1x elsewhere.": "选堕落重型机枪手做目标，是因为它会在虚空裂缝里出现，是堕落者里最硬的单位，也是玩家最常拿来测配装的木桩之一。它属于堕落者派系，所以派系 MOD 和派系加成对它生效；它受穿刺和病毒 1.5 倍、辐射 0.5 倍伤害。作为卓越者，它在生命值前面还有一层超宏防护，生命值是普通重型机枪手的三倍半；它有护甲；弱点是头部 3 倍、其他部位 1 倍。"
   "Which Eximus it is changes nothing here: no Eximus aura is applied, and no type that shields itself from weapons is used.": "是哪一种卓越者在这里没有区别：不计任何卓越者光环，也不使用会替自己挡武器伤害的类型。"
   "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one Heavy Gunner in 180 seconds scores 0.03 and still ranks.": "分数是每分钟击杀数，并计入当前目标已被削去的比例。180 秒内削掉一只重型机枪手的 3%，得分 0.03，仍然进榜。"

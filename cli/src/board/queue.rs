@@ -194,7 +194,10 @@ pub(crate) fn write_missing(
     use std::io::Write;
     if let Some(out) = missing_out.as_mut() {
         for (id, mode) in &pending_missing {
-            let line = json!({ "build_id": id, "ruler": bench_id, "mode": mode });
+            // ITS WEAPON TOO, so a scene's first pass can be paced by the
+            // weapon's popularity (`scripts/scene_rows.py`); the queue keeps three.
+            let weapon = who.get(id).map(|w| w.weapon.as_str());
+            let line = json!({ "build_id": id, "ruler": bench_id, "mode": mode, "weapon": weapon });
             let _ = writeln!(out, "{line}");
             missing += 1;
         }
