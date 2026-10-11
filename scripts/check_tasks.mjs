@@ -249,6 +249,24 @@ console.log("\nthe cases that failed in production");
   check("...and one whose fact on the served engine stands is told at once", told.some((t) => t.ref === "many0"), JSON.stringify(told));
 }
 
+{
+  const db = d1(), env = { LIBRARY: db };
+  // AN ANSWERED QUESTION IS NOBODY ELSE'S UNTIL IT IS SETTLED: it heads every
+  // order, so a lease freed before the fact was handed out and answered for nothing.
+  let f, during = [];
+  const probe = { on_answer: async () => { during.push(await f.next(env, { device: "c", owner: "oc", net: "nc" }, "e1", NOW)); },
+    on_fact: async () => {} };
+  f = factory({ verbs: VERBS, producers: { ...PRODUCERS, r: probe }, random: () => 1 });
+  await f.demand(env, { producer: "r", ref: "head", verb: "simulate", request: { n: 7 }, due_in_ms: 1000 }, "e1", NOW);
+  for (const w of [{ device: "a", owner: "oa", net: "na" }, { device: "b", owner: "ob", net: "nb" }]) {
+    const q = await f.next(env, w, "e1", NOW);
+    if (q) await f.answer(env, w, { lease: q.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
+  }
+  check("a question being answered is handed to nobody else until it is settled", during.length === 2 && during.every((x) => x === null),
+    JSON.stringify(during.map((x) => x && x.question)));
+  check("...and is free once it is", db.raw.prepare("SELECT count(*) AS n FROM questions WHERE lease IS NOT NULL").get().n === 0);
+}
+
 console.log("\nthe watchdog");
 {
   // A STALL: a survey's shapes overdue, volunteers at work on

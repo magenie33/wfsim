@@ -235,7 +235,6 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(q.id, engine, w.device, w.owner || w.device, w.net || "", official, c, JSON.stringify(result), work, compute_ms,
           counts ? JSON.stringify(counts) : null, lanes, at),
-      db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ? AND leased_to = ?").bind(q.id, w.device),
     ];
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md §"Contribution").
@@ -254,6 +253,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, random =
       }
     }
     await settle(env, q.id, engine, now);
+    // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED: the answered question
+    // heads every witness's order, so freed before it became a fact it was
+    // taken at once and answered again for nothing.
+    await db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ? AND leased_to = ?").bind(q.id, w.device).run();
   }
 
   /// WHAT THE ANSWERS NOW MAKE OF A QUESTION (§"States").
