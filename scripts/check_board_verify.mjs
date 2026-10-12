@@ -418,6 +418,16 @@ console.log("\norders open before the factory");
   check("...and one the backfill asks, by its own age too", demand("aged8") && Math.abs(dueIn("aged8") - 7) < 0.01, demand("aged8") && dueIn("aged8"));
 }
 
+console.log("\nthe database's safety valve");
+{
+  env.COMPUTE_CAP = "1";
+  L.prepare("UPDATE verifiers SET asked_at = ?").run(new Date().toISOString());
+  const fresh = await work("9".repeat(24), { ip: "203.0.113.90" });
+  check("past COMPUTE_CAP a computer that answered nothing lately is handed nothing", fresh.busy === true && none(fresh), JSON.stringify(fresh));
+  delete env.COMPUTE_CAP;
+  check("...and with no cap it is handed work as before", !(await work("8".repeat(24), { ip: "203.0.113.91" })).busy);
+}
+
 console.log("\nan older engine still accepted computes the weapons its data matches");
 {
   L.prepare("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'").run();

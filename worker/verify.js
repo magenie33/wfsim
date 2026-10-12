@@ -219,7 +219,7 @@ async function work(request, env) {
     db.prepare("UPDATE verifiers SET seen = ? WHERE id = ? AND seen IS NOT ?").bind(day(), id, day()),
     ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
       : f.releaseAllOf(env, id, now),
-    db.prepare("SELECT banned, refused_until FROM verifiers WHERE id = ?").bind(id),
+    db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
     db.prepare(`SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
                   AND (lease_until IS NULL OR lease_until < ?1) LIMIT ?2)) AS open,
                 (SELECT count(*) FROM verifiers WHERE asked_at > ?3) AS asking`).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
@@ -239,6 +239,11 @@ async function work(request, env) {
     return json({ ok: true, release, work: leased && workOf(leased), pack: null });
   }
   const { open, asking } = fair.results[0];
+  // A SAFETY VALVE FOR THE DATABASE (`COMPUTE_CAP`, a worker var; unset is no
+  // cap): past that many computers asking, one that has answered nothing in ten
+  // minutes is handed nothing and asks again later — those already computing go on.
+  const cap = Number(env.COMPUTE_CAP) || 0;
+  if (cap && asking > cap && !(v.last_at && v.last_at > iso(now - 600_000))) return json({ ok: true, release, work: null, pack: null, busy: true });
   // WHILE THE OPEN ROWS ARE FEWER THAN THE ASKING WOULD TAKE, an account past its
   // fair share is handed nothing this ask (worker/fair.js) — and only then, so
   // the table is never read while work is plentiful.
