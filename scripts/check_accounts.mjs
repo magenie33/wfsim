@@ -200,7 +200,7 @@ const nobody = await browser().login("nobody@example.com", PASSWORD);
 check("a wrong password and an unknown address answer alike",
   badPw.reason === "wrong_credentials" && nobody.reason === "wrong_credentials", JSON.stringify([badPw, nobody]));
 check("a password is never kept as itself", !env.ACCOUNTS.raw.prepare(
-  "SELECT group_concat(password_hash) h FROM identities").get().h.includes(PASSWORD));
+  "SELECT password_hash FROM identities").all().some((r) => String(r.password_hash).includes(PASSWORD)));
 me = await a.me();
 check("the account page says the address has a password, and never shows it",
   me.identities.find((i) => i.provider === "email").has_password === true && !JSON.stringify(me).includes("pbkdf2"),

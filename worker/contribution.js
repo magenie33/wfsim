@@ -36,7 +36,7 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
-import { factoryDb, isPg, sameDb } from "./factory_db.js";
+import { factoryDb, pick, sameDb } from "./factory_db.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
@@ -141,7 +141,7 @@ async function spanWork(env, spans) {
     const part = cut.slice(i, i + PER_STATEMENT);
     const rows = await db.batch(part.map(([s]) => db.prepare(
       `SELECT SUM(work) AS work, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS recent, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS week
-         FROM verifier_hours WHERE verifier = ? AND hour >= ? AND (${isPg(db) ? "?::text" : "?"} IS NULL OR hour < ?)`)
+         FROM verifier_hours WHERE verifier = ? AND hour >= ? AND (${pick(db, "?", "?::text")} IS NULL OR hour < ?)`)
       .bind(from, week, s.verifier, s.from_hour, s.until_hour, s.until_hour)));
     part.forEach(([s, k], j) => {
       const r = rows[j].results[0] || {};
@@ -338,7 +338,7 @@ async function accountLedger(env, account, from) {
     const part = spans.slice(i, i + PER_STATEMENT);
     const db = factoryDb(env);
     const rows = await db.batch(part.map((s) => db.prepare(
-      `SELECT hour, work FROM verifier_hours WHERE verifier = ? AND hour >= ? AND hour >= ? AND (${isPg(db) ? "?::text" : "?"} IS NULL OR hour < ?) ORDER BY hour`)
+      `SELECT hour, work FROM verifier_hours WHERE verifier = ? AND hour >= ? AND hour >= ? AND (${pick(db, "?", "?::text")} IS NULL OR hour < ?) ORDER BY hour`)
       .bind(s.verifier, s.from_hour, from, s.until_hour, s.until_hour)));
     part.forEach((s, j) => { for (const r of rows[j].results) hours.push({ hour: r.hour, id: s.verifier.slice(0, 6), points: points(r.work || 0) }); });
   }
@@ -367,7 +367,7 @@ async function claim(env, account, b) {
   await closeSpan(env, v, nextHour());
   const last = await db.prepare("SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(v).first();
   await db.batch([
-    db.prepare("INSERT OR IGNORE INTO device_spans (verifier, account, from_hour) VALUES (?1, ?2, ?3)").bind(v, account, last ? last.until_hour : ""),
+    db.prepare("INSERT INTO device_spans (verifier, account, from_hour) VALUES (?1, ?2, ?3) ON CONFLICT DO NOTHING").bind(v, account, last ? last.until_hour : ""),
     db.prepare(`INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?1, ?2, ?3, ?4)
       ON CONFLICT (verifier) DO UPDATE SET account = ?2, claimed_at = ?3, label = ?4`).bind(v, account, now(), labelOf(b.label)),
   ]);
@@ -544,16 +544,16 @@ async function demand(request, env) {
                 FROM queue q JOIN batches b ON b.id = q.batch
                 LEFT JOIN demands d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode AND d.producer = 'new_build' AND d.state = 'live'
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
-    db.prepare(`SELECT SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official
+    db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
                 FROM scores WHERE finished_at >= ?`).bind(hour),
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
       .bind(iso(t - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
     // many two owners have agreed on and how many anyone has begun. A survey
     // whose every shape is agreed is reached, and no longer a goal.
-    db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(agreed_at IS NOT NULL) AS agreed, SUM(started_at IS NOT NULL) AS started
+    db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) AS agreed, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started
                 FROM appraisals WHERE channel = ? AND request IS NOT NULL AND at > ? GROUP BY weapon, ruler
-                HAVING SUM(agreed_at IS NOT NULL) < COUNT(*) ORDER BY MIN(at), weapon`)
+                HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
       .bind(SURVEY_CHANNEL, iso(t - SURVEY_KEEP_MS)),
   ]);
   const by = Object.fromEntries(owed.results.map((r) => [r.k, r.n]));
@@ -572,7 +572,7 @@ async function demand(request, env) {
 /// since it, read on `scores_oldest`. A row replaced since the base is counted
 /// again until the next base; the volunteers' count stays exact either way.
 const TALLY_BASE_MS = 60 * 60_000;
-const SPLIT = `SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official`;
+const SPLIT = `SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official`;
 async function tally(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const key = new Request(new URL("/api/board/tally", request.url).toString());

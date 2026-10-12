@@ -104,8 +104,8 @@ async function open(request, env) {
   if (room && byRoom.results[0].n >= PER_ROOM) return json({ ok: false, error: "room_limit", per_hour: PER_ROOM }, 429);
   for (let i = 0; i < 5; i++) {
     const code = newCode();
-    const r = await db.prepare(`INSERT OR IGNORE INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(code, b.channel, JSON.stringify(b.chat || {}), b.asker, room,
+    const r = await db.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`).bind(code, b.channel, JSON.stringify(b.chat || {}), b.asker, room,
       b.weapon, b.ruler, JSON.stringify(b.riven), iso(now)).run();
     if (r.meta.changes) return json({ ok: true, code });
   }
@@ -402,7 +402,7 @@ async function claim(request, env) {
     await db.batch(toJudge.map((r) => db.prepare("UPDATE appraisal_results SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
   }
   const { results: toTell } = await db.prepare(`SELECT a.code, a.weapon, a.ruler, a.riven, a.chat, a.asker, a.at AS asked_at,
-      a.done_at, r.id AS result_id, r.thanks, r.verdict, r.verifier IS NOT NULL AS volunteer
+      a.done_at, r.id AS result_id, r.thanks, r.verdict, CASE WHEN r.verifier IS NULL THEN 0 ELSE 1 END AS volunteer
     FROM appraisals a JOIN appraisal_results r ON r.id = a.winner
     WHERE a.channel = ? AND a.done_at IS NOT NULL AND a.told_at IS NULL ORDER BY a.done_at LIMIT 20`).bind(channel).all();
   // A COMPUTER TOOK IT: the chat may be told so, once, while it waits.
