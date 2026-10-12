@@ -428,11 +428,21 @@ console.log("\nthe watchdog");
   db.raw.exec(`INSERT INTO batches (id, at, why, total) VALUES ('b', 'x', 'test', 2);
     INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', 'x1', 'sst__sp200', 'base'), ('b', 'x2', 'sst__sp200', 'base'), ('b', 'x3', 'sst', 'base');
     INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-      VALUES ('x0', 'sst__sp200', 'base', 'v', 1, 'kpm', 0, 'x', 'x');`);
+      VALUES ('x0', 'sst__sp200', 'base', 'v', 1, 'kpm', 0, 'x', '${iso(NOW - 7 * 3_600_000)}');`);
   const found = (await watchdog(env, NOW)).find((x) => x.kind === "cells_filling");
   check("a scene still filling is said: measured and owed, per cell ruler",
-    found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, owed: 2 }])
+    found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, recent: 0, recent_hours: 6, owed: 2 }])
       && said.some((x) => /cells_filling/.test(x.text)), JSON.stringify(found));
+  check("...and a cell that measured nothing in six hours is said as needing someone",
+    said.some((x) => x.text.includes("🔴 要处理") && x.text.includes("sst · sp200")), JSON.stringify(said));
+  const { watchdogText } = await import("../worker/watchdog_say.js");
+  const moving = watchdogText({ kind: "cells_filling", cells: [{ ruler: "sst__sp200", measured: 30, recent: 12, recent_hours: 6, owed: 60 }] }, NOW);
+  check("...a cell that is moving is progress, with its pace and time left",
+    moving.includes("🟢 进度") && moving.includes("30/90") && moving.includes("+12/6h") && moving.includes("约 30 小时"), moving);
+  check("every finding the audit makes has its own words, none the fallback",
+    ["stalled:p", "nondeterministic", "unsettled", "overdue", "disagreeing"].every((kind) => !watchdogText({ kind, producer: "p", questions: 1,
+      oldest_due: iso(NOW), witnesses_active: 1, producers: [{ producer: "p", questions: 1, oldest_due: iso(NOW) }],
+      engine: "e", answers: 10, differ: 5, owners: [{ owner: "o", answers: 10, differ: 5, devices: 1 }] }, NOW).includes("没有这一类的说明")));
   db.raw.exec("DELETE FROM queue WHERE ruler = 'sst__sp200'");
   check("...and nothing once it is full", !(await watchdog(env, NOW + 7 * 3_600_000)).some((x) => x.kind === "cells_filling"));
 }

@@ -658,7 +658,9 @@ deadline and what only they may settle.
   hours late — a refresh past due is a row past fifteen days), and clients disagreeing with the hour's facts on
   the served engine (thirty answers and 3% of them, by owner) are said to the
   owner, once a cause until it has stood six hours. So is a scene still
-  filling, its cell rulers' rows measured and owed.
+  filling, its cell rulers' rows measured, measured in six hours, and owed —
+  a cell that measured none is said as needing someone. Each is said with a
+  level, what it means and what to do (`worker/watchdog_say.js`).
 - **WHO IS ON**: a page's ask for work is recorded once a minute
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.

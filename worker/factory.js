@@ -7,6 +7,7 @@ import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board_tasks.js";
 import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } from "./verify.js";
 import { cloudTell } from "./cloud.js";
+import { watchdogText } from "./watchdog_say.js";
 import { iso } from "./instant.js";
 
 /// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY. Hand-outs go
@@ -149,12 +150,13 @@ export async function watchdog(env, now = Date.now()) {
   };
   const found = await facts().audit(env, now, (await servedRelease(env)).engine);
   if (await stale("cells_filling")) {
-    const cells = await cellsFilling(env);
+    const cells = await cellsFilling(env, now);
     if (cells.length) found.push({ kind: "cells_filling", cells });
   }
   for (const f of found) {
     if (!(await stale(f.kind))) continue;
-    if (await cloudTell(env, `WFSim compute watchdog: ${f.kind} ${JSON.stringify(f)}`)) {
+    if (await cloudTell(env, `WFSim compute watchdog
+${watchdogText(f, now)}`)) {
       await db.prepare(`INSERT INTO watchdog_told (cause, told_at) VALUES (?, ?)
                         ON CONFLICT (cause) DO UPDATE SET told_at = excluded.told_at`).bind(f.kind, iso(now)).run();
     }

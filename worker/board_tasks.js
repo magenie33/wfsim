@@ -79,17 +79,20 @@ export const BOARD_PRODUCERS = { new_build: boardProducer, refresh: boardProduce
 export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ")})`;
 
 /// A SCENE'S RULERS STILL FILLING, for the watchdog: per cell ruler (an id with
-/// `__`, docs/BOARD.md §"A ruler's ladder"), the rows measured and the rows
-/// still owed. Two scans of the tables, so read only when it is to be said.
-export async function cellsFilling(env) {
+/// `__`, docs/BOARD.md §"A ruler's ladder"), the rows measured, those measured
+/// in the last `since_ms`, and the rows still owed (a measured row leaves the
+/// queue). Scans of the tables, so read only when it is to be said.
+export async function cellsFilling(env, now = Date.now(), since_ms = 6 * 3_600_000) {
   const db = env.LIBRARY;
   const { results: owed } = await db.prepare(
     `SELECT ruler, count(DISTINCT build_id || '|' || mode) AS owed FROM queue WHERE instr(ruler, '__') > 0 GROUP BY ruler`).all();
   if (!owed.length) return [];
   const { results: measured } = await db.prepare(
-    "SELECT ruler, count(*) AS measured FROM scores WHERE instr(ruler, '__') > 0 GROUP BY ruler").all();
-  const m = new Map(measured.map((r) => [r.ruler, r.measured]));
-  return owed.map((r) => ({ ruler: r.ruler, measured: m.get(r.ruler) || 0, owed: r.owed }));
+    `SELECT ruler, count(*) AS measured, sum(finished_at > ?) AS recent FROM scores WHERE instr(ruler, '__') > 0 GROUP BY ruler`)
+    .bind(iso(now - since_ms)).all();
+  const m = new Map(measured.map((r) => [r.ruler, r]));
+  return owed.map((r) => ({ ruler: r.ruler, measured: m.get(r.ruler)?.measured || 0, recent: m.get(r.ruler)?.recent || 0,
+    recent_hours: since_ms / 3_600_000, owed: r.owed }));
 }
 
 /// THE TASK THE FACTORY LEASED, in the shape the page fights a board row in.
