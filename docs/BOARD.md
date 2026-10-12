@@ -899,6 +899,14 @@ yes, since each ask again is a reader interrupted. Eight rules:
    whole picture (`/api/board/demand`): browsers computing now, owed rows by
    why, riven gains waiting, and the last hour's scores by the volunteers and
    by the official machines — totals, never a device or a person.
+   EVERY POINT HAS A LEDGER, as open as privacy allows (worker/contribution.js
+   §"The ledger", `check_ledger`): this browser, by its own id, sees its
+   credited hours day by day in the reader's time zone, each said with where
+   it went — kept on the device, the reader's own account, or another account
+   never named, an ended span said as ended — its all-time split by holder,
+   and its window's results that earned nothing, by why. An owner opens the
+   same for each listed device, and the account's points by day, device by
+   device.
    Below it this browser's recent tasks, each with the build, the fight, the
    number it computed and where it stands, asked by the browser's own id —
    a board order of `/api/board/mine` (waiting, checking, confirmed or no

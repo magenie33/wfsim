@@ -15,6 +15,9 @@
 //   POST /api/account/contribution   { named }    → { ok }
 //   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour;
 //        the points are what no account holds yet, so 0 once it is claimed
+//   POST /api/board/ledger           { verifier, from? } → the device's ledger (`ledgerOf`), the signed-in reader's account its `you`
+//   POST /api/account/devices/ledger { id, from? }       → the same, for one of the account's devices by its six characters
+//   GET  /api/account/ledger[?from=] → { devices: [{ id, label, removed, refused }], hours: [{ hour, id, points }] } — what came in, device by device
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
 //   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }] (unfinished), per_hour: { volunteers, official } }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
@@ -259,6 +262,91 @@ async function devicePoints(env, b) {
     today = { tasks: (t && t.tasks) || 0, ms: (t && t.ms) || 0, points: points((t && t.work) || 0) };
   }
   return json({ ok: true, points: points(w.work), recent: points(w.recent), week: points(w.week), claimed, ...(today ? { today } : {}) });
+}
+
+// ---- The ledger ----------------------------------------------------------------
+//
+// WHERE A DEVICE'S POINTS WENT, hour by hour, as transparent as privacy allows
+// (docs/BOARD.md §"Contribution"). Each hour is its span's holder's (§"Spans"):
+// `device` while no account held it, `you` for the reader's own account, `other`
+// for any other — whose name never leaves here — and `closed` once that span
+// ended. A full device id is never sent; only its own browser can ask by it.
+const HOUR = /^\d{4}-\d\d-\d\dT\d\d$/;
+const LEDGER_DAYS = 30;
+/// The first hour a ledger lists: the one asked, "" for all of it, else the last `LEDGER_DAYS`.
+const ledgerFrom = (f) => (f === "" || HOUR.test(f || "") ? f : since(LEDGER_DAYS) + "T00");
+
+/// `verifier`'s ledger as `me` reads it: every hour from `from`, the all-time
+/// split by holder, and its results that earned nothing in the window — those
+/// that disagreed with the agreed result, those still waiting for another
+/// computer, and those set aside with a refusal.
+async function ledgerOf(env, verifier, me, from) {
+  const db = env.LIBRARY;
+  const [spans, hours, v, u] = await Promise.all([
+    env.ACCOUNTS ? env.ACCOUNTS.prepare("SELECT account, from_hour, until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour")
+      .bind(verifier).all().then((r) => r.results) : [],
+    db.prepare("SELECT hour, work, tasks FROM verifier_hours WHERE verifier = ? ORDER BY hour").bind(verifier).all().then((r) => r.results),
+    db.prepare("SELECT banned FROM verifiers WHERE id = ?").bind(verifier).first(),
+    db.prepare(`SELECT SUM(a.void = 1) AS refused, SUM(a.void = 0 AND q.state = 'fact') AS disagreed,
+        SUM(a.void = 0 AND q.state IN ('open', 'disputed', 'spot', 'nondeterministic')) AS waiting
+        FROM answers a JOIN questions q ON q.id = a.question
+        WHERE a.device = ? AND a.at >= ? AND a.credited = 0 AND a.official = 0`).bind(verifier, from).first(),
+  ]);
+  const at = (h) => {
+    const s = spans.find((x) => (!x.from_hour || h >= x.from_hour) && (x.until_hour == null || h < x.until_hour));
+    return s ? { holder: me && s.account === me ? "you" : "other", closed: s.until_hour != null } : { holder: "device", closed: false };
+  };
+  const sum = { tasks: 0, device: 0, you: 0, other: 0 }, rows = [];
+  for (const r of hours) {
+    const w = at(r.hour);
+    sum.tasks += r.tasks || 0;
+    sum[w.holder] += r.work || 0;
+    if (r.hour >= from) rows.push({ hour: r.hour, tasks: r.tasks || 0, points: points(r.work || 0), ...w });
+  }
+  return { ok: true, from, earlier: !!hours.length && hours[0].hour < from, refused: !!(v && v.banned),
+    summary: { tasks: sum.tasks, points: points(sum.device + sum.you + sum.other), device: points(sum.device), you: points(sum.you), other: points(sum.other) },
+    unpaid: { disagreed: (u && u.disagreed) || 0, waiting: (u && u.waiting) || 0, refused: (u && u.refused) || 0 }, hours: rows };
+}
+
+async function deviceLedger(request, env, b) {
+  if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
+  if (!env.LIBRARY) return no("unavailable", 503);
+  const me = env.AUTH_SECRET && env.ACCOUNTS ? await sessionAccount(env, request) : null;
+  return json(await ledgerOf(env, b.verifier, me, ledgerFrom(b.from)));
+}
+async function ownLedger(env, account, b) {
+  const v = await ownDevice(env, account, b.id);
+  if (!v) return no("not_your_device", 404);
+  if (!env.LIBRARY) return no("unavailable", 503);
+  return json(await ledgerOf(env, v, account, ledgerFrom(b.from)));
+}
+
+/// WHAT CAME IN TO THE ACCOUNT, hour by hour and device by device — its spans'
+/// hours alone, a removed device's included, each named by its six characters.
+async function accountLedger(env, account, from) {
+  const [{ results: spans }, { results: listed }] = await Promise.all([
+    env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT verifier, label FROM devices WHERE account = ?1").bind(account).all(),
+  ]);
+  const hours = [];
+  for (let i = 0; i < spans.length; i += PER_STATEMENT) {
+    const part = spans.slice(i, i + PER_STATEMENT);
+    const rows = await env.LIBRARY.batch(part.map((s) => env.LIBRARY.prepare(
+      "SELECT hour, work FROM verifier_hours WHERE verifier = ? AND hour >= ? AND hour >= ? AND (? IS NULL OR hour < ?) ORDER BY hour")
+      .bind(s.verifier, s.from_hour, from, s.until_hour, s.until_hour)));
+    part.forEach((s, j) => { for (const r of rows[j].results) hours.push({ hour: r.hour, id: s.verifier.slice(0, 6), points: points(r.work || 0) }); });
+  }
+  const ids = [...new Set(spans.map((s) => s.verifier))];
+  const banned = new Set();
+  for (let i = 0; i < ids.length; i += PER_STATEMENT) {
+    const part = ids.slice(i, i + PER_STATEMENT);
+    const { results } = await env.LIBRARY.prepare(`SELECT id FROM verifiers WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
+      .bind(...part).all();
+    for (const r of results) banned.add(r.id);
+  }
+  const label = new Map(listed.map((d) => [d.verifier, d.label]));
+  const devices = ids.map((v) => ({ id: v.slice(0, 6), label: label.get(v) || null, removed: !label.has(v), refused: banned.has(v) }));
+  return json({ ok: true, from, devices, hours: hours.sort((x, y) => (x.hour < y.hour ? -1 : x.hour > y.hour ? 1 : 0)) });
 }
 
 /// A DEVICE WORKS FOR THE ACCOUNT SIGNED IN ON IT, from the next hour on
@@ -536,15 +624,26 @@ export async function contributionRoute(request, env, path) {
     try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
     return devicePoints(env, b);
   }
+  if (path === "/api/board/ledger") {
+    if (request.method !== "POST") return no("method", 405);
+    let b = {};
+    try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
+    return deviceLedger(request, env, b);
+  }
   const posts = { "/api/account/devices/claim": claim, "/api/account/devices/label": relabel,
-    "/api/account/devices/remove": release, "/api/account/contribution": choose };
-  if (path !== "/api/account/devices" && !posts[path]) return null;
+    "/api/account/devices/remove": release, "/api/account/contribution": choose, "/api/account/devices/ledger": ownLedger };
+  const gets = ["/api/account/devices", "/api/account/ledger"];
+  if (!gets.includes(path) && !posts[path]) return null;
   if (!env.ACCOUNTS || !env.AUTH_SECRET) return no("unavailable", 503);
-  const get = path === "/api/account/devices";
+  const get = gets.includes(path);
   if (request.method !== (get ? "GET" : "POST")) return no("method", 405);
   if (!get && !sameSite(request)) return no("cross_site", 403);
   const account = await sessionAccount(env, request);
   if (!account) return no("not_signed_in", 401);
+  if (path === "/api/account/ledger") {
+    if (!env.LIBRARY) return no("unavailable", 503);
+    return accountLedger(env, account, ledgerFrom(new URL(request.url).searchParams.get("from") ?? undefined));
+  }
   if (get) return devices(request, env, account);
   let b = {};
   try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }

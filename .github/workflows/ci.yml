@@ -164,6 +164,8 @@ jobs:
         run: node scripts/check_clients_doc.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
+      - name: A device's ledger says where every point went, and names nobody else
+        run: node scripts/check_ledger.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot
         run: node scripts/check_tasks.mjs
       - name: While work is short an account past its fair share waits, and only then

@@ -365,6 +365,19 @@ still handed out; a chat asking what a survey agreed is answered at once with
 a build to tell; and an appraisal frozen before the factory is adopted once,
 due as of when it was opened, its answers carried.
 
+## `check_ledger`
+
+Plain node against `worker/accounts.sql` and `worker/schema.sql`. A device's
+ledger gives each credited hour to its span's holder — the device itself, the
+reader's own account, or another account never named — says an ended span as
+ended, adds its all-time split up by holder, lists its window's hours alone
+and says earlier ones exist, and counts the window's unpaid results by why
+(disagreed, waiting, refused), a volunteer's alone; it is asked by POST with a
+well-formed id, and by an owner by six characters, nobody else; an account's
+ledger holds its own spans' hours device by device, a device taken since
+counted as removed; no answer carries a full device id or an account's id or
+name.
+
 ## `check_contribution`
 
 Plain node against `worker/accounts.sql` and `worker/schema.sql`, the paid half
