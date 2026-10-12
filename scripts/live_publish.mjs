@@ -14,22 +14,11 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+import { query, close } from "./db.mjs";
 
 const OVERLAP_SECONDS = 2 * 3600;
 const SITE = process.env.WFSIM_SITE || "https://wfsim.app";
 const [mode, work, dir] = process.argv.slice(2);
-
-async function d1(sql, params = []) {
-  const { CF_ACCOUNT, CF_TOKEN, CF_D1_DATABASE } = process.env;
-  const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/d1/database/${CF_D1_DATABASE}/query`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
-    body: JSON.stringify({ sql, params }),
-  });
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j || !j.success) throw new Error(`d1 ${r.status}: ${JSON.stringify(j && j.errors)}`);
-  return j.result[0].results;
-}
 
 const key = (f) => `${f.identity}|${f.ruler}|${f.mode}`;
 
@@ -40,8 +29,9 @@ async function delta() {
   let seen = existsSync(cursorPath) ? readFileSync(cursorPath, "utf8").trim() : "";
   if (!seen) for (const l of lines) { const f = JSON.parse(l); if (f.finished_at > seen) seen = f.finished_at; }
   const since = new Date(Date.parse(seen || "1970-01-01T00:00:00Z") - OVERLAP_SECONDS * 1000).toISOString();
-  const rows = await d1(`SELECT identity, ruler, mode, measured_by, score, cost_seconds, started_at, finished_at
+  const rows = await query(`SELECT identity, ruler, mode, measured_by, score, cost_seconds, started_at, finished_at
                          FROM scores WHERE finished_at > ? ORDER BY finished_at`, [since]);
+  await close();
   const byKey = new Map(lines.map((l) => [key(JSON.parse(l)), l]));
   // COMPARED AS VALUES: the hourly read writes its lines through jq and this
   // through JSON.stringify, and two spellings of one fact are not a change.

@@ -11,7 +11,7 @@
 # pipeline, designed around one rule").
 #
 # THE CURSOR IS AN OPTIMISATION, NOT CORRECTNESS. The write is
-# `INSERT OR REPLACE` on the row's own key, so shipping a line twice writes the
+# An upsert on the row's own key, so shipping a line twice writes the
 # same row twice and a lost cursor costs one repeat, never a wrong number.
 set -euo pipefail
 
@@ -23,31 +23,8 @@ set -euo pipefail
 FACT_COLUMNS=9
 BATCH=$((100 / FACT_COLUMNS))
 
-configured() {
-  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
-}
-
-# A REFUSED WRITE HAS TO SAY WHY — the body to a file, the status to a
-# variable. `curl -sf` swallows the body, and a token without D1 permission, a
-# missing table and a malformed statement then arrive as the same silent
-# non-zero.
-D1_OUT=""
-D1_CODE=""
-d1() {
-  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
-  # A CALL THAT NEVER ANSWERS IS THE WORST SHAPE THIS PIPELINE HAS. Without a
-  # clock a hung connection holds the step until GitHub's six-hour cap, and the
-  # board's workflows keep ONE run pending per concurrency group — so every
-  # hourly tick behind it is cancelled and nothing is scored until somebody
-  # looks. Measured 2026-09-21: one hung call cost seventeen hours of ticks.
-  D1_CODE=$(curl -s --connect-timeout 15 --max-time 180     -o "$D1_OUT" -w '%{http_code}' -X POST \
-    -H "Authorization: Bearer ${CF_TOKEN:-x}" \
-    -H "content-type: application/json" \
-    --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
-    || D1_CODE="000"
-  [ "$D1_CODE" = "200" ]
-}
+. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
+configured() { db_configured; }
 
 # ---- the statements -------------------------------------------------------
 #
@@ -55,7 +32,7 @@ d1() {
 # arrived at a public endpoint, and this is the one place in the pipeline where
 # that text meets a language.
 #
-# `INSERT OR REPLACE` on (identity, ruler, mode): a row has one fact, the last
+# AN UPSERT on (identity, ruler, mode), every column written: a row has one fact, the last
 # measurement of it, and measuring it again overwrites.
 #
 # THE CLOCKS ARE THE SCORER'S, NOT THE SHIPPER'S AND NOT THE DATABASE'S. A row
@@ -71,12 +48,15 @@ batches() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT OR REPLACE INTO scores (identity, ruler, mode,"
+        sql: ("INSERT INTO scores (identity, ruler, mode,"
               + " measured_by, score, metric, cost_seconds,"
               + " started_at, finished_at)"
               + " VALUES "
               + ([$chunk[] | "(?,?,?,?,?,?,?,?,?)"]
-                 | join(","))),
+                 | join(","))
+              + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by,"
+              + " score = excluded.score, metric = excluded.metric, cost_seconds = excluded.cost_seconds,"
+              + " started_at = excluded.started_at, finished_at = excluded.finished_at"),
         params: [$chunk[]
                  | .identity, .ruler, .mode, (.measured_by // ""),
                    .score, .metric,
@@ -127,13 +107,13 @@ ship() {
   tail -n +$((from + 1)) "$src" > "$pending"
   while IFS= read -r body; do
     [ -n "$body" ] || continue
-    if d1 "$body"; then
+    if db_query "$body"; then
       sent=$((sent + 1))
     else
       failed=$((failed + 1))
       if [ "$failed" -eq 1 ]; then
-        echo "::error::facts: the database refused a write [HTTP $D1_CODE]"
-        head -c 500 "$D1_OUT" || true
+        echo "::error::facts: the database refused a write [HTTP $DB_CODE]"
+        head -c 500 "$DB_OUT" || true
         echo
       fi
     fi
@@ -150,8 +130,8 @@ ship() {
     local spent=0
     while IFS= read -r body; do
       [ -n "$body" ] || continue
-      d1 "$body" && spent=$((spent + 1)) || {
-        echo "::warning::queue: a spent row would not delete [HTTP $D1_CODE] — it will be computed again"
+      db_query "$body" && spent=$((spent + 1)) || {
+        echo "::warning::queue: a spent row would not delete [HTTP $DB_CODE] — it will be computed again"
       }
     done < <(spends "$pending2")
     rm -f "$pending2"
@@ -167,6 +147,7 @@ ship() {
 # ---- self-test ------------------------------------------------------------
 self_test() {
   ok=0; bad=0
+  unset PG_URL
   DIR=$(mktemp -d)
   trap 'rm -rf "$DIR"' EXIT
   mkdir -p "$DIR/bin" "$DIR/work"

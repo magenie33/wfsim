@@ -22,34 +22,15 @@ BUILD_COLUMNS=3
 BUILD_BATCH=$((100 / BUILD_COLUMNS))
 DELETE_BATCH=100
 
-configured() {
-  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
-}
-
-D1_OUT=""
-D1_CODE=""
-d1() {
-  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
-  # A CALL THAT NEVER ANSWERS IS THE WORST SHAPE THIS PIPELINE HAS. Without a
-  # clock a hung connection holds the step until GitHub's six-hour cap, and the
-  # board's workflows keep ONE run pending per concurrency group — so every
-  # hourly tick behind it is cancelled and nothing is scored until somebody
-  # looks. Measured 2026-09-21: one hung call cost seventeen hours of ticks.
-  D1_CODE=$(curl -s --connect-timeout 15 --max-time 180     -o "$D1_OUT" -w '%{http_code}' -X POST \
-    -H "Authorization: Bearer ${CF_TOKEN:-x}" \
-    -H "content-type: application/json" \
-    --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
-    || D1_CODE="000"
-  [ "$D1_CODE" = "200" ]
-}
+. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
+configured() { db_configured; }
 
 # ---- the statements -------------------------------------------------------
 #
 # PARAMETERS ARE BOUND, NEVER INTERPOLATED. A record is built from ids that
 # arrived at a public endpoint, and this is where that text meets a language.
 #
-# `INSERT OR REPLACE` on the build's own id: the id is a hash of what makes the
+# AN UPSERT on the build's own id: the id is a hash of what makes the
 # build one, so a build derived twice is one row and there is nothing to ask the
 # table first. The record it replaces is the same record.
 #
@@ -63,8 +44,9 @@ build_batches() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT OR REPLACE INTO builds (id, at, record) VALUES "
-              + ([$chunk[] | "(?,?,?)"] | join(","))),
+        sql: ("INSERT INTO builds (id, at, record) VALUES "
+              + ([$chunk[] | "(?,?,?)"] | join(","))
+              + " ON CONFLICT (id) DO UPDATE SET at = excluded.at, record = excluded.record"),
         params: [$chunk[] | .id, .at, (.record | tojson)]
       }
   ' "$1"
@@ -88,7 +70,7 @@ send() {
   local what="$1" sent=0 failed=0 body
   while IFS= read -r body; do
     [ -n "$body" ] || continue
-    if d1 "$body"; then
+    if db_query "$body"; then
       sent=$((sent + 1))
     else
       failed=$((failed + 1))
@@ -98,8 +80,8 @@ send() {
       # statements".
       if [ "$failed" -eq 1 ]; then
         {
-          echo "::error::builds: the database refused a $what [HTTP $D1_CODE]"
-          head -c 500 "$D1_OUT" || true
+          echo "::error::builds: the database refused a $what [HTTP $DB_CODE]"
+          head -c 500 "$DB_OUT" || true
           echo
         } >&2
       fi
@@ -139,6 +121,7 @@ ship() {
 # ---- self-test ------------------------------------------------------------
 self_test() {
   ok=0; bad=0
+  unset PG_URL
   DIR=$(mktemp -d)
   trap 'rm -rf "$DIR"' EXIT
   mkdir -p "$DIR/bin" "$DIR/work"
@@ -197,7 +180,7 @@ OK
     && say ok "a pass ships its builds and spends its queue" || say FAIL "$(cat out.txt)"
   # THE ORDER IS THE WHOLE SAFETY ARGUMENT. Stopped between the two, the queue
   # still holds what the library is missing.
-  grep -n "INSERT OR REPLACE INTO builds" sent.log | head -1 | cut -d: -f1 > a.txt
+  grep -n "INSERT INTO builds" sent.log | head -1 | cut -d: -f1 > a.txt
   grep -n "DELETE FROM inbox" sent.log | head -1 | cut -d: -f1 > b.txt
   [ "$(cat a.txt)" -lt "$(cat b.txt)" ] \
     && say ok "...with every build written before any queue row is spent" \

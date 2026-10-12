@@ -9,8 +9,8 @@
 //
 // `measure` times the engine contributors run (the site's wasm, under V8) over
 // the board's rows. `sample` reads the volunteers' credited board answers of
-// the last `days` from the database (CF_ACCOUNT, CF_TOKEN, CF_D1_DATABASE,
-// CF_D1_ACCOUNTS) and fights `rows` of their questions natively for their
+// the last `days` from the databases (scripts/db.mjs: D1's CF_ACCOUNT, CF_TOKEN,
+// CF_D1_ACCOUNTS, or PG_ACCOUNTS_URL) and fights `rows` of their questions natively for their
 // exact count. `fit` takes the price BETWEEN the two terms from the timing,
 // and the SCALE from those answers: what they would be paid now over what they
 // were paid is `total`, held to 1.00–1.20. It reports that, each account's
@@ -23,6 +23,7 @@ import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { loadEngine } from "./wasm_engine.mjs";
+import { query, close, onPostgres } from "./db.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
 const arg = (name, dflt) => {
@@ -100,16 +101,6 @@ async function factoryReport(body) {
   return j;
 }
 
-/// ONE QUERY TO A DATABASE over Cloudflare's API, the way scripts/fetch_facts.sh asks.
-async function d1(database, sql, params = []) {
-  const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT}/d1/database/${database}/query`;
-  const r = await fetch(url, { method: "POST", headers: { authorization: `Bearer ${process.env.CF_TOKEN}`, "content-type": "application/json" },
-    body: JSON.stringify({ sql, params }), signal: AbortSignal.timeout(180_000) });
-  const j = await r.json();
-  if (!j.success) throw new Error(`d1: ${JSON.stringify(j.errors)}`);
-  return j.result[0].results;
-}
-
 /// An account as the report shows it: a digest, never the id.
 const hidden = (id) => createHash("sha256").update(String(id)).digest("hex").slice(0, 10);
 
@@ -128,10 +119,13 @@ async function sample() {
   const devices = [...new Set(questions.flatMap((q) => q.devices))];
   const owner = new Map();
   for (let i = 0; i < devices.length; i += 500) {
-    const got = await d1(process.env.CF_D1_ACCOUNTS, "SELECT verifier, account FROM devices WHERE verifier IN (SELECT value FROM json_each(?1))",
-      [JSON.stringify(devices.slice(i, i + 500))]);
+    const got = await query(onPostgres("accounts")
+      ? "SELECT verifier, account FROM devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))"
+      : "SELECT verifier, account FROM devices WHERE verifier IN (SELECT value FROM json_each(?1))",
+    [JSON.stringify(devices.slice(i, i + 500))], "accounts");
     for (const d of got) owner.set(d.verifier, hidden(d.account));
   }
+  await close();
   // A BROWSER'S ID IS ITS SECRET (docs/BOARD.md §"Contribution"): what leaves
   // here is how many were paid and their accounts' digests, never an id.
   for (const q of questions) {

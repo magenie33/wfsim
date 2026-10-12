@@ -5,6 +5,7 @@
 // tables asks `factoryDb(env)`; every query states its Postgres text where the
 // dialects differ (`pick`), and the same D1-shaped object answers both ways.
 import postgres from "./vendor/postgres/cf/src/index.js";
+import { placeholders } from "./placeholders.js";
 
 /// THE DATABASE THE FACTORY'S TABLES ARE IN for this request.
 export const factoryDb = (env) => env.FACTORY || env.LIBRARY;
@@ -18,34 +19,7 @@ export const pick = (db, lite, pg) => (isPg(db) ? pg
 /// WHETHER TWO STATEMENTS GO IN ONE TRANSACTION: only on one database.
 export const sameDb = (env) => factoryDb(env) === env.LIBRARY;
 
-/// PLACEHOLDERS ARE BOUND, NEVER REWRITTEN AS SQL: `?` in order and `?N` by
-/// number become Postgres's `$N`, outside quoted text. The query itself is
-/// written for Postgres by its caller; this numbers its parameters.
-const numbered = new Map();
-export function placeholders(sql) {
-  let out = numbered.get(sql);
-  if (out) return out;
-  let n = 0, i = 0;
-  out = "";
-  while (i < sql.length) {
-    const c = sql[i];
-    if (c === "'" || c === '"') {
-      const end = sql.indexOf(c, i + 1);
-      const stop = end < 0 ? sql.length : end + 1;
-      out += sql.slice(i, stop);
-      i = stop;
-    } else if (c === "?") {
-      const m = /^\d+/.exec(sql.slice(i + 1));
-      out += `$${m ? m[0] : ++n}`;
-      i += 1 + (m ? m[0].length : 0);
-    } else {
-      out += c;
-      i += 1;
-    }
-  }
-  numbered.set(sql, out);
-  return out;
-}
+export { placeholders };
 
 /// D1'S SHAPE OVER A POSTGRES CLIENT — `{ query(text, params) → { rows,
 /// affected }, transaction(fn) }` — so the factory's code reads one way: `.first()`,

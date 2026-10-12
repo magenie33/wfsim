@@ -92,6 +92,13 @@ jobs:
       - if: steps.wired.outputs.yes == 'true'
         run: cargo build --release --bin wfsim-intake --bin wfsim-board
 
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # ---- THE QUEUE BECOMES THE LIBRARY --------------------------------
       #
       # The door has no game data, so a submission arrives VERBATIM in `inbox`
@@ -133,6 +140,13 @@ jobs:
           bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
             "the fight each arrival was run in" asked.ndjson
 
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # ---- …AND WHAT HAS NO SCORE IS ASKED FOR --------------------------
       #
       # `builds x rulers x modes` is the DEFINITION of what should exist, and
@@ -157,6 +171,13 @@ jobs:
           # a reader has to be able to see it did something.
           echo "::notice::$(grep -c . queue.ndjson || echo 0) row(s) owed after this hour"
 
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # ---- …AND WHAT WAS MEASURED THREE DAYS AGO ------------------------
       #
       # ROW BY ROW, by each row's own age (`--queue-older`), so a weapon's file
@@ -204,6 +225,13 @@ jobs:
           bash scripts/ship_queue.sh "refresh-$(date -u +'%Y-%m-%d')"             "rows measured before $older, asked again" refresh.ndjson
           echo "::notice::refresh: $(grep -c . refresh.ndjson) of $(grep -c . refresh-all.ndjson) row(s) measured before $older"
 
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # ---- …AND A RULER WHOSE MODEL MOVED --------------------------------
       #
       # A MEASUREMENT CORRECTS THE MODEL AND EVERY ROW UNDER IT IS OWED AGAIN,

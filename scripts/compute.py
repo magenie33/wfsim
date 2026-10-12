@@ -3,9 +3,10 @@
     python scripts/compute.py              # every day `verifier_hours` holds
     python scripts/compute.py --days 7
 
-Reads the live `wfsim` D1 database through `npx wrangler d1 execute --remote`,
-read-only, so it needs the wrangler login the deploys use. docs/ANALYTICS.md
-§"Community compute".
+Reads the fact factory's tables, read-only: from Postgres through
+`scripts/pgq.mjs` while PG_URL is set (docs/BOARD.md §"Postgres"), else from
+the live `wfsim` D1 database through `npx wrangler d1 execute --remote`, which
+needs the wrangler login the deploys use. docs/ANALYTICS.md §"Community compute".
 
 TOTALS ONLY. A device is a random id its browser made; this script reads ids to
 count them and prints none, and it never reads the accounts database.
@@ -13,6 +14,7 @@ count them and prints none, and it never reads the accounts database.
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from collections import defaultdict
@@ -24,6 +26,14 @@ SHOW_OFFSET = 8
 
 
 def d1(query):
+    if os.environ.get("PG_URL"):
+        here = os.path.dirname(os.path.abspath(__file__))
+        r = subprocess.run(["node", os.path.join(here, "pgq.mjs")], input=json.dumps({"sql": query}),
+                           capture_output=True, text=True, encoding="utf-8")
+        try:
+            return json.loads(r.stdout)["result"][0]["results"]
+        except (ValueError, IndexError, KeyError):
+            sys.exit(f"compute.py: postgres failed\n{r.stdout[-400:]}{r.stderr[-400:]}")
     r = subprocess.run(f'npx wrangler d1 execute {DATABASE} --remote --json --command "{query}"',
                        shell=True, capture_output=True, text=True, encoding="utf-8")
     try:

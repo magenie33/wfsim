@@ -1,0 +1,73 @@
+# THE DATABASES FOR THE STEPS AFTER THIS ONE — docs/BOARD.md §"Postgres".
+# While the repository variable DB_LIBRARY (or DB_ACCOUNTS) is "pg" it opens a
+# Cloudflare Access TCP tunnel to the server's Postgres and sets PG_URL (or
+# PG_ACCOUNTS_URL), which every script that reads or writes that database obeys
+# (scripts/db.sh, scripts/db.mjs); otherwise it does nothing and the scripts
+# speak to D1. Once a job: a second use sees the tunnel open and returns.
+name: databases
+description: Postgres through a Cloudflare Access tunnel while DB_LIBRARY or DB_ACCOUNTS is "pg", else D1
+inputs:
+  db_library:
+    description: vars.DB_LIBRARY — "pg" moves the library's scripts to Postgres
+    required: false
+    default: ""
+  db_accounts:
+    description: vars.DB_ACCOUNTS — "pg" moves the accounts' scripts to Postgres
+    required: false
+    default: ""
+  access_client_id:
+    description: secrets.CF_ACCESS_CLIENT_ID — the Access service token pg.wfsim.app admits
+    required: false
+    default: ""
+  access_client_secret:
+    description: secrets.CF_ACCESS_CLIENT_SECRET
+    required: false
+    default: ""
+  pg_url:
+    description: secrets.PG_PIPELINE_URL — postgres://wfsim_pipeline:<password>@127.0.0.1:15432/wfsim
+    required: false
+    default: ""
+  pg_accounts_url:
+    description: secrets.PG_ACCOUNTS_PIPELINE_URL — postgres://wfsim_accounts_pipeline:<password>@127.0.0.1:15432/wfsim_accounts
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: open the tunnel to Postgres
+      if: (inputs.db_library == 'pg' || inputs.db_accounts == 'pg') && env.WFSIM_PG_TUNNEL == ''
+      shell: bash
+      env:
+        TUNNEL_SERVICE_TOKEN_ID: ${{ inputs.access_client_id }}
+        TUNNEL_SERVICE_TOKEN_SECRET: ${{ inputs.access_client_secret }}
+        DB_LIBRARY: ${{ inputs.db_library }}
+        DB_ACCOUNTS: ${{ inputs.db_accounts }}
+        LIBRARY_URL: ${{ inputs.pg_url }}
+        ACCOUNTS_URL: ${{ inputs.pg_accounts_url }}
+      run: |
+        set -euo pipefail
+        # HALF-CONFIGURED FAILS LOUDLY: a switch on with no credentials would
+        # otherwise read as an empty library and publish it.
+        missing=""
+        [ -n "$TUNNEL_SERVICE_TOKEN_ID" ] && [ -n "$TUNNEL_SERVICE_TOKEN_SECRET" ] || missing="CF_ACCESS_CLIENT_ID/SECRET"
+        [ "$DB_LIBRARY" != pg ] || [ -n "$LIBRARY_URL" ] || missing="$missing PG_PIPELINE_URL"
+        [ "$DB_ACCOUNTS" != pg ] || [ -n "$ACCOUNTS_URL" ] || missing="$missing PG_ACCOUNTS_PIPELINE_URL"
+        [ -z "$missing" ] || { echo "::error::a database is switched to pg but these are not set: $missing"; exit 1; }
+        curl -fsSL --retry 3 -o /tmp/cloudflared \
+          https://github.com/cloudflare/cloudflared/releases/download/2025.4.0/cloudflared-linux-amd64
+        chmod +x /tmp/cloudflared
+        nohup /tmp/cloudflared access tcp --hostname pg.wfsim.app --url 127.0.0.1:15432 > /tmp/cloudflared.log 2>&1 &
+        for _ in $(seq 1 30); do (exec 3<>/dev/tcp/127.0.0.1/15432) 2>/dev/null && break; sleep 1; done
+        (exec 3<>/dev/tcp/127.0.0.1/15432) 2>/dev/null || { cat /tmp/cloudflared.log; echo "::error::the tunnel to Postgres did not open"; exit 1; }
+        npm ci --silent --prefix scripts/pg
+        echo "WFSIM_PG_TUNNEL=open" >> "$GITHUB_ENV"
+        # THE FIRST STATEMENT IS THE PROOF: a tunnel that opens but refuses the
+        # role fails here, before any script reads an empty answer.
+        prove() {
+          echo "::add-mask::$3"
+          echo "{\"sql\":\"SELECT count(*) AS n FROM $2\"}" | env "$1=$3" node scripts/pgq.mjs "$4" | jq -e '.success' > /dev/null \
+            || { cat /tmp/cloudflared.log; echo "::error::Postgres refused $1's role"; exit 1; }
+          echo "$1=$3" >> "$GITHUB_ENV"
+        }
+        [ "$DB_LIBRARY" != pg ] || prove PG_URL builds "$LIBRARY_URL" library
+        [ "$DB_ACCOUNTS" != pg ] || prove PG_ACCOUNTS_URL devices "$ACCOUNTS_URL" accounts

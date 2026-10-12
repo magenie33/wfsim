@@ -1,0 +1,21 @@
+# THE BOT SERVER'S ROAD TO POSTGRES — the live board's PG_URL
+# (`deploy/wfsim-live.service`) is postgres://…@127.0.0.1:15432/wfsim, and this
+# carries that port through Cloudflare Access to pg.wfsim.app. Installed to
+# /etc/systemd/system/ by hand with cloudflared; /etc/wfsim-pg-tunnel.env holds
+# the Access service token as TUNNEL_SERVICE_TOKEN_ID and
+# TUNNEL_SERVICE_TOKEN_SECRET. docs/BOARD.md §"Postgres".
+[Unit]
+Description=WFSim tunnel to Postgres
+After=network-online.target
+Wants=network-online.target
+Before=wfsim-live.service
+
+[Service]
+User=ubuntu
+EnvironmentFile=/etc/wfsim-pg-tunnel.env
+ExecStart=/usr/local/bin/cloudflared access tcp --hostname pg.wfsim.app --url 127.0.0.1:15432
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

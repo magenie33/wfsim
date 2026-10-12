@@ -46,6 +46,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.20.0"
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: settle
         run: |
           set -euo pipefail

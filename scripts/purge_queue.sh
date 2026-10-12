@@ -26,27 +26,8 @@
 # benchmarks" as "no benchmark is legal".
 set -euo pipefail
 
-configured() {
-  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
-}
-
-D1_OUT=""
-D1_CODE=""
-d1() {
-  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
-  # A CALL THAT NEVER ANSWERS IS THE WORST SHAPE THIS PIPELINE HAS. Without a
-  # clock a hung connection holds the step until GitHub's six-hour cap, and the
-  # board's workflows keep ONE run pending per concurrency group — so every
-  # hourly tick behind it is cancelled and nothing is scored until somebody
-  # looks. Measured 2026-09-21: one hung call cost seventeen hours of ticks.
-  D1_CODE=$(curl -s --connect-timeout 15 --max-time 180     -o "$D1_OUT" -w '%{http_code}' -X POST \
-    -H "Authorization: Bearer ${CF_TOKEN:-x}" \
-    -H "content-type: application/json" \
-    --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
-    || D1_CODE="000"
-  [ "$D1_CODE" = "200" ]
-}
+. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
+configured() { db_configured; }
 
 # EVERY RULER THE ROSTER HAS, one per line, from the engine: a file in
 # `data/benchmarks/` is only a ruler's base, and its ladder's cells are rulers
@@ -81,13 +62,13 @@ purge() {
     echo "queue: not configured — nothing purged"
     return 0
   fi
-  if d1 "$body"; then
+  if db_query "$body"; then
     local gone
-    gone=$(jq -r '.result[0].meta.changes // 0' "$D1_OUT" 2>/dev/null || echo 0)
+    gone=$(jq -r '.result[0].meta.changes // 0' "$DB_OUT" 2>/dev/null || echo 0)
     echo "queue: $gone row(s) owed under a retired ruler, forgotten ($count live)"
   else
-    echo "::error::queue: the database refused the purge [HTTP $D1_CODE]" >&2
-    head -c 500 "$D1_OUT" || true
+    echo "::error::queue: the database refused the purge [HTTP $DB_CODE]" >&2
+    head -c 500 "$DB_OUT" || true
     return 1
   fi
 }
@@ -99,6 +80,7 @@ purge() {
 # gone.
 self_test() {
   ok=0; bad=0
+  unset PG_URL
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
 
   local body

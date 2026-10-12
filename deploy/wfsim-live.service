@@ -1,9 +1,10 @@
 # THE OWNER'S LIVE BOARD on the bot server — `scripts/live_board.sh`, which
 # the bot reads through WFSIM_LIVE_BOARD (`deploy/wfsim-bot.service`).
 # Installed to /etc/systemd/system/; `scripts/ship_bot.py` ships its binaries
-# and scripts to /opt/wfsim-bot/{bin,scripts}. /etc/wfsim-live.env holds
-# CF_ACCOUNT, CF_D1_DATABASE and a D1 READ token as CF_TOKEN — nothing here
-# writes to the database.
+# and scripts to /opt/wfsim-bot/{bin,scripts}. /etc/wfsim-live.env holds the
+# library's database — CF_ACCOUNT, CF_D1_DATABASE and CF_TOKEN for D1, or
+# PG_URL for Postgres (scripts/db.sh), which wins while set — BOARD_PUSH_TOKEN
+# and FACTORY_TOKEN. PG_URL reaches the server through `wfsim-pg-tunnel.service`.
 [Unit]
 Description=WFSim live board
 After=network-online.target

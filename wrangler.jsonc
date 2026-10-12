@@ -88,9 +88,10 @@
       "database_id": "ad0765fa-bf84-4cb9-95a1-4bd5b297b864"
     }
   ],
-  // THE FACT FACTORY'S TABLES IN POSTGRES (worker/factory_db.js), reached
-  // through Hyperdrive and a Cloudflare Tunnel; used only while `FACTORY_DB`
-  // says "pg", and D1 holds them otherwise — the switch is this one value.
+  // POSTGRES (worker/factory_db.js), reached through Hyperdrive and a
+  // Cloudflare Tunnel: the fact factory's tables while `FACTORY_DB` says "pg",
+  // the whole library with them while `DB_LIBRARY` does. D1 holds what no
+  // switch moves — each switch is one value (docs/BOARD.md §"Postgres").
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "fa561a2ab9364482aeb33421649eba62" }],
   // HOW OFTEN ONE ADDRESS MAY ASK FOR A LOGIN CODE — the mail costs money and
   // lands in somebody's inbox. Keyed by the caller's IP, which is not stored.
