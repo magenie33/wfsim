@@ -9,7 +9,8 @@ class: crossbow
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: nagantaka
-mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, ZHUGE, CROSSBOW
+mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile, zhuge, crossbow]   # see notes: de_compatibility_tags
 mastery_rank: 9
 max_rank: 30
 

@@ -8,7 +8,8 @@ weapon_type: primary
 class: bow
 form: charged
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
-mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, SNIPER_AMMO, AOE, SINGLESHOT, CRPBOW
+mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile, sniper_ammo, aoe, singleshot, crpbow]   # see notes: de_compatibility_tags
 mastery_rank: 8
 max_rank: 30
 
@@ -72,11 +73,11 @@ attack:
     damage: { blast: 660 }   # total 660
 
 unmodeled:
-  - "The module gives this shot three attacks and the engine carries one explosion: the 660 Blast collapse is modelled, and the 10 Cold initial blast is not counted."
+  - "The module gives this shot three attacks and the engine carries one explosion: the Blast collapse is modelled, and the initial blast is not - neither its 10 Cold damage nor its guaranteed Cold status in 7.2 m, so a build that profits from Cold stacks or a status count reads low."
+  - "The collapse's 1.3 s delay after the initial blast is not modelled: the blast arrives with the arrow, so a short fight gets its damage early."
   - "The bubble holds what it catches until it collapses (wiki); crowd control, and enemies here neither move nor stop."
-  - reason: explosion_ignores_cover
   - reason: self_stagger
-  - reason: silent_weapon
+  - reason: bolt_corpse_ragdoll
 
 source:
   url: https://wiki.warframe.com/w/Lenz

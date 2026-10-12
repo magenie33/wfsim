@@ -8,7 +8,8 @@ class: bow
 form: charged
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: mutalist_cernos
-mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, INFCERNOS
+mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile, infcernos]   # see notes: de_compatibility_tags
 mastery_rank: 7
 max_rank: 30
 

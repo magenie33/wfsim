@@ -16,6 +16,7 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # Crossbows and Arm-Cannons), and `bow` is the narrow tag only bows carry
 # (DE's `BOW` compatName — Thunderbolt and friends).
 mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile]   # see notes: de_compatibility_tags
 grip_type: BOW
 mastery_rank: 12
 max_rank: 30

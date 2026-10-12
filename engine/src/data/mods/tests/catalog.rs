@@ -845,3 +845,24 @@ fn galvanized_steel_stacks_its_crit_damage_four_times() {
                 && b.max_stacks == 4
                 && (b.per_stack - 0.30).abs() < 1e-9)));
 }
+
+/// SPLIT FLIGHTS IS FOR NON-AOE BOWS, and the rule is DE's tags meeting: the
+/// card's `excludes_weapon` against each weapon's `compatibility_tags`. A bow
+/// that stated no tags would take it silently, so every weapon the `bow` pool
+/// reaches must state them.
+#[test]
+fn split_flights_refuses_what_its_tags_refuse() {
+    let untagged: Vec<&str> = crate::data::weapons::all()
+        .iter()
+        .filter(|w| w.mod_pools.iter().any(|p| p == "bow") && w.compatibility_tags.is_empty())
+        .map(|w| w.id.as_str())
+        .collect();
+    assert!(untagged.is_empty(), "bow-pool weapons with no `compatibility_tags`: {untagged:?}");
+    let has = |weapon: &str| pool_for_weapon(weapon).iter().any(|m| m.id == "split_flights");
+    for w in ["lenz", "prisma_lenz", "kuva_bramma", "nataruk", "proboscis_cernos", "attica", "zhuge", "nagantaka_prime"] {
+        assert!(!has(w), "{w} refuses Split Flights");
+    }
+    for w in ["paris", "cernos_prime", "daikyu", "mutalist_cernos", "nunchasa", "paris_incarnon"] {
+        assert!(has(w), "{w} takes Split Flights");
+    }
+}

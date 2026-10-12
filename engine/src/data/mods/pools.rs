@@ -338,6 +338,7 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
         .filter(|m| {
             !(weapon.class.contains("sentinel") && m.excludes_weapon.contains(&"sentinel_weapon"))
                 && !(weapon.exalted && m.excludes_weapon.contains(&"power_weapon"))
+                && !weapon.compatibility_tags.iter().any(|t| m.excludes_weapon.contains(&t.as_str()))
         })
         .collect()
 }

@@ -9,7 +9,8 @@ weapon_type: primary
 class: bow
 form: charged
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
-mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, DAIKYU
+mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile, daikyu]   # see notes: de_compatibility_tags
 mastery_rank: 10
 max_rank: 30
 

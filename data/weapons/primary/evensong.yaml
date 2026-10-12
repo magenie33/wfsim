@@ -8,7 +8,8 @@ class: bow
 form: charged
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: evensong
-mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE
+mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile]   # see notes: de_compatibility_tags
 mastery_rank: 10
 max_rank: 30
 

@@ -306,6 +306,12 @@ pub struct WeaponSpec {
     /// refused from the pool — Blood Rush, Weeping Wounds, the Amalgams.
     #[serde(default)]
     pub exalted: bool,
+    /// DE'S COMPATIBILITY TAGS, lowercased (`Module:Weapons/data`
+    /// `CompatibilityTags`). A card whose incompatibility tags name one
+    /// (`excludes_weapon`) is refused from the pool: Split Flights off the Lenz
+    /// (`crpbow`). A weapon that states none is refused by no tag of its own.
+    #[serde(default)]
+    pub compatibility_tags: Vec<String>,
     /// A STANCE THE WEAPON CANNOT TAKE OFF, by mod id. Seated on every build,
     /// never removed, and its slot takes no Forma (Valkyr Talons' Hysteria,
     /// MEASUREMENTS M94) — so it is the weapon's fact and a build only repeats it.

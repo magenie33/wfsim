@@ -6,6 +6,7 @@ class: bow
 form: charged
 default_form: true
 mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile]   # see notes: de_compatibility_tags
 mastery_rank: 5
 max_rank: 30
 

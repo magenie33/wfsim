@@ -12,7 +12,8 @@ class: bow
 form: charged
 default_form: true          # the drawn shot, which is how a bow is played
 transform_group: nunchasa
-mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE
+mod_pools: [primary, rifle, bow]
+compatibility_tags: [projectile, duelistbow]   # see notes: de_compatibility_tags
 mastery_rank: 14
 max_rank: 30
 

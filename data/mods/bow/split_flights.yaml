@@ -24,6 +24,10 @@ description: "On Hit:
 # Chamber" — the family those two already share.
 family: split_chamber
 incompatible_with: [split_chamber]
+# "(Non-AOE Bows)" on the card: the Lenz (crpbow), Kuva Bramma (grnbow),
+# Proboscis Cernos (infbow), Nataruk (omicrus), every crossbow, Artemis Bow.
+# see notes: de_s_own_incompatibility
+excludes_weapon: [crpbow, crossbow, grnbow, power_weapon, infbow, omicrus]
 
 effects:
   # A LIVE STACKING BUFF, not a flat +400% multishot. The distinction is the
@@ -89,9 +93,4 @@ source:
   # -> 2 s, cost 10 -> 15), Notes and Patch History, read 2026-08-18. DE's
   # Public Export agrees on every identity field for `internal_name`: madurai,
   # Rare, baseDrain 10, fusionLimit 5, compatName Bow.
-  #
-  # THE AoE BOWS IT REFUSES are Artemis Bow, Attica, Kuva Bramma, Lenz (and
-  # Prisma), Nagantaka (and Prime), Nataruk, Proboscis Cernos and Zhuge (and
-  # Prime) — "(Non-AOE Bows)" on the card itself. None of the nine bows in this
-  # roster is one of them, so no equip rule is transcribed for weapons the app
-  # does not have; the list moves here the day one of them is added.
+

@@ -526,6 +526,11 @@ notes:
     (`IncompatibilityTags`) — the same list the mod infobox prints. DE's own
     Public Export carries no such field, so this module is the only
     structured source for what a mod REFUSES to be equipped on.
+  de_compatibility_tags: |
+    DE's own compatibility tags, lowercased, from the wiki's
+    `Module:Weapons/data` (`CompatibilityTags`). A mod refuses a weapon when
+    one of them is among the mod's `excludes_weapon` (see notes:
+    de_s_own_incompatibility).
   decay_read_mods_data: |
     `decay` is NOT read by data::mods. The engine hardcodes the matching model
     per effect kind — `LiveStacks` (engine/src/fight/stacks.rs): on timeout lose ONE stack and
