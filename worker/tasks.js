@@ -608,6 +608,25 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     await commit(env, writes);
     for (const f of later) await f();
   }
+  /// A FACT WHOSE ASKER WAS NEVER TOLD, told again: a delivery that failed half
+  /// way (a database too busy for the producer's own write) left its demand live
+  /// on a settled question, which nothing else ever revisits. Up to `max` a call,
+  /// oldest first, each on its own so one that fails again stops none behind it.
+  async function redeliver(env, now = Date.now(), max = 100) {
+    const db = factoryDb(env);
+    const { results } = await db.prepare(pick(db,
+      `SELECT DISTINCT q.* FROM demands d JOIN questions q ON q.id = d.question
+        WHERE d.state = 'live' AND q.state IN ('fact', 'spot') AND q.fact_at < ? ORDER BY q.fact_at LIMIT ?`,
+      `SELECT DISTINCT q.* FROM demands d JOIN questions q ON q.id = d.question
+        WHERE d.state = 'live' AND q.state IN ('fact', 'spot') AND q.fact_at < ?::text ORDER BY q.fact_at LIMIT ?::bigint`))
+      .bind(iso(now - 10 * 60_000), max).all();
+    let told = 0;
+    for (const q of results) {
+      try { await deliver(env, q, now); told += 1; } catch (_) { /* told again next run */ }
+    }
+    return told;
+  }
+
   /// …AS WRITES where the producer states its own (`on_fact_writes`), so a whole
   /// pack's facts land in one round trip; a producer that must call out is told
   /// after them (`later`).
@@ -778,7 +797,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit };
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit, redeliver };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has

@@ -200,6 +200,7 @@ export async function watchdog(env, now = Date.now()) {
     const told = await db.prepare("SELECT told_at FROM watchdog_told WHERE cause = ?").bind(kind).first();
     return !told || Date.parse(told.told_at) <= now - RETELL_MS;
   };
+  await facts().redeliver(env, now);
   const found = await facts().audit(env, now, (await servedRelease(env)).engine);
   if (await stale("cells_filling")) {
     const cells = await cellsFilling(env, now);

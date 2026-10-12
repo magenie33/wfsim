@@ -589,6 +589,21 @@ console.log("\nrefusals paused");
 }
 
 
+console.log("\na fact whose asker was never told is told again");
+{
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const old = new Date(NOW - 3_600_000).toISOString();
+  db.raw.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+    VALUES ('lost', 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`).run(old, old, old);
+  db.raw.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'lost-ref', 'lost', 'live', ?, ?)`).run(old, old);
+  const before = told.length;
+  const n = await f.redeliver(env, NOW);
+  check("a settled question with a live demand is delivered by the sweep", n === 1 && told.slice(before).some((t) => t.ref === "lost-ref")
+    && db.raw.prepare("SELECT state FROM demands WHERE ref = 'lost-ref'").get().state === "served", JSON.stringify({ n, told: told.slice(before) }));
+  check("...and once delivered it is not told again", (await f.redeliver(env, NOW)) === 0);
+}
+
 console.log("\nwhat a refusal takes back goes to the official pool");
 {
   const db = d1(), env = { LIBRARY: db };
