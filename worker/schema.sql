@@ -292,6 +292,15 @@ CREATE TABLE IF NOT EXISTS verifiers (
   asked_lanes   INTEGER
 );
 
+-- THE OFFICIAL POOL: work that was credited and then left its holder — a
+-- deleted account's (`deleted_account`), or taken back from a refused client
+-- (`refused`). Points are compute and stay counted; the pool holds no name.
+CREATE TABLE IF NOT EXISTS points_pool (
+  at     TEXT NOT NULL,
+  source TEXT NOT NULL,
+  work   INTEGER NOT NULL
+);
+
 -- THE SAME WORK BY THE DAY IT WAS CREDITED, for the ranking's last thirty days
 -- (docs/BOARD.md §"Contribution"). A refused client's days count for nothing,
 -- as its total does: the ranking reads them through `verifiers.banned`.

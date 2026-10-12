@@ -74,6 +74,17 @@ never empty, so the last-slot trigger cannot fire half way through.
 refuses it with `last_slot` unless the call says `delete_account: true`, and
 the panel asks for that inline — no native dialog.
 
+**A DELETION IS ASKED FOR, AND CARRIED OUT A WEEK LATER.** An account has
+value — its points are compute — so a browser left signed in is not enough to
+end it: the call carries `confirm: "DELETE"` and comes from a sign-in younger
+than ten minutes (`reauth_required` otherwise), every session ends, and
+`accounts.delete_after` is set seven days on. Signed in again meanwhile, the
+owner sees the date and may cancel (`/api/account/delete/cancel`). The daily
+cron's `purgeDeleted` then ends subscriptions (one that will not end waits),
+holds the name, moves the account's points to the official pool
+(`points_pool`, docs/BOARD.md §"Contribution") and lets its devices go from the
+next hour, so what they earn after is their own again.
+
 Every way in ends in one function, `arrive` in `worker/accounts.js`, so no way
 in can have its own idea of what linking means.
 
@@ -120,7 +131,9 @@ router leaves to the browser.
 | `POST /api/account/password` `{current?, password}` | signed in: `current` where the slot has a password |
 | `GET /api/account` | the account and its slots, and which ways in are configured |
 | `POST /api/account/unlink` `{provider, delete_account?}` | empties a slot |
-| `POST /api/account/delete`, `/api/account/export`, `/api/auth/logout` | as named |
+| `POST /api/account/delete` `{confirm: "DELETE"}` | asks for the deletion, a week on |
+| `POST /api/account/delete/cancel` | takes the ask back |
+| `POST /api/account/export`, `/api/auth/logout` | as named |
 
 A state-changing call is JSON from this origin; the session cookie is
 `HttpOnly; Secure; SameSite=Lax`, a random token whose hash is the table's key.
@@ -137,7 +150,8 @@ A state-changing call is JSON from this origin; the session cookie is
 | the signed-in account travels as `x-wfsim-account`; a browser's own header is dropped, and so is the cookie | `cloudRoute` |
 | a state-changing paid call from another site never leaves this worker | `cloudRoute` → `sameSite` |
 | Stripe's webhook goes through as sent, as nobody | `cloudRoute` |
-| an account is deleted only once the private worker has ended its subscriptions | `cloudEnd`, `billing_open` |
+| an account is deleted only once the private worker has ended its subscriptions | `cloudEnd` in `purgeDeleted` |
+| a deletion is typed, from a fresh sign-in, and waits a week | `askDelete`, `DELETE_REAUTH_SECONDS`, `DELETE_GRACE_SECONDS` |
 | with no binding, billing reads as off and nothing is ended | `cloudRoute`, `cloudEnd` |
 
 **EVERY ACCOUNT SYNCS**, up to the allowance the private worker states. The

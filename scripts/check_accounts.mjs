@@ -10,7 +10,7 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { accountRoute } from "../worker/accounts.js";
+import { accountRoute, purgeDeleted } from "../worker/accounts.js";
 import { cloudRoute, cloudPath } from "../worker/cloud.js";
 import { agentRoute, MCP_LIMITS } from "../worker/agents.js";
 import { clanRoute } from "../worker/clan.js";
@@ -128,6 +128,13 @@ function browser() {
   };
 }
 const count = (sql, ...a) => env.ACCOUNTS.raw.prepare(sql).get(...a).n;
+/// A DELETION ASKED FOR AND ITS WEEK OVER: the daily run carries it out.
+const deleteNow = async (b, id) => {
+  const r = await (await b.post("/api/account/delete", { confirm: "DELETE" })).json();
+  env.ACCOUNTS.raw.prepare("UPDATE accounts SET delete_after = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), id);
+  await purgeDeleted(env);
+  return r;
+};
 
 // ---- the rules ---------------------------------------------------------------------------
 
@@ -246,10 +253,13 @@ r = await (await a.post("/api/account/unlink", { provider: "email" })).json();
 r = await (await a.post("/api/account/unlink", { provider: "google" })).json();
 check("the last slot is not emptied by accident", r.ok === false && r.reason === "last_slot"
   && count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 1, JSON.stringify(r));
-r = await (await a.post("/api/account/unlink", { provider: "google", delete_account: true })).json();
-check("...and emptied on purpose, it takes the account and its sessions",
-  r.ok && r.deleted === true && count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 0
+r = await (await a.post("/api/account/unlink", { provider: "google", delete_account: true, confirm: "DELETE" })).json();
+check("...and emptied on purpose, it asks for the account's deletion and ends its sessions",
+  r.ok && r.deleted === false && r.delete_after && count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 1
     && count("SELECT COUNT(*) n FROM sessions WHERE account = ?", adaId) === 0 && (await a.me()) === null, JSON.stringify(r));
+env.ACCOUNTS.raw.prepare("UPDATE accounts SET delete_after = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), adaId);
+await purgeDeleted(env);
+check("...carried out once its week is over", count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 0);
 
 env.ACCOUNTS.raw.prepare("DELETE FROM identities WHERE account = ?").run(bobId);
 check("the schema holds the rule too: a last slot deleted by hand takes its account",
@@ -360,17 +370,36 @@ check("Stripe's webhook goes through as sent, and as nobody",
 const exported = await (await payer.post("/api/account/export", {})).json();
 check("the account export carries what the paid half holds", exported.billing?.customer === "cus_1"
   && exported.sync?.[0]?.id === "e1", JSON.stringify([exported.billing, exported.sync]));
+// ---- deleting: typed, freshly signed in, a week to take it back -------------------------
+
+r = await (await payer.post("/api/account/delete", {})).json();
+check("a deletion not typed out is refused", r.reason === "confirm_required" && count("SELECT delete_after IS NULL n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
+const SESSION_MS = 90 * 24 * 3600 * 1000;
+env.ACCOUNTS.raw.prepare("UPDATE sessions SET expires_at = ? WHERE account = ?").run(new Date(Date.now() + SESSION_MS - 11 * 60_000).toISOString(), payerId);
+r = await (await payer.post("/api/account/delete", { confirm: "DELETE" })).json();
+check("...and so is one from a sign-in older than ten minutes", r.reason === "reauth_required"
+  && count("SELECT delete_after IS NULL n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
+env.ACCOUNTS.raw.prepare("UPDATE sessions SET expires_at = ? WHERE account = ?").run(new Date(Date.now() + SESSION_MS).toISOString(), payerId);
+r = await (await payer.post("/api/account/delete", { confirm: "DELETE" })).json();
+const due = Date.parse(r.delete_after || "") - Date.now();
+check("a deletion asked for waits seven days, every session ended", r.ok && Math.abs(due - 7 * 86_400_000) < 60_000
+  && count("SELECT COUNT(*) n FROM sessions WHERE account = ?", payerId) === 0 && (await payer.me()) === null, JSON.stringify(r));
+await purgeDeleted(env);
+check("...and nothing happens before then", count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 1);
+await payer.oauth("github", { id: "99", name: "payer" });
+const pending = await payer.me();
+check("signed in again, the account says when", pending && pending.delete_after === r.delete_after, JSON.stringify(pending));
+r = await (await payer.post("/api/account/delete/cancel", {})).json();
+check("...and the deletion is cancelled", r.ok && r.account.delete_after === null
+  && count("SELECT delete_after IS NULL n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
 endAnswer = false;
-r = await (await payer.post("/api/account/delete", {})).json();
-check("an account whose subscription the paid half cannot end is kept",
-  r.reason === "billing_open" && count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
-r = await (await payer.post("/api/account/unlink", { provider: "github", delete_account: true })).json();
-check("...by either way of deleting it", r.reason === "billing_open" && count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 1,
-  JSON.stringify(r));
+await deleteNow(payer, payerId);
+check("an account whose subscription the paid half cannot end is kept past its week",
+  count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 1);
 endAnswer = true;
-r = await (await payer.post("/api/account/delete", {})).json();
-check("once it is ended the account goes", r.ok && count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 0
-  && seen.filter((x) => x.path === "/internal/end" && x.account === payerId).length === 3, JSON.stringify(r));
+await purgeDeleted(env);
+check("once it is ended the account goes", count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 0
+  && seen.filter((x) => x.path === "/internal/end" && x.account === payerId).length === 2);
 delete env.CLOUD;
 const off = await (await cloudRoute(new Request(SITE + "/api/billing"), env, "/api/billing")).json();
 check("with no paid half bound, billing reads as off", off.ok && off.configured === false, JSON.stringify(off));
@@ -433,7 +462,7 @@ check("a name set before the rule that refuses it is kept, and the account is to
 nr = await setName(n2, { display_name: "" });
 check("...and an empty one shows the username again", nr.ok && nr.account.display_name === null, JSON.stringify(nr));
 const gone = (await n2.me()).username;
-await n2.post("/api/account/delete", {});
+await deleteNow(n2, (await n2.me()).id);
 const n3 = browser();
 await n3.oauth("github", { id: "71", name: "three" });
 nr = await setName(n3, { username: gone });
@@ -545,7 +574,20 @@ check("an agent may revoke its own key", self.ok && (await agentJson("GET", "/ap
 
 const reg3 = await agentJson("POST", "/api/agent/auth", { body: { name: "Doomed" } });
 env.ACCOUNTS.raw.prepare("UPDATE agent_keys SET account = ? WHERE id = ?").run(ownerMe.id, reg3.agent_id);
-await owner.post("/api/account/delete", {});
+// A DELETED ACCOUNT'S POINTS GO TO THE OFFICIAL POOL, and its devices earn for
+// themselves again from the next hour.
+env.LIBRARY = d1();
+env.LIBRARY.raw.exec(`CREATE TABLE verifier_hours (verifier TEXT, hour TEXT, work INTEGER, tasks INTEGER, ms INTEGER);
+  CREATE TABLE points_pool (at TEXT NOT NULL, source TEXT NOT NULL, work INTEGER NOT NULL);`);
+const dev = "a".repeat(24);
+env.ACCOUNTS.raw.prepare("INSERT INTO device_spans (verifier, account, from_hour) VALUES (?, ?, '2026-10-01T00')").run(dev, ownerMe.id);
+env.LIBRARY.raw.prepare("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, '2026-09-30T00', 7), (?, '2026-10-02T00', 500), (?, '2026-10-03T05', 250)").run(dev, dev, dev);
+await deleteNow(owner, ownerMe.id);
+const pooled = env.LIBRARY.raw.prepare("SELECT source, SUM(work) w FROM points_pool GROUP BY source").all();
+check("a deleted account's points go to the official pool, and only what its spans held",
+  pooled.length === 1 && pooled[0].source === "deleted_account" && pooled[0].w === 750, JSON.stringify(pooled));
+check("...and the device it held is let go", count("SELECT COUNT(*) n FROM device_spans WHERE verifier = ? AND until_hour IS NULL", dev) === 0);
+delete env.LIBRARY;
 check("deleting the account deletes its agents' keys", count("SELECT COUNT(*) n FROM agent_keys WHERE id = ?", reg3.agent_id) === 0);
 
 // THE ALLOWANCE STATED IS THE ALLOWANCE ENFORCED.

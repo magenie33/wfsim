@@ -65,6 +65,8 @@ const ACCOUNT_SAYS = {
   bad_display_name: "A display name is at most 32 characters.",
   name_not_allowed: "That name cannot be used. A name cannot carry a link, contact details or trading.",
   needs_consent: "Tick the box above to agree first.",
+  confirm_required: "Type DELETE to confirm.",
+  reauth_required: "For your safety, deleting needs a sign-in from the last 10 minutes. Sign out, sign in again, then delete.",
 };
 const accountSaid = (key) => tr(ACCOUNT_SAYS[key] || key);
 
@@ -89,6 +91,8 @@ let agentsState = [];
 /// said; and the public ranking, as `/api/contributors` did.
 let devicesState = null;
 let contributorsState = null;
+/// THE OFFICIAL POOL, as `/api/contributors` last said (`pool`), or null.
+let contributorsPool = null;
 
 async function accountCall(method, path, body) {
   try {
@@ -557,6 +561,7 @@ async function contributorsLoad() {
   contributorsFrom = new Map((contributorsState || []).map((c) => [c.key, contributorShown(c)]));
   contributorsState = (r && r.ok && r.contributors) || contributorsState || [];
   contributorsTotal = (r && r.ok && r.total) || contributorsState.length;
+  if (r && r.ok && r.pool && r.pool.points > 0) contributorsPool = r.pool;
   contributorsAt = Date.now();
   if (authKindOf(location.pathname) !== "contributors") return;
   if (!contributorsPatch()) renderAuthPage("contributors");
@@ -665,6 +670,9 @@ function contributorsPage() {
     ${contributorsYouHtml()}
     <div class="block"><div class="bh"><span class="oseg">${tab("all", "All-time ranking")} ${tab("recent", "Monthly ranking")} ${tab("week", "Weekly ranking")}</span></div><div class="bb">${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol><div id="rank-more"></div>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
+    ${contributorsPool ? `<p class="set-note">${escHtml(trF("Official pool: {n} points — {d} from deleted accounts, {r} taken back from refused clients. Points are compute, so none is lost.", {
+      n: contributorsPool.points.toLocaleString(accountLocale()), d: contributorsPool.deleted_account.toLocaleString(accountLocale()),
+      r: contributorsPool.refused.toLocaleString(accountLocale()) }))}</p>` : ""}
     <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
       ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.")}</p></div></div>`;
 }
@@ -703,9 +711,18 @@ function accountDataBlock() {
 }
 
 function accountDangerBlock() {
+  // A DELETION ASKED FOR WAITS A WEEK (worker/accounts.js `askDelete`), and
+  // while it waits the block says when, and offers to undo it.
+  const pending = (accountState.account || {}).delete_after;
+  if (pending) {
+    const day = new Date(pending).toLocaleDateString(accountLocale(), { year: "numeric", month: "long", day: "numeric" });
+    return `<div class="block danger" id="delete-account"><div class="bh"><h2>${aT("Delete account")}</h2></div><div class="bb">
+      <p class="set-note" style="margin:0 0 8px">${escHtml(trF("This account is to be deleted on {date}. Until then you can cancel.", { date: day }))}</p>
+      <button class="ghost-btn btn-sm" data-auth="undelete">${aT("Cancel deletion")}</button></div></div>`;
+  }
   return `<div class="block danger" id="delete-account"><div class="bh"><h2>${aT("Delete account")}</h2></div><div class="bb">
     ${authFlow.error === "last_slot" ? `<div class="auth-err" role="alert">${escHtml(accountSaid("last_slot"))}</div>` : ""}
-    <p class="set-note" style="margin:0">${aT("Deletes this account, every way to sign in to it and everything it syncs, for good.")}
+    <p class="set-note" style="margin:0">${aT("Deleting waits 7 days, and signing in within them lets you cancel. Then this account, every way to sign in to it and everything it syncs are gone for good, and its points go to the official pool.")}
       ${accountDeleteNote}</p>
     <div class="confirm"><label for="auth-delete" class="set-note">${aT("Type DELETE to confirm:")}</label>
       <input id="auth-delete" autocomplete="off" spellcheck="false">
@@ -927,14 +944,20 @@ async function authAct(el) {
       return loadAccount();
     }
     if (what === "delete") {
-      const r = await accountCall("POST", "/api/account/delete", {});
+      const r = await accountCall("POST", "/api/account/delete", { confirm: ($("auth-delete") || {}).value || "" });
       if (!(r && r.ok)) return fail(r);
       // WHAT IT SYNCED WENT WITH IT; this browser keeps its own copy, and the
       // next account to sign in here takes it as new rather than as another's.
       try { localStorage.removeItem(SYNC_KEY); } catch (_) { /* nothing to forget */ }
-      presetToast(tr("Account deleted."));
+      presetToast(tr("Your account will be deleted in 7 days. Sign in before then to cancel."));
       await loadAccount();
       return nav("/");
+    }
+    if (what === "undelete") {
+      const r = await accountCall("POST", "/api/account/delete/cancel", {});
+      if (!(r && r.ok)) return fail(r);
+      presetToast(tr("Deletion cancelled."));
+      return loadAccount();
     }
     // AN ACTION THIS FILE DOES NOT KNOW is an extension's, which says whether it took it.
     if (await extHook("act", el, kind)) return;

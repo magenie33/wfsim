@@ -627,6 +627,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       db.prepare(`INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)
                   ON CONFLICT (verifier, hour) DO UPDATE SET work = work + excluded.work`).bind(device, at.slice(0, 13), -paid),
       db.prepare("UPDATE answers SET void = 1, credited = 0 WHERE device = ? AND official = 0").bind(device),
+      // WHAT IT TAKES BACK GOES TO THE OFFICIAL POOL: compute is never uncounted.
+      db.prepare("INSERT INTO points_pool (at, source, work) SELECT ?, 'refused', ? WHERE ? > 0").bind(at, paid, paid),
     ]);
     for (const q of touched) {
       await db.prepare("UPDATE questions SET state = 'open', canon = NULL, fact_engine = NULL, fact_at = NULL WHERE id = ?").bind(q.id).run();

@@ -568,6 +568,19 @@ console.log("\nrefusals paused");
 }
 
 
+console.log("\nwhat a refusal takes back goes to the official pool");
+{
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  db.raw.prepare("INSERT INTO verifiers (id, work, seen) VALUES ('r-lied', 300, '2026-10-01T00:00:00.000Z')").run();
+  db.raw.prepare(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+    VALUES ('q', 'e1', 'r-lied', 'r-lied', '', 0, '{}', '{}', 300, 1, ?, 1, 0)`).run(new Date(NOW).toISOString());
+  await f.refuse(env, "r-lied", NOW);
+  const pool = db.raw.prepare("SELECT source, SUM(work) AS w FROM points_pool GROUP BY source").all();
+  check("the credit a refusal takes back is the pool's, not lost", pool.length === 1 && pool[0].source === "refused" && pool[0].w === 300,
+    JSON.stringify(pool));
+}
+
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");
 process.exitCode = failures ? 1 : 0;
 

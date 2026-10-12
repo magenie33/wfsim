@@ -69,6 +69,12 @@ const USERNAMES_RESERVED = new Set(["wfsim", "nona", "admin", "administrator", "
   "login", "signup", "billing", "privacy", "terms", "null", "undefined"]);
 const RENAME_COOLDOWN_SECONDS = 24 * 3600;
 const USERNAME_HOLD_SECONDS = 7 * 24 * 3600;
+/// A DELETION WAITS A WEEK, so one asked by whoever had the browser, or by a
+/// slip, is undone by signing in and cancelling; only then is it carried out.
+const DELETE_GRACE_SECONDS = 7 * 24 * 3600;
+/// …AND IS ASKED ONLY ON A FRESH SIGN-IN: a browser left signed in is not proof
+/// that whoever sits at it owns the account.
+const DELETE_REAUTH_SECONDS = 10 * 60;
 const DISPLAY_NAME_MAX = 32;
 
 const secretOf = (env, p) => ({ id: env[`${p.toUpperCase()}_CLIENT_ID`], secret: env[`${p.toUpperCase()}_CLIENT_SECRET`] });
@@ -476,13 +482,13 @@ async function passwordChange(request, env, account, b) {
 
 async function accountView(env, account) {
   const a = await env.ACCOUNTS.prepare(
-    "SELECT id, created_at, username, display_name, username_changed_at FROM accounts WHERE id = ?1",
+    "SELECT id, created_at, username, display_name, username_changed_at, delete_after FROM accounts WHERE id = ?1",
   ).bind(account).first();
   if (!a) return null;
   const { results } = await env.ACCOUNTS.prepare(
     "SELECT provider, label, linked_at, password_hash IS NOT NULL AS has_password FROM identities WHERE account = ?1",
   ).bind(account).all();
-  return { id: a.id, created_at: a.created_at, username: a.username, display_name: a.display_name,
+  return { id: a.id, created_at: a.created_at, username: a.username, display_name: a.display_name, delete_after: a.delete_after || null,
     display_name_hidden: !!a.display_name && nameBlocked(a.display_name), rename_after: renameAfter(a),
     identities: SLOTS.map((s) => results.find((r) => r.provider === s)).filter(Boolean)
       .map(({ has_password, ...r }) => (r.provider === "email" ? { ...r, has_password: !!has_password } : r)) };
@@ -547,9 +553,62 @@ async function holdOnDelete(env, account) {
   if (hold) await hold.run();
 }
 
+/// A DELETION ASKED FOR: typed out, on a sign-in younger than
+/// `DELETE_REAUTH_SECONDS`, and carried out `DELETE_GRACE_SECONDS` later by
+/// `purgeDeleted`. Every session ends, so a browser that asked keeps nothing.
+async function askDelete(request, env, account, b) {
+  if (b.confirm !== "DELETE") return no("confirm_required");
+  const token = cookies(request)[SESSION_COOKIE];
+  const s = token && await env.ACCOUNTS.prepare("SELECT expires_at FROM sessions WHERE token_hash = ?1").bind(await sha256(token)).first();
+  const signedInAt = s ? Date.parse(s.expires_at) - SESSION_SECONDS * 1000 : 0;
+  if (signedInAt < Date.now() - DELETE_REAUTH_SECONDS * 1000) return no("reauth_required", 403);
+  const at = later(DELETE_GRACE_SECONDS);
+  await env.ACCOUNTS.batch([
+    env.ACCOUNTS.prepare("UPDATE accounts SET delete_after = ?1 WHERE id = ?2").bind(at, account),
+    env.ACCOUNTS.prepare("DELETE FROM sessions WHERE account = ?1").bind(account),
+  ]);
+  return json({ ok: true, deleted: false, delete_after: at }, 200, { "set-cookie": endSession() });
+}
+
+/// THE DELETIONS WHOSE WEEK IS OVER, carried out: subscriptions ended first (one
+/// that will not end waits for the next run), the name held, every device the
+/// account held let go from the next hour — what it earns after is its own
+/// again — and the account with its sessions, slots and data.
+export async function purgeDeleted(env) {
+  if (!env.ACCOUNTS) return 0;
+  const { results } = await env.ACCOUNTS.prepare("SELECT id FROM accounts WHERE delete_after IS NOT NULL AND delete_after <= ?1")
+    .bind(now()).all();
+  const hour = new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000).toISOString().slice(0, 13);
+  let n = 0;
+  for (const { id } of results) {
+    if (!(await cloudEnd(env, id))) continue;
+    await holdOnDelete(env, id);
+    // ITS POINTS GO TO THE OFFICIAL POOL (`points_pool`): what its devices
+    // earned in its spans, read before the spans lose their holder.
+    const { results: spans } = await env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(id).all();
+    let work = 0;
+    for (const s of spans) {
+      const r = env.LIBRARY && await env.LIBRARY.prepare(
+        "SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?1 AND hour >= ?2 AND (?3 IS NULL OR hour < ?3)")
+        .bind(s.verifier, s.from_hour, s.until_hour).first();
+      work += (r && r.w) || 0;
+    }
+    if (work > 0 && env.LIBRARY) {
+      await env.LIBRARY.prepare("INSERT INTO points_pool (at, source, work) VALUES (?1, 'deleted_account', ?2)").bind(now(), work).run();
+    }
+    await env.ACCOUNTS.batch([
+      env.ACCOUNTS.prepare("UPDATE device_spans SET until_hour = ?1 WHERE account = ?2 AND until_hour IS NULL").bind(hour, id),
+      env.ACCOUNTS.prepare("DELETE FROM device_spans WHERE account = ?1 AND until_hour = from_hour").bind(id),
+      env.ACCOUNTS.prepare("DELETE FROM accounts WHERE id = ?1").bind(id),
+    ]);
+    n += 1;
+  }
+  return n;
+}
+
 /// EMPTYING A SLOT. The last one is the account itself, so it is refused
-/// unless the caller says it means that — and then the trigger takes the UUID,
-/// its sessions and its data with it.
+/// unless the caller says it means that — and then it is a deletion asked for
+/// (`askDelete`), on the same terms.
 async function unlink(request, env, account, b) {
   if (!SLOTS.includes(b.provider)) return no("bad_provider");
   const { n } = await env.ACCOUNTS.prepare("SELECT COUNT(*) AS n FROM identities WHERE account = ?1").bind(account).first();
@@ -557,11 +616,9 @@ async function unlink(request, env, account, b) {
     .bind(account, b.provider).first();
   if (!has) return no("not_linked");
   if (n <= 1 && b.delete_account !== true) return no("last_slot", 409);
-  if (n <= 1 && !(await cloudEnd(env, account))) return no("billing_open", 409);
-  if (n <= 1) await holdOnDelete(env, account);
+  if (n <= 1) return askDelete(request, env, account, b);
   await env.ACCOUNTS.prepare("DELETE FROM identities WHERE account = ?1 AND provider = ?2").bind(account, b.provider).run();
-  const gone = n <= 1;
-  return json({ ok: true, deleted: gone }, 200, gone ? { "set-cookie": endSession() } : {});
+  return json({ ok: true, deleted: false });
 }
 
 // ---- the router -----------------------------------------------------------------------
@@ -583,7 +640,7 @@ export async function accountRoute(request, env, path) {
   }
   const post = ["/api/auth/email/register", "/api/auth/email/verify", "/api/auth/email/login",
     "/api/auth/email/reset", "/api/auth/email/link", "/api/auth/logout",
-    "/api/account/password", "/api/account/unlink", "/api/account/delete", "/api/account/export", "/api/account/profile"];
+    "/api/account/password", "/api/account/unlink", "/api/account/delete", "/api/account/delete/cancel", "/api/account/export", "/api/account/profile"];
   if (!post.includes(path)) return null;
   if (request.method !== "POST") return no("method", 405);
   if (!sameSite(request)) return no("cross_site", 403);
@@ -612,11 +669,10 @@ export async function accountRoute(request, env, path) {
   if (path === "/api/account/unlink") return unlink(request, env, account, b);
   if (path === "/api/account/password") return passwordChange(request, env, account, b);
   if (path === "/api/account/profile") return profile(env, account, b);
-  if (path === "/api/account/delete") {
-    if (!(await cloudEnd(env, account))) return no("billing_open", 409);
-    await holdOnDelete(env, account);
-    await env.ACCOUNTS.prepare("DELETE FROM accounts WHERE id = ?1").bind(account).run();
-    return json({ ok: true, deleted: true }, 200, { "set-cookie": endSession() });
+  if (path === "/api/account/delete") return askDelete(request, env, account, b);
+  if (path === "/api/account/delete/cancel") {
+    await env.ACCOUNTS.prepare("UPDATE accounts SET delete_after = NULL WHERE id = ?1").bind(account).run();
+    return json({ ok: true, account: await accountView(env, account) });
   }
   // EVERYTHING HELD ABOUT THIS ACCOUNT, as it is held — docs/ACCOUNTS.md.
   const devices = (await env.ACCOUNTS.prepare("SELECT verifier, claimed_at FROM devices WHERE account = ?1")

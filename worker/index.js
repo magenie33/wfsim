@@ -19,7 +19,7 @@
 // the same build produce ONE row, with no dedup pass and no counting.
 
 import { decodeShare, useShareHost } from "./share_codec.js";
-import { accountRoute } from "./accounts.js";
+import { accountRoute, purgeDeleted } from "./accounts.js";
 import { cloudPath, cloudRoute } from "./cloud.js";
 import { agentRoute } from "./agents.js";
 import { BOT_AUTH_DIRECTORY, botAuthDirectory } from "./bot_auth.js";
@@ -731,7 +731,7 @@ async function agentPage(request, env, twin) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(event.cron === WATCHDOG_CRON ? watchdog(env) : rollupUsage(env));
+    ctx.waitUntil(event.cron === WATCHDOG_CRON ? watchdog(env) : Promise.all([rollupUsage(env), purgeDeleted(env)]));
   },
   async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;

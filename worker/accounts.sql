@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS accounts (
   created_at          TEXT NOT NULL,
   username            TEXT NOT NULL,
   display_name        TEXT,
-  username_changed_at TEXT
+  username_changed_at TEXT,
+  -- A DELETION ASKED FOR, carried out at this instant unless cancelled first.
+  delete_after        TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_username ON accounts (username);
 

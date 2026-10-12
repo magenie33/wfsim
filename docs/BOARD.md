@@ -890,6 +890,10 @@ yes, since each ask again is a reader interrupted. Eight rules:
    browser once a load, the server's row the only record of it, so a browser
    stops counting for an account by signing out there. A client in
    its cool-down is off the ranking until it ends.
+   **CREDIT THAT LEAVES ITS HOLDER GOES TO THE OFFICIAL POOL** (`points_pool`):
+   a deleted account's, once its week is over (docs/ACCOUNTS.md), and what a
+   refusal takes back. Points are compute, so none is uncounted; the pool keeps
+   only when and why, never whose, and the ranking states it on its own line.
    The owner sees every device of theirs at `/compute`: the name they call it
    (the browser's coarse guess until renamed), when it last answered
    (`verifiers.last_at`) and the task it holds a lease on, named by its KIND

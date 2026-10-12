@@ -369,13 +369,22 @@ async function person(request, env, name) {
 /// THE RANKING the page shows, its first `limit`. A name and a handle leave
 /// here only for an account that agreed; the reader's own row is marked `you`,
 /// to them alone.
+/// THE OFFICIAL POOL, in points and by where it came from (`points_pool`).
+async function poolOf(env) {
+  if (!env.LIBRARY) return null;
+  const { results } = await env.LIBRARY.prepare("SELECT source, SUM(work) AS work FROM points_pool GROUP BY source").all();
+  const by = Object.fromEntries(results.map((r) => [r.source, points(r.work || 0)]));
+  return { points: points(results.reduce((t, r) => t + (r.work || 0), 0)),
+    deleted_account: by.deleted_account || 0, refused: by.refused || 0 };
+}
+
 async function ranking(request, env, period, limit, me) {
   const key = PERIODS[period] || "points";
-  const { everyone, computing, day } = await kept(request, env);
+  const { everyone, computing, day, pool } = await kept(request, env);
   const mine = me && await rowKey(env, me, day);
   const all = ordered(everyone, key);
   const contributors = all.slice(0, limit).map((e) => ({ ...e, ...(e.key === mine ? { you: true } : {}) }));
-  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors });
+  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors, pool: pool || null });
 }
 
 /// A ROW'S KEY, for the page to follow it as it moves: its account's id and
@@ -403,7 +412,7 @@ async function kept(request, env) {
     points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
-  const body = { everyone, day, computing: await computingNow(env) };
+  const body = { everyone, day, computing: await computingNow(env), pool: await poolOf(env) };
   if (cache) await cache.put(at, new Response(JSON.stringify(body),
     { headers: { "content-type": "application/json", "cache-control": `public, max-age=${KEPT_SECONDS}` } }));
   return body;
