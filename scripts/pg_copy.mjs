@@ -40,7 +40,7 @@ async function d1(sql, params = []) {
   }
 }
 
-const sql = postgres(process.env.PG_URL, { max: 2, onnotice: () => {},
+const sql = postgres(process.env.PG_URL, { max: 12, onnotice: () => {},
   types: { bigint: { to: 20, from: [20, 1700], serialize: (x) => String(x), parse: (x) => Number(x) } } });
 
 async function columns(table) {
@@ -58,16 +58,20 @@ async function copy(table) {
          ON CONFLICT (${key.join(", ")}) DO UPDATE SET ${cols.filter((c) => !key.includes(c.name)).map((c) => `"${c.name}" = excluded."${c.name}"`).join(", ")}`
     : `INSERT INTO ${table} (${list}) SELECT ${list} FROM jsonb_to_recordset($1::text::jsonb) AS x(${def})`;
   if (!key) await sql.unsafe(`TRUNCATE ${table}`);
-  let after = null, total = 0;
+  const page = (after, offset) => d1(`SELECT * FROM ${table} ${!key || !after ? "" : key.length === 1 ? `WHERE ${key[0]} > ?1`
+    : `WHERE ${key[0]} > ?1 OR (${key[0]} = ?1 AND ${key[1]} > ?2)`} ${key ? `ORDER BY ${key.join(", ")}` : ""} LIMIT ${PAGE}${key ? "" : ` OFFSET ${offset}`}`,
+  !key || !after ? [] : key.map((k) => after[k]));
+  // The next page is read while this one is written, and its chunks are written
+  // at once: they are disjoint rows, so no order between them matters.
+  let total = 0, next = page(null, 0);
   for (;;) {
-    const where = !key || !after ? "" : key.length === 1 ? `WHERE ${key[0]} > ?1`
-      : `WHERE ${key[0]} > ?1 OR (${key[0]} = ?1 AND ${key[1]} > ?2)`;
-    const rows = await d1(`SELECT * FROM ${table} ${where} ${key ? `ORDER BY ${key.join(", ")}` : ""} LIMIT ${PAGE}${key ? "" : ` OFFSET ${total}`}`,
-      !key || !after ? [] : key.map((k) => after[k]));
-    for (let i = 0; i < rows.length; i += CHUNK) await sql.unsafe(upsert, [JSON.stringify(rows.slice(i, i + CHUNK))]);
+    const rows = await next;
+    if (rows.length === PAGE) next = page(rows[rows.length - 1], total + PAGE);
+    const chunks = [];
+    for (let i = 0; i < rows.length; i += CHUNK) chunks.push(sql.unsafe(upsert, [JSON.stringify(rows.slice(i, i + CHUNK))]));
+    await Promise.all(chunks);
     total += rows.length;
     if (rows.length < PAGE) break;
-    after = rows[rows.length - 1];
     if (total % 20_000 === 0) console.log(`  ${table}: ${total}`);
   }
   if (table === "answers") await sql.unsafe("SELECT setval(pg_get_serial_sequence('answers', 'id'), GREATEST((SELECT max(id) FROM answers), 1))");
@@ -77,8 +81,9 @@ async function copy(table) {
 /// ROWS, KEYS AND WORK ALIKE in both.
 async function compare(table) {
   const key = TABLES[table], sum = SUMS[table];
-  const q = `SELECT count(*) AS n${sum ? `, coalesce(sum(${sum}), 0) AS s` : ""}${key ? `, min(${key[0]}) AS lo, max(${key[0]}) AS hi` : ""} FROM ${table}`;
-  const [a] = await d1(q), [b] = await sql.unsafe(q);
+  // The sums pass 2^53, so each side states its own as text.
+  const q = (text) => `SELECT count(*) AS n${sum ? `, ${text(`coalesce(sum(${sum}), 0)`)} AS s` : ""}${key ? `, min(${key[0]}) AS lo, max(${key[0]}) AS hi` : ""} FROM ${table}`;
+  const [a] = await d1(q((x) => `CAST(${x} AS TEXT)`)), [b] = await sql.unsafe(q((x) => `${x}::text`));
   const same = ["n", "s", "lo", "hi"].every((k) => a[k] === undefined || String(a[k]) === String(b[k]));
   console.log(`${same ? "  ok " : "FAIL"}  ${table}: d1 ${JSON.stringify(a)} pg ${JSON.stringify(b)}`);
   return same;
@@ -86,7 +91,7 @@ async function compare(table) {
 
 let bad = 0;
 try {
-  if (mode === "copy") for (const t of names) await copy(t);
+  if (mode === "copy") await Promise.all(names.map(copy));
   for (const t of names) if (!(await compare(t))) bad++;
 } finally {
   await sql.end({ timeout: 5 });
