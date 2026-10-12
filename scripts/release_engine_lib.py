@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """THE ENGINE AS A LIBRARY FOR EVERY CLIENT, published beside the desktop channel.
 
-    python scripts/release_engine_lib.py [--dry-run]
+    python scripts/release_engine_lib.py [--stage] [--dry-run]
 
 A third-party client loads the library the served engine was built into rather
 than building its own, so an engine that moves every day costs it a download,
@@ -11,6 +11,11 @@ per target, each under its own digest in `engine/<engine>/`, and
 `engine/<engine>.json` naming them — signed with the update key the desktop
 shell verifies, one object carrying its own signature as `channel.json` does —
 then `engine/latest.json`, the same object, last.
+
+STAGED BEFORE THE SITE (`--stage`): `ship.py` publishes the library and its
+`engine/<engine>.json` before the push that serves the engine, so a client told
+the new engine finds its library already there; `latest.json` moves after the
+push, so it never names an engine the site does not serve yet.
 
 BUILT ONLY FOR AN ENGINE NOT YET PUBLISHED: the Windows library is the one
 `desktop/payload/native/` holds for this engine; the Linux one is built in
@@ -21,6 +26,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
@@ -61,12 +67,15 @@ def signed(body: str) -> bytes:
 
 
 def main() -> None:
-    dry = "--dry-run" in sys.argv
+    dry, stage = "--dry-run" in sys.argv, "--stage" in sys.argv
     release = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))
     engine, commit = release["engine"], release["commit"]
     c = cos.creds()
     if not dry and cos.head(c, f"engine/{engine}.json") is not None:
-        print(f"engine library {engine}: already published")
+        if not stage:
+            with urllib.request.urlopen(f"https://{cos.host(c)}/engine/{engine}.json", timeout=60) as r:
+                cos.put(c, "engine/latest.json", r.read(), "application/json; charset=utf-8")
+        print(f"engine library {engine}: already published" + ("" if stage else ", latest.json names it"))
         return
     libs = {}
     named = json.loads((NATIVE / "engine.json").read_text(encoding="utf-8")) if (NATIVE / "engine.json").is_file() else {}
@@ -91,7 +100,8 @@ def main() -> None:
     pointer = signed(body)
     if not dry:
         cos.put(c, f"engine/{engine}.json", pointer, "application/json; charset=utf-8")
-        cos.put(c, "engine/latest.json", pointer, "application/json; charset=utf-8")
+        if not stage:
+            cos.put(c, "engine/latest.json", pointer, "application/json; charset=utf-8")
     print(f"engine library {engine}: {', '.join(files)}" + ("  [DRY RUN — nothing uploaded]" if dry else ""))
 
 

@@ -146,7 +146,7 @@ and a download is all that costs.
 - To follow the served engine: when `/release.json` names an engine other than
   the loaded one, fetch its `engine/<engine>.json`, verify, download, load, and
   compute the next pack on it. The old one keeps working meanwhile within its
-  `accepted` days. A library appears a few minutes after its release.
+  `accepted` days. A library is published before the site serves its engine.
 - A client may still build the engine itself from `commit`; the terms of
   §"The engine" are the same either way.
 

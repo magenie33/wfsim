@@ -179,6 +179,11 @@ def main() -> None:
         print("\n[DRY RUN] site/ built, payload rebuilt, nothing published or committed")
         return
 
+    # THE ENGINE LIBRARY BEFORE THE SITE that serves its engine, so a client told
+    # the new engine finds the library waiting (`release_engine_lib.py --stage`).
+    # A failure is said, never fatal: a client keeps the library it has.
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py"), "--stage"])
+
     # GIT GOES FIRST, and the publish only follows a push that landed. A
     # parallel push rejects this one, and a channel published before that is a
     # channel ahead of the repository — the divergence this script exists to
@@ -193,8 +198,7 @@ def main() -> None:
         run("git", "push")
 
     run(*release)
-    # THE ENGINE AS A LIBRARY FOR EVERY CLIENT, once per engine; a failure is
-    # said, never fatal — a client keeps the library it has (accepted days).
+    # …AND `latest.json` NAMES IT once the site serves it.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])
     # THE MCP SERVER AFTER THE PUSH, from the same tree: its engine is the one
     # just published, and a server deployed ahead of the site answers with it.
