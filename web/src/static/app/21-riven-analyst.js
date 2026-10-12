@@ -56,7 +56,7 @@ function renderRivenAnalyst() {
   const rulers = [...new Set(groups.map((g) => g.ruler_id))];
   const ruler = rulers.includes(raRuler) ? raRuler : rulers[0];
   const segs = rulers.map((id) => `<span class="seg${id === ruler ? " on" : ""}" data-ruler="${escHtml(id)}">${
-    escHtml(benchmarkName(id).split(" · ")[0])}</span>`).join("");
+    escHtml(benchShort(id))}</span>`).join("");
   const mine = groups.filter((g) => g.ruler_id === ruler);
   const all = mine.flatMap((g) => g.rivens);
   const pick = all.find((x) => x.key === raPick) || all[0];

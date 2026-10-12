@@ -21,6 +21,30 @@ const benchList = () => META.benchmarks || [];
 const benchCurrent = () =>
   benchList().find((b) => b.id === benchPick) || benchList()[0] || null;
 
+/// A RULER'S SCENE (`cell_dir`, "" the base) — the first scene every list
+/// reads before the next. The engine lists each fight's scenes together;
+/// boot regroups them (`benchScenesFirst`) so Lv 9999 comes whole, then Lv 200.
+const benchSceneOf = (b) => (b && b.cell_dir) || "";
+const benchScenes = () => [...new Set(benchList().map(benchSceneOf))];
+function benchScenesFirst(list) {
+  const scenes = [...new Set(list.map(benchSceneOf))];
+  return list.map((b, i) => [scenes.indexOf(benchSceneOf(b)), i, b]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map((x) => x[2]);
+}
+/// A SCENE IN WORDS, as its rulers' `scene_name` says it.
+const benchSceneName = (dir) => {
+  const b = benchList().find((x) => benchSceneOf(x) === dir);
+  return b && b.scene_name ? tr(b.scene_name) : dir;
+};
+/// A RULER'S SHORT NAME: its first clause, and its scene once a fight is
+/// measured in more than one — "Standard Single Target" alone would name two
+/// boards. The whole name is `tr(b.name)`.
+function benchShort(id) {
+  const b = benchList().find((x) => x.id === id);
+  if (!b) return id || "";
+  const head = tr(b.name).split(" · ")[0];
+  return benchScenes().length > 1 && b.scene_name ? `${head} · ${tr(b.scene_name)}` : head;
+}
+
 /// HOW A WEAPON WAS PLAYED, in words. The ids are the vocabulary a submission
 /// and a board row use; this is what a reader sees.
 ///

@@ -465,7 +465,7 @@ const COMPUTE_DONE_MS = 1400;
 let computeJustDone = null;
 const computeSubOf = (t, w) => (t.kind === "board" ? [computeRulerName(t.ruler), w && t.mode ? modeLabel(w, t.mode) : t.mode].filter(Boolean).join(" · ")
   : t.kind === "riven_gain" ? [tr("Riven gain"), computeRulerName(t.ruler)].filter(Boolean).join(" · ") : "");
-const computeRulerName = (id) => { const b = (META.benchmarks || []).find((x) => x.id === id); return b ? tr(b.name).split(" · ")[0] : id || ""; };
+const computeRulerName = (id) => benchShort(id);
 const computeWeaponOf = (t) => (t && t.weapon ? (META.weapons || []).find((x) => x.id === t.weapon) : null);
 function computeLiveNow(root) {
   const slot = root.querySelector("[data-now]");

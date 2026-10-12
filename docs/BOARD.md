@@ -1838,10 +1838,16 @@ new rung never floods the factory's open questions.
 **A SCENE'S ROWS LIVE IN ITS OWN DIRECTORY**, `site/board/<cell_dir>/` (a
 weapon file and an `index.json`, as at the top) and the live board's
 `/board/<cell_dir>/` beside it, so a reader of the base board never meets one.
-The board page offers a fight's scenes as a row of chips under its ruler, read
-from that directory's index. What reads the base board alone, today:
+The board page offers the scenes as a row of chips above the rulers, read from
+that directory's index. A weapon's page reads its file in every scene beside
+the base's (`loadWeaponBoard`), so the build finder, the weapon's board tab and
+every other reader of `BOARD` hold a cell's rows as an ordinary ruler's; the
+finder picks a scene before a ruler, and a short ruler name carries its scene
+(`benchShort`). Every list reads one scene whole before the next: boot
+regroups `META.benchmarks` (`benchScenesFirst`), the base first. What reads the
+base board alone, today:
 
-- a weapon's page and its official builds, and the prerendered pages;
+- the prerendered pages;
 - the stamp's manifest (`board_meta.py`), and so the desktop shell's offline
   copy — a shell in the field cannot store a nested name, so a scene's files are
   reached online only.

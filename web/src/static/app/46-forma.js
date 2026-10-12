@@ -432,9 +432,16 @@ async function runFormaReach() {
   formaReach = { at: w.id, r, groups, scope, sel: hit >= 0 ? hit : curve.length - 1 };
 }
 
-/// A ruler's name cut to its first two terms — what it is and what it fights.
-/// The whole name rides in the tooltip.
-const benchmarkShort = (id) => benchmarkName(id).split(" · ").slice(0, 2).join(" · ");
+/// A ruler's name cut to its first two terms — what it is and what it fights —
+/// and its scene where a fight has more than one (`benchShort`). The whole name
+/// rides in the tooltip.
+const benchmarkShort = (id) => {
+  const b = benchList().find((x) => x.id === id);
+  const [first, second = ""] = benchmarkName(id).split(" · ");
+  if (!(b && b.scene_name && benchScenes().length > 1)) return second ? `${first} · ${second}` : first;
+  const what = second.replace(/\s*(Lv\s*)?\d.*$/, "").trim();
+  return [first, what, tr(b.scene_name)].filter(Boolean).join(" · ");
+};
 const reachPct = (x) => `${Math.floor(x * 1000) / 10}%`;
 const reachBill = (p) => [`${p.regular} Forma`, p.umbra ? `${p.umbra} Umbra` : null, p.omni ? `${p.omni} Omni` : null]
   .filter(Boolean).join(" · ");

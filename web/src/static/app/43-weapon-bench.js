@@ -15,11 +15,14 @@ let wbenchPick = null;
 /// NO SCORE IS COMPARED ACROSS RULERS. Two rulers are two environments and
 /// their numbers are not like terms, so the only figure that crosses a row is
 /// the rank — a position inside one ruler, with the count it is out of.
+///
+/// …AMONG ITS OWN SCENE: a cell's ranking is its scene's index (`benchIndexOf`).
 const wbenchRank = (benchmark, mode, score, exalted) => {
-  if (!BOARD_INDEX || score == null) return null;
+  const index = benchIndexOf(benchList().find((b) => b.id === benchmark)).index;
+  if (!index || score == null) return null;
   let total = 0;
   let above = 0;
-  for (const [wid, rows] of Object.entries(BOARD_INDEX)) {
+  for (const [wid, rows] of Object.entries(index)) {
     // AMONG ITS OWN KIND. An Exalted weapon's numbers are its Warframe's
     // ability's — it seats no capacity of its own and scales with strength —
     // so a position counted against guns would be a comparison nothing
@@ -157,13 +160,17 @@ function renderWeaponBench() {
   // THE RANK NEEDS EVERY WEAPON'S BEST ROW, which is the index and not this
   // weapon's file. Asked here rather than at boot — a reader who never opens
   // this tab should not pay for it — and the table redraws when it lands.
-  if (!BOARD_INDEX) {
-    loadFullBoard().then(() => {
+  const cells = wbenchCells(w.id);
+  // EVERY SCENE'S, for a weapon measured in more than one.
+  const asks = [...new Set(cells.map((c) => c.benchmark))]
+    .map((id) => benchIndexOf(benchList().find((b) => b.id === id)))
+    .filter((x) => !x.index && !x.lost);
+  if (asks.length) {
+    Promise.all(asks.map((x) => x.load())).then(() => {
       if ($("weapon") && $("weapon").value === w.id
         && document.body.classList.contains("on-wbench")) renderWeaponBench();
     });
   }
-  const cells = wbenchCells(w.id);
   const sub = $("wbench-sub");
   if (sub) sub.textContent = cells.length ? "" : tr("not measured yet");
   if (!cells.length) {
@@ -174,10 +181,7 @@ function renderWeaponBench() {
     return;
   }
   const pick = cells.find((c) => `${c.benchmark}#${c.mode}` === wbenchPick) || cells[0];
-  const nameOf = (id) => {
-    const b = (META.benchmarks || []).find((x) => x.id === id);
-    return b ? tr(b.name).split(" · ")[0] : id;
-  };
+  const nameOf = benchShort;
   const rows = cells.map((c) => {
     const r = wbenchRank(c.benchmark, c.mode, c.best.score, w.exalted);
     const on = c === pick ? " sel" : "";

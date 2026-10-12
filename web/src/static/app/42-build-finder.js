@@ -52,7 +52,7 @@ const FINDER_STEP = 20;
 /// A row's rank is still its own mode's, so in this scope each row names it.
 const FINDER_EVERY_MODE = "*";
 const finder = {
-  weapon: null, b: null, mo: null, rv: "all",
+  weapon: null, sc: "", b: null, mo: null, rv: "all",
   req: new Set(), exc: new Set(),
   open: null, ref: null, shown: FINDER_FIRST, hi: 0,
 };
@@ -122,6 +122,7 @@ function renderBuildFinder() {
     // board's leader, which is where the rows arrive first.
     const act = all.find((p) => presetId(p) === activePreset) || all[0];
     Object.assign(finder, { weapon: w.id, b: act ? act.benchmark : null, mo: act ? act.mode : null,
+      sc: act ? benchSceneOf((META.benchmarks || []).find((b) => b.id === act.benchmark)) : "",
       rv: "all", req: new Set(), exc: new Set(), open: null, ref: null, shown: FINDER_FIRST, hi: 0,
       ships_open: !loadPresetList(BUILDS).length });
   }
@@ -141,6 +142,19 @@ function renderBuildFinder() {
   }
   // A SCOPE THE BOARD NO LONGER HOLDS falls back to what it does hold.
   if (!all.some((p) => p.benchmark === finder.b)) finder.b = all[0].benchmark;
+  // THE SCENE FIRST, then a ruler in it: a fight measured at two levels is two
+  // boards, and its rulers are read one scene at a time. A scene picked keeps
+  // the same fight where that scene has it.
+  const benchOf = (id) => (META.benchmarks || []).find((b) => b.id === id) || { name: id };
+  const sceneOfId = (id) => benchSceneOf(benchOf(id));
+  const scenes = benchScenes().filter((dir) => all.some((p) => sceneOfId(p.benchmark) === dir));
+  if (finder.b && sceneOfId(finder.b) !== finder.sc) {
+    const base = benchOf(finder.b).base;
+    const same = all.find((p) => sceneOfId(p.benchmark) === finder.sc && benchOf(p.benchmark).base === base);
+    const any = all.find((p) => sceneOfId(p.benchmark) === finder.sc);
+    if (same || any) finder.b = (same || any).benchmark;
+    else finder.sc = sceneOfId(finder.b);
+  }
   const inMo = (p) => p.benchmark === finder.b && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo);
   if (!all.some(inMo)) finder.mo = all.find((p) => p.benchmark === finder.b).mode;
   const everyMode = finder.mo === FINDER_EVERY_MODE;
@@ -153,7 +167,6 @@ function renderBuildFinder() {
   const list = all.filter((p) => inScope(p) && passes(p)).sort((a, b) => score(b) - score(a) || a.rank - b.rank);
   const scopeTotal = all.filter(inMo).length;
   const updated = measuredText(boardMeasuredAt(all.filter((p) => p.benchmark === finder.b).map((p) => p.board)));
-  const benchOf = (id) => (META.benchmarks || []).find((b) => b.id === id) || { name: id };
   const unit = rulerUnit(tr(benchOf(finder.b).name));
   const shown = (p) => String((p.board || {}).shown != null ? p.board.shown : score(p).toFixed(2));
   const byId = (id) => all.find((p) => presetId(p) === id) || null;
@@ -327,7 +340,7 @@ function renderBuildFinder() {
       `<div class="fd-ov-body fold-b">${body}<p class="fd-hint">${escHtml(tr("click: must have · again: I don't have · again: clear"))}</p></div></div>`;
   };
   const segBtn = (key, v, text, n, hint) => `<button type="button" data-fseg="${key}" data-v="${escHtml(v)}" class="${finder[key] === v ? "on" : ""}"${n ? "" : " disabled"}${hint ? ` title="${escHtml(hint)}"` : ""}>${escHtml(text)}<em>${n}</em></button>`;
-  const rulers = [...new Set(all.map((p) => p.benchmark))];
+  const rulers = [...new Set(all.filter((p) => sceneOfId(p.benchmark) === finder.sc).map((p) => p.benchmark))];
   const modes = [...new Set(all.filter((p) => p.benchmark === finder.b).map((p) => p.mode))];
   const inMode = all.filter(inMo);
 
@@ -335,6 +348,8 @@ function renderBuildFinder() {
     `<div class="fd-head fold-h">${title}<small class="fd-count">${escHtml(trF("{n} of {m} builds", { n: list.length, m: scopeTotal })
       + (updated ? " · " + trF("updated {t}", { t: updated }) : ""))}</small></div>` +
     `<div class="fd-scope">` +
+    (scenes.length > 1 ? `<div class="fd-seg"><span>${escHtml(tr("Fight"))}</span>${scenes.map((dir) =>
+      segBtn("sc", dir, benchSceneName(dir), all.filter((p) => sceneOfId(p.benchmark) === dir).length)).join("")}</div>` : "") +
     `<div class="fd-seg"><span>${escHtml(tr("Ruler"))}</span>${rulers.map((id) => {
       const name = tr(benchOf(id).name);
       return segBtn("b", id, rulerShort(name), all.filter((p) => p.benchmark === id).length, name);

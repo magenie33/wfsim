@@ -344,12 +344,21 @@ let BOARD_INDEX = null;
 /// the first has a populated benchmark page and an empty board everywhere else.
 async function loadWeaponBoard(id, base = "") {
   if (!id || BOARD_HAVE.has(id)) return;
+  // …AND ITS ROWS IN EVERY OTHER SCENE, `board/<cell_dir>/<id>.json` beside
+  // it: a cell is an ordinary ruler, so every surface reading `BOARD` groups
+  // its rows by `benchmark` as it does the base's. A scene that has not
+  // measured this weapon has no file. A desktop shell's offline copy holds
+  // the base alone (`scripts/board_meta.py`), so it asks the site for these.
+  const sceneBase = window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
+  const scenes = benchScenes().filter(Boolean)
+    .map((dir) => fetchJsonPatient(`${sceneBase}/board/${dir}/${id}.json`).catch(() => null));
   let rows = null;
   try { rows = await fetchJsonPatient(`${base}/board/${id}.json`); } catch (_) { /* unreachable */ }
+  const more = (await Promise.all(scenes)).filter(Array.isArray);
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
   if (!rows) return;
-  BOARD[id] = rows;
+  BOARD[id] = more.length ? rows.concat(...more) : rows;
   BOARD_HAVE.add(id);
 }
 
