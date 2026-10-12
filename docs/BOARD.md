@@ -721,28 +721,50 @@ A Hyperdrive config for `wfsim_accounts` as `wfsim_accounts`, bound as
 bot server: cloudflared, `/etc/wfsim-pg-tunnel.env`, the tunnel's unit, and
 `PG_URL` in `/etc/wfsim-live.env`.
 
-**THE LIBRARY** (`DB_LIBRARY`):
+**THE LIBRARY** (`DB_LIBRARY`). The switch flips only once Postgres holds a
+verified copy: flipped first, the worker and the scripts would read an empty
+library and publish it.
 
-1. Pause: disable the `queue`, `scores`, `publish`, `settle` and `backup`
-   workflows and let a running one end; `sudo systemctl stop wfsim-live` on the
-   bot server; set the worker's `FACTORY_PAUSED` and deploy, and wait a
-   quarter hour, so no answer handed out before it still writes a score or
-   spends a queue row in D1. Submissions, share links and appraisals still
-   write to D1 until the flip: those tables are copied again after it (step 4).
-2. Copy and compare, on the server:
-   `node scripts/pg_copy.mjs fresh library`, then `node scripts/pg_copy.mjs
-   verify library` — every row, value by value. Never `factory`: its tables
-   have been Postgres's since `FACTORY_DB` moved.
-3. Flip: `"DB_LIBRARY": "pg"` in wrangler.jsonc's vars, deploy; the repository
-   variable `DB_LIBRARY` to `pg`; `PG_URL` into `/etc/wfsim-live.env`.
-4. Catch up what landed in D1 between steps 2 and 3:
-   `node scripts/pg_copy.mjs copy inbox shares bot_inbox appraisals appraisal_results fissures usage_days scores`
-   (an upsert; nothing is deleted), and `compare library`.
-5. Re-enable: unset `FACTORY_PAUSED` and deploy; start `wfsim-live`; enable
-   the workflows and dispatch `queue` once by hand.
-6. Verify: `/api/board/pending` counts the library, a share link made and
-   opened, a build submitted reaches `inbox` in Postgres and the live board
-   within a minute, a `queue` and a `scores` run green, an appraisal answered.
+```sh
+# 1. PAUSE — nothing writes the library in D1 but the page's own doors.
+gh workflow disable queue.yml; gh workflow disable scores.yml; gh workflow disable publish.yml
+gh workflow disable settle.yml; gh workflow disable backup.yml
+gh run list --status in_progress            # until none of those is running
+ssh bot 'sudo systemctl stop wfsim-live'
+#    "FACTORY_PAUSED": "1" in wrangler.jsonc vars, then
+npx wrangler deploy
+sleep 900                                   # every answer handed out lands or lapses
+
+# 2. COPY — on the server, beside the database (/root/pgcopy, copy.env: CF_ACCOUNT,
+#    CF_TOKEN, CF_D1_DATABASE, PG_URL=…/wfsim); never `factory`.
+cd /root/pgcopy && set -a && . ./copy.env && set +a
+node scripts/pg_copy.mjs fresh library      # empties the library's tables, copies, compares
+
+# 3. VERIFY — every row, value by value.
+node scripts/pg_copy.mjs verify library
+
+# 4. FLIP — "DB_LIBRARY": "pg" beside "FACTORY_PAUSED" in wrangler.jsonc vars, then
+npx wrangler deploy
+gh variable set DB_LIBRARY --body pg
+node scripts/pg_copy.mjs add inbox shares bot_inbox appraisals appraisal_results fissures usage_days
+#    what the page's doors wrote to D1 between 2 and 4: rows Postgres lacks, its own kept
+
+# 5. UNPAUSE — "FACTORY_PAUSED" out of the vars, then
+npx wrangler deploy
+
+# 6. THE BOT SERVER — PG_URL=postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim in
+#    /etc/wfsim-live.env, its scripts shipped (scripts/ship_bot.py), then
+ssh bot 'sudo systemctl enable --now wfsim-pg-tunnel && sudo systemctl start wfsim-live'
+
+# 7. RE-ENABLE
+gh workflow enable queue.yml; gh workflow enable scores.yml; gh workflow enable publish.yml
+gh workflow enable settle.yml; gh workflow enable backup.yml
+gh workflow run queue.yml
+```
+
+Then: `/api/board/pending` counts the library; a share link made and opened; a
+build submitted reaches `inbox` in Postgres and the live board within a minute;
+the `queue` run green, its tunnel step first; an appraisal answered.
 
 **THE ACCOUNTS** (`DB_ACCOUNTS`), with the private worker's queries ported
 first — it reads the same tables: pause sign-in writes (`FACTORY_PAUSED` and
@@ -752,12 +774,21 @@ the paid half's own pause), `node scripts/pg_copy.mjs fresh accounts` then
 `DB_ACCOUNTS`, un-pause; verify a sign-in, `/api/me`, a device claim, the
 contribution page.
 
-**BACK**: the switch to `d1` (wrangler var and repository variable, `PG_URL`
-out of `/etc/wfsim-live.env`) and deploy. D1 then holds everything up to the
-flip: what Postgres took since is copied back by hand, table by table, or is
-accepted as lost — a share link and an arrival are recoverable from the
-inbox's own log only while they are in Postgres, so a rollback is decided
-within hours, not days.
+**BACK**, the library: the switch off everywhere it is on, in the order that
+stops writes to Postgres first.
+
+```sh
+gh variable set DB_LIBRARY --body d1
+ssh bot "sudo sed -i '/^PG_URL=/d' /etc/wfsim-live.env && sudo systemctl restart wfsim-live"
+#    "DB_LIBRARY" out of wrangler.jsonc vars (or "d1"), then
+npx wrangler deploy
+```
+
+D1 then holds the library as it was at the flip. What Postgres took since —
+arrivals, builds, scores, queue rows, shares, appraisals — is not copied back
+by any tool; it is read out of Postgres table by table and written to D1 by
+hand, or accepted as lost and measured again. A rollback is decided within
+hours, not days.
 
 ## Compute orders
 
