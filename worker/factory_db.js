@@ -65,14 +65,11 @@ export function pgDb(client) {
     batch: async (list) => {
       for (let i = 0; ; i++) {
         try {
-          return await client.transaction(async (tx) => {
-            const out = [];
-            for (const s of list) {
-              const r = await exec(tx, s);
-              out.push({ results: r.rows, meta: { changes: r.affected } });
-            }
-            return out;
-          });
+          // EVERY STATEMENT SENT AT ONCE, pipelined on the one connection: sent one
+          // round trip at a time, a settlement held its row locks for seconds and
+          // every other credit to those devices queued behind it.
+          return await client.transaction(async (tx) => (await Promise.all(list.map((s) => exec(tx, s))))
+            .map((r) => ({ results: r.rows, meta: { changes: r.affected } })));
         } catch (e) {
           if (i >= 2 || !["40P01", "40001"].includes(e && e.code)) throw e;
           await new Promise((r) => setTimeout(r, 25 * (i + 1) + Math.random() * 50));
