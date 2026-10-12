@@ -118,13 +118,11 @@ is `work_per_point` work.
   else is never accepted. Any other engine gets `stale: true` and nothing, and
   `/answers` naming it releases the lease and drops the answers. Every `/work`
   answer carries `release`; the page reloads into a newer one when idle.
-- WHEN ENGINES MOVE. Weapon data changes whenever a weapon is measured in game,
-  any day; everything else that moves `engine` — mechanics, shared data, the
-  toolchain — ships on the weekly release, Tuesday 20:00 Asia/Shanghai,
-  announced a day before with the commit it will be. A fix to a wrong number or
-  a security fix may ship at once, and says why. A client built on a commit
-  keeps working through its `accepted` days, so rebuilding once inside them
-  loses nothing.
+- WHEN ENGINES MOVE: whenever a change is ready, any day and as often as it
+  comes — there is no release schedule. A client on the official library
+  (§"The official engine library") follows each one by itself; one built from a
+  commit keeps working through its `accepted` days when only weapon data moved,
+  and stops at once when anything else did.
 
 ## The official engine library
 
