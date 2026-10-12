@@ -263,11 +263,13 @@ const protectorField = () =>
 /// THE LADDER IS THE UNIT'S. `squad_health_bonus` comes off `/api/meta` rather
 /// than being written here — a second copy of +0/+50/+100/+200 would be a
 /// second answer the day DE changes it — and it is also what decides whether
-/// this control exists at all.
+/// this control exists at all — beside a mission's Empowered Enemies, which
+/// the squad sizes too: up to four, and the Icebind's six.
 const squadField = (en) => {
   const ladder = (en && en.squad_health_bonus) || [];
-  if (ladder.length < 2) return "";
-  const opts = ladder
+  const most = Math.max(ladder.length, sim.empowered === "icebind" ? 6 : sim.empowered === "archimedea" ? 4 : 0);
+  if (most < 2) return "";
+  const opts = Array.from({ length: most }, (_, i) => ladder.length ? ladder[Math.min(i, ladder.length - 1)] : 0)
     .map((bonus, i) => {
       const n = i + 1;
       const label = bonus > 0

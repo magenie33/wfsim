@@ -248,7 +248,8 @@ function fightCardHtml() {
   const en = allEnemies().find((e) => e.id === sim.enemy) || {};
   const gap = Math.hypot((sim.target_at || [0, 0])[0] - (sim.player_at || [0, 0])[0],
     (sim.target_at || [0, 0])[1] - (sim.player_at || [0, 0])[1]);
-  const enemy = [chip(`${en.name || sim.enemy} Lv ${sim.level}${sim.steel_path ? " (SP)" : ""}`)];
+  const emp = empowermentLabel(sim.steel_path, sim.empowered, true);
+  const enemy = [chip(`${en.name || sim.enemy} Lv ${sim.level}${emp ? ` (${emp})` : ""}`)];
   if (sim.eximus) enemy.push(chip(tr("Eximus")));
   const play = [
     chip(`${sim.duration} s`),
@@ -569,7 +570,9 @@ function renderScenarioFields(ids, opts = {}) {
         <div class="arc-side">${card}
           <div class="arc-fields">
             <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
-            <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
+            <label>${escHtml(tr("Empowerment"))} <select data-k="empowered">${[["none", tr("None")], ["steel_path", tr("Steel Path")],
+              ["archimedea", tr("Archimedea")], ["icebind", tr("Icebind")]].map(([v, t]) =>
+              `<option value="${v}"${empowermentOf(sim) === v ? " selected" : ""}>${escHtml(t)}</option>`).join("")}</select></label>
             ${eximusField(en)}
             ${spectralField(en)}
             ${guardianField()}
@@ -743,6 +746,17 @@ function renderScenarioFields(ids, opts = {}) {
           return;
         }
         if (applyClassRule(el)) { renderSim(); return; }
+        // ONE EMPOWERMENT, TWO WIRE FIELDS: Steel Path stays the `steel_path`
+        // flag every saved fight carries, and a mission is `empowered` beside
+        // it switched off — never both (webapi `empowerment_from`).
+        if (k === "empowered") {
+          const v = el.value;
+          writeScenarioFields({ steel_path: v === "steel_path", empowered: v === "archimedea" || v === "icebind" ? v : null });
+          markScenarioDirty();
+          if (opts.after) opts.after();
+          renderSim();
+          return;
+        }
         // A NUMBER THAT IS NOT A NUMBER INPUT SAYS SO. A `<select>` reaches the
         // `else` below as a STRING, and a scenario field the server reads with
         // `get_u32` would silently fall back to its default — the control would
@@ -1086,7 +1100,7 @@ function enemyMeta(en) {
     // "Lv" stays untranslated, the way every other level label in the app is.
     const lv = src === en
       ? `Lv ${en.base_level ?? 1}`
-      : `Lv ${sim.level}${sim.steel_path ? " SP" : ""}${at.eximus ? ` ${tr("Eximus")}` : ""}`;
+      : `Lv ${sim.level}${empowermentLabel(sim.steel_path, sim.empowered, true) ? " " + empowermentLabel(sim.steel_path, sim.empowered, true) : ""}${at.eximus ? ` ${tr("Eximus")}` : ""}`;
     bits.push(`${lv}: ${pools.join(" · ")}`);
     // What the armour is WORTH — at these levels the raw figure says little
     // and the reduction it buys says everything.

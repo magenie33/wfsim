@@ -1828,8 +1828,11 @@ coded.
 
 **A FILE IS ONE FIGHT; ITS LADDER MAKES IT SEVERAL RULERS.** An axis
 (`data/benchmarks/axes/<id>.yaml`) lists RUNGS, and a rung is a CHOSEN
-combination of fight fields — `scene` names each one by its level, Steel Path
-and Empowered Enemies — never a product of them, so only the fights someone
+combination of fight fields — `scene` names each one by its level, its one
+empowerment (Steel Path, Deep Archimedea or The Icebind, docs/MECHANICS.md
+§"Empowered Enemies") and the squad that sizes it, in the order the page shows
+them: Lv 9999 Steel Path, Lv 1000 Icebind (six), Lv 500 Archimedea (four), Lv
+200 Steel Path — never a product of them, so only the fights someone
 decided to measure exist. The FIRST rung is what each spanning ruler's own file
 states, and the build refuses a ruler that states otherwise; a rung added once
 lines up on every board. A later rung overwrites only the fields it sets, so it

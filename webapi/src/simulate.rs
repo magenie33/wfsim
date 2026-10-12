@@ -485,6 +485,8 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         arena.target.max_health(),
         arena.target.armor(),
     );
+    // …AND THE MISSION'S EMPOWERMENT beside Steel Path, the one a reader saw.
+    let empowered = arena.target.empowered.map(|(e, squad)| json!({ "id": e.id(), "squad_size": squad }));
     let report_panel = &report_panel;
 
     // ---- run ----
@@ -1076,6 +1078,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             "name": enemy_name,
             "level": level,
             "steel_path": steel_path,
+            "empowered": empowered,
             // What was actually fought, not what was asked for — the default
             // is the unit's own answer, so a caller that said nothing still
             // needs telling which variant it got.

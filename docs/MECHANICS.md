@@ -2585,8 +2585,13 @@ with U36 must be **measured**.
 **Empowered Enemies** (wiki `Empowered_Enemies`; Update 44.1.0 notes) — a
 mission's own multiplier, and **not Steel Path**: *"Missions with Empowered
 Enemies are not considered Steel Path"*; stacking the two at Netracell's release
-*"was recognized as a bug and was fixed later"*. The fight field `empowered`
-names the mission and `squad_size` (1–6) sizes it (`rules::scaling::Empowered`):
+*"was recognized as a bug and was fixed later"*. So a fight has ONE
+EMPOWERMENT: the field `empowered` names it — `steel_path`, `archimedea` or
+`icebind` — and `squad_size` (1–6) sizes a mission's (`rules::scaling::Empowered`).
+Absent, the fight's `steel_path` flag decides, which is how every saved fight
+and link has always said Steel Path; a mission switches Steel Path off whatever
+the flag says (webapi `empowerment_from`). The page offers one Empowerment
+choice, None, Steel Path, Archimedea or Icebind, and writes those two fields.
 
 | mission | health and shields | armor |
 | --- | --- | --- |
@@ -2595,9 +2600,10 @@ names the mission and `squad_size` (1–6) sizes it (`rules::scaling::Empowered`
 
 Armor is multiplied on the scaled value and still ends at 2,700, which no
 source raises. Overguard is untouched: no source says the modifier reaches it.
-The engine computes what it is told, so a fight setting both `steel_path` and
-`empowered` gets both; a ruler states only missions that exist. Past four
-players the ammo-drop table has no column and the four-player one is read.
+A UNIT'S OWN SQUAD BONUS IS ITS OWN, and stacks: a Demolisher's Disruption
+health ladder (`squad_health_bonus`) reads the same `squad_size` and multiplies
+with the mission's. Past four players neither table has a column, and the
+four-player one is read — for the Demolisher an unmeasured admission.
 
 **Simulacrum limits** (for golden-test planning): enemy level can only be set
 up to `5 × Mastery Rank + 30` (+25 in some Simulacrum variants) — nowhere

@@ -7,7 +7,7 @@ use wfsim_engine::target::TargetMode;
 use crate::kitgun::board_assembly_of;
 use crate::tenno::wielder_build_of;
 use crate::registry::enemies;
-use crate::request::{get_bool, get_str, get_u32};
+use crate::request::{get_str, get_u32};
 
 /// THE RIVEN SHAPE a board payload carries — two flat fields, the way the
 /// endpoint stores them.
@@ -161,9 +161,8 @@ pub fn board_check_json(v: &Value) -> Value {
 /// picking it.
 pub fn targets_json(v: &Value) -> Value {
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
-    let steel_path = get_bool(v, "steel_path", true);
     let squad_size = get_u32(v, "squad_size", 1).clamp(1, 6);
-    let empowered = match crate::fight::empowered_from(v, squad_size) {
+    let (steel_path, empowered) = match crate::fight::empowerment_from(v, squad_size) {
         Ok(e) => e,
         Err(e) => return e,
     };

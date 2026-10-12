@@ -197,6 +197,19 @@ function defaultScenario() {
 // where they become a Tenno (`data/tenno/default.yaml` + these overrides).
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
+/// THE FIGHT'S ONE EMPOWERMENT, in words: Steel Path or a mission's Empowered
+/// Enemies, never both (webapi `empowerment_from`); "" when it has none. `e`
+/// is a scenario's `empowered` id or a result's `{ id, squad_size }`.
+function empowermentLabel(steelPath, e, short) {
+  const id = e && typeof e === "object" ? e.id : e;
+  if (id === "archimedea") return tr("Archimedea");
+  if (id === "icebind") return tr("Icebind");
+  return steelPath || id === "steel_path" ? (short ? "SP" : tr("Steel Path")) : "";
+}
+/// …AND WHICH ONE A SCENARIO HOLDS, as the Empowerment control names it.
+const empowermentOf = (s) => (s.empowered === "archimedea" || s.empowered === "icebind" ? s.empowered
+  : s.steel_path || s.empowered === "steel_path" ? "steel_path" : "none");
+
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null,
   guardian_aura: false, ancient_protector_aura: false,
   headshot_pct: 100, aiming: true,

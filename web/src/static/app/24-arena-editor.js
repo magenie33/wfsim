@@ -259,7 +259,7 @@ function mountArenaCanvas(host, s, en, opts) {
           + (art ? `<img src="${escHtml(art)}" alt="">` : "")
           + `<div><b>${swatch(id)}${escHtml((en && en.name) || tr("Enemy"))}</b>`
           + `<span>${escHtml(tr("Level"))} ${escHtml(String(level))}`
-          + `${s.steel_path ? " · " + escHtml(tr("Steel Path")) : ""}</span>`
+          + `${empowermentLabel(s.steel_path, s.empowered) ? " · " + escHtml(empowermentLabel(s.steel_path, s.empowered)) : ""}</span>`
           + `<span>${escHtml(enemyMeta(en))}</span></div></div>`
           + row(tr("at"), `${b[0].toFixed(1)}, ${b[1].toFixed(1)}`)
           + row(tr("from you"), gapTo(b))
@@ -289,7 +289,7 @@ function mountArenaCanvas(host, s, en, opts) {
       + (IMG(en && en.image) ? `<img src="${escHtml(IMG(en.image))}" alt="">` : "")
       + `<div><b>${swatch(id)}${escHtml((en && en.name) || tr("Enemy"))}</b>`
       + `<span>${escHtml(tr("Level"))} ${escHtml(String(level))}`
-      + `${s.steel_path ? " · " + escHtml(tr("Steel Path")) : ""}</span></div></div>`
+      + `${empowermentLabel(s.steel_path, s.empowered) ? " · " + escHtml(empowermentLabel(s.steel_path, s.empowered)) : ""}</span></div></div>`
       + row(tr("enemy count"), bodies.length)
       + row(tr("range"), gapTo(bodies[Math.max(struck, 0)] || s.target_at))
       + row(tr("aim"), s.aim_at ? tr("a place of its own") : tr("on the target"))

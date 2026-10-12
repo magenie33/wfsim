@@ -64,6 +64,14 @@ impl Empowered {
         }
     }
 
+    /// The id `from_id` reads, for a report.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Archimedea => "archimedea",
+            Self::Icebind => "icebind",
+        }
+    }
+
     /// `(health and shields, armor)` multipliers for a squad of `squad`.
     ///
     /// VERBATIM, Archimedea: *"Enemy Health and Shields increased by 100% and
