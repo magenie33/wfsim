@@ -1818,8 +1818,9 @@ spans, and a new rung starts with every build unmeasured. A cell's row is never
 `new_build`'s: a new build is ranked first where it was always ranked, and the
 other scenes are a sweep's (`isLadderCell` in `worker/board_tasks.js`).
 Its first pass is asked at a pace, at most `SCENE_ROWS_PER_RUN` cell rows a
-reconciliation, in rounds of each weapon's best builds with the most popular
-weapons first (`scripts/scene_rows.py`), so a
+reconciliation, one weapon finished before the next and the most popular
+first (`scripts/scene_rows.py`) — a scene's leading build need not be the
+base's — so a
 new rung never floods the factory's open questions.
 
 **A SCENE'S ROWS LIVE IN ITS OWN DIRECTORY**, `site/board/<cell_dir>/` (a

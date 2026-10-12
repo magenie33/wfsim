@@ -1,21 +1,20 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """A SCENE'S FIRST PASS, ASKED AT A PACE — the base rulers' rows all, a cell's
-rows at most N a run, the most popular weapons' best builds first.
+rows at most N a run, ONE WEAPON AT A TIME, the most popular first.
 
     python3 scripts/scene_rows.py <facts.ndjson> <popularity.json> <missing.ndjson> <n> > out.ndjson
 
 A new rung owes every build a row at once (docs/BOARD.md §"A ruler's ladder"),
 and asking a whole board in one run floods the factory's open questions; what
-is left is asked the next run. A cell's rows go in ROUNDS of `ROUND` builds a
-weapon, its best on the base ruler first, so a weapon's board row lands early;
-inside a round the weapon `/api/popularity` counts more goes first. A cell's id
-is its base's plus `__<rung>`; ties by the row itself, so two runs over the same
-input ask the same rows. An unreadable popularity file orders by score alone.
+is left is asked the next run. A WEAPON IS FINISHED BEFORE THE NEXT STARTS,
+every build under every cell: the build that leads a scene need not be the one
+leading the base, so a weapon half measured ranks the wrong build. Weapons go
+in the order `/api/popularity` counts them, inside one by base score. A cell's
+id is its base's plus `__<rung>`; ties by the row itself, so two runs over the
+same input ask the same rows. An unreadable popularity file orders by weapon.
 """
 import json
 import sys
-
-ROUND = 10
 
 
 def main(facts_path, popularity_path, rows_path, n):
@@ -43,14 +42,7 @@ def main(facts_path, popularity_path, rows_path, n):
                 continue
             score = best.get((r["build_id"], r["ruler"].split("__")[0], r["mode"]))
             cells.append((r.get("weapon") or "", score, row))
-    # A BUILD'S PLACE AMONG ITS WEAPON'S on this cell and mode, by base score.
-    rank, seen = {}, {}
-    for weapon, score, row in sorted(cells, key=lambda c: (c[0], c[2]["ruler"], c[2]["mode"], c[1] is None, -(c[1] or 0), c[2]["build_id"])):
-        group = (weapon, row["ruler"], row["mode"])
-        rank[(row["build_id"], row["ruler"], row["mode"])] = seen.get(group, 0)
-        seen[group] = seen.get(group, 0) + 1
-    cells.sort(key=lambda c: (rank[(c[2]["build_id"], c[2]["ruler"], c[2]["mode"])] // ROUND,
-                              -popular.get(c[0], 0), c[1] is None, -(c[1] or 0),
+    cells.sort(key=lambda c: (-popular.get(c[0], 0), c[0], c[1] is None, -(c[1] or 0),
                               c[2]["ruler"], c[2]["build_id"], c[2]["mode"]))
     for _, _, row in cells[:n]:
         print(json.dumps(row, separators=(",", ":")))

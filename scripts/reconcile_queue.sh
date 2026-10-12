@@ -58,8 +58,8 @@ done
 
 # A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
 # one run asking a whole board floods the factory's open questions. At most
-# `SCENE_ROWS_PER_RUN` cell rows a run, the popular weapons' best builds first;
-# the rest are still missing next run (`scene_rows.py`).
+# `SCENE_ROWS_PER_RUN` cell rows a run, one weapon finished before the next and
+# the popular first; the rest are still missing next run (`scene_rows.py`).
 popular=$(mktemp)
 curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > "$popular" || : > "$popular"
 paced=$(mktemp)
