@@ -406,16 +406,17 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
         a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
-    if (!official) {
-      // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md §"Contribution").
-      const ms = items.reduce((t, { a }) => t + (a.compute_ms || 0), 0);
-      writes.push(
-        db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?").bind(ms, at, w.device),
-        db.prepare(`INSERT INTO verifier_hours AS h (verifier, hour, tasks, ms) VALUES (?, ?, ?, ?)
-                    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = h.tasks + excluded.tasks, ms = h.ms + excluded.ms`)
-          .bind(w.device, at.slice(0, 13), items.length, ms));
-    }
     await db.batch(writes);
+    if (!official) {
+      // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
+      // §"Contribution") — a statistic, so each on its own and outside the answers'
+      // transaction: inside it, it held the device's row against every credit.
+      const ms = items.reduce((t, { a }) => t + (a.compute_ms || 0), 0);
+      await db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?").bind(ms, at, w.device).run();
+      await db.prepare(`INSERT INTO verifier_hours AS h (verifier, hour, tasks, ms) VALUES (?, ?, ?, ?)
+                    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = h.tasks + excluded.tasks, ms = h.ms + excluded.ms`)
+        .bind(w.device, at.slice(0, 13), items.length, ms).run();
+    }
     const answered = new Map(items.map(({ q, a }) => [q.id,
       { question: q.id, device: w.device, net: w.net || "", engine: a.engine, result: a.result, work: a.work, official: !!official, at }]));
     const ids = JSON.stringify([...answered.keys()]);
