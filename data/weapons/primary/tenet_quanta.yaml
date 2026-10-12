@@ -17,7 +17,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 100.0
-disposition: 0.75            # riven disposition
+disposition: 0.85            # riven disposition
 polarities: [vazarin, madurai, naramon]
 exilus_polarity: naramon
 riven_family: Quanta

@@ -774,7 +774,7 @@ notes:
     RIVEN DISPOSITION is `Module:Weapons/data/modular`'s — the module behind the
     chamber page's OWN infobox, one record per (chamber, slot). The wiki has two
     other answers: `Module:Modular/data` (Tombfinger's secondary 0.7 against the
-    infobox's 0.85), and the Kitgun page's overview table, last edited in 39.1,
+    infobox's 0.9), and the Kitgun page's overview table, last edited in 39.1,
     lower on four secondaries (Catchmoon 0.70, Gaze 0.95, Rattleguts 0.90,
     Vermisplicer 1.10). The weapon's own page wins; a riven reading settles it.
   kitgun_riven_is_the_chambers: |

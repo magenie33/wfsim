@@ -27,7 +27,7 @@ kitgun: gaze_secondary
 transform_group: gaze_secondary
 
 # see notes: kitgun_disposition_source
-disposition: 1.0
+disposition: 1.05
 riven_family: Gaze
 
 polarities: []

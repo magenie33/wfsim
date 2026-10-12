@@ -16,7 +16,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 12.5
-disposition: 1.05            # riven disposition
+disposition: 1.1            # riven disposition
 polarities: [naramon, madurai, madurai]
 exilus_polarity: naramon
 riven_family: Aksomati

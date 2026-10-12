@@ -16,7 +16,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 100.0
-disposition: 0.5            # riven disposition
+disposition: 0.6            # riven disposition
 polarities: [madurai, madurai]
 # UNIVERSAL, not the weapon's own Madurai. The module states it and the page
 # never mentions the exilus slot, so the copied value looked right; it meant

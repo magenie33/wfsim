@@ -18,7 +18,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_uncrosschecked
 accuracy: 100.0             # the module states 0, which a bow reads as perfect
-disposition: 1.0            # riven disposition
+disposition: 0.5            # riven disposition
 polarities: [naramon]
 exilus_polarity: madurai
 # NO `riven_family`. It is DE's own `compatibility` string and the only

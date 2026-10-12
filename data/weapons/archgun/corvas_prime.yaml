@@ -27,7 +27,7 @@ mastery_rank: 14
 max_rank: 30
 
 accuracy: 100.0              # "Very High"
-disposition: 0.95
+disposition: 1.0
 polarities: [madurai, madurai, naramon]
 riven_family: Corvas
 traits: [prime]

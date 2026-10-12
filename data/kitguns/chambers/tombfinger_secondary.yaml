@@ -33,7 +33,7 @@ ammo_pickup: 20
 trigger: "Semi-Auto"
 shot_type: "Projectile"
 # see notes: kitgun_disposition_source
-riven_disposition: 0.85
+riven_disposition: 0.9
 silent: false
 spread:
   min_deg: 1

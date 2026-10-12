@@ -18,7 +18,7 @@ transforms_to: onos_incarnon
 # weapon is missing belongs to the Incarnon form, and is stated there rather
 # than twice (the page renders both entries' lists together).
 accuracy: 40
-disposition: 0.8
+disposition: 0.85
 polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Onos
