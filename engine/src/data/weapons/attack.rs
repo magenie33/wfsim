@@ -109,6 +109,11 @@ pub struct AttackSpec {
     pub ammo_cost: f64,
     #[serde(default)]
     pub shot_type: Option<ShotType>,
+    /// HOW FAST THE SHOT FLIES, metres a second — the module's `ShotSpeed`.
+    /// Read only where [`Self::shot_type`] flies: the hit lands `gap / speed`
+    /// after the trigger (docs/MECHANICS.md §"Projectile flight").
+    #[serde(default)]
+    pub projectile_speed_mps: Option<f64>,
     pub fire_rate: f64,
     /// The DRAW before the shot (the module's per-attack `ChargeTime`), and
     /// with it the weapon's real cadence. VERBATIM (wiki Fire Rate), the bow

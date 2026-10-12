@@ -624,6 +624,13 @@ pub fn base_panel_assembled(
         punch_through_m: s.attack.punch_through_m,
         infinite_body_punch_through: s.attack.infinite_body_punch_through,
         projectile_width_m: s.attack.projectile_width_m,
+        // A HIT-SCAN OR BEAM ATTACK HAS NO FLIGHT whatever it states, and an
+        // ORB attack's trigger deploys the orb, which flies at its own
+        // `OrbSpec::speed_mps`.
+        projectile_speed_mps: s
+            .attack
+            .projectile_speed_mps
+            .filter(|_| s.attack.shot_type.is_some_and(ShotType::flies) && s.attack.orb.is_none()),
         // ONE FACT, TWO SPELLINGS, resolved here rather than left to a reader
         // to notice. `beam.range_m` has carried a beam's reach since the block
         // existed — the Torid Incarnon's 37 m is asserted in this file's own

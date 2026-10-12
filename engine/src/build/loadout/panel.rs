@@ -318,6 +318,10 @@ pub struct ResolvedPanel {
     /// How wide the projectile is — see [`WeaponBase::projectile_width_m`]. No
     /// mod moves it, so it arrives here unchanged.
     pub projectile_width_m: f64,
+    /// FLIGHT SPEED, metres a second, with every Projectile Speed bonus in it
+    /// — `None` on an attack that does not fly. See
+    /// [`WeaponBase::projectile_speed_mps`].
+    pub projectile_speed_mps: Option<f64>,
     /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon
     /// declares none. See [`crate::data::weapons::AttackSpec::range_m`]: past it
     /// there is nothing, which is a different fact from `falloff`, a ramp.
@@ -687,7 +691,8 @@ pub struct ResolvedPanel {
     pub crit_tier_upgrade_chance: f64,
     /// Summed INDIRECT buckets (recoil, accuracy, ammo…): outside the
     /// theoretical-DPS math, stated on the panel; a future shooter model
-    /// (2D recoil/aim, travel time, ammo sustain) consumes them.
+    /// (2D recoil/aim, ammo sustain) consumes them. Accuracy and Projectile
+    /// Speed are already read: the cone, and the falloff window and flight.
     pub indirect: Vec<(IndirectStat, f64)>,
     /// (element, 1 + Σ that element's bonuses) — the elemental bracket of
     /// DoT tick formulas (only literal same-element mods count).

@@ -10,10 +10,11 @@
 
 use super::*;
 
-/// Settle the shot that has just landed, and set the clock to the next one.
+/// Settle the shot that has just LANDED. `t` is the landing, and a transform
+/// the gauge fills here moves it on.
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
-pub(super) fn after_the_shot(
+pub(super) fn after_the_landing(
     params: &FightParams,
     apl: &crate::data::apl::Apl,
     flash: bool,
@@ -27,10 +28,12 @@ pub(super) fn after_the_shot(
     any_head: bool,
     pellets_before: u32,
     headshots_before: u32,
-    swing: Option<crate::model::ComboHit>,
+    // DID THIS ROUND COMPLETE A BURST, read when it was FIRED. `None` reads
+    // the magazine now, which is that moment only for a shot that does not fly.
+    burst_completed: Option<bool>,
+    swing: &Option<crate::model::ComboHit>,
     combo_now: f64,
     combo_multiplier: f64,
-    initial_now: f64,
     tennokai: bool,
     tennokai_heavy: bool,
     tennokai_kill_mark: u32,
@@ -47,12 +50,9 @@ pub(super) fn after_the_shot(
     double_tap: &mut DoubleTap,
     melee: &mut MeleeState,
     sniper_combo: &mut SniperComboCount,
-    spool: &mut Spool,
-    windows: &CardWindows,
     rs_armed: &mut bool,
     opening_closed: &mut bool,
-    field_duration_boost: &mut bool,
-    last_shot_t: &mut f64,) {
+    field_duration_boost: &mut bool,) {
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
         //
         // A counter that decays only through its own timer runs slightly
@@ -98,8 +98,10 @@ pub(super) fn after_the_shot(
         //
         // A weapon with no burst has a count of one, and then every round
         // completes its own burst — which is what the trigger means there.
-        let burst_len = active.burst.map_or(1, |b| b.count.max(1));
-        if ammo.rounds_this_mag.is_multiple_of(burst_len) {
+        let completed = burst_completed.unwrap_or_else(|| {
+            ammo.rounds_this_mag.is_multiple_of(active.burst.map_or(1, |b| b.count.max(1)))
+        });
+        if completed {
             bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::FullBurst, *t, rng);
         }
 
@@ -228,7 +230,7 @@ pub(super) fn after_the_shot(
         //
         // ONLY A LANDED SWING COUNTS: *"Only successful strikes against enemies
         // award points"*, so a miss neither adds nor refreshes.
-        if let Some(h) = &swing {
+        if let Some(h) = swing {
             after_swing(
                 h, active, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
                 tennokai_heavy, pellets_before, *t,
@@ -236,6 +238,30 @@ pub(super) fn after_the_shot(
             );
         }
 
+}
+
+/// …AND SET THE CLOCK TO THE NEXT SHOT. Apart from the landing because a shot
+/// that flies is due again before it arrives: cadence is the TRIGGER's, read
+/// at the moment it was pulled.
+#[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
+pub(super) fn next_shot_due(
+    params: &FightParams,
+    active: &FightParams,
+    t: &mut f64,
+    swing: Option<crate::model::ComboHit>,
+    initial_now: f64,
+    tennokai: bool,
+    tennokai_heavy: bool,
+    r: &RunResult,
+    bar: &mut BuffBar,
+    buff_stacks: &mut [LiveStacks],
+    ammo: &Ammo,
+    incarnon: &IncarnonState,
+    melee: &mut MeleeState,
+    spool: &mut Spool,
+    windows: &CardWindows,
+    last_shot_t: &mut f64,) {
         // Next shot: cadence reflects the bar as of now (Frenzy just
         // granted/refreshed counts immediately), plus Pressurized
         // Magazine's live on-reload fire-rate buff.

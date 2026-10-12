@@ -61,6 +61,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         punch_through_m: 0.0,
         infinite_body_punch_through: false,
         projectile_width_m: 0.0,
+        projectile_speed_mps: None,
         // AIMED: the calibration profile is a pistol pointed at a dummy.
         unaimed_headshot_chance: None,
         // …AND IT DEPLOYS NOTHING: this fixture throws no orb.

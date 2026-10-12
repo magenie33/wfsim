@@ -89,7 +89,10 @@ What it turned on:
 - **radial falloff**, because a missed projectile detonates beside the target
   and the explosion finally has an epicentre distance to read. 10 admissions;
 - **the shot combo counter dropping on a miss**, which is the other half of a
-  mechanic that otherwise only decays on its timer.
+  mechanic that otherwise only decays on its timer;
+- **projectile flight**: a projectile's hit, and everything keyed off it, lands
+  `gap / speed` after the pull, and a Projectile Speed bonus shortens it
+  (MECHANICS §"Projectile flight"). At contact the gap is 0 and nothing moves.
 
 What is still open here:
 
@@ -114,6 +117,17 @@ What is still open here:
   IS — so the intake takes nothing rather than the neighbouring one. Each says
   so (`spread_not_transcribed`); re-running `scripts/intake_spread.py` only
   ever lowers the count and a test holds the ceiling;
+- **PROJECTILE LIFETIME, and with it a projectile's MAX RANGE** (= speed ×
+  lifetime, wiki `Range`). No entry states a lifetime, so a round flies any
+  distance and a Projectile Speed bonus pays through the flight and the falloff
+  window only;
+- **WHERE A FLIGHT IS NOT KNOWN, IT IS ZERO.** 30 `projectile` entries carry no
+  `projectile_speed_mps` (the Kuva Bramma, the Kuva Zarr, the laser rifles…),
+  no kitgun chamber carries one, and the Stug states a speed under
+  `shot_type: hit_scan` — each of these lands at the pull;
+- **ONE FLIGHT PER SHOT.** A body behind the aimed one (punch through) or beside
+  it (an explosion, a chain) is struck at the aimed body's landing, not after
+  the extra metres to it;
 - **Dizzying Rounds**' stun, which applies "from less than 8m" — the distance
   half is answerable now and the STUN half is not: it opens a finisher, and
   nothing here takes one. Filed under `nobody_shoots_back`'s neighbourhood
@@ -681,7 +695,7 @@ than from memory — 22 spatial kinds across mods, arcanes and evolutions.
 | `multishot_beyond_range` | 2 evolutions (Lone Enforcer) | `panel.multishot_beyond_range` |
 | `beam_range_bonus` / `beam_range_percent` | 3 mods + 3 evolutions | `ap.range_m`, a WALL — `gap_m <= ap.range_m` |
 | `accuracy_bonus` | 28 | the spread cone |
-| `projectile_speed_bonus` | 4 | the falloff window |
+| `projectile_speed_bonus` | 4 | the falloff window, and the flight (`FightParams::flight_seconds`) |
 
 `spread_audit` counts 101 of the roster's 224 entries reaching a formation now
 — 7 beams, 54 explosive, 39 punch-through, 1 tendrils — against 62 before punch

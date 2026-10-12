@@ -112,6 +112,9 @@ pub(super) struct Combatant<'a> {
     pub(super) melee: MeleeState,
     pub(super) influence_until: f64,
     pub(super) last_shot_t: f64,
+    /// ITS SHOTS STILL IN THE AIR, in the order they were fired — see
+    /// [`super::flight`]. Always empty for a weapon whose shot does not fly.
+    pub(super) in_flight: Vec<Landing>,
     /// WHAT IT ONLY READS — resolved once from its own build, constant for the
     /// whole engagement.
     pub(super) fixed: Fixed<'a>,
@@ -737,6 +740,7 @@ pub(super) fn open<'a>(
             melee,
             influence_until,
             last_shot_t,
+            in_flight: Vec::new(),
             fixed: Fixed {
                 aim_off_axis,
                 ricochet_layout,

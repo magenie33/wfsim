@@ -140,7 +140,10 @@ fn landed(weapon: &str, range: f64) -> u32 {
     let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
     let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-    let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    // WHETHER A PELLET MISSES IS GEOMETRY, NOT TIME: without this the rounds
+    // still in the air at the end would read as misses (`fight::flight`).
+    p.projectile_speed_mps = None;
     run_once(&p, &mut Rng::new(0x5EED)).pellets
 }
 

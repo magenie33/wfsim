@@ -1268,11 +1268,40 @@ travel-distance falloff: *"Mods including Rivens that have positive or negative
 Projectile speeds will affect a weapon's entire Damage Falloff range
 accordingly, making them more or less effective at longer ranges."*
 
-**Unmodeled, deliberately.** The arena is single-target at a fixed engagement,
-so it models neither travel time nor range, and no roster weapon publishes a
-projectile lifetime — the Torid's wiki page stops at `shot_speed: 40` — so the
-resulting range is not even derivable from data. Recorded here so
-the omission is a stated scope boundary rather than an oversight.
+**Projectile flight — the hit lands `gap / speed` after the pull.** VERBATIM
+(wiki `Projectile Speed`): the stat *"defines how quickly a weapon's ammunition
+travels to a target after leaving the weapon"*, *"Hitscan weapons simply strike
+at the aimed point instantly"*, and the mods *"increase their flight speeds,
+reduce their travel times"*. So an attack whose `shot_type` is `projectile` and
+which states `projectile_speed_mps` arrives `gap / (speed × (1 + Projectile
+Speed))` seconds after it is fired, where the gap is the aimed body's,
+surface to surface (`rules::space::gap`). The bonus is the same bracket the
+falloff window reads — mods, rivens, evolutions, gated grants.
+
+How the sim runs it (`engine::fight::flight`):
+
+- **THE PULL AND THE HIT ARE TWO MOMENTS.** The pull spends the round, rolls
+  the shot's numbers and sets the clock to the next pull, which does not wait
+  for the round. Everything that keys off contact happens at the LANDING: the
+  damage and its procs, on-hit and on-headshot buffs, kills and what a kill
+  grants, the gauge, every spread to the bodies around it, and
+  the record's timestamps. Stats are rolled when the round is fired; the live
+  state it lands into is read when it lands.
+- **ONE LANDING PER SHOT, timed to the aimed body.** A punched body behind it
+  and an explosion's neighbours are struck at the same instant — the extra
+  metres to them are not flown.
+- **A KILL'S TIME IS ITS LANDING.** `first_kill_at` is stamped by the hit that
+  made it, so a time to kill includes the last round's flight.
+- **A ROUND STILL IN THE AIR WHEN THE ENGAGEMENT ENDS NEVER LANDS**, the same
+  rule a blob pile whose fuse runs past the end follows.
+- **A SHOT THAT DOES NOT FLY** — hit-scan, a beam, a melee swing, an orb (which
+  flies at its own `OrbSpec::speed_mps`), or an entry with no transcribed speed
+  — lands inside its own pull. So does any projectile at contact, where the gap
+  is 0, which is the distance both official rulers pin.
+
+The other half of the stat — **max range = speed × lifetime** — is still
+unmodelled: no roster weapon publishes a projectile lifetime, so a round flies
+any distance (`docs/UNMODELLED.md` §2).
 
 The critical-headshot damage interaction is specified in §5.
 

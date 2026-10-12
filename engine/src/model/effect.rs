@@ -419,9 +419,9 @@ pub enum ModEffect {
     /// an additive bucket per stat, resolved into
     /// [`ResolvedPanel::indirect`]. Indirect = excluded from the
     /// theoretical-DPS formula, but a real input to practical combat —
-    /// a future shooter model can consume them (recoil/accuracy → hit &
-    /// headshot probability; projectile speed → travel time vs moving
-    /// targets; ammo/holstered reload → long-fight sustain). Noise and
+    /// a future shooter model can consume them (recoil → hit & headshot
+    /// probability; projectile speed → leading moving targets;
+    /// ammo/holstered reload → long-fight sustain). Noise and
     /// dodge/roll speed are stealth/survivability, never DPS.
     Indirect(IndirectStat, f64),
     /// Reflex Draw: temporary handling buff on weapon swap-in. Conditional

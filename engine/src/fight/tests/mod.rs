@@ -31,6 +31,7 @@ mod overguard_status;
 mod pellet_volley;
 mod perks_and_cards;
 mod pools_columns_record;
+mod projectile_flight;
 mod radials_roster_targets;
 mod reload_grenade;
 mod replay_debilitate_misc;
@@ -70,6 +71,8 @@ impl Default for FightParams {
             punch_through_m: 0.0,
             infinite_body_punch_through: false,
             projectile_width_m: 0.0,
+            // HIT-SCAN: every fixture lands the instant it fires.
+            projectile_speed_mps: None,
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),
             resting: None,

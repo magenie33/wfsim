@@ -515,7 +515,63 @@ pub fn run_once_traced(
     // WHOSE TURN, AND WHEN. The fight's clock is whatever the next seat is due
     // at; the body then reads `t` as "now" exactly as it did when there was
     // only ever one seat to be due. It ends when every seat has parked.
-    while let Some(seat_index) = next_seat(&seats) {
+    loop {
+        let due = next_seat(&seats);
+        // A SHOT ARRIVING NO LATER THAN THE NEXT TURN LANDS FIRST, at its own
+        // time (`fight::flight`). One that would arrive after the engagement
+        // never does. A weapon whose shot does not fly never has one.
+        let by = due.map(|s| seats[s].next_t);
+        if let Some((si, k)) = next_landing(&seats, by, params.duration_seconds) {
+            let mut l = seats[si].in_flight.remove(k);
+            if trace.is_some() {
+                sample_frames_up_to(
+                    l.t, params, &mut trace, &mut next_frame, frame_seconds,
+                    &mut seats, &r, &bodies,
+                );
+            }
+            let me = &mut seats[si];
+            let counters_before = SeatCounters::of(&r);
+            let active = l.active(me.params);
+            // What is due before the hit settles first, as it does before a pull.
+            process_ticks(
+                &me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, l.t + 1e-9,
+                me.params, active, &mut r, rec, &mut me.d.status, &me.params.foe, 0,
+            );
+            process_field_ticks(
+                &me.windows, &mut fields, &mut me.gal, &mut me.arc, l.t,
+                me.params, me.fixed.field_active, &me.field_ctx, &mut r, rec, &mut me.d,
+                &mut bodies,
+            );
+            l.pellets_before = r.pellets;
+            l.headshots_before = r.weakpoint_hits + r.headshots_on_others;
+            // WHAT IT DEALS POINTS BACK AT THE PULL THAT FIRED IT, not at
+            // whichever pull is the latest.
+            let latest = rec.attribute_to(l.shot);
+            let after = land_the_shot(
+                &l,
+                me,
+                &mut Ground {
+                    r: &mut r,
+                    rec,
+                    rng,
+                    bodies: &mut bodies,
+                    fields: &mut fields,
+                    orbs: &mut orbs,
+                    blobs: &mut blobs,
+                    daggers: &mut daggers,
+                    body_at: &body_at,
+                    bounce_bodies: &bounce_bodies,
+                    area_near: &area_near,
+                },
+            );
+            rec.attribute_to(latest);
+            // A TRANSFORM THE HIT'S GAUGE STARTED holds the next pull.
+            me.next_t = me.next_t.max(after);
+            me.windows.sync_frenzy(&me.bar);
+            r.per_seat[si].add(SeatCounters::of(&r).since(counters_before));
+            continue;
+        }
+        let Some(seat_index) = due else { break };
         t = seats[seat_index].next_t;
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the shot
         // at `t` — the same convention the timeline buckets use. Sampling here
@@ -601,12 +657,6 @@ pub fn run_once_traced(
             Some(cy) if me.incarnon.in_base_form => &cy.base_form,
             _ => me.params,
         };
-        // …AND WHO IS ON THE LINE IS THE ACTIVE FORM'S ANSWER TOO, for the same
-        // reason: a form's punch through is its own (`open`).
-        let struck: &[usize] = match &me.fixed.base_struck {
-            Some(b) if me.incarnon.in_base_form => b,
-            _ => &me.fixed.struck,
-        };
         // The instance total and its SHAPE (Toxin's shield bypass, the
         // vulnerability column) are derived PER STAGE now — each attack part
         // has its own vector — so only the vector and ModifiedBase survive at
@@ -655,19 +705,6 @@ pub fn run_once_traced(
             &mut me.melee,
             &r,
         );
-        // …and the instances read it where they always did.
-        let qvec = &qvec;
-        // The per-projectile vectors belong to the FORM that is firing, like
-        // everything else at this scope. A cycle whose base form has them and
-        // whose Incarnon form does not simply reads an empty slice there.
-        let (variants, variant_rad): (&[_], &[_]) = if me.incarnon.in_base_form {
-            match me.params.cycle.as_ref() {
-                Some(_) => (&me.fixed.base_variants, &me.fixed.base_variant_rad),
-                None => (&me.fixed.main_variants, &me.fixed.main_variant_rad),
-            }
-        } else {
-            (&me.fixed.main_variants, &me.fixed.main_variant_rad)
-        };
 
         // Status events scheduled before this shot land first.
         process_ticks(
@@ -810,7 +847,6 @@ pub fn run_once_traced(
         } else {
             1.0
         };
-        let (mut any_head, mut any_big) = (false, false);
         // THE GAUGE'S OWN MARK, and it counts what the gauge counts —
         // `RunResult::weakpoint_hits`, not the reported headshot rate.
         let headshots_before = r.weakpoint_hits + r.headshots_on_others;
@@ -893,23 +929,8 @@ pub fn run_once_traced(
             );
             blobs.append(&mut mine);
         }
-        // Secondary Encumber: at most ONE extra proc per instant — pellets
-        // of one pull land simultaneously, so one roll per pull.
-        let mut encumber_done = false;
         r.shots += 1;
         r.body_shots += bodies.len() as u32;
-        // ...and the same boundary for a per-instance arcane cap: the whole
-        // pull is ONE damage instance, pellets and radial included.
-        me.arc.next_instance();
-
-        // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO
-        // COUNTER asks, and it is the shot's rather than the pellet's: a
-        // multishot pull that puts one pellet of six on the target is a hit.
-        let mut landed_this_shot = false;
-
-        // THE SHOT'S FACTORS, filled by its first landing pellet — see
-        // `SpreadStrike`. `None` when nothing landed, and then nothing spreads.
-        let mut strike_spread: Option<SpreadStrike> = None;
 
         // A SHOT THAT DEPLOYS RATHER THAN ARRIVES. An orb attack settles no
         // collision and no explosion here: everything it deals is delivered
@@ -929,189 +950,95 @@ pub fn run_once_traced(
             throw_orb(o, me.seat, me.params, t, &mut orbs);
         }
 
-        {
-            let shot = Strike {
-                seat: me.seat,
-                active,
-                qvec,
-                direct_pre_snap,
-                variants,
-                variant_rad,
-                modded_base,
-                co_base,
-                combo_multiplier,
-                combo_spec: me.fixed.combo_spec,
-                swing: &swing,
-                swing_mult,
-                swing_forced_types: &swing_forced_types,
-                swing_forced_independent: &swing_forced_independent,
-                tennokai,
-                tennokai_heavy,
-                melee_struck: &melee_struck,
-                struck,
-                body_at: &body_at,
-                bounce_bodies: &bounce_bodies,
-                chain_layout: &me.fixed.chain_layout,
-                ricochet_layout: &me.fixed.ricochet_layout,
-                aim_off_axis: me.fixed.aim_off_axis,
-                effective_cc,
-                crit_chance_relative,
-                flat_crit,
-                cc_mult,
-                sc_mult,
-                sc_arc_shot,
-                weakpoint_cd,
-                weakpoint_sc,
-                bd_reload_add,
-                bd_eximus_add,
-                dt_mult,
-                ms_damage,
-                status_damage: me.fixed.status_damage,
-                live_rate,
-                beam_ramp,
-                next_shot_bonus: if me.weakpoint_next_shot_armed {
-                    me.params.arcane.weakpoint_next_shot_damage
-                } else {
-                    0.0
-                },
-                undamaged,
-                t,
-                bar: &me.bar,
-                rec_roster: &me.fixed.rec_roster,
-                rec_buff_index: &me.fixed.rec_buff_index,
-                params: me.params,
-            };
-            let mut live = Live {
-                r: &mut r,
-                rec,
-                d,
-                bodies: &mut bodies,
-                gal: &mut me.gal,
-                arc: &mut me.arc,
-                buff_stacks: &mut me.buff_stacks,
-                windows: &mut me.windows,
-                ammo: &mut me.ammo,
-                incarnon: &mut me.incarnon,
-                meter: &mut me.meter,
-                tendril: &mut me.tendril,
-                crit_per_hit: &mut me.crit_per_hit,
-                sniper_combo: &mut me.sniper_combo,
-                weakpoint_pile: &mut me.weakpoint_pile,
-                strike_spread: &mut strike_spread,
-                fields: &mut fields,
-                orbs: &mut orbs,
-                any_big: &mut any_big,
-                any_head: &mut any_head,
-                beam_merge: &mut beam_merge,
-                encumber_done: &mut encumber_done,
-                field_duration_boost: &mut me.field_duration_boost,
-                influence_until: &mut me.influence_until,
-                landed_this_shot: &mut landed_this_shot,
-                super_crit_armed: &mut me.super_crit_armed,
-            };
-            for pellet_idx in 0..n_pellets {
-                settle_pellet(pellet_idx, &shot, &mut live);
-            }
-        }
-
-        // THE BLOB EMBEDS in the body the shot struck, and a pile this shot
-        // takes to its cap goes off now (`fight::blobs`).
-        if let Some(part) = active.blob.filter(|_| landed_this_shot) {
-            if let Some(pile) = embed_blob(&mut blobs, part, me.seat, 0, blob_stacks, t) {
-                detonate_blob(
-                    &me.windows, pile, t, &mut me.gal, &mut me.arc,
-                    me.params, active, &me.field_ctx, &mut r, rec, d, &mut bodies,
-                );
-            }
-        }
-
-        // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
-        if bodies.len() > 1 {
-            spread_beyond_the_target(
-                me.seat,
-                &me.windows,
-                me.params,
-                active,
-                rec,
-                d,
-                t,
-                &strike_spread,
-                &mut bodies,
-                &mut me.gal,
-                &mut me.arc,
-                &mut r,
-                me.tendril.count,
-                me.fixed.chain_layout.as_ref(),
-                struck,
-            );
-        }
-
-        // THE NEXT SHOT IS ARMED BY THIS ONE, pellets and spread included, and
-        // a shot that found no weak point leaves it unarmed.
-        me.weakpoint_next_shot_armed = r.weakpoint_hits + r.headshots_on_others > headshots_before;
-
-        // …AND THE CLOUDS AND ARCS THIS SHOT LEFT reach the bodies standing in
-        // them. Once per SHOT, after every instance of it has settled: a gas
-        // cloud posted by the first pellet and one posted by the fourth are the
-        // same instant, and the drain is where a body's outbox becomes its
-        // neighbours' DoTs (`DebuffState::area_out`).
-        drain_area_procs(
-            &mut bodies,
-            me.params,
-            &area_near,
-            &mut r,
-            rec,
+        // WHAT THE PULL DECIDED, owned by the hit it becomes (`fight::flight`).
+        let landing = Landing {
             t,
-            shot_head_landing,
-            &mut d.arc_landing,
-        );
-
-        // A KILL THIS SWING OR ANYTHING BEFORE IT MADE is a spectral dagger, if the
-        // form that makes them was up when it swung.
-        make_daggers(me.seat, me.params, active, t, &mut r, &mut me.dagger_kill_mark, &mut daggers);
-
-        after_the_shot(
-            me.params,
-            &me.apl,
+            base_form: me.incarnon.in_base_form,
+            shot: rec.shot(),
             flash,
-            active,
-            rec,
-            rng,
-            d,
-            &mut t,
-            landed_this_shot,
-            any_big,
-            any_head,
-            pellets_before,
-            headshots_before,
-            swing,
+            qvec,
+            direct_pre_snap,
+            modded_base,
+            co_base,
             combo_now,
             combo_multiplier,
-            initial_now,
+            swing,
+            swing_mult,
+            swing_forced_types,
+            swing_forced_independent,
             tennokai,
             tennokai_heavy,
             tennokai_kill_mark,
-            &mut r,
-            &mut me.bar,
-            &mut me.arc,
-            &mut me.enervate,
-            &mut me.frenzy,
-            &mut me.buff_stacks,
-            &me.fixed.rec_buff_index,
-            &mut bodies,
-            &mut me.ammo,
-            &mut me.incarnon,
-            &mut me.double_tap,
-            &mut me.melee,
-            &mut me.sniper_combo,
-            &mut me.spool,
-            &me.windows,
-            &mut me.rs_armed,
-            &mut me.opening_closed,
-            &mut me.field_duration_boost,
-            &mut me.last_shot_t,
-        );
-        // WHERE THIS SEAT IS DUE NEXT. `after_the_shot` advanced `t` by this
+            melee_struck,
+            effective_cc,
+            crit_chance_relative,
+            flat_crit,
+            cc_mult,
+            sc_mult,
+            sc_arc_shot,
+            weakpoint_cd,
+            weakpoint_sc,
+            bd_reload_add,
+            bd_eximus_add,
+            dt_mult,
+            ms_damage,
+            live_rate,
+            beam_ramp,
+            next_shot_bonus: if me.weakpoint_next_shot_armed {
+                me.params.arcane.weakpoint_next_shot_damage
+            } else {
+                0.0
+            },
+            undamaged,
+            n_pellets,
+            beam_merge,
+            blob_stacks,
+            shot_head_landing,
+            pellets_before,
+            headshots_before,
+            burst_completed: None,
+        };
+        // A SHOT THAT FLIES IS DUE THE GAP OVER ITS SPEED FROM NOW, and the
+        // trigger does not wait for it: the next pull is timed from this one.
+        let flight = active.flight_seconds(me.params.gap());
+        if flight > 0.0 {
+            let swing = landing.swing.clone();
+            let burst_len = active.burst.map_or(1, |b| b.count.max(1));
+            me.in_flight.push(Landing {
+                t: t + flight,
+                burst_completed: Some(me.ammo.rounds_this_mag.is_multiple_of(burst_len)),
+                ..landing
+            });
+            next_shot_due(
+                me.params, active, &mut t, swing, initial_now, tennokai, tennokai_heavy, &r,
+                &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
+                &mut me.spool, &me.windows, &mut me.last_shot_t,
+            );
+        } else {
+            t = land_the_shot(
+                &landing,
+                me,
+                &mut Ground {
+                    r: &mut r,
+                    rec,
+                    rng,
+                    bodies: &mut bodies,
+                    fields: &mut fields,
+                    orbs: &mut orbs,
+                    blobs: &mut blobs,
+                    daggers: &mut daggers,
+                    body_at: &body_at,
+                    bounce_bodies: &bounce_bodies,
+                    area_near: &area_near,
+                },
+            );
+            next_shot_due(
+                me.params, active, &mut t, landing.swing, initial_now, tennokai, tennokai_heavy, &r,
+                &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
+                &mut me.spool, &me.windows, &mut me.last_shot_t,
+            );
+        }
+        // WHERE THIS SEAT IS DUE NEXT. `next_shot_due` advanced `t` by this
         // weapon's cadence, which is this seat's clock and nobody else's.
         me.next_t = t;
         // …and again once the shot has refreshed it, for the ticks the

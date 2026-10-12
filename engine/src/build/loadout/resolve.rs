@@ -1432,17 +1432,20 @@ pub fn resolve_for(
     }
     .max(0.0);
 
+    // ONE PROJECTILE SPEED BRACKET, paid twice: it stretches the falloff
+    // window and it shortens the flight.
+    let ps = (1.0
+        + indirect
+            .iter()
+            .find(|(s, _)| *s == IndirectStat::ProjectileSpeed)
+            .map_or(0.0, |(_, v)| *v))
+    .max(0.0);
     let falloff = base.falloff.as_ref().map(|f| {
-        let ps = 1.0
-            + indirect
-                .iter()
-                .find(|(s, _)| *s == IndirectStat::ProjectileSpeed)
-                .map_or(0.0, |(_, v)| *v);
-        let ps = ps.max(0.0);
         // DE's `Reduction` is the share REMOVED at the far end, so the share
         // kept is its complement: Hek's 0.8 is the page's "100% to 20%".
         Falloff { start_m: f.start_m * ps, end_m: f.end_m * ps, keep: 1.0 - f.reduction }
     });
+    let projectile_speed_mps = base.projectile_speed_mps.map(|v| v * ps);
 
     ResolvedPanel {
         form: base.form,
@@ -1453,6 +1456,7 @@ pub fn resolve_for(
         punch_through_m,
         infinite_body_punch_through: base.infinite_body_punch_through,
         projectile_width_m: base.projectile_width_m,
+        projectile_speed_mps,
         range_m: beam_range_m,
         damage,
         resting,

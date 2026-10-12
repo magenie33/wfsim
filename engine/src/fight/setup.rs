@@ -877,6 +877,19 @@ impl FightParams {
         crate::rules::space::gap(self.player_at, self.target_at)
     }
 
+    /// HOW LONG THIS ATTACK'S SHOT IS IN THE AIR over `gap_m` — the aimed
+    /// body's [`Self::gap`] — at its bonused speed, and 0 for a shot that does
+    /// not fly. Everything behind the aimed body (punch through, an
+    /// explosion's neighbours) lands with it (docs/MECHANICS.md §"Projectile
+    /// flight"). The gap is an argument because a cycle's two forms share the
+    /// outer panel's arena and each flies at its own speed.
+    pub fn flight_seconds(&self, gap_m: f64) -> f64 {
+        match self.projectile_speed_mps {
+            Some(v) if gap_m > 0.0 => if v > 0.0 { gap_m / v } else { f64::INFINITY },
+            _ => 0.0,
+        }
+    }
+
     pub fn from_panel(
         panel: &crate::build::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
@@ -1408,6 +1421,7 @@ impl FightParams {
             punch_through_m: panel.punch_through_m,
             infinite_body_punch_through: panel.infinite_body_punch_through,
             projectile_width_m: panel.projectile_width_m,
+            projectile_speed_mps: panel.projectile_speed_mps,
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,

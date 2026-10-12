@@ -119,12 +119,10 @@ pub struct OrbSpec {
     /// a body — 6 m/s then 2 m/s.
     ///
     /// The launch speed is HERE rather than read off the attack's
-    /// `projectile_speed_mps`, which this engine has never modelled: that field
-    /// is transcribed on every projectile weapon in the roster and read by
-    /// nothing, because a shot in this arena arrives the instant it is fired.
-    /// An orb is the first thing whose flight actually costs something, so it
-    /// states the number it flies at rather than quietly giving a meaning to a
-    /// field 224 other entries assume has none.
+    /// `projectile_speed_mps`, which times a shot's single flight to the aimed
+    /// body (docs/MECHANICS.md §"Projectile flight"). An orb is an entity that
+    /// keeps moving and slows on contact, so it states its own speeds, and an
+    /// orb attack's trigger has no flight of its own.
     pub speed_mps: f64,
     pub speed_after_contact_mps: f64,
     /// BODIES ONE STRIKE REACHES PER POINT OF MULTISHOT — the struck one
@@ -735,6 +733,9 @@ pub struct WeaponBase {
     pub infinite_body_punch_through: bool,
     /// [`crate::data::weapons::AttackSpec::projectile_width_m`] — 0 is a ray.
     pub projectile_width_m: f64,
+    /// [`crate::data::weapons::AttackSpec::projectile_speed_mps`], before any
+    /// bonus — `None` is a shot that arrives the instant it is fired.
+    pub projectile_speed_mps: Option<f64>,
     /// [`crate::data::weapons::AttackSpec::range_m`] — `INFINITY` when the
     /// weapon declares none, which is what every weapon did before 2026-08-19.
     pub range_m: f64,

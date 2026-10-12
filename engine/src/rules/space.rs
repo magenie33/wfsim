@@ -766,7 +766,8 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 ///
 /// A BODY MAY BE HIT TWICE: a reflected projectile can come back, so only the
 /// body it is LEAVING is excluded. Velocity loss is not modelled and costs
-/// nothing, since this engine gives a projectile no travel time. `first` is the
+/// nothing: a bounce lands at the instant of the hit it comes off
+/// (docs/MECHANICS.md §"Projectile flight"). `first` is the
 /// body just struck — that collision is resolved and is not in the path.
 #[wfsim_gas_macro::metered]
 pub fn bounce_path(
