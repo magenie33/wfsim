@@ -94,7 +94,7 @@ function downloadFor(ua) {
 /// download fixes something only a download can. Raise it when a released shell
 /// changes behaviour a reader would notice, and only once that file is on the
 /// drive `DOWNLOADS` points at — or the notice sends readers to the old one.
-const SHELL_MINIMUM = [2026, 10, 10];
+const SHELL_MINIMUM = [2026, 10, 12];
 /// Whether the running shell predates it. A shell too old to state its build
 /// predates everything.
 function shellIsOld() {
