@@ -255,6 +255,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   ///
   /// AN OLDER ENGINE STILL ACCEPTED (`exclude`, worker/verify.js `graceOf`) is
   /// handed only rows of a weapon whose data it shares with the served engine.
+  /// ON POSTGRES THE PICK SKIPS ROWS ANOTHER PICK HOLDS LOCKED (`SKIP LOCKED`):
+  /// two asks at once took the same head rows and deadlocked.
   async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null }, now = Date.now()) {
     const db = factoryDb(env), at = iso(now), lease = newLease();
     const [taken, ds] = await db.batch([
@@ -265,7 +267,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
           RETURNING id, verb, request, due_at`,
         `UPDATE questions SET ${SUPERSEDE_PG}, lease = ?9::text, lease_until = ?10::text, leased_to = ?11::text, leased_at = ?1::text
           WHERE id IN (SELECT q.id ${eligibleFrom(false, true)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
-            AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb))) ${ORDER} LIMIT ?13::bigint)
+            AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb))) ${ORDER} LIMIT ?13::bigint FOR UPDATE OF q SKIP LOCKED)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11::text AND h.lease_until > ?1::text AND h.lease <> ?9::text) < ?14::bigint
           RETURNING id, verb, request, due_at`))
         .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most, exclude ? JSON.stringify(exclude) : null),
@@ -648,7 +650,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
             AND (?6::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
                                        AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?6::text)::jsonb))))
             AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?7::text)
-          ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8::bigint)
+          ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8::bigint FOR UPDATE OF q SKIP LOCKED)
         RETURNING id, verb, request, state, lease, waits, due_at`))
       .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max).all();
     if (!results.length) return [];
