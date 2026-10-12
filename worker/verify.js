@@ -377,9 +377,12 @@ async function mine(request, env) {
   // WHAT THE FACTORY SAYS of this client's answer to each row's question, in one read.
   const refs = keys.map((k) => `${k.identity}|${k.ruler}|${k.mode}`);
   const { results } = await env.LIBRARY.prepare(
+    // BY THE QUESTION, NEVER THE DEVICE (`+a.device` keeps `answers_by_device`
+    // out): a busy client holds a hundred thousand answers, and scanning them
+    // per row overloaded the database.
     `SELECT k.value AS ref, q.state, q.fact_at,
-            (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS credited,
-            (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1 AND a.void = 0) AS mine
+            (SELECT max(credited) FROM answers a WHERE a.question = q.id AND +a.device = ?1 AND a.void = 0) AS credited,
+            (SELECT count(*) FROM answers a WHERE a.question = q.id AND +a.device = ?1 AND a.void = 0) AS mine
        FROM json_each(?2) k
        JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND d.producer IN ${BOARD_KINDS_SQL}
                                      ORDER BY d.asked_at DESC LIMIT 1)`)
