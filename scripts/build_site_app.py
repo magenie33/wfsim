@@ -25,6 +25,7 @@ Prereqs: rustup target add wasm32-unknown-unknown;
          cargo install wasm-bindgen-cli --version <matching Cargo.lock>.
 """
 
+import calendar
 import functools
 import hashlib
 import html as html_mod
@@ -605,6 +606,96 @@ def quote_attr(path: str) -> str:
 ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "native/src", "tools/gas-macro", "data")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
                       "data/assets.yaml", "data/notes.yaml", "data/README.md")
+
+
+def is_test_source(rel: str) -> bool:
+    return "/tests/" in rel or rel.endswith(("/tests.rs", "_tests.rs"))
+
+
+def engine_files() -> dict:
+    """What `engine_id` reads, as the grace compares it: each weapon file by its
+    own digest, and every other file but a test as one, `rest`."""
+    out, rest = {}, hashlib.sha256()
+    files = sorted(p for d in ENGINE_SOURCES for p in (ROOT / d).rglob("*") if p.is_file())
+    for p in files + [ROOT / "Cargo.lock"]:
+        rel = p.relative_to(ROOT).as_posix()
+        if rel.startswith(ENGINE_SOURCES_NOT) or is_test_source(rel):
+            continue
+        body = p.read_bytes().replace(bytes([13, 10]), bytes([10]))
+        if rel.startswith("data/weapons/") and rel.endswith(".yaml"):
+            out[rel] = hashlib.sha256(body).hexdigest()[:12]
+        else:
+            rest.update(rel.encode("utf-8") + bytes(1) + body + bytes(1))
+    out["rest"] = rest.hexdigest()[:16]
+    return out
+
+
+# AN OLDER ENGINE STILL ACCEPTED (worker/verify.js `graceOf`): a client built on
+# one keeps computing the board for `ENGINE_GRACE_DAYS` after the engine that
+# replaced it, on every weapon its data still matches. Each served engine leaves
+# its file list in `site/engines/`; an older one is accepted only when what
+# moved since is weapon data and tests, and then not on the weapons it touched
+# or any weapon linked to them by `inherits`, a transform group or a riven family.
+ENGINE_GRACE_DAYS = 7
+ENGINES_DIR = APP / "engines"
+
+
+def changed_weapons(paths) -> set | None:
+    """The weapons whose rows `paths` may move, or None when they may move any."""
+    ids = set()
+    for rel in paths:
+        if not (rel.startswith("data/weapons/") and rel.endswith(".yaml")):
+            return None
+        p = ROOT / rel
+        spec = yload(p.read_text(encoding="utf-8")) if p.is_file() else None
+        ids.add(spec["id"] if isinstance(spec, dict) and spec.get("id") else Path(rel).stem)
+    # LINKED WEAPONS MOVE TOGETHER: a form and what it inherits, and all that
+    # share a transform group or a riven family, walked until nothing is added.
+    near = {}
+    for p in (ROOT / "data" / "weapons").rglob("*.yaml"):
+        spec = yload(p.read_text(encoding="utf-8"))
+        if not (isinstance(spec, dict) and spec.get("id")):
+            continue
+        for node in ([("w", spec["inherits"])] if spec.get("inherits") else []) +                 [(k, spec[f]) for k, f in (("t", "transform_group"), ("r", "riven_family")) if spec.get(f)]:
+            near.setdefault(("w", spec["id"]), set()).add(node)
+            near.setdefault(node, set()).add(("w", spec["id"]))
+    seen, todo = set(), [("w", i) for i in ids]
+    while todo:
+        n = todo.pop()
+        if n not in seen:
+            seen.add(n)
+            todo.extend(near.get(n, ()))
+    ids = {v for k, v in seen if k == "w"}
+    return ids
+
+
+def accepted_engines(current: str) -> list:
+    """This engine's file list kept, and every older one still accepted."""
+    now = time.time()
+    stamp = lambda t: time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(t))
+    ENGINES_DIR.mkdir(parents=True, exist_ok=True)
+    mine = ENGINES_DIR / f"{current}.json"
+    files = engine_files()
+    served_from = json.loads(mine.read_text(encoding="utf-8"))["served_from"] if mine.is_file() else stamp(now)
+    mine.write_text(json.dumps({"engine": current, "served_from": served_from, "files": files},
+                               separators=(",", ":"), sort_keys=True), encoding="utf-8", newline=chr(10))
+    kept = sorted((json.loads(p.read_text(encoding="utf-8")) for p in ENGINES_DIR.glob("*.json")),
+                  key=lambda m: m["served_from"])
+    out = []
+    for i, m in enumerate(kept):
+        if m["engine"] == current:
+            continue
+        after = next((n for n in kept[i + 1:]), None)
+        retired = calendar.timegm(time.strptime(after["served_from"][:19], "%Y-%m-%dT%H:%M:%S")) if after else now
+        until = retired + ENGINE_GRACE_DAYS * 86400
+        if until <= now:
+            (ENGINES_DIR / f"{m['engine']}.json").unlink()
+            continue
+        moved = {p for p in set(m["files"]) | set(files) if m["files"].get(p) != files.get(p)}
+        weapons = changed_weapons(moved)
+        if weapons is not None:
+            out.append({"engine": m["engine"], "until": stamp(until), "changed": sorted(weapons)})
+    return out
 
 
 def engine_id() -> str:
@@ -2515,7 +2606,7 @@ def main() -> None:
     # to hand compute orders to this engine alone (worker/verify.js).
     (APP / "release.json").write_text(
         json.dumps({"release": release, "commit": build_sha(), "wasm": pkg["digest"],
-                    "engine": engine_id()},
+                    "engine": engine_id(), "accepted": accepted_engines(engine_id())},
                    separators=(",", ":"), sort_keys=True),
         encoding="utf-8", newline="\n")
 

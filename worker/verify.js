@@ -105,15 +105,26 @@ async function servedEngine(env) {
 export async function servedRelease(env) {
   if (!env.ASSETS) return { engine: null, release: null };
   if (served.has(env.ASSETS)) return served.get(env.ASSETS);
-  let out = { engine: null, release: null };
+  let out = { engine: null, release: null, accepted: [] };
   try {
     const r = await env.ASSETS.fetch(new Request("https://wfsim.app/release.json"));
     const j = r.ok ? await r.json() : {};
     out = { engine: typeof j.engine === "string" && ENGINE_ID.test(j.engine) ? j.engine : null,
-      release: typeof j.release === "string" && ENGINE_ID.test(j.release) ? j.release : null };
+      release: typeof j.release === "string" && ENGINE_ID.test(j.release) ? j.release : null,
+      accepted: (Array.isArray(j.accepted) ? j.accepted : []).filter((a) => a && ENGINE_ID.test(a.engine || "")
+        && typeof a.until === "string" && Array.isArray(a.changed) && a.changed.every((w) => typeof w === "string")) };
   } catch { /* unread: nobody works until it is */ }
   if (out.engine) served.set(env.ASSETS, out);
   return out;
+}
+
+/// AN OLDER ENGINE STILL ACCEPTED (`accepted` in release.json, written by
+/// scripts/build_site_app.py `accepted_engines`): until `until`, on the rows of
+/// every weapon but the ones whose data moved since — its bits there are the
+/// served engine's. Null when it is not.
+export function graceOf(release, engine, now = Date.now()) {
+  const a = (release.accepted || []).find((x) => x.engine === engine);
+  return a && Date.parse(a.until) > now ? a : null;
 }
 
 /// THE NETWORK A CLIENT ASKS FROM, as a salted hash of its public address — an
@@ -169,9 +180,14 @@ async function work(request, env) {
   // for ever and be given nothing once a release ships.
   if (!PROTOCOLS_SERVED.has(b.protocol)) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
   const single = b.protocol !== PROTOCOL;
-  const { engine, release } = await servedRelease(env);
-  if (!engine) { await asked.run(); return json({ ok: true, work: null, pack: null }); }
-  if (b.engine !== engine) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
+  const served = await servedRelease(env), { release } = served;
+  if (!served.engine) { await asked.run(); return json({ ok: true, work: null, pack: null }); }
+  // AN OLDER ENGINE IS TOLD IT IS STALE — unless it is still accepted
+  // (`graceOf`): then it is handed packs, rows only, of the weapons its data
+  // still matches, told the served engine and until when (`accepted_until`).
+  const grace = b.engine !== served.engine ? graceOf(served, b.engine) : null;
+  if (b.engine !== served.engine && (!grace || single)) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
+  const engine = b.engine;
   // NO WORK WITHOUT THE READER'S YES — `consent: { v, at }`, the statement they
   // agreed to and when (69-board-work.js `computeConsent`) — kept on the
   // client's row the first time it is seen and whenever it changes.
@@ -217,8 +233,8 @@ async function work(request, env) {
   const none = json({ ok: true, release, work: null, pack: null });
   if (ahead && (holds.packs < 1 || holds.packs >= PACKS_HELD)) return none;
   const first = head.results[0];
-  if (!first) return none;
-  if (!f.packable(first)) {
+  if (!first && !grace) return none;
+  if (!grace && !f.packable(first)) {
     const leased = await f.next(env, { ...w, most: holds.questions + 1 }, engine, now);
     return json({ ok: true, release, work: leased && workOf(leased), pack: null });
   }
@@ -227,15 +243,16 @@ async function work(request, env) {
   // fair share is handed nothing this ask (worker/fair.js) — and only then, so
   // the table is never read while work is plentiful.
   const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(PACK_MS / pace) : PACK_FIRST);
-  if (short && throttled(await fairTable(request, env, engine, now), accountOf(who.owner, id))) return none;
+  if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return none;
   const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : PACK_LEASE_MS;
-  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1 }, now);
+  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1, exclude: grace ? grace.changed : null }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
     const t = tasks[0];
     return json({ ok: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
   }
-  return json({ ok: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null });
+  return json({ ok: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null,
+    ...(grace ? { engine: served.engine, accepted_until: grace.until } : {}) });
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
@@ -276,14 +293,16 @@ async function answers(request, env) {
       compute_ms: Number.isInteger(a.compute_ms) && a.compute_ms >= 0 && a.compute_ms <= LEASE_MS ? a.compute_ms : null,
       counts: countsOf(a.counts), lanes: Number.isInteger(a.lanes) && a.lanes > 0 && a.lanes <= 256 ? a.lanes : null });
   }
-  const engine = await servedEngine(env);
-  if (!engine || b.engine !== engine) {
+  const served = await servedRelease(env), engine = served.engine;
+  const grace = engine && b.engine !== engine ? graceOf(served, b.engine) : null;
+  if (!engine || (b.engine !== engine && !grace)) {
     await facts().release(env, b.verifier, b.lease);
     return json({ ok: true });
   }
   const who = await witnessOf(env, b.verifier);
   await facts().answerPack(env, { device: b.verifier, owner: who.owner, net: await netOf(request, env) },
-    { lease: b.lease, engine, answers: [...items.values()], done: b.done === true, keep: QUESTION_ID.test(b.keep || "") ? b.keep : null });
+    { lease: b.lease, engine: b.engine, served: grace ? engine : null, answers: [...items.values()], done: b.done === true,
+      keep: QUESTION_ID.test(b.keep || "") ? b.keep : null });
   return json({ ok: true });
 }
 /// A full pack's answers, each about three hundred bytes.

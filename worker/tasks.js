@@ -232,14 +232,18 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// is never in one: it goes alone to a computer free now (`next`). `most` is
   /// how many packs the witness may then hold. Each comes with its live demands;
   /// a row no longer wanted is withdrawn where it is found and left out.
-  async function nextPack(env, w, engine, { n, lease_ms, most = 1 }, now = Date.now()) {
+  ///
+  /// AN OLDER ENGINE STILL ACCEPTED (`exclude`, worker/verify.js `graceOf`) is
+  /// handed only rows of a weapon whose data it shares with the served engine.
+  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null }, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), lease = newLease();
     const [taken, ds] = await db.batch([
       db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?9, lease_until = ?10, leased_to = ?11, leased_at = ?1
-          WHERE id IN (SELECT q.id ${eligibleFrom(false)} AND q.waits = 0 AND q.verb IN (SELECT value FROM json_each(?12)) ${ORDER} LIMIT ?13)
+          WHERE id IN (SELECT q.id ${eligibleFrom(false)} AND q.waits = 0 AND q.verb IN (SELECT value FROM json_each(?12))
+            AND (?15 IS NULL OR json_extract(q.request, '$.record.weapon') NOT IN (SELECT value FROM json_each(?15))) ${ORDER} LIMIT ?13)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11 AND h.lease_until > ?1 AND h.lease != ?9) < ?14
           RETURNING id, verb, request, due_at`)
-        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most),
+        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most, exclude ? JSON.stringify(exclude) : null),
       db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
           WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live'`).bind(lease, w.device),
     ]);
@@ -335,7 +339,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// A PACK'S ANSWERS, together: those whose question the pack still holds are
   /// recorded and settled in a few round trips, whatever their number; `done`
   /// gives back the rest of the pack but `keep`. Returns the questions taken.
-  async function answerPack(env, w, { lease, engine, answers, done = false, keep = null }, now = Date.now()) {
+  /// AN OLDER ENGINE'S ANSWERS (`served` the engine the site serves) settle
+  /// under the served one: its rows were handed out because their bits are the same.
+  async function answerPack(env, w, { lease, engine, served = null, answers, done = false, keep = null }, now = Date.now()) {
     const db = env.LIBRARY;
     const { results: held } = await db.prepare(
       `SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?4))
@@ -343,7 +349,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question))).all();
     const byId = new Map(held.map((q) => [q.id, q]));
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
-    if (items.length) await recordMany(env, w, items, now);
+    if (items.length) await recordMany(env, w, items, now, served);
     if (done) await release(env, w.device, lease, keep);
     return { taken: items.map((x) => x.q.id) };
   }
@@ -360,8 +366,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// ONE WITNESS'S ANSWERS `[{ q, a }]`, all of one engine: written in one round
   /// trip, then settled together (`settleMany`).
-  async function recordMany(env, w, items, now) {
-    const db = env.LIBRARY, at = iso(now), official = w.official ? 1 : 0, engine = items[0].a.engine;
+  async function recordMany(env, w, items, now, served = null) {
+    const db = env.LIBRARY, at = iso(now), official = w.official ? 1 : 0, mine = items[0].a.engine, engine = served || mine;
     const writes = items.map(({ q, a }) => db.prepare(
       `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -383,7 +389,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED, in the settling's own
     // write: the answered question heads every witness's order, so freed before
     // it became a fact it was taken at once and answered again for nothing.
-    await settleMany(env, [...answered.keys()], engine, now, { answered, after: [
+    await settleMany(env, [...answered.keys()], engine, now, { answered, peer: mine !== engine ? mine : null, after: [
       db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
                    WHERE id IN (SELECT value FROM json_each(?)) AND leased_to = ?`).bind(ids, w.device)] });
   }
@@ -398,7 +404,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// is credited only once — so two witnesses settling one question at the same
   /// moment cannot both count. `answered` tells each question's producers of the
   /// answer just recorded (`on_answer`); `after` is written with the rest.
-  async function settleMany(env, ids, engine, now, { answered = null, after = [] } = {}) {
+  async function settleMany(env, ids, engine, now, { answered = null, after = [], peer = null } = {}) {
     const db = env.LIBRARY, list = JSON.stringify([...new Set(ids)]);
     const [qs, as, ds] = await db.batch([
       db.prepare("SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?))").bind(list),
@@ -419,7 +425,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const served = all.filter((a) => a.engine === engine);
       const officialSays = served.filter((a) => a.official).at(-1);
       if (officialSays) await settleOfficial(env, q, all, served, officialSays, engine, now);
-      else if (q.state === "open") decide(env, q, all, served, demands, engine, now, writes, later);
+      else if (q.state === "open") decide(env, q, all, peer ? all.filter((a) => a.engine === engine || a.engine === peer) : served, demands, engine, now, writes, later);
     }
     writes.push(...after);
     if (writes.length) await db.batch(writes);
@@ -431,7 +437,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   function decide(env, q, all, served, demands, engine, now, writes, later) {
     const db = env.LIBRARY, needs = q.needs || threshold;
     // A GROUP OF EQUAL ANSWERS holds one of the served engine; an older engine's
-    // answer joins one (a release that did not move the bits) and never starts one.
+    // answer joins one (a release that did not move the bits) and never starts one
+    // — unless it is still accepted on this row (`peer`), when it leads as one.
     for (const lead of served) {
       // The served engine's answers are taken first, so the witnesses it
       // reproduced are credited beside it rather than instead of it.

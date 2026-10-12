@@ -418,5 +418,30 @@ console.log("\norders open before the factory");
   check("...and one the backfill asks, by its own age too", demand("aged8") && Math.abs(dueIn("aged8") - 7) < 0.01, demand("aged8") && dueIn("aged8"));
 }
 
+console.log("\nan older engine still accepted computes the weapons its data matches");
+{
+  L.prepare("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'").run();
+  const until = new Date(Date.now() + 86_400_000).toISOString();
+  env.ASSETS = { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r9",
+    accepted: [{ engine: "e0", until, changed: ["braton_prime"] }, { engine: "eold", until: "2026-01-01T00:00:00.000Z", changed: [] }] })) };
+  build("moved", undefined, "braton_prime");
+  build("same", undefined, "torid");
+  queue("grace-1", "moved", "same");
+  await ask("grace-1", "moved", "same");
+  const O1 = "1".repeat(24), O2 = "2".repeat(24);
+  const p1 = await work(O1, { engine: "e0", ip: "203.0.113.71" });
+  const weapons = (p1.pack ? p1.pack.tasks : []).map((t) => t.record.weapon);
+  check("an accepted older engine is handed the rows of a weapon its data matches, and only those",
+    weapons.length === 1 && weapons[0] === "torid" && p1.engine === "e1" && p1.accepted_until === until && !p1.stale, JSON.stringify(p1));
+  check("...and never a row of a weapon whose data moved", none(await work("3".repeat(24), { engine: "e0", ip: "203.0.113.73" })));
+  check("...and one past its days is told it is stale", (await work(O2, { engine: "eold", ip: "203.0.113.72" })).stale === true);
+  await answer(task(p1), O1, { engine: "e0", ip: "203.0.113.71" });
+  const p2 = await work(O2, { engine: "e0", ip: "203.0.113.72" });
+  await answer(task(p2), O2, { engine: "e0", ip: "203.0.113.72" });
+  const q = L.prepare("SELECT state, fact_engine FROM questions WHERE id = ?").get(task(p1).question);
+  check("...two of them agreeing make a fact, the served engine's", q && ["fact", "spot"].includes(q.state) && q.fact_engine === "e1", JSON.stringify(q));
+  env.ASSETS = site("e1");
+}
+
 console.log(failures ? `\n${failures} failed` : "\na board row reaches the board when CLIENTS_PER_FACT clients measured the same bits");
 process.exitCode = failures ? 1 : 0;

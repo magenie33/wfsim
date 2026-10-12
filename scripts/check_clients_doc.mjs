@@ -36,6 +36,7 @@ const KEYS = {
   row_ceiling_ms: ["ROW_CEILING_MS", ["worker/tasks.js"]],
   clients_per_fact: ["CLIENTS_PER_FACT", ["worker/verify.js"]],
   facts_per_refusal_forgiven: ["FACTS_PER_REFUSAL_FORGIVEN", ["worker/tasks.js"]],
+  engine_grace_days: ["ENGINE_GRACE_DAYS", ["scripts/build_site_app.py"]],
 };
 
 // THE FILE A NAME IS IMPORTED FROM, so a constant set from another reads through.
@@ -48,7 +49,8 @@ function importedFrom(name, file) {
 // its members joined by ", ", a number as a number.
 function valueOf(name, file) {
   if (!file) return undefined;
-  const m = read(file).match(new RegExp(`^\\s*(?:export\\s+)?(?:pub\\s+)?const\\s+${name}\\b[^=]*=\\s*(.+?);\\s*(?://.*)?$`, "m"));
+  const m = read(file).match(file.endsWith(".py") ? new RegExp(`^${name}\\s*=\\s*(.+?)\\s*(?:#.*)?$`, "m")
+    : new RegExp(`^\\s*(?:export\\s+)?(?:pub\\s+)?const\\s+${name}\\b[^=]*=\\s*(.+?);\\s*(?://.*)?$`, "m"));
   if (!m) return undefined;
   const rhs = m[1].trim();
   const re = rhs.match(/^\/(.+)\/[a-z]*$/);

@@ -31,6 +31,7 @@ renew_ms: 300000
 row_ceiling_ms: 7200000
 clients_per_fact: 2
 facts_per_refusal_forgiven: 1000
+engine_grace_days: 7
 ```
 
 Each key is its constant in snake case, read by `scripts/check_clients_doc.mjs`
@@ -97,7 +98,7 @@ is `work_per_point` work.
 
 ## The engine
 
-- `GET /release.json` → `{ release, commit, wasm, engine }`. `engine` is the id a
+- `GET /release.json` → `{ release, commit, wasm, engine, accepted }`. `engine` is the id a
   client sends; `wasm` names the module: `/pkg/wfsim_wasm.<wasm>.js` and
   `/pkg/wfsim_wasm_bg.<wasm>.wasm`, `<wasm>` the first 12 hex of the module's
   SHA-256. The module exports `api(path, body)`, JSON text in and out.
@@ -107,10 +108,23 @@ is `work_per_point` work.
   native build is of the commit `/release.json` names (`commit`), unmodified,
   built without `WFSIM_GAS_OFF` (which turns the meter off), and its engine id
   equals the served one.
-- Only the served engine works: a `/work` ask naming another gets `stale: true`
-  and nothing; `/answers` naming another releases the lease and drops the
-  answers. Every `/work` answer carries `release`; the page reloads into a newer
-  one when idle.
+- The served engine works, and so does an older one while `accepted` names it:
+  each entry is `{ engine, until, changed }`, an engine replaced less than
+  `engine_grace_days` ago whose difference from the served one is weapon data
+  alone. Until `until` a `/work` ask naming it is handed packs of board rows of
+  every weapon but those in `changed` (each moved weapon and every one linked to
+  it), with `engine` (the served one) and `accepted_until` beside the pack, and
+  its `/answers` count as the served engine's. An engine that moved anything
+  else is never accepted. Any other engine gets `stale: true` and nothing, and
+  `/answers` naming it releases the lease and drops the answers. Every `/work`
+  answer carries `release`; the page reloads into a newer one when idle.
+- WHEN ENGINES MOVE. Weapon data changes whenever a weapon is measured in game,
+  any day; everything else that moves `engine` — mechanics, shared data, the
+  toolchain — ships on the weekly release, Tuesday 20:00 Asia/Shanghai,
+  announced a day before with the commit it will be. A fix to a wrong number or
+  a security fix may ship at once, and says why. A client built on a commit
+  keeps working through its `accepted` days, so rebuilding once inside them
+  loses nothing.
 
 ## The cycle
 
