@@ -168,6 +168,8 @@ jobs:
         run: node scripts/check_ledger.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot
         run: node scripts/check_tasks.mjs
+      - name: The factory answers alike on D1 and on Postgres
+        run: npm ci --silent --prefix scripts/pg && node scripts/check_pg_factory.mjs
       - name: While work is short an account past its fair share waits, and only then
         run: node scripts/check_fair.mjs
       - name: A row its page still computes is kept for it, and only a silent one loses it

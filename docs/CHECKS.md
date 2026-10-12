@@ -213,6 +213,19 @@ part every kitgun; anything else — mechanics, shared data — moves everything
 and that engine is not accepted. Tests are never compared. An engine replaced
 more than seven days ago is dropped with its file list.
 
+## `check_pg_factory`
+
+The fact factory on Postgres against itself on D1 (worker/factory_db.js). One
+seeded workload — rows asked and backfilled, packs and single rows handed out,
+answered, renewed and given back, an older engine still accepted, a dispute the
+official machines settle and refuse a client in, the scripts' reports, points,
+ledgers, the ranking, the fair table, the audit — runs through the worker's own
+doors in two processes, one with the tables in D1 and one in PGlite with them
+dropped from D1, under one clock and one die; every answer and every table dump
+must match, a lease compared by when it first appeared. `PG_URL` swaps PGlite
+for a real Postgres. Bites: an inverted weapon exclusion, a broken credit guard,
+a query left on D1 — each fails it. Needs `npm ci --prefix scripts/pg`.
+
 ## `check_board_verify`
 
 Plain node against `worker/schema.sql` on node's sqlite: a board row as a

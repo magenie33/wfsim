@@ -665,6 +665,22 @@ deadline and what only they may settle.
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.
 
+### Where the factory's tables live
+
+**IN D1, OR IN POSTGRES, BY ONE SWITCH** (`FACTORY_DB` in wrangler.jsonc,
+`worker/factory_db.js`). Its tables — questions, demands, answers, verifiers,
+verifier_hours, watchdog_told, points_pool — are D1's while it says `d1` and a
+Postgres's through Hyperdrive (`HYPERDRIVE`, a Cloudflare Tunnel to the
+server) while it says `pg`; the library, the queue, the scores and the
+accounts stay in D1 either way. Every query on those tables asks
+`factoryDb(env)` and states its Postgres text where the dialects differ
+(`pick`); a join across the two databases is two reads, and a producer's own
+writes go to D1 after the factory's. A script reads them through the official
+door's named `report`s, never by a query of its own in D1. `FACTORY_DB` is
+moved with the factory paused (`FACTORY_PAUSED`) and its rows copied by
+`scripts/pg_copy.mjs`; `check_pg_factory` runs one workload on both and
+compares every answer and every table.
+
 ## Compute orders
 
 **EVERY OWED ROW IS A QUESTION, AND THE MACHINES WITH THE SITE OPEN ANSWER

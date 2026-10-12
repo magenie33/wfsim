@@ -175,6 +175,9 @@ async function work(request, env) {
   if (!VERIFIER_ID.test(b.verifier || "") || !ENGINE_ID.test(b.engine || "")) return json({ ok: false, error: "bad request" }, 400);
   const refused = unrecognised(b.verifier);
   if (refused) return refused;
+  // THE FACTORY PAUSED (`FACTORY_PAUSED`, a worker var) hands out nothing while
+  // its tables move between databases; a page asks again, and answers still land.
+  if (env.FACTORY_PAUSED === "1") return json({ ok: true, work: null, pack: null, busy: true });
   const db = factoryDb(env), now = Date.now(), at = iso(now), id = b.verifier;
   const asked = askedOf(db, b, now);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
