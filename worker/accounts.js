@@ -451,8 +451,8 @@ async function emailLogin(env, b) {
   }
   await db.prepare(
     `INSERT INTO login_failures (email, failures, first_at) VALUES (?1, 1, ?2)
-     ON CONFLICT (email) DO UPDATE SET failures = CASE WHEN ?3 THEN 1 ELSE failures + 1 END,
-       first_at = CASE WHEN ?3 THEN ?2 ELSE first_at END`,
+     ON CONFLICT (email) DO UPDATE SET failures = CASE WHEN ?3 = 1 THEN 1 ELSE login_failures.failures + 1 END,
+       first_at = CASE WHEN ?3 = 1 THEN ?2 ELSE login_failures.first_at END`,
   ).bind(email, now(), lapsed ? 1 : 0).run();
   return no("wrong_credentials", 401);
 }
@@ -487,7 +487,7 @@ async function accountView(env, account) {
   ).bind(account).first();
   if (!a) return null;
   const { results } = await env.ACCOUNTS.prepare(
-    "SELECT provider, label, linked_at, password_hash IS NOT NULL AS has_password FROM identities WHERE account = ?1",
+    "SELECT provider, label, linked_at, CASE WHEN password_hash IS NULL THEN 0 ELSE 1 END AS has_password FROM identities WHERE account = ?1",
   ).bind(account).all();
   return { id: a.id, created_at: a.created_at, username: a.username, display_name: a.display_name, delete_after: a.delete_after || null,
     display_name_hidden: !!a.display_name && nameBlocked(a.display_name), rename_after: renameAfter(a),

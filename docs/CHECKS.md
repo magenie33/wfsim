@@ -226,6 +226,20 @@ must match, a lease compared by when it first appeared. `PG_URL` swaps PGlite
 for a real Postgres. Bites: an inverted weapon exclusion, a broken credit guard,
 a query left on D1 — each fails it. Needs `npm ci --prefix scripts/pg`.
 
+## `check_pg_shadow`
+
+Every check that runs the worker on node's sqlite, run again with each
+statement repeated on PGlite loaded with `worker/pg/*.sql`
+(`scripts/pg/shadow.mjs`): the worker's statement in the Postgres text `pick`
+gives beside it, a check's own as written. Each worker statement must answer
+alike — its rows (a set unless a SELECT orders them; a lease, drawn at random,
+only by being there), its count of changed rows, whether it failed — and a
+check's own that Postgres refuses fails it too, so the two databases never
+silently part. Bites: an `INSERT OR IGNORE`, a `SUM` of a comparison, a
+`json_each`, a boolean selected as a column — each fails it. `scripts/pg/ddl_proof.mjs`
+lays the DDL and proves `builds.weapon` and the accounts' last-slot trigger.
+Any one check: `node --import ./scripts/pg/shadow.mjs scripts/check_qq.mjs`.
+
 ## `check_board_verify`
 
 Plain node against `worker/schema.sql` on node's sqlite: a board row as a

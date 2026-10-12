@@ -902,7 +902,7 @@ function eligibleFrom(official, pg = false) {
 }
 const ORDER = "ORDER BY q.waits DESC, q.due_at, q.id";
 function eligibleSql(official, db = null) {
-  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${eligibleFrom(official, db && db.dialect === "pg")} ${ORDER} LIMIT 1`;
+  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${pick(db, eligibleFrom(official), eligibleFrom(official, true))} ${ORDER} LIMIT 1`;
 }
 function eligibleArgs(w, engine, at) {
   return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null];

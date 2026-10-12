@@ -63,13 +63,14 @@ check("no dev or check host is live", live.length > 0
   && !live.some((h) => /^(127\.|localhost$|0\.0\.0\.0$)/.test(h)), hosts ? hosts[1] : "no LIVE_HOSTS");
 
 const written = [];
+const CTX = { waitUntil: () => {} };
 const env = { USAGE: { writeDataPoint: (p) => written.push(p) } };
 const cid = "0123456789abcdef0123456789abcdef";
 const good = { v: USAGE_SCHEMA, e: "simulator.run", cid, subject: "torid", route: "weapons",
   lang: "zh", shell: "web", release: "r20260927.1", n: 1000 };
 const post = (b, e = env, method = "POST") => worker.fetch(Object.assign(new Request("https://wfsim.app/api/e", {
   method, ...(method === "POST" ? { body: typeof b === "string" ? b : JSON.stringify(b) } : {}),
-}), { cf: { country: "CN" } }), e);
+}), { cf: { country: "CN" } }), e, CTX);
 
 let r = await post(good);
 check("a point is accepted", r.status === 204, `status ${r.status}`);
@@ -105,14 +106,14 @@ for (const ua of [
 ]) {
   const before = written.length;
   r = await worker.fetch(new Request("https://wfsim.app/api/e", { method: "POST", body: JSON.stringify(good),
-    headers: { "user-agent": ua } }), env);
+    headers: { "user-agent": ua } }), env, CTX);
   check(`a crawler that runs the page is answered and not counted: ${ua.match(/\w+(bot|Chrome)\b/i)[0]}`,
     r.status === 204 && written.length === before);
 }
 {
   const before = written.length;
   r = await worker.fetch(new Request("https://wfsim.app/api/e", { method: "POST", body: JSON.stringify(good),
-    headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0" } }), env);
+    headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0" } }), env, CTX);
   check("…and a reader's browser is", r.status === 204 && written.length === before + 1);
 }
 r = await post(good, {});

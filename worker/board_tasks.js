@@ -12,7 +12,7 @@
 //                          { backfill: true }                           → { asked, left }: owed rows nobody asked for
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
 import { iso } from "./instant.js";
-import { factoryDb, isPg, sameDb } from "./factory_db.js";
+import { factoryDb, pick, sameDb } from "./factory_db.js";
 import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
 import { servedRelease } from "./verify.js";
@@ -29,10 +29,12 @@ const boardProducer = {
   still_wanted: async (env, d) => !!(await env.LIBRARY.prepare(owedSql).bind(d.payload.identity, d.payload.ruler, d.payload.mode).first()),
   // …A WHOLE PACK'S ROWS IN ONE READ: the refs still owed.
   wanted_many: async (env, ds) => {
-    const { results } = await env.LIBRARY.prepare(
+    const { results } = await env.LIBRARY.prepare(pick(env.LIBRARY,
       `SELECT json_extract(k.value, '$[3]') AS ref FROM json_each(?) k
         WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = json_extract(k.value, '$[0]')
-                        AND q.ruler = json_extract(k.value, '$[1]') AND q.mode = json_extract(k.value, '$[2]'))`)
+                        AND q.ruler = json_extract(k.value, '$[1]') AND q.mode = json_extract(k.value, '$[2]'))`,
+      `SELECT k ->> 3 AS ref FROM jsonb_array_elements((?::text)::jsonb) k
+        WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = k ->> 0 AND q.ruler = k ->> 1 AND q.mode = k ->> 2)`))
       .bind(JSON.stringify(ds.map((d) => [d.payload.identity, d.payload.ruler, d.payload.mode, d.ref]))).all();
     return new Set(results.map((r) => r.ref));
   },
@@ -70,7 +72,8 @@ const boardProducer = {
     const { identity, ruler, mode, batch } = d.payload, db = env.LIBRARY;
     await db.batch([
       db.prepare("DELETE FROM scores WHERE identity = ? AND ruler = ? AND mode = ? AND measured_by LIKE 'verified:%'").bind(identity, ruler, mode),
-      db.prepare("INSERT OR IGNORE INTO queue (batch, build_id, ruler, mode) SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM batches WHERE id = ?)")
+      db.prepare(`INSERT INTO queue (batch, build_id, ruler, mode) SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM batches WHERE id = ?)
+        ON CONFLICT DO NOTHING`)
         .bind(batch, identity, ruler, mode, batch),
     ]);
   },
@@ -86,10 +89,11 @@ export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k
 export async function cellsFilling(env, now = Date.now(), since_ms = 6 * 3_600_000) {
   const db = env.LIBRARY;
   const { results: owed } = await db.prepare(
-    `SELECT ruler, count(DISTINCT build_id || '|' || mode) AS owed FROM queue WHERE instr(ruler, '__') > 0 GROUP BY ruler`).all();
+    `SELECT ruler, count(DISTINCT build_id || '|' || mode) AS owed FROM queue WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`).all();
   if (!owed.length) return [];
   const { results: measured } = await db.prepare(
-    `SELECT ruler, count(*) AS measured, sum(finished_at > ?) AS recent FROM scores WHERE instr(ruler, '__') > 0 GROUP BY ruler`)
+    `SELECT ruler, count(*) AS measured, sum(CASE WHEN finished_at > ? THEN 1 ELSE 0 END) AS recent FROM scores
+       WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`)
     .bind(iso(now - since_ms)).all();
   const m = new Map(measured.map((r) => [r.ruler, r]));
   return owed.map((r) => ({ ruler: r.ruler, measured: m.get(r.ruler)?.measured || 0, recent: m.get(r.ruler)?.recent || 0,
@@ -162,13 +166,14 @@ async function ask(request, env) {
          FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
         WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                             AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live')
-        GROUP BY q.build_id, q.ruler, q.mode LIMIT ?`).bind(ASK_MAX).all();
+        GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at LIMIT ?`).bind(ASK_MAX).all();
     await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now)), engine, now);
     return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });
   }
   const rows = Array.isArray(b.rows) ? b.rows.filter((r) => r && typeof r.identity === "string" && typeof r.ruler === "string" && typeof r.mode === "string") : [];
   if (typeof b.batch !== "string" || !b.batch || rows.length > ASK_MAX) return json({ ok: false, error: `needs batch and at most ${ASK_MAX} rows` }, 400);
-  const { results: builds } = await db.prepare("SELECT id, record, at FROM builds WHERE id IN (SELECT value FROM json_each(?))")
+  const { results: builds } = await db.prepare(pick(db, "SELECT id, record, at FROM builds WHERE id IN (SELECT value FROM json_each(?))",
+    "SELECT id, record, at FROM builds WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))"))
     .bind(JSON.stringify([...new Set(rows.map((r) => r.identity))])).all();
   const buildOf = new Map(builds.map((x) => [x.id, x]));
   // AN ARRIVAL'S ROW THE BOARD ALREADY SCORED is not asked: a resubmission the
@@ -176,9 +181,11 @@ async function ask(request, env) {
   // A REFRESH'S ROW is due by when its fact finished.
   const scored = new Map();
   if (b.batch.startsWith("arrivals-") || b.batch.startsWith("refresh-")) {
-    const { results: had } = await db.prepare(
+    const { results: had } = await db.prepare(pick(db,
       `SELECT s.identity, s.ruler, s.mode, s.finished_at FROM scores s JOIN json_each(?) j
-          ON s.identity = json_extract(j.value, '$.identity') AND s.ruler = json_extract(j.value, '$.ruler') AND s.mode = json_extract(j.value, '$.mode')`)
+          ON s.identity = json_extract(j.value, '$.identity') AND s.ruler = json_extract(j.value, '$.ruler') AND s.mode = json_extract(j.value, '$.mode')`,
+      `SELECT s.identity, s.ruler, s.mode, s.finished_at FROM scores s JOIN jsonb_array_elements((?::text)::jsonb) j
+          ON s.identity = j ->> 'identity' AND s.ruler = j ->> 'ruler' AND s.mode = j ->> 'mode'`))
       .bind(JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
     for (const x of had) scored.set(rowRef(x.identity, x.ruler, x.mode), x.finished_at);
   }
@@ -203,13 +210,13 @@ export async function unasked(env, max) {
               q.build_id || '|' || q.ruler || '|' || q.mode AS ref
          FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
         WHERE q.build_id || '|' || q.ruler || '|' || q.mode > ?
-        GROUP BY q.build_id, q.ruler, q.mode ORDER BY ref LIMIT ?`).bind(after, UNASKED_PAGE).all();
+        GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at ORDER BY ref LIMIT ?`).bind(after, UNASKED_PAGE).all();
     if (!page.length) return out;
     const fdb = factoryDb(env);
-    const { results: live } = await fdb.prepare(isPg(fdb)
-      ? `SELECT ref FROM demands WHERE ref IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
-           AND producer IN ${BOARD_KINDS_SQL} AND state = 'live'`
-      : `SELECT ref FROM demands WHERE ref IN (SELECT value FROM json_each(?)) AND producer IN ${BOARD_KINDS_SQL} AND state = 'live'`)
+    const { results: live } = await fdb.prepare(pick(fdb,
+      `SELECT ref FROM demands WHERE ref IN (SELECT value FROM json_each(?)) AND producer IN ${BOARD_KINDS_SQL} AND state = 'live'`,
+      `SELECT ref FROM demands WHERE ref IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+           AND producer IN ${BOARD_KINDS_SQL} AND state = 'live'`))
       .bind(JSON.stringify(page.map((r) => r.ref))).all();
     const asked = new Set(live.map((r) => r.ref));
     for (const r of page) {

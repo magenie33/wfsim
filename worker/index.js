@@ -369,7 +369,7 @@ async function shareStore(request, env) {
   try {
     // THE DAY, and nothing finer — the same promise every table here makes.
     await env.LIBRARY.prepare(
-      "INSERT OR IGNORE INTO shares (id, weapon, code, at, claim) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO shares (id, weapon, code, at, claim) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
     ).bind(id, weapon, code, new Date().toISOString().slice(0, 10), claim && JSON.stringify(claim)).run();
   } catch (e) {
     console.log("share write failed:", (e && e.message) || String(e));
@@ -741,10 +741,11 @@ export default {
       }
     })());
   },
-  // THE FACTORY'S DATABASE FOR THIS REQUEST (worker/factory_db.js), closed once
-  // it is answered: an api path alone reaches it.
+  // THIS REQUEST'S DATABASES (worker/factory_db.js), closed once it is answered:
+  // an api path reaches them, and so does a share's page while the library is
+  // in Postgres. A client connects on its first query, never before.
   async fetch(request, env, ctx) {
-    if (!new URL(request.url).pathname.startsWith("/api/")) return serve(request, env, ctx);
+    if (!new URL(request.url).pathname.startsWith("/api/") && env.DB_LIBRARY !== "pg") return serve(request, env, ctx);
     const f = withFactory(env);
     try {
       return await serve(request, f.env, ctx);

@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE FACT FACTORY'S DATABASE — docs/BOARD.md §"The fact factory". Its tables
-// (questions, demands, answers, verifiers, verifier_hours, watchdog_told,
-// points_pool) live in D1 (`LIBRARY`) or, with `FACTORY_DB = "pg"`, in Postgres
-// through Hyperdrive (`HYPERDRIVE`); the library and the board stay in D1
-// either way. Every query on those tables asks `factoryDb(env)`, never
-// `env.LIBRARY`, and states its Postgres text where the dialects differ (`pick`).
+// THE WORKER'S DATABASES — docs/BOARD.md §"The fact factory". The library, the
+// fact factory's tables and the accounts live in D1 or in Postgres through
+// Hyperdrive, as `withFactory` reads the switches. A query on the factory's
+// tables asks `factoryDb(env)`; every query states its Postgres text where the
+// dialects differ (`pick`), and the same D1-shaped object answers both ways.
 import postgres from "./vendor/postgres/cf/src/index.js";
 
 /// THE DATABASE THE FACTORY'S TABLES ARE IN for this request.
 export const factoryDb = (env) => env.FACTORY || env.LIBRARY;
 export const isPg = (db) => !!db && db.dialect === "pg";
-/// ONE QUERY IN EACH DIALECT: SQLite's text, or Postgres's where it differs.
-export const pick = (db, lite, pg) => (isPg(db) ? pg : lite);
+/// ONE QUERY OR ONE PIECE OF ONE IN EACH DIALECT: SQLite's text, or Postgres's
+/// where it differs — text, never a list of statements, which the shadow check
+/// (scripts/pg/shadow.mjs) cannot see into. Under it SQLite's text carries the
+/// Postgres text, so one run checks both.
+export const pick = (db, lite, pg) => (isPg(db) ? pg
+  : globalThis.__WFSIM_PG_SHADOW__ ? globalThis.__WFSIM_PG_SHADOW__(lite, pg) : lite);
 /// WHETHER TWO STATEMENTS GO IN ONE TRANSACTION: only on one database.
 export const sameDb = (env) => factoryDb(env) === env.LIBRARY;
 
@@ -85,7 +88,6 @@ export const POSTGRES_OPTIONS = {
   max: 5, fetch_types: false, prepare: true, idle_timeout: 5,
   types: { bigint: { to: 20, from: [20, 1700], serialize: (x) => String(x), parse: (x) => Number(x) } },
 };
-const hyperdriveClient = (env) => postgresClient(postgres(env.HYPERDRIVE.connectionString, POSTGRES_OPTIONS));
 /// `{ query, transaction, end }` over a postgres.js instance.
 export function postgresClient(sql) {
   const wrap = (q) => ({
@@ -97,10 +99,23 @@ export function postgresClient(sql) {
   return { ...wrap(sql), transaction: (fn) => sql.begin((tx) => fn(wrap(tx))), end: () => sql.end({ timeout: 5 }) };
 }
 
-/// THIS REQUEST'S ENV, with the factory's database when it is Postgres, and
-/// what closes it once the request is answered.
+/// THIS REQUEST'S ENV, its databases on Postgres where its switches say, and
+/// what closes them once it is answered. `DB_LIBRARY = "pg"` serves the
+/// library — and the factory with it: one database, one transaction — from
+/// `HYPERDRIVE`; `DB_ACCOUNTS = "pg"` serves the accounts from their own
+/// database (`HYPERDRIVE_ACCOUNTS`). `FACTORY_DB = "pg"` alone moves the
+/// factory's tables and leaves the library in D1. Unset, every one is D1's.
 export function withFactory(env) {
-  if (env.FACTORY_DB !== "pg" || !env.HYPERDRIVE) return { env, close: async () => {} };
-  const client = hyperdriveClient(env);
-  return { env: { ...env, FACTORY: pgDb(client) }, close: () => client.end() };
+  const clients = [], next = { ...env };
+  const pg = (binding) => {
+    const client = postgresClient(postgres(binding.connectionString, POSTGRES_OPTIONS));
+    clients.push(client);
+    return pgDb(client);
+  };
+  if (env.HYPERDRIVE && (env.DB_LIBRARY === "pg" || env.FACTORY_DB === "pg")) {
+    next.FACTORY = pg(env.HYPERDRIVE);
+    if (env.DB_LIBRARY === "pg") next.LIBRARY = next.FACTORY;
+  }
+  if (env.HYPERDRIVE_ACCOUNTS && env.DB_ACCOUNTS === "pg") next.ACCOUNTS = pg(env.HYPERDRIVE_ACCOUNTS);
+  return { env: clients.length ? next : env, close: () => Promise.all(clients.map((c) => c.end())) };
 }

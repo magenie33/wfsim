@@ -102,8 +102,10 @@ export async function rollupUsage(env, now = Date.now()) {
       GROUP BY day, cid, e, subject, country LIMIT 1000000`);
     const out = usageDayRows(day, rows);
     if (!out.length) continue;
-    const put = env.LIBRARY.prepare(`INSERT OR REPLACE INTO usage_days
-      (day, event, subject, market, visitors, points, sampled) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    const put = env.LIBRARY.prepare(`INSERT INTO usage_days
+      (day, event, subject, market, visitors, points, sampled) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (day, event, subject, market) DO UPDATE SET
+        visitors = excluded.visitors, points = excluded.points, sampled = excluded.sampled`);
     for (let i = 0; i < out.length; i += BATCH_ROWS) {
       await env.LIBRARY.batch(out.slice(i, i + BATCH_ROWS).map((o) =>
         put.bind(o.day, o.event, o.subject, o.market, o.visitors, o.points, o.sampled)));

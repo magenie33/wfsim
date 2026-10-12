@@ -70,7 +70,7 @@ async function qqCallback(request, env) {
     new TextEncoder().encode(ts + body));
   if (!ok) return json({ ok: false, error: "bad signature" }, 401);
   if (ev.op === 0 && qqAddressed(ev.t, ev.d)) {
-    await env.LIBRARY.prepare("INSERT OR IGNORE INTO bot_inbox (id, channel, kind, body, at) VALUES (?, 'qq', ?, ?, ?)")
+    await env.LIBRARY.prepare("INSERT INTO bot_inbox (id, channel, kind, body, at) VALUES (?, 'qq', ?, ?, ?) ON CONFLICT DO NOTHING")
       .bind(String(ev.d.id), ev.t, JSON.stringify(ev.d), iso(Date.now())).run();
   }
   return json({ op: 12 });

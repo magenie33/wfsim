@@ -69,11 +69,11 @@ const first = await (await post("/api/qq/claim", {}, auth)).json();
 check("the pull hands out what has not been answered", first.rows.length === 1 && first.rows[0].body.content === "zk 托里德");
 const again = await (await post("/api/qq/claim", {}, auth)).json();
 check("…once, while it is being answered", again.rows.length === 0);
-db.prepare("UPDATE bot_inbox SET claimed_at = claimed_at - 100000").run();
+db.prepare("UPDATE bot_inbox SET claimed_at = '2000-01-01T00:00:00.000Z' WHERE claimed_at IS NOT NULL").run();
 const stale = await (await post("/api/qq/claim", {}, auth)).json();
 check("…and again if it was never answered", stale.rows.length === 1);
 await post("/api/qq/claim", { done: ["m1"] }, auth);
-db.prepare("UPDATE bot_inbox SET claimed_at = claimed_at - 100000").run();
+db.prepare("UPDATE bot_inbox SET claimed_at = '2000-01-01T00:00:00.000Z' WHERE claimed_at IS NOT NULL").run();
 const after = await (await post("/api/qq/claim", {}, auth)).json();
 check("…and never once it is", after.rows.length === 0);
 
