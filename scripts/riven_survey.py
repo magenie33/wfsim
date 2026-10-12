@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""A RIVEN SURVEY IN ONE COMMAND — docs/AGENT.md §"Riven survey".
+
+    python scripts/riven_survey.py ocucor burston_prime   # these weapons
+    python scripts/riven_survey.py --popular 10           # the 10 most tested not yet surveyed
+    python scripts/riven_survey.py ... --dry              # say what it would open, touch nothing
+
+Every shape of each weapon's riven (engine `riven_shapes`) is opened as a
+`survey` appraisal, then frozen by a clean page (`scripts/riven_freeze.mjs`),
+which hands it to the factory. Running it again is safe: a weapon already
+surveyed opens nothing, and only its unfrozen shapes are frozen.
+
+The library is reached over ssh to its server, as `private/hetzner/ssh.env`
+names it (SSH_TARGET, SSH_KEY, SSH_KNOWN_HOSTS).
+"""
+import argparse
+import datetime
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import urllib.request
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SITE = os.environ.get("WFSIM_SITE", "https://wfsim.app")
+CHANNEL, ASKER, RULER = "survey", "wfsim", "standard_single_target"
+# 'S', three characters of the weapon, four of the shape: eight, inside the
+# worker's 3-12 and apart from the six-character codes opened by hand.
+CODE_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def ssh_env():
+    path = os.path.join(ROOT, "private", "hetzner", "ssh.env")
+    env = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.strip().split("=", 1)
+                env[k] = v
+    return env
+
+
+def psql(sql, stdin=None):
+    """One psql call on the library's server; rows as lists of fields."""
+    e = ssh_env()
+    cmd = ["ssh", "-i", os.path.join(ROOT, e["SSH_KEY"]), "-o", f"UserKnownHostsFile={os.path.join(ROOT, e['SSH_KNOWN_HOSTS'])}",
+           "-o", "BatchMode=yes", e["SSH_TARGET"],
+           "sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -At -F '\t'" + ("" if stdin else f" -c {sh_quote(sql)}")]
+    r = subprocess.run(cmd, input=stdin if stdin else "", capture_output=True, text=True, encoding="utf-8")
+    if r.returncode:
+        sys.exit(f"psql failed: {r.stderr.strip()}")
+    return [line.split("\t") for line in r.stdout.splitlines() if line]
+
+
+def sh_quote(s):
+    return "'" + s.replace("'", "'\\''") + "'"
+
+
+def sql_text(s):
+    return "'" + s.replace("'", "''") + "'"
+
+
+def base36(n, width):
+    out = ""
+    for _ in range(width):
+        n, d = divmod(n, 36)
+        out = CODE_CHARS[d] + out
+    return out
+
+
+def prefix(weapon):
+    return "S" + base36(int(hashlib.sha1(weapon.encode()).hexdigest(), 16), 3)
+
+
+def shapes(weapons):
+    """{weapon: line} for every weapon the engine can survey; the rest are said and skipped."""
+    r = subprocess.run(["cargo", "run", "--quiet", "--release", "--bin", "riven_shapes", "--", *weapons],
+                       cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+    for line in r.stderr.splitlines():
+        if ": " in line and not line.startswith(("warning", "error")):
+            print(f"  skip {line}")
+    out = {}
+    for line in r.stdout.splitlines():
+        d = json.loads(line)
+        out[d["weapon"]] = d
+    return out
+
+
+def popular(n, surveyed):
+    req = urllib.request.Request(f"{SITE}/api/popularity", headers={"user-agent": "wfsim-riven-survey"})
+    with urllib.request.urlopen(req, timeout=30) as f:
+        scores = json.load(f).get("scores") or {}
+    ranked = sorted((w for w in scores if w not in surveyed), key=lambda w: (-scores[w], w))
+    # Ask the engine for more than n: some of the most tested are melee or have no riven.
+    found = shapes(ranked[: n * 3])
+    return [w for w in ranked if w in found][:n], found
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("weapons", nargs="*")
+    ap.add_argument("--popular", type=int, default=0)
+    ap.add_argument("--lanes", type=int, default=12)
+    ap.add_argument("--dry", action="store_true")
+    a = ap.parse_args()
+
+    counts = {w: int(n) for w, n in psql(f"SELECT weapon, count(*) FROM appraisals WHERE channel = '{CHANNEL}' GROUP BY weapon")}
+    if a.popular:
+        weapons, found = popular(a.popular, counts)
+    else:
+        weapons, found = a.weapons, shapes(a.weapons)
+    if not weapons:
+        sys.exit("no weapon to survey")
+
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    for w in weapons:
+        if w in counts:
+            print(f"{w}: surveyed already ({counts[w]} shapes)")
+            continue
+        d = found.get(w)
+        if not d:
+            continue
+        p = prefix(w)
+        clash = psql(f"SELECT DISTINCT weapon FROM appraisals WHERE code LIKE '{p}%' AND weapon <> {sql_text(w)}")
+        if clash:
+            sys.exit(f"{w}: code prefix {p} is {clash[0][0]}'s")
+        print(f"{w}: {d['class']}, {len(d['stats'])} stats, malus {d['malus']}, {len(d['shapes'])} shapes, codes {p}xxxx")
+        if a.dry:
+            continue
+        rows = ",\n".join(
+            f"({sql_text(p + base36(i, 4))}, '{CHANNEL}', '{{}}', '{ASKER}', '', {sql_text(w)}, '{RULER}', "
+            f"{sql_text(json.dumps(s, separators=(',', ':')))}, '{now}')"
+            for i, s in enumerate(d["shapes"]))
+        psql(None, stdin="INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at) VALUES\n"
+             + rows + "\nON CONFLICT (code) DO NOTHING;\n")
+
+    names = ", ".join(sql_text(w) for w in weapons)
+    codes = [r[0] for r in psql(f"SELECT code FROM appraisals WHERE channel = '{CHANNEL}' AND weapon IN ({names}) "
+                                "AND request IS NULL ORDER BY code")]
+    print(f"{len(codes)} shapes to freeze")
+    if a.dry or not codes:
+        return
+    with tempfile.NamedTemporaryFile("w", suffix=".codes", delete=False) as f:
+        f.write("\n".join(codes))
+    try:
+        r = subprocess.run(["node", os.path.join(ROOT, "scripts", "riven_freeze.mjs"), f.name, str(a.lanes)], cwd=ROOT)
+    finally:
+        os.unlink(f.name)
+    sys.exit(r.returncode)
+
+
+if __name__ == "__main__":
+    main()
