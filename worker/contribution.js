@@ -36,7 +36,7 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
-import { factoryDb, pick, sameDb } from "./factory_db.js";
+import { factoryDb, isPg, pick, sameDb } from "./factory_db.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
@@ -97,6 +97,18 @@ async function workOf(env, ids) {
   const db = factoryDb(env);
   if (!db) return out;
   const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
+  // ON POSTGRES, ONE STATEMENT for every id: the ranking asks for all of them,
+  // and ninety at a time was a round trip each while a page waited.
+  if (isPg(db)) {
+    if (!ids.length) return out;
+    const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at,
+        (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
+        (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week
+      FROM verifiers v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
+      .bind(from, week, JSON.stringify(ids)).all();
+    for (const r of results) out.set(r.id, { work: r.work || 0, recent: r.recent || 0, week: r.week || 0, consent_at: r.consent_at || null });
+    return out;
+  }
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
     const marks = part.map(() => "?").join(", ");
@@ -137,6 +149,19 @@ async function spanWork(env, spans) {
   const db = factoryDb(env);
   if (!db || !cut.length) return out;
   const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
+  if (isPg(db)) {
+    const list = cut.map(([sp], k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
+    const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
+        SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week
+      FROM jsonb_to_recordset((?3::text)::jsonb) AS s(k bigint, v text, f text, u text)
+      LEFT JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND (s.u IS NULL OR h.hour < s.u COLLATE "C")
+      GROUP BY s.k`).bind(from, week, JSON.stringify(list)).all();
+    for (const r of results) {
+      const [sp, k] = cut[r.k];
+      out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0 } : { ...NONE };
+    }
+    return out;
+  }
   for (let i = 0; i < cut.length; i += PER_STATEMENT) {
     const part = cut.slice(i, i + PER_STATEMENT);
     const rows = await db.batch(part.map(([s]) => db.prepare(
@@ -499,7 +524,19 @@ const rowKey = async (env, id, day) => (await sha256(`${env.AUTH_SECRET || ""}:c
 /// claimed device. Only what an answer may carry is kept — no account id, and
 /// an anonymous row's name never.
 const KEPT_SECONDS = 60;
+/// …AND ONCE AN ISOLATE: every page asking while it is worked out waits on the
+/// same working-out, which the edge cache alone let a crowd of them each begin.
+let keptHere = null;
 async function kept(request, env) {
+  // NO FRESHER THAN THE EDGE'S MINUTE, so only where there is an edge.
+  if (typeof caches === "undefined") return keptWorkedOut(request, env);
+  if (keptHere && keptHere.until > Date.now()) return keptHere.body;
+  const body = keptWorkedOut(request, env);
+  keptHere = { until: Date.now() + KEPT_SECONDS * 1000, body };
+  body.catch(() => { keptHere = null; });
+  return body;
+}
+async function keptWorkedOut(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
   const hit = cache && await cache.match(at);
