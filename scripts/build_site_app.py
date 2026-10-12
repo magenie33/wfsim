@@ -30,6 +30,7 @@ import functools
 import hashlib
 import html as html_mod
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -756,7 +757,11 @@ def ship_native_engine() -> None:
         print(f"!! desktop/payload/native/ is engine {named.get('engine')}, this tree is {want}: "
               "the desktop client computes on wasm until a build on Windows")
         return
-    run("cargo", "build", "--release", "-p", "wfsim-native", "--target", NATIVE_TARGET)
+    # THE C RUNTIME LINKED IN (`crt-static`): a third party loads this DLL on
+    # machines without the VC++ 2015-2022 redistributable, where it would not load.
+    print("+ cargo build --release -p wfsim-native --target", NATIVE_TARGET, "(crt-static)")
+    subprocess.run(["cargo", "build", "--release", "-p", "wfsim-native", "--target", NATIVE_TARGET], cwd=ROOT, check=True,
+                   env={**os.environ, "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS": "-C target-feature=+crt-static"})
     body = NATIVE_DLL.read_bytes()
     sha = hashlib.sha256(body).hexdigest()
     name = f"wfsim_engine.{sha[:12]}.dll"
