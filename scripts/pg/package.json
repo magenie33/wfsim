@@ -1,0 +1,10 @@
+{
+  "name": "wfsim-pg-checks",
+  "private": true,
+  "description": "The in-memory Postgres the fact factory's Postgres checks run on (scripts/check_pg_factory.mjs); nothing here ships.",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "postgres": "3.4.9"
+  }
+}

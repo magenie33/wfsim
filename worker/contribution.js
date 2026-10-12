@@ -36,6 +36,7 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
+import { factoryDb, isPg, sameDb } from "./factory_db.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
@@ -93,14 +94,15 @@ const since = (days) => new Date(Date.now() - (days - 1) * 86_400_000).toISOStri
 /// counting for nothing.
 async function workOf(env, ids) {
   const out = new Map();
-  if (!env.LIBRARY) return out;
+  const db = factoryDb(env);
+  if (!db) return out;
   const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
     const marks = part.map(() => "?").join(", ");
-    const [all, recent] = await env.LIBRARY.batch([
-      env.LIBRARY.prepare(`SELECT id, work, consent_at FROM verifiers WHERE banned = 0 AND id IN (${marks})`).bind(...part),
-      env.LIBRARY.prepare(
+    const [all, recent] = await db.batch([
+      db.prepare(`SELECT id, work, consent_at FROM verifiers WHERE banned = 0 AND id IN (${marks})`).bind(...part),
+      db.prepare(
         `SELECT d.verifier AS id, SUM(d.work) AS work, SUM(CASE WHEN d.hour >= ? THEN d.work ELSE 0 END) AS week
           FROM verifier_hours d JOIN verifiers v ON v.id = d.verifier
           WHERE v.banned = 0 AND d.hour >= ? AND d.verifier IN (${marks}) GROUP BY d.verifier`).bind(week, from, ...part),
@@ -132,13 +134,14 @@ async function spanWork(env, spans) {
   const whole = await workOf(env, [...new Set(spans.map((s) => s.verifier))]);
   const out = spans.map((s) => ({ ...(whole.get(s.verifier) || NONE) }));
   const cut = spans.map((s, i) => [s, i]).filter(([s]) => !spanAll(s));
-  if (!env.LIBRARY || !cut.length) return out;
+  const db = factoryDb(env);
+  if (!db || !cut.length) return out;
   const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
   for (let i = 0; i < cut.length; i += PER_STATEMENT) {
     const part = cut.slice(i, i + PER_STATEMENT);
-    const rows = await env.LIBRARY.batch(part.map(([s]) => env.LIBRARY.prepare(
+    const rows = await db.batch(part.map(([s]) => db.prepare(
       `SELECT SUM(work) AS work, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS recent, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS week
-         FROM verifier_hours WHERE verifier = ? AND hour >= ? AND (? IS NULL OR hour < ?)`)
+         FROM verifier_hours WHERE verifier = ? AND hour >= ? AND (${isPg(db) ? "?::text" : "?"} IS NULL OR hour < ?)`)
       .bind(from, week, s.verifier, s.from_hour, s.until_hour, s.until_hour)));
     part.forEach(([s, k], j) => {
       const r = rows[j].results[0] || {};
@@ -175,15 +178,16 @@ const volunteerSince = (ws) => ws.filter((w) => w.consent_at && w.work > 0).map(
 /// so the page draws any kind the same way.
 async function activityOf(env, ids) {
   const out = new Map();
-  if (!env.LIBRARY || !ids.length) return out;
+  const db = factoryDb(env);
+  if (!db || !ids.length) return out;
   const t = Date.now();
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
     const marks = part.map(() => "?").join(", ");
-    const [seen, held] = await env.LIBRARY.batch([
-      env.LIBRARY.prepare(`SELECT id, last_at FROM verifiers WHERE id IN (${marks})`).bind(...part),
+    const [seen, held] = await db.batch([
+      db.prepare(`SELECT id, last_at FROM verifiers WHERE id IN (${marks})`).bind(...part),
       // A QUESTION OF THE FACT FACTORY, named by the producer that asked it.
-      env.LIBRARY.prepare(`SELECT q.leased_to, q.request, d.producer, d.payload FROM questions q
+      db.prepare(`SELECT q.leased_to, q.request, d.producer, d.payload FROM questions q
           JOIN demands d ON d.question = q.id AND d.state = 'live'
           WHERE q.lease_until > ? AND q.leased_to IN (${marks})`).bind(iso(t), ...part),
     ]);
@@ -256,8 +260,8 @@ async function devicePoints(env, b) {
   // ITS OWN "TODAY": the whole UTC hours from the one the page names as its
   // midnight — results sent, what they took, and the points credited in them.
   let today = null;
-  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(b.since || "") && env.LIBRARY) {
-    const t = await env.LIBRARY.prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
+  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(b.since || "") && factoryDb(env)) {
+    const t = await factoryDb(env).prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
       .bind(b.verifier, b.since).first();
     today = { tasks: (t && t.tasks) || 0, ms: (t && t.ms) || 0, points: points((t && t.work) || 0) };
   }
@@ -281,14 +285,15 @@ const ledgerFrom = (f) => (f === "" || HOUR.test(f || "") ? f : since(LEDGER_DAY
 /// that disagreed with the agreed result, those still waiting for another
 /// computer, and those set aside with a refusal.
 async function ledgerOf(env, verifier, me, from) {
-  const db = env.LIBRARY;
+  const db = factoryDb(env);
   const [spans, hours, v, u] = await Promise.all([
     env.ACCOUNTS ? env.ACCOUNTS.prepare("SELECT account, from_hour, until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour")
       .bind(verifier).all().then((r) => r.results) : [],
     db.prepare("SELECT hour, work, tasks FROM verifier_hours WHERE verifier = ? ORDER BY hour").bind(verifier).all().then((r) => r.results),
     db.prepare("SELECT banned FROM verifiers WHERE id = ?").bind(verifier).first(),
-    db.prepare(`SELECT SUM(a.void = 1) AS refused, SUM(a.void = 0 AND q.state = 'fact') AS disagreed,
-        SUM(a.void = 0 AND q.state IN ('open', 'disputed', 'spot', 'nondeterministic')) AS waiting
+    db.prepare(`SELECT SUM(CASE WHEN a.void = 1 THEN 1 ELSE 0 END) AS refused,
+        SUM(CASE WHEN a.void = 0 AND q.state = 'fact' THEN 1 ELSE 0 END) AS disagreed,
+        SUM(CASE WHEN a.void = 0 AND q.state IN ('open', 'disputed', 'spot', 'nondeterministic') THEN 1 ELSE 0 END) AS waiting
         FROM answers a JOIN questions q ON q.id = a.question
         WHERE a.device = ? AND a.at >= ? AND a.credited = 0 AND a.official = 0`).bind(verifier, from).first(),
   ]);
@@ -331,8 +336,9 @@ async function accountLedger(env, account, from) {
   const hours = [];
   for (let i = 0; i < spans.length; i += PER_STATEMENT) {
     const part = spans.slice(i, i + PER_STATEMENT);
-    const rows = await env.LIBRARY.batch(part.map((s) => env.LIBRARY.prepare(
-      "SELECT hour, work FROM verifier_hours WHERE verifier = ? AND hour >= ? AND hour >= ? AND (? IS NULL OR hour < ?) ORDER BY hour")
+    const db = factoryDb(env);
+    const rows = await db.batch(part.map((s) => db.prepare(
+      `SELECT hour, work FROM verifier_hours WHERE verifier = ? AND hour >= ? AND hour >= ? AND (${isPg(db) ? "?::text" : "?"} IS NULL OR hour < ?) ORDER BY hour`)
       .bind(s.verifier, s.from_hour, from, s.until_hour, s.until_hour)));
     part.forEach((s, j) => { for (const r of rows[j].results) hours.push({ hour: r.hour, id: s.verifier.slice(0, 6), points: points(r.work || 0) }); });
   }
@@ -340,7 +346,7 @@ async function accountLedger(env, account, from) {
   const banned = new Set();
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
-    const { results } = await env.LIBRARY.prepare(`SELECT id FROM verifiers WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
+    const { results } = await factoryDb(env).prepare(`SELECT id FROM verifiers WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
       .bind(...part).all();
     for (const r of results) banned.add(r.id);
   }
@@ -431,9 +437,9 @@ const ordered = (list, key) => list.filter((e) => e[key] > 0)
 /// this long, refused ones aside — a count, never who.
 const COMPUTING_MS = 10 * 60_000;
 async function computingNow(env) {
-  if (!env.LIBRARY) return 0;
+  if (!factoryDb(env)) return 0;
   const from = iso(Date.now() - COMPUTING_MS);
-  const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
+  const r = await factoryDb(env).prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
   return (r && r.n) || 0;
 }
 
@@ -459,8 +465,8 @@ async function person(request, env, name) {
 /// to them alone.
 /// THE OFFICIAL POOL, in points and by where it came from (`points_pool`).
 async function poolOf(env) {
-  if (!env.LIBRARY) return null;
-  const { results } = await env.LIBRARY.prepare("SELECT source, SUM(work) AS work FROM points_pool GROUP BY source").all();
+  if (!factoryDb(env)) return null;
+  const { results } = await factoryDb(env).prepare("SELECT source, SUM(work) AS work FROM points_pool GROUP BY source").all();
   const by = Object.fromEntries(results.map((r) => [r.source, points(r.work || 0)]));
   return { points: points(results.reduce((t, r) => t + (r.work || 0), 0)),
     deleted_account: by.deleted_account || 0, refused: by.refused || 0 };
@@ -525,8 +531,16 @@ async function demand(request, env) {
   if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0, refreshes: 0 }, riven_gains: 0, surveys: [], per_hour: { volunteers: 0, official: 0 } });
   const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
+  // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's; with the
+  // factory in a database of its own, those rows' refs are read there first.
+  const apart = !sameDb(env);
+  const fresh = apart ? JSON.stringify((await factoryDb(env).prepare(
+    "SELECT ref FROM demands WHERE producer = 'new_build' AND state = 'live'").all()).results.map((r) => r.ref)) : null;
   const [owed, done, gains, surveys] = await db.batch([
-    db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.producer = 'new_build' THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
+    apart ? db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN q.build_id || '|' || q.ruler || '|' || q.mode IN (SELECT value FROM json_each(?)) THEN 0
+                WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
+                FROM queue q JOIN batches b ON b.id = q.batch GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`).bind(fresh)
+      : db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.producer = 'new_build' THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
                 FROM queue q JOIN batches b ON b.id = q.batch
                 LEFT JOIN demands d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode AND d.producer = 'new_build' AND d.state = 'live'
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),

@@ -9,6 +9,7 @@ import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } 
 import { cloudTell } from "./cloud.js";
 import { watchdogText } from "./watchdog_say.js";
 import { iso } from "./instant.js";
+import { factoryDb, pick } from "./factory_db.js";
 
 /// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY. Hand-outs go
 /// earliest deadline first, and a question past its deadline is the official
@@ -101,7 +102,7 @@ export async function officialRoute(request, env, path) {
   try { b = await request.json(); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if (!OFFICIAL_ID.test(b.witness || "")) return json({ ok: false, error: "needs witness official:<name>" }, 400);
   const w = { device: b.witness, owner: b.witness, official: true };
-  const db = env.LIBRARY;
+  const db = factoryDb(env);
   if (path === "/api/tasks/official/release") {
     await db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ?").bind(b.witness).run();
     return json({ ok: true });
@@ -120,9 +121,11 @@ export async function officialRoute(request, env, path) {
     const states = [];
     for (const a of answers) {
       // THE DEMAND IT ANSWERS, by its ref among the named producers — a live one first.
-      const d = a && typeof a.ref === "string" && await db.prepare(
+      const d = a && typeof a.ref === "string" && await db.prepare(pick(db,
         `SELECT question FROM demands WHERE ref = ? AND producer IN (SELECT value FROM json_each(?))
-          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers).first();
+          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`,
+        `SELECT question FROM demands WHERE ref = ?::text AND producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`)).bind(a.ref, producers).first();
       // `work: null` is a witness of the score alone (worker/tasks.js `settleOfficial`).
       if (!d || !(a.work === null || Number.isSafeInteger(a.work)) || !a.result || typeof a.result !== "object") { states.push(null); continue; }
       states.push(await facts().answerOfficial(env, w, { question: d.question, engine: b.engine, result: a.result, work: a.work }));
@@ -143,7 +146,7 @@ const RETELL_MS = 6 * 3_600_000;
 /// is said on the same clock, its progress read only when it is to be said.
 export async function watchdog(env, now = Date.now()) {
   if (!env.LIBRARY) return [];
-  const db = env.LIBRARY;
+  const db = factoryDb(env);
   const stale = async (kind) => {
     const told = await db.prepare("SELECT told_at FROM watchdog_told WHERE cause = ?").bind(kind).first();
     return !told || Date.parse(told.told_at) <= now - RETELL_MS;

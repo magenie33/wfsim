@@ -36,6 +36,7 @@ import { verifyRoute } from "./verify.js";
 import { contributionRoute } from "./contribution.js";
 import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
+import { withFactory } from "./factory_db.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 // AN OUTER BOUND, NOT THE RULE — see below. It is `MAIN_SLOTS + 1`: eight main
@@ -731,9 +732,29 @@ async function agentPage(request, env, twin) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(event.cron === WATCHDOG_CRON ? watchdog(env) : Promise.all([rollupUsage(env), purgeDeleted(env)]));
+    ctx.waitUntil((async () => {
+      const f = withFactory(env);
+      try {
+        await (event.cron === WATCHDOG_CRON ? watchdog(f.env) : Promise.all([rollupUsage(f.env), purgeDeleted(f.env)]));
+      } finally {
+        await f.close();
+      }
+    })());
   },
+  // THE FACTORY'S DATABASE FOR THIS REQUEST (worker/factory_db.js), closed once
+  // it is answered: an api path alone reaches it.
   async fetch(request, env, ctx) {
+    if (!new URL(request.url).pathname.startsWith("/api/")) return serve(request, env, ctx);
+    const f = withFactory(env);
+    try {
+      return await serve(request, f.env, ctx);
+    } finally {
+      ctx.waitUntil(f.close());
+    }
+  },
+};
+
+async function serve(request, env, ctx) {
     const path = new URL(request.url).pathname;
     const twin = markdownTwin(path);
     if (twin) return agentPage(request, env, twin);
@@ -849,5 +870,4 @@ export default {
     // binding is what keeps this script from becoming a thing the site depends
     // on: it adds one path and forwards the rest.
     return asset;
-  },
-};
+}

@@ -12,6 +12,7 @@
 //                          { backfill: true }                           → { asked, left }: owed rows nobody asked for
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
 import { iso } from "./instant.js";
+import { factoryDb, isPg, sameDb } from "./factory_db.js";
 import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
 import { servedRelease } from "./verify.js";
@@ -149,6 +150,11 @@ async function ask(request, env) {
   // EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
   // scorer measures it: a run stopped between the queue's write and the ask
   // leaves exactly that. A few hundred a call, until none is left.
+  if (b.backfill === true && !sameDb(env)) {
+    const results = await unasked(env, ASK_MAX);
+    await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now)), engine, now);
+    return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });
+  }
   if (b.backfill === true) {
     const { results } = await db.prepare(
       `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at,
@@ -183,6 +189,38 @@ async function ask(request, env) {
   return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
 }
 
+/// THE OWED ROWS NO BOARD DEMAND IS LIVE FOR, at most `max`, when the queue and
+/// the factory are two databases: the queue read a page at a time, each page's
+/// refs looked up in the factory, until `max` are found or the queue is read.
+const UNASKED_PAGE = 1000;
+export async function unasked(env, max) {
+  const out = [];
+  let after = "";
+  for (;;) {
+    const { results: page } = await env.LIBRARY.prepare(
+      `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at,
+              (SELECT s.finished_at FROM scores s WHERE s.identity = q.build_id AND s.ruler = q.ruler AND s.mode = q.mode) AS measured,
+              q.build_id || '|' || q.ruler || '|' || q.mode AS ref
+         FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
+        WHERE q.build_id || '|' || q.ruler || '|' || q.mode > ?
+        GROUP BY q.build_id, q.ruler, q.mode ORDER BY ref LIMIT ?`).bind(after, UNASKED_PAGE).all();
+    if (!page.length) return out;
+    const fdb = factoryDb(env);
+    const { results: live } = await fdb.prepare(isPg(fdb)
+      ? `SELECT ref FROM demands WHERE ref IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+           AND producer IN ${BOARD_KINDS_SQL} AND state = 'live'`
+      : `SELECT ref FROM demands WHERE ref IN (SELECT value FROM json_each(?)) AND producer IN ${BOARD_KINDS_SQL} AND state = 'live'`)
+      .bind(JSON.stringify(page.map((r) => r.ref))).all();
+    const asked = new Set(live.map((r) => r.ref));
+    for (const r of page) {
+      if (!asked.has(r.ref)) out.push(r);
+      if (out.length >= max) return out;
+    }
+    if (page.length < UNASKED_PAGE) return out;
+    after = page[page.length - 1].ref;
+  }
+}
+
 /// THE ORDERS OPEN BEFORE THE FACTORY, asked of it once each with the results
 /// clients already sent, carried; a lease held now is kept, so its answer lands.
 /// Called until `left` is 0. Each is asked as of when it was opened.
@@ -191,6 +229,8 @@ const LIVE = "('todo', 'fresh', 'open', 'dispute', 'spot', 'arbiter', 'scoring:t
 async function adopt(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
+  // THE ADOPTION PREDATES THE FACTORY'S OWN DATABASE and joins across it.
+  if (!sameDb(env)) return json({ ok: true, adopted: 0, left: 0 });
   const db = env.LIBRARY, now = Date.now();
   const { engine } = await servedRelease(env);
   const { results } = await db.prepare(

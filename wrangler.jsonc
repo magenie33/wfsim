@@ -16,10 +16,13 @@
 {
   "name": "wfsim",
   "compatibility_date": "2026-07-28",
+  // THE POSTGRES CLIENT (worker/vendor/postgres) speaks through node's buffer,
+  // events and streams.
+  "compatibility_flags": ["nodejs_compat"],
   "main": "worker/index.js",
   // THE DATABASE'S SAFETY VALVE (worker/verify.js `COMPUTE_CAP`): past this many
   // computers asking, a newcomer waits; those already computing go on.
-  "vars": { "COMPUTE_CAP": "400" },
+  "vars": { "COMPUTE_CAP": "400", "FACTORY_DB": "d1" },
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",
@@ -89,6 +92,10 @@
   // lands in somebody's inbox. Keyed by the caller's IP, which is not stored.
   // THE LOGIN CODE'S MAIL, through Cloudflare Email Service from the onboarded
   // `wfsim.app` (docs/ACCOUNTS.md §Setup). Absent, email is not offered.
+  // THE FACT FACTORY'S TABLES IN POSTGRES (worker/factory_db.js), reached
+  // through Hyperdrive and a Cloudflare Tunnel; used only while `FACTORY_DB`
+  // says "pg", and D1 holds them otherwise — the switch is this one value.
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "fa561a2ab9364482aeb33421649eba62" }],
   "send_email": [{ "name": "EMAIL" }],
   // THE PAID HALF: a private worker, the only way to reach it (worker/cloud.js).
   "services": [{ "binding": "CLOUD", "service": "wfsim-cloud" }],

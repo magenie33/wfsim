@@ -17,6 +17,7 @@
 
 import { nameBlocked } from "./names.js";
 import { cloudEnd, cloudExport } from "./cloud.js";
+import { factoryDb, pick } from "./factory_db.js";
 import { agentsOf } from "./agents.js";
 
 export const SLOTS = ["google", "discord", "github", "email"];
@@ -588,13 +589,15 @@ export async function purgeDeleted(env) {
     const { results: spans } = await env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(id).all();
     let work = 0;
     for (const s of spans) {
-      const r = env.LIBRARY && await env.LIBRARY.prepare(
-        "SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?1 AND hour >= ?2 AND (?3 IS NULL OR hour < ?3)")
+      const fdb = factoryDb(env);
+      const r = fdb && await fdb.prepare(pick(fdb,
+        "SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?1 AND hour >= ?2 AND (?3 IS NULL OR hour < ?3)",
+        "SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?1::text AND hour >= ?2::text AND (?3::text IS NULL OR hour < ?3::text)"))
         .bind(s.verifier, s.from_hour, s.until_hour).first();
       work += (r && r.w) || 0;
     }
-    if (work > 0 && env.LIBRARY) {
-      await env.LIBRARY.prepare("INSERT INTO points_pool (at, source, work) VALUES (?1, 'deleted_account', ?2)").bind(now(), work).run();
+    if (work > 0 && factoryDb(env)) {
+      await factoryDb(env).prepare("INSERT INTO points_pool (at, source, work) VALUES (?1, 'deleted_account', ?2)").bind(now(), work).run();
     }
     await env.ACCOUNTS.batch([
       env.ACCOUNTS.prepare("UPDATE device_spans SET until_hour = ?1 WHERE account = ?2 AND until_hour IS NULL").bind(hour, id),

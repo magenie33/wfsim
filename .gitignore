@@ -61,3 +61,6 @@ target-*/
 # a 30 MB binary per release is not what a git history is for.
 /dist
 /.wasm-witness/
+
+# The pg checks install their one dependency here (scripts/pg/package.json).
+scripts/pg/node_modules/
