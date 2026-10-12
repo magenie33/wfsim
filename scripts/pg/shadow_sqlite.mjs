@@ -10,6 +10,9 @@ export * from "node:sqlite";
 const PG_DIR = new URL("../../worker/pg/", import.meta.url);
 const pgSchema = (kind) => (kind === "accounts" ? ["accounts.sql"] : ["schema.sql", "library.sql"])
   .map((f) => readFileSync(new URL(f, PG_DIR), "utf8")).join("\n");
+const tablesOf = (kind) => new RegExp(`CREATE TABLE (IF NOT EXISTS )?(${[...pgSchema(kind)
+  .matchAll(/CREATE TABLE IF NOT EXISTS ([a-z_]+)/g)].map((m) => m[1]).join("|")})\\b`);
+const TABLES = { accounts: tablesOf("accounts"), library: tablesOf("library") };
 
 const found = [];
 let judged = 0, repeated = 0;
@@ -19,7 +22,13 @@ const pg = new PGlite({ parsers: { 20: (x) => Number(x), 1700: (x) => Number(x) 
 let chain = pg.waitReady, current = null, opened = 0;
 
 /// WHO ISSUED A STATEMENT: the worker's are judged, a check's own are only repeated.
-const byWorker = () => /[\\/]worker[\\/](?!pg[\\/])[a-z_]+\.js/.test(new Error().stack.split("\n").slice(3).join("\n"));
+/// `WFSIM_SHADOW_WORKER` names another worker's source folder to judge, by a
+/// regular expression over the caller's path — a worker beside this one.
+const OTHER_WORKER = process.env.WFSIM_SHADOW_WORKER ? new RegExp(process.env.WFSIM_SHADOW_WORKER) : null;
+const byWorker = () => {
+  const stack = new Error().stack.split("\n").slice(3).join("\n");
+  return /[\\/]worker[\\/](?!pg[\\/])[a-z_]+\.js/.test(stack) || !!(OTHER_WORKER && OTHER_WORKER.test(stack));
+};
 
 /// A CHECK'S OWN SQL, in SQLite's words, made Postgres's where it is plain to.
 function lenient(sql) {
@@ -75,7 +84,8 @@ class ShadowDatabase extends real.DatabaseSync {
     super.exec(text);
     // A DATABASE IS THE ACCOUNTS', THE LIBRARY'S OR BOTH by the worker schema
     // laid in it, and its Postgres twin is laid with worker/pg's.
-    const kinds = [["accounts", /CREATE TABLE IF NOT EXISTS identities/], ["library", /CREATE TABLE IF NOT EXISTS (questions|builds)/]]
+    // Any table of either: a worker beside this one lays its own tables first.
+    const kinds = [["accounts", TABLES.accounts], ["library", TABLES.library]]
       .filter(([k, re]) => re.test(text) && !this.kinds.has(k)).map(([k]) => k);
     if (kinds.length) {
       for (const k of kinds) { this.kinds.add(k); this.later(() => this.pg.exec(pgSchema(k))); }

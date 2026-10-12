@@ -95,7 +95,11 @@
   // Cloudflare Tunnel: the fact factory's tables while `FACTORY_DB` says "pg",
   // the whole library with them while `DB_LIBRARY` does. D1 holds what no
   // switch moves — each switch is one value (docs/BOARD.md §"Postgres").
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "fa561a2ab9364482aeb33421649eba62" }],
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "fa561a2ab9364482aeb33421649eba62" },
+    // THE ACCOUNTS' OWN DATABASE, read uncached: a session or a payment is never a minute old.
+    { "binding": "HYPERDRIVE_ACCOUNTS", "id": "06b1b58fa6fa489e860906f937e40cf2" }
+  ],
   // HOW OFTEN ONE ADDRESS MAY ASK FOR A LOGIN CODE — the mail costs money and
   // lands in somebody's inbox. Keyed by the caller's IP, which is not stored.
   // THE LOGIN CODE'S MAIL, through Cloudflare Email Service from the onboarded

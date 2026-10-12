@@ -767,8 +767,9 @@ build submitted reaches `inbox` in Postgres and the live board within a minute;
 the `queue` run green, its tunnel step first; an appraisal answered.
 
 **THE ACCOUNTS** (`DB_ACCOUNTS`), with the private worker's queries ported
-first — it reads the same tables: pause sign-in writes (`FACTORY_PAUSED` and
-the paid half's own pause), `node scripts/pg_copy.mjs fresh accounts` then
+first — it reads the same tables: pause the accounts' writes
+(`"ACCOUNTS_PAUSED": "1"`, `check_accounts_pause`; the paid half is reached only
+through the site), `node scripts/pg_copy.mjs fresh accounts` then
 `verify accounts` with `CF_D1_ACCOUNTS` and `PG_ACCOUNTS_URL`, the
 `HYPERDRIVE_ACCOUNTS` binding and `"DB_ACCOUNTS": "pg"`, deploy, the variable
 `DB_ACCOUNTS`, un-pause; verify a sign-in, `/api/me`, a device claim, the

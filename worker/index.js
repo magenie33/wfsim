@@ -755,6 +755,16 @@ export default {
   },
 };
 
+/// A REQUEST THAT MAY WRITE THE ACCOUNTS: any sign-in step (an OAuth return is
+/// a GET that makes a session), and any change to an account, its devices or
+/// what the paid half keeps for it.
+const READ_ONLY_CLOUD = new Set(["/api/cloud/page.js", "/api/cloud/thanks"]);
+function accountWrite(request, path) {
+  if (path.startsWith("/api/auth/")) return true;
+  if (request.method === "GET" || request.method === "HEAD") return false;
+  return path === "/api/account" || path.startsWith("/api/account/") || (cloudPath(path) && !READ_ONLY_CLOUD.has(path));
+}
+
 async function serve(request, env, ctx) {
     const path = new URL(request.url).pathname;
     const twin = markdownTwin(path);
@@ -779,6 +789,13 @@ async function serve(request, env, ctx) {
       if (WELL_KNOWN_TYPES[path]) headers.set("content-type", WELL_KNOWN_TYPES[path]);
       if (WELL_KNOWN_OPEN.has(path)) headers.set("access-control-allow-origin", "*");
       return new Response(doc.body, { status: doc.status, headers });
+    }
+    // THE ACCOUNTS PAUSED (`ACCOUNTS_PAUSED`, a worker var) while they move
+    // between databases: a sign-in, a change, a payment's webhook waits and is
+    // tried again; what only reads goes on.
+    if (env.ACCOUNTS_PAUSED === "1" && accountWrite(request, path)) {
+      return new Response(JSON.stringify({ ok: false, reason: "maintenance" }),
+        { status: 503, headers: { "content-type": "application/json", "retry-after": "120", "cache-control": "no-store" } });
     }
     {
       const r = await contributionRoute(request, env, path);

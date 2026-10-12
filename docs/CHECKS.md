@@ -239,6 +239,16 @@ silently part. Bites: an `INSERT OR IGNORE`, a `SUM` of a comparison, a
 `json_each`, a boolean selected as a column — each fails it. `scripts/pg/ddl_proof.mjs`
 lays the DDL and proves `builds.weapon` and the accounts' last-slot trigger.
 Any one check: `node --import ./scripts/pg/shadow.mjs scripts/check_qq.mjs`.
+A worker beside this one is judged too when `WFSIM_SHADOW_WORKER` names its
+source folder (a regular expression over the caller's path); a table of
+either schema laid first, `IF NOT EXISTS` or not, lays the whole DDL.
+
+## `check_accounts_pause`
+
+While `ACCOUNTS_PAUSED` is set the worker answers every sign-in step (an OAuth
+return included), account change and paid-half write 503 `maintenance` with a
+`retry-after`, and none of them reaches the accounts; a read is answered by its
+own route. Bites: an OAuth return let through — it fails two.
 
 ## `check_pg_scripts`
 
