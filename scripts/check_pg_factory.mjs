@@ -251,6 +251,15 @@ async function run(backend) {
   }
   await dump("disputed");
 
+  // THE SCRIPTS' READS of the factory (worker/factory.js `report`).
+  const queueRows = L.prepare("SELECT batch, build_id, ruler, mode FROM queue ORDER BY batch, build_id, ruler, mode").all();
+  say("report claimed", await call(officialRoute, "/api/tasks/official/report", { witness: "official:diff", report: "claimed", rows: queueRows }, TOKEN));
+  say("report refresh_live", await call(officialRoute, "/api/tasks/official/report", { witness: "official:diff", report: "refresh_live" }, TOKEN));
+  const unv = await call(officialRoute, "/api/tasks/official/report", { witness: "official:diff", report: "unverified" }, TOKEN);
+  say("report unverified", { n: unv.rows.length, rows: unv.rows.map((r) => JSON.stringify(r)).sort() });
+  say("report calibration", await call(officialRoute, "/api/tasks/official/report",
+    { witness: "official:diff", report: "calibration", since: "2026-01-01T00:00:00.000Z", offset: 0 }, TOKEN));
+
   // THE OFFICIAL MACHINES: past every deadline, they settle disputes and open rows.
   clock += 8 * 86_400_000;
   const W = "official:diff";

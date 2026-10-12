@@ -89,6 +89,17 @@ function measure() {
   console.log(`${rows.length} rows, ${rows.reduce((a, r) => a + r.seconds, 0).toFixed(1)} s, ${out.machine.cpu}`);
 }
 
+/// ONE OF THE FACTORY'S NAMED READS (worker/factory.js `report`), by its secret.
+async function factoryReport(body) {
+  const origin = process.env.FACTORY_ORIGIN || "https://wfsim.app";
+  const r = await fetch(`${origin}/api/tasks/official/report`, { method: "POST", signal: AbortSignal.timeout(180_000),
+    headers: { authorization: `Bearer ${process.env.FACTORY_TOKEN}`, "content-type": "application/json", "user-agent": "wfsim-scorer" },
+    body: JSON.stringify({ witness: "official:calibrate", ...body }) });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || !j.ok) throw new Error(`factory report ${r.status}: ${JSON.stringify(j)}`);
+  return j;
+}
+
 /// ONE QUERY TO A DATABASE over Cloudflare's API, the way scripts/fetch_facts.sh asks.
 async function d1(database, sql, params = []) {
   const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT}/d1/database/${database}/query`;
@@ -109,11 +120,8 @@ async function sample() {
   // and the counts it was weighed by, a page at a time.
   const questions = [];
   for (let offset = 0; ; offset += 2000) {
-    const page = await d1(process.env.CF_D1_DATABASE,
-      `SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, json_group_array(a.device) AS devices
-         FROM answers a JOIN questions q ON q.id = a.question
-        WHERE a.credited = 1 AND a.official = 0 AND a.void = 0 AND q.verb = 'simulate' AND a.at > ?1
-        GROUP BY q.id ORDER BY q.id LIMIT 2000 OFFSET ?2`, [since, offset]);
+    // FROM THE FACTORY, wherever its tables live (worker/factory.js `report`).
+    const page = (await factoryReport({ report: "calibration", since, offset })).rows;
     questions.push(...page.map((q) => ({ id: q.id, request: JSON.parse(q.request), work: q.work, counts: q.counts ? JSON.parse(q.counts) : null, devices: JSON.parse(q.devices) })));
     if (page.length < 2000) break;
   }

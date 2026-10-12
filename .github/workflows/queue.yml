@@ -191,7 +191,7 @@ jobs:
             ./target/release/wfsim-board "$id"               --dry-run               --gate               --facts-in facts-known.ndjson               --queue-in queue.ndjson               --queue-older "$older"               --queue-missing "refresh-$id.ndjson"               < library.json > /dev/null
             cat "refresh-$id.ndjson" >> refresh-all.ndjson
           done
-          live=$(curl -s --connect-timeout 15 --max-time 120 -X POST             -H "Authorization: Bearer $CF_TOKEN" -H "content-type: application/json"             --data-binary '{"sql":"SELECT count(*) AS n FROM demands WHERE producer = '"'"'refresh'"'"' AND state = '"'"'live'"'"'"}'             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/d1/database/$CF_D1_DATABASE/query"             | jq -r '.result[0].results[0].n // empty') || live=""
+          live=$(curl -s --connect-timeout 15 --max-time 120 -X POST -H "Authorization: Bearer $FACTORY_TOKEN" -H "content-type: application/json" -H "user-agent: wfsim-scorer" --data-binary '{"witness":"official:queue","report":"refresh_live"}' "$FACTORY_ORIGIN/api/tasks/official/report" | jq -r '.n // empty') || live=""
           # NOT KNOWING THE ROOM ASKS ONLY WHAT IS FORCED: a flood is the worse mistake.
           room=$(( ${REFRESH_LIVE_CAP} - ${live:-$REFRESH_LIVE_CAP} ))
           force=$(date -u -d "$REFRESH_FORCE_DAYS days ago" +'%Y-%m-%dT%H:%M:%S.000Z')

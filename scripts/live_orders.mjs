@@ -26,19 +26,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const [mode, work, arg] = process.argv.slice(2);
 const WITNESS = process.env.WITNESS || "official:live";
 
-/// ONE STATEMENT AGAINST D1's HTTP API, its rows back — a read of the factory's tables.
-async function d1(sql, params = []) {
-  const { CF_ACCOUNT, CF_TOKEN, CF_D1_DATABASE } = process.env;
-  const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/d1/database/${CF_D1_DATABASE}/query`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
-    body: JSON.stringify({ sql, params }),
-  });
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j || !j.success) throw new Error(`d1 ${r.status}: ${JSON.stringify(j && j.errors)}`);
-  return j.result[0].results;
-}
-
 /// ONE FIGHT MAY NOT HOLD SETTLING: past this the cycle stops, the row is
 /// tried again on a later one, and the rows behind it are released meanwhile.
 const SETTLE_FIGHT_MS = 15 * 60_000;
@@ -95,10 +82,8 @@ async function settle() {
 /// projects (`board::CLIENT_MEASURED` marks them unverified): the first answer
 /// to each open board question.
 async function unverified() {
-  const rows = await d1(`SELECT d.payload, a.result, a.engine FROM demands d JOIN questions q ON q.id = d.question
-                          JOIN answers a ON a.id = (SELECT min(x.id) FROM answers x WHERE x.question = q.id AND x.void = 0 AND x.official = 0)
-                         WHERE d.state = 'live' AND d.producer IN (${BOARD_KINDS.map((k) => `'${k}'`).join(", ")})
-                           AND q.state IN ('open', 'disputed', 'nondeterministic')`);
+  // THE FACTORY SAYS, from whichever database holds it (worker/factory.js `report`).
+  const { rows } = await official("report", { report: "unverified" });
   const at = new Date().toISOString();
   writeFileSync(arg, rows.map((r) => {
     const p = JSON.parse(r.payload), res = JSON.parse(r.result);

@@ -240,9 +240,10 @@ check("the scorer claims what is past its deadline and leaves a young row to the
 check("no client is handed a claimed row", task(await work(C, { ip: "192.0.2.30" })).identity === "young");
 free();
 L.prepare("UPDATE questions SET lease = 'x', lease_until = '2999-01-01T00:00:00.000Z', leased_to = 'official:scorer' WHERE id = ?").run(question("late").id);
-const page = JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", "page", "100", "0"],
-  { env: { ...process.env, CLAIMED: "1", WITNESS: "official:scorer" } }).toString());
-const read = L.prepare(page.sql).all(...page.params).map((r) => r.build_id).sort();
+const page = JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", "page", "100", "0"]).toString());
+const claimedRows = await post(officialRoute, "/api/tasks/official/report",
+  { witness: "official:scorer", report: "claimed", rows: L.prepare(page.sql).all(...page.params) }, TOKEN);
+const read = claimedRows.rows.map((r) => r.build_id).sort();
 check("...it reads exactly what it claimed and what nobody asked for", JSON.stringify(read) === JSON.stringify(["late", "orphan"]), JSON.stringify(read));
 await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", score: 3, metric: "kpm", work: WORK }], "e1",
   (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN));

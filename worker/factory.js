@@ -107,6 +107,7 @@ export async function officialRoute(request, env, path) {
     await db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ?").bind(b.witness).run();
     return json({ ok: true });
   }
+  if (path === "/api/tasks/official/report") return report(db, b);
   if (!ENGINE_ID.test(b.engine || "")) return json({ ok: false, error: "needs engine" }, 400);
   if (path === "/api/tasks/official/claim") {
     const max = Math.min(5000, Math.max(0, Number(b.max) || 0));
@@ -133,6 +134,54 @@ export async function officialRoute(request, env, path) {
     return json({ ok: true, states });
   }
   return json({ ok: false, error: "not found" }, 404);
+}
+
+/// WHAT THE SCRIPTS READ OF THE FACTORY, named, from whichever database holds
+/// it — never a query of their own on its tables:
+///   claimed     { rows: [{ batch, build_id, ruler, mode }] } → the rows no board
+///               demand asks for, or one live and leased to `witness` (scripts/fetch_queue.sh)
+///   refresh_live                                            → { n } (queue.yml)
+///   unverified                                              → open board rows' first answers (scripts/live_orders.mjs)
+///   calibration { since, offset }                           → paid questions, 2000 a page (scripts/work_calibrate.mjs)
+const BOARD_KINDS = ["new_build", "refresh", "sweep"];
+async function report(db, b) {
+  const kinds = BOARD_KINDS.map((k) => `'${k}'`).join(", ");
+  if (b.report === "claimed") {
+    const rows = (Array.isArray(b.rows) ? b.rows : []).filter((r) => r && typeof r.build_id === "string").slice(0, 10_000);
+    const refs = rows.map((r) => `${r.build_id}|${r.ruler}|${r.mode}`);
+    const { results } = await db.prepare(pick(db,
+      `SELECT d.ref, d.state, q.leased_to FROM demands d JOIN questions q ON q.id = d.question
+        WHERE d.ref IN (SELECT value FROM json_each(?)) AND d.producer IN (${kinds})`,
+      `SELECT d.ref, d.state, q.leased_to FROM demands d JOIN questions q ON q.id = d.question
+        WHERE d.ref IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) AND d.producer IN (${kinds})`))
+      .bind(JSON.stringify(refs)).all();
+    const asked = new Set(results.map((r) => r.ref));
+    const mine = new Set(results.filter((r) => r.state === "live" && r.leased_to === b.witness).map((r) => r.ref));
+    return json({ ok: true, rows: rows.filter((r, i) => !asked.has(refs[i]) || mine.has(refs[i])) });
+  }
+  if (b.report === "refresh_live") {
+    return json({ ok: true, n: (await db.prepare("SELECT count(*) AS n FROM demands WHERE producer = 'refresh' AND state = 'live'").first()).n });
+  }
+  if (b.report === "unverified") {
+    const { results } = await db.prepare(`SELECT d.payload, a.result, a.engine FROM demands d JOIN questions q ON q.id = d.question
+        JOIN answers a ON a.id = (SELECT min(x.id) FROM answers x WHERE x.question = q.id AND x.void = 0 AND x.official = 0)
+       WHERE d.state = 'live' AND d.producer IN (${kinds}) AND q.state IN ('open', 'disputed', 'nondeterministic')`).all();
+    return json({ ok: true, rows: results });
+  }
+  if (b.report === "calibration") {
+    const { results } = await db.prepare(pick(db,
+      `SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, json_group_array(a.device) AS devices
+         FROM answers a JOIN questions q ON q.id = a.question
+        WHERE a.credited = 1 AND a.official = 0 AND a.void = 0 AND q.verb = 'simulate' AND a.at > ?1
+        GROUP BY q.id ORDER BY q.id LIMIT 2000 OFFSET ?2`,
+      `SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, '[' || string_agg(to_json(a.device)::text, ',' ORDER BY a.id) || ']' AS devices
+         FROM answers a JOIN questions q ON q.id = a.question
+        WHERE a.credited = 1 AND a.official = 0 AND a.void = 0 AND q.verb = 'simulate' AND a.at > ?1::text
+        GROUP BY q.id ORDER BY q.id LIMIT 2000 OFFSET ?2::bigint`))
+      .bind(String(b.since || ""), Number(b.offset) || 0).all();
+    return json({ ok: true, rows: results });
+  }
+  return json({ ok: false, error: "no such report" }, 400);
 }
 
 /// THE WATCHDOG'S SCHEDULE (wrangler.jsonc `triggers`), and how long one cause

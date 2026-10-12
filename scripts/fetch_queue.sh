@@ -62,26 +62,11 @@ d1() {
 # official machines take only questions past their deadline, so a young row is
 # the clients' and an overdue one this run's — claimed from the factory before
 # it reads (`claim`), never a row a client holds. It also reads what nobody
-# asked the factory for, which no client can be handed. `CLAIMED` unset, every
-# owed row is read — which is what a reconciliation needs.
+# asked the factory for, which no client can be handed. Which rows those are
+# the factory says of each page (`report claimed`): its tables may be in
+# another database than the queue. `CLAIMED` unset, every owed row is read —
+# which is what a reconciliation needs.
 page_body() {
-  if [ -n "${CLAIMED:-}" ]; then
-    jq -n -c --argjson limit "$1" --argjson offset "$2" --arg witness "$WITNESS" --argjson kinds "$BOARD_KINDS" '
-      ("(" + ([$kinds[] | "?"] | join(", ")) + ")") as $in |
-      {
-        sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
-              + " JOIN batches b ON b.id = q.batch"
-              + " WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode"
-              + " AND d.producer IN " + $in + ")"
-              + " OR EXISTS (SELECT 1 FROM demands d JOIN questions x ON x.id = d.question"
-              + " WHERE d.ref = q.build_id || ? || q.ruler || ? || q.mode AND d.producer IN " + $in
-              + " AND d.state = ? AND x.leased_to = ?)"
-              + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode"
-              + " LIMIT ? OFFSET ?"),
-        params: (["|", "|"] + $kinds + ["|", "|"] + $kinds + ["live", $witness, $limit, $offset])
-      }'
-    return
-  fi
   jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {
       sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
@@ -144,7 +129,15 @@ fetch() {
       return 1
     fi
     got=$(jq -r '.result[0].results | length' < "$D1_OUT")
-    jq -c '.result[0].results[]' < "$D1_OUT" >> "$out"
+    if [ -n "${CLAIMED:-}" ]; then
+      if ! factory report "$(jq -c --arg witness "$WITNESS" '{ witness: $witness, report: "claimed", rows: .result[0].results }' < "$D1_OUT")"; then
+        echo "::error::queue: the factory refused the claimed read [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo
+        return 1
+      fi
+      jq -c '.rows[]' < "$F_OUT" >> "$out"
+    else
+      jq -c '.result[0].results[]' < "$D1_OUT" >> "$out"
+    fi
     total=$((total + got))
     [ "$got" -lt "$PAGE" ] && break
     offset=$((offset + PAGE))
@@ -182,6 +175,7 @@ self_test() {
 #!/usr/bin/env bash
 out=/dev/null; prev=
 for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+case "$*" in *official/report*) jq -n -c '{ok:true,rows:[{batch:"arrivals",build_id:"b1",ruler:"standard_single_target",mode:"base"}]}' > "$out"; printf '200'; exit 0;; esac
 n=$(cat "$PWD/page.n" 2>/dev/null || echo 0)
 echo $((n + 1)) > "$PWD/page.n"
 if [ "$n" = "0" ]; then
@@ -199,6 +193,10 @@ OK
     && say ok "...and every row lands in the file" || say FAIL "$(grep -c . got.ndjson) rows"
   jq -e -s '.[0].batch == "arrivals" and .[0].build_id == "b0"' < got.ndjson >/dev/null \
     && say ok "...in the order the database gave them" || say FAIL "$(head -1 got.ndjson)"
+  rm -f page.n
+  CLAIMED=1 FACTORY_TOKEN=t fetch claimed.ndjson > out.txt 2>&1 || true
+  [ "$(grep -c . claimed.ndjson 2>/dev/null)" = "1" ] && jq -e '.build_id == "b1"' < claimed.ndjson >/dev/null \
+    && say ok "a claimed read keeps the rows the factory says are its" || say FAIL "$(cat out.txt; cat claimed.ndjson)"
 
   cat > "$DIR/bin/curl" <<'DEAD'
 #!/usr/bin/env bash

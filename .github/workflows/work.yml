@@ -95,6 +95,9 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          # THE PAID QUESTIONS ARE THE FACTORY'S to say (worker/factory.js `report`).
+          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
+          FACTORY_ORIGIN: https://wfsim.mgnmz1999.workers.dev
         run: |
           set -euo pipefail
           chmod +x pkg/wfsim-gas
