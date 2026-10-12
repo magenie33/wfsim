@@ -368,6 +368,14 @@ console.log("\nthe watchdog");
   const found = await f.audit(env, later);
   check("a kind whose overdue questions got no answer in half an hour, while witnesses worked, is a stall",
     found.length === 1 && found[0].kind === "stalled:p", JSON.stringify(found));
+  db.raw.prepare("UPDATE questions SET lease = 'l', leased_to = 'slow', leased_at = ?, lease_until = ? WHERE verb = 'optimize'")
+    .run(iso(later - 40 * 60_000), iso(later + 4 * 60_000));
+  check("...but not while a page computes one and renews it", !(await f.audit(env, later)).some((x) => x.kind === "stalled:p"));
+  const pastCeiling = later + 2 * 3_600_000 - 40 * 60_000 + 60_000;
+  db.raw.prepare("UPDATE verifiers SET last_at = ? WHERE id = 'busy'").run(iso(pastCeiling - 60_000));
+  check("...and is one again once it is held past the ceiling", (await f.audit(env, pastCeiling)).some((x) => x.kind === "stalled:p"));
+  db.raw.prepare("UPDATE verifiers SET last_at = ? WHERE id = 'busy'").run(iso(later - 60_000));
+  db.raw.prepare("UPDATE questions SET lease = NULL, leased_to = NULL, leased_at = NULL, lease_until = NULL").run();
   const q = await f.next(env, { device: "busy", owner: "o", net: "n" }, "e1", later - 5 * 60_000);
   await f.answer(env, { device: "busy", owner: "o", net: "n" }, { lease: q.lease, engine: "e1", result: { build: "b", score: 1 }, work: 1 }, later - 5 * 60_000);
   check("...and one answer to it is not", !(await f.audit(env, later)).some((x) => x.kind === "stalled:p"));

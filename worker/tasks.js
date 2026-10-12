@@ -662,13 +662,15 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // A PRODUCER WHOSE OVERDUE QUESTIONS GOT NO ANSWER AT ALL in half an hour
     // while witnesses were at work: something hands them out to nobody. One
     // overdue question waiting its turn is a queue; a whole kind silent is a stall.
+    // Only a question nobody holds counts: one a page is computing and renewing
+    // is handed out, however long a single row takes.
     const { results: stalled } = await db.prepare(
       `SELECT d.producer, count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
          FROM demands d JOIN questions q ON q.id = d.question
-        WHERE d.state = 'live' AND q.state = 'open' AND d.due_at < ?
+        WHERE d.state = 'live' AND q.state = 'open' AND d.due_at < ?1 AND ${TAKEABLE.replaceAll("lease", "q.lease")}
         GROUP BY d.producer
        HAVING NOT EXISTS (SELECT 1 FROM demands e JOIN answers a ON a.question = e.question
-                           WHERE e.producer = d.producer AND a.at > ?)`).bind(at, recent).all();
+                           WHERE e.producer = d.producer AND a.at > ?2)`).bind(at, recent).all();
     const odd = (await db.prepare("SELECT count(*) AS n FROM questions WHERE state = 'nondeterministic' OR (odd = 1 AND fact_at > ?)")
       .bind(iso(now - 24 * 3_600_000)).first()).n;
     // WAITING ON THE OFFICIAL MACHINES since its last answer put it there: a
