@@ -19,7 +19,7 @@
 // once is a thousand deadlines passed together, and by deadline alone a person
 // asking in a chat would wait behind every one of them.
 import { iso } from "./instant.js";
-import { factoryDb, pick, sameDb } from "./factory_db.js";
+import { factoryDb, isPg, pick, sameDb } from "./factory_db.js";
 
 /// HOW STATES LEAVE (§"States"). `open` takes volunteers' answers; the cap on
 /// them reached without agreement is `disputed`, or `nondeterministic` when every
@@ -462,9 +462,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       else if (q.state === "open") decide(env, q, all, peer ? all.filter((a) => a.engine === engine || a.engine === peer) : served, demands, engine, now, writes, later, credits);
     }
     // CREDITS LAST AND IN ONE ORDER, by device: two settlements crediting the
-    // same devices in different orders deadlocked on Postgres.
-    writes.push(...creditWrites(db, credits, now), ...after);
+    // same devices in different orders deadlocked on Postgres — where they are
+    // paid after the commit instead (`creditPg`), so no settlement holds a
+    // device's row.
+    if (isPg(db)) writes.push(...after);
+    else writes.push(...creditWrites(db, credits, now), ...after);
     await commit(env, writes);
+    if (isPg(db)) await creditPg(db, credits, now);
     for (const f of later) await f();
   }
 
@@ -598,8 +602,38 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     ]);
   }
   async function credit(db, answers, now) {
+    if (isPg(db)) return creditPg(db, answers, now);
     const writes = creditWrites(db, answers, now);
     if (writes.length) await db.batch(writes);
+  }
+  /// ON POSTGRES A CREDIT IS PAID IN TWO SHORT STEPS, each its own statement:
+  /// the answers flip to credited (their RETURNING is what was not yet paid, so
+  /// each is paid once), then each device is paid their sum in one update, in
+  /// device order. A device's row is held for one statement, never a settlement.
+  async function creditPg(db, answers, now) {
+    // THE WORK PAID IS THE ANSWER'S AS GIVEN HERE, which may be the official work
+    // in its place (`settleOfficial`), never re-read from the table.
+    const owed = new Map(answers.filter((a) => !a.official && !a.credited).map((a) => [Number(a.id), a]));
+    const ids = [...owed.keys()];
+    if (!ids.length) return;
+    const { results: paid } = await db.prepare(
+      `UPDATE answers SET credited = 1 WHERE id IN (SELECT value::bigint FROM jsonb_array_elements_text((?::text)::jsonb)) AND credited = 0
+        RETURNING id`).bind(JSON.stringify(ids)).all();
+    const by = new Map();
+    for (const p of paid) {
+      const a = owed.get(Number(p.id));
+      const d = by.get(a.device) || { work: 0, n: 0 };
+      d.work += a.work; d.n += 1; by.set(a.device, d);
+    }
+    const hour = iso(now).slice(0, 13);
+    for (const [device, d] of [...by].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+      await db.prepare(`UPDATE verifiers SET work = work + ?::bigint, agreed = agreed + ?::bigint,
+          refusals = CASE WHEN refusals > 0 AND clean + ?::bigint >= refusals * ?::bigint THEN refusals - 1 ELSE refusals END,
+          clean = CASE WHEN refusals = 0 OR clean + ?::bigint >= refusals * ?::bigint THEN 0 ELSE clean + ?::bigint END
+        WHERE id = ?::text`).bind(d.work, d.n, d.n, FACTS_PER_REFUSAL_FORGIVEN, d.n, FACTS_PER_REFUSAL_FORGIVEN, d.n, device).run();
+      await db.prepare(`INSERT INTO verifier_hours AS h (verifier, hour, work) VALUES (?::text, ?::text, ?::bigint)
+          ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work`).bind(device, hour, d.work).run();
+    }
   }
 
   /// EVERY LIVE DEMAND IS TOLD THE FACT, once.
