@@ -61,6 +61,9 @@ const SCORE_NEAR = 1e-12;
 /// WHEN THE WATCHDOG SPEAKS of a backlog past due: this many questions, or any
 /// left this long past its deadline; settling runs hourly, so less is a queue.
 const OVERDUE_MAX = 1000, OVERDUE_HOURS_MS = 3 * 3_600_000;
+/// …AND OF A QUESTION WAITING ON THEM: settling is an hourly cron GitHub
+/// starts up to ~45 min late, so under two hours is the next run not yet come.
+const UNSETTLED_MS = 2 * 3_600_000;
 /// …AND OF CLIENTS DISAGREEING: this many answers in the hour, and this share
 /// of all of them. A healthy hour runs under one in a hundred.
 const DISAGREE_MIN = 30, DISAGREE_SHARE = 0.03;
@@ -668,11 +671,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
                            WHERE e.producer = d.producer AND a.at > ?)`).bind(at, recent).all();
     const odd = (await db.prepare("SELECT count(*) AS n FROM questions WHERE state = 'nondeterministic' OR (odd = 1 AND fact_at > ?)")
       .bind(iso(now - 24 * 3_600_000)).first()).n;
-    // WAITING ON THE OFFICIAL MACHINES for over an hour: a dispute nobody settles
-    // is the one place a question can still wait for ever.
+    // WAITING ON THE OFFICIAL MACHINES since its last answer put it there: a
+    // dispute nobody settles is the one place a question can still wait for ever.
+    // Not `opened_at` — a refresh opened hours ago turns spot a minute ago.
     const unsettled = (await db.prepare(
-      `SELECT count(*) AS n FROM questions WHERE state IN (${OFFICIAL_STATES.map(() => "?").join(", ")}) AND opened_at < ?`)
-      .bind(...OFFICIAL_STATES, iso(now - 3_600_000)).first()).n;
+      `SELECT count(*) AS n FROM questions q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
+          AND coalesce((SELECT max(a.at) FROM answers a WHERE a.question = q.id), q.opened_at) < ?`)
+      .bind(...OFFICIAL_STATES, iso(now - UNSETTLED_MS)).first()).n;
     // PAST DUE AND STILL OPEN, by kind: the official machines take what is past
     // due within the hour, so a pile of it, or one left hours late, is a fleet
     // and a backstop both behind. A refresh past due is a row past fifteen days.

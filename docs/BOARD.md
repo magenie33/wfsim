@@ -653,9 +653,9 @@ deadline and what only they may settle.
   reproduce or replace.
 - **THE WATCHDOG** (`watchdog`, every ten minutes): a producer whose overdue
   questions got no answer in half an hour while witnesses worked, a
-  non-deterministic question, a dispute nobody settled in an hour, a backlog
-  past due (a thousand questions, or one three hours late — a refresh past due
-  is a row past fifteen days), and clients disagreeing with the hour's facts on
+  non-deterministic question, a dispute or spot nobody settled in two hours
+  since its last answer, a backlog past due (a thousand questions, or one three
+  hours late — a refresh past due is a row past fifteen days), and clients disagreeing with the hour's facts on
   the served engine (thirty answers and 3% of them, by owner) are said to the
   owner, once a cause until it has stood six hours. So is a scene still
   filling, its cell rulers' rows measured and owed.

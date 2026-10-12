@@ -373,7 +373,10 @@ console.log("\nthe watchdog");
   check("...and one answer to it is not", !(await f.audit(env, later)).some((x) => x.kind === "stalled:p"));
   check("a healthy factory has nothing to say", (await f.audit(env, later)).length === 0, JSON.stringify(await f.audit(env, later)));
   db.raw.prepare("UPDATE questions SET state = 'disputed', opened_at = ?").run(iso(NOW - 2 * 3_600_000));
-  check("a dispute nobody settled in an hour is said", (await f.audit(env, later)).some((x) => x.kind === "unsettled"));
+  check("a spot opened long ago, its last answer minutes old, is not unsettled",
+    (await f.audit(env, later)).find((x) => x.kind === "unsettled")?.questions === 1, JSON.stringify(await f.audit(env, later)));
+  check("a dispute nobody settled in two hours since its last answer is said",
+    (await f.audit(env, later + 2 * 3_600_000)).find((x) => x.kind === "unsettled")?.questions === 2);
   // SAID ONCE, then again only once it has stood six hours.
   const said = [];
   const { watchdog } = await import("../worker/factory.js");
