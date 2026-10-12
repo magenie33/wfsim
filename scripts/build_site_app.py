@@ -1908,8 +1908,8 @@ browser signed in to it holds the same. Each item is kept as your browser stores
 it, without its measured results, with when it last changed. An item you delete
 is kept for 30 days, so you can restore it from Cloud sync; after that only a
 note that it was deleted remains, so every browser drops it. It is in your data
-download, and deleting the account deletes it at once; your browser keeps its
-own copy either way.</p>
+download, and deleting the account deletes it with the account; your browser
+keeps its own copy either way.</p>
 
 <h2>Where it is kept</h2>
 <p>The site, the leaderboard and accounts are kept by Cloudflare, outside
@@ -1949,9 +1949,11 @@ only from the site itself.</li>
 <ul>
 <li>Download everything held about your account from the account panel.</li>
 <li>Remove any way to sign in. Removing the last one deletes the account.</li>
-<li>Delete the account: it and everything synced to it are gone at once. The
-database keeps a point-in-time history for up to 30 days, after which no copy
-remains.</li>
+<li>Delete the account: asked from a sign-in made in the last 10 minutes, it is
+carried out 7 days later, and signing in before then lets you cancel. Then the
+account and everything synced to it are gone, and the points its devices earned
+move to an official pool that records no name. The database keeps a
+point-in-time history for up to 30 days, after which no copy remains.</li>
 </ul>
 
 <h2>隐私（中文）</h2>
@@ -1967,11 +1969,11 @@ remains.</li>
 <li><b>联系：</b><a href="mailto:magenie33@moginlabs.com">magenie33@moginlabs.com</a></li>
 <li><b>识别裂罅截图：</b>在「裂罅」页读取的截图只在你的浏览器里识别，不会发出。只有你在识别结果窗口里勾选「把这次识别和修正提交给 WF模拟」并点了确定，WF模拟 才会收到卡上词条区域的截图、识别出的文字、最初的识别结果和你确认后的结果，用来改进识别，最多保存 365 天。这个选择会在本浏览器记住，随时可以在识别窗口里取消。它不带账号、IP 或任何编号，因此无法追溯到你，发出后也无法撤回。</li>
 <li><b>登录后：</b>账号是一个随机编号，最多可绑定 Google、Discord、GitHub、邮箱四种登录方式。每种方式保存：是哪个服务、该服务给你的用户编号、账号页上显示给你看的名字（Google 邮箱、Discord 或 GitHub 用户名、你的邮箱），以及绑定时间。使用邮箱时你会设置一个密码，WFSim 只保存它加盐的慢哈希，无法还原成密码。邮件只在需要验证邮箱时发送（注册、绑定、找回密码），其中的验证码以哈希保存 10 分钟。登录状态以随机令牌的哈希保存（cookie <code>wfsim_session</code>，90 天）。不保存 IP 地址，也不保存第三方返回的访问令牌。WFSim 从不合并两个账号。如果 Discord 是你的登录方式之一，WFSim 会在 WFSim Discord 服务器里给你的 Discord 账号对应的身份组（Verified，以及持有时的 WFSim Member 或 WFSim Patron）；移除 Discord 或删除账号后一天内收回。</li>
-<li><b>配装同步：</b>登录后，你保存的配装、场景、搜索方案、裂罅、自定义敌人、战甲、同伴和指挥官配装，以及提醒会随账号保存，每个登录的浏览器看到的都一样。每一项按浏览器保存的样子存放，不含测量结果，并记录最后修改时间。你删除的条目保留 30 天，可在「云同步」页面恢复；之后只留一个删除标记，让每个浏览器都移除它。这些都在你的数据下载里，删除账号会立即删除它们；你的浏览器始终保留自己的那份。</li>
+<li><b>配装同步：</b>登录后，你保存的配装、场景、搜索方案、裂罅、自定义敌人、战甲、同伴和指挥官配装，以及提醒会随账号保存，每个登录的浏览器看到的都一样。每一项按浏览器保存的样子存放，不含测量结果，并记录最后修改时间。你删除的条目保留 30 天，可在「云同步」页面恢复；之后只留一个删除标记，让每个浏览器都移除它。这些都在你的数据下载里，删除账号时会随账号一起删除；你的浏览器始终保留自己的那份。</li>
 <li data-ext="privacy-buying-zh"></li>
 <li><b>第三方：</b>Cloudflare 提供托管、数据库和验证邮件投递，其投递日志会保留收件地址最多 30 天；Google、Discord、GitHub 仅在你选择用它们登录时参与。不出售任何数据，不用于广告。</li>
 <li><b>安全措施：</b>全站 HTTPS；密码、登录令牌和邮件验证码只以哈希保存，密码哈希还用一个不在数据库里的密钥加固，单拿到数据库也无法验证任何猜测；<span data-ext="privacy-card-zh"></span>账号数据放在独立的数据库，与排行榜公开备份的那个分开，只有 WFSim 的运营方能访问；登录接口有频率限制，修改数据的请求只接受来自本站的。</li>
-<li><b>你的权利：</b>可在账号面板下载你的全部数据、移除任何登录方式（移除最后一种即删除账号）、直接删除账号。删除立即生效；数据库的时间点历史最多保留 30 天。</li>
+<li><b>你的权利：</b>可在账号面板下载你的全部数据、移除任何登录方式（移除最后一种即删除账号）、删除账号。删除需要在 10 分钟内登录过，7 天后才执行，期间登录即可撤销；执行后账号和同步的数据全部删除，它的设备挣得的积分转入不记名字的官方公共池。数据库的时间点历史最多保留 30 天。</li>
 </ul>
 """
 
