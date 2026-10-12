@@ -366,7 +366,17 @@ async function accountLedger(env, account, from) {
     env.ACCOUNTS.prepare("SELECT verifier, label FROM devices WHERE account = ?1").bind(account).all(),
   ]);
   const hours = [];
-  for (let i = 0; i < spans.length; i += PER_STATEMENT) {
+  const fdb = factoryDb(env);
+  // ON POSTGRES, ONE STATEMENT for every span (`spanWork`'s reason).
+  if (isPg(fdb) && spans.length) {
+    const list = spans.map((sp, k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
+    const { results } = await fdb.prepare(`SELECT h.hour, s.v, h.work
+        FROM jsonb_to_recordset((?1::text)::jsonb) AS s(k bigint, v text, f text, u text)
+        JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND h.hour >= ?2::text
+          AND (s.u IS NULL OR h.hour < s.u COLLATE "C") ORDER BY s.k, h.hour`).bind(JSON.stringify(list), from).all();
+    for (const r of results) hours.push({ hour: r.hour, id: r.v.slice(0, 6), points: points(r.work || 0) });
+  }
+  for (let i = 0; i < (isPg(fdb) ? 0 : spans.length); i += PER_STATEMENT) {
     const part = spans.slice(i, i + PER_STATEMENT);
     const db = factoryDb(env);
     const rows = await db.batch(part.map((s) => db.prepare(
