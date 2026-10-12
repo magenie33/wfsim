@@ -344,22 +344,34 @@ let BOARD_INDEX = null;
 /// the first has a populated benchmark page and an empty board everywhere else.
 async function loadWeaponBoard(id, base = "") {
   if (!id || BOARD_HAVE.has(id)) return;
-  // …AND ITS ROWS IN EVERY OTHER SCENE, `board/<cell_dir>/<id>.json` beside
-  // it: a cell is an ordinary ruler, so every surface reading `BOARD` groups
-  // its rows by `benchmark` as it does the base's. A scene that has not
-  // measured this weapon has no file. A desktop shell's offline copy holds
-  // the base alone (`scripts/board_meta.py`), so it asks the site for these.
-  const sceneBase = window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
-  const scenes = benchScenes().filter(Boolean)
-    .map((dir) => fetchJsonPatient(`${sceneBase}/board/${dir}/${id}.json`).catch(() => null));
   let rows = null;
   try { rows = await fetchJsonPatient(`${base}/board/${id}.json`); } catch (_) { /* unreachable */ }
-  const more = (await Promise.all(scenes)).filter(Array.isArray);
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
   if (!rows) return;
-  BOARD[id] = more.length ? rows.concat(...more) : rows;
+  BOARD[id] = rows;
   BOARD_HAVE.add(id);
+  loadSceneRows(id, base);
+}
+
+/// …AND ITS ROWS IN EVERY OTHER SCENE, `board/<cell_dir>/<id>.json`, joined
+/// as they land: a cell is an ordinary ruler, so every reader of `BOARD` groups
+/// them by `benchmark`. NEVER AWAITED — a route waits on the base rows alone,
+/// and a desktop shell asks the site for these (its offline copy holds the base
+/// alone, `scripts/board_meta.py`), which a slow network must not turn into a
+/// page that never opens. A scene that has not measured this weapon has no file.
+const SCENE_ROWS_WITHIN_MS = 8000;
+function loadSceneRows(id, base) {
+  const sceneBase = window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
+  for (const dir of benchScenes().filter(Boolean)) {
+    fetch(`${sceneBase}/board/${dir}/${id}.json`, { cache: "no-cache", signal: AbortSignal.timeout(SCENE_ROWS_WITHIN_MS) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((more) => {
+        if (!Array.isArray(more) || !more.length || !BOARD[id]) return;
+        BOARD[id] = BOARD[id].concat(more);
+        boardRowsLanded(id);
+      }, () => { /* the base rows stand alone */ });
+  }
 }
 
 /// A BOARD FILE THROUGH A BAD NETWORK: a request that never arrived is asked
