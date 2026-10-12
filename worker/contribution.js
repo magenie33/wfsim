@@ -554,6 +554,23 @@ async function kept(request, env) {
   return old ? old.value : body;
 }
 const KEPT_STALE_MS = 5 * 60_000;
+/// THE NAMED ROWS' MARKS, asked of the paid half every `MARKS_KEEP_MS` an
+/// isolate and waited on `MARKS_WAIT_MS` at most: a mark is a tier or a title,
+/// which moves in days, and the asking is seconds — so a slow answer leaves the
+/// last marks drawn and lands for the next ranking instead.
+const MARKS_KEEP_MS = 10 * 60_000, MARKS_WAIT_MS = 4_000;
+let marksHere = null;
+async function marksOfNamed(env, named) {
+  if (marksHere && Date.now() - marksHere.at < MARKS_KEEP_MS && named.every((id) => marksHere.asked.has(id))) return marksHere.marks;
+  const parts = [];
+  for (let i = 0; i < named.length; i += PER_STATEMENT) parts.push(cloudMarks(env, named.slice(i, i + PER_STATEMENT)));
+  const asking = Promise.all(parts).then((got) => {
+    marksHere = { at: Date.now(), asked: new Set(named), marks: Object.assign({}, ...got) };
+    return marksHere.marks;
+  });
+  const late = new Promise((res) => setTimeout(() => res(null), MARKS_WAIT_MS));
+  return (await Promise.race([asking, late])) || (marksHere ? marksHere.marks : {});
+}
 async function keptWorkedOut(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
@@ -561,9 +578,7 @@ async function keptWorkedOut(request, env) {
   if (hit) return hit.json();
   const day = keyDay(), rows = await standings(env, day);
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
-  const named = rows.filter((e) => e.named).map((e) => e.id), parts = [];
-  for (let i = 0; i < named.length; i += PER_STATEMENT) parts.push(cloudMarks(env, named.slice(i, i + PER_STATEMENT)));
-  const marks = Object.assign({}, ...(await Promise.all(parts)));
+  const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id));
   const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
     points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
