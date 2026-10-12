@@ -15,6 +15,8 @@ max_rank: 30
 # see notes: weapon_level_metadata_wiki
 accuracy: 1.0
 disposition: 0.8            # riven disposition
+# THE PAGE SAYS "Innate Madurai polarity"; the module says Naramon, kept
+# until the arsenal is read.
 polarities: [naramon]
 exilus_polarity: naramon
 riven_family: Enkaus
@@ -54,6 +56,12 @@ attack:
   # wiki: "Range: 36.0 m" on this attack.
   range_m: 36.0
   damage: { corrosive: 20, puncture: 8 }   # total 28
+
+unmodeled:
+  - "An Enkaus hit that leaves an ink-stained enemy below 35% health kills it outright, as one hit at 600% critical chance, 1x critical multiplier and a forced Corrosive status (wiki); the stain comes from the alternate fire or Follie's passive, and bosses and enemies with special states are spared. Nothing is ink-stained here, so every enemy is shot down to zero and the number reads low."
+  - "Primary fire on an ink-stained enemy spends no ammo and restores 0.33 rounds per enemy hit (wiki). Nothing is ink-stained here, so every tick spends a round and the beam reloads on its usual schedule; the number reads low."
+  - "Unmeasured: the page gives the beam a 30 m range and the weapon module 36 m. The sim uses 36 m, so a fight set between 30 m and 36 m reads high if the page is right."
+  - "Unmeasured: the page says the weapon uses no ammo pickups and has an infinite reserve, and the weapon module lists a reserve of 60. The sim uses the 60, so a fight with Infinite ammo unticked can run dry where the game would not, and reads low."
 
 source:
   url: https://wiki.warframe.com/w/Enkaus

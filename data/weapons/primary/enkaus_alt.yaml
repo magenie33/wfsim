@@ -56,6 +56,8 @@ attack:
     damage: { corrosive: 10, puncture: 4 }   # total 14
 
 unmodeled:
+  - "The blast ink-stains every enemy it hits for 20 s and leaves an 8 m puddle that stains anyone in it for 10 s, and an Enkaus hit that then leaves a stained enemy below 35% health kills it outright (wiki). Neither is modelled, so every enemy is shot down to zero and the number reads low."
+  - "Unmeasured: the page says the weapon uses no ammo pickups and has an infinite reserve, and the weapon module lists a reserve of 60. The sim uses the 60, so a fight with Infinite ammo unticked can run dry where the game would not, and reads low."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
