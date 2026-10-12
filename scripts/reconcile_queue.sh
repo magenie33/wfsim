@@ -63,7 +63,7 @@ done
 popular=$(mktemp)
 curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > "$popular" || : > "$popular"
 paced=$(mktemp)
-python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-5000}" > "$paced"
+python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-40000}" > "$paced"
 rm -f "$popular"
 mv "$paced" "$missing"
 
