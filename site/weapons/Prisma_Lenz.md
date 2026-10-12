@@ -19,11 +19,11 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The module gives this shot three attacks and the engine carries one explosion: the Blast collapse is modelled, and the Cold initial blast is not counted.
+- The module gives this shot three attacks and the engine carries one explosion: the Blast collapse is modelled, and the initial blast is not - neither its Cold damage nor its guaranteed Cold status in 7.2 m, so a build that profits from Cold stacks or a status count reads low.
+- The collapse's 1.3 s delay after the initial blast is not modelled: the blast arrives with the arrow, so a short fight gets its damage early.
 - The bubble holds what it catches until it collapses (wiki); crowd control, and enemies here neither move nor stop.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
+- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
 
 ## In WFSim
 
