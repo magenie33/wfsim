@@ -283,6 +283,18 @@ const ANSWER_EVERY_MS = 30_000;
 /// A PACK'S ANSWERS SO FAR, sent; `done` gives back the rest of it. Its rows
 /// leave the "not sent" state in this browser's list either way: a send that
 /// failed is the server's to say (`/api/board/mine`), and it says `gone`.
+/// A SEND THAT GOT NO REPLY IS SENT AGAIN, a computed result being the one thing
+/// a dropped connection must not cost: a reply lost after the answers landed is
+/// harmless, the server taking each device's answer to a question once.
+const SEND_AGAIN_MS = [3_000, 10_000, 30_000];
+async function sendAgain(body) {
+  for (let i = 0; ; i++) {
+    const r = await postBoardWork("/api/board/answers", body);
+    if (r && r.ok) return true;
+    if (i >= SEND_AGAIN_MS.length) return false;
+    await new Promise((res) => setTimeout(res, SEND_AGAIN_MS[i]));
+  }
+}
 function sendAnswers(p, done, beacon = false, keep = null) {
   const body = { lease: p.lease, verifier: p.verifier, engine: ENGINE_ID, done, answers: p.unsent.map(({ key: _k, ...a }) => a),
     ...(keep ? { keep } : {}) };
@@ -290,7 +302,7 @@ function sendAnswers(p, done, beacon = false, keep = null) {
   p.unsent = [];
   p.sentAt = Date.now();
   if (beacon && navigator.sendBeacon) navigator.sendBeacon("/api/board/answers", JSON.stringify(body));
-  const sent = beacon && navigator.sendBeacon ? Promise.resolve(true) : postBoardWork("/api/board/answers", body).then((r) => !!(r && r.ok));
+  const sent = beacon && navigator.sendBeacon ? Promise.resolve(true) : sendAgain(body);
   return sent.then((ok) => { computeSent(keys); if (ok && keys.length) { devicePointsAt = 0; loadDevicePoints(); } return ok; });
 }
 async function endPack(keep = null) {

@@ -52,6 +52,10 @@ function main() {
   const ok = facts >= 10 && refused >= 1;
   console.log(`  ${ok ? "ok " : "FAIL"}  the workload reaches what it must: ${facts} facts, ${refused} client(s) refused`);
   if (!ok) failures++;
+  const pairs = lite.trace.at(-1).tables.answers.filter((a) => !a.official).map((a) => `${a.question}|${a.device}|${a.engine}`);
+  const once = pairs.length === new Set(pairs).size;
+  console.log(`  ${once ? "ok " : "FAIL"}  answers sent twice are recorded once`);
+  if (!once) failures++;
   const asks = lite.trace.at(-1).tables.verifier_asks;
   const counted = asks.some((a) => a.asks > 0) && asks.some((a) => a.failed > 0 && a.idle >= a.failed)
     && !asks.some((a) => a.hour < "2026-10-01");
@@ -255,6 +259,14 @@ async function run(backend) {
     const rows = r.pack.tasks.map((t) => ({ question: t.question, metric: "kpm", compute_ms: 900,
       score: v === liar ? truth(t.question) + 1 : truth(t.question), work: 7_000_000_000 }));
     say(`dispute answers ${dev.indexOf(v)}`, await call(verifyRoute, "/api/board/answers",
+      { lease: r.pack.lease, verifier: v, engine: "e1", done: false, answers: rows }, { "cf-connecting-ip": ip }));
+    // …AND SENT AGAIN, as a page does when the reply was lost — its rows handed
+    // on meanwhile, so it is the previous lease that still lets it answer.
+    const fdb = env.FACTORY || LIBRARY;
+    for (const x of rows) {
+      await fdb.prepare("UPDATE questions SET lease_prev = ?, leased_to_prev = ? WHERE id = ?").bind(r.pack.lease, v, x.question).run();
+    }
+    say(`dispute answers again ${dev.indexOf(v)}`, await call(verifyRoute, "/api/board/answers",
       { lease: r.pack.lease, verifier: v, engine: "e1", done: true, answers: rows }, { "cf-connecting-ip": ip }));
   }
   await dump("disputed");

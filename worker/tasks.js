@@ -380,6 +380,16 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
          AND ((lease = ?1::text AND leased_to = ?2::text AND lease_until >= ?3::text) OR (lease_prev = ?1::text AND leased_to_prev = ?2::text))`))
       .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question))).all();
     const byId = new Map(held.map((q) => [q.id, q]));
+    // A PAGE SENDS AGAIN what got no reply, and the reply may be all that was lost:
+    // an answer this device already gave on this engine is not a second witness
+    // (the ask never hands it the same question twice, `nextPack`).
+    if (byId.size) {
+      const { results: given } = await db.prepare(pick(db,
+        "SELECT question FROM answers WHERE device = ?1 AND engine = ?2 AND question IN (SELECT value FROM json_each(?3))",
+        "SELECT question FROM answers WHERE device = ?1::text AND engine = ?2::text AND question IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))"))
+        .bind(w.device, engine, JSON.stringify([...byId.keys()])).all();
+      for (const r of given) byId.delete(r.question);
+    }
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
     if (items.length) await recordMany(env, w, items, now, served);
     if (done) await release(env, w.device, lease, keep);
