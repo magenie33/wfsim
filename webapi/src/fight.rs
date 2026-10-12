@@ -504,7 +504,6 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let PlayedMode { mode_id, evos, cycle_from, single_form } = played_mode(v, info)?;
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
-    let steel_path = get_bool(v, "steel_path", true);
     // HOW MANY PEOPLE ARE SHOOTING — a property of the FIGHT, so it is parsed
     // here and nowhere else. It decides two things that must not disagree: how
     // often a body drops ammo (`engine::ammo`), and how much health a unit
@@ -519,7 +518,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // SIX is the Icebind's squad. Past four the ammo table has no column and
     // reads the four-player one (`rules::ammo::on_kill`).
     let squad_size = get_u32(v, "squad_size", 1).clamp(1, 6);
-    let empowered = empowered_from(v, squad_size)?;
+    let (steel_path, empowered) = empowerment_from(v, squad_size)?;
     // A SENTINEL'S HEADSHOT RATE IS NOT THE PLAYER'S TO SET. Its companion
     // picks its own targets and never aims for a head, so this is 0 whatever
     // the request says — the same shape as `tenno_from` forcing its stance.
@@ -1042,18 +1041,22 @@ fn ability_picks(v: &Value) -> Vec<wfsim_engine::data::abilities::AbilityPick<'_
         .unwrap_or_default()
 }
 
-/// THE MISSION'S EMPOWERED ENEMIES: `empowered` names which (`archimedea`,
-/// `icebind`), absent or null is none, and `squad_size` sizes it. An unknown
-/// id refuses the fight rather than running it as an ordinary one.
-pub(crate) fn empowered_from(
+/// THE FIGHT'S ONE EMPOWERMENT, as `(steel_path, empowered)`: Steel Path or a
+/// mission's Empowered Enemies, never both — *"Missions with Empowered Enemies
+/// are not considered Steel Path"* (wiki). `empowered` names it (`steel_path`,
+/// `archimedea`, `icebind`) and `squad_size` sizes a mission's; absent, the
+/// wire's own `steel_path` flag decides, as it always has. An unknown id
+/// refuses the fight rather than running it as an ordinary one.
+pub(crate) fn empowerment_from(
     v: &Value,
     squad_size: u32,
-) -> Result<Option<(wfsim_engine::rules::scaling::Empowered, u32)>, Value> {
+) -> Result<(bool, Option<(wfsim_engine::rules::scaling::Empowered, u32)>), Value> {
     match v.get("empowered").and_then(Value::as_str).filter(|s| !s.is_empty()) {
-        None => Ok(None),
+        None => Ok((get_bool(v, "steel_path", true), None)),
+        Some("steel_path") => Ok((true, None)),
         Some(id) => wfsim_engine::rules::scaling::Empowered::from_id(id)
-            .map(|e| Some((e, squad_size)))
-            .ok_or_else(|| err_json(format!("empowered: no mission named '{id}' (archimedea, icebind)"))),
+            .map(|e| (false, Some((e, squad_size))))
+            .ok_or_else(|| err_json(format!("empowered: no empowerment named '{id}' (steel_path, archimedea, icebind)"))),
     }
 }
 
@@ -1467,6 +1470,22 @@ mod empowered_enemies {
         let f = fight("crewman", 1, Some("icebind"), 6);
         let body = &f.arena.others[0].params;
         assert!((body.max_health() - f.arena.target.max_health()).abs() < 1e-9, "the formation is in the same mission");
+    }
+
+    /// **ONE EMPOWERMENT A FIGHT.** A mission's Empowered Enemies replace Steel
+    /// Path whatever the wire's flag says, and `empowered: steel_path` is the
+    /// flag by its other name.
+    #[test]
+    fn steel_path_is_one_empowerment_and_never_stacks() {
+        let hp = |v: serde_json::Value| super::parse_fight(&v).expect("the fight parses").arena.target.max_health();
+        let base = json!({ "weapon": "braton", "enemy": "crewman", "level": 100, "squad_size": 4, "duration": 10 });
+        let with = |k: &str, x: serde_json::Value| { let mut v = base.clone(); v[k] = x; v };
+        let plain = hp(with("steel_path", json!(false)));
+        let arch = hp(with("empowered", json!("archimedea")));
+        let both = { let mut v = with("empowered", json!("archimedea")); v["steel_path"] = json!(true); hp(v) };
+        assert!((arch / plain - 4.0).abs() < 1e-9 && both == arch, "Archimedea is not Steel Path: {plain} {arch} {both}");
+        let sp = { let mut v = with("empowered", json!("steel_path")); v["steel_path"] = json!(false); hp(v) };
+        assert_eq!(sp, hp(with("steel_path", json!(true))));
     }
 
     #[test]

@@ -9,6 +9,16 @@ values:
     set: {level: 9999, steel_path: true}
     short: Lv 9999 SP
     long: at level 9999 on Steel Path
+  # ONE EMPOWERMENT A SCENE (`empowered`: steel_path, archimedea or icebind),
+  # never two, and the squad that sizes it and a unit's own squad bonus.
+  - tag: icebind1000
+    set: {level: 1000, steel_path: false, empowered: icebind, squad_size: 6}
+    short: Lv 1000 Icebind
+    long: at level 1000 in The Icebind, a squad of six
+  - tag: archimedea500
+    set: {level: 500, steel_path: false, empowered: archimedea, squad_size: 4}
+    short: Lv 500 Archimedea
+    long: at level 500 in Deep Archimedea, a squad of four
   - tag: sp200
     set: {level: 200}
     short: Lv 200 SP

@@ -308,7 +308,7 @@ function renderResults(r, testedAt, build) {
             <div class="fs-wn">${escHtml(t.name || sim.enemy || "")}</div>
             <div class="fs-wb">${escHtml([
               `${tr("Level")} ${t.level ?? sim.level}`,
-              t.steel_path ? "Steel Path" : "",
+              empowermentLabel(t.steel_path, t.empowered),
               t.eximus ? tr("Eximus") : "",
             ].filter(Boolean).join(" · "))}</div>
           </div>

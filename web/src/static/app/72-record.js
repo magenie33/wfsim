@@ -312,7 +312,7 @@ function recordSubtitle(r) {
   if (w && w.name) bits.push(w.name);
   if (t.name) {
     bits.push(`${t.name}${t.level != null ? ` Lv ${t.level}` : ""}${
-      t.steel_path ? " SP" : ""}`);
+      empowermentLabel(t.steel_path, t.empowered, true) ? " " + empowermentLabel(t.steel_path, t.empowered, true) : ""}`);
   }
   return bits.join("  ·  ");
 }

@@ -197,7 +197,7 @@ function updateOptEstimate() {
   const en = allEnemies().find((e) => e.id === sim.enemy) || {};
   $("opt-estimate").innerHTML = escHtml(tr("{n} starts · best {k} · {r} runs a candidate · final round {f} runs")
     .replace("{n}", n).replace("{k}", optRun.finalists).replace("{r}", optRun.candidate_runs).replace("{f}", simRuns().toLocaleString()))
-    + ` · ${escHtml(tr("vs"))} <b>${escHtml(en.name || sim.enemy)}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.duration} s`;
+    + ` · ${escHtml(tr("vs"))} <b>${escHtml(en.name || sim.enemy)}</b> Lv ${sim.level}${empowermentLabel(sim.steel_path, sim.empowered, true) ? ` (${empowermentLabel(sim.steel_path, sim.empowered, true)})` : ""} · ${sim.duration} s`;
   // A START THAT PINS WHAT A LIMIT RULES OUT has no answer to give: the run
   // waits until one side changes, and says so here.
   const blocked = opt.limits && startsBlocked();
@@ -556,7 +556,7 @@ function renderOptResults(r) {
     ? "the time budget ran out before every start settled — strong builds, short of what those starts reach"
     : "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further"))}</span>`
     + `${r.cancelled ? ` · <span class="warn">${escHtml(tr("cancelled — best so far"))}</span>` : ""}`
-    + ` · vs ${escHtml(r.target.name)} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${d ?? "?"} s · ${(r.final_runs || 0).toLocaleString()} ${escHtml(tr("runs each"))}`;
+    + ` · vs ${escHtml(r.target.name)} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""}${r.target.empowered ? ` (${escHtml(empowermentLabel(false, r.target.empowered))})` : ""} · ${d ?? "?"} s · ${(r.final_runs || 0).toLocaleString()} ${escHtml(tr("runs each"))}`;
   $("opt-results").innerHTML = `<h4 class="sim-h">③ ${escHtml(tr("Results"))}</h4><div class="opt-board" id="opt-board"></div><div class="opt-meta">${meta}</div>${html}${failed}`;
   const byRank = new Map(rows.map((res) => [res.rank, res]));
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>

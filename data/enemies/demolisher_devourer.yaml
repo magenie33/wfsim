@@ -129,6 +129,7 @@ unmodeled:
   - "The mines on its back are a 0.5x hitbox the sim never aims at; shots land on the body or the head."
   - "Cold greatly slows a Demolisher in game, and its pulse cannot cleanse it. The sim has no movement, so slowing it changes nothing here."
   - "The conduit it walks towards is not modelled: a Disruption run races its arrival, and this fight has no such clock."
+  - "Unmeasured: in a squad of more than four (The Icebind's six) its squad health bonus is read at the four-player +200%, the last value the wiki states. Empowered Enemies multiply on top of it."
 
 source:
   url: https://wiki.warframe.com/w/Ghoul_Devourer
