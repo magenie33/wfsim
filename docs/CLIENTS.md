@@ -126,6 +126,32 @@ is `work_per_point` work.
   keeps working through its `accepted` days, so rebuilding once inside them
   loses nothing.
 
+## The official engine library
+
+The engine the site serves is published as a native library, so a client loads
+it instead of building one: the engine moves whenever a weapon is measured,
+and a download is all that costs.
+
+- `GET https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/latest.json`
+  (or `engine/<engine>.json` for one engine) → `{ sig, signed }`. `signed` is
+  JSON text `{ engine, commit, abi, files }`, `files` by target
+  (`x86_64-windows`, `x86_64-linux`) each `{ path, sha256, size }`, the library
+  at `<bucket>/<path>`. `sig` is the hex Ed25519 signature of the bytes of
+  `signed` under the key the desktop client verifies
+  (`b488481177cb0a459a685c5d66f646768e7f66c405b92ecde81025581419a95e`). Verify
+  the signature, then the SHA-256, before loading; refuse either mismatch.
+- The Linux library needs glibc 2.31 or newer.
+- `abi: 1` is two C functions: `wfsim_api(path, path_len, body, body_len,
+  &len) -> ptr`, UTF-8 in and out, the wasm module's `api(path, body)`
+  exactly, and `wfsim_free(ptr, len)` to give each answer back. Calls are
+  independent; one library serves any number of threads.
+- To follow the served engine: when `/release.json` names an engine other than
+  the loaded one, fetch its `engine/<engine>.json`, verify, download, load, and
+  compute the next pack on it. The old one keeps working meanwhile within its
+  `accepted` days. A library appears a few minutes after its release.
+- A client may still build the engine itself from `commit`; the terms of
+  §"The engine" are the same either way.
+
 ## The cycle
 
 `POST /api/board/work` (body ≤ 2048 characters)

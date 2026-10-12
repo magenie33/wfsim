@@ -193,6 +193,9 @@ def main() -> None:
         run("git", "push")
 
     run(*release)
+    # THE ENGINE AS A LIBRARY FOR EVERY CLIENT, once per engine; a failure is
+    # said, never fatal — a client keeps the library it has (accepted days).
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])
     # THE MCP SERVER AFTER THE PUSH, from the same tree: its engine is the one
     # just published, and a server deployed ahead of the site answers with it.
     run(shutil.which("npx") or "npx", "wrangler", "deploy", "-c", str(ROOT / "mcp" / "wrangler.jsonc"))
