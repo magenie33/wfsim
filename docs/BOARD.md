@@ -665,21 +665,99 @@ deadline and what only they may settle.
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.
 
-### Where the factory's tables live
+### Postgres
 
-**IN D1, OR IN POSTGRES, BY ONE SWITCH** (`FACTORY_DB` in wrangler.jsonc,
-`worker/factory_db.js`). Its tables — questions, demands, answers, verifiers,
-verifier_hours, watchdog_told, points_pool — are D1's while it says `d1` and a
-Postgres's through Hyperdrive (`HYPERDRIVE`, a Cloudflare Tunnel to the
-server) while it says `pg`; the library, the queue, the scores and the
-accounts stay in D1 either way. Every query on those tables asks
-`factoryDb(env)` and states its Postgres text where the dialects differ
-(`pick`); a join across the two databases is two reads, and a producer's own
-writes go to D1 after the factory's. A script reads them through the official
-door's named `report`s, never by a query of its own in D1. `FACTORY_DB` is
-moved with the factory paused (`FACTORY_PAUSED`) and its rows copied by
-`scripts/pg_copy.mjs`; `check_pg_factory` runs one workload on both and
-compares every answer and every table.
+**EACH DATABASE IN D1 OR IN POSTGRES, BY ONE SWITCH, AND THE QUERIES READ ALIKE
+IN BOTH** (`worker/factory_db.js`). Postgres is the server's, reached by the
+worker through Hyperdrive and by everything else through a Cloudflare Access
+TCP tunnel to `pg.wfsim.app`.
+
+| switch (worker var · repo variable) | moves | to |
+| --- | --- | --- |
+| `FACTORY_DB = "pg"` | the factory's tables — questions, demands, answers, verifiers, verifier_hours, watchdog_told, points_pool | `wfsim` (`HYPERDRIVE`) |
+| `DB_LIBRARY = "pg"` · `vars.DB_LIBRARY` | the library with them — inbox, builds, scores, batches, queue, orders, shares, usage_days, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations | `wfsim`, one database and one transaction with the factory |
+| `DB_ACCOUNTS = "pg"` · `vars.DB_ACCOUNTS` | the accounts — every table `worker/accounts.sql` and the paid half name | `wfsim_accounts` (`HYPERDRIVE_ACCOUNTS`), its own database and role |
+
+Unset, each is D1's. Their DDL is `worker/pg/` (`schema.sql`, `library.sql`,
+`accounts.sql`): every text column `COLLATE "C"`, D1's byte order; the last
+slot's trigger is a function and a trigger.
+
+- **ONE TEXT WHERE ONE TEXT SERVES.** `ON CONFLICT DO NOTHING` for `INSERT OR
+  IGNORE`, an upsert naming its columns for `INSERT OR REPLACE`, `CASE` for a
+  boolean summed or selected, a qualified column in an upsert's `SET`. Where
+  the dialects differ — `json_each`, `strftime`, `max(a, b)` — the query states
+  both (`pick`), a piece of a query too.
+- **A SCRIPT NEVER SPEAKS D1 OR POSTGRES ITSELF.** `scripts/db.sh` and
+  `scripts/db.mjs` take one statement in D1's words and answer D1's shape from
+  whichever database `PG_URL` (`PG_ACCOUNTS_URL`) names; the workflows set it
+  through `.github/actions/databases` while the repository variable says `pg`,
+  the bot server through `deploy/wfsim-pg-tunnel.service`. The factory's tables
+  are read through the official door's `report`s.
+- **PROVED ON BOTH**: `check_pg_shadow` repeats every statement the worker
+  issues in the node checks on PGlite; `check_pg_factory` runs the factory on
+  both; `check_pg_scripts` runs the pipeline's scripts on Postgres.
+
+#### Moving a database, and moving it back
+
+Once, before the first move: create the accounts' database and role, apply the
+DDL, make the pipeline's roles, and give the secrets.
+
+```sh
+sudo -u postgres psql -c "CREATE ROLE wfsim_accounts LOGIN PASSWORD '…'" -c "CREATE DATABASE wfsim_accounts OWNER wfsim_accounts"
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/library.sql
+sudo -u postgres psql -d wfsim_accounts -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim_accounts' -f worker/pg/accounts.sql
+sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '…'" \
+  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, scores, batches, queue TO wfsim_pipeline" \
+  -c "GRANT SELECT ON verifiers, verifier_hours TO wfsim_pipeline"
+sudo -u postgres psql -d wfsim_accounts -c "CREATE ROLE wfsim_accounts_pipeline LOGIN PASSWORD '…'" \
+  -c "GRANT SELECT ON devices TO wfsim_accounts_pipeline"
+```
+
+A Hyperdrive config for `wfsim_accounts` as `wfsim_accounts`, bound as
+`HYPERDRIVE_ACCOUNTS`. Repository secrets `CF_ACCESS_CLIENT_ID`,
+`CF_ACCESS_CLIENT_SECRET` (the Access service token `pg.wfsim.app` admits),
+`PG_PIPELINE_URL` (`postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim`),
+`PG_ACCOUNTS_PIPELINE_URL` (`…wfsim_accounts_pipeline…/wfsim_accounts`). On the
+bot server: cloudflared, `/etc/wfsim-pg-tunnel.env`, the tunnel's unit, and
+`PG_URL` in `/etc/wfsim-live.env`.
+
+**THE LIBRARY** (`DB_LIBRARY`):
+
+1. Pause: disable the `queue`, `scores`, `publish`, `settle` and `backup`
+   workflows and let a running one end; `sudo systemctl stop wfsim-live` on the
+   bot server; set the worker's `FACTORY_PAUSED` and deploy, and wait a
+   quarter hour, so no answer handed out before it still writes a score or
+   spends a queue row in D1. Submissions, share links and appraisals still
+   write to D1 until the flip: those tables are copied again after it (step 4).
+2. Copy and compare, on the server:
+   `node scripts/pg_copy.mjs fresh library`, then `node scripts/pg_copy.mjs
+   verify library` — every row, value by value. Never `factory`: its tables
+   have been Postgres's since `FACTORY_DB` moved.
+3. Flip: `"DB_LIBRARY": "pg"` in wrangler.jsonc's vars, deploy; the repository
+   variable `DB_LIBRARY` to `pg`; `PG_URL` into `/etc/wfsim-live.env`.
+4. Catch up what landed in D1 between steps 2 and 3:
+   `node scripts/pg_copy.mjs copy inbox shares bot_inbox appraisals appraisal_results fissures usage_days scores`
+   (an upsert; nothing is deleted), and `compare library`.
+5. Re-enable: unset `FACTORY_PAUSED` and deploy; start `wfsim-live`; enable
+   the workflows and dispatch `queue` once by hand.
+6. Verify: `/api/board/pending` counts the library, a share link made and
+   opened, a build submitted reaches `inbox` in Postgres and the live board
+   within a minute, a `queue` and a `scores` run green, an appraisal answered.
+
+**THE ACCOUNTS** (`DB_ACCOUNTS`), with the private worker's queries ported
+first — it reads the same tables: pause sign-in writes (`FACTORY_PAUSED` and
+the paid half's own pause), `node scripts/pg_copy.mjs fresh accounts` then
+`verify accounts` with `CF_D1_ACCOUNTS` and `PG_ACCOUNTS_URL`, the
+`HYPERDRIVE_ACCOUNTS` binding and `"DB_ACCOUNTS": "pg"`, deploy, the variable
+`DB_ACCOUNTS`, un-pause; verify a sign-in, `/api/me`, a device claim, the
+contribution page.
+
+**BACK**: the switch to `d1` (wrangler var and repository variable, `PG_URL`
+out of `/etc/wfsim-live.env`) and deploy. D1 then holds everything up to the
+flip: what Postgres took since is copied back by hand, table by table, or is
+accepted as lost — a share link and an arrival are recoverable from the
+inbox's own log only while they are in Postgres, so a rollback is decided
+within hours, not days.
 
 ## Compute orders
 
