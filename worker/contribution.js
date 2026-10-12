@@ -512,9 +512,9 @@ async function kept(request, env) {
 /// a ruler it lacks, a refresh of a row three days old — the riven gains handed
 /// to the community in the last day and not done, the scores written in the last
 /// hour by the volunteers and by the official machines, and how many browsers
-/// are computing. Totals only, kept a minute at the edge and per isolate: the
+/// are computing. Totals only, kept five minutes at the edge and per isolate: the
 /// owed count reads every queue row, and per isolate alone it ran ~25 times a minute.
-const DEMAND_KEEP_MS = 60_000;
+const DEMAND_KEEP_MS = 5 * 60_000;
 let demandKept = null;
 async function demand(request, env) {
   if (demandKept && Date.now() - demandKept.at < DEMAND_KEEP_MS) return json(demandKept.body);
@@ -557,7 +557,7 @@ async function demand(request, env) {
 /// BASE kept `TALLY_BASE_MS` at the edge and each answer adds the rows finished
 /// since it, read on `scores_oldest`. A row replaced since the base is counted
 /// again until the next base; the volunteers' count stays exact either way.
-const TALLY_BASE_MS = 10 * 60_000;
+const TALLY_BASE_MS = 60 * 60_000;
 const SPLIT = `SUM(measured_by LIKE 'verified:%') AS volunteers, SUM(measured_by NOT LIKE 'verified:%') AS official`;
 async function tally(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
