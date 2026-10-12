@@ -187,7 +187,10 @@ pub(crate) fn write_missing(
 ) {
     let mut missing = 0usize;
     let parked = if gate {
-        park_under_entry_line(&mut pending_missing, cross, who, already_owed, corner_of).len()
+        {
+            let scene = wfsim_engine::board::benchmarks::get(bench_id).and_then(|b| b.cell_dir());
+            park_under_entry_line(&mut pending_missing, scene.as_deref(), cross, who, already_owed, corner_of).len()
+        }
     } else {
         0
     };

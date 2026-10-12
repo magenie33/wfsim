@@ -5,8 +5,10 @@
     python3 scripts/oldest_rows.py --self-test
 
 `rows` are queue lines ({build_id, ruler, mode}); each is ordered by when its
-fact in `facts` finished, a row with none first, and ties by the row itself so
-two runs over the same input ask the same rows.
+fact in `facts` finished, ties by the row itself so two runs over the same input
+ask the same rows. A ROW WITH NO FACT IS NOT A REFRESH: it is the reconciliation's
+to ask, at its own pace (`scene_rows.py`); counted here, every unmeasured row of a
+new scene would be the oldest, and forced.
 
 ROOM IS WHAT THE FACTORY HAS SPACE FOR, and a row whose fact finished before
 `force_before` is asked whatever the room: at most N, at least those, and
@@ -33,7 +35,9 @@ def main(facts_path, rows_path, n, room=None, force_before=""):
         for line in f:
             if line.strip():
                 r = json.loads(line)
-                rows.append((finished.get((r["build_id"], r["ruler"], r["mode"]), ""), r["build_id"], r["ruler"], r["mode"]))
+                at = finished.get((r["build_id"], r["ruler"], r["mode"]))
+                if at:
+                    rows.append((at, r["build_id"], r["ruler"], r["mode"]))
     rows.sort()
     if room is not None:
         forced = sum(1 for finished, *_ in rows if finished < force_before)
@@ -50,7 +54,7 @@ def self_test():
             for i, at in facts:
                 f.write(json.dumps({"identity": i, "ruler": "r", "mode": "base", "finished_at": at}) + "\n")
         with open(rp, "w", encoding="utf-8") as f:
-            for i, _ in reversed(facts):
+            for i in ["unmeasured", *(i for i, _ in reversed(facts))]:
                 f.write(json.dumps({"build_id": i, "ruler": "r", "mode": "base"}) + "\n")
 
         def asked(*args):
@@ -66,6 +70,7 @@ def self_test():
             ("a room below zero is none", asked(10, -5, "2026-09-01"), []),
             ("what is forced is asked past the room", asked(10, 1, "2026-10-03"), ["old", "mid"]),
             ("...but never past n", asked(1, 0, "2026-10-09"), ["old"]),
+            ("a row with no fact is never a refresh", asked(10, 0, "2026-12-01"), ["old", "mid", "new"]),
         ]
     for what, got, want in cases:
         print(f"  {'ok  ' if got == want else 'FAIL'}  {what}" + ("" if got == want else f"  got {got}, want {want}"))

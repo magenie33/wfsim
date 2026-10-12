@@ -1317,7 +1317,7 @@ granularities:
 | | | |
 | --- | --- | --- |
 | **a ROW** is published | `clears_entry` | it reaches a tenth of its own group's leader |
-| **a BUILD** earns more fights | `keeps_earning` | it reaches a tenth in at LEAST ONE (ruler, mode) it has a fact for |
+| **a BUILD** earns more fights | `keeps_earning` | it reaches a tenth in at LEAST ONE (ruler, mode) of that SCENE it has a fact for — or, with none there yet, of the base |
 
 **THE TWO MAY NOT BE COLLAPSED**, and that is the whole shape of the rule. The
 board asks for one good answer rather than for a build that is good everywhere,
@@ -1811,8 +1811,10 @@ moves, and every other cell appends `__<tag>` per axis it moves
 scene, a theoretical one where the game would not spawn it.
 
 **A CELL IS AN ORDINARY RULER.** It has its own facts under `(identity, ruler,
-mode)`, its own groups and so its own entry line, and a build that clears the
-line in any cell keeps earning every other. `{<axis>}` in the name, the standard
+mode)`, its own groups and so its own entry line. A SCENE IS JUDGED ON ITS OWN
+FACTS: a build keeps earning a scene's rows by clearing the line on one of its
+rulers, and is first asked into a scene for clearing it on the base
+(`park_under_entry_line`). `{<axis>}` in the name, the standard
 and the rules is filled per cell — the rung's `short` in the name, its `long` in
 the prose — and a file that spans an axis may not write its base's words out
 (`a_spanned_axis_is_never_written_out`): it would publish them on every cell.

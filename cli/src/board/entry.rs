@@ -54,8 +54,14 @@ pub(crate) fn entry_floor(kept: &mut Vec<Row>) -> std::collections::BTreeSet<Str
 ///
 /// TWO PASSES, because a share is against a group's BEST and not against the
 /// best seen so far.
+///
+/// EACH SCENE JUDGES BY ITS OWN FACTS (`Benchmark::cell_dir`, `None` the base):
+/// a build keeps earning a scene's rows by clearing the line on some ruler in
+/// that scene, and one with no fact there yet by clearing it on the base — the
+/// base board's builds are a new scene's first pass.
 pub(crate) fn park_under_entry_line(
     pending: &mut Vec<(String, String)>,
+    scene: Option<&str>,
     cross: &[CrossFact],
     who: &std::collections::HashMap<String, Who>,
     already_owed: &std::collections::BTreeSet<String>,
@@ -70,20 +76,27 @@ pub(crate) fn park_under_entry_line(
         let e = leader.entry(k).or_insert(f64::NEG_INFINITY);
         *e = e.max(f.score);
     }
-    let mut best: std::collections::HashMap<&str, f64> = Default::default();
+    let mut scene_of: std::collections::HashMap<&str, Option<String>> = Default::default();
+    let mut best: std::collections::HashMap<(&str, Option<String>), f64> = Default::default();
     for f in cross {
         let Some(w) = who.get(&f.identity) else { continue };
+        let at = scene_of
+            .entry(f.ruler.as_str())
+            .or_insert_with(|| wfsim_engine::board::benchmarks::get(&f.ruler).and_then(|b| b.cell_dir()))
+            .clone();
         let k = (w.weapon.as_str(), f.ruler.as_str(), f.mode.as_str(), w.riven);
         // A LEADER OF ZERO leaves a ratio nothing to say, so the group is not
         // judged — the same rule `clears_entry` states.
         let l = leader[&k];
         let share = if l > 0.0 { f.score / l } else { 1.0 };
-        let e = best.entry(f.identity.as_str()).or_insert(f64::NEG_INFINITY);
+        let e = best.entry((f.identity.as_str(), at)).or_insert(f64::NEG_INFINITY);
         *e = e.max(share);
     }
+    let here = scene.map(str::to_string);
+    let share_of = |id: &str| best.get(&(id, here.clone())).or_else(|| best.get(&(id, None))).copied();
     let mut parked: std::collections::BTreeSet<String> = Default::default();
     pending.retain(|(id, _mode)| {
-        let share = best.get(id.as_str()).copied();
+        let share = share_of(id.as_str());
         if !wfsim_engine::data::boards::keeps_earning(share) {
             parked.insert(id.clone());
             return false;
@@ -109,9 +122,7 @@ pub(crate) fn park_under_entry_line(
         // no sibling to wait for, and parking it would retire a published row
         // by never measuring it again.
         if let Some(def) = corner_of.get(id.as_str()).filter(|d| who.contains_key(d.as_str())) {
-            let cleared = best
-                .get(def.as_str())
-                .copied()
+            let cleared = share_of(def.as_str())
                 .is_some_and(|s| wfsim_engine::data::boards::keeps_earning(Some(s)));
             if !cleared {
                 parked.insert(id.clone());
@@ -416,13 +427,44 @@ mod entry_line_tests {
             ("junk".to_string(), "cycle".to_string()),
             ("lead".to_string(), "cycle".to_string()),
         ];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &Default::default());
+        let parked = park_under_entry_line(&mut pending, None, &cross, &who, &owed(&[]), &Default::default());
         assert_eq!(
             pending.iter().map(|(i, _)| i.as_str()).collect::<Vec<_>>(),
             ["good", "lead"],
             "a build good on ONE ruler keeps earning rows on every other",
         );
         assert_eq!(parked.iter().map(String::as_str).collect::<Vec<_>>(), ["junk"]);
+    }
+
+    /// **EACH SCENE JUDGES BY ITS OWN FACTS.** A build measured in a scene keeps
+    /// earning its rows there only by clearing the line there; one not yet
+    /// measured there is judged on the base, which is the scene's first pass.
+    #[test]
+    fn a_scene_judges_by_its_own_facts_and_the_base_seeds_it() {
+        let who = known(vec![
+            Entry("lead", "torid", false),
+            Entry("fell", "torid", false),
+            Entry("fresh", "torid", false),
+            Entry("junk", "torid", false),
+        ]);
+        let cell = "standard_single_target__sp200";
+        let cross = vec![
+            fact("lead", "standard_single_target", "base", 100.0),
+            fact("fell", "standard_single_target", "base", 90.0),
+            fact("fresh", "standard_single_target", "base", 50.0),
+            fact("junk", "standard_single_target", "base", 1.0),
+            fact("lead", cell, "base", 1000.0),
+            // Good on the base, a twentieth of the leader in the scene.
+            fact("fell", cell, "base", 50.0),
+        ];
+        let scene = wfsim_engine::board::benchmarks::get(cell).and_then(|b| b.cell_dir());
+        let mut pending: Vec<_> =
+            ["lead", "fell", "fresh", "junk"].iter().map(|i| (i.to_string(), "base".to_string())).collect();
+        park_under_entry_line(&mut pending, scene.as_deref(), &cross, &who, &owed(&[]), &Default::default());
+        assert_eq!(pending.iter().map(|(i, _)| i.as_str()).collect::<Vec<_>>(), ["lead", "fresh"]);
+        let mut pending: Vec<_> = ["fell", "junk"].iter().map(|i| (i.to_string(), "base".to_string())).collect();
+        park_under_entry_line(&mut pending, None, &cross, &who, &owed(&[]), &Default::default());
+        assert_eq!(pending.iter().map(|(i, _)| i.as_str()).collect::<Vec<_>>(), ["fell"], "the base reads no scene");
     }
 
     /// **A BUILD NOTHING HAS MEASURED IS OWED ONE FIGHT, AND THE ROW ALREADY
@@ -436,7 +478,7 @@ mod entry_line_tests {
             ("new".to_string(), "cycle".to_string()),
             ("new".to_string(), "base".to_string()),
         ];
-        let parked = park_under_entry_line(&mut pending, &[], &who, &owed(&["new"]), &Default::default());
+        let parked = park_under_entry_line(&mut pending, None, &[], &who, &owed(&["new"]), &Default::default());
         assert!(pending.is_empty(), "{pending:?}");
         assert!(parked.is_empty(), "a build with no fact is owed one, not parked");
     }
@@ -452,7 +494,7 @@ mod entry_line_tests {
             ("old".to_string(), "cycle".to_string()),
             ("old".to_string(), "base".to_string()),
         ];
-        park_under_entry_line(&mut pending, &[], &who, &owed(&[]), &Default::default());
+        park_under_entry_line(&mut pending, None, &[], &who, &owed(&[]), &Default::default());
         assert_eq!(pending.len(), 2);
     }
 
@@ -547,7 +589,7 @@ mod entry_line_tests {
         // THE DEFAULT HAS NO FACT YET: nothing says the riven is worth more
         // than one fight, and the corner is not it.
         let mut pending = vec![("corner".to_string(), "base".to_string())];
-        let parked = park_under_entry_line(&mut pending, &[], &who, &owed(&[]), &corner_of);
+        let parked = park_under_entry_line(&mut pending, None, &[], &who, &owed(&[]), &corner_of);
         assert!(pending.is_empty(), "the corner waits: {pending:?}");
         assert_eq!(parked.iter().map(String::as_str).collect::<Vec<_>>(), ["corner"]);
 
@@ -558,7 +600,7 @@ mod entry_line_tests {
             fact("default", "standard_single_target", "base", 1.0),
         ];
         let mut pending = vec![("corner".to_string(), "base".to_string())];
-        park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &corner_of);
+        park_under_entry_line(&mut pending, None, &cross, &who, &owed(&[]), &corner_of);
         assert!(pending.is_empty(), "a corner of a parked riven is parked too");
 
         // …AND ONCE THE DEFAULT CLEARS IT, the corner is worth measuring.
@@ -567,7 +609,7 @@ mod entry_line_tests {
             fact("default", "standard_single_target", "base", 900.0),
         ];
         let mut pending = vec![("corner".to_string(), "base".to_string())];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &corner_of);
+        let parked = park_under_entry_line(&mut pending, None, &cross, &who, &owed(&[]), &corner_of);
         assert_eq!(pending.len(), 1, "the default earned its corners a fight");
         assert!(parked.is_empty());
 
@@ -577,7 +619,7 @@ mod entry_line_tests {
         // by quietly never measuring it again.
         let alone = known(vec![Entry("corner", "furis", true)]);
         let mut pending = vec![("corner".to_string(), "base".to_string())];
-        let parked = park_under_entry_line(&mut pending, &[], &alone, &owed(&[]), &corner_of);
+        let parked = park_under_entry_line(&mut pending, None, &[], &alone, &owed(&[]), &corner_of);
         assert_eq!(pending.len(), 1, "an orphan corner is a build like any other");
         assert!(parked.is_empty());
     }
@@ -596,7 +638,7 @@ mod entry_line_tests {
             fact("plain", "standard_single_target", "base", 50.0),
         ];
         let mut pending = vec![("plain".to_string(), "alternate".to_string())];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]), &Default::default());
+        let parked = park_under_entry_line(&mut pending, None, &cross, &who, &owed(&[]), &Default::default());
         assert_eq!(pending.len(), 1, "the plain build leads its own group");
         assert!(parked.is_empty());
     }
