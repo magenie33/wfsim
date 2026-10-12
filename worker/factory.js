@@ -25,6 +25,10 @@ export const DEADLINE_MS = {
 /// (`.github/workflows/queue.yml` asks from three days on). `DEADLINE_MS.refresh`
 /// is only for a row with no fact time.
 export const REFRESH_WITHIN_MS = 15 * 86_400_000;
+/// A SCENE'S FIRST PASS: a cell row with no fact yet, whichever batch asked it,
+/// is due this long after its ask — ahead of every refresh still days from its
+/// own bound, so a new scene fills before the base is measured again.
+export const SCENE_FIRST_MS = 3 * 86_400_000;
 
 /// HOW A COMPUTER ANSWERS. The canonical answer is all two equal answers share —
 /// and so all of it must be deterministic under every split of the work

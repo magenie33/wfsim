@@ -115,8 +115,10 @@ check("...and its question is the build's record on the ruler, simulated",
 build("cell");
 L.prepare("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, 'cell', 'standard_single_target__sp200', 'base')").run(arrivals);
 await post(boardTasksRoute, "/api/board/ask", { batch: arrivals, rows: [{ identity: "cell", ruler: "standard_single_target__sp200", mode: "base" }] }, TOKEN);
-check("...but a new build's row under another scene of a ruler by `sweep`",
-  (L.prepare("SELECT producer FROM demands WHERE ref = 'cell|standard_single_target__sp200|base'").get() || {}).producer === "sweep");
+const cellAsk = L.prepare("SELECT producer, asked_at, due_at FROM demands WHERE ref = 'cell|standard_single_target__sp200|base'").get() || {};
+check("...but a new build's row under another scene of a ruler by `sweep`", cellAsk.producer === "sweep");
+check("...due three days after it is asked, ahead of a refresh days from its bound",
+  Date.parse(cellAsk.due_at) - Date.parse(cellAsk.asked_at) === 3 * 86_400_000, `${cellAsk.asked_at} -> ${cellAsk.due_at}`);
 queue("rescore-x", "scored");
 await ask("rescore-x", "scored");
 check("a rescore asks for a scored row on purpose", demand("scored") && demand("scored").producer === "sweep");

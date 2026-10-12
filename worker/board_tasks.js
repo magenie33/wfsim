@@ -13,7 +13,7 @@
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
 import { iso } from "./instant.js";
 import { witnessOf } from "./tasks.js";
-import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, VERBS, factoryAuthed } from "./factory.js";
+import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
 import { servedRelease } from "./verify.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -125,7 +125,8 @@ const producerOf = (batch, builtAt, ruler) => {
 export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
   const producer = producerOf(batch, builtAt, r.ruler);
   const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
-  const due_in_ms = Number.isFinite(measured) ? measured + REFRESH_WITHIN_MS - now : DEADLINE_MS[producer];
+  const due_in_ms = Number.isFinite(measured) ? measured + REFRESH_WITHIN_MS - now
+    : isLadderCell(r.ruler) && !measuredAt ? SCENE_FIRST_MS : DEADLINE_MS[producer];
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,
     payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch } };
