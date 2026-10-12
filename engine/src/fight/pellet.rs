@@ -2094,15 +2094,15 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // an explosion whose damage type is not the gun's.
         let stage_bracket = if stage_mb > 0.0 { qvec.total() / stage_mb } else { 1.0 };
         let xh_bracket = active.extra_hit_bracket(t, windows) / stage_bracket.max(1e-12);
-        // …and the BODY PART, a second time, on a direct hit only. DE's
-        // CN card, in the same breath as the faction double-dip: "同理，
-        // 弱点倍率也会被计算两次". A radial struck no body part, so
-        // `part_factor` is already 1.0 there and this reads as it should.
+        // …and the BODY PART, a second time, on a direct hit only and for
+        // Xata's Whisper only (`body_part_again`). A radial struck no body
+        // part, so `part_factor` is already 1.0 there.
         if fire_extra_hits(
             seat,
             raw,
             xh_bracket,
             part_factor,
+            false,
             head_direct,
             status_chance,
             t,

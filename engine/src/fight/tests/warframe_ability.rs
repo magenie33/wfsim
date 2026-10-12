@@ -498,28 +498,23 @@ fn the_wiki_worked_example_reproduces_to_the_digit() {
         run_once(&q, &mut crate::rules::rng::Rng::new(3))
     };
 
-    // QUANTISATION IS THE ONE DIFFERENCE, and it is ours being right rather
-    // than the example being wrong: DE rounds each element of the vector
-    // down to a step of the base, which an illustration written to show a
-    // formula has no reason to carry. So the example's 310 is 300.3125 here
-    // and every absolute figure below moves with it — the four RELATIONS,
-    // which are what the example is demonstrating, are exact.
+    // THE HIT IS QUANTIZED AND ITS EXTRA HITS ARE NOT: the example's 310 is
+    // 300.3125 on the hit, while both extra hits read the vector before the
+    // snap and land on the example's own 193.6415 and 90.0433.
     let q = wiki_example().damage.quantized_against(100.0).total();
     assert!(q < 310.0 && q > 295.0, "quantised vector {q}");
+    let u = wiki_example().damage.total();
+    assert!((u - 310.0).abs() < 1e-9, "unquantized vector {u}");
     let f = 1.55;
     let mb = 100.0;
-    // The bracket the extra hit off a detonation picks up: the vector over
-    // the base a status burns off — the example's `1 + 0.6 + 0.6 + 0.9`.
-    let bracket = q / mb;
+    // The bracket the extra hit off a detonation picks up: the example's
+    // `1 + 0.6 + 0.6 + 0.9`.
+    let bracket = u / mb;
 
     // 1 + 2. THE HIT AND ITS EXTRA HIT.
     let r = one(&wiki_example());
     assert!((r.sources.direct - q * f).abs() < 1e-6, "hit {}", r.sources.direct);
-    assert!(
-        (r.sources.extra_hit - 0.26 * (q * f) * f).abs() < 1e-4,
-        "extra hit {}",
-        r.sources.extra_hit
-    );
+    assert!((r.sources.extra_hit - 193.6415).abs() < 1e-4, "extra hit {}", r.sources.extra_hit);
 
     // 3 + 4. THE DETONATION AND THE EXTRA HIT OFF IT. Forced, because the
     // example says "if the hit proc'd Blast" — and long enough for the fuse.
@@ -538,7 +533,8 @@ fn the_wiki_worked_example_reproduces_to_the_digit() {
     // …and the extra hit off it takes faction a THIRD time and the whole
     // elemental bracket the detonation itself was denied.
     let want_xh_det = 0.26 * want_det * f * bracket;
-    let off_det = r.extra_hit - 0.26 * (q * f) * f;
+    assert!((want_xh_det - 90.0433).abs() < 1e-4, "{want_xh_det}");
+    let off_det = r.extra_hit - 193.6415;
     assert!(
         (off_det - want_xh_det).abs() < 1e-3,
         "extra hit off the detonation {off_det}, wanted {want_xh_det}"
@@ -579,16 +575,17 @@ fn one_shot_with_fuse(p: &FightParams) -> FusedRun {
 /// FACTION, TWICE — the whole of the ordinary case. The extra hit is 26% of
 /// a hit that already carried the bonus, and it carries it again:
 /// `0.26 x 1.55 = 0.403` of the hit, against the 0.26 a reading of the card
-/// would predict.
+/// would predict — of the hit BEFORE quantization, `98 x 2.2 x 1.55`, which
+/// is the capture's 135 (M40); the quantized hit would make it 133.91.
 #[test]
 fn the_extra_hit_takes_the_faction_bonus_a_second_time() {
     let r = run_once(&measured(), &mut crate::rules::rng::Rng::new(3));
     let ratio = r.sources.extra_hit / r.sources.direct;
-    assert!(
-        (ratio - 0.26 * 1.55).abs() < 1e-9,
-        "extra/direct = {ratio:.6}, wanted {:.6}",
-        0.26 * 1.55
-    );
+    // 117.6 Blast is 38.4 steps of 98/32 and the hit snaps it to 38.
+    let snap = (98.0 * 2.2) / (98.0 + 38.0 * 98.0 / crate::rules::damage::QUANTIZATION_DENOMINATOR);
+    let want = 0.26 * 1.55 * snap;
+    assert!((ratio - want).abs() < 1e-9, "extra/direct = {ratio:.6}, wanted {want:.6}");
+    assert_eq!((98.0 * 2.2 * 1.55 * 0.26 * 1.55_f64).round(), 135.0, "the capture's number");
     // …and it is VOID, whatever the weapon deals: a separate instance, not
     // a share of the vector ("does not dilute weapon elements").
     let by = &r.sources.extra_hit_by_type;
@@ -622,6 +619,48 @@ fn the_extra_hit_takes_the_body_part_multiplier_a_second_time() {
     assert!((three_x / body - 3.0).abs() < 1e-9, "x{:.4}", three_x / body);
 }
 
+/// …AND ONLY XATA'S WHISPER. "the only extra hit that does not have a forced
+/// 1x weakpoint multiplier" (wiki `Extra_Hit`): Toxic Lash's and Resupply's
+/// instances are a 1x weak point, so a 3x head moves the hit and not the ratio.
+#[test]
+fn only_xatas_whisper_takes_the_body_part_a_second_time() {
+    for (id, again) in [("xatas_whisper", 3.0), ("toxic_lash", 1.0), ("resupply", 1.0)] {
+        let head = |mult: f64| {
+            let mut p = measured();
+            p.abilities = params(&[(id, None)], 1.0).abilities;
+            p.body_parts = vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: mult,
+                is_head: true,
+                is_weak_point: true,
+                crit_bonus: false,
+            }];
+            let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
+            r.sources.extra_hit / r.sources.direct
+        };
+        let moved = head(3.0) / head(1.0);
+        assert!((moved - again).abs() < 1e-9, "{id}: x{moved:.4}");
+    }
+}
+
+/// "Only Xata's Whisper will be triggered by blast Detonations, no other extra
+/// hit will." One shot, one forced Blast stack, the fuse run out: Toxic Lash's
+/// extra hits are the hit's alone.
+#[test]
+fn a_blast_detonation_fires_no_extra_hit_but_xatas() {
+    let mut p = measured();
+    p.abilities = params(&[("toxic_lash", None)], 1.0).abilities;
+    p.fire_rate = 0.5;
+    p.duration_seconds = 1.9;
+    p.status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Blast];
+    let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
+    assert!(r.sources.status[DamageType::Blast as usize] > 0.0, "the fuse has to fire");
+    let from_hit = 98.0 * 2.2 * 1.55 * 0.30 * 1.55;
+    assert!((r.sources.extra_hit - from_hit).abs() < 1e-6, "extra {:.3} vs {from_hit:.3}", r.sources.extra_hit);
+}
+
 /// THE BLAST CHAIN, decoded number by number against the capture: one
 /// shot, one forced Blast stack, and 1.5 s later the fuse fires.
 ///
@@ -636,11 +675,10 @@ fn the_extra_hit_takes_the_body_part_multiplier_a_second_time() {
 /// a THIRD time, and the elemental bracket lands on a payload that is
 /// explicitly denied elemental bonuses.
 ///
-/// THE `2.2` IS THE ILLUSTRATION'S, NOT THE GAME'S: the Blast half is
-/// `98 x 1.2 = 117.6`, 38.4 steps of the `98/32` scale, which snaps to 38 —
-/// so the vector is `214.375` and the bracket a status burns off is
-/// `2.1875`. A capture read through mitigation cannot resolve 0.6%. The
-/// four RELATIONS are exact; the absolute figures carry the quantization.
+/// THE HIT IS QUANTIZED, ITS EXTRA HITS ARE NOT: the Blast half is
+/// `98 x 1.2 = 117.6`, 38.4 steps of the `98/32` scale, which snaps to 38 on
+/// the hit — but both extra hits read the `2.2`, and only that reading pops
+/// the capture's 135 and 63 (the snapped one pops 134 and 62).
 #[test]
 fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
     let mut p = measured();
@@ -653,7 +691,7 @@ fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
 
     // 117.6 Blast is 38.4 steps of 98/32 and snaps to 38.
     let qtotal = 98.0 + 38.0 * (98.0 / crate::rules::damage::QUANTIZATION_DENOMINATOR);
-    let bracket = qtotal / 98.0;
+    let bracket = 2.2;
     let hit = qtotal * 1.55;
     // The detonation reads ModifiedBase — 98 — which quantization never
     // touches, so this half is unmoved.
@@ -665,8 +703,9 @@ fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
         r.sources.status[DamageType::Blast as usize]
     );
     // The hit's own extra hit, plus the detonation's.
-    let from_hit = hit * 0.26 * 1.55;
+    let from_hit = 98.0 * bracket * 1.55 * 0.26 * 1.55;
     let from_deto = deto * 0.26 * 1.55 * bracket;
+    assert_eq!((from_hit.round(), from_deto.round()), (135.0, 63.0), "the capture's numbers");
     assert!(
         (r.sources.extra_hit - (from_hit + from_deto)).abs() < 1e-6,
         "extra {:.3} vs {:.3} + {:.3}",
@@ -680,8 +719,7 @@ fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
     // THE BAND IS THE CAPTURE'S OWN. It read 63 and 71, each a whole
     // number popped in game, so the ratio it pins is `[62.5/71.5,
     // 63.5/70.5]` — 0.874 to 0.901, and nothing tighter is in the video. A
-    // tighter band claims a precision two integers cannot carry and turns a
-    // 0.57% quantization correction into a red test.
+    // tighter band claims a precision two integers cannot carry.
     let ratio = from_deto / deto;
     assert!((0.874..=0.901).contains(&ratio), "{ratio:.4} outside the capture's 63/71");
 }

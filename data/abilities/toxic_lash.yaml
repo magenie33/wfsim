@@ -5,8 +5,10 @@
 # health and armor resistances. This damage buff is applied as an Extra Hit."
 #
 # So everything about how it behaves is the category's, not this file's — the
-# faction bonus twice, the body part twice, crit inherited and never rolled, the
-# `f³` on the status it leaves. This file names two numbers and one flag.
+# faction bonus twice, crit inherited and never rolled, the `f³` on the status
+# it leaves. The body part lands ONCE, inside the hit it copies: its own
+# instance is a forced 1x weak point, and no Blast detonation fires it — both
+# are Xata's Whisper's alone (wiki `Extra_Hit`).
 #
 # "before health and armor resistances" is worth reading twice: it is not a
 # separate rule, it is what being a damage INSTANCE means. It lands through

@@ -155,10 +155,10 @@ pub(super) fn debilitate_split(
 ///
 /// The factor-by-factor account is docs/EXTRA_HIT.md §"How the multipliers
 /// stack"; the shape here is that it MULTIPLIES the triggering instance's
-/// finished `trigger_raw` rather than rebuilding anything, so faction and the
-/// body part are applied a second time and crit is inherited rather than
-/// rolled. `part_again` is the caller's, because only the caller knows whether
-/// what triggered this struck a body part at all.
+/// finished `trigger_raw` rather than rebuilding anything, so faction is
+/// applied a second time and crit is inherited rather than rolled. `part_again`
+/// is the caller's, because only the caller knows whether what triggered this
+/// struck a body part at all; only a member with `body_part_again` takes it.
 #[wfsim_gas_macro::metered]
 pub(super) fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> f64 {
     if extra_hit_damage > 0.0 {
@@ -176,6 +176,8 @@ pub(super) fn fire_extra_hits(
     trigger_raw: f64,
     bracket: f64,
     part_again: f64,
+    // A BLAST DETONATION fires only the members that say so.
+    from_blast_detonation: bool,
     head_direct: bool,
     status_chance: f64,
     at: f64,
@@ -195,7 +197,20 @@ pub(super) fn fire_extra_hits(
         return false;
     }
     let f = params.faction_at_time(at);
-    for crate::data::abilities::ExtraHitLive { element: ty, fraction, forced_status } in hits {
+    for crate::data::abilities::ExtraHitLive {
+        element: ty,
+        fraction,
+        forced_status,
+        body_part_again,
+        triggered_by_blast_detonation,
+    } in hits
+    {
+        if from_blast_detonation && !triggered_by_blast_detonation {
+            continue;
+        }
+        // Every other member's instance is a forced 1x weak point; the part it
+        // carries is the one already inside `trigger_raw`.
+        let part_again = if body_part_again { part_again } else { 1.0 };
         let raw = trigger_raw * fraction * bracket * part_again * f;
         let mut breakdown = Breakdown::default();
         let settled = target.apply(
@@ -1050,7 +1065,8 @@ pub(super) fn settle_procs(
                         arc.on_kill(params, at);
                         debuffs.on_death(owner, params.acid_shells, &params.foe);
                     } else {
-                        // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT.
+                        // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT, and
+                        // only Xata's Whisper's.
                         // The bracket is already folded into `xh_total`, and no
                         // body part is re-applied — a detonation struck none.
                         fire_extra_hits(
@@ -1058,6 +1074,7 @@ pub(super) fn settle_procs(
                             xh_total,
                             1.0,
                             1.0,
+                            true,
                             false,
                             active.status_chance,
                             at,

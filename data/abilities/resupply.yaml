@@ -29,6 +29,10 @@
 #   weapon, so the sim never has to know what a sniper is.
 #
 # ITS STATUS IS A CERTAINTY: "the selected Elemental Damage AND Status Effect".
+#
+# THE BODY PART ONCE, inside the hit it copies: its own instance is a forced 1x
+# weak point, and no Blast detonation fires it — both are Xata's Whisper's alone
+# (wiki `Extra_Hit`).
 
 # DURATION: THE ABILITY HAS NONE. It is an ammo pack — the buff rides the
 # magazine it filled, not a clock, so the wiki's duration row reads "not

@@ -98,10 +98,10 @@ has none.
 | **Melee Duplicate** | 100%, on a base crit | the swing's own | **rolled anew**, crit too | `data/arcanes/melee/melee_duplicate.yaml` ✅ — the instance replayed, faction once |
 | **Melee Influence** | the element's own share | the status that landed | **guaranteed** | `data/arcanes/melee/melee_influence.yaml` ✅ |
 
-### The three things a member may differ in, and nothing else
+### The five things a member may differ in, and nothing else
 
 Adding Toxic Lash and Resupply is what proved the category, because between them
-they needed exactly three fields and no new mechanism:
+they needed five fields and no new mechanism:
 
 - **`forced_status`** — Xata's extra hit rolls the weapon's own chance
   ("附加的虚空伤害具有基于武器本身触发几率的独立触发几率"); Toxic Lash is
@@ -116,6 +116,11 @@ they needed exactly three fields and no new mechanism:
   Rifles against 10/15/20/25%. Applied in `data::abilities::resolve`, the one
   function handed both the ability and the weapon it is cast on, so the sim
   never learns what a sniper is.
+- **`body_part_again`** — Xata's Whisper is *"the only extra hit that does not
+  have a forced 1x weakpoint multiplier"*. Every other member's instance is a
+  1x weak point, so it carries the body part once, inside the hit it copies.
+- **`triggered_by_blast_detonation`** — *"Only Xata's Whisper will be triggered
+  by blast Detonations, no other extra hit will."*
 
 The three unimplemented ability sources are `kind: extra_hit` entries in
 `data/abilities/` and nothing else — the machinery is `fight::fire_extra_hits`,
@@ -167,11 +172,13 @@ nothing invented.
 - ✅ **"independently rolling Status Effects"** — its own roll, at the weapon's
   own chance, off its own one-type vector.
 - ✅ **enemies killed by an Extra Hit are credited to the weapon.**
-- ⚠️ **Body part twice** and **crit inherited, never rolled** are stated on
-  Xata's own card rather than here; see MECHANICS §7 §"Extra Hit".
+- ✅ **Body part twice for Xata's Whisper only** — every other member has a
+  forced 1x weak point (`body_part_again`).
+- ⚠️ **Crit inherited, never rolled** is stated on Xata's own card rather than
+  here; see MECHANICS §7 §"Extra Hit".
 - ⚠️ **A Blast detonation triggers only Xata's Whisper** — the EN wiki files it
-  under Bugs, and it is declared as a `live_bugs:` line on that ability rather
-  than as a property of the category (MEASUREMENTS M40).
+  under Bugs; it is that member's `triggered_by_blast_detonation` and a
+  `live_bugs:` line on it (MEASUREMENTS M40).
 
 ## Why this is a category and not four special cases
 
@@ -194,11 +201,17 @@ wiki's one-line formula
 produces every oddity people report: `Weapon Hit Damage` already contains a
 faction layer, a crit multiplier and a body-part multiplier.
 
+- **Before quantization.** `Weapon Hit Damage` is the hit before the snap: the
+  bracket the caller passes divides its own quantized bracket out and the
+  unquantized one in. M40's capture pops 135 and 63, which are 134.68 and 62.62
+  unquantized and 133.91 and 62.27 quantized; the wiki's worked example is
+  then exact to the digit.
 - **Faction, again.** One `faction_at_time` on top of however many the trigger
   already carried. A direct hit is at depth 1, so its extra hit is at 2; a Blast
   detonation is at depth 2, so ITS extra hit is at 3 — which is the "triple dip"
   both wikis name, and it is not hardcoded anywhere.
-- **The body part, again**, and the CALLER is what knows. A direct headshot
+- **The body part, again — Xata's Whisper only** (`body_part_again`), and the
+  CALLER is what knows. A direct headshot
   passes its `part_factor`; a radial, a field tick and a Blast detonation pass
   1.0, since none of them struck a body part. DE's CN card states both halves:
   「同理，弱点倍率也会被计算两次」for a hit, 「弱点倍率只会被计算一次」off a

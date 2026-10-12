@@ -23,6 +23,8 @@
 # - IT NEVER CRITS OF ITS OWN, but it inherits the crit of the hit it copied,
 #   which is why Vital Sense is listed as affecting it and why the number is
 #   still orange-sized behind an orange hit.
+# - IT COPIES THE HIT BEFORE QUANTIZATION (MEASUREMENTS M40), and takes Void's
+#   own health-type column, never the weapon's elements' columns.
 # - AND IT FIRES OFF A BLAST DETONATION, which nothing else does — see below.
 #
 # The percentage is of the TOTAL weapon damage, not of base: "Xata's Whisper
@@ -78,6 +80,12 @@ duration_seconds: 35
 effect:
   kind: extra_hit
   element: void
+  # "the only extra hit that does not have a forced 1x weakpoint multiplier"
+  # (wiki `Extra_Hit`), so a headshot lands on it a second time.
+  body_part_again: true
+  # "Only Xata's Whisper will be triggered by blast Detonations, no other extra
+  # hit will." (wiki `Extra_Hit`, Bugs)
+  triggered_by_blast_detonation: true
 
 # WHAT THE VOID PROC IS WORTH HERE, which is a stack of Condition Overload and
 # nothing else. The extra hit rolls the weapon's own status chance ("附加的虚空
@@ -90,6 +98,8 @@ unmodelled:
   - "The Void proc's reset of Sentient and Shadow Stalker damage adaptation is not modelled."
   - "The Vast Untime's +50% Void vulnerability, and its pause on this buff's timer, belong to another Xaku ability, which is not modelled."
   - "Whether a lingering field's tick (the Torid's cloud) triggers an extra hit is stated by neither wiki, so it does not here."
+  - "Its own crit roll — 0% base, 1x, raised only by headshot crit chance (Covenant, a charged Concentrated Arrow) — is not modelled; with neither in the build it never crits of its own."
+  - "A sneak attack on the hit is not copied onto it; the sim has no sneak attacks."
 
 live_bugs:
   - "An extra hit also fires off a Blast detonation, taking the faction bonus a third time and the elemental bonus the detonation itself is denied. The wiki lists it as a bug; it is modelled as it plays now, and a fix would change this number."

@@ -2000,12 +2000,18 @@ so an extra hit is worth `pct × (1 + faction)` of the hit rather than `pct` —
 writes a 2: it multiplies the finished instance and applies
 `faction_at_time` once more, and the layer count follows from what triggered it.
 
-**And the body part twice, which the EN formula does not show and DE's own CN
-card states outright** — 同理，弱点倍率也会被计算两次. A 3× headshot is 3× on the
-hit and 3× again on the extra hit off it, so an extra-hit ability is worth
-strictly more to a headshot build than any multiplier that merely scales the
-hit. `fight::fire_extra_hits` takes that as `part_again` from the caller,
+**And the body part twice ON XATA'S WHISPER ONLY**, which the EN formula does
+not show and DE's own CN card states outright — 同理，弱点倍率也会被计算两次. A
+3× headshot is 3× on the hit and 3× again on Xata's extra hit off it. Every
+other member's instance is a forced 1× weak point — Xata's is *"the only extra
+hit that does not have a forced 1x weakpoint multiplier"* — so Toxic Lash and
+Resupply carry the part once, inside the hit (`body_part_again`).
+`fight::fire_extra_hits` takes the part as `part_again` from the caller,
 because only the caller knows whether its instance struck a body part at all.
+
+**And the hit before quantization**: the extra hit copies the unquantized
+`Weapon Hit Damage` (`FightParams::extra_hit_bracket`; M40's 135 and 63 tell
+the two readings apart).
 
 **The percentage's bracket is the BASE ATTACK's, not the triggering
 instance's.** `Unmodded Impact Distribution` is the phrase that says so, and the
@@ -2022,6 +2028,9 @@ payload does NOT — with one exception, filed by the wiki under Bugs:
 
 > Only Xata's Whisper will be triggered by blast Detonations, no other extra hit
 > will.
+
+`triggered_by_blast_detonation` is that member's flag; `fire_extra_hits` skips
+every other member off a detonation.
 
 That detonation case is where three layers of faction stack up (the detonation
 is already at `faction_at(f, DEPTH_PROC)`) and where the extra hit takes a full
@@ -2045,8 +2054,8 @@ Attractor deals no damage and the arena has nobody to redirect fire from — but
 Void is on Condition Overload's own list of counting procs, so it is tracked
 like Radiation's Confusion: a presence with no payload. `DebuffState::attractor`.
 
-**Sources of extra hits, from the wiki's table** (none but Xata's Whisper is
-implemented; the ability layer is what would carry the rest): Toxic Lash
+**Sources of extra hits, from the wiki's table** (Xata's Whisper, Toxic Lash
+and Resupply are implemented — docs/EXTRA_HIT.md §"The members"): Toxic Lash
 20–30% Toxin, Xata's Whisper 17–26% Void, Silken Stride 10–40% Toxin, Resupply
 10–25% selectable, Uriel's Demonium Rune 30% Heat; Reconifex's Active Reload
 25% Heat; Melee Duplicate 100%; Primary Debilitate's 0-damage status application

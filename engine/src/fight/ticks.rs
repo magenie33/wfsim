@@ -576,6 +576,7 @@ pub(super) fn process_ticks(
                 value,
                 bracket,
                 1.0,
+                true,
                 false,
                 active.status_chance,
                 now,

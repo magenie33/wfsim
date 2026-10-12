@@ -28,13 +28,11 @@ Both oddities are visible in the last line alone, and the whole faction ladder
 is visible across the four: `f¹` on the hit, `f²` on its extra hit AND on the
 detonation, `f³` on the extra hit off the detonation.
 
-`the_wiki_worked_example_reproduces_to_the_digit` runs it. **The relations are
-exact; the absolute figures are not, and that is quantisation** — DE rounds each
-element of the vector down to a step of the base, so the example's 310 is
-300.3125 here. An illustration written to show a formula has no reason to carry
-it, and this engine has every reason to. The test therefore asserts the four
-RELATIONS, where the quantised total cancels, and states the one number that
-differs and why.
+`the_wiki_worked_example_reproduces_to_the_digit` runs it. **Both extra hits
+are exact to the digit, because an extra hit copies the hit BEFORE
+quantization**; only the hit itself snaps (the example's 310 is 300.3125 on
+it). The capture below says the same: its 135 and 63 are 134.68 and 62.62
+unquantized, and 133.91 and 62.27 — which pop 134 and 62 — quantized.
 
 It also rules out the two near-misses by name, because both are what a careful
 reader would expect instead: the extra hit off a detonation WITHOUT the

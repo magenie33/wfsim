@@ -73,24 +73,17 @@ pub enum AbilityEffect {
     /// on anything — `fight::fire_extra_hits`, MECHANICS §7 §"Extra Hit", and
     /// docs/EXTRA_HIT.md for the law its members share.
     ///
-    /// THREE THINGS DIFFER BETWEEN MEMBERS and nothing else does, which is what
-    /// makes this a category rather than four special cases:
-    ///
-    /// - the ELEMENT, fixed for most and CHOSEN for Resupply, whose gear wheel
-    ///   offers ten. A chosen one arrives on the pick, so one definition serves
-    ///   every choice;
-    /// - whether its status is GUARANTEED or rolls the weapon's own chance.
-    ///   Xata's rolls ("附加的虚空伤害具有基于武器本身触发几率的独立触发几率");
-    ///   Toxic Lash is 100% Toxin, and Resupply grants "the selected Elemental
-    ///   Damage and Status Effect";
-    /// - a WEAPON CLASS that doubles it — Resupply is 20/30/40/50% on Sniper
-    ///   Rifles against 10/15/20/25%. Applied in [`resolve`], the one function
-    ///   handed both the ability and the weapon it is cast on, so nothing
-    ///   downstream has to know what a sniper is.
+    /// FIVE THINGS DIFFER BETWEEN MEMBERS and nothing else does — the element
+    /// (fixed, or Resupply's chosen one), a guaranteed status, a weapon class
+    /// that doubles it (applied in [`resolve`]), the body part a second time and
+    /// a Blast detonation as a trigger (both Xata's Whisper's alone).
+    /// docs/EXTRA_HIT.md §"The five things a member may differ in".
     ExtraHit {
         element: DamageType,
         fraction: f64,
         forced_status: bool,
+        body_part_again: bool,
+        triggered_by_blast_detonation: bool,
     },
     /// AMMO EFFICIENCY (Energized Munitions). Not a damage bracket at all — it
     /// divides what a shot costs the magazine, so what it buys is RELOADS not
@@ -246,6 +239,12 @@ struct EffectFile {
     class_bonus_for: Option<String>,
     #[serde(default)]
     class_bonus: Option<f64>,
+    /// An extra hit whose own instance keeps the body part (Xata's Whisper).
+    #[serde(default)]
+    body_part_again: bool,
+    /// An extra hit a Blast detonation fires (Xata's Whisper).
+    #[serde(default)]
+    triggered_by_blast_detonation: bool,
 }
 
 #[derive(Deserialize)]
@@ -414,6 +413,8 @@ pub fn all() -> &'static [AbilityDef] {
                             element: element("extra_hit"),
                             fraction: v,
                             forced_status: ef.forced_status,
+                            body_part_again: ef.body_part_again,
+                            triggered_by_blast_detonation: ef.triggered_by_blast_detonation,
                         },
                         other => panic!("{path}: unknown ability effect kind {other}"),
                     }
@@ -582,7 +583,13 @@ pub fn resolve(
                 AbilityEffect::FlatCritChance(v) => AbilityEffect::FlatCritChance(scale(v)),
                 AbilityEffect::FinalCritDamage(v) => AbilityEffect::FinalCritDamage(scale(v)),
                 AbilityEffect::FireRate(v) => AbilityEffect::FireRate(scale(v)),
-                AbilityEffect::ExtraHit { element, fraction, forced_status } => {
+                AbilityEffect::ExtraHit {
+                    element,
+                    fraction,
+                    forced_status,
+                    body_part_again,
+                    triggered_by_blast_detonation,
+                } => {
                     AbilityEffect::ExtraHit {
                         element: picked(element),
                         fraction: scale(fraction)
@@ -590,6 +597,8 @@ pub fn resolve(
                                 .class_bonus
                                 .map_or(1.0, |(c, x)| if c == weapon_class { x } else { 1.0 }),
                         forced_status,
+                        body_part_again,
+                        triggered_by_blast_detonation,
                     }
                 }
             })
@@ -752,9 +761,19 @@ pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
         .filter(|a| a.live_at(t))
         .flat_map(|a| a.effects.iter())
         .filter_map(|e| match *e {
-            AbilityEffect::ExtraHit { element, fraction, forced_status } => {
-                Some(ExtraHitLive { element, fraction, forced_status })
-            }
+            AbilityEffect::ExtraHit {
+                element,
+                fraction,
+                forced_status,
+                body_part_again,
+                triggered_by_blast_detonation,
+            } => Some(ExtraHitLive {
+                element,
+                fraction,
+                forced_status,
+                body_part_again,
+                triggered_by_blast_detonation,
+            }),
             _ => None,
         })
         .collect()
@@ -791,6 +810,10 @@ pub struct ExtraHitLive {
     /// selected Elemental Damage and Status Effect"; Xata's rolls the weapon's
     /// own. The difference is per member, so it travels with the member.
     pub forced_status: bool,
+    /// Xata's Whisper alone takes the struck body part on its own instance too.
+    pub body_part_again: bool,
+    /// Xata's Whisper alone fires off a Blast detonation.
+    pub triggered_by_blast_detonation: bool,
 }
 
 /// Every distinct moment the ACTIVE SET changes, `0.0` first and each cast and
@@ -1089,7 +1112,7 @@ mod tests {
         }
     }
 
-    /// THE CATEGORY'S THREE PER-MEMBER FACTS, asserted on the members that
+    /// THE CATEGORY'S PER-MEMBER FACTS, asserted on the members that
     /// have them — because each one is a field, and a field nobody reads is a
     /// field that quietly stops working.
     #[test]
@@ -1133,6 +1156,14 @@ mod tests {
         for (id, forced) in [("toxic_lash", true), ("resupply", true), ("xatas_whisper", false)] {
             let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], &Caster::default(), "rifle", "melee");
             assert_eq!(extra_hits_at(&live, 0.0)[0].forced_status, forced, "{id}");
+        }
+
+        // 4 + 5. THE BODY PART AGAIN, and a BLAST DETONATION as a trigger:
+        //    Xata's Whisper's alone (wiki `Extra_Hit`).
+        for (id, xata) in [("toxic_lash", false), ("resupply", false), ("xatas_whisper", true)] {
+            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], &Caster::default(), "rifle", "melee");
+            let xh = extra_hits_at(&live, 0.0)[0];
+            assert_eq!((xh.body_part_again, xh.triggered_by_blast_detonation), (xata, xata), "{id}");
         }
 
         // …and Toxic Lash's own number, for guns: 30% Toxin, 45 s.

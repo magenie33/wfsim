@@ -666,6 +666,18 @@ impl FightParams {
         t: f64,
         w: &CardWindows,
     ) -> DamageVector {
+        let out = self.with_live_elements_unquantized(qvec, stage_mb, t, w);
+        if out == qvec { out } else { out.quantized_against(stage_mb) }
+    }
+
+    /// [`Self::with_live_elements`] before the snap, which is what an extra hit reads.
+    pub(super) fn with_live_elements_unquantized(
+        &self,
+        qvec: DamageVector,
+        stage_mb: f64,
+        t: f64,
+        w: &CardWindows,
+    ) -> DamageVector {
         let mut added = crate::data::abilities::added_elements_at(&self.abilities_now(), t);
         for &(ty, v) in &self.arcane.added_elements {
             match added.iter_mut().find(|(t2, _)| *t2 == ty) {
@@ -689,7 +701,7 @@ impl FightParams {
         for (ty, fraction) in added {
             out.add(ty, stage_mb * fraction);
         }
-        out.quantized_against(stage_mb)
+        out
     }
 
     /// Build engagement params from a resolved mod loadout (pipeline
@@ -1700,12 +1712,15 @@ impl FightParams {
     /// `dot_modified_base` is the same number before it, so dividing cancels
     /// everything but the bracket. READ AT `t`, because an ability-granted
     /// element is additive with elemental mods and so inside this bracket.
+    ///
+    /// UNQUANTIZED: an extra hit copies the hit before the snap (M40: 135 and 63
+    /// on screen; the snapped vector pops 134 and 62).
     pub(super) fn extra_hit_bracket(&self, t: f64, w: &CardWindows) -> f64 {
         let mb = self.dot_modified_base.unwrap_or_else(|| self.damage.total());
         if mb <= 0.0 {
             return 1.0;
         }
-        self.with_live_elements(self.damage.quantized_against(mb), mb, t, w).total() / mb
+        self.with_live_elements_unquantized(self.damage, mb, t, w).total() / mb
     }
 
     /// ONE RATIO ON THE HIT, with Frenzy up and down alike — a site that
