@@ -54,6 +54,15 @@ const r = await evaluate(`(async () => {
         ? { at: t.at, code: "AB12", state: "confirmed", agreed_at: new Date().toISOString() } : { at: t.at, code: "CD34", state: "waiting" })) });
     }
     if (path === "/api/board/points") return reply({ ok: true, points: 12, recent: 12, claimed: !!account });
+    // THE LEDGERS: an hour kept on this device, a day before held by an account since ended.
+    const ago = (h) => new Date(Date.now() - h * 3600000).toISOString().slice(0, 13);
+    const ledger = (you) => ({ ok: true, from: ago(720), earlier: true, refused: false,
+      summary: { tasks: 9, points: 30, device: you ? 0 : 12, you: you ? 30 : 0, other: you ? 0 : 18 }, unpaid: { disagreed: 2, waiting: 1, refused: 0 },
+      hours: [{ hour: ago(30), tasks: 6, points: 18, holder: you ? "you" : "other", closed: !you }, { hour: ago(1), tasks: 3, points: 12, holder: you ? "you" : "device", closed: false }] });
+    if (path === "/api/board/ledger") return reply(ledger(false));
+    if (path === "/api/account/devices/ledger") return reply(ledger(true));
+    if (path.startsWith("/api/account/ledger")) return reply({ ok: true, from: ago(720), devices: [{ id: "ownown", label: null, removed: false }, { id: "zzzzzz", label: null, removed: true }],
+      hours: [{ hour: ago(1), id: "ownown", points: 5 }, { hour: ago(1), id: "zzzzzz", points: 7 }] });
     if (path === "/api/cloud/sync") return reply({ ok: true, full: false, entries: [], next: null, cursor: 0 });
     return realFetch(url, o);
   };
@@ -87,6 +96,14 @@ const r = await evaluate(`(async () => {
   cards()[0].click(); await sleep(200);
   out.closed = !page().querySelector("#rt-live .rt-detail");
   out.signIn = !!page().querySelector('a[href^="/login"]');
+  // THIS BROWSER'S LEDGER: the split, the unpaid by why, its days, a day opening into its hours.
+  const lg = document.getElementById("compute-ledger");
+  out.ledger = lg ? lg.textContent.replace(/\\s+/g, " ") : "";
+  out.ledgerDays = lg ? lg.querySelectorAll(".lg-day").length : 0;
+  if (lg) { lg.querySelector(".lg-day").click(); await sleep(300); }
+  out.ledgerHours = page().querySelectorAll("#compute-ledger .lg-hour").length;
+  out.ledgerMore = !!page().querySelector('[data-auth="compute-ledger-span"]');
+  out.leak = page().textContent.includes(own);
   // THE NOW ROW IS DRAWN WHILE COMPUTING IS ON, so it is turned on for this.
   localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
   computeStart({ kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base" });
@@ -105,6 +122,9 @@ const r = await evaluate(`(async () => {
   out.devices = mine.map((k) => k.querySelector("dt").textContent.replace(/\\s+/g, " ").trim());
   out.status = mine.map((k) => (k.querySelector("dd") || { textContent: "" }).textContent.replace(/\\s+/g, " ").trim());
   out.guessed = posted.find(([what, b]) => what === "label" && b.id === "ownown");
+  page().querySelector('[data-auth="compute-ledger-device"][data-id="abcdef"]').click(); await sleep(400);
+  out.deviceLedger = (page().querySelector(".lg-device") || { textContent: "" }).textContent.replace(/\\s+/g, " ");
+  out.accountLedger = (document.getElementById("compute-account-ledger") || { textContent: "" }).textContent.replace(/\\s+/g, " ");
   page().querySelector('[data-auth="device-rename"][data-id="abcdef"]').click(); await sleep(200);
   const input = document.getElementById("device-label");
   out.editing = !!input;
@@ -139,6 +159,13 @@ check("...opened, linked to that weapon's board, and its mods never drawn closed
 check("...the list is changed in place, never drawn again", r.kept);
 check("...and a kind the page does not know still draws", r.recent[1] && r.recent[1].startsWith("Task"), JSON.stringify(r.recent));
 check("signed out, it says how to count the work under a name", r.signIn);
+check("this browser's ledger says where its points went, the unpaid by why, another account never named",
+  r.ledger.includes("30 points in all — 12 kept on this device, 0 in your account, 18 in another account.")
+  && r.ledger.includes("2 disagreed with the agreed result, 1 wait for another computer's result")
+  && r.ledger.includes("another account (no longer holds it) 18") && r.ledger.includes("this device 12"), r.ledger);
+check("...a day each, newest first, a day opening into its hours, and all history a click away",
+  r.ledgerDays === 2 && r.ledgerHours === 1 && r.ledgerMore, `${r.ledgerDays} ${r.ledgerHours} ${r.ledgerMore}`);
+check("...and the page never draws this browser's full id", !r.leak);
 check("a task in progress shows how far it is", r.now === "50%" && r.bar === "50%", `${r.now} ${r.bar}`);
 check("signed in, every device is listed by its name, this browser marked",
   / · .* \(this browser\)$/.test(r.devices[0]) && r.devices[1] === "Study PC" && r.devices.length === 2, JSON.stringify(r.devices));
@@ -146,6 +173,10 @@ check("...with what each is doing, or when it last answered",
   /^Computing: Leaderboard order · Furis/.test(r.status[0]) && /^Last answered 10 min ago/.test(r.status[1]), JSON.stringify(r.status));
 check("this browser, claimed before it had a name, is given its guess", !!r.guessed && /·/.test(r.guessed[1].label),
   JSON.stringify(r.guessed));
+check("an owner opens a listed device's ledger under its row, its points said as the account's own",
+  r.deviceLedger.includes("30 in your account") && r.deviceLedger.includes("your account 18"), r.deviceLedger);
+check("...and the account's points by day, device by device, a removed one said as removed",
+  /Device zzzzzz \(removed\) 7/.test(r.accountLedger) && r.accountLedger.includes("Points by day"), r.accountLedger);
 check("a device is renamed inline", r.editing && r.renamed.includes("Garage Mac"), JSON.stringify(r.renamed));
 check("...and removed after an inline question", r.asks && r.after === 1
   && r.posted.some(([what, b]) => what === "remove" && b.id === "abcdef"), JSON.stringify(r.posted));
