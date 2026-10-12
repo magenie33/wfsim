@@ -613,8 +613,8 @@ def is_test_source(rel: str) -> bool:
 
 
 def engine_files() -> dict:
-    """What `engine_id` reads, as the grace compares it: each weapon file by its
-    own digest, and every other file but a test as one, `rest`."""
+    """What `engine_id` reads, as the grace compares it: each weapon and kitgun
+    part file by its own digest, and every other file but a test as one, `rest`."""
     out, rest = {}, hashlib.sha256()
     files = sorted(p for d in ENGINE_SOURCES for p in (ROOT / d).rglob("*") if p.is_file())
     for p in files + [ROOT / "Cargo.lock"]:
@@ -622,7 +622,7 @@ def engine_files() -> dict:
         if rel.startswith(ENGINE_SOURCES_NOT) or is_test_source(rel):
             continue
         body = p.read_bytes().replace(bytes([13, 10]), bytes([10]))
-        if rel.startswith("data/weapons/") and rel.endswith(".yaml"):
+        if rel.startswith(("data/weapons/", "data/kitguns/")) and rel.endswith(".yaml"):
             out[rel] = hashlib.sha256(body).hexdigest()[:12]
         else:
             rest.update(rel.encode("utf-8") + bytes(1) + body + bytes(1))
@@ -641,21 +641,29 @@ ENGINES_DIR = APP / "engines"
 
 
 def changed_weapons(paths) -> set | None:
-    """The weapons whose rows `paths` may move, or None when they may move any."""
+    """The weapons whose rows `paths` may move, or None when they may move any.
+    A kitgun chamber's file is the weapon naming it as its `kitgun`; any other
+    kitgun part, every kitgun."""
+    specs = [yload(p.read_text(encoding="utf-8")) for p in (ROOT / "data" / "weapons").rglob("*.yaml")]
+    specs = [s for s in specs if isinstance(s, dict) and s.get("id")]
     ids = set()
     for rel in paths:
-        if not (rel.startswith("data/weapons/") and rel.endswith(".yaml")):
+        if not rel.endswith(".yaml"):
             return None
-        p = ROOT / rel
-        spec = yload(p.read_text(encoding="utf-8")) if p.is_file() else None
-        ids.add(spec["id"] if isinstance(spec, dict) and spec.get("id") else Path(rel).stem)
+        if rel.startswith("data/kitguns/chambers/"):
+            ids |= {s["id"] for s in specs if s.get("kitgun") == Path(rel).stem}
+        elif rel.startswith("data/kitguns/"):
+            ids |= {s["id"] for s in specs if s.get("kitgun")}
+        elif rel.startswith("data/weapons/"):
+            p = ROOT / rel
+            spec = yload(p.read_text(encoding="utf-8")) if p.is_file() else None
+            ids.add(spec["id"] if isinstance(spec, dict) and spec.get("id") else Path(rel).stem)
+        else:
+            return None
     # LINKED WEAPONS MOVE TOGETHER: a form and what it inherits, and all that
     # share a transform group or a riven family, walked until nothing is added.
     near = {}
-    for p in (ROOT / "data" / "weapons").rglob("*.yaml"):
-        spec = yload(p.read_text(encoding="utf-8"))
-        if not (isinstance(spec, dict) and spec.get("id")):
-            continue
+    for spec in specs:
         for node in ([("w", spec["inherits"])] if spec.get("inherits") else []) +                 [(k, spec[f]) for k, f in (("t", "transform_group"), ("r", "riven_family")) if spec.get(f)]:
             near.setdefault(("w", spec["id"]), set()).add(node)
             near.setdefault(node, set()).add(("w", spec["id"]))

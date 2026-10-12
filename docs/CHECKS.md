@@ -203,6 +203,16 @@ Plain node against a KV stub, no browser. Every key
 table knows how to keep; every key survives into storage; two builds differing
 in any one axis are two records.
 
+## `check_engine_grace.py`
+
+Python over the repository's own data: which older engine `release.json`
+accepts and on which weapons (`build_site_app.py` `accepted_engines`). A
+weapon file moves that weapon and every form, transform group and riven family
+linked to it; a kitgun chamber moves the weapon built on it, any other kitgun
+part every kitgun; anything else — mechanics, shared data — moves everything,
+and that engine is not accepted. Tests are never compared. An engine replaced
+more than seven days ago is dropped with its file list.
+
 ## `check_board_verify`
 
 Plain node against `worker/schema.sql` on node's sqlite: a board row as a

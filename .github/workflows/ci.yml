@@ -302,6 +302,10 @@ jobs:
       # days whatever the room: the oldest first, never more than an hour's.
       - name: A refresh asks the oldest rows the room allows, and the forced ones
         run: python3 scripts/oldest_rows.py --self-test
+      # AN OLDER ENGINE IS ACCEPTED WHERE ITS BITS ARE THE SERVED ONE'S, and
+      # nowhere else: a weapon's data and its linked forms, never mechanics.
+      - name: An older engine is accepted exactly on the weapons its data matches
+        run: (python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml) && python3 scripts/check_engine_grace.py
       # THE WHOLE HOP, IN ONE. Each end of it has its own test and all of them
       # passed on the day `mode` was in the door's key, because no test looked at
       # what came out the far end. What a player PLACES and what the library
