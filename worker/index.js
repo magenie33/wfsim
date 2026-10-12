@@ -749,7 +749,7 @@ export default {
     try {
       return await serve(request, f.env, ctx);
     } finally {
-      ctx.waitUntil(f.close());
+      if (ctx) ctx.waitUntil(f.close()); else await f.close();
     }
   },
 };
