@@ -3412,6 +3412,10 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .w-tab{border-collapse:collapse;width:100%;font-size:12px;
   font-variant-numeric:tabular-nums;margin:0 0 10px}
 .w-tab:last-child{margin-bottom:0}
+/* THE POINTS LEDGER (75-ledger.js): a day row opens into its hours. */
+.lg-tab .lg-day{cursor:pointer}
+.lg-tab .lg-hour td{color:var(--muted);font-size:11.5px;padding-left:14px}
+.lg-device{grid-column:1/-1;padding:0 0 10px}
 .w-tab caption{caption-side:top;text-align:left;color:var(--muted);
   font-size:11px;padding:0 0 6px}
 .w-tab th,.w-tab td{padding:5px 10px 5px 0;vertical-align:top;

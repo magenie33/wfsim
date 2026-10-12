@@ -313,7 +313,8 @@ function computeDevicesHtml() {
     }
     return `<div class="kv"><dt>${escHtml(name)}${here}</dt><dd>${status}<br><span class="set-note">${pts}</span></dd>
       <button class="ghost-btn btn-sm" data-auth="device-rename" data-id="${d.id}">${aT("Rename")}</button>
-      <button class="ghost-btn btn-sm" data-auth="device-remove" data-id="${d.id}">${aT("Remove")}</button></div>`;
+      <button class="ghost-btn btn-sm" data-auth="device-remove" data-id="${d.id}">${aT("Remove")}</button>
+      <button class="ghost-btn btn-sm" data-auth="compute-ledger-device" data-id="${d.id}">${aT("Ledger")}</button></div>${ledgerDeviceHtml(d.id)}`;
   }).join("");
   const total = `${computePts(s.points)} · ${escHtml(tr("{n} in the last 30 days").replace("{n}", Number(s.recent || 0).toLocaleString(accountLocale())))}`;
   // A REMOVED DEVICE'S POINTS ARE STILL IN THE TOTAL, and the list says so (worker/contribution.js `release`).
@@ -747,7 +748,7 @@ function computePage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute together")}</h1>
     <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}
       <a href="/contributors">${aT("Contributors")}</a></p>
-    ${computeDemandHtml()}${computeHereHtml()}${computeDevicesHtml()}${computeRecentHtml()}</div></div>`;
+    ${computeDemandHtml()}${computeHereHtml()}${ledgerHereHtml()}${computeDevicesHtml()}${ledgerAccountHtml()}${computeRecentHtml()}</div></div>`;
 }
 
 /// DRAWN: this browser's points asked, the account's devices asked once per
@@ -773,12 +774,13 @@ function computeOpened() {
   // for here redrew for ever — the page froze.
   if (!computeTimer) {
     computeTimer = setInterval(computeRefresh, 30000);
-    Promise.all([loadComputeDemand(), navComputing(), loadTaskStates()]).then(computeRedraw);
+    Promise.all([loadComputeDemand(), navComputing(), loadTaskStates(), loadLedgers()]).then(computeRedraw);
   }
 }
 async function computeRefresh() {
   if (authKindOf(location.pathname) !== "compute") { clearInterval(computeTimer); computeTimer = null; computeAskedFor = null; return; }
-  await Promise.all([loadComputeDemand(), navComputing(), loadTaskStates()]);
+  const ledgers = Date.now() - ledgerAskedAt >= LEDGER_EVERY_MS || ledgerAskedFor !== ((accountState.account || {}).id || null);
+  await Promise.all([loadComputeDemand(), navComputing(), loadTaskStates(), ledgers ? loadLedgers() : null]);
   if (!accountState.account) return computeRedraw();
   await loadDevices();
   const own = computeOwnId();
@@ -794,6 +796,7 @@ async function computeRefresh() {
 async function computeAct(el, what) {
   const id = el.dataset.id;
   if (what === "compute-reload") return reloadForRelease();
+  if (what.startsWith("compute-ledger")) return ledgerAct(el, what);
   else if (what === "device-rename") computeEditing = id;
   else if (what === "device-rename-cancel" || what === "device-remove-cancel") { computeEditing = null; computeRemoving = null; }
   else if (what === "device-remove") computeRemoving = id;
