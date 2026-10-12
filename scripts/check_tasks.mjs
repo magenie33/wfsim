@@ -604,6 +604,25 @@ console.log("\na fact whose asker was never told is told again");
   check("...and once delivered it is not told again", (await f.redeliver(env, NOW)) === 0);
 }
 
+console.log("\na fact's witnesses never paid are paid, and a late answer never");
+{
+  const db = d1(), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const t = (m) => new Date(NOW - m * 60_000).toISOString();
+  db.raw.prepare(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+    VALUES ('unpaid', 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`).run(t(90), t(90), t(60));
+  for (const [dev, at, canon] of [["w1", t(70), "c"], ["w2", t(65), "c"], ["late", t(50), "c"], ["wrong", t(66), "x"]]) {
+    db.raw.prepare("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')").run(dev);
+    db.raw.prepare(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+      VALUES ('unpaid', 'e1', ?, ?, ?, 0, ?, '{}', 100, 1, ?, 0, 0)`).run(dev, dev, dev, canon, at);
+  }
+  const n = await f.repay(env, NOW);
+  const paid = db.raw.prepare("SELECT device FROM answers WHERE credited = 1 ORDER BY device").all().map((r) => r.device);
+  check("the witnesses of a fact left unpaid are paid, the late answer and the disagreeing one not", n === 2 && paid.join() === "w1,w2"
+    && db.raw.prepare("SELECT work FROM verifiers WHERE id = 'w1'").get().work === 100, JSON.stringify({ n, paid }));
+  check("...and paid once", (await f.repay(env, NOW)) === 0);
+}
+
 console.log("\nwhat a refusal takes back goes to the official pool");
 {
   const db = d1(), env = { LIBRARY: db };

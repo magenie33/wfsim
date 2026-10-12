@@ -665,6 +665,33 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return told;
   }
 
+  /// A FACT'S WITNESSES NEVER PAID, paid: the answers agreeing with a settled
+  /// question's canon by the time it formed (a later answer is unpaid, as ever),
+  /// its independent witnesses as `decide` counts them, still uncredited — a
+  /// settlement whose credit failed after its commit. Paid in the
+  /// hour the fact formed, as they would have been. Up to `max` questions a call.
+  async function repay(env, now = Date.now(), max = 200) {
+    const db = factoryDb(env);
+    const { results: qs } = await db.prepare(pick(db,
+      `SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
+        WHERE a.credited = 0 AND a.void = 0 AND a.official = 0 AND a.canon = q.canon AND q.state IN ('fact', 'spot')
+          AND a.at <= q.fact_at AND q.fact_at < ? ORDER BY q.fact_at LIMIT ?`,
+      `SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
+        WHERE a.credited = 0 AND a.void = 0 AND a.official = 0 AND a.canon = q.canon AND q.state IN ('fact', 'spot')
+          AND a.at <= q.fact_at AND q.fact_at < ?::text ORDER BY q.fact_at LIMIT ?::bigint`))
+      .bind(iso(now - 10 * 60_000), max).all();
+    let paid = 0;
+    for (const q of qs) {
+      const { results: all } = await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 AND official = 0 AND canon = ? AND at <= ? ORDER BY id")
+        .bind(q.id, q.canon, q.fact_at).all();
+      const group = independent([...all.filter((a) => a.engine === q.fact_engine), ...all.filter((a) => a.engine !== q.fact_engine)]);
+      const owed = group.filter((a) => !a.credited);
+      if (!owed.length) continue;
+      try { await credit(db, owed, Date.parse(q.fact_at)); paid += owed.length; } catch (_) { /* paid next run */ }
+    }
+    return paid;
+  }
+
   /// …AS WRITES where the producer states its own (`on_fact_writes`), so a whole
   /// pack's facts land in one round trip; a producer that must call out is told
   /// after them (`later`).
@@ -835,7 +862,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit, redeliver };
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit, redeliver, repay };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has

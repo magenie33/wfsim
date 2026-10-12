@@ -201,6 +201,7 @@ export async function watchdog(env, now = Date.now()) {
     return !told || Date.parse(told.told_at) <= now - RETELL_MS;
   };
   await facts().redeliver(env, now);
+  await facts().repay(env, now);
   const found = await facts().audit(env, now, (await servedRelease(env)).engine);
   if (await stale("cells_filling")) {
     const cells = await cellsFilling(env, now);
