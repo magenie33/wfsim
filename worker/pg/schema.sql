@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS verifier_asks (
   idle       BIGINT NOT NULL DEFAULT 0,
   idle_lanes BIGINT NOT NULL DEFAULT 0,
   failed     BIGINT NOT NULL DEFAULT 0,
+  relayed      BIGINT NOT NULL DEFAULT 0,
+  relay_failed BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (verifier, hour)
 );
 CREATE INDEX IF NOT EXISTS verifier_asks_by_hour ON verifier_asks (hour);

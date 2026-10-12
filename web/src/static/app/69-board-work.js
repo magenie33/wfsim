@@ -259,12 +259,57 @@ async function loadDevicePoints() {
 /// dead connection — would otherwise hold the work loop for good.
 const BOARD_ASK_MS = 30_000;
 const boardSignal = () => (typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(BOARD_ASK_MS) : undefined);
-const postBoardWork = (path, body) => fetch(path, {
+const postBoardTo = (base, path, body) => fetch(base + path, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),
   signal: boardSignal(),
 }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+/// THE RELAY (docs/DISTRIBUTION.md §"The relay"): a server in Hong Kong that
+/// carries the board's work for readers whose road to the edge is poor. The page
+/// times both roads every `ROUTE_EVERY_MS` and takes the quicker; a call the
+/// relay drops goes direct at once, and the relay is left for that long.
+const RELAY = "https://cn.wfsim.app", ROUTE_EVERY_MS = 10 * 60_000, ROUTE_TRIES = 3;
+let routeBase = "", routeAt = 0, routing = null;
+const relayServes = () => /^(https:\/\/wfsim\.app|https?:\/\/wfsim\.localhost)$/.test(location.origin);
+async function timeRoute(base) {
+  const ms = [];
+  for (let i = 0; i < ROUTE_TRIES; i++) {
+    const t = performance.now();
+    try {
+      const r = await fetch(base + "/api/board/ping", { cache: "no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(5_000) : undefined });
+      if (!r.ok) return Infinity;
+      await r.json();
+    } catch (_) { return Infinity; }
+    ms.push(performance.now() - t);
+  }
+  return ms.sort((a, b) => a - b)[Math.floor(ms.length / 2)];
+}
+function chooseRoute() {
+  if (!relayServes()) return Promise.resolve("");
+  if (Date.now() - routeAt < ROUTE_EVERY_MS) return Promise.resolve(routeBase);
+  routing = routing || Promise.all([timeRoute(""), timeRoute(RELAY)]).then(([direct, relay]) => {
+    routeBase = relay < direct ? RELAY : "";
+    routeAt = Date.now();
+    routing = null;
+    return routeBase;
+  });
+  return routing;
+}
+/// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
+/// `/api/board/` alone — its answer or null. `relayDropped` says whether the
+/// last call was one the relay dropped.
+let relayDropped = false;
+async function postBoardWork(path, body) {
+  const base = path.startsWith("/api/board/") ? await chooseRoute() : "";
+  const r = await postBoardTo(base, path, body);
+  relayDropped = !r && !!base;
+  if (r || !base) return r;
+  routeBase = "";
+  routeAt = Date.now();
+  return postBoardTo("", path, body);
+}
 
 /// WHAT THIS PAGE HOLDS, given back on every way out that is not an answer —
 /// and on the page's own exit, by beacon — so neither the work nor this computer
@@ -399,10 +444,11 @@ function idleSave(m) {
   const hours = Object.keys(m).sort().slice(-IDLE_HOURS);
   try { localStorage.setItem(IDLE_KEY, JSON.stringify(Object.fromEntries(hours.map((h) => [h, m[h]])))); } catch (_) { /* this page only */ }
 }
-function idleCount(at, failed, lanes) {
+function idleCount(at, idle, failed, lanes, relayFailed) {
   const m = idleLoad(), h = new Date(at).toISOString().slice(0, 13);
-  const x = m[h] || { asks: 0, failed: 0, lanes: 0 };
-  m[h] = { asks: x.asks + 1, failed: x.failed + (failed ? 1 : 0), lanes: x.lanes + lanes };
+  const x = { asks: 0, failed: 0, lanes: 0, relay_failed: 0, ...m[h] };
+  m[h] = { asks: x.asks + (idle ? 1 : 0), failed: x.failed + (failed ? 1 : 0), lanes: x.lanes + (idle ? lanes : 0),
+    relay_failed: x.relay_failed + (relayFailed ? 1 : 0) };
   idleSave(m);
 }
 /// …LESS WHAT A REPLY KEPT, and only that: an ask counted while it was in flight stays.
@@ -411,8 +457,9 @@ function idleKept(sent) {
   for (const [h, x] of Object.entries(sent)) {
     const y = m[h];
     if (!y) continue;
-    const left = { asks: y.asks - x.asks, failed: y.failed - x.failed, lanes: y.lanes - x.lanes };
-    if (left.asks > 0) m[h] = left; else delete m[h];
+    const left = { asks: y.asks - x.asks, failed: y.failed - x.failed, lanes: y.lanes - x.lanes,
+      relay_failed: (y.relay_failed || 0) - (x.relay_failed || 0) };
+    if (left.asks > 0 || left.relay_failed > 0) m[h] = left; else delete m[h];
   }
   idleSave(m);
 }
@@ -423,11 +470,13 @@ async function askWork(id, ahead = false) {
   if (!c) return null;
   const at = Date.now(), lanes = communityLanes();
   const idle = ahead ? {} : idleLoad();
-  const ask = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, consent: { v: c.v, at: c.at },
+  const sent = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, consent: { v: c.v, at: c.at },
     lanes, ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}),
     ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}) });
+  const ask = sent, dropped = relayDropped;
   if (ask && ask.kept) idleKept(idle);
-  if (!ahead && !(ask && (ask.pack || ask.work))) idleCount(at, !ask, lanes);
+  const idleNow = !ahead && !(ask && (ask.pack || ask.work));
+  if (idleNow || dropped) idleCount(at, idleNow, !ask, lanes, dropped);
   if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
   if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
   if (ask && (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil)) {

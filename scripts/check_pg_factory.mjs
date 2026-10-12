@@ -57,6 +57,11 @@ function main() {
   console.log(`  ${once ? "ok " : "FAIL"}  answers sent twice are recorded once`);
   if (!once) failures++;
   const asks = lite.trace.at(-1).tables.verifier_asks;
+  const carried = lite.trace.find((t) => t.step === "relayed asks").out;
+  const relayed = asks.reduce((n, a) => n + a.relayed, 0);
+  const byRelay = carried > 0 && relayed === carried;
+  console.log(`  ${byRelay ? "ok " : "FAIL"}  the relay's asks are counted apart (${relayed} of ${carried}), and one posing as it is not`);
+  if (!byRelay) failures++;
   const counted = asks.some((a) => a.asks > 0) && asks.some((a) => a.failed > 0 && a.idle >= a.failed)
     && !asks.some((a) => a.hour < "2026-10-01");
   console.log(`  ${counted ? "ok " : "FAIL"}  an ask is counted by its hour, with the page's own idle and failed asks, and none too old`);
@@ -103,7 +108,7 @@ async function run(backend) {
       } };
   };
   const LIBRARY = d1("schema.sql", backend === "d1" ? [] : HOT), ACCOUNTS = d1("accounts.sql");
-  const env = { LIBRARY, ACCOUNTS, FACTORY_TOKEN: "ft", AUTH_SECRET: "s",
+  const env = { LIBRARY, ACCOUNTS, FACTORY_TOKEN: "ft", AUTH_SECRET: "s", RELAY_SECRET: "rs",
     ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1", accepted: [{ engine: "e0", until: "2099-01-01T00:00:00.000Z", changed: ["torid"] }] })) } };
   let pgc = null;
   // A REAL POSTGRES (`PG_URL`, a scratch database) through postgres.js, as the
@@ -202,6 +207,7 @@ async function run(backend) {
   const truth = (q) => 1 + (parseInt(q.slice(0, 6), 16) % 1000) / 7;
   const liar = dev[1];
   const held = new Map();
+  let relayedAsks = 0;
   for (let step = 0; step < 70; step++) {
     clock += 37_000 + Math.floor(rnd() * 60_000);
     const v = dev[Math.floor(rnd() * dev.length)], ip = `203.0.113.${dev.indexOf(v) + 1}`;
@@ -215,7 +221,11 @@ async function run(backend) {
         // THE PAGE'S OWN COUNT of asks that brought nothing, one hour of it too old to keep.
         ...(step % 4 === 0 ? { idle: [{ hour: new Date(clock - 3_600_000).toISOString().slice(0, 13), asks: 3, failed: 2, lanes: 12 },
           { hour: "2026-01-01T00", asks: 5, failed: 0, lanes: 20 }] } : {}) };
-      const r = await call(verifyRoute, "/api/board/work", body, { "cf-connecting-ip": ip });
+      // BY THE RELAY now and then, and once in a while by something posing as it.
+      const road = step % 7 === 3 ? { "x-wfsim-relay": "rs", "x-wfsim-client-ip": ip, "cf-connecting-ip": "192.0.2.99" }
+        : step % 7 === 5 ? { "x-wfsim-relay": "guess", "x-wfsim-client-ip": "192.0.2.7", "cf-connecting-ip": ip } : { "cf-connecting-ip": ip };
+      if (step % 7 === 3 && !body.ahead) relayedAsks++;
+      const r = await call(verifyRoute, "/api/board/work", body, road);
       say(`work ${dev.indexOf(v)} ${body.protocol}${body.engine}${body.ahead ? " ahead" : ""}`, r);
       if (r && r.pack) held.set(v, { ...r.pack, engine: body.engine });
       // A ROW ALONE is answered at once, by protocol 6's door.
@@ -248,6 +258,8 @@ async function run(backend) {
     }
     if (step % 10 === 9) await dump(`step ${step}`);
   }
+
+  trace.push({ step: "relayed asks", out: relayedAsks });
 
   // A DISPUTE FOR CERTAIN: the liar and two honest computers on the same rows.
   for (const v of [liar, dev[3], dev[4]]) {

@@ -327,6 +327,10 @@ CREATE TABLE IF NOT EXISTS verifier_asks (
   idle       INTEGER NOT NULL DEFAULT 0,
   idle_lanes INTEGER NOT NULL DEFAULT 0,
   failed     INTEGER NOT NULL DEFAULT 0,
+  -- …AND BY THE RELAY (docs/DISTRIBUTION.md §"The relay"): the asks it carried,
+  -- and the page's failed asks that went by it.
+  relayed      INTEGER NOT NULL DEFAULT 0,
+  relay_failed INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (verifier, hour)
 );
 CREATE INDEX IF NOT EXISTS verifier_asks_by_hour ON verifier_asks (hour);

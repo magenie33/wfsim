@@ -128,13 +128,24 @@ export function graceOf(release, engine, now = Date.now()) {
   return a && Date.parse(a.until) > now ? a : null;
 }
 
+/// THE ADDRESS A CLIENT ASKS FROM — the relay's for every reader it carries
+/// (docs/DISTRIBUTION.md §"The relay"), unless the relay says whose it carries
+/// and proves it is the relay by the secret only it and this worker hold.
+export function clientIp(request, env) {
+  const relayed = env.RELAY_SECRET && request.headers.get("x-wfsim-relay") === env.RELAY_SECRET
+    && (request.headers.get("x-wfsim-client-ip") || "").trim();
+  return relayed || (request.headers.get("cf-connecting-ip") || "").trim();
+}
+/// …AND WHETHER IT CAME THROUGH THE RELAY, which `verifier_asks` counts apart.
+export const viaRelay = (request, env) => !!env.RELAY_SECRET && request.headers.get("x-wfsim-relay") === env.RELAY_SECRET;
+
 /// THE NETWORK A CLIENT ASKS FROM, as a salted hash of its public address — an
 /// IPv4 address whole, an IPv6 one by its /64 — so a further result never comes
 /// from the network of the one it confirms: two browsers on one desk agreeing
 /// are one witness counted twice. Kept on an open order and cleared with it;
 /// "" when the address is unknown, which excludes nothing.
 export async function netOf(request, env) {
-  const ip = (request.headers.get("cf-connecting-ip") || "").trim();
+  const ip = clientIp(request, env);
   if (!ip) return "";
   const net = ip.includes(":") ? ip.split(":").slice(0, 4).join(":") : ip;
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${env.AUTH_SECRET || "wfsim"}|${net}`));
@@ -235,7 +246,7 @@ async function work(request, env) {
                   AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT ?2::bigint) o) AS open,
                 (SELECT count(*) FROM verifiers WHERE asked_at > ?3::text) AS asking`)).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
     f.headOf(env, w, engine, now),
-    asksOf(db, id, ahead, b.idle, now),
+    asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),
   ]);
   // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
   // task for ever and its reader would never learn why.
@@ -274,8 +285,10 @@ async function work(request, env) {
 
 /// WHAT A DEVICE ASKED FOR, by the hour (`verifier_asks`, docs/BOARD.md
 /// §"Outages"): this ask, unless it asks ahead, and the page's own count of the
-/// asks that brought nothing (`idle`: `[{ hour, asks, failed, lanes }]`, those
-/// that never landed among them), which the page sends until a reply says `kept`.
+/// asks that brought nothing (`idle`: `[{ hour, asks, failed, lanes, relay_failed }]`,
+/// those that never landed among them; `relay_failed` the asks the relay dropped),
+/// which the page sends until a reply says `kept`. `relayed` counts the asks the
+/// relay carried, so the two routes' failures can be set side by side.
 const IDLE_HOURS = 48, IDLE_ASKS = 400;
 export function idleOf(list, now) {
   const out = new Map(), first = iso(now - IDLE_HOURS * 3_600_000).slice(0, 13), last = iso(now).slice(0, 13);
@@ -284,21 +297,24 @@ export function idleOf(list, now) {
     const asks = Number.isInteger(x.asks) ? Math.min(Math.max(x.asks, 0), IDLE_ASKS) : 0;
     const failed = Number.isInteger(x.failed) ? Math.min(Math.max(x.failed, 0), asks) : 0;
     const lanes = Number.isInteger(x.lanes) ? Math.min(Math.max(x.lanes, 0), asks * 256) : 0;
-    if (asks) out.set(x.hour, { asks, failed, lanes });
+    const relay_failed = Number.isInteger(x.relay_failed) ? Math.min(Math.max(x.relay_failed, 0), IDLE_ASKS) : 0;
+    if (asks || relay_failed) out.set(x.hour, { asks, failed, lanes, relay_failed });
   }
   return out;
 }
 const HOUR = /^\d{4}-\d\d-\d\dT\d\d$/;
-function asksOf(db, id, ahead, idle, now) {
+function asksOf(db, id, ahead, idle, now, relayed = false) {
   const rows = idleOf(idle, now), hour = iso(now).slice(0, 13);
-  const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, ...x }]));
-  if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, ...all.get(hour), seen: 1 });
+  const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, relayed: 0, ...x }]));
+  if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, relay_failed: 0, ...all.get(hour), seen: 1, relayed: relayed ? 1 : 0 });
   if (!all.size) return db.prepare("SELECT 1");
-  const values = [...all].map(() => pick(db, "(?, ?, ?, ?, ?, ?)", "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint)")).join(", ");
-  return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed) VALUES ${values}
+  const values = [...all].map(() => pick(db, "(?, ?, ?, ?, ?, ?, ?, ?)",
+    "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint)")).join(", ");
+  return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed) VALUES ${values}
       ON CONFLICT (verifier, hour) DO UPDATE SET asks = h.asks + excluded.asks, idle = h.idle + excluded.idle,
-        idle_lanes = h.idle_lanes + excluded.idle_lanes, failed = h.failed + excluded.failed`)
-    .bind(...[...all].flatMap(([h, x]) => [id, h, x.seen, x.asks, x.lanes, x.failed]));
+        idle_lanes = h.idle_lanes + excluded.idle_lanes, failed = h.failed + excluded.failed,
+        relayed = h.relayed + excluded.relayed, relay_failed = h.relay_failed + excluded.relay_failed`)
+    .bind(...[...all].flatMap(([h, x]) => [id, h, x.seen, x.asks, x.lanes, x.failed, x.relayed || 0, x.relay_failed || 0]));
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
@@ -457,6 +473,9 @@ async function mine(request, env) {
 }
 
 export async function verifyRoute(request, env, path) {
+  // A ROUTE'S ROUND TRIP, timed by the page to choose between the direct one and
+  // the relay's (69-board-work.js `chooseRoute`): it reads nothing.
+  if (path === "/api/board/ping") return json({ ok: true, relayed: viaRelay(request, env) });
   if (!env.LIBRARY) return json({ ok: false, error: "the library is not configured" }, 503);
   if (path === "/api/board/work") return work(request, env);
   if (path === "/api/board/answers") return answers(request, env);

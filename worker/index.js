@@ -846,7 +846,7 @@ async function serve(request, env, ctx) {
     if (path === "/api/qq" || path.startsWith("/api/qq/")) return qqRoute(request, env, path);
     if (path === "/api/world" || path.startsWith("/api/world/")) return worldRoute(request, env, ctx, path);
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path);
-    if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine"].includes(path)) return verifyRoute(request, env, path);
+    if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path.startsWith("/api/tasks/official/")) return officialRoute(request, env, path);
     if (path.startsWith("/api/board/live/")) return pushLive(request, env, path.slice("/api/board/live/".length));
