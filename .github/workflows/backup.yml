@@ -78,6 +78,13 @@ jobs:
           if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # ONE QUERY, AND IT IS THE SAME ONE THE BOARD RUNS. A backup that shares
       # its input with the thing it backs up shares its failure mode — which is
       # why a cache here would be wrong. There is none: the read IS the whole

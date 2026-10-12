@@ -27,27 +27,8 @@ set -euo pipefail
 PAGE=5000
 MAX_PAGES=200
 
-configured() {
-  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
-}
-
-D1_OUT=""
-D1_CODE=""
-d1() {
-  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
-  # A CALL THAT NEVER ANSWERS IS THE WORST SHAPE THIS PIPELINE HAS. Without a
-  # clock a hung connection holds the step until GitHub's six-hour cap, and the
-  # board's workflows keep ONE run pending per concurrency group — so every
-  # hourly tick behind it is cancelled and nothing is scored until somebody
-  # looks. Measured 2026-09-21: one hung call cost seventeen hours of ticks.
-  D1_CODE=$(curl -s --connect-timeout 15 --max-time 180     -o "$D1_OUT" -w '%{http_code}' -X POST \
-    -H "Authorization: Bearer ${CF_TOKEN:-x}" \
-    -H "content-type: application/json" \
-    --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
-    || D1_CODE="000"
-  [ "$D1_CODE" = "200" ]
-}
+. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
+configured() { db_configured; }
 
 # ---- the read -------------------------------------------------------------
 #
@@ -75,13 +56,13 @@ fetch() {
   local out="$1" offset=0 got total=0 page
   : > "$out"
   for page in $(seq 1 "$MAX_PAGES"); do
-    if ! d1 "$(page_body "$PAGE" "$offset")"; then
-      echo "::error::facts: the database refused the read [HTTP $D1_CODE]"
-      [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
+    if ! db_query "$(page_body "$PAGE" "$offset")"; then
+      echo "::error::facts: the database refused the read [HTTP $DB_CODE]"
+      [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
       return 1
     fi
-    got=$(jq -r '.result[0].results | length' < "$D1_OUT")
-    jq -c '.result[0].results[]' < "$D1_OUT" >> "$out"
+    got=$(jq -r '.result[0].results | length' < "$DB_OUT")
+    jq -c '.result[0].results[]' < "$DB_OUT" >> "$out"
     total=$((total + got))
     [ "$got" -lt "$PAGE" ] && break
     offset=$((offset + PAGE))
@@ -98,6 +79,7 @@ fetch() {
 # ---- self-test ------------------------------------------------------------
 self_test() {
   ok=0; bad=0
+  unset PG_URL
   DIR=$(mktemp -d)
   trap 'rm -rf "$DIR"' EXIT
   mkdir -p "$DIR/bin" "$DIR/work"

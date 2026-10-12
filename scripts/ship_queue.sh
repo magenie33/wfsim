@@ -23,33 +23,11 @@ set -euo pipefail
 # AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, DERIVED so a
 # column added below shrinks the batch rather than putting every write one
 # parameter over the limit.
-# AN INSTANT IS ISO 8601 TO THE MILLISECOND (docs/NAMING.md §9), as SQL:
-# now, and `?` seconds ago.
-ISO_NOW="strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"
 QUEUE_COLUMNS=4
 QUEUE_BATCH=$((100 / QUEUE_COLUMNS))
 
-configured() {
-  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
-}
-
-D1_OUT=""
-D1_CODE=""
-d1() {
-  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
-  # A CALL THAT NEVER ANSWERS IS THE WORST SHAPE THIS PIPELINE HAS. Without a
-  # clock a hung connection holds the step until GitHub's six-hour cap, and the
-  # board's workflows keep ONE run pending per concurrency group — so every
-  # hourly tick behind it is cancelled and nothing is scored until somebody
-  # looks. Measured 2026-09-21: one hung call cost seventeen hours of ticks.
-  D1_CODE=$(curl -s --connect-timeout 15 --max-time 180     -o "$D1_OUT" -w '%{http_code}' -X POST \
-    -H "Authorization: Bearer ${CF_TOKEN:-x}" \
-    -H "content-type: application/json" \
-    --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
-    || D1_CODE="000"
-  [ "$D1_CODE" = "200" ]
-}
+. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
+configured() { db_configured; }
 
 # ---- the statements -------------------------------------------------------
 #
@@ -64,12 +42,12 @@ batch_body() {
   jq -n -c --arg id "$1" --arg why "$2" --argjson total "$3" '
     {
       sql: ("INSERT INTO batches (id, at, why, total) VALUES (?,?,?,?)"
-            + " ON CONFLICT(id) DO UPDATE SET total = total + excluded.total"),
+            + " ON CONFLICT(id) DO UPDATE SET total = batches.total + excluded.total"),
       params: [$id, $id, $why, $total]
     }'
 }
 
-# `INSERT OR IGNORE`, because asking twice for one row is one row. The primary
+# `ON CONFLICT DO NOTHING`, because asking twice for one row is one row. The primary
 # key is (batch, build, ruler, mode) and that is the whole of the idempotence.
 queue_batches() {
   jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
@@ -78,9 +56,10 @@ queue_batches() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT OR IGNORE INTO queue (batch, build_id, ruler, mode)"
+        sql: ("INSERT INTO queue (batch, build_id, ruler, mode)"
               + " SELECT v.column1, v.column2, v.column3, v.column4 FROM (VALUES "
-              + ([$chunk[] | "(?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed),
+              + ([$chunk[] | "(?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed
+              + " ON CONFLICT DO NOTHING"),
         params: [$chunk[] | $batch, .build_id, .ruler, .mode]
       }
   ' "$2"
@@ -144,7 +123,7 @@ send() {
   local what="$1" sent=0 failed=0 body
   while IFS= read -r body; do
     [ -n "$body" ] || continue
-    if d1 "$body"; then
+    if db_query "$body"; then
       sent=$((sent + 1))
     else
       failed=$((failed + 1))
@@ -153,8 +132,8 @@ send() {
       # a count.
       if [ "$failed" -eq 1 ]; then
         {
-          echo "::error::queue: the database refused a $what [HTTP $D1_CODE]"
-          head -c 500 "$D1_OUT" || true
+          echo "::error::queue: the database refused a $what [HTTP $DB_CODE]"
+          head -c 500 "$DB_OUT" || true
           echo
         } >&2
       fi
@@ -177,9 +156,9 @@ ship() {
   # THE BATCH BEFORE ITS ROWS. `fetch_queue.sh` joins the two, so a row whose
   # batch is not there yet is a row no run can see — the other order hides work
   # for as long as the write takes.
-  if ! d1 "$(batch_body "$batch" "$why" "$n")"; then
-    echo "::error::queue: the database refused the batch [HTTP $D1_CODE]"
-    head -c 500 "$D1_OUT" || true
+  if ! db_query "$(batch_body "$batch" "$why" "$n")"; then
+    echo "::error::queue: the database refused the batch [HTTP $DB_CODE]"
+    head -c 500 "$DB_OUT" || true
     return 1
   fi
   # A CHUNK WRITTEN, THEN ASKED, THEN THE NEXT: a row written and not asked is
@@ -208,6 +187,7 @@ ship() {
 # ---- self-test ------------------------------------------------------------
 self_test() {
   ok=0; bad=0
+  unset PG_URL
   DIR=$(mktemp -d)
   trap 'rm -rf "$DIR"' EXIT
   mkdir -p "$DIR/bin" "$DIR/work"
@@ -226,7 +206,7 @@ self_test() {
   [ $((QUEUE_BATCH * QUEUE_COLUMNS)) -le 100 ] \
     && say ok "...and a statement stays inside D1's hundred" \
     || say FAIL "$((QUEUE_BATCH * QUEUE_COLUMNS)) is over"
-  printf '%s' "$first" | jq -e '.sql | contains("INSERT OR IGNORE")' >/dev/null \
+  printf '%s' "$first" | jq -e '.sql | endswith("ON CONFLICT DO NOTHING")' >/dev/null \
     && say ok "...and asking twice for one row is one row" \
     || say FAIL "$(printf '%s' "$first" | jq -r .sql)"
   printf '%s' "$first" | jq -e '.sql | contains("h1") | not' >/dev/null \
@@ -239,7 +219,7 @@ self_test() {
   # runs in one day both find arrivals; `total` is a statement about the past —
   # how many rows this group was ever asked for — so progress is that minus what
   # is still owed, and a replace would report the group shrinking as it worked.
-  printf '%s' "$(batch_body b why 4)" | jq -e '.sql | contains("total = total + excluded.total")' >/dev/null \
+  printf '%s' "$(batch_body b why 4)" | jq -e '.sql | contains("total = batches.total + excluded.total")' >/dev/null \
     && say ok "...and a second pass into it adds rather than replaces" \
     || say FAIL "$(printf '%s' "$(batch_body b why 4)" | jq -r .sql)"
 

@@ -55,6 +55,13 @@ jobs:
           key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
       - name: build the assembler
         run: cargo build --release --bin wfsim-board
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: read the library and the facts
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}

@@ -77,7 +77,7 @@ LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/was
                 "scripts/live_publish.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/fetch_facts.sh",
                 "scripts/ship_facts.sh", "scripts/ship_builds.sh",
-                "scripts/ship_queue.sh"]
+                "scripts/ship_queue.sh", "scripts/db.sh", "scripts/db.mjs", "scripts/pgq.mjs"]
 
 
 def toolchain() -> str:
@@ -126,6 +126,13 @@ def deploy_live(t: dict) -> None:
          str(out / "VERSION"), str(out / "ENGINE"), f"{host}:{root}/bin/incoming/"])
     run(["ssh", *o, host, f"chmod +x {root}/bin/incoming/wfsim-*; mv -f {root}/bin/incoming/* {root}/bin/"])
     run(["scp", "-q", *o, *LIVE_SCRIPTS, f"{host}:{root}/scripts/"])
+    # THE LIBRARY IN POSTGRES (scripts/db.mjs): its one shared piece of the
+    # worker, and the client, installed there. /etc/wfsim-live.env's PG_URL
+    # moves the live board onto it (deploy/wfsim-live.service).
+    run(["ssh", *o, host, f"mkdir -p {root}/worker {root}/scripts/pg"])
+    run(["scp", "-q", *o, "worker/placeholders.js", f"{host}:{root}/worker/"])
+    run(["scp", "-q", *o, "scripts/pg/package.json", "scripts/pg/package-lock.json", f"{host}:{root}/scripts/pg/"])
+    run(["ssh", *o, host, f"cd {root}/scripts/pg && npm ci --silent --omit=dev"])
     # THE WITNESS'S ENGINE IS THE SITE'S OWN WASM (scripts/wasm_witness.mjs): the
     # one that counts the volunteers' work, which no native build can.
     wasm = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))["wasm"]

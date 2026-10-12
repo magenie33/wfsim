@@ -12,8 +12,9 @@
 # nothing: what only the official machines may settle is `settle.yml`'s.
 # docs/BOARD.md §"The fact factory", §"The live board".
 #
-# Needs CF_ACCOUNT, CF_TOKEN (D1) and CF_D1_DATABASE, BOARD_PUSH_TOKEN, and
-# FACTORY_TOKEN (the fact factory's secret: ship_queue.sh, live_orders.mjs).
+# Needs the library's database — CF_ACCOUNT, CF_TOKEN and CF_D1_DATABASE (D1),
+# or PG_URL (Postgres, scripts/db.sh) — BOARD_PUSH_TOKEN, and FACTORY_TOKEN
+# (the fact factory's secret: ship_queue.sh, live_orders.mjs).
 set -euo pipefail
 
 WORK="${1:?usage: live_board.sh <work-dir> <bin-dir>}"
@@ -26,13 +27,7 @@ cd "$WORK"
 WORK="$(pwd)"
 touch new-builds.ndjson unverified.ndjson
 
-d1() {
-  curl -s --connect-timeout 15 --max-time 120 -o d1.json -w '%{http_code}' -X POST \
-    -H "Authorization: Bearer ${CF_TOKEN:?}" \
-    -H "content-type: application/json" \
-    --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:?}/d1/database/${CF_D1_DATABASE:?}/query"
-}
+. "$HERE/db.sh"
 
 # WHAT ARRIVED, TAKEN IN NOW: the same intake `queue.yml` runs hourly, which
 # stays as the fallback — the builds land and the inbox rows are spent
@@ -40,10 +35,9 @@ d1() {
 # order. Twice is harmless: a build is keyed by its hash and a queue row by its
 # own key.
 intake_arrivals() {
-  local code
-  code=$(d1 '{"sql":"SELECT id, at, record FROM inbox ORDER BY id LIMIT 500"}') || code=000
-  [ "$code" = "200" ] || { echo "live: inbox read refused [HTTP $code]" >&2; return 1; }
-  jq -c '.result[0].results[]' < d1.json > inbox-new.ndjson
+  db_query '{"sql":"SELECT id, at, record FROM inbox ORDER BY id LIMIT 500"}' \
+    || { echo "live: inbox read refused [HTTP $DB_CODE]" >&2; return 1; }
+  jq -c '.result[0].results[]' < "$DB_OUT" > inbox-new.ndjson
   [ -s inbox-new.ndjson ] || return 1
   "$BIN/wfsim-intake" --done done.txt --orders orders-new.ndjson < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
   bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
