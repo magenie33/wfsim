@@ -88,14 +88,14 @@
       "database_id": "ad0765fa-bf84-4cb9-95a1-4bd5b297b864"
     }
   ],
-  // HOW OFTEN ONE ADDRESS MAY ASK FOR A LOGIN CODE — the mail costs money and
-  // lands in somebody's inbox. Keyed by the caller's IP, which is not stored.
-  // THE LOGIN CODE'S MAIL, through Cloudflare Email Service from the onboarded
-  // `wfsim.app` (docs/ACCOUNTS.md §Setup). Absent, email is not offered.
   // THE FACT FACTORY'S TABLES IN POSTGRES (worker/factory_db.js), reached
   // through Hyperdrive and a Cloudflare Tunnel; used only while `FACTORY_DB`
   // says "pg", and D1 holds them otherwise — the switch is this one value.
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "fa561a2ab9364482aeb33421649eba62" }],
+  // HOW OFTEN ONE ADDRESS MAY ASK FOR A LOGIN CODE — the mail costs money and
+  // lands in somebody's inbox. Keyed by the caller's IP, which is not stored.
+  // THE LOGIN CODE'S MAIL, through Cloudflare Email Service from the onboarded
+  // `wfsim.app` (docs/ACCOUNTS.md §Setup). Absent, email is not offered.
   "send_email": [{ "name": "EMAIL" }],
   // THE PAID HALF: a private worker, the only way to reach it (worker/cloud.js).
   "services": [{ "binding": "CLOUD", "service": "wfsim-cloud" }],
