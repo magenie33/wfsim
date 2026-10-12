@@ -4,7 +4,7 @@ Chinese name: 侦察者
 
 Rifle · Primary · Mastery Rank 14. 40 base damage (impact 16, puncture 24), 28% crit chance, 2.8x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

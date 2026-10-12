@@ -4,7 +4,7 @@ Chinese name: 赤毒·鳄神
 
 Shotgun · Primary · Mastery Rank 15. 77 base damage x5 multishot (impact 57.75, puncture 9.625, slash 9.625), 21% crit chance, 2.3x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.1541 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-09-29 10:23 UTC · a96c10c3c2 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.1541 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-10-05 16:57 UTC · 052c2ed8c6 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6344 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-09-29 09:45 UTC · a96c10c3c2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.1541 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-10-11 05:33 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.1541 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-10-11 06:56 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6344 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-10-11 05:32 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 12.8199 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Shotgun Vendetta | 2026-10-08 21:12 UTC · 531aca13c9 |
 
 ## In WFSim

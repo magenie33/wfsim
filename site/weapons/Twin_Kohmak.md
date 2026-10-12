@@ -4,7 +4,7 @@ Chinese name: 双子寇恩霰机枪
 
 Dual Shotguns · Secondary · Mastery Rank 10. 30 base damage x5 multishot (impact 6, puncture 6, slash 18), 11% crit chance, 2x crit multiplier, 13.8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 9.2846 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-04 16:08 UTC · 9769e78c4c |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 9.2846 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-05 23:46 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0988 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-04 14:29 UTC · b2e56376e6 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 9.2846 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-11 06:28 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 9.2846 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-11 07:18 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0988 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-11 06:27 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 5.7433 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-09 03:03 UTC · d90905f83b |
 
 ## Not modelled here

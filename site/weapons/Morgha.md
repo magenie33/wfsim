@@ -4,7 +4,7 @@ Chinese name: 置灵者
 
 Archgun · Archgun · Mastery Rank 15. 64 base damage (impact 64), 30% crit chance, 2.2x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 16.2603 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-09-29 11:23 UTC · 9b0496567c |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 246.7451 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-05 21:46 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 2.9610 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-09-29 10:45 UTC · 9b0496567c |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 16.2603 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-11 05:33 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 246.7451 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-11 07:10 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 2.9610 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-11 05:32 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 8.0994 | Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-09 01:21 UTC · d90905f83b |
 
 ## Not modelled here

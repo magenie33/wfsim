@@ -4,7 +4,7 @@ Chinese name: 棱晶·楞次弓
 
 Bow · Primary · Mastery Rank 12. 56 base damage (impact 56), 50% crit chance, 2.8x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6682 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-05 16:58 UTC · 052c2ed8c6 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6682 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-05 19:00 UTC · 40071ee3b3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1508 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-05 17:18 UTC · 052c2ed8c6 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.0564 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 18:01 UTC · 9f97040e88 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.0564 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 18:06 UTC · 9f97040e88 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1862 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 06:57 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.0572 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-08 22:51 UTC · c9a903ca56 |
 
 ## Not modelled here

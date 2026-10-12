@@ -4,7 +4,7 @@ Chinese name: 赤毒·沙皇
 
 Launcher · Primary · Mastery Rank 15. 50 base damage (impact 50), 25% crit chance, 2.5x crit multiplier, 31% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 11.3616 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-10 22:21 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 53.4179 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-10 22:33 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.9918 | Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-09-29 12:55 UTC · 601279c5f9 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 15.0524 | Stormbringer, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-11 03:25 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 57.5178 | Stormbringer, Primary Acuity, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Aerial Ace, Primary Crux | 2026-10-11 03:18 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.9918 | Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-11 08:15 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 4.3342 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-10 22:00 UTC · 22610331fe |
 
 ## Not modelled here

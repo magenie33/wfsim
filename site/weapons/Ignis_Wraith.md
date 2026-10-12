@@ -4,7 +4,7 @@ Chinese name: 伊格尼斯·亡魂
 
 Rifle · Primary · Mastery Rank 9. 35 base damage (heat 35), 17% crit chance, 2.5x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.4080 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-07 17:53 UTC · 7972f35e80 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.3716 | Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Shred, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-07 19:26 UTC · a7836d0380 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.9990 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-07 19:22 UTC · a7836d0380 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.4080 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-11 08:13 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.6170 | Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 08:32 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.9990 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-11 08:30 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.9965 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-09 00:00 UTC · 7cbf9a5d27 |
 
 ## Not modelled here

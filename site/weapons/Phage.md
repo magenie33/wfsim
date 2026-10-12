@@ -4,7 +4,7 @@ Chinese name: 噬菌者
 
 Shotgun · Primary · Mastery Rank 11. 5 base damage x7 multishot (viral 5), 19% crit chance, 2x crit multiplier, 15.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.7071 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-10 18:08 UTC · 22610331fe |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.8468 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-10 17:46 UTC · 22610331fe |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.4521 | Shell Shock, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Elementalist, Vigilante Supplies, Primary Crux | 2026-10-10 21:54 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 7.1389 | Incendiary Coat, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-09 09:15 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 7.1389 | Incendiary Coat, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-11 08:17 UTC |
 
 ## Not modelled here
 

@@ -4,7 +4,7 @@ Chinese name: 信条·弧电离子枪
 
 Shotgun · Primary · Mastery Rank 16. 760 base damage (radiation 760), 22% crit chance, 2x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.6033 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Magnetic Welt, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Shotgun Elementalist, Galvanized Acceleration, Shotgun Vendetta | 2026-09-29 21:47 UTC · 92c94eb9a6 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 16.6358 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Primary Crux | 2026-10-08 04:03 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4173 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Primary Crux | 2026-10-08 04:05 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.6033 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Magnetic Welt, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Shotgun Elementalist, Galvanized Acceleration, Shotgun Vendetta | 2026-10-11 05:37 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 16.6358 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Primary Crux | 2026-10-11 10:26 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4173 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Primary Crux | 2026-10-11 10:26 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.1881 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Barrage, Primary Crux | 2026-10-08 19:22 UTC · 531aca13c9 |
 
 ## Not modelled here

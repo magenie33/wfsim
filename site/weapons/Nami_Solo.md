@@ -4,7 +4,7 @@ Chinese name: 海波单剑
 
 Machete · Melee · Mastery Rank 6. 172 base damage (impact 25.8, puncture 25.8, slash 120.4), 15% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | block | 0.6702 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-05 14:25 UTC · 4d57cccc45 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | slide | 95.4408 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-05 14:20 UTC · 4d57cccc45 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block | 0.03430 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-05 14:00 UTC · 4d57cccc45 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | block | 0.6702 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-11 06:43 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | slide | 95.4408 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-11 06:44 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block | 0.03430 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-11 06:40 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | block | 0.2402 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-08 22:16 UTC · 531aca13c9 |
 
 ## Not modelled here

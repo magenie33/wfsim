@@ -4,7 +4,7 @@ Chinese name: 孢丝感染枪
 
 Sniper · Primary · Mastery Rank 13. 371 base damage (impact 100.17, puncture 115.01, slash 155.82), 1% crit chance, 3x crit multiplier, 53% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-11
+## Best riven-free build on the WFSim board, as of 2026-10-12
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-07 20:08 UTC · a7836d0380 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-07 19:42 UTC · 7972f35e80 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.2877 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-07 21:44 UTC · c218998e95 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-11 08:36 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8187 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-11 08:35 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.2877 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-11 09:09 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 10.5675 | Thermite Rounds, Galvanized Chamber, Heavy Caliber, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Primary Crux | 2026-10-09 08:32 UTC |
 
 ## Not modelled here
