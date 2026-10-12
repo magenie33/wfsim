@@ -132,7 +132,10 @@ def deploy_live(t: dict) -> None:
     run(["ssh", *o, host, f"mkdir -p {root}/worker {root}/scripts/pg"])
     run(["scp", "-q", *o, "worker/placeholders.js", f"{host}:{root}/worker/"])
     run(["scp", "-q", *o, "scripts/pg/package.json", "scripts/pg/package-lock.json", f"{host}:{root}/scripts/pg/"])
-    run(["ssh", *o, host, f"cd {root}/scripts/pg && npm ci --silent --omit=dev"])
+    # INSTALLED ONLY WHEN THE LOCK MOVED: the server has node and no npm, so an
+    # install it does not need must not be what fails the deploy.
+    run(["ssh", *o, host, f"cd {root}/scripts/pg && (cmp -s package-lock.json .installed-lock"
+                          " || (npm ci --silent --omit=dev && cp package-lock.json .installed-lock))"])
     # THE WITNESS'S ENGINE IS THE SITE'S OWN WASM (scripts/wasm_witness.mjs): the
     # one that counts the volunteers' work, which no native build can.
     wasm = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))["wasm"]
