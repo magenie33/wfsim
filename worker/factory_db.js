@@ -60,14 +60,25 @@ export function pgDb(client) {
   return {
     dialect: "pg",
     prepare: (sql) => stmt(sql),
-    batch: (list) => client.transaction(async (tx) => {
-      const out = [];
-      for (const s of list) {
-        const r = await exec(tx, s);
-        out.push({ results: r.rows, meta: { changes: r.affected } });
+    // A DEADLOCK OR A SERIALIZATION FAILURE IS TRIED AGAIN, twice: Postgres
+    // rolls the whole transaction back, so running it again is running it once.
+    batch: async (list) => {
+      for (let i = 0; ; i++) {
+        try {
+          return await client.transaction(async (tx) => {
+            const out = [];
+            for (const s of list) {
+              const r = await exec(tx, s);
+              out.push({ results: r.rows, meta: { changes: r.affected } });
+            }
+            return out;
+          });
+        } catch (e) {
+          if (i >= 2 || !["40P01", "40001"].includes(e && e.code)) throw e;
+          await new Promise((r) => setTimeout(r, 25 * (i + 1) + Math.random() * 50));
+        }
       }
-      return out;
-    }),
+    },
   };
 }
 

@@ -444,7 +444,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       db.prepare(`SELECT * FROM answers WHERE question IN ${ids_} AND void = 0 ORDER BY id`).bind(list),
       db.prepare(`SELECT * FROM demands WHERE question IN ${ids_} AND state = 'live'`).bind(list),
     ]);
-    const writes = [], later = [];
+    const writes = [], later = [], credits = [];
     for (const q of qs.results) {
       const demands = ds.results.filter((d) => d.question === q.id);
       const told = answered && answered.get(q.id);
@@ -458,9 +458,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const served = all.filter((a) => a.engine === engine);
       const officialSays = served.filter((a) => a.official).at(-1);
       if (officialSays) await settleOfficial(env, q, all, served, officialSays, engine, now);
-      else if (q.state === "open") decide(env, q, all, peer ? all.filter((a) => a.engine === engine || a.engine === peer) : served, demands, engine, now, writes, later);
+      else if (q.state === "open") decide(env, q, all, peer ? all.filter((a) => a.engine === engine || a.engine === peer) : served, demands, engine, now, writes, later, credits);
     }
-    writes.push(...after);
+    // CREDITS LAST AND IN ONE ORDER, by device: two settlements crediting the
+    // same devices in different orders deadlocked on Postgres.
+    writes.push(...creditWrites(db, credits, now), ...after);
     await commit(env, writes);
     for (const f of later) await f();
   }
@@ -478,7 +480,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// AN OPEN QUESTION'S VOLUNTEER ANSWERS, judged — a fact, the cap reached, or
   /// still open — its writes added to `writes`.
-  function decide(env, q, all, served, demands, engine, now, writes, later) {
+  function decide(env, q, all, served, demands, engine, now, writes, later, credits) {
     const db = factoryDb(env), needs = q.needs || threshold;
     // A GROUP OF EQUAL ANSWERS holds one of the served engine; an older engine's
     // answer joins one (a release that did not move the bits) and never starts one
@@ -500,7 +502,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
       writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
         .bind(state, lead.canon, engine, iso(now), q.id));
-      writes.push(...creditWrites(db, group, now));
+      credits.push(...group);
       deliverPlan(env, { ...q, canon: lead.canon }, now, lead, demands, writes, later);
       return;
     }
@@ -580,7 +582,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   function creditWrites(db, answers, now) {
     const hour = iso(now).slice(0, 13), unpaid = pick(db, "EXISTS (SELECT 1 FROM answers WHERE id = ? AND credited = 0)",
       "EXISTS (SELECT 1 FROM answers WHERE id = ?::bigint AND credited = 0)");
-    return answers.filter((a) => !a.official && !a.credited).flatMap((a) => [
+    return answers.filter((a) => !a.official && !a.credited)
+      .sort((a, b) => (a.device < b.device ? -1 : a.device > b.device ? 1 : a.id - b.id)).flatMap((a) => [
       db.prepare(`UPDATE verifiers SET work = work + ?, agreed = agreed + 1 WHERE id = ? AND ${unpaid}`).bind(a.work, a.device, a.id),
       db.prepare(`UPDATE verifiers SET
           refusals = CASE WHEN refusals > 0 AND clean + 1 >= refusals * ? THEN refusals - 1 ELSE refusals END,
