@@ -94,7 +94,10 @@ in can have its own idea of what linking means.
 D1 database, `wfsim-accounts` — apart from `wfsim` (docs/NAMING.md §8), because a
 point-in-time restore of one must not roll the other back, and because nothing
 personal may reach the public `library-backups` branch, which reads `wfsim`.
-D1 Time Travel is its backup: any minute of the last 30 days.
+D1 Time Travel is its backup: any minute of the last 30 days. While
+`DB_ACCOUNTS` says `pg` the same tables are Postgres's — `worker/pg/accounts.sql`
+in the database `wfsim_accounts` under its own role, apart from `wfsim` for the
+same two reasons (docs/BOARD.md §"Postgres").
 
 ## On the page
 

@@ -66,7 +66,9 @@ async function d1(sql, params = []) {
   }
 }
 
-const sql = postgres(process.env[PG_ENV], { max: 12, onnotice: () => {},
+// THREE CONNECTIONS, beside the worker's: the server allows a hundred and the
+// live worker has been seen holding 85, so a wider copy starves the site.
+const sql = postgres(process.env[PG_ENV], { max: Number(process.env.PG_COPY_CONNECTIONS) || 3, onnotice: () => {},
   types: { bigint: { to: 20, from: [20, 1700], serialize: (x) => String(x), parse: (x) => Number(x) } } });
 
 /// A TABLE'S COLUMNS AS WRITTEN: a generated one (`builds.weapon`) is Postgres's to fill.

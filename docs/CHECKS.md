@@ -240,6 +240,15 @@ silently part. Bites: an `INSERT OR IGNORE`, a `SUM` of a comparison, a
 lays the DDL and proves `builds.weapon` and the accounts' last-slot trigger.
 Any one check: `node --import ./scripts/pg/shadow.mjs scripts/check_qq.mjs`.
 
+## `check_pg_scripts`
+
+The board's pipeline scripts themselves, not their stubs, on an on-disk PGlite
+through `PG_URL` (`scripts/db.sh`, `scripts/db.mjs`): the inbox read, a build
+shipped twice as one row, a batch asked for twice counting both, the queue read
+in order, a fact shipped and overwritten with its row spent, the facts and the
+library read, an orphan and a dead ruler purged. Bites: an upsert's unqualified
+column, which Postgres calls ambiguous — it fails three of them.
+
 ## `check_board_verify`
 
 Plain node against `worker/schema.sql` on node's sqlite: a board row as a
