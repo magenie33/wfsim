@@ -2710,6 +2710,23 @@ ui:
   "Computing": 正在计算
   "Last answered {when}": "最后完成于 {when}"
   "Nothing computed yet": 还没有算过
+  "Points ledger": 积分流水
+  "Where this device's points went, day by day, in your time zone.": "这台设备的积分每天去了哪里（按你的时区）。"
+  "{p} points in all — {d} kept on this device, {y} in your account, {o} in another account.": "累计 {p} 分 —— {d} 分留在这台设备，{y} 分在你的账号，{o} 分在另一个账号。"
+  "this device": 这台设备
+  "your account": 你的账号
+  "another account": 另一个账号
+  "(no longer holds it)": （已不再持有）
+  "(removed)": （已移除）
+  "Day": 日期
+  "Went to": 去向
+  "Ledger": 流水
+  "Show all history": 显示全部历史
+  "Show the last 30 days": 只看最近 30 天
+  "In this window, results that earned nothing: {d} disagreed with the agreed result, {w} wait for another computer's result, {r} were set aside by a refusal.": "这段时间里没有得分的结果：{d} 个与公认结果不一致，{w} 个在等另一台电脑的结果，{r} 个因拒收被作废。"
+  "This device is refused for now: its points count for nothing until the refusal ends.": "这台设备目前被拒收：拒收结束前，它的积分不计。"
+  "Points by day": 每日积分
+  "What came in to your account each day, device by device.": "你的账号每天进账多少，按设备分开。"
   "Rename": 改名
   "Remove it from this list? Its points stay yours; signed in on it again, it is listed again.": "从列表中移除吗？它的积分仍归你；在它上面再次登录时，它会重新出现在列表里。"
   "Everything this browser computes counts under the account signed in on it.": "这个浏览器算的每一分，都直接记在登录在它上面的账号名下。"
