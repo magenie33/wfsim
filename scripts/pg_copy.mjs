@@ -119,7 +119,9 @@ async function compare(table) {
   const q = (text) => `SELECT count(*) AS n${sum ? `, ${text(`coalesce(sum(${sum}), 0)`)} AS s` : ""}${key ? `, min(${key[0]}) AS lo, max(${key[0]}) AS hi` : ""} FROM ${table}`;
   const [a] = await d1(q((x) => `CAST(${x} AS TEXT)`)), [b] = await sql.unsafe(q((x) => `${x}::text`));
   const same = ["n", "s", "lo", "hi"].every((k) => a[k] === undefined || String(a[k]) === String(b[k]));
-  console.log(`${same ? "  ok " : "FAIL"}  ${table}: d1 ${JSON.stringify(a)} pg ${JSON.stringify(b)}`);
+  // COUNTS AND SUMS SAID, NEVER A KEY: an account's key may be an address.
+  const said = (x) => JSON.stringify({ n: x.n, ...(sum ? { s: x.s } : {}) });
+  console.log(`${same ? "  ok " : "FAIL"}  ${table}: d1 ${said(a)} pg ${said(b)}${same ? "" : " (or its first or last key)"}`);
   return same;
 }
 
@@ -137,7 +139,8 @@ async function verify(table) {
       ORDER BY ${key.join(", ")} LIMIT ${PAGE}`, after ? key.map((k) => after[k]) : []);
     for (let i = 0; i < Math.max(a.length, b.length); i++) {
       if (!a[i] || !b[i] || text(a[i]) !== text(b[i])) {
-        if (bad++ < 3) console.log(`      ${table}: d1 ${a[i] ? text(a[i]).slice(0, 200) : "-"}\n      ${" ".repeat(table.length)}  pg ${b[i] ? text(b[i]).slice(0, 200) : "-"}`);
+        // WHICH COLUMNS, never their values: a row may be somebody's.
+        if (bad++ < 3) console.log(`      ${table}: ${!a[i] || !b[i] ? "a row in one only" : `differs in ${cols.filter((c) => String(a[i][c.name]) !== String(b[i][c.name])).map((c) => c.name).join(", ")}`}`);
       }
     }
     n += a.length;

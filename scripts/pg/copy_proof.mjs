@@ -16,8 +16,11 @@ if (/^wfsim(_accounts)?$/.test(library) || /^wfsim(_accounts)?$/.test(accounts))
 const ddl = (f) => readFileSync(`worker/pg/${f}`, "utf8");
 const accountsRun = process.argv.slice(5).includes("accounts");
 const sql = postgres(url(accountsRun ? accounts : library), { onnotice: () => {} });
-await sql.unsafe("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
-await sql.unsafe(accountsRun ? ddl("accounts.sql") : `${ddl("schema.sql")}\n${ddl("library.sql")}`);
+// THE DDL LAID FRESH ONLY FOR A COPY: a comparison reads what the last one left.
+if (["copy", "fresh"].includes(process.argv[4])) {
+  await sql.unsafe("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
+  await sql.unsafe(accountsRun ? ddl("accounts.sql") : `${ddl("schema.sql")}\n${ddl("library.sql")}`);
+}
 await sql.end();
 const t0 = Date.now();
 const r = spawnSync(process.execPath, ["scripts/pg_copy.mjs", ...process.argv.slice(4)], { encoding: "utf8",
