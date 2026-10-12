@@ -22,7 +22,7 @@
   "main": "worker/index.js",
   // THE DATABASE'S SAFETY VALVE (worker/verify.js `COMPUTE_CAP`): past this many
   // computers asking, a newcomer waits; those already computing go on.
-  "vars": { "COMPUTE_CAP": "400", "FACTORY_DB": "pg", "DB_LIBRARY": "pg" },
+  "vars": { "COMPUTE_CAP": "400", "FACTORY_DB": "pg", "DB_LIBRARY": "pg", "DB_ACCOUNTS": "pg" },
   // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
   // Postgres in Germany, and every round trip an ocean away held locks longer.
   "placement": { "mode": "smart" },
