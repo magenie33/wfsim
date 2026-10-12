@@ -541,11 +541,19 @@ async function kept(request, env) {
   // NO FRESHER THAN THE EDGE'S MINUTE, so only where there is an edge.
   if (typeof caches === "undefined") return keptWorkedOut(request, env);
   if (keptHere && keptHere.until > Date.now()) return keptHere.body;
+  // …AND PAST ITS MINUTE THE LAST ONE IS ANSWERED while the next is worked out:
+  // the working-out asks the marks of every named row, seconds of it, and no
+  // page should wait on that when a minute-old ranking is what the edge serves anyway.
+  // A working-out the runtime dropped once the reply left is why the last one
+  // serves `KEPT_STALE_MS` at most: past it the page waits on a fresh one.
+  const old = keptHere && keptHere.value && Date.now() - keptHere.value_at < KEPT_STALE_MS ? keptHere : null;
   const body = keptWorkedOut(request, env);
-  keptHere = { until: Date.now() + KEPT_SECONDS * 1000, body };
-  body.catch(() => { keptHere = null; });
-  return body;
+  keptHere = { until: Date.now() + KEPT_SECONDS * 1000, body, value: old && old.value, value_at: old && old.value_at };
+  body.then((v) => { if (keptHere && keptHere.body === body) Object.assign(keptHere, { value: v, value_at: Date.now() }); },
+    () => { if (keptHere && keptHere.body === body) keptHere = null; });
+  return old ? old.value : body;
 }
+const KEPT_STALE_MS = 5 * 60_000;
 async function keptWorkedOut(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
