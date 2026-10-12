@@ -375,13 +375,47 @@ function giveBackAhead(beacon = false) {
   aheadHeld = null;
   if (h) releaseLease(h, beacon);
 }
+/// THE ASKS THAT BROUGHT NOTHING, by the UTC hour — `{ hour: { asks, failed,
+/// lanes } }`, kept across reloads and sent with every ask until a reply says
+/// `kept` (worker/verify.js `asksOf`): an outage's compensation is the cores it
+/// left waiting, and the asks that never landed only this page can count.
+const IDLE_KEY = "wfsim-compute-idle", IDLE_HOURS = 48;
+function idleLoad() {
+  try { return JSON.parse(localStorage.getItem(IDLE_KEY) || "{}") || {}; } catch (_) { return {}; }
+}
+function idleSave(m) {
+  const hours = Object.keys(m).sort().slice(-IDLE_HOURS);
+  try { localStorage.setItem(IDLE_KEY, JSON.stringify(Object.fromEntries(hours.map((h) => [h, m[h]])))); } catch (_) { /* this page only */ }
+}
+function idleCount(at, failed, lanes) {
+  const m = idleLoad(), h = new Date(at).toISOString().slice(0, 13);
+  const x = m[h] || { asks: 0, failed: 0, lanes: 0 };
+  m[h] = { asks: x.asks + 1, failed: x.failed + (failed ? 1 : 0), lanes: x.lanes + lanes };
+  idleSave(m);
+}
+/// …LESS WHAT A REPLY KEPT, and only that: an ask counted while it was in flight stays.
+function idleKept(sent) {
+  const m = idleLoad();
+  for (const [h, x] of Object.entries(sent)) {
+    const y = m[h];
+    if (!y) continue;
+    const left = { asks: y.asks - x.asks, failed: y.failed - x.failed, lanes: y.lanes - x.lanes };
+    if (left.asks > 0) m[h] = left; else delete m[h];
+  }
+  idleSave(m);
+}
+
 /// ONE ASK FOR WORK, its answer heard: a newer engine or release, a refusal.
 async function askWork(id, ahead = false) {
   const c = computeConsent();
   if (!c) return null;
-  const at = Date.now();
+  const at = Date.now(), lanes = communityLanes();
+  const idle = ahead ? {} : idleLoad();
   const ask = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, consent: { v: c.v, at: c.at },
-    lanes: communityLanes(), ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}) });
+    lanes, ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}),
+    ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}) });
+  if (ask && ask.kept) idleKept(idle);
+  if (!ahead && !(ask && (ask.pack || ask.work))) idleCount(at, !ask, lanes);
   if (ask && ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
   if (ask && ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
   if (ask && (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil)) {

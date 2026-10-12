@@ -286,7 +286,7 @@ const ledgerFrom = (f) => (f === "" || HOUR.test(f || "") ? f : since(LEDGER_DAY
 /// computer, and those set aside with a refusal.
 async function ledgerOf(env, verifier, me, from) {
   const db = factoryDb(env);
-  const [spans, hours, v, u] = await Promise.all([
+  const [spans, hours, v, u, adj] = await Promise.all([
     env.ACCOUNTS ? env.ACCOUNTS.prepare("SELECT account, from_hour, until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour")
       .bind(verifier).all().then((r) => r.results) : [],
     db.prepare("SELECT hour, work, tasks FROM verifier_hours WHERE verifier = ? ORDER BY hour").bind(verifier).all().then((r) => r.results),
@@ -296,7 +296,13 @@ async function ledgerOf(env, verifier, me, from) {
         SUM(CASE WHEN a.void = 0 AND q.state IN ('open', 'disputed', 'spot', 'nondeterministic') THEN 1 ELSE 0 END) AS waiting
         FROM answers a JOIN questions q ON q.id = a.question
         WHERE a.device = ? AND a.at >= ? AND a.credited = 0 AND a.official = 0`).bind(verifier, from).first(),
+    // WHAT OF AN HOUR WAS GIVEN BY HAND (`adjustments`), already in its work and
+    // named apart: compensation for an outage reads as that, not as computing.
+    db.prepare("SELECT hour, reason, SUM(work) AS work FROM adjustments WHERE verifier = ? AND hour >= ? GROUP BY hour, reason")
+      .bind(verifier, from).all().then((r) => r.results),
   ]);
+  const given = new Map();
+  for (const a of adj) given.set(a.hour, [...(given.get(a.hour) || []), { reason: a.reason, points: points(a.work || 0) }]);
   const at = (h) => {
     const s = spans.find((x) => (!x.from_hour || h >= x.from_hour) && (x.until_hour == null || h < x.until_hour));
     return s ? { holder: me && s.account === me ? "you" : "other", closed: s.until_hour != null } : { holder: "device", closed: false };
@@ -306,7 +312,8 @@ async function ledgerOf(env, verifier, me, from) {
     const w = at(r.hour);
     sum.tasks += r.tasks || 0;
     sum[w.holder] += r.work || 0;
-    if (r.hour >= from) rows.push({ hour: r.hour, tasks: r.tasks || 0, points: points(r.work || 0), ...w });
+    if (r.hour >= from) rows.push({ hour: r.hour, tasks: r.tasks || 0, points: points(r.work || 0), ...w,
+      ...(given.has(r.hour) ? { given: given.get(r.hour) } : {}) });
   }
   return { ok: true, from, earlier: !!hours.length && hours[0].hour < from, refused: !!(v && v.banned),
     summary: { tasks: sum.tasks, points: points(sum.device + sum.you + sum.other), device: points(sum.device), you: points(sum.you), other: points(sum.other) },

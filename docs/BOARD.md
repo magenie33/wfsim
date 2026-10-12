@@ -1103,6 +1103,26 @@ shipped may be round ones near the fit, judged by the same report
 (`prices=<gas>,<run>`): their time error no worse than the fit's and their
 total within the same 1.00–1.20, so points never shrink with a new engine.
 
+### Outages
+
+When the factory cannot hand out work, the computers that were waiting are
+owed what they would have earned. Three tables make that a lookup, not a guess:
+
+- **`verifier_asks`** — per device and UTC hour: `asks` the server saw (not
+  `ahead`), and the page's own count of asks that brought nothing (`idle`), the
+  cores they left waiting (`idle_lanes`), and those that never reached the
+  server (`failed`). The page keeps that count in `localStorage` and sends it
+  with each ask until a reply says `kept` (worker/verify.js `asksOf`), so an
+  outage the database itself was part of is counted once it ends. The page's
+  numbers are claims: they pay only inside a window the owner declares an
+  outage, and never past the device's own earlier rate.
+- **`factory_events`** — `pause` (noted by the asks `FACTORY_PAUSED` turns away,
+  once a minute an isolate) and `alert:<cause>` (each watchdog round a cause
+  stands), each from its first sight to its last (worker/factory.js `noteEvent`).
+- **`adjustments`** — points given by hand, each also added to `verifier_hours`
+  in the same transaction; the ledger shows an hour's part of it as
+  compensation (`given`), so it never reads as computing.
+
 ## Consent
 
 Asked ONCE, inline, the first time a run finishes — never on load, never as a

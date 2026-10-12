@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const ROOT = new URL("../", import.meta.url);
-const HOT = ["questions", "demands", "answers", "verifiers", "verifier_hours", "watchdog_told", "points_pool"];
+const HOT = ["questions", "demands", "answers", "verifiers", "verifier_hours", "watchdog_told", "points_pool", "verifier_asks"];
 
 if (process.argv[2] === "--run") await run(process.argv[3]);
 else main();
@@ -52,6 +52,11 @@ function main() {
   const ok = facts >= 10 && refused >= 1;
   console.log(`  ${ok ? "ok " : "FAIL"}  the workload reaches what it must: ${facts} facts, ${refused} client(s) refused`);
   if (!ok) failures++;
+  const asks = lite.trace.at(-1).tables.verifier_asks;
+  const counted = asks.some((a) => a.asks > 0) && asks.some((a) => a.failed > 0 && a.idle >= a.failed)
+    && !asks.some((a) => a.hour < "2026-10-01");
+  console.log(`  ${counted ? "ok " : "FAIL"}  an ask is counted by its hour, with the page's own idle and failed asks, and none too old`);
+  if (!counted) failures++;
   console.log(failures ? `\n${failures} failed` : "\nthe factory answers alike on D1 and on Postgres");
   process.exitCode = failures ? 1 : 0;
 }
@@ -143,7 +148,7 @@ async function run(backend) {
   const dump = async (step) => {
     const db = env.FACTORY || LIBRARY, tables = {};
     const key = { questions: "id", demands: "producer, ref", answers: "id", verifiers: "id", verifier_hours: "verifier, hour",
-      watchdog_told: "cause", points_pool: "at, source, work" };
+      watchdog_told: "cause", points_pool: "at, source, work", verifier_asks: "verifier, hour" };
     for (const t of HOT) tables[t] = norm((await db.prepare(`SELECT * FROM ${t} ORDER BY ${key[t]}`).all()).results);
     trace.push({ step, tables });
   };
@@ -202,7 +207,10 @@ async function run(backend) {
       // ahead, one on an older engine still accepted on some weapons.
       const kind = rnd();
       const body = { verifier: v, engine: kind > 0.9 ? "e0" : "e1", protocol: kind < 0.12 ? 6 : PROTOCOL, consent: YES, lanes: 4,
-        ...(kind > 0.8 && kind <= 0.9 && held.has(v) ? { ahead: true } : {}), ...(rnd() < 0.3 ? { pace_ms: 20_000 } : {}) };
+        ...(kind > 0.8 && kind <= 0.9 && held.has(v) ? { ahead: true } : {}), ...(rnd() < 0.3 ? { pace_ms: 20_000 } : {}),
+        // THE PAGE'S OWN COUNT of asks that brought nothing, one hour of it too old to keep.
+        ...(step % 4 === 0 ? { idle: [{ hour: new Date(clock - 3_600_000).toISOString().slice(0, 13), asks: 3, failed: 2, lanes: 12 },
+          { hour: "2026-01-01T00", asks: 5, failed: 0, lanes: 20 }] } : {}) };
       const r = await call(verifyRoute, "/api/board/work", body, { "cf-connecting-ip": ip });
       say(`work ${dev.indexOf(v)} ${body.protocol}${body.engine}${body.ahead ? " ahead" : ""}`, r);
       if (r && r.pack) held.set(v, { ...r.pack, engine: body.engine });

@@ -91,10 +91,14 @@ function ledgerHtml(l, key) {
   const rows = [...days].reverse().map(([day, hours]) => {
     const open = ledgerOpenDay === `${key}|${day}`;
     const sum = (k) => hours.reduce((t, h) => t + h[k], 0);
+    const given = (hs) => {
+      const g = hs.reduce((t, h) => t + (h.given || []).reduce((u, x) => u + x.points, 0), 0);
+      return g ? ` <span class="set-note">${escHtml(tr("incl. {n} compensation")).replace("{n}", computePts(g))}</span>` : "";
+    };
     const head = `<tr class="lg-day" data-auth="compute-ledger-day" data-day="${escHtml(`${key}|${day}`)}" role="button" tabindex="0">`
-      + `<td>${open ? "▾" : "▸"} ${escHtml(day)}</td><td class="w-num">${computePts(sum("tasks"))}</td><td class="w-num">${computePts(sum("points"))}</td><td>${ledgerWent(hours)}</td></tr>`;
+      + `<td>${open ? "▾" : "▸"} ${escHtml(day)}</td><td class="w-num">${computePts(sum("tasks"))}</td><td class="w-num">${computePts(sum("points"))}${given(hours)}</td><td>${ledgerWent(hours)}</td></tr>`;
     return head + (open ? hours.slice().reverse().map((h) => `<tr class="lg-hour"><td>${escHtml(ledgerLocal(h.hour).hour)}</td>`
-      + `<td class="w-num">${computePts(h.tasks)}</td><td class="w-num">${computePts(h.points)}</td><td>${ledgerWent([h])}</td></tr>`).join("") : "");
+      + `<td class="w-num">${computePts(h.tasks)}</td><td class="w-num">${computePts(h.points)}${given([h])}</td><td>${ledgerWent([h])}</td></tr>`).join("") : "");
   }).join("");
   const more = l.earlier || ledgerAll ? `<button class="ghost-btn btn-sm" data-auth="compute-ledger-span">${
     aT(ledgerAll ? "Show the last 30 days" : "Show all history")}</button>` : "";

@@ -2740,6 +2740,7 @@ ui:
   "Points ledger": 积分流水
   "Where this device's points went, day by day, in your time zone.": "这台设备的积分每天去了哪里（按你的时区）。"
   "{p} points in all — {d} kept on this device, {y} in your account, {o} in another account.": "累计 {p} 分 —— {d} 分留在这台设备，{y} 分在你的账号，{o} 分在另一个账号。"
+  "incl. {n} compensation": "含补偿 {n} 分"
   "this device": 这台设备
   "your account": 你的账号
   "another account": 另一个账号

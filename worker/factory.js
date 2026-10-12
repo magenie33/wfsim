@@ -184,6 +184,28 @@ async function report(db, b) {
   return json({ ok: false, error: "no such report" }, 400);
 }
 
+/// AN EVENT, from its first sight to its last (`factory_events`, docs/BOARD.md
+/// §"Outages"): seen again within `gap_ms` it is the same one, lasting longer.
+/// Never throws — what it records must not be what breaks.
+export async function noteEvent(db, kind, now, gap_ms) {
+  try {
+    const r = await db.prepare("UPDATE factory_events SET last_at = ? WHERE kind = ? AND last_at >= ?")
+      .bind(iso(now), kind, iso(now - gap_ms)).run();
+    if (!r.meta.changes) {
+      await db.prepare("INSERT INTO factory_events (kind, started_at, last_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
+        .bind(kind, iso(now), iso(now)).run();
+    }
+  } catch (_) { /* the outage it records may be the database's own */ }
+}
+/// A PAUSE IS NOTED by the asks it turns away, once a minute an isolate.
+const PAUSE_NOTE_MS = 60_000, PAUSE_GAP_MS = 10 * 60_000;
+let pauseNotedAt = 0;
+export async function notePause(env, now) {
+  if (now - pauseNotedAt < PAUSE_NOTE_MS) return;
+  pauseNotedAt = now;
+  await noteEvent(factoryDb(env), "pause", now, PAUSE_GAP_MS);
+}
+
 /// THE WATCHDOG'S SCHEDULE (wrangler.jsonc `triggers`), and how long one cause
 /// stays said before it is said again.
 export const WATCHDOG_CRON = "*/10 * * * *";
@@ -203,6 +225,8 @@ export async function watchdog(env, now = Date.now()) {
   await facts().redeliver(env, now);
   await facts().repay(env, now);
   const found = await facts().audit(env, now, (await servedRelease(env)).engine);
+  // EVERY ROUND IT STANDS, not only when it is said: the event's span is the outage's.
+  for (const f of found) await noteEvent(db, `alert:${f.kind}`, now, 3 * 10 * 60_000);
   if (await stale("cells_filling")) {
     const cells = await cellsFilling(env, now);
     if (cells.length) found.push({ kind: "cells_filling", cells });

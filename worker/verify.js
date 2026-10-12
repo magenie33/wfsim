@@ -28,7 +28,7 @@
 
 import { witnessOf, RENEW_MS } from "./tasks.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
-import { facts, workOf, packTaskOf } from "./factory.js";
+import { facts, workOf, packTaskOf, notePause } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
 import { factoryDb, pick } from "./factory_db.js";
@@ -177,7 +177,9 @@ async function work(request, env) {
   if (refused) return refused;
   // THE FACTORY PAUSED (`FACTORY_PAUSED`, a worker var) hands out nothing while
   // its tables move between databases; a page asks again, and answers still land.
-  if (env.FACTORY_PAUSED === "1") return json({ ok: true, work: null, pack: null, busy: true });
+  // `paused` tells the page so: it counts that ask as idle itself, the server
+  // having written nothing.
+  if (env.FACTORY_PAUSED === "1") { await notePause(env, Date.now()); return json({ ok: true, work: null, pack: null, busy: true, paused: true }); }
   const db = factoryDb(env), now = Date.now(), at = iso(now), id = b.verifier;
   const asked = askedOf(db, b, now);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
@@ -233,26 +235,27 @@ async function work(request, env) {
                   AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT ?2::bigint) o) AS open,
                 (SELECT count(*) FROM verifiers WHERE asked_at > ?3::text) AS asking`)).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
     f.headOf(env, w, engine, now),
+    asksOf(db, id, ahead, b.idle, now),
   ]);
   // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
   // task for ever and its reader would never learn why.
   const v = me.results[0] || {};
-  if (v.banned) return json({ ok: true, work: null, pack: null, banned: true, until: v.refused_until });
+  if (v.banned) return json({ ok: true, kept: true, work: null, pack: null, banned: true, until: v.refused_until });
   const holds = ahead ? held.results[0] : { questions: 0, packs: 0 };
-  const none = json({ ok: true, release, work: null, pack: null });
+  const none = json({ ok: true, kept: true, release, work: null, pack: null });
   if (ahead && (holds.packs < 1 || holds.packs >= PACKS_HELD)) return none;
   const first = head.results[0];
   if (!first && !grace) return none;
   if (!grace && !f.packable(first)) {
     const leased = await f.next(env, { ...w, most: holds.questions + 1 }, engine, now);
-    return json({ ok: true, release, work: leased && workOf(leased), pack: null });
+    return json({ ok: true, kept: true, release, work: leased && workOf(leased), pack: null });
   }
   const { open, asking } = fair.results[0];
   // A SAFETY VALVE FOR THE DATABASE (`COMPUTE_CAP`, a worker var; unset is no
   // cap): past that many computers asking, one that has answered nothing in ten
   // minutes is handed nothing and asks again later — those already computing go on.
   const cap = Number(env.COMPUTE_CAP) || 0;
-  if (cap && asking > cap && !(v.last_at && v.last_at > iso(now - 600_000))) return json({ ok: true, release, work: null, pack: null, busy: true });
+  if (cap && asking > cap && !(v.last_at && v.last_at > iso(now - 600_000))) return json({ ok: true, kept: true, release, work: null, pack: null, busy: true });
   // WHILE THE OPEN ROWS ARE FEWER THAN THE ASKING WOULD TAKE, an account past its
   // fair share is handed nothing this ask (worker/fair.js) — and only then, so
   // the table is never read while work is plentiful.
@@ -263,10 +266,39 @@ async function work(request, env) {
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
     const t = tasks[0];
-    return json({ ok: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
+    return json({ ok: true, kept: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
   }
-  return json({ ok: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null,
+  return json({ ok: true, kept: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null,
     ...(grace ? { engine: served.engine, accepted_until: grace.until } : {}) });
+}
+
+/// WHAT A DEVICE ASKED FOR, by the hour (`verifier_asks`, docs/BOARD.md
+/// §"Outages"): this ask, unless it asks ahead, and the page's own count of the
+/// asks that brought nothing (`idle`: `[{ hour, asks, failed, lanes }]`, those
+/// that never landed among them), which the page sends until a reply says `kept`.
+const IDLE_HOURS = 48, IDLE_ASKS = 400;
+export function idleOf(list, now) {
+  const out = new Map(), first = iso(now - IDLE_HOURS * 3_600_000).slice(0, 13), last = iso(now).slice(0, 13);
+  for (const x of Array.isArray(list) ? list.slice(0, IDLE_HOURS) : []) {
+    if (!x || !HOUR.test(x.hour || "") || x.hour < first || x.hour > last) continue;
+    const asks = Number.isInteger(x.asks) ? Math.min(Math.max(x.asks, 0), IDLE_ASKS) : 0;
+    const failed = Number.isInteger(x.failed) ? Math.min(Math.max(x.failed, 0), asks) : 0;
+    const lanes = Number.isInteger(x.lanes) ? Math.min(Math.max(x.lanes, 0), asks * 256) : 0;
+    if (asks) out.set(x.hour, { asks, failed, lanes });
+  }
+  return out;
+}
+const HOUR = /^\d{4}-\d\d-\d\dT\d\d$/;
+function asksOf(db, id, ahead, idle, now) {
+  const rows = idleOf(idle, now), hour = iso(now).slice(0, 13);
+  const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, ...x }]));
+  if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, ...all.get(hour), seen: 1 });
+  if (!all.size) return db.prepare("SELECT 1");
+  const values = [...all].map(() => pick(db, "(?, ?, ?, ?, ?, ?)", "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint)")).join(", ");
+  return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed) VALUES ${values}
+      ON CONFLICT (verifier, hour) DO UPDATE SET asks = h.asks + excluded.asks, idle = h.idle + excluded.idle,
+        idle_lanes = h.idle_lanes + excluded.idle_lanes, failed = h.failed + excluded.failed`)
+    .bind(...[...all].flatMap(([h, x]) => [id, h, x.seen, x.asks, x.lanes, x.failed]));
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and

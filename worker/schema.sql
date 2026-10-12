@@ -316,6 +316,43 @@ CREATE TABLE IF NOT EXISTS verifier_hours (
   PRIMARY KEY (verifier, hour)
 );
 
+-- WHAT A DEVICE ASKED FOR, by the UTC hour (docs/BOARD.md §"Outages"): `asks`
+-- the server saw; `idle` the asks that brought nothing and `idle_lanes` the
+-- cores they left waiting; `failed` those that never reached the server. The
+-- last three are the page's own count, sent with its next ask that lands.
+CREATE TABLE IF NOT EXISTS verifier_asks (
+  verifier   TEXT NOT NULL,
+  hour       TEXT NOT NULL,
+  asks       INTEGER NOT NULL DEFAULT 0,
+  idle       INTEGER NOT NULL DEFAULT 0,
+  idle_lanes INTEGER NOT NULL DEFAULT 0,
+  failed     INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (verifier, hour)
+);
+CREATE INDEX IF NOT EXISTS verifier_asks_by_hour ON verifier_asks (hour);
+
+-- WHEN THE FACTORY WAS PAUSED OR ITS WATCHDOG FOUND SOMETHING WRONG, from the
+-- first sight to the last (docs/BOARD.md §"Outages"): `pause`, or `alert:<cause>`.
+CREATE TABLE IF NOT EXISTS factory_events (
+  kind       TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  last_at    TEXT NOT NULL,
+  PRIMARY KEY (kind, started_at)
+);
+
+-- POINTS GIVEN BY HAND, an outage's compensation among them: each is ALSO in
+-- `verifier_hours`, written in the same transaction, and this says which part
+-- of an hour it was and why (`reason`, an id the ledger names).
+CREATE TABLE IF NOT EXISTS adjustments (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  verifier TEXT NOT NULL,
+  hour     TEXT NOT NULL,
+  work     INTEGER NOT NULL,
+  reason   TEXT NOT NULL,
+  at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS adjustments_by_verifier ON adjustments (verifier, hour);
+
 -- SHORT SHARE LINKS: `/weapons/<weapon>/s/<id>` names a stored share code.
 -- `id` is a hash of (weapon, code) computed by the worker, so a row never
 -- changes, the same build is one row, and no client chooses an id. `at` is the
