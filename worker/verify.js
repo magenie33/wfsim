@@ -288,7 +288,8 @@ async function work(request, env) {
 /// WHAT A DEVICE ASKED FOR, by the hour (`verifier_asks`, docs/BOARD.md
 /// §"Outages"): this ask, unless it asks ahead, and the page's own count of the
 /// asks that brought nothing (`idle`: `[{ hour, asks, failed, lanes, relay_failed }]`,
-/// those that never landed among them; `relay_failed` the asks the relay dropped),
+/// those that never landed among them; `relay_failed` and `direct_failed` the
+/// asks that road dropped, the other then tried),
 /// which the page sends until a reply says `kept`. `relayed` counts the asks the
 /// relay carried, so the two routes' failures can be set side by side.
 const IDLE_HOURS = 48, IDLE_ASKS = 400;
@@ -300,7 +301,8 @@ export function idleOf(list, now) {
     const failed = Number.isInteger(x.failed) ? Math.min(Math.max(x.failed, 0), asks) : 0;
     const lanes = Number.isInteger(x.lanes) ? Math.min(Math.max(x.lanes, 0), asks * 256) : 0;
     const relay_failed = Number.isInteger(x.relay_failed) ? Math.min(Math.max(x.relay_failed, 0), IDLE_ASKS) : 0;
-    if (asks || relay_failed) out.set(x.hour, { asks, failed, lanes, relay_failed });
+    const direct_failed = Number.isInteger(x.direct_failed) ? Math.min(Math.max(x.direct_failed, 0), IDLE_ASKS) : 0;
+    if (asks || relay_failed || direct_failed) out.set(x.hour, { asks, failed, lanes, relay_failed, direct_failed });
   }
   return out;
 }
@@ -308,15 +310,17 @@ const HOUR = /^\d{4}-\d\d-\d\dT\d\d$/;
 function asksOf(db, id, ahead, idle, now, relayed = false) {
   const rows = idleOf(idle, now), hour = iso(now).slice(0, 13);
   const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, relayed: 0, ...x }]));
-  if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, relay_failed: 0, ...all.get(hour), seen: 1, relayed: relayed ? 1 : 0 });
+  if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, relay_failed: 0, direct_failed: 0, ...all.get(hour), seen: 1, relayed: relayed ? 1 : 0 });
   if (!all.size) return db.prepare("SELECT 1");
-  const values = [...all].map(() => pick(db, "(?, ?, ?, ?, ?, ?, ?, ?)",
-    "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint)")).join(", ");
-  return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed) VALUES ${values}
+  const values = [...all].map(() => pick(db, "(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint)")).join(", ");
+  return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed, direct_failed)
+      VALUES ${values}
       ON CONFLICT (verifier, hour) DO UPDATE SET asks = h.asks + excluded.asks, idle = h.idle + excluded.idle,
         idle_lanes = h.idle_lanes + excluded.idle_lanes, failed = h.failed + excluded.failed,
-        relayed = h.relayed + excluded.relayed, relay_failed = h.relay_failed + excluded.relay_failed`)
-    .bind(...[...all].flatMap(([h, x]) => [id, h, x.seen, x.asks, x.lanes, x.failed, x.relayed || 0, x.relay_failed || 0]));
+        relayed = h.relayed + excluded.relayed, relay_failed = h.relay_failed + excluded.relay_failed,
+        direct_failed = h.direct_failed + excluded.direct_failed`)
+    .bind(...[...all].flatMap(([h, x]) => [id, h, x.seen, x.asks, x.lanes, x.failed, x.relayed || 0, x.relay_failed || 0, x.direct_failed || 0]));
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and

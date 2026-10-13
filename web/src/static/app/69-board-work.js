@@ -298,17 +298,22 @@ function chooseRoute() {
   return routing;
 }
 /// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
-/// `/api/board/` alone — its answer or null. `relayDropped` says whether the
-/// last call was one the relay dropped.
-let relayDropped = false;
+/// `/api/board/` alone — its answer or null. A call one road drops goes by the
+/// other at once, and the road that answered is kept until the next timing; one
+/// both drop has the roads timed again on the next call. `roadDropped` names the
+/// road that dropped the last call: "relay", "direct" or "".
+let roadDropped = "";
 async function postBoardWork(path, body) {
-  const base = path.startsWith("/api/board/") ? await chooseRoute() : "";
+  const board = path.startsWith("/api/board/") && relayServes();
+  const base = board ? await chooseRoute() : "";
   const r = await postBoardTo(base, path, body);
-  relayDropped = !r && !!base;
-  if (r || !base) return r;
-  routeBase = "";
-  routeAt = Date.now();
-  return postBoardTo("", path, body);
+  roadDropped = r || !board ? "" : base ? "relay" : "direct";
+  if (r || !board) return r;
+  const other = base ? "" : RELAY;
+  const again = await postBoardTo(other, path, body);
+  routeBase = other;
+  routeAt = again ? Date.now() : 0;
+  return again;
 }
 
 /// WHAT THIS PAGE HOLDS, given back on every way out that is not an answer —
@@ -444,11 +449,11 @@ function idleSave(m) {
   const hours = Object.keys(m).sort().slice(-IDLE_HOURS);
   try { localStorage.setItem(IDLE_KEY, JSON.stringify(Object.fromEntries(hours.map((h) => [h, m[h]])))); } catch (_) { /* this page only */ }
 }
-function idleCount(at, idle, failed, lanes, relayFailed) {
+function idleCount(at, idle, failed, lanes, dropped) {
   const m = idleLoad(), h = new Date(at).toISOString().slice(0, 13);
-  const x = { asks: 0, failed: 0, lanes: 0, relay_failed: 0, ...m[h] };
+  const x = { asks: 0, failed: 0, lanes: 0, relay_failed: 0, direct_failed: 0, ...m[h] };
   m[h] = { asks: x.asks + (idle ? 1 : 0), failed: x.failed + (failed ? 1 : 0), lanes: x.lanes + (idle ? lanes : 0),
-    relay_failed: x.relay_failed + (relayFailed ? 1 : 0) };
+    relay_failed: x.relay_failed + (dropped === "relay" ? 1 : 0), direct_failed: x.direct_failed + (dropped === "direct" ? 1 : 0) };
   idleSave(m);
 }
 /// …LESS WHAT A REPLY KEPT, and only that: an ask counted while it was in flight stays.
@@ -458,8 +463,8 @@ function idleKept(sent) {
     const y = m[h];
     if (!y) continue;
     const left = { asks: y.asks - x.asks, failed: y.failed - x.failed, lanes: y.lanes - x.lanes,
-      relay_failed: (y.relay_failed || 0) - (x.relay_failed || 0) };
-    if (left.asks > 0 || left.relay_failed > 0) m[h] = left; else delete m[h];
+      relay_failed: (y.relay_failed || 0) - (x.relay_failed || 0), direct_failed: (y.direct_failed || 0) - (x.direct_failed || 0) };
+    if (left.asks > 0 || left.relay_failed > 0 || left.direct_failed > 0) m[h] = left; else delete m[h];
   }
   idleSave(m);
 }
@@ -473,7 +478,7 @@ async function askWork(id, ahead = false) {
   const sent = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, consent: { v: c.v, at: c.at },
     lanes, ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}),
     ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}) });
-  const ask = sent, dropped = relayDropped;
+  const ask = sent, dropped = roadDropped;
   if (ask && ask.kept) idleKept(idle);
   const idleNow = !ahead && !(ask && (ask.pack || ask.work));
   if (idleNow || dropped) idleCount(at, idleNow, !ask, lanes, dropped);

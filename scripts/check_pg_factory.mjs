@@ -78,8 +78,9 @@ async function main() {
   console.log(`  ${byRelay ? "ok " : "FAIL"}  the relay's asks are counted apart (${relayed} of ${carried}), and one posing as it is not`);
   if (!byRelay) failures++;
   const counted = asks.some((a) => a.asks > 0) && asks.some((a) => a.failed > 0 && a.idle >= a.failed)
+    && asks.some((a) => a.relay_failed > 0) && asks.some((a) => a.direct_failed > 0)
     && !asks.some((a) => a.hour < "2026-10-01");
-  console.log(`  ${counted ? "ok " : "FAIL"}  an ask is counted by its hour, with the page's own idle and failed asks, and none too old`);
+  console.log(`  ${counted ? "ok " : "FAIL"}  an ask is counted by its hour, with the page's own idle and failed asks and each road's drops, and none too old`);
   if (!counted) failures++;
   console.log(failures ? `\n${failures} failed` : "\nthe factory answers alike on D1 and on Postgres");
   process.exitCode = failures ? 1 : 0;
@@ -235,7 +236,7 @@ async function run(backend) {
       const body = { verifier: v, engine: kind > 0.9 ? "e0" : "e1", protocol: kind < 0.12 ? 6 : PROTOCOL, consent: YES, lanes: 4,
         ...(kind > 0.8 && kind <= 0.9 && held.has(v) ? { ahead: true } : {}), ...(rnd() < 0.3 ? { pace_ms: 20_000 } : {}),
         // THE PAGE'S OWN COUNT of asks that brought nothing, one hour of it too old to keep.
-        ...(step % 4 === 0 ? { idle: [{ hour: new Date(clock - 3_600_000).toISOString().slice(0, 13), asks: 3, failed: 2, lanes: 12 },
+        ...(step % 4 === 0 ? { idle: [{ hour: new Date(clock - 3_600_000).toISOString().slice(0, 13), asks: 3, failed: 2, lanes: 12, relay_failed: 1, direct_failed: 2 },
           { hour: "2026-01-01T00", asks: 5, failed: 0, lanes: 20 }] } : {}) };
       // BY THE RELAY now and then, and once in a while by something posing as it.
       const road = step % 7 === 3 ? { "x-wfsim-relay": "rs", "x-wfsim-client-ip": ip, "cf-connecting-ip": "192.0.2.99" }

@@ -239,15 +239,17 @@ mainland China to the edge is poor. It stores nothing and decides nothing.
 
 - **The page chooses the road** (69-board-work.js `chooseRoute`): it times
   `/api/board/ping` both ways every ten minutes and takes the quicker, on
-  wfsim.app and in the desktop client alike. A call the relay drops goes direct
-  at once, and the relay is left alone until the next timing.
+  wfsim.app and in the desktop client alike. A call either road drops goes by
+  the other at once, which is then kept until the next timing; a call both drop
+  has the roads timed again.
 - **A relayed request says whose it is.** Through the relay every reader would
   share its address, and a network is what keeps two answers independent
   (worker/verify.js `netOf`). The relay sends the reader's address with the
   secret only it and the worker hold (`RELAY_SECRET`, private/hk/relay.env);
   without the secret the header is ignored (`clientIp`).
 - **Its effect is measured, not assumed**: `verifier_asks.relayed` counts the
-  asks it carried and `relay_failed` those it dropped, beside the direct road's.
+  asks it carried, `relay_failed` and `direct_failed` the asks each road dropped
+  before the other was tried.
 - **The server** is `private/hk/` (ssh key, host keys, the secret); its nginx
   site is `wfsim-relay`, the secret in `/etc/nginx/wfsim-relay-secret.conf`.
   Anything signed in — accounts, the ledger, sync — stays on the direct road,
