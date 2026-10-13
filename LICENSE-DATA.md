@@ -53,9 +53,10 @@ build in game, read the numbers off the screen and wrote up what they saw.
 Nothing upstream is being copied; this is new work, and it is the part of the
 project that cannot be reconstructed from any other source.
 
-Licensed **CC BY-NC-SA 4.0**, attribution to the named contributor and to
-WFSim. Each accepted measurement is a numbered `M<n>` entry crediting whoever
-ran it, and that number is permanent.
+Licensed **CC BY-NC-SA 4.0**, attribution to WFSim and to the contributor an
+entry names. Each accepted measurement is a numbered `M<n>` entry, and that
+number is permanent; its heading credits whoever ran it, and `owner` there is
+the Maintainer, attributed as WFSim.
 
 The NonCommercial term matches §3 and is deliberate. Reading a measurement,
 reproducing it in game, citing it, arguing with it, building on it — all free,

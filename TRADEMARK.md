@@ -32,9 +32,9 @@ required by the license, and this policy does not touch it.
   this project.
 - Anything that implies official status, endorsement, affiliation or
   maintenance by this project.
-- Distributing a **modified version under the WFSim name or logo**. The license
-  gives you the right to modify and redistribute the code; this is the one
-  thing it asks you to rename.
+- Distributing a **modified version under the WFSim name or logo**. The code
+  license gives you the right to modify and redistribute the code; this policy
+  asks you to rename what you distribute, and nothing more.
 
 ## Forks and derived projects
 

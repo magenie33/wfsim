@@ -14,7 +14,10 @@ below governs**; the translation is provided for convenience.
 - **"Project"** — WFSim, the software and materials in this repository.
 - **"Maintainer"** — the copyright holder of the Project, who administers this
   agreement.
-- **"You"** — the individual or legal entity agreeing to these terms.
+- **"You"** — the individual agreeing to these terms. A Contribution made on
+  behalf of a company or other legal entity is not covered by this agreement;
+  it needs a separate written agreement with the Maintainer, signed by someone
+  able to bind that entity.
 - **"Contribution"** — any work You intentionally submit to the Project for
   inclusion. This covers **code, data files, translations, measurement reports
   and documentation**, in whatever form submitted: a pull request, an issue, a
@@ -53,21 +56,25 @@ ordinary life of the project rather than an exception.
 
 ## 3. Patent license
 
-You grant the Maintainer a **perpetual, worldwide, non-exclusive, royalty-free,
+You grant the Maintainer, and every recipient of software or materials the
+Project distributes, a **perpetual, worldwide, non-exclusive, royalty-free,
 irrevocable** patent license to make, have made, use, offer to sell, sell,
-import and otherwise transfer Your Contribution, covering only those patent
-claims You can license that are necessarily infringed by Your Contribution
-alone or by its combination with the Project.
+import and otherwise transfer Your Contribution and the Project that includes
+it, covering only those patent claims You can license that are necessarily
+infringed by Your Contribution alone or by its combination with the Project.
+The Maintainer may sublicense it together with the rights granted in §2.
 
-If any entity institutes patent litigation alleging that a Contribution, or the
-Project itself, constitutes direct or contributory patent infringement, any
-patent license granted under this agreement to that entity terminates.
+If any entity institutes patent litigation against You or anyone else alleging
+that a Contribution, or the Project itself, constitutes direct or contributory
+patent infringement, any patent license granted under this agreement to that
+entity terminates as of the date the litigation is filed.
 
 ## 4. Your representations
 
 You represent that:
 
-- Each Contribution is **Your original creation**, and You have the right to
+- Each Contribution is **Your original creation**, apart from third-party
+  material identified as the point below requires, and You have the right to
   grant the licenses above.
 - If Your employer has rights to work You create, You have either received
   permission to make the Contribution on their behalf, or Your employer has
