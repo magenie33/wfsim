@@ -21,6 +21,7 @@ co_behavior: independent
 headshot_multiplier: 1.0
 
 attack:
+  extra_hit_reads: { impact: 0.4, slash: 0.55, puncture: 0.05 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 6.0

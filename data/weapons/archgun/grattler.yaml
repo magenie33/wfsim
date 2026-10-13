@@ -50,6 +50,7 @@ no_resupply: true
 co_behavior: independent
 
 attack:
+  extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 5
@@ -84,6 +85,7 @@ attack:
     radius_calculation: doesnt_work
   damage: { impact: 22.5, puncture: 180.0, slash: 22.5 }   # 225 (Archwing: 150)
   radial:
+    extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
     damage: { blast: 310.0 }         # Archwing: 205
     radius_m: 9.0
     falloff_start_m: 0.0

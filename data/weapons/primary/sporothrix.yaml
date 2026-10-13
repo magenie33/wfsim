@@ -33,6 +33,7 @@ scope:
   magnification: 2.7
   headshot_damage: 0.5
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -61,6 +62,7 @@ attack:
   # THE BARB ERUPTS. A 1.7 m explosion 0.9 s after the hit — the delay is not
   # modelled (see `unmodeled:`), so the two arrive together here.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { slash: 22.0, viral: 19.0 }   # 41 at the centre
     radius_m: 1.7
     falloff_start_m: 0.0

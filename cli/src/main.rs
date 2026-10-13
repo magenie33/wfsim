@@ -204,6 +204,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         elem_dot_bonus: Vec::new(),
         faction_multiplier: 1.0,
         dot_modified_base: None,
+        extra_hit_reads_shift: 0.0,
         reload_bonus: 0.0,
         reload_from_empty_speed: 0.0,
         weakpoint_damage: 0.0,

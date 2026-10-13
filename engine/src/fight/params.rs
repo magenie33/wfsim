@@ -413,6 +413,8 @@ pub struct FightParams {
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).
     pub dot_modified_base: Option<f64>,
+    /// [`crate::build::loadout::ResolvedPanel::extra_hit_reads_shift`].
+    pub extra_hit_reads_shift: f64,
     /// Σ reload-speed bonuses on the panel — needed live when arcane
     /// reload buffs (Merciless r5, Conjunction Voltage stacks) join the
     /// bucket: time = base_reload / (1 + this + arcane additions).

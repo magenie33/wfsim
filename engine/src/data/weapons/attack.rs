@@ -441,6 +441,10 @@ pub struct AttackSpec {
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
+    /// See [`ExtraHitReads`] — the shares an Extra Hit off this attack's
+    /// direct hit reads, where they are not the attack's own.
+    #[serde(default)]
+    pub extra_hit_reads: Option<ExtraHitReads>,
     /// The BOMBLETS this attack's explosion throws out — see [`ClusterSpec`].
     #[serde(default)]
     pub cluster: Option<ClusterSpec>,
@@ -736,6 +740,46 @@ pub struct RadialSpec {
     /// Declared per entry, never inferred.
     #[serde(default = "yes")]
     pub takes_multishot: bool,
+    /// See [`ExtraHitReads`] — the shares an Extra Hit off THIS explosion reads.
+    /// Absent, it reads the base attack's, as every explosion did before.
+    #[serde(default)]
+    pub extra_hit_reads: Option<ExtraHitReads>,
+}
+
+/// THE PHYSICAL SHARES AN EXTRA HIT READS, where the game does not read the
+/// attack's own (MEASUREMENTS M115). An Extra Hit's bracket is `1 + Σ elemental
+/// bonuses + Σ (Impact/Slash/Puncture share × that type's bonus)`, and on many
+/// projectiles the shares are a hidden distribution rather than the listed
+/// damage: the Akarius Prime's 100% Impact rocket reads 10/10/80, so Pummel
+/// lifts its Extra Hit by 12% and not 120%. `even` is a third each, the reading
+/// most entries give; a map lists the three shares of the unmodded base.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ExtraHitReads(pub [f64; 3]);
+
+impl<'de> Deserialize<'de> for ExtraHitReads {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Shares {
+            #[serde(default)]
+            impact: f64,
+            #[serde(default)]
+            slash: f64,
+            #[serde(default)]
+            puncture: f64,
+        }
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Raw {
+            Word(String),
+            Shares(Shares),
+        }
+        match Raw::deserialize(d)? {
+            Raw::Word(w) if w == "even" => Ok(Self([1.0 / 3.0; 3])),
+            Raw::Word(w) => Err(serde::de::Error::custom(format!("extra_hit_reads: `even` or a map of impact/slash/puncture, got {w:?}"))),
+            Raw::Shares(s) => Ok(Self([s.impact, s.slash, s.puncture])),
+        }
+    }
 }
 
 /// THE BOMBLETS AN EXPLOSION THROWS OUT — docs/MECHANICS.md §7.1.

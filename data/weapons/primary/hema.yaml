@@ -45,6 +45,7 @@ reload_seconds: 2.0
 co_behavior: independent
 
 attack:
+  extra_hit_reads: { impact: 0.25, slash: 0.5, puncture: 0.25 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0

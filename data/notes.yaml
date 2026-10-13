@@ -617,6 +617,11 @@ notes:
   explosion_single_target_relevant: |
     THE EXPLOSION. Single-target relevant in full: a 25 m radius is one the
     arena's only enemy is always inside, so this lands whole.
+  extra_hit_reads: |
+    THE SHARES AN EXTRA HIT READS off this attack, measured with Toxic Lash
+    (MEASUREMENTS M115): the game reads a distribution of its own here rather
+    than the listed damage, so an Impact, Slash or Puncture mod lifts the Extra
+    Hit by that share of its bonus. `even` is a third each.
   family_conditional_half_larger: |
     ON THIS FAMILY THE CONDITIONAL HALF IS THE LARGER ONE for three of the four,
     which is worth knowing before reading an unticked Braton as its ceiling.

@@ -758,6 +758,8 @@ pub struct WeaponBase {
     /// an evolution's handling stat lands exactly where a mod's does.
     pub indirect: Vec<(IndirectStat, f64)>,
     pub base_vector: DamageVector,
+    /// See [`crate::data::weapons::ExtraHitReads`] — the direct hit's.
+    pub extra_hit_reads: Option<[f64; 3]>,
     pub base_crit_chance: f64,
     pub base_crit_damage: f64,
     pub base_status_chance: f64,

@@ -91,6 +91,7 @@ co_behavior: additive_with_base_damage
 # whatever the mod elements leave (MECHANICS §3 rule 2). Radiation is a
 # COMBINED element, so it cannot be consumed by a mod pairing at all.
 attack:
+  extra_hit_reads: { impact: 0.3, slash: 0.3, puncture: 0.3 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 10

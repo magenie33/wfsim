@@ -33,6 +33,7 @@ reload_seconds: 2.7
 co_behavior: additive_with_base_damage
 
 attack:
+  extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0

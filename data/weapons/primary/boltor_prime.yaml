@@ -38,6 +38,7 @@ co_behavior: additive_with_base_damage
 # travel, which is why `projectile_speed_mps` is set and matters to a perk in
 # tier 3 (Swift Deliverance) that has nothing to do on a hit-scan weapon.
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 1

@@ -54,6 +54,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 7.0
@@ -83,6 +84,7 @@ attack:
   # A 1x body-part multiplier and no headshot conditions, which is the engine's
   # standing rule for every radial.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { heat: 80 }
     radius_m: 2.0
     falloff_start_m: 0.0

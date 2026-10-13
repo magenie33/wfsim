@@ -2406,3 +2406,22 @@ fn a_punch_through_mod_adds_metres_beside_the_body_class() {
     assert!(with.punch_through_m < crate::rules::space::INFINITE_PUNCH_THROUGH_M);
     assert!(with.infinite_body_punch_through);
 }
+
+/// THE AKARIUS PRIME READS 10/10/80 (MEASUREMENTS M115), so Pummel's +120%
+/// Impact moves its Extra Hit bracket by `(0.1 − 1) × 1.2`: from the 2.2 its
+/// all-Impact rocket states to 1.12. The explosion reads the same split, and
+/// the base attack it is measured against is the same rocket.
+#[test]
+fn an_extra_hit_reads_the_akarius_primes_hidden_split() {
+    let pool = crate::data::mods::pool_for_build("akarius_prime", &[]);
+    let pummel = pool.iter().find(|m| m.id == "pummel").expect("pummel");
+    let base = super::WeaponBase::from_data("akarius_prime", false, &[]);
+    let panel = super::resolve(&base, &[pummel], super::StackPolicy::Emergent);
+    let want = (0.1 - 1.0) * 1.2;
+    assert!((panel.extra_hit_reads_shift - want).abs() < 1e-9, "{}", panel.extra_hit_reads_shift);
+    let radial = panel.radial.expect("the rocket explodes");
+    assert!((radial.extra_hit_reads_shift - want).abs() < 1e-9, "{}", radial.extra_hit_reads_shift);
+    // …AND NOTHING WITHOUT A PHYSICAL MOD: the split only weighs those.
+    let bare = super::resolve(&base, &[], super::StackPolicy::Emergent);
+    assert_eq!(bare.extra_hit_reads_shift, 0.0);
+}

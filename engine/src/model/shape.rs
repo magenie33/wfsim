@@ -93,6 +93,8 @@ pub struct RadialBase {
     pub takes_condition_overload: bool,
     /// See [`crate::data::weapons::RadialSpec::takes_multishot`].
     pub takes_multishot: bool,
+    /// See [`crate::data::weapons::ExtraHitReads`].
+    pub extra_hit_reads: Option<[f64; 3]>,
     /// THE ORIGINAL BASE of this explosion — the radial's own [`WeaponBase::co_base`],
     /// and it needs its own because an evolution can raise what the explosion
     /// DEALS without raising what its CO term reads.

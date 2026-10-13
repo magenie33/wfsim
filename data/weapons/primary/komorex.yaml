@@ -42,6 +42,7 @@ sniper_combo:
 # collect. So the entry carries the FIRST level's numbers (neither of whose
 # effects this arena reads) and states the second as unmodelled.
 attack:
+  extra_hit_reads: { impact: 0, slash: 1, puncture: 0 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -68,6 +69,7 @@ attack:
   # A VIRAL explosion on every shot, 53 at the first zoom level and 106 at the
   # second — the second is not carried, see above.
   radial:
+    extra_hit_reads: { impact: 0, slash: 1, puncture: 0 }   # see notes: extra_hit_reads
     damage: { viral: 53.0 }
     radius_m: 3.5
     falloff_start_m: 0.0

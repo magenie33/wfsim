@@ -40,6 +40,7 @@ reload_seconds: 3.4
 co_behavior: independent
 
 attack:
+  extra_hit_reads: { impact: 0.1, slash: 0.1, puncture: 0.8 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 2.5
@@ -67,6 +68,7 @@ attack:
   # ROCKET DETONATION. Its own crit and status, the same as the impact's, and
   # the falloff the module lists.
   radial:
+    extra_hit_reads: { impact: 0.1, slash: 0.1, puncture: 0.8 }   # see notes: extra_hit_reads
     damage: { blast: 419 }   # total 419
     radius_m: 7.2
     falloff_start_m: 0

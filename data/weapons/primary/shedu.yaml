@@ -96,6 +96,7 @@ unmodeled:
   - "+30% Movement Speed while aiming and the explosion's self-stagger are not read here."
 
 attack:
+  extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -153,6 +154,7 @@ attack:
     radius_calculation: snapshot
 
   radial:
+    extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
     # ITS RADIUS DOES NOT TAKE BLAST-RADIUS MODS, and the page says it of this
     # explosion in as many words: "Explosion cannot benefit from Firestorm
     # (Primed) despite being area of effect."

@@ -100,6 +100,7 @@ co_behavior: additive_with_base_damage
 # hits, and Radiation damage in a 2 meter radius." The directly-hit enemy
 # takes BOTH. "Initial hit and explosion apply status separately."
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -122,6 +123,7 @@ attack:
   # to (1 - reduction) at the radius edge. Self-stagger only, never
   # self-damage.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { radiation: 300.0 }
     radius_m: 2.0
     falloff_start_m: 0.0

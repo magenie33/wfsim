@@ -225,6 +225,10 @@ faction layer, a crit multiplier and a body-part multiplier.
   where the trigger's own bracket differs from the base attack's. The Blast
   detonation is the loud case: it takes NO elemental bonus, and the extra hit
   off it takes the whole one.
+- **The physical shares it reads may be hidden.** On many projectiles the game
+  weighs the Impact, Slash and Puncture bonuses by a split of its own rather
+  than the attack's listed damage (MEASUREMENTS M115): `extra_hit_reads` on the
+  attack and on its `radial`, applied as a shift of the bracket.
 
 It is a real instance, so it lands through `TargetState::apply` like any other:
 Void's ×1.5 against Overguard is the vulnerability column doing its job, not a

@@ -191,6 +191,9 @@ pub struct ResolvedRadial {
     pub takes_multishot: bool,
     /// See [`RadialBase::co_base_pair`].
     pub co_base: CoBase,
+    /// See [`ResolvedPanel::extra_hit_reads_shift`] — an Extra Hit off this
+    /// explosion's.
+    pub extra_hit_reads_shift: f64,
 }
 
 /// The bomblets after mod resolution — see [`ClusterBase`].
@@ -483,6 +486,11 @@ pub struct ResolvedPanel {
     /// ModifiedBase = unmodded total × (1 + Σ base damage) — the base of
     /// every status-payload formula (elemental portions excluded).
     pub modified_base: f64,
+    /// WHAT A HIDDEN READING MOVES AN EXTRA HIT'S BRACKET BY:
+    /// `Σ (read share − the base attack's own share) × that IPS bonus`, added to
+    /// the bracket the vector states. 0 where the game reads the attack itself.
+    /// [`crate::data::weapons::ExtraHitReads`].
+    pub extra_hit_reads_shift: f64,
     pub crit_chance: f64,
     pub crit_damage: f64,
     /// PRELUDE OF MIGHT, unresolved on purpose: `(how much of `crit_damage`

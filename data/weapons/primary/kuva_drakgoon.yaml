@@ -53,6 +53,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # PINPOINT once drawn — "Tightly focused blast for longer ranges", against
   # the tapped shot's 60-80 degrees. The module carries no cone for this attack
   # at all, which is what that means.

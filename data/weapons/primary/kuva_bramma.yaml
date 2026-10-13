@@ -44,6 +44,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   spread:
     min_deg: 0
     max_deg: 12
@@ -74,6 +75,7 @@ attack:
   damage: { impact: 187.0 }   # total 187
   # THE MAIN EXPLOSION — rules in MECHANICS §7.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 8.3
     falloff_start_m: 0.0
     # "100% - 10%" over 8.3 m, so nine tenths is lost at the edge.

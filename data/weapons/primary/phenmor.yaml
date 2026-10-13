@@ -46,6 +46,7 @@ co_behavior: additive_with_base_damage
 # ONE ATTACK PART. The base form is a plain semi-auto projectile — the radial
 # and the punch-through belong to the Incarnon form (phenmor_incarnon.yaml).
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 2

@@ -211,6 +211,7 @@ path, so an entry may be renamed but never renumbered.
 | [M112](measurements/M112-arbucep-volley-costs-six-rounds.md) | an Arbucep pull spends six rounds, one a missile: the 36 magazine empties in six volleys | ✅ 2026-10-12 (owner) |
 | [M113](measurements/M113-arbucep-multishot-is-a-fixed-factor-that-reaches-dots.md) | Arbucep multishot is a fixed damage factor (effective multishot over six, never rolled) on the hit and the explosion, and it reaches the DoT seed (720 explosion, ~360 Gas tick at +110%) | ✅ 2026-10-12 (owner) |
 | [M114](measurements/M114-epitaph-never-reloads.md) | Epitaph and Epitaph Prime never reload, charged or uncharged: a full-charge shot is the draw plus 1/fire rate (1.027 s, Prime 0.931 s unmodded), and the arsenal's 0.6 s reload is never paid | ✅ 2026-10-13 (owner) |
+| [M115](measurements/M115-extra-hit-reads-a-hidden-ips-split.md) | an Extra Hit reads a hidden Impact/Slash/Puncture split on many projectiles — the Akarius Prime's all-Impact rocket reads 10/10/80, most entries a third each — measured with Toxic Lash across 177 attacks | ✅ 2026-10-13 (白苓) |
 
 ## By weapon
 

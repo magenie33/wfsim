@@ -82,6 +82,7 @@ co_base_fraction: 0.5
 # module's own Damage block sums to. Attacks[1], the tapped shot at exactly
 # half the damage, is the sibling entry.
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0

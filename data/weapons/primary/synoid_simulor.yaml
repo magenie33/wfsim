@@ -59,6 +59,7 @@ attack:
   damage: { impact: 0 }   # total 0
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 5.0
     falloff_start_m: 0.0
     falloff_reduction: 1.0

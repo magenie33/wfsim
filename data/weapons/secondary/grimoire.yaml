@@ -48,6 +48,7 @@ reload_seconds: 0
 co_behavior: additive_with_base_damage
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
@@ -81,6 +82,7 @@ attack:
   damage: { electricity: 100 }   # total 100
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 1.0
     falloff_start_m: 0.0
     falloff_reduction: 0.8

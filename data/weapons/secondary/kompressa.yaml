@@ -32,6 +32,7 @@ reload_seconds: 1.8
 co_behavior: additive_with_base_damage
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 23.0
@@ -52,6 +53,7 @@ attack:
   damage: { viral: 2 }   # 2 a pellet, 8 a shot
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 2.4
     falloff_start_m: 0.0
     falloff_reduction: 0.2

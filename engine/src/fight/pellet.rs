@@ -2088,12 +2088,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // be triggered."
         //
         // `stage_bracket` is the correction: the extra hit is scaled by
-        // the BASE ATTACK's elemental/IPS bracket, and `raw` already
-        // carries THIS stage's. They are the same number on the direct
-        // hit — the ratio is exactly 1 and nothing moves — and differ on
-        // an explosion whose damage type is not the gun's.
+        // the BASE ATTACK's unquantized elemental/IPS bracket, and `raw`
+        // already carries THIS stage's quantized one. On the direct hit
+        // they differ by the snap alone; on an explosion whose damage
+        // type is not the gun's, by the whole bracket. A hidden reading
+        // (`extra_hit_reads_shift`) moves the first, per stage.
         let stage_bracket = if stage_mb > 0.0 { qvec.total() / stage_mb } else { 1.0 };
-        let xh_bracket = active.extra_hit_bracket(t, windows) / stage_bracket.max(1e-12);
+        let reads_shift = rad.as_ref().map_or(active.extra_hit_reads_shift, |r| r.extra_hit_reads_shift);
+        let xh_bracket = (active.extra_hit_bracket(t, windows) + reads_shift) / stage_bracket.max(1e-12);
         // …and the BODY PART, a second time, on a direct hit only and for
         // Xata's Whisper only (`body_part_again`). A radial struck no body
         // part, so `part_factor` is already 1.0 there.

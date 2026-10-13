@@ -49,6 +49,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: { impact: 0.37, slash: 0.34, puncture: 0.29 }   # see notes: extra_hit_reads
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). Pinpoint.
   spread:
@@ -82,6 +83,7 @@ attack:
   # THE EXPLOSION — rules in MECHANICS §7. "Shots explode in 2.9m radius after
   # impact."
   radial:
+    extra_hit_reads: { impact: 0.37, slash: 0.34, puncture: 0.29 }   # see notes: extra_hit_reads
     radius_m: 2.9
     falloff_start_m: 0.0
     # Linear 0.0-2.9 m, 100% -> 70%.

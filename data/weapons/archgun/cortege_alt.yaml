@@ -38,6 +38,7 @@ deployments:
 co_behavior: additive_with_base_damage
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -66,6 +67,7 @@ attack:
     radius_calculation: doesnt_work
   damage: { impact: 20.0 }         # per grenade; Archwing: 10
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { blast: 2000.0 }      # per grenade; Archwing: 1000
     radius_m: 4.0
     falloff_start_m: 0.0

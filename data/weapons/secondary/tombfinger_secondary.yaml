@@ -46,6 +46,7 @@ reload_seconds: 2.1
 co_behavior: independent
 
 attack:
+  extra_hit_reads: { impact: 0, slash: 0.5, puncture: 0.5 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 1
@@ -72,6 +73,7 @@ attack:
 
   # …AND THE OTHER 80.5%.
   radial:
+    extra_hit_reads: { impact: 0, slash: 0.5, puncture: 0.5 }   # see notes: extra_hit_reads
     damage: { radiation: 56.08435 }
     radius_m: 1.9
     # A CONTACT blast: it goes off on the first thing it touches, which is what

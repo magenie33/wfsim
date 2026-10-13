@@ -1379,6 +1379,7 @@ fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
         takes_condition_overload: takes,
         takes_multishot: true,
         co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
+        extra_hit_reads_shift: 0.0,
     };
     // Zero-damage direct hit that still forces an Impact proc, so the only
     // damage reported is the explosion's and the target carries one status

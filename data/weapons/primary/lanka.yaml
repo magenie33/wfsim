@@ -53,6 +53,7 @@ scope:
   magnification: 8.0
   crit_chance_post_mod: 0.5
 attack:
+  extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0

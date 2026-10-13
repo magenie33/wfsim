@@ -32,6 +32,7 @@ unmodeled:
   - "The escalating ammo cost the wiki lists under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo) is not modelled, so the number reads slightly high."
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -107,6 +108,7 @@ attack:
     radius_calculation: snapshot
 
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { radiation: 73.0 }
     radius_m: 4.8
     falloff_start_m: 0.0

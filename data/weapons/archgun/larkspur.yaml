@@ -56,6 +56,7 @@ co_behavior: additive_with_base_damage
 # a COMBINED element, so it cannot be consumed by a mod pairing and enters the
 # hierarchy last (MECHANICS §3 rule 2).
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 10

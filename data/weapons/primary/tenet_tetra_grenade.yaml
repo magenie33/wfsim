@@ -26,6 +26,7 @@ reload_seconds: 1.8
 co_behavior: additive_with_base_damage
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). The same cone as
   # the rifle's, stated rather than inherited because an ATTACK is never
@@ -71,6 +72,7 @@ attack:
   # added damage. A 1x body-part multiplier and no headshot conditions, the
   # engine's standing rule for every radial.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { blast: 1000 }
     radius_m: 8.0
     falloff_start_m: 0.0

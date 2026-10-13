@@ -41,6 +41,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   # Pinpoint — "Very high accuracy", and the module carries no cone.
   spread:
     min_deg: 0
@@ -73,6 +74,7 @@ attack:
   damage: { impact: 18.9, puncture: 8.1 }   # total 27
   # THE EXPLOSION — rules in MECHANICS §7, and it is 25x the rocket.
   radial:
+    extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
     radius_m: 7.9
     falloff_start_m: 0.0
     # Linear 0.0-7.9 m, 100% -> 20%.

@@ -48,6 +48,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
@@ -70,6 +71,7 @@ attack:
   # THE EXPLOSION — rules in MECHANICS §7. "Shots explode in a 2.3 meter radius
   # upon impact with surface or enemy."
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 2.3
     falloff_start_m: 0.0
     # Linear 0.0-2.3 m, 100% -> 70%, so 30% is lost at the edge.

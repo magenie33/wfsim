@@ -43,6 +43,7 @@ co_behavior: additive_with_base_damage
 co_base_fraction: 0.4
 
 attack:
+  extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 100

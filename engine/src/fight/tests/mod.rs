@@ -162,6 +162,7 @@ impl Default for FightParams {
             faction_multiplier: 1.0,
             abilities: Vec::new(),
             dot_modified_base: None,
+            extra_hit_reads_shift: 0.0,
             reload_bonus: 0.0,
             reload_from_empty_speed: 0.0,
             weakpoint_damage: 0.0,
@@ -653,6 +654,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::Res
         takes_condition_overload: false,
         takes_multishot: true,
         co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
+        extra_hit_reads_shift: 0.0,
     }
 }
 

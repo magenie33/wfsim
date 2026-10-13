@@ -278,6 +278,7 @@ pub fn base_panel_assembled(
             ),
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
+            extra_hit_reads: r.extra_hit_reads.map(|x| x.0),
             // AN EXPLOSION STARTS WITH ITS OWN BASE as the CO base, and stays
             // there — see `WeaponBase::add_flat_base_damage`, where the radial's
             // never grows.
@@ -318,6 +319,7 @@ pub fn base_panel_assembled(
             damage: c.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),
+            extra_hit_reads: None,
             // A CONTACT HIT HAS NO RADIUS TO GROW. Firestorm pays on the
             // bomblet's explosion below and on nothing else here.
             takes_blast_radius_mods: false,
@@ -355,6 +357,7 @@ pub fn base_panel_assembled(
             damage: t.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),
+            extra_hit_reads: None,
             takes_blast_radius_mods: false,
             crit_chance: t.crit_chance,
             crit_multiplier: t.crit_multiplier,
@@ -386,6 +389,7 @@ pub fn base_panel_assembled(
             damage: g.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),
+            extra_hit_reads: None,
             takes_blast_radius_mods: false,
             crit_chance: None,
             crit_multiplier: None,
@@ -463,6 +467,7 @@ pub fn base_panel_assembled(
         indirect: Vec::new(),
         reload_damage_buff: 0.0,
         base_vector: vector,
+        extra_hit_reads: s.attack.extra_hit_reads.map(|x| x.0),
         base_crit_chance: s.attack.crit_chance,
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,

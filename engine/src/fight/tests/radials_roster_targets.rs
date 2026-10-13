@@ -607,6 +607,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
             takes_condition_overload: false,
             takes_multishot: true,
             co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial), // the default: an explosion gets no CO
+            extra_hit_reads_shift: 0.0,
         }
     };
     // +50% x 2 pinned stacks = +100% of the part's base crit damage.
@@ -676,6 +677,7 @@ fn the_explosion_arms_an_on_hit_buff_of_its_own() {
             takes_condition_overload: false,
             takes_multishot: true,
             co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial), // the default: an explosion gets no CO
+            extra_hit_reads_shift: 0.0,
         });
         let p = FightParams {
             radial,

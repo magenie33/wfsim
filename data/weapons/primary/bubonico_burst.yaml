@@ -29,6 +29,7 @@ battery:
 co_behavior: independent
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). PERFECT, where the
   # primary fire's barrage spreads 1-7 degrees.
@@ -78,6 +79,7 @@ attack:
   # standing rule for every radial. Its status chance matches the round's here,
   # where the Coda's two differ by four points.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { viral: 143 }
     radius_m: 7.0
     falloff_start_m: 0.0

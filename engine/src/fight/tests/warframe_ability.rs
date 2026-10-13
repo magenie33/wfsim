@@ -917,3 +917,28 @@ fn a_flat_crit_damage_lands_after_the_mods_and_before_the_tier() {
     }
 }
 
+/// A HIDDEN SPLIT MOVES THE EXTRA HIT AND NOT THE HIT (MEASUREMENTS M115). 100
+/// Impact with +120% Impact is a 2.2 bracket, snapped to 70 steps of 100/32;
+/// a 10% Impact reading takes the Extra Hit to 1.12 of the base while the hit
+/// it copies keeps every point.
+#[test]
+fn a_hidden_split_moves_the_extra_hit_and_not_the_hit() {
+    let run = |shift: f64| {
+        let mut p = params(&[("toxic_lash", None)], 1.0);
+        p.damage = DamageVector::new().with(DamageType::Impact, 220.0);
+        p.dot_modified_base = Some(100.0);
+        p.extra_hit_reads_shift = shift;
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.forced_procs = Vec::new();
+        p.foe.base_health = 1e15;
+        let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
+        (r.sources.direct, r.sources.extra_hit / r.sources.direct)
+    };
+    let snapped = 70.0 * 100.0 / crate::rules::damage::QUANTIZATION_DENOMINATOR / 100.0;
+    let (own_hit, own) = run(0.0);
+    let (read_hit, read) = run((0.1 - 1.0) * 1.2);
+    assert_eq!(own_hit, read_hit, "the hit itself does not move");
+    assert!((own - 0.3 * 2.2 / snapped).abs() < 1e-9, "{own}");
+    assert!((read - 0.3 * 1.12 / snapped).abs() < 1e-9, "{read}");
+}

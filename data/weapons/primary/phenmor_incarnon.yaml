@@ -74,6 +74,7 @@ co_behavior: additive_with_base_damage
 # which is unusual — most Incarnon forms buy crit — and is why this weapon's
 # case is its fire rate rather than its per-shot numbers.
 attack:
+  extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 6

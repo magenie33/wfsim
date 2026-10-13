@@ -61,6 +61,7 @@ reload_seconds: 2.1
 co_behavior: independent
 
 attack:
+  extra_hit_reads: { impact: 0.5, slash: 0, puncture: 0.5 }   # see notes: extra_hit_reads
   spread:
     min_deg: 1
     max_deg: 3
@@ -92,6 +93,7 @@ attack:
   damage: { impact: 35, radiation: 13 }
 
   radial:
+    extra_hit_reads: { impact: 0.5, slash: 0, puncture: 0.5 }   # see notes: extra_hit_reads
     damage: { radiation: 422 }
     radius_m: 6.2
     blast_kind: contact

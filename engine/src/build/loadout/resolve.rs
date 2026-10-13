@@ -1111,6 +1111,22 @@ pub fn resolve_for(
     });
     let (damage, modified_base) =
         build(&base.base_vector.scale(charge_scale), Some(&mut elem_bonus));
+    // The base attack's own shares are what the vector's bracket already holds,
+    // so a reading replaces them rather than adding to them.
+    let reads_shift = |reads: Option<[f64; 3]>| {
+        reads.map_or(0.0, |read| {
+            let total = base.base_vector.total();
+            [DamageType::Impact, DamageType::Slash, DamageType::Puncture]
+                .into_iter()
+                .zip(read)
+                .map(|(t, share)| {
+                    let own = if total > 0.0 { base.base_vector.get(t) / total } else { 0.0 };
+                    let bonus = phys_bonus.iter().find(|(a, _)| *a == t).map_or(0.0, |(_, x)| *x);
+                    (share - own) * bonus
+                })
+                .sum::<f64>()
+        })
+    };
     // The radial part (Laetum Incarnon's 300 Radiation explosion): its own
     // base vector, crit and status stats, modded by the same buckets.
     let a_resolved_in = |r: &RadialBase, base_damage: f64| {
@@ -1159,6 +1175,7 @@ pub fn resolve_for(
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
             co_base: r.co_base_pair(),
+            extra_hit_reads_shift: reads_shift(r.extra_hit_reads),
         }
     };
     let a_resolved = |r: &RadialBase| a_resolved_in(r, base_damage);
@@ -1656,6 +1673,7 @@ pub fn resolve_for(
             seconds_per_ammo_pickup: m.seconds_per_ammo_pickup,
         }),
         modified_base,
+        extra_hit_reads_shift: reads_shift(base.extra_hit_reads),
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.
         crit_chance: resolved_cc,

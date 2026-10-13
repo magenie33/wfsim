@@ -55,6 +55,7 @@ unmodeled:
   - "It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here."
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
@@ -113,6 +114,7 @@ attack:
   # different things — 7 m of damage, 14 m of attractor — and only the first is
   # here.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { corrosive: 55 }
     radius_m: 7.0
     falloff_start_m: 0.0

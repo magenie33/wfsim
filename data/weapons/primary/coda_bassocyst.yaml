@@ -58,6 +58,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). Perfect, on a
   # shotgun — the projectile is one wide sonic sheet rather than a pellet spread.

@@ -50,6 +50,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # "Pinpoint accuracy with minimal penalty from Heavy Caliber."
   spread:
     min_deg: 0
@@ -77,6 +78,7 @@ attack:
   damage: { impact: 50.0 }   # total 50
   # THE SHELL'S EXPLOSION — rules in MECHANICS §7, and it is 13x the shell.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 7.0
     falloff_start_m: 0.0
     # Linear 0.0-7.0 m, 100% -> 30%.

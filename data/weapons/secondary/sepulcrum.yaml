@@ -36,6 +36,7 @@ reload_seconds: 4
 co_behavior: independent
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 1.0
@@ -59,6 +60,7 @@ attack:
   damage: { impact: 9.6, puncture: 26.88, slash: 11.52 }   # total 48
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
+    extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 1.6
     falloff_start_m: 0.0
     falloff_reduction: 0.2

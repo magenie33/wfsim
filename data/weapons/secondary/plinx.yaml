@@ -46,6 +46,7 @@ battery:
 co_behavior: additive_with_base_damage
 
 attack:
+  extra_hit_reads: { impact: 0, slash: 0, puncture: 0.571429 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 1.0

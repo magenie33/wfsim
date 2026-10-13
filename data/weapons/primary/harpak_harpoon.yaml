@@ -16,6 +16,7 @@ introduced: "17.0"
 co_behavior: independent
 
 attack:
+  extra_hit_reads: { impact: 0, slash: 0, puncture: 1 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0

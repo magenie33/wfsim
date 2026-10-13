@@ -53,6 +53,7 @@ valence:
   max: 0.60
 
 attack:
+  extra_hit_reads: { impact: 0.3, slash: 0.3, puncture: 0.3 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 4
@@ -82,6 +83,7 @@ attack:
     radius_calculation: doesnt_work
   damage: { impact: 130.0 }         # Archwing: 87
   radial:
+    extra_hit_reads: { impact: 0.3, slash: 0.3, puncture: 0.3 }   # see notes: extra_hit_reads
     damage: { blast: 280.0 }        # Archwing: 187
     radius_m: 6.0                   # Archwing: 9.0
     falloff_start_m: 0.0

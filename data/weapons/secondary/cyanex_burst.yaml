@@ -15,6 +15,7 @@ introduced: "25.0"
 co_behavior: independent
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 1.0

@@ -35,6 +35,7 @@ co_behavior: additive_with_base_damage
 co_base_fraction: 0.5
 
 attack:
+  extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0

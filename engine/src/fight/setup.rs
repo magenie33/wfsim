@@ -1369,6 +1369,7 @@ impl FightParams {
             status_duration_multiplier: panel.status_duration_multiplier,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
+            extra_hit_reads_shift: panel.extra_hit_reads_shift,
             reload_bonus: panel.reload_bonus,
             reload_from_empty_speed: panel.reload_from_empty_speed,
             weakpoint_damage: panel.weakpoint_damage,
