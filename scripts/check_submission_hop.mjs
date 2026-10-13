@@ -6,7 +6,7 @@
 //         -> `wfsim-intake`, the real binary
 //           -> the build that would land in the library
 //
-// Only the network and D1 are stubbed. Nothing about what a build IS is: three
+// Only the network and the database are stubbed. Nothing about what a build IS is: three
 // separate programs in two languages have to agree, and the failures this
 // refuses are the ones where they quietly stop agreeing.
 //

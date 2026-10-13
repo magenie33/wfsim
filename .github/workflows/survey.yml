@@ -39,18 +39,13 @@ jobs:
       - name: the databases
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: the shapes not yet frozen
         id: read
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           set -euo pipefail
-          export CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[] | select(.binding == "LIBRARY") | .database_id')
           echo "{\"sql\":\"SELECT code FROM appraisals WHERE channel = 'survey' AND request IS NULL ORDER BY code LIMIT $MAX_CODES\"}" \
             | node scripts/pgq.mjs | jq -er '.result[0].results[].code' > codes.txt || true
           count=$(grep -c . codes.txt || true)

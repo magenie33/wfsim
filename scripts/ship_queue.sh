@@ -20,7 +20,7 @@
 # key absorbs.
 set -euo pipefail
 
-# AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, DERIVED so a
+# AS MANY ROWS A STATEMENT AS A HUNDRED BOUND PARAMETERS ALLOW, DERIVED so a
 # column added below shrinks the batch rather than putting every write one
 # parameter over the limit.
 QUEUE_COLUMNS=4
@@ -204,7 +204,7 @@ self_test() {
     && say ok "$QUEUE_COLUMNS bound parameters a row" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
   [ $((QUEUE_BATCH * QUEUE_COLUMNS)) -le 100 ] \
-    && say ok "...and a statement stays inside D1's hundred" \
+    && say ok "...and a statement stays inside a hundred" \
     || say FAIL "$((QUEUE_BATCH * QUEUE_COLUMNS)) is over"
   printf '%s' "$first" | jq -e '.sql | endswith("ON CONFLICT DO NOTHING")' >/dev/null \
     && say ok "...and asking twice for one row is one row" \
@@ -224,8 +224,11 @@ self_test() {
     || say FAIL "$(printf '%s' "$(batch_body b why 4)" | jq -r .sql)"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
-  cat > "$DIR/bin/curl" <<'COUNT'
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
+  # THE DATABASE AND THE FACTORY BOTH LOG what they were sent, in one file, so
+  # the order between a write and an ask is visible.
+  cat > "$DIR/bin/curl" <<'ASK'
 #!/usr/bin/env bash
 prev=; body=; out=/dev/null
 for a in "$@"; do
@@ -236,27 +239,20 @@ done
 printf '%s\n' "$body" >> "$PWD/sent.log"
 printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
-COUNT
+ASK
   chmod +x "$DIR/bin/curl"
+  cat > "$DIR/bin/db" <<'OK'
+#!/usr/bin/env bash
+cat >> "$PWD/sent.log"; echo >> "$PWD/sent.log"
+printf '{"result":[{"results":[],"success":true}],"success":true}'
+OK
+  chmod +x "$DIR/bin/db"
   # NOTHING TO ASK FOR IS NOT AN EMPTY BATCH. An hourly reconciliation finds
   # nothing most hours, and a group with no rows in it is a row in a table a
   # person reads — twenty-four of them a day.
   : > sent.log; : > none.ndjson
   ship "arrivals" "nothing" none.ndjson > out.txt 2>&1     && grep -q "nothing to ask for" out.txt     && say ok "nothing to ask for asks for nothing" || say FAIL "$(cat out.txt)"
   [ ! -s sent.log ]     && say ok "...and writes no batch at all" || say FAIL "$(head -c 200 sent.log)"
-  cat > "$DIR/bin/curl" <<'OK'
-#!/usr/bin/env bash
-prev=; body=; out=/dev/null
-for a in "$@"; do
-  [ "$prev" = "-o" ] && out="$a"
-  [ "$prev" = "--data-binary" ] && body="$a"
-  prev="$a"
-done
-printf '%s\n' "$body" >> "$PWD/sent.log"
-printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
-printf '200'
-OK
-  chmod +x "$DIR/bin/curl"
   : > sent.log
   ship arrivals "what arrived" missing.ndjson > out.txt 2>&1 \
     && say ok "a pass asks for what it was handed" || say FAIL "$(cat out.txt)"
@@ -275,21 +271,19 @@ OK
   [ "$order" = 'INTO queue "rows": INTO queue "rows": ' ] \
     && say ok "...a chunk at a time, each asked before the next is written" || say FAIL "order: $order"
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7500,"message":"no such table"}]}' > "$out"
-printf '500'
+printf '{"success":false,"errors":[{"code":"42P01","message":"relation queue does not exist"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   ship arrivals why missing.ndjson > out.txt 2>&1 \
     && say FAIL "a refused write passed" \
-    || { grep -q "no such table" out.txt \
+    || { grep -q "does not exist" out.txt \
          && say ok "a refused write reports what the database said" \
          || say FAIL "$(cat out.txt)"; }
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 

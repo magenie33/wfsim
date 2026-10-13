@@ -36,7 +36,7 @@ import { verifyRoute } from "./verify.js";
 import { contributionRoute } from "./contribution.js";
 import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
-import { withFactory } from "./factory_db.js";
+import { withDatabases } from "./db.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 // AN OUTER BOUND, NOT THE RULE — see below. It is `MAIN_SLOTS + 1`: eight main
@@ -733,7 +733,7 @@ async function agentPage(request, env, twin) {
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
-      const f = withFactory(env);
+      const f = withDatabases(env);
       try {
         await (event.cron === WATCHDOG_CRON ? watchdog(f.env) : Promise.all([rollupUsage(f.env), purgeDeleted(f.env)]));
       } finally {
@@ -741,12 +741,10 @@ export default {
       }
     })());
   },
-  // THIS REQUEST'S DATABASES (worker/factory_db.js), closed once it is answered:
-  // an api path reaches them, and so does a share's page while the library is
-  // in Postgres. A client connects on its first query, never before.
+  // THIS REQUEST'S DATABASES (worker/db.js), closed once it is answered. A
+  // client connects on its first query, never before.
   async fetch(request, env, ctx) {
-    if (!new URL(request.url).pathname.startsWith("/api/") && env.DB_LIBRARY !== "pg") return serve(request, env, ctx);
-    const f = withFactory(env);
+    const f = withDatabases(env);
     try {
       return await serve(request, f.env, ctx);
     } finally {

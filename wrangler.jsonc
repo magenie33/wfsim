@@ -22,7 +22,7 @@
   "main": "worker/index.js",
   // THE DATABASE'S SAFETY VALVE (worker/verify.js `COMPUTE_CAP`): past this many
   // computers asking, a newcomer waits; those already computing go on.
-  "vars": { "COMPUTE_CAP": "400", "FACTORY_DB": "pg", "DB_LIBRARY": "pg", "DB_ACCOUNTS": "pg" },
+  "vars": { "COMPUTE_CAP": "400" },
   // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
   // Postgres in Germany, and every round trip an ocean away held locks longer.
   "placement": { "mode": "smart" },
@@ -63,44 +63,21 @@
   },
   // THE CARD'S FONTS ride in the bundle as bytes: a worker has no system fonts.
   "rules": [{ "type": "Data", "globs": ["**/*.ttf"], "fallthrough": true }],
-  // WHERE EVERYTHING GOES. One database, and it is the only store: the library
-  // of builds, the scores computed from it, and the money that has come in. A
-  // KV namespace held the library and could not be asked a question about it —
-  // no queries, no transactions, no bulk read, and listing
-  // was the only index, metered at a thousand operations a DAY.
+  // WHERE EVERYTHING GOES: the library and the accounts live in Postgres,
+  // reached through Hyperdrive and a Cloudflare Tunnel (worker/db.js,
+  // docs/BOARD.md §"Postgres").
   //
   // IN THIS FILE AND NOT IN THE DASHBOARD: a wrangler deploy REPLACES the
   // worker's bindings with what the config declares, so a binding added through
-  // the dashboard is removed by the next push.
-  //
-  // The id is an IDENTIFIER, not a secret — it grants nothing without an api
-  // token, and Cloudflare's own docs commit it. It takes the bare product name
-  // because ONE database holds every table this product has: docs/NAMING.md §8.
-  //
-  //   npx wrangler d1 create wfsim
-  //   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
-  "d1_databases": [
-    {
-      "binding": "LIBRARY",
-      "database_name": "wfsim",
-      "database_id": "0fdd0713-cdd6-44ff-af38-efe6978c9e52"
-    },
-    // …EXCEPT THE ACCOUNTS, which are personal data: a database of their own,
-    // so a point-in-time restore of either never rolls the other back and
-    // nothing in it can reach the public library backup (docs/ACCOUNTS.md).
-    {
-      "binding": "ACCOUNTS",
-      "database_name": "wfsim-accounts",
-      "database_id": "ad0765fa-bf84-4cb9-95a1-4bd5b297b864"
-    }
-  ],
-  // POSTGRES (worker/factory_db.js), reached through Hyperdrive and a
-  // Cloudflare Tunnel: the fact factory's tables while `FACTORY_DB` says "pg",
-  // the whole library with them while `DB_LIBRARY` does. D1 holds what no
-  // switch moves — each switch is one value (docs/BOARD.md §"Postgres").
+  // the dashboard is removed by the next push. An id is an IDENTIFIER, not a
+  // secret — it grants nothing without an api token.
   "hyperdrive": [
+    // THE LIBRARY: the builds, the scores computed from them, the fact factory.
     { "binding": "HYPERDRIVE", "id": "fa561a2ab9364482aeb33421649eba62" },
-    // THE ACCOUNTS' OWN DATABASE, read uncached: a session or a payment is never a minute old.
+    // THE ACCOUNTS, which are personal data: a database of their own, so a
+    // restore of either never rolls the other back and nothing in it can reach
+    // the public library backup (docs/ACCOUNTS.md). Read uncached: a session
+    // or a payment is never a minute old.
     { "binding": "HYPERDRIVE_ACCOUNTS", "id": "06b1b58fa6fa489e860906f937e40cf2" }
   ],
   // HOW OFTEN ONE ADDRESS MAY ASK FOR A LOGIN CODE — the mail costs money and

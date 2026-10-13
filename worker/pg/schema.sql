@@ -1,10 +1,20 @@
--- THE FACT FACTORY IN POSTGRES (worker/factory_db.js; docs/BOARD.md §"The fact
--- factory"): the tables worker/schema.sql states for D1, column for column, read
--- the same way. Instants stay ISO-ms TEXT (docs/NAMING.md §9), so they compare
--- as text in both, byte by byte (`COLLATE "C"`, whatever the database's locale).
--- Every whole number is BIGINT: work sums past 2^31.
+-- THE FACT FACTORY (database `wfsim`; docs/BOARD.md §"The fact factory"): the
+-- volunteers, the work they are credited, and the questions they answer. The
+-- library's other tables are in library.sql, in the same database.
+--
+-- Instants are ISO-ms TEXT (docs/NAMING.md §9) and every text column is
+-- COLLATE "C", so they compare byte by byte whatever the database's locale.
+-- Every whole number is BIGINT: work sums past 2^31. Applied by the role that
+-- owns the tables:
 --
 --   psql -d wfsim -f worker/pg/schema.sql
+
+-- A VERIFYING CLIENT, by the random id its browser made for itself — joined to
+-- no submission, and to an account only where its owner claimed it (`devices`,
+-- in `wfsim_accounts`). Kept so a client caught once can be refused and
+-- everything it agreed to re-checked. `compute_ms` is the time its fights took
+-- on its machine, summed; `work` the work of every fact it measured, summed
+-- (docs/BOARD.md §"Contribution").
 CREATE TABLE IF NOT EXISTS verifiers (
   id            TEXT COLLATE "C" PRIMARY KEY,
   agreed        BIGINT NOT NULL DEFAULT 0,
@@ -13,11 +23,18 @@ CREATE TABLE IF NOT EXISTS verifiers (
   compute_ms    BIGINT NOT NULL DEFAULT 0,
   work          BIGINT NOT NULL DEFAULT 0,
   last_at       TEXT COLLATE "C",
+  -- THE READER'S YES: the statement version they agreed to, and when.
   consent_v     BIGINT,
   consent_at    TEXT COLLATE "C",
+  -- A REFUSAL IS A COOL-DOWN: how many this client has had, and when the last
+  -- one ends (scripts/live_orders.mjs `ban`).
   refusals      BIGINT NOT NULL DEFAULT 0,
   refused_until TEXT COLLATE "C",
+  -- …and the facts it has been part of since its last refusal, which forgive
+  -- one each `FACTS_PER_REFUSAL_FORGIVEN` (worker/tasks.js).
   clean         BIGINT NOT NULL DEFAULT 0,
+  -- WHEN IT LAST ASKED FOR WORK, on which engine and with how many cores free,
+  -- to the minute — what tells an idle page from a closed one (verify.js `askedOf`).
   asked_at      TEXT COLLATE "C",
   asked_engine  TEXT COLLATE "C",
   asked_lanes   BIGINT
@@ -25,22 +42,35 @@ CREATE TABLE IF NOT EXISTS verifiers (
 CREATE INDEX IF NOT EXISTS verifiers_last ON verifiers (last_at);
 CREATE INDEX IF NOT EXISTS verifiers_asked ON verifiers (asked_at);
 
+-- THE OFFICIAL POOL: work that was credited and then left its holder — a
+-- deleted account's (`deleted_account`), or taken back from a refused client
+-- (`refused`). Points are compute and stay counted; the pool holds no name.
 CREATE TABLE IF NOT EXISTS points_pool (
   at     TEXT COLLATE "C" NOT NULL,
   source TEXT COLLATE "C" NOT NULL,
   work   BIGINT NOT NULL
 );
 
+-- THE SAME WORK BY THE HOUR IT WAS CREDITED, for the rankings' recent periods
+-- (docs/BOARD.md §"Contribution"). A refused client's hours count for nothing,
+-- as its total does: the ranking reads them through `verifiers.banned`.
 CREATE TABLE IF NOT EXISTS verifier_hours (
   verifier TEXT COLLATE "C" NOT NULL,
+  -- THE UTC HOUR, `YYYY-MM-DDTHH`: a reader's own "today" is whole hours of it
+  -- in their time zone, and the rankings' days are its prefix.
   hour     TEXT COLLATE "C" NOT NULL,
   work     BIGINT NOT NULL DEFAULT 0,
+  -- …AND WHAT THE BROWSER SENT IN THAT HOUR: results, and what their fights took.
   tasks    BIGINT NOT NULL DEFAULT 0,
   ms       BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (verifier, hour)
 );
 CREATE INDEX IF NOT EXISTS verifier_hours_by_hour ON verifier_hours (hour);
 
+-- WHAT A DEVICE ASKED FOR, by the UTC hour (docs/BOARD.md §"Outages"): `asks`
+-- the server saw; `idle` the asks that brought nothing and `idle_lanes` the
+-- cores they left waiting; `failed` those that never reached the server. The
+-- last three are the page's own count, sent with its next ask that lands.
 CREATE TABLE IF NOT EXISTS verifier_asks (
   verifier   TEXT COLLATE "C" NOT NULL,
   hour       TEXT COLLATE "C" NOT NULL,
@@ -48,6 +78,8 @@ CREATE TABLE IF NOT EXISTS verifier_asks (
   idle       BIGINT NOT NULL DEFAULT 0,
   idle_lanes BIGINT NOT NULL DEFAULT 0,
   failed     BIGINT NOT NULL DEFAULT 0,
+  -- …AND BY ROAD (docs/DISTRIBUTION.md §"The relay"): the asks the relay
+  -- carried, and the page's asks each road dropped before the other was tried.
   relayed      BIGINT NOT NULL DEFAULT 0,
   relay_failed BIGINT NOT NULL DEFAULT 0,
   direct_failed BIGINT NOT NULL DEFAULT 0,
@@ -55,6 +87,8 @@ CREATE TABLE IF NOT EXISTS verifier_asks (
 );
 CREATE INDEX IF NOT EXISTS verifier_asks_by_hour ON verifier_asks (hour);
 
+-- WHEN THE FACTORY WAS PAUSED OR ITS WATCHDOG FOUND SOMETHING WRONG, from the
+-- first sight to the last (docs/BOARD.md §"Outages"): `pause`, or `alert:<cause>`.
 CREATE TABLE IF NOT EXISTS factory_events (
   kind       TEXT COLLATE "C" NOT NULL,
   started_at TEXT COLLATE "C" NOT NULL,
@@ -62,6 +96,9 @@ CREATE TABLE IF NOT EXISTS factory_events (
   PRIMARY KEY (kind, started_at)
 );
 
+-- POINTS GIVEN BY HAND, an outage's compensation among them: each is ALSO in
+-- `verifier_hours`, written in the same transaction, and this says which part
+-- of an hour it was and why (`reason`, an id the ledger names).
 CREATE TABLE IF NOT EXISTS adjustments (
   id       BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   verifier TEXT COLLATE "C" NOT NULL,
@@ -72,26 +109,41 @@ CREATE TABLE IF NOT EXISTS adjustments (
 );
 CREATE INDEX IF NOT EXISTS adjustments_by_verifier ON adjustments (verifier, hour);
 
+-- THE FACT FACTORY (worker/tasks.js): every computed answer the volunteers and
+-- the official machines give, whatever asked for it. A QUESTION is a verb on a
+-- canonical request, its id the hash of both, so two producers asking one thing
+-- share it. A DEMAND is one producer's ask for it, with the deadline that
+-- orders the dispatch. An ANSWER is one witness's canonical result.
 CREATE TABLE IF NOT EXISTS questions (
   id               TEXT COLLATE "C" PRIMARY KEY,
   verb             TEXT COLLATE "C" NOT NULL,
   request          TEXT COLLATE "C" NOT NULL,
+  -- open | fact | spot | disputed | nondeterministic | withdrawn (worker/tasks.js §"States").
   state            TEXT COLLATE "C" NOT NULL,
+  -- THE EARLIEST DEADLINE of its live demands, and 1 when a person waits on one
+  -- now: dispatch is the waited-on first, then earliest deadline first.
   due_at           TEXT COLLATE "C" NOT NULL,
   waits            BIGINT NOT NULL DEFAULT 0,
   opened_at        TEXT COLLATE "C" NOT NULL,
+  -- The cores a first answer needs, relaxing with age: [{ lanes, after_ms }], or null.
   lanes            TEXT COLLATE "C",
   lease            TEXT COLLATE "C",
   lease_until      TEXT COLLATE "C",
   leased_to        TEXT COLLATE "C",
+  -- WHEN A VOLUNTEER LEASED IT, and the holder before, still computing, when
+  -- another took it past `ROW_CEILING_MS` (worker/tasks.js `SUPERSEDE`).
   leased_at        TEXT COLLATE "C",
   lease_prev       TEXT COLLATE "C",
   leased_to_prev   TEXT COLLATE "C",
   lease_prev_until TEXT COLLATE "C",
+  -- THE WITNESSES IT NEEDS, when a recheck raised them past the threshold
+  -- (worker/tasks.js `decide`); null is the threshold.
   needs            BIGINT,
+  -- THE FACT: the canonical answer, the engine it holds for, and when.
   canon            TEXT COLLATE "C",
   fact_engine      TEXT COLLATE "C",
   fact_at          TEXT COLLATE "C",
+  -- 1 when its answers were found not deterministic: settled, nobody refused, said aloud.
   odd              BIGINT NOT NULL DEFAULT 0
 );
 -- IN THE ORDER A WITNESS IS HANDED WORK (worker/tasks.js `eligibleSql`).
@@ -104,10 +156,12 @@ CREATE TABLE IF NOT EXISTS demands (
   producer  TEXT COLLATE "C" NOT NULL,
   ref       TEXT COLLATE "C" NOT NULL,
   question  TEXT COLLATE "C" NOT NULL,
+  -- live | served | withdrawn
   state     TEXT COLLATE "C" NOT NULL,
   asked_at  TEXT COLLATE "C" NOT NULL,
   due_at    TEXT COLLATE "C" NOT NULL,
   waits     BIGINT NOT NULL DEFAULT 0,
+  -- What the producer's consumer needs back, which the factory never reads.
   payload   TEXT COLLATE "C" NOT NULL DEFAULT '{}',
   served_at TEXT COLLATE "C",
   PRIMARY KEY (producer, ref)
@@ -121,24 +175,35 @@ CREATE TABLE IF NOT EXISTS answers (
   id         BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   question   TEXT COLLATE "C" NOT NULL,
   engine     TEXT COLLATE "C" NOT NULL,
+  -- THE WITNESS: its device id, its owner then (the device itself when unclaimed),
+  -- the salted hash of its network (verify.js `netOf`), and whether it is official.
   device     TEXT COLLATE "C" NOT NULL,
   owner      TEXT COLLATE "C" NOT NULL,
   net        TEXT COLLATE "C" NOT NULL DEFAULT '',
   official   BIGINT NOT NULL DEFAULT 0,
+  -- The verb's canonical answer, which agreement compares byte for byte, and the
+  -- whole result the consumers read (a build, a score).
   canon      TEXT COLLATE "C" NOT NULL,
   result     TEXT COLLATE "C" NOT NULL,
   work       BIGINT NOT NULL,
   compute_ms BIGINT,
   at         TEXT COLLATE "C" NOT NULL,
+  -- Set when it is one of a fact's witnesses, credited; `void` when its witness
+  -- was refused, after which it counts for nothing.
   credited   BIGINT NOT NULL DEFAULT 0,
   void       BIGINT NOT NULL DEFAULT 0,
+  -- WHAT IT COST, to fit what a point is worth and never credited: the engine's
+  -- work counts (`WORK_COUNTERS`, and a search's own), and the cores it ran on.
   counts     TEXT COLLATE "C",
   lanes      BIGINT
 );
 CREATE INDEX IF NOT EXISTS answers_by_question ON answers (question, engine);
 CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);
+-- WHEN AN ENGINE'S UNIT OF WORK BEGAN, one seek (worker/fair.js `tableOf`).
 CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
 
+-- WHAT THE WATCHDOG LAST SAID, per cause (worker/factory.js `watchdog`), so a
+-- cause is said once until it has stood six hours.
 CREATE TABLE IF NOT EXISTS watchdog_told (
   cause   TEXT COLLATE "C" PRIMARY KEY,
   told_at TEXT COLLATE "C" NOT NULL

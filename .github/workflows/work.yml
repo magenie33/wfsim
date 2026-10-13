@@ -99,22 +99,17 @@ jobs:
       - name: the databases
         uses: ./.github/actions/databases
         with:
-          db_accounts: ${{ vars.DB_ACCOUNTS }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_accounts_url: ${{ secrets.PG_ACCOUNTS_PIPELINE_URL }}
       - name: Read and fight the paid answers
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           # THE PAID QUESTIONS ARE THE FACTORY'S to say (worker/factory.js `report`).
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           FACTORY_ORIGIN: https://wfsim.mgnmz1999.workers.dev
         run: |
           set -euo pipefail
           chmod +x pkg/wfsim-gas
-          ids=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[] | "\(.binding)=\(.database_id)"')
-          export CF_D1_DATABASE=$(echo "$ids" | sed -n 's/^LIBRARY=//p') CF_D1_ACCOUNTS=$(echo "$ids" | sed -n 's/^ACCOUNTS=//p')
           node scripts/work_calibrate.mjs sample out="$RUNNER_TEMP/work-sample.json" days=${{ inputs.days }} rows=${{ inputs.sample }} native=pkg/wfsim-gas
       - name: Fit the prices
         run: |

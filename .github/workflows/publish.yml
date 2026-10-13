@@ -36,7 +36,7 @@ jobs:
     # through, or may have fallen over an hour ago; neither changes what this
     # does, which is read the table and write what it says.
     runs-on: ubuntu-latest
-    # Capped for the reason `scores.yml` states — this one reads D1 too.
+    # Capped for the reason `scores.yml` states — this one reads the database too.
     timeout-minutes: 45
     permissions:
       contents: write
@@ -58,18 +58,12 @@ jobs:
       - name: the databases
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: read the library and the facts
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           # THE FACTS AS THEY ARE AT THIS MOMENT, which is the whole promise
           # of this file: a scoring run may be shipping rows while it reads,
           # and the next publish carries those.

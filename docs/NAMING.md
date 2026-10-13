@@ -137,7 +137,7 @@ or a prefix. A name describes the resource, not what happens to be in it. A
 second resource of one type needs a boundary (a lifecycle, a write path, a blast
 radius) and takes its name from it — `wfsim-staging`, not `wfsim-2`. Neither the
 type nor the vendor is in the name: the type lives in the config key
-(`D1_DATABASE_ID`, `R2_BUCKET`). Hyphens, not underscores, because an object
+(`hyperdrive`, `r2_buckets`). Hyphens, not underscores, because an object
 store's name must be DNS-compatible. An environment joins the name only when a
 second one exists.
 

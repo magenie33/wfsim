@@ -14,7 +14,7 @@
 # how they agree on who owns which row without talking.
 #
 # THE SCORER NEVER SPEAKS TO THE DATABASE. It reads and writes files, and the
-# network lives in scripts a stub `curl` can drive.
+# database and the factory live in scripts a stub can drive.
 set -euo pipefail
 
 # A PAGE, AND THE LOOP IS BOUNDED. The queue is EMPTY at rest — it holds only
@@ -148,22 +148,27 @@ self_test() {
     || say FAIL "$(printf '%s' "$body" | jq -c .params)"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
   cat > "$DIR/bin/curl" <<'OK'
 #!/usr/bin/env bash
 out=/dev/null; prev=
 for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-case "$*" in *official/report*) jq -n -c '{ok:true,rows:[{batch:"arrivals",build_id:"b1",ruler:"standard_single_target",mode:"base"}]}' > "$out"; printf '200'; exit 0;; esac
-n=$(cat "$PWD/page.n" 2>/dev/null || echo 0)
-echo $((n + 1)) > "$PWD/page.n"
-if [ "$n" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{batch:"arrivals",build_id:("b"+(.|tostring)),ruler:"standard_single_target",mode:"base"}],success:true}],success:true}' > "$out"
-else
-  jq -n -c '{result:[{results:[],success:true}],success:true}' > "$out"
-fi
+jq -n -c '{ok:true,rows:[{batch:"arrivals",build_id:"b1",ruler:"standard_single_target",mode:"base"}]}' > "$out"
 printf '200'
 OK
   chmod +x "$DIR/bin/curl"
+  cat > "$DIR/bin/db" <<'OK'
+#!/usr/bin/env bash
+n=$(cat "$PWD/page.n" 2>/dev/null || echo 0)
+echo $((n + 1)) > "$PWD/page.n"
+if [ "$n" = "0" ]; then
+  jq -n -c '{result:[{results:[range(0;3)|{batch:"arrivals",build_id:("b"+(.|tostring)),ruler:"standard_single_target",mode:"base"}],success:true}],success:true}'
+else
+  jq -n -c '{result:[{results:[],success:true}],success:true}'
+fi
+OK
+  chmod +x "$DIR/bin/db"
   rm -f page.n
   fetch got.ndjson > out.txt 2>&1 \
     && say ok "a read pages until the answer runs out" || say FAIL "$(cat out.txt)"
@@ -176,24 +181,22 @@ OK
   [ "$(grep -c . claimed.ndjson 2>/dev/null)" = "1" ] && jq -e '.build_id == "b1"' < claimed.ndjson >/dev/null \
     && say ok "a claimed read keeps the rows the factory says are its" || say FAIL "$(cat out.txt; cat claimed.ndjson)"
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7403,"message":"not authorized"}]}' > "$out"
-printf '403'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table queue"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   # A REFUSED READ IS NOT AN EMPTY QUEUE. Reported as an error rather than as
   # "nothing owed", which a run would act on by scoring nothing and publishing.
   if fetch got.ndjson > out.txt 2>&1; then
     say FAIL "a refused read passed as an empty queue"
   else
-    grep -q "not authorized" out.txt \
+    grep -q "permission denied" out.txt \
       && say ok "a refused read says what the database said" || say FAIL "$(cat out.txt)"
   fi
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 

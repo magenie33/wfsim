@@ -31,7 +31,6 @@ export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf, packTaskOf, notePause } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
-import { factoryDb, pick } from "./factory_db.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest.
@@ -193,7 +192,7 @@ async function work(request, env) {
   // `paused` tells the page so: it counts that ask as idle itself, the server
   // having written nothing.
   if (env.FACTORY_PAUSED === "1") { await notePause(env, Date.now()); return json({ ok: true, work: null, pack: null, busy: true, paused: true }); }
-  const db = factoryDb(env), now = Date.now(), at = iso(now), id = b.verifier;
+  const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier;
   const asked = askedOf(db, b, now);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
@@ -232,21 +231,16 @@ async function work(request, env) {
     // and a refusal — a cool-down (scripts/live_orders.mjs `ban`) — lifted once over.
     db.prepare("INSERT INTO verifiers (id, seen) VALUES (?, ?) ON CONFLICT DO NOTHING").bind(id, day()),
     asked,
-    db.prepare(pick(db, "UPDATE verifiers SET consent_v = ?, consent_at = ? WHERE id = ? AND (consent_v IS NOT ? OR consent_at IS NOT ?)",
-      "UPDATE verifiers SET consent_v = ?::bigint, consent_at = ?::text WHERE id = ?::text AND (consent_v IS DISTINCT FROM ?::bigint OR consent_at IS DISTINCT FROM ?::text)"))
+    db.prepare("UPDATE verifiers SET consent_v = ?::bigint, consent_at = ?::text WHERE id = ?::text AND (consent_v IS DISTINCT FROM ?::bigint OR consent_at IS DISTINCT FROM ?::text)")
       .bind(c.v, c.at, id, c.v, c.at),
     db.prepare("UPDATE verifiers SET banned = 0 WHERE id = ? AND banned = 1 AND (refused_until IS NULL OR refused_until <= ?)").bind(id, at),
-    db.prepare(pick(db, "UPDATE verifiers SET seen = ? WHERE id = ? AND seen IS NOT ?",
-      "UPDATE verifiers SET seen = ?::text WHERE id = ?::text AND seen IS DISTINCT FROM ?::text")).bind(day(), id, day()),
+    db.prepare("UPDATE verifiers SET seen = ?::text WHERE id = ?::text AND seen IS DISTINCT FROM ?::text").bind(day(), id, day()),
     ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
       : f.releaseAllOf(env, id, now),
     db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
-    db.prepare(pick(db, `SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
-                  AND (lease_until IS NULL OR lease_until < ?1) LIMIT ?2)) AS open,
-                (SELECT count(*) FROM verifiers WHERE asked_at > ?3) AS asking`,
-      `SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
+    db.prepare(`SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
                   AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT ?2::bigint) o) AS open,
-                (SELECT count(*) FROM verifiers WHERE asked_at > ?3::text) AS asking`)).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
+                (SELECT count(*) FROM verifiers WHERE asked_at > ?3::text) AS asking`).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
     f.headOf(env, w, engine, now),
     asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),
   ]);
@@ -312,8 +306,7 @@ function asksOf(db, id, ahead, idle, now, relayed = false) {
   const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, relayed: 0, ...x }]));
   if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, relay_failed: 0, direct_failed: 0, ...all.get(hour), seen: 1, relayed: relayed ? 1 : 0 });
   if (!all.size) return db.prepare("SELECT 1");
-  const values = [...all].map(() => pick(db, "(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint)")).join(", ");
+  const values = [...all].map(() => "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint)").join(", ");
   return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed, direct_failed)
       VALUES ${values}
       ON CONFLICT (verifier, hour) DO UPDATE SET asks = h.asks + excluded.asks, idle = h.idle + excluded.idle,
@@ -330,11 +323,9 @@ export const ASKED_EVERY_MS = 60_000;
 function askedOf(db, b, now) {
   const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
   const lanes = b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-  return db.prepare(pick(db, `UPDATE verifiers SET asked_at = ?1, asked_engine = ?2, asked_lanes = coalesce(?3, asked_lanes)
-      WHERE id = ?4 AND (asked_at IS NULL OR asked_at < ?5 OR asked_engine IS NOT ?2 OR (?3 IS NOT NULL AND asked_lanes IS NOT ?3))`,
-    `UPDATE verifiers SET asked_at = ?1::text, asked_engine = ?2::text, asked_lanes = coalesce(?3::bigint, asked_lanes)
+  return db.prepare(`UPDATE verifiers SET asked_at = ?1::text, asked_engine = ?2::text, asked_lanes = coalesce(?3::bigint, asked_lanes)
       WHERE id = ?4::text AND (asked_at IS NULL OR asked_at < ?5::text OR asked_engine IS DISTINCT FROM ?2::text
-        OR (?3::bigint IS NOT NULL AND asked_lanes IS DISTINCT FROM ?3::bigint))`))
+        OR (?3::bigint IS NOT NULL AND asked_lanes IS DISTINCT FROM ?3::bigint))`)
     .bind(iso(now), engine, lanes, b.verifier, iso(now - ASKED_EVERY_MS));
 }
 
@@ -387,7 +378,7 @@ async function verify(request, env) {
   if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "")) return json({ ok: false, error: "bad request" }, 400);
   const refused = unrecognised(b.verifier);
   if (refused) return refused;
-  const q = await factoryDb(env).prepare("SELECT id FROM questions WHERE lease = ? AND leased_to = ? LIMIT 1").bind(b.lease, b.verifier).first();
+  const q = await env.LIBRARY.prepare("SELECT id FROM questions WHERE lease = ? AND leased_to = ? LIMIT 1").bind(b.lease, b.verifier).first();
   if (!q) return json({ ok: true });
   const { lease, verifier, engine, ...a } = b;
   return answers(new Request(request.url, { method: "POST", headers: request.headers,
@@ -447,23 +438,13 @@ async function mine(request, env) {
   const keys = b.orders.slice(0, MINE_MAX).filter((k) => k && typeof k.identity === "string" && typeof k.ruler === "string" && typeof k.mode === "string");
   // WHAT THE FACTORY SAYS of this client's answer to each row's question, in one read.
   const refs = keys.map((k) => `${k.identity}|${k.ruler}|${k.mode}`);
-  const db = factoryDb(env);
-  const { results } = await db.prepare(pick(db,
-    // BY THE QUESTION, NEVER THE DEVICE (`+a.device` keeps `answers_by_device`
-    // out): a busy client holds a hundred thousand answers, and scanning them
-    // per row overloaded the database.
-    `SELECT k.value AS ref, q.state, q.fact_at,
-            (SELECT max(credited) FROM answers a WHERE a.question = q.id AND +a.device = ?1 AND a.void = 0) AS credited,
-            (SELECT count(*) FROM answers a WHERE a.question = q.id AND +a.device = ?1 AND a.void = 0) AS mine
-       FROM json_each(?2) k
-       JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND d.producer IN ${BOARD_KINDS_SQL}
-                                     ORDER BY d.asked_at DESC LIMIT 1)`,
-    `SELECT k.value AS ref, q.state, q.fact_at,
+  const db = env.LIBRARY;
+  const { results } = await db.prepare(`SELECT k.value AS ref, q.state, q.fact_at,
             (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS credited,
             (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS mine
        FROM jsonb_array_elements_text((?2::text)::jsonb) k
        JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND d.producer IN ${BOARD_KINDS_SQL}
-                                     ORDER BY d.asked_at DESC LIMIT 1)`))
+                                     ORDER BY d.asked_at DESC LIMIT 1)`)
     .bind(b.verifier, JSON.stringify(refs)).all();
   const byRef = new Map(results.map((r) => [r.ref, r]));
   const out = [];

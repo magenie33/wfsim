@@ -20,15 +20,20 @@ const instant = (name) => /(^at|_at|_until)$/.test(name);
 
 function schema(path) {
   const s = read(path);
+  // A SCHEMA THIS PARSER READS NO COLUMN OF would pass in silence.
+  let columns = 0;
   for (const t of s.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([\s\S]*?)\n\);/g)) {
     for (const line of t[2].split("\n")) {
-      const c = line.replace(/--.*/, "").trim().match(/^(\w+)\s+(TEXT|INTEGER|REAL)\b/);
+      const c = line.replace(/--.*/, "").trim()
+        .match(/^(\w+)\s+(TEXT|BIGINT|INTEGER|SMALLINT|DOUBLE PRECISION|REAL|NUMERIC|BOOLEAN|TIMESTAMPTZ|TIMESTAMP|DATE|JSONB|JSON|BYTEA)\b/i);
       if (!c) continue;
-      const [, col, type] = c, key = `${t[1]}.${col}`;
+      columns++;
+      const [, col] = c, type = c[2].toUpperCase(), key = `${t[1]}.${col}`;
       if (/_at_ms$/.test(col)) failures.push(`${path}: ${key} is an instant in milliseconds; store it as ${col.replace(/_ms$/, "")} TEXT`);
       else if (instant(col) && type !== "TEXT") failures.push(`${path}: ${key} is ${type}; an instant is TEXT`);
     }
   }
+  if (!columns) failures.push(`${path}: no column read; the parser no longer matches this schema`);
 }
 
 const sources = (dir, ext) => readdirSync(resolve(ROOT, dir)).filter((f) => ext.test(f) && !f.startsWith("check_")).map((f) => join(dir, f).replace(/\\/g, "/"));
@@ -76,8 +81,7 @@ function writers(path) {
   }
 }
 
-schema("worker/schema.sql");
-schema("worker/accounts.sql");
+for (const f of sources("worker/pg", /\.sql$/)) schema(f);
 for (const f of [...sources("worker", /\.js$/), ...sources("scripts", /\.(mjs|sh)$/)]) writers(f);
 // THE PRIVATE WORKER is checked wherever it is checked out; CI has no copy.
 if (existsSync(resolve(ROOT, "private/cloud/schema"))) {

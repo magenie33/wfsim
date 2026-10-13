@@ -7,7 +7,6 @@
 // ask with probability 1 − target / received; while work is plentiful nothing
 // here runs. docs/BOARD.md §"Fair share while work is short".
 import { iso } from "./instant.js";
-import { factoryDb, pick } from "./factory_db.js";
 
 /// HOW MUCH OF THE HAND-OUT IS EQUAL PER ACCOUNT, the rest by cores asking.
 export const FAIR_ALPHA = 0.3;
@@ -63,7 +62,7 @@ const median = (xs) => {
 };
 
 export async function tableOf(env, engine, now) {
-  const db = factoryDb(env);
+  const db = env.LIBRARY;
   // ON OVER THE SAME WINDOW AS WHAT WAS RECEIVED: a machine deep in a pack asks
   // only as it ends, and counting its answers but not its capacity would read
   // a big fleet as twice its share.
@@ -71,35 +70,26 @@ export async function tableOf(env, engine, now) {
     .bind(iso(now - FAIR_WINDOW_MS)).all();
   const owned = new Map(), created = new Map();
   if (env.ACCOUNTS) {
-    const { results } = await env.ACCOUNTS.prepare(pick(env.ACCOUNTS,
-      `SELECT d.verifier, d.account, a.created_at FROM devices d JOIN accounts a ON a.id = d.account
-        WHERE d.account IN (SELECT account FROM devices WHERE verifier IN (SELECT value FROM json_each(?)))`,
-      `SELECT d.verifier, d.account, a.created_at FROM devices d JOIN accounts a ON a.id = d.account
-        WHERE d.account IN (SELECT account FROM devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)))`))
+    const { results } = await env.ACCOUNTS.prepare(`SELECT d.verifier, d.account, a.created_at FROM devices d JOIN accounts a ON a.id = d.account
+        WHERE d.account IN (SELECT account FROM devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)))`)
       .bind(JSON.stringify(asking.map((r) => r.id))).all();
     for (const r of results) { owned.set(r.verifier, r.account); created.set(r.account, r.created_at); }
   }
   const devices = [...new Set([...asking.map((r) => r.id), ...owned.keys()])];
   const on = JSON.stringify(asking.map((r) => r.id));
   const [got, paid, best] = await db.batch([
-    db.prepare(pick(db, `SELECT device, sum(work) AS work, sum(CASE WHEN credited THEN work END) AS credited FROM answers WHERE device IN (SELECT value FROM json_each(?1))
-                 AND at > ?2 AND engine = ?3 AND official = 0 AND void = 0 GROUP BY 1`,
-    `SELECT device, sum(work) AS work, sum(CASE WHEN credited <> 0 THEN work END) AS credited FROM answers
+    db.prepare(`SELECT device, sum(work) AS work, sum(CASE WHEN credited <> 0 THEN work END) AS credited FROM answers
                  WHERE device IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))
-                 AND at > ?2::text AND engine = ?3::text AND official = 0 AND void = 0 GROUP BY 1`))
+                 AND at > ?2::text AND engine = ?3::text AND official = 0 AND void = 0 GROUP BY 1`)
       .bind(JSON.stringify(devices), iso(now - FAIR_WINDOW_MS), engine),
-    db.prepare(pick(db, "SELECT id FROM verifiers WHERE id IN (SELECT value FROM json_each(?)) AND work > 0",
-      "SELECT id FROM verifiers WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) AND work > 0"))
+    db.prepare("SELECT id FROM verifiers WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) AND work > 0")
       .bind(JSON.stringify([...owned.keys()])),
-    // SQLITE'S max() OF A NULL IS NULL: no answer on the engine yet reads no hour.
-    db.prepare(pick(db, `SELECT verifier, max(work) AS best FROM verifier_hours WHERE verifier IN (SELECT value FROM json_each(?1))
-                 AND hour >= max(?2, (SELECT strftime('%Y-%m-%dT%H', min(at), '+1 hour') FROM answers WHERE engine = ?3))
-               GROUP BY 1`,
-    `SELECT verifier, max(work) AS best FROM verifier_hours WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))
+    // NO ANSWER ON THE ENGINE YET reads no hour.
+    db.prepare(`SELECT verifier, max(work) AS best FROM verifier_hours WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))
                  AND hour >= (SELECT CASE WHEN min(at) IS NULL THEN NULL ELSE GREATEST(?2::text,
                    to_char(((min(at))::timestamptz AT TIME ZONE 'UTC') + interval '1 hour', 'YYYY-MM-DD"T"HH24')) END
                    FROM answers WHERE engine = ?3::text)
-               GROUP BY 1`)).bind(on, iso(now - CAPACITY_HOURS * 3_600_000).slice(0, 13), engine),
+               GROUP BY 1`).bind(on, iso(now - CAPACITY_HOURS * 3_600_000).slice(0, 13), engine),
   ]);
   const credited = new Set(paid.results.map((r) => owned.get(r.id)));
   const by = new Map();

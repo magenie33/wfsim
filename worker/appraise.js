@@ -12,7 +12,6 @@ import { submitRecord } from "./index.js";
 import { netOf, servedRelease, countsOf, unrecognised } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
-import { factoryDb, sameDb } from "./factory_db.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
 const CODE_LEN = 5;
@@ -287,7 +286,7 @@ async function mine(request, env) {
     if (!r) continue;
     used.add(r.code);
     // WHAT THE FACTORY SAYS of this browser's answer to that question.
-    const q = r.weapon == null ? null : await factoryDb(env).prepare(
+    const q = r.weapon == null ? null : await env.LIBRARY.prepare(
       `SELECT q.state, q.fact_at, (SELECT max(credited) FROM answers x WHERE x.question = q.id AND x.device = ?) AS credited
          FROM demands d JOIN questions q ON q.id = d.question WHERE d.ref = ? AND d.producer IN ('chat', 'survey')`)
       .bind(b.verifier, r.code).first();
@@ -334,8 +333,6 @@ const kept = (now) => [SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - KEEP
 async function adopt(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!botAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
-  // THE ADOPTION PREDATES THE FACTORY'S OWN DATABASE and joins across it.
-  if (!sameDb(env)) return json({ ok: true, adopted: 0, left: 0 });
   const db = env.LIBRARY, now = Date.now(), since = kept(now);
   const { results } = await db.prepare(
     `SELECT code, channel, weapon, ruler, at, request, lease, lease_until, leased_to FROM appraisals a

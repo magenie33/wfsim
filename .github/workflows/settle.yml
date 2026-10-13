@@ -34,8 +34,6 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     env:
-      CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-      CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
       FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
       # ONE WITNESS A SHARD: a release frees every claim its witness holds.
       WITNESS: official:settle-${{ matrix.shard }}
@@ -49,15 +47,12 @@ jobs:
       - name: the databases
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: settle
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           export WITNESS_LANES=$(nproc)
           end=$(( $(date +%s) + SETTLE_MINUTES * 60 ))
           mkdir -p work

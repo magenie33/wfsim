@@ -4,8 +4,7 @@
 // only its own.
 //   node scripts/check_appraise.mjs
 import { appraiseRoute } from "../worker/appraise.js";
-import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
+import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -13,18 +12,8 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-const db = new DatabaseSync(":memory:");
-db.exec(readFileSync(new URL("../worker/schema.sql", import.meta.url), "utf8"));
-// D1's surface, on node's sqlite: `first`, `all`, `run` with `meta.changes`, and
-// a batch that answers each statement the way D1 does.
-const stmt = (sql, args = []) => ({
-  bind: (...a) => stmt(sql, a),
-  first: async () => db.prepare(sql).get(...args) ?? null,
-  all: async () => ({ results: db.prepare(sql).all(...args) }),
-  run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
-  each: async () => (/^\s*select/i.test(sql) ? { results: db.prepare(sql).all(...args) } : { meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
-});
-const LIBRARY = { prepare: (sql) => stmt(sql), batch: async (ss) => Promise.all(ss.map((x) => x.each())) };
+const db = await testDb("library");
+const LIBRARY = db;
 const env = { BOT_RELAY_TOKEN: "relay", LIBRARY };
 const call = async (method, path, body, headers = {}) => {
   const r = await appraiseRoute(new Request(`https://x${path}`, { method, headers,
@@ -55,7 +44,7 @@ check("a hand-back needs a build", (await call("POST", `/api/appraise/${code}/re
 const b1 = await call("POST", `/api/appraise/${code}/result`, { build, thanks: "  Kai  see https://evil.example/x  and evil.com  " });
 const b2 = await call("POST", `/api/appraise/${code}/result`, { build: { ...build, mods: ["hornet_strike", "riven"] }, thanks: "B" });
 check("every build handed back is kept, each told it may be first", b1.body.ok && b1.body.first && b2.body.first);
-const thanked = db.prepare("SELECT thanks FROM appraisal_results ORDER BY id").all().map((r) => r.thanks);
+const thanked = (await db.all("SELECT thanks FROM appraisal_results ORDER BY id")).map((r) => r.thanks);
 check("a name to thank loses its links and its length", thanked[0] === "Kai see and" && !/https?:|evil/.test(thanked[0]), JSON.stringify(thanked));
 
 const c1 = (await call("POST", "/api/appraise/claim", { channel: "qq" }, bot)).body;
@@ -68,7 +57,7 @@ const [r1, r2] = c1.judge.map((j) => j.id);
 const c3 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r2, ok: true, verdict: { score: 87.3 } }] }, bot)).body;
 check("the first build the bot accepts wins", c3.tell.length === 1 && c3.tell[0].code === code && c3.tell[0].result_id === r2 && c3.tell[0].thanks === "B" && c3.tell[0].verdict.score === 87.3, JSON.stringify(c3.tell));
 const c4 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r1, ok: true }], told: [code] }, bot)).body;
-const row = db.prepare("SELECT winner, told_at FROM appraisals WHERE code = ?").get(code);
+const row = await db.get("SELECT winner, told_at FROM appraisals WHERE code = ?", code);
 check("…once: a later acceptance changes nothing", row.winner === r2, JSON.stringify(row));
 check("…and a told appraisal is not handed out to tell again", c4.tell.length === 0 && Date.parse(row.told_at) > 0);
 const late = await call("POST", `/api/appraise/${code}/result`, { build, thanks: "C" });
@@ -83,7 +72,7 @@ check("the page then reads it done, and whom it thanked", done.body.done === tru
 const other = (await call("POST", "/api/appraise/new", ask("names"), bot)).body.code;
 await call("POST", `/api/appraise/${other}/result`, { build, thanks: "a 片达人" });
 check("a name carrying a listed word is not carried into a chat at all, though the build counts",
-  db.prepare("SELECT thanks FROM appraisal_results WHERE code = ?").get(other).thanks === "");
+  (await db.get("SELECT thanks FROM appraisal_results WHERE code = ?", other)).thanks === "");
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }
 console.log("\nan appraisal is asked once, answered once");

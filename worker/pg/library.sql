@@ -1,19 +1,46 @@
--- THE LIBRARY'S OTHER TABLES IN POSTGRES (database `wfsim`, beside the fact
--- factory's in schema.sql): what D1's `wfsim` holds besides the factory, column
--- for column, so worker/factory_db.js can serve `LIBRARY` from here when
--- `DB = "pg"`. Text compares byte by byte (COLLATE "C"), as D1's does, and an
--- integer is a bigint. Applied once, by the role that owns the tables:
+-- THE LIBRARY (database `wfsim`; docs/BOARD.md §"The fact factory"): every table
+-- besides the fact factory's, which are in schema.sql, in the same database.
+-- The library is the one thing here that cannot be regenerated — the boards are
+-- derived from it, the site is generated, the code is in git — so it is kept
+-- where it is easiest to inspect, count and dump.
+--
+-- Every text column is COLLATE "C": it compares byte by byte, whatever the
+-- database's locale. Every whole number is BIGINT. Applied by the role that
+-- owns the tables:
 --   sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f library.sql
 
+-- WHERE A SUBMISSION LANDS, AND THE ONLY DOOR THERE IS. The endpoint has no game
+-- data, so it cannot say what a build IS: telling two builds apart needs the mod
+-- POOL — an elemental card enters the element sequence and a plain one does not.
+-- A key derived without it would be a second answer to a question that must
+-- have one. So the door stores the record VERBATIM, and `wfsim-intake` — which
+-- has the engine — canonicalises it, resolves a riven's numbers and writes the
+-- builds that come out; the row is deleted the moment they land.
+--
+-- A QUEUE, NOT A LIBRARY: `id` is random and exists so one row can be deleted;
+-- two submissions of one build are two rows here and one in `builds`. Nothing
+-- reads this table but intake.
 CREATE TABLE IF NOT EXISTS inbox (
   id     TEXT COLLATE "C" PRIMARY KEY,
   at     TEXT COLLATE "C" NOT NULL,
   record TEXT COLLATE "C" NOT NULL
 );
 
--- A BUILD'S WEAPON is read out of its record, stored, as D1 reads it virtually.
+-- ONE ROW PER BUILD, keyed by a HASH of the canonical build
+-- `engine::board::builds::identity` states — its riven's ROLLS included — hashed
+-- by `wfsim-intake`. DERIVED AND NOT ALLOCATED, so the same build always keys
+-- the same: nothing looks the row up before writing it.
+--
+-- The RECORD is kept whole as json rather than exploded into columns: a build's
+-- axes are declared once (`engine::board::builds::BUILD_AXES`), and a schema
+-- that spelled them out would be one more place to forget one. Anything worth
+-- indexing gets a generated column instead, `weapon` the first, because "how
+-- well covered is this weapon" is the question the board is run on.
 CREATE TABLE IF NOT EXISTS builds (
   id     TEXT COLLATE "C" PRIMARY KEY,
+  -- The submission DAY, and nothing finer. The store records nothing about
+  -- submitters — no IP, no token, no timestamp that could order one person's
+  -- submissions against another's — and the schema states that promise too.
   at     TEXT COLLATE "C" NOT NULL,
   record TEXT COLLATE "C" NOT NULL,
   weapon TEXT COLLATE "C" GENERATED ALWAYS AS ((record::jsonb ->> 'weapon')) STORED
@@ -21,28 +48,85 @@ CREATE TABLE IF NOT EXISTS builds (
 CREATE INDEX IF NOT EXISTS builds_weapon ON builds (weapon);
 CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 
+-- A SCORE IS A FACT, NOT A STEP IN A PIPELINE (docs/BOARD.md).
+--
+-- `(build, ruler, mode) -> score` is true for ever once computed, so it is
+-- written down the moment it is computed rather than when a batch finishes.
+-- Neither the clock nor a thousand commits of distance is evidence that a
+-- measurement was wrong; the only thing that retires one is a person deleting
+-- the row. `scripts/ship_facts.sh` writes it beside the running scorer;
+-- `scripts/fetch_facts.sh` reads them back out. This table is the only source
+-- the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
+  -- THE BUILD, BY ITS `builds.id`. The name is the one the column was created
+  -- with and the wire keeps the names it has; what it holds is the id.
   identity     TEXT COLLATE "C" NOT NULL,
   ruler        TEXT COLLATE "C" NOT NULL,
+  -- A ROW IS (build, ruler, MODE). A mode is a property of the WEAPON — every
+  -- melee carries seven and the Ballistica Prime four — and the cards that win
+  -- one do not win another, so each is an independent ranking.
   mode         TEXT COLLATE "C" NOT NULL,
+  -- WHICH BUILD MEASURED IT, AND IT DECIDES NOTHING. An older engine does not
+  -- make a score wrong — the two are a REFERENCE relation, not a validity one.
+  -- This is FORENSICS: it says which rows a build wrote, once that build is
+  -- found to have been broken.
   measured_by  TEXT COLLATE "C" NOT NULL,
   score        DOUBLE PRECISION NOT NULL,
+  -- WHAT `score` IS IN — the ruler's CORE metric, an id from
+  -- `engine::metrics::ALL`, never a label. A test has one core, and that one
+  -- ranks; another metric read off the same fight belongs in a column of its
+  -- own beside it, never in a row of its own, or one key holds two answers.
+  -- It decides nothing either: it lets a row outlive the ruler's terms it was
+  -- measured under and still be read without checking out that commit.
   metric       TEXT COLLATE "C" NOT NULL,
+  -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated,
+  -- and the next run packs its shards by work rather than by count. NOT
+  -- derivable from the two clocks below: a row paid for in sittings spans a wall
+  -- clock much longer than the fight it contains.
   cost_seconds DOUBLE PRECISION NOT NULL,
+  -- WHEN THE FIGHT STARTED AND WHEN IT ENDED. Provenance, and nothing branches
+  -- on either: they show how old a ROW is, and say afterwards which rows a bad
+  -- build wrote. A row from before they existed carries the same value in
+  -- both, which is how "we do not know when this started" is spelled; deriving
+  -- a start by subtracting the cost would invent precision it never had.
   started_at   TEXT COLLATE "C" NOT NULL,
   finished_at  TEXT COLLATE "C" NOT NULL,
+  -- ONE FACT PER ROW: the last measurement of it. Nothing here says whether a
+  -- number is right; only another measurement can, and a person deleting the
+  -- row is what asks for one.
   PRIMARY KEY (identity, ruler, mode)
 );
+-- "What has this ruler measured" is one indexed query, which is what the set
+-- difference is asked through.
 CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
+-- …and "what has gone longest without being measured" is the order to repair
+-- in, which is the one thing a clock here is allowed to decide.
 CREATE INDEX IF NOT EXISTS scores_oldest ON scores (finished_at);
 
+-- WHAT SOMEBODY ASKED TO BE COMPUTED, AND HOW FAR IT GOT. The queue may only
+-- ever CAUSE work: it may not prevent work and it may not decide a number, so
+-- losing it costs an ordering and never a fact, and the publisher never reads
+-- it. A row is deleted when its score lands, the score written first.
+--
+-- NOT A COLUMN ON `scores`: that table is what the site is built from, and a
+-- `pending` flag on it would make every reader know which rows are real.
 CREATE TABLE IF NOT EXISTS batches (
   id    TEXT COLLATE "C" PRIMARY KEY,
+  -- THE ORDER, AND THE ONLY THING THAT SETS IT. Sorted as text, so a batch
+  -- jumps the line by being renamed rather than by a priority nobody can see.
   at    TEXT COLLATE "C" NOT NULL,
+  -- WHAT THIS GROUP IS FOR, for the person who finds it a week later. A batch
+  -- with no reason is a batch nobody can decide to cancel.
   why   TEXT COLLATE "C",
+  -- HOW MANY ROWS IT WAS EVER ASKED FOR WITH — a statement about the PAST, so
+  -- it cannot drift: progress is this minus what is still in `queue`. A second
+  -- pass into one batch ADDS to it.
   total BIGINT NOT NULL
 );
 
+-- ONE ROW PER (batch, build, ruler, mode). The same row may sit in two batches
+-- at once — two people asking for one thing — and computing it deletes it from
+-- both, which is why the delete does not name a batch.
 CREATE TABLE IF NOT EXISTS queue (
   batch    TEXT COLLATE "C" NOT NULL,
   build_id TEXT COLLATE "C" NOT NULL,
@@ -50,10 +134,20 @@ CREATE TABLE IF NOT EXISTS queue (
   mode     TEXT COLLATE "C" NOT NULL,
   PRIMARY KEY (batch, build_id, ruler, mode)
 );
+-- "WHAT IS LEFT, IN ORDER" is one indexed read.
 CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
+-- "IS THIS ROW STILL OWED" (worker/board_tasks.js `owedSql`).
 CREATE INDEX IF NOT EXISTS queue_row ON queue (build_id, ruler, mode);
 
--- THE BOARD'S ORDERS BEFORE THE FACTORY, read by `/api/board/adopt` alone.
+-- THE BOARD'S ORDERS BEFORE THE FACTORY, read by `/api/board/adopt` alone
+-- (worker/board_tasks.js `adopt`): one owed row each. `state` is where its
+-- lease left it, or `settled` once adopted; `engine` the first result's
+-- `ENGINE_ID`; `clients` every client that measured it, comma-separated in the
+-- order their results came, with `clients_compute_ms` (each one's fight time)
+-- and `clients_nets` (each one's salted network hash, verify.js `netOf`) in the
+-- same order; `work` the first result's `Shard::work`; `priority` 0 for a new
+-- build's row and 1 for a rescore; `carried_from` the engine a result was
+-- measured by when a release carried it to the next.
 CREATE TABLE IF NOT EXISTS orders (
   identity           TEXT COLLATE "C" NOT NULL,
   ruler              TEXT COLLATE "C" NOT NULL,
@@ -81,6 +175,12 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS orders_pick ON orders (state, engine, priority, slot);
 
+-- SHORT SHARE LINKS: `/weapons/<weapon>/s/<id>` names a stored share code
+-- (worker/index.js §"SHORT SHARE LINKS"). `id` is a hash of (weapon, code,
+-- claim) computed by the worker (`shareId`), so a row never changes, the same
+-- build is one row, and no client chooses an id. `at` is the day. `claim` is
+-- the sharer's measurement when they chose to include one (JSON, validated by
+-- `shareClaim`); NULL otherwise.
 CREATE TABLE IF NOT EXISTS shares (
   id     TEXT COLLATE "C" PRIMARY KEY,
   weapon TEXT COLLATE "C" NOT NULL,
@@ -89,6 +189,12 @@ CREATE TABLE IF NOT EXISTS shares (
   claim  TEXT COLLATE "C"
 );
 
+-- A FINISHED DAY'S USAGE TOTALS, kept past the Analytics Engine's three months
+-- by the worker's daily cron (worker/usage_days.js, docs/ANALYTICS.md
+-- §Retention). Totals only, never a visitor id. `event` is a usage event, or
+-- `visitors` (subject `all`, `result`, `returning`) or `visitors.country`;
+-- `market` is `china` or `overseas`; `sampled` is 1 when the dataset sampled
+-- that day, so `visitors` is a floor.
 CREATE TABLE IF NOT EXISTS usage_days (
   day      TEXT COLLATE "C" NOT NULL,
   event    TEXT COLLATE "C" NOT NULL,
@@ -101,6 +207,12 @@ CREATE TABLE IF NOT EXISTS usage_days (
 );
 CREATE INDEX IF NOT EXISTS usage_days_by_event ON usage_days (event, subject, day);
 
+-- WHAT A CHAT SENT THE BOT, until the bot server has answered it (worker/qq.js,
+-- docs/AGENT.md §"The QQ bot"). `id` is the platform's own message id, so a
+-- retried callback lands on the row it already wrote; `body` is the event as
+-- the platform sent it. The server claims a row, answers from its whitelisted
+-- address and marks it done; a row is deleted a day after it arrived, answered
+-- or not.
 CREATE TABLE IF NOT EXISTS bot_inbox (
   id         TEXT COLLATE "C" PRIMARY KEY,
   channel    TEXT COLLATE "C" NOT NULL,
@@ -111,6 +223,10 @@ CREATE TABLE IF NOT EXISTS bot_inbox (
   done_at    TEXT COLLATE "C"
 );
 
+-- RIVEN APPRAISAL (worker/appraise.js, docs/AGENT.md §"Riven appraisal"). One
+-- row per appraisal a chat's bot opened; `chat` is that channel's own record of
+-- where to answer and nothing else reads it. `winner` is the first handed-back
+-- build the bot accepted. Both tables are emptied a day after a row arrived.
 CREATE TABLE IF NOT EXISTS appraisals (
   code         TEXT COLLATE "C" PRIMARY KEY,
   channel      TEXT COLLATE "C" NOT NULL,
@@ -124,12 +240,16 @@ CREATE TABLE IF NOT EXISTS appraisals (
   winner       BIGINT,
   done_at      TEXT COLLATE "C",
   told_at      TEXT COLLATE "C",
+  -- AS VOLUNTEER WORK (worker/appraise.js §"Volunteer work"): the search frozen
+  -- once by the bot, the engine it is for, the lease of the computer running it,
+  -- and when two owners' computers agreed on its answer.
   request      TEXT COLLATE "C",
   engine       TEXT COLLATE "C",
   lease        TEXT COLLATE "C",
   lease_until  TEXT COLLATE "C",
   leased_to    TEXT COLLATE "C",
   agreed_at    TEXT COLLATE "C",
+  -- WHEN A COMPUTER FIRST TOOK IT, and when the chat was told one had.
   started_at   TEXT COLLATE "C",
   started_told TEXT COLLATE "C"
 );
@@ -145,15 +265,24 @@ CREATE TABLE IF NOT EXISTS appraisal_results (
   claimed_at TEXT COLLATE "C",
   checked_at TEXT COLLATE "C",
   verdict    TEXT COLLATE "C",
+  -- A VOLUNTEER'S ANSWER: whose computer, its winner's score, the search's work,
+  -- the build's canonical text, which two answers must share to agree, and the
+  -- salted hash of the network it came from (verify.js `netOf`).
   verifier   TEXT COLLATE "C",
   score      DOUBLE PRECISION,
   work       BIGINT,
   key        TEXT COLLATE "C",
   net        TEXT COLLATE "C" NOT NULL DEFAULT '',
+  -- THE ENGINE IT RAN ON, which the cap on answers counts by.
   engine     TEXT COLLATE "C"
 );
 CREATE INDEX IF NOT EXISTS appraisal_results_by_code ON appraisal_results (code);
 
+-- EVERY VOID FISSURE THE GAME OPENS, from the world state the bot server relays
+-- each minute (worker/world.js `fissureLog`). `id` is DE's own, so the minutes
+-- that see one again write nothing. `list` is normal, steel_path or railjack;
+-- `mission` is NULL for a Void Storm. Which combinations a reminder may hold is
+-- read from here.
 CREATE TABLE IF NOT EXISTS fissures (
   id         TEXT COLLATE "C" PRIMARY KEY,
   list       TEXT COLLATE "C" NOT NULL,
@@ -165,7 +294,7 @@ CREATE TABLE IF NOT EXISTS fissures (
 );
 
 -- THE OWNER'S DONATION LEDGER, kept by hand and read by nothing in this
--- repository; carried so nothing D1 holds is left behind.
+-- repository.
 CREATE TABLE IF NOT EXISTS donors (
   id           BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   display_name TEXT COLLATE "C",

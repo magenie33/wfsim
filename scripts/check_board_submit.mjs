@@ -29,7 +29,7 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-// A D1 STUB, AND IT IS THE WHOLE STORE NOW. `prepare(sql).bind(...).run()` and
+// A LIBRARY STUB, AND IT IS THE WHOLE STORE NOW. `prepare(sql).bind(...).run()` and
 // `.first()` are the whole surface the worker touches.
 //
 // IT KEEPS WHAT IT WAS WRITTEN, twice over: `rows` is the table as the
@@ -51,7 +51,7 @@ const database = (fail = false) => {
     prepare: (sql) => ({
       bind: (...args) => ({
         run: async () => {
-          if (fail) throw new Error("D1 is down");
+          if (fail) throw new Error("the library is down");
           calls.push({ sql, args });
           // ONE MAP PER TABLE, keyed the way the table is: the assertions ask
           // "how many rows does `builds` hold", which is a question about a
@@ -66,7 +66,7 @@ const database = (fail = false) => {
         },
       }),
       first: async () => {
-        if (fail) throw new Error("D1 is down");
+        if (fail) throw new Error("the library is down");
         calls.push({ sql, args: [] });
         // EVERY TABLE THE STATEMENT COUNTS, summed. The library is `builds`
         // plus what has arrived and not been through intake yet, so the count

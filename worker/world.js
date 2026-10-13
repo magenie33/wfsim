@@ -69,7 +69,7 @@ async function worldRelay(request, env) {
 }
 
 /// EVERY FISSURE THE GAME OPENS, one row per DE id, written the first minute it
-/// is seen (`fissures`, worker/schema.sql). It is the only source of which
+/// is seen (`fissures`, worker/pg/library.sql). It is the only source of which
 /// combinations of list, era and mission exist — no export or wiki table says
 /// which era opens which mission type — and of how often each comes.
 async function fissureLog(env, items) {

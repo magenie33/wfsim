@@ -158,9 +158,9 @@ Per UTC day: devices that sent results, those new that day, results, the hours
 their fights took, the work credited, and each device's hours online. Then how
 many of each day's new devices came back, how concentrated the work is, and the
 devices computing in each hour of the day. Totals only: it reads the device ids
-to count them, prints none, and never opens the accounts database. It runs
-through `npx wrangler d1 execute --remote`, read-only, so it needs the wrangler
-login the deploys use.
+to count them, prints none, and never opens the accounts database. It reads
+the library through `scripts/pgq.mjs` from whatever `PG_URL` names — the
+tunnel to `pg.wfsim.app` (docs/BOARD.md §"Postgres").
 
 ## Retention
 
@@ -173,7 +173,7 @@ and market the visitors and points, and the day's visitors — `all`, `result`
 visitor id is kept. A trend longer than a quarter is read from there:
 
 ```
-npx wrangler d1 execute wfsim --remote --command "SELECT day, market, visitors FROM usage_days WHERE event = 'visitors' AND subject = 'all' ORDER BY day"
+psql "$PG_URL" -c "SELECT day, market, visitors FROM usage_days WHERE event = 'visitors' AND subject = 'all' ORDER BY day"
 ```
 
 It needs the worker secrets `USAGE_ACCOUNT` and `USAGE_READ_TOKEN` (Account

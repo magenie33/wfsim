@@ -330,8 +330,12 @@ mod tests {
     /// READ FROM THE SCHEMA ITSELF, so the two cannot drift.
     #[test]
     fn the_scores_table_holds_one_fact_per_row() {
-        let schema = include_str!("../../../worker/schema.sql");
-        let key = schema
+        let library = include_str!("../../../worker/pg/library.sql");
+        let scores = library
+            .split("CREATE TABLE IF NOT EXISTS scores (")
+            .nth(1)
+            .expect("the library has a scores table");
+        let key = scores
             .lines()
             .map(str::trim)
             .find(|l| l.starts_with("PRIMARY KEY (identity, ruler, mode"))

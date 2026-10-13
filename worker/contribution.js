@@ -36,7 +36,6 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso } from "./instant.js";
-import { factoryDb, isPg, pick, sameDb } from "./factory_db.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
@@ -54,7 +53,7 @@ const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
 /// What the owner calls a device: one short line, no control characters.
 const LABEL = /^[^\u0000-\u001f\u007f]{1,40}$/u;
 const labelOf = (s) => (typeof s === "string" && LABEL.test(s.trim()) ? s.trim() : null);
-/// D1 binds at most a hundred parameters a statement.
+/// A LIST OF IDS IS BOUND A PART AT A TIME, this many to a statement.
 const PER_STATEMENT = 90;
 
 const points = (work) => Math.floor(work / WORK_PER_POINT);
@@ -94,34 +93,17 @@ const since = (days) => new Date(Date.now() - (days - 1) * 86_400_000).toISOStri
 /// counting for nothing.
 async function workOf(env, ids) {
   const out = new Map();
-  const db = factoryDb(env);
-  if (!db) return out;
+  const db = env.LIBRARY;
+  if (!db || !ids.length) return out;
   const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
-  // ON POSTGRES, ONE STATEMENT for every id: the ranking asks for all of them,
-  // and ninety at a time was a round trip each while a page waited.
-  if (isPg(db)) {
-    if (!ids.length) return out;
-    const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at,
-        (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
-        (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week
-      FROM verifiers v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
-      .bind(from, week, JSON.stringify(ids)).all();
-    for (const r of results) out.set(r.id, { work: r.work || 0, recent: r.recent || 0, week: r.week || 0, consent_at: r.consent_at || null });
-    return out;
-  }
-  for (let i = 0; i < ids.length; i += PER_STATEMENT) {
-    const part = ids.slice(i, i + PER_STATEMENT);
-    const marks = part.map(() => "?").join(", ");
-    const [all, recent] = await db.batch([
-      db.prepare(`SELECT id, work, consent_at FROM verifiers WHERE banned = 0 AND id IN (${marks})`).bind(...part),
-      db.prepare(
-        `SELECT d.verifier AS id, SUM(d.work) AS work, SUM(CASE WHEN d.hour >= ? THEN d.work ELSE 0 END) AS week
-          FROM verifier_hours d JOIN verifiers v ON v.id = d.verifier
-          WHERE v.banned = 0 AND d.hour >= ? AND d.verifier IN (${marks}) GROUP BY d.verifier`).bind(week, from, ...part),
-    ]);
-    for (const r of all.results) out.set(r.id, { work: r.work || 0, recent: 0, week: 0, consent_at: r.consent_at || null });
-    for (const r of recent.results) if (out.has(r.id)) Object.assign(out.get(r.id), { recent: r.work || 0, week: r.week || 0 });
-  }
+  // ONE STATEMENT for every id: the ranking asks for all of them, and ninety
+  // at a time was a round trip each while a page waited.
+  const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at,
+      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
+      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week
+    FROM verifiers v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
+    .bind(from, week, JSON.stringify(ids)).all();
+  for (const r of results) out.set(r.id, { work: r.work || 0, recent: r.recent || 0, week: r.week || 0, consent_at: r.consent_at || null });
   return out;
 }
 const NONE = { work: 0, recent: 0, week: 0, consent_at: null };
@@ -146,33 +128,19 @@ async function spanWork(env, spans) {
   const whole = await workOf(env, [...new Set(spans.map((s) => s.verifier))]);
   const out = spans.map((s) => ({ ...(whole.get(s.verifier) || NONE) }));
   const cut = spans.map((s, i) => [s, i]).filter(([s]) => !spanAll(s));
-  const db = factoryDb(env);
+  const db = env.LIBRARY;
   if (!db || !cut.length) return out;
   const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
-  if (isPg(db)) {
-    const list = cut.map(([sp], k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
-    const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
-        SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week
-      FROM jsonb_to_recordset((?3::text)::jsonb) AS s(k bigint, v text, f text, u text)
-      LEFT JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND (s.u IS NULL OR h.hour < s.u COLLATE "C")
-      GROUP BY s.k`).bind(from, week, JSON.stringify(list)).all();
-    for (const r of results) {
-      const [sp, k] = cut[r.k];
-      out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0 } : { ...NONE };
-    }
-    return out;
-  }
-  for (let i = 0; i < cut.length; i += PER_STATEMENT) {
-    const part = cut.slice(i, i + PER_STATEMENT);
-    const rows = await db.batch(part.map(([s]) => db.prepare(
-      `SELECT SUM(work) AS work, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS recent, SUM(CASE WHEN hour >= ? THEN work ELSE 0 END) AS week
-         FROM verifier_hours WHERE verifier = ? AND hour >= ? AND (${pick(db, "?", "?::text")} IS NULL OR hour < ?)`)
-      .bind(from, week, s.verifier, s.from_hour, s.until_hour, s.until_hour)));
-    part.forEach(([s, k], j) => {
-      const r = rows[j].results[0] || {};
-      // A REFUSED CLIENT counts for nothing, as `workOf` says by leaving it out.
-      out[k] = whole.has(s.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0 } : { ...NONE };
-    });
+  const list = cut.map(([sp], k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
+  const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
+      SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week
+    FROM jsonb_to_recordset((?3::text)::jsonb) AS s(k bigint, v text, f text, u text)
+    LEFT JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND (s.u IS NULL OR h.hour < s.u COLLATE "C")
+    GROUP BY s.k`).bind(from, week, JSON.stringify(list)).all();
+  for (const r of results) {
+    const [sp, k] = cut[r.k];
+    // A REFUSED CLIENT counts for nothing, as `workOf` says by leaving it out.
+    out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0 } : { ...NONE };
   }
   return out;
 }
@@ -203,7 +171,7 @@ const volunteerSince = (ws) => ws.filter((w) => w.consent_at && w.work > 0).map(
 /// so the page draws any kind the same way.
 async function activityOf(env, ids) {
   const out = new Map();
-  const db = factoryDb(env);
+  const db = env.LIBRARY;
   if (!db || !ids.length) return out;
   const t = Date.now();
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
@@ -285,8 +253,8 @@ async function devicePoints(env, b) {
   // ITS OWN "TODAY": the whole UTC hours from the one the page names as its
   // midnight — results sent, what they took, and the points credited in them.
   let today = null;
-  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(b.since || "") && factoryDb(env)) {
-    const t = await factoryDb(env).prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
+  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(b.since || "") && env.LIBRARY) {
+    const t = await env.LIBRARY.prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
       .bind(b.verifier, b.since).first();
     today = { tasks: (t && t.tasks) || 0, ms: (t && t.ms) || 0, points: points((t && t.work) || 0) };
   }
@@ -310,7 +278,7 @@ const ledgerFrom = (f) => (f === "" || HOUR.test(f || "") ? f : since(LEDGER_DAY
 /// that disagreed with the agreed result, those still waiting for another
 /// computer, and those set aside with a refusal.
 async function ledgerOf(env, verifier, me, from) {
-  const db = factoryDb(env);
+  const db = env.LIBRARY;
   const [spans, hours, v, u, adj] = await Promise.all([
     env.ACCOUNTS ? env.ACCOUNTS.prepare("SELECT account, from_hour, until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour")
       .bind(verifier).all().then((r) => r.results) : [],
@@ -366,29 +334,20 @@ async function accountLedger(env, account, from) {
     env.ACCOUNTS.prepare("SELECT verifier, label FROM devices WHERE account = ?1").bind(account).all(),
   ]);
   const hours = [];
-  const fdb = factoryDb(env);
-  // ON POSTGRES, ONE STATEMENT for every span (`spanWork`'s reason).
-  if (isPg(fdb) && spans.length) {
+  // ONE STATEMENT for every span (`spanWork`'s reason).
+  if (spans.length) {
     const list = spans.map((sp, k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
-    const { results } = await fdb.prepare(`SELECT h.hour, s.v, h.work
+    const { results } = await env.LIBRARY.prepare(`SELECT h.hour, s.v, h.work
         FROM jsonb_to_recordset((?1::text)::jsonb) AS s(k bigint, v text, f text, u text)
         JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND h.hour >= ?2::text
           AND (s.u IS NULL OR h.hour < s.u COLLATE "C") ORDER BY s.k, h.hour`).bind(JSON.stringify(list), from).all();
     for (const r of results) hours.push({ hour: r.hour, id: r.v.slice(0, 6), points: points(r.work || 0) });
   }
-  for (let i = 0; i < (isPg(fdb) ? 0 : spans.length); i += PER_STATEMENT) {
-    const part = spans.slice(i, i + PER_STATEMENT);
-    const db = factoryDb(env);
-    const rows = await db.batch(part.map((s) => db.prepare(
-      `SELECT hour, work FROM verifier_hours WHERE verifier = ? AND hour >= ? AND hour >= ? AND (${pick(db, "?", "?::text")} IS NULL OR hour < ?) ORDER BY hour`)
-      .bind(s.verifier, s.from_hour, from, s.until_hour, s.until_hour)));
-    part.forEach((s, j) => { for (const r of rows[j].results) hours.push({ hour: r.hour, id: s.verifier.slice(0, 6), points: points(r.work || 0) }); });
-  }
   const ids = [...new Set(spans.map((s) => s.verifier))];
   const banned = new Set();
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
-    const { results } = await factoryDb(env).prepare(`SELECT id FROM verifiers WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
+    const { results } = await env.LIBRARY.prepare(`SELECT id FROM verifiers WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
       .bind(...part).all();
     for (const r of results) banned.add(r.id);
   }
@@ -479,9 +438,9 @@ const ordered = (list, key) => list.filter((e) => e[key] > 0)
 /// this long, refused ones aside — a count, never who.
 const COMPUTING_MS = 10 * 60_000;
 async function computingNow(env) {
-  if (!factoryDb(env)) return 0;
+  if (!env.LIBRARY) return 0;
   const from = iso(Date.now() - COMPUTING_MS);
-  const r = await factoryDb(env).prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
+  const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
   return (r && r.n) || 0;
 }
 
@@ -507,8 +466,8 @@ async function person(request, env, name) {
 /// to them alone.
 /// THE OFFICIAL POOL, in points and by where it came from (`points_pool`).
 async function poolOf(env) {
-  if (!factoryDb(env)) return null;
-  const { results } = await factoryDb(env).prepare("SELECT source, SUM(work) AS work FROM points_pool GROUP BY source").all();
+  if (!env.LIBRARY) return null;
+  const { results } = await env.LIBRARY.prepare("SELECT source, SUM(work) AS work FROM points_pool GROUP BY source").all();
   const by = Object.fromEntries(results.map((r) => [r.source, points(r.work || 0)]));
   return { points: points(results.reduce((t, r) => t + (r.work || 0), 0)),
     deleted_account: by.deleted_account || 0, refused: by.refused || 0 };
@@ -600,16 +559,9 @@ async function demand(request, env) {
   if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0, refreshes: 0 }, riven_gains: 0, surveys: [], per_hour: { volunteers: 0, official: 0 } });
   const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
-  // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's; with the
-  // factory in a database of its own, those rows' refs are read there first.
-  const apart = !sameDb(env);
-  const fresh = apart ? JSON.stringify((await factoryDb(env).prepare(
-    "SELECT ref FROM demands WHERE producer = 'new_build' AND state = 'live'").all()).results.map((r) => r.ref)) : null;
+  // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's.
   const [owed, done, gains, surveys] = await db.batch([
-    apart ? db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN q.build_id || '|' || q.ruler || '|' || q.mode IN (SELECT value FROM json_each(?)) THEN 0
-                WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
-                FROM queue q JOIN batches b ON b.id = q.batch GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`).bind(fresh)
-      : db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.producer = 'new_build' THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
+    db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.producer = 'new_build' THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
                 FROM queue q JOIN batches b ON b.id = q.batch
                 LEFT JOIN demands d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode AND d.producer = 'new_build' AND d.state = 'live'
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),

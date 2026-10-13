@@ -101,26 +101,20 @@ self_test() {
     || say FAIL "no ORDER BY"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
 
   # TWO PAGES, so the paging is exercised rather than described.
-  cat > "$DIR/bin/curl" <<'PAGES'
+  cat > "$DIR/bin/db" <<'PAGES'
 #!/usr/bin/env bash
-out=/dev/null; prev=; body=
-for a in "$@"; do
-  [ "$prev" = "-o" ] && out="$a"
-  [ "$prev" = "--data-binary" ] && body="$a"
-  prev="$a"
-done
-off=$(printf '%s' "$body" | jq -r '.params[1]')
+off=$(jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{id:("k"+(.|tostring)),record:("{\"weapon\":\"w" + (.|tostring) + "\",\"at\":\"2026-01-01\"}")}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{id:("k"+(.|tostring)),record:("{\"weapon\":\"w" + (.|tostring) + "\",\"at\":\"2026-01-01\"}")}],success:true}],success:true}'
 else
-  jq -n -c '{result:[{results:[{id:"last",record:"{\"weapon\":\"zzz\",\"at\":\"2026-01-02\"}"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{id:"last",record:"{\"weapon\":\"zzz\",\"at\":\"2026-01-02\"}"}],success:true}],success:true}'
 fi
-printf '200'
 PAGES
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   PAGE=3
   fetch library.json > out.txt 2>&1 && grep -q "4 builds" out.txt \
     && say ok "a library longer than one page is read whole" || say FAIL "$(cat out.txt)"
@@ -144,23 +138,21 @@ PAGES
     say ok "...and a short one refuses"
   fi
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}' > "$out"
-printf '403'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table builds"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   if fetch library.json > out.txt 2>&1; then
     say FAIL "a refused read passed"
-  elif grep -q "D1 not authorized" out.txt; then
+  elif grep -q "permission denied" out.txt; then
     say ok "a refused read reports what the database said"
   else
     say FAIL "$(cat out.txt)"
   fi
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 
@@ -173,13 +165,6 @@ if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
 
 OUT="${1:?the file to write, the array the scorer takes}"
 
-# A DATABASE ID WITHOUT CREDENTIALS IS A MISTAKE, NOT AN ABSENCE: the id is
-# committed in `wrangler.jsonc`, so its presence says this repo HAS a library.
-if [ -n "${CF_D1_DATABASE:-}" ] && ! configured; then
-  echo "::error::library: a database is declared but the credentials are not set"
-  echo "::error::CF_ACCOUNT=${CF_ACCOUNT:+set}${CF_ACCOUNT:-MISSING} CF_TOKEN=${CF_TOKEN:+set}${CF_TOKEN:-MISSING}"
-  exit 1
-fi
 if ! configured; then
   echo "no library database configured — see docs/BOARD.md §Setup"
   printf '[]' > "$OUT"

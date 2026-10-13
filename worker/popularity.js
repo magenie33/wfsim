@@ -20,8 +20,6 @@ export async function popularity(request, env, ctx) {
   if (hit) return hit;
   // THE WINDOW ENDS AT THE NEWEST FINISHED DAY, not today: a day is written
   // after midnight UTC, so "today" would always be an empty day in the sum.
-  // The window's first day is reckoned here, so the one query reads alike in
-  // SQLite and in Postgres.
   const last = (await env.LIBRARY.prepare("SELECT MAX(day) AS d FROM usage_days WHERE event = 'visitors' AND subject = 'all'").first() || {}).d;
   const after = last ? new Date(Date.parse(`${last}T00:00:00Z`) - DAYS * 86_400_000).toISOString().slice(0, 10) : null;
   const { results } = after ? await env.LIBRARY.prepare(

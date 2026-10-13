@@ -15,7 +15,7 @@
 # order loses a submission the moment a write fails.
 set -euo pipefail
 
-# AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, and both
+# AS MANY ROWS A STATEMENT AS A HUNDRED BOUND PARAMETERS ALLOW, and both
 # counts are DERIVED so that a column added below shrinks the batch rather than
 # putting every write one parameter over the limit.
 BUILD_COLUMNS=3
@@ -140,7 +140,7 @@ self_test() {
     && say ok "$BUILD_COLUMNS bound parameters a build" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
   [ $((BUILD_BATCH * BUILD_COLUMNS)) -le 100 ] \
-    && say ok "...and a batch stays inside D1's hundred" \
+    && say ok "...and a batch stays inside a hundred" \
     || say FAIL "$((BUILD_BATCH * BUILD_COLUMNS)) is over"
   # THE RECORD IS BOUND AS TEXT, which is what the column holds. Handed over as
   # an object it would arrive as the string `[object Object]` or be refused.
@@ -161,20 +161,15 @@ self_test() {
     || say FAIL "$(printf '%s' "$del" | jq -c .params)"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
-  cat > "$DIR/bin/curl" <<'OK'
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
+  cat > "$DIR/bin/db" <<'OK'
 #!/usr/bin/env bash
-out=/dev/null; prev=; body=
-for a in "$@"; do
-  [ "$prev" = "-o" ] && out="$a"
-  [ "$prev" = "--data-binary" ] && body="$a"
-  prev="$a"
-done
+body=$(cat)
 printf '%s\n' "$body" >> "$PWD/sent.log"
-printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
-printf '200'
+printf '{"result":[{"results":[],"success":true}],"success":true}'
 OK
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   : > sent.log
   ship builds.ndjson done.txt > out.txt 2>&1 \
     && say ok "a pass ships its builds and spends its queue" || say FAIL "$(cat out.txt)"
@@ -186,26 +181,24 @@ OK
     && say ok "...with every build written before any queue row is spent" \
     || say FAIL "the delete went first"
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7500,"message":"no such table"}]}' > "$out"
-printf '500'
+printf '{"success":false,"errors":[{"code":"42P01","message":"relation does not exist"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   : > sent.log
   if ship builds.ndjson done.txt > out.txt 2>&1; then
     say FAIL "a refused write passed"
   else
-    grep -q "no such table" out.txt \
+    grep -q "does not exist" out.txt \
       && say ok "a refused write reports what the database said" || say FAIL "$(cat out.txt)"
     grep -q "DELETE FROM inbox" sent.log \
       && say FAIL "the queue was spent after a refused write" \
       || say ok "...and nothing in the queue is spent"
   fi
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 

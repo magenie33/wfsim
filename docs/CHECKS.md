@@ -4,6 +4,10 @@
 ones a change touches. AGENTS.md lists them by name and one line of what they
 assert — this file is the shape of each and why it is shaped that way.
 
+A check that runs the worker's SQL runs it on an in-memory PGlite laid with
+`worker/pg/*.sql` (`scripts/pg/test_db.mjs`), behind the statement API the
+worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
+
 ## `check_page_bodies`
 
 `node --check` over every check script, and over `app.js` joined from its
@@ -214,36 +218,6 @@ and that engine is accepted to join the served one (`join`). Tests are never
 compared. An engine replaced more than `ENGINE_GRACE_DAYS` ago is dropped with
 its file list.
 
-## `check_pg_factory`
-
-The fact factory on Postgres against itself on D1 (worker/factory_db.js). One
-seeded workload — rows asked and backfilled, packs and single rows handed out,
-answered, renewed and given back, an older engine still accepted, a dispute the
-official machines settle and refuse a client in, the scripts' reports, points,
-ledgers, the ranking, the fair table, the audit — runs through the worker's own
-doors in two processes, one with the tables in D1 and one in PGlite with them
-dropped from D1, under one clock and one die; every answer and every table dump
-must match, a lease compared by when it first appeared. `PG_URL` swaps PGlite
-for a real Postgres. Bites: an inverted weapon exclusion, a broken credit guard,
-a query left on D1 — each fails it. Needs `npm ci --prefix scripts/pg`.
-
-## `check_pg_shadow`
-
-Every check that runs the worker on node's sqlite, run again with each
-statement repeated on PGlite loaded with `worker/pg/*.sql`
-(`scripts/pg/shadow.mjs`): the worker's statement in the Postgres text `pick`
-gives beside it, a check's own as written. Each worker statement must answer
-alike — its rows (a set unless a SELECT orders them; a lease, drawn at random,
-only by being there), its count of changed rows, whether it failed — and a
-check's own that Postgres refuses fails it too, so the two databases never
-silently part. Bites: an `INSERT OR IGNORE`, a `SUM` of a comparison, a
-`json_each`, a boolean selected as a column — each fails it. `scripts/pg/ddl_proof.mjs`
-lays the DDL and proves `builds.weapon` and the accounts' last-slot trigger.
-Any one check: `node --import ./scripts/pg/shadow.mjs scripts/check_qq.mjs`.
-A worker beside this one is judged too when `WFSIM_SHADOW_WORKER` names its
-source folder (a regular expression over the caller's path); a table of
-either schema laid first, `IF NOT EXISTS` or not, lays the whole DDL.
-
 ## `check_accounts_pause`
 
 While `ACCOUNTS_PAUSED` is set the worker answers every sign-in step (an OAuth
@@ -262,7 +236,7 @@ column, which Postgres calls ambiguous — it fails three of them.
 
 ## `check_board_verify`
 
-Plain node against `worker/schema.sql` on node's sqlite: a board row as a
+Plain node on PGlite (`worker/pg/*.sql`): a board row as a
 question of the fact factory. Only the factory's secret asks; an owed row is
 asked by `new_build` (an arrival's own build) or `sweep`, an arrival's scored
 row not again, a rescore's on purpose, and the backfill asks what nobody did.
@@ -354,7 +328,7 @@ and the next one starts on them.
 
 ## `check_tasks`
 
-Plain node against `worker/schema.sql`: the fact factory (`worker/tasks.js`)
+Plain node on PGlite (`worker/pg/*.sql`): the fact factory (`worker/tasks.js`)
 on random books. LIVENESS — a witness is handed exactly the first question it
 may answer in order (a waited-on one, then the earliest deadline), compared
 with a slow scan of the rule, and nothing only when nothing is eligible; a
@@ -381,7 +355,7 @@ two who agreed.
 
 ## `check_fair`
 
-Plain node against `worker/schema.sql` and `worker/accounts.sql`: fair share
+Plain node on PGlite (`worker/pg/*.sql`): fair share
 while work is short (`worker/fair.js`). The targets are 0.7 by capacity asking (work delivered) and
 0.3 equal among established accounts, so with 80% of the capacity against four
 accounts of 5% the targets are 62% and 9.5%. A new account shares by its cores
@@ -395,7 +369,7 @@ from before the served engine's first answer counts for nothing.
 
 ## `check_renew`
 
-Plain node against `worker/schema.sql`: a pack's lease is a heartbeat. A row
+Plain node on PGlite (`worker/pg/*.sql`): a pack's lease is a heartbeat. A row
 whose lease ran out while its page computed it is kept on renewal when nobody
 took it, and its answer forty minutes in is taken. A row another computer took
 since is not kept, nor is a row outside the lease. A row under the ceiling
@@ -406,7 +380,7 @@ owner's two holders answering being one witness, credited to nobody.
 
 ## `check_riven_gain`
 
-Plain node against `worker/schema.sql` and `worker/accounts.sql`, the served
+Plain node on PGlite (`worker/pg/*.sql`), the served
 engine stubbed: a riven gain as a producer of the fact factory. Only the bot
 freezes its question, once, and freezing it is the ask; a computer asking for
 work is handed it only on the served engine, and nobody else holds it
@@ -426,7 +400,7 @@ due as of when it was opened, its answers carried.
 
 ## `check_ledger`
 
-Plain node against `worker/accounts.sql` and `worker/schema.sql`. A device's
+Plain node on PGlite (`worker/pg/*.sql`). A device's
 ledger gives each credited hour to its span's holder — the device itself, the
 reader's own account, or another account never named — says an ended span as
 ended, adds its all-time split up by holder, lists its window's hours alone
@@ -439,7 +413,7 @@ name.
 
 ## `check_contribution`
 
-Plain node against `worker/accounts.sql` and `worker/schema.sql`, the paid half
+Plain node on PGlite (`worker/pg/*.sql`), the paid half
 stubbed. A signed-in browser claims its device and the last claim owns it, its
 work going with it; an account's points are its devices' credited work, a
 refused device's counting for nothing; every account with a claimed device is
@@ -1405,8 +1379,8 @@ because rows differ 79x in cost.
 
 A submission survives the whole hop, and every hop in it is the real one: the
 page's own `boardPayload()` in headless Chrome, then `worker/index.js` against a
-stub D1, then the inbox row it stores, then the `wfsim-intake` binary, then the
-build that would land in the library. Only the network and D1 are stubbed —
+stub database, then the inbox row it stores, then the `wfsim-intake` binary, then the
+build that would land in the library. Only the network and the database are stubbed —
 nothing about what a build IS is.
 
 It asserts that the door stores the record VERBATIM and under a random id, that

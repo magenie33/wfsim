@@ -52,10 +52,8 @@ on:
   # is one job, not thirty-two.
   #
   # WHAT THE HOUR IS *NOT* BOUNDED BY: this repository is public, so Actions
-  # minutes are unlimited. One run reads ~40k rows of D1 against a free five
-  # million a day, and writes two rows per score against a hundred thousand —
-  # which caps a day at 50,000 scores, or 221 core-hours of fighting. The CPU
-  # gives out an order of magnitude before either quota does.
+  # minutes are unlimited, and the database meters nothing. The CPU is the
+  # bound.
   - cron: "30 * * * *"
   #
   # A PERSON CAN ALSO PRESS IT, and it is the same run: no input, no flag, no
@@ -131,7 +129,7 @@ jobs:
     # A CAP, BECAUSE THE GROUP IS HELD WHILE THIS RUNS. One pending run is kept
     # per concurrency group and a second is cancelled, so a step that hangs does
     # not cost its own run — it costs every tick until GitHub's six-hour cap.
-    # This job reads and writes D1 and builds two binaries against a warm cache;
+    # This job reads and writes the database and builds two binaries against a warm cache;
     # half an hour is generous for both and far short of six.
     timeout-minutes: 30
     outputs:
@@ -149,9 +147,9 @@ jobs:
       - name: is the board wired up?
         id: wired
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          PG_PIPELINE_URL: ${{ secrets.PG_PIPELINE_URL }}
         run: |
-          if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
+          if [ -n "$PG_PIPELINE_URL" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
 
@@ -206,22 +204,18 @@ jobs:
       - if: steps.wired.outputs.yes == 'true'
         run: cargo build --release --bin wfsim-intake
       - name: the databases
+        if: steps.wired.outputs.yes == 'true'
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: take in what has arrived
         if: steps.wired.outputs.yes == 'true'
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           bash scripts/fetch_inbox.sh inbox.ndjson
           # A CLOCK ON THE PASS. A riven record costs FIGHTS — its shape has to
           # become a build and only a fight says which corner is — so a full
@@ -234,9 +228,9 @@ jobs:
           bash scripts/ship_builds.sh builds.ndjson done.txt
 
       - name: the databases
+        if: steps.wired.outputs.yes == 'true'
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
@@ -245,15 +239,10 @@ jobs:
       - name: read the library
         if: steps.wired.outputs.yes == 'true'
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           FLOOR: ${{ steps.floor.outputs.floor }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           bash scripts/fetch_library.sh library.json
 
       # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one
@@ -284,9 +273,9 @@ jobs:
         run: cargo build --release --bin wfsim-board
 
       - name: the databases
+        if: steps.wired.outputs.yes == 'true'
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
@@ -311,20 +300,15 @@ jobs:
       # computes everything, which is what it did before there was one.
       - name: read what is already measured
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           bash scripts/fetch_facts.sh facts-known.ndjson
 
       - name: the databases
+        if: steps.wired.outputs.yes == 'true'
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
@@ -346,14 +330,9 @@ jobs:
       - name: what is owed
         if: steps.wired.outputs.yes == 'true'
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
           # …AND WHAT THIS RUN TAKES IS WHAT IT CLAIMED: a question past its
           # deadline that no client is fighting, moved out of the clients' reach
@@ -505,9 +484,8 @@ jobs:
 
       # THE SAME GENERATION EVERY JOB WAS HANDED, as an artifact. Read once
       # in the job above and passed down: thirty-two shards each asking the
-      # database for the same rows is thirty-two times the rows read for one
-      # answer, and D1 meters rows READ — five million a day on the free
-      # plan, which that shape spends in a handful of runs.
+      # database for the same rows is thirty-two times the rows read, through
+      # one tunnel, for one answer.
       #
       # …AND IT MEANS EVERY SHARD DECIDES FROM THE SAME FACTS, which is what
       # lets them agree on who owns which row without talking to each other.
@@ -525,7 +503,6 @@ jobs:
       - name: the databases
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
@@ -537,9 +514,6 @@ jobs:
           # service timeout can empty — measured, on a whole rescore. A minute
           # is the most a killed shard loses.
           : > facts.ndjson
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           # A CLIENT RESULT THIS RUN REPRODUCES IS PAID TO ITS CLIENTS
           # (`order_credit.mjs`), but only of the engine this tree builds: the
           # page's `ENGINE_ID`, by the function that stamps it.
@@ -591,11 +565,6 @@ jobs:
               < library.json > /dev/null
           done
         env:
-          # THE SHIPPER'S HALF. Without these the fact log is written and
-          # never sent, and `ship_facts.sh` calls that unconfigured — silent
-          # and green, which is how a whole shard's rows went nowhere.
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           BYRULER: ${{ needs.submissions.outputs.byruler }}
 
@@ -611,19 +580,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: the databases
+        if: needs.submissions.outputs.wired == 'true'
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: release the claim
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           bash scripts/fetch_queue.sh --release

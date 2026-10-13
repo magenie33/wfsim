@@ -12,9 +12,9 @@
 # nothing: what only the official machines may settle is `settle.yml`'s.
 # docs/BOARD.md §"The fact factory", §"The live board".
 #
-# Needs the library's database — CF_ACCOUNT, CF_TOKEN and CF_D1_DATABASE (D1),
-# or PG_URL (Postgres, scripts/db.sh) — BOARD_PUSH_TOKEN, and FACTORY_TOKEN
-# (the fact factory's secret: ship_queue.sh, live_orders.mjs).
+# Needs the library's database — PG_URL (Postgres, scripts/db.sh) —
+# BOARD_PUSH_TOKEN, and FACTORY_TOKEN (the fact factory's secret:
+# ship_queue.sh, live_orders.mjs).
 set -euo pipefail
 
 WORK="${1:?usage: live_board.sh <work-dir> <bin-dir>}"

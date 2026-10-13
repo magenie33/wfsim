@@ -12,7 +12,7 @@
 import worker, { USAGE_EVENTS, USAGE_SCHEMA, usagePoint } from "../worker/index.js";
 import { appSource } from "./app_source.mjs";
 import { USAGE_RESULTS, usageDayRows, rollupUsage } from "../worker/usage_days.js";
-import { DatabaseSync } from "node:sqlite";
+import { testDb } from "./pg/test_db.mjs";
 import { readFileSync, readdirSync } from "node:fs";
 
 let failures = 0;
@@ -150,14 +150,7 @@ check("…and no row carries a visitor id", !JSON.stringify(keptDay).includes(A)
 const tail = keptDay[keptDay.length - 1];
 check("…and its kept marker is the last row written", tail.event === "visitors" && tail.subject === "all");
 {
-  const db = new DatabaseSync(":memory:");
-  db.exec(readFileSync(new URL("../worker/schema.sql", import.meta.url), "utf8"));
-  const stmt = (sql, args = []) => ({
-    bind: (...a) => stmt(sql, a),
-    all: async () => ({ results: db.prepare(sql).all(...args) }),
-    run: async () => db.prepare(sql).run(...args),
-  });
-  const LIBRARY = { prepare: (sql) => stmt(sql), batch: async (ss) => { for (const x of ss) await x.run(); } };
+  const LIBRARY = await testDb("library");
   // THE DATASET, STUBBED: it holds three days, and a day's query returns every
   // point before the end of the day it asks for.
   const realFetch = globalThis.fetch;
@@ -173,7 +166,7 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   check("a run keeps every finished day it lacks, and not today",
     JSON.stringify(first) === '["2026-10-01","2026-10-02"]', JSON.stringify(first));
   check("…and a second run keeps nothing again", (await rollupUsage(env, now)).length === 0);
-  db.exec("DELETE FROM usage_days WHERE day = '2026-10-02' AND event = 'visitors' AND subject = 'all'");
+  await LIBRARY.exec("DELETE FROM usage_days WHERE day = '2026-10-02' AND event = 'visitors' AND subject = 'all'");
   const redo = await rollupUsage(env, now);
   check("…but a day without its marker is written again", JSON.stringify(redo) === '["2026-10-02"]',
     JSON.stringify(redo));

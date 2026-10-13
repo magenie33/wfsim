@@ -14,34 +14,27 @@
 #   git clone --branch library-backups <repo>       # every night, for ever
 #   gh run download --name library-<n>              # the last 90 days
 #
-# THE TOKEN IS NOT THE ONE IN THE REPO. A restore WRITES the library, and the
-# right way to do that is to create a token for it, use it, and revoke it —
-# not to keep one lying around for a job that runs once a decade.
+# IT WRITES THROUGH THE SCRIPTS' DOOR (scripts/db.sh): PG_URL names the
+# library's Postgres, with a role that may write `builds` — the pipeline's
+# does, through the tunnel docs/BOARD.md §"Postgres" describes.
 #
-#   CF_ACCOUNT=... CF_D1_DATABASE=... CF_TOKEN=<a token that may write> \
-#     scripts/restore_library.sh library.ndjson --write
-#
-# IT WRITES IN BULK, which is the one place KV is generous: there is no bulk
-# READ (which is why a full fetch costs 7.5 minutes) but there IS a bulk write
-# of up to 10,000 pairs per request, so putting 2,474 records back is a single
-# call rather than 2,474.
+#   PG_URL=postgres://... scripts/restore_library.sh library.ndjson --write
 #
 # IT IS ADDITIVE, NEVER DESTRUCTIVE. It writes the records in the file and
-# touches nothing else — a key that exists in KV and not in the snapshot is left
-# alone. Restoring an old snapshot therefore cannot delete newer submissions,
-# which is the failure a restore is most likely to cause and the one nobody
-# thinks about while restoring.
+# touches nothing else — a key that exists in the library and not in the
+# snapshot is left alone. Restoring an old snapshot therefore cannot delete
+# newer submissions, which is the failure a restore is most likely to cause and
+# the one nobody thinks about while restoring.
 set -euo pipefail
 
-# The same expiry the endpoint writes with, so a restored record ages exactly
-# as it would have. Without it a restore would make every record immortal.
-TTL=$(( 60 * 60 * 24 * 365 ))
+. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 
-# ---- turn a snapshot into KV's bulk-write shape ----------------------------
+# ---- turn a snapshot into statements ----------------------------------------
 #
 # THE SNAPSHOT, AS STATEMENTS. Nine rows each, parameters BOUND: an identity
 # is built from ids that arrived at a public endpoint, and a restore is the
-# worst moment to discover that one of them carried a quote.
+# worst moment to discover that one of them carried a quote. The upsert is
+# `ship_builds.sh`'s, so a restored row is the row the pipeline would write.
 to_batches() {
   jq -s -c '
     . as $all
@@ -49,15 +42,16 @@ to_batches() {
     | . as $i
     | $all[$i : $i + 9] as $chunk
     | {
-        sql: ("INSERT OR REPLACE INTO builds (identity, at, record) VALUES "
-              + ([$chunk[] | "(?,?,?)"] | join(","))),
+        sql: ("INSERT INTO builds (id, at, record) VALUES "
+              + ([$chunk[] | "(?,?,?)"] | join(","))
+              + " ON CONFLICT (id) DO UPDATE SET at = excluded.at, record = excluded.record"),
         params: [$chunk[] | .k, (.v.at // ""), (.v | tojson)]
       }
   ' "$1"
 }
 
 restore() {
-  local file="$1" write="$2" api="$3"
+  local file="$1" write="$2"
   local n; n=$(wc -l < "$file" | tr -d ' ')
   [ "$n" -gt 0 ] || { echo "the snapshot is empty — refusing"; return 1; }
 
@@ -77,17 +71,14 @@ restore() {
     return 0
   fi
 
-  # NINE ROWS A STATEMENT: three bound parameters each, against D1's limit of
-  # a hundred per query. Slower than a bulk put and it does not matter — a
-  # restore runs once, under pressure, and what it owes is certainty.
+  # NINE ROWS A STATEMENT. Slower than one statement and it does not matter —
+  # a restore runs once, under pressure, and what it owes is certainty.
   local total=0
   while IFS= read -r stmt; do
     [ -n "$stmt" ] || continue
-    if ! curl -sf -o /dev/null -X POST "$api/query" \
-        -H "Authorization: Bearer $CF_TOKEN" \
-        -H "content-type: application/json" \
-        --data-binary "$stmt"; then
+    if ! db_query "$stmt"; then
       echo "the database refused a batch — stopped after $total row(s)"
+      head -c 500 "$DB_OUT" || true
       return 1
     fi
     total=$(( total + $(printf "%s" "$stmt" | jq '.params | length / 3') ))
@@ -97,24 +88,20 @@ restore() {
 
 # ---- the self-test ---------------------------------------------------------
 #
-# The whole path, against a stub `curl` that records what it was sent. It exists
-# because a restore is run once, under pressure, by someone who has just lost
-# data — which is the worst possible moment to discover a typo.
+# The whole path, against a stub transport that records what it was sent. It
+# exists because a restore is run once, under pressure, by someone who has just
+# lost data — which is the worst possible moment to discover a typo.
 self_test() {
   local dir; dir=$(mktemp -d)
   mkdir -p "$dir/bin" "$dir/work"
-  cat > "$dir/bin/curl" <<'STUB'
+  cat > "$dir/bin/db" <<'STUB'
 #!/usr/bin/env bash
-prev=
-for a in "$@"; do
-  [ "$prev" = "--data-binary" ] && printf '%s
-' "$a" >> /tmp/restore-sent.json
-  prev="$a"
-done
-exit 0
+cat >> /tmp/restore-sent.json; echo >> /tmp/restore-sent.json
+printf '{"result":[{"results":[],"success":true}],"success":true}'
 STUB
-  chmod +x "$dir/bin/curl"
-  PATH="$dir/bin:$PATH"
+  chmod +x "$dir/bin/db"
+  db_send() { "$dir/bin/db"; }
+  export PG_URL=stub
   cd "$dir/work"
   local fails=0
   say() { printf '  %-5s %s\n' "$1" "$2"; [ "$1" = "FAIL" ] && fails=$((fails + 1)); return 0; }
@@ -125,11 +112,11 @@ STUB
 
   # DRY IS THE DEFAULT, and it has to send nothing at all.
   rm -f /tmp/restore-sent.json
-  restore snap.ndjson no x > /dev/null
+  restore snap.ndjson no > /dev/null
   [ ! -f /tmp/restore-sent.json ] && say ok "a dry run sends nothing" \
     || say FAIL "a dry run sent a request"
 
-  CF_TOKEN=stub restore snap.ndjson yes x > /dev/null
+  restore snap.ndjson yes > /dev/null
   [ -f /tmp/restore-sent.json ] && say ok "a write run sends the records" \
     || say FAIL "a write run sent nothing"
   # EVERY VALUE BOUND, because an identity is built from ids that arrived at a
@@ -141,7 +128,7 @@ STUB
   else
     say FAIL "a key reached the statement: $(head -c 160 /tmp/restore-sent.json)"
   fi
-  if jq -e '.sql | startswith("INSERT OR REPLACE INTO builds")' < /tmp/restore-sent.json > /dev/null; then
+  if jq -e '.sql | startswith("INSERT INTO builds (id, at, record)") and contains("DO UPDATE")' < /tmp/restore-sent.json > /dev/null; then
     say ok "...into the library table, replacing what is there"
   else
     say FAIL "$(jq -r .sql < /tmp/restore-sent.json | head -c 120)"
@@ -173,7 +160,7 @@ STUB
   # A FILE THAT IS NOT A SNAPSHOT MUST BE REFUSED BEFORE ANYTHING IS SENT.
   echo '{"nonsense":1}' > bad.ndjson
   rm -f /tmp/restore-sent.json
-  if CF_TOKEN=stub restore bad.ndjson yes x > /dev/null 2>&1; then
+  if restore bad.ndjson yes > /dev/null 2>&1; then
     say FAIL "a file that is not a snapshot was accepted"
   else
     [ ! -f /tmp/restore-sent.json ] && say ok "a file that is not a snapshot is refused, before sending" \
@@ -181,10 +168,11 @@ STUB
   fi
 
   : > empty.ndjson
-  CF_TOKEN=stub restore empty.ndjson yes x > /dev/null 2>&1 \
+  restore empty.ndjson yes > /dev/null 2>&1 \
     && say FAIL "an empty snapshot was accepted" \
     || say ok "an empty snapshot is refused"
 
+  rm -f /tmp/restore-sent.json
   cd /; rm -rf "$dir"
   if [ "$fails" -gt 0 ]; then echo "$fails failed"; return 1; fi
   echo "the library can be put back"
@@ -203,11 +191,6 @@ FILE="${1:-}"
 WRITE=no
 [ "${2:-}" = "--write" ] && WRITE=yes
 if [ "$WRITE" = "yes" ]; then
-  : "${CF_ACCOUNT:?CF_ACCOUNT is required}"
-  : "${CF_D1_DATABASE:?CF_D1_DATABASE is required}"
-  # An apostrophe inside ${var:?...} confuses the parser, so the sentence is
-  # spelled without one.
-  : "${CF_TOKEN:?CF_TOKEN is required, and it needs D1 Edit rather than the read token in the repo}"
+  : "${PG_URL:?PG_URL is required: the library Postgres, with a role that may write builds}"
 fi
-restore "$FILE" "$WRITE" \
-  "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}"
+restore "$FILE" "$WRITE"

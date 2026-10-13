@@ -9,7 +9,7 @@
 # the engine.
 #
 # THE SCORER NEVER SPEAKS TO THE DATABASE — nor does intake. They read and write
-# files, and the network lives in scripts a stub `curl` can drive, which is what
+# files, and the database lives in scripts a stub transport can drive, which is what
 # makes every hop here testable without one.
 set -euo pipefail
 
@@ -41,7 +41,7 @@ page_body() {
 
 fetch() {
   local out="$1" offset=0 got total=0 page
-  : > "$out"
+  :
   for page in $(seq 1 "$MAX_PAGES"); do
     if ! db_query "$(page_body "$PAGE" "$offset")"; then
       echo "::error::inbox: the database refused the read [HTTP $DB_CODE]"
@@ -80,26 +80,21 @@ self_test() {
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
 
   # TWO PAGES, so the paging is exercised rather than described.
-  cat > "$DIR/bin/curl" <<'PAGES'
+  cat > "$DIR/bin/db" <<'PAGES'
 #!/usr/bin/env bash
-out=/dev/null; prev=; body=
-for a in "$@"; do
-  [ "$prev" = "-o" ] && out="$a"
-  [ "$prev" = "--data-binary" ] && body="$a"
-  prev="$a"
-done
+body=$(cat)
 off=$(printf '%s' "$body" | jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{id:("u"+(.|tostring)),at:"2026-01-01",record:"{\"weapon\":\"torid\"}"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{id:("u"+(.|tostring)),at:"2026-01-01",record:"{\"weapon\":\"torid\"}"}],success:true}],success:true}'
 else
-  jq -n -c '{result:[{results:[{id:"last",at:"2026-01-02",record:"{\"weapon\":\"boar\"}"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{id:"last",at:"2026-01-02",record:"{\"weapon\":\"boar\"}"}],success:true}],success:true}'
 fi
-printf '200'
 PAGES
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   PAGE=3
   fetch got.ndjson > out.txt 2>&1 && grep -q "read 4 record" out.txt \
     && say ok "a queue longer than one page is read whole" || say FAIL "$(cat out.txt)"
@@ -112,23 +107,21 @@ PAGES
     && say ok "...with the record handed on exactly as it was stored" \
     || say FAIL "the record was reshaped on the way through"
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}' > "$out"
-printf '403'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table scores"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   if fetch got.ndjson > out.txt 2>&1; then
     say FAIL "a refused read passed"
-  elif grep -q "D1 not authorized" out.txt; then
+  elif grep -q "permission denied" out.txt; then
     say ok "a refused read reports what the database said"
   else
     say FAIL "$(cat out.txt)"
   fi
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 

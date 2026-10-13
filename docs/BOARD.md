@@ -179,7 +179,7 @@ back fails CI rather than being discovered in a published number.
 | ranked across weapons | `site/board/index.json` | derived from the files beside it |
 | which board this is | `site/board.meta.json` | a digest per published file |
 | consent + submit | `web/src/static/app/68-board-submit.js` (`offerBoardSubmit`) | the player's browser |
-| the library | one D1 database, `wfsim` (binding `LIBRARY`) | written by the endpoint |
+| the library | the Postgres database `wfsim` (binding `LIBRARY`, §"Postgres") | written by the endpoint |
 | the facts | the `scores` table in it | written by `ship_facts.sh` |
 | the deploy | `wrangler.jsonc` | `scripts/deploy.sh`, from a git push |
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
@@ -254,10 +254,7 @@ owed costs ONE job, because the gate answers `todo=0` and the fan-out never
 happens.
 
 **AND NOTHING ELSE BOUNDS THE CADENCE.** The repository is public, so Actions
-minutes are unlimited. One run reads about 40,000 rows of D1 against a free five
-million a day, and writes two per score against a hundred thousand — which caps
-a day at 50,000 scores, or 221 core-hours of fighting. The CPU gives out an
-order of magnitude before either quota does.
+minutes are unlimited.
 
 **A RUN'S WORK IS DECIDED AT ITS START AND NEVER CHANGES.** The queue is read
 once, in the first job, and handed to every shard as an artifact — which is what
@@ -667,130 +664,59 @@ deadline and what only they may settle.
 
 ### Postgres
 
-**EACH DATABASE IN D1 OR IN POSTGRES, BY ONE SWITCH, AND THE QUERIES READ ALIKE
-IN BOTH** (`worker/factory_db.js`). Postgres is the server's, reached by the
-worker through Hyperdrive and by everything else through a Cloudflare Access
-TCP tunnel to `pg.wfsim.app`.
+**TWO POSTGRES DATABASES ON THE OWNER'S SERVER, AND NOTHING ELSE**
+(`worker/db.js`). The worker reaches them through Hyperdrive; scripts and CI
+through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
-| switch (worker var · repo variable) | moves | to |
-| --- | --- | --- |
-| `FACTORY_DB = "pg"` | the factory's tables — questions, demands, answers, verifiers, verifier_hours, watchdog_told, points_pool | `wfsim` (`HYPERDRIVE`) |
-| `DB_LIBRARY = "pg"` · `vars.DB_LIBRARY` | the library with them — inbox, builds, scores, batches, queue, orders, shares, usage_days, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations | `wfsim`, one database and one transaction with the factory |
-| `DB_ACCOUNTS = "pg"` · `vars.DB_ACCOUNTS` | the accounts — every table `worker/accounts.sql` and the paid half name | `wfsim_accounts` (`HYPERDRIVE_ACCOUNTS`), its own database and role |
+| database | holds | worker binding | DDL |
+| --- | --- | --- | --- |
+| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_told, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql` |
+| `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
-Unset, each is D1's. Their DDL is `worker/pg/` (`schema.sql`, `library.sql`,
-`accounts.sql`): every text column `COLLATE "C"`, D1's byte order; the last
-slot's trigger is a function and a trigger.
+`withDatabases` opens each from its binding; every query is Postgres text.
+Every text column is `COLLATE "C"`, so an ISO instant compares byte by byte
+whatever the server's locale; the last slot's trigger is a function and a
+trigger.
 
-- **ONE TEXT WHERE ONE TEXT SERVES.** `ON CONFLICT DO NOTHING` for `INSERT OR
-  IGNORE`, an upsert naming its columns for `INSERT OR REPLACE`, `CASE` for a
-  boolean summed or selected, a qualified column in an upsert's `SET`. Where
-  the dialects differ — `json_each`, `strftime`, `max(a, b)` — the query states
-  both (`pick`), a piece of a query too.
-- **A SCRIPT NEVER SPEAKS D1 OR POSTGRES ITSELF.** `scripts/db.sh` and
-  `scripts/db.mjs` take one statement in D1's words and answer D1's shape from
-  whichever database `PG_URL` (`PG_ACCOUNTS_URL`) names; the workflows set it
-  through `.github/actions/databases` while the repository variable says `pg`,
-  the bot server through `deploy/wfsim-pg-tunnel.service`. The factory's tables
-  are read through the official door's `report`s.
-- **PROVED ON BOTH**: `check_pg_shadow` repeats every statement the worker
-  issues in the node checks on PGlite; `check_pg_factory` runs the factory on
-  both; `check_pg_scripts` runs the pipeline's scripts on Postgres.
+- **A SCRIPT REACHES A DATABASE THROUGH ONE DOOR.** `scripts/db.sh` and
+  `scripts/db.mjs` take one statement and answer from whichever database
+  `PG_URL` (`PG_ACCOUNTS_URL`) names; the workflows set it through
+  `.github/actions/databases`, the bot server through
+  `deploy/wfsim-pg-tunnel.service`. The factory's tables are read through the
+  official door's `report`s.
+- **A NODE CHECK RUNS THE WORKER'S OWN SQL**: `scripts/pg/test_db.mjs` lays
+  `worker/pg/*.sql` in an in-memory PGlite (`testDb("library")`,
+  `testDb("accounts")`) behind the statement API the worker gets;
+  `check_pg_scripts` runs the pipeline's scripts on Postgres.
 
-#### Moving a database, and moving it back
+#### Setting a server up
 
-Once, before the first move: create the accounts' database and role, apply the
-DDL, make the pipeline's roles, and give the secrets.
+The databases, their owners, the DDL — applied as each file's header says — and
+the pipeline's roles:
 
 ```sh
+sudo -u postgres psql -c "CREATE ROLE wfsim LOGIN PASSWORD '…'" -c "CREATE DATABASE wfsim OWNER wfsim"
 sudo -u postgres psql -c "CREATE ROLE wfsim_accounts LOGIN PASSWORD '…'" -c "CREATE DATABASE wfsim_accounts OWNER wfsim_accounts"
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/schema.sql
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/library.sql
 sudo -u postgres psql -d wfsim_accounts -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim_accounts' -f worker/pg/accounts.sql
 sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '…'" \
   -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, scores, batches, queue TO wfsim_pipeline" \
-  -c "GRANT SELECT ON verifiers, verifier_hours TO wfsim_pipeline" \
+  -c "GRANT SELECT ON verifiers, verifier_hours, verifier_asks, adjustments, factory_events TO wfsim_pipeline" \
   -c "GRANT SELECT (code, channel, request) ON appraisals TO wfsim_pipeline"
 sudo -u postgres psql -d wfsim_accounts -c "CREATE ROLE wfsim_accounts_pipeline LOGIN PASSWORD '…'" \
   -c "GRANT SELECT ON devices TO wfsim_accounts_pipeline"
 ```
 
-A Hyperdrive config for `wfsim_accounts` as `wfsim_accounts`, bound as
-`HYPERDRIVE_ACCOUNTS`. Repository secrets `CF_ACCESS_CLIENT_ID`,
-`CF_ACCESS_CLIENT_SECRET` (the Access service token `pg.wfsim.app` admits),
-`PG_PIPELINE_URL` (`postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim`),
+A Hyperdrive config for each database as its owner, bound in `wrangler.jsonc`
+as `HYPERDRIVE` and `HYPERDRIVE_ACCOUNTS`. Repository secrets
+`CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET` (the Access service token
+`pg.wfsim.app` admits), `PG_PIPELINE_URL`
+(`postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim`),
 `PG_ACCOUNTS_PIPELINE_URL` (`…wfsim_accounts_pipeline…/wfsim_accounts`). On the
 bot server: cloudflared, `/etc/wfsim-pg-tunnel.env`, the tunnel's unit, and
-`PG_URL` in `/etc/wfsim-live.env`.
-
-**THE LIBRARY** (`DB_LIBRARY`). The switch flips only once Postgres holds a
-verified copy: flipped first, the worker and the scripts would read an empty
-library and publish it.
-
-```sh
-# 1. PAUSE — nothing writes the library in D1 but the page's own doors.
-gh workflow disable queue.yml; gh workflow disable scores.yml; gh workflow disable publish.yml
-gh workflow disable settle.yml; gh workflow disable backup.yml
-gh run list --status in_progress            # until none of those is running
-ssh bot 'sudo systemctl stop wfsim-live'
-#    "FACTORY_PAUSED": "1" in wrangler.jsonc vars, then
-npx wrangler deploy
-sleep 900                                   # every answer handed out lands or lapses
-
-# 2. COPY — on the server, beside the database (/root/pgcopy, copy.env: CF_ACCOUNT,
-#    CF_TOKEN, CF_D1_DATABASE, PG_URL=…/wfsim); never `factory`.
-cd /root/pgcopy && set -a && . ./copy.env && set +a
-node scripts/pg_copy.mjs fresh library      # empties the library's tables, copies, compares
-
-# 3. VERIFY — every row, value by value.
-node scripts/pg_copy.mjs verify library
-
-# 4. FLIP — "DB_LIBRARY": "pg" beside "FACTORY_PAUSED" in wrangler.jsonc vars, then
-npx wrangler deploy
-gh variable set DB_LIBRARY --body pg
-node scripts/pg_copy.mjs add inbox shares bot_inbox appraisals appraisal_results fissures usage_days
-#    what the page's doors wrote to D1 between 2 and 4: rows Postgres lacks, its own kept
-
-# 5. UNPAUSE — "FACTORY_PAUSED" out of the vars, then
-npx wrangler deploy
-
-# 6. THE BOT SERVER — PG_URL=postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim in
-#    /etc/wfsim-live.env, its scripts shipped (scripts/ship_bot.py), then
-ssh bot 'sudo systemctl enable --now wfsim-pg-tunnel && sudo systemctl start wfsim-live'
-
-# 7. RE-ENABLE
-gh workflow enable queue.yml; gh workflow enable scores.yml; gh workflow enable publish.yml
-gh workflow enable settle.yml; gh workflow enable backup.yml
-gh workflow run queue.yml
-```
-
-Then: `/api/board/pending` counts the library; a share link made and opened; a
-build submitted reaches `inbox` in Postgres and the live board within a minute;
-the `queue` run green, its tunnel step first; an appraisal answered.
-
-**THE ACCOUNTS** (`DB_ACCOUNTS`), with the private worker's queries ported
-first — it reads the same tables: pause the accounts' writes
-(`"ACCOUNTS_PAUSED": "1"`, `check_accounts_pause`; the paid half is reached only
-through the site), `node scripts/pg_copy.mjs fresh accounts` then
-`verify accounts` with `CF_D1_ACCOUNTS` and `PG_ACCOUNTS_URL`, the
-`HYPERDRIVE_ACCOUNTS` binding and `"DB_ACCOUNTS": "pg"`, deploy, the variable
-`DB_ACCOUNTS`, un-pause; verify a sign-in, `/api/me`, a device claim, the
-contribution page.
-
-**BACK**, the library: the switch off everywhere it is on, in the order that
-stops writes to Postgres first.
-
-```sh
-gh variable set DB_LIBRARY --body d1
-ssh bot "sudo sed -i '/^PG_URL=/d' /etc/wfsim-live.env && sudo systemctl restart wfsim-live"
-#    "DB_LIBRARY" out of wrangler.jsonc vars (or "d1"), then
-npx wrangler deploy
-```
-
-D1 then holds the library as it was at the flip. What Postgres took since —
-arrivals, builds, scores, queue rows, shares, appraisals — is not copied back
-by any tool; it is read out of Postgres table by table and written to D1 by
-hand, or accepted as lost and measured again. A rollback is decided within
-hours, not days.
+`PG_URL=postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim` in
+`/etc/wfsim-live.env`.
 
 ## Compute orders
 
@@ -1618,34 +1544,29 @@ front of them. Two consequences:
 
 ## Setup, once (repo owner)
 
-1. **The database** — one D1 database holds everything:
-
-   ```sh
-   npx wrangler d1 create wfsim
-   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
-   ```
-
-   …then declare it in `wrangler.jsonc`:
+1. **The databases** — `wfsim` and `wfsim_accounts` in Postgres, laid with
+   `worker/pg/*.sql` through psql as each file's header says
+   (§"Postgres" §"Setting a server up"), then a Hyperdrive config for each,
+   declared in `wrangler.jsonc`:
 
    ```jsonc
-   "d1_databases": [
-     { "binding": "LIBRARY", "database_name": "wfsim",
-       "database_id": "<id from the create above>" }
+   "hyperdrive": [
+     { "binding": "HYPERDRIVE", "id": "<the wfsim config's id>" },
+     { "binding": "HYPERDRIVE_ACCOUNTS", "id": "<the wfsim_accounts config's id>" }
    ]
    ```
 
    **In the file, not in the dashboard.** wfsim.app is a WORKER (static assets),
    deployed by `npx wrangler deploy`, and a deploy REPLACES the worker's
    bindings with what the config declares — a binding added through the
-   dashboard is removed by the next push. The database id is an identifier, not
-   a secret; it grants nothing without a token, and Cloudflare's own docs commit
-   it.
+   dashboard is removed by the next push. A Hyperdrive id is an identifier, not
+   a secret; it grants nothing without the database's password.
 
-   Named for what it HOLDS, which is not the board: the board is
-   `site/board/`, and this holds the builds people sent and the facts computed
-   from them. A binding called `BOARD` is a debugging trap — "the board is
-   empty but the BOARD binding looks fine" is a sentence that sends you looking
-   in the wrong place. The resource NAME follows `docs/NAMING.md` §8: the
+   The worker serves the library as `LIBRARY`, named for what it HOLDS, which
+   is not the board: the board is `site/board/`, and this holds the builds
+   people sent and the facts computed from them. A binding called `BOARD` is a
+   debugging trap — "the board is empty but the BOARD binding looks fine" is a
+   sentence that sends you looking in the wrong place. The resource NAME follows `docs/NAMING.md` §8: the
    granularity it is provisioned at is the database, so that is what is named.
 
    **A PUSH DEPLOYS THE WORKER TOO.** Cloudflare's Workers Build runs
@@ -1659,11 +1580,11 @@ front of them. Two consequences:
    full mod list and a deliberately malformed arcane answers "bad mods" from a
    stale worker and "bad arcanes" from a current one.
 
-2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_D1_DATABASE`, `CF_API_TOKEN` (a
-   token with *D1: Read*, and *Edit* for the workflows that WRITE: the fact
-   shipper and the restore).
+2. **Repo secrets** — `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`,
+   `PG_PIPELINE_URL`, `PG_ACCOUNTS_PIPELINE_URL` (§"Postgres" §"Setting a
+   server up"); `.github/actions/databases` opens the tunnel with them.
 
-   **A DATABASE ID WITH NO CREDENTIALS IS A MISCONFIGURATION, NOT AN ABSENCE.**
+   **A TUNNEL WITH NO DATABASE URL IS A MISCONFIGURATION, NOT AN ABSENCE.**
    The scripts treat "nothing configured" as a working state — a run with no
    database computes everything, which is what it did before there was one —
    but a half-configured one fails loudly, because the alternative is a shipper
@@ -1672,7 +1593,7 @@ front of them. Two consequences:
 3. **The facts table is already in the schema above.** Nothing else has to be
    provisioned: the scorer writes a log, `scripts/ship_facts.sh` sends it, and
    `scripts/fetch_facts.sh` reads it back. Both carry their own self-tests,
-   driven against a stub `curl`, so every hop is testable without a network.
+   driven against a stub, so every hop is testable without a network.
 
    ASK IT A QUESTION, which is most of why it is a database. ON ONE LINE: a
    continuation is the one piece of shell syntax that differs between the two
@@ -1680,18 +1601,14 @@ front of them. Two consequences:
    then reports an unknown one and never says which.
 
    ```sh
-   npx wrangler d1 execute wfsim --remote --command "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2 DESC LIMIT 20"
+   cloudflared access tcp --hostname pg.wfsim.app --url 127.0.0.1:15432
+   psql "$PG_URL" -c "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2 DESC LIMIT 20"
    ```
 
-   **AND IT NEEDS AN API TOKEN, NOT THE LOGIN.** `wrangler login` is enough to
-   `d1 list` this database and not enough to QUERY it: the same account, holding
-   a `d1 (write)` scope, is answered `7403 — not authorized to access this
-   service` on `/d1/database/<id>/query`. Set `CLOUDFLARE_API_TOKEN` to a token
-   with *Account · D1 · Edit* — which is what the workflows use, and what makes
-   them work where a laptop does not — and wrangler stops consulting the login
-   at all.
+   The first holds the tunnel open — run it in a shell of its own — and `PG_URL`
+   is a role's `postgres://…@127.0.0.1:15432/wfsim`.
 
-The token only READS on the publishing path. What the board says is computed in
+The publishing path only READS. What the board says is computed in
 the repo from data in the repo; nothing secret decides a rank.
 
 Until step 1 is done the endpoint answers 503 and the page says "could not
@@ -2040,6 +1957,11 @@ holding the original.
 | the `library-backups` branch | for ever, versioned by git | `git clone --branch library-backups` |
 | a run artifact | 90 days | `gh run download --name library-<n>` |
 
+The server dumps both databases whole besides (`/usr/local/bin/wfsim-pg-backup`,
+nightly at 03:17 UTC): `pg_dump -Fc` of `wfsim` and `wfsim_accounts`, seven days
+on its disk and thirty in the R2 bucket `wfsim-pg-backup`. That copy holds
+personal data and never leaves the owner's accounts.
+
 **IT FETCHES COLD.** The backup reads the rows straight out of the database
 with no cache of any kind, because a copy that shares its input with the thing
 it is copying shares its failure mode.
@@ -2064,28 +1986,22 @@ day it is needed is not the first day it has ever run.
 
 ```sh
 scripts/restore_library.sh library.ndjson            # says what it WOULD write
-CF_ACCOUNT=… CF_D1_DATABASE=… CF_TOKEN=<an EDIT token>  scripts/restore_library.sh library.ndjson --write
+PG_URL=postgres://…@127.0.0.1:15432/wfsim  scripts/restore_library.sh library.ndjson --write
 ```
-
-**THE TOKEN IS NOT THE REPO'S.** A restore needs *D1: Edit*, and the right way
-is to create that token, use it, and revoke it.
 
 **IT IS ADDITIVE, NEVER DESTRUCTIVE.** It writes the records in the file and
 touches nothing else, so restoring an old snapshot cannot delete newer
 submissions — which is the failure a restore is most likely to cause and the one
 nobody thinks about while restoring.
 
-**NINE ROWS A STATEMENT**, three bound parameters each against D1's limit of a
-hundred per query. Slower than a bulk put and it does not matter — a restore
-runs once, under pressure, and what it owes is certainty. The parameters are
-BOUND because an identity is built from ids that arrived at a public endpoint,
+**THE PARAMETERS ARE BOUND** because an identity is built from ids that arrived at a public endpoint,
 and a restore is the worst moment to discover one of them carried a quote.
 
 ### Three things fail differently, which is why there are three
 
 - `guard_shrink` (the **tripwire**) refuses to publish a board from a short
   list. It is the only one that works while nobody is watching, and it cannot
-  help if Cloudflare loses the database.
+  help if the server loses the database.
 - The **backup** can, and cannot help if nobody notices for a month.
 - **`site/board/` in git** is a partial copy: every PUBLISHED row carries its
   build. What it misses is the builds under the 50% floor.
@@ -2123,11 +2039,6 @@ together are under 2%.
 nothing per-run is being wasted: a run with no work costs one job and 44 seconds.
 The spread is what to aim at instead — 15.9 s average in that run, 1,434 s for
 its worst row, and one row is indivisible.
-
-**AND THE BINDING QUOTA IS WRITES, not reads or minutes.** Per run: 44,133 D1
-rows read (the library once, the facts twice — the shards read the artifact, not
-the database) and 4,441 written. At 24 runs a day that is 1.06M reads against a
-free 5M/day, and 107k writes against a free 100k/day.
 
 ### Where the 179 hours go, measured
 
@@ -2307,8 +2218,8 @@ forced list.
 ### The four pieces, and what each is allowed to do
 
 **INGEST — the worker.** `POST /api/board/submit` writes one row:
-`INSERT OR REPLACE INTO builds`. The key is the build, so a resubmission is the
-same row. `GET /api/board/pending` is `SELECT COUNT(*)`. It knows nothing about
+`INSERT … ON CONFLICT DO UPDATE` into `builds`. The key is the build, so a
+resubmission is the same row. `GET /api/board/pending` is `SELECT COUNT(*)`. It knows nothing about
 scores and writes nothing else.
 
 **COMPUTE — a shard.** Reads the library and the facts, takes its share of
@@ -2379,7 +2290,7 @@ time, and that is a property rather than a defect:
      coupled to anything behind it.
 
   WRITE PATH — one submission is one row
-     player ──► Worker ──► D1.builds
+     player ──► Worker ──► Postgres builds
                      └──► answers "how many" and "already held" with a query
 
   COMPUTE — the queue is a query
@@ -2393,7 +2304,7 @@ time, and that is a property rather than a defect:
        Cloudflare deploys the push
 
   PROTECT — a gate in front, a copy at another vendor behind
-     nightly   D1.builds ──► library-backups branch (GitHub)
+     nightly   Postgres builds ──► library-backups branch (GitHub)
                two-way count ──► red if the database holds fewer
      always    guard_shrink ──► refuses to publish from a short library
 ```
@@ -2421,15 +2332,13 @@ every one of them is a real measurement — §"The board is a record, and a mixt
 | tier | runs on | free ceiling |
 | --- | --- | --- |
 | serve | Cloudflare static assets | unmetered |
-| write | Worker + D1 | 100k requests/day; 100k rows written/day |
+| write | Worker + Hyperdrive | 100k requests/day |
 | compute | GitHub Actions | unmetered minutes, 40 jobs = 960 CPU hours/day |
-| store | D1 | 500 MB per database |
+| store | Postgres, on the owner's server | the server's disk |
 | backup | a git branch | ~22 KB a night |
 
-**The free tier carries all of this**: D1 counts rows at a hundred thousand a
-day and has no listing operation, where KV metered LIST and WRITE at a thousand
-a DAY. The paid plan is taken for Workers Builds concurrency rather than for
-any of these numbers.
+The paid plan is taken for Workers Builds concurrency rather than for any of
+these numbers.
 
 ### The rule efficiency is judged by
 
@@ -2449,7 +2358,7 @@ change actually reached, and only those are rescored.
 
 ## One database, and the two things that are deliberately not in it
 
-**ONE D1 DATABASE IS THE SYSTEM OF RECORD**, and the board holds three tables
+**ONE POSTGRES DATABASE IS THE SYSTEM OF RECORD**, and the board holds three tables
 in it: `inbox`, what players sent, verbatim, until intake has made a build of
 it; `builds`, the library; and `scores`, the facts computed from it. `batches`
 and `queue` are the work list beside them, and they may only ever CAUSE work.
@@ -2465,21 +2374,19 @@ The division is decided by two questions, asked of each piece of data:
 
 | | question asked of it | if lost | where |
 | --- | --- | --- | --- |
-| the library | constantly | **gone for ever** | D1 `builds` |
-| the facts | every operational one | recomputed, at 179 CPU hours | D1 `scores` |
+| the library | constantly | **gone for ever** | Postgres `builds` |
+| the facts | every operational one | recomputed, at 179 CPU hours | Postgres `scores` |
 | the published board | none — it is read | regenerated from the facts | git, served from the CDN |
 | the snapshots | none | it IS the last copy | a git branch, at another vendor |
 
 **WHY KV COULD NOT KEEP THE LIBRARY.** It has no queries, so every question
 about the set had to be faked: "how many are there" became a counter key with
 an hourly corrector, "is this build already held" became a read before every
-write, and "which weapons are under-covered" could not be asked at all. Its free
-plan meters LIST and WRITE at a thousand a DAY against D1's hundred thousand
-rows.
+write, and "which weapons are under-covered" could not be asked at all.
 
 **WHY R2 HOLDS NOTHING OF THE BOARD.** It held the score blobs, and a score is a row now.
-The one job it might have inherited is the off-vendor copy, and it is the wrong
-vendor for that (below).
+The one job it might have inherited is the off-vendor copy, and the branch
+holds that (below).
 
 **ONE STORE MEANS ONE POINT OF FAILURE FOR A WRITE**, and that is accepted: a
 submission that fails is a retry, not a loss, and it failed the same way when KV
@@ -2488,7 +2395,7 @@ somewhere else, and a gate in front of the damage.
 
 ### The library is protected in three layers, and they fail differently
 
-1. **THE LIVE COPY** — D1. Where it is read and written.
+1. **THE LIVE COPY** — Postgres. Where it is read and written.
 2. **THE GATE** — `guard_shrink`. A run that comes back with materially fewer
    builds than the last board was built from REFUSES to publish. A backup
    restores after the damage; this declines to do it, which is the only one of
@@ -2498,11 +2405,10 @@ somewhere else, and a gate in front of the damage.
    versioned, and about 22 KB a night because the file is sorted and git stores
    the delta.
 
-**THE COPY MAY NOT LIVE AT THE SAME VENDOR AS THE ORIGINAL.** R2 is Cloudflare
-and so is D1, so one account-level problem — a suspension, a mistaken delete, a
-regional fault — takes both. The branch is at GitHub: another vendor, another
-credential, another failure domain. That is the whole reason the snapshot is
-where it is, and it is why R2 does not inherit the job.
+**THE COPY MAY NOT LIVE WHERE THE ORIGINAL DOES.** One server or one account —
+a disk lost, a mistaken delete, a suspension — would take both. The branch is
+at GitHub: another vendor, another credential, another failure domain. That is
+the whole reason the snapshot is where it is.
 
 **AND THE SNAPSHOT IS PUBLIC, WHICH IS WHAT MAKES IT FREE.** A record carries
 the build and a DAY, and nothing about whoever sent it — no address, no token,

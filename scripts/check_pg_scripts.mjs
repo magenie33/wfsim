@@ -2,8 +2,8 @@
 // scripts, not their stubs, run one pass against an on-disk PGlite laid with
 // worker/pg — an arrival read from the inbox, shipped as a build, asked for,
 // read back from the queue, measured, its fact shipped and the row spent, the
-// facts and the library read, the orphans and dead rulers purged — and each
-// table must hold what the pass says it wrote.
+// facts and the library read, a backup restored, the orphans and dead rulers
+// purged — and each table must hold what the pass says it wrote.
 //   npm ci --prefix scripts/pg && node scripts/check_pg_scripts.mjs
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
@@ -66,6 +66,9 @@ check("...and measured again it is overwritten", await run("ship_facts.sh", "fac
   && (await query("SELECT score FROM scores"))[0]?.score === 13);
 check("the facts are read", await run("fetch_facts.sh", "facts-read.ndjson") === 0 && JSON.parse(read("facts-read.ndjson")[0]).score === 13);
 check("the library is read", await run("fetch_library.sh", "library.json") === 0 && readFileSync(join(dir, "library.json"), "utf8").includes("torid"));
+file("snapshot.ndjson", `${JSON.stringify({ k: "b2", v: { at: "2026-10-02", weapon: "braton", mods: [] } })}\n`);
+check("a backup is restored into the library", await run("restore_library.sh", "snapshot.ndjson", "--write") === 0
+  && (await query("SELECT weapon FROM builds WHERE id = 'b2'"))[0]?.weapon === "braton");
 
 file("orphans.ndjson", `${JSON.stringify({ build_id: "b1", ruler: "standard_single_target", mode: "base" })}\n`);
 check("an orphan is purged", await run("purge_orphans.sh", "orphans.ndjson") === 0 && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
@@ -76,5 +79,5 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
 
 await close();
 rmSync(dir, { recursive: true, force: true });
-console.log(failed ? `\n${failed} failed` : "\nthe pipeline's scripts read and write Postgres as they do D1");
+console.log(failed ? `\n${failed} failed` : "\nthe pipeline's scripts read and write Postgres");
 process.exitCode = failed ? 1 : 0;

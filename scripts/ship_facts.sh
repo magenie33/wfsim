@@ -15,7 +15,7 @@
 # same row twice and a lost cursor costs one repeat, never a wrong number.
 set -euo pipefail
 
-# AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, and the count
+# AS MANY ROWS A STATEMENT AS A HUNDRED BOUND PARAMETERS ALLOW, and the count
 # is DERIVED so that a column added below shrinks it. Written as a number it
 # goes one parameter over on the eleventh column, and what that buys is every
 # write refused and the cursor never moving — loud, but for a reason nobody
@@ -38,8 +38,7 @@ configured() { db_configured; }
 # THE CLOCKS ARE THE SCORER'S, NOT THE SHIPPER'S AND NOT THE DATABASE'S. A row
 # may be shipped minutes after it was measured, so a timestamp invented here
 # would be the shipping time wearing the fight's name; the fact log carries both
-# ends of the fight and this binds them. A strftime call inside the statement is
-# refused by D1 outright — "near %: syntax error at offset 164".
+# ends of the fight and this binds them.
 batches() {
   local src="$1"
   jq -s -c --argjson n "$BATCH" '
@@ -174,8 +173,8 @@ self_test() {
     && say ok "...$FACT_COLUMNS bound parameters a row" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
   [ $((9 * FACT_COLUMNS)) -le 100 ] \
-    && say ok "...and a batch stays inside D1's hundred" \
-    || say FAIL "$((9 * FACT_COLUMNS)) parameters is over D1's hundred"
+    && say ok "...and a batch stays inside a hundred" \
+    || say FAIL "$((9 * FACT_COLUMNS)) parameters is over a hundred"
 
   printf '%s' "$first" | jq -e '.sql | contains("quote") | not' >/dev/null \
     && printf '%s' "$first" | jq -e '.params | index("quote\"key")' >/dev/null \
@@ -207,21 +206,16 @@ self_test() {
     || say FAIL "the metric did not reach the statement: $(printf '%s' "$first" | jq -c '.params[5]')"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
 
-  cat > "$DIR/bin/curl" <<'OK'
+  cat > "$DIR/bin/db" <<'OK'
 #!/usr/bin/env bash
-out=/dev/null; prev=; body=
-for a in "$@"; do
-  [ "$prev" = "-o" ] && out="$a"
-  [ "$prev" = "--data-binary" ] && body="$a"
-  prev="$a"
-done
+body=$(cat)
 printf '%s\n' "$body" >> "$PWD/sent.log"
-printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
-printf '200'
+printf '{"result":[{"results":[],"success":true}],"success":true}'
 OK
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   : > sent.log
   ship facts.ndjson > out.txt 2>&1 \
     && grep -q "rows 1..12" out.txt \
@@ -251,18 +245,16 @@ OK
   ship facts.ndjson > out.txt 2>&1 && grep -q "rows 13..13" out.txt \
     && say ok "...and a row appended after it ships alone" || say FAIL "$(cat out.txt)"
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}' > "$out"
-printf '403'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table scores"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   row 'refused' base 1.0 >> facts.ndjson
   if ship facts.ndjson > out.txt 2>&1; then
     say FAIL "a refused write passed"
-  elif grep -q "D1 not authorized" out.txt; then
+  elif grep -q "permission denied" out.txt; then
     say ok "a refused write reports what the database said"
   else
     say FAIL "$(cat out.txt)"
@@ -272,7 +264,7 @@ DEAD
     && say ok "...and the cursor stays where it was" \
     || say FAIL "cursor moved to $(cat facts.ndjson.shipped)"
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 
@@ -282,21 +274,6 @@ DEAD
 }
 
 if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
-
-# UNCONFIGURED IS SILENT AND GREEN — but HALF-configured is not, and the two
-# read identically from inside `configured()`.
-#
-# A DATABASE ID WITHOUT A TOKEN IS A MISTAKE, NOT AN ABSENCE. The id comes out
-# of `wrangler.jsonc`, which is committed, so its presence says this repo HAS a
-# database; the token comes from a secret, which a step can simply forget to
-# pass. Measured: a shard wrote its whole fact log, shipped none of it, and
-# reported success — because the env block carrying the secrets had been put on
-# the wrong step.
-if [ -n "${CF_D1_DATABASE:-}" ] && ! configured; then
-  echo "::error::facts: a database is declared but the credentials are not set"
-  echo "::error::CF_ACCOUNT=${CF_ACCOUNT:+set}${CF_ACCOUNT:-MISSING} CF_TOKEN=${CF_TOKEN:+set}${CF_TOKEN:-MISSING}"
-  exit 1
-fi
 
 if ! configured; then
   echo "no database configured — nothing shipped (docs/BOARD.md §Setup)"

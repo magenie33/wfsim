@@ -9,19 +9,18 @@
 # can rank. One query, paged.
 #
 # THE SCORER NEVER SPEAKS TO THE DATABASE. It reads and writes files, and the
-# network lives in scripts that a stub `curl` can drive — which is what makes
-# every hop here testable without a network.
+# database lives in scripts a stub transport can drive — which is what makes
+# every hop here testable without a database.
 set -euo pipefail
 
-# A PAGE, AND THE LOOP IS BOUNDED. D1 answers a query whole, so the page is
+# A PAGE, AND THE LOOP IS BOUNDED. The database answers a query whole, so the page is
 # about the size of the answer rather than about a cursor: 5,000 rows is a few
 # megabytes of json, and the table is about 22,656 rows once every row of the
 # library has been measured.
 #
-# READ ONCE A RUN, NEVER ONCE A JOB. D1 meters rows READ — five million a day on
-# the free plan — and thirty-two shards each asking the same question is
-# thirty-two times the rows for one answer: about half a million a run, which
-# spends the day's allowance in ten. The submissions job reads it and hands it
+# READ ONCE A RUN, NEVER ONCE A JOB. Thirty-two shards each asking the same
+# question is thirty-two times the rows through one tunnel for one answer:
+# about half a million a run. The submissions job reads it and hands it
 # down as an artifact; only the ASSEMBLY reads again, because the shards were
 # still shipping when that artifact was taken.
 PAGE=5000
@@ -54,7 +53,7 @@ page_body() {
 
 fetch() {
   local out="$1" offset=0 got total=0 page
-  : > "$out"
+  :
   for page in $(seq 1 "$MAX_PAGES"); do
     if ! db_query "$(page_body "$PAGE" "$offset")"; then
       echo "::error::facts: the database refused the read [HTTP $DB_CODE]"
@@ -104,27 +103,22 @@ self_test() {
     || say FAIL "the statement still names a generation"
 
   export PATH="$DIR/bin:$PATH"
-  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+  export PG_URL=stub
+  db_send() { "$DIR/bin/db"; }
 
   # TWO PAGES, so the paging is exercised rather than described: the first
   # answers a full page and the second the remainder.
-  cat > "$DIR/bin/curl" <<'PAGES'
+  cat > "$DIR/bin/db" <<'PAGES'
 #!/usr/bin/env bash
-out=/dev/null; prev=; body=
-for a in "$@"; do
-  [ "$prev" = "-o" ] && out="$a"
-  [ "$prev" = "--data-binary" ] && body="$a"
-  prev="$a"
-done
+body=$(cat)
 off=$(printf '%s' "$body" | jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"standard_single_target",mode:"base",measured_by:"abc",score:1.5,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"standard_single_target",mode:"base",measured_by:"abc",score:1.5,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}'
 else
-  jq -n -c '{result:[{results:[{identity:"last",ruler:"standard_single_target",mode:"base",measured_by:"abc",score:9.0,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{identity:"last",ruler:"standard_single_target",mode:"base",measured_by:"abc",score:9.0,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}'
 fi
-printf '200'
 PAGES
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   PAGE=3
   fetch got.ndjson > out.txt 2>&1 && grep -q "read 4 rows" out.txt \
     && say ok "a table longer than one page is read whole" || say FAIL "$(cat out.txt)"
@@ -134,23 +128,21 @@ PAGES
     && say ok "...and the second page is appended, not written over the first" \
     || say FAIL "$(head -c 200 got.ndjson)"
 
-  cat > "$DIR/bin/curl" <<'DEAD'
+  cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}' > "$out"
-printf '403'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table scores"}]}'
+exit 1
 DEAD
-  chmod +x "$DIR/bin/curl"
+  chmod +x "$DIR/bin/db"
   if fetch got.ndjson > out.txt 2>&1; then
     say FAIL "a refused read passed"
-  elif grep -q "D1 not authorized" out.txt; then
+  elif grep -q "permission denied" out.txt; then
     say ok "a refused read reports what the database said"
   else
     say FAIL "$(cat out.txt)"
   fi
 
-  unset CF_D1_DATABASE
+  unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
 

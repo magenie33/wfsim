@@ -6,10 +6,9 @@
 // account sees what came in device by device, its own spans' hours alone; and no
 // answer carries a full device id or another account's name.
 //   node scripts/check_ledger.mjs
-import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
 import { contributionRoute } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
+import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -17,25 +16,13 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-const d1 = (file) => {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  db.exec(readFileSync(new URL(`../worker/${file}`, import.meta.url), "utf8"));
-  const stmt = (sql, args = []) => ({
-    bind: (...a) => stmt(sql, a),
-    first: async () => db.prepare(sql).get(...args) ?? null,
-    all: async () => ({ results: db.prepare(sql).all(...args) }),
-    run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
-  });
-  return { raw: db, prepare: (sql) => stmt(sql), batch: (stmts) => Promise.all(stmts.map((s) => s.all())) };
-};
-const accounts = d1("accounts.sql"), library = d1("schema.sql");
+const accounts = await testDb("accounts"), library = await testDb("library");
 const env = { ACCOUNTS: accounts, LIBRARY: library, AUTH_SECRET: "x" };
 const POINT = 1e9;
 
 const person = async (id, username, display) => {
-  accounts.raw.prepare("INSERT INTO accounts (id, created_at, username, display_name) VALUES (?, '2026-01-01', ?, ?)").run(id, username, display);
-  accounts.raw.prepare("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, '2999-01-01')").run(await sha256(`token-${id}`), id);
+  await accounts.run("INSERT INTO accounts (id, created_at, username, display_name) VALUES (?, '2026-01-01', ?, ?)", id, username, display);
+  await accounts.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, '2999-01-01')", await sha256(`token-${id}`), id);
   return `wfsim_session=token-${id}`;
 };
 const call = async (path, { cookie = "", body, method = body ? "POST" : "GET" } = {}) => {
@@ -47,24 +34,24 @@ const call = async (path, { cookie = "", body, method = body ? "POST" : "GET" } 
 
 const ann = await person("acct-ann", "annhandle", "Ann Example"), bob = await person("acct-bob", "bobhandle", "Bob Example");
 const D = "d".repeat(24), E = "e".repeat(24);
-for (const v of [D, E]) library.raw.prepare("INSERT INTO verifiers (id, seen, work) VALUES (?, '2026-01-01', 0)").run(v);
-const hour = (v, h, pts, tasks) => library.raw.prepare("INSERT INTO verifier_hours (verifier, hour, work, tasks) VALUES (?, ?, ?, ?)").run(v, h, pts * POINT, tasks);
+for (const v of [D, E]) await library.run("INSERT INTO verifiers (id, seen, work) VALUES (?, '2026-01-01', 0)", v);
+const hour = (v, h, pts, tasks) => library.run("INSERT INTO verifier_hours (verifier, hour, work, tasks) VALUES (?, ?, ?, ?)", v, h, pts * POINT, tasks);
 // D: Ann held it from its first hour until the 5th, Bob from then on, and Bob lists it now.
-hour(D, "2026-10-01T10", 4, 2); hour(D, "2026-10-04T10", 6, 3); hour(D, "2026-10-06T10", 10, 5);
-accounts.raw.prepare("INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acct-ann', '', '2026-10-05T00')").run(D);
-accounts.raw.prepare("INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acct-bob', '2026-10-05T00', NULL)").run(D);
-accounts.raw.prepare("INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?, 'acct-bob', '2026-10-05', 'Bob PC')").run(D);
+await hour(D, "2026-10-01T10", 4, 2); await hour(D, "2026-10-04T10", 6, 3); await hour(D, "2026-10-06T10", 10, 5);
+await accounts.run("INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acct-ann', '', '2026-10-05T00')", D);
+await accounts.run("INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acct-bob', '2026-10-05T00', NULL)", D);
+await accounts.run("INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?, 'acct-bob', '2026-10-05', 'Bob PC')", D);
 // E: nobody ever claimed it.
-hour(E, "2026-10-06T11", 7, 1);
+await hour(E, "2026-10-06T11", 7, 1);
 // D's results that earned nothing: one against an agreed fact, one still open, one set aside — and three that do not count.
-const q = (id, state) => library.raw.prepare("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', ?, '2026-12-01', '2026-10-01')").run(id, state);
-q("q-fact", "fact"); q("q-open", "open"); q("q-old", "fact");
-const answer = (question, at, { credited = 0, voided = 0, official = 0 } = {}) => library.raw.prepare(
+const q = (id, state) => library.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', ?, '2026-12-01', '2026-10-01')", id, state);
+await q("q-fact", "fact"); await q("q-open", "open"); await q("q-old", "fact");
+const answer = (question, at, { credited = 0, voided = 0, official = 0 } = {}) => library.run(
   `INSERT INTO answers (question, engine, device, owner, official, canon, result, work, at, credited, void)
-   VALUES (?, 'e', ?, ?, ?, '{}', '{}', 1, ?, ?, ?)`).run(question, D, D, official, at, credited, voided);
-answer("q-fact", "2026-10-06T10:00:00.000Z"); answer("q-open", "2026-10-06T10:01:00.000Z");
-answer("q-fact", "2026-10-06T10:02:00.000Z", { voided: 1 }); answer("q-fact", "2026-10-06T10:03:00.000Z", { credited: 1 });
-answer("q-fact", "2026-10-06T10:04:00.000Z", { official: 1 }); answer("q-old", "2026-09-01T10:00:00.000Z");
+   VALUES (?, 'e', ?, ?, ?, '{}', '{}', 1, ?, ?, ?)`, question, D, D, official, at, credited, voided);
+await answer("q-fact", "2026-10-06T10:00:00.000Z"); await answer("q-open", "2026-10-06T10:01:00.000Z");
+await answer("q-fact", "2026-10-06T10:02:00.000Z", { voided: 1 }); await answer("q-fact", "2026-10-06T10:03:00.000Z", { credited: 1 });
+await answer("q-fact", "2026-10-06T10:04:00.000Z", { official: 1 }); await answer("q-old", "2026-09-01T10:00:00.000Z");
 
 const ledger = (cookie, verifier, from = "2026-10-01T00") => call("/api/board/ledger", { cookie, body: { verifier, from } });
 const where = (l) => l.hours.map((h) => `${h.hour}:${h.holder}${h.closed ? "/closed" : ""}:${h.points}`).join(" ");

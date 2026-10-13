@@ -48,7 +48,7 @@ shows everywhere at once.
 
 | rule | where it is held |
 | --- | --- |
-| a new account is born `user_` and six random characters; every existing one was given one by `accounts-0003-usernames.sql` | `bornUsername`, `arrive` |
+| a new account is born `user_` and six random characters | `bornUsername`, `arrive` |
 | a username is 3–20 of `a-z`, `0-9`, `_`, typed in any case and kept lowercase, and unique | `USERNAME`, index `accounts_username` |
 | `user_` names and a reserved list are the system's; nobody picks one | `USERNAME_BORN`, `USERNAMES_RESERVED` |
 | the first change is at once; each later one waits a day after the last | `renameAfter`, `username_changed_at` |
@@ -90,14 +90,12 @@ in can have its own idea of what linking means.
 
 ## Where it lives
 
-`worker/accounts.js` behind the site's worker, `worker/accounts.sql` in its own
-D1 database, `wfsim-accounts` — apart from `wfsim` (docs/NAMING.md §8), because a
-point-in-time restore of one must not roll the other back, and because nothing
-personal may reach the public `library-backups` branch, which reads `wfsim`.
-D1 Time Travel is its backup: any minute of the last 30 days. While
-`DB_ACCOUNTS` says `pg` the same tables are Postgres's — `worker/pg/accounts.sql`
-in the database `wfsim_accounts` under its own role, apart from `wfsim` for the
-same two reasons (docs/BOARD.md §"Postgres").
+`worker/accounts.js` behind the site's worker, `worker/pg/accounts.sql` in its
+own Postgres database, `wfsim_accounts`, under its own role (binding
+`HYPERDRIVE_ACCOUNTS`, docs/BOARD.md §"Postgres") — apart from `wfsim`
+(docs/NAMING.md §8), because a point-in-time restore of one must not roll the
+other back, and because nothing personal may reach the public
+`library-backups` branch, which reads `wfsim`.
 
 ## On the page
 
@@ -239,5 +237,5 @@ What the owner does once, and what each gives:
 
 A way in whose secrets are absent is simply not offered.
 
-`scripts/check_accounts.mjs` runs these rules against the real schema in node's
-own SQLite: no network, no browser.
+`scripts/check_accounts.mjs` runs these rules against the real schema on PGlite
+(`scripts/pg/test_db.mjs`): no network, no browser.

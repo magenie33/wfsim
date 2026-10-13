@@ -1,15 +1,15 @@
 # THE LIBRARY IS THE ONLY IRREPLACEABLE THING HERE, AND IT HAD ONE COPY.
 #
 # The boards are derived from it, the site is generated, the code is in git —
-# the library is what players sent, and until this workflow it lived in exactly
-# one Cloudflare database plus whatever `submissions` artifact had not
+# the library is what players sent, and without this workflow it lives in
+# exactly one Postgres database plus whatever `submissions` artifact has not
 # expired yet.
 #
 # WHAT THIS IS NOT: it is not the tripwire. `guard_shrink` in
 # `scripts/fetch_library.sh` refuses to publish a board from a short list,
 # and that is the protection that works while nobody is watching — a backup
 # restores AFTER the damage. Both, because they fail differently: a tripwire
-# cannot help if Cloudflare loses the database, and a backup cannot help if
+# cannot help if the database server is lost, and a backup cannot help if
 # nobody notices for a month.
 #
 # TWO LAYERS, because they expire differently:
@@ -29,10 +29,10 @@
 # rather than silently: the arithmetic that justified committing a file nightly
 # is worth being right about.
 #
-# THE TOKEN HERE ONLY READS. Restoring needs a token with *D1: Edit*, which is
-# not a repo secret and is meant to be created for a restore and revoked after
-# — see `scripts/restore_library.sh`, which is the other half of this and the
-# reason this is a backup rather than a hope.
+# THIS JOB ONLY READS: the library, from Postgres through the tunnel
+# (`.github/actions/databases`). Writing it back is `scripts/restore_library.sh`,
+# which is the other half of this and the reason this is a backup rather than
+# a hope.
 name: backup
 
 on:
@@ -73,15 +73,15 @@ jobs:
       - name: is the board wired up?
         id: wired
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          PG_PIPELINE_URL: ${{ secrets.PG_PIPELINE_URL }}
         run: |
-          if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
+          if [ -n "$PG_PIPELINE_URL" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
       - name: the databases
+        if: steps.wired.outputs.yes == 'true'
         uses: ./.github/actions/databases
         with:
-          db_library: ${{ vars.DB_LIBRARY }}
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
@@ -91,14 +91,8 @@ jobs:
       # library, in order, every time, so the two paths cannot diverge.
       - name: read the whole library
         if: steps.wired.outputs.yes == 'true'
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
           bash scripts/fetch_library.sh library.json
 
       # THE SNAPSHOT CARRIES ITS KEYS. `library.json` is the values only —
@@ -172,7 +166,7 @@ jobs:
             echo
             echo "Written by .github/workflows/backup.yml and read by"
             echo "scripts/restore_library.sh, which puts it back. Nothing else should"
-            echo "depend on it: the live library is the Cloudflare database, and"
+            echo "depend on it: the live library is the Postgres database, and"
             echo "the board is generated from that."
             echo
             echo "It is sorted so git stores a night as a delta rather than as a file."

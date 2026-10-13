@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ONE STATEMENT TO THE DATABASES, for the shell scripts (scripts/db.sh): a D1
-// query-API body `{ sql, params }` on stdin, D1's answer on stdout — so a
-// script reads `.result[0].results` whichever database answered. Exit 1 on a
-// refusal, its errors in the answer. scripts/db.mjs says which database.
+// ONE STATEMENT TO THE DATABASES, for the shell scripts (scripts/db.sh): a body
+// `{ sql, params }` on stdin, the answer scripts/db.mjs gives on stdout, which a
+// script reads as `.result[0].results`. Exit 1 on a refusal, its errors in the
+// answer.
 //
 //   echo '{"sql":"SELECT count(*) AS n FROM builds"}' | node scripts/pgq.mjs [library|accounts]
 import { answer, close } from "./db.mjs";

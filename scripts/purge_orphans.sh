@@ -21,7 +21,7 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
 
-# Thirty-three rows a statement: three parameters each, and D1 binds at most a
+# Thirty-three rows a statement: three parameters each, at most a
 # hundred. BOUND, never interpolated. NO `batch` in the key: a row two groups
 # asked for is one debt, the same rule `ship_facts.sh` keeps.
 purge_statements() {
@@ -83,11 +83,11 @@ self_test() {
   local many
   many=$(for i in $(seq 1 100); do echo "{\"build_id\":\"b$i\",\"ruler\":\"r\",\"mode\":\"base\"}"; done \
     | purge_statements | jq -s 'map(.params | length) | max')
-  [ "$many" -le 100 ] && say ok "no statement binds more than D1's hundred parameters" || say FAIL "$many parameters"
+  [ "$many" -le 100 ] && say ok "no statement binds more than a hundred parameters" || say FAIL "$many parameters"
 
   # AN EMPTY LIST TOUCHES NOTHING, configured or not.
   local empty; empty=$(mktemp)
-  ( CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t purge "$empty" ) | grep -q "no orphaned rows" \
+  ( PG_URL=stub purge "$empty" ) | grep -q "no orphaned rows" \
     && say ok "an empty list sends nothing" \
     || say FAIL "an empty list was sent"
   rm -f "$empty"

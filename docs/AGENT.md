@@ -322,8 +322,8 @@ carrying six megabytes of wasm would start every page load colder.
 The door in is the site's worker (`worker/qq.js`): QQ calls back to
 `/api/qq`, the address check (op 13) is signed there, every event's Ed25519
 signature is checked against the AppSecret-derived key, and the messages the
-bot answers are kept in `bot_inbox` (`worker/schema.sql`). Nothing is sent from
-the worker. The bot server — the one address on QQ's whitelist — pulls those
+bot answers are kept in `bot_inbox` (`worker/pg/library.sql`). Nothing is sent
+from the worker. The bot server — the one address on QQ's whitelist — pulls those
 rows over `/api/qq/claim` (bearer `BOT_RELAY_TOKEN`), answers each from the
 headless table, and replies through QQ's API; a row is handed to one pull at a
 time, again if it was never marked done, and deleted a day after it arrived.

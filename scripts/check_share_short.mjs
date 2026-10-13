@@ -24,14 +24,14 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-// THE STORE, as much of D1 as the endpoint touches: `INSERT OR IGNORE` keeps
+// THE STORE, as much of the library as the endpoint touches: `ON CONFLICT DO NOTHING` keeps
 // the first row under a key, and `SELECT … WHERE id = ?` reads it.
 const shares = new Map();
 const LIBRARY = {
   prepare: (sql) => ({
     bind: (...a) => ({
       run: async () => {
-        if (/INSERT OR IGNORE INTO shares/.test(sql) && !shares.has(a[0])) {
+        if (/INSERT INTO shares .*ON CONFLICT DO NOTHING/.test(sql) && !shares.has(a[0])) {
           shares.set(a[0], { weapon: a[1], code: a[2], at: a[3], claim: a[4] ?? null });
         }
       },

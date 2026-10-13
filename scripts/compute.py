@@ -3,10 +3,9 @@
     python scripts/compute.py              # every day `verifier_hours` holds
     python scripts/compute.py --days 7
 
-Reads the fact factory's tables, read-only: from Postgres through
-`scripts/pgq.mjs` while PG_URL is set (docs/BOARD.md §"Postgres"), else from
-the live `wfsim` D1 database through `npx wrangler d1 execute --remote`, which
-needs the wrangler login the deploys use. docs/ANALYTICS.md §"Community compute".
+Reads the fact factory's tables, read-only, from the library's Postgres
+through `scripts/pgq.mjs`: PG_URL (docs/BOARD.md §"Postgres").
+docs/ANALYTICS.md §"Community compute".
 
 TOTALS ONLY. A device is a random id its browser made; this script reads ids to
 count them and prints none, and it never reads the accounts database.
@@ -20,26 +19,20 @@ import sys
 from collections import defaultdict
 from datetime import date, timedelta
 
-DATABASE = "wfsim"
 # A UTC HOUR's offset for the hour-of-day table: the readers are mostly UTC+8.
 SHOW_OFFSET = 8
 
 
-def d1(query):
-    if os.environ.get("PG_URL"):
-        here = os.path.dirname(os.path.abspath(__file__))
-        r = subprocess.run(["node", os.path.join(here, "pgq.mjs")], input=json.dumps({"sql": query}),
-                           capture_output=True, text=True, encoding="utf-8")
-        try:
-            return json.loads(r.stdout)["result"][0]["results"]
-        except (ValueError, IndexError, KeyError):
-            sys.exit(f"compute.py: postgres failed\n{r.stdout[-400:]}{r.stderr[-400:]}")
-    r = subprocess.run(f'npx wrangler d1 execute {DATABASE} --remote --json --command "{query}"',
-                       shell=True, capture_output=True, text=True, encoding="utf-8")
+def db(query):
+    if not os.environ.get("PG_URL"):
+        sys.exit('compute.py: PG_URL is not set — the library\'s Postgres, docs/BOARD.md §"Postgres"')
+    here = os.path.dirname(os.path.abspath(__file__))
+    r = subprocess.run(["node", os.path.join(here, "pgq.mjs")], input=json.dumps({"sql": query}),
+                       capture_output=True, text=True, encoding="utf-8")
     try:
-        return json.loads(r.stdout)[0]["results"]
+        return json.loads(r.stdout)["result"][0]["results"]
     except (ValueError, IndexError, KeyError):
-        sys.exit(f"compute.py: wrangler failed\n{r.stdout[-400:]}{r.stderr[-400:]}")
+        sys.exit(f"compute.py: postgres failed\n{r.stdout[-400:]}{r.stderr[-400:]}")
 
 
 def quantile(xs, q):
@@ -68,7 +61,7 @@ def main():
     # `ms` their fights' time on its machine, `work` what facts credited it. A
     # device COMPUTED in an hour only if it sent tasks: work alone is credit for
     # results it sent earlier, and the totals carried in from before hours were kept.
-    rows = d1(f"SELECT verifier v, hour h, tasks t, ms, work w FROM verifier_hours WHERE hour >= '{since}'")
+    rows = db(f"SELECT verifier v, hour h, tasks t, ms, work w FROM verifier_hours WHERE hour >= '{since}'")
     if not rows:
         print("no compute in the window")
         return
@@ -141,7 +134,7 @@ def main():
     print("  " + "  ".join(f"{h:02}:{mean(h)}" for h in range(12, 24)))
 
     # WHO SAID YES, by the day of the statement they agreed to last.
-    agreed = d1(f"SELECT substr(consent_at, 1, 10) d, COUNT(*) n FROM verifiers "
+    agreed = db(f"SELECT substr(consent_at, 1, 10) d, COUNT(*) n FROM verifiers "
                 f"WHERE consent_at >= '{since}' GROUP BY d ORDER BY d")
     print("\nconsents by day: " + ", ".join(f"{r['d']} {r['n']}" for r in agreed))
 
