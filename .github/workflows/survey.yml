@@ -19,11 +19,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SHARDS: 4
-  # A shard's share of a run: a runner freezes ~17 a minute on six lanes, so
-  # an hour, inside its timeout.
-  PER_SHARD: 1000
-  LANES: 6
+  # A run's share of the backlog. Most codes are written into a template and
+  # take a request each; a weapon whose check differs goes to clean pages, a
+  # few seconds each, and what is left waits for the next hour.
+  MAX_CODES: 20000
+  LANES: 4
 
 jobs:
   codes:
@@ -51,8 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           export CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[] | select(.binding == "LIBRARY") | .database_id')
-          n=$((SHARDS * PER_SHARD))
-          echo "{\"sql\":\"SELECT code FROM appraisals WHERE channel = 'survey' AND request IS NULL ORDER BY code LIMIT $n\"}" \
+          echo "{\"sql\":\"SELECT code FROM appraisals WHERE channel = 'survey' AND request IS NULL ORDER BY code LIMIT $MAX_CODES\"}" \
             | node scripts/pgq.mjs | jq -er '.result[0].results[].code' > codes.txt || true
           count=$(grep -c . codes.txt || true)
           echo "count=$count" >> "$GITHUB_OUTPUT"
@@ -68,10 +67,6 @@ jobs:
     if: needs.codes.outputs.count != '0'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -80,12 +75,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: codes
-      - name: freeze this shard's slice
+      - name: freeze them
         env:
           BOT_RELAY_TOKEN: ${{ secrets.BOT_RELAY_TOKEN }}
         run: |
           set -euo pipefail
           [ -n "$BOT_RELAY_TOKEN" ] || { echo "::error::BOT_RELAY_TOKEN is not set"; exit 1; }
-          awk -v s=${{ matrix.shard }} -v k="$SHARDS" '(NR - 1) % k == s' codes.txt > mine.txt
-          [ -s mine.txt ] || exit 0
-          node scripts/riven_freeze.mjs mine.txt "$LANES" | tail -n 20 | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/riven_freeze.mjs codes.txt "$LANES" | tee freeze.log
+          grep -v '^[0-9]*/[0-9]* ok' freeze.log | tail -n 40 >> "$GITHUB_STEP_SUMMARY"
