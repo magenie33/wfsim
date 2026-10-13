@@ -71,3 +71,17 @@ fn a_magazine_mod_does_not_move_an_ordinary_charge_weapon() {
     assert_eq!(a.charge_seconds, b.charge_seconds);
     assert!((a.damage.total() - b.damage.total()).abs() < 1e-9);
 }
+
+/// AN EPITAPH NEVER RELOADS, in either form (M114): a shot draws from the
+/// reserve, so the charged cycle is the draw plus the listed rate's interval
+/// and the arsenal's 0.6 s reload is never paid.
+#[test]
+fn an_epitaph_has_no_magazine_and_pays_draw_then_rate() {
+    for id in ["epitaph", "epitaph_uncharged", "epitaph_prime", "epitaph_prime_uncharged"] {
+        let p = resolve(&WeaponBase::from_data(id, true, &[]), &[], StackPolicy::Emergent);
+        assert!(p.no_magazine, "{id} reloads after every shot");
+    }
+    let p = resolve(&WeaponBase::from_data("epitaph", true, &[]), &[], StackPolicy::Emergent);
+    assert_eq!(p.charge_cadence, crate::model::ChargeCadence::DrawThenRate);
+    assert!((p.charge_seconds.expect("a draw") - 0.36).abs() < 1e-9);
+}

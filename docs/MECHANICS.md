@@ -2664,6 +2664,8 @@ A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
 word rather than a measurement — **MEASUREMENTS M16**. A non-bow charge weapon
 (Tombfinger's primary) takes the second formula, `1 / (Modded Charge Time + 1 /
 Modded Fire Rate)` — `data::weapons::ChargeCadence::DrawThenRate`.
+Epitaph is on the wiki's exception list for its RELOAD, not its draw: it takes
+this second formula and never reloads (`no_magazine`, **MEASUREMENTS M114**).
 
 ### Fire rate that MOVES while the trigger is held — the spool
 

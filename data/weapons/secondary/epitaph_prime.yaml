@@ -26,6 +26,8 @@ ammo_type: secondary
 ammo_max: 40
 ammo_pickup: 20
 magazine: 1
+# THE ARSENAL PRINTS 0.6 s AND NOTHING READS IT: the weapon never reloads
+# (`attack.no_magazine`, M114). Kept so the panel shows the arsenal's line.
 reload_seconds: 0.6
 
 # CARRIED FROM `epitaph` — see notes: co_carried_from_the_family
@@ -36,6 +38,12 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.5
+  # NO CLIP AND NO RELOAD: a shot draws straight from the reserve, so a charged
+  # shot is the draw plus the listed rate's interval and nothing after it.
+  # Owner-measured (M114); the wiki says it too — "No magazine; does not need
+  # to reload", "Epitaph's displayed 0.6s reload time has no purpose". Drop the
+  # flag and every shot pays 0.6 s more and fires every on-reload effect.
+  no_magazine: true
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 300

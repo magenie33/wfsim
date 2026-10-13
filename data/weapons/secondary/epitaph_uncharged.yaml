@@ -21,6 +21,8 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.5
+  # NO CLIP AND NO RELOAD, as on the charged shot — the weapon's, not the form's (M114).
+  no_magazine: true
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 50

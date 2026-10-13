@@ -64,6 +64,7 @@ attack:
   projectile_speed_mps: 250
   # The page prints "inf attacks/sec": the draw IS the cadence here, so the
   # listed rate says nothing and `charge_seconds` is what paces it.
+  # UNMEASURED: the engine still adds 1 / rate as for any sniper — MEASUREMENTS queue, Lanka.
   fire_rate: 1.0
   multishot: 1.0
   ammo_cost: 1

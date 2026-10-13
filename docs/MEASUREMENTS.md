@@ -83,6 +83,7 @@ is only the order to measure them in.
 | **Keratinos's own heavy** (`keratinos_heavy`) | The page's 6x spin then 5x lunge against the stance module's 9x first heavy and the infobox's 7x: count the spin's hits and read them unmodded at 1x combo. |
 | **Zenistar's slide** (`zenistar_slide`) | 596 (the 26.0 patch note, 2x like every Heavy Blade) against the module's 260: one unmodded slide attack on a dummy. |
 | **A module-built melee weapon's slide and heavy slam timing** | The slide is timed by its CLASS block's `Duration` and the heavy slam by a 2.0 s stand-in recovery; time ten of each back to back on any one weapon per class. |
+| **Lanka** (`lanka`, `lanka_uncharged`) | **Whether the listed rate adds to the draw.** wiki `Fire Rate` excludes the Lanka from `1 / (Charge Time + 1 / Fire Rate)` and its page prints "inf attacks/sec", but as a sniper the engine takes that formula: 1.0 + 1/1.0 = 2.0 s a full-charge shot, where the draw alone is 1.0 s. Fire it unmodded at full charge, back to back, and time ten shots (2.0 or 1.0 s each; the 10-round magazine reloads in between). A 1.0 s answer needs the yamls' dead `charge_cadence:` field made real. |
 
 ---
 
@@ -209,6 +210,7 @@ path, so an entry may be renamed but never renumbered.
 | [M111](measurements/M111-dual-toxocyst-neurotoxin-and-ricochet-heads.md) | Neurotoxin adds 70% Toxin in Frenzy's and the mods' one Toxin bracket, and a Dual Toxocyst ricochet finds a head 20% of the time | ✅ 2026-10-09 (owner) |
 | [M112](measurements/M112-arbucep-volley-costs-six-rounds.md) | an Arbucep pull spends six rounds, one a missile: the 36 magazine empties in six volleys | ✅ 2026-10-12 (owner) |
 | [M113](measurements/M113-arbucep-multishot-is-a-fixed-factor-that-reaches-dots.md) | Arbucep multishot is a fixed damage factor (effective multishot over six, never rolled) on the hit and the explosion, and it reaches the DoT seed (720 explosion, ~360 Gas tick at +110%) | ✅ 2026-10-12 (owner) |
+| [M114](measurements/M114-epitaph-never-reloads.md) | Epitaph and Epitaph Prime never reload, charged or uncharged: a full-charge shot is the draw plus 1/fire rate (1.027 s, Prime 0.931 s unmodded), and the arsenal's 0.6 s reload is never paid | ✅ 2026-10-13 (owner) |
 
 ## By weapon
 
@@ -233,6 +235,8 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Coda Catabolyst | `coda_catabolyst` | [M107](measurements/M107-critical-mutation-is-a-global-buff.md) |
 | Cryotra | `cryotra` | [M47](measurements/M47-body-radius-on-the-floor.md) |
 | Dual Toxocyst | `dual_toxocyst` | [M9](measurements/M09-incarnon-transition-timings.md) · [M49](measurements/M49-dual-toxocyst-co-and-carnage-reign.md) · [M111](measurements/M111-dual-toxocyst-neurotoxin-and-ricochet-heads.md) |
+| Epitaph | `epitaph` | [M114](measurements/M114-epitaph-never-reloads.md) |
+| Epitaph Prime | `epitaph_prime` | [M114](measurements/M114-epitaph-never-reloads.md) |
 | Felarx | `felarx` | [M36](measurements/M36-felarx-incarnon-and-gun-co.md) · [M37](measurements/M37-debilitate-dot-attrition-bug.md) |
 | Furis | `furis` | [M35](measurements/M35-riven-stat-pools-counted.md) · [M101](measurements/M101-furis-co-reads-its-own-base-under-haven-foray.md) |
 | Gotva Prime | `gotva_prime` | [M30](measurements/M30-stat-lock-mod-bucket.md) |
