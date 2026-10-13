@@ -4,12 +4,14 @@
 
     python scripts/riven_survey.py ocucor burston_prime   # these weapons
     python scripts/riven_survey.py --popular 10           # the 10 most tested not yet surveyed
+    python scripts/riven_survey.py torid --bonus toxin,multishot,critical_chance --malus none,status_duration@1.1
     python scripts/riven_survey.py ... --dry              # say what it would open, touch nothing
 
-Every shape of each weapon's riven (engine `riven_shapes`) is opened as a
-`survey` appraisal, then frozen by a clean page (`scripts/riven_freeze.mjs`),
-which hands it to the factory. Running it again is safe: a weapon already
-surveyed opens nothing, and only its unfrozen shapes are frozen.
+Every shape of each weapon's riven (engine `riven_shapes`, which `--bonus` and
+`--malus` narrow) is opened as a `survey` appraisal, then frozen by a clean page
+(`scripts/riven_freeze.mjs`), which hands it to the factory. Running it again
+is safe: a weapon opens only the shapes it lacks, and only its unfrozen shapes
+are frozen.
 
 The library is reached over ssh to its server, as `private/hetzner/ssh.env`
 names it (SSH_TARGET, SSH_KEY, SSH_KNOWN_HOSTS).
@@ -75,9 +77,9 @@ def prefix(weapon):
     return "S" + base36(int(hashlib.sha1(weapon.encode()).hexdigest(), 16), 3)
 
 
-def shapes(weapons):
+def shapes(weapons, choice=()):
     """{weapon: line} for every weapon the engine can survey; the rest are said and skipped."""
-    r = subprocess.run(["cargo", "run", "--quiet", "--release", "--bin", "riven_shapes", "--", *weapons],
+    r = subprocess.run(["cargo", "run", "--quiet", "--release", "--bin", "riven_shapes", "--", *weapons, *choice],
                        cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     for line in r.stderr.splitlines():
         if ": " in line and not line.startswith(("warning", "error")):
@@ -87,6 +89,12 @@ def shapes(weapons):
         d = json.loads(line)
         out[d["weapon"]] = d
     return out
+
+
+def card_key(card):
+    bonuses = sorted((b["id"], b["roll"]) for b in card["bonuses"])
+    m = card.get("malus")
+    return (tuple(bonuses), m and (m["id"], m["roll"]), card.get("rank"))
 
 
 def popular(n, surveyed):
@@ -105,21 +113,22 @@ def main():
     ap.add_argument("--popular", type=int, default=0)
     ap.add_argument("--lanes", type=int, default=12)
     ap.add_argument("--dry", action="store_true")
+    # WHICH STATS: passed to the engine as they are (engine `riven_shapes`).
+    ap.add_argument("--bonus", help="only these bonuses, comma-separated ids")
+    ap.add_argument("--malus", help="each combination's maluses: none, harmless, <id> or <id>@<roll>")
     a = ap.parse_args()
+    choice = [f"--{k}={v}" for k, v in (("bonus", a.bonus), ("malus", a.malus)) if v]
 
     counts = {w: int(n) for w, n in psql(f"SELECT weapon, count(*) FROM appraisals WHERE channel = '{CHANNEL}' GROUP BY weapon")}
     if a.popular:
         weapons, found = popular(a.popular, counts)
     else:
-        weapons, found = a.weapons, shapes(a.weapons)
+        weapons, found = a.weapons, shapes(a.weapons, choice)
     if not weapons:
         sys.exit("no weapon to survey")
 
     now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     for w in weapons:
-        if w in counts:
-            print(f"{w}: surveyed already ({counts[w]} shapes)")
-            continue
         d = found.get(w)
         if not d:
             continue
@@ -127,13 +136,21 @@ def main():
         clash = psql(f"SELECT DISTINCT weapon FROM appraisals WHERE code LIKE '{p}%' AND weapon <> {sql_text(w)}")
         if clash:
             sys.exit(f"{w}: code prefix {p} is {clash[0][0]}'s")
-        print(f"{w}: {d['class']}, {len(d['stats'])} stats, malus {d['malus']}, {len(d['shapes'])} shapes, codes {p}xxxx")
-        if a.dry:
+        # A WEAPON SURVEYED ALREADY IS ASKED ONLY THE SHAPES IT LACKS, numbered
+        # after its last code. A shape is its card IN ANY BONUS ORDER: cards opened
+        # earlier list the same bonuses in another order.
+        held = psql(f"SELECT code, riven FROM appraisals WHERE channel = '{CHANNEL}' AND weapon = {sql_text(w)}")
+        have = {card_key(json.loads(r)) for _, r in held}
+        start = 1 + max((int(c[len(p):], 36) for c, _ in held if c.startswith(p)), default=-1)
+        new = [json.dumps(s, separators=(",", ":")) for s in d["shapes"] if card_key(s) not in have]
+        print(f"{w}: {d['class']}, {len(d['stats'])} stats, malus {d['malus']}, {len(d['shapes'])} shapes, "
+              f"{len(new)} new, codes {p}xxxx")
+        if a.dry or not new:
             continue
         rows = ",\n".join(
-            f"({sql_text(p + base36(i, 4))}, '{CHANNEL}', '{{}}', '{ASKER}', '', {sql_text(w)}, '{RULER}', "
-            f"{sql_text(json.dumps(s, separators=(',', ':')))}, '{now}')"
-            for i, s in enumerate(d["shapes"]))
+            f"({sql_text(p + base36(start + i, 4))}, '{CHANNEL}', '{{}}', '{ASKER}', '', {sql_text(w)}, '{RULER}', "
+            f"{sql_text(t)}, '{now}')"
+            for i, t in enumerate(new))
         psql(None, stdin="INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at) VALUES\n"
              + rows + "\nON CONFLICT (code) DO NOTHING;\n")
 

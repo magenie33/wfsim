@@ -387,9 +387,11 @@ question (docs/BOARD.md §"The Riven Analyst").
    the owner opens in bulk, channel `survey`, kept a week — due in a day.
    A survey is one command, `python scripts/riven_survey.py <weapons>` (or
    `--popular N`): the shapes are the engine's (`riven_shapes`: two or three
-   bonuses at 1.1, one spliced at most, each with no malus and with a harmless
-   one at 0.9), opened once, then frozen by clean pages
-   (`scripts/riven_freeze.mjs`). Run again, it freezes only what is left.
+   bonuses at 1.1, one spliced at most, each with no malus, with a harmless
+   one at 0.9 and with status duration at 0.9 and at 1.1; `--bonus` and
+   `--malus` choose others), then frozen by clean pages
+   (`scripts/riven_freeze.mjs`). Run again, it opens only the shapes a weapon
+   lacks and freezes only what is left.
    `/api/board/work` hands it out on the served engine only, and its page runs
    the request through a search of its own (`quickFleet`, the reader's
    optimizer untouched) and sends the build under its lease with the search's
