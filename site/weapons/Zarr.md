@@ -4,7 +4,7 @@ Chinese name: 沙皇
 
 Launcher · Primary · Mastery Rank 7. 25 base damage (impact 25), 17% crit chance, 2.5x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 3.2142 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-11 08:32 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 12.0616 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-11 08:31 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.3977 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-11 08:30 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 1.4591 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-08 19:59 UTC · 531aca13c9 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 1.4591 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-12 09:29 UTC |
 
 ## Not modelled here
 

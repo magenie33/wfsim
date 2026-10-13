@@ -4,7 +4,7 @@ Chinese name: 视使之触
 
 Pistol · Secondary · Mastery Rank 8. 11 base damage (puncture 1, radiation 10), 16% crit chance, 1.8x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.3559 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-11 05:35 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 37.4877 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Magnetic Might, Sentient Surge, Secondary Irradiate | 2026-10-11 06:47 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.3559 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Secondary Fortifier | 2026-10-12 13:24 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 42.4780 | Primed Heated Charge, Scorch, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Pistol Elementalist, Magnetic Might, Sentient Surge, Eject Magazine, Secondary Irradiate | 2026-10-12 13:17 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.8729 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Sentient Surge, Cascadia Flare | 2026-10-11 05:32 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.3376 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Lethal Torrent, Anemic Agility, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-09 02:17 UTC · d90905f83b |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.3376 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Lethal Torrent, Anemic Agility, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-12 10:20 UTC |
 
 ## In WFSim
 

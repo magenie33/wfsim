@@ -4,7 +4,7 @@ Chinese name: 圣洁·猛虎
 
 Shotgun · Primary · Mastery Rank 12. 210 base damage x6 multishot (impact 21, puncture 21, slash 168), 15% crit chance, 1.5x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

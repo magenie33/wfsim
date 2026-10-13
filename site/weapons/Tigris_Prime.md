@@ -4,7 +4,7 @@ Chinese name: 猛虎 Prime
 
 Shotgun · Primary · Mastery Rank 13. 195 base damage x8 multishot (impact 19.5, puncture 19.5, slash 156), 10% crit chance, 2x crit multiplier, 11.25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

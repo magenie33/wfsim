@@ -4,7 +4,7 @@ Chinese name: 孢射
 
 Pistol · Secondary · Mastery Rank 0. 0 base damage (), 21% crit chance, 3x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -14,7 +14,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.0543 | Deep Freeze, Pathogen Rounds, Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 02:51 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.8141 | Deep Freeze, Pathogen Rounds, Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 02:50 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6702 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Lethal Torrent, Pax Charge, Cascadia Overcharge | 2026-10-11 05:33 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6828 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Lethal Torrent, Pax Charge, Secondary Merciless | 2026-10-12 14:01 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.2121 | Deep Freeze, Pathogen Rounds, Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 02:51 UTC |
 
 ## Not modelled here

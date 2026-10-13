@@ -4,7 +4,7 @@ Chinese name: 赤毒·布拉玛
 
 Bow · Primary · Mastery Rank 15. 187 base damage (impact 187), 35% crit chance, 2.1x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 9.4757 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primed Firestorm, Critical Delay, Vigilante Supplies, Vile Acceleration, Vital Sense, Ammo Drum, Primary Compression | 2026-10-11 05:33 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.1220 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primed Firestorm, Critical Delay, Vigilante Supplies, Vile Acceleration, Vital Sense, Ammo Drum, Primary Compression | 2026-10-11 07:09 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.7042 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primed Firestorm, Critical Delay, Vigilante Supplies, Vile Acceleration, Vital Sense, Ammo Drum, Primary Compression | 2026-10-11 15:28 UTC · a5018fcb4e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 6.9375 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primed Firestorm, Critical Delay, Vigilante Supplies, Vile Acceleration, Vital Sense, Ammo Drum, Primary Compression | 2026-10-09 00:02 UTC · 7cbf9a5d27 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 6.9375 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primed Firestorm, Critical Delay, Vigilante Supplies, Vile Acceleration, Vital Sense, Ammo Drum, Primary Compression | 2026-10-12 10:13 UTC |
 
 ## Not modelled here
 

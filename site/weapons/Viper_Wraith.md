@@ -4,7 +4,7 @@ Chinese name: 蝰蛇·亡魂
 
 Pistol · Secondary · Mastery Rank 4. 18 base damage (impact 14.4, puncture 1.8, slash 1.8), 19% crit chance, 2x crit multiplier, 9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

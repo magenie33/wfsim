@@ -4,7 +4,7 @@ Chinese name: 刺吸西诺斯
 
 Bow · Primary · Mastery Rank 15. 279 base damage (impact 103.23, puncture 30.69, slash 145.08), 7% crit chance, 1.9x crit multiplier, 43% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.2348 | Primed Cryo Rounds, Amalgam Serration, Heavy Caliber, Primary Acuity, Primed Shred, Internal Bleeding, Galvanized Aptitude, Vital Sense, Primary Compression | 2026-10-11 20:25 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.2348 | Primed Cryo Rounds, Amalgam Serration, Heavy Caliber, Primary Acuity, Primed Shred, Internal Bleeding, Galvanized Aptitude, Vital Sense, Primary Compression | 2026-10-11 08:36 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.08653 | Primed Cryo Rounds, Amalgam Serration, Heavy Caliber, Primary Acuity, Primed Shred, Internal Bleeding, Galvanized Aptitude, Vital Sense, Primary Compression | 2026-10-11 08:36 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.4830 | Primed Cryo Rounds, Amalgam Serration, Heavy Caliber, Primary Acuity, Primed Shred, Internal Bleeding, Galvanized Aptitude, Vital Sense, Primary Compression | 2026-10-09 09:09 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6009 | High Voltage, Malignant Force, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Serration, Speed Trigger, Vile Acceleration, Vigilante Supplies, Primary Compression | 2026-10-12 14:00 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6009 | High Voltage, Malignant Force, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Serration, Speed Trigger, Vile Acceleration, Vigilante Supplies, Primary Compression | 2026-10-12 14:02 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4008 | High Voltage, Malignant Force, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Serration, Speed Trigger, Vile Acceleration, Vigilante Supplies, Primary Compression | 2026-10-12 14:00 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.0695 | High Voltage, Malignant Force, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Serration, Speed Trigger, Vile Acceleration, Vigilante Supplies, Primary Compression | 2026-10-12 14:02 UTC |
 
 ## Not modelled here
 

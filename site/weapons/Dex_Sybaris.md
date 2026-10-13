@@ -4,7 +4,7 @@ Chinese name: Dex 席芭莉丝
 
 Rifle · Primary · Mastery Rank 7. 75 base damage (impact 22.5, puncture 18.75, slash 33.75), 35% crit chance, 2x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 9.2711 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-10 18:13 UTC · 22610331fe |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 13.0578 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-10 17:55 UTC · 22610331fe |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 0.4378 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-11 08:16 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.4774 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-11 08:17 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 2.0303 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-12 10:10 UTC |
 
 ## In WFSim
 

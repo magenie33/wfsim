@@ -4,7 +4,7 @@ Chinese name: 净化者 1
 
 Launcher · Primary · Mastery Rank 14. 781 base damage (impact 351.45, puncture 429.55), 31% crit chance, 2.3x crit multiplier, 19% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.4020 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 05:26 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 26.5917 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 06:39 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.7981 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 05:26 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.3412 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-09 06:59 UTC · d967af4e04 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.3412 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-12 10:46 UTC |
 
 ## Not modelled here
 

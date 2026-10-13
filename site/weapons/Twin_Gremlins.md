@@ -4,7 +4,7 @@ Chinese name: 双子小精灵
 
 Dual Pistols · Secondary · Mastery Rank 5. 36.99 base damage (impact 12.33, puncture 12.33, slash 12.33), 15% crit chance, 1.5x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-12
+## Best riven-free build on the WFSim board, as of 2026-10-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
