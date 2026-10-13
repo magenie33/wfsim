@@ -28,10 +28,12 @@ export function estimate(s, ratio = 1) {
   return Math.ceil((cjk * 0.6 + (str.length - cjk) * 0.3) * 1.1 * ratio);
 }
 
-/// The next ratio, from what a provider billed against what was guessed.
+/// The next ratio, from what a provider billed against what was guessed. A
+/// sample is held to [0.5, 4]: a proxy that misreports usage once is not a
+/// tokenizer, and the ratio outlives the conversation in which it was billed.
 export function calibrate(prev, estimated, billed) {
   if (!estimated || !billed) return prev || 1;
-  const r = billed / (estimated / (prev || 1));
+  const r = Math.min(4, Math.max(0.5, billed / (estimated / (prev || 1))));
   return prev ? prev * 0.7 + r * 0.3 : r;
 }
 

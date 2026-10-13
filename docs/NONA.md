@@ -215,8 +215,11 @@ Anything that has left the request is still in the record, and
   million-token window is still sent a small request.
 
 The input one request may hold is **W = min(X − O − margin, B)**, where O is
-the output reserved for the reply. A model whose W cannot hold the fixed zones
-below is refused, with that reason, rather than run badly.
+the output reserved for the reply. Only X refuses: a model whose window cannot
+hold the fixed zones below is refused, with that reason, rather than run badly.
+B gives way instead — where the model's token correction leaves it no room for
+a turn, W rises to that room, never past X. A refused model sends nothing, so a
+correction that refused it could never be corrected back.
 
 ### The zones
 

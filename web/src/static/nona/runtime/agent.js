@@ -246,7 +246,7 @@ export function createAgent(door) {
     const asked = s.conv.messages.length;
     s.busy = true; s.abort = new AbortController(); emit({ type: "busy" });
     const signal = s.abort.signal;
-    let retried = false, nudged = false;
+    let retried = false, retrying = false, nudged = false;
     const seen = [];
     try {
       // M IS TAKEN when the conversation starts — tidied first if it has grown
@@ -267,10 +267,14 @@ export function createAgent(door) {
           emit({ type: "stream", text: null });
           // TOO LONG FOR THE ADDRESS: its window is smaller than it said or than
           // the estimate thinks; plan against a third less, once.
-          if (!retried && transport.tooLong(e)) { retried = true; s.shrink *= 1.5; step--; continue; }
+          if (!retried && transport.tooLong(e)) { retried = retrying = true; s.shrink *= 1.5; step--; continue; }
+          // A third less did not help, so the window was not the cause: kept,
+          // the shrink would compound with every ask until the model is refused.
+          if (retrying && transport.tooLong(e)) s.shrink /= 1.5;
           throw e;
         }
         emit({ type: "stream", text: null });
+        retrying = false;
         if (out.usage) {
           store.saveRatio(cfg.model, budget.calibrate(store.ratio(cfg.model), est, out.usage.input));
           const cost = budget.cost(cfg.price, out.usage);

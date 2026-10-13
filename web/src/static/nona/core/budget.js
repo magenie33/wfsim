@@ -105,7 +105,13 @@ export function plan(record, fixed, { context, budget, ratio = 1 } = {}) {
       }
     }
   }
-  const c = caps({ ...z, K }, Math.floor(room({ context, budget }) / (ratio || 1)));
+  // ONLY THE WINDOW REFUSES. B is a cost policy: where the estimate's
+  // correction leaves it no working room it gives way, up to the window — a
+  // refused model sends nothing, so its correction could never come back down.
+  const r = ratio || 1;
+  const hard = Math.floor(room({ context, budget: Infinity }) / r);
+  const floor = z.S + z.T + z.M + K + CAPS.P + CAPS.summary + 500;
+  const c = caps({ ...z, K }, Math.min(hard, Math.max(Math.floor((budget || BUDGET) / r), floor)));
   out.caps = c;
   out.refuse = c.refuse;
   if (c.refuse) return out;

@@ -185,6 +185,9 @@ check("a summary is cut to its cap whatever the model wrote", estimate(summed.su
 check("what is sent starts from the summary", view(summed, FIXED).turns[0].text.startsWith("<summary of the conversation so far>"));
 check("a window too small for the fixed zones is refused, not run badly",
   budget.plan(brief, FIXED, { context: 9000 }).refuse === true && budget.plan(brief, FIXED).refuse === false);
+check("a tokenizer heavier than the estimate is never refused while its window holds the request, and B gives way",
+  [2.5, 4].every((ratio) => { const p = budget.plan(brief, FIXED, { ratio }); return !p.refuse && p.caps.W > budget.room() / ratio; })
+    && budget.plan(brief, FIXED, { ratio: 4, context: 16000 }).refuse === true);
 
 // FOR EVER: a seeded conversation of hundreds of turns, every size random, the
 // maintenance run before every request. After it, every zone is under its cap
@@ -239,6 +242,8 @@ check("a clipped text fits its cap and says how much is missing",
   estimate(clip("x".repeat(50000), 500)) <= 500 && /cut: \d+ more characters/.test(clip("x".repeat(50000), 500)));
 check("calibration moves toward what the provider billed",
   budget.calibrate(1, 1000, 2000) > 1 && budget.calibrate(1, 1000, 500) < 1);
+check("one misreported usage moves the ratio a bounded step, not to where the model is refused",
+  budget.calibrate(1, 1000, 100000) <= 0.7 + 4 * 0.3 + 1e-9);
 check("a reply's cost counts cached input at a tenth",
   Math.abs(budget.cost([1, 2], { input: 1000, cached: 1000, output: 0 }) - 0.0001) < 1e-12);
 
