@@ -26,6 +26,9 @@
   // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
   // Postgres in Germany, and every round trip an ocean away held locks longer.
   "placement": { "mode": "smart" },
+  // WORKERS LOGS: without them a cron that throws leaves only its status, never
+  // the exception, and its cause can only be guessed.
+  "observability": { "enabled": true },
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",
