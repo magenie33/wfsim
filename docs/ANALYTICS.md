@@ -105,7 +105,7 @@ with this thing, not how many times: forty edits to one build are one build.
 | `nona.open` | Nona's panel was opened | — | 1 with a key set, 0 without |
 | `nona.ask` | a reader message was sent to her — never its text | — | which reader message of this conversation it is |
 | `nona.concise` | concise mode was switched in her settings | — | 1 on, 0 off |
-| `road.probe` | once a day per browser, 15 s past boot, `board.meta.json` was fetched by each road in turn (docs/DISTRIBUTION.md §"The relay") | `direct_ok`, `direct_failed`, `relay_ok`, `relay_failed` | ms the fetch took, or until it failed |
+| `road.probe` | once a day per browser, 15 s past boot, `board.meta.json` was fetched by each road in turn — direct from `cdn.wfsim.app`, where the page reads it (docs/DISTRIBUTION.md §"The relay") | `direct_ok`, `direct_failed`, `relay_ok`, `relay_failed` | ms the fetch took, or until it failed |
 
 An `engine.fail` from a visitor with no `app.boot` is a reader the site lost
 before it could do anything — the one failure the edge cannot see.

@@ -258,7 +258,8 @@ stores nothing and decides nothing.
   asks it carried, `relay_failed` and `direct_failed` the asks each road dropped
   before the other was tried. Whether PUBLIC READS should take it too is read
   from `road.probe` (docs/ANALYTICS.md), each road timed on one public file once
-  a day per browser, by country: `python scripts/usage.py`.
+  a day per browser, by country: `python scripts/usage.py`. Direct is the road
+  the page reads the board by, `cdn.wfsim.app`.
 - **It keeps no access log**, so a reader's address passes through it and is
   written nowhere.
 - **The server** is `private/hk/` (ssh key, host keys, the secret); its nginx
@@ -284,7 +285,7 @@ replaces itself and a shell does not, so a shell that predates a capability goes
 on predating it for as long as its reader never downloads again — and it keeps
 receiving releases the whole time. A release that begins depending on one has to
 degrade to the site for the shells without it: `fetchJson` and
-`loadWeaponBoard` ask this origin and then `wfsim.app`, which is why
+`loadWeaponBoard` ask this origin and then `cdn.wfsim.app`, which is why
 `board.meta.json` not answering is read as "this origin holds no board" rather
 than as a failure.
 

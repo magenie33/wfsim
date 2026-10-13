@@ -174,7 +174,7 @@ back fails CI rather than being discovered in a published number.
 | what | where | who runs it |
 | --- | --- | --- |
 | the ruler | `data/benchmarks/*.yaml` | — |
-| the board the site reads | R2 `board/live/`, served at `/board/<weapon>.json` | `scripts/live_board.sh`, the moment `scores` moves |
+| the board the site reads | R2 bucket `wfsim-public`, served at `cdn.wfsim.app/board/<weapon>.json` | `scripts/live_board.sh`, the moment `scores` moves |
 | the board's daily snapshot | `site/board/<weapon>.json` | `publish.yml`, committed, read by people |
 | ranked across weapons | `site/board/index.json` | derived from the files beside it |
 | which board this is | `site/board.meta.json` | a digest per published file |
@@ -593,11 +593,18 @@ current and writes its numbers on top.
 `scripts/live_board.sh` on the bot server reads the rows `scores` gained
 (`live_publish.mjs delta` — a verification, the scorer, the server's own
 settling), ranks them with `wfsim-board --project`, stamps the result with
-`board_meta.py` and pushes the files that changed to R2 (`board/live/`) through
-`PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last.
-`worker/live_board.js` answers `/board/<file>` and `/board.meta.json` from
-there, cached thirty seconds — so the page, the desktop client, the bot and the
-MCP server all read it at the URLs they always had.
+`board_meta.py` and pushes the files that changed through
+`PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last, into
+the bucket `wfsim-public` under their public paths, each kept thirty seconds.
+
+**THE PAGE READS IT WITH NO WORKER IN THE WAY.** `cdn.wfsim.app` is that
+bucket on its own domain, read through the CDN with `Access-Control-Allow-Origin:
+*`, and the page on wfsim.app reads every board file there (`BOARD_ORIGIN`,
+`boardOffOrigin`). `worker/live_board.js` still answers `/board/<file>` and
+`/board.meta.json` on wfsim.app from the same bucket, for every reader that
+names that address — a desktop shell in the field, the bots, the MCP server,
+the relay. Everything in that bucket is public, so nothing private is ever
+written to it.
 
 **A CYCLE RE-RANKS THE WEAPONS IT MOVED** (`wfsim-board --subset`): the builds
 of every weapon whose facts or claims changed, against the board as it stands.
@@ -2122,8 +2129,9 @@ rule to keep the two apart.
 
 ### What must not change
 
-- **The site reads the live board, and only it.** The worker answers
-  `/board/*` from R2 (§"The live board"); the committed `site/board/` is a
+- **The site reads the live board, and only it.** The page reads
+  `cdn.wfsim.app` and the worker answers `/board/*` from the same bucket
+  (§"The live board"); the committed `site/board/` is a
   daily snapshot for people and never a fallback, so a reader is never shown a
   board older than `scores` says.
 - **The store keeps nothing about submitters.** No IP, no token, no time finer

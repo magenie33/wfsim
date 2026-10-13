@@ -56,6 +56,10 @@
     // …AND EVERY PAGE WITH A MARKDOWN TWIN, which the worker serves to
     // `Accept: text/markdown`, AND THE TWIN ITSELF, which names its page as
     // canonical — and `.well-known/`, which is a document or a 404.
+    // …AND THE BOARD AT THIS ADDRESS, live from its bucket for the readers that
+    // name wfsim.app (a desktop shell in the field, the bots, the MCP server,
+    // the relay); served as assets it would be the committed daily snapshot.
+    // The page reads `cdn.wfsim.app` and never comes through here.
     "run_worker_first": ["/api/*", "/asset/*", "/pkg/*", "/", "/weapons", "/weapons/*",
                          "/index.md", "/weapons.md",
                          "/.well-known/*", "/og/s/*", "/auth.md", "/privacy", "/terms", "/refunds",
@@ -95,10 +99,14 @@
     // a typo is corrected at once.
     { "name": "CLAN_LIMIT", "namespace_id": "1003", "simple": { "limit": 2, "period": 60 } }
   ],
-  // THE PRODUCT'S ONE BUCKET (docs/NAMING.md §8): the screenshots readers offer,
+  // THE PRODUCT'S PRIVATE BUCKET (docs/NAMING.md §8): the screenshots readers offer,
   // under `ocr-samples/`, kept 365 days by the bucket's own lifecycle rule —
   //   npx wrangler r2 bucket lifecycle add wfsim ocr-samples-365 ocr-samples/ --expire-days 365
-  "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "wfsim" }],
+  // …AND THE PUBLIC ONE, apart by that boundary: `cdn.wfsim.app` serves the
+  // whole bucket through the CDN (the board, worker/live_board.js), so nothing
+  // private may ever be written to it — and the screenshots above never served.
+  "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "wfsim" },
+                 { "binding": "PUBLIC", "bucket_name": "wfsim-public" }],
   // WHAT READERS DID — `POST /api/e`, docs/ANALYTICS.md. A dataset is created by
   // its first write; nothing to provision. Read back by `scripts/usage.py`.
   "analytics_engine_datasets": [

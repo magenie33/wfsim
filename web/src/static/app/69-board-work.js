@@ -329,6 +329,7 @@ async function postBoardWork(path, body) {
 /// points: whether to send public reads by the relay too is decided on these,
 /// split by country, and not on a guess. `board.meta.json` is small, public and
 /// what every board reader fetches first; each road is timed alone, in turn.
+/// DIRECT IS THE ROAD THE PAGE READS IT BY, the board's own address.
 /// It waits `ROAD_PROBE_AFTER_MS` past boot, so it neither slows the page nor is slowed by it.
 const ROAD_PROBE = "wfsim-road-probe", ROAD_PROBE_MS = 10_000, ROAD_PROBE_AFTER_MS = 15_000;
 async function roadProbe() {
@@ -336,7 +337,7 @@ async function roadProbe() {
       || navigator.globalPrivacyControl || navigator.doNotTrack === "1") return;
   const day = new Date().toISOString().slice(0, 10);
   try { if (localStorage.getItem(ROAD_PROBE) === day) return; localStorage.setItem(ROAD_PROBE, day); } catch (_) { return; }
-  for (const [road, base] of [["direct", LIVE_ORIGIN], ["relay", RELAY]]) {
+  for (const [road, base] of [["direct", BOARD_ORIGIN], ["relay", RELAY]]) {
     const t = performance.now();
     let ok = false;
     try {

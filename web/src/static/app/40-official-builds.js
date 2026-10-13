@@ -283,13 +283,14 @@ let BOARD = {};
 /// ABSENT IS A STATE, not a failure — the dev server has no stamp, and a page
 /// that cannot say when the board was scored says nothing rather than guessing.
 let BOARD_META = null;
-/// THE SITE, for a shell whose own origin has no board yet.
+/// THE LIVE BOARD'S OWN ADDRESS: its bucket, served by the CDN with no worker
+/// in the way (worker/live_board.js), at the same paths as on the site.
 ///
 /// The board is not part of a release, so a client that has not fetched one has
-/// nothing to serve — and a shell answering same-origin cannot invent it. Asked
-/// second and never first: on the web the same-origin copy always answers, and
-/// on a shell the local one is the offline copy this exists to keep.
-const BOARD_ORIGIN = "https://wfsim.app";
+/// nothing to serve — and a shell answering same-origin cannot invent it. On a
+/// shell it is asked second and never first, the local copy being the offline
+/// one this exists to keep; on wfsim.app it is asked first (`boardOffOrigin`).
+const BOARD_ORIGIN = "https://cdn.wfsim.app";
 
 /// `res.ok` is not the whole test: a shell that falls back to its SPA answers
 /// `index.html` with a 200, so what decides is whether the body PARSES.
@@ -342,7 +343,7 @@ let BOARD_INDEX = null;
 /// The index alone is not enough for a weapon page: the ranking across weapons
 /// and the rows one weapon draws are different files, so a client served only
 /// the first has a populated benchmark page and an empty board everywhere else.
-async function loadWeaponBoard(id, base = "") {
+async function loadWeaponBoard(id, base = boardOffOrigin ? BOARD_ORIGIN : "") {
   if (!id || BOARD_HAVE.has(id)) return;
   let rows = null;
   try { rows = await fetchJsonPatient(`${base}/board/${id}.json`); } catch (_) { /* unreachable */ }
@@ -457,20 +458,24 @@ function showBenchBoard() {
 /// page appears — "opens instantly" is the whole reason the desktop build
 /// exists. So the site is asked afterwards, off the boot path, and the view
 /// redraws if an answer arrives.
+/// THE STAMP IS ASKED BESIDE THE ROWS, so its scene lists (`scene_weapons`)
+/// are usually in hand when the weapon's scenes are asked.
 async function loadBoard(weapon) {
+  const stamp = fetchJson(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board.meta.json`).then((m) => (BOARD_META = m));
   await loadWeaponBoard(weapon);
-  BOARD_META = await fetchJson("/board.meta.json");
-  if (!BOARD_META) {
+  if (!(await stamp) && !boardOffOrigin) {
     boardOffOrigin = true;
     boardFromSite(weapon);
   }
 }
 
-/// THIS ORIGIN HOLDS NO BOARD OF ITS OWN, and every later weapon asks the site
-/// first because of it. `board.meta.json` not answering is the whole test: the
-/// site always has one, a shell keeps one beside its release, and a shell too
-/// old to know about that directory never will.
-let boardOffOrigin = false;
+/// THIS ORIGIN HOLDS NO BOARD OF ITS OWN, and every later weapon asks
+/// `BOARD_ORIGIN` first because of it. `board.meta.json` not answering is the
+/// whole test: a shell keeps one beside its release, and a shell too old to
+/// know about that directory never will. WFSIM.APP STARTS OFF ITS ORIGIN: its
+/// own `/board/*` is a worker call per file, and the same files are free on
+/// the board's address.
+let boardOffOrigin = location.hostname === new URL(LIVE_ORIGIN).hostname;
 
 /// The rows for `id` landed — and they are PRESETS, so this is `initPresets`
 /// and not a repaint: a bar redrawn without them is a bar with no benchmark
