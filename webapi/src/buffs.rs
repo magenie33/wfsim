@@ -788,15 +788,31 @@ pub(crate) fn frenzy_apply(cfg: Option<&(u32, bool)>) -> (bool, Vec<BuffLock>) {
 }
 
 /// The Frenzy lock mode for the incarnon cycle (baked at construction).
+/// UNCONFIGURED IS EARNED, as on the page's card: a ruler sends no buff map, and
+/// a Permanent default scored every Dual Toxocyst row above the page's own run.
 pub(crate) fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
     match cfg {
-        Some(&(_, true)) | None => LockMode::Permanent, // legacy cycle default
+        Some(&(_, true)) => LockMode::Permanent,
         Some(&(stacks, false)) => LockMode::Initial(stacks),
+        None => LockMode::Initial(0),
     }
 }
 
 // The per-buff config application lives in the engine (shared with the
 // optimizer); `BuffCfg` is its `BuffConfig`.
+
+#[cfg(test)]
+mod frenzy_default_tests {
+    use super::*;
+
+    /// A RULER SENDS NO BUFF MAP, THE PAGE SENDS THE CARD'S DEFAULT, and the two
+    /// must be one fight — or the board ranks above what its own page reproduces.
+    #[test]
+    fn unconfigured_frenzy_is_the_cards_default() {
+        assert_eq!(frenzy_lock_mode(None), frenzy_lock_mode(Some(&(0, false))));
+        assert_eq!(frenzy_apply(None), frenzy_apply(Some(&(0, false))));
+    }
+}
 
 #[cfg(test)]
 mod arcane_slot_tests {

@@ -479,14 +479,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     };
     // Frenzy weapon passive. Configured ⇒ from the buff config; legacy ⇒ the
     // `frenzy` on/off knob. Cycle bakes the LockMode at construction; single
-    // forms take (active?, lock vector).
+    // forms take (active?, lock vector). Unconfigured is EARNED in both, or a
+    // ruler (no buff map) and the page (the card's default) fight two fights.
     let frenzy_on = get_bool(v, "frenzy", true);
     let frenzy_cfg = buff_cfg.as_ref().and_then(|m| m.get("frenzy"));
-    let cycle_frenzy_lock = if buff_cfg.is_some() {
-        frenzy_lock_mode(frenzy_cfg)
-    } else {
-        LockMode::Permanent // legacy cycle default
-    };
+    let cycle_frenzy_lock = frenzy_lock_mode(frenzy_cfg);
     let (frenzy_single, frenzy_locks) = if buff_cfg.is_some() {
         frenzy_apply(frenzy_cfg)
     } else {

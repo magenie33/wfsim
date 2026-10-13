@@ -218,14 +218,14 @@ fn main() {
     };
     // The REAL Incarnon cycle (user flow): full gauge start -> dump -> revert
     // 1.0 s -> rebuild 9 weakpoint charges in base form -> transmute 2.35 s ->
-    // repeat, Frenzy (Dual Toxocyst's passive) locked Permanent, infinite reserve.
+    // repeat, Frenzy (Dual Toxocyst's passive) earned as the rulers earn it, infinite reserve.
     {
         let (fight, fx) = (scenario.arena.clone(), arcanes.clone());
         let frenzy = wfsim_engine::data::weapons::has_perk("dual_toxocyst", "frenzy");
         scenario.params = std::sync::Arc::new(move |c: &Candidate, ai: usize| {
             let base = c.base_panel.as_ref()?;
             let mut p = wfsim_engine::fight::FightParams::incarnon_cycle_from_panels(
-                &c.panel, base, frenzy, LockMode::Permanent, &fight, fx.get(ai)?,
+                &c.panel, base, frenzy, LockMode::Initial(0), &fight, fx.get(ai)?,
             );
             p.infinite_reserve = c.panel.reserve_is_infinite(true);
             Some(p)
