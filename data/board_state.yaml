@@ -11,34 +11,66 @@
 # question and the page answers it (docs/BOARD.md).
 boards:
   demolisher:
-    submissions: 56856
-    listed: 25455
-    scored_at_epoch_seconds: 1791766121
+    submissions: 67599
+    listed: 28405
+    scored_at_epoch_seconds: 1791853701
+  demolisher__archimedea500:
+    submissions: 67599
+    listed: 667
+    scored_at_epoch_seconds: 1791853748
+  demolisher__icebind1000:
+    submissions: 67599
+    listed: 704
+    scored_at_epoch_seconds: 1791853725
   demolisher__sp200:
-    submissions: 56856
-    listed: 0
-    scored_at_epoch_seconds: 1791766140
+    submissions: 67599
+    listed: 14507
+    scored_at_epoch_seconds: 1791853772
   heavy_gunner:
-    submissions: 56856
-    listed: 36511
-    scored_at_epoch_seconds: 1791766162
+    submissions: 67599
+    listed: 40886
+    scored_at_epoch_seconds: 1791853797
+  heavy_gunner__archimedea500:
+    submissions: 67599
+    listed: 698
+    scored_at_epoch_seconds: 1791853845
+  heavy_gunner__icebind1000:
+    submissions: 67599
+    listed: 765
+    scored_at_epoch_seconds: 1791853821
   heavy_gunner__sp200:
-    submissions: 56856
-    listed: 0
-    scored_at_epoch_seconds: 1791766182
+    submissions: 67599
+    listed: 18237
+    scored_at_epoch_seconds: 1791853869
   standard_multi_target:
-    submissions: 56856
-    listed: 29559
-    scored_at_epoch_seconds: 1791766080
+    submissions: 67599
+    listed: 34643
+    scored_at_epoch_seconds: 1791853603
+  standard_multi_target__archimedea500:
+    submissions: 67599
+    listed: 1606
+    scored_at_epoch_seconds: 1791853651
+  standard_multi_target__icebind1000:
+    submissions: 67599
+    listed: 1483
+    scored_at_epoch_seconds: 1791853627
   standard_multi_target__sp200:
-    submissions: 56856
-    listed: 0
-    scored_at_epoch_seconds: 1791766100
+    submissions: 67599
+    listed: 11928
+    scored_at_epoch_seconds: 1791853676
   standard_single_target:
-    submissions: 56856
-    listed: 43579
-    scored_at_epoch_seconds: 1791766038
+    submissions: 67599
+    listed: 50238
+    scored_at_epoch_seconds: 1791853505
+  standard_single_target__archimedea500:
+    submissions: 67599
+    listed: 1380
+    scored_at_epoch_seconds: 1791853553
+  standard_single_target__icebind1000:
+    submissions: 67599
+    listed: 1393
+    scored_at_epoch_seconds: 1791853529
   standard_single_target__sp200:
-    submissions: 56856
-    listed: 0
-    scored_at_epoch_seconds: 1791766058
+    submissions: 67599
+    listed: 20477
+    scored_at_epoch_seconds: 1791853577
