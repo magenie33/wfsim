@@ -1,12 +1,12 @@
 // THE PANEL: the button, the log, the conversation picker, the suggestions and
-// the running cost. It draws the agent's events while a turn runs and the record
-// when a conversation is opened — through the same `draw`, so a conversation
-// reopened tomorrow reads exactly as it did.
+// the tokens billed so far. It draws the agent's events while a turn runs and
+// the record when a conversation is opened — through the same `draw`, so a
+// conversation reopened tomorrow reads exactly as it did.
 
 import { numbersIn } from "../core/measure.js";
 import { toolId } from "../core/tools.js";
 import * as store from "../runtime/store.js";
-import { tr, esc, dd, $, k, usd, markup, usageLine, line } from "./kit.js";
+import { tr, esc, dd, $, k, markup, usageLine, line } from "./kit.js";
 import { drawCard } from "./cards.js";
 import { drawChip, drawMerged } from "./chips.js";
 import { fillSettings } from "./settings.js";
@@ -164,7 +164,7 @@ export function mountPanel(door, agent) {
     const u = agent.conv && agent.conv.usage;
     if (!u) return;
     f.textContent = [tr("AI-generated content; it may be wrong."),
-      u.input ? `${tr("this chat")} ${k(u.input + u.output)} tokens${u.cost ? ` · ≈${usd(u.cost)}` : ""}` : ""]
+      u.input ? `${tr("this chat")} ${k(u.input + u.output)} tokens` : ""]
       .filter(Boolean).join(" · ");
   }
 

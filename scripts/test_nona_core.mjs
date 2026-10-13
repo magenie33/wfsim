@@ -5,10 +5,10 @@
 // what a stored shape becomes is checked here in milliseconds. docs/NONA.md
 // §"The invariants" names which of them this is the enforcement for.
 import * as record from "../web/src/static/nona/core/record.js";
-import { view, sent, viewText, sizeOf } from "../web/src/static/nona/core/view.js";
+import { view, sent, viewText, userText, toolText } from "../web/src/static/nona/core/view.js";
 import * as budget from "../web/src/static/nona/core/budget.js";
 import * as summary from "../web/src/static/nona/core/summary.js";
-import { CAPS, clip, estimate } from "../web/src/static/nona/core/size.js";
+import { CAPS, clip } from "../web/src/static/nona/core/size.js";
 import { markNumbers, numbersIn } from "../web/src/static/nona/core/measure.js";
 import * as memory from "../web/src/static/nona/core/memory.js";
 import { rules } from "../web/src/static/nona/core/prompt.js";
@@ -105,8 +105,8 @@ for (const [name, p] of [["openai", openai], ["anthropic", anthropic]]) {
 check("the rules are the same text every time for one reader", rules({ lang: "zh", concise: false }) === RULES
   && rules({ lang: "zh", concise: true }) !== RULES);
 check("her rules and character fit zone S, in every language and mode",
-  [["zh", false], ["zh", true], ["en", false], ["en", true]].every(([lang, concise]) => estimate(rules({ lang, concise })) <= CAPS.S),
-  String(estimate(RULES)));
+  [["zh", false], ["zh", true], ["en", false], ["en", true]].every(([lang, concise]) => rules({ lang, concise }).length <= CAPS.S),
+  String(RULES.length));
 // HER VOICE (docs/NONA.md §"Her voice"): the words calm, the kaomoji her inside,
 // never one inside a number, and never an emoji.
 check("her voice keeps asides out of numbers and verdicts, owns its mistakes plainly, and speaks its feelings in kaomoji, not emoji",
@@ -115,31 +115,18 @@ check("her voice keeps asides out of numbers and verdicts, owns its mistakes pla
 check("concise mode drops the character, not the rules",
   !/contrast/.test(rules({ lang: "zh", concise: true })) && /contrast/.test(RULES) && /never agree to please/.test(rules({ lang: "zh", concise: true })));
 
-// ---- 9: every zone under its cap, however long the conversation -------------------
+// ---- 9: compacted on what the provider billed, however long the conversation ------
 
 const FIXED = { rules: RULES, memory: "<memory of this reader>\n- [m1] riven_policy: none\n</memory>", tools: TOOLS, skills: "" };
-const within = (rec, opts = {}) => {
-  const z = budget.measure(rec, FIXED);
-  const c = budget.caps(z, budget.room(opts));
-  return { z, c, ok: z.K <= CAPS.K && z.H <= c.H && z.P <= c.P && z.S + z.T + z.M + z.K + z.H + z.P <= c.W };
-};
-/// The agent's maintenance loop, with a stand-in summariser: plan, mark,
-/// summarise, until the plan asks for nothing more.
-function maintain(rec, summarizer, opts = {}) {
-  for (let round = 0; round < 3; round++) {
-    const pl = budget.plan(rec, FIXED, opts);
-    if (pl.refuse) return { rec, refuse: true, rounds: round };
-    rec = budget.applyMarks(rec, pl.marks);
-    if (pl.summarize == null) return { rec, stop: pl.stop, rounds: round };
-    rec = summary.applySummary(rec, pl.summarize, summarizer());
-  }
-  return { rec, stop: false, rounds: 3 };
-}
+/// A reply the provider billed at `n` tokens in all.
+const billed = (n) => ({ role: "assistant", text: "a", calls: [], usage: { input: n, output: 0, cached: 0 } });
 
 const brief = freeze(convo(2, 300));
-const quiet = budget.plan(brief, FIXED);
-check("under its caps, nothing is set aside and nothing summarised: the prefix does not move",
-  !quiet.marks.tools.length && !quiet.marks.pages.length && quiet.summarize == null && !quiet.stop);
+check("before any reply, or with no window stated, nothing is pressed",
+  budget.pressed(brief, 64000) === false && budget.pressed(freeze({ ...brief, messages: [...brief.messages, billed(60000)] }), null) === false);
+check("pressed once the last reply was billed past the share of the window, and not before",
+  budget.pressed(freeze({ ...brief, messages: [...brief.messages, billed(45000)] }), 64000) === true
+  && budget.pressed(freeze({ ...brief, messages: [...brief.messages, billed(44000)] }), 64000) === false);
 
 // THIS TURN: one question, eight large results.
 const turn = { ...convo(0), messages: [{ role: "user", text: "q", page: "{}" }] };
@@ -148,104 +135,97 @@ for (let i = 0; i < 8; i++) {
   turn.messages.push({ role: "tool", id: `p${i}`, name: "builder_stats_read", ok: true, line: "x", result: "z".repeat(5000) });
 }
 freeze(turn);
-const pTurn = budget.plan(turn, FIXED);
+const pTurn = budget.plan(turn);
 const pIdx = turn.messages.map((m, i) => (m.role === "tool" ? i : -1)).filter((i) => i >= 0);
-check("this turn over its cap: its oldest results go first, the newest two stay",
-  pTurn.marks.tools.length > 0 && same(pTurn.marks.tools, pIdx.slice(0, pTurn.marks.tools.length))
-  && !pTurn.marks.tools.includes(pIdx[7]) && !pTurn.marks.tools.includes(pIdx[6]), JSON.stringify(pTurn.marks.tools));
-const pAfter = within(budget.applyMarks(turn, pTurn.marks));
-check("...toward its low water mark, not just under the line — as far as the newest two allow",
-  pAfter.z.P <= pAfter.c.P && (pAfter.z.P <= pAfter.c.P * 0.6 || pTurn.marks.tools.length === 6), JSON.stringify([pAfter.z.P, pAfter.c.P]));
+check("this turn's results are set aside but the newest two, and a lone turn has nothing to summarise",
+  same(pTurn.marks.tools, pIdx.slice(0, 6)) && pTurn.summarize == null, JSON.stringify(pTurn));
 check("marks are written into a new record, the old one untouched",
   budget.applyMarks(turn, pTurn.marks).messages[pIdx[0]].masked === true && !turn.messages[pIdx[0]].masked);
 check("a set-aside result says how to get it back",
   /set aside.*call it again/.test(view(budget.applyMarks(turn, pTurn.marks), FIXED).turns[2].text));
+const again = budget.plan(budget.applyMarks(turn, pTurn.marks));
+check("compacting twice does nothing the second time", !again.marks.tools.length && again.summarize == null);
 
-const wordy = { ...convo(0), messages: [{ role: "user", text: "q", page: "{}" }] };
-for (let i = 0; i < 20; i++) wordy.messages.push({ role: "assistant", text: "话".repeat(600), calls: [{ id: `w${i}`, name: "x", args: {} }] });
-check("a turn over its cap with nothing left to set aside ends, rather than being sent",
-  budget.plan(freeze(wordy), FIXED).stop === true && budget.plan(brief, FIXED).stop === false);
-
-// HISTORY: earlier results go before anything is summarised.
-const hist = freeze(convo(10, 3000));
-const pHist = budget.plan(hist, FIXED);
-check("history over its cap: earlier results are set aside before any summary",
-  pHist.marks.tools.length > 0 && pHist.summarize == null, JSON.stringify([pHist.marks.tools.length, pHist.summarize]));
 const talky = { ...convo(0), messages: [] };
 for (let i = 0; i < 40; i++) talky.messages.push({ role: "user", text: "长".repeat(600), page: "{}" }, { role: "assistant", text: "答".repeat(600), calls: [] });
+talky.messages.push({ role: "user", text: "now", page: "{}" });
 freeze(talky);
-const pTalk = budget.plan(talky, FIXED);
-check("words alone over the cap: the oldest turns are summarised, at a reader turn",
-  pTalk.summarize != null && talky.messages[pTalk.summarize].role === "user", String(pTalk.summarize));
+const pTalk = budget.plan(talky);
+check("every turn before this one is summarised, at this turn's start", pTalk.summarize === talky.messages.length - 1, String(pTalk.summarize));
 const input = summary.summaryInput(talky, 4, (c) => c.name);
 check("the summariser is given the turns before the cut and none after",
   (input.match(/\[reader\]/g) || []).length === 2 && input.startsWith("<record>"));
 const summed = summary.applySummary(talky, pTalk.summarize, "S".repeat(20000));
-check("a summary is cut to its cap whatever the model wrote", estimate(summed.summary.text) <= CAPS.summary);
+check("a summary is cut to its cap whatever the model wrote", summed.summary.text.length <= CAPS.summary);
 check("what is sent starts from the summary", view(summed, FIXED).turns[0].text.startsWith("<summary of the conversation so far>"));
-check("a window too small for the fixed zones is refused, not run badly",
-  budget.plan(brief, FIXED, { context: 9000 }).refuse === true && budget.plan(brief, FIXED).refuse === false);
-check("a tokenizer heavier than the estimate is never refused while its window holds the request, and B gives way",
-  [2.5, 4].every((ratio) => { const p = budget.plan(brief, FIXED, { ratio }); return !p.refuse && p.caps.W > budget.room() / ratio; })
-    && budget.plan(brief, FIXED, { ratio: 4, context: 16000 }).refuse === true);
+const skilled = { ...convo(0), messages: ["builder", "simulator", "optimizer", "rivens"].flatMap((id, i) => [
+  { role: "user", text: "q", page: "{}" }, { role: "assistant", text: "", calls: [{ id: `k${i}`, name: "skill_load", args: {} }] },
+  { role: "tool", id: `k${i}`, name: "skill_load", ok: true, line: "x", skills: [id], result: `<skill ${id}>\n${"s".repeat(5000)}\n</skill>` }]) };
+skilled.messages.push({ role: "user", text: "now", page: "{}" });
+const kept = summary.applySummary(freeze(skilled), skilled.messages.length - 1, "S").summary.skills;
+check("a summary carries the skills in view up to K, the most recently loaded kept",
+  kept.reduce((n, d) => n + d.text.length, 0) <= CAPS.K && kept[kept.length - 1].id === "rivens" && !kept.some((d) => d.id === "builder"),
+  JSON.stringify(kept.map((d) => d.id)));
 
-// FOR EVER: a seeded conversation of hundreds of turns, every size random, the
-// maintenance run before every request. After it, every zone is under its cap
-// and the whole under W; no message is ever removed and no mark undone.
+// FOR EVER: a seeded conversation of hundreds of turns, sizes random, sent to a
+// stand-in provider of each tokenizer weight and window. It bills what it was
+// sent, and refuses a request over its window. After one compaction a request
+// always fits, and no message is ever removed and no mark undone.
 let seed = 42;
 const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
 const words = (n) => Array.from({ length: n }, () => (rnd() < 0.5 ? "伤害" : "dmg ")).join("");
-const opts = [{}, { context: 32000 }, { context: 1000000 }, { budget: 40000 }];
 const MODS = ["builder", "simulator", "optimizer", "rivens"];
-/// A skill document of a random size up to the per-skill cap.
-const skillText = (id) => clip(`<skill ${id}>\n${words(Math.floor(rnd() * 2400))}`, CAPS.skill - 10) + "\n</skill>";
-let bad = [], rounds = 0, summaries = 0, stops = 0;
-for (const o of opts) {
+const skillText = (id) => clip(`<skill ${id}>\n${words(Math.floor(rnd() * 3000))}`, CAPS.skill - 10) + "\n</skill>";
+let bad = [], summaries = 0, tooLong = 0;
+for (const [weight, context] of [[0.3, 64000], [0.6, 64000], [1, 64000], [1, 200000], [0.6, null]]) {
+  const tokens = (rec) => Math.ceil(viewText(view(rec, FIXED)).length * weight);
+  const window = context || 128000;
   let rec = { ...convo(0), messages: [] };
-  for (let t = 0; t < 250; t++) {
+  /// One request: compacted first when pressed, and once more when refused.
+  const send = () => {
+    for (let tries = 0; tries < 2; tries++) {
+      if (tries || budget.pressed(rec, context)) {
+        const before = rec, pl = budget.plan(rec);
+        rec = budget.applyMarks(rec, pl.marks);
+        if (pl.summarize != null) { rec = summary.applySummary(rec, pl.summarize, words(Math.floor(rnd() * 1500))); summaries++; }
+        if (rec.messages.length !== before.messages.length || before.messages.some((x, i) => x.masked && !rec.messages[i].masked)) bad.push("record changed shape");
+      }
+      const n = tokens(rec);
+      if (n <= window) return n;
+      tooLong++;
+    }
+    bad.push(`weight ${weight} window ${window}: over after compacting`);
+    return 0;
+  };
+  for (let t = 0; t < 250 && !bad.length; t++) {
     const mod = MODS[Math.floor(rnd() * MODS.length)];
     rec = { ...rec, messages: [...rec.messages, { role: "user", text: words(Math.floor(rnd() * 3000)), page: words(Math.floor(rnd() * 1500)),
       ...(rnd() < 0.3 ? { preload: skillText(mod), skills: [mod] } : {}) }] };
     const steps = Math.floor(rnd() * 7);
     for (let st = 0; st <= steps; st++) {
-      const before = rec;
-      const m = maintain(rec, () => words(Math.floor(rnd() * 4000)), o);
-      rec = m.rec;
-      rounds = Math.max(rounds, m.rounds);
-      if (rec.summary !== before.summary) summaries++;
-      if (rec.messages.length !== before.messages.length || before.messages.some((x, i) => x.masked && !rec.messages[i].masked)) bad.push(`t${t}: record changed shape`);
-      if (m.stop) { stops++; break; }
-      const w = within(rec, o);
-      if (!w.ok) { bad.push(`t${t} ${JSON.stringify(o)}: H ${w.z.H}/${w.c.H} P ${w.z.P}/${w.c.P} W ${w.c.W}`); break; }
-      if (st === steps) { rec = { ...rec, messages: [...rec.messages, { role: "assistant", text: words(Math.floor(rnd() * 800)), calls: [] }] }; break; }
+      const n = send();
+      if (st === steps) { rec = { ...rec, messages: [...rec.messages, { ...billed(n), text: words(Math.floor(rnd() * 800)) }] }; break; }
       const id = `c${t}-${st}`;
       const load = rnd() < 0.15 ? MODS[Math.floor(rnd() * MODS.length)] : null;
       rec = { ...rec, messages: [...rec.messages,
-        { role: "assistant", text: words(Math.floor(rnd() * 200)), calls: [{ id, name: load ? "skill_load" : "act", args: {} }] },
+        { ...billed(n), text: words(Math.floor(rnd() * 200)), calls: [{ id, name: load ? "skill_load" : "act", args: {} }] },
         load ? { role: "tool", id, name: "skill_load", ok: true, line: "x", skills: [load], result: skillText(load) }
           : { role: "tool", id, name: "act", action: `${MODS[Math.floor(rnd() * MODS.length)]}.x.read`, ok: true, line: "x",
             result: clip(words(Math.floor(rnd() * 20000)), CAPS.result) }] };
     }
   }
 }
-check("over 1,000 turns in four windows, every zone stays under its cap and the whole under W",
+check("over 1,000 turns at five tokenizer weights and windows, a request always fits after one compaction",
   !bad.length, bad.slice(0, 3).join(" | "));
-check("...the maintenance settles within two rounds, and summaries did happen", rounds <= 2 && summaries > 10, JSON.stringify({ rounds, summaries, stops }));
+check("...and summaries did happen, without the window being stated too", summaries > 10, JSON.stringify({ summaries, tooLong }));
 
 // ---- small pieces ---------------------------------------------------------------------
 
-check("the estimate reads CJK at about twice Latin", estimate("你".repeat(100)) > estimate("a".repeat(100)) * 1.8);
 check("a result, the reader's words and the page are each sent cut to their caps, whatever the record holds",
-  sizeOf({ role: "tool", name: "x", result: "r".repeat(90000) }) <= CAPS.result
-  && sizeOf({ role: "user", text: "t".repeat(90000), page: "p".repeat(90000) }) <= CAPS.text + CAPS.page + 10);
+  toolText({ role: "tool", name: "x", result: "r".repeat(90000) }).length <= CAPS.result
+  && userText({ role: "user", text: "t".repeat(90000), page: "p".repeat(90000) }).length <= CAPS.text + CAPS.page + 20);
 check("a clipped text fits its cap and says how much is missing",
-  estimate(clip("x".repeat(50000), 500)) <= 500 && /cut: \d+ more characters/.test(clip("x".repeat(50000), 500)));
-check("calibration moves toward what the provider billed",
-  budget.calibrate(1, 1000, 2000) > 1 && budget.calibrate(1, 1000, 500) < 1);
-check("one misreported usage moves the ratio a bounded step, not to where the model is refused",
-  budget.calibrate(1, 1000, 100000) <= 0.7 + 4 * 0.3 + 1e-9);
-check("a reply's cost counts cached input at a tenth",
-  Math.abs(budget.cost([1, 2], { input: 1000, cached: 1000, output: 0 }) - 0.0001) < 1e-12);
+  clip("x".repeat(50000), 500).length <= 500 && /cut: \d+ more characters/.test(clip("x".repeat(50000), 500)));
 
 // ---- 2: a number no tool returned is marked ---------------------------------------
 
@@ -369,7 +349,7 @@ check("...notes are replaced by the merged ones, which say where they came from;
   tidied.items.filter((x) => x.kind === "note" && x.status === "active").length === 2
   && same(tidied.items.find((x) => x.id === "t0").source.from, ids(0, 10).split(","))
   && tidied.items.some((x) => x.id === "p1") && tidied.items.some((x) => x.id === "q1"));
-check("...and it fits the memory zone", estimate(memory.block(tidied, 100)) <= CAPS.M && memory.needsMerge(tidied, 100) === false);
+check("...and it fits the memory zone", memory.block(tidied, 100).length <= CAPS.M && memory.needsMerge(tidied, 100) === false);
 check("...and the version before comes back in one step", same(memory.restore(tidied).items, fat.items));
 for (const [why, text] of [
   ["a source that does not exist", good.replace("[p1]", "[p9]")],
@@ -400,7 +380,7 @@ check("...a long list of values is counted, not copied; a short one is listed",
   /weapon\*: one of 300 values/.test(doc) && /mode: one of "a"\|"b"/.test(doc) && !/w299/.test(doc));
 check("a document splits back into its skills", same(docsOf(doc + "\n\n" + doc.replace(/builder/g, "rivens")).map((d) => d.id), ["builder", "rivens"]));
 
-// K: the least recently used skill goes first; a skill's document is K's alone.
+// K: the skills in view, and what a summary carries of them.
 const big = (id) => `<skill ${id}>\n${"x ".repeat(3000)}\n</skill>`;
 const kRec = { ...convo(0), messages: [
   { role: "user", text: "q1", page: "{}", preload: big("builder"), skills: ["builder"] },
@@ -413,27 +393,12 @@ const kRec = { ...convo(0), messages: [
   { role: "tool", id: "k3", name: "skill_load", ok: true, line: "x", skills: ["optimizer"], result: big("optimizer") },
 ] };
 freeze(kRec);
-const zK = budget.measure(kRec, FIXED);
-check("a skill document counts in K, not in the zone it sits in",
-  zK.K > 5000 && zK.H < 1000 && zK.P < 1000, JSON.stringify([zK.K, zK.H, zK.P]));
-const pK = budget.plan(kRec, FIXED);
-check("K over its cap: the least recently used go first — simulator, never used, then builder; optimizer, newest, stays",
-  same(pK.marks.tools, [2]) && same(pK.marks.skills, [0]), JSON.stringify(pK.marks));
-const kAfter = budget.applyMarks(kRec, pK.marks);
-check("...and it leaves a line saying so", /skill simulator unloaded — load it again/.test(view(kAfter, FIXED).turns[2].text));
-check("...and the set-aside passes of H and P never touch a skill", (() => {
-  const r = { ...convo(0), messages: [kRec.messages[0], kRec.messages[1], kRec.messages[2],
-    ...Array.from({ length: 12 }, (_, i) => ({ role: "tool", id: `f${i}`, name: "act", action: "builder.stats.read", ok: true, line: "x", result: "y".repeat(4000) }))] };
-  const pl = budget.plan(r, FIXED);
-  return pl.marks.tools.length > 3 && !pl.marks.tools.includes(2) && !pl.marks.skills.length;
-})());
+check("the skills in view are every one attached or loaded since the summary",
+  same([...budget.loadedSkills(kRec)], ["builder", "simulator", "optimizer"]));
 const carried = summary.applySummary(kRec, 5, "S");
 check("a summary carries the skills in view before its cut, as they were loaded",
   same(carried.summary.skills.map((d) => d.id), ["builder", "simulator"]) && carried.summary.skills[1].text === big("simulator")
   && view(carried, FIXED).turns[0].text.includes("<skill simulator>"));
-const unl = budget.applyMarks(carried, { summary: ["simulator"] });
-check("...and one it carries can be unloaded like any other", !view(unl, FIXED).turns[0].text.includes("<skill simulator>")
-  && view(unl, FIXED).turns[0].text.includes("<skill builder>"));
 
 // calc: arithmetic on what she was sent, and nothing else.
 const sentNums = [51.98, 29.32, 1234.5, 0.35];
@@ -445,7 +410,6 @@ const refused = calc("530 - 29.32", sentNums);
 check("a number she was never sent is refused, and named", refused.ok === false && refused.reason === "unmeasured" && same(refused.numbers, ["530"]));
 check("a broken expression says why", calc("(51.98 - ", sentNums).reason === "bad_expression" && calc("51.98 / 0", sentNums).reason === "not_a_number"
   && calc("alert(1)", sentNums).reason === "bad_expression");
-check("the whole view estimates as text", viewText(v1).length > 0);
 
 console.log(failed ? `\n${failed} failed` : "\nnona's core holds");
 process.exit(failed ? 1 : 0);

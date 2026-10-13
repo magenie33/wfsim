@@ -1,18 +1,10 @@
-// THE CONTEXT BUDGET: every zone of a request under its cap, and the whole
-// under W, however long the conversation — docs/NONA.md §"The context budget".
-// `plan` measures the zones and says what to do; the agent does it and asks
-// again. Nothing here removes a message: setting aside is a mark, summarising
-// moves where the request starts, and the record stays whole.
+// WHEN AND HOW A CONVERSATION IS COMPACTED — docs/NONA.md §"The context
+// budget". Nothing here estimates: `pressed` reads what the provider said the
+// last request cost, and `plan` says what to set aside and where to summarise.
+// Nothing removes a message: setting aside is a mark, summarising moves where
+// the request starts, and the record stays whole.
 
-import { CAPS, LOW, WINDOW, OUTPUT, MARGIN, BUDGET, estimate } from "./size.js";
-import { sizeOf, skillSizeOf, summaryText, summarySkillsText } from "./view.js";
-
-export { calibrate, estimate } from "./size.js";
-
-/// W: the input one request may hold — the window less the reply's reserve and
-/// a margin, and never more than the cost budget.
-export const room = ({ context, budget } = {}) =>
-  Math.min((context || WINDOW) - OUTPUT - MARGIN, budget || BUDGET);
+import { HIGH } from "./size.js";
 
 /// Where this turn starts: the reader's newest message.
 function turnStart(record) {
@@ -20,163 +12,48 @@ function turnStart(record) {
   return record.messages.length;
 }
 
-/// THE ZONES AS THEY STAND. `fixed` is {rules, memory, tools}, the texts of S,
-/// M and T. K is every skill document in view, wherever it sits; H is the
-/// summary and every message from it to this turn; P is this turn.
-export function measure(record, fixed) {
+/// WHAT THE LAST REQUEST COST, as the provider billed it: its input and the
+/// reply, which the next request carries too. Null before any reply.
+export function used(record) {
+  for (let i = record.messages.length - 1; i >= 0; i--) {
+    const u = record.messages[i].usage;
+    if (record.messages[i].role === "assistant" && u) return u.input + u.output;
+  }
+  return null;
+}
+
+/// NEAR THE WINDOW: the last request filled past HIGH of it. A model whose
+/// window its address does not state is compacted only when it says too long.
+export const pressed = (record, context) => !!context && (used(record) || 0) >= context * HIGH;
+
+/// WHAT TO DO WHEN PRESSED: this turn's results but the newest two are set
+/// aside, and every turn before this one is summarised. Both empty means there
+/// is nothing left to compact, and the provider's answer stands.
+export function plan(record) {
+  const msgs = record.messages;
   const from = record.summary ? record.summary.upto : 0;
   const start = Math.max(from, turnStart(record));
-  // ONLY WHAT IS SENT IS MEASURED: a message before the summary costs nothing,
-  // and measuring it would make every request slower the longer the record.
-  const sizes = record.messages.map((m, i) => (i < from ? 0 : sizeOf(m)));
-  const skillSizes = record.messages.map((m, i) => (i < from ? 0 : skillSizeOf(m)));
-  const add = (xs, a, b) => xs.slice(a, b).reduce((x, y) => x + y, 0);
-  const s = record.summary;
-  return {
-    S: estimate(fixed.rules || ""), T: estimate(JSON.stringify(fixed.tools || [])), M: estimate(fixed.memory || ""),
-    K: (s ? estimate(summarySkillsText(s)) : 0) + add(skillSizes, from, skillSizes.length),
-    H: (s ? estimate(summaryText({ ...s, skills: [] })) : 0) + add(sizes, from, start), P: add(sizes, start, sizes.length),
-    from, start, sizes, skillSizes,
-  };
+  const results = [];
+  for (let i = start; i < msgs.length; i++) if (msgs[i].role === "tool" && !msgs[i].masked && !msgs[i].skills) results.push(i);
+  return { marks: { tools: results.slice(0, -2) }, summarize: start > from ? start : null };
 }
 
-/// THE SKILLS IN VIEW, one entry per place a document sits: `where` is the
-/// mark that would unload it ("tools" for a skill_load result, "skills" for a
-/// reader's attachment, "summary" for one the summary carries), with its size
-/// and the last time it was used — its load, or the latest action of its skill.
-export function skillsInView(record) {
+/// The skills whose documents the next request carries: those the summary
+/// carries, then every one attached or loaded since.
+export function loadedSkills(record) {
   const from = record.summary ? record.summary.upto : 0;
-  const out = [];
-  if (record.summary) {
-    for (const d of record.summary.skills || []) {
-      if (!d.unloaded) out.push({ where: "summary", at: d.id, ids: [d.id], size: estimate(d.text), from });
-    }
-  }
+  const ids = new Set(((record.summary && record.summary.skills) || []).filter((d) => !d.unloaded).map((d) => d.id));
   record.messages.forEach((m, i) => {
     if (i < from) return;
-    if (m.role === "user" && m.preload && !m.skillsMasked) out.push({ where: "skills", at: i, ids: m.skills || [], size: skillSizeOf(m), from: i });
-    if (m.role === "tool" && m.skills && !m.masked) out.push({ where: "tools", at: i, ids: m.skills, size: skillSizeOf(m), from: i });
+    if ((m.role === "user" && m.preload && !m.skillsMasked) || (m.role === "tool" && m.skills && !m.masked)) (m.skills || []).forEach((x) => ids.add(x));
   });
-  for (const e of out) {
-    e.used = e.from;
-    record.messages.forEach((m, i) => { if (i > e.used && m.action && e.ids.includes(m.action.split(".")[0])) e.used = i; });
-  }
-  return out;
-}
-
-/// THE CAPS FOR THIS REQUEST. S, T, M and K are what they are; H and P share
-/// what is left of W, each up to its own cap, this turn first. A model whose W
-/// leaves no working room is refused rather than run badly.
-export function caps(z, W) {
-  const avail = W - z.S - z.T - z.M - z.K;
-  const P = Math.min(CAPS.P, Math.floor(avail / 2));
-  const H = Math.min(CAPS.H, avail - P);
-  return { W, P, H, refuse: P < 1500 || H < CAPS.summary + 500 };
-}
-
-/// The size of message `i` once set aside as `kind`.
-const asideSize = (m, kind) => sizeOf({ ...m, ...(kind === "tools" ? { masked: true } : { pageMasked: true }) });
-
-/// WHAT TO DO BEFORE THIS REQUEST, cheapest first:
-/// - `marks`: results and pages to set aside (this turn's older results beyond
-///   the newest two; then earlier turns' results, then their pages);
-/// - `summarize`: the index to summarise up to, when setting aside is not
-///   enough to bring H down to its low water mark;
-/// - `stop`: this turn alone is over its cap with nothing left to set aside —
-///   the turn ends, and the next one can summarise it.
-/// A zone under its cap is left alone, so the prefix does not move.
-export function plan(record, fixed, { context, budget, ratio = 1 } = {}) {
-  const z = measure(record, fixed);
-  const out = { zones: z, marks: { tools: [], pages: [], skills: [], summary: [] }, summarize: null, stop: false };
-  const msgs = record.messages;
-
-  // K: the skills least recently used are unloaded first. An unloaded result
-  // leaves one line behind, which is H's or P's.
-  let K = z.K;
-  if (K > CAPS.K) {
-    for (const e of skillsInView(record).sort((a, b) => a.used - b.used)) {
-      if (K <= CAPS.K * LOW) break;
-      out.marks[e.where].push(e.at);
-      K -= e.size;
-      if (e.where === "tools") {
-        const line = sizeOf({ ...msgs[e.at], masked: true });
-        z.sizes[e.at] = line;
-        if (e.at < z.start) z.H += line; else z.P += line;
-      }
-    }
-  }
-  // ONLY THE WINDOW REFUSES. B is a cost policy: where the estimate's
-  // correction leaves it no working room it gives way, up to the window — a
-  // refused model sends nothing, so its correction could never come back down.
-  const r = ratio || 1;
-  const hard = Math.floor(room({ context, budget: Infinity }) / r);
-  const floor = z.S + z.T + z.M + K + CAPS.P + CAPS.summary + 500;
-  const c = caps({ ...z, K }, Math.min(hard, Math.max(Math.floor((budget || BUDGET) / r), floor)));
-  out.caps = c;
-  out.refuse = c.refuse;
-  if (c.refuse) return out;
-  const aside = new Map();
-  const setAside = (i, kind) => {
-    out.marks[kind].push(i);
-    aside.set(i, kind);
-    return z.sizes[i] - asideSize(msgs[i], kind);
-  };
-
-  // P: this turn's older results, keeping the newest two — or the newest one,
-  // when two do not fit under the cap.
-  let P = z.P;
-  if (P > c.P) {
-    const results = [];
-    for (let i = z.start; i < msgs.length; i++) if (msgs[i].role === "tool" && !msgs[i].masked && !msgs[i].skills) results.push(i);
-    for (const i of results.slice(0, Math.max(0, results.length - 2))) {
-      if (P <= c.P * LOW) break;
-      P -= setAside(i, "tools");
-    }
-    if (P > c.P && results.length >= 2) P -= setAside(results[results.length - 2], "tools");
-    if (P > c.P) out.stop = true;
-  }
-
-  // H: earlier results, then earlier pages, then a summary.
-  let H = z.H;
-  if (H > c.H) {
-    const at = (pred) => { const xs = []; for (let i = z.from; i < z.start; i++) if (pred(msgs[i])) xs.push(i); return xs; };
-    for (const i of at((m) => m.role === "tool" && !m.masked && !m.skills)) { if (H <= c.H * LOW) break; H -= setAside(i, "tools"); }
-    for (const i of at((m) => m.role === "user" && m.page && !m.pageMasked)) { if (H <= c.H * LOW) break; H -= setAside(i, "pages"); }
-    if (H > c.H * LOW) {
-      // THE LEAST THAT IS ENOUGH: the earliest reader turn from which what is
-      // left, plus a full summary, fits the low water mark — or all of it.
-      const tail = (u) => {
-        let s = CAPS.summary;
-        for (let i = u; i < z.start; i++) s += aside.has(i) ? asideSize(msgs[i], aside.get(i)) : z.sizes[i];
-        return s;
-      };
-      let cut = z.start;
-      for (let u = z.from + 1; u < z.start; u++) {
-        if (msgs[u].role === "user" && tail(u) <= c.H * LOW) { cut = u; break; }
-      }
-      if (cut > z.from) out.summarize = cut;
-    }
-  }
-  return out;
+  return ids;
 }
 
 /// The record with those marks written in — a new record; the old is untouched.
 /// Written INTO the record so the next request is sent the same prefix.
-export function applyMarks(record, { tools = [], pages = [], skills = [], summary = [] }) {
-  if (!tools.length && !pages.length && !skills.length && !summary.length) return record;
-  const t = new Set(tools), p = new Set(pages), k = new Set(skills);
-  return {
-    ...record,
-    ...(summary.length ? { summary: { ...record.summary,
-      skills: record.summary.skills.map((d) => (summary.includes(d.id) ? { ...d, unloaded: true } : d)) } } : {}),
-    messages: record.messages.map((m, i) => (t.has(i) ? { ...m, masked: true }
-      : p.has(i) ? { ...m, pageMasked: true } : k.has(i) ? { ...m, skillsMasked: true } : m)),
-  };
-}
-
-/// What a reply cost, where the address states prices: the part read from the
-/// provider's cache is counted at a tenth, which is what most of them charge.
-export function cost(price, u) {
-  if (!u || !price) return null;
-  return ((u.input - u.cached) * price[0] + u.cached * price[0] * 0.1 + u.output * price[1]) / 1e6;
+export function applyMarks(record, { tools = [] }) {
+  if (!tools.length) return record;
+  const t = new Set(tools);
+  return { ...record, messages: record.messages.map((m, i) => (t.has(i) ? { ...m, masked: true } : m)) };
 }

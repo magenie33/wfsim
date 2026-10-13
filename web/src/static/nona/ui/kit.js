@@ -11,7 +11,6 @@ export const dd = (id, cfg) => kit().dd(id, cfg);
 export const $ = (id) => document.getElementById(id);
 
 export const k = (n) => (n >= 1000 ? `${Math.round(n / 100) / 10}k` : String(n));
-export const usd = (x) => (x < 0.01 ? `$${x.toFixed(4)}` : `$${x.toFixed(2)}`);
 
 /// A REPLY'S MARKUP: escaped first, then the few marks a chat reply uses — a
 /// model's text is not trusted as HTML. `measured` (the numbers the tools
@@ -26,8 +25,7 @@ export const markup = (s, measured) => markNumbers(esc(s), measured,
 
 export function usageLine(u) {
   return [`${k(u.input)} → ${k(u.output)} tokens`,
-    u.input && u.cached ? `${tr("cached")} ${Math.round((u.cached / u.input) * 100)}%` : "",
-    u.cost != null ? `≈${usd(u.cost)}` : ""].filter(Boolean).join(" · ");
+    u.input && u.cached ? `${tr("cached")} ${Math.round((u.cached / u.input) * 100)}%` : ""].filter(Boolean).join(" · ");
 }
 
 /// One line in the log. The log only ever grows at its end.

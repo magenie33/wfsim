@@ -6,17 +6,16 @@
 
 import { SENT_ROLES } from "./record.js";
 import { toolId } from "./tools.js";
-import { CAPS, clip, estimate } from "./size.js";
+import { CAPS, clip } from "./size.js";
 
-/// ONE MESSAGE AS SENT — the only place that says so, which is what lets the
-/// budget measure exactly what the view sends. The reader's words, the page and
-/// a result are each cut to their cap here; the record keeps them whole.
+/// ONE MESSAGE AS SENT — the only place that says so. The reader's words, the
+/// page and a result are each cut to their cap here; the record keeps them whole.
 export const pageText = (m) => (m.page && !m.pageMasked ? `\n\n<page>${clip(m.page, CAPS.page)}</page>` : "");
 /// The skill documents attached to a reader's message (the module they are on).
 export const preloadText = (m) => (m.preload && !m.skillsMasked ? `\n\n${m.preload}` : "");
 export const userText = (m) => clip(m.text || "", CAPS.text) + pageText(m) + preloadText(m);
 /// A SKILL'S RESULT IS NOT CUT: its size is bounded where it is made, and it
-/// is K's to account for. Unloaded, it says so and how to have it back.
+/// is K's to keep under its cap. Unloaded, it says so and how to have it back.
 export const toolText = (m) => (m.skills
   ? (m.masked ? `[skill ${m.skills.join(", ")} unloaded — load it again if you need it]` : m.result || "")
   : m.masked
@@ -27,21 +26,7 @@ export const toolText = (m) => (m.skills
 export const summarySkillsText = (s) => (s.skills || []).filter((d) => !d.unloaded).map((d) => `${d.text}\n\n`).join("");
 export const summaryText = (s) => `<summary of the conversation so far>\n${s.text}\n</summary>\n\n${summarySkillsText(s)}`;
 
-/// WHAT ONE MESSAGE COSTS TO SEND, in estimated tokens, split between K (the
-/// skill documents it carries) and the zone it sits in (H or P).
-export function skillSizeOf(m) {
-  if (m.role === "user") return m.preload && !m.skillsMasked ? estimate(preloadText(m)) : 0;
-  if (m.role === "tool" && m.skills && !m.masked) return estimate(toolText(m));
-  return 0;
-}
 export const checkText = (m) => `<check>${m.text}</check>`;
-export function sizeOf(m) {
-  if (m.role === "user") return estimate(userText(m)) - skillSizeOf(m);
-  if (m.role === "check") return estimate(checkText(m));
-  if (m.role === "assistant") return estimate((m.text || "") + JSON.stringify(m.calls || []));
-  if (m.role === "tool") return estimate(toolText(m)) - skillSizeOf(m);
-  return 0;
-}
 
 /// The messages sent, from the summary on: the ones after it, the first of which
 /// carries the summary ahead of its own text. A reply with neither words nor
@@ -66,6 +51,6 @@ export function view(record, { rules, memory, tools }) {
   };
 }
 
-/// The whole view as one string, for estimating what it costs.
+/// The whole view as one string — what a stand-in provider is sent in the tests.
 export const viewText = (v) => v.system.join("") + JSON.stringify(v.tools)
   + v.turns.map((t) => t.text + (t.calls ? JSON.stringify(t.calls) : "")).join("");

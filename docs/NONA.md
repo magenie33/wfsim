@@ -21,7 +21,7 @@ wish.
 | 6 | **The prefix is stable.** Rules, memory and tools are byte-identical from one request to the next between two summaries, so a provider's prompt cache keeps matching. | `test_nona_core` (two consecutive views share their prefix byte for byte) |
 | 7 | **Every stored shape is versioned, and a name that ships is frozen.** Conversations, memory and settings live in readers' browsers; they are a wire. | `test_nona_core` (each old fixture migrates; no shipped name leaves `FROZEN`) |
 | 8 | **Every door action reaches her through a skill generated from the table at request time**, by seven fixed tools. Nothing in her code lists what the page can do. | `check_agent_door` (every action in exactly one skill); `check_nona` (seven tools; the catalogue names every action) |
-| 9 | **Every zone of a request is under its cap, and the whole under W** — however long the conversation. | `test_nona_core`: over a thousand generated turns in four windows, every zone under its cap after every maintenance; T and one skill's size by `check_nona` |
+| 9 | **A request fits the window after at most one compaction, and nothing is estimated** — however long the conversation; the budget acts only on what a provider stated. | `test_nona_core`: over a thousand generated turns sent to stand-in providers of five tokenizer weights and windows; T and one skill's size by `check_nona` |
 
 ## The layers
 
@@ -55,11 +55,11 @@ web/src/static/nona/
   index.js                 mount: waits for the page's boot, builds the runtime, mounts the ui
   core/
     record.js              Conversation, Message, Settings, Memory shapes; migrate(); FROZEN
-    size.js                the caps; estimate(); clip()
+    size.js                the caps; clip()
     skills.js              the catalogue and a skill's document, from the door's table
     calc.js                arithmetic on numbers she was sent
     view.js                each message as sent; view(record, parts) -> { system, tools, turns }
-    budget.js              measure(record) -> zones; plan() -> what to set aside, where to summarise
+    budget.js              pressed(record, window) from the billed usage; plan() -> what to set aside, where to summarise
     summary.js             summaryInput(); applySummary(), cut to its cap; SUMMARY_RULES
     measure.js             numbersIn(record); markNumbers(text, numbers)
     memory.js              set / forget / undo / block over a Memory value
@@ -95,10 +95,9 @@ untouched and read-only rather than guessed at.
 
 | Key | Where | Shape (v1) |
 | --- | --- | --- |
-| `wfsim-nona` | localStorage | `{ v, base, proto, model, context, price, remember, concise, key? }` — `key` only when `remember` |
+| `wfsim-nona` | localStorage | `{ v, base, proto, model, context, remember, concise, key? }` — `key` only when `remember` |
 | `wfsim-nona-key` | sessionStorage | the key, when not remembered |
 | `wfsim-nona-memory` | localStorage | `{ v, paused, items: MemoryItem[], archive?: {at, items}[] }` — `archive`, the versions before the last tidies |
-| `wfsim-nona-calib` | localStorage | `{ [model]: ratio }` — token estimate calibration |
 | `wfsim-nona-launcher` | localStorage | `{ v, side, y }` — where the launcher was dragged: the edge it settled on, and its bottom's height as a share of the screen's; absent, it sits where the stylesheet puts it |
 | `wfsim-nona` / `conversations` | IndexedDB | `Conversation` |
 
@@ -196,121 +195,87 @@ is a reason to keep a few actions as named tools again, not to guess.
 
 ## The context budget
 
-The code is `core/size.js` (the caps), `core/budget.js` (the plan) and
-`core/summary.js`. The numbers are starting values, tuned against `nona_eval`;
-the structure is the rule.
+The code is `core/size.js` (the caps), `core/budget.js` (when and how to
+compact) and `core/summary.js`.
 
 A conversation may go on for ever. What makes that possible is two stores of
 different kinds: **the record**, whole and append-only, in the reader's
-browser, and **the request**, which has a hard size and is rebuilt from the
-record for every call. The record grows without bound; the request never does.
-Anything that has left the request is still in the record, and
+browser, and **the request**, rebuilt from the record for every call. The
+record grows without bound; the request is compacted when the provider says it
+has to be. Anything that has left the request is still in the record, and
 `shell_history_search` reaches it.
 
-### Two ceilings
+### Nothing is estimated
 
-- **X**, the model's context window, from the address's model list or the
-  reader. A request larger than X fails, so this is a hard limit.
-- **B**, the cost budget: what one request may spend on input. A model with a
-  million-token window is still sent a small request.
+The page never guesses how many tokens a text is. Every number the budget acts
+on is one a provider stated:
 
-The input one request may hold is **W = min(X − O − margin, B)**, where O is
-the output reserved for the reply. Only X refuses: a model whose window cannot
-hold the fixed zones below is refused, with that reason, rather than run badly.
-B gives way instead — where the model's token correction leaves it no room for
-a turn, W rises to that room, never past X. A refused model sends nothing, so a
-correction that refused it could never be corrected back.
+- **the window**, from the address's model list (`context`); an address that
+  does not state one has none, and is compacted only when it says too long;
+- **what the last request cost**, the `usage` the provider billed for it —
+  input and reply, since the next request carries both;
+- **too long**, the provider's own refusal of a request.
 
-### The zones
+There is no cost budget. The reader chose the model and pays for it; what a
+request holds is bounded by the window alone. A refused model is never refused
+by the page: a window too small is the provider's error, in its words.
 
-The request is built in this order, most stable first. Every zone has a cap;
-each is kept under it by the mechanism named, and nothing else writes it.
+### When to compact
 
-| Zone | Holds | Cap | Kept under it by |
-| --- | --- | --- | --- |
-| **S** rules | who she is, what she may do | 1.5k | a build-time check: over it, CI fails and the rules are rewritten |
-| **T** tools | her fixed tools and the skill catalogue | 2k | `check_nona`: a door that outgrows it fails CI until the catalogue is shortened |
-| **M** memory | the reader's profile, as frozen for this stretch | 0.8k | memory compaction |
-| **K** skills | the skill documents in view, wherever they sit | 4k, one skill ≤ 2.5k | unloading the least recently used; a skill over 2.5k fails `check_nona` |
-| **H** history | the summary, then the turns since it | 6k, summary ≤ 1.5k | setting results aside, then summarising |
-| **P** this turn | the reader's message, its page, this turn's calls and results | 6k; page ≤ 0.5k, one result ≤ 2k | setting this turn's older results aside |
-| **O** output | her reply | 2k–4k | the request's `max_tokens` |
+1. **Pressed**: the last reply was billed at 70% of the window or more. The
+   rest is the room for what the next request adds, which is at most one
+   message or result, each under its cap. Compacted before the request.
+2. **Too long**: the provider refused the request. Compacted, and sent once
+   more; refused again, its words are what the reader sees.
 
-S and T are fixed for a release and M for a stretch of conversation, so they
-form a prefix that a provider's cache keeps matching. Only K, H and P change,
-and they come last.
+### What compacting does
 
-### Keeping each zone under its cap
-
-Before every request, one pure function in `core/` measures the zones and
-returns what to do. A zone over its cap (the **high water mark**) is brought
-down to 60% of it (the **low water mark**), not just under the line: every
-compaction breaks the provider's cache once, and the room left over is what
-makes the next one rare.
-
-The cheapest step comes first:
-
-1. **P over its cap.** This turn's older tool results are set aside, each
-   replaced by one line saying what it was and that the call can be repeated.
-   The newest two stay verbatim — the newest one, when two do not fit. A turn
-   still over its cap with nothing left to set aside is not sent: it ends
-   there, saying so, and the reader's next message starts a turn that can
-   summarise it.
-2. **H over its cap.** First, the results of earlier turns are set aside. Then
-   the older page snapshots go. Then the oldest turns are summarised by the
-   model into the summary, which keeps every measured number only with its
-   source. A summary over its own cap is summarised again.
-3. **K over its cap.** The least recently used skill is unloaded and replaced
-   by one line saying it can be loaded again.
-4. **M over its cap.** A memory is at most 120 characters and a slot is
-   written over in place; unconfirmed items are never sent. A profile past its
-   cap is handed to the model to rewrite shorter — merging notes, dropping what
-   a later one contradicts — as lines that each name the memories they come
-   from. The page takes the result only if every source exists, every slot is
-   still there and nothing is new, and it fits the cap; anything else is thrown
-   away and the profile stays. The reader is told, and the version before is
-   one tap away (`archive`, the last three). Until a tidy succeeds, the notes
-   least recently touched are left out of what is sent. This runs when the
-   conversation starts and at each summary, where M is taken anyway.
+One step, the same either way. This turn's tool results but the newest two are
+set aside, each replaced by one line saying what it was and that the call can
+be repeated. Every turn before this one is summarised by the model, which keeps
+every measured number only with its source. Compacting a conversation with
+nothing left to compact does nothing, so a turn that alone fills the window
+reaches the provider and its answer stands.
 
 **A SUMMARY IS THE MOMENT FOR EVERYTHING ELSE.** Summarising breaks the cache
 anyway, so M's snapshot is refreshed then, and memories written since take
 effect in the prefix. The skill documents in view before the cut are carried
-into the summary as they were loaded — the same bytes, with no call from her.
-Between summaries the prefix does not move.
+into the summary as they were loaded — the same bytes, with no call from her —
+up to K, the most recently loaded kept. Between compactions the prefix does
+not move.
 
-The function's contract: after it runs, every zone is under its cap and the
-whole is under W. `test_nona_core` holds it to that over generated records of
-every length, including ones far longer than any real conversation.
+`test_nona_core` holds the rule over generated conversations of hundreds of
+turns sent to stand-in providers of several tokenizer weights and windows:
+after one compaction a request always fits, and the record never loses a
+message.
 
-### Round n + 1
+### The caps
 
-After n rounds, with rounds 1 to k summarised, the reader asks again:
+Each piece of a request has a cap in characters — a length, measured, not a
+token count. They bound what one message or result can add, which is what
+makes the 70% rule safe.
 
-```
-── system ────────────────────────────────── shared by every conversation
- S  rules                                             ≤ 1.5k
- T  skill catalogue: builder · simulator · …          ┐
-── tools ───────────────────────────────────          │ ≤ 2k
- T  observe · history_search · memory_set ·           │
-    memory_forget · skill_load · act · calc           ┘
-── system, continued ─────────────────────── fixed until the next summary
- M  <memory of this reader>                           ≤ 0.8k
-── messages ──────────────────────────────── appended only
- H  <summary of rounds 1…k>                           ≤ 1.5k  ┐
- K  skill documents: builder, simulator               ≤ 4k    │
- H  rounds k+1…n: the reader's words, her replies,            │ H ≤ 6k
-    her calls; their results set aside, one line each        ┘
- P  round n+1: the reader's words + <page>…</page>    ≤ 0.5k  ┐
-    the skill of the module they are on, preloaded            │ P ≤ 6k
-    this round's calls and results, newest two verbatim      ┘
-── max_tokens ─────────────────────────────── O  2k–4k
-```
+| Piece | Holds | Cap | Kept under it by |
+| --- | --- | --- | --- |
+| **S** rules | who she is, what she may do | 4,500 | a build-time check: over it, CI fails and the rules are rewritten |
+| **T** tools | her fixed tools and the skill catalogue | 6,000 | `check_nona`: a door that outgrows it fails CI until the catalogue is shortened |
+| **M** memory | the reader's profile, as frozen for this stretch | 1,500 | memory compaction |
+| **K** skills | the skill documents a summary carries; one load | 15,000, one skill ≤ 7,500 | the summary keeps the most recently loaded; a skill over its cap fails `check_nona` |
+| summary | the summary's text | 2,000 | cut, whatever the model wrote |
+| text, page, result | the reader's words, the page, one result | 4,500, 1,500, 6,000 | cut where sent, saying how much is missing |
 
-With the caps above, a request holds at most about 22k tokens of input and
-typically 8k–12k, whatever X is. A larger X decides only whether a model can
-run, never what it costs; B is what the reader may raise to have her keep
-more in view.
+S and T are fixed for a release and M for a stretch of conversation, so they
+form a prefix that a provider's cache keeps matching. **M over its cap**: a
+memory is at most 120 characters and a slot is written over in place;
+unconfirmed items are never sent. A profile past its cap is handed to the model
+to rewrite shorter — merging notes, dropping what a later one contradicts — as
+lines that each name the memories they come from. The page takes the result
+only if every source exists, every slot is still there and nothing is new, and
+it fits the cap; anything else is thrown away and the profile stays. The reader
+is told, and the version before is one tap away (`archive`, the last three).
+Until a tidy succeeds, the notes least recently touched are left out of what is
+sent. This runs when the conversation starts and at each summary, where M is
+taken anyway.
 
 ### What measured means
 
@@ -325,7 +290,7 @@ The record is never trimmed, because it is the reader's and because it is what
 `shell_history_search` and a reopened conversation read. It is kept in
 segments, so a long conversation is not rewritten whole on every save, and the
 panel draws the latest ones and loads earlier ones on scroll. A result is
-already capped at 2k tokens when it is recorded, which bounds what one round
+already capped at 6,000 characters when it is recorded, which bounds what one round
 can add.
 
 ## The page's side
@@ -351,7 +316,7 @@ not in `tools()`, whatever it does.
 
 | Kind | What | Runs |
 | --- | --- | --- |
-| `test_nona_core` | Node, no browser: migrations from every fixture version; the view is deterministic and leaves the record unchanged; two consecutive views share their prefix; budget marks the oldest first and keeps the newest; the summary's input; the number checker; both protocols encode to their golden bodies and decode recorded streams; memory set / forget / undo / block | CI, seconds |
+| `test_nona_core` | Node, no browser: migrations from every fixture version; the view is deterministic and leaves the record unchanged; two consecutive views share their prefix; compaction on the billed usage, over generated conversations sent to stand-in providers; the summary's input; the number checker; both protocols encode to their golden bodies and decode recorded streams; memory set / forget / undo / block | CI, seconds |
 | `check_nona_boundary` | static: no `nona/` file names an `app.js` identifier; imports point down; each layer keeps to what it may touch; every file is in the site build and the dev server lists | CI, seconds |
 | `check_nona` | the browser, against a stand-in provider: the loop end to end, the branch policy, storage, the ui | CI |
 | `nona_eval` | a real model, by hand: behaviour graded per case | after prompt, tool or door changes |

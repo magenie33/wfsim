@@ -119,25 +119,25 @@ the build it was. No browser.
 ## `check_nona`
 
 Nona against a local stand-in provider speaking both protocols, streamed in
-pieces the way providers send them, read only through the page and the
-requests — never her module's internals. She is sent her seven fixed tools,
-whose catalogue names every door action; the tools fit zone T and every
-skill's document its cap; every reader message carries the page and the skill
-of the module they are on; a scripted `act` lands on the page and in the
-trail, and her first change branches
-the reader's build — which is asserted untouched afterwards, and taken back
-through the change card. Each reply shows its usage and cost, Anthropic
-requests carry cache breakpoints, conversations survive a reload and reopen
-from the picker with their trail, memory rides a request except an incognito
-one, an incognito chat is not kept, and the key is kept for the tab unless the
-reader asks to remember it. Verified to bite: with the branch policy disabled
-and the incognito guard removed from the save, seven assertions fail; with the
-preload off, or a skill dropped from the door, the catalogue and preload
-assertions fail. A model that answers with nothing is sent the page's check
-once and then answers; with the check removed, that assertion fails. A
-profile past its cap is tidied before she is asked — she is sent the tidied
-one, the reader is told, and one tap brings the old one back; with the tidy
-switched off, those assertions fail.
+pieces the way providers send them, read only through the page and the requests
+— never her module's internals. She is sent her seven fixed tools, whose
+catalogue names every door action; the tools fit cap T and every skill's
+document its cap, in characters; every reader message carries the page and the
+skill of the module they are on; a scripted `act` lands on the page and in the
+trail, and her first change branches the reader's build — which is asserted
+untouched afterwards, and taken back through the change card. Each reply shows
+the tokens the provider billed and no guessed price, Anthropic requests carry
+cache breakpoints, conversations survive a reload and reopen from the picker
+with their trail, memory rides a request except an incognito one, an incognito
+chat is not kept, and the key is kept for the tab unless the reader asks to
+remember it. Verified to bite: with the branch policy disabled and the
+incognito guard removed from the save, seven assertions fail; with the preload
+off, or a skill dropped from the door, the catalogue and preload assertions
+fail. A model that answers with nothing is sent the page's check once and then
+answers; with the check removed, that assertion fails. A profile past its cap
+is tidied before she is asked — she is sent the tidied one, the reader is told,
+and one tap brings the old one back; with the tidy switched off, those
+assertions fail.
 
 ## `test_nona_core`
 

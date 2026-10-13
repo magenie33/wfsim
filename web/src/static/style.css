@@ -3304,6 +3304,8 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .nona-settings{padding:14px 12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
 .nona-settings label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
 .nona-settings input,.nona-settings select{font:inherit;font-size:13px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--plane);color:var(--text)}
+/* THE KEY IS MASKED, NOT A PASSWORD FIELD: the browser offers to save a filled password box as this site's login, and fills one in */
+.nona-settings .nona-secret{-webkit-text-security:disc}
 .nona-fine{font-size:11px;color:var(--muted);margin:0}
 .nona-settings .run-btn{margin-top:4px}
 /* The page's own dropdown opens ABOVE the panel it was opened from. */

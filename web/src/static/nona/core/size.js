@@ -1,52 +1,25 @@
-// HOW BIG THINGS ARE, and how big each part of a request may be.
-// docs/NONA.md §"The context budget" is the rule; these are its numbers, which
-// are starting values tuned against `nona_eval`.
+// HOW BIG EACH PIECE OF A REQUEST MAY BE, in characters. Nothing here guesses
+// tokens: the provider states what a request cost, and docs/NONA.md §"The
+// context budget" compacts on that.
 
-/// THE CAPS, in estimated tokens. S, T, M, K, H and P are the zones; `summary`,
-/// `page`, `text`, `result` and `skill` bound the pieces inside them.
+/// THE CAPS. S, T, M and K bound her rules, the tool table, the reader's memory
+/// and the skill documents in view; `summary`, `page`, `text`, `result` and
+/// `skill` bound one piece each.
 export const CAPS = {
-  S: 1500, T: 2000, M: 800, K: 4000, H: 6000, P: 6000,
-  summary: 1500, page: 500, text: 1500, result: 2000, skill: 2500,
+  S: 4500, T: 6000, M: 1500, K: 15000,
+  summary: 2000, page: 1500, text: 4500, result: 6000, skill: 7500,
 };
-/// A zone over its cap is brought down to this share of it, not just under the
-/// line: each compaction breaks the provider's cache once, and the room left is
-/// what makes the next one rare.
-export const LOW = 0.6;
-/// The window assumed when the address does not state one, the reply's
-/// reserve, a margin for the estimate being wrong, and the cost budget B.
-export const WINDOW = 64000;
-export const OUTPUT = 4096;
-export const MARGIN = 1500;
-export const BUDGET = 24000;
-
-/// TOKENS, ESTIMATED WITHOUT A TOKENIZER: a CJK character is about 0.6, any
-/// other about 0.3 (DeepSeek's published rule of thumb), JSON a little more,
-/// times the model's own correction (`calibrate`).
-export function estimate(s, ratio = 1) {
-  const str = String(s);
-  const cjk = (str.match(/[⺀-鿿가-힯＀-￯]/g) || []).length;
-  return Math.ceil((cjk * 0.6 + (str.length - cjk) * 0.3) * 1.1 * ratio);
-}
-
-/// The next ratio, from what a provider billed against what was guessed. A
-/// sample is held to [0.5, 4]: a proxy that misreports usage once is not a
-/// tokenizer, and the ratio outlives the conversation in which it was billed.
-export function calibrate(prev, estimated, billed) {
-  if (!estimated || !billed) return prev || 1;
-  const r = Math.min(4, Math.max(0.5, billed / (estimated / (prev || 1))));
-  return prev ? prev * 0.7 + r * 0.3 : r;
-}
+/// COMPACT PAST THIS SHARE OF THE WINDOW, measured on the last reply: the next
+/// request adds at most one message or result, and the room left must hold it.
+export const HIGH = 0.7;
 
 /// TEXT CUT TO A SIZE, saying so and saying how much is missing — so a list cut
 /// short reads as cut, and the tool's own limit can narrow it.
-export function clip(text, tokens) {
+export function clip(text, chars) {
   const s = String(text);
-  if (estimate(s) <= tokens) return s;
+  if (s.length <= chars) return s;
   const tail = (n) => ` …[cut: ${n} more characters]`;
-  let lo = 0, hi = s.length;
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2);
-    if (estimate(s.slice(0, mid) + tail(s.length - mid)) <= tokens) lo = mid; else hi = mid - 1;
-  }
-  return s.slice(0, lo) + tail(s.length - lo);
+  let keep = chars - tail(s.length).length;
+  keep = Math.max(0, keep);
+  return s.slice(0, keep) + tail(s.length - keep);
 }

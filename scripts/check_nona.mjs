@@ -16,7 +16,7 @@
 // internals; the pure logic under them is `test_nona_core`'s.
 import { createServer } from "node:http";
 import { openApp } from "./cdp.mjs";
-import { CAPS, estimate } from "../web/src/static/nona/core/size.js";
+import { CAPS } from "../web/src/static/nona/core/size.js";
 import { skillDoc } from "../web/src/static/nona/core/skills.js";
 
 const seen = [];
@@ -201,9 +201,9 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
   check(`${provider}: the skill of the module the reader is on rides with their message`,
     JSON.stringify(sent[0].body.messages).includes("<skill builder>"));
   if (provider === "openrouter") {
-    const t = estimate(JSON.stringify(tools.map((x) => ({ name: x.function.name, description: x.function.description, input_schema: x.function.parameters }))));
+    const t = JSON.stringify(tools.map((x) => ({ name: x.function.name, description: x.function.description, input_schema: x.function.parameters }))).length;
     check("the tools and the catalogue fit zone T", t <= CAPS.T, `${t} > ${CAPS.T}`);
-    const over = r.skills.map((k) => [k.id, estimate(skillDoc(k, r.door))]).filter(([, n]) => n > CAPS.skill);
+    const over = r.skills.map((k) => [k.id, skillDoc(k, r.door).length]).filter(([, n]) => n > CAPS.skill);
     check("every skill's document fits its cap", !over.length, JSON.stringify(over));
   }
   check(`${provider}: the loop runs to an answer`, sent.length === 3 && r.log.some((l) => /assistant \| Serration is seated/.test(l)),
@@ -219,8 +219,8 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
     r.card === true && /Serration|膛线/.test(r.cardText) && r.taken === true, JSON.stringify([r.cardText, r.taken]));
   check(`${provider}: every request streams, and each reader message carries the page`,
     sent.every((x) => x.body.stream === true) && JSON.stringify(sent[0].body.messages).includes("<page>"));
-  check(`${provider}: each reply shows what it cost, and the chat its total and the AI label`,
-    r.log.some((l) => /nona-msg usage \| .*tokens.*80%.*≈\$/.test(l)) && /tokens/.test(r.foot) && r.foot.length > 20,
+  check(`${provider}: each reply shows the tokens it was billed and no guessed price, and the chat its total and the AI label`,
+    r.log.some((l) => /nona-msg usage \| .*tokens.*80%/.test(l)) && ![...r.log, r.foot].some((l) => /≈/.test(l)) && /tokens/.test(r.foot) && r.foot.length > 20,
     JSON.stringify([r.log.filter((l) => /usage/.test(l)), r.foot]));
   if (provider === "anthropic") {
     const b = sent[0].body;
@@ -363,6 +363,7 @@ const set = await evaluate(`(async () => {
   const base = document.getElementById("nona-base");
   base.value = ${JSON.stringify(MOCK + "/v1")}; base.dispatchEvent(new Event("change"));
   const key = document.getElementById("nona-apikey");
+  out.keyMasked = key.type !== "password" && getComputedStyle(key).webkitTextSecurity === "disc";
   key.value = "test"; key.dispatchEvent(new Event("change"));
   for (let i = 0; i < 40 && !document.querySelector(".nona-status.good, .nona-status.bad"); i++) await wait(100);
   out.state = document.querySelector(".nona-status.good") ? "ok" : "error";
@@ -390,14 +391,15 @@ const set = await evaluate(`(async () => {
 
 check("with no key saved, the panel opens on its settings", set.settingsFirst === true);
 check("a quick fill puts an address in the address box", set.filled === true);
+check("the key is masked without being a password box, so the browser never offers to save it as a login", set.keyMasked === true);
 check("the address and key are checked, and the protocol is detected",
   set.state === "ok" && /OpenAI/.test(set.status) && /2/.test(set.status), JSON.stringify([set.state, set.status]));
 check("nothing is saved before a model is chosen", set.saveOff === true);
 check("the model list is the page's searchable dropdown, over the panel, with a tool-less model greyed",
   set.noToolsGreyed === true && set.popoverOnTop === true, JSON.stringify([set.noToolsGreyed, set.popoverOnTop]));
-check("the model picked is saved with the address, protocol, context and price",
+check("the model picked is saved with the address, protocol and the window its address states, and no price",
   set.model === "vendor/mock-tools" && set.saved.model === "vendor/mock-tools" && set.saved.proto === "openai"
-  && set.saved.context === 128000 && Array.isArray(set.saved.price), JSON.stringify(set.saved));
+  && set.saved.context === 128000 && !("price" in set.saved), JSON.stringify(set.saved));
 check("the key is kept for this tab only, unless the reader asks to remember it",
   !("key" in set.saved) && set.sessionKey === "test", JSON.stringify([set.saved, set.sessionKey]));
 

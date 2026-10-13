@@ -3,8 +3,8 @@
 // draws those events; it never writes the record. docs/NONA.md §"One turn".
 
 import * as record from "../core/record.js";
-import { view, viewText } from "../core/view.js";
-import { CAPS, clip, estimate } from "../core/size.js";
+import { view } from "../core/view.js";
+import { CAPS, clip } from "../core/size.js";
 import * as budget from "../core/budget.js";
 import * as summary from "../core/summary.js";
 import * as memoryOps from "../core/memory.js";
@@ -43,7 +43,7 @@ const uid = (p) => `${p}${Date.now().toString(36)}${Math.random().toString(36).s
 export function createAgent(door) {
   const listeners = new Set();
   const emit = (ev) => listeners.forEach((f) => f(ev));
-  const s = { conv: null, list: [], busy: false, abort: null, owned: new Set(), shrink: 1 };
+  const s = { conv: null, list: [], busy: false, abort: null, owned: new Set() };
 
   function append(m) {
     s.conv.messages.push(m);
@@ -71,7 +71,6 @@ export function createAgent(door) {
     s.conv = c ? JSON.parse(JSON.stringify(c))
       : record.newConversation({ id: uid("c"), now: Date.now(), weapon: (door.observe().route || {}).weapon });
     s.owned = new Set(s.conv.made || []);
-    s.shrink = 1;
     emit({ type: "open" });
   }
 
@@ -108,30 +107,26 @@ export function createAgent(door) {
     };
   }
 
-  /// EVERY ZONE UNDER ITS CAP before a request: set aside what `plan` says to,
-  /// summarise when it says to, and ask again until it asks for nothing more.
-  /// `shrink` is how much smaller than the estimate the address has shown the
-  /// window to be. Returns the parts to send, or why not to send.
-  async function maintain(cfg, signal) {
-    let p = parts(cfg);
-    for (let round = 0; round < 3; round++) {
-      const pl = budget.plan(s.conv, p, { context: cfg.context, budget: cfg.budget, ratio: store.ratio(cfg.model) * s.shrink });
-      if (pl.refuse) return { refuse: true };
-      const mk = pl.marks;
-      if (mk.tools.length || mk.pages.length || mk.skills.length || mk.summary.length) {
-        s.conv = budget.applyMarks(s.conv, mk);
-        say("note", "earlier tool results were set aside to save space");
-      }
-      if (pl.summarize == null) return { p, stop: pl.stop };
+  /// COMPACTED BEFORE A REQUEST when the last one was billed near the window,
+  /// or when the address said the last try was too long (`forced`): this
+  /// turn's older results set aside, every earlier turn summarised. Returns
+  /// the parts to send.
+  async function maintain(cfg, signal, forced = false) {
+    if (!forced && !budget.pressed(s.conv, cfg.context)) return parts(cfg);
+    const pl = budget.plan(s.conv);
+    if (pl.marks.tools.length) {
+      s.conv = budget.applyMarks(s.conv, pl.marks);
+      say("note", "earlier tool results were set aside to save space");
+    }
+    if (pl.summarize != null) {
       const text = await transport.complete(cfg, summary.SUMMARY_RULES, summary.summaryInput(s.conv, pl.summarize, callLine), signal);
       s.conv = summary.applySummary(s.conv, pl.summarize, text);
       await tidyMemory(cfg, signal);
       freezeMemory();
-      p = parts(cfg);
       say("note", "the early part of this chat was summarised to save space");
       await save();
     }
-    return { p, stop: false };
+    return parts(cfg);
   }
 
   /// Up to eight places the record mentions `q`, each with a little around it.
@@ -164,7 +159,7 @@ export function createAgent(door) {
   }
 
   /// Skills whose documents are in view now — never loaded twice.
-  const loaded = () => new Set(budget.skillsInView(s.conv).flatMap((e) => e.ids));
+  const loaded = () => budget.loadedSkills(s.conv);
 
   /// The documents of `ids`, as generated from the door now.
   const docsFor = (ids) => {
@@ -184,7 +179,7 @@ export function createAgent(door) {
     const ids = want.filter((x) => !have.has(x));
     if (!ids.length) return { r: { ok: true, text: `already loaded: ${want.join(", ")}` } };
     const text = docsFor(ids);
-    if (estimate(text) > CAPS.K) return { r: { ok: false, reason: "too_large", because: "load fewer skills at once" } };
+    if (text.length > CAPS.K) return { r: { ok: false, reason: "too_large", because: "load fewer skills at once" } };
     return { r: { ok: true }, result: text, skills: ids };
   }
 
@@ -246,42 +241,30 @@ export function createAgent(door) {
     const asked = s.conv.messages.length;
     s.busy = true; s.abort = new AbortController(); emit({ type: "busy" });
     const signal = s.abort.signal;
-    let retried = false, retrying = false, nudged = false;
+    let nudged = false;
     const seen = [];
     try {
       // M IS TAKEN when the conversation starts — tidied first if it has grown
       // past its cap — and then left alone until a summary.
       if (!s.conv.memory) { await tidyMemory(cfg, signal); freezeMemory(); }
       for (let step = 0; step < MAX_STEPS; step++) {
-        const m = await maintain(cfg, signal);
-        if (m.refuse) { say("error", "This model's context window is too small for Nona."); return; }
-        // THIS TURN ALONE HAS OUTGROWN ITS ZONE: it ends here, and the next
-        // message starts a turn that can summarise this one.
-        if (m.stop) { say("note", "this question has taken many steps — ask me to go on and I will continue from here"); return; }
-        const v = view(s.conv, m.p);
-        const est = estimate(viewText(v)) * store.ratio(cfg.model);
-        let out;
-        try {
-          out = await transport.send(cfg, v, { signal, onText: (t) => emit({ type: "stream", text: t }) });
-        } catch (e) {
-          emit({ type: "stream", text: null });
-          // TOO LONG FOR THE ADDRESS: its window is smaller than it said or than
-          // the estimate thinks; plan against a third less, once.
-          if (!retried && transport.tooLong(e)) { retried = retrying = true; s.shrink *= 1.5; step--; continue; }
-          // A third less did not help, so the window was not the cause: kept,
-          // the shrink would compound with every ask until the model is refused.
-          if (retrying && transport.tooLong(e)) s.shrink /= 1.5;
-          throw e;
+        let p = await maintain(cfg, signal), out;
+        for (let tries = 0; ; tries++) {
+          try {
+            out = await transport.send(cfg, view(s.conv, p), { signal, onText: (t) => emit({ type: "stream", text: t }) });
+            break;
+          } catch (e) {
+            emit({ type: "stream", text: null });
+            // TOO LONG FOR THE ADDRESS, in its own words: compacted once and sent
+            // again; still too long, its words are what the reader sees.
+            if (tries || !transport.tooLong(e)) throw e;
+            p = await maintain(cfg, signal, true);
+          }
         }
         emit({ type: "stream", text: null });
-        retrying = false;
         if (out.usage) {
-          store.saveRatio(cfg.model, budget.calibrate(store.ratio(cfg.model), est, out.usage.input));
-          const cost = budget.cost(cfg.price, out.usage);
           const u = s.conv.usage;
-          s.conv.usage = { input: u.input + out.usage.input, output: u.output + out.usage.output,
-            cached: u.cached + out.usage.cached, cost: u.cost + (cost || 0) };
-          out.usage.cost = cost;
+          s.conv.usage = { ...u, input: u.input + out.usage.input, output: u.output + out.usage.output, cached: u.cached + out.usage.cached };
         }
         append({ role: "assistant", text: out.text, calls: out.calls, usage: out.usage || null });
         await save();
