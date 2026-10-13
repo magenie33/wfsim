@@ -271,6 +271,10 @@ const postBoardTo = (base, path, body) => fetch(base + path, {
 /// times both roads every `ROUTE_EVERY_MS` and takes the quicker; a call the
 /// relay drops goes direct at once, and the relay is left for that long.
 const RELAY = "https://cn.wfsim.app", ROUTE_EVERY_MS = 10 * 60_000, ROUTE_TRIES = 3;
+/// WHAT THE RELAY CARRIES — its nginx site lists the same paths, and anything
+/// else it answers 404, which a call here would read as the relay dropping it.
+const RELAY_PATHS = ["/api/board/work", "/api/board/answers", "/api/board/renew", "/api/board/release",
+  "/api/board/mine", "/api/board/points", "/api/board/ping"];
 let routeBase = "", routeAt = 0, routing = null;
 const relayServes = () => /^(https:\/\/wfsim\.app|https?:\/\/wfsim\.localhost)$/.test(location.origin);
 async function timeRoute(base) {
@@ -298,13 +302,13 @@ function chooseRoute() {
   return routing;
 }
 /// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
-/// `/api/board/` alone — its answer or null. A call one road drops goes by the
+/// `RELAY_PATHS` alone — its answer or null. A call one road drops goes by the
 /// other at once, and the road that answered is kept until the next timing; one
 /// both drop has the roads timed again on the next call. `roadDropped` names the
 /// road that dropped the last call: "relay", "direct" or "".
 let roadDropped = "";
 async function postBoardWork(path, body) {
-  const board = path.startsWith("/api/board/") && relayServes();
+  const board = RELAY_PATHS.includes(path) && relayServes();
   const base = board ? await chooseRoute() : "";
   const r = await postBoardTo(base, path, body);
   roadDropped = r || !board ? "" : base ? "relay" : "direct";
@@ -314,6 +318,29 @@ async function postBoardWork(path, body) {
   routeBase = other;
   routeAt = again ? Date.now() : 0;
   return again;
+}
+
+/// HOW EACH ROAD CARRIES A PUBLIC FILE, once a day per browser, as `road.probe`
+/// points: whether to send public reads by the relay too is decided on these,
+/// split by country, and not on a guess. `board.meta.json` is small, public and
+/// what every board reader fetches first; each road is timed alone, in turn.
+/// It waits `ROAD_PROBE_AFTER_MS` past boot, so it neither slows the page nor is slowed by it.
+const ROAD_PROBE = "wfsim-road-probe", ROAD_PROBE_MS = 10_000, ROAD_PROBE_AFTER_MS = 15_000;
+async function roadProbe() {
+  if (!relayServes() || !LIVE_HOSTS.includes(location.hostname) || usageOff()
+      || navigator.globalPrivacyControl || navigator.doNotTrack === "1") return;
+  const day = new Date().toISOString().slice(0, 10);
+  try { if (localStorage.getItem(ROAD_PROBE) === day) return; localStorage.setItem(ROAD_PROBE, day); } catch (_) { return; }
+  for (const [road, base] of [["direct", LIVE_ORIGIN], ["relay", RELAY]]) {
+    const t = performance.now();
+    let ok = false;
+    try {
+      const r = await fetch(`${base}/board.meta.json`, { cache: "no-store",
+        signal: AbortSignal.timeout ? AbortSignal.timeout(ROAD_PROBE_MS) : undefined });
+      ok = r.ok && !!(await r.json());
+    } catch (_) { /* a failed road is the point */ }
+    track("road.probe", `${road}_${ok ? "ok" : "failed"}`, Math.round(performance.now() - t));
+  }
 }
 
 /// WHAT THIS PAGE HOLDS, given back on every way out that is not an answer —

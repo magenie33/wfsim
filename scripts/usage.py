@@ -151,6 +151,21 @@ def main():
     if never:
         print(f"  {len(never)} visitor(s) had the engine fail and never booted")
 
+    # THE TWO ROADS, per market: each browser's daily fetch of one public file
+    # directly and through the relay (docs/DISTRIBUTION.md §"The relay").
+    probes = sql(account, token, f"""
+        SELECT blob8 AS country, blob3 AS subject, double2 AS ms
+        FROM {DATASET} WHERE {since} AND blob1 = 'road.probe' LIMIT 1000000""")
+    if probes:
+        print(f"
+{'road':16}  {'probes':>6}  {'failed':>6}  {'p50':>6}  {'p90':>6}")
+        for m in ("china", "overseas"):
+            for road in ("direct", "relay"):
+                mine = [r for r in probes if MARKET(r["country"]) == m and r["subject"].startswith(road + "_")]
+                ok = [float(r["ms"]) for r in mine if r["subject"].endswith("_ok")]
+                print(f"{m + ' ' + road:16}  {len(mine):6}  {pct(len(mine) - len(ok), len(mine)):>6}  "
+                      f"{seconds(quantile(ok, 0.5)):>6}  {seconds(quantile(ok, 0.9)):>6}")
+
     others = [e for e in sorted(by_event) if e != BOOT and e not in RESULTS]
     if others:
         print("\nvisitors per event: " + ", ".join(f"{e} {len(by_event[e])}" for e in others))

@@ -233,9 +233,14 @@ which is the whole failure this plane exists to prevent.
 ## The relay
 
 The site's api has one home, and a relay is a second road to it, not a second
-home. `cn.wfsim.app` is a server in Hong Kong that carries `/api/board/` — the
-board's work, and nothing else — to `wfsim.app`, for readers whose road from
-mainland China to the edge is poor. It stores nothing and decides nothing.
+home. `cn.wfsim.app` is a server in Hong Kong that carries the board's work to
+`wfsim.app`, for readers whose road from mainland China to the edge is poor. It
+stores nothing and decides nothing.
+
+- **It carries a list, not a prefix**: the board's work (69-board-work.js
+  `RELAY_PATHS`, the same list in its nginx site) and `board.meta.json`, which
+  the probe below times. Anything else is a 404 there. What joins the list is
+  public, signed out, and costs a reader a lot when one road drops it.
 
 - **The page chooses the road** (69-board-work.js `chooseRoute`): it times
   `/api/board/ping` both ways every ten minutes and takes the quicker, on
@@ -249,7 +254,11 @@ mainland China to the edge is poor. It stores nothing and decides nothing.
   without the secret the header is ignored (`clientIp`).
 - **Its effect is measured, not assumed**: `verifier_asks.relayed` counts the
   asks it carried, `relay_failed` and `direct_failed` the asks each road dropped
-  before the other was tried.
+  before the other was tried. Whether PUBLIC READS should take it too is read
+  from `road.probe` (docs/ANALYTICS.md), each road timed on one public file once
+  a day per browser, by country: `python scripts/usage.py`.
+- **It keeps no access log**, so a reader's address passes through it and is
+  written nowhere.
 - **The server** is `private/hk/` (ssh key, host keys, the secret); its nginx
   site is `wfsim-relay`, the secret in `/etc/nginx/wfsim-relay-secret.conf`.
   Anything signed in — accounts, the ledger, sync — stays on the direct road,

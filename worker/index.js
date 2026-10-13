@@ -604,7 +604,7 @@ export const USAGE_EVENTS = [
   "simulator.start", "simulator.run", "optimizer.start", "optimizer.run",
   "share.create", "share.entry", "share.open", "board.open", "board.submit", "desktop.download",
   "presets.saved", "door.seen", "door.open", "account.state",
-  "nona.open", "nona.ask", "nona.concise",
+  "nona.open", "nona.ask", "nona.concise", "road.probe",
 ];
 /// The wire's schema, written into every point so a later change stays readable.
 export const USAGE_SCHEMA = 1;
