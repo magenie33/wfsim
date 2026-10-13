@@ -9,6 +9,8 @@
 // first runs keep the history there is and a missed run is made up by the next.
 // A day is written once and never revised: its numbers are final when it ends.
 
+import { isPg } from "./factory_db.js";
+
 /// A RESULT, as opposed to a page opened. `scripts/usage.py` holds the same list
 /// and `check_usage_events` holds the two equal: a day kept under another
 /// definition is a trend that moves for no reason.
@@ -28,6 +30,10 @@ const RETURN_DAYS = 7;
 /// worker's subrequest limit, and the next run takes the rest.
 const DAYS_PER_RUN = 10;
 const BATCH_ROWS = 500;
+/// MANY ROWS A STATEMENT: on Postgres each statement is its own round trip, and
+/// a day sent a row at a time outlived the cron. D1 binds at most a hundred
+/// parameters a statement — fourteen rows of seven.
+const rowsPerStatement = (db) => (isPg(db) ? BATCH_ROWS : 14);
 
 const DAY_MS = 86400000;
 const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -102,13 +108,16 @@ export async function rollupUsage(env, now = Date.now()) {
       GROUP BY day, cid, e, subject, country LIMIT 1000000`);
     const out = usageDayRows(day, rows);
     if (!out.length) continue;
-    const put = env.LIBRARY.prepare(`INSERT INTO usage_days
-      (day, event, subject, market, visitors, points, sampled) VALUES (?, ?, ?, ?, ?, ?, ?)
+    const put = (part) => env.LIBRARY.prepare(`INSERT INTO usage_days
+      (day, event, subject, market, visitors, points, sampled) VALUES ${part.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ")}
       ON CONFLICT (day, event, subject, market) DO UPDATE SET
-        visitors = excluded.visitors, points = excluded.points, sampled = excluded.sampled`);
+        visitors = excluded.visitors, points = excluded.points, sampled = excluded.sampled`)
+      .bind(...part.flatMap((o) => [o.day, o.event, o.subject, o.market, o.visitors, o.points, o.sampled]));
+    const per = rowsPerStatement(env.LIBRARY);
     for (let i = 0; i < out.length; i += BATCH_ROWS) {
-      await env.LIBRARY.batch(out.slice(i, i + BATCH_ROWS).map((o) =>
-        put.bind(o.day, o.event, o.subject, o.market, o.visitors, o.points, o.sampled)));
+      const chunk = out.slice(i, i + BATCH_ROWS), statements = [];
+      for (let j = 0; j < chunk.length; j += per) statements.push(put(chunk.slice(j, j + per)));
+      await env.LIBRARY.batch(statements);
     }
     written.push(day);
   }
