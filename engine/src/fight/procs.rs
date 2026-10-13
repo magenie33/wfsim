@@ -203,8 +203,10 @@ pub(super) fn fire_extra_hits(
         forced_status,
         body_part_again,
         triggered_by_blast_detonation,
+        copies_the_hit,
     } in hits
     {
+        let bracket = if copies_the_hit { 1.0 } else { bracket };
         if from_blast_detonation && !triggered_by_blast_detonation {
             continue;
         }

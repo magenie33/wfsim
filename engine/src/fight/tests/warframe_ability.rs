@@ -942,3 +942,24 @@ fn a_hidden_split_moves_the_extra_hit_and_not_the_hit() {
     assert!((own - 0.3 * 2.2 / snapped).abs() < 1e-9, "{own}");
     assert!((read - 0.3 * 1.12 / snapped).abs() < 1e-9, "{read}");
 }
+
+/// RESUPPLY COPIES THE HIT AS DEALT (MEASUREMENTS M115): a 787 headshot pops
+/// 197, which is 0.25 of the quantized hit with no bracket put back, while
+/// Toxic Lash off the same hit is re-weighed by the unquantized bracket.
+#[test]
+fn resupply_copies_the_hit_as_dealt() {
+    let ratio = |id: &'static str| {
+        let mut p = params(&[(id, None)], 1.0);
+        p.damage = DamageVector::new().with(DamageType::Impact, 220.0);
+        p.dot_modified_base = Some(100.0);
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.forced_procs = Vec::new();
+        p.foe.base_health = 1e15;
+        let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
+        r.sources.extra_hit / r.sources.direct
+    };
+    let snapped = 70.0 / crate::rules::damage::QUANTIZATION_DENOMINATOR;
+    assert!((ratio("resupply") - 0.25).abs() < 1e-9, "{}", ratio("resupply"));
+    assert!((ratio("toxic_lash") - 0.3 * 2.2 / snapped).abs() < 1e-9, "{}", ratio("toxic_lash"));
+}

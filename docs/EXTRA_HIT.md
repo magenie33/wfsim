@@ -98,10 +98,10 @@ has none.
 | **Melee Duplicate** | 100%, on a base crit | the swing's own | **rolled anew**, crit too | `data/arcanes/melee/melee_duplicate.yaml` ✅ — the instance replayed, faction once |
 | **Melee Influence** | the element's own share | the status that landed | **guaranteed** | `data/arcanes/melee/melee_influence.yaml` ✅ |
 
-### The five things a member may differ in, and nothing else
+### The six things a member may differ in, and nothing else
 
 Adding Toxic Lash and Resupply is what proved the category, because between them
-they needed five fields and no new mechanism:
+they needed six fields and no new mechanism:
 
 - **`forced_status`** — Xata's extra hit rolls the weapon's own chance
   ("附加的虚空伤害具有基于武器本身触发几率的独立触发几率"); Toxic Lash is
@@ -121,6 +121,9 @@ they needed five fields and no new mechanism:
   1x weak point, so it carries the body part once, inside the hit it copies.
 - **`triggered_by_blast_detonation`** — *"Only Xata's Whisper will be triggered
   by blast Detonations, no other extra hit will."*
+- **`copies_the_hit`** — Resupply is a share of the hit as it was dealt,
+  quantized, with no bracket correction and no hidden split (MEASUREMENTS M115:
+  787 on screen, 197 off it).
 
 The three unimplemented ability sources are `kind: extra_hit` entries in
 `data/abilities/` and nothing else — the machinery is `fight::fire_extra_hits`,
@@ -201,7 +204,8 @@ wiki's one-line formula
 produces every oddity people report: `Weapon Hit Damage` already contains a
 faction layer, a crit multiplier and a body-part multiplier.
 
-- **Before quantization.** `Weapon Hit Damage` is the hit before the snap: the
+- **Before quantization**, except Resupply's (`copies_the_hit`).
+  `Weapon Hit Damage` is the hit before the snap: the
   bracket the caller passes divides its own quantized bracket out and the
   unquantized one in. M40's capture pops 135 and 63, which are 134.68 and 62.62
   unquantized and 133.91 and 62.27 quantized; the wiki's worked example is

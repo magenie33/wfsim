@@ -56,6 +56,9 @@ effect:
   forced_status: true
   class_bonus_for: sniper
   class_bonus: 2.0
+  # 0.25 OF THE HIT AS DEALT, quantized and with no bracket put back: a 787
+  # headshot pops 197 (MEASUREMENTS M115).
+  copies_the_hit: true
 
 unmodelled:
   - "The pack refills the magazine instantly. Reserves are infinite by default, so the refill adds nothing here, and running the pack dry is not simulated."

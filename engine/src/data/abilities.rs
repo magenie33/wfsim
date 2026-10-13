@@ -73,17 +73,19 @@ pub enum AbilityEffect {
     /// on anything — `fight::fire_extra_hits`, MECHANICS §7 §"Extra Hit", and
     /// docs/EXTRA_HIT.md for the law its members share.
     ///
-    /// FIVE THINGS DIFFER BETWEEN MEMBERS and nothing else does — the element
+    /// SIX THINGS DIFFER BETWEEN MEMBERS and nothing else does — the element
     /// (fixed, or Resupply's chosen one), a guaranteed status, a weapon class
     /// that doubles it (applied in [`resolve`]), the body part a second time and
-    /// a Blast detonation as a trigger (both Xata's Whisper's alone).
-    /// docs/EXTRA_HIT.md §"The five things a member may differ in".
+    /// a Blast detonation as a trigger (both Xata's Whisper's alone), and
+    /// copying the hit as dealt (Resupply's).
+    /// docs/EXTRA_HIT.md §"The six things a member may differ in".
     ExtraHit {
         element: DamageType,
         fraction: f64,
         forced_status: bool,
         body_part_again: bool,
         triggered_by_blast_detonation: bool,
+        copies_the_hit: bool,
     },
     /// AMMO EFFICIENCY (Energized Munitions). Not a damage bracket at all — it
     /// divides what a shot costs the magazine, so what it buys is RELOADS not
@@ -245,6 +247,9 @@ struct EffectFile {
     /// An extra hit a Blast detonation fires (Xata's Whisper).
     #[serde(default)]
     triggered_by_blast_detonation: bool,
+    /// See [`ExtraHitLive::copies_the_hit`] (Resupply).
+    #[serde(default)]
+    copies_the_hit: bool,
 }
 
 #[derive(Deserialize)]
@@ -415,6 +420,7 @@ pub fn all() -> &'static [AbilityDef] {
                             forced_status: ef.forced_status,
                             body_part_again: ef.body_part_again,
                             triggered_by_blast_detonation: ef.triggered_by_blast_detonation,
+                            copies_the_hit: ef.copies_the_hit,
                         },
                         other => panic!("{path}: unknown ability effect kind {other}"),
                     }
@@ -589,6 +595,7 @@ pub fn resolve(
                     forced_status,
                     body_part_again,
                     triggered_by_blast_detonation,
+                    copies_the_hit,
                 } => {
                     AbilityEffect::ExtraHit {
                         element: picked(element),
@@ -599,6 +606,7 @@ pub fn resolve(
                         forced_status,
                         body_part_again,
                         triggered_by_blast_detonation,
+                        copies_the_hit,
                     }
                 }
             })
@@ -767,12 +775,14 @@ pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
                 forced_status,
                 body_part_again,
                 triggered_by_blast_detonation,
+                copies_the_hit,
             } => Some(ExtraHitLive {
                 element,
                 fraction,
                 forced_status,
                 body_part_again,
                 triggered_by_blast_detonation,
+                copies_the_hit,
             }),
             _ => None,
         })
@@ -814,6 +824,10 @@ pub struct ExtraHitLive {
     pub body_part_again: bool,
     /// Xata's Whisper alone fires off a Blast detonation.
     pub triggered_by_blast_detonation: bool,
+    /// RESUPPLY COPIES THE HIT AS IT WAS DEALT — quantized, with no bracket
+    /// put back: 787 on screen and 197 off it is 0.25 of the hit to the digit
+    /// (MEASUREMENTS M115). The others take the bracket correction.
+    pub copies_the_hit: bool,
 }
 
 /// Every distinct moment the ACTIVE SET changes, `0.0` first and each cast and

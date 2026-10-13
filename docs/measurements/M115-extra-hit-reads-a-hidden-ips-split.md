@@ -2,7 +2,7 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-**THE READING.** An Extra Hit's bracket is `1 + Σ elemental bonuses + Σ
+**THE READING.** A re-weighing Extra Hit's bracket is `1 + Σ elemental bonuses + Σ
 (Impact/Slash/Puncture share × that type's bonus)` (docs/EXTRA_HIT.md). On a
 large part of the roster the shares the game reads are NOT the attack's listed
 damage. The Akarius Prime's rocket is 100% Impact on its card and reads
@@ -21,9 +21,26 @@ read. The table below is the ranged half of it, as applied.
 (`data/notes.yaml` `extra_hit_reads`). The engine adds
 `Σ (read share − the base attack's own share) × that IPS bonus` to the bracket
 of an Extra Hit off that part (`ResolvedPanel::extra_hit_reads_shift`). It is a
-property of the WEAPON, so every Extra Hit member reads it; the sheet measured
-Toxic Lash alone, and Resupply and Xata's Whisper reading the same split is the
-category's rule rather than a measurement of theirs.
+property of the WEAPON, so every member that re-weighs the bracket reads it; the
+sheet measured Toxic Lash, and Xata's Whisper reading the same split is the
+category's rule rather than a measurement of its own.
+
+**RESUPPLY DOES NOT RE-WEIGH ANYTHING.** 白苓's second capture, one weapon on a
+Heavy Gunner Eximus's head at 100% Strength (base 39.6 Puncture, 2.8 Impact,
+3.7 Slash; +90% Puncture; base damage ×2.2):
+
+| instance | predicted | on screen |
+| --- | --- | --- |
+| the hit, quantized (52 / 2 / 3 steps of 46/32 = 81.9375) | 786.6 | 787 |
+| Resupply, `0.25 ×` the hit | 196.65 | 197 |
+| Toxic Lash (毒刺), +90% Puncture / +120% Impact / +120% Slash | 144.40 / 227.87 / 180.17 | 145 / 228 / 180 |
+| …the setup labelled 冰火电刺, the same three mods | 172.22 / 185.47 / 185.47 | 172 / 186 / 186 |
+
+Resupply is a quarter of the hit as it was dealt, quantized and with no bracket
+put back (`copies_the_hit` on `resupply`); the unquantized bracket would pop 196.
+Toxic Lash's six numbers share one base of 132.48 and read 60/30/10
+Impact/Slash/Puncture in the first setup and a third each in the second, which
+is the kind of split the table above records, not the weapon's own 6/8/86.
 
 | weapon | direct hit reads (I / S / P) | explosion reads (I / S / P) |
 | --- | --- | --- |
