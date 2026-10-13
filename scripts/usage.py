@@ -157,8 +157,7 @@ def main():
         SELECT blob8 AS country, blob3 AS subject, double2 AS ms
         FROM {DATASET} WHERE {since} AND blob1 = 'road.probe' LIMIT 1000000""")
     if probes:
-        print(f"
-{'road':16}  {'probes':>6}  {'failed':>6}  {'p50':>6}  {'p90':>6}")
+        print(f"\n{'road':16}  {'probes':>6}  {'failed':>6}  {'p50':>6}  {'p90':>6}")
         for m in ("china", "overseas"):
             for road in ("direct", "relay"):
                 mine = [r for r in probes if MARKET(r["country"]) == m and r["subject"].startswith(road + "_")]
