@@ -11,7 +11,6 @@ const SETTINGS = "wfsim-nona";
 /// it past the tab is a choice the reader makes, not the default.
 const SESSION_KEY = "wfsim-nona-key";
 const MEMORY = "wfsim-nona-memory";
-const CALIB = "wfsim-nona-calib";
 const LAUNCHER = "wfsim-nona-launcher";
 /// How many conversations are kept besides the pinned ones.
 const KEEP_CONVERSATIONS = 100;
@@ -60,15 +59,6 @@ export const launcher = {
   get: () => migrate("launcher", read(LAUNCHER)),
   put(p) { if (!newer(read(LAUNCHER))) write(LAUNCHER, { ...p, v: V }); },
 };
-
-// ---- the token estimate's correction, per model -------------------------------
-
-export const ratio = (model) => (read(CALIB) || {})[model] || 1;
-export function saveRatio(model, r) {
-  const c = read(CALIB) || {};
-  c[model] = r;
-  write(CALIB, c);
-}
 
 // ---- conversations ------------------------------------------------------------
 //

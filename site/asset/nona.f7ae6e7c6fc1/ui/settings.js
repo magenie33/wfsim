@@ -64,7 +64,7 @@ function paint() {
     <div class="nona-presets"><span class="nona-lbl">${esc(tr("Quick fill"))}</span>${PRESETS.map(([name, url]) =>
       `<span class="pchip${url === d.base ? " sel" : ""}" data-nona-base="${esc(url)}">${esc(tr(name))}</span>`).join("")}</div>
     <label>${esc(tr("Base URL"))}<input id="nona-base" type="url" autocomplete="off" value="${esc(d.base)}"></label>
-    <label>${esc(tr("API key"))}<input id="nona-apikey" type="password" autocomplete="off" value="${esc(d.key)}"></label>
+    <label>${esc(tr("API key"))}<input id="nona-apikey" class="nona-secret" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(d.key)}"></label>
     <label class="check"><input type="checkbox" id="nona-remember"${d.remember ? " checked" : ""}> ${esc(tr("Remember the key in this browser"))}</label>
     <p class="nona-fine">${esc(tr("Otherwise it is forgotten when this tab closes. Set a spending limit on the key at your provider."))}</p>
     <div class="nona-detect"><button class="ghost-btn small" id="nona-check">${esc(tr("Check"))}</button>
@@ -91,7 +91,7 @@ function paint() {
     const m = (d.models || []).find((x) => x.id === d.model) || {};
     store.saveSettings({ base: d.base, key: d.key, remember: d.remember, concise: d.concise, model: d.model,
       proto: d.proto || (/anthropic\.com/.test(d.base) ? "anthropic" : "openai"),
-      context: m.context || null, price: m.price || null });
+      context: m.context || null });
     if (d.onSaved) d.onSaved();
   });
 }

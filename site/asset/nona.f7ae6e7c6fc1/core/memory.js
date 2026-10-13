@@ -7,7 +7,7 @@
 // Pure: every function takes the memory and returns a new one.
 
 import { V } from "./record.js";
-import { CAPS, estimate } from "./size.js";
+import { CAPS } from "./size.js";
 
 /// THE SLOTS, and what each is for — the model reads the descriptions.
 export const SLOTS = {
@@ -97,7 +97,7 @@ export function block(mem, now, off, cap = CAPS.M) {
     return `- [${x.id}] ${x.key ? x.key + ": " : "note: "}${x.value}${age > STALE_DAYS ? ` (saved ${age} days ago — confirm before relying on it)` : ""}`;
   }).join("\n") + "\n</memory>" : "");
   let keep = live;
-  while (keep.length && estimate(text(keep)) > cap) keep = keep.slice(0, -1);
+  while (keep.length && text(keep).length > cap) keep = keep.slice(0, -1);
   return text(keep);
 }
 
@@ -129,7 +129,7 @@ export const mergeInput = (mem) => active(mem).map(lineOf).join("\n");
 
 /// Over its cap in full — more than the zone can send — and not paused.
 export const needsMerge = (mem, now) => !mem.paused && active(mem).length > 1
-  && estimate(block(mem, now, false, Infinity)) > CAPS.M;
+  && block(mem, now, false, Infinity).length > CAPS.M;
 
 /// THE MODEL'S ANSWER, CHECKED. `{ ok, lines: [{ ids, key, value }] }` when it
 /// may be taken; `{ ok: false, reason }` when not.
@@ -151,7 +151,7 @@ export function parseMerge(mem, text, now) {
   const kept = lines.filter((l) => l.key).map((l) => l.key).sort();
   if (JSON.stringify(slots) !== JSON.stringify(kept)) return { ok: false, reason: "slots_changed" };
   // WITHIN THE CAP, which is also smaller: only a profile past it is tidied.
-  if (estimate(block(merge(mem, lines, now, (i) => `merged${i}`), now, false, Infinity)) > CAPS.M) return { ok: false, reason: "still_over" };
+  if (block(merge(mem, lines, now, (i) => `merged${i}`), now, false, Infinity).length > CAPS.M) return { ok: false, reason: "still_over" };
   return { ok: true, lines };
 }
 

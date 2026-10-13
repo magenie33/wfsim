@@ -1,9 +1,8 @@
-// THE LAST STEP, once setting results aside is not enough to bring the history
-// under its cap: the oldest turns are written up by the model, and what it wrote
-// replaces them in what is sent. Where to cut is `plan`'s decision. A measured
-// number survives only with where it came from — the summary is told to drop
-// one that has lost its source — so "every number she states was sent to her"
-// holds across it.
+// WHAT A COMPACTION WRITES: the turns before the cut are written up by the
+// model, and what it wrote replaces them in what is sent. Where to cut is
+// `plan`'s decision. A measured number survives only with where it came from
+// — the summary is told to drop one that has lost its source — so "every
+// number she states was sent to her" holds across it.
 
 import { CAPS, clip } from "./size.js";
 import { toolText } from "./view.js";
@@ -32,7 +31,8 @@ export function summaryInput(record, cut, callLine) {
 /// THE SUMMARY IN PLACE — cut to its cap whatever the model wrote, since a cap
 /// the model is only asked to respect is not a cap — carrying every skill
 /// document that was in view before the cut, as it was loaded, so the skills
-/// she was using stay loaded and their bytes do not change.
+/// she was using stay loaded and their bytes do not change — up to K, the most
+/// recently loaded kept.
 export function applySummary(record, cut, text) {
   const from = record.summary ? record.summary.upto : 0;
   const carried = ((record.summary && record.summary.skills) || []).filter((d) => !d.unloaded);
@@ -45,5 +45,6 @@ export function applySummary(record, cut, text) {
       carried.push({ id: d.id, text: d.text });
     }
   }
-  return { ...record, summary: { upto: cut, text: clip(text, CAPS.summary - 50), skills: carried } };
+  while (carried.length > 1 && carried.reduce((n, d) => n + d.text.length, 0) > CAPS.K) carried.shift();
+  return { ...record, summary: { upto: cut, text: clip(text, CAPS.summary), skills: carried } };
 }
