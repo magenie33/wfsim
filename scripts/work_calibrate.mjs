@@ -15,11 +15,16 @@
 // and the SCALE from those answers: what they would be paid now over what they
 // were paid is `total`, held to 1.00–1.20. It reports that, each account's
 // ratio, and the rows that move most; no number it prints names a person.
+//
+// THE SAMPLE NEVER LEAVES THE JOB THAT READ IT: it joins accounts to the
+// questions they answered, which nothing may publish (docs/ACCOUNTS.md), so
+// work.yml runs `sample` and `fit` in one job and uploads neither the file nor a
+// digest — an account's digest is keyed per run, and printed only as a count.
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createHash } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { loadEngine } from "./wasm_engine.mjs";
@@ -101,8 +106,10 @@ async function factoryReport(body) {
   return j;
 }
 
-/// An account as the report shows it: a digest, never the id.
-const hidden = (id) => createHash("sha256").update(String(id)).digest("hex").slice(0, 10);
+/// An account inside one run: a digest under a key this run alone holds, so two
+/// runs' samples cannot be joined on it.
+const RUN_KEY = randomBytes(32);
+const hidden = (id) => createHmac("sha256", RUN_KEY).update(String(id)).digest("hex").slice(0, 10);
 
 async function sample() {
   const days = Number(arg("days", "7"));
@@ -126,8 +133,8 @@ async function sample() {
     for (const d of got) owner.set(d.verifier, hidden(d.account));
   }
   await close();
-  // A BROWSER'S ID IS ITS SECRET (docs/BOARD.md §"Contribution"): what leaves
-  // here is how many were paid and their accounts' digests, never an id.
+  // A BROWSER'S ID IS ITS SECRET (docs/BOARD.md §"Contribution"): what this
+  // writes is how many were paid and their accounts' run-keyed digests.
   for (const q of questions) {
     q.accounts = q.devices.map((d) => owner.get(d) || "unclaimed");
     delete q.devices;
@@ -259,7 +266,8 @@ function fit() {
   console.log(`  per account (${ratios.length}): p05 ${quantile(ratios.map((x) => x.r), 0.05).toFixed(3)}  median ${quantile(ratios.map((x) => x.r), 0.5).toFixed(3)}  p95 ${quantile(ratios.map((x) => x.r), 0.95).toFixed(3)}`);
   const u = byAccount.get("unclaimed");
   if (u) console.log(`  unclaimed devices together: ${(u.now / u.old).toFixed(3)} over ${u.answers} answers`);
-  for (const x of ratios.filter((x) => x.r < 0.95).sort((p, q) => p.r - q.r)) console.log(`  BELOW 0.95: account ${x.a}  ${x.r.toFixed(3)} over ${x.n} answers`);
+  const below = ratios.filter((x) => x.r < 0.95).sort((p, q) => p.r - q.r);
+  if (below.length) console.log(`  BELOW 0.95: ${below.length} account(s), the lowest ${below[0].r.toFixed(3)} over ${below[0].n} answers`);
   console.log("  the rows that move most (fought exactly):");
   for (const q of [...fought].sort((p, q2) => Math.abs(Math.log(now(q2) / q2.work)) - Math.abs(Math.log(now(p) / p.work))).slice(0, 20)) {
     console.log(`    ${(now(q) / q.work).toFixed(3)}  ${q.exact.key}  (was ${q.work}, now ${Math.round(now(q))})`);

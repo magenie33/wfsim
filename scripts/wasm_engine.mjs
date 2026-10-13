@@ -32,13 +32,10 @@ export function loadEngine({ pkg = "" } = {}) {
   // Built inside the context: the shim tells its argument's shape by the
   // context's own `Object.prototype`.
   ctx.bytes = fs.readFileSync(wasm);
-  const exports = vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
-  const gas = exports.__wfsim_gas;
+  vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
   return {
     release,
     api: (p, body) => JSON.parse(ctx.wasm_bindgen.api(p, JSON.stringify(body))),
-    /// The meter's running total, for a check; 0n on a module nobody metered.
-    gas: () => (gas ? gas.value : 0n),
   };
 }
 

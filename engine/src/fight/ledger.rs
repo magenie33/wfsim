@@ -175,6 +175,7 @@ impl Tally {
 // branch, and it sits on the hottest path this engine has.
 #[inline]
 #[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
 pub(in crate::fight) fn settle(
     r: &mut RunResult,
     rec: &mut crate::record::Record,

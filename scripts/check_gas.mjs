@@ -32,7 +32,7 @@ export const METERED = ["engine/src/fight", "engine/src/rules", "engine/src/mode
 /// which was never counted either.
 const NOT_METERED = ["engine/src/fight/monte_carlo.rs", "engine/src/fight/gas.rs", "engine/src/rules/math.rs"];
 const ATTR = "#[wfsim_gas_macro::metered]";
-const ITEM = /^(pub(\([a-z:]+\))? )?(unsafe )?(fn |impl[ <]|trait )/;
+const ITEM = /^(pub(\([^)]*\))? )?(unsafe )?(fn |impl[ <]|trait )/;
 
 function rust(p) {
   const abs = path.join(ROOT, p);
@@ -51,11 +51,21 @@ for (const file of METERED.flatMap(rust).filter((f) => !NOT_METERED.includes(f))
     items++;
     // The attribute may sit anywhere in the item's run of attributes and doc comments.
     let j = i - 1;
-    while (j >= 0 && /^\s*(#\[|\/\/\/|\/\/!)/.test(lines[j]) && lines[j].trim() !== ATTR) j--;
+    while (j >= 0 && /^\s*(#\[|\/\/)/.test(lines[j]) && lines[j].trim() !== ATTR) j--;
     if (!(j >= 0 && lines[j].trim() === ATTR)) unmetered.push(`${file}:${i + 1}: ${line.trim().slice(0, 60)}`);
   });
 }
 check(`${items} top-level items carry ${ATTR}`, items > 0 && unmetered.length === 0, unmetered.slice(0, 10).join("\n        "));
+/// A `macro_rules!` body is opaque to the attribute, so one that loops wraps it
+/// in `metered_expr!`, or its turns would count as one expression.
+const opaque = [];
+for (const file of METERED.flatMap(rust).filter((f) => !NOT_METERED.includes(f))) {
+  const text = fs.readFileSync(path.join(ROOT, file), "utf8");
+  for (const m of text.matchAll(/macro_rules!\s*(\w+)\s*\{([\s\S]*?)\n\s*\};?\s*\n\s*\}/g)) {
+    if (/\b(for|while|loop)\b[^\n]*\{/.test(m[2].replace(/\/\/.*$/gm, "")) && !m[2].includes("metered_expr!")) opaque.push(`${file}: ${m[1]}`);
+  }
+}
+check("every macro_rules! body that loops is a metered_expr!", opaque.length === 0, opaque.join(", "));
 
 /// ONE MATHS LIBRARY ON EVERY TARGET (engine/src/rules/math.rs): a transcendental
 /// called on an f64 reaches the platform's own library natively and

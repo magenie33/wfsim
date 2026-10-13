@@ -295,8 +295,10 @@ opened, its result carried.
 ## `check_gas`
 
 Two parts. Plain node, in the light job: every top-level fn, impl and trait in
-the metered sources (`METERED`) carries `#[wfsim_gas_macro::metered]` — it
-failed with one attribute removed; and no production line of engine/src,
+the metered sources (`METERED`) carries `#[wfsim_gas_macro::metered]`, whatever its visibility — it
+failed with one attribute removed, on a `pub(in crate::fight)` fn too; every
+`macro_rules!` there whose body loops is a `metered_expr!` — it failed on
+`bump_buffs` unwrapped; and no production line of engine/src,
 webapi/src or optimizer/src calls a transcendental on an f64 (`.powf(`,
 `.exp(`, `.sin(`, `.hypot(`…) except `rules/math.rs`, the one libm — it failed
 with one call put back in data/rage.rs and one in optimizer/src. With `build` (CI's `gas` job: rust, the

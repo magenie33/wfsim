@@ -77,9 +77,10 @@ jobs:
           path: measure-${{ matrix.machine }}.json
 
   # WHAT VOLUNTEERS WERE PAID, read once and fought natively — the native
-  # engine counts what the wasm does (check_gas). Its report names no account.
-  sample:
-    needs: build
+  # engine counts what the wasm does (check_gas) — and the prices fit on it IN
+  # THE SAME JOB: the sample joins accounts to questions and is never uploaded.
+  fit:
+    needs: [build, measure]
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -91,6 +92,10 @@ jobs:
         with:
           name: pkg
           path: pkg
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: measure-*
+          merge-multiple: true
       - name: the databases
         uses: ./.github/actions/databases
         with:
@@ -110,27 +115,10 @@ jobs:
           chmod +x pkg/wfsim-gas
           ids=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[] | "\(.binding)=\(.database_id)"')
           export CF_D1_DATABASE=$(echo "$ids" | sed -n 's/^LIBRARY=//p') CF_D1_ACCOUNTS=$(echo "$ids" | sed -n 's/^ACCOUNTS=//p')
-          node scripts/work_calibrate.mjs sample out=work-sample.json days=${{ inputs.days }} rows=${{ inputs.sample }} native=pkg/wfsim-gas
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sample
-          path: work-sample.json
-
-  fit:
-    needs: [measure, sample]
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22.20.0"
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: "*"
-          merge-multiple: true
+          node scripts/work_calibrate.mjs sample out="$RUNNER_TEMP/work-sample.json" days=${{ inputs.days }} rows=${{ inputs.sample }} native=pkg/wfsim-gas
       - name: Fit the prices
         run: |
-          node scripts/work_calibrate.mjs fit measure-*.json sample=work-sample.json total=${{ inputs.total }} | tee fit.txt
+          node scripts/work_calibrate.mjs fit measure-*.json sample="$RUNNER_TEMP/work-sample.json" total=${{ inputs.total }} | tee fit.txt
           { echo '```'; cat fit.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:

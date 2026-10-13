@@ -9,12 +9,13 @@
 //! function.
 //!
 //! They take what they touch, rather than reading the caller's locals, so the
-//! pellet's pipeline can use them from its own file.
+//! pellet's pipeline can use them from its own file. Each body is a
+//! `metered_expr!`, so its loops charge per turn like any metered function's.
 
 /// EVERY BUFF ONE EVENT GRANTS, and the row that says it fired.
 macro_rules! bump_buffs {
     ($params:expr, $stacks:expr, $rec_index:expr, $rec:expr, $trigger:expr, $t:expr, $rng:expr) => {
-        for (i, b) in $params.stacking_buffs.iter().enumerate() {
+        wfsim_gas_macro::metered_expr! { for (i, b) in $params.stacking_buffs.iter().enumerate() {
             if b.trigger == $trigger && (b.chance >= 1.0 || $rng.chance(b.chance)) {
                 // …AND THE ROW SAYS SO. One line here rather than at seven
                 // call sites, so a trigger added later is covered by nobody
@@ -30,7 +31,7 @@ macro_rules! bump_buffs {
                     $stacks[i].bump($t, b.duration, b.max_stacks);
                 }
             }
-        }
+        } }
     };
 }
 
@@ -38,13 +39,13 @@ macro_rules! bump_buffs {
 /// well as the clock. One arm, however many buffs use it.
 macro_rules! bump_status_buffs {
     ($params:expr, $stacks:expr, $debuffs:expr, $t:expr, $rng:expr) => {
-        for (i, b) in $params.stacking_buffs.iter().enumerate() {
+        wfsim_gas_macro::metered_expr! { for (i, b) in $params.stacking_buffs.iter().enumerate() {
             if let crate::model::BuffTrigger::HitEnemyWithStatus(s) = b.trigger {
                 if crate::fight::has_status($debuffs, s) && (b.chance >= 1.0 || $rng.chance(b.chance)) {
                     $stacks[i].bump($t, b.duration, b.max_stacks);
                 }
             }
-        }
+        } }
     };
 }
 
