@@ -190,7 +190,10 @@ score, metric, work, compute_ms?, counts?, lanes? }`.
   `^[a-z_]{1,32}$` keys of safe integers. The page sends every 30 s and as the
   pack ends with `done: true`, which gives back the rows not answered. An
   answer counts only for a row the lease still holds (`lease_until >= now`) or
-  holds as the one before; the reply is `{ ok: true }` either way.
+  holds as the one before; the reply is `{ ok: true }` either way. Optional
+  `points_since` (the `/api/board/points` `since`) adds `device_points`, that
+  endpoint's body, to the reply — the page sends it with every send that
+  carries results instead of asking `/api/board/points` after it.
 - **A LEASE IS A HEARTBEAT.** While a row runs and its lease nears its end
   (the page: 2 min before), and before starting a row whose lease may have
   run out, `POST /api/board/renew { lease, verifier, question }` →

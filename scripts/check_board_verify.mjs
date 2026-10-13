@@ -48,8 +48,9 @@ const work = (v, { ip = "", engine = "e1", protocol = PROTOCOL, consent = YES, a
 /// THE FIRST ROW OF A PACK with the pack's lease — what its page computes first.
 const task = (r) => (r.pack ? { ...r.pack.tasks[0], lease: r.pack.lease } : r.work);
 const none = (r) => !r.work && !r.pack;
-const answerAll = (lease, v, rows, { engine = "e1", ip = "", done = true, keep } = {}) =>
-  post(verifyRoute, "/api/board/answers", { lease, verifier: v, engine, done, answers: rows, ...(keep ? { keep } : {}) }, ip ? { "cf-connecting-ip": ip } : {});
+const answerAll = (lease, v, rows, { engine = "e1", ip = "", done = true, keep, since } = {}) =>
+  post(verifyRoute, "/api/board/answers", { lease, verifier: v, engine, done, answers: rows, ...(keep ? { keep } : {}),
+    ...(since ? { points_since: since } : {}) }, ip ? { "cf-connecting-ip": ip } : {});
 const row = (t, { score = SCORE, metric = "kpm", work: wk = WORK, extra = {} } = {}) =>
   ({ question: t.question, score, metric, work: wk, compute_ms: 1000, ...extra });
 const answer = (t, v, { engine = "e1", ip = "", ...o } = {}) => answerAll(t.lease, v, [row(t, o)], { engine, ip });
@@ -148,6 +149,11 @@ check("equal bits make a fact, written to the board as the clients'", await fact
   && (await fact("one")).measured_by === "verified:e1", JSON.stringify(await fact("one")));
 check("...the queue no longer owes the row", !await owed("one"));
 check("...and both clients are credited its work, once", await credited(A) === WORK && await credited(B) === WORK);
+check("...a send that does not ask for its points is told nothing more", JSON.stringify(agreed) === '{"ok":true}', JSON.stringify(agreed));
+const pointsTold = await answerAll(task(w2).lease, B, [row(task(w2))], { ip: "198.51.100.2", since: "2000-01-01T00" });
+check("...and one that asks is told them in the reply, the fact's work in them",
+  pointsTold.ok && pointsTold.device_points && pointsTold.device_points.points > 0 && pointsTold.device_points.today
+  && pointsTold.device_points.today.points === pointsTold.device_points.points, JSON.stringify(pointsTold));
 check("...and their tasks say confirmed", (await post(verifyRoute, "/api/board/mine",
   { verifier: B, orders: [{ identity: "one", ruler: "standard_single_target", mode: "base" }] })).orders[0].state === "confirmed");
 

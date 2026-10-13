@@ -986,7 +986,8 @@ yes, since each ask again is a reader interrupted. Eight rules:
    points); then it is the display name, else the username, and nothing else.
    An anonymous row's name and tier never leave the server; the reader's own
    row is marked to them alone. A browser asks what it earned by its own id
-   (`/api/board/points`).
+   (`/api/board/points`), and is told it in the reply to each send of results
+   (`/api/board/answers` `points_since`).
    **THE RANKING MOVES WHILE IT IS READ, AND NEVER AHEAD OF THE SERVER.** The
    page asks for the rows it has scrolled to, a hundred more as the end comes
    near, and asks again each minute, the server keeping the standings a minute

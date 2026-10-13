@@ -248,17 +248,22 @@ async function devices(request, env, account) {
 /// account holds it. `claimed` says whether one does, and never which.
 async function devicePoints(env, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
-  const w = await unheld(env, b.verifier);
+  return json({ ok: true, ...await devicePointsOf(env, b.verifier, b.since) });
+}
+/// …AS A BODY, also carried by `/api/board/answers` (worker/verify.js) to the
+/// page that sent results, so it need not ask again.
+export async function devicePointsOf(env, verifier, since) {
+  const w = await unheld(env, verifier);
   const claimed = w.held;
   // ITS OWN "TODAY": the whole UTC hours from the one the page names as its
   // midnight — results sent, what they took, and the points credited in them.
   let today = null;
-  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(b.since || "") && env.LIBRARY) {
+  if (/^\d{4}-\d\d-\d\dT\d\d$/.test(since || "") && env.LIBRARY) {
     const t = await env.LIBRARY.prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
-      .bind(b.verifier, b.since).first();
+      .bind(verifier, since).first();
     today = { tasks: (t && t.tasks) || 0, ms: (t && t.ms) || 0, points: points((t && t.work) || 0) };
   }
-  return json({ ok: true, points: points(w.work), recent: points(w.recent), week: points(w.week), claimed, ...(today ? { today } : {}) });
+  return { points: points(w.work), recent: points(w.recent), week: points(w.week), claimed, ...(today ? { today } : {}) };
 }
 
 // ---- The ledger ----------------------------------------------------------------

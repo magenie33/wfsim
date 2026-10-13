@@ -245,10 +245,15 @@ async function loadDevicePoints() {
   const id = verifierId();
   if (!id) return;
   devicePointsAt = Date.now();
-  // …AND ITS OWN "TODAY", from this reader's midnight, as the UTC hour it falls in.
+  const r = await postBoardWork("/api/board/points", { verifier: id, since: pointsSince() });
+  if (r && r.ok) await takeDevicePoints(r);
+}
+/// …AND ITS OWN "TODAY", from this reader's midnight, as the UTC hour it falls in.
+function pointsSince() {
   const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-  const r = await postBoardWork("/api/board/points", { verifier: id, since: midnight.toISOString().slice(0, 13) });
-  if (!(r && r.ok)) return;
+  return midnight.toISOString().slice(0, 13);
+}
+async function takeDevicePoints(r) {
   devicePoints = r;
   // WHETHER THE RANKING MAY NAME THEM is asked here, where they see their points.
   if (accountState.account && !devicesState) await loadDevices();
@@ -367,20 +372,29 @@ const SEND_AGAIN_MS = [3_000, 10_000, 30_000];
 async function sendAgain(body) {
   for (let i = 0; ; i++) {
     const r = await postBoardWork("/api/board/answers", body);
-    if (r && r.ok) return true;
-    if (i >= SEND_AGAIN_MS.length) return false;
+    if (r && r.ok) return r;
+    if (i >= SEND_AGAIN_MS.length) return null;
     await new Promise((res) => setTimeout(res, SEND_AGAIN_MS[i]));
   }
 }
+/// A SEND WITH RESULTS ASKS FOR THIS BROWSER'S POINTS IN THE SAME REPLY
+/// (`points_since`); a worker that does not carry them is asked apart, as before.
 function sendAnswers(p, done, beacon = false, keep = null) {
-  const body = { lease: p.lease, verifier: p.verifier, engine: ENGINE_ID, done, answers: p.unsent.map(({ key: _k, ...a }) => a),
-    ...(keep ? { keep } : {}) };
   const keys = p.unsent.map((a) => a.key);
+  const body = { lease: p.lease, verifier: p.verifier, engine: ENGINE_ID, done, answers: p.unsent.map(({ key: _k, ...a }) => a),
+    ...(keep ? { keep } : {}), ...(keys.length ? { points_since: pointsSince() } : {}) };
   p.unsent = [];
   p.sentAt = Date.now();
   if (beacon && navigator.sendBeacon) navigator.sendBeacon("/api/board/answers", JSON.stringify(body));
-  const sent = beacon && navigator.sendBeacon ? Promise.resolve(true) : sendAgain(body);
-  return sent.then((ok) => { computeSent(keys); if (ok && keys.length) { devicePointsAt = 0; loadDevicePoints(); } return ok; });
+  const sent = beacon && navigator.sendBeacon ? Promise.resolve({ ok: true }) : sendAgain(body);
+  return sent.then((r) => {
+    computeSent(keys);
+    if (r && keys.length) {
+      if (r.device_points) { devicePointsAt = Date.now(); takeDevicePoints({ ok: true, ...r.device_points }); }
+      else { devicePointsAt = 0; loadDevicePoints(); }
+    }
+    return !!r;
+  });
 }
 async function endPack(keep = null) {
   const p = heldPack;

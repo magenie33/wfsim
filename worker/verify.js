@@ -10,7 +10,8 @@
 //        → { pack: { lease, lease_ms, tasks: [{ question, identity, record, ruler, mode }] } | null, work: null }
 //        — or, for a question that goes alone, `work: { kind: "riven_gain", lease, code, weapon, ruler, request, context }`
 //        (worker/appraise.js §"Volunteer work"), `pack: null`.
-//   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done?, keep? } → { ok }
+//   POST /api/board/answers { lease, verifier, engine, answers: [{ question, score, metric, work, compute_ms, counts?, lanes? }], done?, keep?, points_since? }
+//        → { ok, device_points? } — `device_points` is `/api/board/points`'s body for `points_since`, sent only when asked
 //   POST /api/board/release { lease, verifier, keep? }                              → { ok }
 //   POST /api/board/renew   { lease, verifier, question }                           → { ok, held, renew_ms }
 //   …and PROTOCOL 6, the one before (`PROTOCOLS_SERVED`): `/work` hands a pack of one
@@ -32,6 +33,7 @@ import { facts, workOf, packTaskOf, notePause } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
+import { devicePointsOf } from "./contribution.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest.
 export const LEASE_MS = 30 * 60_000;
@@ -365,7 +367,13 @@ async function answers(request, env) {
   await facts().answerPack(env, { device: b.verifier, owner: who.owner, net: await netOf(request, env) },
     { lease: b.lease, engine: b.engine, served: grace ? engine : null, join: !!(grace && grace.join), answers: [...items.values()], done: b.done === true,
       keep: QUESTION_ID.test(b.keep || "") ? b.keep : null });
-  return json({ ok: true });
+  // ITS POINTS IN THE SAME REPLY, for a page that would otherwise ask
+  // `/api/board/points` after every send — a second billed call each time. A
+  // read that fails leaves it out: the answers have landed, and a failed reply
+  // would send them again.
+  if (typeof b.points_since !== "string") return json({ ok: true });
+  const device_points = await devicePointsOf(env, b.verifier, b.points_since).catch(() => null);
+  return json({ ok: true, ...(device_points ? { device_points } : {}) });
 }
 /// A full pack's answers, each about three hundred bytes.
 const ANSWERS_BODY = 32_768;
