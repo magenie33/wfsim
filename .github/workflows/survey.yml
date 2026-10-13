@@ -20,8 +20,9 @@ concurrency:
 
 env:
   SHARDS: 4
-  # A shard's share of a run, sized to finish well inside its timeout.
-  PER_SHARD: 1500
+  # A shard's share of a run: a runner freezes ~17 a minute on six lanes, so
+  # an hour, inside its timeout.
+  PER_SHARD: 1000
   LANES: 6
 
 jobs:
