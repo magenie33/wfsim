@@ -113,7 +113,8 @@ export async function servedRelease(env) {
     out = { engine: typeof j.engine === "string" && ENGINE_ID.test(j.engine) ? j.engine : null,
       release: typeof j.release === "string" && ENGINE_ID.test(j.release) ? j.release : null,
       accepted: (Array.isArray(j.accepted) ? j.accepted : []).filter((a) => a && ENGINE_ID.test(a.engine || "")
-        && typeof a.until === "string" && Array.isArray(a.changed) && a.changed.every((w) => typeof w === "string")) };
+        && typeof a.until === "string" && (a.join === true || (Array.isArray(a.changed) && a.changed.every((w) => typeof w === "string"))))
+        .map((a) => (a.join === true ? { engine: a.engine, until: a.until, join: true } : a)) };
   } catch { /* unread: nobody works until it is */ }
   if (out.engine) served.set(env.ASSETS, out);
   return out;
@@ -122,7 +123,8 @@ export async function servedRelease(env) {
 /// AN OLDER ENGINE STILL ACCEPTED (`accepted` in release.json, written by
 /// scripts/build_site_app.py `accepted_engines`): until `until`, on the rows of
 /// every weapon but the ones whose data moved since — its bits there are the
-/// served engine's. Null when it is not.
+/// served engine's — or, `join`, when its code moved, on every row, its answers
+/// only joining the served engine's (worker/tasks.js `decide`). Null when it is not.
 export function graceOf(release, engine, now = Date.now()) {
   const a = (release.accepted || []).find((x) => x.engine === engine);
   return a && Date.parse(a.until) > now ? a : null;
@@ -273,14 +275,14 @@ async function work(request, env) {
   const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(PACK_MS / pace) : PACK_FIRST);
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return none;
   const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : PACK_LEASE_MS;
-  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1, exclude: grace ? grace.changed : null }, now);
+  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1, exclude: grace && !grace.join ? grace.changed : null }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
     const t = tasks[0];
     return json({ ok: true, kept: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
   }
   return json({ ok: true, kept: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null,
-    ...(grace ? { engine: served.engine, accepted_until: grace.until } : {}) });
+    ...(grace ? { engine: served.engine, accepted_until: grace.until, ...(grace.join ? { join: true } : {}) } : {}) });
 }
 
 /// WHAT A DEVICE ASKED FOR, by the hour (`verifier_asks`, docs/BOARD.md
@@ -366,7 +368,7 @@ async function answers(request, env) {
   }
   const who = await witnessOf(env, b.verifier);
   await facts().answerPack(env, { device: b.verifier, owner: who.owner, net: await netOf(request, env) },
-    { lease: b.lease, engine: b.engine, served: grace ? engine : null, answers: [...items.values()], done: b.done === true,
+    { lease: b.lease, engine: b.engine, served: grace ? engine : null, join: !!(grace && grace.join), answers: [...items.values()], done: b.done === true,
       keep: QUESTION_ID.test(b.keep || "") ? b.keep : null });
   return json({ ok: true });
 }

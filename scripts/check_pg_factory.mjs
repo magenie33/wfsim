@@ -17,7 +17,8 @@ const HOT = ["questions", "demands", "answers", "verifiers", "verifier_hours", "
 if (process.argv[2] === "--run") await run(process.argv[3]);
 else main();
 
-function main() {
+async function main() {
+  const { GRACE_SHARE } = await import("../worker/tasks.js");
   const of = (backend) => {
     const r = spawnSync(process.execPath, [fileURLToPath(import.meta.url), "--run", backend], { encoding: "utf8", maxBuffer: 256 << 20 });
     const line = (r.stdout || "").trim().split("\n").pop();
@@ -56,6 +57,20 @@ function main() {
   const once = pairs.length === new Set(pairs).size;
   console.log(`  ${once ? "ok " : "FAIL"}  answers sent twice are recorded once`);
   if (!once) failures++;
+  {
+    const end = lite.trace.at(-1).tables, { joiners, rows } = lite.trace.find((t) => t.step === "join rows").out;
+    const facts = new Map(end.questions.filter((q) => rows.includes(q.id) && ["fact", "spot"].includes(q.state)).map((q) => [q.id, q]));
+    const ans = end.answers.filter((a) => a.engine === "ej" && facts.has(a.question));
+    const pair = ans.filter((a) => joiners.slice(0, 2).includes(a.device)), alone = ans.filter((a) => a.device === joiners[2]);
+    const work = (d) => (end.verifiers.find((v) => v.id === d) || {}).work || 0;
+    const paid = pair.length > 0 && pair.every((a) => a.credited)
+      && joiners.slice(0, 2).every((d) => work(d) === pair.filter((a) => a.device === d).length * Math.floor(7_000_000_000 * GRACE_SHARE));
+    const unpaid = alone.length > 0 && alone.every((a) => !a.credited) && work(joiners[2]) === 0;
+    const led = [...facts.values()].every((q) => q.fact_engine === "e1");
+    const ok = facts.size > 0 && paid && unpaid && led;
+    console.log(`  ${ok ? "ok " : "FAIL"}  a moved engine's answers join the served engine's: two agreeing apart from the fact are paid GRACE_SHARE, one alone nothing, none leads (${facts.size} facts, ${pair.length}+${alone.length} answers)`);
+    if (!ok) failures++;
+  }
   const asks = lite.trace.at(-1).tables.verifier_asks;
   const carried = lite.trace.find((t) => t.step === "relayed asks").out;
   const relayed = asks.reduce((n, a) => n + a.relayed, 0);
@@ -109,7 +124,8 @@ async function run(backend) {
   };
   const LIBRARY = d1("schema.sql", backend === "d1" ? [] : HOT), ACCOUNTS = d1("accounts.sql");
   const env = { LIBRARY, ACCOUNTS, FACTORY_TOKEN: "ft", AUTH_SECRET: "s", RELAY_SECRET: "rs",
-    ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1", accepted: [{ engine: "e0", until: "2099-01-01T00:00:00.000Z", changed: ["torid"] }] })) } };
+    ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1", accepted: [{ engine: "e0", until: "2099-01-01T00:00:00.000Z", changed: ["torid"] },
+      { engine: "ej", until: "2099-01-01T00:00:00.000Z", join: true }] })) } };
   let pgc = null;
   // A REAL POSTGRES (`PG_URL`, a scratch database) through postgres.js, as the
   // worker reaches one — node's build of the same release as worker/vendor's.
@@ -282,6 +298,33 @@ async function run(backend) {
       { lease: r.pack.lease, verifier: v, engine: "e1", done: true, answers: rows }, { "cf-connecting-ip": ip }));
   }
   await dump("disputed");
+
+  // AN ENGINE WHOSE CODE MOVED (`join`): two of its computers agree with each other
+  // and not with the served engine, a third alone with nobody; then the served
+  // engine's computers answer the same rows.
+  const joiners = ["aa", "ab", "ac"].map((x) => x.repeat(12)), servers = ["ba", "bb", "bc"].map((x) => x.repeat(12));
+  const joinedRows = new Set();
+  for (const [k, v] of joiners.entries()) {
+    clock += 1_000;
+    const ip = `198.18.${k}.1`;
+    const r = await call(verifyRoute, "/api/board/work", { verifier: v, engine: "ej", protocol: PROTOCOL, consent: YES, lanes: 4 }, { "cf-connecting-ip": ip });
+    say(`join work ${k}`, r);
+    if (!r || !r.pack) continue;
+    const rows = r.pack.tasks.map((t) => (joinedRows.add(t.question), { question: t.question, metric: "kpm", compute_ms: 900,
+      score: truth(t.question) + (k < 2 ? 0.5 : 0.25), work: 7_000_000_000 }));
+    say(`join answers ${k}`, await call(verifyRoute, "/api/board/answers", { lease: r.pack.lease, verifier: v, engine: "ej", done: true, answers: rows }, { "cf-connecting-ip": ip }));
+  }
+  for (const [k, v] of servers.entries()) {
+    clock += 1_000;
+    const ip = `198.19.${k}.1`;
+    const r = await call(verifyRoute, "/api/board/work", { verifier: v, engine: "e1", protocol: PROTOCOL, consent: YES, lanes: 4 }, { "cf-connecting-ip": ip });
+    say(`join served work ${k}`, r);
+    if (!r || !r.pack) continue;
+    const rows = r.pack.tasks.map((t) => ({ question: t.question, metric: "kpm", compute_ms: 900, score: truth(t.question), work: 7_000_000_000 }));
+    say(`join served answers ${k}`, await call(verifyRoute, "/api/board/answers", { lease: r.pack.lease, verifier: v, engine: "e1", done: true, answers: rows }, { "cf-connecting-ip": ip }));
+  }
+  trace.push({ step: "join rows", out: { joiners, servers, rows: [...joinedRows].sort() } });
+  await dump("joined");
 
   // THE SCRIPTS' READS of the factory (worker/factory.js `report`).
   const queueRows = L.prepare("SELECT batch, build_id, ruler, mode FROM queue ORDER BY batch, build_id, ruler, mode").all();

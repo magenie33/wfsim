@@ -31,7 +31,7 @@ renew_ms: 300000
 row_ceiling_ms: 7200000
 clients_per_fact: 2
 facts_per_refusal_forgiven: 1000
-engine_grace_days: 7
+engine_grace_days: 3
 ```
 
 Each key is its constant in snake case, read by `scripts/check_clients_doc.mjs`
@@ -109,20 +109,26 @@ is `work_per_point` work.
   built without `WFSIM_GAS_OFF` (which turns the meter off), and its engine id
   equals the served one.
 - The served engine works, and so does an older one while `accepted` names it:
-  each entry is `{ engine, until, changed }`, an engine replaced less than
-  `engine_grace_days` ago whose difference from the served one is weapon data
-  alone. Until `until` a `/work` ask naming it is handed packs of board rows of
-  every weapon but those in `changed` (each moved weapon and every one linked to
-  it), with `engine` (the served one) and `accepted_until` beside the pack, and
-  its `/answers` count as the served engine's. An engine that moved anything
-  else is never accepted. Any other engine gets `stale: true` and nothing, and
-  `/answers` naming it releases the lease and drops the answers. Every `/work`
+  each is an engine replaced less than `engine_grace_days` ago, and until
+  `until` a `/work` ask naming it is handed packs, with `engine` (the served
+  one) and `accepted_until` beside the pack.
+  - `{ engine, until, changed }` — only weapon data moved: rows of every weapon
+    but those in `changed` (each moved weapon and every one linked to it), and
+    its `/answers` count as the served engine's.
+  - `{ engine, until, join: true }` — anything else moved: rows of every weapon,
+    the pack marked `join`. Its answers count only beside the served engine's:
+    one equal to a served engine's answer is a witness to it and paid as one;
+    one that differs is paid too (`GRACE_SHARE` of its work, worker/tasks.js)
+    when an independent answer of the same engine agrees with it, and nothing
+    when none does. Such answers alone never make a fact.
+  Any other engine gets `stale: true` and nothing, and `/answers` naming it
+  releases the lease and drops the answers. Every `/work`
   answer carries `release`; the page reloads into a newer one when idle.
 - WHEN ENGINES MOVE: whenever a change is ready, any day and as often as it
   comes — there is no release schedule. A client on the official library
   (§"The official engine library") follows each one by itself; one built from a
-  commit keeps working through its `accepted` days when only weapon data moved,
-  and stops at once when anything else did.
+  commit keeps working through its `accepted` days, as the served engine's
+  equal when only weapon data moved and beside it when anything else did.
 
 ## The official engine library
 

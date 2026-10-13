@@ -42,10 +42,11 @@ with tempfile.TemporaryDirectory() as d:
     out = {a["engine"]: a for a in b.accepted_engines("current00000")}
     check("an engine replaced by a weapon's measurement is accepted, that weapon apart",
           out.get("weaponold000", {}).get("changed") == ["arbucep"], out)
-    check("one whose mechanics moved is not", "mechanics000" not in out, out)
+    check("one whose mechanics moved is accepted on every row, its answers only joining the served engine's",
+          out.get("mechanics000", {}).get("join") is True and "changed" not in out.get("mechanics000", {}), out)
     check("one replaced more than the grace ago is not, and its list is dropped",
           "expired00000" not in out and not (Path(d) / "expired00000.json").exists(), out)
-    check("...while one replaced within it stays, until seven days after", out.get("weaponold000", {}).get("until", "") > ago(-4.9), out)
+    check("...while one replaced within it stays, until the grace after", out.get("weaponold000", {}).get("until", "") > ago(2 - b.ENGINE_GRACE_DAYS + 0.1), out)
 
-print(f"\n{bad} failed" if bad else "\nan older engine is accepted exactly where its bits are the served one's")
+print(f"\n{bad} failed" if bad else "\nan older engine is accepted where its bits are the served one's, and joins it everywhere else")
 sys.exit(1 if bad else 0)

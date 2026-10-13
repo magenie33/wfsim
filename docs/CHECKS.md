@@ -210,8 +210,9 @@ accepts and on which weapons (`build_site_app.py` `accepted_engines`). A
 weapon file moves that weapon and every form, transform group and riven family
 linked to it; a kitgun chamber moves the weapon built on it, any other kitgun
 part every kitgun; anything else — mechanics, shared data — moves everything,
-and that engine is not accepted. Tests are never compared. An engine replaced
-more than seven days ago is dropped with its file list.
+and that engine is accepted to join the served one (`join`). Tests are never
+compared. An engine replaced more than `ENGINE_GRACE_DAYS` ago is dropped with
+its file list.
 
 ## `check_pg_factory`
 

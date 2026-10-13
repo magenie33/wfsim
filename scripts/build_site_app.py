@@ -633,11 +633,12 @@ def engine_files() -> dict:
 
 # AN OLDER ENGINE STILL ACCEPTED (worker/verify.js `graceOf`): a client built on
 # one keeps computing the board for `ENGINE_GRACE_DAYS` after the engine that
-# replaced it, on every weapon its data still matches. Each served engine leaves
-# its file list in `site/engines/`; an older one is accepted only when what
-# moved since is weapon data and tests, and then not on the weapons it touched
-# or any weapon linked to them by `inherits`, a transform group or a riven family.
-ENGINE_GRACE_DAYS = 7
+# replaced it. Each served engine leaves its file list in `site/engines/`. When
+# what moved since is weapon data and tests, it is accepted as the served engine
+# on every weapon but the ones touched or linked to them by `inherits`, a
+# transform group or a riven family; when anything else moved, on every row, its
+# answers only joining the served engine's (`join`, worker/tasks.js `decide`).
+ENGINE_GRACE_DAYS = 3
 ENGINES_DIR = APP / "engines"
 
 
@@ -702,8 +703,10 @@ def accepted_engines(current: str) -> list:
             continue
         moved = {p for p in set(m["files"]) | set(files) if m["files"].get(p) != files.get(p)}
         weapons = changed_weapons(moved)
-        if weapons is not None:
-            out.append({"engine": m["engine"], "until": stamp(until), "changed": sorted(weapons)})
+        # ITS CODE MOVED, so no row is known to keep its bits: it is accepted on
+        # every row, its answers only joining the served engine's (`join`).
+        out.append({"engine": m["engine"], "until": stamp(until), "join": True} if weapons is None
+                   else {"engine": m["engine"], "until": stamp(until), "changed": sorted(weapons)})
     return out
 
 

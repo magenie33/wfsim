@@ -33,6 +33,10 @@ export const OFFICIAL_STATES = ["disputed", "spot", "nondeterministic"];
 /// renews it (`renewRow`) and is never cut off; only a silent one loses it.
 /// Each renewal holds the row this much longer — a few missed beats' worth.
 export const RENEW_MS = 5 * 60_000;
+/// WHAT AN OLDER ENGINE'S ANSWER EARNS WHEN ITS ENGINE PARTED FROM THE FACT
+/// (`joinersParted`): at most what an answer on the served engine earns, so
+/// staying on an old engine never pays better than updating.
+export const GRACE_SHARE = 1;
 /// …AND PAST THIS LONG FROM THE LEASE another computer may take it too, the
 /// first holder computing on (`lease_prev`): whichever answers first makes it.
 /// Nobody is cut off, and a page that beats but never answers holds nothing.
@@ -370,8 +374,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// recorded and settled in a few round trips, whatever their number; `done`
   /// gives back the rest of the pack but `keep`. Returns the questions taken.
   /// AN OLDER ENGINE'S ANSWERS (`served` the engine the site serves) settle
-  /// under the served one: its rows were handed out because their bits are the same.
-  async function answerPack(env, w, { lease, engine, served = null, answers, done = false, keep = null }, now = Date.now()) {
+  /// under the served one: its rows were handed out because their bits are the same
+  /// — or, `join`, because they may be, and then each only joins a served one's.
+  async function answerPack(env, w, { lease, engine, served = null, join = false, answers, done = false, keep = null }, now = Date.now()) {
     const db = factoryDb(env);
     const { results: held } = await db.prepare(pick(db,
       `SELECT * FROM questions WHERE id IN (SELECT value FROM json_each(?4))
@@ -391,7 +396,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       for (const r of given) byId.delete(r.question);
     }
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
-    if (items.length) await recordMany(env, w, items, now, served);
+    if (items.length) await recordMany(env, w, items, now, served, join);
     if (done) await release(env, w.device, lease, keep);
     return { taken: items.map((x) => x.q.id) };
   }
@@ -409,7 +414,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// ONE WITNESS'S ANSWERS `[{ q, a }]`, all of one engine: written in one round
   /// trip, then settled together (`settleMany`).
-  async function recordMany(env, w, items, now, served = null) {
+  async function recordMany(env, w, items, now, served = null, join = false) {
     const db = factoryDb(env), at = iso(now), official = w.official ? 1 : 0, mine = items[0].a.engine, engine = served || mine;
     const writes = items.map(({ q, a }) => db.prepare(
       `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
@@ -433,7 +438,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED, in the settling's own
     // write: the answered question heads every witness's order, so freed before
     // it became a fact it was taken at once and answered again for nothing.
-    await settleMany(env, [...answered.keys()], engine, now, { answered, peer: mine !== engine ? mine : null, after: [
+    await settleMany(env, [...answered.keys()], engine, now, { answered, peer: mine !== engine && !join ? mine : null, after: [
       db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
                    WHERE id IN ${listOf(db, "?")} AND leased_to = ?`).bind(ids, w.device)] });
   }
@@ -517,7 +522,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
       writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
         .bind(state, lead.canon, engine, iso(now), q.id));
-      credits.push(...group);
+      credits.push(...group, ...joinersParted(all, served, group, lead, engine));
       deliverPlan(env, { ...q, canon: lead.canon }, now, lead, demands, writes, later);
       return;
     }
@@ -529,6 +534,21 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       writes.push(db.prepare("UPDATE questions SET state = ? WHERE id = ? AND state = 'open'")
         .bind(distinct && witnesses.length >= 3 ? "nondeterministic" : "disputed", q.id));
     }
+  }
+
+  /// AN OLDER ENGINE'S ANSWERS THAT PARTED FROM THE FACT, paid `GRACE_SHARE`
+  /// of their work: computed in good faith on the engine its owner had, and
+  /// less, so an engine is worth updating. Only where two independent answers
+  /// of that engine agree with each other — the engine's own bits, which one
+  /// alone cannot tell from a made-up number.
+  function joinersParted(all, served, group, lead, engine) {
+    const parted = all.filter((a) => a.engine !== engine && !a.official && !served.includes(a) && !group.includes(a) && a.canon !== lead.canon);
+    const out = [];
+    for (const key of new Set(parted.map((a) => `${a.engine}|${a.canon}`))) {
+      const agreeing = independent(parted.filter((a) => `${a.engine}|${a.canon}` === key));
+      if (agreeing.length >= 2) out.push(...agreeing.map((a) => ({ ...a, work: Math.floor((a.work || 0) * GRACE_SHARE) })));
+    }
+    return out;
   }
 
   async function settleOfficial(env, q, all, served, officialSays, engine, now) {

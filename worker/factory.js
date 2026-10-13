@@ -171,7 +171,7 @@ async function report(db, b) {
   if (b.report === "calibration") {
     const { results } = await db.prepare(pick(db,
       `SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, json_group_array(a.device) AS devices
-         FROM answers a JOIN questions q ON q.id = a.question
+         FROM (SELECT * FROM answers ORDER BY id) a JOIN questions q ON q.id = a.question
         WHERE a.credited = 1 AND a.official = 0 AND a.void = 0 AND q.verb = 'simulate' AND a.at > ?1
         GROUP BY q.id ORDER BY q.id LIMIT 2000 OFFSET ?2`,
       `SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, '[' || string_agg(to_json(a.device)::text, ',' ORDER BY a.id) || ']' AS devices
