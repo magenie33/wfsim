@@ -8,10 +8,10 @@
     python scripts/riven_survey.py ... --dry              # say what it would open, touch nothing
 
 Every shape of each weapon's riven (engine `riven_shapes`, which `--bonus` and
-`--malus` narrow) is opened as a `survey` appraisal, then frozen by a clean page
-(`scripts/riven_freeze.mjs`), which hands it to the factory. Running it again
-is safe: a weapon opens only the shapes it lacks, and only its unfrozen shapes
-are frozen.
+`--malus` narrow) is opened as a `survey` appraisal, and the official machines
+freeze each on a clean page (`.github/workflows/survey.yml`), which hands it
+to the factory. Running it again is safe: a weapon opens only the shapes it
+lacks, and only unfrozen shapes are frozen.
 
 The library is reached over ssh to its server, as `private/hetzner/ssh.env`
 names it (SSH_TARGET, SSH_KEY, SSH_KNOWN_HOSTS).
@@ -23,7 +23,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -111,7 +110,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("weapons", nargs="*")
     ap.add_argument("--popular", type=int, default=0)
-    ap.add_argument("--lanes", type=int, default=12)
     ap.add_argument("--dry", action="store_true")
     # WHICH STATS: passed to the engine as they are (engine `riven_shapes`).
     ap.add_argument("--bonus", help="only these bonuses, comma-separated ids")
@@ -160,13 +158,12 @@ def main():
     print(f"{len(codes)} shapes to freeze")
     if a.dry or not codes:
         return
-    with tempfile.NamedTemporaryFile("w", suffix=".codes", delete=False) as f:
-        f.write("\n".join(codes))
-    try:
-        r = subprocess.run(["node", os.path.join(ROOT, "scripts", "riven_freeze.mjs"), f.name, str(a.lanes)], cwd=ROOT)
-    finally:
-        os.unlink(f.name)
-    sys.exit(r.returncode)
+    # FROZEN ON THE OFFICIAL MACHINES (.github/workflows/survey.yml), never on
+    # the machine that opened them; its hourly run would take them anyway.
+    r = subprocess.run(["gh", "workflow", "run", "survey.yml"], cwd=ROOT)
+    if r.returncode:
+        sys.exit("could not start survey.yml; its hourly run will take them")
+    print("survey.yml started: gh run list --workflow survey.yml")
 
 
 if __name__ == "__main__":

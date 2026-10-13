@@ -708,7 +708,8 @@ sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/
 sudo -u postgres psql -d wfsim_accounts -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim_accounts' -f worker/pg/accounts.sql
 sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '…'" \
   -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, scores, batches, queue TO wfsim_pipeline" \
-  -c "GRANT SELECT ON verifiers, verifier_hours TO wfsim_pipeline"
+  -c "GRANT SELECT ON verifiers, verifier_hours TO wfsim_pipeline" \
+  -c "GRANT SELECT (code, channel, request) ON appraisals TO wfsim_pipeline"
 sudo -u postgres psql -d wfsim_accounts -c "CREATE ROLE wfsim_accounts_pipeline LOGIN PASSWORD '…'" \
   -c "GRANT SELECT ON devices TO wfsim_accounts_pipeline"
 ```

@@ -1,0 +1,90 @@
+# A RIVEN SURVEY'S SHAPES, FROZEN ON THE OFFICIAL MACHINES — docs/AGENT.md
+# §"Riven survey". `scripts/riven_survey.py` opens the shapes and starts this;
+# each shape's search is built by a clean page (`scripts/riven_freeze.mjs`) and
+# stored, which hands it to the factory. Nothing here computes a score.
+#
+# A RUN TAKES WHAT IS LEFT AND STOPS. A shape is frozen once and never again, so
+# a run cut short loses only the pages in flight and the next one takes the
+# rest; an hour with nothing unfrozen is one short job.
+name: survey
+
+on:
+  schedule:
+    - cron: "45 * * * *"
+  workflow_dispatch:
+
+# ONE RUN AT A TIME: two would freeze the same shapes twice.
+concurrency:
+  group: survey-freeze
+  cancel-in-progress: false
+
+env:
+  SHARDS: 4
+  # A shard's share of a run, sized to finish well inside its timeout.
+  PER_SHARD: 1500
+  LANES: 6
+
+jobs:
+  codes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      count: ${{ steps.read.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          db_library: ${{ vars.DB_LIBRARY }}
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
+      - name: the shapes not yet frozen
+        id: read
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          export CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc | jq -r '.d1_databases[] | select(.binding == "LIBRARY") | .database_id')
+          n=$((SHARDS * PER_SHARD))
+          echo "{\"sql\":\"SELECT code FROM appraisals WHERE channel = 'survey' AND request IS NULL ORDER BY code LIMIT $n\"}" \
+            | node scripts/pgq.mjs | jq -er '.result[0].results[].code' > codes.txt || true
+          count=$(grep -c . codes.txt || true)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "$count shapes to freeze" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: steps.read.outputs.count != '0'
+        with:
+          name: codes
+          path: codes.txt
+
+  freeze:
+    needs: codes
+    if: needs.codes.outputs.count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+      - uses: actions/download-artifact@v4
+        with:
+          name: codes
+      - name: freeze this shard's slice
+        env:
+          BOT_RELAY_TOKEN: ${{ secrets.BOT_RELAY_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "$BOT_RELAY_TOKEN" ] || { echo "::error::BOT_RELAY_TOKEN is not set"; exit 1; }
+          awk -v s=${{ matrix.shard }} -v k="$SHARDS" '(NR - 1) % k == s' codes.txt > mine.txt
+          [ -s mine.txt ] || exit 0
+          node scripts/riven_freeze.mjs mine.txt "$LANES" | tail -n 20 | tee -a "$GITHUB_STEP_SUMMARY"
