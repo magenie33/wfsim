@@ -2091,10 +2091,10 @@ ui:
   "Shape": 词条构成
   "Bonus": 增益
   "Malus": 减益
-  # SPLICED: DE's Riven Splicer is 裂罅熔接器 and its description's verb is 拼接.
-  "spliced": 拼接
-  "spliced — at most one a card": "拼接词条 —— 每张卡最多一条"
-  "A Riven Splicer's stat, made out of two rolled ones: always a bonus, at most one a card": 由裂罅熔接器把两条词条拼接成的属性：永远是正面词条，每张卡最多一条
+  # SPLICED: DE calls the Riven Splicer 裂罅熔接器 and the stat it makes 熔接词条.
+  "spliced": 熔接
+  "spliced — at most one a card": "熔接词条 —— 每张卡最多一条"
+  "A Riven Splicer's stat, made out of two rolled ones: always a bonus, at most one a card": 由裂罅熔接器把两条词条熔接成的属性：永远是正面词条，每张卡最多一条
   "Rank": 等级
   "Polarity": 极性
   "capacity": 容量
