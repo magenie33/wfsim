@@ -1143,6 +1143,7 @@ ui:
   "how much of this machine the page may use — it changes how FAST an answer arrives, never what the answer is": "这个页面可以用这台机器多少算力 —— 它只改变答案来得多快，从不改变答案本身"
   "how the weapon is played — this gates the buffs below": 你怎么打这把武器 —— 它决定下面的 buff 是否生效
   "how this build is played": 这套配装怎么打
+  "if nothing was saved, long-press the image to save it": 如果没有保存成功，长按图片即可保存
   "ignored — this stat is locked at the weapon's default": 未生效 —— 这项属性已被锁定为武器默认值
   "ignored": 未生效
   "image copied": 图片已复制

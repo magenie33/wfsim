@@ -666,18 +666,27 @@ async function openShareClaim(panel, url, measured) {
     `<button class="cu-btn sh-img">${escHtml(tr("copy image"))}</button>` +
     `<button class="cu-btn sh-dl">${escHtml(tr("download image"))}</button></div>` +
     `<div class="sh-note">${escHtml(tr("the card shows the build; the link beside it opens the same build, and never touches the reader's own scenario"))}</div>` +
-    `<canvas class="sh-canvas"></canvas>`;
+    `<canvas hidden></canvas><img class="sh-canvas" alt="">`;
   const urlBox = more.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
-  const canvas = more.querySelector(".sh-canvas");
+  const canvas = more.querySelector("canvas"), shown = more.querySelector(".sh-canvas");
   const standing = await showcaseStanding();
   let pick = standing && showcasePick(standing);
-  const draw = () => drawShareCard(canvas, url, {
-    measured: measured && measured.card,
-    by: by && { name: by.name, mark: by.mark || "" },
-    theme: (by && by.theme) || "",
-    showcase: standing && showcaseOf(standing, pick, by && by.mark),
-  });
+  // THE CARD IS SHOWN AS AN <img>, NOT THE CANVAS: a phone saves a picture by
+  // long-pressing it, and an in-app browser (WeChat, QQ) offers nothing else —
+  // it drops a download link's click without a word.
+  let blob = null;
+  const draw = async () => {
+    await drawShareCard(canvas, url, {
+      measured: measured && measured.card,
+      by: by && { name: by.name, mark: by.mark || "" },
+      theme: (by && by.theme) || "",
+      showcase: standing && showcaseOf(standing, pick, by && by.mark),
+    });
+    blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+    if (shown.src) URL.revokeObjectURL(shown.src);
+    shown.src = URL.createObjectURL(blob);
+  };
   if (standing) {
     const box = (id, label, on, off) => `<label class="sh-opt"><input type="checkbox" data-showcase="${id}"${
       on ? " checked" : ""}${off ? " disabled" : ""}> ${escHtml(tr(label))}</label>`;
@@ -713,16 +722,30 @@ async function openShareClaim(panel, url, measured) {
   };
   more.querySelector(".sh-img").onclick = async () => {
     try {
-      const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       say("image copied");
     } catch (_) { say("this browser will not copy images — use download"); }
   };
-  more.querySelector(".sh-dl").onclick = () => {
+  const touch = matchMedia("(pointer: coarse)").matches;
+  more.querySelector(".sh-dl").onclick = async () => {
+    const name = `wfsim-${$("weapon").value}-${presetLabel(buildNamed(activePreset))}.png`.replace(/[\s#]+/g, "-");
+    const file = new File([blob], name, { type: "image/png" });
+    // A PHONE SAVES THROUGH THE SHARE SHEET ("Save Image"): iOS Safari ignores
+    // `download`. Not on a desktop, whose sheet would replace a plain download.
+    if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); } catch (_) { /* closed */ }
+      return;
+    }
+    // In the document and from a blob url: a detached anchor or a data url is
+    // dropped by several mobile browsers.
     const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = `wfsim-${$("weapon").value}-${presetLabel(buildNamed(activePreset))}.png`.replace(/[\s#]+/g, "-");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.append(a);
     a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    if (touch) say("if nothing was saved, long-press the image to save it");
   };
 }
 

@@ -35,7 +35,7 @@ const r = await evaluate(`(async () => {
   const full = bar.querySelector('.pshare .sh-full');
   if (full) { full.click(); await sleep(3000); }
   const cv = bar.querySelector('.pshare .sh-canvas');
-  out.panel = cv ? [cv.width, cv.height] : null;
+  out.panel = cv ? [cv.tagName, cv.naturalWidth, cv.naturalHeight] : null;
   return out;
 })()`);
 
@@ -48,5 +48,7 @@ check("the backdrop word is the one fewest weapons share",
   JSON.stringify(r.keywords) === JSON.stringify(["PLASMOR", "NIKANA", "LATO", "BRAMMA", "LEX"]), JSON.stringify(r.keywords));
 check("the card is drawn, 1080 wide at twice the pixels, as tall as its blocks", r.size[0] === 2160 && r.size[1] > 1200,
   JSON.stringify(r.size));
-check("the share panel draws it", !!r.panel && r.panel[0] === 2160, JSON.stringify(r.panel));
+// AN <img>, NOT THE CANVAS: a phone saves a picture by long-pressing it.
+check("the share panel shows it as a picture a phone can long-press", !!r.panel && r.panel[0] === "IMG" && r.panel[1] === 2160,
+  JSON.stringify(r.panel));
 await app.finish("the share card is the builder's steps, in the builder's order");
