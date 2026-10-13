@@ -189,7 +189,9 @@ on a schedule, and it moves at its own rate.
   fetched at runtime.
 - `board.meta.json` beside them is small and carries the stamp: **a digest per
   published file**, one digest over that manifest, which generation the rows
-  were measured under, when each board was scored, and how many rows. A client
+  were measured under, when each board was scored, how many rows, and which
+  weapons each scene has a file for (`scene_weapons`, so a page never asks a
+  scene for a file it does not have). A client
   reads the stamp to learn whether the copy it holds is current **without
   fetching the board to find out** — and, when it is not, learns WHICH files
   moved, so an hourly rescore that touched twenty weapons costs twenty small

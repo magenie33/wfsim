@@ -359,11 +359,14 @@ async function loadWeaponBoard(id, base = "") {
 /// them by `benchmark`. NEVER AWAITED — a route waits on the base rows alone,
 /// and a desktop shell asks the site for these (its offline copy holds the base
 /// alone, `scripts/board_meta.py`), which a slow network must not turn into a
-/// page that never opens. A scene that has not measured this weapon has no file.
+/// page that never opens. A scene that has not measured this weapon has no file,
+/// and one the stamp lists without it (`scene_weapons`) is not asked.
 const SCENE_ROWS_WITHIN_MS = 8000;
 function loadSceneRows(id, base) {
   const sceneBase = window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
+  const listed = (BOARD_META && BOARD_META.scene_weapons) || {};
   for (const dir of benchScenes().filter(Boolean)) {
+    if (Array.isArray(listed[dir]) && !listed[dir].includes(id)) continue;
     fetch(`${sceneBase}/board/${dir}/${id}.json`, { cache: "no-cache", signal: AbortSignal.timeout(SCENE_ROWS_WITHIN_MS) })
       .then((r) => (r.ok ? r.json() : null))
       .then((more) => {

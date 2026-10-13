@@ -64,6 +64,20 @@ def manifest() -> dict[str, str]:
     }
 
 
+def scene_weapons() -> dict[str, list[str]]:
+    """Every scene's directory, and the weapons it has a file for.
+
+    A page asks a scene for a weapon's rows only when it is listed here: a
+    scene that never measured the weapon has no file, and asking anyway was a
+    billed 404 per scene on every weapon page. A scene NOT in this map is asked
+    as before, so a stamp without it costs requests, never rows.
+    """
+    return {
+        d.name: sorted(f.stem for f in d.glob("*.json") if f.stem != INDEX)
+        for d in sorted(BOARD.iterdir()) if d.is_dir()
+    }
+
+
 def digest_of(files: dict[str, str]) -> str:
     """The board's identity: one hash over the manifest, order fixed by sorting.
 
@@ -104,6 +118,7 @@ def build() -> dict:
         # per-board times are below for anything that shows more.
         "scored_at": max(scored) if scored else None,
         "boards": boards,
+        "scene_weapons": scene_weapons(),
     }
 
 

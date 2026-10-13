@@ -189,6 +189,18 @@ check(named === Object.keys(files).sort().join(","),
 check(meta.rows > 0 && meta.weapons > 0,
   "…and counts what is in it",
   `${meta.rows} rows, ${meta.weapons} weapons`);
+// A SCENE'S LIST IS EXACTLY ITS DIRECTORY: the page skips a scene's file for a
+// weapon the list leaves out, so a list short of one hides rows that exist. A
+// stamp without the lists is read as "ask every scene" and is only slower.
+if (meta.scene_weapons) {
+  const scenes = Object.fromEntries(readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory())
+    .map((e) => [e.name, readdirSync(resolve(dir, e.name)).filter((f) => f.endsWith(".json") && f !== "index.json")
+      .map((f) => f.replace(/[.]json$/, "")).sort()]));
+  const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((k) => [k, [...o[k]].sort()]));
+  check(sorted(meta.scene_weapons) === sorted(scenes),
+    "…and lists each scene's weapons as its directory holds them",
+    "the stamp's scene lists are not this board's — run scripts/board_meta.py");
+}
 
 // …AND THE PAGE READS THAT STAMP RATHER THAN THE ONE IN THE BINARY. The same
 // fields are `data/board_state.yaml`, which is compiled into the wasm, so a
