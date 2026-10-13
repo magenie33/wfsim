@@ -534,26 +534,18 @@ const rowKey = async (env, id, day) => (await sha256(`${env.AUTH_SECRET || ""}:c
 /// claimed device. Only what an answer may carry is kept — no account id, and
 /// an anonymous row's name never.
 const KEPT_SECONDS = 60;
-/// …AND ONCE AN ISOLATE: every page asking while it is worked out waits on the
-/// same working-out, which the edge cache alone let a crowd of them each begin.
+/// …AND ONCE AN ISOLATE, a worked-out ranking and never one being worked out:
+/// a request's I/O is its own, so a promise another request began dies with that
+/// request and every page that waited on it hangs until its own timeout.
 let keptHere = null;
 async function kept(request, env) {
   // NO FRESHER THAN THE EDGE'S MINUTE, so only where there is an edge.
   if (typeof caches === "undefined") return keptWorkedOut(request, env);
-  if (keptHere && keptHere.until > Date.now()) return keptHere.body;
-  // …AND PAST ITS MINUTE THE LAST ONE IS ANSWERED while the next is worked out:
-  // the working-out asks the marks of every named row, seconds of it, and no
-  // page should wait on that when a minute-old ranking is what the edge serves anyway.
-  // A working-out the runtime dropped once the reply left is why the last one
-  // serves `KEPT_STALE_MS` at most: past it the page waits on a fresh one.
-  const old = keptHere && keptHere.value && Date.now() - keptHere.value_at < KEPT_STALE_MS ? keptHere : null;
-  const body = keptWorkedOut(request, env);
-  keptHere = { until: Date.now() + KEPT_SECONDS * 1000, body, value: old && old.value, value_at: old && old.value_at };
-  body.then((v) => { if (keptHere && keptHere.body === body) Object.assign(keptHere, { value: v, value_at: Date.now() }); },
-    () => { if (keptHere && keptHere.body === body) keptHere = null; });
-  return old ? old.value : body;
+  if (keptHere && Date.now() - keptHere.at < KEPT_SECONDS * 1000) return keptHere.body;
+  const body = await keptWorkedOut(request, env);
+  keptHere = { at: Date.now(), body };
+  return body;
 }
-const KEPT_STALE_MS = 5 * 60_000;
 /// THE NAMED ROWS' MARKS, asked of the paid half every `MARKS_KEEP_MS` an
 /// isolate and waited on `MARKS_WAIT_MS` at most: a mark is a tier or a title,
 /// which moves in days, and the asking is seconds — so a slow answer leaves the
