@@ -720,17 +720,25 @@ function computeDemandHtml() {
 }
 
 /// THE NAV'S COUNT: how many computers are computing for WFSim now, asked when
-/// the page starts and each minute it stays in view — the number as it is,
-/// zero too, and nothing where the site has no such count (a dev server).
+/// the page starts, each minute on the compute page and at most every five
+/// minutes anywhere else — every ask is a billed worker call, and a badge on
+/// every open tab was most of them. The number as it is, zero too, and nothing
+/// where the site has no such count (a dev server).
 /// ONE SOURCE FOR THE COUNT: the bar and the compute page's "computing now"
 /// both draw `computingCount`, and only this asks for it — so the two are the
-/// same number at every moment, never two reads a minute apart. Asked past the
-/// browser's cache (`no-cache` revalidates with the edge), so the edge's minute
-/// is the one delay.
+/// same number at every moment. Asked past the browser's cache (`no-cache`
+/// revalidates with the edge), so the edge's minute is the one extra delay.
 let computingCount = null;
+let computingAskedAt = 0;
+const COMPUTING_EVERY_MS = 60_000;
+const COMPUTING_AWAY_EVERY_MS = 5 * 60_000;
 async function navComputing() {
   const el = document.getElementById("compute-count");
   if (!el || document.hidden) return;
+  const every = authKindOf(location.pathname) === "compute" ? COMPUTING_EVERY_MS : COMPUTING_AWAY_EVERY_MS;
+  // A SECOND OF SLACK so the minute's tick is not skipped by its own jitter.
+  if (Date.now() - computingAskedAt < every - 1000) return;
+  computingAskedAt = Date.now();
   const r = await fetch("/api/board/computing", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || typeof r.computing !== "number") return;
   computingCount = r.computing;
@@ -741,7 +749,7 @@ async function navComputing() {
   computeRedraw();
 }
 navComputing();
-setInterval(navComputing, 60_000);
+setInterval(navComputing, COMPUTING_EVERY_MS);
 addEventListener("visibilitychange", navComputing);
 
 function computePage() {
