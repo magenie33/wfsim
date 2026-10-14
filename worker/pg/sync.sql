@@ -111,8 +111,10 @@ RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LAN
     WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
       AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
     RETURNING q.id, q.verb, q.request, q.due_at, q.producer),
+  locked AS (SELECT u.producer FROM producer_use u WHERE u.producer IN (SELECT t.producer FROM taken t) ORDER BY u.producer FOR UPDATE),
   charged AS (UPDATE producer_use u SET used = u.used + u.answer_ms * c.n / u.weight
-    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c WHERE u.producer = c.producer)
+    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c WHERE u.producer = c.producer
+      AND u.producer IN (SELECT producer FROM locked))
   SELECT t.id, t.verb, t.request, t.due_at, t.producer FROM taken t
 $$;
 
@@ -204,9 +206,13 @@ RETURNS void LANGUAGE sql AS $$
   ON CONFLICT (question, device, engine) WHERE official = 0 DO NOTHING
 $$;
 
+-- EVERY WRITER OF PRODUCER_USE LOCKS ITS ROWS IN PRODUCER ORDER first (this,
+-- the pack's charge, board_sync): one statement taking them in its plan's order
+-- deadlocked against another taking them in its own.
 -- WHAT ANSWERS COST, folded into each producer's mean: `n` answers of `ms` in
 -- all move it as `n` folds of share $2 would ($1: [{ p, ms, n }]).
 CREATE OR REPLACE FUNCTION factory_learn(text, double precision) RETURNS void LANGUAGE sql AS $$
+  SELECT 1 FROM producer_use WHERE producer IN (SELECT p FROM jsonb_to_recordset($1::jsonb) AS x(p text)) ORDER BY producer FOR UPDATE;
   UPDATE producer_use u SET answer_ms = CASE WHEN u.answer_ms = 0 THEN x.ms / x.n
       ELSE u.answer_ms * power(1 - $2, x.n) + x.ms / x.n * (1 - power(1 - $2, x.n)) END
   FROM jsonb_to_recordset($1::jsonb) AS x(p text, ms double precision, n double precision) WHERE u.producer = x.p
