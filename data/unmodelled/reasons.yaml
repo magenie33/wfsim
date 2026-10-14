@@ -152,7 +152,18 @@ reasons:
   melee_attack_unmodelled:
     text: "Not modelled: {attacks}. Of this weapon's attacks, only the swing, the slam and the heavy slam are."
   glaive_heavy_is_a_throw:
-    text: "A glaive's heavy attack is a throw, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
+    text: "A glaive's heavy attack is the detonation of a thrown glaive, which is its own mode (a throw, detonated), so there is no standing heavy mode and a Tennokai window converts no swing."
+  # A GLAIVE'S THROW — docs/MELEE.md §10.
+  glaive_bounce_unmodelled:
+    text: "A thrown glaive's bounces are not modelled: it strikes the body it was thrown at and what its punch through reaches. The bounce explosions of Volatile Rebound and Volatile Quick Return are not modelled either."
+  glaive_throw_return_assumed:
+    text: "How fast a thrown glaive comes back is unpublished: one left to return is taken to fly back over the same distance at its own speed, and a detonated one is in the hand at once."
+  glaive_throw_animation_assumed:
+    text: "A throw's own animation is unpublished: it is taken as one attack at the throw's listed rate, after the charge where there is one, and attack speed shortens it."
+  glaive_throw_tennokai_unmodelled:
+    text: "Tennokai on a throw is not modelled as the game has it: the window pauses while the glaive flies and only a detonation spends it."
+  glaive_throw_animosity_unmodelled:
+    text: "Melee Animosity counts a throw as a heavy attack that pays its bonus and spends no stack; here a throw is a light input."
   gunblade_heavy_is_a_shot:
     text: "A gunblade's heavy attack fires, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
   melee_heavy_is_special:

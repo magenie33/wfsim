@@ -39,6 +39,8 @@ pub(super) struct Strike<'a> {
     pub(super) swing_forced_independent: &'a [&'static str],
     pub(super) tennokai: bool,
     pub(super) tennokai_heavy: bool,
+    /// Does the in-flight explosion go off — see `MeleeState::detonating`.
+    pub(super) detonates: bool,
     pub(super) melee_struck: &'a [usize],
     pub(super) struck: &'a [usize],
     /// The metres a live grant added to this shot's punch through — see
@@ -183,6 +185,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         swing_forced_independent,
         tennokai,
         tennokai_heavy,
+        detonates,
         melee_struck,
         struck,
         pierce_live_m,
@@ -431,6 +434,15 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             params, active, &mut bodies[0].debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
             r.co_base, crate::model::CoStage::Radial, active.co_behavior,
         ),
+        // A DETONATED GLAIVE IS A HEAVY ATTACK and its swing is not: Killing
+        // Blow's term joins the explosion's bracket alone — *"increase the
+        // damage of their mid-air explosion, but will not affect the damage of
+        // the thrown weapon itself"* (wiki, Killing Blow).
+        Some(r) if r.blast_kind == crate::model::BlastKind::InFlight => Gunco {
+            bucket: (1.0 + base_damage + arcane_base_damage + heavy_attack_base_damage(active, true))
+                / (1.0 + base_damage),
+            ..Default::default()
+        },
         _ => Gunco { bucket: arc_ratio, ..Default::default() },
     };
 
@@ -773,6 +785,23 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         == Some(crate::model::BlastKind::Slam)
     {
         crate::rules::space::Detonation { at: params.player_at, height_m: det.height_m }
+    } else if let Some(r) = active
+        .radial
+        .as_ref()
+        .filter(|r| pellet_lands && r.blast_kind == crate::model::BlastKind::InFlight)
+    {
+        let aim = params.aim_point();
+        crate::rules::space::Detonation {
+            at: crate::rules::space::best_detonation(
+                det.at,
+                crate::rules::space::muzzle(params.player_at, aim),
+                aim,
+                &params.body_positions(),
+                r.radius_m,
+                active.range_m,
+            ),
+            height_m: det.height_m,
+        }
     } else if pellet_lands
         && active.radial.as_ref().map(|r| r.blast_kind)
             == Some(crate::model::BlastKind::Terminal)
@@ -810,6 +839,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     };
     let radial_stage = match attack_radial {
         Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
+        // A THROW NOBODY DETONATES explodes not at all.
+        Some(r) if r.blast_kind == crate::model::BlastKind::InFlight && !detonates => None,
         other => other,
     };
     // …AND THE SWING SCALES THE EXPLOSION, which on a SLAM is the whole
@@ -829,6 +860,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         && swing.as_ref().is_some_and(|h| h.slam_multiplier.is_some());
     let radial_mult = if stance_slam {
         (if active.spends_combo { combo_multiplier } else { 1.0 }) * (1.0 + active.slam_damage)
+    } else if radial_stage.is_some_and(|r| r.blast_kind == crate::model::BlastKind::InFlight) {
+        // THE DETONATION TAKES THE COUNTER AND THE THROW DOES NOT — *"Only
+        // explosive damage will use the Combo Multiplier"* (wiki, Melee, 26.0.7).
+        swing_mult * combo_multiplier
     } else {
         swing_mult
     };
@@ -1148,7 +1183,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // difference between an algebraic rearrangement and a fiction.
         let gunco = match &rad {
             None => co_mult,
-            Some(r) if r.takes_condition_overload => co_mult_radial,
+            // …or the explosion's own bracket: CO where the entry takes it,
+            // Killing Blow's term on a detonated glaive.
+            Some(r) if r.takes_condition_overload || r.blast_kind == crate::model::BlastKind::InFlight => {
+                co_mult_radial
+            }
             Some(_) => Gunco { bucket: arc_ratio, ..Default::default() },
         };
         let bucket = gunco.bucket;

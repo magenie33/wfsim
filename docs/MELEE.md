@@ -1,4 +1,4 @@
-# Melee — seven ways to swing one weapon
+# Melee — seven ways to swing one weapon, and a glaive's throw
 
 The **Magistar**, as seven entries, is the template. This is what melee is, and
 what is still owed.
@@ -843,3 +843,60 @@ those two blocks off the cards is the fix.
 
 What the pages describe and the engine does not apply is listed per weapon and
 summarised in docs/UNMODELLED.md §"THE MELEE ROSTER".
+
+---
+
+## 10. A GLAIVE'S THROW — two presses and one decision
+
+A glaive is thrown by HOLDING melee and detonated by the HEAVY press while it
+flies: *"it can be activated while the thrown weapon is in flight, resulting in
+an explosion that deals Heavy Attack damage and returns the weapon to the
+user's hand"* (wiki, Melee). So the throw is a FORM (`throw`, `charged_throw`)
+and the detonation is an ACTION (`detonate`), which the list takes only while
+the glaive is in the air (`Now::glaive_in_flight`).
+
+| mode id | the list | what happens |
+| --- | --- | --- |
+| `throw` / `charged_throw` | the throw | it strikes, flies back, and the next one goes |
+| `throw_detonate` / `charged_throw_detonate` | `detonate` above the throw | it strikes and is set off where the blast is worth most |
+
+**A MODE IS A WRITTEN LIST**, and a detonated throw is the one mode whose list
+says more than its form: `WeaponPlayMode::rules` adds `detonate`, and the
+fight reads the list, so an inserted `detonate` does the same.
+
+**TWO HALVES OF ONE THROW, AND THEY WANT OPPOSITE THINGS:**
+
+- **The strike is not a heavy attack.** It earns a combo point per hit, takes
+  Condition Overload, and is NOT multiplied by the counter — *"Only explosive
+  damage will use the Combo Multiplier"* (26.0.7).
+- **The detonation is one** (`BlastKind::InFlight`). It reads and SPENDS the
+  counter, takes Killing Blow's term in its own bracket, takes the `(x2 for
+  Heavy Attacks)` cards twice, and takes no Condition Overload (*"Condition
+  Overload does not affect the explosion"*, wiki, Glaive Prime) — on the bodies
+  around it as on the one it struck. The detonated loop waits for a counter
+  rung exactly as a standing heavy does (`heavy_cycle_seconds`).
+
+**WHERE IT GOES OFF IS THE FIGHT'S CHOICE**, since the player's is free:
+`rules::space::best_detonation` takes the point on the throw's line, at or past
+the body it struck and inside its flight range, that catches the most bodies.
+
+**THE GLAIVE IN THE AIR HOLDS THE NEXT THROW** — out to the target, and back
+again unless it was detonated. The charge is the heavy wind-up clock, so the
+wind-up cards shorten it and attack speed does not.
+
+Numbers are the module's `Throw`, `Charged Throw` and `Recall Explosion` rows
+(`notes: glaive_throw_from_the_module`), with each page's own figures winning
+where it states one (ranges, a quick throw's innate punch through, Kestrel's
+falloff).
+
+### …and what is still owed
+
+- **The flight back and the throw's own animation are stand-ins** (the throw's
+  speed; one attack at the quick throw's rate). They are most of a throw
+  loop's cadence, so one stopwatch run — throw to catch, and charge to
+  detonation to the next release — moves every glaive's number.
+- **Bounces and the Volatile cards' bounce explosions**, and the eleven glaive
+  cards with them (`data/surveys/pool_mods.yaml`).
+- **Orvius's quick throw** is a hover that explodes by itself, and has no form.
+- **Disputed rows**, declared on their entries: Halikar's quick detonation,
+  Xoris's charged strike, two 12% explosion crit chances, Kestrel's falloff.

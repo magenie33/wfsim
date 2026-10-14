@@ -351,6 +351,18 @@ notes:
       `SlideAttack`, timed by the block's `Duration`;
     - the slam is the infobox's `Slam Attack` at 100% (half its 2x), and the
       heavy slam its `Heavy Slam Attack` on the 2.0 s stand-in recovery.
+  glaive_throw_from_the_module: |
+    A GLAIVE'S THROW FROM `Module:Weapons/data/melee`, its `Throw` and
+    `Charged Throw` rows (docs/MELEE.md §10):
+    - the direct hit is the row's damage, crit, status and forced procs, its
+      `ShotSpeed` the projectile speed, its `Range` the flight range and its
+      `PunchThrough` the innate punch through;
+    - the explosion is the matching `Recall Explosion` row — the in-flight
+      detonation — with its own radius, crit, status and forced procs and no
+      falloff (`Reduction = 0`); it goes off only when `detonate` is pressed;
+    - the charge is the row's `ChargeTime`, on the heavy wind-up clock; the
+      throw itself is one attack at the quick `Throw` row's `FireRate`;
+    - each throw that lands earns one combo point, as one 100% swing does.
   stance_from_the_module: |
     A STANCE TRANSCRIBED MECHANICALLY from `Module:Stances/data`, and its card
     fields from `Module:Mods/data`. One `Attacks` entry is one input and the

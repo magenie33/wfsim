@@ -254,6 +254,11 @@ pub(super) struct MeleeState {
     /// are hit"* (wiki), so a stack is paid when an input ENDS, not per hit.
     pub(super) animosity_stacks: u32,
     pub(super) animosity_input_landed: bool,
+    /// IS THE GLAIVE IN THE AIR GOING TO BE DETONATED? Decided when it is
+    /// thrown (`swing_this_shot`), because the next throw's timing depends on
+    /// it — a detonated glaive is back in the hand at once — and read where it
+    /// lands, where the explosion SPENDS the counter as a heavy attack does.
+    pub(super) detonating: bool,
 }
 
 /// MELEE ANIMOSITY'S BONUS on this swing: the pile, on a heavy attack only.
@@ -433,7 +438,7 @@ pub(super) fn after_swing(
         // …AND A TENNOKAI SWING SPENDS NOTHING — *"does not consume Combo
         // Counter"* — which on a HEAVY mode is the whole of what the window
         // buys, and on a light one is what makes a free 12x heavy free.
-        if active.spends_combo && !tennokai {
+        if (active.spends_combo || melee.detonating) && !tennokai {
             // …AND IT SPENDS WHAT THE SWING READ, floor included. The
             // counter is ONE number: *"40% heavy attack efficiency will
             // change the amount spent to 60% combo points"*, and the points
@@ -618,14 +623,24 @@ pub(super) fn seconds_to_next_shot(
             } else {
                 melee.swing_idx += 1;
             }
-            let cycle = (w + d / rate.max(1e-9)).max(1e-6);
+            let cycle = (w + d / rate.max(1e-9)).max(1e-6)
+                // A THROWN GLAIVE HOLDS THE NEXT THROW until it is back: out to
+                // the target, and back again unless it was detonated, which
+                // *"returns the weapon to the user's hand"* (wiki, Melee). The
+                // return at the throw's own speed is a stand-in, declared on
+                // every throw entry.
+                + if active.form.is_throw() {
+                    active.flight_seconds(active.gap()) * if melee.detonating { 1.0 } else { 2.0 }
+                } else {
+                    0.0
+                };
             // …AND A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING,
             // which is not always as soon as the animation allows — see
             // `heavy_cycle_seconds`. Derived from the swing SPENDING the
             // counter rather than from the mode, so a standing heavy and a
             // heavy slam make the same decision and the next weapon needs
             // no field.
-            if active.spends_combo {
+            if active.spends_combo || melee.detonating {
                 heavy_cycle_seconds(cycle, melee.combo_points, initial_now)
             } else {
                 cycle
@@ -662,6 +677,8 @@ pub(super) struct Swung {
     pub(super) modded_base: f64,
     pub(super) direct_pre_snap: DamageVector,
     pub(super) co_base: crate::model::CoBase,
+    /// Is this throw going to be detonated — see `MeleeState::detonating`.
+    pub(super) detonates: bool,
 }
 
 /// Read the stance's next swing, spend what it spends, and fold it into the
@@ -739,12 +756,28 @@ pub(super) fn swing_this_shot(
             gauge_pct: 0.0,
             magazine_pct: 1.0,
             tennokai,
+            glaive_in_flight: false,
             in_base_form: true,
             remaining: &|_| 0.0,
         })
         .is_some_and(|r| {
             r.action == crate::data::apl::Action::Heavy && r.when == crate::data::apl::When::Tennokai
         });
+    // **THE LIST DECIDES WHETHER A THROW IS DETONATED** — `detonate` is the
+    // heavy press while the glaive flies, so it is asked as of that instant.
+    // Only a throw whose entry carries the in-flight explosion has one to set off.
+    let detonates = active.form.is_throw()
+        && active.radial.as_ref().is_some_and(|r| r.blast_kind == crate::model::BlastKind::InFlight)
+        && apl.pick(&crate::data::apl::Now {
+            can_fire: true,
+            gauge_pct: 0.0,
+            magazine_pct: 1.0,
+            tennokai,
+            glaive_in_flight: true,
+            in_base_form: true,
+            remaining: &|_| 0.0,
+        }) == crate::data::apl::Action::Detonate;
+    melee.detonating = detonates;
     // …AND WHETHER THE ONE BEING SPENT WAS CHAINED, kept because spending
     // it clears the flag and the damage is decided after.
     let tennokai_was_chained = tennokai && melee.tennokai_chained;
@@ -892,5 +925,6 @@ pub(super) fn swing_this_shot(
         modded_base,
         direct_pre_snap,
         co_base,
+        detonates,
     }
 }

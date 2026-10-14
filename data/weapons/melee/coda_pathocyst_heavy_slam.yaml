@@ -7,8 +7,7 @@ transform_group: coda_pathocyst
 co_behavior: additive_with_base_damage
 unmodeled:
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: melee_attack_unmodelled
-    attacks: "Throw, Throw Bounce Explosion, Throw Recall Explosion, Charged Throw, Charged Throw Bounce Explosion and Charged Throw Recall Explosion"
+  - reason: glaive_bounce_unmodelled
   - reason: melee_valence_unmodelled
     family: Coda
   - reason: glaive_heavy_is_a_throw

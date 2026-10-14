@@ -53,6 +53,10 @@ pub struct WeaponPlayMode {
     pub other_id: Option<&'static str>,
     /// May a standard benchmark rank this? See [`play_modes`].
     pub sustainable: bool,
+    /// DOES THE PLAYER DETONATE THE THROW? The mode's own line on the action
+    /// list (`Self::rules`), and the only thing telling `throw` from
+    /// `throw_detonate`: one form, two ways to play it.
+    pub detonates: bool,
 }
 
 /// Every way this weapon can be played, derived from the forms it registers.
@@ -70,6 +74,18 @@ pub struct WeaponPlayMode {
 /// charged by kills, and it will get its cycle from declaring a gauge and
 /// nothing else.
 impl WeaponPlayMode {
+    /// **THE RULES THIS MODE ADDS TO THE ACTION LIST** above the form's own
+    /// press — a mode IS a written list, and these are the lines a form cannot
+    /// say for itself. Empty for every mode but a detonated throw.
+    pub fn rules(&self) -> crate::data::apl::Apl {
+        use crate::data::apl::{Action, Apl, Rule, When};
+        Apl(if self.detonates {
+            vec![Rule { action: Action::Detonate, when: When::Always }]
+        } else {
+            Vec::new()
+        })
+    }
+
     /// The `form` a fight request must carry to be played this way.
     ///
     /// The fight parser's vocabulary is form KINDS plus the one policy word:
@@ -127,6 +143,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         weapon_id: default.weapon_id,
         other_id: None,
         sustainable: true,
+        detonates: false,
     }];
     for alt in alts().filter(held) {
         out.push(WeaponPlayMode {
@@ -135,7 +152,20 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
             weapon_id: alt.weapon_id,
             other_id: None,
             sustainable: true,
+            detonates: false,
         });
+        // …AND A THROW THAT CAN BE DETONATED IS TWO BUILDS: thrown and left to
+        // come back, or set off in flight. Same form, one more line on the list.
+        if let Some(id) = detonated_id(alt.kind).filter(|_| detonatable(alt.weapon_id)) {
+            out.push(WeaponPlayMode {
+                id,
+                mode: PlayMode::Alternate,
+                weapon_id: alt.weapon_id,
+                other_id: None,
+                sustainable: true,
+                detonates: true,
+            });
+        }
     }
     for alt in alts().filter(|f| !held(f)) {
         // ONE CYCLE PER FORM YOU CAN HOLD: the form you fill the gauge IN is
@@ -147,6 +177,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
                 weapon_id: feeder.weapon_id,
                 other_id: Some(alt.weapon_id),
                 sustainable: true,
+                detonates: false,
             });
         }
         // …AND A FORM YOU NEVER HOLD GETS NO MODE OF ITS OWN. `Transformed`
@@ -165,6 +196,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
             // A gauge you must fill and then run dry is exactly what cannot be
             // sustained; anything else can.
             sustainable: false,
+            detonates: false,
         });
     }
     out
@@ -186,6 +218,23 @@ pub(super) fn free_form_id(kind: FormKind) -> &'static str {
         k if k.is_melee() => k.id(),
         _ => PlayMode::Alternate.id(),
     }
+}
+
+/// The mode id of a throw played with `detonate` — `None` for a form that is
+/// not thrown.
+pub(super) fn detonated_id(kind: FormKind) -> Option<&'static str> {
+    match kind {
+        FormKind::Throw => Some("throw_detonate"),
+        FormKind::ChargedThrow => Some("charged_throw_detonate"),
+        _ => None,
+    }
+}
+
+/// Does this form carry an explosion only a `detonate` sets off?
+pub fn detonatable(weapon_id: &str) -> bool {
+    spec(weapon_id).is_some_and(|s| {
+        s.attack.radial.as_ref().is_some_and(|r| r.blast_kind == crate::model::BlastKind::InFlight)
+    })
 }
 
 /// A CYCLE IS NAMED FOR THE FORM THAT FEEDS IT, and the arsenal's own form

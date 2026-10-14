@@ -694,6 +694,7 @@ pub fn run_once_traced(
             modded_base,
             direct_pre_snap,
             co_base,
+            detonates,
         } = swing_this_shot(
             me.params,
             &me.apl,
@@ -969,6 +970,7 @@ pub fn run_once_traced(
             tennokai,
             tennokai_heavy,
             tennokai_kill_mark,
+            detonates,
             melee_struck,
             pierce_live_m: buff_total(active, crate::model::BuffGrant::PunchThrough, &mut me.buff_stacks, t),
             effective_cc,

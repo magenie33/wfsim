@@ -1,0 +1,47 @@
+id: pathocyst_charged_throw
+name: Pathocyst
+# see notes: glaive_throw_from_the_module
+inherits: pathocyst
+form: charged_throw
+transform_group: pathocyst
+co_behavior: additive_with_base_damage
+unmodeled:
+  - reason: glaive_bounce_unmodelled
+  - reason: glaive_throw_return_assumed
+  - reason: glaive_throw_animation_assumed
+  - reason: glaive_throw_tennokai_unmodelled
+  - reason: glaive_throw_animosity_unmodelled
+  - "The Maggots a throw drops are not modelled: the page gives no damage and no radius for them."
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: projectile
+  projectile_speed_mps: 30
+  fire_rate: 0.667
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.21
+  crit_multiplier: 2.5
+  status_chance: 0.35
+  punch_through_m: 0
+  range_m: 30
+  damage: { impact: 127, puncture: 121, slash: 135, viral: 193 }   # total 576
+  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  radial:
+    damage: { viral: 1572 }   # total 1572
+    radius_m: 4.9
+    blast_kind: in_flight
+    crit_chance: 0.21
+    crit_multiplier: 2.5
+    status_chance: 0.35
+    falloff_start_m: 0.0
+    falloff_reduction: 0
+    forced_procs: [viral]
+    takes_multishot: false
+  # see notes: combo_points_from_multiplier
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.0, windup_seconds: 1.192, combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Pathocyst

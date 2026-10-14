@@ -1,0 +1,48 @@
+id: kestrel_charged_throw
+name: Kestrel
+# see notes: glaive_throw_from_the_module
+inherits: kestrel
+form: charged_throw
+transform_group: kestrel
+co_behavior: additive_with_base_damage
+unmodeled:
+  - reason: glaive_bounce_unmodelled
+  - reason: glaive_throw_return_assumed
+  - reason: glaive_throw_animation_assumed
+  - reason: glaive_throw_tennokai_unmodelled
+  - reason: glaive_throw_animosity_unmodelled
+  - "The detonation's 40% falloff and 3.6 m are the page's; the module states no falloff, and 4 m on the charged throw. Unmeasured."
+  - "The throw forces Ragdoll (the module's ForcedProcs), a state this arena does not have."
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 1.08
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.14
+  crit_multiplier: 2.2
+  status_chance: 0.14
+  punch_through_m: 1
+  range_m: 30
+  damage: { impact: 147.2, puncture: 18.4, slash: 18.4 }   # total 184
+  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  radial:
+    damage: { blast: 504 }   # total 504
+    radius_m: 3.6
+    blast_kind: in_flight
+    crit_chance: 0.14
+    crit_multiplier: 2.2
+    status_chance: 0.14
+    falloff_start_m: 0.0
+    falloff_reduction: 0.4
+    forced_procs: [impact]
+    takes_multishot: false
+  # see notes: combo_points_from_multiplier
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.0, windup_seconds: 1.192, combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Kestrel

@@ -3,6 +3,8 @@ name: Melee Influence
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeProcsSpread
+# "Does not work with Glaive (Weapon Type) weapons" (wiki).
+inert_on: [glaive]
 description: "On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 20m for 18s. Cannot refresh while active."
 
 # Rank 0: On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 10m for 3s. Cannot refresh while active.
@@ -26,13 +28,10 @@ effects:
     duration_rank0: 3
     duration_rankMax: 18
 
-# TWO OF ITS RESTRICTIONS ARE NOT APPLIED, and both make this too generous: it
-# does not work on Glaive-type weapons, and it triggers only on DIRECT melee
-# strikes (not on Magnetic's breakage or a toxin field). Neither costs a number
-# today — the roster has no Glaive and no such melee source — and neither can be
-# a `kind: unmodelled` here, because an arcane's admissions are derived from the
-# effects its loader built and what is missing is a CONDITION on one that works.
-# docs/UNMODELLED.md carries them.
+# IT DOES NOTHING ON A GLAIVE (`inert_on`), swing or throw. Its other
+# restriction is not applied: it triggers only on DIRECT melee strikes (not on
+# Magnetic's breakage or a toxin field), which costs no number while the roster
+# has no such melee source. docs/UNMODELLED.md carries it.
 
 source:
   url: https://wiki.warframe.com/w/Melee_Influence

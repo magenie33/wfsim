@@ -306,9 +306,14 @@ pub(super) fn spread_hit(
     // WHICH MECHANISM PUT IT HERE — see [`SpreadBy`]. The only thing it
     // changes is which kills spawn another tendril.
     by: SpreadBy,
-    // IS THE SWING A TENNOKAI HEAVY? Killing Blow's term joins this body's
-    // bucket then, as it joins the aimed body's.
+    // IS THIS A HEAVY ATTACK'S INSTANCE — a Tennokai heavy, or a glaive's
+    // detonation? Killing Blow's term joins this body's bucket then, as it
+    // joins the aimed body's.
     tennokai_heavy: bool,
+    // DOES CONDITION OVERLOAD REACH IT? A direct hit's spread does; an
+    // explosion's only where its entry says so (`takes_condition_overload`),
+    // the rule the aimed body's half of the same blast already follows.
+    takes_co: bool,
 ) -> Landed {
     let base_damage = active.base_damage_bonus;
     let arcane_base_damage =
@@ -323,20 +328,24 @@ pub(super) fn spread_hit(
     } else {
         0.0
     };
-    let bucket = gunco_bucket(
-        params,
-        active,
-        &mut foe.debuffs,
-        gal,
-        t,
-        base_damage,
-        arcane_base_damage,
-        arc_ratio,
-        half_hp,
-        active.co_base,
-        crate::model::CoStage::Direct,
-        active.co_behavior,
-    );
+    let bucket = if takes_co {
+        gunco_bucket(
+            params,
+            active,
+            &mut foe.debuffs,
+            gal,
+            t,
+            base_damage,
+            arcane_base_damage,
+            arc_ratio,
+            half_hp,
+            active.co_base,
+            crate::model::CoStage::Direct,
+            active.co_behavior,
+        )
+    } else {
+        Gunco { bucket: arc_ratio, ..Default::default() }
+    };
     // THE PART FACTOR IS A SEPARATE MULTIPLIER FROM THE SHARE, and the two are
     // not interchangeable: `share` scales the hit AND the modded base its DoTs
     // are computed from, while a head multiplier scales the hit alone. 1.0 for
@@ -645,6 +654,7 @@ pub(super) fn spread_from_follow_through(
             modded_base, status_chance, forced, vector, params, active, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
             tennokai_heavy,
+            true,
         );
         seeds.push((sidx, landed));
     }
@@ -803,6 +813,7 @@ pub(super) fn spread_from_punch_through(
             t,
             SpreadBy::PunchThrough,
             false,
+            true,
         );
         if inst.headshot {
             punched.hits += 1;
@@ -908,6 +919,7 @@ pub(super) fn spread_from_ricochet(
             t,
             SpreadBy::Ricochet,
             false,
+            true,
         );
     }
 }
@@ -1024,6 +1036,7 @@ pub(super) fn spread_from_echo(
             t,
             SpreadBy::Echo,
             false,
+            true,
         );
     }
 }
@@ -1134,6 +1147,7 @@ pub(super) fn spread_from_tendrils(
             t,
             SpreadBy::Tendril,
             false,
+            true,
         );
     }
 }
@@ -1300,7 +1314,8 @@ pub(super) fn blast_at(
             d,
             t,
             by,
-            false,
+            rad.blast_kind == crate::model::BlastKind::InFlight,
+            rad.takes_condition_overload,
         );
     }
 }
@@ -1419,6 +1434,7 @@ pub(super) fn spread_from_seeds(
             t,
             SpreadBy::Chain,
             false,
+            true,
         );
     }
 }

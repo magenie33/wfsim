@@ -607,6 +607,9 @@ pub fn meta_json() -> Value {
                             (base > 0.0).then(|| r3(r.damage.values().sum::<f64>() / base))
                         }),
                         "spends_combo": s.is_some_and(|s| s.attack.spends_combo),
+                        // A GLAIVE'S THROW, whose mode says where the glaive goes
+                        // after it strikes rather than what it swings.
+                        "thrown": s.is_some_and(|s| s.form_kind().is_throw()),
                         // Is this the form the GAUGE switches into? Then it
                         // exists only while its unlock is installed — and a mod
                         // that cannot be worn beside that unlock (`evo_forbids`)

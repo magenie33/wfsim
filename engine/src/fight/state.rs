@@ -256,6 +256,9 @@ impl IncarnonState {
                 gauge_pct: 0.0,
                 magazine_pct: ammo.loaded / ammo.cap.max(1e-9),
                 tennokai,
+                // BETWEEN SHOTS the glaive is always in the hand: a throw is decided
+                // where it ARRIVES (`fight::flight`), which is the only instant it flies.
+                glaive_in_flight: false,
                 in_base_form: true,
                 remaining,
             };
@@ -313,6 +316,7 @@ impl IncarnonState {
                 _ => ammo.loaded / ammo.cap.max(1e-9),
             },
             tennokai,
+            glaive_in_flight: false,
             in_base_form: self.in_base_form,
             remaining,
         }

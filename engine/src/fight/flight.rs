@@ -36,6 +36,8 @@ pub(super) struct Landing {
     pub(super) tennokai: bool,
     pub(super) tennokai_heavy: bool,
     pub(super) tennokai_kill_mark: u32,
+    /// Is this throw detonated where it arrives — see `MeleeState::detonating`.
+    pub(super) detonates: bool,
     pub(super) melee_struck: Vec<usize>,
     /// THE PUNCH THROUGH A LIVE GRANT GAVE THE ROUND AS IT LEFT THE MUZZLE
     /// (Ripper Rounds' kill window): a property of the projectile, so a kill
@@ -175,6 +177,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             swing_forced_independent: &l.swing_forced_independent,
             tennokai: l.tennokai,
             tennokai_heavy: l.tennokai_heavy,
+            detonates: l.detonates,
             melee_struck: &l.melee_struck,
             struck,
             pierce_live_m: l.pierce_live_m,

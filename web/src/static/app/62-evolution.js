@@ -77,7 +77,9 @@ const isCycleMode = (id) => id === "cycle" || String(id).endsWith("_cycle");
 const modeForm = (w, id) => {
   const forms = (w || {}).forms || [];
   const def = forms.find((x) => x.is_default) || forms[0] || null;
-  const fed = id === "cycle" ? "base" : String(id).replace(/_cycle$/, "");
+  // …AND A DETONATED THROW FIRES THE THROW: the mode is that form with one
+  // more line on its action list.
+  const fed = id === "cycle" ? "base" : String(id).replace(/_cycle$/, "").replace(/_detonate$/, "");
   if (fed === "base") return def;
   if (fed === "transformed") return earnedForm(w);
   // A WEAPON CAN HAVE MORE THAN ONE ALTERNATE — a bow with an adapter has a
@@ -194,6 +196,13 @@ function modeExplain(w, id) {
     // numbers can be read.
     out.push(trF("Its {form} alone, from the first second — a form that has to be bought and runs out, so this is here to read its numbers rather than to play.",
       { form: firedForm(earned) }));
+  } else if (/_detonate$/.test(id) || (forms.find((x) => x.id === id) || {}).thrown) {
+    // A THROW, which is worth saying for what happens to the glaive after it
+    // strikes: away and back, or set off where the blast is worth most.
+    const f = modeForm(w, id) || {};
+    out.push(/_detonate$/.test(id)
+      ? trF("{form}, then detonated in flight where the explosion catches the most enemies: the throw earns the combo counter and the explosion spends it, multiplied by it.", { form: tr(f.name || "") })
+      : trF("{form}, left to fly out and back before the next one; nothing explodes.", { form: tr(f.name || "") }));
   } else if (forms.some((x) => x.id === id)) {
     // **A MODE WHOSE ID IS A FORM'S ID**, which is every melee mode and the
     // Kuva Hind's two extra triggers. `renderMode` DROPS an entry with no

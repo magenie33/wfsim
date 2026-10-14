@@ -70,6 +70,15 @@ pub enum Action {
     Slide,
     Heavy,
     HeavySlam,
+    /// A glaive's throw, quick or held to the full charge — each its own press.
+    Throw,
+    ChargedThrow,
+    /// THE HEAVY ATTACK WHILE THE GLAIVE IS IN FLIGHT: *"it can be activated
+    /// while the thrown weapon is in flight, resulting in an explosion that
+    /// deals Heavy Attack damage and returns the weapon to the user's hand"*
+    /// (wiki, Melee). Possible only then — `Now::glaive_in_flight` — so it sits
+    /// ABOVE the throw and is passed over between throws.
+    Detonate,
     /// Put a magazine in.
     Reload,
     /// Go into the other form, and come back out of it. TWO ACTIONS AND NOT
@@ -115,6 +124,9 @@ impl Action {
                 | Action::Slide
                 | Action::Heavy
                 | Action::HeavySlam
+                | Action::Throw
+                | Action::ChargedThrow
+                | Action::Detonate
         )
     }
 }
@@ -141,6 +153,8 @@ impl Action {
             F::Slide => Action::Slide,
             F::Heavy => Action::Heavy,
             F::HeavySlam => Action::HeavySlam,
+            F::Throw => Action::Throw,
+            F::ChargedThrow => Action::ChargedThrow,
         }
     }
 }
@@ -215,6 +229,9 @@ impl Rule {
             Action::Slide => "slide".into(),
             Action::Heavy => "heavy".into(),
             Action::HeavySlam => "heavy_slam".into(),
+            Action::Throw => "throw".into(),
+            Action::ChargedThrow => "charged_throw".into(),
+            Action::Detonate => "detonate".into(),
             Action::Reload => "reload".into(),
             Action::TransformIn => "transform_in".into(),
             Action::TransformOut => "transform_out".into(),
@@ -297,6 +314,8 @@ impl Apl {
                 // A FULL MAGAZINE CANNOT BE RELOADED, so a rule that would is
                 // passed over like a transmute into a form already held.
                 Action::Reload => now.magazine_pct < 1.0 - 1e-9,
+                // …AND A GLAIVE IN THE HAND CANNOT BE DETONATED.
+                Action::Detonate => now.glaive_in_flight,
                 _ => true,
             };
             if !possible {
@@ -352,6 +371,9 @@ pub struct Now<'a> {
     /// Is the Tennokai flash up — a melee-only fact, and `false` on every
     /// weapon and every instant that has no window open.
     pub tennokai: bool,
+    /// Is a thrown glaive in the air — what makes `detonate` possible at all.
+    /// `false` everywhere but the instant a throw arrives.
+    pub glaive_in_flight: bool,
     /// Which half of a cycle the player is in — `true` on a weapon with no
     /// other form at all. A transmute's two ends are each possible from exactly
     /// one of them, which is what [`Apl::pick`] reads it for.
@@ -426,7 +448,7 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, in_base_form: true, remaining }
+        Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining }
     }
 
     /// An ordinary gun: the trigger, and no flash to convert a swing.
@@ -551,10 +573,10 @@ prio: 3
         let word = |f: F| Rule { action: Action::firing(f), when: When::Always }.to_simc();
         // The melee half is named for the BUTTON, and each button is its own.
         let melee = [F::Neutral, F::Forward, F::Block, F::BlockForward, F::Slide,
-                     F::Heavy, F::HeavySlam];
+                     F::Heavy, F::HeavySlam, F::Throw, F::ChargedThrow];
         let mut seen: Vec<String> = melee.iter().map(|f| word(*f)).collect();
         assert_eq!(seen, ["neutral", "forward", "block", "block_forward", "slide",
-                          "heavy", "heavy_slam"]);
+                          "heavy", "heavy_slam", "throw", "charged_throw"]);
         // …and a melee form's mode id IS that button (`play_modes::free_form_id`),
         // so the list a reader sees names the mode they picked.
         for f in melee {
@@ -568,7 +590,7 @@ prio: 3
             assert_eq!(word(f), f.id(), "{f:?}");
         }
         seen.extend(["shoot".into(), "charged".into(), "alt_fire".into(),
-                     "semi_auto".into(), "auto".into()]);
+                     "semi_auto".into(), "auto".into(), "detonate".into()]);
         let mut sorted = seen.clone();
         sorted.sort();
         sorted.dedup();
@@ -593,7 +615,7 @@ prio: 3
         // the only thing that distinguishes a converted swing from the press a
         // heavy build makes all engagement.
         let none = |_: &str| 0.0;
-        let flash = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true,
+        let flash = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, glaive_in_flight: false,
                           in_base_form: true, remaining: &none };
         let converted = |a: &Apl| a.pick_rule(&flash)
             .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
@@ -608,9 +630,9 @@ prio: 3
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, in_base_form: false, remaining: &none };
+        let spent = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, glaive_in_flight: false, in_base_form: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -631,7 +653,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, in_base_form: true, remaining: &none };
+        let dry = Now { can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 
@@ -644,10 +666,27 @@ prio: 3
             Rule { action: Action::Reload, when: When::Always },
         ]);
         let none = |_: &str| 0.0;
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick_rule(&at(0.4)).map(|r| &r.when), Some(&When::MagazineAtMost { pct: 0.5 }));
         assert_eq!(apl.pick_rule(&at(0.8)).map(|r| &r.when), Some(&When::Always), "only the second holds");
         assert_eq!(apl.pick(&at(1.0)), Action::Shoot, "a full magazine reloads nothing");
         assert_eq!(apl.0[0].to_simc(), "reload,if=magazine.pct<=0.5");
+    }
+
+    /// **`detonate` IS PASSED OVER BETWEEN THROWS AND TAKEN IN FLIGHT** — the
+    /// glaive in the hand has nothing to set off, so the list throws.
+    #[test]
+    fn detonate_waits_for_the_glaive_in_the_air() {
+        let apl = for_fight(
+            &Apl(vec![Rule { action: Action::Detonate, when: When::Always }]),
+            &Shape { attack: Action::ChargedThrow, has_cycle: false, tennokai_heavy: false },
+        );
+        assert_eq!(apl.to_simc(), "detonate
+charged_throw");
+        let none = |_: &str| 0.0;
+        let now = |flying: bool| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
+                                       glaive_in_flight: flying, in_base_form: true, remaining: &none };
+        assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
+        assert_eq!(apl.pick(&now(true)), Action::Detonate);
     }
 }

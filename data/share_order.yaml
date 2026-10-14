@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 2ee44510ba71032b
-count: 3396
+digest: b2b3a8a2e06b1f16
+count: 3419
 ids:
   - acceltra
   - acceltra_prime
@@ -3406,3 +3406,26 @@ ids:
   - votive_onslaught
   - vulpine_mask
   - wise_razor
+  - cerata_charged_throw
+  - cerata_throw
+  - coda_pathocyst_charged_throw
+  - coda_pathocyst_throw
+  - falcor_charged_throw
+  - falcor_throw
+  - glaive_charged_throw
+  - glaive_prime_charged_throw
+  - glaive_prime_throw
+  - glaive_throw
+  - halikar_charged_throw
+  - halikar_throw
+  - halikar_wraith_charged_throw
+  - halikar_wraith_throw
+  - kestrel_charged_throw
+  - kestrel_prime_charged_throw
+  - kestrel_prime_throw
+  - kestrel_throw
+  - orvius_charged_throw
+  - pathocyst_charged_throw
+  - pathocyst_throw
+  - xoris_charged_throw
+  - xoris_throw

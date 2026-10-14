@@ -6,8 +6,7 @@ form: slide
 transform_group: halikar_wraith
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "Throw, Throw Bounce Explosion, Throw Recall Explosion, Charged Throw, Charged Throw Bounce Explosion and Charged Throw Recall Explosion"
+  - reason: glaive_bounce_unmodelled
   - reason: glaive_heavy_is_a_throw
 attack:
   # see notes: swing_trigger_pull_engine

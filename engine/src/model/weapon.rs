@@ -333,6 +333,14 @@ pub enum FormKind {
     /// Nothing but heavy slams — the one melee mode that needs no stance at
     /// all, because a slam is the same attack whatever is in the slot.
     HeavySlam,
+    /// A GLAIVE'S THROW — melee held: *"Holding the melee button throws the
+    /// glaive"* (wiki, Glaive). The glaive flies, strikes, and comes back.
+    /// Whether it is DETONATED in flight is the action list's `detonate`, a
+    /// second press, never a property of this one (docs/MELEE.md §10).
+    Throw,
+    /// …HELD TO THE FULL CHARGE, which is the heavy attack's wind-up clock
+    /// (`ChargeTime = 1.192` on every Charged Throw in the wiki's module).
+    ChargedThrow,
 }
 
 #[wfsim_gas_macro::metered]
@@ -354,6 +362,8 @@ impl FormKind {
             FormKind::Heavy => "heavy",
             FormKind::Slide => "slide",
             FormKind::HeavySlam => "heavy_slam",
+            FormKind::Throw => "throw",
+            FormKind::ChargedThrow => "charged_throw",
         }
     }
 
@@ -377,6 +387,8 @@ impl FormKind {
             FormKind::Heavy => "Heavy Attack",
             FormKind::Slide => "Slide Attack",
             FormKind::HeavySlam => "Heavy Slam",
+            FormKind::Throw => "Throw",
+            FormKind::ChargedThrow => "Charged Throw",
         }
     }
 
@@ -396,7 +408,8 @@ impl FormKind {
         matches!(self, FormKind::Incarnon)
     }
 
-    /// Is this one of the seven ways to swing a melee weapon?
+    /// Is this one of the ways to attack with a melee weapon — the seven swings
+    /// and a glaive's two throws?
     ///
     /// Asked where a mode id is chosen and where a stance's own combo name is
     /// filled in. It is a property of the KIND rather than of the weapon's
@@ -411,7 +424,15 @@ impl FormKind {
                 | FormKind::Heavy
                 | FormKind::Slide
                 | FormKind::HeavySlam
+                | FormKind::Throw
+                | FormKind::ChargedThrow
         )
+    }
+
+    /// Does the WEAPON leave the hand? A thrown glaive is away until it is
+    /// detonated or comes back, so the next throw waits for it.
+    pub fn is_throw(self) -> bool {
+        matches!(self, FormKind::Throw | FormKind::ChargedThrow)
     }
 
     /// Does this form SPEND the combo counter to swing?
@@ -439,6 +460,8 @@ impl FormKind {
             "heavy" => FormKind::Heavy,
             "slide" => FormKind::Slide,
             "heavy_slam" => FormKind::HeavySlam,
+            "throw" => FormKind::Throw,
+            "charged_throw" => FormKind::ChargedThrow,
             other => panic!("unknown form kind in weapon data: {other}"),
         }
     }

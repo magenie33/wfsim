@@ -71,6 +71,8 @@ const bareModeLabel = (w, id) => {
   // to answer: "which stance is best for the neutral combo" cannot be asked if
   // the two builds call that mode different things.
   const f = modeForm(w, id);
+  // A DETONATED THROW IS ITS THROW plus the press that sets it off.
+  if (f && /_detonate$/.test(id)) return trF("{form}, detonated", { form: tr(f.name) });
   return f ? tr(f.name) : tr(id);
 };
 

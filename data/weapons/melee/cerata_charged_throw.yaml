@@ -1,0 +1,47 @@
+id: cerata_charged_throw
+name: Cerata
+# see notes: glaive_throw_from_the_module
+inherits: cerata
+form: charged_throw
+transform_group: cerata
+co_behavior: additive_with_base_damage
+unmodeled:
+  - reason: glaive_bounce_unmodelled
+  - reason: glaive_throw_return_assumed
+  - reason: glaive_throw_animation_assumed
+  - reason: glaive_throw_tennokai_unmodelled
+  - reason: glaive_throw_animosity_unmodelled
+  - "On a throw the innate Toxin never combines with modded elements (wiki); here it combines as on a swing."
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: projectile
+  projectile_speed_mps: 45
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.21
+  crit_multiplier: 2.3
+  status_chance: 0.34
+  punch_through_m: 1
+  range_m: 33
+  damage: { impact: 46, puncture: 80, slash: 114, toxin: 162 }   # total 402
+  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  radial:
+    damage: { toxin: 1318 }   # total 1318
+    radius_m: 4.8
+    blast_kind: in_flight
+    crit_chance: 0.21
+    crit_multiplier: 2.3
+    status_chance: 0.3
+    falloff_start_m: 0.0
+    falloff_reduction: 0
+    forced_procs: [toxin, impact]
+    takes_multishot: false
+  # see notes: combo_points_from_multiplier
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.0, windup_seconds: 1.192, forced_procs: [toxin, impact], combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Cerata

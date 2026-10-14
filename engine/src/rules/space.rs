@@ -728,6 +728,59 @@ pub fn dissipation_point(
     Vec2::new(b.x + ux * t.left_m, b.y + uy * t.left_m)
 }
 
+/// WHERE A GLAIVE IS DETONATED — `model::BlastKind::InFlight`.
+///
+/// The wielder sets it off whenever they like, so the fight sets it off where it
+/// is worth most: the point on the throw's line from `contact` (the body it
+/// struck) out to `reach_m` from the muzzle that the most `bodies` are
+/// [`caught_by_blast`] from. Never BEFORE the contact, because a glaive
+/// detonated short of its target never struck it. Ties go to the nearest point,
+/// which is the contact itself whenever the crowd gives no reason to wait.
+///
+/// The count only changes where the line enters or leaves a body's reach, so
+/// those crossings are the only candidates to try.
+#[wfsim_gas_macro::metered]
+pub fn best_detonation(
+    contact: Vec2,
+    muzzle: Vec2,
+    aim_at: Vec2,
+    bodies: &[Vec2],
+    radius_m: f64,
+    reach_m: f64,
+) -> Vec2 {
+    let (dx, dy) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
+    let len = dx.hypot_portable(dy);
+    if len <= 0.0 {
+        return contact;
+    }
+    let (ux, uy) = (dx / len, dy / len);
+    let at = |s: f64| Vec2::new(muzzle.x + ux * s, muzzle.y + uy * s);
+    let start = (contact.x - muzzle.x) * ux + (contact.y - muzzle.y) * uy;
+    let end = reach_m.max(start);
+    let caught = |p: Vec2| bodies.iter().filter(|&&b| caught_by_blast(p.distance(b), radius_m)).count();
+    let reach = radius_m + BODY_RADIUS_M;
+    let mut best = (caught(contact), start, contact);
+    for b in bodies {
+        let along = (b.x - muzzle.x) * ux + (b.y - muzzle.y) * uy;
+        let perp = ((b.x - muzzle.x) * uy - (b.y - muzzle.y) * ux).abs();
+        if perp > reach {
+            continue;
+        }
+        // Just inside each crossing, so the body it belongs to is counted.
+        let half = (reach * reach - perp * perp).sqrt() - 1e-6;
+        for s in [along - half, along + half] {
+            if s > start && s <= end {
+                let p = at(s);
+                let n = caught(p);
+                if n > best.0 || (n == best.0 && s < best.1) {
+                    best = (n, s, p);
+                }
+            }
+        }
+    }
+    best.2
+}
+
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
 /// overlap.
 ///
@@ -1413,5 +1466,27 @@ mod tests {
         assert_eq!(a.distance(Vec2::ORIGIN), 5.0);
         assert_eq!(Vec2::ORIGIN.distance(a), 5.0);
         assert_eq!(a.distance(a), 0.0);
+    }
+
+    /// **A GLAIVE IS SET OFF WHERE IT CATCHES THE MOST** — at the body it
+    /// struck when nothing behind is worth waiting for, and down the line when a
+    /// crowd stands there, never short of the body it struck.
+    #[test]
+    fn a_glaive_goes_off_where_it_catches_the_most() {
+        let me = Vec2::ORIGIN;
+        let aimed = Vec2::new(0.0, 5.0);
+        let contact = detonation_point(aimed, me);
+        // ALONE: the contact itself.
+        assert_eq!(best_detonation(contact, me, aimed, &[aimed], 4.8, 50.0), contact);
+        // A CROWD 8 M BEHIND, three of them: the blast moves to take the aimed
+        // body and all three — 4.8 m on either side covers both groups.
+        let crowd = [aimed, Vec2::new(0.0, 13.0), Vec2::new(0.5, 13.0), Vec2::new(-0.5, 13.0)];
+        let at = best_detonation(contact, me, aimed, &crowd, 4.8, 50.0);
+        let caught = crowd.iter().filter(|&&b| caught_by_blast(at.distance(b), 4.8)).count();
+        assert_eq!(caught, 4, "{at:?}");
+        assert!(at.y > contact.y, "never short of the body it struck: {at:?}");
+        // …AND NOT PAST ITS FLIGHT RANGE: at 6 m of reach the crowd is out.
+        let short = best_detonation(contact, me, aimed, &crowd, 4.8, 6.0);
+        assert!(short.y <= 6.0 + 1e-6, "{short:?}");
     }
 }

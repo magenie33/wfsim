@@ -382,16 +382,9 @@ Both are listed under Bugs on its page, and both would move a number:
 ## MELEE INFLUENCE SPREADS FROM THINGS IT SHOULD NOT
 
 The arcane is modelled — the roll, the window, the ten spreadable elements, the
-radius, the faction rungs, the damage on the body it came from — and **two of
-its RESTRICTIONS are not applied**. Both make the model too generous rather than
-too mean, and both are TODOs rather than edges: each is a check with a known
-answer, waiting on something the roster does not have yet.
-
-**It does not work on Glaive-type weapons** (wiki: Nepheri, Hate Incarnon
-Genesis, Ceramic Dagger Incarnon Genesis, Syam's projectiles). Nothing in the
-engine refuses it there. It costs nothing today because the roster carries no
-Glaive, and it will be wrong on the day one arrives — which is the failure mode
-worth writing down, since a weapon intake would not think to look here.
+radius, the faction rungs, the damage on the body it came from — and it does
+nothing on a Glaive-type weapon, swing or throw (`inert_on: [glaive]`).
+**One RESTRICTION is not applied**, and it makes the model too generous:
 
 **It triggers only on DIRECT melee strikes.** *"Secondary melee effects such as
 Magnetic's breakage effect and Dual Ichor Incarnon's toxin fields cannot trigger
@@ -399,9 +392,9 @@ Melee Influence."* The engine spreads from any qualifying status the swing
 applied, so a build whose statuses come from a field or a breakage would spread
 where the game does not. The roster has no such source on a melee today.
 
-Neither is `kind: unmodelled` in the data, because an arcane's admissions are
+It is not `kind: unmodelled` in the data, because an arcane's admissions are
 DERIVED from the effects its loader built and there is no effect to mark: what
-is missing is a condition on one that works. That is why they are written here
+is missing is a condition on one that works. That is why it is written here
 instead of on the card, and it is the shape to watch for — a restriction is
 easier to lose than a clause, because nothing goes silent when it is gone.
 
@@ -461,6 +454,7 @@ numbers, and the engine does not apply, is admitted on that weapon:
 | --- | --- | --- |
 | an attack beyond swing, slam and heavy slam — a throw, a shot, a projectile, a pool | `melee_attack_unmodelled` (names them) | the weapon |
 | a heavy that is not a swing: no heavy mode | `glaive_heavy_is_a_throw`, `gunblade_heavy_is_a_shot`, `melee_heavy_is_special` (says what it is) | every glaive and gunblade; Zenistar, Syam, Quassus, Quassus Prime, Edun, Corufell, Corufell Prime, Caustacyst, Coda Caustacyst, Arum Spinosa, Argo & Vel |
+| a glaive's throw beyond the strike and the detonation — bounces, the Volatile bounce explosions, the flight back, the throw's animation, Tennokai and Melee Animosity on a throw (docs/MELEE.md §10) | `glaive_bounce_unmodelled`, `glaive_throw_*` | every glaive and its throws; Orvius's quick throw (a hover, not a strike) has no form |
 | no heavy or no slide figure/duration published: no such mode | `melee_heavy_unpublished`, `melee_slide_unpublished` | Amanata's heavy; the slide of War, War Prime and every Blade and Whip, Fist, Scythe, Heavy Scythe, Sword and Shield, Two-Handed Nikana and Warfan — the class's slide block has no `Duration` |
 | combos the stance module gives the WEAPON itself | `melee_own_combo_unmodelled` | Korumm, Tatsu, Nepheri, … |
 | a passive, a signature bonus, a wielder bonus | `melee_passive_unmodelled` (says what it is) | Wrath, Pride, Lesion, Tonkkatt, the block-charge Sword and Shields, … |

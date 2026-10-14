@@ -498,7 +498,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // the request may still switch it off (or configure it via buff_cfg).
     // The cycle reads it too, or its knob is dead.
     let frenzy_single = frenzy_single && has_frenzy;
-    let PlayedMode { mode_id, evos, cycle_from, single_form } = played_mode(v, info)?;
+    let PlayedMode { mode_id, evos, cycle_from, single_form, mode_rules } = played_mode(v, info)?;
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     // HOW MANY PEOPLE ARE SHOOTING — a property of the FIGHT, so it is parsed
@@ -625,7 +625,10 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // THE RULES THIS REQUEST INSERTED. The fight's own half is added where the
     // params are built, off the one fact that decides it (`FightParams::apl`),
     // so nothing here has to know what a mode resolves to.
-    let apl = inserted_apl(v)?;
+    // …AND THE MODE'S OWN, below them: a mode is a written list, and a detonated
+    // throw is the throw with `detonate` above it.
+    let mut apl = inserted_apl(v)?;
+    apl.0.extend(mode_rules.0);
     // …AND THE STRENGTH AN EXALTED WEAPON WAS SUMMONED AT, which is the
     // WEAPON's number and so has to be known before its build is resolved. The
     // fight runs the same frame where the build is known (`FightParams::from_panel`),
@@ -829,12 +832,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
 }
 
 /// A mode as [`played_mode`] resolves it: its name, the evolutions it installs,
-/// the half a cycle returns to, and the single form to fire.
+/// the half a cycle returns to, the single form to fire, and the lines the
+/// mode itself adds to the action list (`WeaponPlayMode::rules`).
 struct PlayedMode {
     mode_id: String,
     evos: Vec<String>,
     cycle_from: Option<&'static str>,
     single_form: &'static str,
+    mode_rules: wfsim_engine::data::apl::Apl,
 }
 
 /// HOW THE WEAPON IS PLAYED, from the BUILD side of the request.
@@ -937,7 +942,8 @@ fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value
             .or_else(|| registered.iter().find(|f| f.is_default).map(|f| f.weapon_id))
             .unwrap_or(&info.id)
     };
-    Ok(PlayedMode { mode_id, evos, cycle_from, single_form })
+    let mode_rules = modes.iter().find(|m| m.id == mode_id).map(|m| m.rules()).unwrap_or_default();
+    Ok(PlayedMode { mode_id, evos, cycle_from, single_form, mode_rules })
 }
 
 /// WHERE THE TWO OF THEM STAND, in metres — the fight's 2D layer. Two

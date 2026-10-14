@@ -8,6 +8,8 @@ pub struct ArcaneDef {
     pub rarity: Rarity,
     pub max_rank: u32,
     pub requires: Option<String>,
+    /// Weapon traits that make the effects inert — `requires` the other way.
+    pub inert_on: Vec<String>,
     /// Weapon CLASSES that may equip this arcane at all. Empty = any weapon
     /// whose slot seats the arcane, which is almost all of them.
     ///
@@ -129,6 +131,9 @@ impl ArcaneDef {
             if !traits.contains(&req.as_str()) {
                 return fx; // required trait absent: effects inert, id kept
             }
+        }
+        if self.inert_on.iter().any(|t| traits.contains(&t.as_str())) {
+            return fx;
         }
         if self.perk.as_deref() == Some("secondary_enervate") {
             fx.enervate_rank = Some(rank as u8);

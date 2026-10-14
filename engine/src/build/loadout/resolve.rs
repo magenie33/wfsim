@@ -272,6 +272,9 @@ pub fn resolve_for(
     // MELEE COMBO. Four buckets and one clock — all zero on every gun, which is
     // what keeps this function's answer unchanged for them.
     let mut cc_per_combo = 0.0f64;
+    // The `(x2 for Heavy Attacks)` cards' second copy, for an explosion that IS
+    // a heavy attack on a form that is not (a detonated glaive).
+    let mut cc_heavy_again = 0.0f64;
     let mut sc_per_combo = 0.0f64;
     let mut combo_duration_add = 0.0f64;
     let mut initial_combo = 0.0f64;
@@ -510,6 +513,7 @@ pub fn resolve_for(
                 // the same bracket and does not double.
                 ModEffect::CritChanceHeavyDoubled(v) => {
                     cc += v;
+                    cc_heavy_again += v;
                     if base.form.is_heavy() {
                         cc += v;
                     }
@@ -1149,7 +1153,12 @@ pub fn resolve_for(
             modified_base: rmb,
             // The post-mod flat layer (Elemental Excess) is a WEAPON stat
             // change, so the explosion takes it too.
-            crit_chance: (r.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra)).max(0.0),
+            crit_chance: (r.base_crit_chance
+                * (1.0
+                    + cc
+                    + if r.blast_kind == crate::model::BlastKind::InFlight { cc_heavy_again } else { 0.0 })
+                + (base.post_mod_crit_chance + post_mod_cc_extra))
+                .max(0.0),
             crit_damage: r.base_crit_damage * (1.0 + cd) + fb.final_crit_damage,
             base_crit_chance: r.base_crit_chance,
             base_crit_damage: r.base_crit_damage,
@@ -1440,7 +1449,7 @@ pub fn resolve_for(
     let contact_blast = base
         .radial
         .as_ref()
-        .is_some_and(|r| r.blast_kind != crate::model::BlastKind::Terminal);
+        .is_some_and(|r| !matches!(r.blast_kind, crate::model::BlastKind::Terminal | crate::model::BlastKind::InFlight));
     let takes_mods = base
         .punch_through_mods
         .unwrap_or(!contact_blast && base.lingering.is_none());

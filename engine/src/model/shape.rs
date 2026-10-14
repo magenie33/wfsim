@@ -496,6 +496,13 @@ pub enum BlastKind {
     /// is aimed at, nothing flies, and nothing has to be hit for it to go off,
     /// which is also why a slam is the one melee mode that works at any range.
     Slam,
+    /// A GLAIVE DETONATED IN FLIGHT, wherever the wielder chooses to set it off
+    /// — so this fight chooses: the point on the throw's line, at or past the
+    /// body it struck and inside its flight range, that catches the most living
+    /// bodies (`rules::space::best_detonation`). It goes off only when the
+    /// action list presses `detonate`; a throw nobody detonates explodes not at
+    /// all. Not a contact blast: the throw itself takes punch-through mods.
+    InFlight,
 }
 
 /// ONE SWING OF A STANCE COMBO.

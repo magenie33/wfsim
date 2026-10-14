@@ -1,0 +1,47 @@
+id: xoris_charged_throw
+name: Xoris
+# see notes: glaive_throw_from_the_module
+inherits: xoris
+form: charged_throw
+transform_group: xoris
+co_behavior: additive_with_base_damage
+unmodeled:
+  - reason: glaive_bounce_unmodelled
+  - reason: glaive_throw_return_assumed
+  - reason: glaive_throw_animation_assumed
+  - reason: glaive_throw_tennokai_unmodelled
+  - reason: glaive_throw_animosity_unmodelled
+  - "The Charged Throw's direct damage is the module's, the same as the quick throw's where every other glaive doubles it; unmeasured."
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: projectile
+  projectile_speed_mps: 25
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.22
+  crit_multiplier: 2.4
+  status_chance: 0.2
+  punch_through_m: 0
+  range_m: 21
+  damage: { impact: 24, puncture: 40.8, slash: 55.2 }   # total 120
+  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  radial:
+    damage: { electricity: 1000 }   # total 1000
+    radius_m: 9
+    blast_kind: in_flight
+    crit_chance: 0.22
+    crit_multiplier: 2.4
+    status_chance: 0.2
+    falloff_start_m: 0.0
+    falloff_reduction: 0
+    forced_procs: [impact, electricity]
+    takes_multishot: false
+  # see notes: combo_points_from_multiplier
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.0, windup_seconds: 1.192, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Xoris

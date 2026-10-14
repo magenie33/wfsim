@@ -1,0 +1,48 @@
+id: halikar_throw
+name: Halikar
+# see notes: glaive_throw_from_the_module
+inherits: halikar
+form: throw
+transform_group: halikar
+co_behavior: additive_with_base_damage
+unmodeled:
+  - reason: glaive_bounce_unmodelled
+  - reason: glaive_throw_return_assumed
+  - reason: glaive_throw_animation_assumed
+  - reason: glaive_throw_tennokai_unmodelled
+  - reason: glaive_throw_animosity_unmodelled
+  - "The quick throw's 450 Blast detonation is the module's, the same as its bounce explosion where every other glaive doubles it; unmeasured."
+  - "A throw's 50% chance to disarm is not modelled; nothing here is armed."
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: projectile
+  projectile_speed_mps: 30
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.19
+  crit_multiplier: 2.1
+  status_chance: 0.31
+  punch_through_m: 1
+  range_m: 23
+  damage: { impact: 16.3, puncture: 130.4, slash: 16.3 }   # total 163
+  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  radial:
+    damage: { blast: 450 }   # total 450
+    radius_m: 4.9
+    blast_kind: in_flight
+    crit_chance: 0.19
+    crit_multiplier: 2.1
+    status_chance: 0.31
+    falloff_start_m: 0.0
+    falloff_reduction: 0
+    forced_procs: [impact]
+    takes_multishot: false
+  # see notes: combo_points_from_multiplier
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.0, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Halikar

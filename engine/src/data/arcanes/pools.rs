@@ -35,6 +35,7 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
             rarity: rarity(&af.rarity),
             max_rank: af.max_rank,
             requires: af.requires,
+            inert_on: af.inert_on,
             seats: if af.seats.is_empty() {
                 vec![dir]
             } else {

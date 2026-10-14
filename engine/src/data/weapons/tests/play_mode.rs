@@ -65,8 +65,10 @@ fn a_gauge_gives_a_cycle_and_costs_the_alternate_its_rank() {
         // form has a second cycle rather than one that picks for you.
         let cycles = alts.iter().filter(|f| gauged(f)).count()
             * (1 + alts.iter().filter(|f| !gauged(f)).count());
+        // …AND A THROW THAT CAN BE DETONATED is played both ways.
+        let detonated = alts.iter().filter(|f| detonatable(f.weapon_id)).count();
         assert_eq!(
-            multishot.len(), 1 + own_modes + cycles,
+            multishot.len(), 1 + own_modes + cycles + detonated,
             "{}: {} forms should give base + one mode each + a cycle per feeder: {:?}",
             w.id, forms.len(), multishot.iter().map(|m| m.id).collect::<Vec<_>>()
         );
