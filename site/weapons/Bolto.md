@@ -4,7 +4,7 @@ Chinese name: 螺钉手枪
 
 Pistol · Secondary · Mastery Rank 7. 64 base damage (impact 6.4, puncture 57.6), 16% crit chance, 2.4x crit multiplier, 2.2% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-13
+## Best riven-free build on the WFSim board, as of 2026-10-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 弧电振子锤
 
 Hammer · Melee · Mastery Rank 10. 360 base damage (impact 234, slash 126), 24% crit chance, 2x crit multiplier, 38% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-13
+## Best riven-free build on the WFSim board, as of 2026-10-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 0.3170 | Shocking Touch, Voltaic Strike, Sacrificial Steel, Primed Pressure Point, Galvanized Elementalist, Galvanized Reflex, Organ Shatter, Seismic Wave, Crushing Ruin, Melee Influence | 2026-10-11 17:02 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 84.6828 | Shocking Touch, Voltaic Strike, Sacrificial Steel, Primed Pressure Point, Galvanized Elementalist, Galvanized Reflex, Organ Shatter, Seismic Wave, Crushing Ruin, Melee Influence | 2026-10-11 17:01 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy slam | 0.01313 | Shocking Touch, Voltaic Strike, Sacrificial Steel, Primed Pressure Point, Galvanized Elementalist, Galvanized Reflex, Organ Shatter, Seismic Wave, Crushing Ruin, Melee Influence | 2026-10-11 17:02 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy slam | 0.1465 | Shocking Touch, Voltaic Strike, Sacrificial Steel, Primed Pressure Point, Galvanized Elementalist, Galvanized Reflex, Organ Shatter, Seismic Wave, Crushing Ruin, Melee Influence | 2026-10-11 17:24 UTC · 8ae28b57e8 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 0.5381 | Shocking Touch, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Melee Elementalist, Organ Shatter, Seismic Wave, Corrupt Charge, Crushing Ruin, Melee Influence | 2026-10-13 02:31 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 88.4786 | Shocking Touch, Voltaic Strike, Sacrificial Pressure, Sacrificial Steel, Galvanized Elementalist, Galvanized Reflex, Organ Shatter, Seismic Wave, Crushing Ruin, Melee Influence | 2026-10-13 01:42 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy slam | 0.01815 | Shocking Touch, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Melee Elementalist, Organ Shatter, Seismic Wave, Corrupt Charge, Crushing Ruin, Melee Influence | 2026-10-13 02:41 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy slam | 0.1725 | Shocking Touch, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Melee Elementalist, Organ Shatter, Seismic Wave, Corrupt Charge, Crushing Ruin, Melee Influence | 2026-10-13 03:18 UTC |
 
 ## Not modelled here
 

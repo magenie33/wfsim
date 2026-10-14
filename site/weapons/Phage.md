@@ -4,7 +4,7 @@ Chinese name: 噬菌者
 
 Shotgun · Primary · Mastery Rank 11. 5 base damage x7 multishot (viral 5), 19% crit chance, 2x crit multiplier, 15.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-13
+## Best riven-free build on the WFSim board, as of 2026-10-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 野马双枪
 
 Dual Shotguns · Secondary · Mastery Rank 2. 42 base damage x7 multishot (impact 33.6, puncture 4.2, slash 4.2), 6% crit chance, 2x crit multiplier, 3.14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-13
+## Best riven-free build on the WFSim board, as of 2026-10-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

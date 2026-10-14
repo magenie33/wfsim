@@ -4,7 +4,7 @@ Chinese name: 大久和弓 Prime
 
 Bow · Primary · Mastery Rank 15. 750 base damage (impact 225, puncture 300, slash 225), 40% crit chance, 2.4x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-13
+## Best riven-free build on the WFSim board, as of 2026-10-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
