@@ -219,8 +219,8 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, fact_at) VALUES
     ('fs', 'simulate', '{}', 'fact', 'x', 'x', ?), ('fo', 'optimize', '{}', 'fact', 'x', 'x', ?),
     ('oo1', 'optimize', '{}', 'open', 'x', 'x', NULL), ('oo2', 'optimize', '{}', 'open', 'x', 'x', NULL)`, ago(1_800_000), ago(1_800_000));
-  for (const [q, ms, t] of [["fs", 1000, 3_600_000], ["fs", 1000, 0], ["fo", 30_000, 3_600_000], ["fo", 30_000, 0]]) {
-    await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', 'd', 'd', 'c', '{}', 1, ?, ?)`, q, ms, ago(t));
+  for (const [q, d, ms, t] of [["fs", "d1", 1000, 3_600_000], ["fs", "d2", 1000, 0], ["fo", "d1", 30_000, 3_600_000], ["fo", "d2", 30_000, 0]]) {
+    await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', ?, ?, 'c', '{}', 1, ?, ?)`, q, d, d, ms, ago(t));
   }
   const hourOf = (ms) => new Date(now - ms).toISOString().slice(0, 13);
   await L.run("INSERT INTO verifier_hours (verifier, hour, ms) VALUES ('vh1', ?, 300000), ('vh2', ?, 72000), ('vh3', ?, 999000), ('vh4', ?, 999000)",

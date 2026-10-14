@@ -208,6 +208,10 @@ CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);
 -- A DEVICE'S ANSWERS THAT EARNED NOTHING, the ledger's few among its many
 -- (worker/contribution.js `ledgerOf`).
 CREATE INDEX IF NOT EXISTS answers_unpaid_by_device ON answers (device, at) WHERE credited = 0 AND official = 0;
+-- ONE VOLUNTEER ANSWER per question, device and engine: a send repeated or raced
+-- is one witness, never two rows (worker/tasks.js `recordMany`). Official
+-- witnesses may answer a question again, so they are left out.
+CREATE UNIQUE INDEX IF NOT EXISTS answers_once ON answers (question, device, engine) WHERE official = 0;
 -- WHEN AN ENGINE'S UNIT OF WORK BEGAN, one seek (worker/fair.js `tableOf`).
 CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
 

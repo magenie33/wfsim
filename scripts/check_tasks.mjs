@@ -60,6 +60,8 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
       const answers = [];
       for (let k = Math.floor(r() * 3); k > 0; k--) {
         const w = pick(r, devices), a = { device: w.device, owner: w.owner, net: w.net, engine: pick(r, engines) };
+        // ONE ANSWER per question, device and engine (`answers_once`): a repeat is no book the factory can hold.
+        if (answers.some((b) => b.device === a.device && b.engine === a.engine)) continue;
         await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, 'c', '{}', 1, ?)`, id, a.engine, a.device, a.owner, a.net, iso(NOW));
         answers.push(a);
       }

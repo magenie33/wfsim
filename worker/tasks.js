@@ -560,7 +560,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const writes = items.map(({ q, a }) => db.prepare(
       `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
        SELECT ?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text, ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text
-       WHERE ?6::bigint = 1 OR NOT EXISTS (SELECT 1 FROM answers x WHERE x.question = ?1::text AND x.device = ?3::text AND x.engine = ?2::text)`)
+       WHERE ?6::bigint = 1 OR NOT EXISTS (SELECT 1 FROM answers x WHERE x.question = ?1::text AND x.device = ?3::text AND x.engine = ?2::text)
+       ON CONFLICT (question, device, engine) WHERE official = 0 DO NOTHING`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
         a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
     const learnt = official ? null : learnCost(db, items);

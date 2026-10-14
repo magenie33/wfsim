@@ -46,11 +46,12 @@ await hour(E, "2026-10-06T11", 7, 1);
 // D's results that earned nothing: one against an agreed fact, one still open, one set aside — and three that do not count.
 const q = (id, state) => library.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', ?, '2026-12-01', '2026-10-01')", id, state);
 await q("q-fact", "fact"); await q("q-open", "open"); await q("q-old", "fact");
+await q("q-void", "fact"); await q("q-paid", "fact");
 const answer = (question, at, { credited = 0, voided = 0, official = 0 } = {}) => library.run(
   `INSERT INTO answers (question, engine, device, owner, official, canon, result, work, at, credited, void)
    VALUES (?, 'e', ?, ?, ?, '{}', '{}', 1, ?, ?, ?)`, question, D, D, official, at, credited, voided);
 await answer("q-fact", "2026-10-06T10:00:00.000Z"); await answer("q-open", "2026-10-06T10:01:00.000Z");
-await answer("q-fact", "2026-10-06T10:02:00.000Z", { voided: 1 }); await answer("q-fact", "2026-10-06T10:03:00.000Z", { credited: 1 });
+await answer("q-void", "2026-10-06T10:02:00.000Z", { voided: 1 }); await answer("q-paid", "2026-10-06T10:03:00.000Z", { credited: 1 });
 await answer("q-fact", "2026-10-06T10:04:00.000Z", { official: 1 }); await answer("q-old", "2026-09-01T10:00:00.000Z");
 
 const ledger = (cookie, verifier, from = "2026-10-01T00") => call("/api/board/ledger", { cookie, body: { verifier, from } });
