@@ -9,7 +9,7 @@ import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } 
 import { cloudTell } from "./cloud.js";
 import { watchdogText } from "./watchdog_say.js";
 import { iso } from "./instant.js";
-import { fairShadow } from "./settler.js";
+import { fairShadow, settleBatch } from "./settler.js";
 
 /// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY. Hand-outs go
 /// earliest deadline first, and a question past its deadline is the official
@@ -199,6 +199,8 @@ export async function notePause(env, now) {
 /// stays said before it is said again.
 export const WATCHDOG_CRON = "*/10 * * * *";
 const RETELL_MS = 6 * 3_600_000;
+/// THE SETTLER IS GONE once it has not beaten this long, and the cron settles its queue.
+export const SETTLER_SILENT_MS = 5 * 60_000;
 
 /// WHAT IS WRONG IS SAID TO THE OWNER (worker/tasks.js `audit`), once a cause
 /// until it has stood for `RETELL_MS`: a queue that stops moving is found by
@@ -211,6 +213,11 @@ export async function watchdog(env, now = Date.now()) {
     const told = await db.prepare("SELECT told_at FROM watchdog_told WHERE cause = ?").bind(kind).first();
     return !told || Date.parse(told.told_at) <= now - RETELL_MS;
   };
+  // THE SETTLER'S QUEUE, emptied here when the daemon beside the database has
+  // not beaten in `SETTLER_SILENT_MS` (dial `settle_async`): its rows are handed
+  // to anyone again after the grace, but nobody else settles them.
+  const beat = await db.prepare("SELECT daemon_at FROM factory_snapshot WHERE id = 1").first().catch(() => null);
+  if (!beat || Date.parse(beat.daemon_at) <= now - SETTLER_SILENT_MS) await settleBatch(env, now, Date.now() + 20_000).catch(() => 0);
   await facts().redeliver(env, now);
   await facts().repay(env, now);
   await facts().liftIdle(env);

@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import postgres from "./pg/node_modules/postgres/src/index.js";
 import { pgDb, postgresClient, POSTGRES_OPTIONS } from "../worker/db.js";
-import { snapshotTick, fairTick, readFair, compareFair, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
+import { snapshotTick, fairTick, readFair, compareFair, settleShadow, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
 import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../worker/verify.js";
 import { dialsOf, forgetDials } from "../worker/dials.js";
 import { putObject } from "./sigv4.mjs";
@@ -126,7 +126,8 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       const cmp = compareFair(table, (await readFair(env.LIBRARY, release.engine)).table);
       if (cmp.differ) await findingsTick(env.LIBRARY, "fair_roundtrip", (p) => ({ differ: (p.differ || 0) + 1, last: cmp }));
     },
-    settle: async () => { cursor = (await settleBatch(env, { threshold: CLIENTS_PER_FACT, from: cursor })).cursor; },
+    // THE QUEUE FIRST (dial `settle_async`), then the shadow's judging of what settled.
+    settle: async () => { await settleBatch(env); cursor = (await settleShadow(env, { threshold: CLIENTS_PER_FACT, from: cursor })).cursor; },
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
     demand: async () => {
       if (!target) return;

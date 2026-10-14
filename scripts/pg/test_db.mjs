@@ -53,6 +53,13 @@ export async function testDb(...kinds) {
   };
   const db = pgDb(client);
   const q = (sql, args) => client.query(placeholders(sql), args);
+  // WFSIM_SETTLE_ASYNC=1 RUNS A CHECK WITH ITS ANSWERS QUEUED (dial
+  // `settle_async`), each settled by the settler's pass at once
+  // (worker/tasks.js `recordMany`), so every check holds on both paths.
+  if (process.env.WFSIM_SETTLE_ASYNC === "1" && kinds.includes("library")) {
+    await q("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('settle_async', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
+    db.settleAtOnce = true;
+  }
   return Object.assign(db, {
     exec: (sql) => step(schema, () => pg.exec(sql)),
     get: async (sql, ...args) => (await q(sql, args)).rows[0] ?? null,

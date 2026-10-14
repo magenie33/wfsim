@@ -409,6 +409,26 @@ left unpaid are each a difference, kept in the finding with the question. An
 official answer and an older engine's peer are counted apart; two answers of
 one owner are one witness. One pass of the daemon's every tick runs clean.
 
+## `check_settler_async`
+
+Plain node on PGlite, for the settler's queue (dial `settle_async`, docs/BOARD.md
+§"The settler").
+
+- Twelve random books are answered on two databases, one settling in the
+  request and the other queueing each answer for a pass. Both must leave the
+  same questions, credits, verifiers, hours, scores, queue and demands.
+- A pass is killed at each of its calls in turn. Once the next pass and the
+  watchdog's `repay` have run, the result must be what one clean pass leaves.
+- Every question is settled a second time, and nothing changes.
+- A queued question goes to nobody within the grace and to anyone after it.
+- An answer clears the claim of a pass holding its row.
+- An official answer and a producer told every answer still settle in the
+  request.
+
+`WFSIM_SETTLE_ASYNC=1` runs `check_tasks`, `check_board_verify`,
+`check_board_sync` and `check_fair` with every answer queued and a pass run at
+once (`scripts/pg/test_db.mjs`).
+
 ## `check_fair`
 
 Plain node on PGlite (`worker/pg/*.sql`): fair share

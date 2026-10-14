@@ -7,7 +7,7 @@
 import { tableOf } from "../worker/fair.js";
 import { factory, canon, nearAnswer } from "../worker/tasks.js";
 import { contributionRoute } from "../worker/contribution.js";
-import { snapshotTick, fairTick, readFair, compareFair, settleBatch, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
+import { snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
 import { testDb } from "./pg/test_db.mjs";
 import { DIAL_DEFAULTS } from "../worker/dials.js";
 
@@ -81,14 +81,14 @@ console.log("settling, in shadow");
   const facts = await L.all("SELECT id, state, canon FROM questions WHERE id IN ('s1', 's2', 's3') ORDER BY id");
   check("the request path made three facts", facts.every((q) => q.state === "fact"), JSON.stringify(facts));
   const from = { at: iso(t0 - 1), id: "" };
-  let r = await settleBatch(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
+  let r = await settleShadow(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
   check("the shadow judges each settled question as the request path did", r.checked === 3 && r.ok === 3 && !Object.keys(r.differ).length, JSON.stringify(r));
   check("…and goes on from its cursor, judging none twice",
-    (await settleBatch(env, { threshold: 2, from: r.cursor }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1)).checked === 0);
-  check("a question settled less than the lag ago waits", (await settleBatch(env, { threshold: 2, from }, t0 + 1_000)).checked === 0);
+    (await settleShadow(env, { threshold: 2, from: r.cursor }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1)).checked === 0);
+  check("a question settled less than the lag ago waits", (await settleShadow(env, { threshold: 2, from }, t0 + 1_000)).checked === 0);
   await L.run("UPDATE questions SET canon = 'x' WHERE id = 's1'");
   await L.run("UPDATE answers SET credited = 0 WHERE question = 's2' AND device = 's2b'");
-  r = await settleBatch(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
+  r = await settleShadow(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
   check("a fact whose canon no group gave, and a witness left unpaid, are each a difference",
     r.differ.canon === 1 && r.differ.uncredited === 1 && r.ok === 1, JSON.stringify(r));
   const finding = JSON.parse((await L.get("SELECT body FROM factory_findings WHERE kind = 'settle_shadow'")).body);

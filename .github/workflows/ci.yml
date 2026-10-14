@@ -182,6 +182,16 @@ jobs:
         run: node scripts/check_fair.mjs
       - name: The settler in shadow judges as the request path does, and says where it does not
         run: node scripts/check_settler.mjs
+      - name: Answers queued for the settler leave what settling them in the request leaves, once
+        run: node scripts/check_settler_async.mjs
+      - name: The factory holds with every answer queued and settled by the settler's pass
+        env:
+          WFSIM_SETTLE_ASYNC: "1"
+        run: |
+          node scripts/check_tasks.mjs
+          node scripts/check_board_verify.mjs
+          node scripts/check_board_sync.mjs
+          node scripts/check_fair.mjs
       - name: A row its page still computes is kept for it, and only a silent one loses it
         run: node scripts/check_renew.mjs
       - name: A riven gain is run by the community and credited when two owners agree

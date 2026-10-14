@@ -11,6 +11,7 @@ import { tableOf, FAIR_KEEP_MS } from "./fair.js";
 import { independent, sameAs, askingIds } from "./tasks.js";
 import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
+import { facts } from "./factory.js";
 
 /// OPEN IS COUNTED ONLY THIS FAR: past it, more open rows decide nothing a
 /// snapshot is read for, and counting them all is a scan every ten seconds.
@@ -157,7 +158,7 @@ export function judgeFact(q, answers, threshold) {
 /// ONE BATCH OF SETTLED QUESTIONS judged in shadow, after `from` (a `{ at, id }`
 /// keyset cursor), and folded into the `settle_shadow` finding. Read-only on
 /// every table the request path writes. Returns the next cursor and the counts.
-export async function settleBatch(env, { threshold, from, max = 200 }, now = Date.now()) {
+export async function settleShadow(env, { threshold, from, max = 200 }, now = Date.now()) {
   const db = env.LIBRARY, until = iso(now - SETTLE_SHADOW_LAG_MS);
   const { results: qs } = await db.prepare(`SELECT id, state, canon, needs, fact_engine, fact_at FROM questions
       WHERE state IN ('fact', 'spot') AND fact_at <= ?1::text AND (fact_at, id) > (?2::text, ?3::text)
@@ -185,6 +186,24 @@ export async function settleBatch(env, { threshold, from, max = 200 }, now = Dat
       samples: [...(prev.samples || []), ...out.samples].slice(-20), cursor: out.cursor };
   }, now);
   return out;
+}
+
+// ---- Settling, for real (dial `settle_async`) ----------------------------------
+
+/// A PASS IS GIVEN THIS LONG TO EMPTY THE QUEUE, so one tick never outlives the next.
+export const SETTLE_PASS_MS = 1_500;
+/// THE SETTLER'S PASSES (worker/tasks.js `settleQueued`): the factory's own
+/// settlement over the queued questions, a batch at a time until none is left or
+/// the pass has had its time. Returns how many it settled.
+export async function settleBatch(env, now = Date.now(), until = Date.now() + SETTLE_PASS_MS) {
+  const f = facts();
+  let total = 0;
+  for (;;) {
+    const n = await f.settleQueued(env, now);
+    total += n;
+    if (!n || Date.now() >= until) return total;
+    now = Date.now();
+  }
 }
 
 // ---- Findings -------------------------------------------------------------------

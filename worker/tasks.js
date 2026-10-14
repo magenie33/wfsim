@@ -134,6 +134,9 @@ export function independent(answers) {
   return out;
 }
 
+/// A SETTLER PASS THAT DIES leaves its claim, taken again by a pass this much later.
+const CLAIM_STALE_MS = 60_000;
+
 /// ROW LOCKS ON QUESTIONS ARE TAKEN IN ID ORDER by every statement that takes
 /// many: a lease given back and a settlement locked one set of rows in two
 /// orders, and deadlocked each other several times an hour.
@@ -256,9 +259,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// no cores free now (asking ahead), which a question someone waits on is never
   /// handed; `before` keeps to questions due before then.
   async function next(env, w, engine, now = Date.now()) {
-    const db = env.LIBRARY, at = iso(now), most = w.most ?? 1, ceiling = (await dialsOf(env, now)).row_ceiling_ms;
+    const db = env.LIBRARY, at = iso(now), most = w.most ?? 1, d = await dialsOf(env, now), ceiling = d.row_ceiling_ms;
     for (let tries = 0; tries < 8; tries++) {
-      const q = await db.prepare(w.official ? eligibleSql(true, ceiling) : fairSql(ceiling)).bind(...eligibleArgs(w, engine, at)).first();
+      const q = await db.prepare(w.official ? eligibleSql(true, ceiling, d.settle_grace_ms) : fairSql(ceiling, d.settle_grace_ms)).bind(...eligibleArgs(w, engine, at)).first();
       if (!q) return null;
       // A ROW NOBODY OWES ANY MORE is withdrawn where it is found, and the next
       // one is asked for.
@@ -310,11 +313,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// ON POSTGRES THE PICK SKIPS ROWS ANOTHER PICK HOLDS LOCKED (`SKIP LOCKED`):
   /// two asks at once took the same head rows and deadlocked.
   async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null, producer = null }, now = Date.now()) {
-    const db = env.LIBRARY, at = iso(now), lease = newLease(), ceiling = (await dialsOf(env, now)).row_ceiling_ms;
+    const db = env.LIBRARY, at = iso(now), lease = newLease(), d = await dialsOf(env, now), ceiling = d.row_ceiling_ms;
     const [taken, ds] = await db.batch([
       // CHARGED IN THE SAME STATEMENT: a pack costs the database one call.
       db.prepare(`WITH taken AS (UPDATE questions SET ${SUPERSEDE}, lease = ?9::text, lease_until = ?10::text, leased_to = ?11::text, leased_at = ?1::text
-          WHERE id IN (SELECT q.id ${eligibleFrom(false, ceiling)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
+          WHERE id IN (SELECT q.id ${eligibleFrom(false, ceiling, d.settle_grace_ms)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
             AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb)))
             AND (?16::text IS NULL OR EXISTS (SELECT 1 FROM answers s WHERE s.question = q.id AND s.engine = ?16::text AND s.void = 0
                  AND s.owner <> ?6::text AND (?7::text = '' OR s.net <> ?7::text)))
@@ -404,7 +407,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// caller to read in its own batch: an ask is then one round trip, not five.
   const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
     `UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ? AND lease_until > ?")}`).bind(device, iso(now));
-  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(w.official ? eligibleSql(true, d.row_ceiling_ms) : fairSql(d.row_ceiling_ms))
+  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(w.official ? eligibleSql(true, d.row_ceiling_ms, d.settle_grace_ms) : fairSql(d.row_ceiling_ms, d.settle_grace_ms))
     .bind(...eligibleArgs(w, engine, iso(now)));
 
   /// WHAT A HAND-OUT COSTS ITS PRODUCER: the question at its producer's mean
@@ -561,7 +564,18 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
         a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
     const learnt = official ? null : learnCost(db, items);
-    await db.batch([lock, ...writes, ...(learnt ? [learnt] : [])]);
+    // QUEUED FOR THE SETTLER (dial `settle_async`): a volunteer's answers to a
+    // packable verb whose producer is not told each answer (`on_answer` runs in
+    // the request), in the answers' own transaction, so one written is one queued.
+    // An answer on a row a settler pass holds clears its claim (`settleQueued`).
+    const peer = mine !== engine && !join ? mine : null;
+    const queued = !official && items.every(({ q }) => (verbs[q.verb] || {}).pack && producers[q.producer] && !producers[q.producer].on_answer)
+      && (await dialsOf(env, now)).settle_async === 1;
+    const queue = queued ? db.prepare(`INSERT INTO settle_queue (question, engine, peer, joined, queued_at)
+        SELECT value, ?2::text, ?3::text, ?4::bigint, ?5::text FROM jsonb_array_elements_text((?1::text)::jsonb)
+        ON CONFLICT (question, engine, peer) DO UPDATE SET claim = NULL, claimed_at = NULL`)
+      .bind(JSON.stringify(items.map(({ q }) => q.id)), engine, peer || "", join ? 1 : 0, at) : null;
+    await db.batch([lock, ...writes, ...(learnt ? [learnt] : []), ...(queue ? [queue] : [])]);
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
       // §"Contribution") — a statistic, so each on its own and outside the answers'
@@ -572,15 +586,51 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
                     ON CONFLICT (verifier, hour) DO UPDATE SET tasks = h.tasks + excluded.tasks, ms = h.ms + excluded.ms`)
         .bind(w.device, at.slice(0, 13), items.length, ms).run();
     }
+    // …AND SETTLED THERE, the lease given back with it. A handle that asks for it
+    // (a check's database, scripts/pg/test_db.mjs) has the pass run at once.
+    if (queued) {
+      if (db.settleAtOnce) await settleQueued(env, now);
+      return;
+    }
     const answered = new Map(items.map(({ q, a }) => [q.id,
       { question: q.id, device: w.device, net: w.net || "", engine: a.engine, result: a.result, work: a.work, official: !!official, at }]));
     const ids = JSON.stringify([...answered.keys()]);
     // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED, in the settling's own
     // write: the answered question heads every witness's order, so freed before
     // it became a fact it was taken at once and answered again for nothing.
-    await settleMany(env, [...answered.keys()], engine, now, { answered, peer: mine !== engine && !join ? mine : null, after: [
+    await settleMany(env, [...answered.keys()], engine, now, { answered, peer, after: [
       db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
                    WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND leased_to = ?`)}`).bind(ids, w.device)] });
+  }
+
+  /// THE SETTLER'S PASS (worker/settler.js `settleBatch`): up to `max` queued
+  /// questions claimed, each settled exactly as an answer in the request settles
+  /// it (`settleMany`), the lease of a holder that answered given back, and the
+  /// rows taken off — but a row an answer re-armed meanwhile, which waits for
+  /// the next pass. A pass that dies is claimed again after `CLAIM_STALE_MS`;
+  /// every write in a settlement is guarded, so settling twice counts once.
+  async function settleQueued(env, now = Date.now(), max = null) {
+    const db = env.LIBRARY, claim = newLease(), n = max ?? (await dialsOf(env, now)).settle_batch;
+    const { results: rows } = await db.prepare(`UPDATE settle_queue SET claim = ?1::text, claimed_at = ?2::text
+        WHERE (question, engine, peer) IN (SELECT question, engine, peer FROM settle_queue
+          WHERE claim IS NULL OR claimed_at < ?3::text ORDER BY question, engine, peer LIMIT ?4::bigint FOR UPDATE SKIP LOCKED)
+        RETURNING question, engine, peer`).bind(claim, iso(now), iso(now - CLAIM_STALE_MS), n).all();
+    if (!rows.length) return 0;
+    const groups = new Map();
+    for (const r of rows) {
+      const k = `${r.engine} ${r.peer}`;
+      if (!groups.has(k)) groups.set(k, { engine: r.engine, peer: r.peer || null, ids: [] });
+      groups.get(k).ids.push(r.question);
+    }
+    for (const g of [...groups.values()].sort((a, b) => (a.engine + a.peer < b.engine + b.peer ? -1 : 1))) {
+      const ids = [...new Set(g.ids)].sort(), list = JSON.stringify(ids);
+      await settleMany(env, ids, g.engine, now, { peer: g.peer, after: [
+        db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder(`id IN ${listOf(db, "?")}
+            AND leased_to IS NOT NULL AND EXISTS (SELECT 1 FROM answers a WHERE a.question = questions.id AND a.device = questions.leased_to)`)}`)
+          .bind(list)] });
+    }
+    await db.prepare("DELETE FROM settle_queue WHERE claim = ?").bind(claim).run();
+    return rows.length;
   }
 
   /// WHAT THE ANSWERS NOW MAKE OF A QUESTION (§"States").
@@ -740,34 +790,30 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// ONLY A FACT SCORES, once per answer: its work to its device, in its hour,
   /// and one fact toward forgiving a refusal (docs/BOARD.md §"Contribution").
-  /// A CREDIT IS PAID IN TWO SHORT STEPS, each its own statement:
-  /// the answers flip to credited (their RETURNING is what was not yet paid, so
-  /// each is paid once), then each device is paid their sum in one update, in
-  /// device order. A device's row is held for one statement, never a settlement.
+  /// A CREDIT IS ONE TRANSACTION, one round trip: its devices locked in device
+  /// order, then the answers flipped to credited (`credited = 0`, so each is paid
+  /// once) and each device paid what flipped. In two steps, a pass dying between
+  /// them left answers marked paid whose work nobody was ever given.
   async function credit(db, answers, now) {
     // THE WORK PAID IS THE ANSWER'S AS GIVEN HERE, which may be the official work
     // in its place (`settleOfficial`), never re-read from the table.
-    const owed = new Map(answers.filter((a) => !a.official && !a.credited).map((a) => [Number(a.id), a]));
-    const ids = [...owed.keys()];
-    if (!ids.length) return;
-    const { results: paid } = await db.prepare(
-      `UPDATE answers SET credited = 1 WHERE id IN (SELECT value::bigint FROM jsonb_array_elements_text((?::text)::jsonb)) AND credited = 0
-        RETURNING id`).bind(JSON.stringify(ids)).all();
-    const by = new Map();
-    for (const p of paid) {
-      const a = owed.get(Number(p.id));
-      const d = by.get(a.device) || { work: 0, n: 0 };
-      d.work += a.work; d.n += 1; by.set(a.device, d);
-    }
-    const hour = iso(now).slice(0, 13);
-    for (const [device, d] of [...by].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
-      await db.prepare(`UPDATE verifiers SET work = work + ?::bigint, agreed = agreed + ?::bigint,
-          refusals = CASE WHEN refusals > 0 AND clean + ?::bigint >= refusals * ?::bigint THEN refusals - 1 ELSE refusals END,
-          clean = CASE WHEN refusals = 0 OR clean + ?::bigint >= refusals * ?::bigint THEN 0 ELSE clean + ?::bigint END
-        WHERE id = ?::text`).bind(d.work, d.n, d.n, FACTS_PER_REFUSAL_FORGIVEN, d.n, FACTS_PER_REFUSAL_FORGIVEN, d.n, device).run();
-      await db.prepare(`INSERT INTO verifier_hours AS h (verifier, hour, work) VALUES (?::text, ?::text, ?::bigint)
-          ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work`).bind(device, hour, d.work).run();
-    }
+    const owed = answers.filter((a) => !a.official && !a.credited).map((a) => ({ id: Number(a.id), device: a.device, work: a.work }));
+    if (!owed.length) return;
+    await db.batch([
+      db.prepare(`SELECT id FROM verifiers WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) ORDER BY id FOR UPDATE`)
+        .bind(JSON.stringify([...new Set(owed.map((a) => a.device))])),
+      db.prepare(`WITH owed AS (SELECT (e->>'id')::bigint AS id, e->>'device' AS device, (e->>'work')::bigint AS work
+            FROM jsonb_array_elements((?1::text)::jsonb) e),
+          paid AS (UPDATE answers a SET credited = 1 FROM owed WHERE a.id = owed.id AND a.credited = 0 RETURNING owed.device, owed.work),
+          sums AS (SELECT device, sum(work)::bigint AS work, count(*)::bigint AS n FROM paid GROUP BY device),
+          v AS (UPDATE verifiers SET work = verifiers.work + sums.work, agreed = agreed + sums.n,
+              refusals = CASE WHEN refusals > 0 AND clean + sums.n >= refusals * ?2::bigint THEN refusals - 1 ELSE refusals END,
+              clean = CASE WHEN refusals = 0 OR clean + sums.n >= refusals * ?2::bigint THEN 0 ELSE clean + sums.n END
+            FROM sums WHERE verifiers.id = sums.device RETURNING 1)
+        INSERT INTO verifier_hours AS h (verifier, hour, work) SELECT device, ?3::text, work FROM sums
+          ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work`)
+        .bind(JSON.stringify(owed), FACTS_PER_REFUSAL_FORGIVEN, iso(now).slice(0, 13)),
+    ]);
   }
 
   /// EVERY LIVE DEMAND IS TOLD THE FACT, once.
@@ -1002,7 +1048,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   }
 
   return { demand, demandAll, withdraw, next, nextPack, headOf, packable, liftIdle, renew, renewRow, renewMany, release, releaseAll, releaseAllOf, releaseUnnamed,
-    answer, answerPack, answerOfficial, refuseRows, claim, refuse, settle, audit, redeliver, repay };
+    answer, answerPack, answerOfficial, refuseRows, claim, refuse, settle, settleQueued, audit, redeliver, repay };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has
@@ -1016,7 +1062,7 @@ export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals |
 /// owner, nor its network — on the served engine, with the cores a first answer
 /// needs at the question's age; the official machines take what is past its
 /// deadline and what only they may settle.
-function eligibleFrom(official, ceilingMs = DIAL_DEFAULTS.row_ceiling_ms) {
+function eligibleFrom(official, ceilingMs = DIAL_DEFAULTS.row_ceiling_ms, graceMs = DIAL_DEFAULTS.settle_grace_ms) {
   return `FROM questions q
   WHERE ${official ? `((q.state = 'open' AND q.due_at < ?1::text) OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
     : "q.state = 'open'"}
@@ -1028,7 +1074,9 @@ function eligibleFrom(official, ceilingMs = DIAL_DEFAULTS.row_ceiling_ms) {
           AND (a.device IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)) OR a.owner = ?6::text OR (?7::text <> '' AND a.net = ?7::text)))
     AND NOT EXISTS (SELECT 1 FROM engine_refusals r WHERE r.question = q.id AND r.engine = ?4::text
           AND r.device IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)))
-    AND (?8::text IS NULL OR q.due_at < ?8::text)`;
+    AND (?8::text IS NULL OR q.due_at < ?8::text)
+    AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = q.id
+          AND s.queued_at > to_char(((?1::text)::timestamptz AT TIME ZONE 'UTC') - interval '${Math.round(graceMs / 1000)} seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))`;
 }
 
 /// WHO IS ASKING, one definition for every reader (worker/verify.js, worker/fair.js,
@@ -1038,21 +1086,21 @@ function eligibleFrom(official, ceilingMs = DIAL_DEFAULTS.row_ceiling_ms) {
 export const askingIds = (since, now) => `(SELECT id FROM verifiers WHERE asked_at > ?${since}::text
   UNION SELECT leased_to FROM questions WHERE leased_to IS NOT NULL AND lease_until > ?${now}::text)`;
 const ORDER = "ORDER BY q.waits DESC, q.due_at, q.id";
-function eligibleSql(official, ceilingMs) {
-  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer ${eligibleFrom(official, ceilingMs)} ${ORDER} LIMIT 1`;
+function eligibleSql(official, ceilingMs, graceMs) {
+  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer ${eligibleFrom(official, ceilingMs, graceMs)} ${ORDER} LIMIT 1`;
 }
 /// A VOLUNTEER'S PICK (docs/BOARD.md §"Fair share between producers"): each producer's head
 /// among what this witness may answer, one index probe each, and of those the
 /// waited-on first, then the producer that has used least. Where no producer's
 /// row finds one, the plain order does, so nothing eligible is ever left unhanded.
-function fairSql(ceilingMs) {
+function fairSql(ceilingMs, graceMs) {
   const cols = "q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer";
   return `SELECT id, verb, request, state, due_at, waits, producer FROM (
       (SELECT 0 AS fallback, x.* FROM producer_use u CROSS JOIN LATERAL (
-         SELECT ${cols} ${eligibleFrom(false, ceilingMs)} AND q.producer = u.producer ${ORDER} LIMIT 1) x
+         SELECT ${cols} ${eligibleFrom(false, ceilingMs, graceMs)} AND q.producer = u.producer ${ORDER} LIMIT 1) x
        ORDER BY x.waits DESC, u.used, x.due_at, x.id LIMIT 1)
       UNION ALL
-      (SELECT 1 AS fallback, ${cols} ${eligibleFrom(false, ceilingMs)} ${ORDER} LIMIT 1)
+      (SELECT 1 AS fallback, ${cols} ${eligibleFrom(false, ceilingMs, graceMs)} ${ORDER} LIMIT 1)
     ) z ORDER BY fallback LIMIT 1`;
 }
 function eligibleArgs(w, engine, at) {

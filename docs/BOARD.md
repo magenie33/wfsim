@@ -777,8 +777,10 @@ GRANT SELECT ON answers, engine_refusals, factory_dials, questions, queue, refus
   settle_queue, verifier_hours, verifiers TO wfsim_factoryd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON factory_findings, factory_snapshot, fair_shares TO wfsim_factoryd;
 GRANT SELECT (id) ON batches TO wfsim_factoryd;
-GRANT SELECT (producer, ref, question, state) ON demands TO wfsim_factoryd;
-GRANT SELECT (measured_by, finished_at) ON scores TO wfsim_factoryd;
+GRANT SELECT, UPDATE ON answers, demands, questions, verifiers TO wfsim_factoryd;
+GRANT SELECT, INSERT, UPDATE ON scores, verifier_hours TO wfsim_factoryd;
+GRANT SELECT, UPDATE, DELETE ON settle_queue TO wfsim_factoryd;
+GRANT DELETE ON queue TO wfsim_factoryd;
 GRANT SELECT (channel, request, at, done_at, weapon, ruler, agreed_at, started_at) ON appraisals TO wfsim_factoryd;
 ```
 
@@ -800,9 +802,31 @@ says so; read back through the CDN every minute, three reads in a row older
 than 30 s are `signal_stale` and three not cached at the edge are
 `signal_uncached`.
 
-**IT RUNS IN SHADOW.** Nothing the worker decides reads these tables yet; the
-request path still settles, credits and works out its own fair table. The
-shadow checks itself against it two ways, each a finding:
+**IT SETTLES A VOLUNTEER'S BOARD ANSWERS** while dial `settle_async` is 1.
+`recordMany` writes the answer and queues its questions in `settle_queue`,
+in the same transaction, and returns; every two seconds the daemon's
+`settleBatch` claims up to `settle_batch` of them (`FOR UPDATE SKIP LOCKED`), in
+question order. It settles each one through `settleMany`, the request path's own
+code: `decide`, the credit, and the producer's `on_fact_writes`. Then it gives
+back the lease of a holder that answered. Only a packable verb whose producer
+has no `on_answer` is queued; a riven's producers are told every answer, so
+they and every official answer still settle in the request.
+
+- A queued question goes to nobody for `settle_grace_ms`. After that it is
+  handed out again, so a dead settler holds no work.
+- An answer to a question that is already claimed clears the claim. The pass
+  that claimed it then leaves the row queued for the next pass.
+- A pass that dies is claimed again a minute later. Settling twice changes
+  nothing: a state moves only from `open`, and a credit is one transaction
+  that pays only answers still unpaid.
+- What a settlement committed but never did is the watchdog's: `repay` and
+  `redeliver`.
+- If the heartbeat is five minutes old, the watchdog empties the queue itself.
+- Dial 0 queues nothing more, and the daemon empties what is already queued.
+
+**THE REST RUNS IN SHADOW.** The worker still works out its own fair table. The
+shadow checks itself against the request path two ways, and each check writes a
+finding:
 
 - `settle_shadow`: every settled question, two minutes after its fact, judged
   again from its answers as they stood — the fact's bits must be a group of
@@ -813,8 +837,9 @@ shadow checks itself against it two ways, each a finding:
   daemon's table with its own `tableOf` now, within 0.05 of a target or a
   share, since asks and answers land between the two readings.
 
-Settling leaves the request path (`settle_queue`, empty until then) only after
-a week of both findings without a difference. `check_settler` holds this.
+`check_settler` holds the shadow. `check_settler_async` holds the queue: what
+the request path leaves, and what one clean pass leaves after a pass that died
+at any call.
 
 ### Fair share between producers
 

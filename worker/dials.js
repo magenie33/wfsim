@@ -61,6 +61,13 @@ export const DIALS = {
     says: "1 answers every protocol 8 sync with fallback 7" },
   signal_mode: { default: 0, min: 0, max: 1, unit: "mode",
     says: "0: computers wait on the signal; 1: they ask the worker directly, the signal unused" },
+  // THE SETTLER (worker/settler.js `settleBatch`, docs/BOARD.md §"The settler").
+  settle_async: { default: 0, min: 0, max: 1, unit: "switch",
+    says: "1: a volunteer's board answers are queued and the settler beside the database settles them; 0: settled in the request" },
+  settle_grace_ms: { default: 120_000, min: 10_000, max: 3_600_000, unit: "ms",
+    says: "a queued question is handed to nobody for this long, then to anyone again should the settler not have come" },
+  settle_batch: { default: 200, min: 1, max: 2_000, unit: "questions",
+    says: "the most queued questions one settler pass takes" },
 };
 /// …AND THE ONES A CLIENT READS, sent with every hand-out so no client
 /// hard-codes them (docs/CLIENTS.md §"Values").

@@ -239,16 +239,21 @@ CREATE INDEX IF NOT EXISTS factory_dial_log_by_name ON factory_dial_log (name, s
 -- THE SETTLER'S TABLES (worker/settler.js, scripts/factoryd.mjs; docs/BOARD.md
 -- §"The settler"). The daemon beside the database writes them; while it runs in
 -- shadow nothing the worker decides reads them.
--- A QUESTION WITH NEW ANSWERS, waiting for the settler: written once settling
--- leaves the request path, empty until then.
+-- A QUESTION WITH NEW ANSWERS, waiting for the settler (dial `settle_async`).
+-- `claim` is the pass settling it; an answer landing meanwhile clears it, so the
+-- pass that read before that answer does not take the row away unsettled.
 CREATE TABLE IF NOT EXISTS settle_queue (
-  question  TEXT COLLATE "C" NOT NULL,
-  engine    TEXT COLLATE "C" NOT NULL,
-  peer      TEXT COLLATE "C" NOT NULL DEFAULT '',
-  joined    BIGINT NOT NULL DEFAULT 0,
-  queued_at TEXT COLLATE "C" NOT NULL,
+  question   TEXT COLLATE "C" NOT NULL,
+  engine     TEXT COLLATE "C" NOT NULL,
+  peer       TEXT COLLATE "C" NOT NULL DEFAULT '',
+  joined     BIGINT NOT NULL DEFAULT 0,
+  queued_at  TEXT COLLATE "C" NOT NULL,
+  claim      TEXT COLLATE "C",
+  claimed_at TEXT COLLATE "C",
   PRIMARY KEY (question, engine, peer)
 );
+ALTER TABLE settle_queue ADD COLUMN IF NOT EXISTS claim TEXT COLLATE "C";
+ALTER TABLE settle_queue ADD COLUMN IF NOT EXISTS claimed_at TEXT COLLATE "C";
 CREATE INDEX IF NOT EXISTS settle_queue_by_age ON settle_queue (queued_at);
 -- THE FACTORY AT ONE MOMENT, one row: what is open and who is on, and the
 -- daemon's own heartbeat and the commit it runs.
