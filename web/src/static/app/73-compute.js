@@ -677,12 +677,21 @@ async function openComputeTask(w, key) {
 }
 
 /// THE WHOLE PICTURE, above this browser's own: what the board asks for and
-/// what is answering it (`/api/board/demand`), asked when the page opens and on
-/// every refresh, signed in or not. Nothing is drawn until it has answered.
+/// what is answering it, asked when the page opens and on every refresh, signed
+/// in or not. Nothing is drawn until it has answered.
+/// ONE OBJECT FOR EVERY READER (docs/BOARD.md §"Demand"): the bucket's own
+/// address first, and the worker's copy of the same object where it is not reached.
 let computeDemand = null;
 async function loadComputeDemand() {
-  const r = await accountCall("GET", "/api/board/demand");
+  let r = await fetchJson(`${BOARD_ORIGIN}/demand.json`);
+  if (!(r && r.ok)) r = await accountCall("GET", "/api/board/demand");
   computeDemand = r && r.ok ? r : null;
+}
+/// HOURS AS A READER COUNTS THEM: under one, whole hours, then whole days.
+function demandHours(h) {
+  if (h < 1) return tr("under an hour");
+  return h < 48 ? tr("about {n} hours").replace("{n}", Math.round(h).toLocaleString(accountLocale()))
+    : tr("about {n} days").replace("{n}", Math.round(h / 24).toLocaleString(accountLocale()));
 }
 function computeDemandHtml() {
   const d = computeDemand;
@@ -696,7 +705,6 @@ function computeDemandHtml() {
     ["a ruler's first pass over older builds {n}", d.owed.sweeps], ["scores three days old, measured again {n}", d.owed.refreshes],
     ["riven gains {n}", d.riven_gains]]
     .filter(([, v]) => v).map(([s, v]) => escHtml(tr(s).replace("{n}", n(v)))).join(" · ");
-  const hours = done ? owed / done : null;
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
   // weapon, how many are confirmed and how many begun.
   const goals = (d.surveys || []).map((g) => {
@@ -706,19 +714,21 @@ function computeDemandHtml() {
       <div class="goal-h"><b>${escHtml(tr("Every riven of {w}").replace("{w}", w ? tr(w.name) : g.weapon))}</b>
         <span>${escHtml(tr("{a} of {n} confirmed").replace("{a}", n(g.agreed)).replace("{n}", n(g.shapes)))}</span></div>
       <div class="goal-bar"><i class="begun" style="width:${pct(g.started)}%"></i><i style="width:${pct(g.agreed)}%"></i></div>
-      <div class="set-note">${escHtml(tr("{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}</div></div></div>`;
+      <div class="set-note">${escHtml(tr("{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}${
+        g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
-  const eta = hours === null || !owed ? "" : hours < 1 ? tr("under an hour") : tr("about {n} hours").replace("{n}", n(Math.round(hours)));
+  const eta = d.clear_hours == null || !owed ? "" : demandHours(d.clear_hours);
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
-    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
+    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(n(d.computing))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
       <div class="demand-bar"><div style="width:${share}%"></div></div>
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
-        &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}</div></dd></div>
-    ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the last hour's pace")}</div></dd></div>` : ""}
+        &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
+        · ${aT("the last six hours' average")}</div></dd></div>
+    ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the recent compute pace")}</div></dd></div>` : ""}
   </dl></div></div>`;
 }
 

@@ -2673,7 +2673,10 @@ ui:
   "Cleared in": 预计清空
   "under an hour": 不到 1 小时
   "about {n} hours": "约 {n} 小时"
-  "at the last hour's pace": 按最近一小时的速度估算
+  "about {n} days": "约 {n} 天"
+  "done in {t}": "{t}后完成"
+  "the last six hours' average": 近 6 小时平均
+  "at the recent compute pace": 按最近的算力估算
   "Nothing yet.": 还没有。
   "{name}'s contribution": "{name} 的贡献"
   "Contributor rank": 贡献段位
