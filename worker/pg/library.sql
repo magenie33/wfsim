@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS inbox (
   at     TEXT COLLATE "C" NOT NULL,
   record TEXT COLLATE "C" NOT NULL
 );
+-- WHO ASKED (docs/BOARD.md §"Who asked"): 'user:<code>' signed in, 'anonymous'
+-- signed out, NULL for the bot's own; carried to `queue` by intake.
+ALTER TABLE inbox ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 
 -- ONE ROW PER BUILD, keyed by a HASH of the canonical build
 -- `engine::board::builds::identity` states — its riven's ROLLS included — hashed
@@ -134,6 +137,9 @@ CREATE TABLE IF NOT EXISTS queue (
   mode     TEXT COLLATE "C" NOT NULL,
   PRIMARY KEY (batch, build_id, ruler, mode)
 );
+-- WHO ASKED for an arrival's row (`inbox.initiator`, the first one intake saw),
+-- read when it is asked of the factory; gone with the row once it is computed.
+ALTER TABLE queue ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 -- "WHAT IS LEFT, IN ORDER" is one indexed read.
 CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
 -- "IS THIS ROW STILL OWED" (worker/board_tasks.js `owedSql`).

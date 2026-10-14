@@ -130,8 +130,10 @@ const producerOf = (batch, builtAt, ruler) => {
 /// however late it was asked: the bound is on how stale a row gets, not on how
 /// long an ask waits.
 /// WHO ASKED FOR A BOARD ROW (docs/BOARD.md §"Who asked"): a player's arrival is
-/// not recorded, every other batch is WFSim's own.
-export const initiatorOf = (batch) => (batch.startsWith("arrivals-") ? null : "system");
+/// whoever its queue row names (`queue.initiator`, NULL before it was kept),
+/// every other batch WFSim's own — a backfill's too, though it is asked as an
+/// arrival is.
+export const initiatorOf = (batch, initiator = null) => (batch.startsWith("arrivals-") ? initiator ?? null : "system");
 export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
   const producer = producerOf(batch, builtAt, r.ruler);
   const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
@@ -139,7 +141,7 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
     : isLadderCell(r.ruler) && !measuredAt ? SCENE_FIRST_MS : DEADLINE_MS[producer];
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,
-    payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch }, initiator: initiatorOf(batch) };
+    payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch }, initiator: initiatorOf(batch, r.initiator) };
 }
 
 /// THE ROWS A BATCH OWES, asked of the factory (`ship_queue.sh`). An arrival's
@@ -160,7 +162,7 @@ async function ask(request, env) {
   // leaves exactly that. `ASK_MAX` a call, until none is left.
   if (b.backfill === true) {
     const { results } = await db.prepare(
-      `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at,
+      `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, (array_agg(q.initiator ORDER BY q.batch))[1] AS initiator, bu.record, bu.at,
               (SELECT s.finished_at FROM scores s WHERE s.identity = q.build_id AND s.ruler = q.ruler AND s.mode = q.mode) AS measured
          FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
         WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
@@ -174,6 +176,11 @@ async function ask(request, env) {
   const { results: builds } = await db.prepare("SELECT id, record, at FROM builds WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))")
     .bind(JSON.stringify([...new Set(rows.map((r) => r.identity))])).all();
   const buildOf = new Map(builds.map((x) => [x.id, x]));
+  // WHO ASKED, as the queue row states it: the runner names the rows, never who asked them.
+  const { results: named } = await db.prepare(`SELECT q.build_id, q.ruler, q.mode, q.initiator FROM queue q JOIN jsonb_array_elements((?2::text)::jsonb) j
+        ON q.build_id = j ->> 'identity' AND q.ruler = j ->> 'ruler' AND q.mode = j ->> 'mode' WHERE q.batch = ?1::text AND q.initiator IS NOT NULL`)
+    .bind(b.batch, JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
+  const whoOf = new Map(named.map((x) => [rowRef(x.build_id, x.ruler, x.mode), x.initiator]));
   // AN ARRIVAL'S ROW THE BOARD ALREADY SCORED is not asked: a resubmission the
   // page did not recognise is the same build, and asking again fought it again.
   // A REFRESH'S ROW is due by when its fact finished.
@@ -186,7 +193,7 @@ async function ask(request, env) {
     for (const x of had) scored.set(rowRef(x.identity, x.ruler, x.mode), x.finished_at);
   }
   const asks = rows.filter((r) => buildOf.has(r.identity) && !(arrivals && scored.has(rowRef(r.identity, r.ruler, r.mode))))
-    .map((r) => rowAsk(b.batch, r, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(rowRef(r.identity, r.ruler, r.mode)), now));
+    .map((r) => rowAsk(b.batch, { ...r, initiator: whoOf.get(rowRef(r.identity, r.ruler, r.mode)) }, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(rowRef(r.identity, r.ruler, r.mode)), now));
   await facts().demandAll(env, asks, engine, now);
   return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
 }

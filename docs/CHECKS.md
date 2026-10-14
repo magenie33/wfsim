@@ -288,7 +288,8 @@ of the live leases is passed over and the system is not, nobody is at or under
 `initiator_floor_rows`, and a lease run out does not count; the SQL's unset
 floor is worker/dials.js's default; `factory_forget_codes` erases the user and
 bot codes of an ask that is over and keeps the rest; a board batch's initiator
-and a code's shape.
+and a code's shape; a submission signed in or out, and an arrival asked as its
+queue row names, never as the runner says.
 
 ## `check_board_verify`
 

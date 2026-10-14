@@ -3,11 +3,14 @@
 // live leases is passed over (dial `initiator_share_pct`, worker/pg/sync.sql
 // `factory_capped`) and nobody else is; a code is erased once its ask is over
 // (`factory_forget_codes`); a board row's initiator follows its batch, and a
-// code is a keyed hash, the same for the same asker.
+// code is a keyed hash, the same for the same asker; a submission signed in
+// keeps its account's code beside it and one signed out `anonymous`, and an
+// arrival is asked as the one its queue row names.
 //   node scripts/check_initiator.mjs
 import { facts } from "../worker/factory.js";
-import { initiatorOf } from "../worker/board_tasks.js";
-import { initiatorCode } from "../worker/accounts.js";
+import { initiatorOf, boardTasksRoute } from "../worker/board_tasks.js";
+import { initiatorCode, sha256 } from "../worker/accounts.js";
+import worker from "../worker/index.js";
 import { DIAL_DEFAULTS } from "../worker/dials.js";
 import { testDb } from "./pg/test_db.mjs";
 
@@ -81,8 +84,40 @@ check("…a live one keeps it, and the system's is never a code to erase",
   && (await L.get("SELECT initiator FROM demands WHERE ref = 's0'")).initiator === "system");
 
 // ---- where it comes from ----
-check("a player's arrival is not recorded, every other batch is WFSim's",
-  initiatorOf("arrivals-2026-10-14") === null && initiatorOf("backfill-2026-10-14") === "system" && initiatorOf("refresh-2026-10-14") === "system");
+check("a player's arrival is whoever its row names, every other batch WFSim's — a backfill's too",
+  initiatorOf("arrivals-2026-10-14", "user:q") === "user:q" && initiatorOf("arrivals-2026-10-14") === null
+  && initiatorOf("backfill-2026-10-14", "user:q") === "system" && initiatorOf("refresh-2026-10-14") === "system");
+
+// ---- a submission ----
+const A = await testDb("accounts");
+await A.run("INSERT INTO accounts (id, created_at, username) VALUES ('acc1', ?, 'p')", at);
+await A.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, 'acc1', '2099-01-01T00:00:00.000Z')", await sha256("tok"));
+const PAYLOAD = { benchmark: "standard_single_target_v1", weapon: "kuva_nukor", mode: "base",
+  mods: ["hornet_strike", "barrel_diffusion", "primed_target_cracker", "primed_heated_charge", "convulsion", "pathogen_rounds",
+    "galvanized_diffusion", "galvanized_shot"], evolutions: [], arcanes: ["secondary_deadhead"], valence: "magnetic" };
+const submit = (cookie) => worker.fetch(new Request("https://wfsim.app/api/board/submit", { method: "POST",
+  headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) }, body: JSON.stringify(PAYLOAD) }),
+  { ...env, ACCOUNTS: A, ASSETS: { fetch: async () => new Response("site") } });
+const okIn = (await submit("wfsim_session=tok")).ok, okOut = (await submit(null)).ok;
+const inbox = (await L.all("SELECT initiator FROM inbox ORDER BY initiator")).map((r) => r.initiator);
+check("a submission signed in keeps its account's code, one signed out `anonymous`, and nothing else about either",
+  okIn && okOut && inbox.length === 2 && inbox[0] === "anonymous" && inbox[1] === await initiatorCode(env, "user", "acc1")
+  && (await L.all("SELECT * FROM inbox")).every((r) => Object.keys(r).sort().join() === "at,id,initiator,record"), JSON.stringify(inbox));
+
+// ---- an arrival asked ----
+await L.run("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-10-14', 'a', 't', 1), ('backfill-2026-10-14', 'b', 't', 1)");
+await L.run("INSERT INTO builds (id, at, record) VALUES ('bx', '2026-10-14', ?), ('by', '2026-10-14', ?)",
+  JSON.stringify({ weapon: "braton_prime", mods: ["serration"] }), JSON.stringify({ weapon: "braton_prime", mods: ["split_chamber"] }));
+await L.run(`INSERT INTO queue (batch, build_id, ruler, mode, initiator) VALUES ('arrivals-2026-10-14', 'bx', 'standard_single_target', 'base', 'user:named'),
+  ('backfill-2026-10-14', 'by', 'standard_single_target', 'base', NULL)`);
+const askRows = (batch, identity, extra = {}) => boardTasksRoute(new Request("https://x/api/board/ask", { method: "POST",
+  headers: { authorization: "Bearer ft" }, body: JSON.stringify({ batch, rows: [{ identity, ruler: "standard_single_target", mode: "base", ...extra }] }) }),
+  { ...env, FACTORY_TOKEN: "ft" }, "/api/board/ask");
+await askRows("arrivals-2026-10-14", "bx", { initiator: "user:forged" });
+await askRows("backfill-2026-10-14", "by");
+const who = Object.fromEntries((await L.all("SELECT payload::jsonb ->> 'identity' AS id, initiator FROM demands WHERE payload::jsonb ->> 'identity' IN ('bx', 'by')")).map((r) => [r.id, r.initiator]));
+check("an arrival is asked as its queue row names, never as the runner says; a backfill is the system's",
+  who.bx === "user:named" && who.by === "system", JSON.stringify(who));
 const c1 = await initiatorCode(env, "bot", "qq:1"), c2 = await initiatorCode(env, "bot", "qq:1"), c3 = await initiatorCode({ AUTH_SECRET: "t" }, "bot", "qq:1");
 check("a code is its kind and a keyed hash: the same asker the same code, another key another", /^bot:[\w-]{16}$/.test(c1) && c1 === c2 && c1 !== c3, c1);
 

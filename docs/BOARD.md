@@ -924,8 +924,12 @@ live demand exactly as `producer` is (`demandAll`, `factory_restate`):
   (`initiatorOf`: refresh, rescore, sweep, backfill, a scene's first pass) and
   a survey.
 - `bot:<code>` — a riven gain asked in a chat, the code of its channel and asker.
-- `user:<code>` / `anonymous` — a player's submission signed in / signed out
-  (not yet recorded: an arrival is NULL).
+- `user:<code>` / `anonymous` — a player's submission signed in / signed out.
+  `submit` writes it beside the record in `inbox`; `wfsim-intake` carries it
+  to the fight the arrival named (the first named one when two ask one fight)
+  and never into the library; `ship_queue.sh` keeps it on the `queue` row, and
+  `ask` reads it there, never from the runner (`initiatorOf`). A backfill's row
+  is the system's though it is asked as an arrival is.
 - NULL — not recorded: every ask before this, never back-filled.
 
 **A CODE IS A KEYED HASH** (`initiatorCode`, keyed by `AUTH_SECRET`): the
@@ -2416,8 +2420,10 @@ rule to keep the two apart.
   daily snapshot for people and never a fallback, so a reader is never shown a
   board older than `scores` says.
 - **The store keeps nothing about submitters.** No IP, no token, no time finer
-  than the day. A working client's id is the one exception, and it is never
-  joined to a submission (§"Compute orders", §"Contribution").
+  than the day. A working client's id is never joined to a submission
+  (§"Compute orders", §"Contribution"). The one thing beside a submission is
+  who asked (§"Who asked"): a signed-in account's code on the rows it owes,
+  erased once they are computed, and never in `builds` or its snapshot.
 - **The library is the only irreplaceable thing.** Boards are derived, the site
   is generated, the code is in git. Anything that could truncate it needs a
   tripwire before it needs a backup.

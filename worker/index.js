@@ -19,7 +19,7 @@
 // the same build produce ONE row, with no dedup pass and no counting.
 
 import { decodeShare, useShareHost } from "./share_codec.js";
-import { accountRoute, purgeDeleted } from "./accounts.js";
+import { accountRoute, purgeDeleted, sessionAccount, initiatorCode } from "./accounts.js";
 import { cloudPath, cloudRoute } from "./cloud.js";
 import { agentRoute } from "./agents.js";
 import { BOT_AUTH_DIRECTORY, botAuthDirectory } from "./bot_auth.js";
@@ -207,10 +207,14 @@ async function submit(request, env) {
   // NOTHING ABOUT THE SUBMITTER IS STORED. Not the IP, not a token, not a
   // timestamp that could order one person's submissions against another's.
   // The row is the build and the key it hashes to; `at` is the DAY, which is
-  // coarse enough to say when and too coarse to identify anyone.
+  // coarse enough to say when and too coarse to identify anyone. The one thing
+  // beside it is WHO ASKED: signed in, a code of the account its rows carry
+  // until they are computed; signed out, `anonymous` (docs/BOARD.md §"Who asked").
   const built = record(b);
   if (built.err) return bad(built.err);
   const rec = built.rec;
+  const account = await sessionAccount(env, request).catch(() => null);
+  const initiator = account ? await initiatorCode(env, "user", account) : "anonymous";
 
   // INTO THE INBOX, VERBATIM, under an id that means nothing.
   //
@@ -234,8 +238,8 @@ async function submit(request, env) {
   // submission endpoint may never give.
   try {
     await env.LIBRARY.prepare(
-      "INSERT INTO inbox (id, at, record) VALUES (?, ?, ?)",
-    ).bind(crypto.randomUUID(), rec.at, JSON.stringify(rec)).run();
+      "INSERT INTO inbox (id, at, record, initiator) VALUES (?, ?, ?, ?)",
+    ).bind(crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator).run();
   } catch (e) {
     console.log("inbox write failed:", (e && e.message) || String(e));
     return bad("the library could not be written", 503);

@@ -22,7 +22,7 @@ set -euo pipefail
 
 # A THOUSAND ROWS A STATEMENT: each statement is a node and a connection through
 # the tunnel, about a second, and Postgres binds up to 65,535 parameters.
-QUEUE_COLUMNS=4
+QUEUE_COLUMNS=5
 QUEUE_BATCH=1000
 PG_MAX_PARAMS=65535
 
@@ -49,6 +49,7 @@ batch_body() {
 
 # `ON CONFLICT DO NOTHING`, because asking twice for one row is one row. The primary
 # key is (batch, build, ruler, mode) and that is the whole of the idempotence.
+# An arrival's row carries who asked (docs/BOARD.md §"Who asked"), else NULL.
 queue_batches() {
   jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
@@ -56,11 +57,11 @@ queue_batches() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT INTO queue (batch, build_id, ruler, mode)"
-              + " SELECT v.column1, v.column2, v.column3, v.column4 FROM (VALUES "
-              + ([$chunk[] | "(?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed
+        sql: ("INSERT INTO queue (batch, build_id, ruler, mode, initiator)"
+              + " SELECT v.column1, v.column2, v.column3, v.column4, v.column5::text FROM (VALUES "
+              + ([$chunk[] | "(?,?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed
               + " ON CONFLICT DO NOTHING"),
-        params: [$chunk[] | $batch, .build_id, .ruler, .mode]
+        params: [$chunk[] | $batch, .build_id, .ruler, .mode, (.initiator // null)]
       }
   ' "$2"
 }
@@ -211,6 +212,11 @@ self_test() {
   [ $((QUEUE_BATCH * QUEUE_COLUMNS)) -le "$PG_MAX_PARAMS" ] \
     && say ok "...and a statement stays inside what Postgres binds" \
     || say FAIL "$((QUEUE_BATCH * QUEUE_COLUMNS)) is over"
+  # WHO ASKED rides with the row as a bound parameter, NULL where the arrival named nobody.
+  printf '%s\n' '{"build_id":"w1","ruler":"r","mode":"m","initiator":"user:abc"}' '{"build_id":"w2","ruler":"r","mode":"m"}' > who.ndjson
+  [ "$(queue_batches "arrivals" who.ndjson | head -1 | jq -c '[.params[4], .params[9]]')" = '["user:abc",null]' ] \
+    && say ok "...and a row's initiator is bound with it, null where none was named" \
+    || say FAIL "initiator params: $(queue_batches "arrivals" who.ndjson | head -1 | jq -c '.params')"
   # A CALL THE WORKER REFUSES IS A CHUNK NEVER ASKED: the factory's cap is ours.
   local ask_max
   ask_max=$(sed -n 's/^const ASK_MAX = \([0-9]*\);.*/\1/p' "$ROOT_DIR/worker/board_tasks.js")

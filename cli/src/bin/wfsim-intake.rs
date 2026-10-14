@@ -212,12 +212,23 @@ fn intake(
         }
         seen += 1;
         done.push(id(&row, "id"));
+        // WHO ASKED (docs/BOARD.md §"Who asked"), the inbox row's, carried to
+        // the fight it named and nowhere else: never into the library.
+        let initiator = row.get("initiator").and_then(Value::as_str).map(str::to_owned);
         // WHAT THIS RECORD ALREADY PRODUCED, if a copy of it came through
         // earlier in this pass: the row is still DONE and the build still
         // remembers it, and nothing has to be searched for again.
         let rkey = rec.to_string();
         if let Some(keys) = already.get(&rkey) {
             for k in keys {
+                // …and a fight a copy asked for without a name takes this one's.
+                if let Some(who) = &initiator {
+                    for (_, ask) in asked.iter_mut().filter(|(ak, _)| ak.starts_with(&format!("{k}#"))) {
+                        if ask.get("initiator").is_none() {
+                            ask["initiator"] = json!(who);
+                        }
+                    }
+                }
                 if let Some(from) =
                     built.get_mut(k).and_then(|b| b.get_mut("from")).and_then(Value::as_array_mut)
                 {
@@ -323,11 +334,24 @@ fn intake(
             }
             // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
             // record shadowed the inbox one, which carries neither field.
-            if let Some(ask) = asked_row(&sent.0, &sent.1, &owed, &key) {
-                asked.insert(
-                    format!("{key}#{}#{}", id(&ask, "ruler"), id(&ask, "mode")),
-                    ask,
-                );
+            // TWO PEOPLE ASKING ONE FIGHT are one row, and the first who asked
+            // with a name is the one it carries.
+            if let Some(mut ask) = asked_row(&sent.0, &sent.1, &owed, &key) {
+                if let Some(who) = &initiator {
+                    ask["initiator"] = json!(who);
+                }
+                let k = format!("{key}#{}#{}", id(&ask, "ruler"), id(&ask, "mode"));
+                match asked.get_mut(&k) {
+                    Some(was) if was.get("initiator").is_none() => {
+                        if let Some(who) = &initiator {
+                            was["initiator"] = json!(who);
+                        }
+                    }
+                    Some(_) => {}
+                    None => {
+                        asked.insert(k, ask);
+                    }
+                }
             }
         }
     }
@@ -753,6 +777,27 @@ mod tests {
             admitted("c", "standard_single_target", "cycle"),
         ]);
         assert_eq!(asked.len(), 2, "{asked:?}");
+    }
+
+    /// **WHO ASKED TRAVELS WITH THE FIGHT, AND ONLY THERE**: the asked row
+    /// carries the inbox row's initiator, the first named one when two ask one
+    /// fight, and the library's build never carries it.
+    #[test]
+    fn who_asked_travels_with_the_fight_alone() {
+        let named = |inbox_id: &str, who: Option<&str>| {
+            let mut v: Value = serde_json::from_str(&admitted(inbox_id, "standard_multi_target", "cycle")).unwrap();
+            if let Some(w) = who {
+                v["initiator"] = json!(w);
+            }
+            v.to_string()
+        };
+        let (builds, asked, ..) = intake(vec![named("a", Some("user:x"))].into_iter(), None, None);
+        assert_eq!(asked[0]["initiator"], "user:x");
+        assert!(!builds[0].to_string().contains("user:x"), "the library never holds it: {}", builds[0]);
+        let asked = asked_of(vec![named("c", None), named("d", Some("user:z")), named("e", Some("anonymous"))]);
+        assert_eq!(asked.len(), 1);
+        assert_eq!(asked[0]["initiator"], "user:z", "{asked:?}");
+        assert!(asked_of(vec![named("f", None)])[0].get("initiator").is_none());
     }
 
     /// **A MODE THE WEAPON CANNOT SUSTAIN IS NOT ASKED FOR.** The scorer
