@@ -73,14 +73,18 @@ FACTORY_ORIGIN="${FACTORY_ORIGIN:-https://wfsim.app}"
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 ASK_ROWS=1000
 ASK_OUT=""
+ASK_IN=""
 ASK_CODE=""
 factory_ask() {
   [ -n "$ASK_OUT" ] || ASK_OUT=$(mktemp)
+  # THROUGH A FILE: a thousand rows near the kernel's 128 KiB limit on one argument.
+  [ -n "$ASK_IN" ] || ASK_IN=$(mktemp)
+  printf '%s' "$1" > "$ASK_IN"
   ASK_CODE=$(curl -s --connect-timeout 15 --max-time 180 -o "$ASK_OUT" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer ${FACTORY_TOKEN:-x}" \
     -H "content-type: application/json" \
     -H "user-agent: wfsim-queue" \
-    --data-binary "$1" \
+    --data-binary "@$ASK_IN" \
     "$FACTORY_ORIGIN/api/board/ask") || ASK_CODE="000"
   [ "$ASK_CODE" = "200" ]
 }

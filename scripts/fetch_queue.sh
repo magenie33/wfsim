@@ -64,12 +64,17 @@ WITNESS="${WITNESS:-official:scorer}"
 CLAIM_PAGE=2000
 CLAIM_MAX="${CLAIM_MAX:-40000}"
 F_OUT=""
+F_IN=""
 F_CODE=""
 factory() {
   [ -n "$F_OUT" ] || F_OUT=$(mktemp)
+  # THE BODY GOES THROUGH A FILE: a page of claimed rows passed as an argument
+  # broke the kernel's argument limit ("Argument list too long") once the queue grew.
+  [ -n "$F_IN" ] || F_IN=$(mktemp)
+  printf '%s' "$2" > "$F_IN"
   F_CODE=$(curl -s --connect-timeout 15 --max-time 180 -o "$F_OUT" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer ${FACTORY_TOKEN:-x}" -H "content-type: application/json" -H "user-agent: wfsim-scorer" \
-    --data-binary "$2" "$FACTORY_ORIGIN/api/tasks/official/$1") || F_CODE="000"
+    --data-binary "@$F_IN" "$FACTORY_ORIGIN/api/tasks/official/$1") || F_CODE="000"
   [ "$F_CODE" = "200" ]
 }
 claim_body() {
