@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DIALS, CLIENT_DIALS } from "../worker/dials.js";
+import { DIALS, CLIENT_DIALS, SYNC_CLIENT_DIALS } from "../worker/dials.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(resolve(ROOT, p), "utf8");
@@ -21,7 +21,11 @@ const check = (ok, name, detail) => {
 const DIAL = Symbol("dial");
 const KEYS = {
   protocol: ["PROTOCOL", ["worker/verify.js"]],
+  pack_protocol: ["PACK_PROTOCOL", ["worker/verify.js"]],
   protocols_served: ["PROTOCOLS_SERVED", ["worker/verify.js"]],
+  sync_body: ["SYNC_BODY", ["worker/sync.js"]],
+  sync_results_max: ["SYNC_RESULTS_MAX", ["worker/sync.js"]],
+  ...Object.fromEntries(SYNC_CLIENT_DIALS.filter((k) => !CLIENT_DIALS.includes(k)).map((k) => [k, [DIAL, [k]]])),
   recognised_client_id: ["RECOGNISED_ID", ["worker/verify.js"]],
   verifier_id_shape: ["VERIFIER_ID", ["worker/appraise.js", "worker/contribution.js"]],
   engine_id_shape: ["ENGINE_ID", ["worker/appraise.js", "worker/factory.js"]],
@@ -88,7 +92,11 @@ for (const [key, said] of stated) {
 }
 for (const key of Object.keys(KEYS)) check(stated.has(key), `${key} is stated`);
 // EVERY DIAL A CLIENT IS TOLD is stated, and the page says a client reads it from the reply.
-for (const k of CLIENT_DIALS) check(stated.has(k) && KEYS[k] && KEYS[k][0] === DIAL, `the client dial ${k} is stated as a dial`);
+for (const k of new Set([...CLIENT_DIALS, ...SYNC_CLIENT_DIALS])) check(stated.has(k) && KEYS[k] && KEYS[k][0] === DIAL, `the client dial ${k} is stated as a dial`);
+// …AND EVERY PROTOCOL 8 TERM a client must hold to is on the page.
+for (const [what, re] of [["the sync door", /\/api\/board\/sync/], ["the work signal", /cdn\.wfsim\.app\/work\.json/],
+  ["the early answer", /`early: true`/], ["the fallback", /`fallback: 7`/], ["the migration", /## Migrating from 7 to 8/],
+  ["the changelog", /## Changelog/], ["the unnamed rule", /DOES NOT NAME IS GIVEN BACK/]]) check(re.test(doc), `the page states ${what}`);
 check(/never hard-code/i.test(doc) && /`dials`/.test(doc), "the page says a client reads the dials from the reply and hard-codes none");
 
 console.log(bad ? `\n${bad} failed` : "\nthe clients' contract states what the code does");

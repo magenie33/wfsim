@@ -668,6 +668,18 @@ deadline and what only they may settle.
 - **WHO IS ON**: a page's ask for work is recorded once a minute
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.
+  **ASKING** — what a pack's fair cap, the fair table and the settler's
+  snapshot divide by — is one definition (`askingIds`, worker/tasks.js): asked
+  within the caller's window OR holding a live lease, since a protocol 8 client
+  deep in a ten-minute pack asks only as it ends.
+- **PROTOCOL 8** (`/api/board/sync`, worker/sync.js; docs/CLIENTS.md) hands out
+  by the same `headOf`, `nextPack`, fair table and pack cap as protocol 7, in
+  packs of `pack8_ms` leased `sync_lease_ms` (`pack_lease_ms` while work is
+  short), and holds each client to its `next_ms` (`verifiers.next_at`). A
+  question its engine refused (`engine_refusals`) is not handed to that device
+  again; refused by `refusals_to_withdraw` owners on the served engine it is
+  withdrawn, written to `refusal_withdrawals`, said by the watchdog
+  (`refused_rows`), and stays withdrawn on that engine when asked again.
 
 ### Postgres
 

@@ -12,8 +12,11 @@ machines, produce the same bits (docs/BOARD.md §"The fact factory").
 Read from the code; a check compares this block with it, and the code wins.
 
 ```text
-protocol: 7
-protocols_served: 7, 6
+protocol: 8
+pack_protocol: 7
+protocols_served: 8, 7, 6
+sync_body: 262144
+sync_results_max: 400
 recognised_client_id: ^[0-9a-f]{24}$
 verifier_id_shape: ^[a-z0-9]{16,40}$
 engine_id_shape: ^[A-Za-z0-9._-]{1,40}$
@@ -29,6 +32,17 @@ pack_lease_ms: 300000
 packs_held: 2
 renew_ms: 300000
 row_ceiling_ms: 7200000
+pack8_ms: 600000
+pack8_max: 200
+sync_lease_ms: 1500000
+sync_low_ms: 120000
+sync_floor_ms: 60000
+sync_idle_ms: 20000
+flush_ms: 600000
+poll_ms: 10000
+jitter_ms: 5000
+urgent_jitter_ms: 2000
+report_ms: 3600000
 clients_per_fact: 2
 facts_per_refusal_forgiven: 1000
 engine_grace_days: 3
@@ -39,13 +53,14 @@ from worker/verify.js, worker/tasks.js, worker/appraise.js,
 worker/contribution.js, worker/factory.js and engine/src/fight/gas.rs; a point
 is `work_per_point` work.
 
-**A DIAL IS STATED AS ITS DEFAULT, AND THE SERVER MAY MOVE IT.** `lease_ms`,
-`pack_ms`, `pack_first`, `pack_max`, `pack_lease_ms`, `packs_held`,
-`renew_ms` and `row_ceiling_ms` are dials (worker/dials.js): the owner sets
-them within fixed bounds, and a change is in force within a minute with no
-release. Every `/api/board/work` reply carries the ones in force as `dials`
-(and `/api/board/renew` its `renew_ms`); a client reads them from there and
-must never hard-code one.
+**A DIAL IS STATED AS ITS DEFAULT, AND THE SERVER MAY MOVE IT.** Every key
+from `lease_ms` to `report_ms` above is a dial (worker/dials.js): the owner sets
+it within fixed bounds, and a change is in force within a minute with no
+release. Every `/api/board/sync` reply carries the protocol 8 ones in force as
+`dials`, every `/api/board/work` reply protocol 7's (and `/api/board/renew` its
+`renew_ms`), and `work.json` the ones an idle client needs; a client reads them
+from there and must never hard-code one. Every `next_ms` a reply gives is
+already multiplied by the owner's `sync_scale_pct`.
 
 ## Terms the server holds a client to
 
@@ -60,10 +75,19 @@ must never hard-code one.
   (`banned = 0` where `refused_until <= now`) and the client earns again
   without asking anyone. Each `FACTS_PER_REFUSAL_FORGIVEN · k` facts it is part
   of afterwards take one refusal off its record.
-- **The previous protocol is served beside the current one** (`PROTOCOLS_SERVED`)
-  and is dropped only once nobody has asked with it for a week; a change to
-  what a client must do changes this page in the same commit.
-- **What each answer means** is in §"The cycle": `unrecognised_client`
+- **The previous protocols are served beside the current one** (`PROTOCOLS_SERVED`)
+  and each is dropped only once nobody has asked with it for a week; a change to
+  what a client must do changes this page in the same commit and adds a line
+  to §Changelog. `/release.json` and every hand-out reply carry `protocol` (the
+  current one) and `protocols_served`: a client that sees a `protocol` newer than
+  its own may keep working and should tell its author.
+- **A sync before its time is handed no work.** A protocol 8 reply's `next_ms`
+  is when the client may next be handed work, and the server holds it to that
+  (`early: true`): asking more often never gets more rows. Results, renewals and
+  refusals in an early sync are served all the same.
+- **One account's devices share one fair share** (§"Checks on a client").
+- **What each answer means** is in §"The cycle, protocol 8" and §"The cycle,
+  protocol 7": `unrecognised_client`
   carries a message naming whom to contact, `banned` the instant it ends,
   `stale` that the engine or the protocol asked with is not served; a missing
   consent gets nothing, a malformed body `"bad request"`, and an answer is
@@ -77,7 +101,7 @@ must never hard-code one.
   must not work, since a new id per start is a refusal nobody can apply.
 - An id outside `^[a-z0-9]{16,40}$` is `400 bad request`. An id of that shape but
   not 24 hex gets `403 { ok: false, error: "unrecognised_client", message }` on
-  `/work`, `/answers`, `/verify`, `/renew` and riven answers; what it earned
+  `/sync`, `/work`, `/answers`, `/verify`, `/renew` and riven answers; what it earned
   stays. The message asks the author of a third-party client to make contact
   before running it.
 - An account claims an id with `POST /api/account/devices/claim { verifier,
@@ -96,9 +120,9 @@ must never hard-code one.
   device it takes and when, that it pauses on battery and costs power and heat,
   how to stop it, and that it is voluntary, unpaid, free for every player and
   never a source of income for WFSim. A client shows a statement saying no less.
-- Every `/work` ask carries `consent: { v, at }`: `v` an integer ≥ 1, `at` an ISO
-  instant matching `^\d{4}-\d\d-\d\dT[\d:.]+Z$`. Without it the answer is
-  `{ ok: true, work: null, pack: null }` and nothing is handed out. The server
+- Every `/sync` and `/work` carries `consent: { v, at }`: `v` an integer ≥ 1, `at` an ISO
+  instant matching `^\d{4}-\d\d-\d\dT[\d:.]+Z$`. Without it nothing is handed
+  out (`pack: null, work: null`); a sync's results are still taken. The server
   keeps both on the client's row whenever they change.
 - A statement that asks for more — more of the device, a new kind of task, more
   sent, another use — is a new version, asked again; a rewording keeps the yes.
@@ -106,7 +130,8 @@ must never hard-code one.
 
 ## The engine
 
-- `GET /release.json` → `{ release, commit, wasm, engine, accepted }`. `engine` is the id a
+- `GET /release.json` → `{ release, commit, wasm, engine, accepted, protocol,
+  protocols_served }`. `engine` is the id a
   client sends; `wasm` names the module: `/pkg/wfsim_wasm.<wasm>.js` and
   `/pkg/wfsim_wasm_bg.<wasm>.wasm`, `<wasm>` the first 12 hex of the module's
   SHA-256. The module exports `api(path, body)`, JSON text in and out.
@@ -164,7 +189,131 @@ and a download is all that costs.
 - A client may still build the engine itself from `commit`; the terms of
   §"The engine" are the same either way.
 
-## The cycle
+## The cycle, protocol 8
+
+One door, `POST /api/board/sync` (body ≤ `sync_body` characters,
+worker/sync.js). A client syncs when its work runs low, when results have waited
+`flush_ms`, and when it stops; an idle client reads the work signal instead
+(§"The work signal"). Every sync states, in full, what the client holds.
+
+**Request**
+
+```json
+{ "verifier": "0123456789abcdef01234567", "engine": "6aca511ab0f4", "protocol": 8,
+  "consent": { "v": 1, "at": "2026-10-14T08:00:00.000Z" },
+  "lanes": 8, "pace_ms": 42000, "want_ms": 540000,
+  "held": [{ "lease": "<32 hex>", "rows": ["<question>", "<question>"] }],
+  "results": [{ "lease": "<32 hex>", "question": "<question>", "score": 1.25, "metric": "kpm",
+                "work": 7000000000, "compute_ms": 41000, "counts": { "gas": 123 }, "lanes": 8 }],
+  "keep": { "lease": "<32 hex>", "question": "<question>" },
+  "refused": [{ "lease": "<32 hex>", "question": "<question>", "step": "order" }],
+  "idle": [{ "hour": "2026-10-14T07", "asks": 6, "failed": 0, "lanes": 48 }],
+  "states": ["<question>"], "since": "2026-10-13T16" }
+```
+
+- `lanes` 1–256 (else 1), the cores free now; `pace_ms` 100–`sync_lease_ms`, the
+  smoothed wall time of a row; `want_ms` 0–`pack8_ms`, how much work to be
+  handed (0: renew and hand in only).
+- `held`: EVERY row the client still holds and has not answered, under the lease
+  it came with. `≤ 400` rows. Each is renewed `sync_lease_ms` from now.
+  **A LIVE LEASE THE SYNC DOES NOT NAME IS GIVEN BACK** — a row in `results`,
+  `refused` or `keep` counts as named.
+- `results`: `≤ sync_results_max`, shaped as protocol 7's answers, each with
+  the `lease` its row came under. Kept by the client until a reply lists the
+  question in `taken` or `dropped`, so a result is never lost to a lost reply.
+- `keep`: a row cut short that the client will resume (§"A row cut short").
+- `refused`: rows its engine refused (`/api/board/order` answered `ok: false`;
+  `step` `^[a-z_]{1,24}$`, the page sends `"order"`). Given back, never handed
+  to this client again on this engine; refused by `refusals_to_withdraw` owners
+  on the served engine, the row is withdrawn.
+- `idle`: protocol 7's `idle` counts (§"The cycle, protocol 7"), sent until a
+  reply says `kept`. `states` (≤ 100) asks where results stand; `since` adds
+  `points` (`/api/board/points`' body).
+
+**Reply** (always `200`; a malformed body is `400 bad request`, an
+unrecognised id `403`)
+
+```json
+{ "ok": true, "protocol": 8, "protocols_served": [8, 7, 6], "release": "cf74c9aba47d", "kept": true,
+  "taken": ["<question>"], "dropped": [{ "question": "<question>", "why": "not_held" }],
+  "held": [{ "question": "<question>", "held": true }],
+  "pack": { "lease": "<32 hex>", "lease_ms": 1500000,
+            "tasks": [{ "question": "<question>", "identity": "<build>", "record": { "weapon": "torid" }, "ruler": "standard_single_target", "mode": "base" }] },
+  "work": null, "states": [{ "question": "<question>", "state": "confirmed", "at": "2026-10-14T08:03:00.000Z" }],
+  "next_ms": 420000, "dials": { "pack8_ms": 600000, "...": "every key of SYNC_CLIENT_DIALS" } }
+```
+
+- `taken`: recorded — including a result recorded before and sent again.
+  `dropped`: never recorded, with `why`: `not_held` (another client took the row
+  since) or `stale_engine`. Either way the client deletes the result.
+- `held`: whether each named row is still the client's; `false` stops that row.
+- `next_ms`: when the client may next be handed work. Sync then, or when its
+  work runs low (`sync_low_ms` left), whichever is later; sync sooner only to
+  hand in results or to stop.
+
+| reply | meaning | then |
+| --- | --- | --- |
+| `pack: {…}` | board rows, leased `lease_ms`; `pack_lease_ms` while work is short | compute them |
+| `work: { kind: "riven_gain", … }` | a question someone waits on, alone (only to a client holding nothing) | §"A riven gain" |
+| `pack: null, work: null` | nothing now: no work, fair share, no consent, or `want_ms: 0` | read the work signal; sync after `next_ms` |
+| `early: true` | synced before its time; results and renewals were served | wait `next_ms` |
+| `banned: true, until` | in a cool-down | sync after `until` |
+| `stale: true` | engine or protocol not served | fetch `/release.json`, follow the engine |
+| `busy: true` / `paused: true` | the server sheds load / its tables are moving; nothing was written while paused | keep results; sync after `next_ms` |
+| `fallback: 7` | the owner switched protocol 8 off | speak protocol 7 for the rest of the session |
+| `withdrawn: [question]` | rows the clients' engine refused, withdrawn now | nothing |
+
+A pack beside an older accepted engine carries `engine`, `accepted_until` and
+`join` as in §"The engine". **Sizing**: `round(want_ms / pace_ms)` rows
+(`pack_first` without a pace), at most `pack8_max` and never more than open rows
+over computers asking — while that cap binds, work is short: the lease is
+`pack_lease_ms` and an account past its fair share is handed nothing.
+
+## The work signal
+
+`GET https://cdn.wfsim.app/work.json` (v1), cached at the edge for seconds:
+
+```json
+{ "v": 1, "at": "2026-10-14T08:00:05.000Z", "open": 4210, "urgent": 0, "engine": "6aca511ab0f4",
+  "release": "cf74c9aba47d", "protocol": 8, "protocols": [8, 7, 6], "computing": 73,
+  "poll_ms": 10000, "jitter_ms": 5000, "urgent_jitter_ms": 2000, "mode": "signal" }
+```
+
+An idle client — consent given, holding nothing — reads it every `poll_ms`
+(±25%) and does not sync. `urgent > 0`: sync after a random wait in
+`[0, urgent_jitter_ms]`; `open > 0`: after `[0, jitter_ms]`. A different `engine`
+or `release` is followed as `/release.json` would be. **Fallback**: unreachable,
+`at` older than 90 s, or `mode: "ask"` — sync directly every 2 minutes with
+jitter, the reply's `next_ms` holding. An idle client also syncs every
+`report_ms` (0: never) with `want_ms: 0`, so the server knows it is on.
+
+## Migrating from 7 to 8
+
+| protocol 7 | protocol 8 |
+| --- | --- |
+| `/api/board/work` (a plain ask gives back everything; `ahead`) | `/api/board/sync` with `want_ms`; what is not named in `held` goes back |
+| `/api/board/answers` every 30 s, `done` at the pack's end | `results` in the next sync, kept by the client until `taken`/`dropped` |
+| `/api/board/renew` per row | `held` in each sync renews every named row |
+| `/api/board/release`, `done: true` | a sync naming nothing; `keep` for a row to resume |
+| `/api/board/points`, `points_since` | `since` → `points` |
+| `/api/board/mine` | `states` |
+| ask again 10 s after an empty answer | read the work signal; never sync before `next_ms` for work |
+| `/api/board/order` `ok: false`: row left to the pack's end | report it in `refused` |
+| `dials` of protocol 7 | `dials` of protocol 8 (`SYNC_CLIENT_DIALS`) |
+
+Unchanged: the id, consent, the engine and its library, measuring a row, what a
+correct answer is, the riven gain's own doors, independence, recheck and spot
+checks. Protocol 7 stays served while anyone uses it.
+
+## Changelog
+
+- **2026-10-14 — protocol 8.** `/api/board/sync` and the work signal; 7 and 6
+  still served. `/release.json` and every hand-out reply carry `protocol` and
+  `protocols_served`. Asking computers now count a client that holds a live
+  lease, for every protocol. A row an engine refuses is reported and withdrawn
+  once `refusals_to_withdraw` owners refused it.
+
+## The cycle, protocol 7
 
 `POST /api/board/work` (body ≤ 2048 characters)
 `{ verifier, engine, protocol: 7, consent, lanes, pace_ms?, ahead? }`:
@@ -312,9 +461,15 @@ simulation runs on a worker fleet").
    travels with every ask; a new statement asks again.
 3. `protocol` is in `PROTOCOLS_SERVED`; `engine` equals `/release.json`'s; on
    `stale` the client fetches the release again before asking.
-4. A plain ask only when holding nothing; `ahead` only near a pack's end.
-5. Rows are renewed while running; `held: false` stops the row.
-6. Every way out gives back what is held (`done: true`, `/release`).
+4. Protocol 8: every sync names everything held; work is asked for only after
+   `next_ms`; an idle client reads the work signal and syncs on `open`/`urgent`
+   after its jitter; results are kept until `taken` or `dropped`; a row its
+   engine refused is reported in `refused`. Protocol 7: a plain ask only when
+   holding nothing; `ahead` only near a pack's end.
+5. Rows are renewed while running (a sync's `held`, or protocol 7's `/renew`);
+   `held: false` stops the row.
+6. Every way out gives back what is held (a sync naming nothing, `done: true`,
+   `/release`).
 7. For each row of `tests/gas/rows.json`, the client's `{ score, metric, work,
    counts.gas }` equals the site's wasm's, and `work` equals
    `floor(counts.gas · 50000 / 10^6) + request.runs · 400000`.

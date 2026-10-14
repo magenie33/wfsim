@@ -710,6 +710,19 @@ def accepted_engines(current: str) -> list:
     return out
 
 
+def protocols_served() -> tuple[int, list[int]]:
+    """THE PROTOCOLS, read from worker/verify.js — the one place they are set.
+    `PROTOCOL` and `PACK_PROTOCOL` are numbers; `PROTOCOLS_SERVED` a Set of them
+    or of those names. A shape this cannot read fails the build."""
+    src = (ROOT / "worker" / "verify.js").read_text(encoding="utf-8")
+    consts = {m.group(1): int(m.group(2)) for m in re.finditer(r"^export const (PROTOCOL|PACK_PROTOCOL) = (\d+);", src, re.M)}
+    m = re.search(r"^export const PROTOCOLS_SERVED = new Set\(\[([^\]]*)\]\);", src, re.M)
+    if "PROTOCOL" not in consts or not m:
+        sys.exit("build_site_app: worker/verify.js no longer states PROTOCOL / PROTOCOLS_SERVED as this reads them")
+    served = [consts[x.strip()] if x.strip() in consts else int(x.strip()) for x in m.group(1).split(",")]
+    return consts["PROTOCOL"], served
+
+
 def engine_id() -> str:
     """WHICH ENGINE — what a result records, so two results say whether they
     were computed by the same arithmetic on the same data (docs/UI.md
@@ -2620,9 +2633,13 @@ def main() -> None:
     # this file and nothing else to answer "are you current" — see
     # `scripts/check_mirrors.py` — and the board's worker reads `engine` from it
     # to hand compute orders to this engine alone (worker/verify.js).
+    # …AND WHICH PROTOCOLS THE WORKER SERVES, so a client that reads nothing else
+    # learns a newer one exists (docs/CLIENTS.md §Changelog).
+    protocol, served = protocols_served()
     (APP / "release.json").write_text(
         json.dumps({"release": release, "commit": build_sha(), "wasm": pkg["digest"],
-                    "engine": engine_id(), "accepted": accepted_engines(engine_id())},
+                    "engine": engine_id(), "accepted": accepted_engines(engine_id()),
+                    "protocol": protocol, "protocols_served": served},
                    separators=(",", ":"), sort_keys=True),
         encoding="utf-8", newline="\n")
 
