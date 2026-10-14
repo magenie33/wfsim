@@ -70,6 +70,16 @@ impl EvolutionDef {
             .sum()
     }
 
+    /// Σ flat BASE multishot (Rain of Lead).
+    pub fn flat_base_multishot(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::FlatBaseMultishot(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
     /// Σ flat BASE status chance (Survivor's Edge, Elemental Balance).
     pub fn flat_base_status_chance(&self) -> f64 {
         self.active_effects()

@@ -552,6 +552,7 @@ pub fn base_panel_assembled(
             _ => 1.0,
         },
         base_multishot: s.attack.multishot,
+        evo_base_multishot: 0.0,
         buff_multishot_bonus: 0.0,
         buff_multishot_max_stacks: 0,
         magazine_size,

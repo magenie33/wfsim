@@ -12,7 +12,8 @@ effects:
   # A WEAPON STAT, not a buff: "+2 Base Multishot" with no condition and no
   # clock. It joins the base the multishot BUCKET multiplies, so a Barrel
   # Diffusion in the build is worth more on this build than without the perk —
-  # the same bracket the wiki states for every "Base Multishot" grant.
+  # the same bracket the wiki states for every "Base Multishot" grant. An
+  # Acuity takes it back off, as it does Forceful Finality's +5 (M116).
   - kind: flat_base_multishot
     value: 2.0
 

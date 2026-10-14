@@ -800,6 +800,10 @@ pub struct WeaponBase {
     pub fire_rate_mod_multiplier: f64,
     /// Stored pellet count (wiki Multishot).
     pub base_multishot: f64,
+    /// The share of `base_multishot` an evolution added ("+2 Base Multishot").
+    /// An Acuity takes it back off: its "Base" names the bracket the mods
+    /// multiply, not the weapon's own value (M116).
+    pub evo_base_multishot: f64,
     /// See [`crate::data::weapons::AttackSpec::unaimed_headshot_chance`].
     pub unaimed_headshot_chance: Option<f64>,
     /// See [`crate::data::weapons::AttackSpec::windup_seconds`] — unmodded here;

@@ -113,18 +113,18 @@ pub(super) fn resolve_the_shot(
             arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
             crate::data::abilities::ammo_efficiency_at(&params.abilities_now(), t),
         );
-        // Final Fusillade's gate, read BEFORE the round is spent: this pull is
-        // the magazine's last round if there is at most one left to fire. On a
-        // charge-backed form `multishot_on_last_round` is 0.0 anyway (the
-        // evolution loader dropped it), so the flag costs nothing there.
-        //
-        // On a BURST weapon the window is the last BURST, not the last round —
-        // Forceful Finality reads "+5 Base Multishot on final magazine burst",
-        // and a Burston's final burst is three rounds. Taking the wiki
-        // literally as one round would have understated a full magazine's
-        // pellets by a fifth (42 + 3x6 = 60 real, against 44 + 6 = 50), which
-        // is far too big to wave through as a rounding difference.
-        let last_n = active.burst.map_or(1.0, |b| f64::from(b.count));
+        // The cost of one round, the expression the spend below pays — one
+        // spelling, so the last-round gate and the payment cannot drift.
+        let round_cost = active.ammo_cost * (1.0 - efficiency);
+        // THE LAST-ROUND GATE (Final Fusillade, Forceful Finality, Synth
+        // Charge), read BEFORE the round is spent: this pull is in the magazine's
+        // last BURST if the rest of its burst EMPTIES the magazine, at what each
+        // round really costs. Measured (M116): every round of a Burston's final
+        // burst pays, two of them when only two are left — and under ammo
+        // efficiency only the burst that forces the reload, not every burst once
+        // the counter reads three. A free round (cost 0) never empties anything.
+        let burst_len = active.burst.map_or(1, |b| b.count.max(1));
+        let rounds_left_in_burst = burst_len - ammo.rounds_this_mag % burst_len;
         // …AND THE WINDOW IS THE ACTIVE MAGAZINE'S, whichever that is.
         // `in_base_form` is only ever true inside an Incarnon CYCLE, so this
         // branch must not read "the cycle's base phase" against "everything
@@ -133,7 +133,8 @@ pub(super) fn resolve_the_shot(
         // its own. A burst window written for the cycle silently becomes one
         // round outside it — 5 pellets a magazine instead of 15 on a Burston.
         let mag_left = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
-        let last_round = mag_left <= last_n + 1e-9;
+        let last_round =
+            round_cost > 0.0 && mag_left <= f64::from(rounds_left_in_burst) * round_cost + 1e-9;
         // THE CHAMBER FAMILY'S GATE, and it is READ AFTER THE ROUND IS PAID
         // FOR. Both cards say "+X% Damage on first shot in Magazine" and both
         // pages say what that really means: the bonus lands *"as long as the
@@ -148,16 +149,14 @@ pub(super) fn resolve_the_shot(
         // every single shot. That is the wiki's Vulkar example, and it is the
         // reason this cannot be `mag_left == mag_max` at the top of the pull.
         //
-        // The cost is `active.ammo_cost * (1 - efficiency)`, spelled the same way
-        // the spend below spells it — one expression, so the reading and the
-        // payment cannot drift.
+        // The cost is `round_cost`, the one the spend below pays.
         let mag_max = if incarnon.in_base_form {
             params.cycle.as_ref().map_or(0.0, |c| c.base_form.magazine_size)
         } else {
             ammo.cap
         };
         let first_round = active.first_round_damage > 0.0
-            && ((mag_left - active.ammo_cost * (1.0 - efficiency)) - (mag_max - 1.0)).abs() < 1e-9;
+            && ((mag_left - round_cost) - (mag_max - 1.0)).abs() < 1e-9;
         // The round itself is spent BELOW, once the multishot roll is known:
         // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
         // draw cannot be settled before the roll.
@@ -483,7 +482,7 @@ pub(super) fn resolve_the_shot(
         // cost, not a separate round. A beam paying 0.5 with 20% efficiency
         // spends 0.4, which is what "0.5 ammo per trace" plus an efficiency
         // mod has to mean.
-        let spend = active.ammo_cost * (1.0 - efficiency);
+        let spend = round_cost;
         if incarnon.in_base_form {
             incarnon.base_magazine -= spend;
         } else {

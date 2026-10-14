@@ -801,6 +801,38 @@ fn final_fusillade_adds_multishot_only_on_the_magazines_last_round() {
     assert_eq!(off.mean_reloads, 0.0);
 }
 
+/// FORCEFUL FINALITY PAYS THE BURST THAT EMPTIES THE MAGAZINE — ✅ measured
+/// (M116). A Burston (one pellet, three-round bursts) with the +5 base:
+/// a 9-round magazine ends on a full burst at six pellets a round (24), an
+/// 8-round one on a two-round burst (18), and at 60% efficiency (0.4 a
+/// round) only the last burst pays — 23 rounds, the last two at six (33),
+/// not every round fired once the counter reads three (63).
+#[test]
+fn forceful_finality_pays_only_the_burst_that_forces_the_reload() {
+    let p = |magazine: f64, eff: f64| FightParams {
+        multishot: 1.0,
+        base_multishot: 1.0,
+        base_multishot_on_last_round: 5.0,
+        burst: Some(crate::model::BurstSpec { count: 3, delay_seconds: 0.04 }),
+        arcane: ArcaneFx { ammo_efficiency: eff, ..ArcaneFx::none() },
+        ammo_efficiency_applies: true,
+        fire_rate: 1.0,
+        magazine_size: magazine,
+        // One magazine only, so the counts are exact.
+        infinite_reserve: false,
+        reserve_ammo: 0.0,
+        duration_seconds: 100.0,
+        body_parts: mono_body(1.0),
+        ..no_status()
+    };
+    let pellets = |magazine: f64, eff: f64| monte_carlo(&p(magazine, eff), 4, 3).mean_pellets;
+    assert!((pellets(9.0, 0.0) - 24.0).abs() < 1e-9, "full last burst: {}", pellets(9.0, 0.0));
+    assert!((pellets(8.0, 0.0) - 18.0).abs() < 1e-9, "two-round last burst: {}", pellets(8.0, 0.0));
+    let eff = monte_carlo(&p(9.0, 0.6), 4, 3);
+    assert!((eff.mean_shots - 23.0).abs() < 1e-9, "9 / 0.4 is 23 rounds: {}", eff.mean_shots);
+    assert!((eff.mean_pellets - 33.0).abs() < 1e-9, "only the emptying burst: {}", eff.mean_pellets);
+}
+
 /// THE CHAMBER FAMILY pays the magazine's FIRST round and nothing else.
 ///
 /// Five rounds, one magazine, +100% on the first: the damage of the whole

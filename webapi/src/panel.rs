@@ -996,6 +996,16 @@ fn evolution_sources(
                     Some("into the BASE status chance — status mods multiply it".into()),
                 ));
             }
+            // Not in `evo_flat`: the base column reads `evo_base_multishot`.
+            let v = def.flat_base_multishot();
+            if v > 0.0 {
+                evo_src.push((
+                    "multishot",
+                    name.clone(),
+                    format!("+{v:.0} base"),
+                    Some("into the BASE multishot — multishot mods multiply it".into()),
+                ));
+            }
             let v = def.flat_base_magazine();
             if v > 0.0 {
                 evo_flat_mag += v;
@@ -1179,7 +1189,7 @@ fn form_section(
     row(
         "multishot",
         "Multishot",
-        format!("×{}", num(base.base_multishot)),
+        format!("×{}", num(base.base_multishot - base.evo_base_multishot)),
         format!("×{}", num(panel.multishot)),
     );
     row(

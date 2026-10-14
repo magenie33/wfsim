@@ -107,7 +107,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // pushed into the radial or the field: an explosion fires per
                 // projectile already (`radius_takes_multishot`), so adding it
                 // there would count the same pellets twice.
-                EvoEffect::FlatBaseMultishot(v) => base.base_multishot += v,
+                EvoEffect::FlatBaseMultishot(v) => {
+                    base.base_multishot += v;
+                    base.evo_base_multishot += v;
+                }
                 // ---- THE MELEE FIVE ------------------------------------
                 //
                 // Each one lands in the channel `resolve` reads it from, so an

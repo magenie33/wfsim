@@ -1760,9 +1760,11 @@ mirror images.
 
 **SYNTH CHARGE — the LAST round.** *"bonus damage to the final shot in the
 Magazine"*, and the window is read BEFORE the round is paid for: this pull is
-the last if at most one round is left to fire. On a burst weapon that is the
+the last if firing it EMPTIES the magazine. On a burst weapon that is the
 last BURST (Forceful Finality's *"final magazine burst"*, three rounds on a
-Burston), which is why the gate is `mag_left ≤ burst.count`.
+Burston, fewer when fewer are left), so the gate is `mag_left ≤ rounds left in
+this burst × the round's cost` — the cost after ammo efficiency, because a
+round that does not force the reload is not the last one (M116).
 
 **THE CHAMBER FAMILY — the FIRST round, read AFTER.** Charged Chamber and Primed
 Chamber both print *"+X% Damage on first shot in Magazine"*, and both pages

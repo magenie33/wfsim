@@ -842,6 +842,14 @@ pub fn resolve_for(
     // Frenzy passive — is not exempt just because the loop above cannot see it. The out-of-bucket layers are shadowed here, and
     // `locked` carries the fact to the SIM, which owns the live ones.
     let locked_stat = |s: &str| disabled.contains(&s);
+    // …AND AN EVOLUTION'S "+N BASE MULTISHOT" GOES WITH IT: "Base" names the
+    // bracket the mods multiply, and an Acuity holds the weapon at its own
+    // count (M116). An Incarnon FORM's multishot is that form's own panel.
+    let own_multishot = if locked_stat("multishot") {
+        base.base_multishot - base.evo_base_multishot
+    } else {
+        base.base_multishot
+    };
     let evo_ms_bonus = if locked_stat("multishot") {
         0.0
     } else {
@@ -1653,7 +1661,7 @@ pub fn resolve_for(
             // six bodies every strike, never five and never seven, which is
             // what tells `3 x multishot` apart from `multishot + 2`.
             chain_bodies: (o.chain_bodies_per_multishot
-                * base.base_multishot
+                * own_multishot
                 * (1.0 + evo_ms_bonus + multishot))
                 .floor()
                 .max(1.0) as u32,
@@ -1834,8 +1842,8 @@ pub fn resolve_for(
                 ..*b
             })
             .collect(),
-        multishot: base.base_multishot * (1.0 + evo_ms_bonus + multishot),
-        base_multishot: base.base_multishot,
+        multishot: own_multishot * (1.0 + evo_ms_bonus + multishot),
+        base_multishot: own_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
         // ammo system — magazine mods are inert, so it never scales.
@@ -2011,7 +2019,7 @@ pub fn resolve_for(
         }),
         evo_multishot: (evo_ms_bonus > 0.0 && evo_ms_stacks > 0).then_some(
             EvoMsBuff {
-                full: base.base_multishot * evo_ms_bonus,
+                full: own_multishot * evo_ms_bonus,
                 max_stacks: evo_ms_stacks,
                 // Full until a buff card says otherwise — it is permanent, so
                 // "the count in play" starts at the count the panel resolved.

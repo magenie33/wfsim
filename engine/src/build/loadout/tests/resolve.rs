@@ -2425,3 +2425,23 @@ fn an_extra_hit_reads_the_akarius_primes_hidden_split() {
     let bare = super::resolve(&base, &[], super::StackPolicy::Emergent);
     assert_eq!(bare.extra_hit_reads_shift, 0.0);
 }
+
+/// AN ACUITY TAKES AN EVOLUTION'S "+N BASE MULTISHOT" TOO (M116): Forceful
+/// Finality's +5 was measured gone under Primary Acuity, and Rain of Lead's +2
+/// is the same bracket — so a locked Bronco fires its own 7, not 9.
+#[test]
+fn a_multishot_lock_takes_an_evolutions_base_multishot_back_off() {
+    let bare = WeaponBase::from_data("bronco", true, &[]);
+    let base = WeaponBase::from_data("bronco", true, &["bronco_rain_of_lead"]);
+    assert!((base.base_multishot - bare.base_multishot - 2.0).abs() < 1e-9, "Rain of Lead is +2");
+    let free = resolve(&base, &[], StackPolicy::Emergent);
+    assert!(
+        (free.multishot - bare.base_multishot - 2.0).abs() < 1e-9,
+        "unlocked it pays: {}",
+        free.multishot
+    );
+    let lock = m_req("acuity", None, vec!["multishot"], vec![]);
+    let locked = resolve(&base, &[&lock], StackPolicy::Emergent);
+    assert!((locked.multishot - bare.base_multishot).abs() < 1e-9, "locked: {}", locked.multishot);
+    assert!((locked.base_multishot - bare.base_multishot).abs() < 1e-9, "and the sim's base agrees");
+}
