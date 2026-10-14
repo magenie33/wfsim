@@ -39,6 +39,13 @@ function step(schema, fn) {
 }
 
 const rowsOf = (r) => ({ rows: r.rows, affected: r.affectedRows ?? 0 });
+// A PARAMETER IS NEVER CAST STRAIGHT TO JSONB: Hyperdrive's driver sends the
+// bound string as a JSON string, so every field reads NULL in production while
+// PGlite reads the object. Bind text and cast it: `(?::text)::jsonb`.
+const textOnly = (text) => {
+  if (/\$\d+::jsonb/.test(text)) throw new Error(`test_db: a parameter cast straight to jsonb, write (?::text)::jsonb: ${text.slice(0, 120)}`);
+  return text;
+};
 
 /// A NEW, EMPTY DATABASE laid with the tables of each of `kinds` ("library",
 /// "accounts"). Beside the worker's API it answers a check's own SQL directly:
@@ -48,8 +55,8 @@ export async function testDb(...kinds) {
   await step(null, () => pg.exec(`CREATE SCHEMA ${schema}`));
   await step(schema, () => pg.exec(kinds.map(ddl).join("\n")));
   const client = {
-    query: (text, params) => step(schema, async () => rowsOf(await pg.query(text, params))),
-    transaction: (fn) => step(schema, () => pg.transaction((tx) => fn({ query: async (text, params) => rowsOf(await tx.query(text, params)) }))),
+    query: (text, params) => step(schema, async () => rowsOf(await pg.query(textOnly(text), params))),
+    transaction: (fn) => step(schema, () => pg.transaction((tx) => fn({ query: async (text, params) => rowsOf(await tx.query(textOnly(text), params)) }))),
   };
   const db = pgDb(client);
   const q = (sql, args) => client.query(placeholders(sql), args);

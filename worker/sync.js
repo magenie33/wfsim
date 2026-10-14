@@ -337,7 +337,7 @@ async function viaProcedure(x, given) {
 async function callSync(db, call) {
   for (let i = 0; ; i++) {
     try {
-      const row = await db.prepare("CALL board_sync(?1::jsonb, NULL)").bind(JSON.stringify(call)).first();
+      const row = await db.prepare("CALL board_sync((?1::text)::jsonb, NULL)").bind(JSON.stringify(call)).first();
       return typeof row.r === "string" ? JSON.parse(row.r) : row.r;
     } catch (e) {
       if (i >= 2 || !["40P01", "40001"].includes(e && e.code)) throw e;
