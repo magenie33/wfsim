@@ -931,7 +931,10 @@ questions, never a heavier client.
   run's reconciliation. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
   (due in six hours), `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
-  `sweep` for a rescore's or an older build's first pass (due in a week). An
+  `sweep` for a rescore's, an older build's first pass, or a `backfill-`
+  batch's (due in a week). The reconciliation ships `backfill-`, rows nobody
+  ordered: under `arrivals-` a day's library growth queued inside `new_build`
+  ahead of the submission somebody waits on. An
   arrival's row the board already scored is not asked: a resubmission the page
   did not recognise is the same build. ONLY A ROW THE BOARD ADMITS IS QUEUED:
   every writer takes its rows from `owed_rows` (`webapi/src/board_rows.rs`),

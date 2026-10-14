@@ -109,7 +109,9 @@ export const boardPackTask = (q) => ({ question: q.question, identity: q.demands
 /// WHICH PRODUCER ASKS FOR A ROW: a new build's — an `arrivals-` batch's row
 /// whose build came that day or the one before — a `refresh-` batch's, or a
 /// sweep's. An older build asked for a ruler it lacks lands in the same daily
-/// batch, and is a sweep.
+/// batch, and is a sweep. A `backfill-` batch is the reconciliation's — rows
+/// nobody ordered — and always a sweep: classed by build age, a day's library
+/// growth queued inside `new_build` ahead of a submission somebody waits on.
 ///
 /// A LADDER CELL'S ROW IS NEVER `new_build`'s: a new build waits on its base
 /// rulers' rows, and every other scene is owed it at a sweep's pace — or each
@@ -173,13 +175,13 @@ async function ask(request, env) {
   // page did not recognise is the same build, and asking again fought it again.
   // A REFRESH'S ROW is due by when its fact finished.
   const scored = new Map();
-  if (b.batch.startsWith("arrivals-") || b.batch.startsWith("refresh-")) {
+  const arrivals = b.batch.startsWith("arrivals-") || b.batch.startsWith("backfill-");
+  if (arrivals || b.batch.startsWith("refresh-")) {
     const { results: had } = await db.prepare(`SELECT s.identity, s.ruler, s.mode, s.finished_at FROM scores s JOIN jsonb_array_elements((?::text)::jsonb) j
           ON s.identity = j ->> 'identity' AND s.ruler = j ->> 'ruler' AND s.mode = j ->> 'mode'`)
       .bind(JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
     for (const x of had) scored.set(rowRef(x.identity, x.ruler, x.mode), x.finished_at);
   }
-  const arrivals = b.batch.startsWith("arrivals-");
   const asks = rows.filter((r) => buildOf.has(r.identity) && !(arrivals && scored.has(rowRef(r.identity, r.ruler, r.mode))))
     .map((r) => rowAsk(b.batch, r, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(rowRef(r.identity, r.ruler, r.mode)), now));
   await facts().demandAll(env, asks, engine, now);

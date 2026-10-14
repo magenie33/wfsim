@@ -109,7 +109,7 @@ backfill() {
 # rescore's batch asks for scored rows on purpose. Prints the SQL predicate.
 owed_only() {
   case "$1" in
-    arrivals-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4)" ;;
+    arrivals-*|backfill-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4)" ;;
     *) echo "true" ;;
   esac
 }

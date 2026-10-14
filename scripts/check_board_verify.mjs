@@ -110,6 +110,9 @@ const cellAsk = await L.get("SELECT producer, asked_at, due_at FROM demands WHER
 check("...but a new build's row under another scene of a ruler by `sweep`", cellAsk.producer === "sweep");
 check("...due three days after it is asked, ahead of a refresh days from its bound",
   Date.parse(cellAsk.due_at) - Date.parse(cellAsk.asked_at) === 3 * 86_400_000, `${cellAsk.asked_at} -> ${cellAsk.due_at}`);
+await build("filled"); await queue(`backfill-${today}`, "filled");
+await ask(`backfill-${today}`, "filled");
+check("...and a new build's row the reconciliation filled in by `sweep`: nobody ordered it", (await demand("filled")).producer === "sweep");
 await queue("rescore-x", "scored");
 await ask("rescore-x", "scored");
 check("a rescore asks for a scored row on purpose", await demand("scored") && (await demand("scored")).producer === "sweep");

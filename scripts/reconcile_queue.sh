@@ -69,9 +69,10 @@ mv "$paced" "$missing"
 
 # ONE BATCH A DAY, named by the day. An hourly clock would otherwise mint
 # twenty-four groups a day and a list nobody can read is a list nobody uses;
-# `ship_queue.sh` ADDS to a batch that already exists, so the day's arrivals are
-# one group however many times this runs.
-bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
+# `ship_queue.sh` ADDS to a batch that already exists, so the day's rows are one
+# group however many times this runs. `backfill-`, never `arrivals-`: the worker
+# asks an arrival's row as a new build's, and nobody here is waiting on these.
+bash scripts/ship_queue.sh "backfill-$(date -u +'%Y-%m-%d')" \
   "builds nothing had asked for yet" "$missing"
 rm -f "$missing"
 # …AND EVERY ROW OWED HAS ITS ORDER, whichever run wrote the row and however it
