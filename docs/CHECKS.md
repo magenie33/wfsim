@@ -244,6 +244,22 @@ set it at once; every change is logged with the value before and after and
 who set it; a `/api/board/work` reply carries exactly the client dials, as in
 force. `CLIENTS_PER_FACT` is not a dial.
 
+## `check_board_sync`
+
+Plain node on PGlite: protocol 8's one door (`worker/sync.js`). An id the site
+does not make, a malformed body or another protocol is refused whole; no yes, no
+work. A sync is handed a pack with every dial a protocol 8 client reads and the
+protocols served. A sync before its `next_ms` is handed nothing, yet its results
+are taken and its rows renewed; a result sent twice, or by protocol 7 and then 8,
+is one answer; one whose lease ran out counts while nobody took the row, and is
+dropped `not_held` once somebody did; a row it names is kept and every other one
+it held goes back. A row its engine refused is not handed to it again, and
+refused by `refusals_to_withdraw` owners on the served engine is withdrawn,
+written down, said by the watchdog and kept withdrawn when asked again. While work
+is short a pack is at most open over asking, leased `pack_lease_ms`; a question
+someone waits on goes alone, never to a computer holding a pack. `sync_off`
+answers `fallback: 7`.
+
 ## `check_board_verify`
 
 Plain node on PGlite (`worker/pg/*.sql`): a board row as a

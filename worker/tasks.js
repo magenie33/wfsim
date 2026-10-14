@@ -398,10 +398,12 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // A PAGE SENDS AGAIN what got no reply, and the reply may be all that was lost:
     // an answer this device already gave on this engine is not a second witness
     // (the ask never hands it the same question twice, `nextPack`).
+    // An answer already recorded is `already` whether or not the row is still held:
+    // settling it gave the lease back, and the reply that said so was lost.
     const already = [];
-    if (byId.size) {
-      const { results: given } = await db.prepare("SELECT question FROM answers WHERE device = ?1::text AND engine = ?2::text AND question IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))")
-        .bind(w.device, engine, JSON.stringify([...byId.keys()])).all();
+    if (answers.length) {
+      const { results: given } = await db.prepare("SELECT DISTINCT question FROM answers WHERE device = ?1::text AND engine = ?2::text AND question IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))")
+        .bind(w.device, engine, JSON.stringify(answers.map((a) => a.question))).all();
       for (const r of given) { byId.delete(r.question); already.push(r.question); }
     }
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));

@@ -33,6 +33,8 @@ import { appraiseRoute } from "./appraise.js";
 import { watchdog, WATCHDOG_CRON, officialRoute } from "./factory.js";
 import { boardTasksRoute } from "./board_tasks.js";
 import { verifyRoute } from "./verify.js";
+import { syncRoute } from "./sync.js";
+import { noteFactoryCall } from "./factory_calls.js";
 import { contributionRoute } from "./contribution.js";
 import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
@@ -845,6 +847,7 @@ async function serve(request, env, ctx) {
     if (path === "/api/world" || path.startsWith("/api/world/")) return worldRoute(request, env, ctx, path);
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path);
     if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
+    if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path.startsWith("/api/tasks/official/")) return officialRoute(request, env, path);
     if (path.startsWith("/api/board/live/")) return pushLive(request, env, path.slice("/api/board/live/".length));

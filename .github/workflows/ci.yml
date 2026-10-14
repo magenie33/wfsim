@@ -162,6 +162,8 @@ jobs:
         run: node scripts/check_appraise.mjs
       - name: A client's number reaches the board only when CLIENTS_PER_FACT clients agree
         run: node scripts/check_board_verify.mjs
+      - name: Protocol 8 hands out by protocol 7's rules and holds a client to its time
+        run: node scripts/check_board_sync.mjs
       - name: Every item on a fight's path is metered
         run: node scripts/check_gas.mjs
       - name: The clients' contract states the values the code holds
