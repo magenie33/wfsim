@@ -544,13 +544,18 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// trip, then settled together (`settleMany`).
   async function recordMany(env, w, items, now, served = null, join = false) {
     const db = env.LIBRARY, at = iso(now), official = w.official ? 1 : 0, mine = items[0].a.engine, engine = served || mine;
+    // ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME, and an answer it already gave on
+    // this engine is not written again: a beacon on the way out raced a sync still
+    // in flight, both checked before either wrote, and both rows landed.
+    const lock = db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device);
     const writes = items.map(({ q, a }) => db.prepare(
       `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+       SELECT ?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text, ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text
+       WHERE ?6::bigint = 1 OR NOT EXISTS (SELECT 1 FROM answers x WHERE x.question = ?1::text AND x.device = ?3::text AND x.engine = ?2::text)`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
         a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
     const learnt = official ? null : learnCost(db, items);
-    await db.batch(learnt ? [...writes, learnt] : writes);
+    await db.batch([lock, ...writes, ...(learnt ? [learnt] : [])]);
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
       // §"Contribution") — a statistic, so each on its own and outside the answers'

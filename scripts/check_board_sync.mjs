@@ -81,6 +81,22 @@ check("…and the rows it names are still its own", early.held.length === rows.l
 // A SYNC SENT TWICE IS ONE ANSWER.
 const again = await as(A, { results: [result(lease, rows[0])], held: [{ lease, rows: rows.slice(1) }] });
 check("a result sent again is taken again and recorded once", again.taken.includes(rows[0]) && await answersOf(rows[0], A) === 1);
+// …AND SENT TWICE AT ONCE (a beacon on the way out beside a sync in flight):
+// both pass the checks before either writes, played here by a database whose
+// checks answer each send as they answered the first — the row still held, the
+// answer not yet given — and still one answer lands.
+const raced = rows[rows.length - 1];
+const heldThen = await L.all("SELECT * FROM questions WHERE id = ?", raced);
+const blind = { ...env, LIBRARY: { ...env.LIBRARY, prepare: (sql) => (/^SELECT DISTINCT question FROM answers WHERE device/.test(sql)
+  ? { bind: () => ({ all: async () => ({ results: [] }) }) }
+  : /lease = \?1::text AND leased_to = \?2::text/.test(sql) && /^SELECT \* FROM questions/.test(sql)
+    ? { bind: () => ({ all: async () => ({ results: heldThen }) }) }
+  : env.LIBRARY.prepare(sql)) } };
+const racedAnswer = { question: raced, result: { score: SCORE, metric: "kpm" }, work: WORK };
+for (let k = 0; k < 2; k++) {
+  await facts().answerPack(blind, { device: A, owner: A, net: "" }, { lease, engine: "e1", answers: [racedAnswer], late: true });
+}
+check("a result sent twice at once is recorded once", await answersOf(raced, A) === 1, String(await answersOf(raced, A)));
 
 // A LATE RESULT: the lease ran out, nobody took the row since.
 await L.run("UPDATE questions SET lease_until = ? WHERE id = ?", new Date(Date.now() - 60_000).toISOString(), rows[1]);
