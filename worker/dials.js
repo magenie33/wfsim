@@ -77,6 +77,15 @@ export const DIALS = {
     says: "nobody is passed over for their share while holding this many leases or fewer" },
   initiator_forget_ms: { default: 600_000, min: 60_000, max: 86_400_000, unit: "ms",
     says: "how often the settler erases the code of an ask that is over" },
+  // MERIT (docs/BOARD.md §"Merit"), worker/merit.js.
+  merit_on: { default: 1, min: 0, max: 1, unit: "switch",
+    says: "1 mints merit from contribution points each ten-minute cron; 0 mints nothing (balances stay)" },
+  merit_daily_base: { default: 16_000, min: 0, max: 10_000_000, unit: "merit",
+    says: "the most merit an account mints a UTC day, at rank 0" },
+  merit_daily_per_rank: { default: 500, min: 0, max: 1_000_000, unit: "merit",
+    says: "…and this much more per contribution rank" },
+  merit_balance_days: { default: 10, min: 1, max: 365, unit: "days",
+    says: "the balance an account may hold, in days of its daily cap" },
   // THE PUBLIC STATS (docs/BOARD.md §"The public stats"), written to the public bucket.
   stats_tally_ms: { default: 60_000, min: 10_000, max: 3_600_000, unit: "ms",
     says: "how often the settler writes stats/tally.json, the home page's count" },

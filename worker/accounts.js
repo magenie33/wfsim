@@ -682,8 +682,12 @@ export async function accountRoute(request, env, path) {
   const devices = (await env.ACCOUNTS.prepare("SELECT verifier, claimed_at FROM devices WHERE account = ?1")
     .bind(account).all()).results;
   const choice = await env.ACCOUNTS.prepare("SELECT named, chosen_at FROM contribution_choice WHERE account = ?1").bind(account).first();
+  const merit = await env.ACCOUNTS.prepare("SELECT balance, points_seen, day, minted_today, auto_priority, since, granted_at FROM merit WHERE account = ?1")
+    .bind(account).first();
+  const meritLedger = (await env.ACCOUNTS.prepare("SELECT at, kind, amount, balance, note FROM merit_ledger WHERE account = ?1 ORDER BY id")
+    .bind(account).all()).results;
   return json({ ok: true, account: await accountView(env, account), agents: await agentsOf(env, account), devices,
-    contribution_choice: choice || null,
+    contribution_choice: choice || null, merit: merit || null, merit_ledger: meritLedger,
     ...(await cloudExport(env, account)),
     exported_at: now() }, 200,
     { "content-disposition": 'attachment; filename="wfsim-account.json"' });

@@ -419,7 +419,7 @@ const PERIODS = { all: "points", recent: "recent", week: "week" };
 
 /// EVERY ACCOUNT WITH A CLAIMED DEVICE and what its devices were credited, in
 /// points — the one list every ranking and every account's place is cut from.
-async function standings(env, day = keyDay()) {
+export async function standings(env, day = keyDay()) {
   const { results } = await env.ACCOUNTS.prepare(
     `SELECT a.id, a.username, a.display_name, c.named, s.verifier, s.from_hour, s.until_hour FROM device_spans s
        JOIN accounts a ON a.id = s.account LEFT JOIN contribution_choice c ON c.account = s.account`).all();
