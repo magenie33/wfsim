@@ -325,10 +325,14 @@ function mountDesktopUpdater() {
   // so checking again reports the same update as available — and now that the
   // fetch is automatic, that is 12 MB pulled down every hour behind a notice
   // already on screen saying it is ready.
+  // …UNLESS IT IS THE VERSION RUNNING. A shell that does not clear "ready" on
+  // apply keeps saying it after the reload, and a restart offered then finds
+  // `next/` already promoted.
   const look = async () => {
     try {
       const s = await invoke("update_status");
-      if (s.phase === "ready" || s.phase === "downloading") return poll();
+      const applied = s.phase === "ready" && s.version === await invoke("app_version");
+      if (!applied && (s.phase === "ready" || s.phase === "downloading")) return poll();
       await invoke("update_check");
       poll();
     } catch (_) { /* offline is normal */ }

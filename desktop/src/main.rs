@@ -189,7 +189,11 @@ fn source_url(state: tauri::State<Arc<Layout>>) -> String {
 /// something, and a reload is cheap where a restart is a window disappearing.
 #[tauri::command]
 fn update_apply(state: tauri::State<Arc<Layout>>) -> Result<(), String> {
-    state.promote().map_err(|e| e.to_string())
+    state.promote().map_err(|e| e.to_string())?;
+    // A STATUS LEFT AT "ready" OUTLIVES THE RELOAD: the page offers the restart
+    // again, a second promote finds no `next/`, and no check ever runs again.
+    update::begin("idle");
+    Ok(())
 }
 
 /// The reader's choices about the program, held for the life of the process
@@ -631,6 +635,8 @@ const UPDATE_PROBE: &str = r#"
           await inv('update_apply');
           const after = await inv('app_version');
           check('applied', true, before + ' -> ' + after);
+          const left = (await inv('update_status')).phase;
+          check('apply clears ready', left !== 'ready', left);
         }
       }
     } catch (e) { check('update', false, (e && e.message) || String(e)); }
