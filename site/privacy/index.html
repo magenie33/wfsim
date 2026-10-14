@@ -77,7 +77,10 @@ or remove, and the work it computed is counted under your account. Your points t
 contributors' ranking without your name. Only if you choose to show it does the
 ranking show your display name (or your username, if you have none) and any
 mark your account carries; you can take it back at any time. It is never joined
-to anything you submit.</p>
+to anything you submit.
+Those points also mint your account's merit: WFSim keeps its balance and a
+record of each time it was minted or spent, which only you can see; only the
+totals over everyone are public.</p>
 <p>With an email address you also choose a password. WFSim keeps it only as a
 salted, slow hash that cannot be turned back into the password. Mail is sent only
 to prove an address — when you register it, link it or reset its password — and
@@ -191,6 +194,7 @@ point-in-time history for up to 30 days, after which no copy remains.</li>
 <li><b>登录后：</b>账号是一个随机编号，最多可绑定 Google、Discord、GitHub、邮箱四种登录方式。每种方式保存：是哪个服务、该服务给你的用户编号、账号页上显示给你看的名字（Google 邮箱、Discord 或 GitHub 用户名、你的邮箱），以及绑定时间。使用邮箱时你会设置一个密码，WFSim 只保存它加盐的慢哈希，无法还原成密码。邮件只在需要验证邮箱时发送（注册、绑定、找回密码），其中的验证码以哈希保存 10 分钟。登录状态以随机令牌的哈希保存（cookie <code>wfsim_session</code>，90 天）。不保存 IP 地址，也不保存第三方返回的访问令牌。WFSim 从不合并两个账号。如果 Discord 是你的登录方式之一，WFSim 会在 WFSim Discord 服务器里给你的 Discord 账号对应的身份组（Verified，以及持有时的 WFSim Member 或 WFSim Patron）；移除 Discord 或删除账号后一天内收回。</li>
 <li><b>配装同步：</b>登录后，你保存的配装、场景、搜索方案、裂罅、自定义敌人、战甲、同伴和指挥官配装，以及提醒会随账号保存，每个登录的浏览器看到的都一样。每一项按浏览器保存的样子存放，不含测量结果，并记录最后修改时间。你删除的条目保留 30 天，可在「云同步」页面恢复；之后只留一个删除标记，让每个浏览器都移除它。这些都在你的数据下载里，删除账号时会随账号一起删除；你的浏览器始终保留自己的那份。</li>
 <li><b>登录后提交到排行榜：</b>这套配装的计算任务会附上一个由你的账号生成的编号，只有你的账号能对上它，用来保证一个人的配装不会占用超过公平份额的社区算力。配装算完或撤回后这个编号即删除，也不会出现在公开的排行榜和它的备份里。不登录提交的配装不附带任何关于你的信息。</li>
+<li><b>功勋：</b>你名下的贡献积分会铸成功勋。WF模拟 保存你的功勋余额，以及每一次铸造和使用的记录，只有你自己能看到；公开的只有所有人的合计。</li>
 <li data-ext="privacy-buying-zh"></li>
 <li><b>第三方：</b>Cloudflare 提供托管、数据库和验证邮件投递，其投递日志会保留收件地址最多 30 天；Google、Discord、GitHub 仅在你选择用它们登录时参与。不出售任何数据，不用于广告。</li>
 <li><b>安全措施：</b>全站 HTTPS；密码、登录令牌和邮件验证码只以哈希保存，密码哈希还用一个不在数据库里的密钥加固，单拿到数据库也无法验证任何猜测；<span data-ext="privacy-card-zh"></span>账号数据放在独立的数据库，与排行榜公开备份的那个分开，只有 WFSim 的运营方能访问；登录接口有频率限制，修改数据的请求只接受来自本站的。</li>
