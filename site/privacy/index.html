@@ -27,7 +27,13 @@ as the count arrives, and kept with the count. A browser that sends Do Not Track
 or Global Privacy Control is not counted at all, and
 <a href="/support#usage">the support page</a> says what is counted and lets you
 turn it off.</li>
-<li>A build you send to the leaderboard carries the build and nothing about you.
+<li>A build you send to the leaderboard is stored as the build and the day, and
+nothing about you. If you are signed in when you send it, the request to compute
+it also carries a code made from your account, which only your account can be
+matched to, so that no one person's builds can take more than a fair share of
+the community's computers. The code is deleted once the build is computed or
+withdrawn, and never appears on the public leaderboard or in its backup. Sent
+signed out, nothing about you is kept with it.
 A short share link stores the build it links to.</li>
 <li>A riven screenshot you read on the Rivens tab is read inside your browser and
 does not leave it. Only if you tick <em>Send this read and your corrections</em>
@@ -184,6 +190,7 @@ point-in-time history for up to 30 days, after which no copy remains.</li>
 <li><b>识别裂罅截图：</b>在「裂罅」页读取的截图只在你的浏览器里识别，不会发出。只有你在识别结果窗口里勾选「把这次识别和修正提交给 WF模拟」并点了确定，WF模拟 才会收到卡上词条区域的截图、识别出的文字、最初的识别结果和你确认后的结果，用来改进识别，最多保存 365 天。这个选择会在本浏览器记住，随时可以在识别窗口里取消。它不带账号、IP 或任何编号，因此无法追溯到你，发出后也无法撤回。</li>
 <li><b>登录后：</b>账号是一个随机编号，最多可绑定 Google、Discord、GitHub、邮箱四种登录方式。每种方式保存：是哪个服务、该服务给你的用户编号、账号页上显示给你看的名字（Google 邮箱、Discord 或 GitHub 用户名、你的邮箱），以及绑定时间。使用邮箱时你会设置一个密码，WFSim 只保存它加盐的慢哈希，无法还原成密码。邮件只在需要验证邮箱时发送（注册、绑定、找回密码），其中的验证码以哈希保存 10 分钟。登录状态以随机令牌的哈希保存（cookie <code>wfsim_session</code>，90 天）。不保存 IP 地址，也不保存第三方返回的访问令牌。WFSim 从不合并两个账号。如果 Discord 是你的登录方式之一，WFSim 会在 WFSim Discord 服务器里给你的 Discord 账号对应的身份组（Verified，以及持有时的 WFSim Member 或 WFSim Patron）；移除 Discord 或删除账号后一天内收回。</li>
 <li><b>配装同步：</b>登录后，你保存的配装、场景、搜索方案、裂罅、自定义敌人、战甲、同伴和指挥官配装，以及提醒会随账号保存，每个登录的浏览器看到的都一样。每一项按浏览器保存的样子存放，不含测量结果，并记录最后修改时间。你删除的条目保留 30 天，可在「云同步」页面恢复；之后只留一个删除标记，让每个浏览器都移除它。这些都在你的数据下载里，删除账号时会随账号一起删除；你的浏览器始终保留自己的那份。</li>
+<li><b>登录后提交到排行榜：</b>这套配装的计算任务会附上一个由你的账号生成的编号，只有你的账号能对上它，用来保证一个人的配装不会占用超过公平份额的社区算力。配装算完或撤回后这个编号即删除，也不会出现在公开的排行榜和它的备份里。不登录提交的配装不附带任何关于你的信息。</li>
 <li data-ext="privacy-buying-zh"></li>
 <li><b>第三方：</b>Cloudflare 提供托管、数据库和验证邮件投递，其投递日志会保留收件地址最多 30 天；Google、Discord、GitHub 仅在你选择用它们登录时参与。不出售任何数据，不用于广告。</li>
 <li><b>安全措施：</b>全站 HTTPS；密码、登录令牌和邮件验证码只以哈希保存，密码哈希还用一个不在数据库里的密钥加固，单拿到数据库也无法验证任何猜测；<span data-ext="privacy-card-zh"></span>账号数据放在独立的数据库，与排行榜公开备份的那个分开，只有 WFSim 的运营方能访问；登录接口有频率限制，修改数据的请求只接受来自本站的。</li>
