@@ -363,6 +363,20 @@ fact and credits all three once, a third differing makes a dispute, and a
 rechecked row past its deadline goes to the official machines, who credit the
 two who agreed.
 
+## `check_settler`
+
+Plain node on PGlite: the settler in shadow (`worker/settler.js`,
+`scripts/factoryd.mjs`, docs/BOARD.md §"The settler"). Its fair table is the
+worker's `tableOf` and reads back from `fair_shares` to the last digit; a target
+moved past the tolerance, or an account missing, is a difference. Its snapshot
+counts computing as `/api/board/computing` serves it, open as what may be taken
+now, urgent as what someone waits on, and its heartbeat names its commit. Three
+questions settled through the real request path are judged as it judged them,
+none twice, none before the lag; a fact whose bits no group gave and a witness
+left unpaid are each a difference, kept in the finding with the question. An
+official answer and an older engine's peer are counted apart; two answers of
+one owner are one witness. One pass of the daemon's every tick runs clean.
+
 ## `check_fair`
 
 Plain node on PGlite (`worker/pg/*.sql`): fair share

@@ -105,6 +105,20 @@ export async function witnessOf(env, device) {
 /// (`threshold`, a volunteer counting one and the official machines all of it),
 /// the share of facts the official machines check again (`spot`), and what
 /// happens to a witness they disprove (`on_disproved`).
+/// THE ANSWERS THAT COUNT AS WITNESSES, in the order they came: no owner and no
+/// network twice. Two browsers on one desk are one witness. The settler's
+/// shadow (worker/settler.js) judges with this same rule.
+export function independent(answers) {
+  const owners = new Set(), nets = new Set(), out = [];
+  for (const a of answers) {
+    if (owners.has(a.owner) || (a.net && nets.has(a.net))) continue;
+    owners.add(a.owner);
+    if (a.net) nets.add(a.net);
+    out.push(a);
+  }
+  return out;
+}
+
 export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, refusing = true }) {
   /// THE VERBS A PACK MAY CARRY (`pack: true`): short, many, nobody waiting on one.
   const PACKABLE = JSON.stringify(Object.keys(verbs).filter((v) => verbs[v].pack));
@@ -578,19 +592,6 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       for (const a of wrong) await (on_disproved ? on_disproved(env, a) : refuse(env, a.device, now));
     }
     if (q.state !== "spot" || moved) await deliver(env, { ...q, canon: officialSays.canon }, now, officialSays);
-  }
-
-  /// THE ANSWERS THAT COUNT AS WITNESSES, in the order they came: no owner and no
-  /// network twice. Two browsers on one desk are one witness.
-  function independent(answers) {
-    const owners = new Set(), nets = new Set(), out = [];
-    for (const a of answers) {
-      if (owners.has(a.owner) || (a.net && nets.has(a.net))) continue;
-      owners.add(a.owner);
-      if (a.net) nets.add(a.net);
-      out.push(a);
-    }
-    return out;
   }
 
   /// ONLY A FACT SCORES, once per answer: its work to its device, in its hour,

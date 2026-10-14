@@ -1,0 +1,26 @@
+# THE SETTLER'S DAEMON on the database server — `scripts/factoryd.mjs`
+# (docs/BOARD.md §"The settler"). Installed to /etc/systemd/system/;
+# `scripts/ship_factoryd.py` ships the worker's code and the daemon to
+# /opt/wfsim-factoryd. /etc/wfsim-factoryd.env holds PG_URL and PG_ACCOUNTS_URL
+# for the role wfsim_factoryd, and PG_SOCKET=/var/run/postgresql: it reaches
+# Postgres over the local socket by peer authentication, so the OS user and the
+# role share the name and no password is on the machine.
+[Unit]
+Description=WFSim settler
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=wfsim_factoryd
+WorkingDirectory=/opt/wfsim-factoryd
+EnvironmentFile=/etc/wfsim-factoryd.env
+ExecStart=/usr/local/bin/node scripts/factoryd.mjs
+# THE DATABASE ANSWERS FIRST: the daemon shares its four cores and can wait.
+Nice=5
+CPUWeight=50
+MemoryMax=512M
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

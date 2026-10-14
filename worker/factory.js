@@ -9,6 +9,7 @@ import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } 
 import { cloudTell } from "./cloud.js";
 import { watchdogText } from "./watchdog_say.js";
 import { iso } from "./instant.js";
+import { fairShadow } from "./settler.js";
 
 /// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY. Hand-outs go
 /// earliest deadline first, and a question past its deadline is the official
@@ -212,7 +213,11 @@ export async function watchdog(env, now = Date.now()) {
   };
   await facts().redeliver(env, now);
   await facts().repay(env, now);
-  const found = await facts().audit(env, now, (await servedRelease(env)).engine);
+  const { engine } = await servedRelease(env);
+  const found = await facts().audit(env, now, engine);
+  // THE SETTLER'S FAIR TABLE AGAINST THIS WORKER'S, while it runs in shadow
+  // (docs/BOARD.md §"The settler"): a comparison that fails changes nothing.
+  if (engine) await fairShadow(env, engine, now).catch(() => null);
   // EVERY ROUND IT STANDS, not only when it is said: the event's span is the outage's.
   for (const f of found) await noteEvent(db, `alert:${f.kind}`, now, 3 * 10 * 60_000);
   if (await stale("cells_filling")) {

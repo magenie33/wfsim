@@ -739,6 +739,39 @@ a dial never set is its default. A client is told the dials it reads in every
 reply (docs/CLIENTS.md §"Values"). `CLIENTS_PER_FACT` is not a dial: two owners
 per fact is the board's promise, not a capacity knob. `check_dials` holds this.
 
+### The settler
+
+**WHAT THE FACTORY WORKS OUT AWAY FROM A REQUEST IS WORKED OUT BESIDE THE
+DATABASE** (`worker/settler.js`, run by `scripts/factoryd.mjs` as
+`deploy/wfsim-factoryd.service` on the database's own machine, over its unix
+socket, so a transaction costs no round trip). It calls the worker's own code —
+the fair table is `tableOf`, a witness is `independent` — so the two can never
+judge by different rules, and it ships from the same commit as the worker
+(`scripts/ship_factoryd.py`, which runs one pass of every tick before it swaps
+the copy in). It writes:
+
+- `factory_snapshot`, every ten seconds: what is open and waited on, who is
+  asking and computing (the worker's own definitions), the queue, and its
+  heartbeat with the commit it runs;
+- `fair_shares`, every minute: the fair-share table for the served engine;
+- `factory_findings`: what its comparisons found, one row a kind.
+
+**IT RUNS IN SHADOW.** Nothing the worker decides reads these tables yet; the
+request path still settles, credits and works out its own fair table. The
+shadow checks itself against it two ways, each a finding:
+
+- `settle_shadow`: every settled question, two minutes after its fact, judged
+  again from its answers as they stood — the fact's bits must be a group of
+  `needs` independent witnesses, and each of them credited. A question an
+  official answer settled, or one where an older engine was a peer, is the
+  official path's or the grace's and is counted apart, not judged.
+- `fair_shadow`: the worker's ten-minute cron (`watchdog`) compares the
+  daemon's table with its own `tableOf` now, within 0.05 of a target or a
+  share, since asks and answers land between the two readings.
+
+Settling leaves the request path (`settle_queue`, empty until then) only after
+a week of both findings without a difference. `check_settler` holds this.
+
 ## Compute orders
 
 **EVERY OWED ROW IS A QUESTION, AND THE MACHINES WITH THE SITE OPEN ANSWER

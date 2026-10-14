@@ -232,3 +232,52 @@ CREATE TABLE IF NOT EXISTS factory_dial_log (
   set_at       TEXT COLLATE "C" NOT NULL
 );
 CREATE INDEX IF NOT EXISTS factory_dial_log_by_name ON factory_dial_log (name, set_at);
+
+-- THE SETTLER'S TABLES (worker/settler.js, scripts/factoryd.mjs; docs/BOARD.md
+-- §"The settler"). The daemon beside the database writes them; while it runs in
+-- shadow nothing the worker decides reads them.
+-- A QUESTION WITH NEW ANSWERS, waiting for the settler: written once settling
+-- leaves the request path, empty until then.
+CREATE TABLE IF NOT EXISTS settle_queue (
+  question  TEXT COLLATE "C" NOT NULL,
+  engine    TEXT COLLATE "C" NOT NULL,
+  peer      TEXT COLLATE "C" NOT NULL DEFAULT '',
+  joined    BIGINT NOT NULL DEFAULT 0,
+  queued_at TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY (question, engine, peer)
+);
+CREATE INDEX IF NOT EXISTS settle_queue_by_age ON settle_queue (queued_at);
+-- THE FACTORY AT ONE MOMENT, one row: what is open and who is on, and the
+-- daemon's own heartbeat and the commit it runs.
+CREATE TABLE IF NOT EXISTS factory_snapshot (
+  id                 BIGINT PRIMARY KEY CHECK (id = 1),
+  at                 TEXT COLLATE "C" NOT NULL,
+  engine             TEXT COLLATE "C",
+  release            TEXT COLLATE "C",
+  open               BIGINT NOT NULL,
+  urgent             BIGINT NOT NULL,
+  asking             BIGINT NOT NULL,
+  computing          BIGINT NOT NULL,
+  queue_rows         BIGINT NOT NULL,
+  settle_queue_rows  BIGINT NOT NULL,
+  daemon_at          TEXT COLLATE "C" NOT NULL,
+  daemon_commit      TEXT COLLATE "C" NOT NULL
+);
+-- THE FAIR-SHARE TABLE (worker/fair.js `tableOf`) as the daemon worked it out,
+-- per engine and account, and when.
+CREATE TABLE IF NOT EXISTS fair_shares (
+  engine  TEXT COLLATE "C" NOT NULL,
+  account TEXT COLLATE "C" NOT NULL,
+  target  DOUBLE PRECISION NOT NULL,
+  share   DOUBLE PRECISION NOT NULL,
+  ratio   DOUBLE PRECISION NOT NULL,
+  at      TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY (engine, account)
+);
+-- WHAT THE SETTLER FOUND, one row per kind, its body JSON: the shadow's
+-- comparisons, and later the findings the watchdog tells the owner.
+CREATE TABLE IF NOT EXISTS factory_findings (
+  kind TEXT COLLATE "C" PRIMARY KEY,
+  body TEXT COLLATE "C" NOT NULL,
+  at   TEXT COLLATE "C" NOT NULL
+);

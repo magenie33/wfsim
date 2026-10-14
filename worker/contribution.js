@@ -442,7 +442,7 @@ const ordered = (list, key) => list.filter((e) => e[key] > 0)
 
 /// HOW MANY BROWSERS ARE COMPUTING NOW: those that answered an order within
 /// this long, refused ones aside — a count, never who.
-const COMPUTING_MS = 10 * 60_000;
+export const COMPUTING_MS = 10 * 60_000;
 async function computingNow(env) {
   if (!env.LIBRARY) return 0;
   const from = iso(Date.now() - COMPUTING_MS);
