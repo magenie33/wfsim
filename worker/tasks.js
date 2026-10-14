@@ -37,6 +37,10 @@ export const RENEW_MS = DIAL_DEFAULTS.renew_ms;
 /// (`joinersParted`): at most what an answer on the served engine earns, so
 /// staying on an old engine never pays better than updating.
 export const GRACE_SHARE = 1;
+/// HOW FAR ONE ANSWER MOVES ITS PRODUCER'S MEAN FIGHT (`learnCost`): about the
+/// last sixty answers, so a release that changes what a row costs is followed
+/// within a pack or two.
+export const PRODUCER_MEAN_SHARE = 1 / 60;
 /// …AND PAST THIS LONG FROM THE LEASE another computer may take it too, the
 /// first holder computing on (`lease_prev`): whichever answers first makes it.
 /// Nobody is cut off, and a page that beats but never answers holds nothing.
@@ -172,8 +176,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false }, k) => {
         const id = ids[i + k], due_at = iso(now + due_in_ms), w = waits ? 1 : 0, l = lanes ? JSON.stringify(lanes) : null;
         const q = qs.get(id);
-        if (!q) qs.set(id, { id, verb, request: canon(request), due_at, lanes: l, waits: w });
-        else Object.assign(q, { due_at: due_at < q.due_at ? due_at : q.due_at, waits: Math.max(q.waits, w), lanes: q.lanes ?? l });
+        if (!q) qs.set(id, { id, verb, request: canon(request), due_at, lanes: l, waits: w, producer });
+        else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l });
         ds.set(JSON.stringify([producer, ref]), { producer, ref, question: id, due_at, waits: w, payload: JSON.stringify(payload) });
       });
       // IN KEY ORDER, so two asks writing the same rows take their locks alike.
@@ -182,13 +186,14 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       // that engine however often it is asked again; a new engine tries it anew.
       const reopen = `t.state = 'withdrawn' AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals rw WHERE rw.question = t.id AND rw.engine = ?3::text)`;
       await db.batch([
-        db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits)
-                      SELECT x.id, x.verb, x.request, 'open', x.due_at, ?1::text, x.lanes, x.waits
-                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, verb text, request text, due_at text, lanes text, waits bigint)
+        db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer)
+                      SELECT x.id, x.verb, x.request, 'open', x.due_at, ?1::text, x.lanes, x.waits, x.producer
+                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, verb text, request text, due_at text, lanes text, waits bigint, producer text)
                     ON CONFLICT (id) DO UPDATE SET
                       state = CASE WHEN ${reopen} THEN 'open' ELSE t.state END,
                       opened_at = CASE WHEN ${reopen} THEN excluded.opened_at ELSE t.opened_at END,
                       due_at = CASE WHEN ${reopen} OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
+                      producer = CASE WHEN ${reopen} OR excluded.due_at < t.due_at THEN excluded.producer ELSE t.producer END,
                       waits = CASE WHEN ${reopen} THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
                       lanes = COALESCE(t.lanes, excluded.lanes)`)
           .bind(at, JSON.stringify(sorted(qs, (q) => q.id)), engine || ""),
@@ -198,6 +203,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
                     ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
                       due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
           .bind(at, JSON.stringify(sorted(ds, (d) => `${d.producer}\u0000${d.ref}`))),
+        // A PRODUCER NEVER SEEN starts at the least any has used: no credit banked.
+        db.prepare(`INSERT INTO producer_use (producer, used)
+                      SELECT x.p, COALESCE((SELECT min(used) FROM producer_use), 0) FROM jsonb_array_elements_text((?1::text)::jsonb) AS x(p)
+                    ON CONFLICT (producer) DO NOTHING`)
+          .bind(JSON.stringify([...new Set([...ds.values()].map((d) => d.producer))].sort())),
       ]);
     }
     const { results } = await db.prepare(`SELECT * FROM questions WHERE id IN ${listOf(db, "?")} AND state IN ('fact', 'spot')`)
@@ -225,10 +235,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   }
 
   async function restate(db, id, now) {
-    const left = await db.prepare("SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n FROM demands WHERE question = ? AND state = 'live'")
-      .bind(id).first();
+    const left = await db.prepare(`SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n, (array_agg(producer ORDER BY due_at, producer))[1] AS producer
+        FROM demands WHERE question = ? AND state = 'live'`).bind(id).first();
     if (left.n) {
-      await db.prepare("UPDATE questions SET due_at = ?, waits = ? WHERE id = ?").bind(left.due, left.waits, id).run();
+      await db.prepare("UPDATE questions SET due_at = ?, waits = ?, producer = ? WHERE id = ?").bind(left.due, left.waits, left.producer, id).run();
     } else {
       await db.prepare("UPDATE questions SET state = 'withdrawn', lease = NULL, lease_until = NULL, leased_to = NULL WHERE id = ? AND state = 'open'")
         .bind(id).run();
@@ -243,7 +253,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   async function next(env, w, engine, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), most = w.most ?? 1, ceiling = (await dialsOf(env, now)).row_ceiling_ms;
     for (let tries = 0; tries < 8; tries++) {
-      const q = await db.prepare(eligibleSql(w.official, ceiling)).bind(...eligibleArgs(w, engine, at)).first();
+      const q = await db.prepare(w.official ? eligibleSql(true, ceiling) : fairSql(ceiling)).bind(...eligibleArgs(w, engine, at)).first();
       if (!q) return null;
       // A ROW NOBODY OWES ANY MORE is withdrawn where it is found, and the next
       // one is asked for.
@@ -265,6 +275,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
             AND (SELECT count(*) FROM questions h WHERE h.leased_to = ?4::text AND h.lease_until > ?1::text) < ?7::bigint`)
         .bind(at, lease, iso(now + verbs[q.verb].lease_ms), w.device, q.id, q.state, most).run();
       if (took.meta.changes) {
+        if (!w.official) await charge(db, q);
         for (const d of wanted) {
           const p = producerOf(d.producer);
           if (p.on_lease) await p.on_lease(env, { ...d, payload: JSON.parse(d.payload) }, now);
@@ -293,17 +304,22 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// the queue again and none of it counts.
   /// ON POSTGRES THE PICK SKIPS ROWS ANOTHER PICK HOLDS LOCKED (`SKIP LOCKED`):
   /// two asks at once took the same head rows and deadlocked.
-  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null }, now = Date.now()) {
+  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null, producer = null }, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), lease = newLease(), ceiling = (await dialsOf(env, now)).row_ceiling_ms;
     const [taken, ds] = await db.batch([
-      db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?9::text, lease_until = ?10::text, leased_to = ?11::text, leased_at = ?1::text
+      // CHARGED IN THE SAME STATEMENT: a pack costs the database one call.
+      db.prepare(`WITH taken AS (UPDATE questions SET ${SUPERSEDE}, lease = ?9::text, lease_until = ?10::text, leased_to = ?11::text, leased_at = ?1::text
           WHERE id IN (SELECT q.id ${eligibleFrom(false, ceiling)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
             AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb)))
             AND (?16::text IS NULL OR EXISTS (SELECT 1 FROM answers s WHERE s.question = q.id AND s.engine = ?16::text AND s.void = 0
-                 AND s.owner <> ?6::text AND (?7::text = '' OR s.net <> ?7::text))) ${ORDER} LIMIT ?13::bigint FOR UPDATE OF q SKIP LOCKED)
+                 AND s.owner <> ?6::text AND (?7::text = '' OR s.net <> ?7::text)))
+            AND (?17::text IS NULL OR q.producer = ?17::text) ${ORDER} LIMIT ?13::bigint FOR UPDATE OF q SKIP LOCKED)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11::text AND h.lease_until > ?1::text AND h.lease <> ?9::text) < ?14::bigint
-          RETURNING id, verb, request, due_at`)
-        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most, exclude ? JSON.stringify(exclude) : null, join),
+          RETURNING id, verb, request, due_at, producer),
+        charged AS (UPDATE producer_use u SET used = u.used + u.answer_ms * c.n / u.weight
+          FROM (SELECT producer, count(*) AS n FROM taken GROUP BY producer) c WHERE u.producer = c.producer)
+        SELECT * FROM taken`)
+        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most, exclude ? JSON.stringify(exclude) : null, join, producer),
       db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
           WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live'`).bind(lease, w.device),
     ]);
@@ -382,7 +398,39 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// caller to read in its own batch: an ask is then one round trip, not five.
   const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
     "UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?").bind(device, iso(now));
-  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(eligibleSql(w.official, d.row_ceiling_ms)).bind(...eligibleArgs(w, engine, iso(now)));
+  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(w.official ? eligibleSql(true, d.row_ceiling_ms) : fairSql(d.row_ceiling_ms))
+    .bind(...eligibleArgs(w, engine, iso(now)));
+
+  /// WHAT A HAND-OUT COSTS ITS PRODUCER: the question at its producer's mean
+  /// fight, over its weight (docs/BOARD.md §"Fair share between producers"); a
+  /// pack is charged in the statement that leases it (`nextPack`).
+  async function charge(db, q) {
+    await db.prepare("UPDATE producer_use SET used = used + answer_ms / weight WHERE producer = ?").bind(q.producer || "").run();
+  }
+  /// …AND WHAT ITS ANSWERS COST, folded into each producer's mean: `k` answers
+  /// move it as `k` folds of `PRODUCER_MEAN_SHARE` would. A statement for the
+  /// answers' own batch, or null.
+  function learnCost(db, items) {
+    const by = {};
+    for (const { q, a } of items) {
+      if (!Number.isFinite(a.compute_ms) || a.compute_ms <= 0) continue;
+      const b = by[q.producer || ""] ||= { ms: 0, n: 0 };
+      b.ms += a.compute_ms; b.n += 1;
+    }
+    const rows = Object.entries(by).sort().map(([p, b]) => ({ p, mean: b.ms / b.n, keep: (1 - PRODUCER_MEAN_SHARE) ** b.n }));
+    if (!rows.length) return null;
+    return db.prepare(`UPDATE producer_use u SET answer_ms = CASE WHEN u.answer_ms = 0 THEN x.mean ELSE u.answer_ms * x.keep + x.mean * (1 - x.keep) END
+        FROM jsonb_to_recordset((?1::text)::jsonb) AS x(p text, mean double precision, keep double precision) WHERE u.producer = x.p`)
+      .bind(JSON.stringify(rows));
+  }
+  /// A PRODUCER WITH NOTHING OPEN is lifted to the least any producer with open
+  /// work has used, so it comes back level and never with a share banked while
+  /// idle. Run by the watchdog's cron.
+  async function liftIdle(env) {
+    await env.LIBRARY.prepare(`UPDATE producer_use u SET used = m.v
+        FROM (SELECT min(a.used) AS v FROM producer_use a WHERE EXISTS (SELECT 1 FROM questions q WHERE q.state = 'open' AND q.producer = a.producer)) m
+        WHERE m.v IS NOT NULL AND u.used < m.v AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.state = 'open' AND q.producer = u.producer)`).run();
+  }
   /// WHETHER A HEAD GOES IN A PACK, or alone (`next`).
   const packable = (q) => !q.waits && !!(verbs[q.verb] || {}).pack;
 
@@ -501,7 +549,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
         a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
-    await db.batch(writes);
+    const learnt = official ? null : learnCost(db, items);
+    await db.batch(learnt ? [...writes, learnt] : writes);
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
       // §"Contribution") — a statistic, so each on its own and outside the answers'
@@ -938,7 +987,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, renewMany, release, releaseAll, releaseAllOf, releaseUnnamed,
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, liftIdle, renew, renewRow, renewMany, release, releaseAll, releaseAllOf, releaseUnnamed,
     answer, answerPack, answerOfficial, refuseRows, claim, refuse, settle, audit, redeliver, repay };
 }
 
@@ -976,7 +1025,21 @@ export const askingIds = (since, now) => `(SELECT id FROM verifiers WHERE asked_
   UNION SELECT leased_to FROM questions WHERE leased_to IS NOT NULL AND lease_until > ?${now}::text)`;
 const ORDER = "ORDER BY q.waits DESC, q.due_at, q.id";
 function eligibleSql(official, ceilingMs) {
-  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${eligibleFrom(official, ceilingMs)} ${ORDER} LIMIT 1`;
+  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer ${eligibleFrom(official, ceilingMs)} ${ORDER} LIMIT 1`;
+}
+/// A VOLUNTEER'S PICK (docs/BOARD.md §"Fair share between producers"): each producer's head
+/// among what this witness may answer, one index probe each, and of those the
+/// waited-on first, then the producer that has used least. Where no producer's
+/// row finds one, the plain order does, so nothing eligible is ever left unhanded.
+function fairSql(ceilingMs) {
+  const cols = "q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer";
+  return `SELECT id, verb, request, state, due_at, waits, producer FROM (
+      (SELECT 0 AS fallback, x.* FROM producer_use u CROSS JOIN LATERAL (
+         SELECT ${cols} ${eligibleFrom(false, ceilingMs)} AND q.producer = u.producer ${ORDER} LIMIT 1) x
+       ORDER BY x.waits DESC, u.used, x.due_at, x.id LIMIT 1)
+      UNION ALL
+      (SELECT 1 AS fallback, ${cols} ${eligibleFrom(false, ceilingMs)} ${ORDER} LIMIT 1)
+    ) z ORDER BY fallback LIMIT 1`;
 }
 function eligibleArgs(w, engine, at) {
   return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null];

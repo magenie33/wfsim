@@ -633,12 +633,12 @@ appraisal"); the official machines are witnesses of the same factory
 (`/api/tasks/official/*`, the factory's secret), taking what is past its
 deadline and what only they may settle.
 
-- **ORDER.** A question a person waits on now first, then earliest deadline
-  first: a chat's in two minutes, a new build's row in six hours, a survey shape
-  in a day, a refresh in four, a rescore's or a sweep's in a week (`DEADLINE_MS` — the dispatch
-  policy, stated once). A deadline alone is not enough: a survey's thousand
-  shapes are a thousand deadlines passed together, and by deadline alone a
-  person in a chat would wait behind every one.
+- **ORDER** (§"Fair share between producers"). A question a person waits
+  on now first; then the PRODUCER that has used the least compute, among those
+  with a question this witness may answer; inside it, earliest deadline first:
+  a chat's in two minutes, a new build's row in six hours, a survey shape in a
+  day, a refresh in four, a rescore's or a sweep's in a week (`DEADLINE_MS` —
+  the dispatch policy, stated once).
 - **ELIGIBILITY IS ONE QUERY.** What a witness may answer — not its own, its
   owner's other devices', nor its network's, with the cores a waited-on
   question needs at its age — is decided in the SQL that picks it, never by a
@@ -815,6 +815,35 @@ shadow checks itself against it two ways, each a finding:
 
 Settling leaves the request path (`settle_queue`, empty until then) only after
 a week of both findings without a difference. `check_settler` holds this.
+
+### Fair share between producers
+
+**EARLIEST DEADLINE FIRST ALONE COLLAPSES UNDER OVERLOAD**, and this work never
+runs out: the batch due first takes every computer and every other producer
+misses its deadline (a survey's thousands of shapes, due together, hold the
+board's rows at zero for hours). So deadlines order work INSIDE a producer and
+compute is shared BETWEEN producers, as Linux's CFS shares a CPU and BOINC a
+volunteer's machine among projects — no amount of compute is set for any
+problem, and a new kind of task is a new producer that takes its share.
+
+- **`producer_use`**, a row a producer: `used`, the compute charged to it,
+  over its `weight` (1 for all); `answer_ms`, the running mean of its answers'
+  fights (`PRODUCER_MEAN_SHARE`, about the last sixty).
+- **A HAND-OUT IS CHARGED** each question's `answer_ms`, in the statement
+  that leases it: an expensive survey shape counts as dozens of board rows, so
+  shares are of compute, not of questions. A lease nobody answers was still
+  handed out, and stays charged.
+- **THE PICK** (`fairSql`): each producer's head among what this witness may
+  answer, one probe each on `(state, producer, waits DESC, due_at, id)`; of
+  those, the waited-on first, then the least `used`. A pack is one producer's
+  rows. Where no producer's row finds a question the plain order does, so
+  liveness never rests on `producer_use`.
+- **NO SHARE IS BANKED.** A new producer starts at the least any has used, and
+  the watchdog lifts one with nothing open to the least used among those with
+  open work (`liftIdle`), so one that comes back after a quiet day is level,
+  not owed a day.
+- `questions.producer` is the producer of its earliest-due live demand, kept
+  where `due_at` is (`demandAll`, `restate`).
 
 ## Compute orders
 

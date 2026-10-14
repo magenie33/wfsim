@@ -306,3 +306,16 @@ CREATE TABLE IF NOT EXISTS refusal_withdrawals (
   owners   BIGINT NOT NULL,
   at       TEXT COLLATE "C" NOT NULL
 );
+-- FAIR SHARE BETWEEN PRODUCERS (worker/tasks.js §"Order", docs/BOARD.md
+-- §"Fair share between producers"): a question's PRODUCER is its earliest-due
+-- live demand's, kept where `due_at` is; each producer's head is one probe.
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS producer TEXT COLLATE "C" NOT NULL DEFAULT '';
+CREATE INDEX IF NOT EXISTS questions_by_producer ON questions (state, producer, waits DESC, due_at, id);
+-- …AND WHAT EACH HAS USED: compute charged at hand-out (`used`, ms over
+-- `weight`), at `answer_ms`, the running mean of its answers' fights.
+CREATE TABLE IF NOT EXISTS producer_use (
+  producer  TEXT COLLATE "C" PRIMARY KEY,
+  used      DOUBLE PRECISION NOT NULL DEFAULT 0,
+  answer_ms DOUBLE PRECISION NOT NULL DEFAULT 0,
+  weight    DOUBLE PRECISION NOT NULL DEFAULT 1
+);

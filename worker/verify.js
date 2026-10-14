@@ -290,7 +290,8 @@ async function work(request, env) {
   const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(d.pack_ms / pace) : d.pack_first);
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return none;
   const n = single ? 1 : packSize(pace, open, asking, d), lease_ms = single ? d.lease_ms : d.pack_lease_ms;
-  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? d.packs_held : 1, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null }, now);
+  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? d.packs_held : 1, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null,
+    producer: first && f.packable(first) ? first.producer : null }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
     const t = tasks[0];

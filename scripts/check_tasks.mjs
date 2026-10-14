@@ -584,6 +584,47 @@ console.log("\nan engine whose code moved joins the served one by its result, an
   check("...and a different result does not join, whatever its work", (await state(differs)) === "open");
 }
 
+console.log("\nfair share between producers: the one that has used least, by compute, earliest deadline inside it");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, r: PRODUCERS.p }, random: () => 1 });
+  let k = 0;
+  const who = () => { k++; return { device: `f${k}`, owner: `f${k}`, siblings: [`f${k}`], net: `fn${k}`, lanes: 8 }; };
+  const ask = (producer, ref, due, extra = {}) => f.demand(env, { producer, ref, verb: "simulate", request: { ref }, due_in_ms: due, ...extra }, "e1", NOW);
+  // p's rows are all due before any of q's: the plain order hands p every one first.
+  for (let i = 0; i < 6; i++) await ask("p", `p${i}`, 60_000 + i);
+  for (let i = 0; i < 6; i++) await ask("q", `q${i}`, 3_600_000 + i);
+  const use = async (p, used, ms) => db.run("UPDATE producer_use SET used = ?, answer_ms = ? WHERE producer = ?", used, ms, p);
+  await use("p", 0, 1000); await use("q", 0, 1000);
+  const order = async (n) => { const out = []; for (let i = 0; i < n; i++) { const t = await f.next(env, who(), "e1", NOW); out.push(t && t.demands[0].producer); } return out.join(""); };
+  check("two producers of equal cost take turns, whoever is due first", (await order(4)) === "pqpq");
+  await use("p", 0, 3000); await use("q", 0, 1000);
+  check("...and by compute: one that costs three times as much is handed a third as often", (await order(4)) === "pqqq");
+  const waited = await ask("q", "waited", 7_200_000, { waits: true });
+  await use("q", 1e9, 1000);
+  const t = await f.next(env, who(), "e1", NOW);
+  check("a question somebody waits on goes first, whatever its producer has used", t && t.question === waited);
+  await ask("r", "r0", 7_200_000);
+  const { used: least } = await db.get("SELECT min(used) AS used FROM producer_use WHERE producer IN ('p', 'q')");
+  check("a producer never seen starts at the least any has used", (await db.get("SELECT used FROM producer_use WHERE producer = 'r'")).used === least);
+  await db.run("UPDATE questions SET state = 'withdrawn' WHERE producer = 'r'");
+  await db.run("UPDATE producer_use SET used = 0 WHERE producer = 'r'");
+  await f.liftIdle(env);
+  check("...and one with nothing open is lifted to it, so it never comes back with a share banked",
+    (await db.get("SELECT used FROM producer_use WHERE producer = 'r'")).used === (await db.get("SELECT min(used) AS used FROM producer_use WHERE producer IN ('p', 'q')")).used);
+  await use("p", 0, 0);
+  const w = who(), pk = await f.nextPack(env, w, "e1", { n: 9, lease_ms: 60_000, producer: "p" }, NOW);
+  check("a pack holds one producer's rows", pk && pk.questions.every((x) => x.demands.every((d) => d.producer === "p")), JSON.stringify(pk && pk.questions.map((x) => x.demands[0].producer)));
+  await f.answerPack(env, w, { lease: pk.lease, engine: "e1", answers: pk.questions.slice(0, 2).map((x) => ({ question: x.question, result: { score: 1 }, work: 1, compute_ms: 600 })), done: true }, NOW);
+  check("...and its answers' fights are its producer's mean, the first ones whole",
+    Math.abs((await db.get("SELECT answer_ms FROM producer_use WHERE producer = 'p'")).answer_ms - 600) < 1e-9);
+  await db.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at, producer) VALUES ('stray', 'simulate', '{}', 'open', ?, ?, 'nobody')", iso(NOW - 1), iso(NOW));
+  await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'stray', 'stray', 'live', ?, ?)", iso(NOW), iso(NOW - 1));
+  await db.run("UPDATE questions SET state = 'withdrawn' WHERE id <> 'stray'");
+  const stray = await f.next(env, who(), "e1", NOW);
+  check("a question whose producer has no row is still handed out", stray && stray.question === "stray");
+}
+
 console.log("\nrefusals paused");
 {
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];
@@ -679,14 +720,15 @@ console.log("many asks in two statements a chunk leave every table as one write 
     for (const a of asks) ids.push(await questionId(a.verb, a.request));
     for (const [k, { producer, ref, request, due_in_ms, payload = {}, lanes = null, waits = false }] of asks.entries()) {
       const due = iso(now + due_in_ms);
-      await db.run(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits) VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
+      await db.run(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer) VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)
           ON CONFLICT (id) DO UPDATE SET
             state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
             opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
             due_at = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
+            producer = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.producer ELSE t.producer END,
             waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
             lanes = COALESCE(t.lanes, excluded.lanes)`,
-        ids[k], asks[k].verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0);
+        ids[k], asks[k].verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0, producer);
       await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
           ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,

@@ -213,6 +213,7 @@ export async function watchdog(env, now = Date.now()) {
   };
   await facts().redeliver(env, now);
   await facts().repay(env, now);
+  await facts().liftIdle(env);
   const { engine } = await servedRelease(env);
   const found = await facts().audit(env, now, engine);
   // THE SETTLER'S FAIR TABLE AGAINST THIS WORKER'S, while it runs in shadow
