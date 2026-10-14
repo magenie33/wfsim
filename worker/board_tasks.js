@@ -21,15 +21,15 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 
 /// A ROW'S KEY, the demand's `ref`: one per (build, ruler, mode), whichever batch asked.
 export const rowRef = (identity, ruler, mode) => `${identity}|${ruler}|${mode}`;
-const owedSql = "SELECT 1 AS x FROM queue WHERE build_id = ? AND ruler = ? AND mode = ? LIMIT 1";
-
 const boardProducer = {
-  // A ROW NOBODY OWES ANY MORE — the scorer measured it — is withdrawn where it is found.
-  still_wanted: async (env, d) => !!(await env.LIBRARY.prepare(owedSql).bind(d.payload.identity, d.payload.ruler, d.payload.mode).first()),
+  // A ROW NOBODY OWES ANY MORE — the scorer measured it — is withdrawn where it
+  // is found: worker/pg/sync.sql `board_owed`, which the sync's procedure asks too.
+  still_wanted: async (env, d) => !!(await env.LIBRARY.prepare("SELECT board_owed(?::text, ?::text, ?::text) AS x")
+    .bind(d.payload.identity, d.payload.ruler, d.payload.mode).first()).x,
   // …A WHOLE PACK'S ROWS IN ONE READ: the refs still owed.
   wanted_many: async (env, ds) => {
     const { results } = await env.LIBRARY.prepare(`SELECT k ->> 3 AS ref FROM jsonb_array_elements((?::text)::jsonb) k
-        WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = k ->> 0 AND q.ruler = k ->> 1 AND q.mode = k ->> 2)`)
+        WHERE board_owed(k ->> 0, k ->> 1, k ->> 2)`)
       .bind(JSON.stringify(ds.map((d) => [d.payload.identity, d.payload.ruler, d.payload.mode, d.ref]))).all();
     return new Set(results.map((r) => r.ref));
   },

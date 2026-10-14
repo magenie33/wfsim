@@ -23,7 +23,6 @@ import { facts, workOf, packTaskOf, notePause } from "./factory.js";
 import { iso } from "./instant.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
 import { devicePointsOf } from "./contribution.js";
-import { askingIds } from "./tasks.js";
 import { json, read, day, VERIFIER_ID, ENGINE_ID, LEASE_ID, QUESTION_ID, METRIC_ID, ISO, unrecognised, servedRelease, graceOf,
   netOf, viaRelay, askedOf, asksOf, countsOf, packSize, FAIR_SCAN, PROTOCOL, protocolsSaid } from "./verify.js";
 
@@ -199,10 +198,7 @@ async function sync(request, env) {
     return say({ ...base, pack: null, work: workOf(leased), next_ms: next - now });
   }
   const per = { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max };
-  const fair = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x)
-      SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
-        AND (lease_until IS NULL OR lease_until < ?1::text)
-        LIMIT LEAST(?2::bigint, GREATEST(1, (SELECT n FROM a)) * ?4::bigint)) o) AS open, (SELECT n FROM a) AS asking`)
+  const fair = await db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
     .bind(at, FAIR_SCAN, iso(now - 2 * d.asked_every_ms), Math.max(d.pack8_max, pace ? Math.round(want / pace) : d.pack_first)).first();
   const { open, asking } = fair;
   if (d.compute_cap && asking > d.compute_cap && !(me.last_at && me.last_at > iso(now - 600_000))) return idle({ busy: true });

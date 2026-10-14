@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS questions (
   -- 1 when its answers were found not deterministic: settled, nobody refused, said aloud.
   odd              BIGINT NOT NULL DEFAULT 0
 );
--- IN THE ORDER A WITNESS IS HANDED WORK (worker/tasks.js `eligibleSql`).
+-- IN THE ORDER A WITNESS IS HANDED WORK (worker/pg/sync.sql `factory_head`).
 CREATE INDEX IF NOT EXISTS questions_order ON questions (state, waits DESC, due_at, id);
 CREATE INDEX IF NOT EXISTS questions_holder ON questions (leased_to);
 CREATE INDEX IF NOT EXISTS questions_lease ON questions (lease);

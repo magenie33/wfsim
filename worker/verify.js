@@ -27,7 +27,7 @@
 // asked because the code that answers it is the current code, and a tab left
 // open on an older one would answer it with the old arithmetic.
 
-import { witnessOf, askingIds } from "./tasks.js";
+import { witnessOf } from "./tasks.js";
 import { dialsOf, clientDials, DIAL_DEFAULTS, DIALS } from "./dials.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf, packTaskOf, notePause } from "./factory.js";
@@ -256,11 +256,7 @@ async function work(request, env) {
     db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
     // OPEN IS COUNTED ONLY AS FAR AS IT CAN MATTER: past `asking` times the most
     // either use below compares it to, `packSize` and `short` read the same.
-    db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x)
-                SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
-                  AND (lease_until IS NULL OR lease_until < ?1::text)
-                  LIMIT LEAST(?2::bigint, GREATEST(1, (SELECT n FROM a)) * ?4::bigint)) o) AS open,
-                (SELECT n FROM a) AS asking`)
+    db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
       .bind(at, FAIR_SCAN, iso(now - 2 * d.asked_every_ms), Math.max(d.pack_max, pace ? Math.round(d.pack_ms / pace) : d.pack_first)),
     f.headOf(env, w, engine, now, d),
     asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),

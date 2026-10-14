@@ -20,7 +20,9 @@ const instant = (name) => /(^at|_at|_until)$/.test(name);
 
 function schema(path) {
   const s = read(path);
-  // A SCHEMA THIS PARSER READS NO COLUMN OF would pass in silence.
+  // A SCHEMA THIS PARSER READS NO COLUMN OF would pass in silence; a file of
+  // functions alone (worker/pg/sync.sql) has none to read.
+  if (!/CREATE TABLE/.test(s)) return;
   let columns = 0;
   for (const t of s.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([\s\S]*?)\n\);/g)) {
     for (const line of t[2].split("\n")) {

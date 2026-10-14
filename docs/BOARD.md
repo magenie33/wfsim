@@ -689,7 +689,7 @@ through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
 | database | holds | worker binding | DDL |
 | --- | --- | --- | --- |
-| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_told, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql` |
+| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_told, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
 | `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
 `withDatabases` opens each from its binding; every query is Postgres text.
@@ -708,6 +708,19 @@ trigger.
   `testDb("accounts")`) behind the statement API the worker gets;
   `check_pg_scripts` runs the pipeline's scripts on Postgres.
 
+#### The sync in the database
+
+**WHAT A WITNESS MAY TAKE, AND IN WHAT ORDER, IS STATED ONCE, IN SQL**
+(`worker/pg/sync.sql`): `factory_eligible` (what a witness may answer),
+`factory_head` (the head of its order, fair between producers),
+`factory_take` and `factory_lease_pack` (a pack picked, leased and charged),
+`factory_asking`, `factory_open`, `factory_restate`, `factory_takeable`,
+`factory_supersede` and the board's `board_owed`. Every caller in
+`worker/tasks.js`, `worker/verify.js` and `worker/sync.js` calls them, so no
+path can hand out by a rule of its own. They are SQL functions the planner
+inlines, so each is the query it replaces. **THE WORKER NEEDS THEM**: apply
+`sync.sql` before a deploy that calls a function it adds.
+
 #### Setting a server up
 
 The databases, their owners, the DDL — applied as each file's header says — and
@@ -718,6 +731,7 @@ sudo -u postgres psql -c "CREATE ROLE wfsim LOGIN PASSWORD '…'" -c "CREATE DAT
 sudo -u postgres psql -c "CREATE ROLE wfsim_accounts LOGIN PASSWORD '…'" -c "CREATE DATABASE wfsim_accounts OWNER wfsim_accounts"
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/schema.sql
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/library.sql
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/sync.sql
 sudo -u postgres psql -d wfsim_accounts -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim_accounts' -f worker/pg/accounts.sql
 sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '…'" \
   -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, scores, batches, queue TO wfsim_pipeline" \
