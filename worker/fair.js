@@ -7,6 +7,7 @@
 // ask with probability 1 − target / received; while work is plentiful nothing
 // here runs. docs/BOARD.md §"Fair share while work is short".
 import { iso } from "./instant.js";
+import { askingIds } from "./tasks.js";
 
 /// HOW MUCH OF THE HAND-OUT IS EQUAL PER ACCOUNT, the rest by cores asking.
 export const FAIR_ALPHA = 0.3;
@@ -63,11 +64,11 @@ const median = (xs) => {
 
 export async function tableOf(env, engine, now) {
   const db = env.LIBRARY;
-  // ON OVER THE SAME WINDOW AS WHAT WAS RECEIVED: a machine deep in a pack asks
-  // only as it ends, and counting its answers but not its capacity would read
-  // a big fleet as twice its share.
-  const { results: asking } = await db.prepare("SELECT id FROM verifiers WHERE asked_at > ?")
-    .bind(iso(now - FAIR_WINDOW_MS)).all();
+  // ON OVER THE SAME WINDOW AS WHAT WAS RECEIVED, or holding a lease now: a
+  // machine deep in a pack asks only as it ends, and counting its answers but
+  // not its capacity would read a big fleet as twice its share.
+  const { results: asking } = await db.prepare(`SELECT id FROM ${askingIds(1, 2)} x`)
+    .bind(iso(now - FAIR_WINDOW_MS), iso(now)).all();
   const owned = new Map(), created = new Map();
   if (env.ACCOUNTS) {
     const { results } = await env.ACCOUNTS.prepare(`SELECT d.verifier, d.account, a.created_at FROM devices d JOIN accounts a ON a.id = d.account

@@ -8,7 +8,7 @@
 // writes only its own tables and compares its judgement with the request path's.
 import { iso } from "./instant.js";
 import { tableOf, FAIR_KEEP_MS } from "./fair.js";
-import { independent } from "./tasks.js";
+import { independent, askingIds } from "./tasks.js";
 import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
 
@@ -25,7 +25,7 @@ export async function snapshotTick(env, { engine = null, release = null, commit 
       (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
          AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT ?2::bigint) o) AS open,
       (SELECT count(*) FROM questions WHERE state = 'open' AND waits > 0) AS urgent,
-      (SELECT count(*) FROM verifiers WHERE asked_at > ?3::text) AS asking,
+      (SELECT count(*) FROM ${askingIds(3, 1)} x) AS asking,
       (SELECT count(*) FROM verifiers WHERE banned = 0 AND last_at >= ?4::text) AS computing,
       (SELECT count(*) FROM queue) AS queue_rows,
       (SELECT count(*) FROM settle_queue) AS settle_queue_rows`)

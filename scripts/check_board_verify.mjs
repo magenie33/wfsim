@@ -12,7 +12,7 @@
 // (scripts/order_credit.mjs), the queue's ask (scripts/ship_queue.sh) and the
 // orders open before the factory (`/api/board/adopt`) are held here too.
 //   node scripts/check_board_verify.mjs
-import { verifyRoute, LEASE_MS, PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, PACK_LEASE_MS } from "../worker/verify.js";
+import { verifyRoute, LEASE_MS, PACK_PROTOCOL as PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, PACK_LEASE_MS } from "../worker/verify.js";
 import { RENEW_MS } from "../worker/tasks.js";
 import { setDial, forgetDials } from "../worker/dials.js";
 import { costOf } from "../worker/factory_calls.js";
@@ -367,7 +367,8 @@ console.log("\norders open before the factory");
   await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", O);
   await work(O, { engine: "old" });
   const v = await L.get("SELECT asked_at, asked_engine, asked_lanes FROM verifiers WHERE id = ?", O);
-  check("a page's ask for work is recorded, with its engine and its cores", v.asked_at && v.asked_engine === "old" && v.asked_lanes === 4, JSON.stringify(v));
+  // PROTOCOL 7 IS NOW THE ONE BEFORE (8 is `/api/board/sync`), so it is marked too.
+  check("a page's ask for work is recorded, with its engine and its cores", v.asked_at && v.asked_engine === `old/p${PROTOCOL}` && v.asked_lanes === 4, JSON.stringify(v));
   await work(O, { engine: "old", protocol: PROTOCOL - 1 });
   check("...and an older protocol is marked on it", (await L.get("SELECT asked_engine FROM verifiers WHERE id = ?", O)).asked_engine === `old/p${PROTOCOL - 1}`);
   await free();

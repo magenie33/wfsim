@@ -27,7 +27,7 @@
 // asked because the code that answers it is the current code, and a tab left
 // open on an older one would answer it with the old arithmetic.
 
-import { witnessOf } from "./tasks.js";
+import { witnessOf, askingIds } from "./tasks.js";
 import { dialsOf, clientDials, DIAL_DEFAULTS, DIALS } from "./dials.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf, packTaskOf, notePause } from "./factory.js";
@@ -62,14 +62,20 @@ export const REFUSING = false;
 /// WHAT A PAGE THAT CAN FILL AN ORDER SENDS. A tab opened before orders existed
 /// asks too, takes an order, and answers in a shape this refuses — holding the
 /// order for a lease's length — so a page that does not say this gets nothing.
-export const PROTOCOL = 7;
-/// THE PROTOCOL BEFORE IS SERVED TOO, so a release stops no client: a page
+export const PROTOCOL = 8;
+/// …PROTOCOL 7 IS `/api/board/work` and `/api/board/answers` (this file); 8 is
+/// one `/api/board/sync` (worker/sync.js). 6 is 7 with packs of one.
+export const PACK_PROTOCOL = 7;
+/// THE PROTOCOLS BEFORE ARE SERVED TOO, so a release stops no client: a page
 /// reloads into the new one, but a program somebody else wrote (simfleet) runs
-/// on until its author ships. Dropped once nobody has asked with it for a week
-/// (`verifiers.asked_engine` marks it).
-export const PROTOCOLS_SERVED = new Set([PROTOCOL, 6]);
+/// on until its author ships. Each is dropped once nobody has asked with it for
+/// a week (`verifiers.asked_engine` marks it).
+export const PROTOCOLS_SERVED = new Set([PROTOCOL, PACK_PROTOCOL, 6]);
 
-const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
+/// WHAT EVERY HAND-OUT SAYS OF THE PROTOCOLS, as `/release.json` does.
+export const protocolsSaid = () => ({ protocol: PROTOCOL, protocols_served: [...PROTOCOLS_SERVED] });
+
+export const VERIFIER_ID = /^[a-z0-9]{16,40}$/;
 /// A CLIENT THE SITE KNOWS makes its id as the page does — 24 hex
 /// (69-board-work.js `verifierId`); simfleet, a community client, does too. Any
 /// other is handed no work and its answers are not taken, and is told why;
@@ -82,17 +88,17 @@ const UNRECOGNISED = "这个客户端不是 WFSim 认可的客户端，已暂停
   + " Contribution already earned is kept.";
 export const unrecognised = (id) => (RECOGNISED_ID.test(id || "") ? null
   : json({ ok: false, error: "unrecognised_client", message: UNRECOGNISED }, 403));
-const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
-const LEASE_ID = /^[a-f0-9]{32}$/;
-const QUESTION_ID = /^[a-f0-9]{32}$/;
-const METRIC_ID = /^[a-z_]{1,24}$/;
-const ISO = /^\d{4}-\d\d-\d\dT[\d:.]+Z$/;
+export const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
+export const LEASE_ID = /^[a-f0-9]{32}$/;
+export const QUESTION_ID = /^[a-f0-9]{32}$/;
+export const METRIC_ID = /^[a-z_]{1,24}$/;
+export const ISO = /^\d{4}-\d\d-\d\dT[\d:.]+Z$/;
 
-const json = (body, status = 200) => new Response(JSON.stringify(body), {
+export const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
-const day = () => new Date().toISOString().slice(0, 10);
+export const day = () => new Date().toISOString().slice(0, 10);
 
-async function read(request, max = 2048) {
+export async function read(request, max = 2048) {
   if (request.method !== "POST") return { err: json({ ok: false, error: "POST only" }, 405) };
   const raw = await request.text();
   if (raw.length > max) return { err: json({ ok: false, error: "payload too large" }, 400) };
@@ -178,7 +184,7 @@ export const PACKS_HELD = DIAL_DEFAULTS.packs_held;
 /// FAIR SHARE: while the open questions are few, a pack is at most their number
 /// over the computers asking — the last rows of a batch go to many computers at
 /// once, never to one fast one while the rest wait. Counted up to this many.
-const FAIR_SCAN = 4000;
+export const FAIR_SCAN = 4000;
 export function packSize(pace_ms, open, asking, d = DIAL_DEFAULTS) {
   const byPace = pace_ms ? Math.round(d.pack_ms / pace_ms) : d.pack_first;
   return Math.max(1, Math.min(d.pack_max, byPace, Math.floor(open / Math.max(1, asking))));
@@ -200,13 +206,14 @@ async function work(request, env) {
   // having written nothing.
   if (env.FACTORY_PAUSED === "1") { await notePause(env, Date.now()); return json({ ok: true, work: null, pack: null, busy: true, paused: true }); }
   const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier, d = await dialsOf(env, now);
-  // EVERY REPLY CARRIES THE DIALS A CLIENT READS, so none hard-codes them.
-  const say = (body, status) => json({ ...body, dials: clientDials(d) }, status);
+  // EVERY REPLY CARRIES THE DIALS A CLIENT READS, so none hard-codes them, and
+  // the protocols served, so a client learns a newer one exists.
+  const say = (body, status) => json({ ...body, dials: clientDials(d), ...protocolsSaid() }, status);
   const asked = askedOf(db, b, now, d);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
   if (!PROTOCOLS_SERVED.has(b.protocol)) { await asked.run(); return say({ ok: true, work: null, pack: null, stale: true }); }
-  const single = b.protocol !== PROTOCOL;
+  const single = b.protocol < PACK_PROTOCOL;
   const served = await servedRelease(env), { release } = served;
   if (!served.engine) { await asked.run(); return say({ ok: true, work: null, pack: null }); }
   // AN OLDER ENGINE IS TOLD IT IS STALE — unless it is still accepted
@@ -249,7 +256,7 @@ async function work(request, env) {
     db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
     // OPEN IS COUNTED ONLY AS FAR AS IT CAN MATTER: past `asking` times the most
     // either use below compares it to, `packSize` and `short` read the same.
-    db.prepare(`WITH a AS (SELECT count(*) AS n FROM verifiers WHERE asked_at > ?3::text)
+    db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x)
                 SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
                   AND (lease_until IS NULL OR lease_until < ?1::text)
                   LIMIT LEAST(?2::bigint, GREATEST(1, (SELECT n FROM a)) * ?4::bigint)) o) AS open,
@@ -315,7 +322,7 @@ export function idleOf(list, now) {
   return out;
 }
 const HOUR = /^\d{4}-\d\d-\d\dT\d\d$/;
-function asksOf(db, id, ahead, idle, now, relayed = false) {
+export function asksOf(db, id, ahead, idle, now, relayed = false) {
   const rows = idleOf(idle, now), hour = iso(now).slice(0, 13);
   const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, relayed: 0, ...x }]));
   if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, relay_failed: 0, direct_failed: 0, ...all.get(hour), seen: 1, relayed: relayed ? 1 : 0 });
@@ -334,7 +341,7 @@ function asksOf(db, id, ahead, idle, now, relayed = false) {
 /// free cores kept, which tells an idle page from a closed one — written at
 /// most once a minute, or a page asking every ten seconds is a write each time.
 export const ASKED_EVERY_MS = DIAL_DEFAULTS.asked_every_ms;
-function askedOf(db, b, now, d = DIAL_DEFAULTS) {
+export function askedOf(db, b, now, d = DIAL_DEFAULTS) {
   const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
   const lanes = b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
   return db.prepare(`UPDATE verifiers SET asked_at = ?1::text, asked_engine = ?2::text, asked_lanes = coalesce(?3::bigint, asked_lanes)

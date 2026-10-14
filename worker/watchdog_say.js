@@ -26,6 +26,12 @@ function describe(f, now) {
       `${f.questions} 个已过期的 ${f.producer} 题半小时内一个回答都没有，同时有 ${f.witnesses_active} 台机器在干别的活（最早到期已 ${fmtHours(hoursAgo(f.oldest_due, now))}）。` +
       `\n异常：这类题没被派给任何人。叫 agent 查派发。`];
   }
+  if (f.kind === "refused_rows") {
+    const ids = f.sample.map((s) => s.question).join("，");
+    return ["act", "客户端引擎拒绝计算的题已撤回",
+      `${f.questions} 个题被多个不同的人报告"引擎拒绝"（/api/board/order 返回 ok:false），已自动撤回。例：${ids}。` +
+      `\n异常：有不合准入的配装进了队列。叫 agent 查是哪条排队路径放进来的。`];
+  }
   if (f.kind === "nondeterministic") {
     return ["act", "结果不确定的题",
       `${f.questions} 个题：要么几台机器各给一个不同答案，要么 24 小时内官方结算后发现没有志愿者答对。` +

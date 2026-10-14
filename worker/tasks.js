@@ -167,17 +167,20 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       });
       // IN KEY ORDER, so two asks writing the same rows take their locks alike.
       const sorted = (m, key) => [...m.values()].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
+      // A QUESTION THE CLIENTS' ENGINE REFUSED (`refuseRows`) stays withdrawn on
+      // that engine however often it is asked again; a new engine tries it anew.
+      const reopen = `t.state = 'withdrawn' AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals rw WHERE rw.question = t.id AND rw.engine = ?3::text)`;
       await db.batch([
         db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits)
                       SELECT x.id, x.verb, x.request, 'open', x.due_at, ?1::text, x.lanes, x.waits
                       FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, verb text, request text, due_at text, lanes text, waits bigint)
                     ON CONFLICT (id) DO UPDATE SET
-                      state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
-                      opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
-                      due_at = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
-                      waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
+                      state = CASE WHEN ${reopen} THEN 'open' ELSE t.state END,
+                      opened_at = CASE WHEN ${reopen} THEN excluded.opened_at ELSE t.opened_at END,
+                      due_at = CASE WHEN ${reopen} OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
+                      waits = CASE WHEN ${reopen} THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
                       lanes = COALESCE(t.lanes, excluded.lanes)`)
-          .bind(at, JSON.stringify(sorted(qs, (q) => q.id))),
+          .bind(at, JSON.stringify(sorted(qs, (q) => q.id)), engine || ""),
         db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload)
                       SELECT x.producer, x.ref, x.question, 'live', ?1::text, x.due_at, x.waits, x.payload
                       FROM jsonb_to_recordset((?2::text)::jsonb) AS x(producer text, ref text, question text, due_at text, waits bigint, payload text)
@@ -384,24 +387,79 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// AN OLDER ENGINE'S ANSWERS (`served` the engine the site serves) settle
   /// under the served one: its rows were handed out because their bits are the same
   /// — or, `join`, because they may be, and then each only joins a served one's.
-  async function answerPack(env, w, { lease, engine, served = null, join = false, answers, done = false, keep = null }, now = Date.now()) {
+  /// `late` (protocol 8): a row whose lease ran out still takes its answer while
+  /// nobody took it since — the page keeps results and sends them later.
+  async function answerPack(env, w, { lease, engine, served = null, join = false, answers, done = false, keep = null, late = false }, now = Date.now()) {
     const db = env.LIBRARY;
     const { results: held } = await db.prepare(`SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text((?4::text)::jsonb))
-         AND ((lease = ?1::text AND leased_to = ?2::text AND lease_until >= ?3::text) OR (lease_prev = ?1::text AND leased_to_prev = ?2::text))`)
-      .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question))).all();
+         AND ((lease = ?1::text AND leased_to = ?2::text AND (?5::bigint = 1 OR lease_until >= ?3::text)) OR (lease_prev = ?1::text AND leased_to_prev = ?2::text))`)
+      .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question)), late ? 1 : 0).all();
     const byId = new Map(held.map((q) => [q.id, q]));
     // A PAGE SENDS AGAIN what got no reply, and the reply may be all that was lost:
     // an answer this device already gave on this engine is not a second witness
     // (the ask never hands it the same question twice, `nextPack`).
+    const already = [];
     if (byId.size) {
       const { results: given } = await db.prepare("SELECT question FROM answers WHERE device = ?1::text AND engine = ?2::text AND question IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))")
         .bind(w.device, engine, JSON.stringify([...byId.keys()])).all();
-      for (const r of given) byId.delete(r.question);
+      for (const r of given) { byId.delete(r.question); already.push(r.question); }
     }
     const items = answers.filter((a) => byId.has(a.question)).map(({ question, ...a }) => ({ q: byId.get(question), a: { ...a, engine } }));
     if (items.length) await recordMany(env, w, items, now, served, join);
     if (done) await release(env, w.device, lease, keep);
-    return { taken: items.map((x) => x.q.id) };
+    return { taken: items.map((x) => x.q.id), already };
+  }
+
+  /// PROTOCOL 8'S RENEWAL: every row a sync names as held, `ms` longer — as its
+  /// holder, or as the holder before (`renewRow`, many at once). Returns the ids
+  /// still held.
+  async function renewMany(env, device, rows, ms, now = Date.now()) {
+    if (!rows.length) return [];
+    const db = env.LIBRARY, list = JSON.stringify(rows.map(({ lease, question }) => ({ lease, question })));
+    const [kept, before] = await db.batch([
+      db.prepare(`UPDATE questions q SET lease_until = GREATEST(q.lease_until, ?3::text)
+          FROM jsonb_to_recordset((?1::text)::jsonb) AS r(lease text, question text)
+          WHERE q.id = r.question AND q.lease = r.lease AND q.leased_to = ?2::text RETURNING q.id`).bind(list, device, iso(now + ms)),
+      db.prepare(`UPDATE questions q SET lease_prev_until = GREATEST(q.lease_prev_until, ?3::text)
+          FROM jsonb_to_recordset((?1::text)::jsonb) AS r(lease text, question text)
+          WHERE q.id = r.question AND q.lease_prev = r.lease AND q.leased_to_prev = ?2::text RETURNING q.id`).bind(list, device, iso(now + ms)),
+    ]);
+    return [...new Set([...kept.results, ...before.results].map((r) => r.id))];
+  }
+  /// …AND A SYNC STATES EVERYTHING ITS ID HOLDS: a live lease on a row it names
+  /// nowhere is one its page lost, given back here rather than waited out.
+  async function releaseUnnamed(env, device, named, now = Date.now()) {
+    await env.LIBRARY.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+        WHERE leased_to = ?1::text AND lease_until > ?2::text AND id NOT IN (SELECT value FROM jsonb_array_elements_text((?3::text)::jsonb))`)
+      .bind(device, iso(now), JSON.stringify(named)).run();
+  }
+
+  /// ROWS A CLIENT'S ENGINE REFUSED, kept so they are not handed to it again and
+  /// given back now; one refused by `withdrawAt` owners on the served engine is
+  /// withdrawn — no client can answer it — and written down for the watchdog.
+  async function refuseRows(env, w, engine, served, rows, withdrawAt, now = Date.now()) {
+    if (!rows.length) return [];
+    const db = env.LIBRARY, at = iso(now), ids = JSON.stringify(rows.map((r) => r.question));
+    await db.batch([
+      db.prepare(`INSERT INTO engine_refusals (question, device, owner, engine, step, at)
+          SELECT r.question, ?2::text, ?3::text, ?4::text, r.step, ?5::text FROM jsonb_to_recordset((?1::text)::jsonb) AS r(question text, step text)
+          ON CONFLICT DO NOTHING`).bind(JSON.stringify(rows), w.device, w.owner || w.device, engine, at),
+      db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+          WHERE id IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb)) AND leased_to = ?2::text`).bind(ids, w.device),
+    ]);
+    if (engine !== served) return [];
+    const { results: out } = await db.prepare(`SELECT question, count(DISTINCT owner) AS owners FROM engine_refusals
+        WHERE question IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb)) AND engine = ?2::text
+        GROUP BY question HAVING count(DISTINCT owner) >= ?3::bigint`).bind(ids, served, withdrawAt).all();
+    for (const r of out) {
+      await db.batch([
+        db.prepare("UPDATE demands SET state = 'withdrawn' WHERE question = ? AND state = 'live'").bind(r.question),
+        db.prepare(`INSERT INTO refusal_withdrawals (question, engine, owners, at) VALUES (?, ?, ?, ?) ON CONFLICT (question) DO NOTHING`)
+          .bind(r.question, served, r.owners, at),
+      ]);
+      await restate(db, r.question, now);
+    }
+    return out.map((r) => r.question);
   }
 
   /// THE OFFICIAL MACHINES ANSWER WITHOUT A LEASE: they are trusted, and what they
@@ -841,7 +899,12 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
         disagreeing = { engine, answers, differ, owners: by.filter((o) => o.differ).sort((x, y) => y.differ - x.differ).slice(0, 5) };
       }
     }
+    // QUESTIONS THE CLIENTS' ENGINE REFUSED, withdrawn (`refuseRows`) in the last
+    // six hours: a build no client can fight came in, so something let it in.
+    const { results: refusedRows } = await db.prepare(`SELECT question, engine, owners, at FROM refusal_withdrawals WHERE at > ? ORDER BY at DESC LIMIT 20`)
+      .bind(iso(now - 6 * 3_600_000)).all();
     const out = [];
+    if (refusedRows.length) out.push({ kind: "refused_rows", questions: refusedRows.length, sample: refusedRows.slice(0, 5) });
     if (active) for (const p of stalled) out.push({ kind: `stalled:${p.producer}`, ...p, witnesses_active: active });
     if (odd) out.push({ kind: "nondeterministic", questions: odd });
     if (unsettled) out.push({ kind: "unsettled", questions: unsettled });
@@ -852,7 +915,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, release, releaseAll, releaseAllOf, answer, answerPack, answerOfficial, claim, refuse, settle, audit, redeliver, repay };
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, renew, renewRow, renewMany, release, releaseAll, releaseAllOf, releaseUnnamed,
+    answer, answerPack, answerOfficial, refuseRows, claim, refuse, settle, audit, redeliver, repay };
 }
 
 /// A REFUSAL IS FORGIVEN BY HONEST WORK: a client with k refusals on record has
@@ -876,8 +940,17 @@ function eligibleFrom(official, ceilingMs = DIAL_DEFAULTS.row_ceiling_ms) {
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ((?1::text)::timestamptz - q.opened_at::timestamptz)) * 1000))
     AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?4::text
           AND (a.device IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)) OR a.owner = ?6::text OR (?7::text <> '' AND a.net = ?7::text)))
+    AND NOT EXISTS (SELECT 1 FROM engine_refusals r WHERE r.question = q.id AND r.engine = ?4::text
+          AND r.device IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)))
     AND (?8::text IS NULL OR q.due_at < ?8::text)`;
 }
+
+/// WHO IS ASKING, one definition for every reader (worker/verify.js, worker/fair.js,
+/// worker/settler.js): an id that asked since ?`since`, OR one holding a live
+/// lease — a protocol 8 client deep in a ten-minute pack asks only as it ends,
+/// and counting it out would hand its share of the last rows to the fast.
+export const askingIds = (since, now) => `(SELECT id FROM verifiers WHERE asked_at > ?${since}::text
+  UNION SELECT leased_to FROM questions WHERE leased_to IS NOT NULL AND lease_until > ?${now}::text)`;
 const ORDER = "ORDER BY q.waits DESC, q.due_at, q.id";
 function eligibleSql(official, ceilingMs) {
   return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${eligibleFrom(official, ceilingMs)} ${ORDER} LIMIT 1`;

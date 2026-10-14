@@ -4,7 +4,7 @@
 // is told the dials it reads with every hand-out.
 //   node scripts/check_dials.mjs
 import { dialsOf, setDial, forgetDials, DIALS, DIAL_DEFAULTS, DIALS_FRESH_MS, CLIENT_DIALS } from "../worker/dials.js";
-import { verifyRoute, PROTOCOL } from "../worker/verify.js";
+import { verifyRoute, PACK_PROTOCOL as PROTOCOL } from "../worker/verify.js";
 import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;

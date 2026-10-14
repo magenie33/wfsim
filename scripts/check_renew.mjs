@@ -5,7 +5,7 @@
 // take the row too, the holder computing longest kept as the one before, whose
 // answer still counts; one owner's two holders answering are one witness.
 //   node scripts/check_renew.mjs
-import { verifyRoute, PROTOCOL } from "../worker/verify.js";
+import { verifyRoute, PACK_PROTOCOL as PROTOCOL } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { RENEW_MS, ROW_CEILING_MS } from "../worker/tasks.js";
 import { testDb } from "./pg/test_db.mjs";

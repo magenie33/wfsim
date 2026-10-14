@@ -5,7 +5,7 @@
 // while the open rows are fewer than the asking would take.
 //   node scripts/check_fair.mjs
 import { shares, throttled, accountOf, tableOf, WALK_INS } from "../worker/fair.js";
-import { verifyRoute, PROTOCOL } from "../worker/verify.js";
+import { verifyRoute, PACK_PROTOCOL as PROTOCOL } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { testDb } from "./pg/test_db.mjs";
 

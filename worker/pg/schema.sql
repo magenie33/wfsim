@@ -37,7 +37,10 @@ CREATE TABLE IF NOT EXISTS verifiers (
   -- to the minute — what tells an idle page from a closed one (verify.js `askedOf`).
   asked_at      TEXT COLLATE "C",
   asked_engine  TEXT COLLATE "C",
-  asked_lanes   BIGINT
+  asked_lanes   BIGINT,
+  -- THE SOONEST A PROTOCOL 8 SYNC IS HANDED WORK AGAIN (worker/sync.js): a sync
+  -- before it is served its results and renewals and nothing new.
+  next_at       TEXT COLLATE "C"
 );
 CREATE INDEX IF NOT EXISTS verifiers_last ON verifiers (last_at);
 CREATE INDEX IF NOT EXISTS verifiers_asked ON verifiers (asked_at);
@@ -280,4 +283,26 @@ CREATE TABLE IF NOT EXISTS factory_findings (
   kind TEXT COLLATE "C" PRIMARY KEY,
   body TEXT COLLATE "C" NOT NULL,
   at   TEXT COLLATE "C" NOT NULL
+);
+-- PROTOCOL 8 (worker/sync.js). A database laid before it gains the column here.
+ALTER TABLE verifiers ADD COLUMN IF NOT EXISTS next_at TEXT COLLATE "C";
+-- A QUESTION A CLIENT'S ENGINE REFUSED (`/api/board/order` answered ok: false),
+-- by device and engine: not handed to that device again, and withdrawn once
+-- `refusals_to_withdraw` owners refused it on the served engine.
+CREATE TABLE IF NOT EXISTS engine_refusals (
+  question TEXT COLLATE "C" NOT NULL,
+  device   TEXT COLLATE "C" NOT NULL,
+  owner    TEXT COLLATE "C" NOT NULL,
+  engine   TEXT COLLATE "C" NOT NULL,
+  step     TEXT COLLATE "C" NOT NULL,
+  at       TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY (question, device, engine)
+);
+CREATE INDEX IF NOT EXISTS engine_refusals_by_engine ON engine_refusals (question, engine);
+-- …AND A QUESTION THEY WITHDREW, which the watchdog tells the owner.
+CREATE TABLE IF NOT EXISTS refusal_withdrawals (
+  question TEXT COLLATE "C" PRIMARY KEY,
+  engine   TEXT COLLATE "C" NOT NULL,
+  owners   BIGINT NOT NULL,
+  at       TEXT COLLATE "C" NOT NULL
 );

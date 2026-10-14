@@ -53,8 +53,10 @@ console.log("the snapshot");
   const s = await snapshotTick(env, { engine: "e1", release: "r1", commit: "abc" }, now);
   const served = await (await contributionRoute(new Request("https://x/api/board/computing"), env, "/api/board/computing")).json();
   check("computing is the count /api/board/computing serves", s.computing === served.computing && s.computing === 1, JSON.stringify({ s, served }));
-  check("open counts what may be taken now, urgent what someone waits on, asking who asked lately",
-    s.open === 1 && s.urgent === 1 && s.asking === 3, JSON.stringify(s));
+  // ASKING IS WHO ASKED LATELY OR HOLDS A LIVE LEASE (worker/tasks.js `askingIds`):
+  // three asked, and 'x' holds o2 without having asked.
+  check("open counts what may be taken now, urgent what someone waits on, asking who asked lately or holds a lease",
+    s.open === 1 && s.urgent === 1 && s.asking === 4, JSON.stringify(s));
   const row = await L.get("SELECT * FROM factory_snapshot WHERE id = 1");
   check("the heartbeat names the commit the daemon runs", row && row.daemon_commit === "abc" && row.daemon_at === iso(now), JSON.stringify(row));
 }

@@ -10,7 +10,7 @@
 // long enough for any; and one asked again once agreed is answered unfought.
 //   node scripts/check_riven_gain.mjs
 import { appraiseRoute } from "../worker/appraise.js";
-import { verifyRoute, PROTOCOL } from "../worker/verify.js";
+import { verifyRoute, PACK_PROTOCOL as PROTOCOL } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { canon } from "../worker/tasks.js";
 import { testDb } from "./pg/test_db.mjs";

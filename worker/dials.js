@@ -30,18 +30,44 @@ export const DIALS = {
     says: "how often an ask is written down as a computer being on" },
   compute_cap: { default: 400, min: 0, max: 1_000_000, unit: "computers",
     says: "past this many asking, one that answered nothing lately waits; 0 is no cap" },
-  poll_ms: { default: 10_000, min: 2_000, max: 300_000, unit: "ms",
-    says: "how often an idle computer reads the work signal (cdn.wfsim.app/work.json)" },
-  jitter_ms: { default: 10_000, min: 0, max: 600_000, unit: "ms",
-    says: "the most an idle computer waits, at random, after the signal shows open work" },
-  urgent_jitter_ms: { default: 3_000, min: 0, max: 60_000, unit: "ms",
-    says: "the same wait when the signal shows work someone is waiting on" },
+  // PROTOCOL 8 (worker/sync.js, docs/CLIENTS.md §"The cycle, protocol 8").
+  pack8_ms: { default: 600_000, min: 60_000, max: 3_600_000, unit: "ms",
+    says: "how much of a computer's time one protocol 8 pack is, while work is plentiful" },
+  pack8_max: { default: 200, min: 1, max: 500, unit: "rows",
+    says: "the most rows one protocol 8 pack holds" },
+  sync_lease_ms: { default: 1_500_000, min: 300_000, max: 7_200_000, unit: "ms",
+    says: "how long a protocol 8 pack is leased while work is plentiful; short work leases pack_lease_ms" },
+  sync_low_ms: { default: 120_000, min: 10_000, max: 1_800_000, unit: "ms",
+    says: "a protocol 8 client syncs for more once this little of its work is left" },
+  sync_floor_ms: { default: 60_000, min: 5_000, max: 3_600_000, unit: "ms",
+    says: "the soonest a protocol 8 client is handed work again after a sync that handed it some" },
+  sync_idle_ms: { default: 20_000, min: 5_000, max: 3_600_000, unit: "ms",
+    says: "the soonest a protocol 8 client is handed work again after a sync that found none" },
+  flush_ms: { default: 600_000, min: 60_000, max: 3_600_000, unit: "ms",
+    says: "a protocol 8 client sends the results it keeps at least this often" },
+  poll_ms: { default: 10_000, min: 2_000, max: 600_000, unit: "ms",
+    says: "how often an idle protocol 8 client reads work.json" },
+  jitter_ms: { default: 5_000, min: 0, max: 120_000, unit: "ms",
+    says: "the most an idle client waits at random before syncing when work.json shows work" },
+  urgent_jitter_ms: { default: 2_000, min: 0, max: 60_000, unit: "ms",
+    says: "the same wait when work.json shows a question someone waits on" },
+  report_ms: { default: 3_600_000, min: 0, max: 86_400_000, unit: "ms",
+    says: "how often an idle protocol 8 client syncs only to say it is on; 0 never" },
+  sync_scale_pct: { default: 100, min: 50, max: 1_000, unit: "%",
+    says: "every next_ms is multiplied by this: one dial to slow every client down" },
+  refusals_to_withdraw: { default: 3, min: 1, max: 20, unit: "owners",
+    says: "this many owners refusing a question on the served engine withdraw it" },
+  sync_off: { default: 0, min: 0, max: 1, unit: "switch",
+    says: "1 answers every protocol 8 sync with fallback 7" },
   signal_mode: { default: 0, min: 0, max: 1, unit: "mode",
     says: "0: computers wait on the signal; 1: they ask the worker directly, the signal unused" },
 };
 /// …AND THE ONES A CLIENT READS, sent with every hand-out so no client
 /// hard-codes them (docs/CLIENTS.md §"Values").
 export const CLIENT_DIALS = ["lease_ms", "pack_ms", "pack_max", "pack_lease_ms", "packs_held", "renew_ms", "row_ceiling_ms"];
+/// …A PROTOCOL 8 CLIENT'S, in every sync reply and in work.json.
+export const SYNC_CLIENT_DIALS = ["pack8_ms", "pack8_max", "sync_lease_ms", "pack_lease_ms", "sync_low_ms", "sync_floor_ms",
+  "sync_idle_ms", "flush_ms", "packs_held", "row_ceiling_ms", "poll_ms", "jitter_ms", "urgent_jitter_ms", "report_ms"];
 
 export const DIAL_DEFAULTS = Object.freeze(Object.fromEntries(Object.entries(DIALS).map(([k, d]) => [k, d.default])));
 const inBounds = (name, v) => Number.isSafeInteger(v) && v >= DIALS[name].min && v <= DIALS[name].max;
@@ -85,4 +111,4 @@ export async function setDial(env, name, value, by, now = Date.now()) {
 }
 
 /// THE DIALS A CLIENT IS TOLD, from what is in force.
-export const clientDials = (d) => Object.fromEntries(CLIENT_DIALS.map((k) => [k, d[k]]));
+export const clientDials = (d, names = CLIENT_DIALS) => Object.fromEntries(names.map((k) => [k, d[k]]));
