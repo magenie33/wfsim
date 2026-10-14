@@ -211,16 +211,21 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
     await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES (?, 'r', 'base', ?, 1, 'kpm', 0, 'T', ?)`, id, by, ago(ms));
   }
-  // WHAT A FACT COSTS: a board row's two witnesses fought 1 s each and a riven
-  // search's 30 s each, an hour apart; two searches are open, and the four rows
-  // the queue owes beside the refresh. 4 x 2 s + 2 x 60 s of work at 62 s an hour.
+  // WHAT A FACT COSTS over the day: a board row's two witnesses fought 1 s each
+  // and a riven search's 30 s each; two searches are open, and the four rows the
+  // queue owes beside the refresh. 4 x 2 s + 2 x 60 s of work, and the volunteers
+  // answered 372 s in the last six whole hours — 62 s an hour. The hour under way
+  // is not one of them.
   await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, fact_at) VALUES
     ('fs', 'simulate', '{}', 'fact', 'x', 'x', ?), ('fo', 'optimize', '{}', 'fact', 'x', 'x', ?),
     ('oo1', 'optimize', '{}', 'open', 'x', 'x', NULL), ('oo2', 'optimize', '{}', 'open', 'x', 'x', NULL)`, ago(1_800_000), ago(1_800_000));
   for (const [q, ms, t] of [["fs", 1000, 3_600_000], ["fs", 1000, 0], ["fo", 30_000, 3_600_000], ["fo", 30_000, 0]]) {
     await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', 'd', 'd', 'c', '{}', 1, ?, ?)`, q, ms, ago(t));
   }
-  const d = await demandOf({ LIBRARY: L }, now);
+  const hourOf = (ms) => new Date(now - ms).toISOString().slice(0, 13);
+  await L.run("INSERT INTO verifier_hours (verifier, hour, ms) VALUES ('vh1', ?, 300000), ('vh2', ?, 72000), ('vh3', ?, 999000), ('vh4', ?, 999000)",
+    hourOf(2 * 3_600_000), hourOf(5 * 3_600_000), hourOf(0), hourOf(7 * 3_600_000));
+  const kept = { LIBRARY: L }, d = await demandOf(kept, now);
   check("each survey is a goal: its shapes, how many are agreed and begun, a lapsed one and a finished one gone, none counted as a chat's riven gain",
     JSON.stringify(d.surveys.map(({ clear_hours, ...g }) => g)) === JSON.stringify([{ weapon: "furis", ruler: "x", shapes: 3, agreed: 1, started: 2 }]), JSON.stringify(d.surveys));
   check("...and its hours to reach at its own pace: one agreed in three hours, two to go", Math.abs(d.surveys[0].clear_hours - 6) < 1e-9, JSON.stringify(d.surveys));
@@ -230,6 +235,8 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("hours to clear are the open work's compute over the compute answered per hour, a refresh left out",
     Math.abs(d.clear_hours - 128 / 62) < 1e-9, String(d.clear_hours));
   await L.run("UPDATE questions SET fact_at = NULL WHERE id = 'fo'");
+  check("...the day's price kept ten minutes, priced again after", Math.abs((await demandOf(kept, now + 60_000)).clear_hours - 128 / 62) < 1e-9
+    && (await demandOf(kept, now + 11 * 60_000)).clear_hours === null);
   check("...and none where a verb formed no fact to price it by", (await demandOf({ LIBRARY: L }, now)).clear_hours === null);
   check("the endpoint serves the settler's object, worked out nowhere else",
     (await call("/api/board/demand")).error === "no_demand");

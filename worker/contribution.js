@@ -554,26 +554,37 @@ async function keptWorkedOut(request, env) {
 /// object and `/api/board/demand` serves the same bytes. Worked out per request,
 /// each isolate and each edge would keep its own minute, and readers disagree.
 export const DEMAND_KEY = "demand.json", DEMAND_CACHE = "public, max-age=30";
-/// THE PACE IS THIS LONG: one hour swings five-fold between two quiet ones, and
-/// a stopped hour says "never".
-export const DEMAND_PACE_MS = 6 * 3_600_000;
+/// THE PACE IS THIS LONG, in whole hours: one hour swings five-fold between two
+/// quiet ones, and a stopped hour says "never".
+export const DEMAND_PACE_HOURS = 6;
 /// …A SURVEY'S OWN PACE, its shapes agreed in this long.
 export const SURVEY_PACE_MS = 3 * 3_600_000;
-/// …AND WHAT A FACT COSTS, read off the latest this many answers: every
-/// witness's fight, the ones that agreed and the ones that did not.
-export const DEMAND_COST_SAMPLE = 50_000;
+/// …AND WHAT A FACT COSTS, over a day: every witness's fight, the ones that
+/// agreed and the ones that did not, over the facts formed. Shorter, a few
+/// hours of one bad release price every row at what that release wasted.
+export const DEMAND_COST_MS = 86_400_000;
+/// THE DAY'S ANSWERS ARE FOUND by reading back at most this many by id, the
+/// one index the table keeps in time order.
+export const DEMAND_COST_SCAN = 1_500_000;
+/// …AND PRICED AGAIN THIS OFTEN, kept per `env` between: a day's price moves
+/// slowly, and reading the day back is seconds of the database every time.
+export const DEMAND_COST_EVERY_MS = 10 * 60_000;
+const demandCosts = new WeakMap();
 
 /// THE WHOLE PICTURE, totals only, never a device or a person (docs/BOARD.md
 /// §"Demand" says each field).
 /// HOURS TO CLEAR ARE COMPUTE, NOT ROWS: one riven search costs as much as
 /// dozens of board rows, so rows per hour cannot say when the rest is done.
-/// Each verb's open work is priced at what one of its facts cost lately and
-/// divided by the compute answered per hour; refreshes come back every three
-/// days and never clear, so they are left out. Null where a verb formed no fact
-/// to price it by.
+/// Each verb's open work is priced at what one of its facts cost over the day
+/// and divided by the compute the volunteers answered per hour; refreshes come
+/// back every three days and never clear, so they are left out. Null where a
+/// verb with work formed no fact to price it by.
 export async function demandOf(env, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now);
-  const [owed, done, gains, surveys, open, sample] = await db.batch([
+  const hourOf = (ms) => iso(ms).slice(0, 13);
+  const kept = demandCosts.get(env);
+  const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
+  const [owed, done, gains, surveys, open, answered, spent, facts] = await db.batch([
     // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
     // demands are read once and joined whole: looked up a queue row at a time,
     // every row cost an index walk for the few that have one.
@@ -583,7 +594,7 @@ export async function demandOf(env, now = Date.now()) {
                 LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                 GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
-                FROM scores WHERE finished_at >= ?`).bind(iso(now - DEMAND_PACE_MS)),
+                FROM scores WHERE finished_at >= ?`).bind(iso(now - DEMAND_PACE_HOURS * 3_600_000)),
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
       .bind(iso(now - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
@@ -595,35 +606,35 @@ export async function demandOf(env, now = Date.now()) {
                 HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
       .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - SURVEY_PACE_MS)),
     db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
-    db.prepare(`WITH s AS (SELECT question, compute_ms, at FROM answers ORDER BY id DESC LIMIT ?)
-                SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms, MIN(s.at) AS from_at, MAX(s.at) AS to_at
-                FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`).bind(DEMAND_COST_SAMPLE),
+    // THE LAST WHOLE HOURS, the one under way left out.
+    db.prepare("SELECT COALESCE(SUM(ms), 0) AS ms FROM verifier_hours WHERE hour >= ?1::text AND hour < ?2::text")
+      .bind(hourOf(now - DEMAND_PACE_HOURS * 3_600_000), hourOf(now)),
+    ...(costs ? [] : [
+      db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
+                    WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)
+                  SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`)
+        .bind(iso(now - DEMAND_COST_MS), DEMAND_COST_SCAN),
+      db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= ? GROUP BY verb").bind(iso(now - DEMAND_COST_MS)),
+    ]),
   ]);
   const by = Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)]));
-  const h = done.results[0] || {}, hours = DEMAND_PACE_MS / 3_600_000;
-  const perHour = (x) => Math.round(Number(x || 0) / hours);
-  // THE SAMPLE'S OWN SPAN is the window its facts are counted in and its
-  // compute is spread over, so the three numbers describe the same minutes.
-  const spent = sample.results, from = spent.reduce((m, r) => (m && m < r.from_at ? m : r.from_at), null),
-    to = spent.reduce((m, r) => (m && m > r.to_at ? m : r.to_at), null);
-  let clearHours = null;
-  if (from && to && to > from) {
-    const facts = await db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= ? AND fact_at <= ? GROUP BY verb").bind(from, to).all();
-    const factsOf = Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)]));
-    const msOf = Object.fromEntries(spent.map((r) => [r.verb, Number(r.ms)]));
-    const msPerHour = Object.values(msOf).reduce((t, x) => t + x, 0) / ((Date.parse(to) - Date.parse(from)) / 3_600_000);
-    // THE BOARD'S ROWS are the queue's, a refresh's left out; every other verb's
-    // open questions are its work.
-    const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) };
-    for (const r of open.results) if (r.verb !== "simulate") left[r.verb] = Number(r.n);
-    let ms = 0;
-    for (const [verb, n] of Object.entries(left)) {
-      if (!n) continue;
-      if (!factsOf[verb]) { ms = null; break; }
-      ms += n * (msOf[verb] || 0) / factsOf[verb];
-    }
-    if (ms !== null && msPerHour > 0) clearHours = ms / msPerHour;
+  const h = done.results[0] || {};
+  const perHour = (x) => Math.round(Number(x || 0) / DEMAND_PACE_HOURS);
+  const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
+    factsOf: Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)])) };
+  if (!costs) demandCosts.set(env, { at: now, msOf, factsOf });
+  const msPerHour = Number((answered.results[0] || {}).ms || 0) / DEMAND_PACE_HOURS;
+  // THE BOARD'S ROWS are the queue's, a refresh's left out; every other verb's
+  // open questions are its work.
+  const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) };
+  for (const r of open.results) if (r.verb !== "simulate") left[r.verb] = Number(r.n);
+  let ms = 0;
+  for (const [verb, n] of Object.entries(left)) {
+    if (!n) continue;
+    if (!factsOf[verb]) { ms = null; break; }
+    ms += n * (msOf[verb] || 0) / factsOf[verb];
   }
+  const clearHours = ms !== null && msPerHour > 0 ? ms / msPerHour : null;
   return { ok: true, v: 1, at, computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: Number((gains.results[0] || {}).n || 0),

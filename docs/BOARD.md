@@ -1145,11 +1145,15 @@ see two.
   ones, and a stopped hour reads as never.
 - `clear_hours`: the open work priced in compute. Each verb's work (the
   queue's rows but the refreshes for `simulate`, its open questions for any
-  other) times what one of its facts cost lately, over the compute answered
-  per hour. Both rates are read off the latest 50,000 answers: every witness's
-  fight in them, over the facts formed between the first and the last, and
-  over that span. A refresh comes back every three days and never clears.
-  Null where a verb with work formed no fact in that span.
+  other) times what one of its facts cost over the last day — every
+  volunteer answer's fight over the facts formed, so the usual rechecks and
+  losses are in the price — over the compute the volunteers answered per hour
+  in the last six whole hours (`verifier_hours`). A day, because a few hours
+  of one bad release would price every row at what that release wasted; the
+  compute, because it holds within a fifth hour to hour while rows per hour
+  swing from nothing to thousands as the work moves between verbs. A refresh
+  comes back every three days and never clears. Null where a verb with work
+  formed no fact that day.
 - a survey's `clear_hours`: its shapes left over its shapes agreed per hour
   in the last three hours; null when none were.
 
