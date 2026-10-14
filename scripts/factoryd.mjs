@@ -36,6 +36,8 @@ export function signalTarget(env = process.env) {
 }
 /// A STATEMENT THAT HANGS, or a transaction left open, is cut here rather than
 /// holding locks the request path waits on.
+/// Every network call the daemon makes gives up after this.
+const FETCH_MS = 15_000;
 const CONNECTION = { statement_timeout: 30_000, idle_in_transaction_session_timeout: 60_000, application_name: "wfsim-factoryd" };
 
 const commitOf = () => {
@@ -62,7 +64,7 @@ export async function openEnv(env = process.env) {
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
 /// fresh ASSETS each time, since it keeps what it read per ASSETS).
 async function served() {
-  return servedRelease({ ASSETS: { fetch: () => fetch(RELEASE_URL) } });
+  return servedRelease({ ASSETS: { fetch: () => fetch(RELEASE_URL, { signal: AbortSignal.timeout(FETCH_MS) }) } });
 }
 
 /// `opened` and `servedNow` stand in for the databases and the release in a
@@ -98,6 +100,8 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   };
   const jobs = {
     release: async () => { release = await servedNow(); forgetDials(); },
+    // THE HEARTBEAT IS WRITTEN FIRST: a signal that cannot be written fails its
+    // own tick and leaves the snapshot, and the daemon_at it carries, current.
     snapshot: async () => writeSignal(await snapshotTick(env, { engine: release.engine, release: release.release, commit })),
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
     wave: async () => {
@@ -159,7 +163,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
 
 /// THE SIGNAL AS A READER GETS IT: its `at` and the edge's cache status.
 export async function readSignalEdge(url = SIGNAL_URL) {
-  const r = await fetch(url, { cache: "no-store" });
+  const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(FETCH_MS) });
   let at = null;
   try { at = (await r.json()).at || null; } catch { /* unreadable reads as stale */ }
   return { status: r.status, at, cache: r.headers.get("cf-cache-status") };

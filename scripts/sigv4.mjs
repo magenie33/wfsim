@@ -35,12 +35,14 @@ export const amzDateOf = (ms = Date.now()) => new Date(ms).toISOString().replace
 
 /// ONE OBJECT PUT to an S3-compatible bucket (R2: `endpoint` is
 /// `https://<account>.r2.cloudflarestorage.com`, region `auto`), path-style.
-export async function putObject({ endpoint, bucket, key, body, contentType, cacheControl, accessKey, secretKey, now = Date.now() }) {
+/// A PUT THAT NEVER ANSWERS is given up after `timeoutMs`: an await on it would
+/// hold whatever waits behind it for good.
+export async function putObject({ endpoint, bucket, key, body, contentType, cacheControl, accessKey, secretKey, now = Date.now(), timeoutMs = 15_000 }) {
   const url = `${endpoint.replace(/\/+$/, "")}/${bucket}/${key}`;
   const signed = signV4({ method: "PUT", url, body, accessKey, secretKey, amzDate: amzDateOf(now),
     headers: { "content-type": contentType, "cache-control": cacheControl } });
   const { signature: _s, canonical: _c, host: _h, ...send } = signed;
-  const r = await fetch(url, { method: "PUT", headers: send, body });
+  const r = await fetch(url, { method: "PUT", headers: send, body, signal: AbortSignal.timeout(timeoutMs) });
   if (!r.ok) throw new Error(`put ${key}: HTTP ${r.status} ${(await r.text()).slice(0, 200)}`);
   return r.status;
 }
