@@ -20,11 +20,11 @@
 # key absorbs.
 set -euo pipefail
 
-# AS MANY ROWS A STATEMENT AS A HUNDRED BOUND PARAMETERS ALLOW, DERIVED so a
-# column added below shrinks the batch rather than putting every write one
-# parameter over the limit.
+# A THOUSAND ROWS A STATEMENT: each statement is a node and a connection through
+# the tunnel, about a second, and Postgres binds up to 65,535 parameters.
 QUEUE_COLUMNS=4
-QUEUE_BATCH=$((100 / QUEUE_COLUMNS))
+QUEUE_BATCH=1000
+PG_MAX_PARAMS=65535
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
@@ -70,7 +70,8 @@ queue_batches() {
 # ruler, the mode — and decides which producer asks, a new build's or a sweep's.
 # `FACTORY_TOKEN` is the factory's own secret.
 FACTORY_ORIGIN="${FACTORY_ORIGIN:-https://wfsim.app}"
-ASK_ROWS=200
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+ASK_ROWS=1000
 ASK_OUT=""
 ASK_CODE=""
 factory_ask() {
@@ -86,7 +87,7 @@ factory_ask() {
 
 # EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
 # scorer measures it: a run stopped between the queue's write and the ask
-# leaves exactly that. The worker asks for a few hundred a call, until none is.
+# leaves exactly that. The worker asks for `ASK_MAX` a call, until none is.
 backfill() {
   local asked=0 n i
   for i in $(seq 1 500); do
@@ -203,9 +204,15 @@ self_test() {
   [ "$(printf '%s' "$first" | jq -r '.params | length')" = "$((4 * QUEUE_COLUMNS))" ] \
     && say ok "$QUEUE_COLUMNS bound parameters a row" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
-  [ $((QUEUE_BATCH * QUEUE_COLUMNS)) -le 100 ] \
-    && say ok "...and a statement stays inside a hundred" \
+  [ $((QUEUE_BATCH * QUEUE_COLUMNS)) -le "$PG_MAX_PARAMS" ] \
+    && say ok "...and a statement stays inside what Postgres binds" \
     || say FAIL "$((QUEUE_BATCH * QUEUE_COLUMNS)) is over"
+  # A CALL THE WORKER REFUSES IS A CHUNK NEVER ASKED: the factory's cap is ours.
+  local ask_max
+  ask_max=$(sed -n 's/^const ASK_MAX = \([0-9]*\);.*/\1/p' "$ROOT_DIR/worker/board_tasks.js")
+  [ -n "$ask_max" ] && [ "$ASK_ROWS" -le "$ask_max" ] \
+    && say ok "...and an ask carries no more rows than the worker takes ($ASK_ROWS <= $ask_max)" \
+    || say FAIL "ASK_ROWS $ASK_ROWS against the worker's ASK_MAX '${ask_max}'"
   printf '%s' "$first" | jq -e '.sql | endswith("ON CONFLICT DO NOTHING")' >/dev/null \
     && say ok "...and asking twice for one row is one row" \
     || say FAIL "$(printf '%s' "$first" | jq -r .sql)"

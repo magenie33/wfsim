@@ -128,9 +128,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return (await demandAll(env, [ask], engine, now))[0];
   }
 
-  /// MANY ASKS AT ONCE, written in a few round trips rather than three each — a
-  /// producer asking thousands an hour is otherwise slower than its own clock.
-  const DEMAND_CHUNK = 50;
+  /// MANY ASKS AT ONCE, a chunk in two statements whatever its size: through
+  /// Hyperdrive a batch's statements go one round trip each, so a statement a
+  /// row is a round trip a row and a reconciliation's asks outlast its hour.
+  /// A chunk names each question and each demand once, folded in ask order the
+  /// way one write a row folded them: the earliest deadline, the larger
+  /// `waits`, the first lanes given; a demand asked twice is its last asking.
+  const DEMAND_CHUNK = 250;
   async function demandAll(env, asks, engine, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), ids = [];
     for (const a of asks) {
@@ -139,36 +143,46 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       ids.push(await questionId(a.verb, a.request));
     }
     for (let i = 0; i < asks.length; i += DEMAND_CHUNK) {
-      const writes = [];
+      const qs = new Map(), ds = new Map();
       asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false }, k) => {
-        const id = ids[i + k], due = iso(now + due_in_ms);
-        writes.push(
-          db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits) VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
-                      ON CONFLICT (id) DO UPDATE SET
-                        state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
-                        opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
-                        due_at = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
-                        waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
-                        lanes = COALESCE(t.lanes, excluded.lanes)`)
-            .bind(id, verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0),
-          db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
-                      ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
-                        due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
-            .bind(producer, ref, id, at, due, waits ? 1 : 0, JSON.stringify(payload)));
+        const id = ids[i + k], due_at = iso(now + due_in_ms), w = waits ? 1 : 0, l = lanes ? JSON.stringify(lanes) : null;
+        const q = qs.get(id);
+        if (!q) qs.set(id, { id, verb, request: canon(request), due_at, lanes: l, waits: w });
+        else Object.assign(q, { due_at: due_at < q.due_at ? due_at : q.due_at, waits: Math.max(q.waits, w), lanes: q.lanes ?? l });
+        ds.set(JSON.stringify([producer, ref]), { producer, ref, question: id, due_at, waits: w, payload: JSON.stringify(payload) });
       });
-      await db.batch(writes);
+      // IN KEY ORDER, so two asks writing the same rows take their locks alike.
+      const sorted = (m, key) => [...m.values()].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
+      await db.batch([
+        db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits)
+                      SELECT x.id, x.verb, x.request, 'open', x.due_at, ?1::text, x.lanes, x.waits
+                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, verb text, request text, due_at text, lanes text, waits bigint)
+                    ON CONFLICT (id) DO UPDATE SET
+                      state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
+                      opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
+                      due_at = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
+                      waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
+                      lanes = COALESCE(t.lanes, excluded.lanes)`)
+          .bind(at, JSON.stringify(sorted(qs, (q) => q.id))),
+        db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload)
+                      SELECT x.producer, x.ref, x.question, 'live', ?1::text, x.due_at, x.waits, x.payload
+                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(producer text, ref text, question text, due_at text, waits bigint, payload text)
+                    ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
+                      due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
+          .bind(at, JSON.stringify(sorted(ds, (d) => `${d.producer}\u0000${d.ref}`))),
+      ]);
     }
     const { results } = await db.prepare(`SELECT * FROM questions WHERE id IN ${listOf(db, "?")} AND state IN ('fact', 'spot')`)
       .bind(JSON.stringify([...new Set(ids)])).all();
-    for (const q of results) {
-      // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,
-      // its answers carried for the served engine to reproduce or replace.
-      if (q.fact_engine !== engine) {
-        await db.prepare("UPDATE questions SET state = 'open', opened_at = ? WHERE id = ? AND state = ?").bind(at, q.id, q.state).run();
-      } else {
-        await deliver(env, q, now);
-      }
+    // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,
+    // its answers carried for the served engine to reproduce or replace.
+    const stale = results.filter((q) => q.fact_engine !== engine);
+    if (stale.length) {
+      await db.prepare(`UPDATE questions SET state = 'open', opened_at = ?1::text
+          FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, state text) WHERE questions.id = x.id AND questions.state = x.state`)
+        .bind(at, JSON.stringify(stale.map((q) => ({ id: q.id, state: q.state })))).run();
     }
+    await deliverMany(env, results.filter((q) => q.fact_engine === engine), now);
     return ids;
   }
 
@@ -618,6 +632,23 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       .bind(q.id, q.canon).first();
     const writes = [], later = [];
     deliverPlan(env, q, now, answerOf, await liveDemands(db, q.id), writes, later);
+    await commit(env, writes);
+    for (const f of later) await f();
+  }
+  /// …MANY AT ONCE, each told what `deliver` tells it, in three round trips
+  /// however many: their answers, their live demands, one commit.
+  async function deliverMany(env, qs, now) {
+    if (!qs.length) return;
+    const db = env.LIBRARY, keys = JSON.stringify(qs.map((q) => ({ id: q.id, canon: q.canon })));
+    const { results: answers } = await db.prepare(`SELECT DISTINCT ON (a.question) a.* FROM answers a
+        JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text, canon text) ON a.question = x.id AND a.canon = x.canon
+        ORDER BY a.question, a.official DESC, a.id`).bind(keys).all();
+    const { results: demands } = await db.prepare(`SELECT * FROM demands WHERE question IN ${listOf(db, "?")} AND state = 'live'`)
+      .bind(JSON.stringify(qs.map((q) => q.id))).all();
+    const writes = [], later = [];
+    for (const q of qs) {
+      deliverPlan(env, q, now, answers.find((a) => a.question === q.id) || null, demands.filter((d) => d.question === q.id), writes, later);
+    }
     await commit(env, writes);
     for (const f of later) await f();
   }

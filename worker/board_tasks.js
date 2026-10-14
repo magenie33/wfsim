@@ -138,7 +138,9 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
 /// THE ROWS A BATCH OWES, asked of the factory (`ship_queue.sh`). An arrival's
 /// row the board already scored is not asked: a resubmission the page did not
 /// recognise is the same build, and asking again would fight it again.
-const ASK_MAX = 200;
+/// A THOUSAND A CALL: a call is a round trip from the runner and a few from the
+/// worker whatever its size (`demandAll`), and `ship_queue.sh` sends this many.
+const ASK_MAX = 1000;
 async function ask(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
@@ -148,7 +150,7 @@ async function ask(request, env) {
   const { engine } = await servedRelease(env);
   // EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
   // scorer measures it: a run stopped between the queue's write and the ask
-  // leaves exactly that. A few hundred a call, until none is left.
+  // leaves exactly that. `ASK_MAX` a call, until none is left.
   if (b.backfill === true) {
     const { results } = await db.prepare(
       `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, bu.record, bu.at,

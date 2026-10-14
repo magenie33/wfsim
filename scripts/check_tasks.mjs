@@ -638,6 +638,93 @@ console.log("\nwhat a refusal takes back goes to the official pool");
     JSON.stringify(pool));
 }
 
+console.log("many asks in two statements a chunk leave every table as one write a row did");
+{
+  // ONE WRITE A ROW, as `demandAll` asked before it wrote a chunk at once: the
+  // reference the set-based writes are held to, on the same random books.
+  const oneAtATime = async (env, producers, asks, engine, now) => {
+    const db = env.LIBRARY, at = iso(now), ids = [];
+    for (const a of asks) ids.push(await questionId(a.verb, a.request));
+    for (const [k, { producer, ref, request, due_in_ms, payload = {}, lanes = null, waits = false }] of asks.entries()) {
+      const due = iso(now + due_in_ms);
+      await db.run(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits) VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
+          ON CONFLICT (id) DO UPDATE SET
+            state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
+            opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
+            due_at = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
+            waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
+            lanes = COALESCE(t.lanes, excluded.lanes)`,
+        ids[k], asks[k].verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0);
+      await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
+          ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
+            due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
+        producer, ref, ids[k], at, due, waits ? 1 : 0, JSON.stringify(payload));
+    }
+    const facts = await db.all(`SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+        AND state IN ('fact', 'spot')`, JSON.stringify([...new Set(ids)]));
+    for (const q of facts) {
+      if (q.fact_engine !== engine) { await db.run("UPDATE questions SET state = 'open', opened_at = ? WHERE id = ? AND state = ?", at, q.id, q.state); continue; }
+      const a = await db.get("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
+      const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, result: a ? JSON.parse(a.result) : null,
+        work: a ? a.work : 0, engine: a ? a.engine : null, official: !!(a && a.official) };
+      for (const d of await db.all("SELECT * FROM demands WHERE question = ? AND state = 'live'", q.id)) {
+        const p = producers[d.producer], told = { ...d, payload: JSON.parse(d.payload) };
+        if (p.on_fact_writes) for (const s of p.on_fact_writes(env, told, fact)) await s.run();
+        else await p.on_fact(env, told, fact);
+        await db.run("UPDATE demands SET state = 'served', served_at = ? WHERE producer = ? AND ref = ?", iso(now), d.producer, d.ref);
+      }
+    }
+    return ids;
+  };
+  const book = async (r, db, n) => {
+    await db.exec("CREATE TABLE told_log (ref TEXT, canon TEXT)");
+    for (let k = 0; k < n; k++) {
+      if (r() < 0.4) continue;
+      const id = await questionId("simulate", { n: k }), state = pick(r, ["open", "fact", "fact", "spot", "withdrawn", "disputed"]);
+      const lanes = r() < 0.3 ? JSON.stringify([{ lanes: 4, after_ms: 0 }]) : null;
+      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits, canon, fact_engine)
+          VALUES (?, 'simulate', ?, ?, ?, ?, ?, ?, ?, ?)`, id, canon({ n: k }), state, iso(NOW + Math.floor((r() - 0.5) * 7_200_000)),
+        iso(NOW - 600_000), lanes, r() < 0.2 ? 1 : 0, ["fact", "spot"].includes(state) ? "c" : null,
+        ["fact", "spot"].includes(state) ? pick(r, ["e1", "e0", null]) : null);
+      if (["fact", "spot"].includes(state)) {
+        for (const official of r() < 0.5 ? [0] : [0, 1]) {
+          await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, at)
+              VALUES (?, 'e1', ?, 'o', '', ?, 'c', ?, 5, ?)`, id, `d${official}`, official, JSON.stringify({ score: k, official }), iso(NOW));
+        }
+      }
+      if (r() < 0.5) {
+        await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, ?, ?, ?, 0, '{}') ON CONFLICT DO NOTHING",
+          pick(r, ["p", "w"]), `r${k % 40}`, id, pick(r, ["live", "served", "withdrawn"]), iso(NOW - 600_000), iso(NOW + 3_600_000));
+      }
+    }
+  };
+  const asksOf = (r, n) => Array.from({ length: 1 + Math.floor(r() * (r() < 0.3 ? 600 : 40)) }, () => ({
+    producer: pick(r, ["p", "q", "w"]), ref: `r${Math.floor(r() * 60)}`, verb: "simulate", request: { n: Math.floor(r() * (n + 10)) },
+    due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
+    payload: r() < 0.5 ? { k: Math.floor(r() * 9) } : undefined }));
+  const state = async (db, said) => JSON.stringify([
+    await db.all("SELECT * FROM questions ORDER BY id"), await db.all("SELECT * FROM demands ORDER BY producer, ref"),
+    await db.all("SELECT * FROM told_log ORDER BY ref, canon"), [...said].sort()]);
+  let bad = 0, first = "";
+  const trials = Math.max(20, Math.floor(TRIALS / 10));
+  for (let t = 0; t < trials && bad < 3; t++) {
+    const seed = t + 7001, n = 5 + Math.floor(rng(seed)() * 60), was = [], now = [];
+    const producersOf = (said) => ({
+      p: { on_fact: async (env, d, fact) => { said.push(`${d.ref} ${fact.canon} ${JSON.stringify(fact.result)}`); } },
+      q: { on_fact: async (env, d, fact) => { said.push(`${d.ref} ${fact.canon} ${JSON.stringify(fact.result)}`); } },
+      w: { on_fact_writes: (env, d, fact) => [env.LIBRARY.prepare("INSERT INTO told_log (ref, canon) VALUES (?, ?)").bind(d.ref, fact.canon)] },
+    });
+    const a = await testDb("library"), b = await testDb("library");
+    await book(rng(seed), a, n); await book(rng(seed), b, n);
+    const asks = asksOf(rng(seed + 1), n);
+    await oneAtATime({ LIBRARY: a }, producersOf(was), asks, "e1", NOW);
+    await factory({ verbs: VERBS, producers: producersOf(now) }).demandAll({ LIBRARY: b }, asks, "e1", NOW);
+    const [x, y] = [await state(a, was), await state(b, now)];
+    if (x !== y) { bad++; first ||= `trial ${t} (${asks.length} asks): ${x.slice(0, 200)} … vs … ${y.slice(0, 200)}`; }
+  }
+  check(`on ${trials} random books, asked a row at a time and asked at once leave the same questions, demands and tellings`, bad === 0, first);
+}
+
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");
 process.exitCode = failures ? 1 : 0;
 
