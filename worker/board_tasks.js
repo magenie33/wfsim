@@ -23,7 +23,9 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 export const rowRef = (identity, ruler, mode) => `${identity}|${ruler}|${mode}`;
 const boardProducer = {
   // A ROW NOBODY OWES ANY MORE — the scorer measured it — is withdrawn where it
-  // is found: worker/pg/sync.sql `board_owed`, which the sync's procedure asks too.
+  // is found: worker/pg/sync.sql `board_owed`, which the sync's procedure asks
+  // too (`wanted_in_sql`).
+  wanted_in_sql: true,
   still_wanted: async (env, d) => !!(await env.LIBRARY.prepare("SELECT board_owed(?::text, ?::text, ?::text) AS x")
     .bind(d.payload.identity, d.payload.ruler, d.payload.mode).first()).x,
   // …A WHOLE PACK'S ROWS IN ONE READ: the refs still owed.

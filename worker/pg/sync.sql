@@ -150,3 +150,371 @@ $$;
 CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (SELECT 1 FROM queue WHERE build_id = $1 AND ruler = $2 AND mode = $3)
 $$;
+
+-- A CLIENT THAT ASKS (worker/verify.js `/work`, worker/sync.js): remembered by
+-- its id, its yes kept when given ($4, $5), a refusal lifted once over at $3,
+-- its day ($2).
+CREATE OR REPLACE FUNCTION verifier_seen(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
+  INSERT INTO verifiers (id, seen) VALUES ($1, $2) ON CONFLICT DO NOTHING;
+  UPDATE verifiers SET consent_v = $4, consent_at = $5
+    WHERE id = $1 AND $4 IS NOT NULL AND (consent_v IS DISTINCT FROM $4 OR consent_at IS DISTINCT FROM $5);
+  UPDATE verifiers SET banned = 0 WHERE id = $1 AND banned = 1 AND (refused_until IS NULL OR refused_until <= $3);
+  UPDATE verifiers SET seen = $2 WHERE id = $1 AND seen IS DISTINCT FROM $2;
+$$;
+
+-- …ON, its engine and free cores ($3, $4) kept, written at $2 at most once
+-- since $5 unless they changed (worker/verify.js `askedOf`).
+CREATE OR REPLACE FUNCTION verifier_asked(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
+  UPDATE verifiers SET asked_at = $2, asked_engine = $3, asked_lanes = coalesce($4, asked_lanes)
+    WHERE id = $1 AND (asked_at IS NULL OR asked_at < $5 OR asked_engine IS DISTINCT FROM $3
+      OR ($4 IS NOT NULL AND asked_lanes IS DISTINCT FROM $4))
+$$;
+
+-- …AND WHAT IT ASKED FOR, by the hour (worker/verify.js `asksOf`), added to.
+CREATE OR REPLACE FUNCTION verifier_asks(text) RETURNS void LANGUAGE sql AS $$
+  INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed, direct_failed)
+  SELECT x.verifier, x.hour, x.asks, x.idle, x.idle_lanes, x.failed, x.relayed, x.relay_failed, x.direct_failed
+  FROM jsonb_to_recordset($1::jsonb) AS x(verifier text, hour text, asks bigint, idle bigint, idle_lanes bigint, failed bigint,
+    relayed bigint, relay_failed bigint, direct_failed bigint)
+  ON CONFLICT (verifier, hour) DO UPDATE SET asks = h.asks + excluded.asks, idle = h.idle + excluded.idle,
+    idle_lanes = h.idle_lanes + excluded.idle_lanes, failed = h.failed + excluded.failed,
+    relayed = h.relayed + excluded.relayed, relay_failed = h.relay_failed + excluded.relay_failed,
+    direct_failed = h.direct_failed + excluded.direct_failed
+$$;
+
+-- THE ROWS OF $3 (json) A PACK'S LEASE $1 STILL HOLDS for device $2 at $4 — or,
+-- $5 = 1, held still though run out — or held before (worker/tasks.js `answerPack`).
+CREATE OR REPLACE FUNCTION factory_held(text, text, text, text, bigint) RETURNS SETOF questions LANGUAGE sql STABLE AS $$
+  SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text($3::jsonb))
+    AND ((lease = $1 AND leased_to = $2 AND ($5 = 1 OR lease_until >= $4)) OR (lease_prev = $1 AND leased_to_prev = $2))
+$$;
+
+-- …AND THOSE DEVICE $1 ALREADY ANSWERED on engine $2: a send repeated is not a second witness.
+CREATE OR REPLACE FUNCTION factory_given(text, text, text) RETURNS SETOF text LANGUAGE sql STABLE AS $$
+  SELECT DISTINCT question FROM answers WHERE device = $1 AND engine = $2 AND question IN (SELECT jsonb_array_elements_text($3::jsonb))
+$$;
+
+-- ONE ANSWER WRITTEN, unless its device gave one on this engine already, the
+-- unique index `answers_once` the last word on a race. Columns in table order.
+CREATE OR REPLACE FUNCTION factory_answer(text, text, text, text, text, bigint, text, text, bigint, bigint, text, bigint, text)
+RETURNS void LANGUAGE sql AS $$
+  INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
+  SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+  WHERE $6 = 1 OR NOT EXISTS (SELECT 1 FROM answers x WHERE x.question = $1 AND x.device = $3 AND x.engine = $2)
+  ON CONFLICT (question, device, engine) WHERE official = 0 DO NOTHING
+$$;
+
+-- WHAT ANSWERS COST, folded into each producer's mean: `n` answers of `ms` in
+-- all move it as `n` folds of share $2 would ($1: [{ p, ms, n }]).
+CREATE OR REPLACE FUNCTION factory_learn(text, double precision) RETURNS void LANGUAGE sql AS $$
+  UPDATE producer_use u SET answer_ms = CASE WHEN u.answer_ms = 0 THEN x.ms / x.n
+      ELSE u.answer_ms * power(1 - $2, x.n) + x.ms / x.n * (1 - power(1 - $2, x.n)) END
+  FROM jsonb_to_recordset($1::jsonb) AS x(p text, ms double precision, n double precision) WHERE u.producer = x.p
+$$;
+
+-- QUESTIONS $1 (json) QUEUED FOR THE SETTLER on engine $2 beside peer $3; an
+-- answer on a row a settler pass holds clears its claim.
+CREATE OR REPLACE FUNCTION factory_queue(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
+  INSERT INTO settle_queue (question, engine, peer, joined, queued_at)
+  SELECT value, $2, $3, $4, $5 FROM jsonb_array_elements_text($1::jsonb)
+  ON CONFLICT (question, engine, peer) DO UPDATE SET claim = NULL, claimed_at = NULL
+$$;
+
+-- WHEN A VOLUNTEER LAST ANSWERED and what it spent ($2 ms on $3 tasks), in its hour.
+CREATE OR REPLACE FUNCTION verifier_worked(text, bigint, bigint, text) RETURNS void LANGUAGE sql AS $$
+  UPDATE verifiers SET compute_ms = compute_ms + $2, last_at = $4 WHERE id = $1;
+  INSERT INTO verifier_hours AS h (verifier, hour, tasks, ms) VALUES ($1, substr($4, 1, 13), $3, $2)
+    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = h.tasks + excluded.tasks, ms = h.ms + excluded.ms;
+$$;
+
+-- PROTOCOL 8'S RENEWAL: every row $1 ([{ lease, question }]) device $2 names
+-- held until $3 at least, as its holder or as the holder before. The ids held.
+-- Its rows are locked in id order first (worker/tasks.js `inIdOrder`): inside
+-- `board_sync` it holds them while it takes others.
+CREATE OR REPLACE FUNCTION factory_renew(text, text, text) RETURNS SETOF text LANGUAGE plpgsql AS $$
+DECLARE x text;
+BEGIN
+  PERFORM 1 FROM questions q, jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
+    WHERE q.id = r.question AND ((q.lease = r.lease AND q.leased_to = $2) OR (q.lease_prev = r.lease AND q.leased_to_prev = $2))
+    ORDER BY q.id FOR UPDATE OF q;
+  FOR x IN UPDATE questions q SET lease_until = GREATEST(q.lease_until, $3) FROM jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
+      WHERE q.id = r.question AND q.lease = r.lease AND q.leased_to = $2 RETURNING q.id LOOP
+    RETURN NEXT x;
+  END LOOP;
+  FOR x IN UPDATE questions q SET lease_prev_until = GREATEST(q.lease_prev_until, $3) FROM jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
+      WHERE q.id = r.question AND q.lease_prev = r.lease AND q.leased_to_prev = $2 RETURNING q.id LOOP
+    RETURN NEXT x;
+  END LOOP;
+END $$;
+
+-- …AND EVERY LIVE LEASE OF DEVICE $1 AT $2 ON A ROW IT NAMES NOWHERE ($3) goes back.
+CREATE OR REPLACE FUNCTION factory_release_unnamed(text, text, text) RETURNS void LANGUAGE sql AS $$
+  UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+  WHERE id IN (SELECT id FROM questions WHERE leased_to = $1 AND lease_until > $2
+    AND id NOT IN (SELECT value FROM jsonb_array_elements_text($3::jsonb)) ORDER BY id FOR UPDATE)
+$$;
+
+-- ROWS A CLIENT'S ENGINE REFUSED ($1: [{ question, step }]) by device $2 of
+-- owner $3 on engine $4: kept and given back; on the served engine $5, one
+-- refused by $6 owners is withdrawn and written down at $7. The ids withdrawn.
+CREATE OR REPLACE FUNCTION factory_refuse(text, text, text, text, text, bigint, text) RETURNS SETOF text LANGUAGE plpgsql AS $$
+DECLARE x record;
+BEGIN
+  INSERT INTO engine_refusals (question, device, owner, engine, step, at)
+    SELECT r.question, $2, $3, $4, r.step, $7 FROM jsonb_to_recordset($1::jsonb) AS r(question text, step text) ON CONFLICT DO NOTHING;
+  UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+    WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT r.question FROM jsonb_to_recordset($1::jsonb) AS r(question text))
+      AND leased_to = $2 ORDER BY id FOR UPDATE);
+  IF $4 IS DISTINCT FROM $5 THEN RETURN; END IF;
+  FOR x IN SELECT e.question, count(DISTINCT e.owner) AS owners FROM engine_refusals e
+      WHERE e.question IN (SELECT r.question FROM jsonb_to_recordset($1::jsonb) AS r(question text)) AND e.engine = $5
+      GROUP BY e.question HAVING count(DISTINCT e.owner) >= $6 ORDER BY e.question LOOP
+    UPDATE demands SET state = 'withdrawn' WHERE question = x.question AND state = 'live';
+    INSERT INTO refusal_withdrawals (question, engine, owners, at) VALUES (x.question, $5, x.owners, $7) ON CONFLICT (question) DO NOTHING;
+    PERFORM factory_restate(x.question);
+    RETURN NEXT x.question;
+  END LOOP;
+END $$;
+
+-- WHERE EACH OF $2 (json) STANDS for device $1: its answers counted and credited.
+CREATE OR REPLACE FUNCTION factory_states(text, text)
+RETURNS TABLE (id text, state text, fact_at text, credited bigint, mine bigint) LANGUAGE sql STABLE AS $$
+  SELECT q.id, q.state, q.fact_at,
+    (SELECT max(a.credited) FROM answers a WHERE a.question = q.id AND a.device = $1 AND a.void = 0),
+    (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = $1 AND a.void = 0)
+  FROM questions q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text($2::jsonb)) ORDER BY q.id
+$$;
+
+-- WHAT DEVICE $1 EARNED THAT NO ACCOUNT HOLDS, as worker/contribution.js
+-- `devicePointsOf` reads it: from hour $2 ('' all of it; NULL while an account
+-- holds it), since days $3 and $4, and since hour $5 when given; work, not points.
+CREATE OR REPLACE FUNCTION device_points(text, text, text, text, text) RETURNS jsonb LANGUAGE sql STABLE AS $$
+  SELECT jsonb_build_object('held', $2 IS NULL,
+    'work', CASE WHEN $2 IS NULL OR v.id IS NULL THEN 0 WHEN $2 = '' THEN v.work
+      ELSE COALESCE((SELECT sum(h.work) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $2), 0) END,
+    'recent', CASE WHEN $2 IS NULL OR v.id IS NULL THEN 0
+      ELSE COALESCE((SELECT sum(h.work) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $2 AND h.hour >= $3), 0) END,
+    'week', CASE WHEN $2 IS NULL OR v.id IS NULL THEN 0
+      ELSE COALESCE((SELECT sum(h.work) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $2 AND h.hour >= $4), 0) END,
+    'today', CASE WHEN $5 IS NULL THEN NULL ELSE (SELECT jsonb_build_object('tasks', COALESCE(sum(h.tasks), 0),
+      'ms', COALESCE(sum(h.ms), 0), 'work', COALESCE(sum(h.work), 0)) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $5) END)
+  FROM (SELECT 1) one LEFT JOIN verifiers v ON v.id = $1 AND v.banned = 0
+$$;
+
+-- PROTOCOL 8'S SYNC, ONE CALL AND ONE TRANSACTION (worker/sync.js, which builds
+-- `p` and reads `r`; docs/BOARD.md §"The sync in the database"). The order and
+-- every gate are worker/sync.js's JS path, step for step, so the two answer
+-- alike (scripts/check_sync_proc.mjs). Whatever needs JS raises WS001 and
+-- nothing is written: an answer the settler may not take, or a pack demand of
+-- a producer whose wanting is not `board_owed`. `outcome` says which reply:
+-- idle, busy, banned, early, full, alone (a waited-on head: worker/sync.js
+-- leases it), or pack.
+CREATE OR REPLACE PROCEDURE board_sync(p jsonb, INOUT r jsonb) LANGUAGE plpgsql AS $$
+DECLARE
+  v_dev text := p ->> 'id';
+  v_at text := p ->> 'at';
+  v_engine text := p ->> 'engine';
+  v_stale boolean := (p ->> 'stale')::boolean;
+  v_owner text := p ->> 'owner';
+  v_siblings text := p ->> 'siblings';
+  v_net text := p ->> 'net';
+  v_lanes bigint := (p ->> 'lanes')::bigint;
+  v_ceiling bigint := (p ->> 'ceiling_s')::bigint;
+  v_grace_s bigint := (p ->> 'grace_s')::bigint;
+  v_grace boolean := jsonb_typeof(p -> 'grace') = 'object';
+  v_lease text := p #>> '{pack,lease}';
+  v_taken jsonb := COALESCE(p -> 'taken', '[]'::jsonb);
+  v_dropped jsonb := COALESCE(p -> 'dropped', '[]'::jsonb);
+  v_withdrawn jsonb := '[]'::jsonb;
+  v_held jsonb := '[]'::jsonb;
+  v_states jsonb := '[]'::jsonb;
+  v_points jsonb;
+  v_queued boolean := false;
+  v_group jsonb;
+  v_ids jsonb;
+  v_ok jsonb;
+  v_rows jsonb;
+  v_kept jsonb := '[]'::jsonb;
+  v_me record;
+  v_holds record;
+  v_head record;
+  v_has_head boolean;
+  v_packable boolean;
+  v_fair record;
+  v_short boolean;
+  v_size bigint;
+  v_got jsonb;
+  v_ds jsonb;
+  v_unwanted jsonb := '[]'::jsonb;
+  v_wanted jsonb;
+  v_gone jsonb;
+  v_x record;
+BEGIN
+  -- ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME (worker/tasks.js `recordMany`).
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_dev, 0));
+  IF (p ->> 'seen')::boolean THEN
+    PERFORM verifier_seen(v_dev, p ->> 'day', v_at, (p ->> 'consent_v')::bigint, p ->> 'consent_at');
+    PERFORM verifier_asked(v_dev, v_at, p #>> '{asked,engine}', (p #>> '{asked,lanes}')::bigint, p #>> '{asked,before}');
+    IF jsonb_array_length(p -> 'asks') > 0 THEN PERFORM verifier_asks((p -> 'asks')::text); END IF;
+  END IF;
+
+  -- RESULTS, by the lease each was handed under (worker/tasks.js `answerPack`, `late`).
+  FOR v_group IN SELECT value FROM jsonb_array_elements(COALESCE(p -> 'groups', '[]'::jsonb)) LOOP
+    v_ids := (SELECT jsonb_agg(a ->> 'question') FROM jsonb_array_elements(v_group -> 'rows') a);
+    v_ok := COALESCE((SELECT jsonb_agg(g) FROM factory_given(v_dev, v_engine, v_ids::text) g), '[]'::jsonb);
+    v_rows := COALESCE((SELECT jsonb_agg(jsonb_build_object('a', x.a, 'id', q.id, 'verb', q.verb, 'producer', q.producer) ORDER BY x.k)
+        FROM jsonb_array_elements(v_group -> 'rows') WITH ORDINALITY x(a, k)
+        JOIN factory_held(v_group ->> 'lease', v_dev, v_ids::text, v_at, 1) q ON q.id = x.a ->> 'question'
+        WHERE NOT v_ok ? q.id), '[]'::jsonb);
+    IF jsonb_array_length(v_rows) > 0 THEN
+      IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_rows) i
+          WHERE NOT (p -> 'packable') ? (i ->> 'verb') OR NOT (p -> 'queueable') ? (i ->> 'producer')) THEN
+        RAISE EXCEPTION 'board_sync: an answer the settler may not take' USING ERRCODE = 'WS001';
+      END IF;
+      FOR v_x IN SELECT value AS i FROM jsonb_array_elements(v_rows) LOOP
+        PERFORM factory_answer(v_x.i ->> 'id', v_engine, v_dev, v_owner, v_net, 0, v_x.i #>> ARRAY['a', 'canons', v_x.i ->> 'verb'],
+          v_x.i #>> '{a,result}', (v_x.i #>> '{a,work}')::bigint, (v_x.i #>> '{a,compute_ms}')::bigint, v_x.i #>> '{a,counts}',
+          (v_x.i #>> '{a,lanes}')::bigint, v_at);
+      END LOOP;
+      PERFORM factory_learn(y.x::text, (p ->> 'share')::double precision)
+        FROM (SELECT jsonb_agg(jsonb_build_object('p', l.producer, 'ms', l.ms, 'n', l.n) ORDER BY l.producer) AS x
+          FROM (SELECT i ->> 'producer' AS producer, sum((i #>> '{a,compute_ms}')::bigint) AS ms, count(*) AS n
+            FROM jsonb_array_elements(v_rows) i WHERE (i #>> '{a,compute_ms}')::bigint > 0 GROUP BY 1) l) y
+        WHERE y.x IS NOT NULL;
+      PERFORM factory_queue((SELECT jsonb_agg(i ->> 'id' ORDER BY k) FROM jsonb_array_elements(v_rows) WITH ORDINALITY x(i, k))::text,
+        p #>> '{record,engine}', p #>> '{record,peer}', (p #>> '{record,joined}')::bigint, v_at);
+      v_queued := true;
+      PERFORM verifier_worked(v_dev, (SELECT COALESCE(sum((i #>> '{a,compute_ms}')::bigint), 0) FROM jsonb_array_elements(v_rows) i)::bigint,
+        jsonb_array_length(v_rows)::bigint, v_at);
+      v_ok := v_ok || (SELECT jsonb_agg(i ->> 'id') FROM jsonb_array_elements(v_rows) i);
+    END IF;
+    FOR v_x IN SELECT x.a ->> 'question' AS q FROM jsonb_array_elements(v_group -> 'rows') WITH ORDINALITY x(a, k) ORDER BY x.k LOOP
+      IF v_ok ? v_x.q THEN v_taken := v_taken || to_jsonb(v_x.q);
+      ELSE v_dropped := v_dropped || jsonb_build_object('question', v_x.q, 'why', 'not_held');
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  -- ROWS ITS ENGINE REFUSED; RENEWED every row it names as held; ANY OTHER LIVE LEASE GOES BACK.
+  IF NOT v_stale AND jsonb_array_length(p -> 'refused') > 0 THEN
+    v_withdrawn := COALESCE((SELECT jsonb_agg(f.x ORDER BY f.k) FROM factory_refuse((p -> 'refused')::text, v_dev, v_owner, v_engine,
+      p ->> 'served', (p ->> 'withdraw_at')::bigint, v_at) WITH ORDINALITY f(x, k)), '[]'::jsonb);
+  END IF;
+  v_rows := '[]'::jsonb;
+  IF NOT v_stale THEN
+    v_rows := COALESCE((SELECT jsonb_agg(x.h ORDER BY x.k) FROM jsonb_array_elements(p -> 'held') WITH ORDINALITY x(h, k)
+      WHERE NOT v_taken ? (x.h ->> 'question')
+        AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(p -> 'refused') f WHERE f ->> 'question' = x.h ->> 'question')), '[]'::jsonb);
+  END IF;
+  IF jsonb_array_length(v_rows) > 0 THEN
+    v_kept := COALESCE((SELECT jsonb_agg(DISTINCT k) FROM factory_renew(v_rows::text, v_dev, p ->> 'renew_until') k), '[]'::jsonb);
+  END IF;
+  PERFORM factory_release_unnamed(v_dev, v_at, (v_kept || CASE WHEN NOT v_stale AND p ->> 'keep' IS NOT NULL
+    THEN jsonb_build_array(p ->> 'keep') ELSE '[]'::jsonb END)::text);
+  v_held := COALESCE((SELECT jsonb_agg(jsonb_build_object('question', x.h ->> 'question', 'held', v_kept ? (x.h ->> 'question')) ORDER BY x.k)
+    FROM jsonb_array_elements(v_rows) WITH ORDINALITY x(h, k)), '[]'::jsonb);
+  IF jsonb_array_length(p -> 'states') > 0 THEN
+    v_states := COALESCE((SELECT jsonb_agg(to_jsonb(s)) FROM factory_states(v_dev, (p -> 'states')::text) s), '[]'::jsonb);
+  END IF;
+  IF jsonb_typeof(p -> 'points') = 'object' THEN
+    v_points := device_points(v_dev, p #>> '{points,from}', p #>> '{points,recent_from}', p #>> '{points,week_from}', p #>> '{points,since_hour}');
+  END IF;
+  r := jsonb_build_object('taken', v_taken, 'dropped', v_dropped, 'withdrawn', v_withdrawn, 'held', v_held, 'states', v_states,
+    'points', v_points, 'queued', v_queued);
+
+  -- THE GATES, in worker/sync.js's order.
+  SELECT banned, refused_until, last_at, next_at INTO v_me FROM verifiers WHERE id = v_dev;
+  IF v_stale THEN
+    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    r := r || jsonb_build_object('outcome', 'stale');
+    RETURN;
+  END IF;
+  IF v_me.banned <> 0 THEN
+    r := r || jsonb_build_object('outcome', 'banned', 'until', v_me.refused_until);
+    RETURN;
+  END IF;
+  IF NOT (p ->> 'consented')::boolean THEN
+    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    r := r || jsonb_build_object('outcome', 'idle');
+    RETURN;
+  END IF;
+  IF v_me.next_at IS NOT NULL
+      AND v_at < to_char((v_me.next_at::timestamptz - interval '2 seconds') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') THEN
+    r := r || jsonb_build_object('outcome', 'early', 'next_at', v_me.next_at);
+    RETURN;
+  END IF;
+  SELECT count(*) AS questions, count(DISTINCT lease) AS packs INTO v_holds FROM questions WHERE leased_to = v_dev AND lease_until > v_at;
+  IF (p ->> 'want')::bigint <= 0 OR v_holds.packs >= (p ->> 'packs_held')::bigint THEN
+    r := r || jsonb_build_object('outcome', 'full');
+    RETURN;
+  END IF;
+  SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling, v_grace_s, p ->> 'official_states');
+  v_has_head := FOUND;
+  v_packable := v_has_head AND v_head.waits = 0 AND (p -> 'packable') ? v_head.verb;
+  IF (NOT v_has_head AND NOT v_grace) OR (NOT v_grace AND NOT v_packable AND v_holds.questions > 0) THEN
+    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    r := r || jsonb_build_object('outcome', 'idle');
+    RETURN;
+  END IF;
+  IF NOT v_grace AND NOT v_packable THEN
+    r := r || jsonb_build_object('outcome', 'alone');
+    RETURN;
+  END IF;
+  SELECT * INTO v_fair FROM factory_open(v_at, (p #>> '{fair,scan}')::bigint, p #>> '{fair,asking_since}', (p #>> '{fair,per}')::bigint);
+  IF (p #>> '{fair,cap}')::bigint <> 0 AND v_fair.asking > (p #>> '{fair,cap}')::bigint
+      AND NOT (v_me.last_at IS NOT NULL AND v_me.last_at > p #>> '{fair,cap_since}') THEN
+    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    r := r || jsonb_build_object('outcome', 'busy');
+    RETURN;
+  END IF;
+  -- WHILE WORK IS SHORT an account past its fair share (the dice are JS's) is handed nothing.
+  v_short := v_fair.open / GREATEST(1, v_fair.asking) < (p #>> '{fair,short_rows}')::bigint;
+  IF v_short AND (p #>> '{fair,throttle}')::boolean THEN
+    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    r := r || jsonb_build_object('outcome', 'idle');
+    RETURN;
+  END IF;
+  v_size := GREATEST(1, LEAST((p #>> '{pack,max}')::bigint, (p #>> '{pack,by_pace}')::bigint, v_fair.open / GREATEST(1, v_fair.asking)));
+  v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_lease_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
+    v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', CASE WHEN v_packable THEN v_head.producer END, v_size,
+    v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev, (p ->> 'packs_held')::bigint) t),
+    '[]'::jsonb);
+
+  -- THE PACK'S DEMANDS, in worker/tasks.js `nextPack`'s order: a row no longer
+  -- owed is withdrawn where it is found, producer by producer, and left out.
+  v_ds := COALESCE((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.k) FROM (
+      SELECT d.question, d.producer, d.ref, d.payload, row_number() OVER (ORDER BY d.question, d.producer, d.ref) AS k
+      FROM demands d JOIN questions q ON q.id = d.question WHERE q.lease = v_lease AND q.leased_to = v_dev AND d.state = 'live') d), '[]'::jsonb);
+  IF jsonb_array_length(v_got) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(v_ds) e WHERE NOT (p -> 'owed') ? (e ->> 'producer')) THEN
+    RAISE EXCEPTION 'board_sync: a pack demand of a producer not owed in sql' USING ERRCODE = 'WS001';
+  END IF;
+  FOR v_x IN SELECT u.producer, u.ref, u.question FROM (
+      SELECT e ->> 'producer' AS producer, e ->> 'ref' AS ref, e ->> 'question' AS question, (e ->> 'payload')::jsonb AS payload,
+        (e ->> 'k')::bigint AS k, min((e ->> 'k')::bigint) OVER (PARTITION BY e ->> 'producer') AS first
+      FROM jsonb_array_elements(v_ds) e) u
+    WHERE NOT board_owed(u.payload ->> 'identity', u.payload ->> 'ruler', u.payload ->> 'mode') ORDER BY u.first, u.k LOOP
+    UPDATE demands SET state = 'withdrawn' WHERE producer = v_x.producer AND ref = v_x.ref;
+    PERFORM factory_restate(v_x.question);
+    v_unwanted := v_unwanted || jsonb_build_array(jsonb_build_array(v_x.producer, v_x.ref));
+  END LOOP;
+  v_wanted := COALESCE((SELECT jsonb_agg(e ORDER BY (e ->> 'k')::bigint) FROM jsonb_array_elements(v_ds) e
+    WHERE NOT v_unwanted @> jsonb_build_array(jsonb_build_array(e ->> 'producer', e ->> 'ref'))), '[]'::jsonb);
+  v_gone := COALESCE((SELECT jsonb_agg(t ->> 'id') FROM jsonb_array_elements(v_got) t
+    WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')), '[]'::jsonb);
+  IF jsonb_array_length(v_gone) > 0 THEN
+    UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+      WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT jsonb_array_elements_text(v_gone)) AND lease = v_lease ORDER BY id FOR UPDATE);
+  END IF;
+  v_got := COALESCE((SELECT jsonb_agg(jsonb_build_object('question', t ->> 'id', 'verb', t ->> 'verb', 'request', t ->> 'request',
+      'due_at', t ->> 'due_at', 'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',
+        'payload', e ->> 'payload') ORDER BY (e ->> 'k')::bigint), '[]'::jsonb) FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id'))
+      ORDER BY t ->> 'due_at' COLLATE "C", t ->> 'id' COLLATE "C")
+    FROM jsonb_array_elements(v_got) t WHERE NOT v_gone ? (t ->> 'id')), '[]'::jsonb);
+  IF jsonb_array_length(v_got) = 0 THEN
+    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    r := r || jsonb_build_object('outcome', 'idle');
+    RETURN;
+  END IF;
+  UPDATE verifiers SET next_at = p ->> 'floor_at' WHERE id = v_dev;
+  r := r || jsonb_build_object('outcome', 'pack', 'short', v_short, 'lease', v_lease, 'questions', v_got);
+END $$;

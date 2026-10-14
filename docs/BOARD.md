@@ -718,8 +718,37 @@ trigger.
 `factory_supersede` and the board's `board_owed`. Every caller in
 `worker/tasks.js`, `worker/verify.js` and `worker/sync.js` calls them, so no
 path can hand out by a rule of its own. They are SQL functions the planner
-inlines, so each is the query it replaces. **THE WORKER NEEDS THEM**: apply
+inlines, so each is the query it replaces. The writes a sync makes are stated
+there once too: `verifier_seen`, `verifier_asked`, `verifier_asks`,
+`factory_held`, `factory_given`, `factory_answer`, `factory_learn`,
+`factory_queue`, `verifier_worked`, `factory_renew`, `factory_release_unnamed`,
+`factory_refuse`, `factory_states`. **THE WORKER NEEDS THEM**: apply
 `sync.sql` before a deploy that calls a function it adds.
+
+**A PROTOCOL 8 SYNC IS ONE CALL** with the dial `sync_proc` at 1: `CALL
+board_sync(p, r)` does in one transaction what `worker/sync.js` otherwise does
+statement by statement, in the same order and through the same functions — a
+sync is then one wait on the database and one on the accounts (the device's
+span, for its points), where statement by statement each is one. `check_sync_proc` holds the
+two paths to the same replies and tables. What stays in the worker, and why:
+
+- **the canonical answer** (`VERBS[verb].canon`): only JS writes the bytes two
+  equal answers share, so each result comes with its canon for every verb;
+- **the fair-share dice and table** (worker/fair.js): the table is the
+  worker's, kept a minute; the call is told whether this account is throttled
+  should work be short;
+- **who a device is** and **its span** (the accounts database), and every
+  instant and dial, worked out once before the call;
+- **a question someone waits on** (`outcome: alone`): it is leased by `next`,
+  whose producer may be told of the lease;
+- **settling in the request** (`settle_async` 0): the answers are recorded and
+  settled first, as the statements do, and the call does the rest — settled
+  inside it, a pack would be chosen before the facts it waits on;
+- **whatever needs a producer's JS** — an answer the settler may not take, a
+  pack row a producer judges in JS (`wanted_in_sql` unset) — raises `WS001`:
+  nothing the call did is kept and the statements run instead.
+
+`sync_proc` at 0 is the statements, and the way back.
 
 #### Setting a server up
 

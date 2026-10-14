@@ -87,16 +87,18 @@ check("a result sent again is taken again and recorded once", again.taken.includ
 // answer not yet given — and still one answer lands.
 const raced = rows[rows.length - 1];
 const heldThen = await L.all("SELECT * FROM questions WHERE id = ?", raced);
-const blind = { ...env, LIBRARY: { ...env.LIBRARY, prepare: (sql) => (/^SELECT DISTINCT question FROM answers WHERE device/.test(sql)
-  ? { bind: () => ({ all: async () => ({ results: [] }) }) }
-  : /lease = \?1::text AND leased_to = \?2::text/.test(sql) && /^SELECT \* FROM questions/.test(sql)
-    ? { bind: () => ({ all: async () => ({ results: heldThen }) }) }
+const blindTo = [];
+const blind = { ...env, LIBRARY: { ...env.LIBRARY, prepare: (sql) => (/FROM factory_given\(/.test(sql)
+  ? (blindTo.push("given"), { bind: () => ({ all: async () => ({ results: [] }) }) })
+  : /FROM factory_held\(/.test(sql)
+    ? (blindTo.push("held"), { bind: () => ({ all: async () => ({ results: heldThen }) }) })
   : env.LIBRARY.prepare(sql)) } };
 const racedAnswer = { question: raced, result: { score: SCORE, metric: "kpm" }, work: WORK };
 for (let k = 0; k < 2; k++) {
   await facts().answerPack(blind, { device: A, owner: A, net: "" }, { lease, engine: "e1", answers: [racedAnswer], late: true });
 }
-check("a result sent twice at once is recorded once", await answersOf(raced, A) === 1, String(await answersOf(raced, A)));
+check("a result sent twice at once is recorded once", await answersOf(raced, A) === 1 && blindTo.join() === "held,given,held,given",
+  `${await answersOf(raced, A)} ${blindTo}`);
 
 // A LATE RESULT: the lease ran out, nobody took the row since.
 await L.run("UPDATE questions SET lease_until = ? WHERE id = ?", new Date(Date.now() - 60_000).toISOString(), rows[1]);

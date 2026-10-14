@@ -258,7 +258,26 @@ refused by `refusals_to_withdraw` owners on the served engine is withdrawn,
 written down, said by the watchdog and kept withdrawn when asked again. While work
 is short a pack is at most open over asking, leased `pack_lease_ms`; a question
 someone waits on goes alone, never to a computer holding a pack. `sync_off`
-answers `fallback: 7`.
+answers `fallback: 7`. `WFSIM_SYNC_PROC=1` runs it with each sync one call
+(dial `sync_proc`), alone and beside `WFSIM_SETTLE_ASYNC=1`.
+
+## `check_sync_proc`
+
+Plain node on PGlite: protocol 8's sync as one call (`board_sync`,
+docs/BOARD.md §"The sync in the database").
+
+- Six random runs, three with answers settled in the request and three with
+  them queued, hand the same syncs to two databases, one through the procedure
+  and one through the worker's statements. Each reply, and at the end every
+  table the sync touches, must match, leases named by the order they were
+  first handed out and an answer by its place, not its number. The books hold
+  rows two producers ask, rows the scorer stops owing, a row someone waits on,
+  a row a riven chat asks too, clients on older engines, an account over its
+  fair share, held and claimed devices, and clients that name a row done and
+  held at once.
+- The runs went through the call, and some came back to the worker (WS001).
+- Through the procedure a sync with results, renewals, states and points is at
+  most two waits on a database; through the statements it is more.
 
 ## `check_board_verify`
 

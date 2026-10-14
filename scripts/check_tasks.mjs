@@ -808,11 +808,13 @@ console.log("\nlocks: every statement that gives back many leases takes their ro
   // the source, since one PGlite connection cannot race two transactions.
   const { readFileSync } = await import("node:fs");
   const loose = [];
-  for (const f of ["tasks.js", "factory.js"]) {
+  for (const f of ["tasks.js", "factory.js", "pg/sync.sql"]) {
     const src = readFileSync(new URL(`../worker/${f}`, import.meta.url), "utf8");
-    for (const m of src.matchAll(/UPDATE questions SET (?:state = 'withdrawn', )?lease = NULL[\s\S]{0,160}?WHERE([\s\S]{0,40})/g)) {
+    for (const m of src.matchAll(/UPDATE questions SET (?:state = 'withdrawn', )?lease = NULL[\s\S]{0,160}?WHERE([\s\S]{0,240})/g)) {
       const where = m[1];
-      if (!/inIdOrder\(/.test(where) && !/^\s*id = \?/.test(where)) loose.push(`${f}: …${m[0].slice(0, 90).replace(/\s+/g, " ")}`);
+      // IN SQL, `inIdOrder` written out: the rows picked in id order and locked first.
+      const ordered = /^\s*id IN \(SELECT id FROM questions WHERE [^;]*?ORDER BY id FOR UPDATE\)/.test(where);
+      if (!/inIdOrder\(/.test(where) && !ordered && !/^\s*id = (\?|\$1\b)/.test(where)) loose.push(`${f}: …${m[0].slice(0, 90).replace(/\s+/g, " ")}`);
     }
   }
   check("a lease given back over many rows locks them in id order (inIdOrder), one row by its id", !loose.length, loose.join(" | "));

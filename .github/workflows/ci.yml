@@ -192,6 +192,14 @@ jobs:
           node scripts/check_board_verify.mjs
           node scripts/check_board_sync.mjs
           node scripts/check_fair.mjs
+      - name: A sync as one call answers and writes what the statements do, in two round trips at most
+        run: node scripts/check_sync_proc.mjs
+      - name: Protocol 8 holds with each sync one call, its answers settled in the request or queued
+        env:
+          WFSIM_SYNC_PROC: "1"
+        run: |
+          node scripts/check_board_sync.mjs
+          WFSIM_SETTLE_ASYNC=1 node scripts/check_board_sync.mjs
       - name: A row its page still computes is kept for it, and only a silent one loses it
         run: node scripts/check_renew.mjs
       - name: A riven gain is run by the community and credited when two owners agree

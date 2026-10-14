@@ -59,6 +59,8 @@ export const DIALS = {
     says: "this many owners refusing a question on the served engine withdraw it" },
   sync_off: { default: 0, min: 0, max: 1, unit: "switch",
     says: "1 answers every protocol 8 sync with fallback 7" },
+  sync_proc: { default: 0, min: 0, max: 1, unit: "switch",
+    says: "1: a protocol 8 sync's database work is one CALL board_sync (worker/pg/sync.sql); 0: the worker's statements one by one" },
   signal_mode: { default: 0, min: 0, max: 1, unit: "mode",
     says: "0: computers wait on the signal; 1: they ask the worker directly, the signal unused" },
   // THE SETTLER (worker/settler.js `settleBatch`, docs/BOARD.md §"The settler").

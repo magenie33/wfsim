@@ -96,7 +96,7 @@ const hex = (buf) => [...new Uint8Array(buf)].map((x) => x.toString(16).padStart
 export async function questionId(verb, request) {
   return hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${verb}\n${canon(request)}`))).slice(0, 32);
 }
-const newLease = () => hex(crypto.getRandomValues(new Uint8Array(16)));
+export const newLease = () => hex(crypto.getRandomValues(new Uint8Array(16)));
 
 /// WHO A DEVICE IS, as eligibility needs it: its owner — the account that claimed
 /// it, or the device itself — and every device of that owner, so a further answer
@@ -399,7 +399,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   }
   /// …AND WHAT ITS ANSWERS COST, folded into each producer's mean: `k` answers
   /// move it as `k` folds of `PRODUCER_MEAN_SHARE` would. A statement for the
-  /// answers' own batch, or null.
+  /// answers' own batch, or null. worker/pg/sync.sql `factory_learn`.
   function learnCost(db, items) {
     const by = {};
     for (const { q, a } of items) {
@@ -407,11 +407,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const b = by[q.producer || ""] ||= { ms: 0, n: 0 };
       b.ms += a.compute_ms; b.n += 1;
     }
-    const rows = Object.entries(by).sort().map(([p, b]) => ({ p, mean: b.ms / b.n, keep: (1 - PRODUCER_MEAN_SHARE) ** b.n }));
+    const rows = Object.entries(by).sort().map(([p, b]) => ({ p, ms: b.ms, n: b.n }));
     if (!rows.length) return null;
-    return db.prepare(`UPDATE producer_use u SET answer_ms = CASE WHEN u.answer_ms = 0 THEN x.mean ELSE u.answer_ms * x.keep + x.mean * (1 - x.keep) END
-        FROM jsonb_to_recordset((?1::text)::jsonb) AS x(p text, mean double precision, keep double precision) WHERE u.producer = x.p`)
-      .bind(JSON.stringify(rows));
+    return db.prepare("SELECT factory_learn(?1::text, ?2::double precision)").bind(JSON.stringify(rows), PRODUCER_MEAN_SHARE);
   }
   /// A PRODUCER WITH NOTHING OPEN is lifted to the least any producer with open
   /// work has used, so it comes back level and never with a share banked while
@@ -423,6 +421,18 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   }
   /// WHETHER A HEAD GOES IN A PACK, or alone (`next`).
   const packable = (q) => !q.waits && !!(verbs[q.verb] || {}).pack;
+  /// AN ANSWER THE SETTLER MAY TAKE (dial `settle_async`): to a packable verb,
+  /// asked by a producer that is not told each answer (`on_answer` runs here).
+  const queueable = (q) => !!(verbs[q.verb] || {}).pack && !!producers[q.producer] && !producers[q.producer].on_answer;
+  /// …THE SAME RULES as data for the sync's procedure (worker/sync.js): the
+  /// producers whose demands it may judge in SQL (`wanted_in_sql`, none told of
+  /// a lease), and each verb's canonical answer, which only JS writes byte-exact.
+  const syncRules = {
+    packable: Object.keys(verbs).filter((v) => verbs[v].pack),
+    queueable: Object.keys(producers).filter((p) => !producers[p].on_answer),
+    owed: Object.keys(producers).filter((p) => producers[p].wanted_in_sql && !producers[p].on_lease),
+    canons: (result, work) => Object.fromEntries(Object.keys(verbs).map((v) => [v, verbs[v].canon(result, work)])),
+  };
 
   /// A WITNESS ANSWERS, under its lease. `w`: { device, owner, net, official }.
   /// `counts`, `lanes` and `compute_ms` are what the answer cost and on how many
@@ -446,8 +456,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// nobody took it since — the page keeps results and sends them later.
   async function answerPack(env, w, { lease, engine, served = null, join = false, answers, done = false, keep = null, late = false }, now = Date.now()) {
     const db = env.LIBRARY;
-    const { results: held } = await db.prepare(`SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text((?4::text)::jsonb))
-         AND ((lease = ?1::text AND leased_to = ?2::text AND (?5::bigint = 1 OR lease_until >= ?3::text)) OR (lease_prev = ?1::text AND leased_to_prev = ?2::text))`)
+    const { results: held } = await db.prepare("SELECT * FROM factory_held(?1::text, ?2::text, ?4::text, ?3::text, ?5::bigint)")
       .bind(lease, w.device, iso(now), JSON.stringify(answers.map((a) => a.question)), late ? 1 : 0).all();
     const byId = new Map(held.map((q) => [q.id, q]));
     // A PAGE SENDS AGAIN what got no reply, and the reply may be all that was lost:
@@ -457,7 +466,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // settling it gave the lease back, and the reply that said so was lost.
     const already = [];
     if (answers.length) {
-      const { results: given } = await db.prepare("SELECT DISTINCT question FROM answers WHERE device = ?1::text AND engine = ?2::text AND question IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))")
+      const { results: given } = await db.prepare("SELECT g AS question FROM factory_given(?1::text, ?2::text, ?3::text) g")
         .bind(w.device, engine, JSON.stringify(answers.map((a) => a.question))).all();
       for (const r of given) { byId.delete(r.question); already.push(r.question); }
     }
@@ -472,51 +481,26 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// still held.
   async function renewMany(env, device, rows, ms, now = Date.now()) {
     if (!rows.length) return [];
-    const db = env.LIBRARY, list = JSON.stringify(rows.map(({ lease, question }) => ({ lease, question })));
-    const [kept, before] = await db.batch([
-      db.prepare(`UPDATE questions q SET lease_until = GREATEST(q.lease_until, ?3::text)
-          FROM jsonb_to_recordset((?1::text)::jsonb) AS r(lease text, question text)
-          WHERE q.id = r.question AND q.lease = r.lease AND q.leased_to = ?2::text RETURNING q.id`).bind(list, device, iso(now + ms)),
-      db.prepare(`UPDATE questions q SET lease_prev_until = GREATEST(q.lease_prev_until, ?3::text)
-          FROM jsonb_to_recordset((?1::text)::jsonb) AS r(lease text, question text)
-          WHERE q.id = r.question AND q.lease_prev = r.lease AND q.leased_to_prev = ?2::text RETURNING q.id`).bind(list, device, iso(now + ms)),
-    ]);
-    return [...new Set([...kept.results, ...before.results].map((r) => r.id))];
+    const list = JSON.stringify(rows.map(({ lease, question }) => ({ lease, question })));
+    const { results } = await env.LIBRARY.prepare("SELECT k AS id FROM factory_renew(?1::text, ?2::text, ?3::text) k")
+      .bind(list, device, iso(now + ms)).all();
+    return [...new Set(results.map((r) => r.id))];
   }
   /// …AND A SYNC STATES EVERYTHING ITS ID HOLDS: a live lease on a row it names
   /// nowhere is one its page lost, given back here rather than waited out.
   async function releaseUnnamed(env, device, named, now = Date.now()) {
-    await env.LIBRARY.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-        WHERE ${inIdOrder("leased_to = ?1::text AND lease_until > ?2::text AND id NOT IN (SELECT value FROM jsonb_array_elements_text((?3::text)::jsonb))")}`)
-      .bind(device, iso(now), JSON.stringify(named)).run();
+    await env.LIBRARY.prepare("SELECT factory_release_unnamed(?1::text, ?2::text, ?3::text)").bind(device, iso(now), JSON.stringify(named)).run();
   }
 
   /// ROWS A CLIENT'S ENGINE REFUSED, kept so they are not handed to it again and
   /// given back now; one refused by `withdrawAt` owners on the served engine is
   /// withdrawn — no client can answer it — and written down for the watchdog.
+  /// worker/pg/sync.sql `factory_refuse`.
   async function refuseRows(env, w, engine, served, rows, withdrawAt, now = Date.now()) {
     if (!rows.length) return [];
-    const db = env.LIBRARY, at = iso(now), ids = JSON.stringify(rows.map((r) => r.question));
-    await db.batch([
-      db.prepare(`INSERT INTO engine_refusals (question, device, owner, engine, step, at)
-          SELECT r.question, ?2::text, ?3::text, ?4::text, r.step, ?5::text FROM jsonb_to_recordset((?1::text)::jsonb) AS r(question text, step text)
-          ON CONFLICT DO NOTHING`).bind(JSON.stringify(rows), w.device, w.owner || w.device, engine, at),
-      db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-          WHERE ${inIdOrder("id IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb)) AND leased_to = ?2::text")}`).bind(ids, w.device),
-    ]);
-    if (engine !== served) return [];
-    const { results: out } = await db.prepare(`SELECT question, count(DISTINCT owner) AS owners FROM engine_refusals
-        WHERE question IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb)) AND engine = ?2::text
-        GROUP BY question HAVING count(DISTINCT owner) >= ?3::bigint`).bind(ids, served, withdrawAt).all();
-    for (const r of out) {
-      await db.batch([
-        db.prepare("UPDATE demands SET state = 'withdrawn' WHERE question = ? AND state = 'live'").bind(r.question),
-        db.prepare(`INSERT INTO refusal_withdrawals (question, engine, owners, at) VALUES (?, ?, ?, ?) ON CONFLICT (question) DO NOTHING`)
-          .bind(r.question, served, r.owners, at),
-      ]);
-      await restate(db, r.question);
-    }
-    return out.map((r) => r.question);
+    const { results } = await env.LIBRARY.prepare("SELECT f AS question FROM factory_refuse(?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text) f")
+      .bind(JSON.stringify(rows), w.device, w.owner || w.device, engine, served, withdrawAt, iso(now)).all();
+    return results.map((r) => r.question);
   }
 
   /// THE OFFICIAL MACHINES ANSWER WITHOUT A LEASE: they are trusted, and what they
@@ -538,11 +522,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // this engine is not written again: a beacon on the way out raced a sync still
     // in flight, both checked before either wrote, and both rows landed.
     const lock = db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device);
-    const writes = items.map(({ q, a }) => db.prepare(
-      `INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
-       SELECT ?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text, ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text
-       WHERE ?6::bigint = 1 OR NOT EXISTS (SELECT 1 FROM answers x WHERE x.question = ?1::text AND x.device = ?3::text AND x.engine = ?2::text)
-       ON CONFLICT (question, device, engine) WHERE official = 0 DO NOTHING`)
+    const writes = items.map(({ q, a }) => db.prepare(`SELECT factory_answer(?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text,
+        ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text)`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
         a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
     const learnt = official ? null : learnCost(db, items);
@@ -551,22 +532,16 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // the request), in the answers' own transaction, so one written is one queued.
     // An answer on a row a settler pass holds clears its claim (`settleQueued`).
     const peer = mine !== engine && !join ? mine : null;
-    const queued = !official && items.every(({ q }) => (verbs[q.verb] || {}).pack && producers[q.producer] && !producers[q.producer].on_answer)
-      && (await dialsOf(env, now)).settle_async === 1;
-    const queue = queued ? db.prepare(`INSERT INTO settle_queue (question, engine, peer, joined, queued_at)
-        SELECT value, ?2::text, ?3::text, ?4::bigint, ?5::text FROM jsonb_array_elements_text((?1::text)::jsonb)
-        ON CONFLICT (question, engine, peer) DO UPDATE SET claim = NULL, claimed_at = NULL`)
+    const queued = !official && items.every(({ q }) => queueable(q)) && (await dialsOf(env, now)).settle_async === 1;
+    const queue = queued ? db.prepare("SELECT factory_queue(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)")
       .bind(JSON.stringify(items.map(({ q }) => q.id)), engine, peer || "", join ? 1 : 0, at) : null;
     await db.batch([lock, ...writes, ...(learnt ? [learnt] : []), ...(queue ? [queue] : [])]);
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
-      // §"Contribution") — a statistic, so each on its own and outside the answers'
-      // transaction: inside it, it held the device's row against every credit.
+      // §"Contribution") — a statistic, so outside the answers' transaction:
+      // inside it, it held the device's row against every credit.
       const ms = items.reduce((t, { a }) => t + (a.compute_ms || 0), 0);
-      await db.prepare("UPDATE verifiers SET compute_ms = compute_ms + ?, last_at = ? WHERE id = ?").bind(ms, at, w.device).run();
-      await db.prepare(`INSERT INTO verifier_hours AS h (verifier, hour, tasks, ms) VALUES (?, ?, ?, ?)
-                    ON CONFLICT (verifier, hour) DO UPDATE SET tasks = h.tasks + excluded.tasks, ms = h.ms + excluded.ms`)
-        .bind(w.device, at.slice(0, 13), items.length, ms).run();
+      await db.prepare("SELECT verifier_worked(?1::text, ?2::bigint, ?3::bigint, ?4::text)").bind(w.device, ms, items.length, at).run();
     }
     // …AND SETTLED THERE, the lease given back with it. A handle that asks for it
     // (a check's database, scripts/pg/test_db.mjs) has the pass run at once.
@@ -1030,7 +1005,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     return out;
   }
 
-  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, liftIdle, renew, renewRow, renewMany, release, releaseAll, releaseAllOf, releaseUnnamed,
+  return { demand, demandAll, withdraw, next, nextPack, headOf, packable, syncRules, liftIdle, renew, renewRow, renewMany, release, releaseAll, releaseAllOf, releaseUnnamed,
     answer, answerPack, answerOfficial, refuseRows, claim, refuse, settle, settleQueued, audit, redeliver, repay };
 }
 

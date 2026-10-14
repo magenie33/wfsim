@@ -242,15 +242,11 @@ async function work(request, env) {
   const who = await witnessOf(env, id);
   const w = { device: id, owner: who.owner, siblings: who.siblings, net: await netOf(request, env), lanes };
   const f = facts();
-  const [, , , , , held, me, fair, head] = await db.batch([
+  const [, , held, me, fair, head] = await db.batch([
     // THE CLIENT, remembered by the id it made and nothing else; its day kept,
     // and a refusal — a cool-down (scripts/live_orders.mjs `ban`) — lifted once over.
-    db.prepare("INSERT INTO verifiers (id, seen) VALUES (?, ?) ON CONFLICT DO NOTHING").bind(id, day()),
+    seenOf(db, id, at, c),
     asked,
-    db.prepare("UPDATE verifiers SET consent_v = ?::bigint, consent_at = ?::text WHERE id = ?::text AND (consent_v IS DISTINCT FROM ?::bigint OR consent_at IS DISTINCT FROM ?::text)")
-      .bind(c.v, c.at, id, c.v, c.at),
-    db.prepare("UPDATE verifiers SET banned = 0 WHERE id = ? AND banned = 1 AND (refused_until IS NULL OR refused_until <= ?)").bind(id, at),
-    db.prepare("UPDATE verifiers SET seen = ?::text WHERE id = ?::text AND seen IS DISTINCT FROM ?::text").bind(day(), id, day()),
     ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
       : f.releaseAllOf(env, id, now),
     db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
@@ -320,18 +316,16 @@ export function idleOf(list, now) {
 }
 const HOUR = /^\d{4}-\d\d-\d\dT\d\d$/;
 export function asksOf(db, id, ahead, idle, now, relayed = false) {
+  const rows = asksRows(id, ahead, idle, now, relayed);
+  return rows.length ? db.prepare("SELECT verifier_asks(?1::text)").bind(JSON.stringify(rows)) : db.prepare("SELECT 1");
+}
+/// …AS THE ROWS worker/pg/sync.sql `verifier_asks` adds, which the sync's procedure is handed.
+export function asksRows(id, ahead, idle, now, relayed = false) {
   const rows = idleOf(idle, now), hour = iso(now).slice(0, 13);
   const all = new Map([...rows].map(([h, x]) => [h, { seen: 0, relayed: 0, ...x }]));
   if (!ahead) all.set(hour, { asks: 0, failed: 0, lanes: 0, relay_failed: 0, direct_failed: 0, ...all.get(hour), seen: 1, relayed: relayed ? 1 : 0 });
-  if (!all.size) return db.prepare("SELECT 1");
-  const values = [...all].map(() => "(?::text, ?::text, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint, ?::bigint)").join(", ");
-  return db.prepare(`INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed, direct_failed)
-      VALUES ${values}
-      ON CONFLICT (verifier, hour) DO UPDATE SET asks = h.asks + excluded.asks, idle = h.idle + excluded.idle,
-        idle_lanes = h.idle_lanes + excluded.idle_lanes, failed = h.failed + excluded.failed,
-        relayed = h.relayed + excluded.relayed, relay_failed = h.relay_failed + excluded.relay_failed,
-        direct_failed = h.direct_failed + excluded.direct_failed`)
-    .bind(...[...all].flatMap(([h, x]) => [id, h, x.seen, x.asks, x.lanes, x.failed, x.relayed || 0, x.relay_failed || 0, x.direct_failed || 0]));
+  return [...all].map(([h, x]) => ({ verifier: id, hour: h, asks: x.seen, idle: x.asks, idle_lanes: x.lanes, failed: x.failed,
+    relayed: x.relayed || 0, relay_failed: x.relay_failed || 0, direct_failed: x.direct_failed || 0 }));
 }
 
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
@@ -339,12 +333,18 @@ export function asksOf(db, id, ahead, idle, now, relayed = false) {
 /// most once a minute, or a page asking every ten seconds is a write each time.
 export const ASKED_EVERY_MS = DIAL_DEFAULTS.asked_every_ms;
 export function askedOf(db, b, now, d = DIAL_DEFAULTS) {
-  const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
-  const lanes = b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-  return db.prepare(`UPDATE verifiers SET asked_at = ?1::text, asked_engine = ?2::text, asked_lanes = coalesce(?3::bigint, asked_lanes)
-      WHERE id = ?4::text AND (asked_at IS NULL OR asked_at < ?5::text OR asked_engine IS DISTINCT FROM ?2::text
-        OR (?3::bigint IS NOT NULL AND asked_lanes IS DISTINCT FROM ?3::bigint))`)
-    .bind(iso(now), engine, lanes, b.verifier, iso(now - d.asked_every_ms));
+  const a = askedArgs(b, now, d);
+  return db.prepare("SELECT verifier_asked(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)").bind(b.verifier, iso(now), a.engine, a.lanes, a.before);
+}
+/// THE CLIENT REMEMBERED by its id and day at `at`, its yes `c` ({ v, at }, or
+/// null) kept: worker/pg/sync.sql `verifier_seen`.
+export const seenOf = (db, id, at, c) => db.prepare("SELECT verifier_seen(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)")
+  .bind(id, day(), at, c ? c.v : null, c ? c.at : null);
+/// …AS worker/pg/sync.sql `verifier_asked` takes it, which the sync's procedure is handed.
+export function askedArgs(b, now, d = DIAL_DEFAULTS) {
+  return { engine: b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`,
+    lanes: b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1,
+    before: iso(now - d.asked_every_ms) };
 }
 
 /// WHAT THE CLIENT MEASURED, a pack's rows together, under the pack's lease —

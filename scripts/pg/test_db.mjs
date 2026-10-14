@@ -60,6 +60,11 @@ export async function testDb(...kinds) {
     await q("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('settle_async', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
     db.settleAtOnce = true;
   }
+  // WFSIM_SYNC_PROC=1 RUNS A CHECK WITH EACH PROTOCOL 8 SYNC ONE CALL (dial
+  // `sync_proc`, worker/sync.js), so it holds on both paths.
+  if (process.env.WFSIM_SYNC_PROC === "1" && kinds.includes("library")) {
+    await q("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('sync_proc', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
+  }
   return Object.assign(db, {
     exec: (sql) => step(schema, () => pg.exec(sql)),
     get: async (sql, ...args) => (await q(sql, args)).rows[0] ?? null,
