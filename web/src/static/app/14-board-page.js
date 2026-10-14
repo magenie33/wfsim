@@ -469,16 +469,19 @@ function renderBenchBoard() {
       : `<div class="sim-empty">${escHtml(tr("No weapon matches these filters."))}</div>`;
   };
   const pool = benchPool();
+  // A RANK HOLDS UNDER THIS RULER'S FIGHT AND NO OTHER, said above the lists:
+  // inside the collapsed rules, a reader comparing rows never sees it.
+  const scope = `<p class="bench-note">${escHtml(tr("This ranking shows results in this benchmark's scenario, a starting point for a build. Adjust it to how you actually play."))}</p>`;
   if (benchSlot === "exalted") {
     // TWO LISTS, NEVER ONE — see `benchSlot`.
     const ability = ranked(pool.filter((w) => w.exalted)), weapon = ranked(pool.filter((w) => !w.exalted));
-    box.innerHTML = [[ability, "Scales with ability strength — ranked on its own"], [weapon, "Does not scale with ability strength"]]
+    box.innerHTML = scope + ([[ability, "Scales with ability strength — ranked on its own"], [weapon, "Does not scale with ability strength"]]
       .filter(([rows]) => rows.length).map(([rows, label]) =>
         `<h3 class="wgroup-h">${escHtml(tr(label))}</h3>${head(rows)}${list(rows)}`).join("")
-      || `<div class="sim-empty">${escHtml(tr("No weapon matches these filters."))}</div>`;
+      || `<div class="sim-empty">${escHtml(tr("No weapon matches these filters."))}</div>`);
   } else {
     const rows = ranked(pool);
-    box.innerHTML = head(rows) + (benchSlot === "all" && (META.weapons || []).some((w) => w.exalted)
+    box.innerHTML = scope + head(rows) + (benchSlot === "all" && (META.weapons || []).some((w) => w.exalted)
       ? `<p class="bench-note">${escHtml(tr("Exalted weapons that scale with ability strength are ranked on their own, under Exalted Weapon."))}</p>` : "")
       + list(rows);
   }

@@ -2026,6 +2026,7 @@ ui:
   "Scales with ability strength — ranked on its own": "随技能强度变化 —— 单独排名"
   "Does not scale with ability strength": "不随技能强度变化"
   "Exalted weapons that scale with ability strength are ranked on their own, under Exalted Weapon.": "随技能强度变化的显赫武器不进总榜，在「显赫武器」里单独排名。"
+  "This ranking shows results in this benchmark's scenario, a starting point for a build. Adjust it to how you actually play.": "排行榜是该场景下的结果，可作为配卡的起点，请根据实战自行调整。"
   "{n} of {t} shown · scroll for more": "已显示 {n} / {t} · 继续下滑加载更多"
   # WEAPON TAGS — the prefixes DE's own Chinese names carry (布莱顿·破坏者,
   # 赤毒·希尔德, 终幕·脓痘, 棱晶·空刃, 斯特朗·亡魂), "集团" as DE's syndicate
