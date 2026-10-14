@@ -670,8 +670,12 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
         return;
       }
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
+      // A FACT IS NO OLDER THAN ITS LAST WITNESS: an answer stamped by its request
+      // can land after a settler pass took its time, and every reader of a fact
+      // counts only the answers at or before `fact_at` (`repay`, the shadow).
+      const formed = [iso(now), ...group.map((a) => a.at)].sort().pop();
       writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
-        .bind(state, lead.canon, engine, iso(now), q.id));
+        .bind(state, lead.canon, engine, formed, q.id));
       credits.push(...group, ...joinersParted(all, served, group, same, engine));
       deliverPlan(env, { ...q, canon: lead.canon }, now, lead, demands, writes, later);
       return;

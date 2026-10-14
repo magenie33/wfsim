@@ -723,6 +723,25 @@ console.log("\nan agreeing answer outside the witnesses is marked covered, and r
     && (await db.get("SELECT work FROM verifiers WHERE id = 'c3'")).work === 0);
 }
 
+console.log("\na fact is no older than its last witness");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES ('late', 'simulate', '{}', 'open', ?, ?)`,
+    new Date(NOW + 3_600_000).toISOString(), new Date(NOW - 60_000).toISOString());
+  // THE SECOND ANSWER'S REQUEST STAMPED IT after the settler took its time.
+  const later = new Date(NOW + 500).toISOString();
+  for (const [dev, at] of [["l1", new Date(NOW - 30_000).toISOString()], ["l2", later]]) {
+    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
+    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+      VALUES ('late', 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, 0, 0)`, dev, dev, dev, at);
+  }
+  await f.settle(env, "late", "e1", NOW);
+  const q = await db.get("SELECT state, fact_at FROM questions WHERE id = 'late'");
+  check("a fact formed by an answer stamped after the pass's own time is dated no earlier than it",
+    q.state === "fact" && q.fact_at >= later, JSON.stringify(q));
+}
+
 console.log("\nwhat a refusal takes back goes to the official pool");
 {
   const db = await testDb("library"), env = { LIBRARY: db };
