@@ -194,8 +194,10 @@ CREATE TABLE IF NOT EXISTS answers (
   work       BIGINT NOT NULL,
   compute_ms BIGINT,
   at         TEXT COLLATE "C" NOT NULL,
-  -- Set when it is one of a fact's witnesses, credited; `void` when its witness
-  -- was refused, after which it counts for nothing.
+  -- 1 when it is one of a fact's witnesses, credited; 2 COVERED, an agreeing
+  -- answer whose owner or network a witness already is, never to be paid
+  -- (worker/tasks.js `repay`); `void` when its witness was refused, after
+  -- which it counts for nothing.
   credited   BIGINT NOT NULL DEFAULT 0,
   void       BIGINT NOT NULL DEFAULT 0,
   -- WHAT IT COST, to fit what a point is worth and never credited: the engine's

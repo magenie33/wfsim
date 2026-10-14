@@ -700,6 +700,28 @@ console.log("\nan answer its owner was already paid for never holds a place in t
     n === 2 && !(await db.get("SELECT credited FROM answers WHERE device = 'a3'")).credited, JSON.stringify({ n }));
 }
 
+console.log("\nan agreeing answer outside the witnesses is marked covered, and read no more");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const t = (m) => new Date(NOW - m * 60_000).toISOString();
+  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+    VALUES ('twice', 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, t(90), t(90), t(60));
+  // c3 IS c1's OWNER AGAIN, after it: no witness while c1 is one.
+  for (const [dev, owner, at] of [["c1", "o1", t(70)], ["c2", "o2", t(68)], ["c3", "o1", t(66)]]) {
+    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
+    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+      VALUES ('twice', 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, 0, 0)`, dev, owner, dev, at);
+  }
+  const n = await f.repay(env, NOW);
+  const state = Object.fromEntries((await db.all("SELECT device, credited FROM answers")).map((r) => [r.device, Number(r.credited)]));
+  check("the witnesses are paid (1) and the owner's second answer is covered (2)", n === 2 && state.c1 === 1 && state.c2 === 1 && state.c3 === 2,
+    JSON.stringify({ n, state }));
+  check("...and no sweep reads it again", (await f.repay(env, NOW)) === 0
+    && Number((await db.get("SELECT credited FROM answers WHERE device = 'c3'")).credited) === 2
+    && (await db.get("SELECT work FROM verifiers WHERE id = 'c3'")).work === 0);
+}
+
 console.log("\nwhat a refusal takes back goes to the official pool");
 {
   const db = await testDb("library"), env = { LIBRARY: db };

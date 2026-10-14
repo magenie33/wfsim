@@ -290,7 +290,7 @@ async function mine(request, env) {
     used.add(r.code);
     // WHAT THE FACTORY SAYS of this browser's answer to that question.
     const q = r.weapon == null ? null : await env.LIBRARY.prepare(
-      `SELECT q.state, q.fact_at, (SELECT max(credited) FROM answers x WHERE x.question = q.id AND x.device = ?) AS credited
+      `SELECT q.state, q.fact_at, (SELECT max(CASE WHEN credited = 1 THEN 1 ELSE 0 END) FROM answers x WHERE x.question = q.id AND x.device = ?) AS credited
          FROM demands d JOIN questions q ON q.id = d.question WHERE d.ref = ? AND d.producer IN ('chat', 'survey')`)
       .bind(b.verifier, r.code).first();
     const state = !q ? "gone" : q.credited ? "confirmed" : q.state === "fact" || q.state === "spot" ? "gone" : "waiting";

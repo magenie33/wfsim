@@ -828,7 +828,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// hour the fact formed, as they would have been. Up to `max` questions a call.
   /// AN ANSWER WHOSE OWNER OR NETWORK WAS ALREADY PAID FOR THE QUESTION is no
   /// witness (`independent`) and is never owed: picked, the oldest of them held
-  /// every call's places and nobody behind them was ever paid.
+  /// every call's places and nobody behind them was ever paid. So an agreeing
+  /// answer outside the witnesses is marked COVERED (`credited = 2`) when found,
+  /// and no call reads it again.
   async function repay(env, now = Date.now(), max = 200) {
     const db = env.LIBRARY;
     const { results: qs } = await db.prepare(`SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
@@ -843,6 +845,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const { results: all } = await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 AND official = 0 AND canon = ? AND at <= ? ORDER BY id")
         .bind(q.id, q.canon, q.fact_at).all();
       const group = independent([...all.filter((a) => a.engine === q.fact_engine), ...all.filter((a) => a.engine !== q.fact_engine)]);
+      const witnesses = new Set(group.map((a) => a.id)), covered = all.filter((a) => !a.credited && !witnesses.has(a.id));
+      if (covered.length) {
+        await db.prepare("UPDATE answers SET credited = 2 WHERE id IN (SELECT value::bigint FROM jsonb_array_elements_text((?::text)::jsonb)) AND credited = 0")
+          .bind(JSON.stringify(covered.map((a) => String(a.id)))).run();
+      }
       const owed = group.filter((a) => !a.credited);
       if (!owed.length) continue;
       try { await credit(db, owed, Date.parse(q.fact_at)); paid += owed.length; } catch (_) { /* paid next run */ }

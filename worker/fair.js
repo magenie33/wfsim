@@ -79,7 +79,7 @@ export async function tableOf(env, engine, now) {
   const devices = [...new Set([...asking.map((r) => r.id), ...owned.keys()])];
   const on = JSON.stringify(asking.map((r) => r.id));
   const [got, paid, best] = await db.batch([
-    db.prepare(`SELECT device, sum(work) AS work, sum(CASE WHEN credited <> 0 THEN work END) AS credited FROM answers
+    db.prepare(`SELECT device, sum(work) AS work, sum(CASE WHEN credited = 1 THEN work END) AS credited FROM answers
                  WHERE device IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))
                  AND at > ?2::text AND engine = ?3::text AND official = 0 AND void = 0 GROUP BY 1`)
       .bind(JSON.stringify(devices), iso(now - FAIR_WINDOW_MS), engine),
