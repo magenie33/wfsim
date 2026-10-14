@@ -121,8 +121,14 @@ console.log("the work signal");
   const target = { endpoint: "https://acct.r2.cloudflarestorage.com", bucket: "wfsim-public", accessKey: "k", secretKey: "s" };
   const go = () => run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }),
     target, put: async (t, o) => { puts.push({ t, o }); } });
-  check("one pass writes the signal once", (await go()) === 0 && puts.length === 1, JSON.stringify(puts.map((p) => p.o.key)));
-  const { o } = puts[0], body = JSON.parse(o.body);
+  const signals = () => puts.filter((p) => p.o.key === SIGNAL_KEY);
+  check("one pass writes the signal once", (await go()) === 0 && signals().length === 1, JSON.stringify(puts.map((p) => p.o.key)));
+  const { o } = signals()[0], body = JSON.parse(o.body);
+  const { DEMAND_KEY, DEMAND_CACHE } = await import("../worker/contribution.js");
+  const demands = puts.filter((p) => p.o.key === DEMAND_KEY);
+  check("…and the compute page's picture once, as demand.json, kept half a minute at the edge",
+    demands.length === 1 && DEMAND_KEY === "demand.json" && demands[0].o.cacheControl === DEMAND_CACHE
+      && JSON.parse(demands[0].o.body).v === 1, JSON.stringify(demands.map((p) => p.o)));
   check("…as work.json, kept five seconds at the edge, as JSON",
     o.key === SIGNAL_KEY && SIGNAL_KEY === "work.json" && o.cacheControl === "public, max-age=5" && SIGNAL_CACHE === o.cacheControl && o.contentType === "application/json", JSON.stringify(o));
   const { PROTOCOL, PROTOCOLS_SERVED } = await import("../worker/verify.js");
@@ -137,7 +143,7 @@ console.log("the work signal");
   await setDial(env, "signal_mode", 1, "check");
   await setDial(env, "poll_ms", 30_000, "check");
   puts.length = 0; await go(); forgetDials();
-  const turned = JSON.parse(puts[0].o.body);
+  const turned = JSON.parse(signals()[0].o.body);
   check("the owner's dials reach the signal: ask mode turns every computer back to asking", turned.mode === "ask" && turned.poll_ms === 30_000, JSON.stringify(turned));
   await setDial(env, "signal_mode", 0, "check"); await setDial(env, "poll_ms", 10_000, "check"); forgetDials();
   const { workWaiting } = await import("../worker/settler.js");

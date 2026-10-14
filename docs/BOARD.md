@@ -1045,9 +1045,9 @@ yes, since each ask again is a reader interrupted. Eight rules:
    and public facts alone; a device is renamed or removed there, and every
    block of the page folds as the site's blocks do. This
    browser's own task list stays in this browser. Above it, for anyone, the
-   whole picture (`/api/board/demand`): browsers computing now, owed rows by
-   why, riven gains waiting, and the last hour's scores by the volunteers and
-   by the official machines — totals, never a device or a person.
+   whole picture (§"Demand"): browsers computing now, owed rows by why, riven
+   gains waiting, each survey, the scores per hour by the volunteers and by the
+   official machines, and the hours to clear — totals, never a device or a person.
    EVERY POINT HAS A LEDGER, as open as privacy allows (worker/contribution.js
    §"The ledger", `check_ledger`): this browser, by its own id, sees its
    credited hours day by day in the reader's time zone, each said with where
@@ -1121,6 +1121,37 @@ digest, under 0.95 flagged) and the twenty rows that move most. The prices
 shipped may be round ones near the fit, judged by the same report
 (`prices=<gas>,<run>`): their time error no worse than the fit's and their
 total within the same 1.00–1.20, so points never shrink with a new engine.
+
+### Demand
+
+**THE COMPUTE PAGE'S PICTURE IS ONE OBJECT EVERY READER GETS.** Each minute
+the daemon works it out (`demandOf`, worker/contribution.js) and writes
+`demand.json` to the public bucket beside the signal, kept 30 s at the edge;
+the page reads it from `cdn.wfsim.app`, and `/api/board/demand` serves the
+same object from the bucket, never working it out. Worked out per request,
+each isolate and each edge would keep its own minute, and two readers would
+see two.
+
+```text
+{ ok, v: 1, at, computing, owed: { new_builds, rescores, sweeps, refreshes },
+  riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
+  per_hour: { volunteers, official }, clear_hours }
+```
+
+- `owed`: the queue's rows by why, a row in two batches counted once as the
+  first of a new build's, a rescore's, a sweep's, a refresh's.
+- `per_hour`: scores written over the last six hours, per hour, by who
+  computed them. One hour is too short: it swings five-fold between two quiet
+  ones, and a stopped hour reads as never.
+- `clear_hours`: the open work priced in compute. Each verb's work (the
+  queue's rows but the refreshes for `simulate`, its open questions for any
+  other) times what one of its facts cost lately, over the compute answered
+  per hour. Both rates are read off the latest 50,000 answers: every witness's
+  fight in them, over the facts formed between the first and the last, and
+  over that span. A refresh comes back every three days and never clears.
+  Null where a verb with work formed no fact in that span.
+- a survey's `clear_hours`: its shapes left over its shapes agreed per hour
+  in the last three hours; null when none were.
 
 ### Outages
 

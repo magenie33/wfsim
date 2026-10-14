@@ -19,7 +19,8 @@
 //   POST /api/account/devices/ledger { id, from? }       → the same, for one of the account's devices by its six characters
 //   GET  /api/account/ledger[?from=] → { devices: [{ id, label, removed, refused }], hours: [{ hour, id, points }] } — what came in, device by device
 //   GET  /api/board/computing        → { computing } — the nav's count, cached a minute at the edge
-//   GET  /api/board/demand           → { computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started }] (unfinished), per_hour: { volunteers, official } }
+//   GET  /api/board/demand           → `demandOf`'s body as the settler last wrote it (`DEMAND_KEY`): { v, at, computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains,
+//        surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }] (unfinished), per_hour: { volunteers, official }, clear_hours }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
 //   GET  /api/contributors[?period=recent|week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, contributor_rank, mark?, volunteer?, you? }] }
 //        — the first `limit` rows (default `PAGE`, at most `MOST`) of `total`; `key` is the row's
@@ -547,53 +548,99 @@ async function keptWorkedOut(request, env) {
 }
 
 /// WHAT THE BOARD ASKS FOR AND WHAT IS ANSWERING IT, for the compute page's
-/// "Demand and compute" (73-compute.js): owed rows by why, a row asked twice
-/// counted as the first of a new build's, a rescore's, an old build's sweep for
-/// a ruler it lacks, a refresh of a row three days old — the riven gains handed
-/// to the community in the last day and not done, the scores written in the last
-/// hour by the volunteers and by the official machines, and how many browsers
-/// are computing. Totals only, kept five minutes at the edge and per isolate: the
-/// owed count reads every queue row, and per isolate alone it ran ~25 times a minute.
-const DEMAND_KEEP_MS = 5 * 60_000;
-let demandKept = null;
-async function demand(request, env) {
-  if (demandKept && Date.now() - demandKept.at < DEMAND_KEEP_MS) return json(demandKept.body);
-  const cache = typeof caches !== "undefined" ? caches.default : null;
-  const key = new Request(new URL("/api/board/demand", request.url).toString());
-  const hit = cache && await cache.match(key);
-  if (hit) return hit;
-  if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0, refreshes: 0 }, riven_gains: 0, surveys: [], per_hour: { volunteers: 0, official: 0 } });
-  const t = Date.now(), hour = iso(t - 3_600_000);
-  const db = env.LIBRARY;
-  // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
-  // demands are read once and joined whole: looked up a queue row at a time,
-  // every row cost an index walk for the few that have one.
-  const [owed, done, gains, surveys] = await db.batch([
+/// "Demand and compute" (73-compute.js) — docs/BOARD.md §"Demand". ONE COPY FOR
+/// EVERY READER: the settler's daemon works it out each minute and writes it to
+/// the public bucket as `DEMAND_KEY` (scripts/factoryd.mjs); the page reads that
+/// object and `/api/board/demand` serves the same bytes. Worked out per request,
+/// each isolate and each edge would keep its own minute, and readers disagree.
+export const DEMAND_KEY = "demand.json", DEMAND_CACHE = "public, max-age=30";
+/// THE PACE IS THIS LONG: one hour swings five-fold between two quiet ones, and
+/// a stopped hour says "never".
+export const DEMAND_PACE_MS = 6 * 3_600_000;
+/// …A SURVEY'S OWN PACE, its shapes agreed in this long.
+export const SURVEY_PACE_MS = 3 * 3_600_000;
+/// …AND WHAT A FACT COSTS, read off the latest this many answers: every
+/// witness's fight, the ones that agreed and the ones that did not.
+export const DEMAND_COST_SAMPLE = 50_000;
+
+/// THE WHOLE PICTURE, totals only, never a device or a person (docs/BOARD.md
+/// §"Demand" says each field).
+/// HOURS TO CLEAR ARE COMPUTE, NOT ROWS: one riven search costs as much as
+/// dozens of board rows, so rows per hour cannot say when the rest is done.
+/// Each verb's open work is priced at what one of its facts cost lately and
+/// divided by the compute answered per hour; refreshes come back every three
+/// days and never clear, so they are left out. Null where a verb formed no fact
+/// to price it by.
+export async function demandOf(env, now = Date.now()) {
+  const db = env.LIBRARY, at = iso(now);
+  const [owed, done, gains, surveys, open, sample] = await db.batch([
+    // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
+    // demands are read once and joined whole: looked up a queue row at a time,
+    // every row cost an index walk for the few that have one.
     db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM demands WHERE state = 'live' AND producer = 'new_build')
                 SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
                 FROM queue q JOIN batches b ON b.id = q.batch
                 LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
+                GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
-                FROM scores WHERE finished_at >= ?`).bind(hour),
+                FROM scores WHERE finished_at >= ?`).bind(iso(now - DEMAND_PACE_MS)),
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
-      .bind(iso(t - 86_400_000), SURVEY_CHANNEL),
+      .bind(iso(now - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
     // many two owners have agreed on and how many anyone has begun. A survey
     // whose every shape is agreed is reached, and no longer a goal.
-    db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) AS agreed, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started
-                FROM appraisals WHERE channel = ? AND request IS NOT NULL AND at > ? GROUP BY weapon, ruler
+    db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) AS agreed, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started,
+                SUM(CASE WHEN agreed_at >= ?3::text THEN 1 ELSE 0 END) AS lately
+                FROM appraisals WHERE channel = ?1::text AND request IS NOT NULL AND at > ?2::text GROUP BY weapon, ruler
                 HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
-      .bind(SURVEY_CHANNEL, iso(t - SURVEY_KEEP_MS)),
+      .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - SURVEY_PACE_MS)),
+    db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
+    db.prepare(`WITH s AS (SELECT question, compute_ms, at FROM answers ORDER BY id DESC LIMIT ?)
+                SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms, MIN(s.at) AS from_at, MAX(s.at) AS to_at
+                FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`).bind(DEMAND_COST_SAMPLE),
   ]);
-  const by = Object.fromEntries(owed.results.map((r) => [r.k, r.n]));
-  const h = done.results[0] || {};
-  const body = { ok: true, computing: await computingNow(env), owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
-    riven_gains: (gains.results[0] || {}).n || 0, surveys: surveys.results, per_hour: { volunteers: h.volunteers || 0, official: h.official || 0 } };
-  demandKept = { at: t, body };
-  if (cache) await cache.put(key, new Response(JSON.stringify(body),
-    { headers: { "content-type": "application/json", "cache-control": `public, max-age=${DEMAND_KEEP_MS / 1000}` } }));
-  return json(body);
+  const by = Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)]));
+  const h = done.results[0] || {}, hours = DEMAND_PACE_MS / 3_600_000;
+  const perHour = (x) => Math.round(Number(x || 0) / hours);
+  // THE SAMPLE'S OWN SPAN is the window its facts are counted in and its
+  // compute is spread over, so the three numbers describe the same minutes.
+  const spent = sample.results, from = spent.reduce((m, r) => (m && m < r.from_at ? m : r.from_at), null),
+    to = spent.reduce((m, r) => (m && m > r.to_at ? m : r.to_at), null);
+  let clearHours = null;
+  if (from && to && to > from) {
+    const facts = await db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= ? AND fact_at <= ? GROUP BY verb").bind(from, to).all();
+    const factsOf = Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)]));
+    const msOf = Object.fromEntries(spent.map((r) => [r.verb, Number(r.ms)]));
+    const msPerHour = Object.values(msOf).reduce((t, x) => t + x, 0) / ((Date.parse(to) - Date.parse(from)) / 3_600_000);
+    // THE BOARD'S ROWS are the queue's, a refresh's left out; every other verb's
+    // open questions are its work.
+    const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) };
+    for (const r of open.results) if (r.verb !== "simulate") left[r.verb] = Number(r.n);
+    let ms = 0;
+    for (const [verb, n] of Object.entries(left)) {
+      if (!n) continue;
+      if (!factsOf[verb]) { ms = null; break; }
+      ms += n * (msOf[verb] || 0) / factsOf[verb];
+    }
+    if (ms !== null && msPerHour > 0) clearHours = ms / msPerHour;
+  }
+  return { ok: true, v: 1, at, computing: await computingNow(env),
+    owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
+    riven_gains: Number((gains.results[0] || {}).n || 0),
+    surveys: surveys.results.map(({ lately, ...g }) => {
+      const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
+      const pace = Number(lately || 0) / (SURVEY_PACE_MS / 3_600_000);
+      return { ...s, clear_hours: pace > 0 ? (s.shapes - s.agreed) / pace : null };
+    }),
+    per_hour: { volunteers: perHour(h.volunteers), official: perHour(h.official) }, clear_hours: clearHours };
+}
+
+/// THE PAGE'S FALLBACK, where the bucket's own address is not reached: the
+/// daemon's object as it stands, never worked out here.
+async function demand(env) {
+  const obj = env.PUBLIC && await env.PUBLIC.get(DEMAND_KEY).catch(() => null);
+  if (!obj) return json({ ok: false, error: "no_demand" }, 503);
+  return new Response(obj.body, { headers: { "content-type": "application/json", "cache-control": DEMAND_CACHE } });
 }
 
 /// THE HOME HERO'S TALLY: every score the board holds, by who computed it, and
@@ -665,7 +712,7 @@ export async function contributionRoute(request, env, path) {
   }
   if (path === "/api/board/demand") {
     if (request.method !== "GET") return no("method", 405);
-    return demand(request, env);
+    return demand(env);
   }
   if (path === "/api/board/tally") {
     if (request.method !== "GET") return no("method", 405);

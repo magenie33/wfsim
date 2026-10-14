@@ -8,7 +8,7 @@
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
-import { contributionRoute, contributorRank } from "../worker/contribution.js";
+import { contributionRoute, contributorRank, demandOf, DEMAND_KEY } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 
@@ -181,8 +181,8 @@ check("...never an anonymous one, by name or by handle", (await who("cy")).perso
 await library.run("UPDATE verifiers SET last_at = ? WHERE id = ?", new Date().toISOString(), X);
 await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", Y);
 // THE DEMAND: owed rows by why — a new build's, a sweep's, a rescore's, a refresh's, one row
-// owed by two batches counted once — riven gains waiting, and the last hour's
-// scores by who measured them.
+// owed by two batches counted once — riven gains waiting, the six hours'
+// scores by who measured them, and the hours to clear.
 {
   const L = library, now = Date.now(), ago = (ms) => new Date(now - ms).toISOString();
   await L.run("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', 'x', 'x', 3), ('rescore-x', 'x', 'x', 2), ('refresh-2026-03-01', 'x', 'x', 1)");
@@ -202,12 +202,40 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   // …AND ONE WHOSE EVERY SHAPE IS AGREED, which is reached and no longer a goal.
   await L.run(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, started_at, agreed_at) VALUES
     ('S5', 'survey', '{}', 'wfsim', '', 'torid', 'x', '{}', ?, '{}', ?, ?)`, ago(60_000), ago(0), ago(0));
-  const d = await call("/api/board/demand");
+  // MORE SCORES, so the six hours' pace is whole: 12 by volunteers and 6 by the
+  // official machines in the window, one more by each before it.
+  for (let i = 0; i < 10; i++) await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+    VALUES (?, 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`, `v${i}`, ago(3_600_000));
+  for (const [id, by, ms] of [["o1", "abc", 3_600_000], ["o2", "abc", 3_600_000], ["o3", "abc", 3_600_000], ["o4", "abc", 3_600_000],
+    ["late-v", "verified:e1", 7 * 3_600_000], ["late-o", "abc", 7 * 3_600_000]]) {
+    await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+      VALUES (?, 'r', 'base', ?, 1, 'kpm', 0, 'T', ?)`, id, by, ago(ms));
+  }
+  // WHAT A FACT COSTS: a board row's two witnesses fought 1 s each and a riven
+  // search's 30 s each, an hour apart; two searches are open, and the four rows
+  // the queue owes beside the refresh. 4 x 2 s + 2 x 60 s of work at 62 s an hour.
+  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, fact_at) VALUES
+    ('fs', 'simulate', '{}', 'fact', 'x', 'x', ?), ('fo', 'optimize', '{}', 'fact', 'x', 'x', ?),
+    ('oo1', 'optimize', '{}', 'open', 'x', 'x', NULL), ('oo2', 'optimize', '{}', 'open', 'x', 'x', NULL)`, ago(1_800_000), ago(1_800_000));
+  for (const [q, ms, t] of [["fs", 1000, 3_600_000], ["fs", 1000, 0], ["fo", 30_000, 3_600_000], ["fo", 30_000, 0]]) {
+    await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', 'd', 'd', 'c', '{}', 1, ?, ?)`, q, ms, ago(t));
+  }
+  const d = await demandOf({ LIBRARY: L }, now);
   check("each survey is a goal: its shapes, how many are agreed and begun, a lapsed one and a finished one gone, none counted as a chat's riven gain",
-    JSON.stringify(d.surveys) === JSON.stringify([{ weapon: "furis", ruler: "x", shapes: 3, agreed: 1, started: 2 }]), JSON.stringify(d.surveys));
-  check("the demand counts owed rows by why, one row once, the last hour's scores by who, and riven gains of the last day",
-    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1, refreshes: 1 }, { volunteers: 1, official: 2 }, 1]),
+    JSON.stringify(d.surveys.map(({ clear_hours, ...g }) => g)) === JSON.stringify([{ weapon: "furis", ruler: "x", shapes: 3, agreed: 1, started: 2 }]), JSON.stringify(d.surveys));
+  check("...and its hours to reach at its own pace: one agreed in three hours, two to go", Math.abs(d.surveys[0].clear_hours - 6) < 1e-9, JSON.stringify(d.surveys));
+  check("the demand counts owed rows by why, one row once, the six hours' scores per hour by who, and riven gains of the last day",
+    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1, refreshes: 1 }, { volunteers: 2, official: 1 }, 1]),
     JSON.stringify(d));
+  check("hours to clear are the open work's compute over the compute answered per hour, a refresh left out",
+    Math.abs(d.clear_hours - 128 / 62) < 1e-9, String(d.clear_hours));
+  await L.run("UPDATE questions SET fact_at = NULL WHERE id = 'fo'");
+  check("...and none where a verb formed no fact to price it by", (await demandOf({ LIBRARY: L }, now)).clear_hours === null);
+  check("the endpoint serves the settler's object, worked out nowhere else",
+    (await call("/api/board/demand")).error === "no_demand");
+  env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(d) } : null) };
+  check("...byte for byte", JSON.stringify(await call("/api/board/demand")) === JSON.stringify({ status: 200, ...d }));
+  delete env.PUBLIC;
 }
 check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);
 check("both say how many browsers are computing now, an old answer not counted",

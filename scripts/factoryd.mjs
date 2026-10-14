@@ -15,9 +15,10 @@ import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../
 import { dialsOf, forgetDials } from "../worker/dials.js";
 import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
+import { demandOf, DEMAND_KEY, DEMAND_CACHE } from "../worker/contribution.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
-export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
+export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
 /// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
 export const SIGNAL_KEY = "work.json", SIGNAL_CACHE = "public, max-age=5";
@@ -126,9 +127,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       if (cmp.differ) await findingsTick(env.LIBRARY, "fair_roundtrip", (p) => ({ differ: (p.differ || 0) + 1, last: cmp }));
     },
     settle: async () => { cursor = (await settleBatch(env, { threshold: CLIENTS_PER_FACT, from: cursor })).cursor; },
+    // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
+    demand: async () => {
+      if (!target) return;
+      await put(target, { key: DEMAND_KEY, body: JSON.stringify(await demandOf(env)), contentType: "application/json", cacheControl: DEMAND_CACHE });
+    },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "demand"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -146,7 +152,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     };
     timers.set(name, setTimeout(loop, 0));
   };
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {
