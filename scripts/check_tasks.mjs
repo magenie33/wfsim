@@ -696,8 +696,9 @@ console.log("\nan answer its owner was already paid for never holds a place in t
       VALUES (?, 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, ?, 0)`, q, dev, owner, dev, at, credited);
   }
   const n = await f.repay(env, NOW, 1);
-  check("a sweep of one pays the fact still owed, behind one whose leftover answer is its owner's second",
-    n === 2 && !(await db.get("SELECT credited FROM answers WHERE device = 'a3'")).credited, JSON.stringify({ n }));
+  check("a sweep of one pays the fact still owed, behind one whose leftover answer is its owner's second, covered and unpaid",
+    n === 2 && Number((await db.get("SELECT credited FROM answers WHERE device = 'a3'")).credited) === 2
+    && (await db.get("SELECT work FROM verifiers WHERE id = 'a3'")).work === 0, JSON.stringify({ n }));
 }
 
 console.log("\nan agreeing answer outside the witnesses is marked covered, and read no more");

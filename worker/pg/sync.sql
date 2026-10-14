@@ -165,6 +165,19 @@ CREATE OR REPLACE FUNCTION factory_restate(text) RETURNS void LANGUAGE sql AS $$
     WHERE id = $1 AND state = 'open' AND NOT EXISTS (SELECT 1 FROM demands WHERE question = $1 AND state = 'live');
 $$;
 
+-- COVERED (`answers.credited = 2`): on the questions $1 (json), an agreeing answer
+-- still unpaid whose owner or network a paid witness of the same answer already
+-- is — no witness rule can ever pay it. Marked where the witnesses are paid
+-- (worker/tasks.js `credit`) and by `repay` for the rows before it; returns how many.
+CREATE OR REPLACE FUNCTION factory_cover(text) RETURNS bigint LANGUAGE sql AS $$
+  WITH c AS (UPDATE answers a SET credited = 2
+      WHERE a.question IN (SELECT jsonb_array_elements_text($1::jsonb)) AND a.credited = 0 AND a.void = 0 AND a.official = 0
+        AND EXISTS (SELECT 1 FROM answers w WHERE w.question = a.question AND w.credited = 1 AND w.void = 0 AND w.official = 0
+                    AND w.canon = a.canon AND (w.owner = a.owner OR (coalesce(a.net, '') <> '' AND w.net = a.net)))
+      RETURNING 1)
+  SELECT count(*) FROM c
+$$;
+
 -- AN ASK THAT IS OVER KEEPS NO CODE: a demand no longer live and a question no
 -- longer open lose a user or bot initiator (the settler's pass, dial
 -- `initiator_forget_ms`). The rows erased.

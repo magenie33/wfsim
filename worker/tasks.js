@@ -758,6 +758,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // in its place (`settleOfficial`), never re-read from the table.
     const owed = answers.filter((a) => !a.official && !a.credited).map((a) => ({ id: Number(a.id), device: a.device, work: a.work }));
     if (!owed.length) return;
+    const questions = JSON.stringify([...new Set(answers.map((a) => a.question).filter(Boolean))]);
     await db.batch([
       db.prepare(`SELECT id FROM verifiers WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) ORDER BY id FOR UPDATE`)
         .bind(JSON.stringify([...new Set(owed.map((a) => a.device))])),
@@ -772,6 +773,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
         INSERT INTO verifier_hours AS h (verifier, hour, work) SELECT device, ?3::text, work FROM sums
           ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work`)
         .bind(JSON.stringify(owed), FACTS_PER_REFUSAL_FORGIVEN, iso(now).slice(0, 13)),
+      // …AND WHAT NO WITNESS RULE CAN EVER PAY, marked covered (worker/pg/sync.sql `factory_cover`).
+      db.prepare("SELECT factory_cover(?::text) AS n").bind(questions),
     ]);
   }
 
@@ -828,11 +831,17 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// hour the fact formed, as they would have been. Up to `max` questions a call.
   /// AN ANSWER WHOSE OWNER OR NETWORK WAS ALREADY PAID FOR THE QUESTION is no
   /// witness (`independent`) and is never owed: picked, the oldest of them held
-  /// every call's places and nobody behind them was ever paid. So an agreeing
-  /// answer outside the witnesses is marked COVERED (`credited = 2`) when found,
-  /// and no call reads it again.
+  /// every call's places and nobody behind them was ever paid. Such an answer is
+  /// COVERED once its witnesses are paid (`credit`); one left from before that,
+  /// `COVER_SWEEP` a call, is marked here, and no call reads it again.
+  const COVER_SWEEP = 2000;
   async function repay(env, now = Date.now(), max = 200) {
     const db = env.LIBRARY;
+    await db.prepare(`SELECT factory_cover((SELECT coalesce(jsonb_agg(DISTINCT x.question), '[]'::jsonb)::text FROM (
+        SELECT a.question FROM answers a WHERE a.credited = 0 AND a.void = 0 AND a.official = 0
+          AND EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
+                      AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net)))
+        LIMIT ?::bigint) x)) AS n`).bind(COVER_SWEEP).first();
     const { results: qs } = await db.prepare(`SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
         WHERE a.credited = 0 AND a.void = 0 AND a.official = 0 AND a.canon = q.canon AND q.state IN ('fact', 'spot')
           AND a.at <= q.fact_at AND q.fact_at < ?::text
@@ -845,11 +854,6 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const { results: all } = await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 AND official = 0 AND canon = ? AND at <= ? ORDER BY id")
         .bind(q.id, q.canon, q.fact_at).all();
       const group = independent([...all.filter((a) => a.engine === q.fact_engine), ...all.filter((a) => a.engine !== q.fact_engine)]);
-      const witnesses = new Set(group.map((a) => a.id)), covered = all.filter((a) => !a.credited && !witnesses.has(a.id));
-      if (covered.length) {
-        await db.prepare("UPDATE answers SET credited = 2 WHERE id IN (SELECT value::bigint FROM jsonb_array_elements_text((?::text)::jsonb)) AND credited = 0")
-          .bind(JSON.stringify(covered.map((a) => String(a.id)))).run();
-      }
       const owed = group.filter((a) => !a.credited);
       if (!owed.length) continue;
       try { await credit(db, owed, Date.parse(q.fact_at)); paid += owed.length; } catch (_) { /* paid next run */ }
