@@ -14,7 +14,8 @@
 //   node scripts/check_board_verify.mjs
 import { verifyRoute, LEASE_MS, PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, PACK_LEASE_MS } from "../worker/verify.js";
 import { RENEW_MS } from "../worker/tasks.js";
-import { setDial, forgetDials, DIALS, CLIENT_DIALS } from "../worker/dials.js";
+import { setDial, forgetDials } from "../worker/dials.js";
+import { costOf } from "../worker/factory_calls.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { officialRoute, refusalsFor } from "../worker/factory.js";
 refusalsFor(true);
@@ -448,6 +449,24 @@ console.log("\nan older engine still accepted computes the weapons its data matc
   const q = await L.get("SELECT state, fact_engine FROM questions WHERE id = ?", task(p1).question);
   check("...two of them agreeing make a fact, the served engine's", q && ["fact", "spot"].includes(q.state) && q.fact_engine === "e1", JSON.stringify(q));
   env.ASSETS = site("e1");
+}
+
+console.log("\nwhat a protocol 7 call costs the database (worker/factory_calls.js)");
+{
+  // A RATCHET: the database calls one ask and one send of a pack's answers may
+  // make. Lower these when a change saves a call; never raise them to pass.
+  const WORK_CALLS_AT_MOST = 4, ANSWERS_CALLS_AT_MOST = 9;
+  await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'");
+  for (const id of ["cost1", "cost2", "cost3"]) await build(id);
+  await queue(arrivals, "cost1", "cost2", "cost3");
+  await ask(arrivals, "cost1", "cost2", "cost3");
+  const costed = async (f) => { const a = costOf(env); const r = await f(); const b = costOf(env); return { r, calls: b.calls - a.calls, statements: b.statements - a.statements }; };
+  const W = "0123456789ab".repeat(2);
+  const w = await costed(() => work(W, { ip: "203.0.113.200" }));
+  const a = await costed(() => answerAll(w.r.pack.lease, W, w.r.pack.tasks.map((t) => row(t)), { ip: "203.0.113.200" }));
+  console.log(`      /work: ${w.calls} call(s), ${w.statements} statement(s); /answers: ${a.calls} call(s), ${a.statements} statement(s)`);
+  check(`a protocol 7 ask makes at most ${WORK_CALLS_AT_MOST} database calls`, w.r.pack && w.calls <= WORK_CALLS_AT_MOST, `${w.calls}`);
+  check(`...and a send of a pack's answers at most ${ANSWERS_CALLS_AT_MOST}`, a.calls <= ANSWERS_CALLS_AT_MOST, `${a.calls}`);
 }
 
 console.log(failures ? `\n${failures} failed` : "\na board row reaches the board when CLIENTS_PER_FACT clients measured the same bits");

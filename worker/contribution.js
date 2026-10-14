@@ -39,6 +39,7 @@ import { iso } from "./instant.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
+import { noteFactoryCall } from "./factory_calls.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -672,9 +673,11 @@ export async function contributionRoute(request, env, path) {
   }
   if (path === "/api/board/points") {
     if (request.method !== "POST") return no("method", 405);
-    let b = {};
-    try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
-    return devicePoints(env, b);
+    return noteFactoryCall(request, env, path, async () => {
+      let b = {};
+      try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
+      return devicePoints(env, b);
+    });
   }
   if (path === "/api/board/ledger") {
     if (request.method !== "POST") return no("method", 405);

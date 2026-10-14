@@ -162,6 +162,30 @@ to count them, prints none, and never opens the accounts database. It reads
 the library through `scripts/pgq.mjs` from whatever `PG_URL` names — the
 tunnel to `pg.wfsim.app` (docs/BOARD.md §"Postgres").
 
+## Factory calls
+
+**WHAT A VOLUNTEER'S CALL COSTS THE SERVER is measured, not guessed.** Every
+call to `/api/board/work`, `/answers`, `/verify`, `/release`, `/renew`, `/mine`
+and `/points` writes one point to the Analytics Engine dataset
+`wfsim_factory_calls` (binding `FACTORY_CALLS`), apart from readers' points so
+`USAGE_EVENTS` is untouched (`worker/factory_calls.js`). Schema 1:
+
+| column | holds |
+| --- | --- |
+| `index1` | a salted hash of the device id (the id is its secret, never stored) |
+| `blob1` | path |
+| `blob2` | protocol, `""` when the call names none |
+| `blob3` | HTTP status |
+| `double1` | schema |
+| `double2` | database calls — a statement, or a batch pipelined as one |
+| `double3` | statements |
+| `double4` | ms spent waiting on the databases |
+| `double5` | wall ms of the call |
+
+Worker calls per device-hour and database calls per call are read from it;
+`check_board_verify` ratchets the database calls of a protocol 7 ask and send.
+The database's own side is `scripts/factory_pulse.mjs` (read-only).
+
 ## Retention
 
 **Analytics Engine keeps three months; `usage_days` keeps the totals for

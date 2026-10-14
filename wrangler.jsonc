@@ -20,9 +20,6 @@
   // events and streams.
   "compatibility_flags": ["nodejs_compat"],
   "main": "worker/index.js",
-  // THE DATABASE'S SAFETY VALVE (worker/verify.js `COMPUTE_CAP`): past this many
-  // computers asking, a newcomer waits; those already computing go on.
-  "vars": { "COMPUTE_CAP": "400" },
   // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
   // Postgres in Germany, and every round trip an ocean away held locks longer.
   "placement": { "mode": "smart" },
@@ -110,7 +107,10 @@
   // WHAT READERS DID — `POST /api/e`, docs/ANALYTICS.md. A dataset is created by
   // its first write; nothing to provision. Read back by `scripts/usage.py`.
   "analytics_engine_datasets": [
-    { "binding": "USAGE", "dataset": "wfsim" }
+    { "binding": "USAGE", "dataset": "wfsim" },
+    // …AND WHAT EACH FACTORY CALL COST — round trips, database and wall time,
+    // apart from what readers did (docs/ANALYTICS.md §"Factory calls").
+    { "binding": "FACTORY_CALLS", "dataset": "wfsim_factory_calls" }
   ],
   // KEEPING THE USAGE DAYS (worker/usage_days.js): after midnight UTC, so the
   // day before is finished. Reads the dataset with the secrets USAGE_ACCOUNT and

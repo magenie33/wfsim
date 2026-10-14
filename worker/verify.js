@@ -35,6 +35,7 @@ import { BOARD_KINDS_SQL } from "./board_tasks.js";
 import { iso } from "./instant.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
 import { devicePointsOf } from "./contribution.js";
+import { noteFactoryCall } from "./factory_calls.js";
 
 /// A browser fights a crowd row in minutes; a lease outlives the slowest. Each
 /// hand-out constant below is a dial's default (worker/dials.js); what is in
@@ -483,11 +484,8 @@ export async function verifyRoute(request, env, path) {
   // the relay's (69-board-work.js `chooseRoute`): it reads nothing.
   if (path === "/api/board/ping") return json({ ok: true, relayed: viaRelay(request, env) });
   if (!env.LIBRARY) return json({ ok: false, error: "the library is not configured" }, 503);
-  if (path === "/api/board/work") return work(request, env);
-  if (path === "/api/board/answers") return answers(request, env);
-  if (path === "/api/board/verify") return verify(request, env);
-  if (path === "/api/board/release") return release(request, env);
-  if (path === "/api/board/renew") return renew(request, env);
-  if (path === "/api/board/mine") return mine(request, env);
-  return json({ ok: false, error: "not found" }, 404);
+  const door = { "/api/board/work": work, "/api/board/answers": answers, "/api/board/verify": verify,
+    "/api/board/release": release, "/api/board/renew": renew, "/api/board/mine": mine }[path];
+  if (!door) return json({ ok: false, error: "not found" }, 404);
+  return noteFactoryCall(request, env, path, () => door(request, env));
 }

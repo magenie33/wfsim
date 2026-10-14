@@ -13,14 +13,23 @@ export { placeholders };
 /// one transaction.
 export function pgDb(client) {
   const exec = (c, s) => c.query(placeholders(s.sql), s.args);
+  // WHAT THIS HANDLE COST ITS REQUEST (docs/ANALYTICS.md §"Factory calls"): a
+  // call is one wait on the database — a statement, or a batch pipelined as one.
+  const cost = { calls: 0, statements: 0, db_ms: 0 };
+  const timed = async (n, f) => {
+    const t0 = Date.now();
+    try { return await f(); } finally { cost.calls += 1; cost.statements += n; cost.db_ms += Date.now() - t0; }
+  };
+  const one = (sql, args) => timed(1, () => exec(client, { sql, args }));
   const stmt = (sql, args = []) => ({
     sql, args,
     bind: (...a) => stmt(sql, a),
-    first: async () => (await exec(client, { sql, args })).rows[0] ?? null,
-    all: async () => ({ results: (await exec(client, { sql, args })).rows }),
-    run: async () => ({ meta: { changes: (await exec(client, { sql, args })).affected } }),
+    first: async () => (await one(sql, args)).rows[0] ?? null,
+    all: async () => ({ results: (await one(sql, args)).rows }),
+    run: async () => ({ meta: { changes: (await one(sql, args)).affected } }),
   });
   return {
+    cost,
     prepare: (sql) => stmt(sql),
     // A DEADLOCK OR A SERIALIZATION FAILURE IS TRIED AGAIN, twice: Postgres
     // rolls the whole transaction back, so running it again is running it once.
@@ -30,7 +39,7 @@ export function pgDb(client) {
           // EVERY STATEMENT SENT AT ONCE, pipelined on the one connection: sent one
           // round trip at a time, a settlement held its row locks for seconds and
           // every other credit to those devices queued behind it.
-          return await client.transaction(async (tx) => (await Promise.all(list.map((s) => exec(tx, s))))
+          return await timed(list.length, async () => (await client.transaction(async (tx) => Promise.all(list.map((s) => exec(tx, s)))))
             .map((r) => ({ results: r.rows, meta: { changes: r.affected } })));
         } catch (e) {
           if (i >= 2 || !["40P01", "40001"].includes(e && e.code)) throw e;
