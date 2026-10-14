@@ -264,5 +264,14 @@ console.log("\nfrozen before the factory");
     JSON.stringify(landed.body));
 }
 
+// THE ASK LOST AFTER THE WRITE: the bot's retry asks it, with what was stored.
+const lostAsk = await open("asker9");
+await appraise("POST", `/api/appraise/${lostAsk}/request`, frozen(2), bot);
+await L.run("DELETE FROM demands WHERE ref = ?", lostAsk);
+const retried = await appraise("POST", `/api/appraise/${lostAsk}/request`, frozen(9), bot);
+check("a freeze whose ask was lost is asked on the retry, as first stored",
+  retried.body.stored === false && (await L.get("SELECT count(*) AS n FROM demands WHERE ref = ? AND state = 'live'", lostAsk)).n === 1
+  && canon(JSON.parse((await L.get("SELECT request FROM questions WHERE id = ?", await questionOf(lostAsk))).request).request) === canon(frozen(2).request));
+
 console.log(failures ? `\n${failures} failed` : "\na riven gain is run by the community and credited when two owners agree");
 process.exitCode = failures ? 1 : 0;

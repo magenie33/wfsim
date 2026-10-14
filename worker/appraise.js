@@ -148,10 +148,11 @@ async function freeze(request, env, code) {
   const frozen = { request: b.request, context: b.context };
   const r = await env.LIBRARY.prepare("UPDATE appraisals SET request = ?, engine = ? WHERE code = ? AND request IS NULL")
     .bind(JSON.stringify(frozen), b.engine, code).run();
-  if (r.meta.changes) {
-    const a = await env.LIBRARY.prepare("SELECT code, channel, weapon, ruler FROM appraisals WHERE code = ?").bind(code).first();
-    await askRiven(env, a, frozen, Date.now());
-  }
+  // A FREEZE WHOSE ASK FAILED is asked on the bot's retry, with what was stored:
+  // the write above made the retry a no-op, so its shape was never handed out.
+  const a = await env.LIBRARY.prepare(`SELECT code, channel, weapon, ruler, request FROM appraisals a WHERE code = ?
+      AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
+  if (a && a.request) await askRiven(env, a, JSON.parse(a.request), Date.now());
   return json({ ok: true, stored: !!r.meta.changes });
 }
 
