@@ -1974,7 +1974,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .goal-bar{position:relative;height:8px;margin:6px 0 4px;border-radius:4px;background:var(--line);overflow:hidden}
 .goal-bar i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--gold);transition:width .8s ease-out}
 .goal-bar i.begun{background:color-mix(in srgb,var(--gold) 30%,transparent)}
-.rt-today{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.rt-today{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .rt-tile{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:box-shadow .7s,border-color .7s}
 .rt-tile b{display:block;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums;min-height:1.2em}
 .rt-tile span{font-size:12px;color:var(--muted)}
@@ -2056,7 +2056,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rt-fight dt{color:var(--muted)}
 .rt-fight dd{margin:0}
 .rt-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-@media (max-width:640px){.rt-today{gap:6px}.rt-tile{padding:10px}.rt-tile b{font-size:18px}.rt-now{grid-template-columns:64px minmax(0,1fr);gap:12px}.rt-now img{width:64px;height:40px}.rt-now-side{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;text-align:left}.rt-card{grid-template-columns:56px minmax(0,1fr)}.rt-card img{width:56px}.rt-side{grid-column:1/-1;text-align:left;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rt-when{margin-top:0}}
+@media (max-width:640px){.rt-today{gap:6px;grid-template-columns:repeat(2,1fr)}.rt-tile{padding:10px}.rt-tile b{font-size:18px}.rt-now{grid-template-columns:64px minmax(0,1fr);gap:12px}.rt-now img{width:64px;height:40px}.rt-now-side{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;text-align:left}.rt-card{grid-template-columns:56px minmax(0,1fr)}.rt-card img{width:56px}.rt-side{grid-column:1/-1;text-align:left;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rt-when{margin-top:0}}
 .tcount{margin-left:6px;font-size:11px;font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
 .tcount .online-dot{width:6px;height:6px;margin-right:4px;box-shadow:0 0 0 3px rgba(88,214,141,.18)}
 .online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#58d68d;box-shadow:0 0 0 4px rgba(88,214,141,.18);margin-right:8px;vertical-align:middle}

@@ -387,6 +387,7 @@ function computeRecentHtml() {
   return `<div class="block" id="rt-live"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">
     <div class="rt-today"><div class="rt-tile"><b data-tile="tasks"></b><span>${aT("tasks finished today")}</span></div>
       <div class="rt-tile gold" data-gold><b data-tile="points"></b><span>${aT("points credited today")}</span></div>
+      <div class="rt-tile"><b data-tile="pending"></b><span>${aT("points pending verification")}</span></div>
       <div class="rt-tile"><b data-tile="ms"></b><span>${aT("core time today")}</span></div></div>
     <div data-now></div><div class="rt-list" data-list></div>
     <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
@@ -454,6 +455,8 @@ function computeLiveTiles(root) {
   const pts = tile("points");
   const held = Number(day.points || 0) - computeInFlight;
   computeRoll(pts, computeInFlight ? Math.max(held, computeRolled.get(pts) || 0) : held, (x) => `+${computeCount(Math.round(x))}`);
+  // PENDING: results kept here or taken that no fact has confirmed yet (69-board-work.js `pendingPoints`).
+  if (tile("pending")) computeRoll(tile("pending"), boardProtocol === 8 ? pendingPoints() : 0, (x) => `+${computeCount(Math.round(x))}`);
   // NONE IS NONE: `computeTook` never says less than a second.
   computeRoll(tile("ms"), Number(day.ms || 0), (x) => (x < 500 ? "0" : computeTook(x)));
 }
@@ -719,27 +722,27 @@ function computeDemandHtml() {
   </dl></div></div>`;
 }
 
-/// THE NAV'S COUNT: how many computers are computing for WFSim now, asked when
-/// the page starts, each minute on the compute page and at most every five
-/// minutes anywhere else — every ask is a billed worker call, and a badge on
-/// every open tab was most of them. The number as it is, zero too, and nothing
-/// where the site has no such count (a dev server).
+/// THE NAV'S COUNT: how many computers are computing for WFSim now, read from
+/// the work signal (`work.json`, 69-board-work.js `SIGNAL_URL`), which the edge
+/// answers and no worker sees — when the page starts, each minute on the compute
+/// page and at most every five minutes anywhere else. The number as it is, zero
+/// too, and nothing where it cannot be read.
 /// ONE SOURCE FOR THE COUNT: the bar and the compute page's "computing now"
 /// both draw `computingCount`, and only this asks for it — so the two are the
-/// same number at every moment. Asked past the browser's cache (`no-cache`
-/// revalidates with the edge), so the edge's minute is the one extra delay.
+/// same number at every moment.
 let computingCount = null;
 let computingAskedAt = 0;
 const COMPUTING_EVERY_MS = 60_000;
 const COMPUTING_AWAY_EVERY_MS = 5 * 60_000;
 async function navComputing() {
   const el = document.getElementById("compute-count");
-  if (!el || document.hidden) return;
+  // NOT ON A DEV SERVER: it hands out no work, and the live count is not its own.
+  if (!el || document.hidden || !WASM) return;
   const every = authKindOf(location.pathname) === "compute" ? COMPUTING_EVERY_MS : COMPUTING_AWAY_EVERY_MS;
   // A SECOND OF SLACK so the minute's tick is not skipped by its own jitter.
   if (Date.now() - computingAskedAt < every - 1000) return;
   computingAskedAt = Date.now();
-  const r = await fetch("/api/board/computing", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  const r = await fetch(SIGNAL_URL, { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || typeof r.computing !== "number") return;
   computingCount = r.computing;
   const n = computingCount.toLocaleString(accountLocale());

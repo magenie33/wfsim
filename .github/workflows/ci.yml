@@ -204,6 +204,8 @@ jobs:
         run: node scripts/check_agent_coverage.mjs
       - name: The compute page shows what each device does, by kind, and nothing private
         run: node scripts/check_compute.mjs
+      - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
+        run: node scripts/check_compute_queue.mjs
       - name: Builder axes match the weapon and reach the board
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.

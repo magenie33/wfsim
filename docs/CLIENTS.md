@@ -284,7 +284,10 @@ over computers asking — while that cap binds, work is short: the lease is
 An idle client — consent given, holding nothing — reads it every `poll_ms`
 (±25%) and does not sync. `urgent > 0`: sync after a random wait in
 `[0, urgent_jitter_ms]`; `open > 0`: after `[0, jitter_ms]`. A different `engine`
-or `release` is followed as `/release.json` would be. **Fallback**: unreachable,
+or `release` is followed as `/release.json` would be. **`at` is aged by the
+server's clock**, never the client's: the `Date` of a reply from wfsim.app (the
+signal's own `Date` is not readable across origins in a browser), since a
+machine's clock minutes off reads a fresh signal as stale. **Fallback**: unreachable,
 `at` older than 90 s, or `mode: "ask"` — sync directly every 2 minutes with
 jitter, the reply's `next_ms` holding. An idle client also syncs every
 `report_ms` (0: never) with `want_ms: 0`, so the server knows it is on.

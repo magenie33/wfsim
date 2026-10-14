@@ -332,9 +332,12 @@ check("...and its score, metric and work are the single fold's to the bit", !fr.
 // what it gives back, and the next ask renews it before anything else and folds
 // on from where it stood — the uncut row's bits. Taken since, another engine's,
 // or computing turned off, the cut is dropped. The board's endpoints are stubbed.
+// PROTOCOL 7, the one a page falls back to (`boardProtocol`): protocol 8's loop
+// is scripts/check_compute_queue.mjs's.
 const rs = await evaluate(`(async () => {
   const out = { wasm: !!WASM };
   if (!WASM) return JSON.stringify(out);
+  boardProtocol = 7;
   const wait = async (ok, ms) => { const end = Date.now() + ms; while (!ok()) { if (Date.now() > end) return false; await new Promise((r) => setTimeout(r, 20)); } return true; };
   const kick = () => { if (computeWake) computeWake(); };
   const rows = await (await fetch("/board/braton_prime.json")).json();

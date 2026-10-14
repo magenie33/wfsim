@@ -269,7 +269,15 @@ const postBoardTo = (base, path, body) => fetch(base + path, {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),
   signal: boardSignal(),
-}).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+}).then((r) => { learnServerClock(r); return r.ok ? r.json() : null; }).catch(() => null);
+/// THE SERVER'S CLOCK, as the offset of a same-origin reply's `Date` from this
+/// one's: a reader's clock minutes off would read a fresh work signal as stale.
+let serverSkewMs = null;
+function learnServerClock(r) {
+  const d = r && r.headers && Date.parse(r.headers.get("date") || "");
+  if (Number.isFinite(d)) serverSkewMs = d - Date.now();
+}
+function serverNow() { return Date.now() + (serverSkewMs || 0); }
 
 /// THE RELAY (docs/DISTRIBUTION.md §"The relay"): a server in Hong Kong that
 /// carries the board's work for readers whose road to the edge is poor. The page
@@ -278,7 +286,7 @@ const postBoardTo = (base, path, body) => fetch(base + path, {
 const RELAY = "https://cn.wfsim.app", ROUTE_EVERY_MS = 10 * 60_000, ROUTE_TRIES = 3;
 /// WHAT THE RELAY CARRIES — its nginx site lists the same paths, and anything
 /// else it answers 404, which a call here would read as the relay dropping it.
-const RELAY_PATHS = ["/api/board/work", "/api/board/answers", "/api/board/renew", "/api/board/release",
+const RELAY_PATHS = ["/api/board/sync", "/api/board/work", "/api/board/answers", "/api/board/renew", "/api/board/release",
   "/api/board/mine", "/api/board/points", "/api/board/ping"];
 let routeBase = "", routeAt = 0, routing = null;
 const relayServes = () => /^(https:\/\/wfsim\.app|https?:\/\/wfsim\.localhost)$/.test(location.origin);
@@ -407,7 +415,280 @@ function giveBack(beacon = false) {
   heldLease = null;
   heldPack = null;
   if (h) releaseLease(h, beacon);
+  if (p && p.proto === 8) { giveBack8(p, beacon); return; }
+  // …AND TURNED OFF OR HELD, THE KEPT RESULTS STILL GO IN, at the reply's pace.
+  if (!p && boardProtocol === 8 && (packQueue.length || (resultsMem.length && (beacon || Date.now() >= syncNotBefore)))) {
+    giveBack8(null, beacon);
+    return;
+  }
   if (p) sendAnswers(p, true, beacon, keptCut(p));
+}
+
+/// PROTOCOL 8 (docs/CLIENTS.md §"The cycle, protocol 8"): one door, `/api/board/sync`,
+/// called when the work runs low, when a result has waited `flush_ms`, and on the
+/// way out; an idle page reads the work signal instead (§"The work signal"). It
+/// is spoken when this browser keeps results in IndexedDB and the server has not
+/// said `fallback: 7`; otherwise the protocol 7 loop below runs unchanged.
+/// `boardProtocol`: 0 not yet decided, then 8 or 7 for the rest of the page.
+let boardProtocol = 0;
+const SIGNAL_URL = "https://cdn.wfsim.app/work.json";
+/// THE DIALS IN FORCE are the server's (`dials` in every reply, `work.json`);
+/// these are its stated defaults, used only until the first reply says otherwise.
+const syncDials = { pack8_ms: 600_000, sync_low_ms: 120_000, sync_lease_ms: 1_500_000, flush_ms: 600_000,
+  poll_ms: 10_000, jitter_ms: 5_000, urgent_jitter_ms: 2_000, report_ms: 3_600_000 };
+/// THE FALLBACK'S PACE and a signal's age past which it is not believed.
+const SYNC_FALLBACK_MS = 120_000, SIGNAL_STALE_MS = 90_000;
+const SYNC_BACKOFF_MS = 5_000, SYNC_BACKOFF_MAX_MS = 600_000;
+/// A result kept longer than this, or another id's or engine's, is dropped.
+const RESULT_KEEP_MS = 24 * 3_600_000, PENDING_KEEP_MS = 3 * 24 * 3_600_000, BEACON_BYTES = 60_000;
+let syncNotBefore = 0, syncFailures = 0, lastSyncAt = 0, syncInFlight = null, bootSyncAt = 0;
+let packQueue = [], refusedPending = [], lostRows = new Set();
+const jittered = (ms) => ms * (0.75 + Math.random() * 0.5);
+
+/// THE RESULTS THIS BROWSER KEEPS (`results`: computed, not yet taken) and the ones
+/// the server took that no fact has confirmed yet (`pending`), in IndexedDB so a
+/// reload, a closed tab or a crash costs no result — and mirrored here, so the
+/// way out can send them in a beacon without waiting on the database.
+const COMPUTE_DB = "wfsim-compute";
+let computeDb = null, resultsMem = [], pendingMem = [];
+function openResults() {
+  if (!computeDb) computeDb = new Promise((ok) => {
+    try {
+      const rq = indexedDB.open(COMPUTE_DB, 1);
+      rq.onupgradeneeded = () => {
+        for (const s of ["results", "pending"]) if (!rq.result.objectStoreNames.contains(s)) rq.result.createObjectStore(s, { keyPath: "question" });
+      };
+      rq.onsuccess = () => ok(rq.result);
+      rq.onerror = rq.onblocked = () => ok(null);
+    } catch (_) { ok(null); }
+  }).then(async (db) => {
+    if (!db) return null;
+    try { [resultsMem, pendingMem] = await Promise.all([idbAll(db, "results"), idbAll(db, "pending")]); } catch (_) { return null; }
+    return db;
+  });
+  return computeDb;
+}
+const idbDone = (tx) => new Promise((ok, no) => { tx.oncomplete = () => ok(); tx.onerror = tx.onabort = () => no(tx.error); });
+function idbAll(db, store) {
+  return new Promise((ok, no) => {
+    const rq = db.transaction(store).objectStore(store).getAll();
+    rq.onsuccess = () => ok(rq.result || []);
+    rq.onerror = () => no(rq.error);
+  });
+}
+async function idbWrite(store, put = [], del = []) {
+  const db = await openResults();
+  if (!db || (!put.length && !del.length)) return;
+  const tx = db.transaction(store, "readwrite"), os = tx.objectStore(store);
+  for (const v of put) os.put(v);
+  for (const k of del) os.delete(k);
+  await idbDone(tx);
+}
+/// …THIS ID'S AND ENGINE'S, oldest first; the rest dropped where they are found.
+async function keptResults(id) {
+  const now = Date.now(), mine = (r) => r.verifier === id && r.engine === ENGINE_ID;
+  const goneR = resultsMem.filter((r) => !mine(r) || now - r.at > RESULT_KEEP_MS).map((r) => r.question);
+  const goneP = pendingMem.filter((r) => r.verifier !== id || now - r.at > PENDING_KEEP_MS).map((r) => r.question);
+  if (goneR.length) { resultsMem = resultsMem.filter((r) => !goneR.includes(r.question)); await idbWrite("results", [], goneR).catch(() => {}); }
+  if (goneP.length) { pendingMem = pendingMem.filter((r) => !goneP.includes(r.question)); await idbWrite("pending", [], goneP).catch(() => {}); }
+  return resultsMem.slice().sort((a, b) => a.at - b.at);
+}
+/// POINTS NOT YET CONFIRMED: every kept or taken result's work, as points.
+function pendingPoints() { return Math.floor([...resultsMem, ...pendingMem].reduce((t, r) => t + (Number(r.work) || 0), 0) / 1e9); }
+
+/// EVERY ROW THIS PAGE HOLDS and has not answered, by lease — named in full in
+/// every sync, since a live lease a sync leaves out is given back.
+function heldRows() {
+  const out = new Map();
+  for (const p of [heldPack, ...packQueue]) {
+    if (!p || p.proto !== 8) continue;
+    const rows = p.tasks.filter((t) => !p.done.has(t.question) && !lostRows.has(t.question)).map((t) => t.question);
+    if (rows.length) out.set(p.lease, [...(out.get(p.lease) || []), ...rows]);
+  }
+  return [...out].map(([lease, rows]) => ({ lease, rows }));
+}
+/// …AND THE WORK LEFT IN THEM, at this computer's pace.
+function workLeftMs() {
+  const rows = heldRows().reduce((t, h) => t + h.rows.length, 0);
+  return rows * (boardPaceMs || 60_000);
+}
+function boardSyncBody(id, { want, keep = null, results }) {
+  const c = computeConsent(), idle = idleLoad();
+  return { verifier: id, engine: ENGINE_ID, protocol: 8, ...(c ? { consent: { v: c.v, at: c.at } } : {}),
+    lanes: communityLanes(), ...(boardPaceMs ? { pace_ms: Math.min(syncDials.sync_lease_ms, Math.max(100, Math.round(boardPaceMs))) } : {}),
+    want_ms: c && c.on ? Math.max(0, Math.round(want)) : 0, held: heldRows(),
+    results: results.map(({ verifier: _v, engine: _e, at: _a, key: _k, ...r }) => r),
+    ...(keep ? { keep } : {}), ...(refusedPending.length ? { refused: refusedPending.slice(0, 50) } : {}),
+    ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}),
+    states: pendingMem.slice().sort((a, b) => a.at - b.at).slice(0, 100).map((r) => r.question), since: pointsSince() };
+}
+
+/// ONE SYNC, its reply heard: results the server took leave the queue for the
+/// pending list, a new pack waits its turn, and `next_ms` is when this browser
+/// may next be handed work. `want` null: what the held work leaves of a pack.
+async function boardSync(id, { want = null } = {}) {
+  if (syncInFlight) return syncInFlight;
+  syncInFlight = (async () => {
+    const results = (await keptResults(id)).slice(0, 400);
+    const early = Date.now() < syncNotBefore;
+    const ask = early ? 0 : want == null ? Math.max(0, syncDials.pack8_ms - workLeftMs()) : want;
+    const body = boardSyncBody(id, { want: ask, results }), sentAt = Date.now(), idle = body.idle ? idleLoad() : {};
+    const refusedSent = (body.refused || []).map((r) => r.question);
+    const r = await postBoardWork("/api/board/sync", body);
+    lastSyncAt = Date.now();
+    if (!r || !r.ok) {
+      syncFailures += 1;
+      const cap = Math.min(SYNC_BACKOFF_MAX_MS, SYNC_BACKOFF_MS * 2 ** (syncFailures - 1));
+      syncNotBefore = Date.now() + Math.random() * cap;
+      idleCount(sentAt, false, true, communityLanes(), roadDropped);
+      return null;
+    }
+    if (r.fallback === 7) { boardProtocol = 7; return r; }
+    syncFailures = 0;
+    if (r.dials) Object.assign(syncDials, r.dials);
+    if (r.kept) idleKept(idle);
+    refusedPending = refusedPending.filter((x) => !refusedSent.includes(x.question));
+    await takeSynced(r, results, sentAt, body.held);
+    if (Number.isFinite(r.next_ms)) syncNotBefore = Date.now() + r.next_ms;
+    noteHandOut(r);
+    if (r.pack && r.pack.tasks && r.pack.tasks.length) {
+      packQueue.push({ proto: 8, lease: r.pack.lease, verifier: id, tasks: r.pack.tasks, next: 0, done: new Set(),
+        until: sentAt + r.pack.lease_ms });
+    }
+    return r;
+  })().finally(() => { syncInFlight = null; });
+  return syncInFlight;
+}
+/// …WHAT THE REPLY SAYS OF EACH RESULT, ROW AND QUESTION ASKED AFTER.
+async function takeSynced(r, sent, sentAt, held) {
+  const byQ = new Map(sent.map((x) => [x.question, x]));
+  const taken = (r.taken || []).filter((q) => byQ.has(q)), dropped = (r.dropped || []).map((d) => d.question).filter((q) => byQ.has(q));
+  const gone = new Set([...taken, ...dropped]);
+  if (gone.size) {
+    resultsMem = resultsMem.filter((x) => !gone.has(x.question));
+    const moved = taken.map((q) => { const x = byQ.get(q); return { question: q, verifier: x.verifier, engine: x.engine, work: x.work, at: Date.now() }; });
+    pendingMem = [...pendingMem.filter((x) => !gone.has(x.question)), ...moved];
+    await idbWrite("results", [], [...gone]).catch(() => {});
+    await idbWrite("pending", moved, []).catch(() => {});
+    computeSent([...gone].map((q) => byQ.get(q).key).filter(Boolean));
+  }
+  for (const h of r.held || []) {
+    if (h.held === false) { lostRows.add(h.question); if (heldPack && heldPack.row === h.question) heldPack.lost = h.question; }
+  }
+  // RENEWED: every pack this sync named runs `sync_lease_ms` from when it was sent.
+  const named = new Set(held.map((h) => h.lease));
+  for (const p of [heldPack, ...packQueue]) if (p && p.proto === 8 && named.has(p.lease)) p.until = sentAt + syncDials.sync_lease_ms;
+  const settled = (r.states || []).filter((s) => s.state === "confirmed" || s.state === "gone").map((s) => s.question);
+  if (settled.length) {
+    pendingMem = pendingMem.filter((x) => !settled.includes(x.question));
+    await idbWrite("pending", [], settled).catch(() => {});
+  }
+  if (r.points) { devicePointsAt = Date.now(); await takeDevicePoints({ ok: true, ...r.points }); }
+  else if (gone.size) renderBoardConsent();
+}
+/// A REPLY'S WORD ON THE ENGINE, THE RELEASE AND THIS BROWSER — protocol 7's too.
+function noteHandOut(ask) {
+  if (ask.stale && !boardStale) { boardStale = true; renderBoardConsent(); }
+  if (ask.release && RELEASE_ID !== "dev" && ask.release !== RELEASE_ID) releaseNewer = true;
+  if (!!ask.banned !== boardBanned || (ask.until || 0) !== boardBannedUntil) {
+    boardBanned = !!ask.banned; boardBannedUntil = ask.until || 0; computeRedraw(); computeChrome();
+  }
+}
+
+/// THE WAY OUT: one sync naming nothing held — so every lease goes back — but the
+/// row to resume (`keep`), carrying the kept results, by beacon on a page that is
+/// going. The results stay kept until a later reply lists them.
+function giveBack8(p, beacon) {
+  const id = verifierId();
+  const keep = p && keptCut(p) ? { lease: p.lease, question: p.row } : null;
+  heldPack = null;
+  packQueue = [];
+  if (!id) return;
+  const results = [];
+  let bytes = 0;
+  for (const r of resultsMem.filter((x) => x.verifier === id && x.engine === ENGINE_ID).sort((a, b) => a.at - b.at)) {
+    bytes += JSON.stringify(r).length;
+    if (bytes > BEACON_BYTES || results.length >= 400) break;
+    results.push(r);
+  }
+  const body = boardSyncBody(id, { want: 0, keep, results });
+  body.held = [];
+  if (beacon && navigator.sendBeacon) { navigator.sendBeacon("/api/board/sync", JSON.stringify(body)); return; }
+  syncNotBefore = Math.max(syncNotBefore, Date.now() + SYNC_FALLBACK_MS);
+  postBoardWork("/api/board/sync", body).then((r) => {
+    if (!r || !r.ok || r.fallback) return;
+    if (Number.isFinite(r.next_ms)) syncNotBefore = Date.now() + r.next_ms;
+    return takeSynced(r, results, Date.now(), []);
+  });
+}
+
+/// THE WORK SIGNAL (`work.json`), read by an idle page instead of asking: the
+/// edge answers it, so waiting costs the server nothing. Unreadable, older than
+/// `SIGNAL_STALE_MS` by the server's clock, or `mode: "ask"`, it is not used.
+async function readSignal() {
+  if (serverSkewMs == null) {
+    await fetch("/release.json", { method: "HEAD", cache: "no-store" }).then(learnServerClock).catch(() => {});
+  }
+  try {
+    const r = await fetch(SIGNAL_URL, { cache: "no-cache", signal: boardSignal() });
+    const s = r.ok ? await r.json() : null;
+    if (!s || s.v !== 1 || serverNow() - Date.parse(s.at) > SIGNAL_STALE_MS || s.mode === "ask") return null;
+    for (const k of ["poll_ms", "jitter_ms", "urgent_jitter_ms"]) if (Number.isFinite(s[k])) syncDials[k] = s[k];
+    // A NEWER ENGINE OR RELEASE is followed as `/release.json` would be.
+    if (RELEASE_ID !== "dev" && ((s.release && s.release !== RELEASE_ID) || (s.engine && s.engine !== ENGINE_ID))) releaseNewer = true;
+    return s;
+  } catch (_) { return null; }
+}
+/// HOW LONG THE LOOP WAITS between looks while nothing is held.
+const idleWaitMs = () => (boardProtocol === 8 ? jittered(syncDials.poll_ms) : ASK_EVERY_MS);
+
+/// ONE STEP OF PROTOCOL 8 — `true` when a row or a riven gain ran. A row comes
+/// from the pack held or the next one queued; with none, the kept results go in
+/// when due, and work is asked for only when the signal says there is some (or,
+/// with no signal, every `SYNC_FALLBACK_MS`), and never before `next_ms`.
+async function workOnce8(id) {
+  const kept = await keptResults(id);
+  const now = Date.now();
+  if (!bootSyncAt) bootSyncAt = now + (kept.length ? Math.random() * 5_000 : 0);
+  const cut = !heldPack && loadCut(id);
+  if (cut) heldPack = { proto: 8, lease: cut.lease, verifier: id, tasks: [cut.task], next: 0, done: new Set(), until: 0, from: cut.cut };
+  if (heldPack && heldPack.next >= heldPack.tasks.length) heldPack = null;
+  if (!heldPack && packQueue.length) heldPack = packQueue.shift();
+  // A ROW TO RESUME IS RENEWED BEFORE IT RUNS: the sync names it held.
+  if (heldPack && cut) { await boardSync(id, { want: 0 }); if (!heldPack || lostRows.has(cut.task.question)) { dropCut(); return true; } }
+  if (heldPack) return packRowOnce(id, heldPack);
+  const due = kept.length && (now >= bootSyncAt && lastSyncAt < bootSyncAt || now - kept[0].at >= syncDials.flush_ms);
+  let r = null;
+  if (now >= syncNotBefore) {
+    const s = await readSignal();
+    if (s) {
+      const wait = s.urgent > 0 ? syncDials.urgent_jitter_ms : s.open > 0 ? syncDials.jitter_ms : -1;
+      if (wait >= 0) { await new Promise((ok) => setTimeout(ok, Math.random() * wait)); r = await boardSync(id); }
+      else if (due || (syncDials.report_ms > 0 && now - lastSyncAt >= syncDials.report_ms)) r = await boardSync(id, { want: 0 });
+      else idleCount(now, true, false, communityLanes(), "");
+    } else if (due || now - lastSyncAt >= jittered(SYNC_FALLBACK_MS)) r = await boardSync(id);
+    else idleCount(now, true, false, communityLanes(), "");
+  } else if (due) r = await boardSync(id, { want: 0 });
+  maybeReloadForRelease();
+  if (boardProtocol !== 8) return false;
+  if (r && r.work && r.work.kind === "riven_gain") return rivenGainOnce(r.work, id);
+  if (!heldPack && packQueue.length) { heldPack = packQueue.shift(); return packRowOnce(id, heldPack); }
+  return false;
+}
+/// …DURING A PACK: work asked for as it runs low (`sync_low_ms` left), results
+/// sent once the oldest has waited `flush_ms` — never more than one sync at a time.
+function refill8(id) {
+  if (syncInFlight) return;
+  const now = Date.now(), oldest = resultsMem.length ? Math.min(...resultsMem.map((r) => r.at)) : now;
+  const low = !packQueue.length && workLeftMs() < syncDials.sync_low_ms && now >= syncNotBefore;
+  if (low || now - oldest >= syncDials.flush_ms) boardSync(id, low ? {} : { want: 0 });
+}
+/// …AND A ROW STILL RUNNING AS ITS LEASE NEARS ITS END is renewed by a sync that
+/// asks for nothing, the row named held.
+function keepRow8(p, t) {
+  if (lostRows.has(t.question)) { p.lost = t.question; return Promise.resolve(); }
+  if (!p.until || Date.now() < p.until - RENEW_BEFORE_MS || syncInFlight) return Promise.resolve();
+  return boardSync(p.verifier, { want: 0 }).then(() => { if (lostRows.has(t.question)) p.lost = t.question; });
 }
 
 /// A ROW CUT SHORT RESUMES — a reload, a closed tab, a crash, a hold — from its
@@ -465,6 +746,7 @@ const REFILL_MS = 15_000;
 let boardPaceMs = 0;
 let aheadAsk = null, aheadHeld = null;
 function askAhead(id) {
+  if (boardProtocol === 8) { refill8(id); return; }
   if (aheadAsk || !boardVerifyOn() || computeHeld()) return;
   aheadAsk = askWork(id, true).then((r) => {
     aheadHeld = r && r.pack ? { lease: r.pack.lease, verifier: id }
@@ -738,6 +1020,8 @@ async function workOnce() {
   const id = verifierId();
   if (!id) return false;
   await claimDevice(id);
+  if (!boardProtocol) boardProtocol = (await openResults()) ? 8 : 7;
+  if (boardProtocol === 8) return workOnce8(id);
   const cut = !heldPack && loadCut(id);
   if (cut) {
     // RENEWED BEFORE ANYTHING IS ASKED: an ask gives back what this computer holds.
@@ -764,21 +1048,29 @@ async function packRowOnce(id, p) {
   const from = p.from;
   p.from = null;
   if (!from) dropCut();
-  await keepRow(p, t);
-  if (p.lost === t.question) { dropCut(); return true; }
+  const p8 = p.proto === 8, keep = p8 ? keepRow8 : keepRow;
+  await keep(p, t);
+  if (p.lost === t.question || (p8 && lostRows.has(t.question))) { dropCut(); if (p8) p.done.add(t.question); return true; }
   const live = () => boardVerifyOn() && !computeHeld() && !computeFrozen && heldPack === p && p.lost !== t.question;
-  const refill = () => { if ((p.tasks.length - p.next) * boardPaceMs <= REFILL_MS) askAhead(id); };
+  const refill = p8 ? () => refill8(id) : () => { if ((p.tasks.length - p.next) * boardPaceMs <= REFILL_MS) askAhead(id); };
   const order = await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
+  // A ROW THIS ENGINE REFUSES is said so in the next sync (`refused`): given back,
+  // never handed here again, and withdrawn once enough owners refused it.
+  if (p8 && order && order.ok === false) {
+    refusedPending.push({ lease: p.lease, question: t.question, step: "order" });
+    p.done.add(t.question);
+    return true;
+  }
   if (!order || !order.ok) return true;
   computeStart({ kind: "board", weapon: t.record.weapon, ruler: t.ruler, mode: t.mode, identity: t.identity, record: t.record });
   const began = Date.now();
   // A BEAT WITHOUT PIECES TOO: a share lowered to nothing folds nothing for a while.
-  const beat = setInterval(() => { if (live()) keepRow(p, t); }, RENEW_RETRY_MS);
+  const beat = setInterval(() => { if (live()) keep(p, t); }, RENEW_RETRY_MS);
   const s = await measureRow(order.request, t.ruler, live, (done, total, cut) => {
     // A FOLD LANDING AFTER THE ROW STOPPED is not this page's to keep or ask on.
     if (!live()) return;
     computeBeats += 1;
-    keepRow(p, t);
+    keep(p, t);
     computeProgress(done, total);
     resumeCut = { engine: ENGINE_ID, verifier: id, lease: p.lease, task: t, cut };
     if (Date.now() - resumeSavedAt >= RESUME_SAVE_MS) saveCut();
@@ -790,19 +1082,34 @@ async function packRowOnce(id, p) {
     // is passed by; a pack that may no longer run ends here — held, its row kept
     // to resume (`keptCut`), turned off, given back whole.
     if (live() || p.lost === t.question || !boardVerifyOn()) dropCut();
+    if (p8) {
+      if (p.lost === t.question) p.done.add(t.question);
+      if (!live() && p.lost !== t.question && heldPack === p) giveBack8(p, false);
+      return true;
+    }
     if (!live() && p.lost !== t.question && heldPack === p) await endPack(keptCut(p));
     return true;
   }
   dropCut();
   const ms = Date.now() - began;
   boardPaceMs = boardPaceMs ? boardPaceMs * 0.7 + ms * 0.3 : ms;
-  p.unsent.push({ key: taskKey(t), question: t.question, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms,
-    counts: s.counts, lanes: s.lanes });
+  const answer = { question: t.question, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms, counts: s.counts, lanes: s.lanes };
+  if (p8) {
+    // KEPT BEFORE ANYTHING ELSE HAPPENS: a result in IndexedDB survives the page.
+    const kept = { ...answer, lease: p.lease, verifier: id, engine: ENGINE_ID, at: Date.now(), key: taskKey(t) };
+    resultsMem = [...resultsMem.filter((x) => x.question !== t.question), kept];
+    await idbWrite("results", [kept], []).catch(() => {});
+    p.done.add(t.question);
+  } else p.unsent.push({ key: taskKey(t), ...answer });
   computeFinished += 1;
   computeEnd({ ms, cpu_ms: s.compute_ms, work: s.work, score: s.score, metric: s.metric, unsent: true });
   try { localStorage.setItem(VERIFIED_KEY, String(boardVerifiedCount() + 1)); } catch (_) { /* private mode */ }
   renderBoardConsent();
   refill();
+  if (p8) {
+    if (p.next >= p.tasks.length && heldPack === p) heldPack = null;
+    return true;
+  }
   if (p.next >= p.tasks.length) await endPack();
   else if (Date.now() - p.sentAt >= ANSWER_EVERY_MS) await sendAnswers(p, false);
   return true;
@@ -854,7 +1161,7 @@ if (WASM) {
       let worked = false;
       computeBeats += 1;
       try { worked = await workOnce(); } catch (_) { giveBack(); /* the next ask tries again */ }
-      if (!worked) await new Promise((r) => { computeWake = r; setTimeout(r, ASK_EVERY_MS); });
+      if (!worked) await new Promise((r) => { computeWake = r; setTimeout(r, idleWaitMs()); });
       computeWake = null;
     }
   };
@@ -884,6 +1191,10 @@ function boardPointsHtml(on) {
   const d = on && devicePoints && !devicePoints.claimed && devicePoints;
   const earned = d ? ` <span class="board-state">${escHtml(tr("This browser: {n} points.")
     .replace("{n}", d.points.toLocaleString(accountLocale())))}</span>` : "";
+  // POINTS NOT YET CONFIRMED: the work of every result kept or taken that no fact holds yet.
+  const pend = on && boardProtocol === 8 ? pendingPoints() : 0;
+  const pending = pend > 0 ? ` <span class="board-state">${escHtml(tr("Pending verification: +{n} points.")
+    .replace("{n}", pend.toLocaleString(accountLocale())))}</span>` : "";
   const join = on && !accountState.account
     ? ` <a href="/login?return=${encodeURIComponent("/contributors")}">${escHtml(tr("Sign in to count it under your name"))}</a> ·`
     : "";
@@ -893,7 +1204,7 @@ function boardPointsHtml(on) {
       <button class="ghost-btn small" id="board-name-yes">${escHtml(tr("Show my name"))}</button>
       <button class="ghost-btn small" id="board-name-no">${escHtml(tr("Keep it anonymous"))}</button> ·`
     : "";
-  return `${earned}${join}${ask} <a href="/compute">${escHtml(tr("Compute together"))}</a> · <a href="/contributors">${escHtml(tr("Contributors"))}</a>`;
+  return `${earned}${pending}${join}${ask} <a href="/compute">${escHtml(tr("Compute together"))}</a> · <a href="/contributors">${escHtml(tr("Contributors"))}</a>`;
 }
 function wireBoardVerify() {
   const b = $("board-verify-flip");

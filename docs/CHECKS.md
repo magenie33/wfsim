@@ -342,7 +342,23 @@ sum is said. A row cut short resumes: a page that goes mid-row keeps that row ba
 from what it gives back, its fold saved with its engine; the next ask renews
 it before asking for anything and folds on to the uncut row's bits; a row
 taken since is dropped unanswered, another engine's fold never renewed, and
-turning computing off drops it.
+turning computing off drops it. These board-order cases run on protocol 7, the
+one a page falls back to.
+
+## `check_compute_queue`
+
+Protocol 8 on the page (docs/CLIENTS.md §"The cycle, protocol 8"), the server and
+the work signal stubbed before the app boots. Built site only. Protocol 8 is
+spoken where IndexedDB opens; a measured row's result is kept there until a
+reply takes it, goes out by beacon when the page goes (holding nothing), and
+after a reload goes in on the next load. Pending points are the work of every
+result kept or taken and not yet confirmed, over 1e9. Idle with nothing open,
+the page reads the signal and calls no worker; with work open it syncs within
+the signal's jitter; `next_ms` holds. A signal is aged by the server's clock (a
+same-origin `Date`), never the reader's; stale or unreadable, the page syncs
+directly at most every two minutes. Told `fallback: 7`, or with no IndexedDB,
+it speaks protocol 7. `WFSIM_BREAK=<name>` sabotages one rule at runtime, to see
+its assertion fail.
 
 ## `check_quick_fleet`
 
