@@ -194,6 +194,8 @@ jobs:
           node scripts/check_fair.mjs
       - name: A sync as one call answers and writes what the statements do, in two round trips at most
         run: node scripts/check_sync_proc.mjs
+      - name: Every ask names who asked, one asker is held to its share, and a code is erased once the ask is over
+        run: node scripts/check_initiator.mjs
       - name: Protocol 8 holds with each sync one call, its answers settled in the request or queued
         env:
           WFSIM_SYNC_PROC: "1"

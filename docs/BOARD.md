@@ -913,6 +913,34 @@ problem, and a new kind of task is a new producer that takes its share.
 - `questions.producer` is the producer of its earliest-due live demand, kept
   where `due_at` is (`demandAll`, `restate`).
 
+### Who asked
+
+**EVERY ASK NAMES ITS INITIATOR**, so one asker cannot hold the community's
+computers and so the work done for players can be told from WFSim's own.
+`demands.initiator`, and `questions.initiator` taken from the earliest-due
+live demand exactly as `producer` is (`demandAll`, `factory_restate`):
+
+- `system` — WFSim's own: every board batch but a player's arrivals
+  (`initiatorOf`: refresh, rescore, sweep, backfill, a scene's first pass) and
+  a survey.
+- `bot:<code>` — a riven gain asked in a chat, the code of its channel and asker.
+- `user:<code>` / `anonymous` — a player's submission signed in / signed out
+  (not yet recorded: an arrival is NULL).
+- NULL — not recorded: every ask before this, never back-filled.
+
+**A CODE IS A KEYED HASH** (`initiatorCode`, keyed by `AUTH_SECRET`): the
+board's database cannot turn it back, the accounts' side makes it again from
+the same id, and a computing browser's id is never one (§"Contribution").
+**AN ASK THAT IS OVER KEEPS NO CODE**: the settler erases it from every demand
+no longer live and every question no longer open (`factory_forget_codes`, dial
+`initiator_forget_ms`); a retracted fact's demand comes back live without one.
+
+**THE SHARE** (`factory_capped`, in `factory_eligible`): a `user:` or `bot:`
+initiator holding more of the live leases than dial `initiator_share_pct` of
+them all, and more than `initiator_floor_rows`, is passed over until it holds
+less; the rest is handed out as before. `system` and `anonymous` are never
+passed over. Leases are counted as rows, not compute. Off while the share is 0.
+
 ## Compute orders
 
 **EVERY OWED ROW IS A QUESTION, AND THE MACHINES WITH THE SITE OPEN ANSWER

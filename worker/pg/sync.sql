@@ -32,11 +32,26 @@ LANGUAGE sql IMMUTABLE AS $$
          CASE WHEN $3 >= $7 THEN $3 WHEN $6 >= $7 THEN $6 END
 $$;
 
+-- WHO HAS HAD THEIR SHARE (docs/BOARD.md §"Who asked"): each coded initiator
+-- holding more live leases at $1 than dial `initiator_share_pct` of all of them,
+-- and more than `initiator_floor_rows`. Off (none) while the share is 0; the
+-- dials are read here as worker/dials.js states them, an unset one its default.
+CREATE OR REPLACE FUNCTION factory_capped(text) RETURNS SETOF text LANGUAGE sql STABLE AS $$
+  WITH d AS (SELECT COALESCE((SELECT value FROM factory_dials WHERE name = 'initiator_share_pct'), 0) AS pct,
+                    COALESCE((SELECT value FROM factory_dials WHERE name = 'initiator_floor_rows'), 50) AS floor),
+  held AS MATERIALIZED (SELECT initiator FROM questions WHERE leased_to IS NOT NULL AND lease_until > $1)
+  SELECT h.initiator FROM held h
+  WHERE (SELECT pct FROM d) > 0 AND (h.initiator LIKE 'user:%' OR h.initiator LIKE 'bot:%')
+  GROUP BY h.initiator
+  HAVING count(*) > GREATEST((SELECT floor FROM d), (SELECT pct FROM d) / 100 * (SELECT count(*) FROM held))
+$$;
+
 -- WHAT A WITNESS MAY ANSWER, whatever the state (the caller names it, so the
 -- order's index is used): a question leased to nobody it must wait for, with
 -- the cores a first answer needs at its age, not answered on this engine by any
 -- of its owner's devices nor its network, not refused by its engine, due before
--- $8 when given, and not just queued for the settler (dial `settle_grace_ms`).
+-- $8 when given, not asked by an initiator past its share (`factory_capped`),
+-- and not just queued for the settler (dial `settle_grace_ms`).
 -- $1 at, $2 official, $3 lanes, $4 engine, $5 siblings (json), $6 owner,
 -- $7 net, $8 before, $9 row ceiling and $10 settle grace in seconds.
 CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, text, text, text, bigint, bigint)
@@ -51,6 +66,7 @@ RETURNS SETOF questions LANGUAGE sql STABLE AS $$
     AND NOT EXISTS (SELECT 1 FROM engine_refusals r WHERE r.question = q.id AND r.engine = $4
           AND r.device IN (SELECT value FROM jsonb_array_elements_text($5::jsonb)))
     AND ($8 IS NULL OR q.due_at < $8)
+    AND (q.initiator IS NULL OR q.initiator NOT IN (SELECT factory_capped($1)))
     AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = q.id
           AND s.queued_at > to_char(($1::timestamptz AT TIME ZONE 'UTC') - make_interval(secs => $10), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 $$;
@@ -138,14 +154,26 @@ LANGUAGE sql STABLE AS $$
 $$;
 
 -- A QUESTION AFTER ITS DEMANDS MOVED: the earliest deadline still standing, the
--- larger wait and that deadline's producer — or withdrawn, nobody asking.
+-- larger wait and that deadline's producer and initiator — or withdrawn, nobody asking.
 CREATE OR REPLACE FUNCTION factory_restate(text) RETURNS void LANGUAGE sql AS $$
-  UPDATE questions q SET due_at = l.due, waits = l.waits, producer = l.producer
-    FROM (SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n, (array_agg(producer ORDER BY due_at, producer))[1] AS producer
+  UPDATE questions q SET due_at = l.due, waits = l.waits, producer = l.producer, initiator = l.initiator
+    FROM (SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n, (array_agg(producer ORDER BY due_at, producer))[1] AS producer,
+            (array_agg(initiator ORDER BY due_at, producer))[1] AS initiator
           FROM demands WHERE question = $1 AND state = 'live') l
     WHERE q.id = $1 AND l.n > 0;
   UPDATE questions SET state = 'withdrawn', lease = NULL, lease_until = NULL, leased_to = NULL
     WHERE id = $1 AND state = 'open' AND NOT EXISTS (SELECT 1 FROM demands WHERE question = $1 AND state = 'live');
+$$;
+
+-- AN ASK THAT IS OVER KEEPS NO CODE: a demand no longer live and a question no
+-- longer open lose a user or bot initiator (the settler's pass, dial
+-- `initiator_forget_ms`). The rows erased.
+CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$
+  WITH d AS (UPDATE demands SET initiator = NULL
+               WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'live' RETURNING 1),
+  q AS (UPDATE questions SET initiator = NULL
+          WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'open' RETURNING 1)
+  SELECT (SELECT count(*) FROM d) + (SELECT count(*) FROM q)
 $$;
 
 -- A BOARD ROW STILL OWED (worker/board_tasks.js): `queue` holds it.

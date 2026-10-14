@@ -155,7 +155,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 
   /// A PRODUCER ASKS. The question is opened, or shared when another producer
   /// asked it already; a fact the served engine already holds is told at once.
-  /// `waits`: a person is waiting on it now — §"Order".
+  /// `waits`: a person is waiting on it now — §"Order". `initiator`: who asked,
+  /// docs/BOARD.md §"Who asked".
   async function demand(env, ask, engine, now = Date.now()) {
     return (await demandAll(env, [ask], engine, now))[0];
   }
@@ -176,12 +177,12 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     }
     for (let i = 0; i < asks.length; i += DEMAND_CHUNK) {
       const qs = new Map(), ds = new Map();
-      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false }, k) => {
+      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false, initiator = null }, k) => {
         const id = ids[i + k], due_at = iso(now + due_in_ms), w = waits ? 1 : 0, l = lanes ? JSON.stringify(lanes) : null;
         const q = qs.get(id);
-        if (!q) qs.set(id, { id, verb, request: canon(request), due_at, lanes: l, waits: w, producer });
-        else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l });
-        ds.set(JSON.stringify([producer, ref]), { producer, ref, question: id, due_at, waits: w, payload: JSON.stringify(payload) });
+        if (!q) qs.set(id, { id, verb, request: canon(request), due_at, lanes: l, waits: w, producer, initiator });
+        else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer, initiator } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l });
+        ds.set(JSON.stringify([producer, ref]), { producer, ref, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator });
       });
       // IN KEY ORDER, so two asks writing the same rows take their locks alike.
       const sorted = (m, key) => [...m.values()].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
@@ -189,22 +190,23 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       // that engine however often it is asked again; a new engine tries it anew.
       const reopen = `t.state = 'withdrawn' AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals rw WHERE rw.question = t.id AND rw.engine = ?3::text)`;
       await db.batch([
-        db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer)
-                      SELECT x.id, x.verb, x.request, 'open', x.due_at, ?1::text, x.lanes, x.waits, x.producer
-                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, verb text, request text, due_at text, lanes text, waits bigint, producer text)
+        db.prepare(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer, initiator)
+                      SELECT x.id, x.verb, x.request, 'open', x.due_at, ?1::text, x.lanes, x.waits, x.producer, x.initiator
+                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, verb text, request text, due_at text, lanes text, waits bigint, producer text, initiator text)
                     ON CONFLICT (id) DO UPDATE SET
                       state = CASE WHEN ${reopen} THEN 'open' ELSE t.state END,
                       opened_at = CASE WHEN ${reopen} THEN excluded.opened_at ELSE t.opened_at END,
                       due_at = CASE WHEN ${reopen} OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
                       producer = CASE WHEN ${reopen} OR excluded.due_at < t.due_at THEN excluded.producer ELSE t.producer END,
+                      initiator = CASE WHEN ${reopen} OR excluded.due_at < t.due_at THEN excluded.initiator ELSE t.initiator END,
                       waits = CASE WHEN ${reopen} THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
                       lanes = COALESCE(t.lanes, excluded.lanes)`)
           .bind(at, JSON.stringify(sorted(qs, (q) => q.id)), engine || ""),
-        db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload)
-                      SELECT x.producer, x.ref, x.question, 'live', ?1::text, x.due_at, x.waits, x.payload
-                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(producer text, ref text, question text, due_at text, waits bigint, payload text)
+        db.prepare(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload, initiator)
+                      SELECT x.producer, x.ref, x.question, 'live', ?1::text, x.due_at, x.waits, x.payload, x.initiator
+                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(producer text, ref text, question text, due_at text, waits bigint, payload text, initiator text)
                     ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
-                      due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`)
+                      due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL, initiator = excluded.initiator`)
           .bind(at, JSON.stringify(sorted(ds, (d) => `${d.producer}\u0000${d.ref}`))),
         // A PRODUCER NEVER SEEN starts at the least any has used: no credit banked.
         db.prepare(`INSERT INTO producer_use (producer, used)

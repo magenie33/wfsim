@@ -279,6 +279,17 @@ docs/BOARD.md §"The sync in the database").
 - Through the procedure a sync with results, renewals, states and points is at
   most two waits on a database; through the statements it is more.
 
+## `check_initiator`
+
+Plain node on PGlite: who asked (docs/BOARD.md §"Who asked"). A demand and its
+question carry the initiator, a question the earliest-due live demand's, again
+after a withdrawal; with `initiator_share_pct` set, an initiator past its share
+of the live leases is passed over and the system is not, nobody is at or under
+`initiator_floor_rows`, and a lease run out does not count; the SQL's unset
+floor is worker/dials.js's default; `factory_forget_codes` erases the user and
+bot codes of an ask that is over and keeps the rest; a board batch's initiator
+and a code's shape.
+
 ## `check_board_verify`
 
 Plain node on PGlite (`worker/pg/*.sql`): a board row as a

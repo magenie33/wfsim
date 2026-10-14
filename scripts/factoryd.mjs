@@ -81,7 +81,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let release = await servedNow(), stopping = false;
   const failed = new Map();
   const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
-  let unconfiguredSaid = false, tallyAt = 0, tallyKept = null;
+  let unconfiguredSaid = false, tallyAt = 0, tallyKept = null, forgotAt = 0;
   // THE SIGNAL FOLLOWS EVERY SNAPSHOT, so it is never older than one.
   const writeSignal = async (snap) => {
     if (!target) {
@@ -143,9 +143,16 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       await put(target, { key: TALLY_KEY, body: JSON.stringify(await tallyOf(env, tallyKept, now)), contentType: "application/json", cacheControl: TALLY_CACHE });
       tallyAt = now;
     },
+    // AN ASK THAT IS OVER KEEPS NO CODE (worker/pg/sync.sql `factory_forget_codes`), every `initiator_forget_ms`.
+    forget: async () => {
+      const now = Date.now();
+      if (now - forgotAt < (await dialsOf(env, now)).initiator_forget_ms - STATS_TICK_MS / 2) return;
+      await env.LIBRARY.prepare("SELECT factory_forget_codes() AS n").first();
+      forgotAt = now;
+    },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "demand", "tally"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "demand", "tally", "forget"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -163,7 +170,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     };
     timers.set(name, setTimeout(loop, 0));
   };
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {

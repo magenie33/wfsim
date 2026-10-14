@@ -129,6 +129,9 @@ const producerOf = (batch, builtAt, ruler) => {
 /// REFRESH IS DUE BY ITS ROW'S AGE, `REFRESH_WITHIN_MS` after its fact finished,
 /// however late it was asked: the bound is on how stale a row gets, not on how
 /// long an ask waits.
+/// WHO ASKED FOR A BOARD ROW (docs/BOARD.md §"Who asked"): a player's arrival is
+/// not recorded, every other batch is WFSim's own.
+export const initiatorOf = (batch) => (batch.startsWith("arrivals-") ? null : "system");
 export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
   const producer = producerOf(batch, builtAt, r.ruler);
   const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
@@ -136,7 +139,7 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
     : isLadderCell(r.ruler) && !measuredAt ? SCENE_FIRST_MS : DEADLINE_MS[producer];
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,
-    payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch } };
+    payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch }, initiator: initiatorOf(batch) };
 }
 
 /// THE ROWS A BATCH OWES, asked of the factory (`ship_queue.sh`). An arrival's
@@ -212,7 +215,7 @@ async function adopt(request, env) {
     const producer = o.priority === 0 ? "new_build" : "sweep";
     const request = { record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode };
     await facts().demand(env, { producer, ref, verb: "simulate", request, due_in_ms: DEADLINE_MS[producer],
-      payload: { identity: o.identity, ruler: o.ruler, mode: o.mode, batch: o.batch } }, engine, Date.parse(o.at));
+      payload: { identity: o.identity, ruler: o.ruler, mode: o.mode, batch: o.batch }, initiator: initiatorOf(o.batch) }, engine, Date.parse(o.at));
     const id = (await db.prepare("SELECT question FROM demands WHERE producer = ? AND ref = ?").bind(producer, ref).first()).question;
     // ITS CLIENTS' RESULT, carried: the first and those that agreed with it hold
     // its number; a disputer's own number is not kept.

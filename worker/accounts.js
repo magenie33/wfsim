@@ -94,6 +94,10 @@ export async function hmac(key, s) {
   const k = await crypto.subtle.importKey("raw", enc.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return b64url(await crypto.subtle.sign("HMAC", k, enc.encode(s)));
 }
+/// WHO ASKED, AS A CODE (docs/BOARD.md §"Who asked"): `kind:` and a keyed hash of
+/// the asker, which the board's database cannot turn back and the accounts' side
+/// can make again from the same id.
+export const initiatorCode = async (env, kind, id) => `${kind}:${(await hmac(`${env.AUTH_SECRET || "wfsim"}:initiator`, id)).slice(0, 16)}`;
 export const now = () => new Date().toISOString();
 /// `user_` and six random characters, free of every account's name.
 async function bornUsername(db) {

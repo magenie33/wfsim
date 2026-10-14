@@ -70,6 +70,13 @@ export const DIALS = {
     says: "a queued question is handed to nobody for this long, then to anyone again should the settler not have come" },
   settle_batch: { default: 200, min: 1, max: 2_000, unit: "questions",
     says: "the most queued questions one settler pass takes" },
+  // WHO ASKED (docs/BOARD.md §"Who asked"): read by worker/pg/sync.sql `factory_capped` too.
+  initiator_share_pct: { default: 0, min: 0, max: 100, unit: "%",
+    says: "one person or chat holding more than this share of the live leases is passed over until it holds less; 0 off" },
+  initiator_floor_rows: { default: 50, min: 1, max: 100_000, unit: "rows",
+    says: "nobody is passed over for their share while holding this many leases or fewer" },
+  initiator_forget_ms: { default: 600_000, min: 60_000, max: 86_400_000, unit: "ms",
+    says: "how often the settler erases the code of an ask that is over" },
   // THE PUBLIC STATS (docs/BOARD.md §"The public stats"), written to the public bucket.
   stats_tally_ms: { default: 60_000, min: 10_000, max: 3_600_000, unit: "ms",
     says: "how often the settler writes stats/tally.json, the home page's count" },

@@ -12,6 +12,7 @@ import { submitRecord } from "./index.js";
 import { netOf, servedRelease, countsOf, unrecognised } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
+import { initiatorCode } from "./accounts.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
 const CODE_LEN = 5;
@@ -150,7 +151,7 @@ async function freeze(request, env, code) {
     .bind(JSON.stringify(frozen), b.engine, code).run();
   // A FREEZE WHOSE ASK FAILED is asked on the bot's retry, with what was stored:
   // the write above made the retry a no-op, so its shape was never handed out.
-  const a = await env.LIBRARY.prepare(`SELECT code, channel, weapon, ruler, request FROM appraisals a WHERE code = ?
+  const a = await env.LIBRARY.prepare(`SELECT code, channel, asker, weapon, ruler, request FROM appraisals a WHERE code = ?
       AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
   if (a && a.request) await askRiven(env, a, JSON.parse(a.request), Date.now());
   return json({ ok: true, stored: !!r.meta.changes });
@@ -173,7 +174,8 @@ export async function askRiven(env, a, frozen, now) {
   const { engine } = await servedRelease(env);
   await facts().demand(env, { producer: chat ? "chat" : "survey", ref: a.code, verb: "optimize", request: frozen,
     due_in_ms: DEADLINE_MS[chat ? "chat" : "survey"], payload: { weapon: a.weapon, ruler: a.ruler },
-    lanes: chat ? RIVEN_LANE_TIERS : null, waits: chat }, engine, now);
+    lanes: chat ? RIVEN_LANE_TIERS : null, waits: chat,
+    initiator: chat ? await initiatorCode(env, "bot", `${a.channel}:${a.asker}`) : "system" }, engine, now);
 }
 
 /// A RIVEN GAIN'S PRODUCERS (worker/factory.js): one still kept is still wanted;
@@ -336,7 +338,7 @@ async function adopt(request, env) {
   if (!botAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
   const db = env.LIBRARY, now = Date.now(), since = kept(now);
   const { results } = await db.prepare(
-    `SELECT code, channel, weapon, ruler, at, request, lease, lease_until, leased_to FROM appraisals a
+    `SELECT code, channel, asker, weapon, ruler, at, request, lease, lease_until, leased_to FROM appraisals a
       WHERE ${UNADOPTED} ORDER BY at LIMIT ?`).bind(...since, ADOPT_BATCH).all();
   const { engine } = await servedRelease(env);
   for (const a of results) {
