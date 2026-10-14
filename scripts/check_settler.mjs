@@ -9,6 +9,7 @@ import { factory, canon, nearAnswer } from "../worker/tasks.js";
 import { contributionRoute } from "../worker/contribution.js";
 import { snapshotTick, fairTick, readFair, compareFair, settleBatch, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
 import { testDb } from "./pg/test_db.mjs";
+import { DIAL_DEFAULTS } from "../worker/dials.js";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -129,7 +130,8 @@ console.log("the work signal");
   check("its fields are the snapshot's counts, the served engine and protocols, and the dials in force",
     body.v === 1 && body.at === snap.at && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
     && body.engine === "e1" && body.release === "r1" && body.protocol === PROTOCOL && body.protocols.length === PROTOCOLS_SERVED.size
-    && body.poll_ms === 10_000 && body.jitter_ms === 10_000 && body.urgent_jitter_ms === 3_000 && body.mode === "signal"
+    && body.poll_ms === DIAL_DEFAULTS.poll_ms && body.jitter_ms === DIAL_DEFAULTS.jitter_ms
+    && body.urgent_jitter_ms === DIAL_DEFAULTS.urgent_jitter_ms && body.mode === "signal"
     && Object.keys(body).join() === "v,at,open,urgent,engine,release,protocol,protocols,computing,poll_ms,jitter_ms,urgent_jitter_ms,mode", JSON.stringify(body));
   const { setDial, forgetDials } = await import("../worker/dials.js");
   await setDial(env, "signal_mode", 1, "check");
