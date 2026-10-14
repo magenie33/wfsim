@@ -26,6 +26,7 @@ import tarfile
 import time
 import urllib.request
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TARGET = ROOT / "private" / "hetzner" / "ssh.env"
@@ -145,9 +146,12 @@ def verify(t: dict | None = None) -> int:
         return 1
     if r2_token():
         try:
+            # AGED BY THE EDGE'S CLOCK (its Date header), never this machine's: a
+            # desktop clock minutes off reads a fresh signal as stale.
             with urllib.request.urlopen(urllib.request.Request(SIGNAL_URL, headers={"user-agent": "ship_factoryd"}), timeout=20) as r:
                 at = json.load(r).get("at")
-            seen = (datetime.now(timezone.utc) - datetime.fromisoformat(at.replace("Z", "+00:00"))).total_seconds() if at else None
+                now = parsedate_to_datetime(r.headers["date"]) if r.headers.get("date") else datetime.now(timezone.utc)
+            seen = (now - datetime.fromisoformat(at.replace("Z", "+00:00"))).total_seconds() if at else None
         except Exception as e:  # noqa: BLE001 — any failure to read it is a signal that is down
             seen, at = None, f"unreadable ({e})"
         print(f"signal: {SIGNAL_URL} at {at}" + (f", {int(seen)} s old" if seen is not None else ""))
