@@ -277,6 +277,8 @@ CREATE TABLE IF NOT EXISTS appraisal_results (
   engine     TEXT COLLATE "C"
 );
 CREATE INDEX IF NOT EXISTS appraisal_results_by_code ON appraisal_results (code);
+-- ONE COMPUTER'S RESULTS IN TIME ORDER (worker/appraise.js `/api/appraise/mine`).
+CREATE INDEX IF NOT EXISTS appraisal_results_by_verifier ON appraisal_results (verifier, at);
 
 -- EVERY VOID FISSURE THE GAME OPENS, from the world state the bot server relays
 -- each minute (worker/world.js `fissureLog`). `id` is DE's own, so the minutes

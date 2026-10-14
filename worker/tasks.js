@@ -626,8 +626,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// oldest first, each on its own so one that fails again stops none behind it.
   async function redeliver(env, now = Date.now(), max = 100) {
     const db = env.LIBRARY;
-    const { results } = await db.prepare(`SELECT DISTINCT q.* FROM demands d JOIN questions q ON q.id = d.question
-        WHERE d.state = 'live' AND q.state IN ('fact', 'spot') AND q.fact_at < ?::text ORDER BY q.fact_at LIMIT ?::bigint`)
+    // FROM THE LIVE DEMANDS, never from the settled questions: walked by
+    // `fact_at`, every fact ever made was probed for a demand to find none.
+    const { results } = await db.prepare(`WITH live AS MATERIALIZED (SELECT DISTINCT question FROM demands WHERE state = 'live')
+        SELECT q.* FROM live JOIN questions q ON q.id = live.question
+        WHERE q.state IN ('fact', 'spot') AND q.fact_at < ?::text ORDER BY q.fact_at LIMIT ?::bigint`)
       .bind(iso(now - 10 * 60_000), max).all();
     let told = 0;
     for (const q of results) {
@@ -641,11 +644,17 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// its independent witnesses as `decide` counts them, still uncredited — a
   /// settlement whose credit failed after its commit. Paid in the
   /// hour the fact formed, as they would have been. Up to `max` questions a call.
+  /// AN ANSWER WHOSE OWNER OR NETWORK WAS ALREADY PAID FOR THE QUESTION is no
+  /// witness (`independent`) and is never owed: picked, the oldest of them held
+  /// every call's places and nobody behind them was ever paid.
   async function repay(env, now = Date.now(), max = 200) {
     const db = env.LIBRARY;
     const { results: qs } = await db.prepare(`SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
         WHERE a.credited = 0 AND a.void = 0 AND a.official = 0 AND a.canon = q.canon AND q.state IN ('fact', 'spot')
-          AND a.at <= q.fact_at AND q.fact_at < ?::text ORDER BY q.fact_at LIMIT ?::bigint`)
+          AND a.at <= q.fact_at AND q.fact_at < ?::text
+          AND NOT EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
+                          AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net)))
+        ORDER BY q.fact_at LIMIT ?::bigint`)
       .bind(iso(now - 10 * 60_000), max).all();
     let paid = 0;
     for (const q of qs) {

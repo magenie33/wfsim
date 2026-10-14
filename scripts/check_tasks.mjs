@@ -603,6 +603,28 @@ console.log("\na fact's witnesses never paid are paid, and a late answer never")
   check("...and paid once", (await f.repay(env, NOW)) === 0);
 }
 
+console.log("\nan answer its owner was already paid for never holds a place in the sweep");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const t = (m) => new Date(NOW - m * 60_000).toISOString();
+  // THE OLDER FACT is settled and paid: o1's second device is no witness, and
+  // never will be. THE NEWER ONE still owes both of its witnesses.
+  for (const [id, fact] of [["covered", t(120)], ["owed", t(60)]]) {
+    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+      VALUES (?, 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, id, fact, fact, fact);
+  }
+  for (const [q, dev, owner, at, credited] of [["covered", "a1", "o1", t(130), 1], ["covered", "a2", "o2", t(125), 1],
+    ["covered", "a3", "o1", t(124), 0], ["owed", "b1", "o3", t(70), 0], ["owed", "b2", "o4", t(65), 0]]) {
+    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01') ON CONFLICT DO NOTHING", dev);
+    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+      VALUES (?, 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, ?, 0)`, q, dev, owner, dev, at, credited);
+  }
+  const n = await f.repay(env, NOW, 1);
+  check("a sweep of one pays the fact still owed, behind one whose leftover answer is its owner's second",
+    n === 2 && !(await db.get("SELECT credited FROM answers WHERE device = 'a3'")).credited, JSON.stringify({ n }));
+}
+
 console.log("\nwhat a refusal takes back goes to the official pool");
 {
   const db = await testDb("library"), env = { LIBRARY: db };

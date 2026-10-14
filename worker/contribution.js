@@ -564,11 +564,14 @@ async function demand(request, env) {
   if (!env.LIBRARY) return json({ ok: true, computing: 0, owed: { new_builds: 0, sweeps: 0, rescores: 0, refreshes: 0 }, riven_gains: 0, surveys: [], per_hour: { volunteers: 0, official: 0 } });
   const t = Date.now(), hour = iso(t - 3_600_000);
   const db = env.LIBRARY;
-  // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's.
+  // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
+  // demands are read once and joined whole: looked up a queue row at a time,
+  // every row cost an index walk for the few that have one.
   const [owed, done, gains, surveys] = await db.batch([
-    db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.producer = 'new_build' THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
+    db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM demands WHERE state = 'live' AND producer = 'new_build')
+                SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
                 FROM queue q JOIN batches b ON b.id = q.batch
-                LEFT JOIN demands d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode AND d.producer = 'new_build' AND d.state = 'live'
+                LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                 GROUP BY q.build_id, q.ruler, q.mode) GROUP BY k`),
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
                 FROM scores WHERE finished_at >= ?`).bind(hour),

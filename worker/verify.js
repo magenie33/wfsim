@@ -240,9 +240,14 @@ async function work(request, env) {
     ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
       : f.releaseAllOf(env, id, now),
     db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
-    db.prepare(`SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
-                  AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT ?2::bigint) o) AS open,
-                (SELECT count(*) FROM verifiers WHERE asked_at > ?3::text) AS asking`).bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS)),
+    // OPEN IS COUNTED ONLY AS FAR AS IT CAN MATTER: past `asking` times the most
+    // either use below compares it to, `packSize` and `short` read the same.
+    db.prepare(`WITH a AS (SELECT count(*) AS n FROM verifiers WHERE asked_at > ?3::text)
+                SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
+                  AND (lease_until IS NULL OR lease_until < ?1::text)
+                  LIMIT LEAST(?2::bigint, GREATEST(1, (SELECT n FROM a)) * ?4::bigint)) o) AS open,
+                (SELECT n FROM a) AS asking`)
+      .bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS), Math.max(PACK_MAX, pace ? Math.round(PACK_MS / pace) : PACK_FIRST)),
     f.headOf(env, w, engine, now),
     asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),
   ]);
