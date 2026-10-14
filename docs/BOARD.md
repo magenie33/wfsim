@@ -738,7 +738,13 @@ questions, never a heavier client.
   (due in six hours), `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
   `sweep` for a rescore's or an older build's first pass (due in a week). An
   arrival's row the board already scored is not asked: a resubmission the page
-  did not recognise is the same build. EVERY OWED ROW IS ASKED FOR: the
+  did not recognise is the same build. ONLY A ROW THE BOARD ADMITS IS QUEUED:
+  every writer takes its rows from `owed_rows` (`webapi/src/board_rows.rs`),
+  the `validate_for_board_with` door `/api/board/order` opens a row through, so
+  a build the library keeps but a ruler refuses — a melee build with an empty
+  stance slot — is never a row no client can open. `scripts/sweep_admission.sh`
+  names queued rows that door refuses, and deletes them only with `--delete`.
+  EVERY OWED ROW IS ASKED FOR: the
   backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked
   for, since a run stopped between writing the queue and asking leaves rows
   only the scorer is ever handed.
@@ -1426,7 +1432,7 @@ and 93.3% of builds; a hundredth keeps 98.0% and gates nothing.
 **WHAT IT CANNOT DO IS REFUSE THE FIRST FIGHT.** Knowing whether a build clears
 the line means measuring it, so a build with no fact anywhere is owed one — and
 exactly one. **`wfsim-intake` asks for it**, at the (ruler, mode) the ARRIVAL
-named, because that is the only moment anything knows: a build carries no ruler
+named where the board admits the build there (`owed_rows`), because that is the only moment anything knows: a build carries no ruler
 and no mode (`canonical` drops both, since mods are equipped on the WEAPON and a
 mode is how it is fired), so after intake the question cannot be asked at all.
 Clearing the line on that one fight earns the other eighty-odd rows.

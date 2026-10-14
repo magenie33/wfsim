@@ -136,25 +136,17 @@ fn rank_choices(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<Vec<String>>
 fn asked_row(
     sent_ruler: &str,
     sent_mode: &str,
-    v: &wfsim_engine::board::builds::ValidBuild,
+    owed: &[(String, String)],
     key: &str,
 ) -> Option<Value> {
-    // A RULER THE ROSTER STILL HAS, by family — a `_vN` record names the ruler
-    // it is a version of. One it no longer has asks for nothing: `purge_queue`
-    // would delete the row and the reconciliation covers the build anyway.
-    let ruler = wfsim_engine::board::benchmarks::all()
-        .iter()
-        .map(|b| b.id.clone())
-        .find(|b| family(b) == family(sent_ruler))?;
-    // …AND A MODE THE WEAPON CAN SUSTAIN. The scorer enumerates sustainable
-    // modes and matches the queue on that id, so a row naming any other mode is
-    // a row nothing will ever take.
-    let modes: Vec<String> = wfsim_engine::data::weapons::play_modes(&v.weapon)
-        .into_iter()
-        .filter(|m| m.sustainable)
-        .map(|m| m.id.to_string())
-        .collect();
-    let mode = modes.iter().find(|m| *m == sent_mode).or_else(|| modes.first())?;
+    // ONLY A ROW THE BOARD ADMITS. `owed` is `owed_rows`: a ruler the roster no
+    // longer has, a mode the weapon cannot sustain and a build the ruler refuses
+    // (a melee row with an empty stance slot) all ask for nothing, since no
+    // client's `/api/board/order` could open that row. The ruler is matched by
+    // family — a `_vN` record names the ruler it is a version of — and the mode
+    // sent is taken if that row is owed, else the ruler's first.
+    let mine: Vec<&(String, String)> = owed.iter().filter(|(r, _)| family(r) == family(sent_ruler)).collect();
+    let (ruler, mode) = mine.iter().find(|(_, m)| m == sent_mode).or_else(|| mine.first())?;
     Some(json!({ "build_id": key, "ruler": ruler, "mode": mode }))
 }
 
@@ -319,19 +311,19 @@ fn intake(
             // …AND EVERY ROW IT OWES, AS A COMPUTE ORDER — the live board opens
             // them the moment the build arrives (docs/BOARD.md §"Compute
             // orders"); the queue's own reconciliation asks more slowly.
+            // ONE DOOR FOR BOTH: the rows the board admits this build on
+            // (`owed_rows`, through the `validate_for_board_with` that the
+            // scorer and `/api/board/order` use), so nothing is queued that no
+            // client can open.
+            let owed = wfsim_webapi::board_rows::owed_rows(&rec);
             if let Some(sink) = orders.as_deref_mut() {
-                let owed = if rolls.is_empty() {
-                    wfsim_webapi::board_rows::canonical_record(&v)
-                } else {
-                    wfsim_webapi::board_rows::with_rolls(wfsim_webapi::board_rows::canonical_record(&v), &rolls)
-                };
-                for (ruler, mode) in wfsim_webapi::board_rows::owed_rows(&owed) {
+                for (ruler, mode) in &owed {
                     sink.push(json!({ "build_id": key, "ruler": ruler, "mode": mode }));
                 }
             }
             // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
             // record shadowed the inbox one, which carries neither field.
-            if let Some(ask) = asked_row(&sent.0, &sent.1, &v, &key) {
+            if let Some(ask) = asked_row(&sent.0, &sent.1, &owed, &key) {
                 asked.insert(
                     format!("{key}#{}#{}", id(&ask, "ruler"), id(&ask, "mode")),
                     ask,
@@ -345,7 +337,43 @@ fn intake(
     (built.into_values().collect(), asked.into_values().collect(), done, seen, refused)
 }
 
+/// QUEUE ROWS THE BOARD DOES NOT ADMIT, read as `{build_id, ruler, mode, record}`
+/// one a line and written back in the queue's shape for `purge_orphans.sh`, the
+/// reason counted out loud. The door is `asked_row`'s, `owed_rows`, so a row
+/// this names is one no client's `/api/board/order` can open.
+fn sweep_admission(lines: impl Iterator<Item = String>) -> (Vec<Value>, BTreeMap<String, usize>) {
+    let mut refused = Vec::new();
+    let mut why: BTreeMap<String, usize> = BTreeMap::new();
+    for line in lines {
+        let Ok(row) = serde_json::from_str::<Value>(&line) else { continue };
+        let (build, ruler, mode) = (id(&row, "build_id"), id(&row, "ruler"), id(&row, "mode"));
+        let record = row.get("record").cloned().unwrap_or(Value::Null);
+        if wfsim_webapi::board_rows::owed_rows(&record).iter().any(|(r, m)| *r == ruler && *m == mode) {
+            continue;
+        }
+        let reason = match wfsim_webapi::board_rows::scored_build(&record, &ruler) {
+            Err(e) => e,
+            Ok(_) if wfsim_engine::board::benchmarks::get(&ruler).is_none() => "a ruler the roster does not have".into(),
+            Ok(_) => "a mode the weapon cannot sustain".into(),
+        };
+        *why.entry(reason).or_default() += 1;
+        refused.push(json!({ "build_id": build, "ruler": ruler, "mode": mode }));
+    }
+    (refused, why)
+}
+
 fn main() {
+    if wfsim_cli::args::has_flag("--sweep-admission") {
+        let (refused, why) = sweep_admission(std::io::stdin().lock().lines().map_while(Result::ok));
+        for r in &refused {
+            println!("{r}");
+        }
+        for (reason, n) in &why {
+            eprintln!("sweep: {n} row(s) refused: {reason}");
+        }
+        eprintln!("sweep: {} queue row(s) the board does not admit", refused.len());
+        return;
+    }
     let done_path = flag("--done");
     let asked_path = flag("--asked");
     let orders_path = flag("--orders");
@@ -533,6 +561,53 @@ mod tests {
         assert!(orders.iter().any(|o| o["mode"] == "cycle") && orders.iter().any(|o| o["mode"] == "base"));
     }
 
+    /// THE FIGHT AN ARRIVAL NAMED IS ASKED ONLY WHERE THE BOARD ADMITS THE
+    /// BUILD. A melee build with an empty stance slot is legal to equip and kept
+    /// in the library, but no ruler takes it, so a row asked for it is one no
+    /// client's `/api/board/order` can open — handed out and returned for ever.
+    #[test]
+    fn the_fight_an_arrival_named_is_asked_only_where_the_board_admits_it() {
+        let mods = |stance: Option<&'static str>| {
+            let mut m = vec!["primed_fever_strike", "vicious_frost", "volcanic_edge", "condition_overload",
+                             "primed_fury", "weeping_wounds", "magnetic_rush", "organ_shatter"];
+            m.extend(stance);
+            m
+        };
+        let line = |id: &str, stance: Option<&'static str>| json!({ "id": id, "at": "2026-10-13", "record": {
+            "weapon": "magistar", "mods": mods(stance),
+            "evolutions": ["magistar_evo1_incarnon_form", "magistar_edge_of_justice",
+                           "magistar_seismic_slam", "magistar_subtle_force"],
+            "arcanes": ["melee_duplicate"], "exilus": "dreamers_wrath",
+            "benchmark": "standard_single_target", "mode": "slide",
+        }}).to_string();
+        let (builds, asked, ..) = intake(vec![line("bare", None)].into_iter(), None, None);
+        assert_eq!(builds.len(), 1, "the library keeps a legal build the board refuses");
+        assert!(asked.is_empty(), "no stance, no row: {asked:?}");
+        let (_, asked, ..) = intake(vec![line("stance", Some("crushing_ruin"))].into_iter(), None, None);
+        assert_eq!(asked.len(), 1, "with a stance it is admitted: {asked:?}");
+        assert_eq!((asked[0]["ruler"].as_str(), asked[0]["mode"].as_str()), (Some("standard_single_target"), Some("slide")));
+    }
+
+    /// THE SWEEP NAMES A QUEUED ROW THE BOARD REFUSES, WITH ITS REASON, and
+    /// passes one it admits.
+    #[test]
+    fn the_sweep_names_only_rows_the_board_refuses() {
+        let bare = json!({ "weapon": "magistar",
+            "mods": ["primed_fever_strike", "vicious_frost", "volcanic_edge", "condition_overload",
+                     "primed_fury", "weeping_wounds", "magnetic_rush", "organ_shatter"],
+            "evolutions": ["magistar_evo1_incarnon_form", "magistar_edge_of_justice",
+                           "magistar_seismic_slam", "magistar_subtle_force"],
+            "arcanes": ["melee_duplicate"] });
+        let mut stance = bare.clone();
+        if let Some(m) = stance["mods"].as_array_mut() {
+            m.push(json!("crushing_ruin"));
+        }
+        let q = |build: &str, rec: &Value| json!({ "build_id": build, "ruler": "standard_single_target", "mode": "slide", "record": rec }).to_string();
+        let (refused, why) = sweep_admission(vec![q("bare", &bare), q("stance", &stance)].into_iter());
+        assert_eq!(refused, vec![json!({ "build_id": "bare", "ruler": "standard_single_target", "mode": "slide" })]);
+        assert_eq!(why.get(wfsim_engine::data::weapons::STANCE_REQUIRED), Some(&1), "{why:?}");
+    }
+
     #[test]
     fn a_refused_record_leaves_the_inbox() {
         let (builds, _, done, seen, refused) = intake(
@@ -641,16 +716,27 @@ mod tests {
         intake(lines.into_iter(), None, None).1
     }
 
+    /// AN ARRIVAL THE BOARD ADMITS on every ruler — an Incarnon weapon with all
+    /// four tiers, since a ruler refuses one without them — and the fight it was
+    /// run in.
+    fn admitted(inbox_id: &str, ruler: &str, mode: &str) -> String {
+        json!({ "id": inbox_id, "at": "2026-01-01", "record": {
+            "weapon": "braton_prime",
+            "mods": ["hellfire", "primary_acuity", "galvanized_aptitude", "hammer_shot",
+                     "speed_trigger", "vigilante_fervor", "vital_sense", "magnetic_capacity"],
+            "evolutions": ["braton_prime_evo1_incarnon_form", "braton_prime_daring_reverie",
+                           "braton_prime_voids_guidance", "braton_prime_prelude_of_might"],
+            "arcanes": ["primary_deadhead"],
+            "benchmark": ruler, "mode": mode,
+        }}).to_string()
+    }
+
     /// **THE FIGHT THE SUBMITTER RAN IS ASKED FOR**, and it is the only thing
     /// that can be: `canonical` drops the ruler and the mode, so after this
     /// pass nothing in the pipeline knows what board they were on.
     #[test]
     fn an_arrival_asks_for_the_fight_it_named() {
-        let asked = asked_of(vec![row(
-            "a",
-            &FULL,
-            json!({ "benchmark": "standard_multi_target", "mode": "cycle" }),
-        )]);
+        let asked = asked_of(vec![admitted("a", "standard_multi_target", "cycle")]);
         assert_eq!(asked.len(), 1, "one arrival, one fight");
         assert_eq!(asked[0]["ruler"], "standard_multi_target");
         assert_eq!(asked[0]["mode"], "cycle");
@@ -662,9 +748,9 @@ mod tests {
     #[test]
     fn one_fight_per_build_ruler_and_mode() {
         let asked = asked_of(vec![
-            row("a", &FULL, json!({ "benchmark": "standard_multi_target", "mode": "cycle" })),
-            row("b", &FULL, json!({ "benchmark": "standard_multi_target", "mode": "cycle" })),
-            row("c", &FULL, json!({ "benchmark": "standard_single_target", "mode": "cycle" })),
+            admitted("a", "standard_multi_target", "cycle"),
+            admitted("b", "standard_multi_target", "cycle"),
+            admitted("c", "standard_single_target", "cycle"),
         ]);
         assert_eq!(asked.len(), 2, "{asked:?}");
     }
@@ -675,19 +761,15 @@ mod tests {
     /// wait for a fight that never comes.
     #[test]
     fn an_unsustainable_mode_falls_back_to_one_that_is() {
-        let asked = asked_of(vec![row(
-            "a",
-            &FULL,
-            json!({ "benchmark": "standard_single_target", "mode": "transformed" }),
-        )]);
+        let asked = asked_of(vec![admitted("a", "standard_single_target", "transformed")]);
         assert_eq!(asked.len(), 1);
-        let modes: Vec<String> = wfsim_engine::data::weapons::play_modes("torid")
+        let modes: Vec<String> = wfsim_engine::data::weapons::play_modes("braton_prime")
             .into_iter()
             .filter(|m| m.sustainable)
-            .map(|m| m.id.to_string())
+            .map(|m| if m.id.is_empty() { "base".to_string() } else { m.id.to_string() })
             .collect();
         let got = asked[0]["mode"].as_str().unwrap_or_default().to_string();
-        assert!(modes.contains(&got), "{got} is not sustainable on the Torid");
+        assert!(modes.contains(&got), "{got} is not sustainable on the Braton Prime");
     }
 
     /// **A RETIRED RULER ASKS FOR NOTHING.** `purge_queue` would delete the row
@@ -695,11 +777,7 @@ mod tests {
     /// board the roster no longer has is not a build left waiting.
     #[test]
     fn a_ruler_the_roster_lost_asks_for_nothing() {
-        let asked = asked_of(vec![row(
-            "a",
-            &FULL,
-            json!({ "benchmark": "a_board_that_was_retired", "mode": "base" }),
-        )]);
+        let asked = asked_of(vec![admitted("a", "a_board_that_was_retired", "base")]);
         assert!(asked.is_empty(), "{asked:?}");
     }
 
@@ -708,11 +786,7 @@ mod tests {
     /// one's board — the same `_vN` rule the scorer applies.
     #[test]
     fn an_older_version_of_a_ruler_asks_for_the_current_one() {
-        let asked = asked_of(vec![row(
-            "a",
-            &FULL,
-            json!({ "benchmark": "standard_single_target_v1", "mode": "base" }),
-        )]);
+        let asked = asked_of(vec![admitted("a", "standard_single_target_v1", "base")]);
         assert_eq!(asked.len(), 1, "{asked:?}");
         assert_eq!(asked[0]["ruler"], "standard_single_target");
     }
