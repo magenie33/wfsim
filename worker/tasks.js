@@ -19,6 +19,7 @@
 // once is a thousand deadlines passed together, and by deadline alone a person
 // asking in a chat would wait behind every one of them.
 import { iso } from "./instant.js";
+import { dialsOf, DIAL_DEFAULTS } from "./dials.js";
 
 /// HOW STATES LEAVE (§"States"). `open` takes volunteers' answers; the cap on
 /// them reached without agreement is `disputed`, or `nondeterministic` when every
@@ -31,7 +32,7 @@ export const OFFICIAL_STATES = ["disputed", "spot", "nondeterministic"];
 /// A PACK'S LEASE IS A HEARTBEAT, not a deadline: a page still computing a row
 /// renews it (`renewRow`) and is never cut off; only a silent one loses it.
 /// Each renewal holds the row this much longer — a few missed beats' worth.
-export const RENEW_MS = 5 * 60_000;
+export const RENEW_MS = DIAL_DEFAULTS.renew_ms;
 /// WHAT AN OLDER ENGINE'S ANSWER EARNS WHEN ITS ENGINE PARTED FROM THE FACT
 /// (`joinersParted`): at most what an answer on the served engine earns, so
 /// staying on an old engine never pays better than updating.
@@ -39,11 +40,11 @@ export const GRACE_SHARE = 1;
 /// …AND PAST THIS LONG FROM THE LEASE another computer may take it too, the
 /// first holder computing on (`lease_prev`): whichever answers first makes it.
 /// Nobody is cut off, and a page that beats but never answers holds nothing.
-export const ROW_CEILING_MS = 2 * 3_600_000;
-/// A LEASE ANOTHER MAY TAKE: none, run out, or held past the ceiling. In SQL,
-/// against the instant bound as ?1.
-const TAKEABLE = `(lease_until IS NULL OR lease_until < ?1::text
-  OR leased_at < to_char(((?1::text)::timestamptz AT TIME ZONE 'UTC') - interval '${ROW_CEILING_MS / 1000} seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))`;
+export const ROW_CEILING_MS = DIAL_DEFAULTS.row_ceiling_ms;
+/// A LEASE ANOTHER MAY TAKE: none, run out, or held past the ceiling (a dial,
+/// worker/dials.js). In SQL, against the instant bound as ?1.
+const takeable = (ceilingMs) => `(lease_until IS NULL OR lease_until < ?1::text
+  OR leased_at < to_char(((?1::text)::timestamptz AT TIME ZONE 'UTC') - interval '${Math.round(ceilingMs / 1000)} seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))`;
 /// …AND TAKING ONE keeps the holder computing longest as the one before, its
 /// answer still counted: one still beating there stays, else the one taken
 /// from if it still beats; a lease run out keeps nobody.
@@ -198,9 +199,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// no cores free now (asking ahead), which a question someone waits on is never
   /// handed; `before` keeps to questions due before then.
   async function next(env, w, engine, now = Date.now()) {
-    const db = env.LIBRARY, at = iso(now), most = w.most ?? 1;
+    const db = env.LIBRARY, at = iso(now), most = w.most ?? 1, ceiling = (await dialsOf(env, now)).row_ceiling_ms;
     for (let tries = 0; tries < 8; tries++) {
-      const q = await db.prepare(eligibleSql(w.official)).bind(...eligibleArgs(w, engine, at)).first();
+      const q = await db.prepare(eligibleSql(w.official, ceiling)).bind(...eligibleArgs(w, engine, at)).first();
       if (!q) return null;
       // A ROW NOBODY OWES ANY MORE is withdrawn where it is found, and the next
       // one is asked for.
@@ -218,7 +219,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const lease = newLease();
       // THE RACE IS THE DATABASE'S, and so is the cap on what one witness holds.
       const took = await db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?2::text, lease_until = ?3::text, leased_to = ?4::text, leased_at = ?1::text
-          WHERE id = ?5::text AND state = ?6::text AND ${TAKEABLE}
+          WHERE id = ?5::text AND state = ?6::text AND ${takeable(ceiling)}
             AND (SELECT count(*) FROM questions h WHERE h.leased_to = ?4::text AND h.lease_until > ?1::text) < ?7::bigint`)
         .bind(at, lease, iso(now + verbs[q.verb].lease_ms), w.device, q.id, q.state, most).run();
       if (took.meta.changes) {
@@ -247,10 +248,10 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// ON POSTGRES THE PICK SKIPS ROWS ANOTHER PICK HOLDS LOCKED (`SKIP LOCKED`):
   /// two asks at once took the same head rows and deadlocked.
   async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null }, now = Date.now()) {
-    const db = env.LIBRARY, at = iso(now), lease = newLease();
+    const db = env.LIBRARY, at = iso(now), lease = newLease(), ceiling = (await dialsOf(env, now)).row_ceiling_ms;
     const [taken, ds] = await db.batch([
       db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?9::text, lease_until = ?10::text, leased_to = ?11::text, leased_at = ?1::text
-          WHERE id IN (SELECT q.id ${eligibleFrom(false)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
+          WHERE id IN (SELECT q.id ${eligibleFrom(false, ceiling)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
             AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb))) ${ORDER} LIMIT ?13::bigint FOR UPDATE OF q SKIP LOCKED)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11::text AND h.lease_until > ?1::text AND h.lease <> ?9::text) < ?14::bigint
           RETURNING id, verb, request, due_at`)
@@ -306,14 +307,14 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// its lease ran out, as long as nobody took it since, and as the holder
   /// before (`SUPERSEDE`) once another took it past the ceiling. Returns `{ held }`.
   async function renewRow(env, device, lease, question, now = Date.now()) {
-    const db = env.LIBRARY, most = "GREATEST";
+    const db = env.LIBRARY, most = "GREATEST", renewMs = (await dialsOf(env, now)).renew_ms;
     const [kept, before] = await db.batch([
       db.prepare(`UPDATE questions SET lease_until = ${most}(lease_until, ?4)
                    WHERE id = ?1 AND lease = ?2 AND leased_to = ?3 RETURNING id`)
-        .bind(question, lease, device, iso(now + RENEW_MS)),
+        .bind(question, lease, device, iso(now + renewMs)),
       db.prepare(`UPDATE questions SET lease_prev_until = ${most}(lease_prev_until, ?4)
                    WHERE id = ?1 AND lease_prev = ?2 AND leased_to_prev = ?3 RETURNING id`)
-        .bind(question, lease, device, iso(now + RENEW_MS)),
+        .bind(question, lease, device, iso(now + renewMs)),
     ]);
     return { held: kept.results.length > 0 || before.results.length > 0 };
   }
@@ -333,7 +334,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// caller to read in its own batch: an ask is then one round trip, not five.
   const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
     "UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?").bind(device, iso(now));
-  const headOf = (env, w, engine, now = Date.now()) => env.LIBRARY.prepare(eligibleSql(w.official)).bind(...eligibleArgs(w, engine, iso(now)));
+  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(eligibleSql(w.official, d.row_ceiling_ms)).bind(...eligibleArgs(w, engine, iso(now)));
   /// WHETHER A HEAD GOES IN A PACK, or alone (`next`).
   const packable = (q) => !q.waits && !!(verbs[q.verb] || {}).pack;
 
@@ -771,7 +772,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // is handed out, however long a single row takes.
     const { results: stalled } = await db.prepare(`SELECT d.producer, count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
          FROM demands d JOIN questions q ON q.id = d.question
-        WHERE d.state = 'live' AND q.state = 'open' AND d.due_at < ?1::text AND ${TAKEABLE.replaceAll("lease", "q.lease")}
+        WHERE d.state = 'live' AND q.state = 'open' AND d.due_at < ?1::text AND ${takeable((await dialsOf(env, now)).row_ceiling_ms).replaceAll("lease", "q.lease")}
         GROUP BY d.producer
        HAVING NOT EXISTS (SELECT 1 FROM demands e JOIN answers a ON a.question = e.question
                            WHERE e.producer = d.producer AND a.at > ?2::text)`).bind(at, recent).all();
@@ -833,11 +834,11 @@ export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals |
 /// owner, nor its network — on the served engine, with the cores a first answer
 /// needs at the question's age; the official machines take what is past its
 /// deadline and what only they may settle.
-function eligibleFrom(official) {
+function eligibleFrom(official, ceilingMs = DIAL_DEFAULTS.row_ceiling_ms) {
   return `FROM questions q
   WHERE ${official ? `((q.state = 'open' AND q.due_at < ?1::text) OR q.state IN (${OFFICIAL_STATES.map((s) => `'${s}'`).join(", ")}))`
     : "q.state = 'open'"}
-    AND ${TAKEABLE.replaceAll("lease", "q.lease")}
+    AND ${takeable(ceilingMs).replaceAll("lease", "q.lease")}
     AND (?2::bigint = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM answers x WHERE x.question = q.id)
          OR ?3::bigint >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ((?1::text)::timestamptz - q.opened_at::timestamptz)) * 1000))
@@ -846,8 +847,8 @@ function eligibleFrom(official) {
     AND (?8::text IS NULL OR q.due_at < ?8::text)`;
 }
 const ORDER = "ORDER BY q.waits DESC, q.due_at, q.id";
-function eligibleSql(official) {
-  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${eligibleFrom(official)} ${ORDER} LIMIT 1`;
+function eligibleSql(official, ceilingMs) {
+  return `SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits ${eligibleFrom(official, ceilingMs)} ${ORDER} LIMIT 1`;
 }
 function eligibleArgs(w, engine, at) {
   return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null];

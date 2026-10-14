@@ -166,6 +166,8 @@ jobs:
         run: node scripts/check_gas.mjs
       - name: The clients' contract states the values the code holds
         run: node scripts/check_clients_doc.mjs
+      - name: A dial is set within its bounds, logged, and told to the clients
+        run: node scripts/check_dials.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
       - name: A device's ledger says where every point went, and names nobody else

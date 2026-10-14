@@ -725,6 +725,20 @@ bot server: cloudflared, `/etc/wfsim-pg-tunnel.env`, the tunnel's unit, and
 `PG_URL=postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim` in
 `/etc/wfsim-live.env`.
 
+### The dials
+
+**EVERY NUMBER THAT DECIDES HOW WORK IS HANDED OUT IS A DIAL** (`worker/dials.js`):
+a pack's length and size, the leases, how long a row is one computer's, how
+often an ask is written down, the database's safety valve (`compute_cap`). The
+code holds each one's default and bounds and nothing else; the owner sets a
+value in `factory_dials`, every change lands in `factory_dial_log` with the
+value before and after, and an isolate reads the table at most once a minute
+(`DIALS_FRESH_MS`), so a change is in force within a minute and needs no
+release. A value outside its bounds is refused when set and ignored when read;
+a dial never set is its default. A client is told the dials it reads in every
+reply (docs/CLIENTS.md §"Values"). `CLIENTS_PER_FACT` is not a dial: two owners
+per fact is the board's promise, not a capacity knob. `check_dials` holds this.
+
 ## Compute orders
 
 **EVERY OWED ROW IS A QUESTION, AND THE MACHINES WITH THE SITE OPEN ANSWER

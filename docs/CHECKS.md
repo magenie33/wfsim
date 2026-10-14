@@ -234,6 +234,16 @@ in order, a fact shipped and overwritten with its row spent, the facts and the
 library read, an orphan and a dead ruler purged. Bites: an upsert's unqualified
 column, which Postgres calls ambiguous — it fails three of them.
 
+## `check_dials`
+
+Plain node on PGlite: a dial never set, or a table that cannot be read, is its
+default; a value outside a dial's bounds, or not a dial, is refused and
+nothing is written, and a row put out of bounds by hand is ignored; an isolate
+keeps what it read for `DIALS_FRESH_MS` and reads the table after, the one that
+set it at once; every change is logged with the value before and after and
+who set it; a `/api/board/work` reply carries exactly the client dials, as in
+force. `CLIENTS_PER_FACT` is not a dial.
+
 ## `check_board_verify`
 
 Plain node on PGlite (`worker/pg/*.sql`): a board row as a

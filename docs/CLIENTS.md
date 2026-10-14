@@ -39,6 +39,14 @@ from worker/verify.js, worker/tasks.js, worker/appraise.js,
 worker/contribution.js, worker/factory.js and engine/src/fight/gas.rs; a point
 is `work_per_point` work.
 
+**A DIAL IS STATED AS ITS DEFAULT, AND THE SERVER MAY MOVE IT.** `lease_ms`,
+`pack_ms`, `pack_first`, `pack_max`, `pack_lease_ms`, `packs_held`,
+`renew_ms` and `row_ceiling_ms` are dials (worker/dials.js): the owner sets
+them within fixed bounds, and a change is in force within a minute with no
+release. Every `/api/board/work` reply carries the ones in force as `dials`
+(and `/api/board/renew` its `renew_ms`); a client reads them from there and
+must never hard-code one.
+
 ## Terms the server holds a client to
 
 - **The server does not tell a compliant client from the page.** Any id of the
@@ -170,6 +178,10 @@ smoothed wall time of the client's recent rows. Answers, all `200 ok: true`:
 | `work: null, pack: null, stale: true` | engine or protocol not served |
 | `work: null, pack: null, banned: true, until` | in a cool-down |
 | `work: null, pack: null` | nothing now: no work, fair share, no consent |
+
+Every answer above also carries `dials: { lease_ms, pack_ms, pack_max,
+pack_lease_ms, packs_held, renew_ms, row_ceiling_ms }`, the values in force
+(§"Values").
 
 Protocol 6 receives a pack of one as `work: { lease, identity, record, ruler,
 mode }` and answers it with `POST /api/board/verify { lease, verifier, engine,

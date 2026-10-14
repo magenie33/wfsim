@@ -14,6 +14,7 @@
 //   node scripts/check_board_verify.mjs
 import { verifyRoute, LEASE_MS, PROTOCOL, PACKS_HELD, PACK_FIRST, PACK_MAX, packSize, PACK_LEASE_MS } from "../worker/verify.js";
 import { RENEW_MS } from "../worker/tasks.js";
+import { setDial, forgetDials, DIALS, CLIENT_DIALS } from "../worker/dials.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { officialRoute, refusalsFor } from "../worker/factory.js";
 refusalsFor(true);
@@ -414,12 +415,14 @@ console.log("\norders open before the factory");
 
 console.log("\nthe database's safety valve");
 {
-  env.COMPUTE_CAP = "1";
+  await setDial(env, "compute_cap", 1, "check");
   await L.run("UPDATE verifiers SET asked_at = ?", new Date().toISOString());
   const fresh = await work("9".repeat(24), { ip: "203.0.113.90" });
-  check("past COMPUTE_CAP a computer that answered nothing lately is handed nothing", fresh.busy === true && none(fresh), JSON.stringify(fresh));
-  delete env.COMPUTE_CAP;
+  check("past the compute_cap dial a computer that answered nothing lately is handed nothing", fresh.busy === true && none(fresh), JSON.stringify(fresh));
+  await setDial(env, "compute_cap", 0, "check");
   check("...and with no cap it is handed work as before", !(await work("8".repeat(24), { ip: "203.0.113.91" })).busy);
+  await L.run("DELETE FROM factory_dials");
+  forgetDials();
 }
 
 console.log("\nan older engine still accepted computes the weapons its data matches");

@@ -6,6 +6,7 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DIALS, CLIENT_DIALS } from "../worker/dials.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(resolve(ROOT, p), "utf8");
@@ -15,7 +16,9 @@ const check = (ok, name, detail) => {
   if (!ok) bad += 1;
 };
 
-// Each key: the constant and every file that defines it (all must agree).
+// Each key: the constant and every file that defines it (all must agree). A
+// dial (worker/dials.js) is stated as its default and read from there.
+const DIAL = Symbol("dial");
 const KEYS = {
   protocol: ["PROTOCOL", ["worker/verify.js"]],
   protocols_served: ["PROTOCOLS_SERVED", ["worker/verify.js"]],
@@ -26,14 +29,14 @@ const KEYS = {
   run_price: ["RUN_PRICE", ["engine/src/fight/gas.rs"]],
   work_per_point: ["WORK_PER_POINT", ["worker/contribution.js"]],
   score_near_relative: ["SCORE_NEAR", ["worker/tasks.js"]],
-  lease_ms: ["LEASE_MS", ["worker/verify.js"]],
-  pack_ms: ["PACK_MS", ["worker/verify.js"]],
-  pack_first: ["PACK_FIRST", ["worker/verify.js"]],
-  pack_max: ["PACK_MAX", ["worker/verify.js"]],
-  pack_lease_ms: ["PACK_LEASE_MS", ["worker/verify.js"]],
-  packs_held: ["PACKS_HELD", ["worker/verify.js"]],
-  renew_ms: ["RENEW_MS", ["worker/tasks.js"]],
-  row_ceiling_ms: ["ROW_CEILING_MS", ["worker/tasks.js"]],
+  lease_ms: [DIAL, ["lease_ms"]],
+  pack_ms: [DIAL, ["pack_ms"]],
+  pack_first: [DIAL, ["pack_first"]],
+  pack_max: [DIAL, ["pack_max"]],
+  pack_lease_ms: [DIAL, ["pack_lease_ms"]],
+  packs_held: [DIAL, ["packs_held"]],
+  renew_ms: [DIAL, ["renew_ms"]],
+  row_ceiling_ms: [DIAL, ["row_ceiling_ms"]],
   clients_per_fact: ["CLIENTS_PER_FACT", ["worker/verify.js"]],
   facts_per_refusal_forgiven: ["FACTS_PER_REFUSAL_FORGIVEN", ["worker/tasks.js"]],
   engine_grace_days: ["ENGINE_GRACE_DAYS", ["scripts/build_site_app.py"]],
@@ -72,6 +75,11 @@ for (const [key, said] of stated) {
   const spec = KEYS[key];
   if (!spec) { check(false, `${key} is a value this check reads`, "add it to KEYS or take it out of the block"); continue; }
   const [name, files] = spec;
+  if (name === DIAL) {
+    const dial = DIALS[files[0]];
+    check(!!dial && Number(said) === dial.default, `${key}: ${said} is the default of the dial ${files[0]}`, `the dial says ${dial && dial.default}`);
+    continue;
+  }
   for (const f of files) {
     const v = valueOf(name, f);
     const same = typeof v === "number" ? Number(said) === v : said === v;
@@ -79,6 +87,9 @@ for (const [key, said] of stated) {
   }
 }
 for (const key of Object.keys(KEYS)) check(stated.has(key), `${key} is stated`);
+// EVERY DIAL A CLIENT IS TOLD is stated, and the page says a client reads it from the reply.
+for (const k of CLIENT_DIALS) check(stated.has(k) && KEYS[k] && KEYS[k][0] === DIAL, `the client dial ${k} is stated as a dial`);
+check(/never hard-code/i.test(doc) && /`dials`/.test(doc), "the page says a client reads the dials from the reply and hard-codes none");
 
 console.log(bad ? `\n${bad} failed` : "\nthe clients' contract states what the code does");
 process.exit(bad ? 1 : 0);

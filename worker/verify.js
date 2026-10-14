@@ -27,7 +27,8 @@
 // asked because the code that answers it is the current code, and a tab left
 // open on an older one would answer it with the old arithmetic.
 
-import { witnessOf, RENEW_MS } from "./tasks.js";
+import { witnessOf } from "./tasks.js";
+import { dialsOf, clientDials, DIAL_DEFAULTS, DIALS } from "./dials.js";
 export { FACTS_PER_REFUSAL_FORGIVEN } from "./tasks.js";
 import { facts, workOf, packTaskOf, notePause } from "./factory.js";
 import { BOARD_KINDS_SQL } from "./board_tasks.js";
@@ -35,11 +36,14 @@ import { iso } from "./instant.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
 import { devicePointsOf } from "./contribution.js";
 
-/// A browser fights a crowd row in minutes; a lease outlives the slowest.
-export const LEASE_MS = 30 * 60_000;
+/// A browser fights a crowd row in minutes; a lease outlives the slowest. Each
+/// hand-out constant below is a dial's default (worker/dials.js); what is in
+/// force is `dialsOf`.
+export const LEASE_MS = DIAL_DEFAULTS.lease_ms;
 /// HOW MANY DIFFERENT CLIENTS MUST MEASURE THE SAME BITS before a result is a
 /// fact. 1 takes the first result unchecked; each one more is one more
 /// independent client the result waits for. A check sets `env.CLIENTS_PER_FACT`.
+/// NEVER A DIAL: two owners per fact is the board's promise, not a capacity knob.
 export const CLIENTS_PER_FACT = 2;
 /// THE SHARE OF FACTS ONE MORE VOLUNTEER MEASURES before they count, which is
 /// what makes two colluding clients a gamble rather than a method: a third who
@@ -159,24 +163,24 @@ const netsOf = (o) => (o.clients_nets || "").split(",").filter(Boolean);
 /// A PACK IS ABOUT A MINUTE OF A COMPUTER'S WORK: the page reports its pace
 /// (`pace_ms`, its last rows' wall time each) and is handed that many rows, so
 /// the database is asked once a minute a computer, not once a row.
-export const PACK_MS = 60_000;
-export const PACK_MAX = 20;
+export const PACK_MS = DIAL_DEFAULTS.pack_ms;
+export const PACK_MAX = DIAL_DEFAULTS.pack_max;
 /// …A COMPUTER WHOSE PACE IS NOT KNOWN YET is handed this many.
-export const PACK_FIRST = 3;
+export const PACK_FIRST = DIAL_DEFAULTS.pack_first;
 /// A PACK IS LEASED FOR ONE HEARTBEAT, whatever its length: the row being
 /// computed is renewed while it runs (`renew`) and a row not started yet before
 /// it starts, so a page that vanished without a word holds its rows minutes.
-export const PACK_LEASE_MS = RENEW_MS;
+export const PACK_LEASE_MS = DIAL_DEFAULTS.pack_lease_ms;
 /// HOW MANY PACKS A CLIENT HOLDS AT MOST: the one it computes and the next,
 /// asked as this one ends (`ahead`), so no core waits on a round trip.
-export const PACKS_HELD = 2;
+export const PACKS_HELD = DIAL_DEFAULTS.packs_held;
 /// FAIR SHARE: while the open questions are few, a pack is at most their number
 /// over the computers asking — the last rows of a batch go to many computers at
 /// once, never to one fast one while the rest wait. Counted up to this many.
 const FAIR_SCAN = 4000;
-export function packSize(pace_ms, open, asking) {
-  const byPace = pace_ms ? Math.round(PACK_MS / pace_ms) : PACK_FIRST;
-  return Math.max(1, Math.min(PACK_MAX, byPace, Math.floor(open / Math.max(1, asking))));
+export function packSize(pace_ms, open, asking, d = DIAL_DEFAULTS) {
+  const byPace = pace_ms ? Math.round(d.pack_ms / pace_ms) : d.pack_first;
+  return Math.max(1, Math.min(d.pack_max, byPace, Math.floor(open / Math.max(1, asking))));
 }
 
 /// THE FACTORY'S NEXT WORK FOR THIS CLIENT — a pack of rows, or one question that
@@ -194,19 +198,21 @@ async function work(request, env) {
   // `paused` tells the page so: it counts that ask as idle itself, the server
   // having written nothing.
   if (env.FACTORY_PAUSED === "1") { await notePause(env, Date.now()); return json({ ok: true, work: null, pack: null, busy: true, paused: true }); }
-  const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier;
-  const asked = askedOf(db, b, now);
+  const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier, d = await dialsOf(env, now);
+  // EVERY REPLY CARRIES THE DIALS A CLIENT READS, so none hard-codes them.
+  const say = (body, status) => json({ ...body, dials: clientDials(d) }, status);
+  const asked = askedOf(db, b, now, d);
   // AN OLDER PAGE IS TOLD SO (`stale`), or a machine left computing would ask
   // for ever and be given nothing once a release ships.
-  if (!PROTOCOLS_SERVED.has(b.protocol)) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
+  if (!PROTOCOLS_SERVED.has(b.protocol)) { await asked.run(); return say({ ok: true, work: null, pack: null, stale: true }); }
   const single = b.protocol !== PROTOCOL;
   const served = await servedRelease(env), { release } = served;
-  if (!served.engine) { await asked.run(); return json({ ok: true, work: null, pack: null }); }
+  if (!served.engine) { await asked.run(); return say({ ok: true, work: null, pack: null }); }
   // AN OLDER ENGINE IS TOLD IT IS STALE — unless it is still accepted
   // (`graceOf`): then it is handed packs, rows only, of the weapons its data
   // still matches, told the served engine and until when (`accepted_until`).
   const grace = b.engine !== served.engine ? graceOf(served, b.engine) : null;
-  if (b.engine !== served.engine && (!grace || single)) { await asked.run(); return json({ ok: true, work: null, pack: null, stale: true }); }
+  if (b.engine !== served.engine && (!grace || single)) { await asked.run(); return say({ ok: true, work: null, pack: null, stale: true }); }
   const engine = b.engine;
   // NO WORK WITHOUT THE READER'S YES — `consent: { v, at }`, the statement they
   // agreed to and when (69-board-work.js `computeConsent`) — kept on the
@@ -214,7 +220,7 @@ async function work(request, env) {
   const c = b.consent;
   if (!c || !Number.isInteger(c.v) || c.v < 1 || typeof c.at !== "string" || !ISO.test(c.at)) {
     await asked.run();
-    return json({ ok: true, work: null, pack: null });
+    return say({ ok: true, work: null, pack: null });
   }
   // A CLIENT THAT ASKS IS WORKING ON NOTHING: one browser computes in one tab
   // (69-board-work.js, a Web Lock) and asks only between packs, so a lease it
@@ -224,7 +230,7 @@ async function work(request, env) {
   // someone waits on, which goes to a computer free now (no cores: `lanes` 0).
   const ahead = b.ahead === true;
   const lanes = ahead ? 0 : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
-  const pace = Number.isInteger(b.pace_ms) && b.pace_ms >= 100 && b.pace_ms <= LEASE_MS ? b.pace_ms : null;
+  const pace = Number.isInteger(b.pace_ms) && b.pace_ms >= 100 && b.pace_ms <= d.lease_ms ? b.pace_ms : null;
   const who = await witnessOf(env, id);
   const w = { device: id, owner: who.owner, siblings: who.siblings, net: await netOf(request, env), lanes };
   const f = facts();
@@ -247,42 +253,42 @@ async function work(request, env) {
                   AND (lease_until IS NULL OR lease_until < ?1::text)
                   LIMIT LEAST(?2::bigint, GREATEST(1, (SELECT n FROM a)) * ?4::bigint)) o) AS open,
                 (SELECT n FROM a) AS asking`)
-      .bind(at, FAIR_SCAN, iso(now - 2 * ASKED_EVERY_MS), Math.max(PACK_MAX, pace ? Math.round(PACK_MS / pace) : PACK_FIRST)),
-    f.headOf(env, w, engine, now),
+      .bind(at, FAIR_SCAN, iso(now - 2 * d.asked_every_ms), Math.max(d.pack_max, pace ? Math.round(d.pack_ms / pace) : d.pack_first)),
+    f.headOf(env, w, engine, now, d),
     asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),
   ]);
   // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
   // task for ever and its reader would never learn why.
   const v = me.results[0] || {};
-  if (v.banned) return json({ ok: true, kept: true, work: null, pack: null, banned: true, until: v.refused_until });
+  if (v.banned) return say({ ok: true, kept: true, work: null, pack: null, banned: true, until: v.refused_until });
   const holds = ahead ? held.results[0] : { questions: 0, packs: 0 };
-  const none = json({ ok: true, kept: true, release, work: null, pack: null });
-  if (ahead && (holds.packs < 1 || holds.packs >= PACKS_HELD)) return none;
+  const none = say({ ok: true, kept: true, release, work: null, pack: null });
+  if (ahead && (holds.packs < 1 || holds.packs >= d.packs_held)) return none;
   const first = head.results[0];
   if (!first && !grace) return none;
   if (!grace && !f.packable(first)) {
     const leased = await f.next(env, { ...w, most: holds.questions + 1 }, engine, now);
-    return json({ ok: true, kept: true, release, work: leased && workOf(leased), pack: null });
+    return say({ ok: true, kept: true, release, work: leased && workOf(leased), pack: null });
   }
   const { open, asking } = fair.results[0];
-  // A SAFETY VALVE FOR THE DATABASE (`COMPUTE_CAP`, a worker var; unset is no
-  // cap): past that many computers asking, one that has answered nothing in ten
+  // A SAFETY VALVE FOR THE DATABASE (the `compute_cap` dial; 0 is no cap):
+  // past that many computers asking, one that has answered nothing in ten
   // minutes is handed nothing and asks again later — those already computing go on.
-  const cap = Number(env.COMPUTE_CAP) || 0;
-  if (cap && asking > cap && !(v.last_at && v.last_at > iso(now - 600_000))) return json({ ok: true, kept: true, release, work: null, pack: null, busy: true });
+  const cap = d.compute_cap;
+  if (cap && asking > cap && !(v.last_at && v.last_at > iso(now - 600_000))) return say({ ok: true, kept: true, release, work: null, pack: null, busy: true });
   // WHILE THE OPEN ROWS ARE FEWER THAN THE ASKING WOULD TAKE, an account past its
   // fair share is handed nothing this ask (worker/fair.js) — and only then, so
   // the table is never read while work is plentiful.
-  const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(PACK_MS / pace) : PACK_FIRST);
+  const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(d.pack_ms / pace) : d.pack_first);
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return none;
-  const n = single ? 1 : packSize(pace, open, asking), lease_ms = single ? LEASE_MS : PACK_LEASE_MS;
-  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? PACKS_HELD : 1, exclude: grace && !grace.join ? grace.changed : null }, now);
+  const n = single ? 1 : packSize(pace, open, asking, d), lease_ms = single ? d.lease_ms : d.pack_lease_ms;
+  const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? d.packs_held : 1, exclude: grace && !grace.join ? grace.changed : null }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
     const t = tasks[0];
-    return json({ ok: true, kept: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
+    return say({ ok: true, kept: true, release, work: t ? { lease: p.lease, identity: t.identity, record: t.record, ruler: t.ruler, mode: t.mode } : null });
   }
-  return json({ ok: true, kept: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null,
+  return say({ ok: true, kept: true, release, work: null, pack: tasks.length ? { lease: p.lease, lease_ms, tasks } : null,
     ...(grace ? { engine: served.engine, accepted_until: grace.until, ...(grace.join ? { join: true } : {}) } : {}) });
 }
 
@@ -326,14 +332,14 @@ function asksOf(db, id, ahead, idle, now, relayed = false) {
 /// A CLIENT THAT ASKS IS ON, its engine (with an older protocol marked) and
 /// free cores kept, which tells an idle page from a closed one — written at
 /// most once a minute, or a page asking every ten seconds is a write each time.
-export const ASKED_EVERY_MS = 60_000;
-function askedOf(db, b, now) {
+export const ASKED_EVERY_MS = DIAL_DEFAULTS.asked_every_ms;
+function askedOf(db, b, now, d = DIAL_DEFAULTS) {
   const engine = b.protocol === PROTOCOL ? b.engine : `${b.engine}/p${Number(b.protocol) || 0}`;
   const lanes = b.ahead === true ? null : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
   return db.prepare(`UPDATE verifiers SET asked_at = ?1::text, asked_engine = ?2::text, asked_lanes = coalesce(?3::bigint, asked_lanes)
       WHERE id = ?4::text AND (asked_at IS NULL OR asked_at < ?5::text OR asked_engine IS DISTINCT FROM ?2::text
         OR (?3::bigint IS NOT NULL AND asked_lanes IS DISTINCT FROM ?3::bigint))`)
-    .bind(iso(now), engine, lanes, b.verifier, iso(now - ASKED_EVERY_MS));
+    .bind(iso(now), engine, lanes, b.verifier, iso(now - d.asked_every_ms));
 }
 
 /// WHAT THE CLIENT MEASURED, a pack's rows together, under the pack's lease —
@@ -345,7 +351,7 @@ async function answers(request, env) {
   const { b, err } = await read(request, ANSWERS_BODY);
   if (err) return err;
   if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "") || !ENGINE_ID.test(b.engine || "")
-      || !Array.isArray(b.answers) || b.answers.length > PACK_MAX) {
+      || !Array.isArray(b.answers) || b.answers.length > DIALS.pack_max.max) {
     return json({ ok: false, error: "bad request" }, 400);
   }
   const refused = unrecognised(b.verifier);
@@ -359,7 +365,7 @@ async function answers(request, env) {
     // WHAT THE FIGHT COST THE CLIENT, as it says — a statistic about the clients'
     // machines and never a number anything is ranked or scheduled by.
     items.set(a.question, { question: a.question, result: { score: a.score, metric: a.metric }, work: a.work,
-      compute_ms: Number.isInteger(a.compute_ms) && a.compute_ms >= 0 && a.compute_ms <= LEASE_MS ? a.compute_ms : null,
+      compute_ms: Number.isInteger(a.compute_ms) && a.compute_ms >= 0 && a.compute_ms <= DIALS.lease_ms.max ? a.compute_ms : null,
       counts: countsOf(a.counts), lanes: Number.isInteger(a.lanes) && a.lanes > 0 && a.lanes <= 256 ? a.lanes : null });
   }
   const served = await servedRelease(env), engine = served.engine;
@@ -432,7 +438,7 @@ async function renew(request, env) {
   const refused = unrecognised(b.verifier);
   if (refused) return refused;
   const { held } = await facts().renewRow(env, b.verifier, b.lease, b.question);
-  return json({ ok: true, held, renew_ms: RENEW_MS });
+  return json({ ok: true, held, renew_ms: (await dialsOf(env)).renew_ms });
 }
 
 /// WHERE EACH OF A BROWSER'S RECENT RESULTS STANDS, asked by its own secret id
