@@ -720,7 +720,7 @@ function computeDemandHtml() {
   const eta = d.clear_hours == null || !owed ? "" : demandHours(d.clear_hours);
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
-    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(n(d.computing))} ${aT("devices")}</dd></div>
+    <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
