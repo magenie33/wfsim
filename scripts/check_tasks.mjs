@@ -552,6 +552,38 @@ console.log("\na recheck: one more independent volunteer before a fact");
     `${JSON.stringify(await row(late))} ${await paid(late)}`);
 }
 
+console.log("\nan engine whose code moved joins the served one by its result, and is handed only what one leads");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const who = (device, net = `n-${device}`) => ({ device, owner: device, siblings: [device], net });
+  const ask = (ref) => f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: 3_600_000 }, "e1", NOW);
+  const send = async (w, engine, id, score, work) => {
+    const join = engine !== "e1";
+    const p = await f.nextPack(env, w, engine, { n: 9, lease_ms: 60_000, join: join ? "e1" : null }, NOW);
+    const held = p ? p.questions.map((x) => x.question) : [];
+    if (p && held.includes(id)) await f.answerPack(env, w, { lease: p.lease, engine, served: join ? "e1" : null, join,
+      answers: [{ question: id, result: { score }, work }], done: true }, NOW);
+    else if (p) await f.answerPack(env, w, { lease: p.lease, engine, answers: [], done: true }, NOW);
+    return held;
+  };
+  const state = async (id) => (await db.get("SELECT state FROM questions WHERE id = ?", id)).state;
+  const lone = await ask("lone"), led = await ask("led");
+  check("a join device is handed no row a served answer does not lead", (await send(who("j1"), "e0", lone, 4, 70)).length === 0);
+  await send(who("s1"), "e1", led, 4, 100);
+  const held = await send(who("j2"), "e0", led, 4, 70);
+  check("...and handed the one it does, its equal result with other work makes it a fact, both credited",
+    held.join() === led && (await state(led)) === "fact"
+      && (await db.get("SELECT count(*) AS n FROM answers WHERE question = ? AND credited = 1", led)).n === 2, `${held} ${await state(led)}`);
+  const mine = await ask("mine");
+  await send(who("s2", "shared"), "e1", mine, 5, 100);
+  check("...never one led by its own network", !(await send(who("j3", "shared"), "e0", mine, 5, 70)).includes(mine));
+  const differs = await ask("differs");
+  await send(who("s3"), "e1", differs, 6, 100);
+  await send(who("j4"), "e0", differs, 7, 100);
+  check("...and a different result does not join, whatever its work", (await state(differs)) === "open");
+}
+
 console.log("\nrefusals paused");
 {
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];

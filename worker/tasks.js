@@ -73,6 +73,17 @@ const UNSETTLED_MS = 2 * 3_600_000;
 /// of all of them. A healthy hour runs under one in a hundred.
 const DISAGREE_MIN = 30, DISAGREE_SHARE = 0.03;
 const sansWork = (c) => { const v = JSON.parse(c); delete v.work; return canon(v); };
+/// AN ANSWER EQUAL TO `lead`: byte for byte on its engine, by everything but
+/// `work` on another (`decide`, and the settler's shadow).
+export const sameAs = (lead) => {
+  let key = null;
+  try { key = sansWork(lead.canon); } catch (_) { /* not an object: bytes alone */ }
+  return (a) => {
+    if (a.canon === lead.canon) return true;
+    if (a.engine === lead.engine || key === null) return false;
+    try { return sansWork(a.canon) === key; } catch (_) { return false; }
+  };
+};
 export const nearAnswer = (same) => (x, y) => {
   let a, b;
   try { a = JSON.parse(x); b = JSON.parse(y); } catch (_) { return false; }
@@ -276,17 +287,23 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   ///
   /// AN OLDER ENGINE STILL ACCEPTED (`exclude`, worker/verify.js `graceOf`) is
   /// handed only rows of a weapon whose data it shares with the served engine.
+  /// ONE WHOSE CODE MOVED (`join`, the served engine) is handed only a row a
+  /// served answer of another owner and network already leads: its own answers
+  /// never start a fact, so handed every row, every stale page answers the head of
+  /// the queue again and none of it counts.
   /// ON POSTGRES THE PICK SKIPS ROWS ANOTHER PICK HOLDS LOCKED (`SKIP LOCKED`):
   /// two asks at once took the same head rows and deadlocked.
-  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null }, now = Date.now()) {
+  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null }, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), lease = newLease(), ceiling = (await dialsOf(env, now)).row_ceiling_ms;
     const [taken, ds] = await db.batch([
       db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?9::text, lease_until = ?10::text, leased_to = ?11::text, leased_at = ?1::text
           WHERE id IN (SELECT q.id ${eligibleFrom(false, ceiling)} AND q.waits = 0 AND q.verb IN (SELECT value FROM jsonb_array_elements_text((?12::text)::jsonb))
-            AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb))) ${ORDER} LIMIT ?13::bigint FOR UPDATE OF q SKIP LOCKED)
+            AND (?15::text IS NULL OR (q.request::jsonb #>> '{record,weapon}') NOT IN (SELECT value FROM jsonb_array_elements_text((?15::text)::jsonb)))
+            AND (?16::text IS NULL OR EXISTS (SELECT 1 FROM answers s WHERE s.question = q.id AND s.engine = ?16::text AND s.void = 0
+                 AND s.owner <> ?6::text AND (?7::text = '' OR s.net <> ?7::text))) ${ORDER} LIMIT ?13::bigint FOR UPDATE OF q SKIP LOCKED)
             AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = ?11::text AND h.lease_until > ?1::text AND h.lease <> ?9::text) < ?14::bigint
           RETURNING id, verb, request, due_at`)
-        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most, exclude ? JSON.stringify(exclude) : null),
+        .bind(...eligibleArgs(w, engine, at), lease, iso(now + lease_ms), w.device, PACKABLE, n, most, exclude ? JSON.stringify(exclude) : null, join),
       db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
           WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live'`).bind(lease, w.device),
     ]);
@@ -565,7 +582,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     for (const lead of served) {
       // The served engine's answers are taken first, so the witnesses it
       // reproduced are credited beside it rather than instead of it.
-      const equal = all.filter((a) => a.canon === lead.canon);
+      // ANOTHER ENGINE AGREES BY ITS RESULT ALONE: `work` counts the engine's own
+      // instructions, so a release that moved its code moved every `work`, and
+      // compared whole, a `join` answer never agrees with a served one.
+      const same = sameAs(lead);
+      const equal = all.filter(same);
       const group = independent([...equal.filter((a) => a.engine === engine), ...equal.filter((a) => a.engine !== engine)]);
       if (group.length < needs) continue;
       // A RECHECK: one more independent volunteer before it is a fact, nothing
@@ -579,7 +600,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
       writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
         .bind(state, lead.canon, engine, iso(now), q.id));
-      credits.push(...group, ...joinersParted(all, served, group, lead, engine));
+      credits.push(...group, ...joinersParted(all, served, group, same, engine));
       deliverPlan(env, { ...q, canon: lead.canon }, now, lead, demands, writes, later);
       return;
     }
@@ -598,8 +619,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// less, so an engine is worth updating. Only where two independent answers
   /// of that engine agree with each other — the engine's own bits, which one
   /// alone cannot tell from a made-up number.
-  function joinersParted(all, served, group, lead, engine) {
-    const parted = all.filter((a) => a.engine !== engine && !a.official && !served.includes(a) && !group.includes(a) && a.canon !== lead.canon);
+  function joinersParted(all, served, group, same, engine) {
+    const parted = all.filter((a) => a.engine !== engine && !a.official && !served.includes(a) && !group.includes(a) && !same(a));
     const out = [];
     for (const key of new Set(parted.map((a) => `${a.engine}|${a.canon}`))) {
       const agreeing = independent(parted.filter((a) => `${a.engine}|${a.canon}` === key));

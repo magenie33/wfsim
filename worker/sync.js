@@ -211,7 +211,7 @@ async function sync(request, env) {
   const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(want / pace) : d.pack_first);
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return idle();
   const n = packSize(pace, open, asking, per), lease_ms = short ? d.pack_lease_ms : d.sync_lease_ms;
-  const got = await f.nextPack(env, w, engine, { n, lease_ms, most: d.packs_held, exclude: grace && !grace.join ? grace.changed : null }, now);
+  const got = await f.nextPack(env, w, engine, { n, lease_ms, most: d.packs_held, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null }, now);
   const tasks = got ? got.questions.map(packTaskOf).filter(Boolean) : [];
   if (!tasks.length) return idle();
   const next = now + ms(d.sync_floor_ms);

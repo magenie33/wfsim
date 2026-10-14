@@ -8,7 +8,7 @@
 // writes only its own tables and compares its judgement with the request path's.
 import { iso } from "./instant.js";
 import { tableOf, FAIR_KEEP_MS } from "./fair.js";
-import { independent, askingIds } from "./tasks.js";
+import { independent, sameAs, askingIds } from "./tasks.js";
 import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
 
@@ -144,7 +144,7 @@ export function judgeFact(q, answers, threshold) {
   const served = before.filter((a) => a.engine === q.fact_engine), needs = q.needs || threshold;
   const others = before.some((a) => a.engine !== q.fact_engine);
   for (const lead of served) {
-    const equal = before.filter((a) => a.canon === lead.canon);
+    const equal = before.filter(sameAs(lead));
     const group = independent([...equal.filter((a) => a.engine === q.fact_engine), ...equal.filter((a) => a.engine !== q.fact_engine)]);
     if (group.length < needs) continue;
     if (lead.canon !== q.canon) return others ? { skip: "peer" } : { differ: "canon" };

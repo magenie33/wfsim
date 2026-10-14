@@ -148,9 +148,11 @@ already multiplied by the owner's `sync_scale_pct`.
   - `{ engine, until, changed }` — only weapon data moved: rows of every weapon
     but those in `changed` (each moved weapon and every one linked to it), and
     its `/answers` count as the served engine's.
-  - `{ engine, until, join: true }` — anything else moved: rows of every weapon,
-    the pack marked `join`. Its answers count only beside the served engine's:
-    one equal to a served engine's answer is a witness to it and paid as one;
+  - `{ engine, until, join: true }` — anything else moved: only rows a served
+    engine's answer of another owner and network already leads, of every
+    weapon, the pack marked `join`. Its answers count only beside the served
+    engine's: one equal to a served engine's answer in all but `work` (which
+    moves with the code) is a witness to it and paid as one;
     one that differs is paid too (`GRACE_SHARE` of its work, worker/tasks.js)
     when an independent answer of the same engine agrees with it, and nothing
     when none does. Such answers alone never make a fact.
