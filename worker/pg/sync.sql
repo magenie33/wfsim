@@ -349,6 +349,7 @@ DECLARE
   v_wanted jsonb;
   v_gone jsonb;
   v_x record;
+  v_use_locked boolean := false;
 BEGIN
   -- ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME (worker/tasks.js `recordMany`).
   PERFORM pg_advisory_xact_lock(hashtextextended(v_dev, 0));
@@ -376,6 +377,11 @@ BEGIN
           v_x.i #>> '{a,result}', (v_x.i #>> '{a,work}')::bigint, (v_x.i #>> '{a,compute_ms}')::bigint, v_x.i #>> '{a,counts}',
           (v_x.i #>> '{a,lanes}')::bigint, v_at);
       END LOOP;
+      -- PRODUCER_USE IS LOCKED WHOLE, in producer order, before its first write
+      -- here or at the pack's charge: two syncs taking its rows in opposite
+      -- orders deadlocked.
+      PERFORM 1 FROM producer_use ORDER BY producer FOR UPDATE;
+      v_use_locked := true;
       PERFORM factory_learn(y.x::text, (p ->> 'share')::double precision)
         FROM (SELECT jsonb_agg(jsonb_build_object('p', l.producer, 'ms', l.ms, 'n', l.n) ORDER BY l.producer) AS x
           FROM (SELECT i ->> 'producer' AS producer, sum((i #>> '{a,compute_ms}')::bigint) AS ms, count(*) AS n
@@ -475,6 +481,7 @@ BEGIN
     RETURN;
   END IF;
   v_size := GREATEST(1, LEAST((p #>> '{pack,max}')::bigint, (p #>> '{pack,by_pace}')::bigint, v_fair.open / GREATEST(1, v_fair.asking)));
+  IF NOT v_use_locked THEN PERFORM 1 FROM producer_use ORDER BY producer FOR UPDATE; END IF;
   v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_lease_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
     v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', CASE WHEN v_packable THEN v_head.producer END, v_size,
     v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev, (p ->> 'packs_held')::bigint) t),
