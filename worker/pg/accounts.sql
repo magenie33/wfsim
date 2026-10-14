@@ -179,6 +179,20 @@ CREATE TABLE IF NOT EXISTS billing_card_refunds (
   card TEXT COLLATE "C" PRIMARY KEY,
   at   TEXT COLLATE "C" NOT NULL
 );
+CREATE TABLE IF NOT EXISTS billing_codes (
+  id          TEXT COLLATE "C" PRIMARY KEY,
+  price       TEXT COLLATE "C" NOT NULL,
+  offer       TEXT COLLATE "C" NOT NULL,
+  months      BIGINT NOT NULL CHECK (months > 0),
+  amount      BIGINT NOT NULL CHECK (amount > 0),
+  currency    TEXT COLLATE "C" NOT NULL,
+  batch       TEXT COLLATE "C" NOT NULL,
+  created_at  TEXT COLLATE "C" NOT NULL,
+  redeemed_by TEXT COLLATE "C" REFERENCES accounts (id) ON DELETE SET NULL,
+  redeemed_at TEXT COLLATE "C",
+  revoked_at  TEXT COLLATE "C"
+);
+CREATE INDEX IF NOT EXISTS billing_codes_by_batch ON billing_codes (batch);
 CREATE TABLE IF NOT EXISTS billing_customers (
   account   TEXT COLLATE "C" PRIMARY KEY REFERENCES accounts (id) ON DELETE CASCADE,
   customer  TEXT COLLATE "C" NOT NULL UNIQUE,
