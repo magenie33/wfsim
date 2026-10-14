@@ -41,6 +41,7 @@ import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
 import { noteFactoryCall } from "./factory_calls.js";
+import { dialsOf } from "./dials.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -534,6 +535,17 @@ async function keptWorkedOut(request, env) {
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
   const hit = cache && await cache.match(at);
   if (hit) return hit.json();
+  // THE PUBLISHED RANKING when it is current: it is this same body, worked out once.
+  const published = await publishedContributors(env);
+  const body = published ? { everyone: published.rankings.all, day: published.day, computing: published.computing, pool: published.pool }
+    : await everyoneOf(env);
+  if (cache) await cache.put(at, new Response(JSON.stringify(body),
+    { headers: { "content-type": "application/json", "cache-control": `public, max-age=${KEPT_SECONDS}` } }));
+  return body;
+}
+/// EVERY ROW AS IT MAY BE SERVED: no account id, and a name, a mark or the
+/// honour only on a row whose account agreed to be named.
+async function everyoneOf(env) {
   const day = keyDay(), rows = await standings(env, day);
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
   const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id));
@@ -541,10 +553,42 @@ async function keptWorkedOut(request, env) {
     points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
-  const body = { everyone, day, computing: await computingNow(env), pool: await poolOf(env) };
-  if (cache) await cache.put(at, new Response(JSON.stringify(body),
-    { headers: { "content-type": "application/json", "cache-control": `public, max-age=${KEPT_SECONDS}` } }));
-  return body;
+  return { everyone, day, computing: await computingNow(env), pool: await poolOf(env) };
+}
+
+/// THE RANKING AS A FILE (docs/BOARD.md §"The public stats"): the worker's
+/// ten-minute cron writes it to the public bucket, and a signed-out page reads
+/// it from the CDN instead of asking. Each period is ordered here, by the same
+/// `ordered` every answer uses, so the page only slices. The reader's own row
+/// (`you`) needs who is asking, so a signed-in page still asks `/api/contributors`,
+/// which reads this file back while it is current.
+export const CONTRIBUTORS_KEY = "stats/contributors.json";
+/// Read back while younger than this many publish periods.
+const CONTRIBUTORS_FRESH_PERIODS = 2;
+export function contributorsFile(body, at = iso(Date.now())) {
+  const rankings = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => [period, ordered(body.everyone, key)]));
+  return { ok: true, v: 1, at, day: body.day, computing: body.computing, pool: body.pool || null, rankings };
+}
+export async function publishContributors(env, now = Date.now()) {
+  if (!env.PUBLIC || !env.ACCOUNTS) return false;
+  const every = (await dialsOf(env, now)).stats_contributors_ms;
+  const head = await env.PUBLIC.head(CONTRIBUTORS_KEY).catch(() => null);
+  // A CRON A FEW SECONDS EARLY still writes: the dial is a period, not a deadline.
+  if (head && head.uploaded && now - new Date(head.uploaded).getTime() < every - 60_000) return false;
+  const file = contributorsFile(await everyoneOf(env), iso(now));
+  await env.PUBLIC.put(CONTRIBUTORS_KEY, JSON.stringify(file), { httpMetadata: { contentType: "application/json",
+    cacheControl: `public, max-age=${Math.round(Math.min(every, 600_000) / 2000)}` } });
+  return true;
+}
+async function publishedContributors(env, now = Date.now()) {
+  const obj = env.PUBLIC && await env.PUBLIC.get(CONTRIBUTORS_KEY).catch(() => null);
+  if (!obj) return null;
+  let file;
+  try { file = JSON.parse(await obj.text()); } catch { return null; }
+  const every = (await dialsOf(env, now)).stats_contributors_ms;
+  // A FILE OF ANOTHER DAY keys its rows by another day: never read across midnight.
+  if (!file || file.v !== 1 || file.day !== keyDay() || now - Date.parse(file.at) > every * CONTRIBUTORS_FRESH_PERIODS) return null;
+  return file;
 }
 
 /// WHAT THE BOARD ASKS FOR AND WHAT IS ANSWERING IT, for the compute page's
@@ -659,34 +703,46 @@ async function demand(env) {
 /// BASE kept `TALLY_BASE_MS` at the edge and each answer adds the rows finished
 /// since it, read on `scores_oldest`. A row replaced since the base is counted
 /// again until the next base; the volunteers' count stays exact either way.
-const TALLY_BASE_MS = 60 * 60_000;
+export const TALLY_BASE_MS = 60 * 60_000;
 const SPLIT = `SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official`;
+const split = (r) => ({ volunteers: (r && r.volunteers) || 0, official: (r && r.official) || 0 });
+/// THE BASE: every score by who computed it, as of `at`.
+export async function tallyBase(db, now = Date.now()) {
+  return { at: iso(now), ...split(await db.prepare(`SELECT ${SPLIT} FROM scores`).first()) };
+}
+/// THE TALLY'S BODY from a base: the worker's answer and the settler's file
+/// (`TALLY_KEY`) are this one function.
+export async function tallyOf(env, base, now = Date.now()) {
+  const db = env.LIBRARY;
+  let totals = { volunteers: 0, official: 0 }, perHour = { volunteers: 0, official: 0 };
+  if (db && base) {
+    const [since, hour] = await db.batch([
+      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at > ?`).bind(base.at),
+      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - 3_600_000)),
+    ]);
+    const s = split(since.results[0]);
+    totals = { volunteers: base.volunteers + s.volunteers, official: base.official + s.official };
+    perHour = split(hour.results[0]);
+  }
+  return { ok: true, v: 1, at: iso(now), totals, per_hour: perHour, computing: await computingNow(env) };
+}
+/// …AS A FILE, written by the settler every `stats_tally_ms` (scripts/factoryd.mjs)
+/// and read by the home page from the CDN; this answer is its fallback.
+export const TALLY_KEY = "stats/tally.json", TALLY_CACHE = "public, max-age=30";
 async function tally(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const key = new Request(new URL("/api/board/tally", request.url).toString());
   const hit = cache && await cache.match(key);
   if (hit) return hit;
   const db = env.LIBRARY;
-  const split = (r) => ({ volunteers: (r && r.volunteers) || 0, official: (r && r.official) || 0 });
   const baseKey = new Request(new URL("/api/board/tally/base", request.url).toString());
   let base = cache && await cache.match(baseKey).then((r) => (r ? r.json() : null));
   if (!base && db) {
-    const at = iso(Date.now());
-    base = { at, ...split(await db.prepare(`SELECT ${SPLIT} FROM scores`).first()) };
+    base = await tallyBase(db);
     if (cache) await cache.put(baseKey, new Response(JSON.stringify(base),
       { headers: { "content-type": "application/json", "cache-control": `public, max-age=${TALLY_BASE_MS / 1000}` } }));
   }
-  let totals = { volunteers: 0, official: 0 }, perHour = { volunteers: 0, official: 0 };
-  if (db) {
-    const [since, hour] = await db.batch([
-      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at > ?`).bind(base.at),
-      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(Date.now() - 3_600_000)),
-    ]);
-    const s = split(since.results[0]);
-    totals = { volunteers: base.volunteers + s.volunteers, official: base.official + s.official };
-    perHour = split(hour.results[0]);
-  }
-  const r = new Response(JSON.stringify({ ok: true, totals, per_hour: perHour, computing: await computingNow(env) }),
+  const r = new Response(JSON.stringify(await tallyOf(env, base)),
     { headers: { "content-type": "application/json", "cache-control": "public, max-age=60" } });
   if (cache) await cache.put(key, r.clone());
   return r;

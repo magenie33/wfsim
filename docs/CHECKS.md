@@ -360,6 +360,17 @@ directly at most every two minutes. Told `fallback: 7`, or with no IndexedDB,
 it speaks protocol 7. `WFSIM_BREAK=<name>` sabotages one rule at runtime, to see
 its assertion fail.
 
+## `check_stats_files`
+
+The public stats on the page (docs/BOARD.md §"The public stats"), the CDN and
+the worker stubbed before the app boots. Built site only. The home tally reads
+`stats/tally.json` and asks no worker; a file stale by the server's clock,
+unreachable or of another version is passed over for `/api/board/tally`.
+Signed out, the ranking is the file's period sliced to the page; a file of
+another day, or none, is passed over for `/api/contributors`; signed in, the
+worker is asked and the file never read. `WFSIM_BREAK=<name>` sabotages one
+rule at runtime, to see its assertion fail.
+
 ## `check_quick_fleet`
 
 A frozen survey question, cut short, searched in the page by `quickFleet` on

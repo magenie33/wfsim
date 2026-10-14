@@ -115,9 +115,19 @@ function renderHomeFacts() {
 /// answers a count walks to the new one over the minute.
 const TALLY_EVERY_MS = 60_000;
 let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0;
+/// THE COUNT IS A FILE first (`stats/tally.json`, written by the settler each
+/// minute and served by the CDN), and asked of the worker only when the file is
+/// unreachable or older than this — docs/BOARD.md §"The public stats".
+const TALLY_STALE_MS = 10 * 60_000;
+const STATS_ORIGIN = "https://cdn.wfsim.app";
+async function statsFile(name, staleMs) {
+  const s = await fetch(`${STATS_ORIGIN}/stats/${name}.json`, { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  return s && s.v === 1 && serverNow() - Date.parse(s.at) <= staleMs ? s : null;
+}
 async function loadHomeTally() {
   if (document.hidden || $("home-page")?.hidden) return;
-  const r = await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  const r = await statsFile("tally", TALLY_STALE_MS)
+    || await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
   const next = { volunteers: r.totals.volunteers, official: r.totals.official, computing: r.computing | 0 };
   // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the last hour's pace,

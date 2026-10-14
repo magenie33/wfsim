@@ -35,7 +35,7 @@ import { boardTasksRoute } from "./board_tasks.js";
 import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
 import { noteFactoryCall } from "./factory_calls.js";
-import { contributionRoute } from "./contribution.js";
+import { contributionRoute, publishContributors } from "./contribution.js";
 import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
@@ -737,7 +737,11 @@ export default {
     ctx.waitUntil((async () => {
       const f = withDatabases(env);
       try {
-        await (event.cron === WATCHDOG_CRON ? watchdog(f.env) : Promise.all([rollupUsage(f.env), purgeDeleted(f.env)]));
+        // THE RANKING'S FILE rides the watchdog's cron, apart: one failing never stops the other.
+        await (event.cron === WATCHDOG_CRON
+          ? Promise.allSettled([watchdog(f.env), publishContributors(f.env)])
+            .then((rs) => rs.forEach((r) => r.status === "rejected" && console.error("cron", r.reason)))
+          : Promise.all([rollupUsage(f.env), purgeDeleted(f.env)]));
       } finally {
         await f.close();
       }

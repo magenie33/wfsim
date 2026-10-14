@@ -1225,6 +1225,33 @@ see two.
 - a survey's `clear_hours`: its shapes left over its shapes agreed per hour
   in the last three hours; null when none were.
 
+### The public stats
+
+**A NUMBER EVERY READER SEES ALIKE IS A FILE ON THE CDN, NOT A CALL.** Two
+are written to the public bucket under `stats/` and read from
+`cdn.wfsim.app`; the worker's endpoint stays, as the page's fallback.
+
+| file | writer, period | edge life | same body as |
+| --- | --- | --- | --- |
+| `stats/tally.json` | the daemon, `stats_tally_ms` (60 s) | 30 s | `/api/board/tally` (`tallyOf`) |
+| `stats/contributors.json` | the worker's ten-minute cron, `stats_contributors_ms` (10 min) | half a period, at most 5 min | `/api/contributors`, each period |
+
+- **The ranking is written by the WORKER**, not the daemon: a row's key is
+  hashed with `AUTH_SECRET` and a named row's mark comes from the paid half,
+  and neither may reach the Hetzner box. Its rows are `everyoneOf`'s, the
+  ones every answer is cut from, ordered per period by the same `ordered`:
+  `{ ok, v: 1, at, day, computing, pool, rankings: { all, recent, week } }`.
+- **Nothing in it names anyone who did not agree**: no account id, and a
+  name, a mark or the honour only on a named row. `check_contribution`
+  asserts it, and that the same test finds each one planted.
+- `/api/contributors` reads the file back while it is of today and younger
+  than two periods, so the worker works the ranking out once a period. A
+  signed-in page still asks it, because only it can mark the reader's own row.
+- **The page passes a file over** — for the endpoint — when it cannot be
+  reached, is not `v: 1`, or is older by the server's clock than 10 minutes
+  (the tally) or 30 (the ranking); a ranking of another day is passed over too,
+  its keys being that day's. `check_stats_files`.
+
 ### Outages
 
 When the factory cannot hand out work, the computers that were waiting are

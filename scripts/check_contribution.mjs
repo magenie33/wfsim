@@ -8,7 +8,7 @@
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
-import { contributionRoute, contributorRank, demandOf, DEMAND_KEY } from "../worker/contribution.js";
+import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 
@@ -211,6 +211,18 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
     await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES (?, 'r', 'base', ?, 1, 'kpm', 0, 'T', ?)`, id, by, ago(ms));
   }
+  // THE HOME TALLY: the settler's file and the worker's answer are one body.
+  const told = await call("/api/board/tally"), at = Date.parse(told.at);
+  const filed = await tallyOf(env, await tallyBase(L, at), at);
+  check("the home tally counts every score by who computed it, and the last hour's",
+    JSON.stringify([told.totals, told.per_hour]) === JSON.stringify([{ volunteers: 13, official: 7 }, { volunteers: 1, official: 2 }]), JSON.stringify(told));
+  check("...and the settler's file of it is the endpoint's answer, field for field",
+    JSON.stringify({ status: 200, ...filed }) === JSON.stringify(told), JSON.stringify({ filed, told }));
+  const base = await tallyBase(L, now - 1000);
+  await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+    VALUES ('t-new', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`, ago(0));
+  check("...a score finished after its base counted on it", (await tallyOf(env, base, now)).totals.volunteers === 14);
+  await L.run("DELETE FROM scores WHERE identity = 't-new'");
   // WHAT A FACT COSTS over the day: a board row's two witnesses fought 1 s each
   // and a riven search's 30 s each; two searches are open, and the four rows the
   // queue owes beside the refresh. 4 x 2 s + 2 x 60 s of work, and the volunteers
@@ -322,6 +334,66 @@ check("...and signed in there again it is claimed again, its points not counted 
   JSON.stringify(await mine(ed)));
 const leaks = JSON.stringify([await mine(ed), await ranking(ed), await call("/api/contributors?name=ed")]);
 check("no answer carries a device's full id, the one thing a claim needs", ![P, Q, X, Y, Z].some((v) => leaks.includes(v)));
+
+// THE RANKING AS A FILE (docs/BOARD.md §"The public stats"): written by the cron, read back while current.
+const bucket = new Map();
+const PUBLIC = {
+  head: async (k) => (bucket.has(k) ? { uploaded: bucket.get(k).uploaded } : null),
+  get: async (k) => (bucket.has(k) ? { text: async () => bucket.get(k).body } : null),
+  put: async (k, body, o) => { bucket.set(k, { body, uploaded: new Date(), meta: o.httpMetadata }); },
+};
+const { results: holders } = await accounts.prepare(`SELECT a.id, a.username, a.display_name, COALESCE(c.named, 0) AS named
+  FROM accounts a LEFT JOIN contribution_choice c ON c.account = a.id`).all();
+const shown = new Set(holders.filter((r) => r.named).flatMap((r) => [r.username, r.display_name]).filter(Boolean));
+const unnamed = holders.filter((r) => !r.named).flatMap((r) => [r.username, r.display_name]).filter((n) => n && !shown.has(n));
+// WHAT A PUBLIC FILE MUST NEVER CARRY: an account id, a device's id, an anonymous account's
+// name, or a mark or the honour beside a row with no name.
+const leaksOf = (text) => {
+  const f = JSON.parse(text), found = [];
+  for (const r of holders) if (text.includes(r.id)) found.push(r.id);
+  for (const v of [P, Q, X, Y, Z, W, N]) if (text.includes(v)) found.push(v);
+  for (const n of unnamed) if (text.includes(`"${n}"`)) found.push(n);
+  for (const rows of Object.values(f.rankings)) for (const e of rows) {
+    if (e.name !== null && !shown.has(e.name)) found.push(e.name);
+    if (e.name === null && ("mark" in e || "volunteer" in e)) found.push(`${e.key} marked`);
+  }
+  return found;
+};
+check("both kinds of account are on the ranking, so the file has an anonymous one to leak",
+  shown.size > 0 && unnamed.length > 0, JSON.stringify({ named: [...shown], unnamed }));
+const live = {};
+for (const period of ["all", "recent", "week"]) live[period] = await call(`/api/contributors?period=${period}&limit=3`);
+env.PUBLIC = PUBLIC;
+check("the cron writes the ranking's file, a period's half its edge life",
+  await publishContributors(env) && bucket.get(CONTRIBUTORS_KEY).meta.cacheControl === "public, max-age=300"
+  && bucket.get(CONTRIBUTORS_KEY).meta.contentType === "application/json", JSON.stringify(bucket.get(CONTRIBUTORS_KEY)?.meta));
+check("...once a period: a cron inside it writes nothing, one a period on writes again",
+  !(await publishContributors(env)) && await publishContributors(env, Date.now() + 10 * 60_000));
+const text = bucket.get(CONTRIBUTORS_KEY).body, file = JSON.parse(text);
+check("the file carries no account id, no device's id, and no name an account did not agree to show",
+  leaksOf(text).length === 0, JSON.stringify(leaksOf(text)));
+const bad = JSON.parse(text);
+bad.rankings.all.push({ ...bad.rankings.all[0], name: unnamed[0] }, { ...bad.rankings.week[0], name: null, mark: { tier: "member" } });
+bad.rankings.recent.push({ key: holders[0].id, name: null });
+check("...and the same test finds each of those planted in one", ((f) => [holders[0].id, unnamed[0]].every((v) => f.includes(v)) && f.some((v) => v.endsWith(" marked")))(leaksOf(JSON.stringify(bad))),
+  JSON.stringify(leaksOf(JSON.stringify(bad))));
+check("each period's rows are the endpoint's, in its order, its count the endpoint's total",
+  Object.entries(live).every(([period, r]) => JSON.stringify(file.rankings[period].slice(0, 3)) === JSON.stringify(r.contributors)
+    && file.rankings[period].length === r.total && file.computing === r.computing && JSON.stringify(file.pool) === JSON.stringify(r.pool)),
+  JSON.stringify({ file: file.rankings.week, live: live.week }));
+const served = async (f) => {
+  bucket.set(CONTRIBUTORS_KEY, { ...bucket.get(CONTRIBUTORS_KEY), body: JSON.stringify(f) });
+  return (await ranking()).find((e) => e.key === f.rankings.all[0].key).points;
+};
+const marked = (over) => ({ ...file, ...over, rankings: { ...file.rankings, all: [{ ...file.rankings.all[0], points: 424242 }, ...file.rankings.all.slice(1)] } });
+check("the endpoint reads a current file back rather than working the ranking out", await served(marked({})) === 424242);
+check("...and works it out again past two periods, or from another day's file",
+  await served(marked({ at: new Date(Date.now() - 21 * 60_000).toISOString() })) !== 424242
+  && await served(marked({ day: "2000-01-01" })) !== 424242);
+await served(file);
+check("...a signed-in reader still finds their own row marked, to them alone",
+  (await ranking(ed)).filter((e) => e.you).length === 1 && (await ranking()).every((e) => !e.you));
+delete env.PUBLIC;
 
 console.log(failures ? `\n${failures} failed` : "\nan account's points are the work its devices were credited");
 process.exitCode = failures ? 1 : 0;

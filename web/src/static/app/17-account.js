@@ -531,6 +531,8 @@ const contributorsColumn = () => ({ all: ["points", "Points"], recent: ["recent"
 /// past another when its number does and comes to rest in the server's order.
 const CONTRIBUTORS_PAGE = 100, CONTRIBUTORS_MOST = 2000, CONTRIBUTORS_EVERY_MS = 60_000;
 let contributorsTotal = 0, contributorsLimit = CONTRIBUTORS_PAGE, contributorsAt = 0, contributorsLoading = false;
+/// …A RANKING FILE OLDER THAN THIS is passed over for the worker: two of the cron's ten minutes and a margin.
+const CONTRIBUTORS_STALE_MS = 30 * 60_000;
 let contributorsFrom = new Map(), contributorsTick = 0, contributorsMore = null;
 function contributorShown(c) {
   const to = c[contributorsColumn()[0]] || 0;
@@ -554,7 +556,12 @@ async function contributorsLoad() {
   if (contributorsLoading) return;
   contributorsLoading = true;
   const period = contributorsPeriod, limit = contributorsLimit;
-  const r = await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`);
+  // SIGNED OUT, THE RANKING IS A FILE (`stats/contributors.json`, ordered per
+  // period by the worker's cron); signed in, the worker marks the reader's row.
+  const file = accountState.account ? null : await statsFile("contributors", CONTRIBUTORS_STALE_MS);
+  const ranked = file && file.day === new Date(serverNow()).toISOString().slice(0, 10) && file.rankings && file.rankings[period];
+  const r = ranked ? { ok: true, period, computing: file.computing, total: ranked.length, contributors: ranked.slice(0, limit), pool: file.pool }
+    : await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`);
   contributorsLoading = false;
   if (period !== contributorsPeriod) return;
   // WHAT EACH ROW SHOWS NOW is where it rolls from.

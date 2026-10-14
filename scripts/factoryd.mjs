@@ -15,10 +15,10 @@ import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../
 import { dialsOf, forgetDials } from "../worker/dials.js";
 import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
-import { demandOf, DEMAND_KEY, DEMAND_CACHE } from "../worker/contribution.js";
+import { demandOf, DEMAND_KEY, DEMAND_CACHE, tallyOf, tallyBase, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
-export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
+export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
 /// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
 export const SIGNAL_KEY = "work.json", SIGNAL_CACHE = "public, max-age=5";
@@ -81,7 +81,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let release = await servedNow(), stopping = false;
   const failed = new Map();
   const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
-  let unconfiguredSaid = false;
+  let unconfiguredSaid = false, tallyAt = 0, tallyKept = null;
   // THE SIGNAL FOLLOWS EVERY SNAPSHOT, so it is never older than one.
   const writeSignal = async (snap) => {
     if (!target) {
@@ -133,9 +133,19 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       if (!target) return;
       await put(target, { key: DEMAND_KEY, body: JSON.stringify(await demandOf(env)), contentType: "application/json", cacheControl: DEMAND_CACHE });
     },
+    // THE HOME PAGE'S COUNT (worker/contribution.js `tallyOf`), every `stats_tally_ms`;
+    // the whole-table count under it is taken again each `TALLY_BASE_MS`.
+    tally: async () => {
+      if (!target) return;
+      const now = Date.now();
+      if (now - tallyAt < (await dialsOf(env, now)).stats_tally_ms - STATS_TICK_MS / 2) return;
+      if (!tallyKept || now - Date.parse(tallyKept.at) >= TALLY_BASE_MS) tallyKept = await tallyBase(env.LIBRARY, now);
+      await put(target, { key: TALLY_KEY, body: JSON.stringify(await tallyOf(env, tallyKept, now)), contentType: "application/json", cacheControl: TALLY_CACHE });
+      tallyAt = now;
+    },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "demand"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "demand", "tally"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -153,7 +163,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     };
     timers.set(name, setTimeout(loop, 0));
   };
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {

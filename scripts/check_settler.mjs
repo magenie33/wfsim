@@ -129,6 +129,12 @@ console.log("the work signal");
   check("…and the compute page's picture once, as demand.json, kept half a minute at the edge",
     demands.length === 1 && DEMAND_KEY === "demand.json" && demands[0].o.cacheControl === DEMAND_CACHE
       && JSON.parse(demands[0].o.body).v === 1, JSON.stringify(demands.map((p) => p.o)));
+  const { TALLY_KEY, TALLY_CACHE } = await import("../worker/contribution.js");
+  const tallies = puts.filter((p) => p.o.key === TALLY_KEY), told = tallies[0] && JSON.parse(tallies[0].o.body);
+  check("…and the home page's count once, as stats/tally.json, kept half a minute at the edge, nobody named in it",
+    tallies.length === 1 && TALLY_KEY === "stats/tally.json" && tallies[0].o.cacheControl === TALLY_CACHE && TALLY_CACHE === "public, max-age=30"
+      && JSON.stringify(Object.keys(told)) === JSON.stringify(["ok", "v", "at", "totals", "per_hour", "computing"]),
+    JSON.stringify(tallies.map((p) => p.o)));
   check("…as work.json, kept five seconds at the edge, as JSON",
     o.key === SIGNAL_KEY && SIGNAL_KEY === "work.json" && o.cacheControl === "public, max-age=5" && SIGNAL_CACHE === o.cacheControl && o.contentType === "application/json", JSON.stringify(o));
   const { PROTOCOL, PROTOCOLS_SERVED } = await import("../worker/verify.js");

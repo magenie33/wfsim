@@ -68,6 +68,11 @@ export const DIALS = {
     says: "a queued question is handed to nobody for this long, then to anyone again should the settler not have come" },
   settle_batch: { default: 200, min: 1, max: 2_000, unit: "questions",
     says: "the most queued questions one settler pass takes" },
+  // THE PUBLIC STATS (docs/BOARD.md §"The public stats"), written to the public bucket.
+  stats_tally_ms: { default: 60_000, min: 10_000, max: 3_600_000, unit: "ms",
+    says: "how often the settler writes stats/tally.json, the home page's count" },
+  stats_contributors_ms: { default: 600_000, min: 600_000, max: 86_400_000, unit: "ms",
+    says: "how often the worker's ten-minute cron writes stats/contributors.json, the ranking" },
 };
 /// …AND THE ONES A CLIENT READS, sent with every hand-out so no client
 /// hard-codes them (docs/CLIENTS.md §"Values").
