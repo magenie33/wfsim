@@ -1,0 +1,17 @@
+id: combo_fury
+name: Combo Fury
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveOnKillBuffSecondary
+description: "On Melee Kill:\n+100% Reload Speed\n+100% Magazine Capacity for 12s on Secondary Weapon"
+
+# Rank 0: +16.7% Reload Speed, +16.7% Magazine Capacity.
+
+effects:
+  # a buff on the SECONDARY weapon - this arena fires the glaive alone
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Combo_Fury

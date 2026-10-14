@@ -215,6 +215,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         derived_crit_from_status: None,
         consecutive_hit_damage: None,
         consecutive_hit_radial_only: false,
+        consecutive_hit_direct_only: false,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
         magazine_growth_on_empty_reload: None,
@@ -236,6 +237,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         aim_at: None,
         beam: None,
         ricochet: None,
+        thrown_bounce: None,
     }
 }
 

@@ -625,12 +625,16 @@ pub(super) fn seconds_to_next_shot(
             }
             let cycle = (w + d / rate.max(1e-9)).max(1e-6)
                 // A THROWN GLAIVE HOLDS THE NEXT THROW until it is back: out to
-                // the target, and back again unless it was detonated, which
-                // *"returns the weapon to the user's hand"* (wiki, Melee). The
-                // return at the throw's own speed is a stand-in, declared on
-                // every throw entry.
+                // where it turns and back again, or out to the target alone when
+                // it is detonated, which *"returns the weapon to the user's
+                // hand"* (wiki, Melee). The return at the throw's own speed is a
+                // stand-in, declared on every throw entry.
                 + if active.form.is_throw() {
-                    active.flight_seconds(active.gap()) * if melee.detonating { 1.0 } else { 2.0 }
+                    if melee.detonating {
+                        active.flight_seconds(active.gap())
+                    } else {
+                        2.0 * active.flight_seconds(active.throw_turn_m())
+                    }
                 } else {
                     0.0
                 };

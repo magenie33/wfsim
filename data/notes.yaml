@@ -360,6 +360,8 @@ notes:
     - the explosion is the matching `Recall Explosion` row — the in-flight
       detonation — with its own radius, crit, status and forced procs and no
       falloff (`Reduction = 0`); it goes off only when `detonate` is pressed;
+    - the bounce explosion is the matching `Bounce Explosion` row, with its
+      own falloff and forced procs; the bounce count is the page's;
     - the charge is the row's `ChargeTime`, on the heavy wind-up clock; the
       throw itself is one attack at the quick `Throw` row's `FireRate`;
     - each throw that lands earns one combo point, as one 100% swing does.

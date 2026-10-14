@@ -2618,6 +2618,15 @@ mods:
   votive_onslaught: 埋首猛击
   vulpine_mask: 狡狐诈面
   wise_razor: 慧黠斩剃
+  combo_fury: 连击狂怒
+  combo_killer: 连击杀手
+  mark_of_the_beast: 兽之印记
+  power_throw: 奋力一掷
+  quick_return: 快速收回
+  rebound: 弹跳
+  volatile_quick_return: 易爆速返
+  volatile_rebound: 易爆反弹
+  whirlwind: 旋风
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射

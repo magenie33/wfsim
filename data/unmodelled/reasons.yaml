@@ -154,8 +154,12 @@ reasons:
   glaive_heavy_is_a_throw:
     text: "A glaive's heavy attack is the detonation of a thrown glaive, which is its own mode (a throw, detonated), so there is no standing heavy mode and a Tennokai window converts no swing."
   # A GLAIVE'S THROW — docs/MELEE.md §10.
-  glaive_bounce_unmodelled:
-    text: "A thrown glaive's bounces are not modelled: it strikes the body it was thrown at and what its punch through reaches. The bounce explosions of Volatile Rebound and Volatile Quick Return are not modelled either."
+  glaive_bounce_count_assumed:
+    text: "A glaive bounces off the bodies it cannot punch through: the body it was thrown into is its first bounce, and the last its count allows turns it for home. With no walls here, a glaive that passes every body flies its whole range and bounces off nothing. A quick throw is given the charged throw's count, the only one published, and the flight between bounces adds no time."
+  glaive_bounce_explosion_assumed:
+    text: "A bounce explosion (Volatile Rebound, Volatile Quick Return) takes no combo multiplier and spends no combo (wiki); whether Killing Blow or any other heavy-attack card reaches it is unpublished, and here none does. Volatile Quick Return's +3 Blast Radius is put on the bounce explosion alone."
+  glaive_detonation_ends_bounces:
+    text: "A detonated glaive goes off on its way out, no further than the first body it cannot pass, and makes no bounce after that one: the fight does not wait for the bounces it could still have made."
   glaive_throw_return_assumed:
     text: "How fast a thrown glaive comes back is unpublished: one left to return is taken to fly back over the same distance at its own speed, and a detonated one is in the hand at once."
   glaive_throw_animation_assumed:

@@ -903,6 +903,27 @@ impl FightParams {
         crate::rules::space::gap(self.player_at, self.target_at)
     }
 
+    /// HOW FAR A THROWN GLAIVE LEFT TO RETURN FLIES before it turns for home:
+    /// to the first body it cannot pass, which is its first bounce, or its whole
+    /// range when it passes them all, since this arena has no wall to turn it
+    /// (docs/MELEE.md §10). The bounces after the first add no flight here.
+    pub fn throw_turn_m(&self) -> f64 {
+        let aim = self.aim_point();
+        let muzzle = crate::rules::space::muzzle(self.player_at, aim);
+        let bodies = self.body_positions();
+        let walk = crate::rules::space::traverse(
+            muzzle,
+            crate::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y),
+            &bodies,
+            self.pierce(),
+            self.projectile_width_m,
+        );
+        match walk.stopped_in {
+            Some(i) => crate::rules::space::gap(self.player_at, bodies[i]),
+            None => self.range_m,
+        }
+    }
+
     /// HOW LONG THIS ATTACK'S SHOT IS IN THE AIR over `gap_m` — the aimed
     /// body's [`Self::gap`] — at its bonused speed, and 0 for a shot that does
     /// not fly. Everything behind the aimed body (punch through, an
@@ -1135,6 +1156,7 @@ impl FightParams {
             // been applied and what seeds the chains is what the player built.
             beam: panel.beam,
             ricochet: panel.ricochet,
+            thrown_bounce: panel.thrown_bounce,
             unaimed_headshot_chance: panel.unaimed_headshot_chance,
             windup_seconds: panel.windup_seconds,
             no_magazine: panel.no_magazine,
@@ -1382,6 +1404,7 @@ impl FightParams {
             derived_crit_from_status: panel.derived_crit_from_status,
             consecutive_hit_damage: panel.consecutive_hit_damage,
             consecutive_hit_radial_only: panel.consecutive_hit_radial_only,
+            consecutive_hit_direct_only: panel.consecutive_hit_direct_only,
             last_round_damage: panel.last_round_damage,
             first_round_damage: panel.first_round_damage,
             round_restore_on_status: panel.round_restore_on_status,

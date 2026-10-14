@@ -788,9 +788,11 @@ weapons:
   cerata: Cerata.png
   cerata_block: Cerata.png
   cerata_block_forward: Cerata.png
+  cerata_charged_throw: Cerata.png
   cerata_forward: Cerata.png
   cerata_heavy_slam: Cerata.png
   cerata_slide: Cerata.png
+  cerata_throw: Cerata.png
   ceti_lacera: OperationsLacera.png
   ceti_lacera_block: OperationsLacera.png
   ceti_lacera_block_forward: OperationsLacera.png
@@ -838,9 +840,11 @@ weapons:
   coda_pathocyst: CodaPathocyst.png
   coda_pathocyst_block: CodaPathocyst.png
   coda_pathocyst_block_forward: CodaPathocyst.png
+  coda_pathocyst_charged_throw: CodaPathocyst.png
   coda_pathocyst_forward: CodaPathocyst.png
   coda_pathocyst_heavy_slam: CodaPathocyst.png
   coda_pathocyst_slide: CodaPathocyst.png
+  coda_pathocyst_throw: CodaPathocyst.png
   corufell: ExaltedAWScytheWeapon.png
   corufell_block: ExaltedAWScytheWeapon.png
   corufell_block_forward: ExaltedAWScytheWeapon.png
@@ -1061,9 +1065,11 @@ weapons:
   falcor: CrpGlaive.png
   falcor_block: CrpGlaive.png
   falcor_block_forward: CrpGlaive.png
+  falcor_charged_throw: CrpGlaive.png
   falcor_forward: CrpGlaive.png
   falcor_heavy_slam: CrpGlaive.png
   falcor_slide: CrpGlaive.png
+  falcor_throw: CrpGlaive.png
   fang: Fang.png
   fang_block: Fang.png
   fang_block_forward: Fang.png
@@ -1162,15 +1168,19 @@ weapons:
   glaive: Glaive.png
   glaive_block: Glaive.png
   glaive_block_forward: Glaive.png
+  glaive_charged_throw: Glaive.png
   glaive_forward: Glaive.png
   glaive_heavy_slam: Glaive.png
   glaive_prime: GlaivePrime.png
   glaive_prime_block: GlaivePrime.png
   glaive_prime_block_forward: GlaivePrime.png
+  glaive_prime_charged_throw: GlaivePrime.png
   glaive_prime_forward: GlaivePrime.png
   glaive_prime_heavy_slam: GlaivePrime.png
   glaive_prime_slide: GlaivePrime.png
+  glaive_prime_throw: GlaivePrime.png
   glaive_slide: Glaive.png
+  glaive_throw: Glaive.png
   gram: Gram.png
   gram_block: Gram.png
   gram_block_forward: Gram.png
@@ -1214,15 +1224,19 @@ weapons:
   halikar: Halikar.png
   halikar_block: Halikar.png
   halikar_block_forward: Halikar.png
+  halikar_charged_throw: Halikar.png
   halikar_forward: Halikar.png
   halikar_heavy_slam: Halikar.png
   halikar_slide: Halikar.png
+  halikar_throw: Halikar.png
   halikar_wraith: HalikarWraith.png
   halikar_wraith_block: HalikarWraith.png
   halikar_wraith_block_forward: HalikarWraith.png
+  halikar_wraith_charged_throw: HalikarWraith.png
   halikar_wraith_forward: HalikarWraith.png
   halikar_wraith_heavy_slam: HalikarWraith.png
   halikar_wraith_slide: HalikarWraith.png
+  halikar_wraith_throw: HalikarWraith.png
   harmony: TnChoirScythe.png
   harmony_block: TnChoirScythe.png
   harmony_block_forward: TnChoirScythe.png
@@ -1334,15 +1348,19 @@ weapons:
   kestrel: Kestrel.png
   kestrel_block: Kestrel.png
   kestrel_block_forward: Kestrel.png
+  kestrel_charged_throw: Kestrel.png
   kestrel_forward: Kestrel.png
   kestrel_heavy_slam: Kestrel.png
   kestrel_prime: KestrelPrime.png
   kestrel_prime_block: KestrelPrime.png
   kestrel_prime_block_forward: KestrelPrime.png
+  kestrel_prime_charged_throw: KestrelPrime.png
   kestrel_prime_forward: KestrelPrime.png
   kestrel_prime_heavy_slam: KestrelPrime.png
   kestrel_prime_slide: KestrelPrime.png
+  kestrel_prime_throw: KestrelPrime.png
   kestrel_slide: Kestrel.png
+  kestrel_throw: Kestrel.png
   kogake: Kogake.png
   kogake_block: Kogake.png
   kogake_block_forward: Kogake.png
@@ -1574,6 +1592,7 @@ weapons:
   orvius: Orvius.png
   orvius_block: Orvius.png
   orvius_block_forward: Orvius.png
+  orvius_charged_throw: Orvius.png
   orvius_forward: Orvius.png
   orvius_heavy_slam: Orvius.png
   orvius_slide: Orvius.png
@@ -1601,9 +1620,11 @@ weapons:
   pathocyst: InfBoomerang.png
   pathocyst_block: InfBoomerang.png
   pathocyst_block_forward: InfBoomerang.png
+  pathocyst_charged_throw: InfBoomerang.png
   pathocyst_forward: InfBoomerang.png
   pathocyst_heavy_slam: InfBoomerang.png
   pathocyst_slide: InfBoomerang.png
+  pathocyst_throw: InfBoomerang.png
   pennant: TnRailjackGreatKatana.png
   pennant_block: TnRailjackGreatKatana.png
   pennant_block_forward: TnRailjackGreatKatana.png
@@ -2120,9 +2141,11 @@ weapons:
   xoris: ProteaPolarizerCrpGlaive.png
   xoris_block: ProteaPolarizerCrpGlaive.png
   xoris_block_forward: ProteaPolarizerCrpGlaive.png
+  xoris_charged_throw: ProteaPolarizerCrpGlaive.png
   xoris_forward: ProteaPolarizerCrpGlaive.png
   xoris_heavy_slam: ProteaPolarizerCrpGlaive.png
   xoris_slide: ProteaPolarizerCrpGlaive.png
+  xoris_throw: ProteaPolarizerCrpGlaive.png
   zenistar: Zenistar.png
   zenistar_block: Zenistar.png
   zenistar_block_forward: Zenistar.png
@@ -2631,6 +2654,8 @@ mods:
   clashing_forest: wiki:ClashingForestMod.png
   cleaving_whirlwind: AxeCombo2a.jpg
   coiling_viper: WhipCombo2b.jpg
+  combo_fury: WeaponGlaiveOnKillBuffSecondary.jpg
+  combo_killer: GlaiveSecondaryHeadshotKillMod.jpg
   crimson_dervish: CrimsonDervish1a.jpg
   crossing_snakes: DualSwordCombo1b.jpg
   cyclone_kraken: MacheteStanceB.jpg
@@ -2649,9 +2674,13 @@ mods:
   homing_fang: DaggerCombo2a.jpg
   iron_phoenix: IronPhoenix1a.jpg
   malicious_raptor: ClawsCombo1b.jpg
+  mark_of_the_beast: GlaiveOnSixKillsBuffSecondaryMod.jpg
   mountains_edge: DualKatanaCmbOne.jpg
   pointed_wind: DaggerCombo1a.jpg
+  power_throw: GlaivePunctureMod.jpg
+  quick_return: GlaiveRefractionMod.jpg
   reaping_spiral: ScytheCombo1a.jpg
+  rebound: GlaiveReflectionMod.jpg
   rending_crane: AxeCombo1a.jpg
   seismic_palm: FistCombo2a.jpg
   shimmering_blight: PolearmCombo1a.jpg
@@ -2666,8 +2695,11 @@ mods:
   twirling_spire: PolearmCmbThree.jpg
   vengeful_revenant: StalkerSwordStance.jpg
   vermillion_storm: VermillionStorm.jpg
+  volatile_quick_return: VolatileQuickReturnMod.jpg
+  volatile_rebound: VolatileReboundMod.jpg
   votive_onslaught: WarfanCmbTwo.jpg
   vulpine_mask: RapierCmbOneMeleeTree.jpg
+  whirlwind: GlaiveWhirlwindMod.jpg
   wise_razor: LongKatanaCmbOne.jpg
 
 arcanes:

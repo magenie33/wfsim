@@ -6,11 +6,14 @@ form: charged_throw
 transform_group: orvius
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: glaive_bounce_unmodelled
+  - reason: glaive_bounce_count_assumed
+  - reason: glaive_bounce_explosion_assumed
+  - reason: glaive_detonation_ends_bounces
   - reason: glaive_throw_return_assumed
   - reason: glaive_throw_animation_assumed
   - reason: glaive_throw_tennokai_unmodelled
   - reason: glaive_throw_animosity_unmodelled
+  - "The glaive seeks enemies by itself (wiki, Volatile Rebound); here it flies straight and bounces where reflection takes it."
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee
@@ -38,6 +41,19 @@ attack:
     falloff_reduction: 0
     forced_procs: [cold]
     takes_multishot: false
+  # THE BOUNCES — "can bounce up to three times" (wiki); the
+  # Bounce Explosion row is what a Volatile card sets off.
+  thrown_bounce:
+    bounces: 3
+    explosion:
+      damage: { cold: 585 }   # total 585
+      radius_m: 4
+      crit_chance: 0.22
+      crit_multiplier: 2.4
+      status_chance: 0.22
+      falloff_start_m: 0.0
+      falloff_reduction: 0.4
+      takes_multishot: false
   # see notes: combo_points_from_multiplier
   combo_script:
     - { multiplier: 1.0, delay_seconds: 1.0, windup_seconds: 1.192, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }

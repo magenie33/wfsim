@@ -1,0 +1,17 @@
+id: mark_of_the_beast
+name: Mark of the Beast
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveOnSixKillsBuffSecondary
+description: "On 6 Melee Kills within 6s:\n+120% Status and Critical Chance for Secondary Weapon for 24s"
+
+# Rank 0: +20% Status and Critical Chance for 4s.
+
+effects:
+  # a buff on the SECONDARY weapon - this arena fires the glaive alone
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Mark_of_the_Beast

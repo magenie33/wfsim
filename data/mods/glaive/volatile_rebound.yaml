@@ -1,0 +1,18 @@
+id: volatile_rebound
+name: Volatile Rebound
+rarity: rare
+polarity: naramon
+base_drain: 10                # max drain 13 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveExplodingReflectionIncreaseMod
+description: "+X% Chance to explode on Bounce (Disables Punch Through)"
+
+incompatible_with: [rebound, quick_return, volatile_quick_return]
+
+effects:
+  - kind: explode_on_bounce_chance
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Volatile_Rebound

@@ -544,6 +544,12 @@ fn mod_sources(
                             per_stack * 100.0),
                     }));
                 }
+                ConsecutiveThrowDamage { .. } => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "a thrown glaive's own multiplier: a loop buffers every throw, so each after the first adds a stack up to the cap, and it is never paid on an explosion or on a swing"})),
+                BounceCount(_) | ExplodeOnBounce(_) | BounceBlastRadius(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "a thrown glaive's bounces: each body it cannot pass turns it, and the last its count allows sends it home (docs/MELEE.md §10)"})),
                 BaseDamage(x) => push("base_damage", x, None),
                 BaseDamageIfNoEnemyWithin { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,

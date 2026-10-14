@@ -6,7 +6,6 @@ form: slide
 transform_group: orvius
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: glaive_bounce_unmodelled
   - "Not modelled: the quick throw, which hovers over the first enemy for 3 s, strikes it three times and explodes by itself (wiki); only the charged throw is played here."
   - reason: glaive_heavy_is_a_throw
 attack:

@@ -31,7 +31,7 @@ fn the_pool_mods_we_still_owe_only_goes_down() {
     // class got its pool, and fourteen class cards that were invisible before
     // are owed now — eleven glaive throw cards, Covert Lethality, Boreal's
     // Contempt and Nira's Contempt. The survey names each one.
-    const OWED: usize = 32;
+    const OWED: usize = 21;
     let text = crate::data::file("surveys/pool_mods.yaml")
         .expect("data/surveys/pool_mods.yaml — run scripts/survey_pool_mods.py");
     let mut total = 0usize;

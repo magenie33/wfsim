@@ -1,0 +1,20 @@
+id: quick_return
+name: Quick Return
+rarity: common
+polarity: naramon
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveReflectionDecreaseMod
+description: "-X Bounce"
+
+incompatible_with: [rebound, volatile_quick_return, volatile_rebound]
+
+effects:
+  # Three bounces less four is none: the glaive turns for home off the first
+  # body it cannot pass.
+  - kind: bounce_bonus
+    rank0: -1
+    rankMax: -4
+
+source:
+  url: https://wiki.warframe.com/w/Quick_Return

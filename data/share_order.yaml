@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: b2b3a8a2e06b1f16
-count: 3419
+digest: 1e05c667ca5c3542
+count: 3428
 ids:
   - acceltra
   - acceltra_prime
@@ -3429,3 +3429,12 @@ ids:
   - pathocyst_throw
   - xoris_charged_throw
   - xoris_throw
+  - combo_fury
+  - combo_killer
+  - mark_of_the_beast
+  - power_throw
+  - quick_return
+  - rebound
+  - volatile_quick_return
+  - volatile_rebound
+  - whirlwind

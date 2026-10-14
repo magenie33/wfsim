@@ -764,6 +764,61 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             });
         }
     }
+    // A THROWN GLAIVE'S BOUNCES — docs/MELEE.md §10. Decided once for the
+    // pellet, before anything goes off, because the detonation reads where the
+    // glaive stopped and the bounce explosions read where it turned.
+    //
+    // A BOUNCE IS A BODY IT CANNOT PASS: the first one stops it on the line and
+    // is its first bounce, then it reflects (`bounce_path`) off one body after
+    // another until its count is spent. A glaive that passes every body bounces
+    // off nothing, since this arena has no walls. One that is detonated is called
+    // home at its first, so it makes no more.
+    let mut glaive_stop_along: Option<f64> = None;
+    let mut bounce_blasts: Vec<crate::rules::space::Vec2> = Vec::new();
+    if let Some(tb) = active.thrown_bounce.filter(|_| pellet_lands && pellet_idx == 0) {
+        let aim = params.aim_point();
+        let muzzle = crate::rules::space::muzzle(params.player_at, aim);
+        let positions = params.body_positions();
+        let walk = crate::rules::space::traverse(
+            muzzle,
+            crate::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y),
+            &positions,
+            params.pierce_with(pierce_live_m),
+            params.projectile_width_m,
+        );
+        if let Some(stop) = walk.stopped_in {
+            let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
+            let len = crate::rules::math::Portable::hypot_portable(dx, dy).max(1e-12);
+            let b = positions[stop];
+            glaive_stop_along = Some(
+                ((b.x - muzzle.x) * dx + (b.y - muzzle.y) * dy) / len - crate::rules::space::BODY_RADIUS_M,
+            );
+            let hops = if detonates || tb.bounces <= 1 {
+                Vec::new()
+            } else {
+                crate::rules::space::bounce_path(
+                    params.player_at,
+                    &positions,
+                    stop,
+                    tb.bounces - 1,
+                    // WHERE ON THE BODY IT LANDED — `bounce_path`'s one assumption.
+                    d.spine.next_f64() * 2.0 - 1.0,
+                )
+            };
+            // EVERY TURN ROLLS ITS OWN EXPLOSION — *"Chance to explode on
+            // Bounce"* — and the body it was thrown into is a turn like the rest.
+            if tb.explosion_chance > 0.0 {
+                for &body in std::iter::once(&stop).chain(hops.iter()) {
+                    if d.spine.chance(tb.explosion_chance) {
+                        bounce_blasts.push(positions[body]);
+                    }
+                }
+            }
+            // …AND EVERY TURN AFTER THE FIRST IS A COLLISION, the thrown glaive
+            // arriving again in full (the ricochet's own path, unaimed).
+            ric_path = Some(hops.into_iter().map(|b| (b, false)).collect());
+        }
+    }
     // A TERMINAL BLAST GOES OFF WHERE THE ROUND DISSIPATES, not on the
     // first body it touched — see `data::weapons::BlastKind` and
     // MEASUREMENTS M53. The budget buys MATERIAL,
@@ -798,7 +853,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 aim,
                 &params.body_positions(),
                 r.radius_m,
-                active.range_m,
+                // NO FURTHER THAN THE BODY IT COULD NOT PASS.
+                glaive_stop_along.map_or(active.range_m, |s| s.min(active.range_m)),
             ),
             height_m: det.height_m,
         }
@@ -910,7 +966,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         ..r
     });
     let first_shock = 1 + usize::from(radial_stage.is_some()) + 2 * bomblets;
-    let n_stages = first_shock + shockwave.map_or(0, |sw| (sw.lines * sw.explosions) as usize);
+    let first_bounce = first_shock + shockwave.map_or(0, |sw| (sw.lines * sw.explosions) as usize);
+    let n_stages = first_bounce + bounce_blasts.len();
     // MELEE DUPLICATE: every stage has a REPLAY slot after it, which runs only
     // when the stage armed it — a base (yellow) crit that did not kill, won
     // on the card's chance. The replay is the same instance with its crit and
@@ -923,12 +980,18 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             continue;
         }
         let rad = match stage {
+            // FIRST, because without a detonation the first bounce is stage 1.
+            s if s >= first_bounce => active.thrown_bounce.map(|tb| tb.explosion),
             0 => None,
             1 => radial_stage,
             s if s >= first_shock => shock_radial,
             s => cluster.map(|c| if s % 2 == 0 { c.contact } else { c.blast }),
         };
-        let det = match shockwave.filter(|_| stage >= first_shock) {
+        let det = match shockwave.filter(|_| stage >= first_shock && stage < first_bounce) {
+            _ if stage >= first_bounce => crate::rules::space::Detonation {
+                at: bounce_blasts[stage - first_bounce],
+                height_m: 0.0,
+            },
             Some(sw) => crate::rules::space::Detonation {
                 at: sw
                     .epicentres(params.player_at, params.aim_point())
@@ -1319,7 +1382,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // escapes them: Primary Compression, range falloff, Longbow Sharpshot.
         let omitted = active.compression_multiplier * range_falloff * (1.0 + next_shot_bonus);
         let beside_co = beside_adding_co(omitted, co_mult.co_share, active.co_behavior);
-        let dt_here = if direct && active.consecutive_hit_radial_only { 1.0 } else { dt_mult };
+        let dt_here = if (direct && active.consecutive_hit_radial_only)
+            || (!direct && active.consecutive_hit_direct_only)
+        {
+            1.0
+        } else {
+            dt_mult
+        };
         let raw_at_epicentre = qtotal
             * part_factor
             * crit_multiplier
@@ -1451,7 +1520,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // damage once for any collision on enemies, and AGAIN FOR THE
         // EXPLOSION" — this is the second half of that sentence, and it
         // is the larger half on this family: 140 to the collision's 50.
-        if let (Some(rr), Some(path)) = (rad, ric_path.as_deref()) {
+        if let (Some(rr), Some(path), Some(_)) = (rad, ric_path.as_deref(), params.ricochet) {
             for &(body, _) in path {
                 // NOT THE AIMED ONE: it is where the projectile came FROM, and
                 // its own explosion went off on the aimed path.

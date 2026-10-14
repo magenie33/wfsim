@@ -94,6 +94,8 @@ mods:
   coiling_viper: coiling_viper
   collision_force: collision_force
   combat_reload: combat_reload
+  combo_fury: combo_fury
+  combo_killer: combo_killer
   combustion_beam: combustion_beam
   combustion_rounds: combustion_rounds
   comet_blast: comet_blast
@@ -264,6 +266,7 @@ mods:
   maiming_strike: maiming_strike
   malicious_raptor: malicious_raptor
   malignant_force: malignant_force
+  mark_of_the_beast: mark_of_the_beast
   marked_target: marked_target
   masters_edge: masters_edge
   melee_elementalist: melee_elementalist
@@ -306,6 +309,7 @@ mods:
   point_strike: point_strike
   pointed_wind: pointed_wind
   polar_magazine: polar_magazine
+  power_throw: power_throw
   precision_strike: precision_strike
   pressure_point: pressure_point
   pressurized_magazine: pressurized_magazine
@@ -371,6 +375,7 @@ mods:
   pummel: pummel
   quasar_drill: quasar_drill
   quick_reload: quick_reload
+  quick_return: quick_return
   quickdraw: quickdraw
   quickening: quickening
   radiated_reload: radiated_reload
@@ -379,6 +384,7 @@ mods:
   razor_shot: razor_shot
   reach: reach
   reaping_spiral: reaping_spiral
+  rebound: rebound
   reflex_coil: reflex_coil
   reflex_draw: reflex_draw
   relentless_combination: relentless_combination
@@ -509,6 +515,8 @@ mods:
   vile_precision: vile_precision
   virulent_scourge: virulent_scourge
   vital_sense: vital_sense
+  volatile_quick_return: volatile_quick_return
+  volatile_rebound: volatile_rebound
   volatile_variant: volatile_variant
   volcanic_edge: volcanic_edge
   voltage_sequence: voltage_sequence
@@ -517,6 +525,7 @@ mods:
   votive_onslaught: votive_onslaught
   vulpine_mask: vulpine_mask
   weeping_wounds: weeping_wounds
+  whirlwind: whirlwind
   wild_frenzy: wild_frenzy
   wildfire: wildfire
   winds_of_purity: winds_of_purity

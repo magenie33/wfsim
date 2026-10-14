@@ -1,0 +1,28 @@
+id: power_throw
+name: Power Throw
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaivePowerthrowMod
+description: "+X Punch Through\nOn Consecutive throw (Max stacks 3):\n+X% Throw Damage"
+
+effects:
+  # The wiki's rank table: +0.3 / 0.7 / 1 / 1.3 / 1.7 / 2.0 m.
+  - kind: punch_through_bonus
+    rank0: 0.3
+    rankMax: 2.0
+  # VERBATIM (Notes): "Damage bonus is multiplicative to the one provided by
+  # Pressure Point and other Melee Damage buffs", and a consecutive throw is
+  # one "buffered" before the glaive is caught — which a loop of throws does
+  # every time, so every throw after the first is one. The patch history's
+  # "Added 60% projectile speed" (Update 29.5) is on neither the card nor the
+  # rank table, and is not applied. The bleeds a throw forces are not raised
+  # either (docs/MELEE.md §10).
+  - kind: consecutive_throw_damage
+    rank0: 0.167
+    rankMax: 1.0
+    max_stacks: 3
+
+source:
+  url: https://wiki.warframe.com/w/Power_Throw

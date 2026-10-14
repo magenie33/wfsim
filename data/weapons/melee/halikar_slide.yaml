@@ -6,7 +6,6 @@ form: slide
 transform_group: halikar
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: glaive_bounce_unmodelled
   - reason: glaive_heavy_is_a_throw
 attack:
   # see notes: swing_trigger_pull_engine

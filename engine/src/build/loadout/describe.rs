@@ -77,6 +77,13 @@ impl ModEffect {
                 "{} damage per consecutive hit, up to {max_stacks} ({}), for {duration}s — its own multiplier, not the base-damage bucket",
                 pct(per_stack), pct(per_stack * f64::from(max_stacks))
             ),
+            ConsecutiveThrowDamage { per_stack, max_stacks } => format!(
+                "{} Throw Damage per consecutive throw, up to {max_stacks} ({}) — its own multiplier, on the thrown glaive alone",
+                pct(per_stack), pct(per_stack * f64::from(max_stacks))
+            ),
+            BounceCount(v) => format!("{v:+} Bounce"),
+            ExplodeOnBounce(v) => format!("{} Chance to explode on Bounce (no Punch Through)", pct(v)),
+            BounceBlastRadius(v) => format!("+{v} m Bounce explosion radius"),
             BaseDamage(v) => format!("{} Base Damage", pct(v)),
             BaseDamageIfNoEnemyWithin { bonus, metres } => {
                 format!("{} Base Damage if no enemy is within {metres:.0} m", pct(bonus))

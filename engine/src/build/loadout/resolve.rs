@@ -246,6 +246,12 @@ pub fn resolve_for(
     // …and the weak-point crit bucket starts at the EVOLUTION's, not at zero,
     // because the card says it is additive with the mods that write here.
     let mut consecutive_hit: Option<(f64, u32, f64)> = None;
+    // POWER THROW pays the thrown glaive and not its explosion.
+    let mut consecutive_hit_direct_only = false;
+    // A THROWN GLAIVE'S BOUNCE CARDS — docs/MELEE.md §10.
+    let mut bounce_delta = 0.0f64;
+    let mut explode_on_bounce = 0.0f64;
+    let mut bounce_blast_radius_m = 0.0f64;
     // SYNTH CHARGE. Summed, though only one such mod exists — a bucket of one
     // is still a bucket, and a second card would otherwise silently replace the
     // first.
@@ -419,6 +425,17 @@ pub fn resolve_for(
                 ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
                     consecutive_hit = Some((per_stack, max_stacks, duration));
                 }
+                // ON A THROW FORM ALONE: the card sits in the glaive's pool, and
+                // a swing is not a throw.
+                ModEffect::ConsecutiveThrowDamage { per_stack, max_stacks } => {
+                    if base.form.is_throw() {
+                        consecutive_hit = Some((per_stack, max_stacks, f64::INFINITY));
+                        consecutive_hit_direct_only = true;
+                    }
+                }
+                ModEffect::BounceCount(v) => bounce_delta += v,
+                ModEffect::ExplodeOnBounce(v) => explode_on_bounce += v,
+                ModEffect::BounceBlastRadius(v) => bounce_blast_radius_m += v,
                 // CARRIED, NOT SPENT — the player is not here. It is folded in
                 // `resolve_for`, which has the Tenno, exactly as `gated` is.
                 ModEffect::TennoScaled { stat, above, unit, per_unit, cap, grant } => {
@@ -1212,6 +1229,16 @@ pub fn resolve_for(
         }
         r
     });
+    // THE BOUNCE EXPLOSION, through the same buckets as the detonation beside it.
+    let thrown_bounce = base.thrown_bounce.as_ref().map(|b| {
+        let mut explosion = a_resolved(&b.explosion);
+        explosion.radius_m += bounce_blast_radius_m;
+        crate::build::loadout::ThrownBounce {
+            bounces: (f64::from(b.bounces) + bounce_delta).round().max(0.0) as u32,
+            explosion_chance: explode_on_bounce.clamp(0.0, 1.0),
+            explosion,
+        }
+    });
     // THE WEAPON'S OWN SLAM, through the same buckets — it is the same attack
     // part seen from a different swing, and a combo that ends on one should not
     // read a different Serration from the swing it ends.
@@ -1453,7 +1480,12 @@ pub fn resolve_for(
     let takes_mods = base
         .punch_through_mods
         .unwrap_or(!contact_blast && base.lingering.is_none());
-    let punch_through_m = if !takes_mods {
+    // A CHANCE TO EXPLODE ON A BOUNCE TAKES IT ALL AWAY — the Volatile cards'
+    // own *"(Disables Punch Through)"*: a glaive that passed through bodies
+    // would never bounce off one.
+    let punch_through_m = if thrown_bounce.is_some_and(|b| b.explosion_chance > 0.0) {
+        0.0
+    } else if !takes_mods {
         base.punch_through_m
     } else {
         base.punch_through_m
@@ -1491,7 +1523,9 @@ pub fn resolve_for(
         infinite_body_punch_through: base.infinite_body_punch_through,
         projectile_width_m: base.projectile_width_m,
         projectile_speed_mps,
-        range_m: beam_range_m,
+        // A THROWN GLAIVE FLIES FURTHER AS IT FLIES FASTER — Whirlwind's page:
+        // *"As a direct result, this mod also increases throwing distance."*
+        range_m: if base.form.is_throw() { beam_range_m * ps } else { beam_range_m },
         damage,
         resting,
         radial,
@@ -1535,6 +1569,7 @@ pub fn resolve_for(
             ..b
         }),
         ricochet: base.ricochet,
+        thrown_bounce,
         unaimed_headshot_chance: base.unaimed_headshot_chance,
         // A FIRE-RATE MOD SHORTENS THE WIND-UP, the same bucket and the same
         // reciprocal application the throw animation and a charge draw get.
@@ -1973,6 +2008,7 @@ pub fn resolve_for(
         bodyshot_crit_chance_multiplier: base.bodyshot_crit_chance_multiplier,
         consecutive_hit_damage: consecutive_hit.or(base.consecutive_hit_damage),
         consecutive_hit_radial_only: base.consecutive_hit_radial_only,
+        consecutive_hit_direct_only,
         // OFF ON A CONTINUOUS WEAPON AND ON AN INCARNON FORM, both the mod's
         // own words. `base.form` is the entry being resolved, so an Incarnon
         // half of a cycle drops it while the base half keeps it — which is

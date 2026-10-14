@@ -857,7 +857,7 @@ the glaive is in the air (`Now::glaive_in_flight`).
 
 | mode id | the list | what happens |
 | --- | --- | --- |
-| `throw` / `charged_throw` | the throw | it strikes, flies back, and the next one goes |
+| `throw` / `charged_throw` | the throw | it strikes, flies to where it turns and back, and the next one goes |
 | `throw_detonate` / `charged_throw_detonate` | `detonate` above the throw | it strikes and is set off where the blast is worth most |
 
 **A MODE IS A WRITTEN LIST**, and a detonated throw is the one mode whose list
@@ -878,13 +878,34 @@ fight reads the list, so an inserted `detonate` does the same.
 
 **WHERE IT GOES OFF IS THE FIGHT'S CHOICE**, since the player's is free:
 `rules::space::best_detonation` takes the point on the throw's line, at or past
-the body it struck and inside its flight range, that catches the most bodies.
+the body it struck and inside its flight range, that catches the most bodies —
+and no further than the first body it cannot pass, where it turns.
 
-**THE GLAIVE IN THE AIR HOLDS THE NEXT THROW** — out to the target, and back
-again unless it was detonated. The charge is the heavy wind-up clock, so the
+**A BOUNCE IS A BODY IT CANNOT PASS.** *"can bounce up to three times or
+travels up to 30 meters before returning"* (wiki, Glaive; eight on Kestrel
+Prime). The body the punch through runs out in is the first bounce; from there
+it reflects at the angle it arrived (`rules::space::bounce_path`, the bounce
+the Latron Incarnon uses) off one body after another, each a full strike, and
+turns for home at the last its count allows (`ThrownBounceSpec`). This arena
+has no walls, so a glaive whose punch through passes every body bounces off
+nothing and flies its whole range. A detonated glaive is called home at its
+first bounce.
+
+**THE CARDS:** Rebound and Quick Return move the count; Volatile Rebound and
+Volatile Quick Return take the punch through away and give each bounce a chance
+to set off the Bounce Explosion row — no counter, no heavy-attack card, Volatile
+Quick Return's +3 m on it alone. Power Throw's +100% a consecutive throw (three
+stacks) is its own multiplier on the thrown strike, never on an explosion, and a
+loop buffers every throw. Whirlwind speeds the flight and, *"as a direct
+result"*, stretches the range with it. Combo Fury and Mark of the Beast buff the
+secondary weapon and are out of this arena.
+
+**THE GLAIVE IN THE AIR HOLDS THE NEXT THROW** — out to the target and no more
+when it is detonated; out to where it turns and back when it is not
+(`FightParams::throw_turn_m`). The charge is the heavy wind-up clock, so the
 wind-up cards shorten it and attack speed does not.
 
-Numbers are the module's `Throw`, `Charged Throw` and `Recall Explosion` rows
+Numbers are the module's `Throw`, `Charged Throw`, `Recall Explosion` and `Bounce Explosion` rows
 (`notes: glaive_throw_from_the_module`), with each page's own figures winning
 where it states one (ranges, a quick throw's innate punch through, Kestrel's
 falloff).
@@ -895,8 +916,13 @@ falloff).
   speed; one attack at the quick throw's rate). They are most of a throw
   loop's cadence, so one stopwatch run — throw to catch, and charge to
   detonation to the next release — moves every glaive's number.
-- **Bounces and the Volatile cards' bounce explosions**, and the eleven glaive
-  cards with them (`data/surveys/pool_mods.yaml`).
+- **Bounces off walls**, which is most of what a glaive bounces off in a
+  mission; the flight between bounces, which adds no time here; the way home,
+  which strikes nothing; Falcor's and Orvius's seeking.
+- **Power Throw on the damage over time** a throw forces: the wiki calls the
+  bonus additive with the universal weapon bonuses, which would reach the
+  bleeds, and here it reaches only the strike.
+- **A quick throw's bounce count**: only the charged throw's is published.
 - **Orvius's quick throw** is a hover that explodes by itself, and has no form.
 - **Disputed rows**, declared on their entries: Halikar's quick detonation,
   Xoris's charged strike, two 12% explosion crit chances, Kestrel's falloff.

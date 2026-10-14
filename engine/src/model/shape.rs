@@ -368,6 +368,15 @@ impl Falloff {
     }
 }
 
+/// A THROWN GLAIVE'S BOUNCES, unmodded — see `data::weapons::ThrownBounceSpec`.
+#[derive(Debug, Clone)]
+pub struct ThrownBounceBase {
+    /// Bodies it may turn off, the one it was thrown into included.
+    pub bounces: u32,
+    /// The Bounce Explosion, unmodded.
+    pub explosion: RadialBase,
+}
+
 /// A BOUNCING PROJECTILE'S GEOMETRY — shape, not a damage part, exactly like
 /// [`BeamGeometry`]. What a bounce DEALS is the attack's own collision and the
 /// attack's own radial arriving again; this says only how many and how far.

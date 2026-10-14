@@ -339,6 +339,9 @@ pub struct AttackSpec {
     /// family's Incarnon form, and the roster's only member.
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
+    /// A THROWN GLAIVE'S BOUNCES — a throw form's, and nothing else's.
+    #[serde(default)]
+    pub thrown_bounce: Option<ThrownBounceSpec>,
     /// DAMAGE FALLOFF on the direct hit — the shotgun's, and the one the
     /// Arsenal lists as a range in metres. The fight applies it at each body's
     /// own distance (`build::loadout::Falloff`).
@@ -915,6 +918,21 @@ pub struct RicochetSpec {
     /// as the only limit — and the count is the only limit the page states.
     #[serde(default)]
     pub range_m: Option<f64>,
+}
+
+/// A THROWN GLAIVE'S BOUNCES — docs/MELEE.md §10.
+///
+/// *"can bounce up to three times or travels up to 30 meters before returning
+/// to the user"* (wiki, Glaive). A bounce is a body the glaive cannot punch
+/// through: it reflects off it (`rules::space::bounce_path`), and the last one
+/// it is allowed turns it for home.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ThrownBounceSpec {
+    /// Bodies it may turn off, the one it was thrown into included.
+    pub bounces: u32,
+    /// The Bounce Explosion row: what a bounce sets off when a card gives it a
+    /// chance to (Volatile Rebound, Volatile Quick Return). Unmodded, nothing.
+    pub explosion: RadialSpec,
 }
 
 #[derive(Debug, Clone, Deserialize)]

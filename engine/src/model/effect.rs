@@ -265,6 +265,24 @@ pub enum ModEffect {
     /// way (see `data/mods/pistol/synth_charge.yaml`).
     FirstRoundDamage(f64),
     ConsecutiveHitDamage { per_stack: f64, max_stacks: u32, duration: f64 },
+    /// POWER THROW's second line — *"On Consecutive throw (Max stacks 3): +100%
+    /// Throw Damage"*. A throw buffered before the glaive is caught is
+    /// consecutive, and a loop of throws buffers every one, so this is
+    /// [`Self::ConsecutiveHitDamage`] counted per throw and never lapsing. Its
+    /// own multiplier (*"multiplicative to … Pressure Point"*, wiki), paid on the
+    /// thrown glaive and not on its explosion, and on a throw form alone.
+    ConsecutiveThrowDamage { per_stack: f64, max_stacks: u32 },
+    /// Bounces a thrown glaive gains (Rebound) or loses (Quick Return).
+    BounceCount(f64),
+    /// *"Chance to explode on Bounce (Disables Punch Through)"* — Volatile
+    /// Rebound and Volatile Quick Return. The two halves are one card line, so
+    /// one effect: any chance at all leaves the throw no punch through.
+    ExplodeOnBounce(f64),
+    /// VOLATILE QUICK RETURN's *"+3 Blast Radius"*: metres on the bounce
+    /// explosion's radius, flat — Update 29.5.3 changed it from +100% because
+    /// *"Multiplicative radius increase was increasing Glaives with a high base
+    /// radius to higher than intended ranges"*.
+    BounceBlastRadius(f64),
     /// ADDED SPREAD, in DEGREES, and it is NOT an accuracy bonus.
     ///
     /// Split Flights is the roster's first. Its rank ladder is published as a

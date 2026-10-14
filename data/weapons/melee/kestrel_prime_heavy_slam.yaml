@@ -7,7 +7,6 @@ transform_group: kestrel_prime
 co_behavior: additive_with_base_damage
 unmodeled:
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: glaive_bounce_unmodelled
   - reason: glaive_heavy_is_a_throw
 attack:
   # see notes: swing_trigger_pull_engine

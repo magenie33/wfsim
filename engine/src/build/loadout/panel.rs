@@ -196,6 +196,17 @@ pub struct ResolvedRadial {
     pub extra_hit_reads_shift: f64,
 }
 
+/// A thrown glaive's bounces once the build has spoken: the count its cards
+/// leave, and the chance each one explodes (Volatile Rebound, Volatile Quick
+/// Return). docs/MELEE.md §10.
+#[derive(Debug, Clone, Copy)]
+pub struct ThrownBounce {
+    pub bounces: u32,
+    /// The chance a bounce sets the explosion off, `0` without a Volatile card.
+    pub explosion_chance: f64,
+    pub explosion: ResolvedRadial,
+}
+
 /// The bomblets after mod resolution — see [`ClusterBase`].
 #[derive(Debug, Clone, Copy)]
 pub struct ResolvedCluster {
@@ -475,6 +486,8 @@ pub struct ResolvedPanel {
     /// See [`ResolvedMeter`] — the recharge clock this form is gated behind.
     pub meter: Option<ResolvedMeter>,
     pub ricochet: Option<Ricochet>,
+    /// A thrown glaive's bounces, with what its cards did to them.
+    pub thrown_bounce: Option<ThrownBounce>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).
     pub headshot_damage_bonus: f64,
     /// Devouring Attrition's (chance, bonus) on non-crit instances.
@@ -742,6 +755,9 @@ pub struct ResolvedPanel {
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     /// See [`crate::data::weapons::AttackSpec::consecutive_hit_radial_only`].
     pub consecutive_hit_radial_only: bool,
+    /// See [`ModEffect::ConsecutiveThrowDamage`] — the opposite: only the
+    /// direct hit takes the bonus.
+    pub consecutive_hit_direct_only: bool,
     /// SYNTH CHARGE's multiplier for the magazine's LAST round — see
     /// [`ModEffect::LastRoundDamage`]. Zero on a continuous weapon and on an
     /// Incarnon form, resolved here because only this layer knows the form.

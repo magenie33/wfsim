@@ -1,0 +1,18 @@
+id: rebound
+name: Rebound
+rarity: common
+polarity: naramon
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveReflectionIncreaseMod
+description: "+X Bounce"
+
+incompatible_with: [quick_return, volatile_quick_return, volatile_rebound]
+
+effects:
+  - kind: bounce_bonus
+    rank0: 1
+    rankMax: 4
+
+source:
+  url: https://wiki.warframe.com/w/Rebound

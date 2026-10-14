@@ -1,0 +1,25 @@
+id: volatile_quick_return
+name: Volatile Quick Return
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveExplodingReflectionDecreaseMod
+description: "-X Bounce\n+X Blast Radius\n+X% Chance to explode on Bounce (Disables Punch Through)"
+
+incompatible_with: [rebound, quick_return, volatile_rebound]
+
+effects:
+  - kind: bounce_bonus
+    rank0: -1
+    rankMax: -4
+  # The wiki's rank table: +0.8 / 1.5 / 2.3 / 3 m.
+  - kind: bounce_blast_radius_bonus_m
+    rank0: 0.8
+    rankMax: 3.0
+  - kind: explode_on_bounce_chance
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Volatile_Quick_Return

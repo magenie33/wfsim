@@ -6,7 +6,9 @@ form: throw
 transform_group: glaive_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: glaive_bounce_unmodelled
+  - reason: glaive_bounce_count_assumed
+  - reason: glaive_bounce_explosion_assumed
+  - reason: glaive_detonation_ends_bounces
   - reason: glaive_throw_return_assumed
   - reason: glaive_throw_animation_assumed
   - reason: glaive_throw_tennokai_unmodelled
@@ -38,6 +40,20 @@ attack:
     falloff_reduction: 0
     forced_procs: [impact, slash]
     takes_multishot: false
+  # THE BOUNCES — "can bounce up to three times" (wiki); the
+  # Bounce Explosion row is what a Volatile card sets off.
+  thrown_bounce:
+    bounces: 3
+    explosion:
+      damage: { blast: 296 }   # total 296
+      radius_m: 4.8
+      crit_chance: 0.24
+      crit_multiplier: 2.2
+      status_chance: 0.32
+      falloff_start_m: 0.0
+      falloff_reduction: 0.4
+      forced_procs: [impact]
+      takes_multishot: false
   # see notes: combo_points_from_multiplier
   combo_script:
     - { multiplier: 1.0, delay_seconds: 1.0, forced_procs: [impact, slash], combo_points: 1, combo_points_base: 1 }

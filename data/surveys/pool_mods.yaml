@@ -12,13 +12,13 @@
 # app refuses by RULE (flawed variants, riven placeholders, Conclave-only),
 # and the rule rides beside it.
 #
-# 444 of 719 carried, 243 excluded by rule, 32 still to transcribe.
+# 453 of 719 carried, 245 excluded by rule, 21 still to transcribe.
 #
 # Per pool (carried / in export, gap):
 #   archgun            37/ 39 gap 0   assault_rifle       8/ 15 gap 0   assault_saw         1/  1 gap 0
 #   blade_and_whip      1/  2 gap 0   bow                 1/ 10 gap 4   claws               3/ 10 gap 0
 #   dagger              3/  6 gap 1   dual_daggers        4/  5 gap 0   dual_nikanas        1/  1 gap 0
-#   dual_swords         3/  4 gap 0   fist                3/  4 gap 0   glaive              2/ 16 gap 11
+#   dual_swords         3/  4 gap 0   fist                3/  4 gap 0   glaive             11/ 16 gap 0
 #   gunblade            2/  2 gap 0   hammer              2/  3 gap 0   heavy_blade         3/  4 gap 0
 #   heavy_scythe        1/  1 gap 0   machete             2/  3 gap 0   melee              91/143 gap 0
 #   nikana              3/  4 gap 0   nunchaku            1/  2 gap 0   pistol             81/140 gap 5
@@ -456,11 +456,11 @@ mods:
   - name: Combo Fury
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveOnKillBuffSecondary
-    carried: ~
+    carried: data/mods/glaive/combo_fury.yaml
   - name: Combo Killer
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveSecondaryHeadshotKillMod
-    carried: ~
+    carried: data/mods/glaive/combo_killer.yaml
   - name: Gleaming Talon
     pool: glaive
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GlaiveCmbOneMeleeTree
@@ -468,49 +468,51 @@ mods:
   - name: Mark of the Beast
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveOnSixKillsBuffSecondary
-    carried: ~
+    carried: data/mods/glaive/mark_of_the_beast.yaml
   - name: Power Throw
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponGlaivePowerthrowModBeginner
     carried: excluded
-    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
   - name: Power Throw
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponGlaivePowerthrowModExpert
-    carried: ~
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
   - name: Power Throw
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaivePowerthrowMod
-    carried: ~
+    carried: data/mods/glaive/power_throw.yaml
   - name: Quick Return
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveReflectionDecreaseMod
-    carried: ~
+    carried: data/mods/glaive/quick_return.yaml
   - name: Rebound
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveReflectionIncreaseMod
-    carried: ~
+    carried: data/mods/glaive/rebound.yaml
   - name: Volatile Quick Return
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveExplodingReflectionDecreaseMod
-    carried: ~
+    carried: data/mods/glaive/volatile_quick_return.yaml
   - name: Volatile Rebound
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveExplodingReflectionIncreaseMod
-    carried: ~
+    carried: data/mods/glaive/volatile_rebound.yaml
   - name: Whirlwind
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponGlaiveSpeedModBeginner
     carried: excluded
-    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
   - name: Whirlwind
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponGlaiveSpeedModExpert
-    carried: ~
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
   - name: Whirlwind
     pool: glaive
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponGlaiveSpeedMod
-    carried: ~
+    carried: data/mods/glaive/whirlwind.yaml
   - name: Bullet Dance
     pool: gunblade
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeCmbTwoMeleeTree

@@ -693,6 +693,10 @@ pub fn base_panel_assembled(
             // hit yet, however far".
             range_m: r.range_m.unwrap_or(f64::INFINITY),
         }),
+        thrown_bounce: s.attack.thrown_bounce.as_ref().map(|b| crate::model::ThrownBounceBase {
+            bounces: b.bounces,
+            explosion: a_radial(&b.explosion),
+        }),
         beam: s.attack.beam.as_ref().map(|b| crate::model::BeamGeometry {
             range_m: b.range_m,
             damage_radius_m: b.damage_radius_m,

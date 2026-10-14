@@ -1276,6 +1276,8 @@ pub struct WeaponBase {
     pub beam: Option<BeamGeometry>,
     /// Ricochet geometry, when this form's projectile bounces.
     pub ricochet: Option<Ricochet>,
+    /// A thrown glaive's bounces — a throw form's, and nothing else's.
+    pub thrown_bounce: Option<ThrownBounceBase>,
     /// Final Fusillade: a FLAT multishot add on the LAST round of the magazine
     /// (0.0 = not installed). Base form only — the evolution loader drops it on
     /// a charge-backed form, so this is always 0.0 there.

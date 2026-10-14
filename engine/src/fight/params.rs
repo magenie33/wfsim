@@ -445,6 +445,8 @@ pub struct FightParams {
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     /// See [`crate::data::weapons::AttackSpec::consecutive_hit_radial_only`].
     pub consecutive_hit_radial_only: bool,
+    /// See [`crate::model::ModEffect::ConsecutiveThrowDamage`].
+    pub consecutive_hit_direct_only: bool,
     /// SYNTH CHARGE — see [`crate::model::ModEffect::LastRoundDamage`].
     pub last_round_damage: f64,
     /// THE CHAMBERS — see [`crate::model::ModEffect::FirstRoundDamage`].
@@ -752,6 +754,8 @@ pub struct FightParams {
     /// bounce is this attack's collision and this attack's explosion arriving
     /// again, at a body it has not hit yet.
     pub ricochet: Option<crate::model::Ricochet>,
+    /// A THROWN GLAIVE'S BOUNCES — docs/MELEE.md §10.
+    pub thrown_bounce: Option<crate::build::loadout::ThrownBounce>,
     /// See [`crate::data::weapons::AttackSpec::unaimed_headshot_chance`] — this
     /// attack is not pointed at anything, so where each of its instances lands
     /// is a flat chance of its own rather than the scenario's `headshot_pct`.

@@ -258,6 +258,13 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // DOUBLE TAP. The rank table moves BOTH halves — 5%/80x at rank 0 and
         // 20%/20x at rank 3 — and the product is +400% at every rank, so the
         // per-stack value and the cap are read together and neither alone.
+        "consecutive_throw_damage" => ModEffect::ConsecutiveThrowDamage {
+            per_stack: max("rankMax"),
+            max_stacks: v.get("max_stacks").and_then(|x| x.as_u64()).unwrap_or(0) as u32,
+        },
+        "bounce_bonus" => ModEffect::BounceCount(max("rankMax")),
+        "explode_on_bounce_chance" => ModEffect::ExplodeOnBounce(max("rankMax")),
+        "bounce_blast_radius_bonus_m" => ModEffect::BounceBlastRadius(max("rankMax")),
         "consecutive_hit_damage" => ModEffect::ConsecutiveHitDamage {
             per_stack: max("rankMax"),
             max_stacks: v.get("max_stacks").and_then(|x| x.as_u64()).unwrap_or(0) as u32,

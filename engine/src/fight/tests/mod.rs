@@ -176,6 +176,7 @@ impl Default for FightParams {
             derived_crit_from_status: None,
             consecutive_hit_damage: None,
             consecutive_hit_radial_only: false,
+            consecutive_hit_direct_only: false,
             last_round_damage: 0.0,
             first_round_damage: 0.0,
             round_restore_on_status: None,
@@ -253,6 +254,7 @@ impl Default for FightParams {
             // chain is something a weapon DECLARES.
             beam: None,
             ricochet: None,
+            thrown_bounce: None,
             // AIMED, like every fixture but the one weapon that is not.
             unaimed_headshot_chance: None,
             // A ROUND LEAVES ON THE TRIGGER, like every gun but one.
