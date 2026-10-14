@@ -124,7 +124,7 @@ def deploy() -> None:
     # ONE PASS OF EVERY TICK, as the service's user, before anything is swapped.
     ssh(t, f"cd {new} && set -a && . /etc/{SERVICE}.env && set +a && "
            f"runuser -u wfsim_factoryd -- /usr/local/bin/node scripts/factoryd.mjs --once")
-    ssh(t, f"install -m 644 /dev/stdin /etc/systemd/system/{SERVICE}.service && systemctl daemon-reload",
+    ssh(t, f"cat > /etc/systemd/system/{SERVICE}.service && chmod 644 /etc/systemd/system/{SERVICE}.service && systemctl daemon-reload",
         stdin=UNIT.read_bytes())
     ssh(t, f"rm -rf {REMOTE}.old; if [ -d {REMOTE} ]; then mv {REMOTE} {REMOTE}.old; fi; mv {new} {REMOTE} && "
            f"systemctl enable --now {SERVICE} && systemctl restart {SERVICE}")
