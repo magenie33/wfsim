@@ -65,8 +65,9 @@ jobs:
   take-in:
     runs-on: ubuntu-latest
     # Capped for the reason `scores.yml` states: one pending run per group, so a
-    # hung call costs every tick behind it rather than only its own.
-    timeout-minutes: 30
+    # hung call costs every tick behind it rather than only its own. Fifty, because
+    # the reconciliation walks every ruler and the hour's next tick is at sixty.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 

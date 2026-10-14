@@ -13,18 +13,15 @@
 # every hop here testable without a database.
 set -euo pipefail
 
-# A PAGE, AND THE LOOP IS BOUNDED. The database answers a query whole, so the page is
-# about the size of the answer rather than about a cursor: 5,000 rows is a few
-# megabytes of json, and the table is about 22,656 rows once every row of the
-# library has been measured.
+# A PAGE IS A ROUND TRIP through the tunnel, a process and a connection, so it
+# is large: 50,000 rows is about ten megabytes of json.
 #
 # READ ONCE A RUN, NEVER ONCE A JOB. Thirty-two shards each asking the same
 # question is thirty-two times the rows through one tunnel for one answer:
 # about half a million a run. The submissions job reads it and hands it
 # down as an artifact; only the ASSEMBLY reads again, because the shards were
 # still shipping when that artifact was taken.
-PAGE=5000
-MAX_PAGES=200
+PAGE=50000
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
@@ -37,25 +34,30 @@ configured() { db_configured; }
 # rows that tie may come back in either order on either page. `(identity, ruler,
 # mode)` is the primary key, so it is total.
 #
+# A PAGE STARTS AFTER THE LAST KEY, never at an OFFSET: an offset walks every
+# row before it again, so a read of the whole table was quadratic in it. `$2`
+# is the previous page's last key as a json array, empty for the first page.
+#
 # `metric` IS WRITTEN AND NOT READ BACK, deliberately. It says what a stored
 # number is IN, which only a reader of the archive needs; nothing in a run
 # decides on it, so selecting it would carry that weight on every row of every
 # run for a question no caller asks.
 page_body() {
-  jq -n -c --argjson limit "$1" --argjson offset "$2" '
+  jq -n -c --argjson limit "$1" --argjson after "${2:-null}" '
     {
       sql: ("SELECT identity, ruler, mode, measured_by, score,"
             + " cost_seconds, started_at, finished_at FROM scores"
-            + " ORDER BY identity, ruler, mode LIMIT ? OFFSET ?"),
-      params: [$limit, $offset]
+            + (if $after then " WHERE (identity, ruler, mode) > (?, ?, ?)" else "" end)
+            + " ORDER BY identity, ruler, mode LIMIT ?"),
+      params: (($after // []) + [$limit])
     }'
 }
 
 fetch() {
-  local out="$1" offset=0 got total=0 page
+  local out="$1" after="" got total=0 last
   :
-  for page in $(seq 1 "$MAX_PAGES"); do
-    if ! db_query "$(page_body "$PAGE" "$offset")"; then
+  while :; do
+    if ! db_query "$(page_body "$PAGE" "$after")"; then
       echo "::error::facts: the database refused the read [HTTP $DB_CODE]"
       [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
       return 1
@@ -64,13 +66,13 @@ fetch() {
     jq -c '.result[0].results[]' < "$DB_OUT" >> "$out"
     total=$((total + got))
     [ "$got" -lt "$PAGE" ] && break
-    offset=$((offset + PAGE))
-    # THE LOOP IS BOUNDED AND SAYS SO. A table larger than this is a finding,
-    # not a page to fetch quietly.
-    if [ "$page" -eq "$MAX_PAGES" ]; then
-      echo "::error::facts: stopped at $MAX_PAGES pages — the table is larger than this reads"
+    # A KEY THAT DID NOT MOVE is a page read again for ever: stop and say so.
+    last=$(jq -c '.result[0].results[-1] | [.identity, .ruler, .mode]' < "$DB_OUT")
+    if [ "$last" = "$after" ]; then
+      echo "::error::facts: the page after $after started at the same key"
       return 1
     fi
+    after="$last"
   done
   echo "facts: read $total rows"
 }
@@ -85,10 +87,16 @@ self_test() {
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
   cd "$DIR/work"
 
-  local body; body=$(page_body 10 20)
-  printf '%s' "$body" | jq -e '.params == [10, 20]' >/dev/null \
-    && say ok "the page and the offset are both bound" \
+  local body; body=$(page_body 10 '["k2","standard_single_target","base"]')
+  printf '%s' "$body" | jq -e '.params == ["k2", "standard_single_target", "base", 10]' >/dev/null \
+    && say ok "the last key and the page are both bound" \
     || say FAIL "params: $(printf '%s' "$body" | jq -c .params)"
+  printf '%s' "$body" | jq -e '.sql | contains("WHERE (identity, ruler, mode) > (?, ?, ?)") and (contains("OFFSET") | not)' >/dev/null \
+    && say ok "...a page starts after the last key, never at an offset" \
+    || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
+  page_body 10 "" | jq -e '.params == [10] and (.sql | contains("WHERE") | not)' >/dev/null \
+    && say ok "...and the first page has no key to start after" \
+    || say FAIL "$(page_body 10 "")"
   printf '%s' "$body" | jq -e '.sql | contains("ORDER BY")' >/dev/null \
     && say ok "...and the read is ORDERED, so two pages cannot overlap or skip" \
     || say FAIL "no ORDER BY: $(printf '%s' "$body" | jq -r .sql)"
@@ -111,11 +119,14 @@ self_test() {
   cat > "$DIR/bin/db" <<'PAGES'
 #!/usr/bin/env bash
 body=$(cat)
-off=$(printf '%s' "$body" | jq -r '.params[1]')
-if [ "$off" = "0" ]; then
+after=$(printf '%s' "$body" | jq -r '.params | if length == 1 then "" else .[0] end')
+if [ -z "$after" ]; then
   jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"standard_single_target",mode:"base",measured_by:"abc",score:1.5,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}'
-else
+elif [ "$after" = "k2" ]; then
   jq -n -c '{result:[{results:[{identity:"last",ruler:"standard_single_target",mode:"base",measured_by:"abc",score:9.0,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}'
+else
+  printf '{"success":false,"errors":[{"code":"","message":"started after %s"}]}' "$after"
+  exit 1
 fi
 PAGES
   chmod +x "$DIR/bin/db"

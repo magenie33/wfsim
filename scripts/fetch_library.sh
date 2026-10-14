@@ -17,28 +17,33 @@
 # Reading twice would be two queries that can disagree.
 set -euo pipefail
 
-PAGE=2000
-MAX_PAGES=200
+# A PAGE IS A ROUND TRIP through the tunnel, a process and a connection, so it
+# is large: 10,000 records is about ten megabytes of json.
+PAGE=10000
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
 
 # ORDERED BY THE KEY, so paging is stable: two pages of an unordered query may
 # overlap or skip, and a skipped build is one the board silently never holds.
+# A PAGE STARTS AFTER THE LAST ID, never at an OFFSET, which walks every row
+# before it again. `$2` is the previous page's last id, empty for the first.
 page_body() {
-  jq -n -c --argjson limit "$1" --argjson offset "$2" '
+  jq -n -c --argjson limit "$1" --arg after "${2:-}" '
     {
-      sql: ("SELECT id, record FROM builds ORDER BY id LIMIT ? OFFSET ?"),
-      params: [$limit, $offset]
+      sql: ("SELECT id, record FROM builds"
+            + (if $after != "" then " WHERE id > ?" else "" end)
+            + " ORDER BY id LIMIT ?"),
+      params: ((if $after != "" then [$after] else [] end) + [$limit])
     }'
 }
 
 # ---- the read -------------------------------------------------------------
 fetch() {
-  local out="$1" offset=0 got total=0 page
+  local out="$1" after="" got total=0 last
   : > "$out.ndjson"
-  for page in $(seq 1 "$MAX_PAGES"); do
-    if ! db_query "$(page_body "$PAGE" "$offset")"; then
+  while :; do
+    if ! db_query "$(page_body "$PAGE" "$after")"; then
       echo "::error::library: the database refused the read [HTTP $DB_CODE]"
       [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
       return 1
@@ -50,11 +55,13 @@ fetch() {
       < "$DB_OUT" >> "$out.ndjson"
     total=$((total + got))
     [ "$got" -lt "$PAGE" ] && break
-    offset=$((offset + PAGE))
-    if [ "$page" -eq "$MAX_PAGES" ]; then
-      echo "::error::library: stopped at $MAX_PAGES pages — the library is larger than this reads"
+    # AN ID THAT DID NOT MOVE is a page read again for ever: stop and say so.
+    last=$(jq -r '.result[0].results[-1].id' < "$DB_OUT")
+    if [ "$last" = "$after" ]; then
+      echo "::error::library: the page after $after started at the same id"
       return 1
     fi
+    after="$last"
   done
   jq -s '[.[].v]' "$out.ndjson" > "$out"
   echo "library: $total builds"
@@ -92,10 +99,16 @@ self_test() {
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
   cd "$DIR/work"
 
-  local body; body=$(page_body 10 20)
-  printf '%s' "$body" | jq -e '.params == [10, 20]' >/dev/null \
-    && say ok "the page and the offset are bound" \
+  local body; body=$(page_body 10 k2)
+  printf '%s' "$body" | jq -e '.params == ["k2", 10]' >/dev/null \
+    && say ok "the last id and the page are bound" \
     || say FAIL "params: $(printf '%s' "$body" | jq -c .params)"
+  printf '%s' "$body" | jq -e '.sql | contains("WHERE id > ?") and (contains("OFFSET") | not)' >/dev/null \
+    && say ok "...a page starts after the last id, never at an offset" \
+    || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
+  page_body 10 "" | jq -e '.params == [10] and (.sql | contains("WHERE") | not)' >/dev/null \
+    && say ok "...and the first page has no id to start after" \
+    || say FAIL "$(page_body 10 "")"
   printf '%s' "$body" | jq -e '.sql | contains("ORDER BY id")' >/dev/null \
     && say ok "...and the read is ORDERED, so two pages cannot overlap or skip" \
     || say FAIL "no ORDER BY"
@@ -107,11 +120,14 @@ self_test() {
   # TWO PAGES, so the paging is exercised rather than described.
   cat > "$DIR/bin/db" <<'PAGES'
 #!/usr/bin/env bash
-off=$(jq -r '.params[1]')
-if [ "$off" = "0" ]; then
+after=$(jq -r '.params | if length == 1 then "" else .[0] end')
+if [ -z "$after" ]; then
   jq -n -c '{result:[{results:[range(0;3)|{id:("k"+(.|tostring)),record:("{\"weapon\":\"w" + (.|tostring) + "\",\"at\":\"2026-01-01\"}")}],success:true}],success:true}'
-else
+elif [ "$after" = "k2" ]; then
   jq -n -c '{result:[{results:[{id:"last",record:"{\"weapon\":\"zzz\",\"at\":\"2026-01-02\"}"}],success:true}],success:true}'
+else
+  printf '{"success":false,"errors":[{"code":"","message":"started after %s"}]}' "$after"
+  exit 1
 fi
 PAGES
   chmod +x "$DIR/bin/db"
