@@ -2,7 +2,7 @@
 // THE SITE'S FACT FACTORY (worker/tasks.js): its verbs, the deadlines that ARE
 // the dispatch policy, and the producers that ask. A new kind of task is one more
 // producer here and in its own file; worker/tasks.js does not change.
-import { factory, canon, nearAnswer } from "./tasks.js";
+import { factory, canon, nearAnswer, inIdOrder } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board_tasks.js";
 import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } from "./verify.js";
@@ -104,7 +104,7 @@ export async function officialRoute(request, env, path) {
   const w = { device: b.witness, owner: b.witness, official: true };
   const db = env.LIBRARY;
   if (path === "/api/tasks/official/release") {
-    await db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ?").bind(b.witness).run();
+    await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ?")}`).bind(b.witness).run();
     return json({ ok: true });
   }
   if (path === "/api/tasks/official/report") return report(db, b);

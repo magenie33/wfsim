@@ -134,6 +134,11 @@ export function independent(answers) {
   return out;
 }
 
+/// ROW LOCKS ON QUESTIONS ARE TAKEN IN ID ORDER by every statement that takes
+/// many: a lease given back and a settlement locked one set of rows in two
+/// orders, and deadlocked each other several times an hour.
+export const inIdOrder = (where) => `id IN (SELECT id FROM questions WHERE ${where} ORDER BY id FOR UPDATE)`;
+
 export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, refusing = true }) {
   /// THE VERBS A PACK MAY CARRY (`pack: true`): short, many, nobody waiting on one.
   const PACKABLE = JSON.stringify(Object.keys(verbs).filter((v) => verbs[v].pack));
@@ -344,7 +349,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const gone = taken.results.filter((q) => !wanted.some((d) => d.question === q.id)).map((q) => q.id);
     if (gone.length) {
       await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-          WHERE id IN ${listOf(db, "?")} AND lease = ?`).bind(JSON.stringify(gone), lease).run();
+          WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND lease = ?`)}`).bind(JSON.stringify(gone), lease).run();
     }
     for (const d of wanted) {
       const p = producerOf(d.producer);
@@ -386,7 +391,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// under the lease, which runs out unless the page comes back to renew it.
   async function release(env, device, lease, keep = null) {
     const db = env.LIBRARY;
-    await db.prepare("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ?::text AND leased_to = ?::text AND id IS DISTINCT FROM ?::text")
+    await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+        WHERE ${inIdOrder("lease = ?::text AND leased_to = ?::text AND id IS DISTINCT FROM ?::text")}`)
       .bind(lease, device, keep).run();
   }
   /// EVERYTHING A WITNESS HOLDS goes back: one that asks for work again is
@@ -397,7 +403,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// …AS ONE STATEMENT, and the head of a witness's order as another, for a
   /// caller to read in its own batch: an ask is then one round trip, not five.
   const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
-    "UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE leased_to = ? AND lease_until > ?").bind(device, iso(now));
+    `UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ? AND lease_until > ?")}`).bind(device, iso(now));
   const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(w.official ? eligibleSql(true, d.row_ceiling_ms) : fairSql(d.row_ceiling_ms))
     .bind(...eligibleArgs(w, engine, iso(now)));
 
@@ -497,7 +503,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// nowhere is one its page lost, given back here rather than waited out.
   async function releaseUnnamed(env, device, named, now = Date.now()) {
     await env.LIBRARY.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-        WHERE leased_to = ?1::text AND lease_until > ?2::text AND id NOT IN (SELECT value FROM jsonb_array_elements_text((?3::text)::jsonb))`)
+        WHERE ${inIdOrder("leased_to = ?1::text AND lease_until > ?2::text AND id NOT IN (SELECT value FROM jsonb_array_elements_text((?3::text)::jsonb))")}`)
       .bind(device, iso(now), JSON.stringify(named)).run();
   }
 
@@ -512,7 +518,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
           SELECT r.question, ?2::text, ?3::text, ?4::text, r.step, ?5::text FROM jsonb_to_recordset((?1::text)::jsonb) AS r(question text, step text)
           ON CONFLICT DO NOTHING`).bind(JSON.stringify(rows), w.device, w.owner || w.device, engine, at),
       db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-          WHERE id IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb)) AND leased_to = ?2::text`).bind(ids, w.device),
+          WHERE ${inIdOrder("id IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb)) AND leased_to = ?2::text")}`).bind(ids, w.device),
     ]);
     if (engine !== served) return [];
     const { results: out } = await db.prepare(`SELECT question, count(DISTINCT owner) AS owners FROM engine_refusals
@@ -574,7 +580,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // it became a fact it was taken at once and answered again for nothing.
     await settleMany(env, [...answered.keys()], engine, now, { answered, peer: mine !== engine && !join ? mine : null, after: [
       db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-                   WHERE id IN ${listOf(db, "?")} AND leased_to = ?`).bind(ids, w.device)] });
+                   WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND leased_to = ?`)}`).bind(ids, w.device)] });
   }
 
   /// WHAT THE ANSWERS NOW MAKE OF A QUESTION (§"States").
@@ -595,7 +601,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       db.prepare(`SELECT * FROM demands WHERE question IN ${ids_} AND state = 'live'`).bind(list),
     ]);
     const writes = [], later = [], credits = [];
-    for (const q of qs.results) {
+    for (const q of [...qs.results].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
       const demands = ds.results.filter((d) => d.question === q.id);
       const told = answered && answered.get(q.id);
       if (told) {
@@ -614,6 +620,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // devices in different orders deadlock, so no settlement holds a
     // device's row.
     writes.push(...after);
+    // …ITS QUESTIONS LOCKED FIRST, IN ID ORDER (`inIdOrder`): each write after
+    // finds its row already held, so the commit never waits holding one.
+    if (writes.length) writes.unshift(db.prepare(`SELECT id FROM questions WHERE ${inIdOrder(`id IN ${ids_}`)}`).bind(list));
     await commit(env, writes);
     await credit(db, credits, now);
     for (const f of later) await f();

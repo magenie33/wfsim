@@ -799,6 +799,23 @@ console.log("many asks in two statements a chunk leave every table as one write 
   check(`on ${trials} random books, asked a row at a time and asked at once leave the same questions, demands and tellings`, bad === 0, first);
 }
 
+console.log("\nlocks: every statement that gives back many leases takes their rows in id order");
+{
+  // A DEADLOCK NEEDS TWO ORDERS: a lease given back over many rows, and a
+  // settlement over the same rows, each in the order its scan met them. Read off
+  // the source, since one PGlite connection cannot race two transactions.
+  const { readFileSync } = await import("node:fs");
+  const loose = [];
+  for (const f of ["tasks.js", "factory.js"]) {
+    const src = readFileSync(new URL(`../worker/${f}`, import.meta.url), "utf8");
+    for (const m of src.matchAll(/UPDATE questions SET (?:state = 'withdrawn', )?lease = NULL[\s\S]{0,160}?WHERE([\s\S]{0,40})/g)) {
+      const where = m[1];
+      if (!/inIdOrder\(/.test(where) && !/^\s*id = \?/.test(where)) loose.push(`${f}: …${m[0].slice(0, 90).replace(/\s+/g, " ")}`);
+    }
+  }
+  check("a lease given back over many rows locks them in id order (inIdOrder), one row by its id", !loose.length, loose.join(" | "));
+}
+
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");
 process.exitCode = failures ? 1 : 0;
 
