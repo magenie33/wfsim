@@ -499,11 +499,11 @@ function contributionNameButton(d) {
 }
 
 /// THE CONTRIBUTION RANKING — public, every account with a claimed device, by
-/// all their points or the last thirty days'. A row is anonymous unless its
-/// account agreed to show its name. A named row's mark comes with it from the
-/// server and the extension draws it (`contributorMark`); it never moves a
-/// place: the order is the points alone.
-let contributorsPeriod = "all";
+/// the last seven days', thirty days' or all their points, the week first. A row
+/// is anonymous unless its account agreed to show its name. A named row's mark
+/// comes with it from the server and the extension draws it (`contributorMark`);
+/// it never moves a place: the order is the points alone.
+let contributorsPeriod = "week";
 let devicesAskedFor = null;
 /// THE CONTRIBUTOR RANK, as the server computes it (worker/contribution.js
 /// `contributorRank`): the page draws it and never derives it from points.
@@ -675,7 +675,7 @@ function contributorsPage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Contributors")}</h1>
     <p class="set-note">${aT("The volunteers whose devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p>
     ${contributorsYouHtml()}
-    <div class="block"><div class="bh"><span class="oseg">${tab("all", "All-time ranking")} ${tab("recent", "Monthly ranking")} ${tab("week", "Weekly ranking")}</span></div><div class="bb">${list == null ? ""
+    <div class="block"><div class="bh"><span class="oseg">${tab("week", "Weekly ranking")} ${tab("recent", "Monthly ranking")} ${tab("all", "All-time ranking")}</span></div><div class="bb">${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol><div id="rank-more"></div>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
     ${contributorsPool ? `<p class="set-note">${escHtml(trF("Official pool: {n} points — {d} from deleted accounts, {r} taken back from refused clients. Points are compute, so none is lost.", {
       n: contributorsPool.points.toLocaleString(accountLocale()), d: contributorsPool.deleted_account.toLocaleString(accountLocale()),
@@ -997,7 +997,7 @@ async function authAct(el) {
       return renderAuthPage(kind);
     }
     if (what === "contributors-period") {
-      contributorsPeriod = ["recent", "week"].includes(el.dataset.period) ? el.dataset.period : "all";
+      contributorsPeriod = ["recent", "all"].includes(el.dataset.period) ? el.dataset.period : "week";
       contributorsState = null;
       return renderAuthPage(kind);
     }

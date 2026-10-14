@@ -176,7 +176,7 @@ async function renderContributorsCard() {
   const name = (p.get("name") || "").trim();
   const n = Math.max(1, Math.min(CARD_MAX, Math.round(Number(p.get("n"))) || 5));
   const get = (q) => fetch(`/api/contributors${q}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const periods = [["all", "points", "All-time ranking"], ["recent", "recent", "Monthly ranking"], ["week", "week", "Weekly ranking"]];
+  const periods = [["week", "week", "Weekly ranking"], ["recent", "recent", "Monthly ranking"], ["all", "points", "All-time ranking"]];
   const num = (x) => escHtml((x || 0).toLocaleString(accountLocale()));
   const honour = (c) => (c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "");
   const who = (c) => (c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
