@@ -964,7 +964,31 @@ a paid feature or money; it changes no number, score or witness rule.
 - **AN ACCOUNT SEES ITS OWN** balance, caps, today's mint and ledger
   (`/api/account/merit`, its export); **THE PUBLIC SEES SUMS** by kind
   (`/api/merit`, carried in the ranking's file as `merit`), never a row.
-- **NOTHING SPENDS IT YET**: leaderboard priority waits behind dial `merit_priority`.
+- **SPENT ON ONE THING**: a player's own rows on the leaderboard, sooner
+  (§"Merit priority"), offered while dial `merit_priority` is 1.
+
+### Merit priority
+
+**A SIGNED-IN PLAYER'S OWN ARRIVALS, SOONER, PAID ONLY WHEN THEY WENT AHEAD OF
+SOMEONE** (`holdPriority`, `settleMerit`). Waited-on work still goes first; a
+system row, an anonymous one and a row the board already scored never move.
+
+- **THE SWITCH** (the account panel, `/api/account/merit`) is the consent: while
+  it is on, `merit_codes` maps the account's `user:` code to it, and turning it
+  off deletes the mapping. Nothing else maps a code to an account.
+- **AT THE ASK** (`ask`, an `arrivals-` batch): each row whose queue row names a
+  switched-on account is priced — the median work of the recent paid answers on
+  its ruler and mode, in points, up to the next ten, else
+  `merit_price_default` — and, while the balance pays it, held: the price leaves
+  the balance (`spend`), a `merit_holds` row keeps the old and the new
+  deadline, and the row is due `merit_priority_pct` (30%) of its deadline
+  sooner. At most `merit_rows_per_hour` an account a UTC hour, and only while the
+  holds are under `merit_share_pct` of the board's live rows.
+- **SETTLED** by the ten-minute cron once a computer took the row: CHARGED where
+  an open row of its producer nobody paid for, opened before the hold, was due
+  between the two deadlines; REFUNDED where it passed nobody, where its ask was
+  withdrawn, or after `merit_hold_max_ms`. A refund is one ledger row keyed by
+  the hold, so settling twice refunds once; a settled hold keeps no code.
 
 ## Compute orders
 

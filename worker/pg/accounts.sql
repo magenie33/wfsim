@@ -176,7 +176,10 @@ CREATE TABLE IF NOT EXISTS merit (
   auto_priority BIGINT NOT NULL DEFAULT 0,
   since         TEXT COLLATE "C" NOT NULL,
   -- WHEN ITS FIRST GRANT WAS MADE: a row the toggle made first is granted still.
-  granted_at    TEXT COLLATE "C"
+  granted_at    TEXT COLLATE "C",
+  -- THE ROWS ITS MERIT MOVED in the UTC hour `prio_hour` (dial `merit_rows_per_hour`).
+  prio_hour     TEXT COLLATE "C",
+  prio_rows     BIGINT NOT NULL DEFAULT 0
 );
 -- …EVERY MOVEMENT: `grant` (the first, from all points before), `mint`, and what
 -- spending writes. An account sees its own rows; the public sees sums by kind.
@@ -190,6 +193,15 @@ CREATE TABLE IF NOT EXISTS merit_ledger (
   note    TEXT COLLATE "C"
 );
 CREATE INDEX IF NOT EXISTS merit_ledger_by_account ON merit_ledger (account, id);
+-- …ONE REFUND A HOLD, however often the settling runs.
+CREATE UNIQUE INDEX IF NOT EXISTS merit_ledger_refund_once ON merit_ledger (note) WHERE kind = 'refund';
+-- WHOSE CODE IS WHOSE (docs/BOARD.md §"Who asked"): kept while the account's
+-- priority switch is on and deleted with it, read only to spend its merit on its
+-- rows. The board's database holds the code and never this.
+CREATE TABLE IF NOT EXISTS merit_codes (
+  code    TEXT COLLATE "C" PRIMARY KEY,
+  account TEXT COLLATE "C" NOT NULL REFERENCES accounts (id) ON DELETE CASCADE
+);
 -- WHAT A MINT MAY ADD: the new points ($1 points, $2 seen), within what the day's
 -- cap leaves ($3 cap, $4 minted today) and the balance cap leaves ($5, $6 balance).
 CREATE OR REPLACE FUNCTION merit_room(bigint, bigint, bigint, bigint, bigint, bigint) RETURNS bigint

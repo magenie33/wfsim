@@ -299,6 +299,11 @@ row the toggle made first granted all the same; a mint with nothing new adds
 nothing, a day's mint stops at the day's cap and what it held back never mints
 the next day, a full balance mints nothing; an account sees its own, the public
 sums only; a change from another site or from nobody signed in is refused.
+Priority: the switch keeps and deletes the code's mapping; a switched-on
+player's arrivals are held at their price up to the hour's cap and due 30%
+sooner, an anonymous one is not; past the share nothing is held; a row that
+went ahead of someone is charged, one that went ahead of nobody or was
+withdrawn refunded, once, and a settled hold keeps no code.
 
 ## `check_board_verify`
 

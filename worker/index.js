@@ -36,7 +36,7 @@ import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
 import { noteFactoryCall } from "./factory_calls.js";
 import { contributionRoute, publishContributors } from "./contribution.js";
-import { meritRoute, mintMerit } from "./merit.js";
+import { meritRoute, mintMerit, settleMerit } from "./merit.js";
 import { clanRoute } from "./clan.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
@@ -744,7 +744,7 @@ export default {
       try {
         // THE RANKING'S FILE rides the watchdog's cron, apart: one failing never stops the other.
         await (event.cron === WATCHDOG_CRON
-          ? Promise.allSettled([watchdog(f.env), publishContributors(f.env), mintMerit(f.env)])
+          ? Promise.allSettled([watchdog(f.env), publishContributors(f.env), mintMerit(f.env), settleMerit(f.env)])
             .then((rs) => rs.forEach((r) => r.status === "rejected" && console.error("cron", r.reason)))
           : Promise.all([rollupUsage(f.env), purgeDeleted(f.env)]));
       } finally {
