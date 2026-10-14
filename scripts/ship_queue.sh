@@ -247,6 +247,7 @@ for a in "$@"; do
   [ "$prev" = "--data-binary" ] && body="$a"
   prev="$a"
 done
+case "$body" in @*) body=$(cat "${body#@}") ;; esac
 printf '%s\n' "$body" >> "$PWD/sent.log"
 printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
