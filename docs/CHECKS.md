@@ -291,6 +291,15 @@ bot codes of an ask that is over and keeps the rest; a board batch's initiator
 and a code's shape; a submission signed in or out, and an arrival asked as its
 queue row names, never as the runner says.
 
+## `check_merit`
+
+Plain node on PGlite: merit (docs/BOARD.md §"Merit"). The caps by rank; an
+account first seen granted all its points up to its balance cap, one whose
+row the toggle made first granted all the same; a mint with nothing new adds
+nothing, a day's mint stops at the day's cap and what it held back never mints
+the next day, a full balance mints nothing; an account sees its own, the public
+sums only; a change from another site or from nobody signed in is refused.
+
 ## `check_board_verify`
 
 Plain node on PGlite (`worker/pg/*.sql`): a board row as a

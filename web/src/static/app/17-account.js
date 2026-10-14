@@ -91,8 +91,12 @@ let agentsState = [];
 /// said; and the public ranking, as `/api/contributors` did.
 let devicesState = null;
 let contributorsState = null;
+/// THIS ACCOUNT'S MERIT, as `/api/account/merit` last said (worker/merit.js), or null.
+let meritState = null;
 /// THE OFFICIAL POOL, as `/api/contributors` last said (`pool`), or null.
 let contributorsPool = null;
+/// MERIT, EVERYONE TOGETHER (`/api/merit`'s sums, carried with the ranking), or null.
+let contributorsMerit = null;
 
 async function accountCall(method, path, body) {
   try {
@@ -143,6 +147,21 @@ function loadAccount() {
 async function loadDevices() {
   const r = await accountCall("GET", "/api/account/devices");
   devicesState = r && r.ok ? r : null;
+  const m = await accountCall("GET", "/api/account/merit");
+  meritState = m && m.ok && m.on ? m : null;
+}
+
+/// THE READER'S MERIT (docs/BOARD.md §"Merit"): the balance under its cap, what
+/// today minted, and — once priority is offered — the switch that spends it.
+function meritHtml() {
+  const m = meritState;
+  if (!m) return "";
+  const n = (x) => escHtml(Number(x).toLocaleString(accountLocale()));
+  const prio = m.priority ? `<div class="kv"><dt>${aT("Leaderboard priority")}</dt><dd>${aT(m.auto_priority ? "On" : "Off")}
+      <button class="ghost-btn btn-sm" data-auth="merit-auto" data-on="${m.auto_priority ? "no" : "yes"}">${aT(m.auto_priority ? "Turn off" : "Turn on")}</button></dd></div>` : "";
+  return `<div class="block"><div class="bb"><dl class="kvs"><div class="kv"><dt>${aT("Merit")}</dt>
+      <dd>${n(m.balance)} / ${n(m.cap)} · ${escHtml(trF(tr("{x} of {y} minted today (UTC)"), { x: Number(m.minted_today).toLocaleString(accountLocale()), y: Number(m.daily).toLocaleString(accountLocale()) }))}</dd></div>${prio}</dl>
+      <p class="set-note" style="margin:8px 0 0">${aT("Merit is minted from your contribution points, one for one: it cannot be bought or given away, and it never expires. Your contribution rank sets how much a day can mint and how much you can hold; the day starts at 00:00 UTC.")}</p></div></div>`;
 }
 
 async function loadAgents() {
@@ -560,7 +579,7 @@ async function contributorsLoad() {
   // period by the worker's cron); signed in, the worker marks the reader's row.
   const file = accountState.account ? null : await statsFile("contributors", CONTRIBUTORS_STALE_MS);
   const ranked = file && file.day === new Date(serverNow()).toISOString().slice(0, 10) && file.rankings && file.rankings[period];
-  const r = ranked ? { ok: true, period, computing: file.computing, total: ranked.length, contributors: ranked.slice(0, limit), pool: file.pool }
+  const r = ranked ? { ok: true, period, computing: file.computing, total: ranked.length, contributors: ranked.slice(0, limit), pool: file.pool, merit: file.merit }
     : await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`);
   contributorsLoading = false;
   if (period !== contributorsPeriod) return;
@@ -569,6 +588,7 @@ async function contributorsLoad() {
   contributorsState = (r && r.ok && r.contributors) || contributorsState || [];
   contributorsTotal = (r && r.ok && r.total) || contributorsState.length;
   if (r && r.ok && r.pool && r.pool.points > 0) contributorsPool = r.pool;
+  if (r && r.ok && r.merit) contributorsMerit = r.merit;
   contributorsAt = Date.now();
   if (authKindOf(location.pathname) !== "contributors") return;
   if (!contributorsPatch()) renderAuthPage("contributors");
@@ -680,6 +700,9 @@ function contributorsPage() {
     ${contributorsPool ? `<p class="set-note">${escHtml(trF("Official pool: {n} points — {d} from deleted accounts, {r} taken back from refused clients. Points are compute, so none is lost.", {
       n: contributorsPool.points.toLocaleString(accountLocale()), d: contributorsPool.deleted_account.toLocaleString(accountLocale()),
       r: contributorsPool.refused.toLocaleString(accountLocale()) }))}</p>` : ""}
+    ${contributorsMerit ? `<p class="set-note">${escHtml(trF(tr("Merit, everyone together: {g} granted, {m} minted since, {s} spent, {h} held."), {
+      g: contributorsMerit.granted.toLocaleString(accountLocale()), m: contributorsMerit.minted.toLocaleString(accountLocale()),
+      s: Math.max(0, contributorsMerit.spent - contributorsMerit.refunded).toLocaleString(accountLocale()), h: contributorsMerit.held.toLocaleString(accountLocale()) }))}</p>` : ""}
     <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
       ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.")}</p></div></div>`;
 }
@@ -704,7 +727,7 @@ function contributorsYouHtml() {
   }
   return `<div class="block"><div class="bb"><dl class="kvs"><div class="kv"><dt>${aT("Your points")}</dt>
       <dd>${escHtml(d.points.toLocaleString(accountLocale()))} · ${aT(d.named ? "Your name is shown" : "Anonymous")}</dd>
-      ${contributionNameButton(d)}</div>${d.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(d.contributor_rank)}</dd></div>` : ""}</dl></div></div>`;
+      ${contributionNameButton(d)}</div>${d.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(d.contributor_rank)}</dd></div>` : ""}</dl></div></div>${meritHtml()}`;
 }
 
 function accountDataBlock() {
@@ -999,6 +1022,12 @@ async function authAct(el) {
     if (what === "contributors-period") {
       contributorsPeriod = ["recent", "all"].includes(el.dataset.period) ? el.dataset.period : "week";
       contributorsState = null;
+      return renderAuthPage(kind);
+    }
+    if (what === "merit-auto") {
+      const r = await accountCall("POST", "/api/account/merit", { auto_priority: el.dataset.on === "yes" });
+      if (!(r && r.ok)) return fail(r);
+      meritState = r.on ? r : null;
       return renderAuthPage(kind);
     }
     if (what === "contribution-named") {

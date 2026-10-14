@@ -86,6 +86,8 @@ export const DIALS = {
     says: "…and this much more per contribution rank" },
   merit_balance_days: { default: 10, min: 1, max: 365, unit: "days",
     says: "the balance an account may hold, in days of its daily cap" },
+  merit_priority: { default: 0, min: 0, max: 1, unit: "switch",
+    says: "1 offers leaderboard priority for merit (the account panel's switch, the spending at an ask); 0 neither" },
   // THE PUBLIC STATS (docs/BOARD.md §"The public stats"), written to the public bucket.
   stats_tally_ms: { default: 60_000, min: 10_000, max: 3_600_000, unit: "ms",
     says: "how often the settler writes stats/tally.json, the home page's count" },

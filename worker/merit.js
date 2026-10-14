@@ -70,13 +70,14 @@ async function mine(env, account, now = Date.now()) {
   ]);
   const row = m.results[0] || null;
   const caps = meritCaps(row ? Number(row.points_seen) : 0, d);
-  return { ok: true, on: !!d.merit_on, balance: row ? Number(row.balance) : 0, ...caps,
+  return { ok: true, on: !!d.merit_on, priority: !!d.merit_priority, balance: row ? Number(row.balance) : 0, ...caps,
     minted_today: row && row.day === today ? Number(row.minted_today) : 0, auto_priority: !!(row && Number(row.auto_priority)),
     ledger: l.results.map((r) => ({ at: r.at, kind: r.kind, amount: Number(r.amount), balance: Number(r.balance) })) };
 }
 
 /// THE PUBLIC LEDGER: sums by kind and how many accounts hold any, never a row.
-async function totals(env) {
+export async function meritTotals(env) {
+  if (!env.ACCOUNTS) return null;
   const { results } = await env.ACCOUNTS.prepare("SELECT kind, coalesce(sum(amount), 0) AS n FROM merit_ledger GROUP BY kind").all();
   const by = Object.fromEntries(results.map((r) => [r.kind, Number(r.n)]));
   const held = await env.ACCOUNTS.prepare("SELECT count(*) AS n, coalesce(sum(balance), 0) AS b FROM merit WHERE balance > 0").first();
@@ -88,7 +89,7 @@ export async function meritRoute(request, env, path) {
   if (!env.ACCOUNTS) return json({ ok: false, error: "not_configured" }, 503);
   if (path === "/api/merit") {
     if (request.method !== "GET") return json({ ok: false, error: "method" }, 405);
-    return json(await totals(env));
+    return json(await meritTotals(env));
   }
   const account = await sessionAccount(env, request);
   if (!account) return json({ ok: false, error: "not_signed_in" }, 401);

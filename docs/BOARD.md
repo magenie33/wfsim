@@ -945,6 +945,27 @@ them all, and more than `initiator_floor_rows`, is passed over until it holds
 less; the rest is handed out as before. `system` and `anonymous` are never
 passed over. Leases are counted as rows, not compute. Off while the share is 0.
 
+### Merit
+
+**WHAT VERIFIED COMPUTE BUYS BACK FROM THE COMMUNITY'S COMPUTE, AND NOTHING
+ELSE** (`worker/merit.js`; the accounts' `merit`, `merit_ledger`). Never bought,
+never moved between accounts, never decaying, never exchanged for a membership,
+a paid feature or money; it changes no number, score or witness rule.
+
+- **MINTED** from contribution points one for one, by the worker's ten-minute
+  cron (`mintMerit`). An account first seen is GRANTED all its points so far,
+  up to its balance cap; after that each mint adds the points earned since
+  (`points_seen`), within what the UTC day's cap and the balance cap leave
+  (`merit_room`). A point past either cap stays a contribution point and mints
+  nothing later.
+- **THE CAPS** follow the contribution rank (`contributorRank`), linearly:
+  a day's mint `merit_daily_base + merit_daily_per_rank × rank` (16,000 + 500 ×
+  rank), the balance `merit_balance_days` (10) days of it. Dial `merit_on`.
+- **AN ACCOUNT SEES ITS OWN** balance, caps, today's mint and ledger
+  (`/api/account/merit`, its export); **THE PUBLIC SEES SUMS** by kind
+  (`/api/merit`, carried in the ranking's file as `merit`), never a row.
+- **NOTHING SPENDS IT YET**: leaderboard priority waits behind dial `merit_priority`.
+
 ## Compute orders
 
 **EVERY OWED ROW IS A QUESTION, AND THE MACHINES WITH THE SITE OPEN ANSWER

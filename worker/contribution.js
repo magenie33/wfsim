@@ -41,6 +41,7 @@ import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
 import { noteFactoryCall } from "./factory_calls.js";
+import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
@@ -483,11 +484,11 @@ async function poolOf(env) {
 
 async function ranking(request, env, period, limit, me) {
   const key = PERIODS[period] || "points";
-  const { everyone, computing, day, pool } = await kept(request, env);
+  const { everyone, computing, day, pool, merit } = await kept(request, env);
   const mine = me && await rowKey(env, me, day);
   const all = ordered(everyone, key);
   const contributors = all.slice(0, limit).map((e) => ({ ...e, ...(e.key === mine ? { you: true } : {}) }));
-  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors, pool: pool || null });
+  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors, pool: pool || null, merit: merit || null });
 }
 
 /// A ROW'S KEY, for the page to follow it as it moves: its account's id and
@@ -537,7 +538,8 @@ async function keptWorkedOut(request, env) {
   if (hit) return hit.json();
   // THE PUBLISHED RANKING when it is current: it is this same body, worked out once.
   const published = await publishedContributors(env);
-  const body = published ? { everyone: published.rankings.all, day: published.day, computing: published.computing, pool: published.pool }
+  const body = published ? { everyone: published.rankings.all, day: published.day, computing: published.computing, pool: published.pool,
+    merit: published.merit || null }
     : await everyoneOf(env);
   if (cache) await cache.put(at, new Response(JSON.stringify(body),
     { headers: { "content-type": "application/json", "cache-control": `public, max-age=${KEPT_SECONDS}` } }));
@@ -553,7 +555,7 @@ async function everyoneOf(env) {
     points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
-  return { everyone, day, computing: await computingNow(env), pool: await poolOf(env) };
+  return { everyone, day, computing: await computingNow(env), pool: await poolOf(env), merit: await meritTotals(env).catch(() => null) };
 }
 
 /// THE RANKING AS A FILE (docs/BOARD.md §"The public stats"): the worker's
@@ -567,7 +569,7 @@ export const CONTRIBUTORS_KEY = "stats/contributors.json";
 const CONTRIBUTORS_FRESH_PERIODS = 2;
 export function contributorsFile(body, at = iso(Date.now())) {
   const rankings = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => [period, ordered(body.everyone, key)]));
-  return { ok: true, v: 1, at, day: body.day, computing: body.computing, pool: body.pool || null, rankings };
+  return { ok: true, v: 1, at, day: body.day, computing: body.computing, pool: body.pool || null, merit: body.merit || null, rankings };
 }
 export async function publishContributors(env, now = Date.now()) {
   if (!env.PUBLIC || !env.ACCOUNTS) return false;

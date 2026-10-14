@@ -2703,6 +2703,14 @@ ui:
   "Nothing yet.": 还没有。
   "{name}'s contribution": "{name} 的贡献"
   "Contributor rank": 贡献段位
+  "Merit": 功勋
+  "Merit, everyone together: {g} granted, {m} minted since, {s} spent, {h} held.": "功勋合计：首次补发 {g}，此后铸造 {m}，已使用 {s}，现存 {h}。"
+  "{x} of {y} minted today (UTC)": "今日已铸 {x} / {y}（UTC）"
+  "Leaderboard priority": 排行榜优先
+  "Off": 已关闭
+  "Turn on": 开启
+  "Turn off": 关闭
+  "Merit is minted from your contribution points, one for one: it cannot be bought or given away, and it never expires. Your contribution rank sets how much a day can mint and how much you can hold; the day starts at 00:00 UTC.": "功勋由你的贡献积分 1:1 铸出：不能购买，不能转让，永不过期。贡献段位决定每天最多铸多少、最多能存多少；每天从 UTC 0 点算起。"
   "Contributor rank {n}": "贡献段位 {n}"
   "{x} / {y} experience to rank {n}": "{x} / {y} 经验，升到 {n} 段"
   "The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.": "名字前的徽章是贡献段位：10 积分算 1 经验，升段方式和游戏的段位一样。"
