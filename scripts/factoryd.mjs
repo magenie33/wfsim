@@ -10,14 +10,30 @@ import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import postgres from "./pg/node_modules/postgres/src/index.js";
 import { pgDb, postgresClient, POSTGRES_OPTIONS } from "../worker/db.js";
-import { snapshotTick, fairTick, readFair, compareFair, settleBatch, findingsTick } from "../worker/settler.js";
-import { servedRelease, CLIENTS_PER_FACT } from "../worker/verify.js";
-import { forgetDials } from "../worker/dials.js";
+import { snapshotTick, fairTick, readFair, compareFair, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
+import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../worker/verify.js";
+import { dialsOf, forgetDials } from "../worker/dials.js";
+import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
-export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000;
+export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
+/// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
+export const SIGNAL_KEY = "work.json", SIGNAL_CACHE = "public, max-age=5";
+const SIGNAL_URL = process.env.SIGNAL_URL || "https://cdn.wfsim.app/work.json";
+/// A SIGNAL OLDER THAN THIS AT THE EDGE is stale; this many stale or uncached
+/// reads in a row are a finding the watchdog tells the owner.
+export const SIGNAL_FRESH_MS = 30_000, SIGNAL_BAD_RUNS = 3;
+/// A CACHE STATUS THAT MEANS THE EDGE KEEPS THE FILE; DYNAMIC or BYPASS mean every read reaches R2.
+const CACHED = new Set(["HIT", "MISS", "EXPIRED", "REVALIDATED", "UPDATING", "STALE"]);
+
+/// WHERE THE SIGNAL IS WRITTEN, from R2_* in the environment, or null when the
+/// token is not configured: the signal is then skipped, and said so once.
+export function signalTarget(env = process.env) {
+  const t = { endpoint: env.R2_ENDPOINT, bucket: env.R2_BUCKET, accessKey: env.R2_ACCESS_KEY_ID, secretKey: env.R2_SECRET_ACCESS_KEY };
+  return Object.values(t).every((v) => typeof v === "string" && v.trim()) ? t : null;
+}
 /// A STATEMENT THAT HANGS, or a transaction left open, is cut here rather than
 /// holding locks the request path waits on.
 const CONNECTION = { statement_timeout: 30_000, idle_in_transaction_session_timeout: 60_000, application_name: "wfsim-factoryd" };
@@ -49,8 +65,10 @@ async function served() {
   return servedRelease({ ASSETS: { fetch: () => fetch(RELEASE_URL) } });
 }
 
-/// `opened` and `servedNow` stand in for the databases and the release in a check.
-export async function run({ once = false, opened = null, servedNow = served } = {}) {
+/// `opened` and `servedNow` stand in for the databases and the release in a
+/// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
+export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
+  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
   const { env, close } = opened || await openEnv();
   const commit = commitOf();
   // THE SHADOW GOES ON WHERE IT STOPPED: its cursor is kept in its finding.
@@ -59,6 +77,19 @@ export async function run({ once = false, opened = null, servedNow = served } = 
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow(), stopping = false;
   const failed = new Map();
+  const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
+  let unconfiguredSaid = false;
+  // THE SIGNAL FOLLOWS EVERY SNAPSHOT, so it is never older than one.
+  const writeSignal = async (snap) => {
+    if (!target) {
+      if (!unconfiguredSaid) { unconfiguredSaid = true; await findingsTick(env.LIBRARY, "signal_unconfigured", () => ({ at: snap.at })); }
+      return null;
+    }
+    const body = signalBody(snap, await dialsOf(env), { protocol: PROTOCOL, protocols: PROTOCOLS_SERVED });
+    await put(target, { key: SIGNAL_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: SIGNAL_CACHE });
+    written.open = body.open > 0; written.urgent = body.urgent > 0;
+    return body;
+  };
   // EVERY TICK ON ITS OWN CLOCK, and one that throws only logs: a bad minute of
   // the fair table must not stop the heartbeat.
   const tick = async (name, fn) => {
@@ -67,7 +98,21 @@ export async function run({ once = false, opened = null, servedNow = served } = 
   };
   const jobs = {
     release: async () => { release = await servedNow(); forgetDials(); },
-    snapshot: () => snapshotTick(env, { engine: release.engine, release: release.release, commit }),
+    snapshot: async () => writeSignal(await snapshotTick(env, { engine: release.engine, release: release.release, commit })),
+    // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
+    wave: async () => {
+      const w = await workWaiting(env.LIBRARY);
+      if ((w.open && !written.open) || (w.urgent && !written.urgent)) await jobs.snapshot();
+    },
+    signalCheck: async () => {
+      if (!target) return;
+      const seen = await readEdge();
+      const stale = !seen.at || Date.now() - Date.parse(seen.at) > SIGNAL_FRESH_MS;
+      edge.stale = stale ? edge.stale + 1 : 0;
+      edge.uncached = CACHED.has(String(seen.cache || "").toUpperCase()) ? 0 : edge.uncached + 1;
+      if (edge.stale === SIGNAL_BAD_RUNS) await findingsTick(env.LIBRARY, "signal_stale", (p) => ({ runs: (p.runs || 0) + 1, last: seen }));
+      if (edge.uncached === SIGNAL_BAD_RUNS) await findingsTick(env.LIBRARY, "signal_uncached", (p) => ({ runs: (p.runs || 0) + 1, last: seen }));
+    },
     fair: async () => {
       if (!release.engine) return;
       // WHAT WAS WRITTEN READS BACK AS WHAT WAS WORKED OUT: the round trip
@@ -98,6 +143,7 @@ export async function run({ once = false, opened = null, servedNow = served } = 
     timers.set(name, setTimeout(loop, 0));
   };
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle");
+  every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {
     const stop = () => { stopping = true; for (const t of timers.values()) clearTimeout(t); resolve(); };
@@ -109,6 +155,14 @@ export async function run({ once = false, opened = null, servedNow = served } = 
   await close();
   log("factoryd down");
   return 0;
+}
+
+/// THE SIGNAL AS A READER GETS IT: its `at` and the edge's cache status.
+export async function readSignalEdge(url = SIGNAL_URL) {
+  const r = await fetch(url, { cache: "no-store" });
+  let at = null;
+  try { at = (await r.json()).at || null; } catch { /* unreadable reads as stale */ }
+  return { status: r.status, at, cache: r.headers.get("cf-cache-status") };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

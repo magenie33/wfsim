@@ -10,20 +10,32 @@ whose daemon cannot run leaves the running one alone (docs/BOARD.md
 §"The settler").
 
 WHERE THE SERVER IS lives in `private/hetzner/ssh.env` with its key, because
-this repository is public.
+this repository is public. THE WORK SIGNAL'S R2 TOKEN lives in
+`private/hetzner/r2-public.env`; when both its keys are filled they are merged
+into the server's /etc/wfsim-factoryd.env, sent on stdin and never printed.
 
     python scripts/ship_factoryd.py            # deploy, then verify
     python scripts/ship_factoryd.py --verify   # only: does the daemon run HEAD, and beat?
 """
 import io
+import json
 import pathlib
 import subprocess
 import sys
 import tarfile
 import time
+import urllib.request
+from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TARGET = ROOT / "private" / "hetzner" / "ssh.env"
+R2_TOKEN = ROOT / "private" / "hetzner" / "r2-public.env"
+R2_KEYS = ("R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_ENDPOINT", "R2_BUCKET")
+SIGNAL_URL = "https://cdn.wfsim.app/work.json"
+# WRITTEN EVERY TEN SECONDS AND KEPT FIVE AT THE EDGE; older than this, the signal is down.
+SIGNAL_S = 60
+# WHAT THE DAEMON RUNS: the worker, and the two scripts of its own.
+DAEMON_FILES = ["scripts/factoryd.mjs", "scripts/sigv4.mjs"]
 REMOTE = "/opt/wfsim-factoryd"
 SERVICE = "wfsim-factoryd"
 UNIT = ROOT / "deploy" / f"{SERVICE}.service"
@@ -65,7 +77,7 @@ def bundle(commit: str) -> bytes:
         sys.exit("ship_factoryd: scripts/pg/node_modules/postgres is missing — npm ci --prefix scripts/pg")
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-        for p in tracked("worker") + ["scripts/factoryd.mjs"]:
+        for p in tracked("worker") + DAEMON_FILES:
             tar.add(ROOT / p, arcname=p)
         tar.add(client, arcname="scripts/pg/node_modules/postgres")
         data = (commit + "\n").encode()
@@ -75,12 +87,37 @@ def bundle(commit: str) -> bytes:
     return buf.getvalue()
 
 
+def r2_token() -> dict | None:
+    """The R2 token's four values, or None (said why) when a key is unfilled."""
+    if not R2_TOKEN.exists():
+        print(f"signal: {R2_TOKEN.relative_to(ROOT)} is missing — the daemon ships without the work signal")
+        return None
+    env = dict(line.split("=", 1) for line in R2_TOKEN.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#"))
+    values = {k: env.get(k, "").strip() for k in R2_KEYS}
+    empty = [k for k, v in values.items() if not v]
+    if empty:
+        print(f"signal: {', '.join(empty)} empty in {R2_TOKEN.relative_to(ROOT)} — the daemon ships without the work signal")
+        return None
+    return values
+
+
+def merge_r2(t: dict, values: dict) -> None:
+    """The token into the server's env file, every other line kept, 640 root:wfsim_factoryd."""
+    lines = "".join(f"{k}={v}\n" for k, v in values.items()).encode()
+    env = f"/etc/{SERVICE}.env"
+    ssh(t, f"{{ grep -v '^R2_' {env} || true; cat; }} > {env}.new && install -m 640 -o root -g wfsim_factoryd {env}.new {env} && rm -f {env}.new",
+        stdin=lines)
+
+
 def deploy() -> None:
     t, commit = target(), head()
-    dirty = subprocess.run(["git", "status", "--porcelain", "--", "worker", "scripts/factoryd.mjs"], cwd=ROOT,
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "worker", *DAEMON_FILES], cwd=ROOT,
                            capture_output=True, text=True, check=True).stdout.strip()
     if dirty:
-        sys.exit("ship_factoryd: worker/ or scripts/factoryd.mjs has uncommitted changes — the daemon ships a commit")
+        sys.exit("ship_factoryd: worker/ or the daemon's scripts have uncommitted changes — the daemon ships a commit")
+    token = r2_token()
+    if token:
+        merge_r2(t, token)
     new = f"{REMOTE}.new"
     ssh(t, f"rm -rf {new} && mkdir -p {new} && tar xzf - -C {new} && chown -R root:root {new} && chmod -R a+rX {new}",
         stdin=bundle(commit))
@@ -106,6 +143,17 @@ def verify(t: dict | None = None) -> int:
     if commit != want or not alive:
         print("factoryd: NOT CURRENT — " + ("an old commit" if commit != want else "no heartbeat"))
         return 1
+    if r2_token():
+        try:
+            with urllib.request.urlopen(urllib.request.Request(SIGNAL_URL, headers={"user-agent": "ship_factoryd"}), timeout=20) as r:
+                at = json.load(r).get("at")
+            seen = (datetime.now(timezone.utc) - datetime.fromisoformat(at.replace("Z", "+00:00"))).total_seconds() if at else None
+        except Exception as e:  # noqa: BLE001 — any failure to read it is a signal that is down
+            seen, at = None, f"unreadable ({e})"
+        print(f"signal: {SIGNAL_URL} at {at}" + (f", {int(seen)} s old" if seen is not None else ""))
+        if seen is None or seen > SIGNAL_S:
+            print("factoryd: SIGNAL STALE")
+            return 1
     print("factoryd ok")
     return 0
 

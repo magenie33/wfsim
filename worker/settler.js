@@ -41,6 +41,26 @@ export async function snapshotTick(env, { engine = null, release = null, commit 
   return row;
 }
 
+// ---- The work signal ---------------------------------------------------------------
+
+/// THE WORK SIGNAL, `cdn.wfsim.app/work.json`, from a snapshot and the dials in
+/// force: what an idle computer reads instead of asking the worker. `v` changes
+/// only when a field changes meaning.
+export function signalBody(snap, d, { protocol, protocols }) {
+  return { v: 1, at: snap.at, open: Number(snap.open), urgent: Number(snap.urgent), engine: snap.engine, release: snap.release,
+    protocol, protocols: [...protocols].sort((a, b) => b - a), computing: Number(snap.computing),
+    poll_ms: d.poll_ms, jitter_ms: d.jitter_ms, urgent_jitter_ms: d.urgent_jitter_ms, mode: d.signal_mode === 1 ? "ask" : "signal" };
+}
+
+/// IS THERE WORK AT ALL, open or waited on — two indexed probes, cheap enough to
+/// ask every couple of seconds so a wave from nothing is signalled at once.
+export async function workWaiting(db, now = Date.now()) {
+  const r = await db.prepare(`SELECT
+      EXISTS (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
+      EXISTS (SELECT 1 FROM questions WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
+  return { open: !!r.open, urgent: !!r.urgent };
+}
+
 // ---- Fair share ------------------------------------------------------------------
 
 /// A RATIO MAY BE INFINITE (an account that received work with no target); JSON

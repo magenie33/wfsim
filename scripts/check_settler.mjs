@@ -103,10 +103,61 @@ console.log("the daemon");
 {
   const { run } = await import("./factoryd.mjs");
   process.env.DAEMON_COMMIT = "c0ffee";
-  const code = await run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }) });
+  const code = await run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }), target: null });
   const row = await L.get("SELECT daemon_commit, engine FROM factory_snapshot WHERE id = 1");
   check("one pass of every tick runs clean and the heartbeat names its commit", code === 0 && row.daemon_commit === "c0ffee" && row.engine === "e1",
     JSON.stringify({ code, row }));
+  check("without an R2 token the signal is skipped and said so, the other ticks unharmed",
+    code === 0 && !!(await L.get("SELECT 1 AS x FROM factory_findings WHERE kind = 'signal_unconfigured'")));
+}
+
+console.log("the work signal");
+{
+  const { run, SIGNAL_KEY, SIGNAL_CACHE } = await import("./factoryd.mjs");
+  const puts = [];
+  const target = { endpoint: "https://acct.r2.cloudflarestorage.com", bucket: "wfsim-public", accessKey: "k", secretKey: "s" };
+  const go = () => run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }),
+    target, put: async (t, o) => { puts.push({ t, o }); } });
+  check("one pass writes the signal once", (await go()) === 0 && puts.length === 1, JSON.stringify(puts.map((p) => p.o.key)));
+  const { o } = puts[0], body = JSON.parse(o.body);
+  check("…as work.json, kept five seconds at the edge, as JSON",
+    o.key === SIGNAL_KEY && SIGNAL_KEY === "work.json" && o.cacheControl === "public, max-age=5" && SIGNAL_CACHE === o.cacheControl && o.contentType === "application/json", JSON.stringify(o));
+  const { PROTOCOL, PROTOCOLS_SERVED } = await import("../worker/verify.js");
+  const snap = await L.get("SELECT * FROM factory_snapshot WHERE id = 1");
+  check("its fields are the snapshot's counts, the served engine and protocols, and the dials in force",
+    body.v === 1 && body.at === snap.at && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
+    && body.engine === "e1" && body.release === "r1" && body.protocol === PROTOCOL && body.protocols.length === PROTOCOLS_SERVED.size
+    && body.poll_ms === 10_000 && body.jitter_ms === 10_000 && body.urgent_jitter_ms === 3_000 && body.mode === "signal"
+    && Object.keys(body).join() === "v,at,open,urgent,engine,release,protocol,protocols,computing,poll_ms,jitter_ms,urgent_jitter_ms,mode", JSON.stringify(body));
+  const { setDial, forgetDials } = await import("../worker/dials.js");
+  await setDial(env, "signal_mode", 1, "check");
+  await setDial(env, "poll_ms", 30_000, "check");
+  puts.length = 0; await go(); forgetDials();
+  const turned = JSON.parse(puts[0].o.body);
+  check("the owner's dials reach the signal: ask mode turns every computer back to asking", turned.mode === "ask" && turned.poll_ms === 30_000, JSON.stringify(turned));
+  await setDial(env, "signal_mode", 0, "check"); await setDial(env, "poll_ms", 10_000, "check"); forgetDials();
+  const { workWaiting } = await import("../worker/settler.js");
+  const w = await workWaiting(L);
+  check("the wave probe sees open work and waited-on work", w.open === true && w.urgent === true, JSON.stringify(w));
+  await L.run("UPDATE questions SET state = 'withdrawn' WHERE id IN ('o1', 'u1')");
+  const none = await workWaiting(L);
+  check("…and none when nothing may be taken", none.open === false && none.urgent === false, JSON.stringify(none));
+}
+
+console.log("signing for R2");
+{
+  // AWS's published example (S3 API reference, "Signature Calculations for the
+  // Authorization Header", GET Object): the signature must come out to the hex they print.
+  const { signV4 } = await import("./sigv4.mjs");
+  const s = signV4({ method: "GET", url: "https://examplebucket.s3.amazonaws.com/test.txt", headers: { range: "bytes=0-9" },
+    payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    accessKey: "AKIAIOSFODNN7EXAMPLE", secretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    region: "us-east-1", service: "s3", amzDate: "20130524T000000Z" });
+  check("the signature is AWS's own example to the last digit",
+    s.signature === "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41", s.signature);
+  check("…and the header names what was signed",
+    s.authorization === "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=host;range;x-amz-content-sha256;x-amz-date, Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41",
+    s.authorization);
 }
 
 console.log(failures ? `\n${failures} failure(s)` : "\nthe settler in shadow agrees with the request path, and says where it does not");

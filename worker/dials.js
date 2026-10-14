@@ -30,6 +30,14 @@ export const DIALS = {
     says: "how often an ask is written down as a computer being on" },
   compute_cap: { default: 400, min: 0, max: 1_000_000, unit: "computers",
     says: "past this many asking, one that answered nothing lately waits; 0 is no cap" },
+  poll_ms: { default: 10_000, min: 2_000, max: 300_000, unit: "ms",
+    says: "how often an idle computer reads the work signal (cdn.wfsim.app/work.json)" },
+  jitter_ms: { default: 10_000, min: 0, max: 600_000, unit: "ms",
+    says: "the most an idle computer waits, at random, after the signal shows open work" },
+  urgent_jitter_ms: { default: 3_000, min: 0, max: 60_000, unit: "ms",
+    says: "the same wait when the signal shows work someone is waiting on" },
+  signal_mode: { default: 0, min: 0, max: 1, unit: "mode",
+    says: "0: computers wait on the signal; 1: they ask the worker directly, the signal unused" },
 };
 /// …AND THE ONES A CLIENT READS, sent with every hand-out so no client
 /// hard-codes them (docs/CLIENTS.md §"Values").

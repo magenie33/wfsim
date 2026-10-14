@@ -756,6 +756,24 @@ the copy in). It writes:
 - `fair_shares`, every minute: the fair-share table for the served engine;
 - `factory_findings`: what its comparisons found, one row a kind.
 
+**THE WORK SIGNAL** is the snapshot published: after every snapshot, and at
+once when open or waited-on work appears from none (a two-second probe), the
+daemon writes `work.json` to the public bucket, which `cdn.wfsim.app` serves
+with `max-age=5` — written straight to R2's S3 API (`scripts/sigv4.mjs`), no
+worker call. An idle computer reads it instead of asking:
+
+```text
+{ v: 1, at, open, urgent, engine, release, protocol, protocols, computing,
+  poll_ms, jitter_ms, urgent_jitter_ms, mode }
+```
+
+`poll_ms`, `jitter_ms` and `urgent_jitter_ms` are dials (§"The dials"), and so
+is `mode`: `signal_mode` 1 makes it `ask`, sending every computer back to the
+worker. Without the R2 token the signal is skipped and `signal_unconfigured`
+says so; read back through the CDN every minute, three reads in a row older
+than 30 s are `signal_stale` and three not cached at the edge are
+`signal_uncached`.
+
 **IT RUNS IN SHADOW.** Nothing the worker decides reads these tables yet; the
 request path still settles, credits and works out its own fair table. The
 shadow checks itself against it two ways, each a finding:
