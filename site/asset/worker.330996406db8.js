@@ -16,7 +16,7 @@
 // optimizer's fleets settle on `onerror` alone and know no such message.
 const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
 try {
-  importScripts("/pkg/wfsim_wasm.73a5cea9983b.js");
+  importScripts("/pkg/wfsim_wasm.1790db65dbc8.js");
 } catch (err) {
   loadFailed("glue");
   throw err;
@@ -39,7 +39,7 @@ const counted = async () => {
   downloadBroke = null;
   let r;
   try {
-    r = await fetch("/pkg/wfsim_wasm_bg.73a5cea9983b.wasm");
+    r = await fetch("/pkg/wfsim_wasm_bg.1790db65dbc8.wasm");
   } catch (err) {
     downloadBroke = "network";
     throw err;
