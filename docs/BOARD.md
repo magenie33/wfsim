@@ -923,7 +923,9 @@ live demand exactly as `producer` is (`demandAll`, `factory_restate`):
 - `system` — WFSim's own: every board batch but a player's arrivals
   (`initiatorOf`: refresh, rescore, sweep, backfill, a scene's first pass) and
   a survey.
-- `bot:<code>` — a riven gain asked in a chat, the code of its channel and asker.
+- `bot:<code>` — a riven gain asked in a chat, the code of its channel and asker;
+  its agreed build goes to the board's door as the same asker, a survey's as
+  `system` (`submitRecord`).
 - `user:<code>` / `anonymous` — a player's submission signed in / signed out.
   `submit` writes it beside the record in `inbox`; `wfsim-intake` carries it
   to the fight the arrival named and to every row it owes (`--asked`,

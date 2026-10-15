@@ -191,12 +191,13 @@ function record(b) {
 }
 
 /// A BUILD INTO THE BOARD'S DOOR from inside the worker — an agreed riven gain
-/// (appraise.js) — checked and stored exactly as a reader's submission is.
-export async function submitRecord(env, build) {
+/// (appraise.js) — checked and stored exactly as a reader's submission is, with
+/// who asked for it (docs/BOARD.md §"Who asked").
+export async function submitRecord(env, build, initiator = null) {
   const built = record(build || {});
   if (built.err || !env.LIBRARY) return false;
-  await env.LIBRARY.prepare("INSERT INTO inbox (id, at, record) VALUES (?, ?, ?)")
-    .bind(crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec)).run();
+  await env.LIBRARY.prepare("INSERT INTO inbox (id, at, record, initiator) VALUES (?, ?, ?, ?)")
+    .bind(crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec), initiator).run();
   return true;
 }
 

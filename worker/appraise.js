@@ -209,7 +209,8 @@ const rivenProducer = {
     }
     // …AND THE AGREED BUILD GOES TO THE BOARD, through the reader's own door.
     if (won.meta.changes && fact.result) {
-      try { await submitRecord(env, fact.result.build); } catch (_) { /* the answer stands without it */ }
+      // …AS ITS ASKER: a survey is WFSim's own, a chat's ask its bot code.
+      try { await submitRecord(env, fact.result.build, d.producer === "survey" ? "system" : d.initiator || null); } catch (_) { /* the answer stands without it */ }
     }
   },
 };

@@ -127,6 +127,8 @@ check("two owners' equal answers credit both — the work, and the hour — and 
 check("...the appraisal is agreed and its build goes to the board's door, as a reader's submission",
   !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", code)).agreed_at
   && (await L.get("SELECT COUNT(*) AS n FROM inbox")).n === inboxBefore + 1);
+check("...as its chat's asker, the bot code its demand carries",
+  (await L.get("SELECT count(*) AS n FROM inbox WHERE initiator LIKE 'bot:%'")).n === 1 && (await L.get("SELECT count(*) AS n FROM inbox WHERE initiator IS NULL")).n === 0);
 check("...after which it is handed out no more", (await work(D) || {}).kind !== "riven_gain");
 check("a browser's own riven gain says confirmed once its answer is credited, and gone when it was not",
   await stateOf(A, { code, at: 1 }) === "confirmed" && await stateOf(C, { code, at: 1 }) === "confirmed" && await stateOf(B, { code, at: 1 }) === "gone");
@@ -216,6 +218,7 @@ await L.run("UPDATE questions SET state = 'withdrawn'");
   check("...but to another", s2 && s2.code === fresh, JSON.stringify(s2));
   await answer(s2, G, {}, "198.51.100.9");
   check("two owners on two networks agree", !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", fresh)).agreed_at);
+  check("...and a survey's agreed build goes to the board's door as WFSim's own", (await L.get("SELECT count(*) AS n FROM inbox WHERE initiator = 'system'")).n >= 1);
 
   // ONE QUESTION, ASKED AGAIN: a chat asking what a survey already agreed on is
   // answered at once, and nobody computes it a second time.
