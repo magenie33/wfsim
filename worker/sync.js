@@ -250,9 +250,14 @@ async function rest(x, { taken, dropped }) {
 
 /// A QUESTION SOMEONE WAITS ON, leased alone (worker/tasks.js `next`): its
 /// producer may be told of the lease, so it is the worker's on either path.
-async function alone({ env, db, now, id, ms, say, w, f, b, d }, base, idle) {
+async function alone(x, base, idle) {
+  const { env, db, now, id, ms, say, w, f, b, d } = x;
   const leased = await f.next(env, { ...w, most: 1 }, b.engine, now);
   if (!leased) return idle();
+  // A BOARD ROW GOES AS A PACK OF ONE: a protocol 8 page runs a pack, and a
+  // `work` only when it is a riven gain, so a waited board row handed as work
+  // was given back unrun and went round.
+  if (packTaskOf(leased)) return packed(x, base, idle, leased.lease, d.pack_lease_ms, [leased]);
   const next = now + ms(d.sync_floor_ms);
   await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
   return say({ ...base, pack: null, work: workOf(leased), next_ms: next - now });
