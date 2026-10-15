@@ -24,6 +24,7 @@ import { cloudPath, cloudRoute } from "./cloud.js";
 import { agentRoute } from "./agents.js";
 import { BOT_AUTH_DIRECTORY, botAuthDirectory } from "./bot_auth.js";
 import { rollupUsage } from "./usage_days.js";
+import { usageVisitor, logPoint, forgetVisitor } from "./usage_log.js";
 import { EXT_DOCUMENTS, extDocument } from "./ext_documents.js";
 import { ocrSample } from "./ocr_samples.js";
 import { popularity } from "./popularity.js";
@@ -598,9 +599,10 @@ async function shareFetch(id, env) {
 
 // ---- USAGE -----------------------------------------------------------------
 //
-// ONE DATA POINT PER THING A READER DID, into Workers Analytics Engine
-// (`env.USAGE`). The page computes everything on the device, so without this the
-// edge cannot tell a bounce from an hour-long search. docs/ANALYTICS.md.
+// ONE DATA POINT PER THING A READER DID, into the usage log (worker/usage_log.js)
+// and Workers Analytics Engine (`env.USAGE`). The page computes everything on
+// the device, so without this the edge cannot tell a bounce from an hour-long
+// search. docs/ANALYTICS.md.
 
 /// THE VOCABULARY, declared once and named by DOMAIN, never by a control: a
 /// renamed event is a broken time series, and history cannot be backfilled.
@@ -614,8 +616,11 @@ export const USAGE_EVENTS = [
   "presets.saved", "door.seen", "door.open", "account.state",
   "nona.open", "nona.ask", "nona.concise", "road.probe",
 ];
-/// The wire's schema, written into every point so a later change stays readable.
+/// The wire's schema: what the page posts.
 export const USAGE_SCHEMA = 1;
+/// THE DATASET'S SCHEMA, written into every point. 2: `index1` and `blob2` hold
+/// the visitor's hash (`usageVisitor`); 1 held the browser's id itself.
+export const USAGE_POINT_SCHEMA = 2;
 const USAGE_CID = /^[0-9a-f]{32}$/;
 const USAGE_ROUTE = /^[a-z0-9_-]{1,32}$/;
 const USAGE_LANG = /^[a-z]{2}(-[a-z0-9]{2,8})?$/;
@@ -623,8 +628,9 @@ const USAGE_RELEASE = /^[0-9A-Za-z._-]{1,40}$/;
 const USAGE_SHELLS = ["web", "desktop"];
 export const USAGE_CRAWLER = /(bot|crawler|spider|slurp)[/;\s)]|headlesschrome|lighthouse/i;
 
-/// The point as it is written, or null for anything that is not one. SHAPE ONLY,
-/// like `record`: whether a subject exists is game data this worker has not got.
+/// The point as it is read off the wire, or null for anything that is not one.
+/// SHAPE ONLY, like `record`: whether a subject exists is game data this worker
+/// has not got.
 export function usagePoint(b, country) {
   if (!b || typeof b !== "object" || b.v !== USAGE_SCHEMA) return null;
   const s = (x) => (typeof x === "string" ? x : "");
@@ -634,16 +640,17 @@ export function usagePoint(b, country) {
       || !USAGE_RELEASE.test(s(b.release)) || !USAGE_SHELLS.includes(b.shell)
       || (subject && !ID_PLAIN.test(subject))
       || typeof n !== "number" || !Number.isFinite(n) || n < 0) return null;
-  // THE VISITOR IS THE INDEX, so when the engine samples it keeps or drops a
-  // visitor whole — a return rate computed over half-sampled visitors is wrong.
   // NOTHING ELSE ABOUT THEM: no IP, no user agent; the country is the edge's.
-  return {
-    indexes: [b.cid],
-    blobs: [b.e, b.cid, subject, b.route, b.lang, b.shell, b.release,
-      /^[A-Z]{2}$/.test(s(country)) ? country : ""],
-    doubles: [USAGE_SCHEMA, n],
-  };
+  return { e: b.e, cid: b.cid, subject, route: b.route, lang: b.lang, shell: b.shell, release: b.release,
+    country: /^[A-Z]{2}$/.test(s(country)) ? country : "", n };
 }
+
+/// THE POINT AS THE ANALYTICS ENGINE KEEPS IT, under the visitor's hash.
+export const usageDataPoint = (p, visitor) => ({
+  indexes: [visitor],
+  blobs: [p.e, visitor, p.subject, p.route, p.lang, p.shell, p.release, p.country],
+  doubles: [USAGE_POINT_SCHEMA, p.n],
+});
 
 async function usage(request, env) {
   const { b, err } = await body(request);
@@ -654,9 +661,25 @@ async function usage(request, env) {
   // A CRAWLER THAT RUNS THE PAGE (Applebot, Googlebot) boots the app like a
   // reader and would be counted as one. Answered, never written.
   if (USAGE_CRAWLER.test(request.headers.get("user-agent") || "")) return new Response(null, { status: 204, headers: CORS });
+  const visitor = await usageVisitor(point.cid);
   // Fire and forget on this side too: `writeDataPoint` queues, it does not wait.
-  env.USAGE.writeDataPoint(point);
+  env.USAGE.writeDataPoint(usageDataPoint(point, visitor));
+  await logPoint(env, new Date().toISOString(), visitor, point);
   return new Response(null, { status: 204, headers: CORS });
+}
+
+/// A BROWSER'S OWN ERASURE (/support#usage): every point kept under its id is
+/// deleted, and the page takes a new id. The id is the proof — only the browser
+/// holding it can name its rows.
+async function usageForget(request, env) {
+  const { b, err } = await body(request);
+  if (err || !b || !USAGE_CID.test(typeof b.cid === "string" ? b.cid : "")) {
+    return new Response(null, { status: 400, headers: CORS });
+  }
+  if (!env.LIBRARY) return new Response(null, { status: 503, headers: CORS });
+  const deleted = await forgetVisitor(env, b.cid);
+  return new Response(JSON.stringify({ ok: true, deleted }),
+    { status: 200, headers: { ...CORS, "content-type": "application/json; charset=utf-8" } });
 }
 
 // ---- THE SITE AS AN AGENT READS IT -----------------------------------------
@@ -826,6 +849,10 @@ async function serve(request, env, ctx) {
     if (path === "/api/e") {
       if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
       return request.method === "POST" ? usage(request, env) : new Response(null, { status: 405, headers: CORS });
+    }
+    if (path === "/api/e/forget") {
+      if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+      return request.method === "POST" ? usageForget(request, env) : new Response(null, { status: 405, headers: CORS });
     }
     if (path === "/api/s" || path.startsWith("/api/s/")) {
       if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });

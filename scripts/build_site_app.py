@@ -1927,12 +1927,16 @@ account. This page says what it keeps, and why.</p>
 <h2>Without an account</h2>
 <ul>
 <li>Your builds, scenarios and rivens stay in your own browser.</li>
-<li>Usage is counted under a random id your browser keeps, with no cookie. Your
-IP address is not kept: the country your connection comes from is read from it
-as the count arrives, and kept with the count. A browser that sends Do Not Track
-or Global Privacy Control is not counted at all, and
-<a href="/support#usage">the support page</a> says what is counted and lets you
-turn it off.</li>
+<li>Usage is counted under a random id your browser keeps, with no cookie, only
+to measure how WFSim itself is used; it is never shared, sold or combined with
+anything else. Your IP address is not kept: the country your connection comes
+from is read from it as the count arrives, and kept with the count. Each count
+is kept for 90 days, under a hash of the id rather than the id itself; after
+that only daily totals that name no one remain. Cloudflare's analytics keeps
+a copy for three months, where one browser's counts cannot be deleted. The id
+is replaced after 13 months. A browser that sends Do Not Track or Global Privacy Control is not
+counted at all, and <a href="/support#usage">the support page</a> says what is
+counted, lets you turn it off, and deletes what WFSim's database keeps under your id.</li>
 <li>A build you send to the leaderboard is stored as the build and the day, and
 nothing about you. If you are signed in when you send it, the request to compute
 it also carries a code made from your account, which only your account can be
@@ -2088,8 +2092,8 @@ point-in-time history for up to 30 days, after which no copy remains.</li>
 <h2>隐私（中文）</h2>
 <p>WFSim 是免费的 Warframe 计算器，不注册也能使用全部功能。</p>
 <ul>
-<li><b>不登录时：</b>配装、场景、裂罅只保存在你自己的浏览器里。使用统计记在浏览器保存的一个随机编号下，不设置 cookie；不保存 IP 地址，只在统计到达时由连接判断所在国家或地区，与统计一起保存。浏览器开启「请勿追踪」或「全球隐私控制」时完全不统计，也可在
-<a href="/support#usage">支持页面</a>关闭。提交到排行榜的只有配装本身。</li>
+<li><b>不登录时：</b>配装、场景、裂罅只保存在你自己的浏览器里。使用统计记在浏览器保存的一个随机编号下，不设置 cookie，只用于了解 WF模拟 自身的使用情况，从不共享、出售或与其他信息合并；不保存 IP 地址，只在统计到达时由连接判断所在国家或地区，与统计一起保存。每条统计以编号的哈希（而不是编号本身）保存 90 天，之后只留下不指向任何人的每日总数；Cloudflare 的统计服务另存一份三个月，其中单个浏览器的记录无法删除。编号满 13 个月会自动更换。浏览器开启「请勿追踪」或「全球隐私控制」时完全不统计；在
+<a href="/support#usage">支持页面</a>可以查看统计内容、关闭统计，或删除 WF模拟 数据库里这个编号下的统计记录。提交到排行榜的只有配装本身。</li>
 <li><b>帮忙计算：</b>默认关闭，你在页面右下角或「我的计算」里开启后才会运行；只在电脑上开着 WF模拟 时计算排行榜和裂罅收益；你在用电脑时只占一个核心、使用计算器时立刻让路，电脑空闲时最多使用 30% 的核心（可在顶部计算菜单调整），用电池时暂停，手机上从不运行，随时可在顶部菜单或「我的计算」关闭。开启后浏览器会保存一个它自己生成的随机编号、你同意的说明版本和时间、按天的积分和最后完成时间；不发送电脑的其他任何信息，也不与你关联，除非你登录并认领这台设备。</li>
 <li><b>九九：</b>九九使用你自己选择的 AI 服务和你提供的密钥。你的提问和她为回答而读取的页面内容由你的浏览器直接发给该服务（其中有中国大陆的服务，也有境外的），适用该服务自己的条款，WF模拟 看不到。密钥只保存在这个浏览器里；对话和她记住的内容也只在这个浏览器里。WF模拟 只统计九九被打开和提问的次数，从不记录内容。她的回答由 AI 生成，并会标明。</li>
 <li><b>QQ 机器人：</b>在 QQ 群或私聊里提到 WF模拟 的机器人时，QQ 会把这条消息连同发送者和群的 openid 发给 WF模拟；每条只保存一天用于回复，然后删除。你询问的裂罅收益也会把裂罅词条和回复位置保存一天。机器人运行在腾讯云广州的服务器上。</li>

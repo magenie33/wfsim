@@ -12,16 +12,31 @@ const LIVE_HOSTS = ["wfsim.app", "wfsim.localhost"];
 
 /// A random id per browser, and nothing else about the reader. Clearable like
 /// every other `wfsim-*` key; a browser that cannot store one gets one per page.
+/// AN ID LIVES 13 MONTHS (`USAGE_CID_DAYS`), the ceiling audience measurement
+/// may keep one without asking (docs/ANALYTICS.md §Rules): the day it was made
+/// is kept beside it, and an id older than that is replaced.
 const USAGE_CID = "wfsim-cid";
+const USAGE_CID_BORN = "wfsim-cid-born";
+const USAGE_CID_DAYS = 395;
 let usageCid = null;
 function usageVisitor() {
   if (usageCid) return usageCid;
-  try { usageCid = localStorage.getItem(USAGE_CID); } catch (_) { /* private mode */ }
-  if (!/^[0-9a-f]{32}$/.test(usageCid || "")) {
-    const b = crypto.getRandomValues(new Uint8Array(16));
-    usageCid = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
-    try { localStorage.setItem(USAGE_CID, usageCid); } catch (_) { /* per page, then */ }
-  }
+  const today = new Date().toISOString().slice(0, 10);
+  let born = null;
+  try { usageCid = localStorage.getItem(USAGE_CID); born = localStorage.getItem(USAGE_CID_BORN); } catch (_) { /* private mode */ }
+  const old = born && Date.parse(today) - Date.parse(born) > USAGE_CID_DAYS * 86400000;
+  if (!/^[0-9a-f]{32}$/.test(usageCid || "") || old) return usageNewVisitor();
+  // AN ID MADE BEFORE ITS DAY WAS KEPT starts its 13 months now.
+  if (!born) { try { localStorage.setItem(USAGE_CID_BORN, today); } catch (_) { /* per page */ } }
+  return usageCid;
+}
+function usageNewVisitor() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  usageCid = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  try {
+    localStorage.setItem(USAGE_CID, usageCid);
+    localStorage.setItem(USAGE_CID_BORN, new Date().toISOString().slice(0, 10));
+  } catch (_) { /* per page, then */ }
   return usageCid;
 }
 
@@ -34,12 +49,35 @@ const usageOff = () => { try { return localStorage.getItem(USAGE_OFF) === "1"; }
 function renderUsageNote() {
   const id = $("usage-id"), btn = $("usage-off");
   if (!id || !btn) return;
-  id.textContent = usageVisitor().slice(0, 8);
+  id.textContent = usageVisitor();
   btn.textContent = tr(usageOff() ? "count this browser again" : "stop counting this browser");
   btn.onclick = () => {
     try { localStorage.setItem(USAGE_OFF, usageOff() ? "0" : "1"); } catch (_) { /* nothing to keep it in */ }
     renderUsageNote();
   };
+  const forget = $("usage-forget"), said = $("usage-forget-said");
+  if (!forget || !said) return;
+  forget.textContent = tr("delete what is counted under this id");
+  forget.onclick = () => usageForget(forget, said);
+}
+
+/// DELETE EVERYTHING KEPT UNDER THIS BROWSER'S ID, then take a new one: what
+/// is counted next is not tied to what came before. Said inline, never a dialog.
+async function usageForget(btn, said) {
+  btn.disabled = true;
+  said.textContent = "";
+  try {
+    const at = location.origin === LIVE_ORIGIN ? "" : LIVE_ORIGIN;
+    const r = await fetch(`${at}/api/e/forget`, { method: "POST", body: JSON.stringify({ cid: usageVisitor() }) });
+    if (!r.ok) throw new Error(String(r.status));
+    const { deleted } = await r.json();
+    usageNewVisitor();
+    said.textContent = tr("Deleted {n} records from WFSim's database. This browser has a new id.").replace("{n}", Number(deleted).toLocaleString());
+  } catch (_) {
+    said.textContent = tr("Could not reach WFSim — nothing was deleted. Try again later.");
+  }
+  btn.disabled = false;
+  renderUsageNote();
 }
 
 /// HOW THIS PAGE WAS REACHED, as `app.boot`'s subject: the browser's own

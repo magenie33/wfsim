@@ -213,6 +213,28 @@ CREATE TABLE IF NOT EXISTS usage_days (
 );
 CREATE INDEX IF NOT EXISTS usage_days_by_event ON usage_days (event, subject, day);
 
+-- EVERY USAGE POINT, UNSAMPLED (worker/usage_log.js, docs/ANALYTICS.md §"The
+-- log"): the source of every visitor count. `visitor` is the SHA-256 of the
+-- browser's id, never the id itself, so a row is found only by the browser that
+-- holds it — which is how `/api/e/forget` deletes them. Kept 90 days, then only
+-- `usage_days` remains. No pipeline role is granted it: the public backup
+-- cannot read it.
+CREATE TABLE IF NOT EXISTS usage_points (
+  at      TEXT COLLATE "C" NOT NULL,
+  day     TEXT COLLATE "C" NOT NULL,
+  visitor TEXT COLLATE "C" NOT NULL,
+  event   TEXT COLLATE "C" NOT NULL,
+  subject TEXT COLLATE "C" NOT NULL,
+  route   TEXT COLLATE "C" NOT NULL,
+  lang    TEXT COLLATE "C" NOT NULL,
+  shell   TEXT COLLATE "C" NOT NULL,
+  release TEXT COLLATE "C" NOT NULL,
+  country TEXT COLLATE "C" NOT NULL,
+  n       DOUBLE PRECISION NOT NULL
+);
+CREATE INDEX IF NOT EXISTS usage_points_by_day ON usage_points (day);
+CREATE INDEX IF NOT EXISTS usage_points_by_visitor ON usage_points (visitor);
+
 -- WHAT A CHAT SENT THE BOT, until the bot server has answered it (worker/qq.js,
 -- docs/AGENT.md §"The QQ bot"). `id` is the platform's own message id, so a
 -- retried callback lands on the row it already wrote; `body` is the event as

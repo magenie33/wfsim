@@ -1,14 +1,16 @@
 // ---- USAGE DAYS ---------------------------------------------------------------
 //
-// docs/ANALYTICS.md §Retention. The Analytics Engine keeps three months, so once
-// a day the worker's cron reads each finished UTC day it has not yet kept and
-// writes that day's TOTALS into `usage_days` (worker/pg/library.sql). Totals only:
-// a visitor id never leaves the dataset.
+// docs/ANALYTICS.md §Retention. The usage log keeps 90 days, so once a day the
+// worker's cron reads each finished UTC day it has not yet kept and writes that
+// day's TOTALS into `usage_days` (worker/pg/library.sql). Totals only: a visitor
+// never leaves the log. A day before `USAGE_LOG_FROM` is read from the Analytics
+// Engine instead, sampled, and kept with `sampled` set.
 //
 // IT FILLS EVERY MISSING DAY STILL IN THE DATASET, not just yesterday, so the
 // first runs keep the history there is and a missed run is made up by the next.
 // A day is written once and never revised: its numbers are final when it ends.
 
+import { usageVisitor, purgeUsageLog } from "./usage_log.js";
 
 /// A RESULT, as opposed to a page opened. `scripts/usage.py` holds the same list
 /// and `check_usage_events` holds the two equal: a day kept under another
@@ -20,6 +22,10 @@ export const USAGE_RESULTS = ["builder.weapon", "builder.warframe", "builder.ope
 /// the popularity ranking reads it (`worker/popularity.js`).
 export const USAGE_TESTED = ["simulator.run", "optimizer.run"];
 const DATASET = "wfsim";
+/// THE FIRST DAY READ FROM THE LOG: the log began on 2026-10-16, and a day's
+/// `returning` reads the seven days before it, so the first day whose seven are
+/// all in the log is the first it can count whole.
+export const USAGE_LOG_FROM = "2026-10-23";
 const CHECK_RELEASE = "deploy-check";
 /// The dataset keeps ~92 days; a day older than this may be cut short.
 const KEEP_BACK_DAYS = 85;
@@ -35,6 +41,34 @@ const BATCH_ROWS = 500;
 const DAY_MS = 86400000;
 const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
 const market = (country) => (country === "CN" ? "china" : "overseas");
+
+/// A DAY'S ROWS FROM THE LOG — every point, so `n` is a count and nothing is sampled.
+async function logRows(env, from, next) {
+  const { results } = await env.LIBRARY.prepare(`
+    SELECT day, visitor AS cid, event AS e, subject, country, 1 AS si, COUNT(*) AS n
+    FROM usage_points WHERE day >= ? AND day < ? AND release != ?
+    GROUP BY day, visitor, event, subject, country`).bind(from, next, CHECK_RELEASE).all();
+  return results;
+}
+
+/// A DAY'S ROWS FROM THE ANALYTICS ENGINE. A schema 1 point carried the
+/// browser's id itself; it is hashed here, so a visitor is one visitor across
+/// the change and across the two sources.
+async function datasetRows(env, from, next) {
+  const rows = await usageSql(env, `
+      SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob2 AS cid, blob1 AS e,
+             blob3 AS subject, blob8 AS country, double1 AS schema, max(_sample_interval) AS si, SUM(_sample_interval) AS n
+      FROM ${DATASET} WHERE timestamp >= toDateTime('${from} 00:00:00')
+        AND timestamp < toDateTime('${next} 00:00:00') AND blob7 != '${CHECK_RELEASE}'
+      GROUP BY day, cid, e, subject, country, schema LIMIT 1000000`);
+  const hashed = new Map();
+  for (const r of rows) {
+    if (Number(r.schema) !== 1) continue;
+    if (!hashed.has(r.cid)) hashed.set(r.cid, await usageVisitor(r.cid));
+    r.cid = hashed.get(r.cid);
+  }
+  return rows;
+}
 
 async function usageSql(env, query) {
   const r = await fetch(
@@ -79,30 +113,36 @@ export function usageDayRows(day, rows) {
     visitors: o.cids.size, points: Math.round(o.points), sampled: sampled.any ? 1 : 0 }));
 }
 
-/// KEEP EVERY FINISHED DAY THE TABLE LACKS. Returns the days written.
+/// KEEP EVERY FINISHED DAY THE TABLE LACKS, then drop the log past its time.
+/// Returns the days written.
 export async function rollupUsage(env, now = Date.now()) {
-  if (!env.LIBRARY || !env.USAGE_ACCOUNT || !env.USAGE_READ_TOKEN) return [];
+  if (!env.LIBRARY) return [];
+  const written = await keepDays(env, now);
+  await purgeUsageLog(env, now);
+  return written;
+}
+
+async function keepDays(env, now) {
   const today = dayOf(now);
+  const dataset = !!(env.USAGE_ACCOUNT && env.USAGE_READ_TOKEN);
   // A DAY IS KEPT ONCE ITS `visitors`/`all` ROW IS: written last, so a run that
   // stopped part way leaves the day to be written again whole.
   const kept = new Set((await env.LIBRARY.prepare(
     "SELECT day FROM usage_days WHERE event = 'visitors' AND subject = 'all'").all()).results.map((r) => r.day));
-  // ONLY DAYS THE DATASET HAS: one before it began is not a zero, and asking
-  // for each of them would spend the run's subrequests on nothing.
-  const held = (await usageSql(env, `
+  // ONLY DAYS A SOURCE HAS: one before it began is not a zero, and asking for
+  // each of them would spend the run's subrequests on nothing.
+  const logged = (await env.LIBRARY.prepare("SELECT DISTINCT day FROM usage_points WHERE day >= ?")
+    .bind(USAGE_LOG_FROM).all()).results.map((r) => r.day);
+  const held = !dataset ? [] : (await usageSql(env, `
     SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day FROM ${DATASET}
-    WHERE timestamp > NOW() - INTERVAL '${KEEP_BACK_DAYS}' DAY GROUP BY day`)).map((r) => r.day.slice(0, 10));
-  const days = [...new Set(held)].filter((d) => d < today && !kept.has(d)).sort().slice(0, DAYS_PER_RUN);
+    WHERE timestamp > NOW() - INTERVAL '${KEEP_BACK_DAYS}' DAY GROUP BY day`))
+    .map((r) => r.day.slice(0, 10)).filter((d) => d < USAGE_LOG_FROM);
+  const days = [...new Set([...held, ...logged])].filter((d) => d < today && !kept.has(d)).sort().slice(0, DAYS_PER_RUN);
   const written = [];
   for (const day of days) {
     const from = dayOf(Date.parse(day) - RETURN_DAYS * DAY_MS);
     const next = dayOf(Date.parse(day) + DAY_MS);
-    const rows = await usageSql(env, `
-      SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob2 AS cid, blob1 AS e,
-             blob3 AS subject, blob8 AS country, max(_sample_interval) AS si, SUM(_sample_interval) AS n
-      FROM ${DATASET} WHERE timestamp >= toDateTime('${from} 00:00:00')
-        AND timestamp < toDateTime('${next} 00:00:00') AND blob7 != '${CHECK_RELEASE}'
-      GROUP BY day, cid, e, subject, country LIMIT 1000000`);
+    const rows = await (day >= USAGE_LOG_FROM ? logRows : datasetRows)(env, from, next);
     const out = usageDayRows(day, rows);
     if (!out.length) continue;
     const put = (part) => env.LIBRARY.prepare(`INSERT INTO usage_days

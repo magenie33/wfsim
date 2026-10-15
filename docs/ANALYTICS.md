@@ -24,7 +24,8 @@ filtered out on the free plan:
   share the same counters. Referer and ASN are not queryable on the free plan.
 
 So the edge gives an order of magnitude for "how many", and nothing for "how
-well". Both come from the usage points below.
+well". Both come from the usage points below, and every count is read from the
+log, which samples nothing.
 
 ## Rules
 
@@ -50,6 +51,17 @@ well". Both come from the usage points below.
   be — `compute.background` — rather than inferred from what it says it is.
 - **No PII, no cookies, no accounts.** One random `wfsim-cid` in localStorage,
   clearable like every other `wfsim-*` key. No IP, no user agent is written.
+- **AUDIENCE MEASUREMENT, AND NOTHING THAT WOULD STOP IT BEING ONE.** Counting
+  runs without asking because it meets the conditions European regulators set
+  for measuring a site's own audience: the purpose is WFSim's own use, nothing
+  is shared or joined to other data, the reader is told and can object, an id
+  lives at most 13 months (`USAGE_CID_DAYS`, `wfsim-cid-born`) and a point
+  at most 90 days. A change that breaks one of these — a longer life, a third
+  party, a join to an account — needs consent first, and is a different design.
+- **A BROWSER CAN DELETE WHAT IS KEPT UNDER ITS ID**: `/support#usage` posts
+  the id to `/api/e/forget`, which deletes its rows from the log, and the page
+  takes a new id. The stored visitor is the id's hash, so only the browser
+  holding the id can name its rows.
 - **Global Privacy Control or Do Not Track set: nothing is sent.** Nor after
   the reader turns counting off on `/support#usage`, which also says what is
   counted and shows the browser's id — the footer links there.
@@ -68,8 +80,9 @@ well". Both come from the usage points below.
 ## What is collected
 
 `track(event, subject, n)` in `web/src/static/app/07-usage.js` posts to
-`POST /api/e`; the worker validates the shape and writes one data point to the
-Analytics Engine dataset `wfsim` (binding `USAGE`, `wrangler.jsonc`).
+`POST /api/e`; the worker validates the shape and writes the point to the log
+(`usage_points`, §"The log") and to the Analytics Engine dataset `wfsim`
+(binding `USAGE`, `wrangler.jsonc`).
 
 **Once per (event, subject) per page load.** A point says a reader got this far
 with this thing, not how many times: forty edits to one build are one build.
@@ -110,14 +123,16 @@ with this thing, not how many times: forty edits to one build are one build.
 An `engine.fail` from a visitor with no `app.boot` is a reader the site lost
 before it could do anything — the one failure the edge cannot see.
 
-The data point, schema 1 — **frozen once written**: a change adds a schema
-number, it never reinterprets a column.
+The dataset's point — **frozen once written**: a change adds a schema number,
+it never reinterprets a column. Schema 2 (`USAGE_POINT_SCHEMA`) holds the
+visitor's hash where schema 1 held the browser's id; a reader hashes a schema 1
+id, so a visitor is one visitor across the change.
 
 | column | holds |
 | --- | --- |
-| `index1` | the visitor id — sampling keeps or drops a visitor whole |
+| `index1` | the visitor's hash — the dataset samples a visitor's points one by one, not the visitor whole |
 | `blob1` | event |
-| `blob2` | visitor id |
+| `blob2` | the visitor's hash |
 | `blob3` | subject |
 | `blob4` | first path segment the page was on (`home`, `weapons`, `operator`, …; `other` for anything unexpected) |
 | `blob5` | page language |
@@ -127,20 +142,41 @@ number, it never reinterprets a column.
 | `double1` | schema |
 | `double2` | `n` |
 
+## The log
+
+**EVERY POINT, UNSAMPLED**, one row each in `usage_points` (`wfsim` database,
+`worker/usage_log.js`): the point's columns, its instant and day, and the
+visitor as the first 128 bits of the SHA-256 of the browser's id. The Analytics
+Engine samples a visitor's points one by one, so a visitor whose one point of an
+event it dropped is missing from that event's count; the log is where every
+visitor count comes from.
+
+- **Kept 90 days** (`USAGE_LOG_DAYS`), deleted by the daily cron; after that
+  only `usage_days` remains.
+- **No pipeline role is granted it**, so the public library backup cannot read
+  it; the server's own dump holds it like the accounts.
+- **A failed write is a point missing**, logged and never the reader's: the
+  endpoint answers either way.
+
 ## Reading it
 
 ```
-python scripts/usage.py            # last 14 days
+python scripts/usage.py                    # last 14 days, from the log
 python scripts/usage.py --days 28
+python scripts/usage.py --source dataset   # the sampled copy
+python scripts/usage.py --compare          # per day, the log against the dataset
 ```
 
-Needs `CF_ACCOUNT` and `CF_TOKEN` (an API token with **Account Analytics:
-Read**) in the environment or in `private/cloudflare.env`. It prints, per day,
+The log needs `PG_URL` naming a role that owns `usage_points`; the dataset needs
+`CF_ACCOUNT` and `CF_TOKEN` (an API token with **Account Analytics: Read**) in
+the environment or in `private/cloudflare.env`. `--compare` holds the two
+against each other: the log holds every visitor the dataset saw, so a visitor
+only the dataset has is a point the log lost. It prints, per day,
 visitors and visitors with a result; each module's visitors; the top subjects
 per event; and visitors by landing route, language, shell and country.
 
 It also ranks the **most active visitors** — by days seen, then results — under
-the first eight characters of their id. A visitor is a browser and nothing
+the first eight characters of their hash. A visitor is a browser and nothing
 more; it becomes a person only if they tell us the id `/support` shows them,
 and then `python scripts/usage.py --visitor <id>` lists everything it sent.
 
@@ -188,9 +224,11 @@ The database's own side is `scripts/factory_pulse.mjs` (read-only).
 
 ## Retention
 
-**Analytics Engine keeps three months; `usage_days` keeps the totals for
-good.** The site worker's cron (`worker/usage_days.js`, 00:30 UTC) writes each
-finished UTC day the table lacks into the `wfsim` database: per event, subject
+**The log keeps 90 days; `usage_days` keeps the totals for good.** The site
+worker's cron (`worker/usage_days.js`, 00:30 UTC) writes each finished UTC day
+the table lacks into the `wfsim` database — from the log for a day on or after
+`USAGE_LOG_FROM`, the first whose seven days before are all in it, and from
+the Analytics Engine, with `sampled` set, for one before: per event, subject
 and market the visitors and points, and the day's visitors — `all`, `result`
 (by the same `RESULTS` as `usage.py`, which `check_usage_events` holds equal),
 `returning` (seen in the seven days before) and by country. Totals only; no
@@ -200,8 +238,8 @@ visitor id is kept. A trend longer than a quarter is read from there:
 psql "$PG_URL" -c "SELECT day, market, visitors FROM usage_days WHERE event = 'visitors' AND subject = 'all' ORDER BY day"
 ```
 
-It needs the worker secrets `USAGE_ACCOUNT` and `USAGE_READ_TOKEN` (Account
-Analytics: Read); without them it writes nothing. A day is written whole and
+A day before `USAGE_LOG_FROM` needs the worker secrets `USAGE_ACCOUNT` and
+`USAGE_READ_TOKEN` (Account Analytics: Read); without them it is not written. A day is written whole and
 never revised. Its `visitors`/`all` row goes last and marks it kept, so a run
 that stops part way is redone, and a missed run is made up by the next.
 

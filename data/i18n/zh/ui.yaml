@@ -1090,6 +1090,10 @@ ui:
   "This browser's id:": 这个浏览器的编号：
   "stop counting this browser": 不再统计这个浏览器
   "count this browser again": 恢复统计这个浏览器
+  "Each count is kept under this id for 90 days; after that only daily totals that name no one remain. The id is replaced after 13 months.": 每条统计在这个编号下保存 90 天，之后只留下不指向任何人的每日总数。编号满 13 个月会自动更换。
+  "delete what is counted under this id": 删除这个编号下的统计记录
+  "Deleted {n} records from WFSim's database. This browser has a new id.": 已从 WF模拟 数据库删除 {n} 条记录，这个浏览器换了新编号。
+  "Could not reach WFSim — nothing was deleted. Try again later.": 连不上 WF模拟，什么都没有删除。请稍后再试。
   "Usage statistics": 使用统计
   "include my result in this scenario": 附上我在当前场景下的结果
   "the link still opens the build alone; your result travels beside it, shown as yours": 链接打开后仍然只导入配装；你的结果随链接一起显示，并注明是你测得的

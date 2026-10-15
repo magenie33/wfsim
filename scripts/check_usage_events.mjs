@@ -4,14 +4,17 @@
 //     worker accepts is sent from somewhere: a name on one side only is a time
 //     series that silently never starts;
 //   - the page writes the schema the worker reads;
-//   - a point carries the visitor as its index and nothing that identifies them;
+//   - a point carries the visitor's hash as its index and nothing that identifies them;
+//   - every point lands in the usage log, a browser's own request deletes its
+//     rows, and the log keeps nothing past its days;
 //   - anything that is not a point is refused and never written;
 //   - no dev server or check host is live, so no test writes the live dataset.
 //
 //   node scripts/check_usage_events.mjs
-import worker, { USAGE_EVENTS, USAGE_SCHEMA, usagePoint } from "../worker/index.js";
+import worker, { USAGE_EVENTS, USAGE_SCHEMA, USAGE_POINT_SCHEMA, usagePoint } from "../worker/index.js";
+import { usageVisitor, USAGE_LOG_DAYS } from "../worker/usage_log.js";
 import { appSource } from "./app_source.mjs";
-import { USAGE_RESULTS, usageDayRows, rollupUsage } from "../worker/usage_days.js";
+import { USAGE_RESULTS, USAGE_LOG_FROM, usageDayRows, rollupUsage } from "../worker/usage_days.js";
 import { testDb } from "./pg/test_db.mjs";
 import { readFileSync, readdirSync } from "node:fs";
 
@@ -75,11 +78,14 @@ const post = (b, e = env, method = "POST") => worker.fetch(Object.assign(new Req
 let r = await post(good);
 check("a point is accepted", r.status === 204, `status ${r.status}`);
 const p = written[0];
-check("…and written once, indexed by the visitor", written.length === 1 && p.indexes[0] === cid);
-check("…carrying the event, subject, route, language, shell, release and country",
-  p && JSON.stringify(p.blobs) === JSON.stringify(["simulator.run", cid, "torid", "weapons", "zh", "web", "r20260927.1", "CN"]),
+const hashed = await usageVisitor(cid);
+check("…and written once, indexed by the visitor's hash", written.length === 1 && p.indexes[0] === hashed
+  && /^[0-9a-f]{32}$/.test(hashed) && hashed !== cid);
+check("…carrying the event, the hash, subject, route, language, shell, release and country",
+  p && JSON.stringify(p.blobs) === JSON.stringify(["simulator.run", hashed, "torid", "weapons", "zh", "web", "r20260927.1", "CN"]),
   p && JSON.stringify(p.blobs));
-check("…and the schema and the count", p && p.doubles[0] === USAGE_SCHEMA && p.doubles[1] === 1000);
+check("…and the dataset's schema and the count", p && p.doubles[0] === USAGE_POINT_SCHEMA && p.doubles[1] === 1000);
+check("…and never the browser's id", !JSON.stringify(p).includes(cid));
 check("…answering any origin, so the desktop shell can post",
   r.headers.get("access-control-allow-origin") === "*");
 
@@ -172,6 +178,63 @@ check("…and its kept marker is the last row written", tail.event === "visitors
     JSON.stringify(redo));
   check("no secrets is no run", (await rollupUsage({ LIBRARY }, now)).length === 0);
   globalThis.fetch = realFetch;
+}
+
+// THE LOG (worker/usage_log.js): every point, under the hash; the browser's own
+// erasure; the days past keeping dropped; and a day after USAGE_LOG_FROM kept
+// from the log, unsampled.
+{
+  const LIBRARY = await testDb("library");
+  const logged = { ...env, LIBRARY };
+  r = await post(good, logged);
+  r = await post({ ...good, e: "app.boot", subject: "direct" }, logged);
+  const rows = await LIBRARY.all("SELECT * FROM usage_points");
+  check("every point lands in the log", r.status === 204 && rows.length === 2, JSON.stringify(rows));
+  check("…under the visitor's hash, never the browser's id",
+    rows.every((x) => x.visitor === hashed) && !JSON.stringify(rows).includes(cid));
+  check("…with its day, event, subject, country and count",
+    rows.some((x) => x.event === "simulator.run" && x.subject === "torid" && x.country === "CN" && x.n === 1000
+      && x.day === x.at.slice(0, 10)));
+  const other = "f".repeat(32);
+  await post({ ...good, cid: other }, logged);
+  const forget = (b, e = logged) => worker.fetch(new Request("https://wfsim.app/api/e/forget",
+    { method: "POST", body: JSON.stringify(b) }), e, CTX);
+  r = await forget({ cid: "me@example.com" });
+  check("a forget that names no id is refused", r.status === 400);
+  r = await forget({ cid });
+  const j = await r.json();
+  const left = await LIBRARY.all("SELECT visitor FROM usage_points");
+  check("a browser's forget deletes its rows and says how many", r.status === 200 && j.deleted === 2, JSON.stringify(j));
+  check("…and nobody else's", left.length === 1 && left[0].visitor === await usageVisitor(other));
+  check("…answering any origin, so the desktop shell can ask", r.headers.get("access-control-allow-origin") === "*");
+  r = await forget({ cid }, env);
+  check("no database bound is a 503", r.status === 503);
+
+  // A DAY FROM THE LOG: the fixture's shape, two weeks on, written as points.
+  const shift = (d) => new Date(Date.parse(d) + 22 * 86400000).toISOString().slice(0, 10);
+  check("the fixture's days move to the log's", shift("2026-10-01") === USAGE_LOG_FROM);
+  await LIBRARY.exec("DELETE FROM usage_points");
+  for (const x of fixture) {
+    const day = shift(x.day.slice(0, 10));
+    await LIBRARY.run(`INSERT INTO usage_points (at, day, visitor, event, subject, route, lang, shell, release, country, n)
+      VALUES (?, ?, ?, ?, ?, 'home', 'zh', 'web', 'r1', ?, 0)`, `${day}T12:00:00.000Z`, day, x.cid, x.e, x.subject, x.country);
+  }
+  const kept = await rollupUsage({ LIBRARY }, Date.parse(`${shift("2026-10-03")}T00:30:00Z`));
+  const day2 = shift("2026-10-02");
+  const cellOf = async (event, subject, market) => (await LIBRARY.get(
+    "SELECT visitors, sampled FROM usage_days WHERE day = ? AND event = ? AND subject = ? AND market = ?",
+    day2, event, subject, market)) || {};
+  check("a day after the log began is kept from the log",
+    JSON.stringify(kept) === JSON.stringify([shift("2026-10-01"), day2]), JSON.stringify(kept));
+  check("…counting what the dataset's day counted",
+    (await cellOf("visitors", "all", "china")).visitors === 2 && (await cellOf("visitors", "returning", "china")).visitors === 1
+    && (await cellOf("tested", "torid", "china")).visitors === 1);
+  check("…and marked unsampled", (await cellOf("visitors", "all", "china")).sampled === 0);
+
+  // THE LOG KEEPS ITS DAYS AND NO MORE.
+  const now = Date.parse(`${shift("2026-10-03")}T00:30:00Z`) + (USAGE_LOG_DAYS + 1) * 86400000;
+  await rollupUsage({ LIBRARY }, now);
+  check("a point past the log's days is dropped", (await LIBRARY.all("SELECT 1 FROM usage_points")).length === 0);
 }
 
 if (failures) {
