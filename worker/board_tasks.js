@@ -135,10 +135,13 @@ const producerOf = (batch, builtAt, ruler) => {
 /// every other batch WFSim's own — a backfill's too, though it is asked as an
 /// arrival is.
 export const initiatorOf = (batch, initiator = null) => (batch.startsWith("arrivals-") ? initiator ?? null : "system");
-/// THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the player just ran it and is the one
-/// looking for the row, so it goes ahead of the build's other rows and of every
-/// row nobody waits on. Only the runner knows which row that is (`named`, from
-/// `wfsim-intake --asked`); a backfill's re-ask of it is an ordinary row.
+const isPlayer = (initiator) => typeof initiator === "string" && (initiator.startsWith("user:") || initiator === "anonymous");
+/// THE FIGHT A PLAYER'S ARRIVAL NAMED IS WAITED ON: they just ran it and are the
+/// one looking for the row, so it goes ahead of the build's other rows and of
+/// every row nobody waits on. Only the runner knows which row that is (`named`,
+/// from `wfsim-intake --asked`), and only a player's (`user:`, `anonymous`)
+/// is waited: a survey's or a chat's riven gain, or an arrival nobody recorded,
+/// is an ordinary row, as is a backfill's re-ask.
 export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
   const producer = producerOf(batch, builtAt, r.ruler);
   const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
@@ -147,7 +150,7 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,
     payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch }, initiator: initiatorOf(batch, r.initiator),
-    waits: batch.startsWith("arrivals-") && r.named === true };
+    waits: batch.startsWith("arrivals-") && r.named === true && isPlayer(r.initiator) };
 }
 
 /// THE ROWS A BATCH OWES, asked of the factory (`ship_queue.sh`). An arrival's

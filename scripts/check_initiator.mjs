@@ -123,13 +123,17 @@ check("an arrival is asked as its queue row names, never as the runner says; a b
 await L.run("INSERT INTO builds (id, at, record) VALUES ('bn', '2026-10-14', ?), ('bo', '2026-10-14', ?), ('bb', '2026-10-14', ?)",
   JSON.stringify({ weapon: "braton_prime", mods: ["hornet_strike"] }), JSON.stringify({ weapon: "braton_prime", mods: ["vital_sense"] }),
   JSON.stringify({ weapon: "braton_prime", mods: ["point_strike"] }));
+await L.run(`INSERT INTO queue (batch, build_id, ruler, mode, initiator) VALUES ('arrivals-2026-10-14', 'bn', 'standard_single_target', 'base', 'anonymous'),
+  ('arrivals-2026-10-14', 'bo', 'standard_single_target', 'base', 'anonymous'), ('arrivals-2026-10-14', 'bs', 'standard_single_target', 'base', 'system')`);
+await L.run("INSERT INTO builds (id, at, record) VALUES ('bs', '2026-10-14', ?)", JSON.stringify({ weapon: "braton_prime", mods: ["heavy_caliber"] }));
 await askRows("arrivals-2026-10-14", "bn", { named: true });
 await askRows("arrivals-2026-10-14", "bo");
 await askRows("backfill-2026-10-14", "bb", { named: true });
+await askRows("arrivals-2026-10-14", "bs", { named: true });
 const waits = Object.fromEntries((await L.all(`SELECT d.payload::jsonb ->> 'identity' AS id, q.waits FROM demands d JOIN questions q ON q.id = d.question
-    WHERE d.payload::jsonb ->> 'identity' IN ('bn', 'bo', 'bb')`)).map((r) => [r.id, Number(r.waits)]));
-check("the fight an arrival named is asked as waited on, the build's other rows and a backfill's are not",
-  waits.bn === 1 && waits.bo === 0 && waits.bb === 0, JSON.stringify(waits));
+    WHERE d.payload::jsonb ->> 'identity' IN ('bn', 'bo', 'bb', 'bs')`)).map((r) => [r.id, Number(r.waits)]));
+check("the fight a player's arrival named is asked as waited on; the build's other rows, a backfill's and a survey's are not",
+  waits.bn === 1 && waits.bo === 0 && waits.bb === 0 && waits.bs === 0, JSON.stringify(waits));
 const c1 = await initiatorCode(env, "bot", "qq:1"), c2 = await initiatorCode(env, "bot", "qq:1"), c3 = await initiatorCode({ AUTH_SECRET: "t" }, "bot", "qq:1");
 check("a code is its kind and a keyed hash: the same asker the same code, another key another", /^bot:[\w-]{16}$/.test(c1) && c1 === c2 && c1 !== c3, c1);
 
