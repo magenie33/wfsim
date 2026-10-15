@@ -922,7 +922,8 @@ const AGENT_ACTIONS = [
     id: "shell.preset.copy",
     writes: "none",
     what: "Duplicate the open build or scenario and open the copy — the way to try changes without touching the reader's own.",
-    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
+    // A READ-ONLY REGION IS THIS COPY: a click in it performs it (`lockReadOnly`).
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer, .locked-hard",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { const cfg = AGENT_BARS[bar](); const id = copyActivePreset(cfg); return { preset: id, name: presetLabel(presetFind(cfg.load(), id)) }; },
