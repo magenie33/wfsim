@@ -926,8 +926,9 @@ live demand exactly as `producer` is (`demandAll`, `factory_restate`):
 - `bot:<code>` — a riven gain asked in a chat, the code of its channel and asker.
 - `user:<code>` / `anonymous` — a player's submission signed in / signed out.
   `submit` writes it beside the record in `inbox`; `wfsim-intake` carries it
-  to the fight the arrival named (the first named one when two ask one fight)
-  and never into the library; `ship_queue.sh` keeps it on the `queue` row, and
+  to the fight the arrival named and to every row it owes (`--asked`,
+  `--orders`; the first named one when two ask one row) and never into the
+  library; `ship_queue.sh` keeps it on the `queue` row, and
   `ask` reads it there, never from the runner (`initiatorOf`). A backfill's row
   is the system's though it is asked as an arrival is.
 - NULL — not recorded: every ask before this, never back-filled.
@@ -970,8 +971,9 @@ a paid feature or money; it changes no number, score or witness rule.
 ### Merit priority
 
 **A SIGNED-IN PLAYER'S OWN ARRIVALS, SOONER, PAID ONLY WHEN THEY WENT AHEAD OF
-SOMEONE** (`holdPriority`, `settleMerit`). Waited-on work still goes first; a
-system row, an anonymous one and a row the board already scored never move.
+SOMEONE** (`holdPriority`, `settleMerit`). Waited-on work still goes first and
+is never held; a system row, an anonymous one and a row the board already
+scored never move.
 
 - **THE SWITCH** (the account panel, `/api/account/merit`) is the consent: while
   it is on, `merit_codes` maps the account's `user:` code to it, and turning it

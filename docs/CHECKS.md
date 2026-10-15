@@ -303,7 +303,8 @@ Priority: the switch keeps and deletes the code's mapping; a switched-on
 player's arrivals are held at their price up to the hour's cap and due 30%
 sooner, an anonymous one is not; past the share nothing is held; a row that
 went ahead of someone is charged, one that went ahead of nobody or was
-withdrawn refunded, once, and a settled hold keeps no code.
+withdrawn refunded, once, and a settled hold keeps no code; a row someone waits
+on is never held.
 
 ## `check_board_verify`
 

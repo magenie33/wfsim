@@ -135,8 +135,8 @@ async function pricesOf(db, keys, d) {
 /// row is due `merit_priority_pct` sooner — up to `merit_rows_per_hour` an
 /// account, while the holds are under `merit_share_pct` of the board's live
 /// rows, and as far as its balance goes; the rest go as they would. Returns the
-/// asks, the moved ones with their sooner deadline. `kinds`: the board's
-/// producers as an SQL list.
+/// asks, the moved ones with their sooner deadline; one waited on is never held.
+/// `kinds`: the board's producers as an SQL list.
 export async function holdPriority(env, batch, asks, kinds, now = Date.now()) {
   const d = await dialsOf(env, now);
   if (!d.merit_priority || !env.ACCOUNTS || !batch.startsWith("arrivals-")) return asks;
@@ -160,7 +160,8 @@ export async function holdPriority(env, batch, asks, kinds, now = Date.now()) {
     let left = Number(p.balance), n = 0, total = 0;
     const mine = [];
     out.forEach((a, k) => {
-      if (a.initiator !== p.code || room <= 0 || Number(p.used) + n >= d.merit_rows_per_hour) return;
+      // A ROW SOMEONE WAITS ON goes first already: merit would buy nothing.
+      if (a.waits || a.initiator !== p.code || room <= 0 || Number(p.used) + n >= d.merit_rows_per_hour) return;
       const cost = price(a.request.ruler, a.request.mode);
       if (cost > left) return;
       left -= cost; total += cost; n++; room--;

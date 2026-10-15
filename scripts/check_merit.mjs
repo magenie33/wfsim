@@ -6,7 +6,7 @@
 // leaves it granted; the public totals are sums only; a change is refused from
 // another site and from nobody signed in.
 //   node scripts/check_merit.mjs
-import { mintMerit, meritCaps, meritRoute, settleMerit } from "../worker/merit.js";
+import { mintMerit, meritCaps, meritRoute, settleMerit, holdPriority } from "../worker/merit.js";
 import { DIAL_DEFAULTS, forgetDials } from "../worker/dials.js";
 import { sha256, initiatorCode } from "../worker/accounts.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
@@ -144,6 +144,11 @@ check("…and from nobody signed in", (await meritRoute(new Request("https://wfs
   await settleMerit(env, NOW + 120_000);
   check("a refund is made once, however often the settling runs", (await bal()) === 1000 - DIAL_DEFAULTS.merit_price_default
     && (await A.all("SELECT id FROM merit_ledger WHERE kind = 'refund'")).length === 2);
+  // A WAITED-ON ROW goes first already, and is never held.
+  const before = (await L.all("SELECT id FROM merit_holds")).length;
+  const waited = await holdPriority(env, batch, [{ producer: "new_build", ref: "w|standard_single_target|base", verb: "simulate",
+    request: { ruler: "standard_single_target", mode: "base" }, due_in_ms: 1000, initiator: code, waits: true }], "('new_build')", NOW);
+  check("a row someone waits on is never held", (await L.all("SELECT id FROM merit_holds")).length === before && waited[0].due_in_ms === 1000);
   await me("POST", { auto_priority: false });
   check("turning priority off deletes whose code is whose", !(await A.get("SELECT code FROM merit_codes WHERE account = 'payer'")));
 }

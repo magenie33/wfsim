@@ -221,11 +221,18 @@ fn intake(
         let rkey = rec.to_string();
         if let Some(keys) = already.get(&rkey) {
             for k in keys {
-                // …and a fight a copy asked for without a name takes this one's.
+                // …and a fight or an order a copy asked for without a name takes this one's.
                 if let Some(who) = &initiator {
                     for (_, ask) in asked.iter_mut().filter(|(ak, _)| ak.starts_with(&format!("{k}#"))) {
                         if ask.get("initiator").is_none() {
                             ask["initiator"] = json!(who);
+                        }
+                    }
+                    if let Some(sink) = orders.as_deref_mut() {
+                        for order in sink.iter_mut().filter(|o| o["build_id"] == json!(k)) {
+                            if order.get("initiator").is_none() {
+                                order["initiator"] = json!(who);
+                            }
                         }
                     }
                 }
@@ -329,7 +336,11 @@ fn intake(
             let owed = wfsim_webapi::board_rows::owed_rows(&rec);
             if let Some(sink) = orders.as_deref_mut() {
                 for (ruler, mode) in &owed {
-                    sink.push(json!({ "build_id": key, "ruler": ruler, "mode": mode }));
+                    let mut order = json!({ "build_id": key, "ruler": ruler, "mode": mode });
+                    if let Some(who) = &initiator {
+                        order["initiator"] = json!(who);
+                    }
+                    sink.push(order);
                 }
             }
             // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
@@ -798,6 +809,13 @@ mod tests {
         assert_eq!(asked.len(), 1);
         assert_eq!(asked[0]["initiator"], "user:z", "{asked:?}");
         assert!(asked_of(vec![named("f", None)])[0].get("initiator").is_none());
+        // THE LIVE PATH'S ORDERS carry it too, a copy filling one that had none.
+        let mut orders = Vec::new();
+        intake(vec![named("g", None), named("h", Some("user:o"))].into_iter(), None, Some(&mut orders));
+        assert!(!orders.is_empty() && orders.iter().all(|o| o["initiator"] == "user:o"), "{orders:?}");
+        let mut orders = Vec::new();
+        intake(vec![named("i", None)].into_iter(), None, Some(&mut orders));
+        assert!(orders.iter().all(|o| o.get("initiator").is_none()), "{orders:?}");
     }
 
     /// **A MODE THE WEAPON CANNOT SUSTAIN IS NOT ASKED FOR.** The scorer
