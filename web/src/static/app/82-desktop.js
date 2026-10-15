@@ -13,10 +13,9 @@
 // A NO-OP IN A BROWSER. `__WFSIM_DESKTOP__` is set by the shell and by nothing
 // else, so this costs the web build one comparison at boot.
 //
-// IT NEVER RESTARTS BY ITSELF. A download is silent and a restart is asked for,
-// because a page that reloads on its own throws away whatever the reader was
-// in the middle of — an hour-long search, a fight half set up — to deliver a
-// change they had not asked for yet.
+// A RESTART IS ASKED FOR, AND TAKEN ONLY ONCE IDLE. A download is silent; the
+// restart waits for a click, or for ten untouched minutes with nothing running
+// (`restartWhenIdle`) — never mid-search or mid-row, which it would throw away.
 const DESKTOP_POLL_MS = 700;
 /// Hourly. The client is not a page a reader refreshes, so it has to look on
 /// its own; hourly is often enough that a fix lands the day it ships and rare
@@ -341,7 +340,35 @@ function mountDesktopUpdater() {
   setTimeout(look, 8000);
   setTimeout(offerNewShell, 8000);
   setInterval(look, DESKTOP_CHECK_MS);
+  // A NEWER ENGINE OR RELEASE SEEN BY THE COMPUTING LOOP is looked for now, not
+  // at the next hourly check: a client on a replaced engine is handed no work.
+  let followedAt = 0;
+  desktopFollowRelease = () => {
+    if (Date.now() - followedAt < DESKTOP_FOLLOW_MS) return;
+    followedAt = Date.now();
+    look();
+  };
+  setInterval(restartWhenIdle, DESKTOP_IDLE_LOOK_MS);
+  // A READY UPDATE IS APPLIED BY ITSELF once nobody has touched the window for
+  // `IDLE_RELOAD_MS` and nothing runs — no reader's job, no row mid-measure (a
+  // row cut short resumes anyway) — the terms a browser tab reloads on. A client
+  // left computing in the tray otherwise stays on the old engine, handed nothing.
+  async function restartWhenIdle() {
+    if (Date.now() - lastTouched < IDLE_RELOAD_MS || readerBusy() || computeNow) return;
+    try {
+      const s = await invoke("update_status");
+      if (s.phase !== "ready" || s.version === await invoke("app_version")) return;
+      if (Date.now() - lastTouched < IDLE_RELOAD_MS || readerBusy() || computeNow) return;
+      await invoke("update_apply");
+      reloadForRelease("idle");
+    } catch (_) { /* the notice still offers the restart */ }
+  }
 }
+/// HOW OFTEN A NEWER RELEASE MAY SEND THE CLIENT LOOKING, and how often a ready
+/// update asks whether the window is idle enough to apply it.
+const DESKTOP_FOLLOW_MS = 10 * 60_000, DESKTOP_IDLE_LOOK_MS = 30_000;
+/// SET ONCE THE UPDATER IS MOUNTED; a no-op in a browser and before it.
+let desktopFollowRelease = () => {};
 
 /// A SHELL OLDER THAN `SHELL_MINIMUM` IS TOLD A NEW DOWNLOAD EXISTS — once per
 /// minimum: closed, it stays closed until a newer shell raises it again. Its

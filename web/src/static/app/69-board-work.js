@@ -904,7 +904,10 @@ function reloadForRelease(how = "asked") {
   location.reload();
 }
 function maybeReloadForRelease() {
-  if ((!boardStale && !releaseNewer) || window.__WFSIM_DESKTOP__ || readerBusy()) return;
+  if (!boardStale && !releaseNewer) return;
+  // THE DESKTOP CLIENT'S UPDATER SWAPS THE FILES (82-desktop.js), told to look now.
+  if (window.__WFSIM_DESKTOP__) { desktopFollowRelease(); return; }
+  if (readerBusy()) return;
   if (!boardStale && !releaseLeftBehind && Date.now() - lastTouched < IDLE_RELOAD_MS) return;
   // ONE TRY AN HOUR: a CDN still serving the old files must not make a loop.
   try {

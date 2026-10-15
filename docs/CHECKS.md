@@ -1224,6 +1224,12 @@ a click switches it without opening the riven. Signed out, the cloud is a link t
 sign in that comes back to the page and picks no entry; with no way to sign
 in, no chip carries one.
 
+## `check_desktop_idle_restart`
+
+The page made to look like the client, its updater saying an update is ready:
+not applied while the window was touched in the last ten minutes, nor while a
+row is mid-measure; applied by itself once idle with nothing running.
+
 ## `check_desktop_shell_notice`
 
 The page made to look like the client, with the build it states varied: a

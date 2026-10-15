@@ -94,7 +94,7 @@ docs/DISTRIBUTION.md.
 
 | | changes | how it ships | what the reader sees |
 |---|---|---|---|
-| **content** — `app.js`, `pkg/*.wasm`, `native/*.dll`, `img/` | on a code change | files, swapped by two renames | a notice, then a restart |
+| **content** — `app.js`, `pkg/*.wasm`, `native/*.dll`, `img/` | on a code change | files, swapped by two renames | a notice, then a restart — by itself once idle |
 | **live data** — the board | every hour | fetched into `live/`, beside the release | nothing |
 | **shell** — the `.exe` | rarely | one file, downloaded once | a download |
 
@@ -106,7 +106,12 @@ never. **Keeping the shell thin is the update strategy**, not tidiness.
 to restart.** Whether to spend twelve megabytes on a calculator they already
 have open is not a decision they have anything to decide it with, and asking it
 put the update behind a button most people never pressed. So the notice appears
-when there is something a click can finish. A failure still interrupts,
+when there is something a click can finish. **UNANSWERED, IT RESTARTS BY ITSELF**
+on the terms a browser tab reloads on: nobody has touched the window for ten
+minutes and nothing runs — no job of the reader's, no row mid-measure. A client
+left computing in the tray would otherwise stay on a replaced engine, which is
+handed no work; a newer engine the computing loop sees sends it looking for the
+update at once instead of at the hourly check. A failure still interrupts,
 unasked — a client that cannot update is frozen for good, and silence there
 reads exactly like being up to date. `next/` is discarded at boot, so an update
 downloaded and never restarted into is fetched again next launch.
