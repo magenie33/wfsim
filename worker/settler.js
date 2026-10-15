@@ -13,24 +13,23 @@ import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
 import { facts } from "./factory.js";
 
-/// OPEN IS COUNTED ONLY THIS FAR: past it, more open rows decide nothing a
-/// snapshot is read for, and counting them all is a scan every ten seconds.
-export const SNAPSHOT_OPEN_CAP = 50_000;
-
 /// THE FACTORY NOW, written as the one `factory_snapshot` row. `asking` and
 /// `computing` are the worker's own definitions (worker/verify.js `work`,
-/// worker/contribution.js `computingNow`).
+/// worker/contribution.js `computingNow`). OPEN IS COUNTED AS FAR AS ANY PACK
+/// COULD NEED: the asking times the largest pack either protocol hands out, all
+/// that `factory_open` (which every hand-out reads this row through) compares
+/// it to — a fixed ceiling read work as short once enough computers asked.
 export async function snapshotTick(env, { engine = null, release = null, commit = "" } = {}, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now), d = await dialsOf(env, now);
-  const n = await db.prepare(`SELECT
+  const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x) SELECT
       (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
-         AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT ?2::bigint) o) AS open,
+         AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * ?2::bigint) o) AS open,
       (SELECT count(*) FROM questions WHERE state = 'open' AND waits > 0) AS urgent,
-      (SELECT count(*) FROM ${askingIds(3, 1)} x) AS asking,
+      (SELECT n FROM a) AS asking,
       (SELECT count(*) FROM verifiers WHERE banned = 0 AND last_at >= ?4::text) AS computing,
       (SELECT count(*) FROM queue) AS queue_rows,
       (SELECT count(*) FROM settle_queue) AS settle_queue_rows`)
-    .bind(at, SNAPSHOT_OPEN_CAP, iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
+    .bind(at, Math.max(d.pack8_max, d.pack_max), iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
   const row = { at, engine, release, open: n.open, urgent: n.urgent, asking: n.asking, computing: n.computing,
     queue_rows: n.queue_rows, settle_queue_rows: n.settle_queue_rows, daemon_at: at, daemon_commit: commit };
   await db.prepare(`INSERT INTO factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)

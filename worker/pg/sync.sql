@@ -142,15 +142,23 @@ CREATE OR REPLACE FUNCTION factory_asking(text, text) RETURNS SETOF text LANGUAG
   UNION SELECT leased_to FROM questions WHERE leased_to IS NOT NULL AND lease_until > $2
 $$;
 
--- THE OPEN ROWS NOBODY WAITS ON, counted only as far as they can matter — past
--- the asking times $4 (and never past $2) a pack's size and `short` read the
--- same — and the asking since $3, at $1 (worker/verify.js `packSize`).
+-- THE OPEN ROWS NOBODY WAITS ON and the computers asking, at $1: the settler's
+-- snapshot (worker/settler.js `snapshotTick`, every ten seconds, open counted as
+-- far as any pack could need), read while under a minute old — six missed ticks
+-- mean the daemon is down. Only then counted here: the open past the asking
+-- since $3 times $4, the rows this pack would hold (worker/verify.js `packRows`).
+-- $2 is unused, kept so the procedure that calls this stays as it is.
 CREATE OR REPLACE FUNCTION factory_open(text, bigint, text, bigint) RETURNS TABLE (open bigint, asking bigint)
 LANGUAGE sql STABLE AS $$
-  WITH a AS (SELECT count(*) AS n FROM factory_asking($3, $1))
+  WITH s AS (SELECT f.open, f.asking FROM factory_snapshot f WHERE f.id = 1
+      AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  a AS (SELECT count(*) AS n FROM factory_asking($3, $1) WHERE NOT EXISTS (SELECT 1 FROM s))
+  SELECT s.open, s.asking FROM s
+  UNION ALL
   SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
       AND (lease_until IS NULL OR lease_until < $1)
-      LIMIT LEAST($2, GREATEST(1, (SELECT n FROM a)) * $4)) o), (SELECT n FROM a)
+      LIMIT GREATEST(1, (SELECT n FROM a)) * $4) o), (SELECT n FROM a)
+  WHERE NOT EXISTS (SELECT 1 FROM s)
 $$;
 
 -- A QUESTION AFTER ITS DEMANDS MOVED: the earliest deadline still standing, the
@@ -515,7 +523,7 @@ BEGIN
     r := r || jsonb_build_object('outcome', 'alone');
     RETURN;
   END IF;
-  SELECT * INTO v_fair FROM factory_open(v_at, (p #>> '{fair,scan}')::bigint, p #>> '{fair,asking_since}', (p #>> '{fair,per}')::bigint);
+  SELECT * INTO v_fair FROM factory_open(v_at, NULL, p #>> '{fair,asking_since}', (p #>> '{fair,per}')::bigint);
   IF (p #>> '{fair,cap}')::bigint <> 0 AND v_fair.asking > (p #>> '{fair,cap}')::bigint
       AND NOT (v_me.last_at IS NOT NULL AND v_me.last_at > p #>> '{fair,cap_since}') THEN
     UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;

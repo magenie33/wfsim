@@ -181,13 +181,18 @@ export const PACK_LEASE_MS = DIAL_DEFAULTS.pack_lease_ms;
 /// HOW MANY PACKS A CLIENT HOLDS AT MOST: the one it computes and the next,
 /// asked as this one ends (`ahead`), so no core waits on a round trip.
 export const PACKS_HELD = DIAL_DEFAULTS.packs_held;
+/// THE ROWS A CLIENT'S PACK WOULD HOLD with work plentiful: `pack_ms` at its pace,
+/// never past `pack_max`. Work is SHORT when the open rows over the computers
+/// asking are fewer, and open is counted that far and no further (`factory_open`):
+/// a fixed ceiling on the count read 1.1M open rows as short for any fast page.
+export function packRows(pace_ms, d = DIAL_DEFAULTS) {
+  return Math.min(d.pack_max, pace_ms ? Math.round(d.pack_ms / pace_ms) : d.pack_first);
+}
 /// FAIR SHARE: while the open questions are few, a pack is at most their number
 /// over the computers asking — the last rows of a batch go to many computers at
-/// once, never to one fast one while the rest wait. Counted up to this many.
-export const FAIR_SCAN = 4000;
+/// once, never to one fast one while the rest wait.
 export function packSize(pace_ms, open, asking, d = DIAL_DEFAULTS) {
-  const byPace = pace_ms ? Math.round(d.pack_ms / pace_ms) : d.pack_first;
-  return Math.max(1, Math.min(d.pack_max, byPace, Math.floor(open / Math.max(1, asking))));
+  return Math.max(1, Math.min(packRows(pace_ms, d), Math.floor(open / Math.max(1, asking))));
 }
 
 /// THE FACTORY'S NEXT WORK FOR THIS CLIENT — a pack of rows, or one question that
@@ -250,10 +255,10 @@ async function work(request, env) {
     ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
       : f.releaseAllOf(env, id, now),
     db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
-    // OPEN IS COUNTED ONLY AS FAR AS IT CAN MATTER: past `asking` times the most
-    // either use below compares it to, `packSize` and `short` read the same.
+    // OPEN IS COUNTED ONLY AS FAR AS IT CAN MATTER: `asking` times `packRows`,
+    // all that `packSize` and `short` compare it to.
     db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
-      .bind(at, FAIR_SCAN, iso(now - 2 * d.asked_every_ms), Math.max(d.pack_max, pace ? Math.round(d.pack_ms / pace) : d.pack_first)),
+      .bind(at, null, iso(now - 2 * d.asked_every_ms), packRows(pace, d)),
     f.headOf(env, w, engine, now, d),
     asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),
   ]);
@@ -279,7 +284,7 @@ async function work(request, env) {
   // WHILE THE OPEN ROWS ARE FEWER THAN THE ASKING WOULD TAKE, an account past its
   // fair share is handed nothing this ask (worker/fair.js) — and only then, so
   // the table is never read while work is plentiful.
-  const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(d.pack_ms / pace) : d.pack_first);
+  const short = Math.floor(open / Math.max(1, asking)) < packRows(pace, d);
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return none;
   const n = single ? 1 : packSize(pace, open, asking, d), lease_ms = single ? d.lease_ms : d.pack_lease_ms;
   const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? d.packs_held : 1, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null,

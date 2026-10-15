@@ -24,7 +24,7 @@ import { iso } from "./instant.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
 import { devicePointsOf, RECENT_DAYS, WEEK_DAYS } from "./contribution.js";
 import { json, read, day, VERIFIER_ID, ENGINE_ID, LEASE_ID, QUESTION_ID, METRIC_ID, ISO, unrecognised, servedRelease, graceOf,
-  netOf, viaRelay, seenOf, askedOf, askedArgs, asksOf, asksRows, countsOf, packSize, FAIR_SCAN, PROTOCOL, protocolsSaid } from "./verify.js";
+  netOf, viaRelay, seenOf, askedOf, askedArgs, asksOf, asksRows, countsOf, packSize, packRows, PROTOCOL, protocolsSaid } from "./verify.js";
 
 /// WHAT ONE SYNC CARRIES AT MOST: a ten-minute pack's results twice over.
 export const SYNC_BODY = 262_144;
@@ -233,14 +233,14 @@ async function rest(x, { taken, dropped }) {
   // holding rows is handed a pack of the rest (a pack never holds a waited row),
   // or a busy fleet idled while any waited row stood open.
   if (!grace && !f.packable(head) && holds.questions === 0) return alone(x, base, idle);
-  const per = { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max };
+  const per = { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max }, rows = packRows(pace, per);
   const fair = await db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
-    .bind(at, FAIR_SCAN, iso(now - 2 * d.asked_every_ms), Math.max(d.pack8_max, pace ? Math.round(want / pace) : d.pack_first)).first();
+    .bind(at, null, iso(now - 2 * d.asked_every_ms), rows).first();
   const { open, asking } = fair;
   if (d.compute_cap && asking > d.compute_cap && !(me.last_at && me.last_at > iso(now - 600_000))) return idle({ busy: true });
   // WHILE WORK IS SHORT: an account past its fair share is handed nothing this
   // sync, and a pack is a short one, leased short — the last rows go to many.
-  const short = Math.floor(open / Math.max(1, asking)) < (pace ? Math.round(want / pace) : d.pack_first);
+  const short = Math.floor(open / Math.max(1, asking)) < rows;
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return idle();
   const n = packSize(pace, open, asking, per), lease_ms = short ? d.pack_lease_ms : d.sync_lease_ms;
   const got = await f.nextPack(env, w, engine, { n, lease_ms, most: d.packs_held, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null,
@@ -264,14 +264,15 @@ async function alone(x, base, idle) {
 }
 
 /// THE PACK HANDED OUT, and when to come back.
-async function packed({ db, now, id, ms, say, d, pace, want, grace, served }, base, idle, lease, lease_ms, questions, wrote = false) {
+async function packed({ db, now, id, ms, say, d, grace, served }, base, idle, lease, lease_ms, questions, wrote = false) {
   const tasks = questions.map(packTaskOf).filter(Boolean);
   if (!tasks.length) return idle();
   const next = now + ms(d.sync_floor_ms);
   if (!wrote) await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
-  // COME BACK as the pack runs low: its rows at the client's pace, less the low mark.
-  const advise = Math.max(d.sync_floor_ms, (pace ? tasks.length * pace : want) - d.sync_low_ms);
-  return say({ ...base, work: null, pack: { lease, lease_ms, tasks }, next_ms: ms(advise),
+  // COME BACK AT THE FLOOR, the gate the server holds it to: the client syncs
+  // only as its work runs low anyway. Advice from its pace told a page with no
+  // pace yet 480 s for three rows of a few seconds, and it sat idle the rest.
+  return say({ ...base, work: null, pack: { lease, lease_ms, tasks }, next_ms: next - now,
     ...(grace ? { engine: served.engine, accepted_until: grace.until, ...(grace.join ? { join: true } : {}) } : {}) });
 }
 
@@ -282,7 +283,7 @@ async function packed({ db, now, id, ms, say, d, pace, want, grace, served }, ba
 /// the procedure to record them.
 async function viaProcedure(x, given) {
   const { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, pace, want, who, w, f } = x;
-  const rules = f.syncRules, a = askedArgs({ ...b, lanes: w.lanes, ahead: false }, now, d);
+  const rules = f.syncRules, rows = packRows(pace, { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max }), a = askedArgs({ ...b, lanes: w.lanes, ahead: false }, now, d);
   const span = typeof b.since === "string" ? await spanOf(env, id).then((from) => ({ from }), () => null) : null;
   const throttle = throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id));
   const call = {
@@ -304,8 +305,8 @@ async function viaProcedure(x, given) {
     consented, idle_at: iso(now + ms(d.sync_idle_ms)), floor_at: iso(now + ms(d.sync_floor_ms)), want, packs_held: d.packs_held,
     ceiling_s: Math.round(d.row_ceiling_ms / 1000), grace_s: Math.round(d.settle_grace_ms / 1000), official_states: JSON.stringify(OFFICIAL_STATES),
     grace: grace ? { exclude: grace.join ? null : JSON.stringify(grace.changed), join: grace.join ? served.engine : null } : null,
-    fair: { scan: FAIR_SCAN, asking_since: iso(now - 2 * d.asked_every_ms), per: Math.max(d.pack8_max, pace ? Math.round(want / pace) : d.pack_first),
-      short_rows: pace ? Math.round(want / pace) : d.pack_first, cap: d.compute_cap, cap_since: iso(now - 600_000), throttle },
+    fair: { asking_since: iso(now - 2 * d.asked_every_ms), per: rows,
+      short_rows: rows, cap: d.compute_cap, cap_since: iso(now - 600_000), throttle },
     pack: { by_pace: pace ? Math.round(Math.max(1, want) / pace) : d.pack_first, max: d.pack8_max, lease: newLease(),
       short_until: iso(now + d.pack_lease_ms), long_until: iso(now + d.sync_lease_ms) },
   };

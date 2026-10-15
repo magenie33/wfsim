@@ -175,6 +175,31 @@ const alone = await as(D);
 check("…a computer holding nothing is, alone, as a pack of one its page runs",
   !alone.work && alone.pack && alone.pack.tasks.length === 1 && alone.pack.tasks[0].question === waiting, JSON.stringify(alone).slice(0, 300));
 
+console.log("\nwhether work is short, and coming back");
+// THE SETTLER'S SNAPSHOT DECIDES, while it is fresh: open past any fixed ceiling
+// on a count is plenty, and a fast computer is handed a long-leased pack.
+await L.run("UPDATE questions SET waits = 0");
+const snap = (open, at) => L.run(`INSERT INTO factory_snapshot (id, at, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
+  VALUES (1, ?1, ?2, 0, 5, 0, 0, 0, ?1, 'check') ON CONFLICT (id) DO UPDATE SET at = excluded.at, open = excluded.open, asking = excluded.asking`, at, open);
+await free(); await comeBack(E);
+await snap(1_000_000, new Date().toISOString());
+const plenty = await as(E, { pace_ms: 1000 });
+check("a fresh snapshot of plenty open is not short: a fast computer's pack is leased long",
+  plenty.pack && plenty.pack.lease_ms === DIALS.sync_lease_ms.default, JSON.stringify(plenty.pack && { n: plenty.pack.tasks.length, lease_ms: plenty.pack.lease_ms }));
+// A PAGE WITH NO PACE YET is handed a few rows and told the floor, never a
+// whole pack's time it would sit out idle once they are done.
+await free(); await comeBack(E);
+const cold = await as(E);
+check("a pack handed to a computer with no pace says come back at the floor",
+  cold.pack && cold.next_ms === DIALS.sync_floor_ms.default, JSON.stringify({ n: cold.pack && cold.pack.tasks.length, next_ms: cold.next_ms }));
+// …A SNAPSHOT OVER A MINUTE OLD IS NOT READ: open is counted here, and these few rows are short.
+await free(); await comeBack(E);
+await snap(1_000_000, new Date(Date.now() - 120_000).toISOString());
+const counted = await as(E, { pace_ms: 1000 });
+check("a stale snapshot is not read: open counted here is short, the pack leased short",
+  counted.pack && counted.pack.lease_ms === DIALS.pack_lease_ms.default, JSON.stringify(counted.pack && { n: counted.pack.tasks.length, lease_ms: counted.pack.lease_ms }));
+await L.run("DELETE FROM factory_snapshot");
+
 console.log("\nthe owner's switches");
 await setDial(env, "sync_off", 1, "check");
 check("sync_off answers every sync with fallback 7", (await as(E)).fallback === 7);
