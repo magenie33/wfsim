@@ -4,9 +4,11 @@
 #
 #   scripts/live_board.sh <work-dir> <bin-dir>
 #
-# EVERY CYCLE: a submission is taken in the moment it lands — its builds into
-# the library, every row it owes into the queue and opened as a compute order
-# (`ship_queue.sh`) — the rows `scores` gained are read, and the boards move:
+# TWO LOOPS. The INTAKE loop takes a submission in the moment it lands — its
+# builds into the library, every row it owes into the queue and opened as a
+# compute order (`ship_queue.sh`) — on its own clock, so a submission never
+# waits for a projection pass. EVERY CYCLE of the main loop the rows `scores`
+# gained are read, and the boards move:
 # `verified/`, `scores` alone, pushed to R2 for the site; `board/`, with every
 # client result not yet a fact, for the owner and the bot. This server fights
 # nothing: what only the official machines may settle is `settle.yml`'s.
@@ -43,8 +45,11 @@ intake_arrivals() {
   "$BIN/wfsim-intake" --done done.txt --orders orders-new.ndjson --asked asked-new.ndjson \
     < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
   bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
-  cat builds-new.ndjson >> new-builds.ndjson
-  jq -r '.id' < builds-new.ndjson >> touched-ids.txt
+  # …INTO THE MAILBOX the main loop takes them from (`take_arrivals`).
+  { flock 9
+    cat builds-new.ndjson >> arrived-builds.ndjson
+    jq -r '.id' < builds-new.ndjson >> arrived-ids.txt
+  } 9> mailbox.lock
   # THE FIGHT EACH ARRIVAL NAMED GOES FIRST, asked as waited on (`named`): the
   # player just ran it and is looking for that row. The build's other rows
   # follow as ordinary ones, the named row left out so it is asked once.
@@ -59,6 +64,28 @@ intake_arrivals() {
     bash "$HERE/ship_queue.sh" "$day" "the rows a new build owes" "$f" >&2 \
       || echo "live: the new rows were not queued; the hourly reconciliation asks for them" >&2
   done
+}
+
+# THE INTAKE LOOP: every `POLL_SECONDS`, whatever the main loop is doing. Its
+# own `DB_OUT`: a variable the main loop set would name the same file.
+intake_loop() {
+  DB_OUT=""
+  while true; do
+    intake_arrivals || true
+    sleep "$POLL_SECONDS"
+  done
+}
+
+# WHAT THE INTAKE LOOP TOOK IN SINCE THE LAST CYCLE, moved out of the mailbox
+# after the store's read, so a build that landed meanwhile is in one or the other.
+take_arrivals() {
+  { flock 9
+    touch arrived-builds.ndjson arrived-ids.txt
+    cat arrived-builds.ndjson >> new-builds.ndjson
+    cat arrived-ids.txt >> touched-ids.txt
+    : > arrived-builds.ndjson
+    : > arrived-ids.txt
+  } 9> mailbox.lock
 }
 
 # READ INTO A SPARE AND SWAPPED ON SUCCESS: a failed read truncates its output,
@@ -155,6 +182,18 @@ read_unverified() {
   mv unverified.next unverified.ndjson
 }
 
+# ONE CYCLE AND OUT takes its arrivals in line; a service runs the intake loop
+# beside the main one, and starts it again if it ever stops.
+INTAKE_PID=""
+start_intake() {
+  intake_loop &
+  INTAKE_PID=$!
+}
+if [ "${ONCE:-}" != 1 ]; then
+  start_intake
+  trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null' EXIT
+fi
+
 last_refresh=0
 while true; do
   whole=0
@@ -169,7 +208,13 @@ while true; do
       echo "live: the store could not be read; keeping the last copy" >&2
     fi
   fi
-  intake_arrivals || true
+  if [ "${ONCE:-}" = 1 ]; then
+    intake_arrivals || true
+  elif ! kill -0 "$INTAKE_PID" 2>/dev/null; then
+    echo "live: the intake loop stopped; starting it again" >&2
+    start_intake
+  fi
+  take_arrivals
   # WHAT WAS VERIFIED SINCE THE LAST READ, without waiting for the hourly one.
   if [ -s facts-known.ndjson ]; then
     code=0
