@@ -504,12 +504,14 @@ BEGIN
   SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling, v_grace_s, p ->> 'official_states');
   v_has_head := FOUND;
   v_packable := v_has_head AND v_head.waits = 0 AND (p -> 'packable') ? v_head.verb;
-  IF (NOT v_has_head AND NOT v_grace) OR (NOT v_grace AND NOT v_packable AND v_holds.questions > 0) THEN
+  IF NOT v_has_head AND NOT v_grace THEN
     UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');
     RETURN;
   END IF;
-  IF NOT v_grace AND NOT v_packable THEN
+  -- A WAITED-ON HEAD goes alone to a computer holding nothing; one holding rows
+  -- is handed a pack of the rest (worker/sync.js says why).
+  IF NOT v_grace AND NOT v_packable AND v_holds.questions = 0 THEN
     r := r || jsonb_build_object('outcome', 'alone');
     RETURN;
   END IF;

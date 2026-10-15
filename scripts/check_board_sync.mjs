@@ -169,6 +169,7 @@ await comeBack(C);
 const busy = await as(C, { held: [{ lease: shortPack.pack.lease, rows: shortPack.pack.tasks.map((t) => t.question) }] });
 check("a computer holding a pack is never handed a question someone waits on",
   !(busy.work && busy.work.question === waiting) && !(busy.pack && busy.pack.tasks.some((t) => t.question === waiting)), JSON.stringify(busy).slice(0, 200));
+check("…but is handed a pack of the rest, not idled while it stands open", !!(busy.pack && busy.pack.tasks.length), JSON.stringify(busy).slice(0, 200));
 await comeBack(D);
 const alone = await as(D);
 check("…a computer holding nothing is, alone", alone.work && !alone.pack, JSON.stringify(alone).slice(0, 300));
