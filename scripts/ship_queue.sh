@@ -50,10 +50,13 @@ batch_body() {
 # ASKING TWICE FOR ONE ROW IS ONE ROW: the primary key is (batch, build, ruler,
 # mode) and that is the whole of the idempotence. An arrival's row carries who
 # asked (docs/BOARD.md §"Who asked"), else NULL, and whichever pass lands second
-# still fills an initiator the first left NULL.
+# still fills an initiator the first left NULL. ONE ROW A KEY A STATEMENT, the one
+# naming who asked: `DO UPDATE` refuses a statement touching one row twice, and
+# that refusal queued nothing.
 queue_batches() {
   jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
-    [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
+    [splits("\n")] | map(select(length > 0)) | map(fromjson)
+    | group_by([.build_id, .ruler, .mode]) | map((map(select(.initiator != null)) + .)[0]) as $all
     | range(0; ($all | length); $n)
     | . as $i
     | $all[$i : $i + $n] as $chunk
@@ -230,6 +233,12 @@ self_test() {
   printf '%s' "$first" | jq -e '.sql | endswith("DO UPDATE SET initiator = excluded.initiator WHERE queue.initiator IS NULL AND excluded.initiator IS NOT NULL")' >/dev/null \
     && say ok "...and asking twice for one row is one row, the second filling only a missing initiator" \
     || say FAIL "$(printf '%s' "$first" | jq -r .sql)"
+  # ONE KEY TWICE IN A FILE is one row, the one naming who asked: a statement
+  # touching a row twice is refused whole.
+  printf '%s\n' '{"build_id":"d","ruler":"r","mode":"m"}' '{"build_id":"d","ruler":"r","mode":"m","initiator":"user:a"}' '{"build_id":"e","ruler":"r","mode":"m"}' > dup.ndjson
+  [ "$(queue_batches "arrivals" dup.ndjson | jq -c '.params')" = '["arrivals","d","r","m","user:a","arrivals","e","r","m",null]' ] \
+    && say ok "...and one key twice is one row, the one naming who asked" \
+    || say FAIL "dup params: $(queue_batches "arrivals" dup.ndjson | jq -c '.params')"
   # THE FIGHT AN ARRIVAL NAMED is asked `named`, and no other row is.
   printf '%s\n' '{"build_id":"w1","ruler":"r","mode":"m","named":true}' '{"build_id":"w2","ruler":"r","mode":"m"}' > named.ndjson
   [ "$(ask_batches named.ndjson arrivals | jq -c '[.rows[].named]')" = '[true,null]' ] \
