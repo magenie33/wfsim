@@ -176,6 +176,8 @@ jobs:
         run: node scripts/check_ledger.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot
         run: node scripts/check_tasks.mjs
+      - name: A computer on but idle is found by what the server keeps, and said once
+        run: node scripts/check_idle_devices.mjs
       - name: The board's pipeline reads and writes Postgres
         run: node scripts/check_pg_scripts.mjs
       - name: While work is short an account past its fair share waits, and only then

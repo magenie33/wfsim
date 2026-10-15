@@ -425,6 +425,14 @@ between calls: the same build, the same number and the same work each time,
 since two volunteers' answers are confirmed only to the bit. A search run to keep its workers hands them back,
 and the next one starts on them.
 
+## `check_idle_devices`
+
+Plain node on PGlite: ids that asked in the last half hour are sorted into an
+old engine, an asking loop and not computing; one that answered, only just
+asked once, or went away is none of them. The watchdog says each kind in
+Chinese once, not again for the same devices, and again, listing all, when a
+device it has not said joins a kind.
+
 ## `check_tasks`
 
 Plain node on PGlite (`worker/pg/*.sql`): the fact factory (`worker/tasks.js`)

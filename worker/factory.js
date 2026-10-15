@@ -8,6 +8,7 @@ import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board
 import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } from "./verify.js";
 import { cloudTell } from "./cloud.js";
 import { watchdogText } from "./watchdog_say.js";
+import { idleFindings } from "./idle_devices.js";
 import { iso } from "./instant.js";
 import { fairShadow, settleBatch } from "./settler.js";
 
@@ -232,13 +233,26 @@ export async function watchdog(env, now = Date.now()) {
     const cells = await cellsFilling(env, now);
     if (cells.length) found.push({ kind: "cells_filling", cells });
   }
+  const told = (cause) => db.prepare(`INSERT INTO watchdog_told (cause, told_at) VALUES (?, ?)
+                        ON CONFLICT (cause) DO UPDATE SET told_at = excluded.told_at`).bind(cause, iso(now)).run();
   for (const f of found) {
     if (!(await stale(f.kind))) continue;
     if (await cloudTell(env, `WFSim compute watchdog
-${watchdogText(f, now)}`)) {
-      await db.prepare(`INSERT INTO watchdog_told (cause, told_at) VALUES (?, ?)
-                        ON CONFLICT (cause) DO UPDATE SET told_at = excluded.told_at`).bind(f.kind, iso(now)).run();
+${watchdogText(f, now)}`)) await told(f.kind);
+  }
+  // COMPUTERS ON BUT IDLE (worker/idle_devices.js), said BY DEVICE: a kind is said
+  // when it holds one not said within `RETELL_MS`, listing all of it, so a new
+  // idle computer is heard of within ten minutes and a known one twice a day.
+  if (engine) {
+    for (const f of await idleFindings(env, engine, now).catch(() => [])) {
+      found.push(f);
+      const fresh = [];
+      for (const x of f.devices) if (await stale(`${f.kind}:${x.device}`)) fresh.push(x.device);
+      if (!fresh.length) continue;
+      if (await cloudTell(env, `WFSim compute watchdog
+${watchdogText({ ...f, fresh: fresh.length }, now)}`)) for (const x of f.devices) await told(`${f.kind}:${x.device}`);
     }
+    await db.prepare("DELETE FROM watchdog_told WHERE cause LIKE 'idle:%' AND told_at < ?").bind(iso(now - RETELL_MS)).run();
   }
   return found;
 }

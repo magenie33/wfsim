@@ -664,7 +664,12 @@ deadline and what only they may settle.
   owner, once a cause until it has stood six hours. So is a scene still
   filling, its cell rulers' rows measured, measured in six hours, and owed —
   a cell that measured none is said as needing someone. Each is said with a
-  level, what it means and what to do (`worker/watchdog_say.js`).
+  level, what it means and what to do (`worker/watchdog_say.js`). **COMPUTERS ON
+  BUT IDLE** (`worker/idle_devices.js`): an id that asked in the last half hour
+  yet holds no row and answered nothing in it — on an old engine, asking more
+  than twice what a page asks when handed nothing, or on the served engine and
+  not computing — said by device: a kind is said when it holds one not said in
+  six hours, so a new idle computer is heard of within ten minutes.
 - **WHO IS ON**: a page's ask for work is recorded once a minute
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.

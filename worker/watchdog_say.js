@@ -67,5 +67,33 @@ function describe(f, now) {
       : `正常：每格都在动。剩余会随每轮排队增加，预计时间只按已排队的算。某格 ${f.cells[0].recent_hours} 小时没动会升为 🔴。`;
     return [still.length ? "act" : "info", "新场景填充中", `\`\`\`\n格子  已算/总数  进度  最近  预计剩余\n${lines.join("\n")}\n\`\`\`\n${verdict}`];
   }
+  if (f.kind.startsWith("idle:")) return idleSaid(f, now);
   return ["watch", f.kind, "看门狗没有这一类的说明，原始数据见下。"];
+}
+
+/// HOW MANY IDLE DEVICES ARE LISTED BY NAME; the rest are counted.
+const IDLE_LISTED = 10;
+function idleSaid(f, now) {
+  const line = (x) => {
+    const last = x.last_answer ? `${fmtHours(hoursAgo(x.last_answer, now))}前` : "6 小时内没有";
+    return `${x.device.slice(0, 8)} · ${x.label || "未认领"} · 引擎 ${x.engine} 协议 ${x.protocol} · ${x.lanes ?? "?"} 核 · 近 1 小时请求 ${x.asks} 次 · 上次交结果 ${last}`;
+  };
+  const list = f.devices.slice(0, IDLE_LISTED).map(line).join("\n")
+    + (f.devices.length > IDLE_LISTED ? `\n……另有 ${f.devices.length - IDLE_LISTED} 台` : "");
+  const head = `在线 ${f.online} 台里有 ${f.devices.length} 台（新出现 ${f.fresh ?? f.devices.length} 台）`;
+  if (f.kind === "idle:old_engine") {
+    return ["watch", "设备停在旧引擎上，拿不到单",
+      `${head}还在用旧引擎来要单，服务端只认 ${f.served}，给不了它们活。\n\`\`\`\n${list}\n\`\`\`\n` +
+      "网页闲置 10 分钟会自己刷新，桌面版闲置 10 分钟会自己重启进新版；协议 7 或更老、几天没交过结果的，多半是很久没碰的老页面、更新失败的桌面版或第三方客户端。认领了的可以找设备主人刷新或更新。"];
+  }
+  if (f.kind === "idle:asking_loop") {
+    return ["watch", "设备频繁请求却不接单",
+      `${head}每小时请求超过 ${f.loop_per_hour} 次（官方页面没单时最多每分钟一次），30 分钟内一个结果都没交。\n\`\`\`\n${list}\n\`\`\`\n` +
+      "官方页面不会这样，多半是第三方客户端的毛病（比如一直发\"不要单\"的请求）。联系客户端作者。"];
+  }
+  const many = f.devices.length * 10 >= f.online;
+  return [many ? "act" : "watch", "设备在线但没在算",
+    `${head}用的是当前引擎、在来要单，但 30 分钟内手里没单、也没交过结果。\n\`\`\`\n${list}\n\`\`\`\n` +
+    (many ? "异常：占在线设备一成以上，像是派单出了问题。叫 agent 查派单。"
+      : "零星几台多半是那台机器自己的问题（浏览器计算线程起不来、拿到单又交回）。持续出现或变多就叫 agent 查。")];
 }
