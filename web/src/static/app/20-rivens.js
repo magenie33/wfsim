@@ -154,6 +154,10 @@ let rivenKinResolved = [];
 
 async function resolveRiven(pending) {
   if (!riven) return;
+  // AN ANSWER FOR A CARD NO LONGER OPEN IS DROPPED: the list, or another card,
+  // may be opened while the engine works, and drawing it read a closed card.
+  const mine = riven;
+  let resolved;
   try {
     // `pending` carries a typed VALUE for one slot; the server turns it into
     // the roll it implies, clamped, so the formula stays in one place.
@@ -162,21 +166,28 @@ async function resolveRiven(pending) {
       const clone = JSON.parse(JSON.stringify(body));
       if (pending.slot === "malus") clone.malus.value = pending.value;
       else clone.bonuses[Number(pending.slot)].value = pending.value;
-      rivenResolved = await api("/api/riven", clone);
+      resolved = await api("/api/riven", clone);
+      if (riven !== mine) return;
+      rivenResolved = resolved;
       // Adopt the roll the value implied, so slider and box agree.
       (rivenResolved.stats || []).forEach((s) => {
         const at = s.slot === "malus" ? riven.malus : riven.bonuses[Number(s.slot)];
         if (at) at.roll = s.roll;
       });
     } else {
-      rivenResolved = await api("/api/riven", body);
+      resolved = await api("/api/riven", body);
+      if (riven !== mine) return;
+      rivenResolved = resolved;
     }
   } catch (e) {
+    if (riven !== mine) return;
     rivenResolved = { ok: false, illegal: [String(e)], stats: [] };
   }
   const kin = rivenComplete() ? rivenKin(weaponInfo($("weapon").value)) : [];
-  rivenKinResolved = await Promise.all(kin.map((x) =>
-    api("/api/riven", { ...riven, weapon: x.id }).then((r) => ({ w: x, r }), () => null)));
+  const kinResolved = await Promise.all(kin.map((x) =>
+    api("/api/riven", { ...mine, weapon: x.id }).then((r) => ({ w: x, r }), () => null)));
+  if (riven !== mine) return;
+  rivenKinResolved = kinResolved;
   renderRivenCard();
 }
 

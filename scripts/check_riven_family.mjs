@@ -200,11 +200,24 @@ const r = await evaluate(`(async () => {
   const now = modById('riven:' + nm);
   out.editAfter = { drain: now && now.drain, eff: ((now || {}).effects || []).join(' ') };
   out.stillEquipped = ((slots[0] || {}).mod === 'riven:' + nm);
+
+  // ---- 8. A CARD CLOSED WHILE THE ENGINE WORKS ON IT --------------------
+  await go('/weapons/Burston/rivens');
+  const reopen = document.querySelector('#riven-all [data-open="' + nm + '"]');
+  if (reopen) { reopen.click(); await sleep(1600); }
+  out.raceOpen = !!riven;
+  const pending = resolveRiven().then(() => 'ok', (e) => String(e));
+  openRiven('');
+  out.race = await pending;
+  out.raceClosed = riven === null;
   return out;
 })()`);
 
 // ---- the card is the family's -----------------------------------------------
 
+check("a card closed while the engine works on it is not drawn when the answer lands",
+  r.raceOpen === true && r.race === "ok" && r.raceClosed === true,
+  JSON.stringify({ raceOpen: r.raceOpen, race: r.race, raceClosed: r.raceClosed }));
 check("a riven was made on the Burston", r.picked === true && !!r.name,
   JSON.stringify({ picked: r.picked, name: r.name }));
 check("the Burston and its Prime file rivens under ONE scope",
