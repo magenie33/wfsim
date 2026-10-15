@@ -2257,6 +2257,14 @@ reads `wfsim-board --rulers`. A loop over the files skips every cell, and the
 purge built from one deletes every row owed under a cell as "retired" —
 `check_rescore_paths.mjs` refuses one.
 
+**THE GROUPS ARE DERIVED, NEVER COUNTED OFF THE SCORES.** Every (weapon,
+ruler, mode, riven-ness) the roster, the rulers' ladders and each weapon's
+sustainable modes make is a group (`board::groups::all`), whether or not a
+build has landed in it; the modes are the ones a build owes rows in
+(`board_modes`, read by `owed_rows`). `wfsim-board --groups` sums them by base
+ruler and scene and says how many rows one build owes, so an axis added to
+`data/benchmarks/` is priced before it ships.
+
 **A SCENE COSTS A BOARD, AND IS PAID FOR AFTER THE BASE.** Every build owes a
 row in every cell, so each rung multiplies the rows owed by the rulers it
 spans, and a new rung starts with every build unmeasured. A cell's row is never

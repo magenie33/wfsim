@@ -200,10 +200,7 @@ pub fn owed_rows(record: &Value) -> Vec<(String, String)> {
         .iter()
         .filter_map(|bench| scored_build(record, &bench.id).ok().map(|b| (bench, b)))
         .flat_map(|(bench, b)| {
-            wfsim_engine::data::weapons::play_modes(&b.weapon)
-                .into_iter()
-                .filter(|m| m.sustainable)
-                .map(move |m| (bench.id.clone(), if m.id.is_empty() { "base".to_string() } else { m.id.to_string() }))
+            wfsim_engine::board::groups::board_modes(&b.weapon).into_iter().map(move |m| (bench.id.clone(), m))
         })
         .collect()
 }

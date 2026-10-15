@@ -4,3 +4,4 @@
 
 pub mod benchmarks;
 pub mod builds;
+pub mod groups;

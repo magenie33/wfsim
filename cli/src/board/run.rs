@@ -26,6 +26,12 @@ pub fn run() {
         }
         return;
     }
+    // EVERY GROUP THE DATA MAKES, counted by base ruler, scene and riven-ness,
+    // and what one build of the average weapon owes; `--groups list` prints each.
+    if std::env::args().nth(1).as_deref() == Some("--groups") {
+        groups_report(std::env::args().nth(2).as_deref() == Some("list"));
+        return;
+    }
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
             "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \
@@ -762,6 +768,56 @@ pub fn run() {
         record_state(&bench_id, seen, kept.len());
     }
 }
+
+/// `wfsim-board --groups`: the groups `board::groups::all` derives, summed the
+/// ways a decision about them is read.
+fn groups_report(list: bool) {
+    use std::collections::BTreeMap;
+    let rulers = wfsim_engine::board::benchmarks::all();
+    let place = |id: &str| {
+        let b = rulers.iter().find(|b| b.id == id).expect("a group's ruler is a ruler");
+        (b.base.clone(), b.cell_dir().unwrap_or_else(|| "base".to_string()))
+    };
+    let groups = wfsim_engine::board::groups::all();
+    if list {
+        for g in &groups {
+            println!("{}\t{}\t{}\t{}", g.weapon, g.ruler, g.mode, if g.riven { "riven" } else { "plain" });
+        }
+        return;
+    }
+    let mut by_base: BTreeMap<String, usize> = BTreeMap::new();
+    let mut by_scene: BTreeMap<String, usize> = BTreeMap::new();
+    let mut by_weapon: BTreeMap<&str, usize> = BTreeMap::new();
+    let mut rows_owed: BTreeMap<&str, usize> = BTreeMap::new();
+    let mut rivens = 0;
+    for g in &groups {
+        let (base, scene) = place(&g.ruler);
+        *by_base.entry(base).or_default() += 1;
+        *by_scene.entry(scene).or_default() += 1;
+        *by_weapon.entry(g.weapon).or_default() += 1;
+        if g.riven {
+            rivens += 1;
+        } else {
+            *rows_owed.entry(g.weapon).or_default() += 1;
+        }
+    }
+    let weapons = by_weapon.len().max(1);
+    let owed: Vec<usize> = rows_owed.values().copied().collect();
+    println!("groups {}  weapons {}  rulers {}  per weapon {:.1} (max {})", groups.len(), weapons, rulers.len(),
+        groups.len() as f64 / weapons as f64, by_weapon.values().max().copied().unwrap_or(0));
+    println!("riven {}  plain {}", rivens, groups.len() - rivens);
+    println!("rows one build owes: mean {:.1}, max {}", owed.iter().sum::<usize>() as f64 / owed.len().max(1) as f64,
+        owed.iter().max().copied().unwrap_or(0));
+    println!("by base ruler:");
+    for (k, v) in &by_base {
+        println!("  {k:<28} {v}");
+    }
+    println!("by scene:");
+    for (k, v) in &by_scene {
+        println!("  {k:<28} {v}");
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
