@@ -168,7 +168,7 @@ $$;
 -- COVERED (`answers.credited = 2`): on the questions $1 (json), an agreeing answer
 -- still unpaid whose owner or network a paid witness of the same answer already
 -- is — no witness rule can ever pay it. Marked where the witnesses are paid
--- (worker/tasks.js `credit`) and by `repay` for the rows before it; returns how many.
+-- (worker/tasks.js `credit`); returns how many.
 CREATE OR REPLACE FUNCTION factory_cover(text) RETURNS bigint LANGUAGE sql AS $$
   WITH c AS (UPDATE answers a SET credited = 2
       WHERE a.question IN (SELECT jsonb_array_elements_text($1::jsonb)) AND a.credited = 0 AND a.void = 0 AND a.official = 0

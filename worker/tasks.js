@@ -844,16 +844,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// AN ANSWER WHOSE OWNER OR NETWORK WAS ALREADY PAID FOR THE QUESTION is no
   /// witness (`independent`) and is never owed: picked, the oldest of them held
   /// every call's places and nobody behind them was ever paid. Such an answer is
-  /// COVERED once its witnesses are paid (`credit`); one left from before that,
-  /// `COVER_SWEEP` a call, is marked here, and no call reads it again.
-  const COVER_SWEEP = 2000;
+  /// COVERED once its witnesses are paid (`credit`), and no call reads it again.
   async function repay(env, now = Date.now(), max = 200) {
     const db = env.LIBRARY;
-    await db.prepare(`SELECT factory_cover((SELECT coalesce(jsonb_agg(DISTINCT x.question), '[]'::jsonb)::text FROM (
-        SELECT a.question FROM answers a WHERE a.credited = 0 AND a.void = 0 AND a.official = 0
-          AND EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
-                      AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net)))
-        LIMIT ?::bigint) x)) AS n`).bind(COVER_SWEEP).first();
     const { results: qs } = await db.prepare(`SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
         WHERE a.credited = 0 AND a.void = 0 AND a.official = 0 AND a.canon = q.canon AND q.state IN ('fact', 'spot')
           AND a.at <= q.fact_at AND q.fact_at < ?::text
