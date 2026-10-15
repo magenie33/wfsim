@@ -6,7 +6,7 @@
 // purged — and each table must hold what the pass says it wrote.
 //   npm ci --prefix scripts/pg && node scripts/check_pg_scripts.mjs
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -73,7 +73,9 @@ check("a backup is restored into the library", await run("restore_library.sh", "
 file("orphans.ndjson", `${JSON.stringify({ build_id: "b1", ruler: "standard_single_target", mode: "base" })}\n`);
 check("an orphan is purged", await run("purge_orphans.sh", "orphans.ndjson") === 0 && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
 await query("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-2026-10-01', 'b1', 'no_such_ruler', 'base')");
-process.env.WFSIM_BOARD = file("rulers.sh", "#!/bin/sh\necho standard_single_target\necho heavy_gunner\n");
+// EXECUTED, not sourced (`purge_queue.sh` runs it), so Linux needs the bit.
+process.env.WFSIM_BOARD = file("rulers.sh","#!/bin/sh\necho standard_single_target\necho heavy_gunner\n");
+chmodSync(process.env.WFSIM_BOARD, 0o755);
 check("a ruler the repo no longer has is purged", await run("purge_queue.sh") === 0
   && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
 
