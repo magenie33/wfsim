@@ -22,7 +22,7 @@
 //   GET  /api/board/demand           → `demandOf`'s body as the settler last wrote it (`DEMAND_KEY`): { v, at, computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains,
 //        surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }] (unfinished), per_hour: { volunteers, official }, clear_hours }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
-//   GET  /api/contributors[?period=recent|week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, contributor_rank, mark?, volunteer?, you? }] }
+//   GET  /api/contributors[?period=recent|week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, contributor_rank, mark?, volunteer?, you? }], windows: { week, recent: { from, until } } }
 //        — the first `limit` rows (default `PAGE`, at most `MOST`) of `total`; `key` is the row's
 //        own for the page to follow it as it moves, and says nothing of the account behind it.
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, contributor_rank, mark?, volunteer? } | null }
@@ -31,8 +31,8 @@
 //        — `name` (the display name, else the username) is null for an account
 //        that did not agree, and `mark` is the paid half's, for a named one only.
 //
-// `recent` is the last `RECENT_DAYS` days and `week` the last `WEEK_DAYS`, so a
-// newcomer can lead somewhere; `ranks` is the account's place on each of the
+// `recent` is this calendar month and `week` this calendar week (`periodStarts`),
+// so a newcomer can lead somewhere; `ranks` is the account's place on each of the
 // three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
@@ -46,9 +46,23 @@ import { dialsOf } from "./dials.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
-/// The ranking's other column: the days counted back from today, today included.
-export const RECENT_DAYS = 30;
-export const WEEK_DAYS = 7;
+/// THE SHORT RANKINGS ARE CALENDAR PERIODS IN UTC: the week from Monday 00:00, the
+/// month from the 1st, so each opens with everyone at nought and a race to the
+/// end of it. A rolling window never restarts, so nobody ever starts level. The
+/// page says both ends in the reader's own time (17-account.js `periodWindow`).
+/// `at`'s Monday and first of the month, as UTC days.
+export function periodStarts(at = Date.now()) {
+  const d = new Date(at);
+  const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return { week: iso(monday).slice(0, 10), month: iso(at).slice(0, 8) + "01" };
+}
+/// …AND EACH ONE'S ENDS as instants, served beside the ranking so the page says
+/// them in the reader's time without a second copy of the rule.
+export function periodWindows(at = Date.now()) {
+  const { week, month } = periodStarts(at), w = Date.parse(week + "T00:00:00Z"), m = new Date(month + "T00:00:00Z");
+  return { week: { from: iso(w), until: iso(w + 7 * 86_400_000) },
+    recent: { from: iso(m.getTime()), until: iso(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)) } };
+}
 /// THE RANKING IS EVERYONE, served `PAGE` rows at a time as the page scrolls,
 /// and asked again whole each minute, so `MOST` bounds what one answer carries.
 export const PAGE = 100;
@@ -93,13 +107,13 @@ export async function ownersOf(env, ids) {
 const since = (days) => new Date(Date.now() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
 
 /// THE WORK EACH OF `ids` IS CREDITED — `{ work, recent, week }`, all of it,
-/// the last `RECENT_DAYS` days and the last `WEEK_DAYS` — a refused client's
+/// this month's and this week's (`periodStarts`) — a refused client's
 /// counting for nothing.
 async function workOf(env, ids) {
   const out = new Map();
   const db = env.LIBRARY;
   if (!db || !ids.length) return out;
-  const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
+  const { month: from, week } = periodStarts();
   // ONE STATEMENT for every id: the ranking asks for all of them, and ninety
   // at a time was a round trip each while a page waited.
   const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at,
@@ -134,7 +148,7 @@ async function spanWork(env, spans) {
   const cut = spans.map((s, i) => [s, i]).filter(([s]) => !spanAll(s));
   const db = env.LIBRARY;
   if (!db || !cut.length) return out;
-  const from = since(RECENT_DAYS), week = since(WEEK_DAYS);
+  const { month: from, week } = periodStarts();
   const list = cut.map(([sp], k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
   const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
       SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week
@@ -414,8 +428,8 @@ async function choose(env, account, b) {
   return json({ ok: true });
 }
 
-/// THE THREE RANKINGS, by the column each orders on: all of it, the last
-/// `RECENT_DAYS` days, the last `WEEK_DAYS`.
+/// THE THREE RANKINGS, by the column each orders on: all of it, this month,
+/// this week (`periodStarts`).
 const PERIODS = { all: "points", recent: "recent", week: "week" };
 
 /// EVERY ACCOUNT WITH A CLAIMED DEVICE and what its devices were credited, in
@@ -488,7 +502,8 @@ async function ranking(request, env, period, limit, me) {
   const mine = me && await rowKey(env, me, day);
   const all = ordered(everyone, key);
   const contributors = all.slice(0, limit).map((e) => ({ ...e, ...(e.key === mine ? { you: true } : {}) }));
-  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors, pool: pool || null, merit: merit || null });
+  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors, pool: pool || null, merit: merit || null,
+    windows: periodWindows() });
 }
 
 /// A ROW'S KEY, for the page to follow it as it moves: its account's id and
@@ -569,7 +584,8 @@ export const CONTRIBUTORS_KEY = "stats/contributors.json";
 const CONTRIBUTORS_FRESH_PERIODS = 2;
 export function contributorsFile(body, at = iso(Date.now())) {
   const rankings = Object.fromEntries(Object.entries(PERIODS).map(([period, key]) => [period, ordered(body.everyone, key)]));
-  return { ok: true, v: 1, at, day: body.day, computing: body.computing, pool: body.pool || null, merit: body.merit || null, rankings };
+  return { ok: true, v: 1, at, day: body.day, computing: body.computing, pool: body.pool || null, merit: body.merit || null, rankings,
+    windows: periodWindows(Date.parse(at)) };
 }
 export async function publishContributors(env, now = Date.now()) {
   if (!env.PUBLIC || !env.ACCOUNTS) return false;

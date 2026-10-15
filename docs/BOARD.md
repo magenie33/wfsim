@@ -1269,8 +1269,9 @@ yes, since each ask again is a reader interrupted. Eight rules:
    SIMULATES one build and shows its score; a riven gain OPTIMIZES and shows
    the best it found and how many builds it tried.
 6. **EVERYONE IS RANKED; A NAME IS SHOWN ONLY BY CONSENT.** `/contributors`
-   lists every account with a claimed device, by all their points, the last
-   thirty days' or the last seven (`verifier_hours`, credited with the total and
+   lists every account with a claimed device, by all their points, this UTC
+   calendar month's or this week's from Monday (`periodStarts`; the page says both
+   ends in the reader's own time) (`verifier_hours`, credited with the total and
    read through the same ban), and tells each account its place on all three.
    The same table, by the UTC hour, also counts each browser's results and
    their time, so a page's "today" is whole hours from its own midnight

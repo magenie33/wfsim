@@ -97,6 +97,8 @@ let meritState = null;
 let contributorsPool = null;
 /// MERIT, EVERYONE TOGETHER (`/api/merit`'s sums, carried with the ranking), or null.
 let contributorsMerit = null;
+/// THE WEEK AND THE MONTH BEING COUNTED, as the worker served them (`windows`), or null.
+let contributorsWindows = null;
 
 async function accountCall(method, path, body) {
   try {
@@ -540,7 +542,21 @@ function contributorRankBar(cr) {
 }
 
 /// THE COLUMN EACH RANKING ORDERS ON, and its heading (worker/contribution.js `PERIODS`).
-const contributorsColumn = () => ({ all: ["points", "Points"], recent: ["recent", "Last 30 days"], week: ["week", "Last 7 days"] }[contributorsPeriod]);
+const contributorsColumn = () => ({ all: ["points", "Points"], recent: ["recent", "This month"], week: ["week", "This week"] }[contributorsPeriod]);
+/// THE PERIOD BEING COUNTED, in the reader's own time: the worker counts UTC
+/// calendar weeks and months (worker/contribution.js `periodStarts`), so the
+/// start and the reset are said at the reader's clock, with the zone named.
+function periodWindowHtml() {
+  const w = contributorsWindows && contributorsWindows[contributorsPeriod];
+  if (!w) return "";
+  const f = new Intl.DateTimeFormat(accountLocale(), { month: "short", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" });
+  const zone = new Intl.DateTimeFormat(accountLocale(), { timeZoneName: "short" }).formatToParts(new Date(w.until))
+    .find((x) => x.type === "timeZoneName");
+  return `<p class="set-note period-window">${escHtml(trF(contributorsPeriod === "week"
+    ? "This week counts from {from} and starts over at {until} ({zone}), for everyone at once."
+    : "This month counts from {from} and starts over at {until} ({zone}), for everyone at once.",
+  { from: f.format(new Date(w.from)), until: f.format(new Date(w.until)), zone: zone ? zone.value : "" }))}</p>`;
+}
 
 /// THE RANKING MOVES WHILE IT IS READ. It is asked again every
 /// `CONTRIBUTORS_EVERY_MS` (the server keeps it as long), and each number rolls
@@ -579,7 +595,8 @@ async function contributorsLoad() {
   // period by the worker's cron); signed in, the worker marks the reader's row.
   const file = accountState.account ? null : await statsFile("contributors", CONTRIBUTORS_STALE_MS);
   const ranked = file && file.day === new Date(serverNow()).toISOString().slice(0, 10) && file.rankings && file.rankings[period];
-  const r = ranked ? { ok: true, period, computing: file.computing, total: ranked.length, contributors: ranked.slice(0, limit), pool: file.pool, merit: file.merit }
+  const r = ranked ? { ok: true, period, computing: file.computing, total: ranked.length, contributors: ranked.slice(0, limit), pool: file.pool, merit: file.merit,
+    windows: file.windows }
     : await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`);
   contributorsLoading = false;
   if (period !== contributorsPeriod) return;
@@ -589,6 +606,7 @@ async function contributorsLoad() {
   contributorsTotal = (r && r.ok && r.total) || contributorsState.length;
   if (r && r.ok && r.pool && r.pool.points > 0) contributorsPool = r.pool;
   if (r && r.ok && r.merit) contributorsMerit = r.merit;
+  if (r && r.ok && r.windows) contributorsWindows = r.windows;
   contributorsAt = Date.now();
   if (authKindOf(location.pathname) !== "contributors") return;
   if (!contributorsPatch()) renderAuthPage("contributors");
@@ -695,7 +713,7 @@ function contributorsPage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Contributors")}</h1>
     <p class="set-note">${aT("The volunteers whose devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p>
     ${contributorsYouHtml()}
-    <div class="block"><div class="bh"><span class="oseg">${tab("week", "Weekly ranking")} ${tab("recent", "Monthly ranking")} ${tab("all", "All-time ranking")}</span></div><div class="bb">${list == null ? ""
+    <div class="block"><div class="bh"><span class="oseg">${tab("week", "Weekly ranking")} ${tab("recent", "Monthly ranking")} ${tab("all", "All-time ranking")}</span></div><div class="bb">${periodWindowHtml()}${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol><div id="rank-more"></div>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
     ${contributorsPool ? `<p class="set-note">${escHtml(trF("Official pool: {n} points — {d} from deleted accounts, {r} taken back from refused clients. Points are compute, so none is lost.", {
       n: contributorsPool.points.toLocaleString(accountLocale()), d: contributorsPool.deleted_account.toLocaleString(accountLocale()),

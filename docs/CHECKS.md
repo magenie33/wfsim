@@ -558,7 +558,7 @@ Plain node on PGlite (`worker/pg/*.sql`), the paid half
 stubbed. A signed-in browser claims its device and the last claim owns it, its
 work going with it; an account's points are its devices' credited work, a
 refused device's counting for nothing; every account with a claimed device is
-ranked, most first, by all its points or the last thirty days' alone, and
+ranked, most first, by all its points or this UTC calendar month's alone, and
 ANONYMOUS — no name, handle or mark, and the paid half never asked about it —
 until it agrees, when it shows the display name or else the username and the
 mark the paid half proves; a no is kept, a yes can be taken back, and the

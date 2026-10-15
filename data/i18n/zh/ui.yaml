@@ -2657,8 +2657,10 @@ ui:
   "Contributors": 贡献者
   "Nobody yet.": 还没有人。
   "All time": 全部
-  "Last 30 days": 近 30 天
-  "Last 7 days": 近 7 天
+  "This month": 本月
+  "This week": 本周
+  "This week counts from {from} and starts over at {until} ({zone}), for everyone at once.": "本周从 {from} 开始计算，到 {until}（{zone}）所有人同时清零重来。"
+  "This month counts from {from} and starts over at {until} ({zone}), for everyone at once.": "本月从 {from} 开始计算，到 {until}（{zone}）所有人同时清零重来。"
   "Weekly ranking": 周榜
   "Monthly ranking": 月榜
   "All-time ranking": 总榜

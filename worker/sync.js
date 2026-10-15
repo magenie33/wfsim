@@ -22,7 +22,7 @@ import { dialsOf, clientDials, SYNC_CLIENT_DIALS } from "./dials.js";
 import { facts, workOf, packTaskOf, notePause } from "./factory.js";
 import { iso } from "./instant.js";
 import { fairTable, throttled, accountOf } from "./fair.js";
-import { devicePointsOf, RECENT_DAYS, WEEK_DAYS } from "./contribution.js";
+import { devicePointsOf, periodStarts } from "./contribution.js";
 import { json, read, day, VERIFIER_ID, ENGINE_ID, LEASE_ID, QUESTION_ID, METRIC_ID, ISO, unrecognised, servedRelease, graceOf,
   netOf, viaRelay, seenOf, askedOf, askedArgs, asksOf, asksRows, countsOf, packSize, packRows, PROTOCOL, protocolsSaid } from "./verify.js";
 
@@ -102,7 +102,6 @@ async function statesOf(db, device, ids) {
 /// (`from`, null while an account holds it, read from the accounts beforehand).
 const WORK_PER_POINT = 1e9;
 const pointsOf = (x) => Math.floor(x / WORK_PER_POINT);
-const sinceDay = (days) => new Date(Date.now() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
 async function spanOf(env, id) {
   const last = env.ACCOUNTS && await env.ACCOUNTS.prepare("SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1")
     .bind(id).first();
@@ -300,7 +299,7 @@ async function viaProcedure(x, given) {
     packable: rules.packable, queueable: rules.queueable, owed: rules.owed, share: PRODUCER_MEAN_SHARE,
     refused: p.refused.map(({ question, step }) => ({ question, step })), withdraw_at: d.refusals_to_withdraw,
     held: p.held, keep: p.keep ? p.keep.question : null, renew_until: iso(now + d.sync_lease_ms), states: p.states,
-    points: span && { from: span.from, recent_from: sinceDay(RECENT_DAYS), week_from: sinceDay(WEEK_DAYS),
+    points: span && { from: span.from, recent_from: periodStarts().month, week_from: periodStarts().week,
       since_hour: HOUR.test(b.since) ? b.since : null },
     consented, idle_at: iso(now + ms(d.sync_idle_ms)), floor_at: iso(now + ms(d.sync_floor_ms)), want, packs_held: d.packs_held,
     ceiling_s: Math.round(d.row_ceiling_ms / 1000), grace_s: Math.round(d.settle_grace_ms / 1000), official_states: JSON.stringify(OFFICIAL_STATES),

@@ -8,7 +8,7 @@
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
-import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase } from "../worker/contribution.js";
+import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 
@@ -37,6 +37,14 @@ const person = async (id, username, display = null) => {
 };
 const device = (id, work, banned = 0) =>
   library.run("INSERT INTO verifiers (id, seen, work, banned) VALUES (?, '2026-01-01', ?, ?)", id, work, banned);
+// THE CALENDAR IS PINNED to a Thursday mid-month while the rankings are read:
+// the week and the month are calendar periods, so "a week ago" is inside this
+// month only on some days of it, and a check must not pass on those alone.
+const UnpinnedDate = Date, pinShift = UnpinnedDate.parse("2026-10-15T12:00:00Z") - UnpinnedDate.now();
+globalThis.Date = class extends UnpinnedDate {
+  constructor(...a) { super(...(a.length ? a : [UnpinnedDate.now() + pinShift])); }
+  static now() { return UnpinnedDate.now() + pinShift; }
+};
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 const credit = (id, ago, work) =>
   library.run("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)", id, daysAgo(ago) + "T00", work);
@@ -71,7 +79,7 @@ check("a malformed device is refused", (await claim(ann, "nope")).reason === "ba
 await claim(ann, X, "Mac · Chrome"); await claim(ann, Y);
 const a = await mine(ann);
 check("an account's points are its devices' credited work", a.points === 8 && a.devices.length === 2, JSON.stringify(a));
-check("...and its last thirty days, the days before them left out", a.recent === 5, JSON.stringify(a));
+check("...and this month's, the days before it left out", a.recent === 5, JSON.stringify(a));
 check("...and its page never sees a device's whole id", a.devices.every((d) => d.id.length === 6));
 check("an account is on the ranking once it claims a device, ANONYMOUS and not yet asked",
   a.named === false && a.decided === false && JSON.stringify((await ranking()).map(({ key, ...e }) => e)) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2,
@@ -127,11 +135,18 @@ check("taken back, the name leaves the ranking", !(await ranking()).some((e) => 
 check("an answer that is not one is refused", (await call("/api/account/contribution", { cookie: ann, body: { named: "yes" } })).reason === "bad_choice");
 
 const recent = await ranking("", "?period=recent");
-check("the last thirty days rank by those days, and an account with none there is not on it",
+check("this month ranks by its days, and an account with none there is not on it",
   recent.map((e) => `${e.name}:${e.recent}`).join(" ") === "bob:3 null:2", JSON.stringify(recent));
 const week = await call("/api/contributors?period=week");
-check("the last seven days rank by those days, a week ago already outside them",
+check("this week ranks by its days from Monday, a week ago already outside them",
   week.period === "week" && week.contributors.map((e) => `${e.name}:${e.week}`).join(" ") === "null:2", JSON.stringify(week));
+check("...and the answer says each period's ends, Monday to Monday and the 1st to the 1st, in UTC",
+  JSON.stringify(week.windows) === JSON.stringify({ week: { from: "2026-10-12T00:00:00.000Z", until: "2026-10-19T00:00:00.000Z" },
+    recent: { from: "2026-10-01T00:00:00.000Z", until: "2026-11-01T00:00:00.000Z" } }), JSON.stringify(week.windows));
+check("a week turns at Monday 00:00 UTC and a month at the 1st, a year's end included",
+  periodStarts(UnpinnedDate.parse("2026-10-18T23:59:59Z")).week === "2026-10-12" && periodStarts(UnpinnedDate.parse("2026-10-19T00:00:00Z")).week === "2026-10-19"
+  && periodStarts(UnpinnedDate.parse("2026-11-01T00:00:00Z")).month === "2026-11-01"
+  && periodWindows(UnpinnedDate.parse("2026-12-31T23:00:00Z")).recent.until === "2027-01-01T00:00:00.000Z");
 check("an account learns its place on each ranking, and none where it has nothing",
   JSON.stringify((await mine(ann)).ranks) === JSON.stringify({ all: 2, recent: 2, week: 1 })
   && JSON.stringify((await mine(bob)).ranks) === JSON.stringify({ all: 3, recent: 1, week: null }),
@@ -167,6 +182,7 @@ check("a named person is found by the name the ranking shows, with their place o
   JSON.stringify(found.person) === JSON.stringify({ name: "bob", points: 3, recent: 3, week: 0, ranks: { all: 3, recent: 1, week: null },
     contributor_rank: { rank: 0, xp: 0, xp_at_rank: 0, xp_at_next: 2500 } }),
   JSON.stringify(found));
+globalThis.Date = UnpinnedDate;
 // THE CONTRIBUTOR RANK: Mastery Rank's curve on all-time points, ten to one experience.
 const crAt = (pts) => { const c = contributorRank(pts); return `${c.rank}:${c.xp}:${c.xp_at_rank}:${c.xp_at_next}`; };
 check("a contributor rank is 2,500·n² experience to 30, ten points to one experience",
