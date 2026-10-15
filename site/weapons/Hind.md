@@ -4,7 +4,7 @@ Chinese name: 雌鹿
 
 Rifle · Primary · Mastery Rank 0. 30 base damage (impact 7.5, puncture 7.5, slash 15), 7% crit chance, 1.5x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

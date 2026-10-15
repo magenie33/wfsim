@@ -4,7 +4,7 @@ Chinese name: 信条·铁晶磁轨炮
 
 Rifle · Primary · Mastery Rank 16. 200 base damage (impact 20, puncture 140, slash 40), 34% crit chance, 3x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.0406 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 05:36 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.2644 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Galvanized Scope, Hammer Shot, Vital Sense, Primary Deadhead | 2026-10-11 07:33 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0205 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 05:35 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.1533 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-09 07:12 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.1533 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-14 08:59 UTC |
 
 ## Not modelled here
 

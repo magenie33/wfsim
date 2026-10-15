@@ -4,7 +4,7 @@ Chinese name: 赤毒·努寇微波枪
 
 Pistol · Secondary · Mastery Rank 13. 21 base damage (radiation 21), 7% crit chance, 5x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

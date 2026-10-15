@@ -4,7 +4,7 @@ Chinese name: 业珀
 
 Nikana · Melee · Mastery Rank 0. 270 base damage (impact 54, puncture 108, slash 108), 22% crit chance, 2x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | block | 1.6382 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-11 06:52 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | block | 35.1589 | Shocking Touch, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Influence | 2026-10-11 05:12 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block | 0.09718 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-11 06:44 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | block | 0.4886 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-09 08:16 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | block | 0.4886 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-14 09:24 UTC |
 
 ## Not modelled here
 

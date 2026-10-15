@@ -4,7 +4,7 @@ Chinese name: 终极·螺钉步枪
 
 Rifle · Primary · Mastery Rank 12. 30 base damage (impact 3, puncture 27), 30% crit chance, 2.4x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

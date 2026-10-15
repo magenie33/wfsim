@@ -4,7 +4,7 @@ Chinese name: 德拉·破坏者
 
 Rifle · Primary · Mastery Rank 7. 32 base damage (impact 6.4, puncture 24, slash 1.6), 8% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 弧电振子锤
 
 Hammer · Melee · Mastery Rank 10. 360 base damage (impact 234, slash 126), 24% crit chance, 2x crit multiplier, 38% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

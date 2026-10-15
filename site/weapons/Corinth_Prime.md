@@ -4,7 +4,7 @@ Chinese name: 科林斯 Prime
 
 Shotgun · Primary · Mastery Rank 14. 90 base damage x6 multishot (impact 25.2, puncture 37.8, slash 27), 30% crit chance, 2.8x crit multiplier, 9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

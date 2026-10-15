@@ -4,7 +4,7 @@ Chinese name: 伯斯顿
 
 Rifle · Primary · Mastery Rank 0. 30 base damage (impact 10, puncture 10, slash 10), 6% crit chance, 1.6x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 氰毒
 
 Pistol · Secondary · Mastery Rank 8. 50 base damage (impact 50), 8% crit chance, 1.4x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 8.9447 | Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Pistol Elementalist, Synth Charge, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-11 06:38 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 35.6085 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Synth Charge, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-11 07:47 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.5360 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Sure Shot, Cascadia Flare | 2026-10-11 06:35 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 1.5823 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-09 07:12 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 1.5823 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-14 08:59 UTC |
 
 ## Not modelled here
 

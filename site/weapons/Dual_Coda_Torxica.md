@@ -4,7 +4,7 @@ Chinese name: 终幕·孢蚀双枪
 
 Dual Pistols · Secondary · Mastery Rank 17. 50 base damage (puncture 17.5, slash 32.5), 25% crit chance, 2.4x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

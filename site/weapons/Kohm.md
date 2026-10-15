@@ -4,7 +4,7 @@ Chinese name: 寇恩热能枪
 
 Shotgun · Primary · Mastery Rank 5. 30 base damage x12 multishot (impact 6, puncture 6, slash 18), 11% crit chance, 2.3x crit multiplier, 6.25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

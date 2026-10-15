@@ -4,7 +4,7 @@ Chinese name: 原子矿融炮
 
 Pistol · Secondary · Mastery Rank 5. 29 base damage (heat 29), 15% crit chance, 1.7x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

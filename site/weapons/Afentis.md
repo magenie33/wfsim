@@ -4,7 +4,7 @@ Chinese name: 圣英
 
 Rifle · Primary · Mastery Rank 8. 100 base damage (impact 20, puncture 60, slash 20), 26% crit chance, 2.2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-14
+## Best riven-free build on the WFSim board, as of 2026-10-15
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 0.7589 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-09 23:30 UTC · 77fd7f0324 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 4.1192 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-09 23:03 UTC · 77fd7f0324 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.06555 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-09 22:44 UTC · 77fd7f0324 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 0.3794 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-09 16:46 UTC · ca98611dee |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 4.9176 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:16 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 24.4068 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Bladed Rounds, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:24 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.0916 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:18 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 2.9458 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:18 UTC |
 
 ## Not modelled here
 

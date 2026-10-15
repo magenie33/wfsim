@@ -16,7 +16,7 @@
 // optimizer's fleets settle on `onerror` alone and know no such message.
 const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
 try {
-  importScripts("/pkg/wfsim_wasm.52c8c84185f0.js");
+  importScripts("/pkg/wfsim_wasm.72d79c4b456e.js");
 } catch (err) {
   loadFailed("glue");
   throw err;
@@ -30,7 +30,7 @@ try {
 // rather than a blank page and then a banner (index.html's boot guard).
 // `WASM_BYTES` is the module's size, written in by build_site_app.py; 0 on the
 // dev server, where the page shows the bytes alone.
-const WASM_BYTES = 9457986;
+const WASM_BYTES = 9458050;
 // WHERE THE DOWNLOAD BROKE is noted at the break, since what reaches `ready`'s
 // catch is the compiler's rewrapping of it; what the compiler throws itself
 // (`CompileError`, a `RangeError` for memory it cannot have) is read off the error.
@@ -39,7 +39,7 @@ const counted = async () => {
   downloadBroke = null;
   let r;
   try {
-    r = await fetch("/pkg/wfsim_wasm_bg.52c8c84185f0.wasm");
+    r = await fetch("/pkg/wfsim_wasm_bg.72d79c4b456e.wasm");
   } catch (err) {
     downloadBroke = "network";
     throw err;
