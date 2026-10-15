@@ -129,9 +129,11 @@ jobs:
     # A CAP, BECAUSE THE GROUP IS HELD WHILE THIS RUNS. One pending run is kept
     # per concurrency group and a second is cancelled, so a step that hangs does
     # not cost its own run — it costs every tick until GitHub's six-hour cap.
-    # This job reads every fact and walks every ruler (`reconcile_queue.sh`), which is
-    # minutes per ruler; fifty leaves the hour's next tick free and is far short of six.
-    timeout-minutes: 50
+    # This job reads every fact, reads the queue three times and walks every ruler
+    # (`reconcile_queue.sh`), minutes per ruler: a queue of a million rows takes
+    # most of an hour. A tick that finds it running waits, which costs no row;
+    # 110 is still far short of six hours.
+    timeout-minutes: 110
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
       shards: ${{ steps.shards.outputs.list }}
