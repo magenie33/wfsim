@@ -39,12 +39,25 @@ intake_arrivals() {
     || { echo "live: inbox read refused [HTTP $DB_CODE]" >&2; return 1; }
   jq -c '.result[0].results[]' < "$DB_OUT" > inbox-new.ndjson
   [ -s inbox-new.ndjson ] || return 1
-  "$BIN/wfsim-intake" --done done.txt --orders orders-new.ndjson < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
+  "$BIN/wfsim-intake" --done done.txt --orders orders-new.ndjson --asked asked-new.ndjson \
+    < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
   bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
   cat builds-new.ndjson >> new-builds.ndjson
   jq -r '.id' < builds-new.ndjson >> touched-ids.txt
-  bash "$HERE/ship_queue.sh" "arrivals-$(date -u +%Y-%m-%d)" "the rows a new build owes" orders-new.ndjson >&2 \
-    || echo "live: the new rows were not queued; the hourly reconciliation asks for them" >&2
+  # THE FIGHT EACH ARRIVAL NAMED GOES FIRST, asked as waited on (`named`): the
+  # player just ran it and is looking for that row. The build's other rows
+  # follow as ordinary ones, the named row left out so it is asked once.
+  local day; day="arrivals-$(date -u +%Y-%m-%d)"
+  jq -c '. + {named: true}' < asked-new.ndjson > named-new.ndjson
+  jq -r '"\(.build_id)|\(.ruler)|\(.mode)"' < asked-new.ndjson > named-keys.txt
+  jq -n -c --rawfile named named-keys.txt \
+    '($named | split("\n") | map({key: ., value: true}) | from_entries) as $s
+     | inputs | select($s["\(.build_id)|\(.ruler)|\(.mode)"] | not)' < orders-new.ndjson > rest-new.ndjson
+  local f
+  for f in named-new.ndjson rest-new.ndjson; do
+    bash "$HERE/ship_queue.sh" "$day" "the rows a new build owes" "$f" >&2 \
+      || echo "live: the new rows were not queued; the hourly reconciliation asks for them" >&2
+  done
 }
 
 # READ INTO A SPARE AND SWAPPED ON SUCCESS: a failed read truncates its output,

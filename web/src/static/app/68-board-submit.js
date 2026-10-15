@@ -598,7 +598,7 @@ function boardRunOutcome() {
         .replace("{n}", b.n).replace("{of}", b.of)
       : "";
     return { kind: "sent",
-      text: tr("uploaded — at the next hourly re-score it is scored in every mode of this weapon, on every board that takes it") + where };
+      text: tr("uploaded — it is scored on the fight you ran first, then in every mode of this weapon, on every board that takes it") + where };
   }
   // NOT YET ANSWERED. `offerBoardSubmit` runs after the result is drawn, so
   // this is the state the first paint is in and it has to say so rather than
@@ -727,7 +727,7 @@ function renderBoardConsent() {
       // WHEN, on the FIRST visit too — this is the branch a new player reads,
       // and saying it only after the consent had been chosen told the fact to
       // everyone except the person meeting the board for the first time.
-      ` ${escHtml(tr("A submitted build appears on the board at the next hourly re-score."))}` +
+      ` ${escHtml(tr("A submitted build is scored on the fight you ran first, then on every board that takes it."))}` +
       ` ${escHtml(boardCutNote())}` +
       floorNote +
       ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>` +
@@ -736,18 +736,16 @@ function renderBoardConsent() {
     wireBoardVerify();
     return;
   }
-  // WHEN, not just whether. A submission is stored the moment it is sent and
-  // the board is re-scored on a schedule, so "sent" and "on the board" are an
-  // hour apart — long enough that a player concludes it failed. The number is
-  // the workflow's own: one run an hour, and GitHub's scheduler slips about
-  // fifteen minutes whatever minute is named.
+  // WHAT HAPPENS NEXT, not just whether: the fight the player ran is asked first
+  // and waited on (worker/board_tasks.js `rowAsk`). No time is promised; the
+  // wait is the volunteers' and moves with them.
   // THE SAME SENTENCE THE RESULT SHOWS — see `boardRunOutcome`. Before any run
   // this box states the standing POLICY instead, which is what a reader at the
   // top of an unrun panel needs; the result says what happened to a run.
   const state = c !== "yes"
     ? tr("nothing is sent from here")
     : boardState === ""
-      ? tr("builds you run here are submitted, and appear at the next hourly re-score")
+      ? tr("builds you run here are submitted and scored, the fight you ran first")
       : boardRunOutcome().text;
   box.innerHTML =
     `<span class="board-state">${escHtml(state)}</span>` +

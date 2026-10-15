@@ -1007,7 +1007,11 @@ questions, never a heavier client.
   the factory for each (`/api/board/ask`, the factory's secret) — from the bot
   server the moment a submission lands (`live_board.sh`: `wfsim-intake
   --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from a scorer
-  run's reconciliation. The worker decides who asks: `new_build` for an
+  run's reconciliation. THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the runner
+  marks that row `named` (`wfsim-intake --asked`) and the worker asks it as a
+  question someone waits on (`rowAsk`), so the row the player just ran goes
+  ahead of the build's other rows and every row nobody waits on; a backfill's
+  re-ask of it is an ordinary row. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
   (due in six hours), `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
   `sweep` for a rescore's, an older build's first pass, or a `backfill-`

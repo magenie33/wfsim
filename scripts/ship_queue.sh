@@ -47,9 +47,10 @@ batch_body() {
     }'
 }
 
-# `ON CONFLICT DO NOTHING`, because asking twice for one row is one row. The primary
-# key is (batch, build, ruler, mode) and that is the whole of the idempotence.
-# An arrival's row carries who asked (docs/BOARD.md §"Who asked"), else NULL.
+# ASKING TWICE FOR ONE ROW IS ONE ROW: the primary key is (batch, build, ruler,
+# mode) and that is the whole of the idempotence. An arrival's row carries who
+# asked (docs/BOARD.md §"Who asked"), else NULL, and whichever pass lands second
+# still fills an initiator the first left NULL.
 queue_batches() {
   jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
@@ -60,7 +61,8 @@ queue_batches() {
         sql: ("INSERT INTO queue (batch, build_id, ruler, mode, initiator)"
               + " SELECT v.column1, v.column2, v.column3, v.column4, v.column5::text FROM (VALUES "
               + ([$chunk[] | "(?,?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed
-              + " ON CONFLICT DO NOTHING"),
+              + " ON CONFLICT (batch, build_id, ruler, mode) DO UPDATE SET initiator = excluded.initiator"
+              + " WHERE queue.initiator IS NULL AND excluded.initiator IS NOT NULL"),
         params: [$chunk[] | $batch, .build_id, .ruler, .mode, (.initiator // null)]
       }
   ' "$2"
@@ -115,13 +117,15 @@ owed_only() {
   esac
 }
 
-# …AND EVERY ROW ASKED OF THE FACT FACTORY, `ASK_ROWS` a call.
+# …AND EVERY ROW ASKED OF THE FACT FACTORY, `ASK_ROWS` a call. A row the file
+# marks `named` is the fight its arrival named, asked as waited on
+# (worker/board_tasks.js `rowAsk`).
 ask_batches() {
   jq -R -s -c --argjson n "$ASK_ROWS" --arg batch "$2" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
-    | { batch: $batch, rows: [$all[$i : $i + $n][] | { identity: .build_id, ruler, mode }] }
+    | { batch: $batch, rows: [$all[$i : $i + $n][] | { identity: .build_id, ruler, mode } + (if .named == true then { named: true } else {} end)] }
   ' "$1"
 }
 
@@ -223,9 +227,14 @@ self_test() {
   [ -n "$ask_max" ] && [ "$ASK_ROWS" -le "$ask_max" ] \
     && say ok "...and an ask carries no more rows than the worker takes ($ASK_ROWS <= $ask_max)" \
     || say FAIL "ASK_ROWS $ASK_ROWS against the worker's ASK_MAX '${ask_max}'"
-  printf '%s' "$first" | jq -e '.sql | endswith("ON CONFLICT DO NOTHING")' >/dev/null \
-    && say ok "...and asking twice for one row is one row" \
+  printf '%s' "$first" | jq -e '.sql | endswith("DO UPDATE SET initiator = excluded.initiator WHERE queue.initiator IS NULL AND excluded.initiator IS NOT NULL")' >/dev/null \
+    && say ok "...and asking twice for one row is one row, the second filling only a missing initiator" \
     || say FAIL "$(printf '%s' "$first" | jq -r .sql)"
+  # THE FIGHT AN ARRIVAL NAMED is asked `named`, and no other row is.
+  printf '%s\n' '{"build_id":"w1","ruler":"r","mode":"m","named":true}' '{"build_id":"w2","ruler":"r","mode":"m"}' > named.ndjson
+  [ "$(ask_batches named.ndjson arrivals | jq -c '[.rows[].named]')" = '[true,null]' ] \
+    && say ok "...and the fight an arrival named is asked as named, no other row" \
+    || say FAIL "named: $(ask_batches named.ndjson arrivals | jq -c .rows)"
   printf '%s' "$first" | jq -e '.sql | contains("h1") | not' >/dev/null \
     && say ok "...never interpolated into the statement" \
     || say FAIL "an id reached the sql"

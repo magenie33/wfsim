@@ -132,9 +132,11 @@ jobs:
             < inbox.ndjson > builds.ndjson
           bash scripts/ship_builds.sh builds.ndjson done.txt
           # AFTER THE BUILDS, because a queue row naming a build the library does
-          # not hold is a row nothing can ever take.
+          # not hold is a row nothing can ever take. `named`: asked as waited on,
+          # as the live board asks it (worker/board_tasks.js `rowAsk`).
+          jq -c '. + {named: true}' < asked.ndjson > named.ndjson
           bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
-            "the fight each arrival was run in" asked.ndjson
+            "the fight each arrival was run in" named.ndjson
 
       - name: the databases
         if: steps.wired.outputs.yes == 'true'

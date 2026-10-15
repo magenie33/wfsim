@@ -5,7 +5,7 @@
 // (`factory_forget_codes`); a board row's initiator follows its batch, and a
 // code is a keyed hash, the same for the same asker; a submission signed in
 // keeps its account's code beside it and one signed out `anonymous`, and an
-// arrival is asked as the one its queue row names.
+// arrival is asked as the one its queue row names, the fight it named waited on.
 //   node scripts/check_initiator.mjs
 import { facts } from "../worker/factory.js";
 import { initiatorOf, boardTasksRoute } from "../worker/board_tasks.js";
@@ -118,6 +118,17 @@ await askRows("backfill-2026-10-14", "by");
 const who = Object.fromEntries((await L.all("SELECT payload::jsonb ->> 'identity' AS id, initiator FROM demands WHERE payload::jsonb ->> 'identity' IN ('bx', 'by')")).map((r) => [r.id, r.initiator]));
 check("an arrival is asked as its queue row names, never as the runner says; a backfill is the system's",
   who.bx === "user:named" && who.by === "system", JSON.stringify(who));
+// THE FIGHT AN ARRIVAL NAMED is waited on; the build's other rows, and a backfill's, are not.
+await L.run("INSERT INTO builds (id, at, record) VALUES ('bn', '2026-10-14', ?), ('bo', '2026-10-14', ?), ('bb', '2026-10-14', ?)",
+  JSON.stringify({ weapon: "braton_prime", mods: ["hornet_strike"] }), JSON.stringify({ weapon: "braton_prime", mods: ["vital_sense"] }),
+  JSON.stringify({ weapon: "braton_prime", mods: ["point_strike"] }));
+await askRows("arrivals-2026-10-14", "bn", { named: true });
+await askRows("arrivals-2026-10-14", "bo");
+await askRows("backfill-2026-10-14", "bb", { named: true });
+const waits = Object.fromEntries((await L.all(`SELECT d.payload::jsonb ->> 'identity' AS id, q.waits FROM demands d JOIN questions q ON q.id = d.question
+    WHERE d.payload::jsonb ->> 'identity' IN ('bn', 'bo', 'bb')`)).map((r) => [r.id, Number(r.waits)]));
+check("the fight an arrival named is asked as waited on, the build's other rows and a backfill's are not",
+  waits.bn === 1 && waits.bo === 0 && waits.bb === 0, JSON.stringify(waits));
 const c1 = await initiatorCode(env, "bot", "qq:1"), c2 = await initiatorCode(env, "bot", "qq:1"), c3 = await initiatorCode({ AUTH_SECRET: "t" }, "bot", "qq:1");
 check("a code is its kind and a keyed hash: the same asker the same code, another key another", /^bot:[\w-]{16}$/.test(c1) && c1 === c2 && c1 !== c3, c1);
 
