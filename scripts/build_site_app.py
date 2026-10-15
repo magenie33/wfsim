@@ -2665,4 +2665,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # A DEPLOY MUST NOT TAKE A HALF-WRITTEN site/ (scripts/checkout_lock.py).
+    import checkout_lock
+    with checkout_lock.hold("build_site_app.py"):
+        main()

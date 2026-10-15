@@ -211,4 +211,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # --verify only reads; everything else holds the checkout (scripts/checkout_lock.py).
+    if "--verify" in sys.argv:
+        main()
+    else:
+        import checkout_lock
+        with checkout_lock.hold("ship.py"):
+            main()

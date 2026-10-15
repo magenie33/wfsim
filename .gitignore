@@ -64,3 +64,6 @@ target-*/
 
 # The pg checks install their one dependency here (scripts/pg/package.json).
 scripts/pg/node_modules/
+
+# Who is building or shipping from this checkout (scripts/checkout_lock.py).
+.build.lock

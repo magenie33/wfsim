@@ -13,6 +13,7 @@ repository is public. A tree without it cannot ship the bot and says so.
 
     python scripts/ship_bot.py            # deploy, then verify
     python scripts/ship_bot.py --verify   # only: does the bot run the site's engine?
+    python scripts/ship_bot.py --self-test
 
 THE LIVE BOARD SHIPS WITH IT (`deploy/wfsim-live.service`): `wfsim-intake` and
 `wfsim-board` built for Linux in Docker from this tree, and the scripts that
@@ -171,7 +172,67 @@ def verify() -> int:
     return 0
 
 
+LIVE_RELEASE = "https://wfsim.app/release.json"
+
+
+def refusal(dirty: list, local_wasm: str, live_wasm: str, other: dict | None) -> str | None:
+    """WHY A HAND-RUN DEPLOY MUST NOT GO, or None. `ship.py` deploys right after
+    the push that publishes this tree; run alone, this copies whatever `site/`
+    holds now, and a half-written build is an engine the site does not serve."""
+    if other:
+        return f"{other['what']} (pid {other['pid']}) is using this checkout"
+    mid = [p for p in dirty if p.startswith("site/") or p == "mcp/engine.js"]
+    if mid:
+        return f"{len(mid)} uncommitted file(s) under site/ or mcp/engine.js, e.g. {mid[0]}: a build is mid-way or unshipped"
+    if not live_wasm:
+        return "the live release could not be read, so the engine cannot be compared"
+    if local_wasm != live_wasm:
+        return f"this tree's engine {local_wasm} is not the one wfsim.app serves ({live_wasm})"
+    return None
+
+
+def standalone_refusal() -> str | None:
+    import urllib.request
+    import checkout_lock
+    porcelain = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True).stdout
+    dirty = [ln[3:].strip() for ln in porcelain.splitlines() if ln.strip()]
+    try:
+        # A NAMED AGENT: the zone challenges a library's default one with a 403.
+        req = urllib.request.Request(LIVE_RELEASE, headers={"user-agent": "wfsim-ship"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            live = json.loads(r.read()).get("wasm", "")
+    except (OSError, ValueError):
+        live = ""
+    return refusal(dirty, engine_digest(ENGINE.read_text(encoding="utf-8")), live, checkout_lock.held_by_other())
+
+
+def self_test() -> int:
+    cases = [
+        (([], "a1", "a1", None), None, "a clean tree on the served engine ships"),
+        (([], "a1", "a1", {"what": "build_site_app.py", "pid": 7}), "using this checkout", "a peer holding the checkout stops it"),
+        ((["site/pkg/wfsim_wasm_bg.x.wasm"], "a1", "a1", None), "uncommitted", "a mid-way site/ stops it"),
+        ((["mcp/engine.js"], "a1", "a1", None), "uncommitted", "an uncommitted engine stops it"),
+        ((["worker/x.js"], "a1", "a1", None), None, "an edit outside site/ does not"),
+        (([], "b2", "a1", None), "not the one wfsim.app serves", "an engine the site does not serve stops it"),
+        (([], "a1", "", None), "could not be read", "a live release it cannot read stops it"),
+    ]
+    bad = 0
+    for args, want, what in cases:
+        got = refusal(*args)
+        ok = got is None if want is None else (got is not None and want in got)
+        bad += 0 if ok else 1
+        print(f"  {'ok  ' if ok else 'FAIL'}  {what}" + ("" if ok else f"   {got}"))
+    print()
+    print("a hand-run deploy is guarded" if not bad else f"{bad} failed")
+    return 1 if bad else 0
+
+
 if __name__ == "__main__":
+    if "--self-test" in sys.argv:
+        sys.exit(self_test())
     if "--verify" not in sys.argv:
+        why = standalone_refusal()
+        if why:
+            sys.exit(f"ship_bot: not deploying, {why}. Ship with scripts/ship.py, which deploys the tree it pushed.")
         deploy()
     sys.exit(verify())

@@ -348,6 +348,15 @@ See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 The multi-session working process (worktrees, staging, shipping from the main
 checkout) is in `private/agents` — read its README first.
 
+**A BUILD HOLDS THE CHECKOUT.** `build_site_app.py` and `ship.py` hold
+`.build.lock` while they run (`scripts/checkout_lock.py`), and `ship_bot.py` run
+by hand refuses while another process holds it, while `site/` or
+`mcp/engine.js` carries uncommitted files, or while its engine is not the one
+wfsim.app serves: it copies whatever `site/` holds, and a half-written build is
+an engine the site does not serve. `node scripts/fleet_pulse.mjs` reads facts per
+five minutes, the waited-on questions and the fleet, on the database's clock —
+run it before and after any change to what the factory hands out.
+
 ### Shell traps on Windows
 
 - Git Bash rewrites an argument starting with `/`, so a `/Lotus/...` path
