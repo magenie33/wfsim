@@ -239,6 +239,27 @@ const c = await evaluate(`(async () => {
   out.set60 = communityShare() === 60;
   out.sum = cs ? (cs.querySelector("[data-cs-sum]") || {}).textContent : "";
   localStorage.removeItem("wfsim-community-share"); renderComputePicker();
+  // THE ROAD (69-board-work.js \`computeRoad\`): one the reader named is the only
+  // one a call takes, with every road dropping; automatic tries the other.
+  const servesWas = relayServes, fetchWas = window.fetch;
+  relayServes = () => true;
+  const hit = [];
+  window.fetch = async (url) => { hit.push(String(url).startsWith(RELAY) ? "relay" : "direct"); throw new Error("dropped"); };
+  const roadTried = async (v) => {
+    setComputeRoad(v); hit.length = 0; await postBoardWork("/api/board/work", {});
+    return [...new Set(hit)].sort().join(",");
+  };
+  out.roadRelay = await roadTried("relay");
+  out.roadDirect = await roadTried("direct");
+  out.roadAuto = await roadTried("auto");
+  window.fetch = fetchWas;
+  setComputeRoad("relay"); document.querySelectorAll(".cs").forEach((h) => { h.dataset.words = ""; }); renderComputePicker();
+  const sel = document.querySelector('#compute-select [data-cs="road"]');
+  out.roadShown = sel ? sel.value : null;
+  if (sel) { sel.value = "direct"; sel.dispatchEvent(new Event("change", { bubbles: true })); }
+  out.roadSet = computeRoad();
+  setComputeRoad("auto"); out.roadKept = localStorage.getItem("wfsim-compute-road");
+  relayServes = servesWas; document.querySelectorAll(".cs").forEach((h) => { h.dataset.words = ""; }); renderComputePicker();
   // AN OLDER YES IS NO ANSWER to a statement that now says more.
   localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V - 1, on: true, at: new Date().toISOString() }));
   out.oldYes = !boardVerifyOn();
@@ -262,6 +283,9 @@ check("...past 100% with solo, while the reader computes, the two share the devi
 check("solo and together are two sliders in the menu, together's set where it is let go, and the sum said",
   k.sliders === 2 && k.set60 && /110% in all/.test(k.sum), c);
 check("...and a yes to an older statement is asked again", k.oldYes, c);
+check("a road the reader names in the menu is the only one taken, even when it drops the call; automatic tries both",
+  k.roadRelay === "relay" && k.roadDirect === "direct" && k.roadAuto === "direct,relay"
+  && k.roadShown === "relay" && k.roadSet === "direct" && k.roadKept === null, c);
 
 // WHEN THE READER COMPUTES, WHATEVER THEY RUN (69-board-work.js `readerBusy`),
 // which is when solo and together past 100% share in proportion: a call of

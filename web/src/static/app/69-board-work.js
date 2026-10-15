@@ -281,15 +281,16 @@ function serverNow() { return Date.now() + (serverSkewMs || 0); }
 
 /// THE RELAY (docs/DISTRIBUTION.md §"The relay"): a server in Hong Kong that
 /// carries the board's work for readers whose road to the edge is poor. The page
-/// times both roads every `ROUTE_EVERY_MS` and takes the quicker; a call the
-/// relay drops goes direct at once, and the relay is left for that long.
+/// times both roads every `ROUTE_EVERY_MS` and takes the quicker, unless the
+/// reader named one (`computeRoad`); a call the relay drops goes direct at once,
+/// and the relay is left for that long.
 const RELAY = "https://cn.wfsim.app", ROUTE_EVERY_MS = 10 * 60_000, ROUTE_TRIES = 3;
 /// WHAT THE RELAY CARRIES — its nginx site lists the same paths, and anything
 /// else it answers 404, which a call here would read as the relay dropping it.
 const RELAY_PATHS = ["/api/board/sync", "/api/board/work", "/api/board/answers", "/api/board/renew", "/api/board/release",
   "/api/board/mine", "/api/board/points", "/api/board/ping"];
 let routeBase = "", routeAt = 0, routing = null;
-const relayServes = () => /^(https:\/\/wfsim\.app|https?:\/\/wfsim\.localhost)$/.test(location.origin);
+function relayServes() { return /^(https:\/\/wfsim\.app|https?:\/\/wfsim\.localhost)$/.test(location.origin); }
 async function timeRoute(base) {
   const ms = [];
   for (let i = 0; i < ROUTE_TRIES; i++) {
@@ -303,8 +304,21 @@ async function timeRoute(base) {
   }
   return ms.sort((a, b) => a - b)[Math.floor(ms.length / 2)];
 }
+/// THE READER MAY NAME THE ROAD in the compute menu: "auto" times both, "direct"
+/// or "relay" is taken every time and nothing falls back to the other — the
+/// reader chose it, and a road that quietly changed under them is not a choice.
+const ROAD_KEY = "wfsim-compute-road", ROADS = ["auto", "direct", "relay"];
+function computeRoad() {
+  try { const v = localStorage.getItem(ROAD_KEY); return ROADS.includes(v) ? v : "auto"; } catch (_) { return "auto"; }
+}
+function setComputeRoad(v) {
+  try { if (v === "auto") localStorage.removeItem(ROAD_KEY); else if (ROADS.includes(v)) localStorage.setItem(ROAD_KEY, v); } catch (_) { /* this page only */ }
+  routeAt = 0;
+}
 function chooseRoute() {
   if (!relayServes()) return Promise.resolve("");
+  const road = computeRoad();
+  if (road !== "auto") return Promise.resolve(road === "relay" ? RELAY : "");
   if (Date.now() - routeAt < ROUTE_EVERY_MS) return Promise.resolve(routeBase);
   routing = routing || Promise.all([timeRoute(""), timeRoute(RELAY)]).then(([direct, relay]) => {
     routeBase = relay < direct ? RELAY : "";
@@ -317,15 +331,16 @@ function chooseRoute() {
 /// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
 /// `RELAY_PATHS` alone — its answer or null. A call one road drops goes by the
 /// other at once, and the road that answered is kept until the next timing; one
-/// both drop has the roads timed again on the next call. `roadDropped` names the
-/// road that dropped the last call: "relay", "direct" or "".
+/// both drop has the roads timed again on the next call. A road the reader named
+/// is never left. `roadDropped` names the road that dropped the last call:
+/// "relay", "direct" or "".
 let roadDropped = "";
 async function postBoardWork(path, body) {
   const board = RELAY_PATHS.includes(path) && relayServes();
   const base = board ? await chooseRoute() : "";
   const r = await postBoardTo(base, path, body);
   roadDropped = r || !board ? "" : base ? "relay" : "direct";
-  if (r || !board) return r;
+  if (r || !board || computeRoad() !== "auto") return r;
   const other = base ? "" : RELAY;
   const again = await postBoardTo(other, path, body);
   routeBase = other;

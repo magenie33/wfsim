@@ -2188,9 +2188,10 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .cs-row small{font-size:11px;color:var(--text-2);line-height:1.4}
 .cs input[type="range"]{width:100%;margin:0;accent-color:var(--accent)}
 .cs-row.cs-off input[type="range"],.cs-row.cs-off .cs-v{opacity:.45}
-.cs label.cs-on,.cs label.cs-bat{display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;
+.cs label.cs-on,.cs label.cs-bat,.cs label.cs-road{display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;
   gap:5px;font-size:12px;color:var(--text-2);cursor:pointer;white-space:nowrap;width:auto;height:auto;padding:0}
-.cs label.cs-bat{align-self:flex-start}
+.cs label.cs-bat,.cs label.cs-road{align-self:flex-start}
+.cs label.cs-road select{width:auto;height:auto;font-size:12px;padding:1px 4px}
 .cs label input[type="checkbox"]{width:auto;margin:0}
 .cs-sum{font-size:12px;color:var(--text-2)}
 /* THE RIGHT-HAND GROUP is pushed over by its first box: the computers-online

@@ -14,8 +14,11 @@ function computeSharesHtml() {
   return row("solo", "Solo", "When you press Run, it computes your own builds")
     + (WASM ? row("together", "Compute together", "With the volunteers, it runs simulation and optimization tasks for every player",
       `<label class="cs-on"><input type="checkbox" data-cs="on">${escHtml(tr("on"))}</label>`)
-      + `<label class="cs-bat"><input type="checkbox" data-cs="battery"> ${escHtml(tr("Also compute together on battery"))}</label>
-        <div class="cs-sum" data-cs-sum></div>` : "");
+      + `<label class="cs-bat"><input type="checkbox" data-cs="battery"> ${escHtml(tr("Also compute together on battery"))}</label>`
+      + (relayServes() ? `<label class="cs-road">${escHtml(tr("Road"))} <select data-cs="road">${
+        [["auto", "Automatic (the quicker)"], ["direct", "Direct"], ["relay", "Hong Kong relay"]]
+          .map(([v, name]) => `<option value="${v}">${escHtml(tr(name))}</option>`).join("")}</select></label>` : "")
+      + `<div class="cs-sum" data-cs-sum></div>` : "");
 }
 function paintComputeShares(host, solo = computePct, together = communityShare()) {
   const on = boardVerifyOn();
@@ -24,6 +27,7 @@ function paintComputeShares(host, solo = computePct, together = communityShare()
   set('[data-cs="together"]', (el) => { if (document.activeElement !== el) el.value = String(together); el.disabled = !on; });
   set('[data-cs="on"]', (el) => { el.checked = on; });
   set('[data-cs="battery"]', (el) => { el.checked = computeOnBattery(); el.disabled = !on; });
+  set('[data-cs="road"]', (el) => { el.value = computeRoad(); el.disabled = !on; });
   set('[data-cs-v="solo"]', (el) => { el.textContent = `${solo}%`; });
   set('[data-cs-v="together"]', (el) => { el.textContent = on ? `${together}%` : tr("off"); });
   set('[data-cs-row="together"]', (el) => el.classList.toggle("cs-off", !on));
@@ -60,6 +64,7 @@ document.addEventListener("change", (e) => {
   else if (k === "together") setCommunityShare(Number(el.value));
   else if (k === "on") setBoardVerify(el.checked);
   else if (k === "battery") setComputeOnBattery(el.checked);
+  else if (k === "road") setComputeRoad(el.value);
   renderComputePicker();
 });
 

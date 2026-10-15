@@ -248,7 +248,9 @@ stores nothing and decides nothing.
   `/api/board/ping` both ways every ten minutes and takes the quicker, on
   wfsim.app and in the desktop client alike. A call either road drops goes by
   the other at once, which is then kept until the next timing; a call both drop
-  has the roads timed again.
+  has the roads timed again. **The reader may name the road** in the compute
+  menu (`computeRoad`: automatic, direct, Hong Kong relay); a named road is
+  taken every time and a call it drops never goes by the other.
 - **A relayed request says whose it is.** Through the relay every reader would
   share its address, and a network is what keeps two answers independent
   (worker/verify.js `netOf`). The relay sends the reader's address with the
