@@ -627,7 +627,6 @@ const demandCosts = new WeakMap();
 /// verb with work formed no fact to price it by.
 export async function demandOf(env, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now);
-  const hourOf = (ms) => iso(ms).slice(0, 13);
   const kept = demandCosts.get(env);
   const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
   const [owed, done, gains, surveys, open, answered, spent, facts] = await db.batch([
@@ -654,7 +653,7 @@ export async function demandOf(env, now = Date.now()) {
     db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
     // THE LAST WHOLE HOURS, the one under way left out.
     db.prepare("SELECT COALESCE(SUM(ms), 0) AS ms FROM verifier_hours WHERE hour >= ?1::text AND hour < ?2::text")
-      .bind(hourOf(now - DEMAND_PACE_HOURS * 3_600_000), hourOf(now)),
+      .bind(iso(now - DEMAND_PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13)),
     ...(costs ? [] : [
       db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
                     WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)

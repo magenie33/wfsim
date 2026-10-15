@@ -17,11 +17,11 @@
 # database and the factory live in scripts a stub can drive.
 set -euo pipefail
 
-# A PAGE, AND THE LOOP IS BOUNDED. The queue is EMPTY at rest — it holds only
-# what is still owed — so a full page is the unusual case: a fresh library, or a
-# rescore somebody just asked for.
+# A PAGE, AND THE LOOP IS BOUNDED. A page is at most what the factory's claimed
+# report reads (10,000 rows, worker/factory.js `report`); the bound is ten
+# million rows, which a survey's arrivals have reached a third of.
 PAGE=5000
-MAX_PAGES=200
+MAX_PAGES=2000
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
@@ -43,14 +43,28 @@ configured() { db_configured; }
 # the factory says of each page (`report claimed`): its tables may be in
 # another database than the queue. `CLAIMED` unset, every owed row is read —
 # which is what a reconciliation needs.
+#
+# A BATCH AT A TIME, EACH PAGE AFTER THE LAST ROW: the batches in their order,
+# then each one's rows along the primary key. An OFFSET sorts every row it
+# skips, so a read of millions slowed with each page and outran the job.
+batches_body() {
+  jq -n -c '
+    {
+      sql: ("SELECT b.id AS batch FROM batches b"
+            + " WHERE EXISTS (SELECT 1 FROM queue q WHERE q.batch = b.id)"
+            + " ORDER BY b.at, b.id"),
+      params: []
+    }'
+}
 page_body() {
-  jq -n -c --argjson limit "$1" --argjson offset "$2" '
+  jq -n -c --argjson limit "$1" --arg batch "$2" --arg build "${3:-}" --arg ruler "${4:-}" --arg mode "${5:-}" '
     {
       sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
             + " JOIN batches b ON b.id = q.batch"
-            + " ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode"
-            + " LIMIT ? OFFSET ?"),
-      params: [$limit, $offset]
+            + " WHERE q.batch = ? AND (q.batch, q.build_id, q.ruler, q.mode) > (?, ?, ?, ?)"
+            + " ORDER BY q.batch, q.build_id, q.ruler, q.mode"
+            + " LIMIT ?"),
+      params: [$batch, $batch, $build, $ruler, $mode, $limit]
     }'
 }
 
@@ -101,33 +115,45 @@ release() {
   echo "queue: released what $WITNESS held"
 }
 
+refused() {
+  echo "::error::queue: the database refused the read [HTTP $DB_CODE]"
+  [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
+  return 1
+}
+
 fetch() {
-  local out="$1" offset=0 got total=0 page
+  local out="$1" got total=0 pages=0 batch build ruler mode batches
   : > "$out"
-  for page in $(seq 1 "$MAX_PAGES"); do
-    if ! db_query "$(page_body "$PAGE" "$offset")"; then
-      echo "::error::queue: the database refused the read [HTTP $DB_CODE]"
-      [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
-      return 1
-    fi
-    got=$(jq -r '.result[0].results | length' < "$DB_OUT")
-    if [ -n "${CLAIMED:-}" ]; then
-      if ! factory report "$(jq -c --arg witness "$WITNESS" '{ witness: $witness, report: "claimed", rows: .result[0].results }' < "$DB_OUT")"; then
-        echo "::error::queue: the factory refused the claimed read [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo
+  db_query "$(batches_body)" || { refused; return 1; }
+  # A WINDOWS jq ENDS A LINE IN \r, which would become part of the name.
+  batches=$(jq -r '.result[0].results[].batch' < "$DB_OUT" | tr -d '\r')
+  while IFS= read -r batch; do
+    [ -n "$batch" ] || continue
+    build="" ruler="" mode=""
+    while :; do
+      if [ "$pages" -ge "$MAX_PAGES" ]; then
+        echo "::error::queue: stopped at $MAX_PAGES pages — more is owed than this reads"
         return 1
       fi
-      jq -c '.rows[]' < "$F_OUT" >> "$out"
-    else
-      jq -c '.result[0].results[]' < "$DB_OUT" >> "$out"
-    fi
-    total=$((total + got))
-    [ "$got" -lt "$PAGE" ] && break
-    offset=$((offset + PAGE))
-    if [ "$page" -eq "$MAX_PAGES" ]; then
-      echo "::error::queue: stopped at $MAX_PAGES pages — more is owed than this reads"
-      return 1
-    fi
-  done
+      pages=$((pages + 1))
+      db_query "$(page_body "$PAGE" "$batch" "$build" "$ruler" "$mode")" || { refused; return 1; }
+      got=$(jq -r '.result[0].results | length' < "$DB_OUT")
+      if [ -n "${CLAIMED:-}" ]; then
+        if ! factory report "$(jq -c --arg witness "$WITNESS" '{ witness: $witness, report: "claimed", rows: .result[0].results }' < "$DB_OUT")"; then
+          echo "::error::queue: the factory refused the claimed read [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo
+          return 1
+        fi
+        jq -c '.rows[]' < "$F_OUT" >> "$out"
+      else
+        jq -c '.result[0].results[]' < "$DB_OUT" >> "$out"
+      fi
+      total=$((total + got))
+      [ "$got" -lt "$PAGE" ] && break
+      build=$(jq -r '.result[0].results[-1].build_id' < "$DB_OUT" | tr -d '\r')
+      ruler=$(jq -r '.result[0].results[-1].ruler' < "$DB_OUT" | tr -d '\r')
+      mode=$(jq -r '.result[0].results[-1].mode' < "$DB_OUT" | tr -d '\r')
+    done
+  done <<< "$batches"
   echo "queue: $total row(s) owed"
 }
 
@@ -141,50 +167,59 @@ self_test() {
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
   cd "$DIR/work"
 
-  local body; body=$(page_body 5000 0)
-  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY b.at, q.batch, q.build_id, q.ruler, q.mode")' >/dev/null \
+  local body; body=$(page_body 5000 arrivals b1 r m)
+  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY q.batch, q.build_id, q.ruler, q.mode")' >/dev/null \
+    && batches_body | jq -e '.sql | contains("ORDER BY b.at, b.id")' >/dev/null \
     && say ok "the order is the batch's, then the key" \
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
   printf '%s' "$body" | jq -e '.sql | contains("JOIN batches")' >/dev/null \
     && say ok "...and a row whose batch is gone is not read" \
     || say FAIL "no join — deleting a batch would leave its rows owed"
-  printf '%s' "$body" | jq -e '.params == [5000, 0]' >/dev/null \
-    && say ok "...and the page is bound, not interpolated" \
+  printf '%s' "$body" | jq -e '.params == ["arrivals", "arrivals", "b1", "r", "m", 5000] and (.sql | contains("OFFSET") | not)' >/dev/null \
+    && say ok "...and a page starts after the last row, bound, not interpolated" \
     || say FAIL "$(printf '%s' "$body" | jq -c .params)"
 
   export PATH="$DIR/bin:$PATH"
   export PG_URL=stub
   db_send() { "$DIR/bin/db"; }
+  # THE FACTORY keeps b1 of whatever page it is shown.
   cat > "$DIR/bin/curl" <<'OK'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-jq -n -c '{ok:true,rows:[{batch:"arrivals",build_id:"b1",ruler:"standard_single_target",mode:"base"}]}' > "$out"
+out=/dev/null; prev=; in=
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; case "$a" in @*) in="${a#@}";; esac; prev="$a"; done
+jq -c '{ok:true,rows:[.rows[] | select(.build_id == "b1")]}' < "$in" > "$out"
 printf '200'
 OK
   chmod +x "$DIR/bin/curl"
+  # A DATABASE OF TWO BATCHES, answering each statement as Postgres would.
   cat > "$DIR/bin/db" <<'OK'
 #!/usr/bin/env bash
-n=$(cat "$PWD/page.n" 2>/dev/null || echo 0)
-echo $((n + 1)) > "$PWD/page.n"
-if [ "$n" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{batch:"arrivals",build_id:("b"+(.|tostring)),ruler:"standard_single_target",mode:"base"}],success:true}],success:true}'
-else
-  jq -n -c '{result:[{results:[],success:true}],success:true}'
-fi
+jq -c '
+  def row(b; id): {batch: b, build_id: id, ruler: "standard_single_target", mode: "base"};
+  [row("first"; "b0"), row("first"; "b1"), row("first"; "b2"), row("second"; "c0"), row("second"; "c1")] as $q
+  | if (.sql | contains("EXISTS")) then [{batch: "first"}, {batch: "second"}]
+    else .params as $p | [$q[] | select(.batch == $p[0] and .build_id > $p[2])][:$p[5]] end
+  | {result: [{results: ., success: true}], success: true}'
 OK
   chmod +x "$DIR/bin/db"
-  rm -f page.n
+  PAGE=2
   fetch got.ndjson > out.txt 2>&1 \
     && say ok "a read pages until the answer runs out" || say FAIL "$(cat out.txt)"
-  [ "$(grep -c . got.ndjson)" = "3" ] \
-    && say ok "...and every row lands in the file" || say FAIL "$(grep -c . got.ndjson) rows"
-  jq -e -s '.[0].batch == "arrivals" and .[0].build_id == "b0"' < got.ndjson >/dev/null \
-    && say ok "...in the order the database gave them" || say FAIL "$(head -1 got.ndjson)"
-  rm -f page.n
+  [ "$(grep -c . got.ndjson)" = "5" ] \
+    && say ok "...and every row lands in the file, once" || say FAIL "$(grep -c . got.ndjson) rows"
+  [ "$(jq -r -s 'map(.build_id) | join(",")' < got.ndjson)" = "b0,b1,b2,c0,c1" ] \
+    && say ok "...in the order of the batches, then the key" || say FAIL "$(jq -r -s 'map(.build_id) | join(",")' < got.ndjson)"
   CLAIMED=1 FACTORY_TOKEN=t fetch claimed.ndjson > out.txt 2>&1 || true
   [ "$(grep -c . claimed.ndjson 2>/dev/null)" = "1" ] && jq -e '.build_id == "b1"' < claimed.ndjson >/dev/null \
     && say ok "a claimed read keeps the rows the factory says are its" || say FAIL "$(cat out.txt; cat claimed.ndjson)"
+  MAX_PAGES=2
+  if fetch got.ndjson > out.txt 2>&1; then
+    say FAIL "a read past its bound passed as complete"
+  else
+    grep -q "stopped at 2 pages" out.txt \
+      && say ok "a read past its bound fails, and says so" || say FAIL "$(cat out.txt)"
+  fi
+  PAGE=5000 MAX_PAGES=2000
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash

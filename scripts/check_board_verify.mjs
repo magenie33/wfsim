@@ -239,9 +239,18 @@ check("the scorer claims what is past its deadline and leaves a young row to the
 check("no client is handed a claimed row", task(await work(C, { ip: "192.0.2.30" })).identity === "young");
 await free();
 await L.run("UPDATE questions SET lease = 'x', lease_until = '2999-01-01T00:00:00.000Z', leased_to = 'official:scorer' WHERE id = ?", (await question("late")).id);
-const page = JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", "page", "100", "0"]).toString());
+// THE SCORER'S OWN READ, run on the schema: the batches in order, then each
+// one's rows after a cursor along the key.
+const body = (...a) => JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", ...a]).toString());
+const listed = body("batches");
+check("the read lists the batch that holds rows", (await L.all(listed.sql, ...listed.params)).some((b) => b.batch === arrivals));
+const page = body("page", "100", arrivals);
+const queued = await L.all(page.sql, ...page.params);
+const after = body("page", "100", arrivals, queued[0].build_id, queued[0].ruler, queued[0].mode);
+check("...and a page after a row starts past it", JSON.stringify((await L.all(after.sql, ...after.params)).map((r) => r.build_id))
+  === JSON.stringify(queued.slice(1).map((r) => r.build_id)));
 const claimedRows = await post(officialRoute, "/api/tasks/official/report",
-  { witness: "official:scorer", report: "claimed", rows: await L.all(page.sql, ...page.params) }, TOKEN);
+  { witness: "official:scorer", report: "claimed", rows: queued }, TOKEN);
 const read = claimedRows.rows.map((r) => r.build_id).sort();
 check("...it reads exactly what it claimed and what nobody asked for", JSON.stringify(read) === JSON.stringify(["late", "orphan"]), JSON.stringify(read));
 await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", score: 3, metric: "kpm", work: WORK }], "e1",
