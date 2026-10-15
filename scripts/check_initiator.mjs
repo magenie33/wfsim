@@ -7,6 +7,7 @@
 // keeps its account's code beside it and one signed out `anonymous`, and an
 // arrival is asked as the one its queue row names, the fight it named waited on.
 //   node scripts/check_initiator.mjs
+import fs from "node:fs";
 import { facts } from "../worker/factory.js";
 import { initiatorOf, boardTasksRoute } from "../worker/board_tasks.js";
 import { initiatorCode, sha256 } from "../worker/accounts.js";
@@ -131,6 +132,14 @@ check("the fight an arrival named is asked as waited on, the build's other rows 
   waits.bn === 1 && waits.bo === 0 && waits.bb === 0, JSON.stringify(waits));
 const c1 = await initiatorCode(env, "bot", "qq:1"), c2 = await initiatorCode(env, "bot", "qq:1"), c3 = await initiatorCode({ AUTH_SECRET: "t" }, "bot", "qq:1");
 check("a code is its kind and a keyed hash: the same asker the same code, another key another", /^bot:[\w-]{16}$/.test(c1) && c1 === c2 && c1 !== c3, c1);
+
+
+// ---- every intake reads it ----
+// A PIPELINE THAT READS THE INBOX WITHOUT IT hands intake a record with no
+// initiator, and every row it ships is unrecorded.
+const readers = ["scripts/fetch_inbox.sh", "scripts/live_board.sh"].map((p) => [p, fs.readFileSync(new URL(`../${p}`, import.meta.url), "utf8")]);
+const blind = readers.flatMap(([p, src]) => [...src.matchAll(/SELECT ([^"]*?) FROM inbox/g)].filter((m) => !/\binitiator\b/.test(m[1])).map((m) => `${p}: ${m[0]}`));
+check("every intake's read of the inbox takes who asked", readers.every(([, src]) => /FROM inbox/.test(src)) && !blind.length, blind.join("; "));
 
 if (failures) { console.log(`\ncheck_initiator: ${failures} failure(s)`); process.exit(1); }
 console.log("\ncheck_initiator: ok");
