@@ -43,26 +43,18 @@ const builtinSearches = () => ((META.search_presets || {}).presets || [])
     state: builtinSearchState(p, p.riven ? appraisal.rivenMod : null) }));
 const builtinSearchActive = () => String(activeOptPreset || "").startsWith("search:");
 
-/// A BUILT-IN SEARCH, ON SCREEN: the starts, the limits and the run terms go
-/// inert and a note says why and offers the copy. Only the visible half — a
-/// built-in is never stored, so the auto-save has nothing to write it into.
-/// A box marked `data-view-only` narrows what is SHOWN and edits nothing, so it
-/// stays live: locked, a reader could not even look for what a built-in leaves out.
+/// A BUILT-IN SEARCH, ON SCREEN: the starts, the limits and the run terms are
+/// read-only regions (`lockReadOnly`) and a note says why and offers the copy.
+/// Only the visible half — a built-in is never stored, so the auto-save has
+/// nothing to write it into.
+/// A box marked `data-view-only` stays live: locked, a reader could not even
+/// look for what a built-in leaves out.
 function lockBuiltinSearch() {
   const on = builtinSearchActive();
-  ["opt-starts", "opt-limits", "opt-finalists", "opt-cand-runs"].map((id) => $(id)).filter(Boolean).forEach((b) => {
-    b.classList.toggle("locked", on);
-    const els = (b.matches("input,select,button,textarea") ? [b] : [...b.querySelectorAll("input,select,button,textarea")])
-      .filter((el) => !el.hasAttribute("data-view-only"));
-    els.forEach((el) => {
-      if (on) {
-        if (!el.disabled) { el.disabled = true; el.dataset.builtinLock = "1"; }
-      } else if (el.dataset.builtinLock) {
-        el.disabled = false;
-        delete el.dataset.builtinLock;
-      }
-    });
-  });
+  // The two run terms are bare controls, so their LABEL is the region.
+  ["opt-starts", "opt-limits", "opt-finalists", "opt-cand-runs"].map((id) => $(id)).filter(Boolean)
+    .map((el) => (el.matches("input,select") ? el.closest("label") || el : el))
+    .forEach((b) => lockReadOnly(b, on, optBarCfg));
   const note = $("opt-builtin");
   if (!note) return;
   note.hidden = !on;

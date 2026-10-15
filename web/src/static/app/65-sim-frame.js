@@ -169,7 +169,7 @@ function setArcaneStacks(id, stacks) {
 
 /// THE WIELDER'S ARCANES THAT A FIGHT RUNS, each with the one setting its rule
 /// has — Molt Augmented's opening stacks — or what earns it.
-function arcaneRows(locked) {
+function arcaneRows() {
   const f = simWarframe();
   if (!f) return "";
   const op = aplOpRule();
@@ -193,7 +193,7 @@ function arcaneRows(locked) {
       : rule.rule === "per_cast_stack" ? tr("each cast in the action list arms the next; the same ability twice running starts over")
       : rule.rule === "per_max_health" ? tr("from the build's Max Health")
       : tr("armed by the weapon's own hits in the fight");
-    const arm = rule.rule === "after_operator_ability" && !armed && !locked
+    const arm = rule.rule === "after_operator_ability" && !armed
       ? `<button class="ghost-btn small" data-arc-vigor="1">+ ${escHtml(tr("school ability"))}</button>` : "";
     return `<div class="sf-row">${head}<span class="sb-empty">${escHtml(note)}</span></div>${arm}</div>`;
   }).join("");
@@ -218,7 +218,7 @@ async function renderSimFrame(host) {
     return `<div class="sf-row"><div class="sf-name"><b>${escHtml(n.name)}</b>
         <span class="sb-empty">${escHtml(n.text)}</span></div>
       <span class="oseg">${seg(n.id, "off", now, tr("off"), !o.preset)}${seg(n.id, "on", now, tr("assumed up"), !o.preset)}${
-        n.trigger ? seg(n.id, "sim", now, tr("simulated"), locked) : ""}</span></div>`;
+        n.trigger ? seg(n.id, "sim", now, tr("simulated")) : ""}</span></div>`;
   }).join("");
 
   // THE LIST'S PLANNED RULES, in the order the fight scans them.
@@ -231,8 +231,8 @@ async function renderSimFrame(host) {
     const op = aplIsOp(r.action);
     // A TRIP WITH NO SLING EARNS NO WINDOW, so it has nothing to keep up.
     const fixedOnce = summon || (op && !r.action.sling);
-    const part = (k, label) => `<span class="seg${r.action[k] ? " on" : ""}${locked ? " dis" : ""}" data-apl-part="${k}">${escHtml(label)}</span>`;
-    const modeSeg = (m, label) => `<span class="seg${mode === m ? " on" : ""}${locked ? " dis" : ""}" data-apl-mode="${i}" data-s="${m}">${escHtml(label)}</span>`;
+    const part = (k, label) => `<span class="seg${r.action[k] ? " on" : ""}" data-apl-part="${k}">${escHtml(label)}</span>`;
+    const modeSeg = (m, label) => `<span class="seg${mode === m ? " on" : ""}" data-apl-mode="${i}" data-s="${m}">${escHtml(label)}</span>`;
     return `<div class="sf-row"><div class="sf-name"><code>${escHtml(aplRuleLabel(r))}</code>
         <span class="sb-empty">${escHtml(summon ? tr("once, at its turn — the snapshot holds for the fight")
           : once ? tr("once, at its turn")
@@ -240,10 +240,10 @@ async function renderSimFrame(host) {
           : tr("again when it is down, or this many seconds before"))}</span></div>
       ${op ? `<span class="oseg">${part("sling", tr("Chained Sling"))}${part("ability", tr("school ability"))}</span>` : ""}
       ${fixedOnce ? "" : `<span class="oseg">${modeSeg("once", tr("once"))}${modeSeg("keep", tr("keep up"))}${op ? "" : modeSeg("gain", tr("when stronger"))}</span>`}
-      ${fixedOnce || mode !== "keep" ? "" : `<input type="number" class="sf-lead" data-apl-lead="${i}" min="0" max="60" step="0.5" value="${lead}"${locked ? " disabled" : ""}>`}
-      <button class="ghost-btn small" data-apl-up="${i}"${i === 0 || locked ? " disabled" : ""}>↑</button>
-      <button class="ghost-btn small" data-apl-down="${i}"${i === rules.length - 1 || locked ? " disabled" : ""}>↓</button>
-      <button class="ghost-btn small" data-apl-del="${i}"${locked ? " disabled" : ""}>×</button></div>`;
+      ${fixedOnce || mode !== "keep" ? "" : `<input type="number" class="sf-lead" data-apl-lead="${i}" min="0" max="60" step="0.5" value="${lead}">`}
+      <button class="ghost-btn small" data-apl-up="${i}"${i === 0 ? " disabled" : ""}>↑</button>
+      <button class="ghost-btn small" data-apl-down="${i}"${i === rules.length - 1 ? " disabled" : ""}>↓</button>
+      <button class="ghost-btn small" data-apl-del="${i}">×</button></div>`;
   }).join("");
   const adds = aplCandidates(w);
   const frame = shownResult && shownResult.r && shownResult.r.frame;
@@ -253,15 +253,21 @@ async function renderSimFrame(host) {
     + (o ? (o.school
       ? `<div class="sb-empty">${escHtml(o.school.name)}${o.preset ? ` · ${escHtml(o.preset.name)}` : ` · ${escHtml(tr("no linked Operator — link one on the Warframe page to tick its nodes"))}`}</div>${nodeRows}`
       : "") : `<div class="sb-empty">${escHtml(tr("no Warframe holds this weapon"))}</div>`)
-    + arcaneRows(locked)
-    + `<div class="sb-h">${escHtml(tr("Planned actions"))}</div>`
+    + arcaneRows()
+    + `<div class="sf-plan"><div class="sb-h">${escHtml(tr("Planned actions"))}</div>`
     + (ruleRows || `<div class="sb-empty">${escHtml(tr("none — every ticked source is assumed up and nobody paid for it"))}</div>`)
-    + (adds.length && !locked
+    + (adds.length
       ? `<div class="sf-add">${adds.map((c) => `<button class="ghost-btn small" data-apl-add="${escHtml(c.key)}">+ ${escHtml(c.label)}</button>`).join(" ")}</div>`
-      : "")
+      : "") + "</div>"
     + (frame ? `<div class="sb-empty">${escHtml(tr("last run"))}: ${escHtml(tr("Ability Strength"))} ${pct(frame.ability_strength)}${
         frame.summon_strength != null ? ` · ${escHtml(tr("summoned at"))} ${pct(frame.summon_strength)}` : ""}</div>` : "");
 
+  // THE PLANNED ACTIONS ARE THE SCENARIO'S, so an official one makes them a
+  // read-only region; the node ticks above are the Operator build's and stay live.
+  if (locked) {
+    lockReadOnly(host.querySelector(".sf-plan"), true, scenarioBarCfg);
+    host.querySelectorAll("[data-node][data-s=sim], [data-arc-vigor]").forEach((el) => lockReadOnly(el, true, scenarioBarCfg));
+  }
   const redraw = () => { markScenarioDirty(); renderSim(); };
   // THROUGH THE DOOR: which state may be set, and by whom, is decided there.
   host.querySelectorAll("[data-node]").forEach((el) => el.addEventListener("click", () => {

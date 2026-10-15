@@ -163,6 +163,43 @@ const copyActivePreset = (cfg) => {
   return e.id;
 };
 
+/// A READ-ONLY ENTRY ON SCREEN, one behaviour for every collection: the region
+/// shows not-allowed, and a click anywhere in it makes your own copy, which is
+/// then what you edit. A disabled control swallows its click and says nothing,
+/// which is how a locked panel reads as broken. Its controls are disabled too,
+/// so the keyboard cannot edit what the mouse cannot; one marked
+/// `data-view-only` only narrows what is shown and stays live.
+function lockReadOnly(el, on, cfg) {
+  if (!el) return;
+  el.classList.toggle("locked-hard", on);
+  el.querySelectorAll("input,select,button,textarea").forEach((c) => {
+    if (c.hasAttribute("data-view-only")) return;
+    // ONLY UNLOCK WHAT THIS LOCKED: a control disabled for its own reason stays so.
+    if (on) {
+      if (!c.disabled) { c.disabled = true; c.dataset.roLock = "1"; }
+    } else if (c.dataset.roLock) {
+      c.disabled = false;
+      delete c.dataset.roLock;
+    }
+  });
+  if (el._roFork) {
+    el.removeEventListener("click", el._roFork, true);
+    el.removeAttribute("title");
+    el._roFork = null;
+  }
+  if (!on) return;
+  el.title = tr("read-only — click to edit your own copy");
+  // CAPTURE, and nothing after it: the region's own handlers would otherwise
+  // act on the read-only entry in the same click.
+  el._roFork = (e) => {
+    if (e.target.closest && e.target.closest("[data-view-only]")) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    copyActivePreset(typeof cfg === "function" ? cfg() : cfg);
+  };
+  el.addEventListener("click", el._roFork, true);
+}
+
 function renderPresetBarIn(bar, cfg) {
   // WHAT ONE OF THESE IS CALLED. "Preset" is the CATEGORY — a saved state of
   // a module, as opposed to a custom — and no collection is named after its

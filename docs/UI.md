@@ -152,7 +152,11 @@ reader did not make: a board build, an official ruler. It is read-only
 (⧉ copies it into one of your own, × takes it out of the bar without touching
 it), it is kept in the bar by what it IS (`cfg.pins`, never by a rank), and the
 open one is always among them. It comes in from the collection's way in: the
-build finder for a board build, the bar's own list for a ruler. A bar's
+build finder for a board build, the bar's own list for a ruler.
+**EDITING A READ-ONLY ENTRY FORKS IT** (`lockReadOnly`): every region of the
+editor that the entry owns shows a not-allowed cursor, and a click anywhere in
+it makes your own copy and opens it — the same copy as ⧉. A control that is only
+disabled swallows its click silently, which reads as a broken page. A bar's
 `load()` is the reader's own entries alone; `published()` is the collection's
 published ones, and a collection publishes exactly when its bar config has
 them. No separate bar exists for published entries.

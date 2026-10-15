@@ -83,7 +83,10 @@ const PROBE = (lang) => `(async () => {
   // their own reason (a weapon with no ammo reserve has its infinite-ammo box
   // ticked and disabled whatever scenario is open — asserting on that one
   // would test the mechanic, not the lock).
-  out.lockedByUs = document.querySelectorAll('[data-official-lock]').length;
+  // THE FIGHT'S boxes only: a built-in search locks the same way on its own tab.
+  const SIM_LOCKS = ['sim-target','sim-technique','sim-wfbuffs','sim-limits','sim-run']
+    .map((b) => '#' + b + ' [data-ro-lock]').join(',');
+  out.lockedByUs = document.querySelectorAll(SIM_LOCKS).length;
 
   // 6. NOTHING WRITES TO IT — the assertion that matters, because auto-save is
   //    what would make a disabled control a lie. Edit the live fight and wait
@@ -111,9 +114,24 @@ const PROBE = (lang) => `(async () => {
   out.copyInOwnBar = [...$('preset-bar-simulator-scenarios').querySelectorAll('.pchip')]
     .some((c) => c.dataset.name === activeScenario);
   // Everything this locked is released, and nothing it did not touch moved.
-  out.stillLocked = document.querySelectorAll('[data-official-lock]').length;
+  out.stillLocked = document.querySelectorAll(SIM_LOCKS).length;
   const lvl = document.querySelector('#sim-target input[data-k="level"], #sim-target input');
   out.copyEditable = !!lvl && !lvl.disabled;
+
+  // 8. A CLICK ON THE LOCKED FIGHT IS THE COPY. A disabled checkbox swallows
+  //    its click and says nothing; the box says not-allowed and forks instead.
+  pickPreset(scenarioBarCfg(), out.id); await sleep(700);
+  const box = $('sim-wfbuffs');
+  out.forkCursor = !!box && getComputedStyle(box).cursor === 'not-allowed';
+  const tick = box && box.querySelector('input[data-wf]');
+  // The tick passes the pointer through, so a click on it lands on the box.
+  out.forkTarget = !!tick && getComputedStyle(tick).pointerEvents === 'none';
+  const owned = loadPresetList('simulator-scenarios').length;
+  box && box.click(); await sleep(700);
+  out.forkOwn = !officialScenarioActive()
+    && loadPresetList('simulator-scenarios').length === owned + 1;
+  const tick2 = $('sim-wfbuffs').querySelector('input[data-wf]');
+  out.forkEditable = !!tick2 && !tick2.disabled;
 
   return out;
 })()`;
@@ -142,6 +160,10 @@ for (const lang of ["en", "zh"]) {
   check("...and the copy is an ordinary editable scenario",
     r.copyIsOwn === true && r.copyStored === true && r.copyEditable === true && r.stillLocked === 0,
     `own ${r.copyIsOwn}, stored ${r.copyStored}, editable ${r.copyEditable}, still locked ${r.stillLocked}`);
+  check("a locked box shows not-allowed and takes the click itself", r.forkCursor === true && r.forkTarget === true,
+    `cursor ${r.forkCursor}, target ${r.forkTarget}`);
+  check("...and the click makes an editable copy", r.forkOwn === true && r.forkEditable === true,
+    `own ${r.forkOwn}, editable ${r.forkEditable}`);
 }
 
 // ---- THE OFFICIAL BUILDS ------------------------------------------------

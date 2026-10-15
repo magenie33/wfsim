@@ -759,12 +759,9 @@ function renderBoardConsent() {
   wireBoardVerify();
 }
 
-// The official BUILD, on screen. Same contract as the scenario's lock, but the
-// build editor is mostly CLICK HANDLERS on divs (a slot, a polarity, an
-// evolution tile) rather than form controls, and `disabled` means nothing to a
-// div. `pointer-events: none` on the whole region is the honest equivalent:
-// it covers everything the region can ever grow, including a control nobody
-// has written yet.
+// The official BUILD, on screen: every builder step is a read-only region
+// (`lockReadOnly`), whose `pointer-events` covers the click handlers on divs a
+// slot or a polarity is, and anything the region grows later.
 function lockOfficialBuild() {
   const on = officialBuildActive();
   // MODE IS PART OF THE BUILD, so it locks with the build. It was the one
@@ -776,23 +773,11 @@ function lockOfficialBuild() {
   // EVERY BUILDER STEP, derived — see `builderSteps`. It was four ids, which
   // is why the Parts block stayed live on a read-only board row. The Stats
   // panel is deliberately not among them: there is nothing in it to click.
-  builderSteps().forEach((b) => {
-    b.classList.toggle("locked-hard", on);
-    // …AND IT SAYS WHY, on the block a player is trying to click. A slot that
-    // simply does not react teaches nothing; this names the reason and the way
-    // out, and clicking anywhere in the block takes it.
-    if (on) {
-      b.title = tr("this is a benchmark row — copy it to edit");
-      b.onclick = () => copyActivePreset(buildBarCfg());
-    } else {
-      b.removeAttribute("title");
-      b.onclick = null;
-    }
-  });
+  builderSteps().forEach((b) => lockReadOnly(b, on, buildBarCfg));
 }
 
-// The official scenario, ON SCREEN: every control in the fight goes inert and
-// the note says why and what to do instead.
+// The official scenario, ON SCREEN: every box of the fight is a read-only
+// region (`lockReadOnly`) and the note says why.
 //
 // This is the VISIBLE half of read-only, and deliberately only the visible
 // half — the rule is enforced in `markScenarioDirty`, which is where a write
@@ -812,32 +797,11 @@ function lockOfficialScenario() {
   const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run",
                  "sim-buffs", "sim-roster", "sim-whole-fight-body"]
     .map((id) => $(id)).filter(Boolean);
-  // The ARENA's bodies are SVG circles and the input sweep below cannot reach
-  // them, so the scene is marked here and refuses the gesture itself.
+  // The ARENA's bodies are SVG circles that no control sweep reaches,
+  // so the scene is marked as well and refuses a drag itself.
   const arena = $("sim-target-arena");
   if (arena) arena.classList.toggle("ar-ro", on);
-  boxes.forEach((b) => {
-    b.classList.toggle("locked", on);
-    b.querySelectorAll("input,select,button,textarea").forEach((el) => {
-      // ONLY UNLOCK WHAT THIS LOCKED. The first shape remembered each
-      // element's prior state and restored it, which is a bookkeeping problem
-      // that has to survive every re-render and did not: a second lock pass
-      // recorded "was disabled" for an element this had just disabled, so the
-      // unlock left it inert and a COPIED scenario could not be edited — the
-      // one thing copying is for.
-      //
-      // Marking instead is idempotent by construction. An element disabled for
-      // its OWN reason (a sentinel's infinite-ammo box, ticked and disabled
-      // whatever scenario is open) is never marked, so it is never re-enabled
-      // here and the page cannot contradict the mechanic.
-      if (on) {
-        if (!el.disabled) { el.disabled = true; el.dataset.officialLock = "1"; }
-      } else if (el.dataset.officialLock) {
-        el.disabled = false;
-        delete el.dataset.officialLock;
-      }
-    });
-  });
+  boxes.forEach((b) => lockReadOnly(b, on, scenarioBarCfg));
   if (!note) return;
   note.hidden = !on;
   if (on) {

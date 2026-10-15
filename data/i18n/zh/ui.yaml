@@ -1353,6 +1353,7 @@ ui:
   "put what you place and drag on the grid you can see": "让放置和拖动落在你看得见的网格上"
   "range": "射程"
   "rank a slot's options by what they would change — off, nothing is simulated": 按「换上去会有多大变化」给槽位的候选排序 —— 关闭后不会进行任何模拟
+  "read-only — click to edit your own copy": 只读——点击即复制一份你自己的来编辑
   "read-only — it belongs to the simulator, which is where it is edited": 只读 —— 它属于模拟器，只在那里编辑
   "read-only — the fight's own, and every candidate is scored under them": 只读——这是战斗自己的设定，每一个候选配装都在它下面评分
   "read-only — the fight's own, and every candidate is scored with them": 只读——属于这场战斗，每个候选配装都带着它们计分
@@ -1763,7 +1764,6 @@ ui:
   "this browser's storage is full - the change is on screen but was not saved": "这个浏览器的存储空间满了 —— 改动在屏幕上，但没有保存下来"
   "this cannot pay out in a one-target fight — it is an edge of the model, not a gap in it": 这在单体战斗里不可能产生收益 —— 它是模型的边界，不是模型的缺口
   "this instance's modded damage": 这个实例改装后的伤害
-  "this is a benchmark row — copy it to edit": 这是榜上的一行——复制一份才能编辑
   "this is as good as the top option — the gap between them is smaller than either answer's own width, so the order between them is the dice": 这个和第一名一样好——它们之间的差距比任一答案自身的误差还小，所以谁排前面是掷骰决定的
   "this is the aimed enemy, and what the place tool puts down. Enemies already on the floor keep the unit they were placed with.": "这是被瞄准的敌人，也是放置工具会放下的单位。已经在场上的敌人保持放置时的单位。"
   "this is the aimed enemy, and what the place tool puts down. {n} already on the floor keep the unit they were placed with.": "这是被瞄准的敌人，也是放置工具会放下的单位。场上已有 {n} 个保持着各自放置时的单位。"
