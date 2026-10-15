@@ -659,6 +659,32 @@ console.log("\na fact whose asker was never told is told again");
   check("...and once delivered it is not told again", (await f.redeliver(env, NOW)) === 0);
 }
 
+console.log("\nthe sweep reads only the facts formed since it last ran, and holds at one it could not tell");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  let fail = true;
+  const f = factory({ verbs: VERBS, random: () => 1, producers: {
+    flaky: { on_fact: async () => { if (fail) throw new Error("busy"); } },
+    p: PRODUCERS.p } });
+  const at = (m) => new Date(NOW - m * 60_000).toISOString();
+  const fact = async (id, m, producer) => {
+    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+      VALUES (?, 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, id, at(m), at(m), at(m));
+    await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES (?, ?, ?, 'live', ?, ?)`, producer, `${id}-ref`, id, at(m), at(m));
+  };
+  await fact("f-flaky", 50, "flaky");
+  await fact("f-after", 40, "p");
+  check("a fact it could not tell stops none behind it", (await f.redeliver(env, NOW)) === 1);
+  check("...and holds the cursor at that fact", (await db.get("SELECT through FROM factory_cursors WHERE name = 'redeliver'")).through === at(50));
+  fail = false;
+  check("...so the next run tells it", (await f.redeliver(env, NOW + 60_000)) === 1
+    && (await db.get("SELECT state FROM demands WHERE ref = 'f-flaky-ref'")).state === "served");
+  // A FACT FORMED BEFORE WHERE THE CURSOR NOW STANDS is not read again.
+  await fact("f-behind", 45, "p");
+  check("a run reads only from its cursor on", (await f.redeliver(env, NOW + 120_000)) === 0
+    && (await db.get("SELECT state FROM demands WHERE ref = 'f-behind-ref'")).state === "live");
+}
+
 console.log("\na fact's witnesses never paid are paid, and a late answer never");
 {
   const db = await testDb("library"), env = { LIBRARY: db };

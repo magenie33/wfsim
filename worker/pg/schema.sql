@@ -326,6 +326,12 @@ ALTER TABLE questions ADD COLUMN IF NOT EXISTS producer TEXT COLLATE "C" NOT NUL
 -- live demand's, as its producer is; a code is erased once the ask is over.
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 ALTER TABLE demands ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
+-- HOW FAR A PASS OVER TIME HAS READ, by name (worker/tasks.js `redeliver`).
+CREATE TABLE IF NOT EXISTS factory_cursors (
+  name    TEXT COLLATE "C" PRIMARY KEY,
+  through TEXT COLLATE "C" NOT NULL
+);
+
 -- MERIT SPENT ON A ROW (docs/BOARD.md §"Merit priority"): the demand it moved,
 -- the code that paid, the price held, and the deadline it had (`natural_due`)
 -- and was given (`boosted_due`). `state` held → charged | refunded, and a

@@ -813,18 +813,26 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// way (a database too busy for the producer's own write) left its demand live
   /// on a settled question, which nothing else ever revisits. Up to `max` a call,
   /// oldest first, each on its own so one that fails again stops none behind it.
+  /// ONLY THE FACTS FORMED SINCE THE LAST RUN are read (`factory_cursors`
+  /// `redeliver`, by `fact_at`): every fact, or every live demand, is a million
+  /// rows and outran the statement timeout. A delivery that fails again holds
+  /// the cursor at its fact, so it is tried again; never further back than
+  /// `REDELIVER_BACK_MS`.
+  const REDELIVER_BACK_MS = 7 * 86_400_000;
   async function redeliver(env, now = Date.now(), max = 100) {
-    const db = env.LIBRARY;
-    // FROM THE LIVE DEMANDS, never from the settled questions: walked by
-    // `fact_at`, every fact ever made was probed for a demand to find none.
-    const { results } = await db.prepare(`WITH live AS MATERIALIZED (SELECT DISTINCT question FROM demands WHERE state = 'live')
-        SELECT q.* FROM live JOIN questions q ON q.id = live.question
-        WHERE q.state IN ('fact', 'spot') AND q.fact_at < ?::text ORDER BY q.fact_at LIMIT ?::bigint`)
-      .bind(iso(now - 10 * 60_000), max).all();
-    let told = 0;
+    const db = env.LIBRARY, until = iso(now - 10 * 60_000), floor = iso(now - REDELIVER_BACK_MS);
+    const kept = await db.prepare("SELECT through FROM factory_cursors WHERE name = 'redeliver'").first();
+    const from = kept && kept.through > floor ? kept.through : floor;
+    const { results } = await db.prepare(`SELECT q.* FROM questions q WHERE q.fact_at >= ?1::text AND q.fact_at < ?2::text
+        AND q.state IN ('fact', 'spot') AND EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id AND d.state = 'live')
+        ORDER BY q.fact_at LIMIT ?3::bigint`).bind(from, until, max).all();
+    let told = 0, stuck = null;
     for (const q of results) {
-      try { await deliver(env, q, now); told += 1; } catch (_) { /* told again next run */ }
+      try { await deliver(env, q, now); told += 1; } catch (_) { stuck ??= q.fact_at; }
     }
+    const through = stuck ?? (results.length === max ? results[results.length - 1].fact_at : until);
+    await db.prepare(`INSERT INTO factory_cursors (name, through) VALUES ('redeliver', ?1::text)
+        ON CONFLICT (name) DO UPDATE SET through = excluded.through`).bind(through).run();
     return told;
   }
 
