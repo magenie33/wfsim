@@ -354,6 +354,9 @@ body.on-wbench [data-module="builder"]{display:none}
 .fd-seg button{height:26px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--text)}
 .fd-seg button:hover{border-color:var(--accent)}
 .fd-seg button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:600}
+.fd-depth input[type=range]{width:180px;accent-color:var(--accent)}
+.fd-depth-at{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.fd-depth-at em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
 .fd-seg button em{font-style:normal;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums;font-size:11px}
 .fd-seg button[disabled]{opacity:.45;cursor:default}
 .fd-use{display:grid;gap:2px}

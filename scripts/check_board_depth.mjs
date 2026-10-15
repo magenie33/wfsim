@@ -54,6 +54,9 @@ const FIXTURE = `(() => {
   return BOARD[W].length;
 })()`;
 
+const fresh = await evaluate(`String(boardDepth)`);
+check("a reader who never moved the slider sees everything the board kept", fresh === "0", fresh);
+
 await evaluate(`switchWeapon("braton_prime")`);
 await sleep(2500);
 const n = await evaluate(FIXTURE);
@@ -67,7 +70,7 @@ const at = (d) => evaluate(`(() => {
 })()`);
 
 const half = await at(0.5);
-check("half is the default line, inclusive of a row exactly on it",
+check("half is a line inclusive of a row exactly on it",
   half === "400,210,100,50,0,0", half);
 check("…so the row a hair under is the one that goes",
   !half.split(",").includes("49.9"), half);
@@ -80,6 +83,9 @@ check("All shows every row the board holds", all === "400,210,100,50,49.9,10,0,0
 const quarter = await at(0.25);
 check("a quarter keeps the 49.9 and still drops the 10",
   quarter === "400,210,100,50,49.9,0,0", quarter);
+
+const steps = await evaluate(`[isBoardDepth(0.35), isBoardDepth(0.33), isBoardDepth(0), isBoardDepth(1.2)].join()`);
+check("the slider stops every 5% and at everything, nowhere else", steps === "true,false,true,false", steps);
 
 // PER GROUP: the riven leader is 400 and the plain one 100. Under a shared
 // reference every plain row would be gone at half.

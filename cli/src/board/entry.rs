@@ -263,7 +263,7 @@ pub(crate) fn account(
                 // statement about this run rather than about the build.
                 && !deferred_ids.contains(id.as_str())
                 // …NOR ONE THE ENTRY LINE PARKED. Its rows were measured and
-                // every one of them came in under a tenth of its group's
+                // every one of them came in under a fifth of its group's
                 // leader, which is an ANSWER about the build rather than a row
                 // going missing.
                 && !floored_ids.contains(id.as_str())
@@ -320,14 +320,14 @@ mod entry_line_tests {
         }
     }
 
-    /// **A ROW UNDER A TENTH OF ITS GROUP'S LEADER IS NOT PUBLISHED**, and one
+    /// **A ROW UNDER A FIFTH OF ITS GROUP'S LEADER IS NOT PUBLISHED**, and one
     /// exactly on the line is. Remove the floor and the third row survives.
     #[test]
     fn a_row_under_the_line_is_not_published() {
         let mut kept = vec![
             scored("lead", "braton_prime", "base", 100.0, false),
-            scored("on_the_line", "braton_prime", "base", 10.0, false),
-            scored("under", "braton_prime", "base", 9.99, false),
+            scored("on_the_line", "braton_prime", "base", 20.0, false),
+            scored("under", "braton_prime", "base", 19.99, false),
         ];
         let parked = entry_floor(&mut kept);
         assert_eq!(
@@ -625,7 +625,7 @@ mod entry_line_tests {
     }
 
     /// **A RIVEN BUILD AND A PLAIN ONE ARE TWO GROUPS** on the queue side too.
-    /// Pool them and the plain build is parked for being a tenth of a card no
+    /// Pool them and the plain build is parked for being a twentieth of a card no
     /// reader can roll.
     #[test]
     fn a_riven_leader_does_not_park_a_plain_build() {

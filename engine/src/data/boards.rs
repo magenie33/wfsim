@@ -48,12 +48,11 @@ pub fn format_score(v: f64) -> String {
 /// build stops earning fights.
 ///
 /// A CUT LINE, NOT A MEASUREMENT: the pooled distribution of
-/// score-as-a-share-of-leader has no knee to sit on. What places it is the
-/// margin under the page's shallowest view — half the leader — so a leader
-/// corrected downwards does not have to resurrect the rows beneath it. What
-/// rules out a smaller one is that a tenth already keeps 82.6% of published
-/// rows where a hundredth keeps 98.0% and gates nothing.
-pub const KEEP_LEADER_SHARE: f64 = 0.10;
+/// score-as-a-share-of-leader has no knee to sit on. A fifth is where a build
+/// leaves the leader's class — five times as long to kill what the leader
+/// kills. Over the whole store it keeps 39.3% of measured rows and 84.4% of
+/// builds earning fights, where a tenth kept 58.5% and 94.2%.
+pub const KEEP_LEADER_SHARE: f64 = 0.20;
 
 /// Does a row stay on the board, given the leader of its own group?
 ///
@@ -156,8 +155,8 @@ mod tests {
     /// the two properties the page's depth control also has.
     #[test]
     fn the_entry_line_is_inclusive_and_never_empties_a_group() {
-        assert!(clears_entry(1.0, 10.0), "a row exactly on the line is kept");
-        assert!(!clears_entry(0.999, 10.0), "a row just under it is not");
+        assert!(clears_entry(2.0, 10.0), "a row exactly on the line is kept");
+        assert!(!clears_entry(1.999, 10.0), "a row just under it is not");
         assert!(clears_entry(10.0, 10.0), "the leader clears its own line");
         // A LEADER OF ZERO leaves the ratio nothing to say, so every row ties it.
         assert!(clears_entry(0.0, 0.0), "a group whose leader scored zero keeps its rows");
@@ -168,9 +167,9 @@ mod tests {
     /// the fan-out able to find a build good where its submitter never tried it.
     #[test]
     fn a_build_earns_its_fights_on_its_best_ruler_alone() {
-        assert!(keeps_earning(Some(0.10)), "exactly on the line");
+        assert!(keeps_earning(Some(0.20)), "exactly on the line");
         assert!(keeps_earning(Some(0.99)), "well over it");
-        assert!(!keeps_earning(Some(0.09)), "under it everywhere it has been measured");
+        assert!(!keeps_earning(Some(0.19)), "under it everywhere it has been measured");
         // NOTHING HAS MEASURED IT, so it is owed its first fight rather than
         // judged on a number nobody computed.
         assert!(keeps_earning(None), "a build with no fact anywhere still earns one");

@@ -111,6 +111,27 @@ const finderTokenKind = (t) => ({ mod: "mod", arc: tr("Arcane"), evo: tr("Evolut
 /// how many builds here carry that piece and the best build without it. A
 /// comparison is the reader's: any build can be made the reference, and every
 /// row then reads against it. Nothing here is a threshold somebody chose.
+/// THE DEPTH SLIDER, in whole per cent: the leader alone on the left, the
+/// board's entry line on the right, which stands for zero — every row it kept.
+/// Its value runs mirrored (`100 + floor - share`) so the filled track is the
+/// span shown: full from 100% to the line, all of it, by default.
+const finderDepthFloor = () => Math.round(((META && META.board_entry_share) || 0) * 100);
+const depthOfSlider = (el) => {
+  const p = 100 + finderDepthFloor() - Number(el.value);
+  return p <= finderDepthFloor() ? 0 : p / 100;
+};
+function finderDepthLabel(w, d) {
+  const text = d ? `≥${Math.round(d * 100)}%` : `${tr("All")} (≥${finderDepthFloor()}%)`;
+  return `<span title="${escHtml(d ? trF("builds scoring at least {p}% of their group's leader", { p: Math.round(d * 100) })
+    : tr("every build the board has scored"))}">${escHtml(text)}</span><em>${depthCount(w, d)}</em>`;
+}
+function finderDepthHtml(w) {
+  const floor = finderDepthFloor();
+  const at = 100 + floor - (boardDepth ? Math.max(floor, Math.min(100, Math.round(boardDepth * 100))) : floor);
+  return `<input type="range" data-fdepth-range min="${floor}" max="100" step="${Math.round(BOARD_DEPTH_STEP * 100)}" value="${at}"
+    aria-label="${escHtml(tr("Depth"))}"><span id="fd-depth-at" class="fd-depth-at">${finderDepthLabel(w, boardDepth)}</span>`;
+}
+
 function renderBuildFinder() {
   const box = $("build-finder");
   if (!box) return;
@@ -362,12 +383,7 @@ function renderBuildFinder() {
     segBtn("rv", "all", tr("All"), inMode.length) +
     segBtn("rv", "riven", tr("With riven"), inMode.filter((p) => p.riven).length) +
     segBtn("rv", "plain", tr("Without riven"), inMode.filter((p) => !p.riven).length) + `</div>` +
-    `<div class="fd-seg fd-depth"><span>${escHtml(tr("Depth"))}</span>` +
-    BOARD_DEPTHS.map((d) => `<button type="button" data-fdepth="${d}" class="${
-      boardDepth === d ? "on" : ""}" title="${escHtml(d
-        ? trF("builds scoring at least {p}% of their group's leader", { p: Math.round(d * 100) })
-        : tr("every build the board has scored"))}">${escHtml(d ? `≥${Math.round(d * 100)}%` : tr("All"))
-      }<em>${depthCount(w, d)}</em></button>`).join("") + `</div></div>` +
+    `<div class="fd-seg fd-depth"><span>${escHtml(tr("Depth"))}</span>${finderDepthHtml(w)}</div></div>` +
     `<div class="fd-conds"><div class="fd-q" role="search">` +
     [...finder.exc].map((t) => `<span class="fd-tok exc"><i>${escHtml(tr("I don't have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
     [...finder.req].map((t) => `<span class="fd-tok req"><i>${escHtml(tr("must have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
@@ -415,6 +431,21 @@ function renderBuildFinder() {
       if (last) { finder.req.delete(last); finder.exc.delete(last); rerender(true); }
     }
   });
+  // THE SLIDER says where it is while dragged and filters when let go: a
+  // redraw on every step would drop the thumb out of the reader's hand.
+  const setFinderDepth = (d) => {
+    setBoardDepth(d);
+    finder.open = null; finder.shown = FINDER_FIRST;
+    // EVERY LIST THAT READS THE BOARD, not just this one: the build bar and
+    // its chips are drawn from the same conversion.
+    renderMods();
+    return rerender();
+  };
+  const slider = box.querySelector("[data-fdepth-range]");
+  if (slider) {
+    slider.oninput = () => { const o = $("fd-depth-at"); if (o) o.innerHTML = finderDepthLabel(w, depthOfSlider(slider)); };
+    slider.onchange = () => setFinderDepth(depthOfSlider(slider));
+  }
   box.onclick = (e) => {
     const g = (sel) => e.target.closest(sel);
     let el;
@@ -433,14 +464,7 @@ function renderBuildFinder() {
       return rerender();
     }
     if ((el = g("[data-fref]"))) { finder.ref = finder.ref === el.dataset.fref ? null : el.dataset.fref; return rerender(); }
-    if ((el = g("[data-fdepth]"))) {
-      setBoardDepth(Number(el.dataset.fdepth));
-      finder.open = null; finder.shown = FINDER_FIRST;
-      // EVERY LIST THAT READS THE BOARD, not just this one: the build bar and
-      // its chips are drawn from the same conversion.
-      renderMods();
-      return rerender();
-    }
+    if ((el = g("[data-fdepth]"))) return setFinderDepth(Number(el.dataset.fdepth));
     if ((el = g("[data-fseg]"))) {
       finder[el.dataset.fseg] = el.dataset.v;
       finder.open = null; finder.shown = FINDER_FIRST;

@@ -567,24 +567,21 @@ function boardRowIdentity(row) {
 /// HOW DEEP THE LIST GOES, as a share of each group's leader.
 ///
 /// THE BOARD PUBLISHES EVERY ROW IT SCORED; this is the only thing that
-/// decides how many of them a reader sees, and it is theirs to change. Half is
-/// the default for the reasons `docs/BOARD.md` gives: the rows below it carry
-/// 8 of 8 mods like the rows above and differ by taking the worse arcane or by
-/// spending slots this fight cannot pay, so half marks where a build stops
-/// being a DIFFERENT answer rather than where it stops being the best one.
+/// decides how many of them a reader sees, and it is theirs to change. The
+/// default is everything the board kept: the entry line already decided what
+/// is worth a row, so a reader narrows from there and never past it.
 ///
-/// ZERO IS "EVERYTHING THE BOARD KEPT", and it is offered because the
-/// alternative is a reader who cannot tell a build that was never submitted
-/// from one the page declined to draw. What it bottoms out at is the board's
-/// own ENTRY LINE — a tenth of the group's leader, `data::boards`'s
-/// `KEEP_LEADER_SHARE` — and the number is not repeated here: zero means "no
-/// filter", which stays true wherever that line is drawn, and a copy of it
-/// would be a second answer to one question the day the line moves.
-const BOARD_DEPTHS = [0.5, 0.25, 0];
-let boardDepth = BOARD_DEPTHS[0];
+/// A SLIDER IN STEPS OF `BOARD_DEPTH_STEP`, from the leader alone down to the
+/// board's own ENTRY LINE (`META.board_entry_share`, `data::boards`'s
+/// `KEEP_LEADER_SHARE`). Its last stop is ZERO, "everything the board kept",
+/// never a copy of the line: no filter stays true wherever the line is drawn.
+const BOARD_DEPTH_STEP = 0.05;
+const BOARD_DEPTH_DEFAULT = 0;
+const isBoardDepth = (v) => v === 0 || (v > 0 && v <= 1 && Math.abs(v / BOARD_DEPTH_STEP - Math.round(v / BOARD_DEPTH_STEP)) < 1e-9);
+let boardDepth = BOARD_DEPTH_DEFAULT;
 try {
   const s = Number(localStorage.getItem("wfsim-board-depth"));
-  if (BOARD_DEPTHS.includes(s)) boardDepth = s;
+  if (localStorage.getItem("wfsim-board-depth") !== null && isBoardDepth(s)) boardDepth = s;
 } catch (_) { /* private mode */ }
 const setBoardDepth = (v) => {
   boardDepth = v;
@@ -641,7 +638,7 @@ const builtinBuildsUncached = (w) => {
   // THE READING ORDER IS `rankBoard`'s (`87-headless.js`), so the bar and a
   // headless caller rank one board one way.
   //
-  // DEEP ENOUGH TO READ, and no deeper — see `BOARD_DEPTHS`. It is drawn
+  // DEEP ENOUGH TO READ, and no deeper — see `boardDepth`. It is drawn
   // against the row's own group, and the boundary is INCLUSIVE, so a row
   // exactly on the line is shown. FILTERING BEFORE THE RANK IS WHAT KEEPS `#1`
   // MEANING `#1`: what survives is always a prefix of a group, and every

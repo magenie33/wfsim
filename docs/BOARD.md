@@ -1749,14 +1749,14 @@ in the board row, and in `board::builds::identity`.
 
 ## The entry line
 
-**A BUILD IS ON THE BOARD ONLY WHERE IT REACHES A TENTH OF ITS GROUP'S LEADER.**
+**A BUILD IS ON THE BOARD ONLY WHERE IT REACHES A FIFTH OF ITS GROUP'S LEADER.**
 `data::boards::KEEP_LEADER_SHARE`, and it decides two things at two
 granularities:
 
 | | | |
 | --- | --- | --- |
-| **a ROW** is published | `clears_entry` | it reaches a tenth of its own group's leader |
-| **a BUILD** earns more fights | `keeps_earning` | it reaches a tenth in at LEAST ONE (ruler, mode) of that SCENE it has a fact for — or, with none there yet, of the base |
+| **a ROW** is published | `clears_entry` | it reaches a fifth of its own group's leader |
+| **a BUILD** earns more fights | `keeps_earning` | it reaches a fifth in at LEAST ONE (ruler, mode) of that SCENE it has a fact for — or, with none there yet, of the base |
 
 **THE TWO MAY NOT BE COLLAPSED**, and that is the whole shape of the rule. The
 board asks for one good answer rather than for a build that is good everywhere,
@@ -1770,9 +1770,10 @@ a thousand of them, and the quality it enforces drifts with the crowd — measur
 on two Torid groups of identical size, "the top 10%" cut at 0.281 and at 0.687 of
 the leader. A share admits none of a flood at any volume, and it is a statement a
 submitter can act on. Where the data cannot help is the NUMBER: the pooled
-distribution of score-as-a-share-of-leader has no knee, so what places it is the
-margin under the page's shallowest view. A tenth keeps 82.6% of published rows
-and 93.3% of builds; a hundredth keeps 98.0% and gates nothing.
+distribution of score-as-a-share-of-leader has no knee, so what places it is
+what a player reads as the leader's class: a fifth is five times as long to kill
+what the leader kills. Over the whole store it keeps 39.3% of measured rows and
+84.4% of builds earning fights; a tenth kept 58.5% and 94.2%.
 
 **WHAT IT CANNOT DO IS REFUSE THE FIRST FIGHT.** Knowing whether a build clears
 the line means measuring it, so a build with no fact anywhere is owed one — and
@@ -1815,10 +1816,11 @@ is missing the builds that now deserve to be on it.
 **EVERY SCORED ROW THAT CLEARS THE ENTRY LINE IS PUBLISHED.** A row is a fact — a
 build measured under a pinned seed — and `site/board/<weapon>.json` carries all
 of them down to that line. How deep to read is a question about what a reader
-wants to see, not about what is true, so the page answers it: it shows builds
-scoring **at least half their group's leader** by default, and offers a quarter
-and everything. `BOARD_DEPTHS` holds `0` rather than a copy of the line for
-"everything", because "no filter" stays true wherever the line is drawn.
+wants to see, not about what is true, so the page answers it on a slider that
+runs in steps of 5% from the leader alone down to the entry line, and shows
+**every row the board kept** until a reader narrows it. Its last stop is `0`
+rather than a copy of the line, because "no filter" stays true wherever the
+line is drawn.
 
 **EVERY BUILD SAYS WHEN AND BY WHICH VERSION IT WAS MEASURED.** A row publishes
 its fact's `finished_at` to the minute as `measured_at` (UTC, ISO) and its
@@ -1848,23 +1850,6 @@ reference would let whichever group is stronger decide what the others may
 show, which on most weapons means the builds most players can make are the ones
 to disappear. There is no count limit, and a group whose builds are genuinely
 close keeps all of them.
-
-**HALF IS A CUT LINE, NOT A MEASUREMENT.** The pooled distribution of
-score-as-a-fraction-of-leader has no knee to sit on — the largest gap anywhere
-below 90% is 1.2 points — so the data cannot pick the number. What it can say
-is that the number is not fragile: about **12 of 1274 rows per point**, so 45
-or 55 would cost a few per cent rather than a shape. Against the sports that
-draw the same kind of line (F1's 107% qualifying rule, cycling's 3-20% time
-limit) half the leader is very generous, which is the intent — it marks where a
-build stops being a DIFFERENT answer, not where it stops being the best one.
-
-**WHAT IT HIDES IS NOT THE CHEAP BUILD.** The rows below the line carry 8 of 8
-mods exactly like the rows
-above, and differ by taking the worse arcane (Merciless where Deadhead wins) or
-by spending slots on mods this fight cannot pay: Magazine Extension, Parallax
-Scope, Quick Reload, all of which `UNMODELLED.md` already says are worth
-nothing against one standing target. Of 86 groups, **three** have ever held a
-row with no arcane at all, and in each it was the leader.
 
 **IT IS MECHANICAL.** The seed is pinned and a score reproduces to the last
 digit, so 50.3% and 49.5% are two different NUMBERS rather than two estimates
