@@ -2811,7 +2811,14 @@ ui:
   "Recent tasks on this browser": 这个浏览器最近的任务
   "A task's points count once another device's answer agrees with it. This list stays in this browser.": "每个任务的积分，要等另一台设备算出一致的结果后才计入。这份清单只保存在这个浏览器里。"
   "That name cannot be used.": 这个名字不能用。
-  "Others see your username: a name cannot carry a link, contact details or trading.": "其他人看到的是你的用户名：名字里不能有网址、联系方式或交易内容。"
+  "Your display name is hidden, so others see your username. Reason: {why}. Changing your display name shows it again.": "你的显示名已被隐藏，其他人现在看到的是你的用户名。原因：{why}。修改显示名后即恢复显示。"
+  "That name cannot be used: {why}.": "这个名字不能用：{why}。"
+  "it contains contact details (a group number, QQ, WeChat or a phone number)": 名字里有联系方式（群号、QQ、微信、手机号）
+  "it contains a link or a web address": 名字里有链接或网址
+  "it offers trading or boosting": 名字里有买卖或代练
+  "it claims to be WFSim or someone else": 名字冒充 WF模拟 官方或他人
+  "it contains offensive words": 名字含不雅或攻击性的词
+  "it advertises something elsewhere": 名字在为别处做宣传
   hidden: 已隐藏
   "That name cannot be used. A name cannot carry a link, contact details or trading.": "这个名字不能用：名字里不能有网址、联系方式或交易内容。"
   "Contributor": 贡献者

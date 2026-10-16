@@ -26,6 +26,17 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_username ON accounts (username);
 
+-- A DISPLAY NAME HELD BY HAND (worker/names.js `hiddenWhy`): hidden while the
+-- account still shows exactly `display_name`, and `reason` (`NAME_REASONS`) is
+-- what its owner is told. Written by the owner's tool in the paid half, and
+-- deleted when the account sets a new name (`profile`).
+CREATE TABLE IF NOT EXISTS display_name_holds (
+  account      TEXT COLLATE "C" PRIMARY KEY REFERENCES accounts (id) ON DELETE CASCADE,
+  display_name TEXT COLLATE "C" NOT NULL,
+  reason       TEXT COLLATE "C" NOT NULL,
+  held_at      TEXT COLLATE "C" NOT NULL
+);
+
 -- THE FOUR WAYS IN, at most one of each per account. `subject` is the
 -- provider's own id for the person — for `email`, the address, lowercased —
 -- and (provider, subject) belongs to one account at most, which is what makes a

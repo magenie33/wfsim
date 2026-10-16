@@ -130,6 +130,10 @@ check("a display name set before the rule that refuses it is shown as the userna
   && (await accounts.get("SELECT display_name FROM accounts WHERE id = 'acct-ann'")).display_name === "wf.jiuuvd.cn",
   JSON.stringify(await ranking()));
 await accounts.run("UPDATE accounts SET display_name = 'Ann' WHERE id = 'acct-ann'");
+await accounts.run("INSERT INTO display_name_holds (account, display_name, reason, held_at) VALUES ('acct-ann', 'Ann', 'advert', '2026-01-01')");
+check("...and so is one held by hand",
+  (await ranking()).some((e) => e.name === "ann") && !(await ranking()).some((e) => e.name === "Ann"), JSON.stringify(await ranking()));
+await accounts.run("DELETE FROM display_name_holds WHERE account = 'acct-ann'");
 await choose(ann, false);
 check("taken back, the name leaves the ranking", !(await ranking()).some((e) => e.name === "Ann") && (await mine(ann)).named === false);
 check("an answer that is not one is refused", (await call("/api/account/contribution", { cookie: ann, body: { named: "yes" } })).reason === "bad_choice");

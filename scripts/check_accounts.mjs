@@ -431,6 +431,10 @@ for (const bad of ["wf.jiuuvd.cn", "https://x.io/a", "jiuuvd点cn", "QQ 123456",
   nr = await setName(n2, { display_name: bad });
   check(`...nor one pointing elsewhere: ${bad}`, nr.reason === "name_not_allowed", JSON.stringify(nr));
 }
+const whys = {};
+for (const bad of ["加群 7788990", "wf.jiuuvd.cn", "代刷白金", "WFSim官方", "做 . 爱"]) whys[bad] = (await setName(n2, { display_name: bad })).why;
+check("...and each refusal says why, in the words the page tells its owner",
+  JSON.stringify(Object.values(whys)) === JSON.stringify(["contact", "link", "trade", "impersonation", "offensive"]), JSON.stringify(whys));
 for (const good of ["B站-星空笨鱼鱼", "dna980560", "SG91", "J.P.", "暗海之星氏族招人", "招人喜欢"]) {
   nr = await setName(n2, { display_name: good });
   check(`...while a handle passes: ${good}`, nr.ok && nr.account.display_name === good, JSON.stringify(nr));
@@ -439,6 +443,23 @@ await env.ACCOUNTS.run("UPDATE accounts SET display_name = 'wf.jiuuvd.cn' WHERE 
 const hidden = await n2.me();
 check("a name set before the rule that refuses it is kept, and the account is told others do not see it",
   hidden.display_name === "wf.jiuuvd.cn" && hidden.display_name_hidden === true, JSON.stringify(hidden));
+check("...and is told why", hidden.display_name_why === "link", JSON.stringify(hidden));
+// A NAME HELD BY HAND: hidden while it is still the name, with the owner's reason.
+nr = await setName(n2, { display_name: "暗海之星 来玩" });
+const heldId = (await n2.me()).id;
+await env.ACCOUNTS.run("INSERT INTO display_name_holds (account, display_name, reason, held_at) VALUES (?, ?, 'advert', ?)",
+  heldId, "暗海之星 来玩", new Date().toISOString());
+const held = await n2.me();
+check("a name held by hand is hidden, and its owner told the reason",
+  held.display_name_hidden === true && held.display_name_why === "advert", JSON.stringify(held));
+nr = await setName(n2, { display_name: "暗海之星 来玩" });
+check("...it cannot be set again as it was", nr.reason === "name_not_allowed" && nr.why === "advert", JSON.stringify(nr));
+const heldExport = await (await n2.post("/api/account/export", {})).json();
+check("...the account's export carries the hold", heldExport.display_name_hold?.reason === "advert", JSON.stringify(heldExport.display_name_hold));
+nr = await setName(n2, { display_name: "暗海之星" });
+check("...and a new name is shown, and the hold is deleted with the name it was about",
+  nr.ok && nr.account.display_name_hidden === false
+  && !(await env.ACCOUNTS.prepare("SELECT 1 FROM display_name_holds WHERE account = ?1").bind(heldId).first()), JSON.stringify(nr));
 nr = await setName(n2, { display_name: "" });
 check("...and an empty one shows the username again", nr.ok && nr.account.display_name === null, JSON.stringify(nr));
 const gone = (await n2.me()).username;

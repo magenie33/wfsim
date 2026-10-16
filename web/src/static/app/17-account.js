@@ -69,6 +69,16 @@ const ACCOUNT_SAYS = {
   reauth_required: "For your safety, deleting needs a sign-in from the last 10 minutes. Sign out, sign in again, then delete.",
 };
 const accountSaid = (key) => tr(ACCOUNT_SAYS[key] || key);
+/// WHY A NAME MAY NOT BE SHOWN, as its owner is told it (worker/names.js `NAME_REASONS`).
+const NAME_WHY = {
+  contact: "it contains contact details (a group number, QQ, WeChat or a phone number)",
+  link: "it contains a link or a web address",
+  trade: "it offers trading or boosting",
+  impersonation: "it claims to be WFSim or someone else",
+  offensive: "it contains offensive words",
+  advert: "it advertises something elsewhere",
+};
+const nameWhy = (why) => tr(NAME_WHY[why] || NAME_WHY.advert);
 
 // The brands' own marks, drawn inline so nothing is fetched from their hosts.
 const ACCOUNT_ICONS = {
@@ -267,7 +277,8 @@ function authField(id, label, type, auto, extra = "") {
     <input id="${id}" type="${type}" autocomplete="${auto}"${type === "password" ? ' minlength="8" maxlength="128"' : ""}></div>`;
 }
 const authError = () => (authFlow.error
-  ? `<div class="auth-err" role="alert">${escHtml(accountSaid(authFlow.error))}</div>` : "");
+  ? `<div class="auth-err" role="alert">${escHtml(authFlow.error === "name_not_allowed" && authFlow.why
+    ? trF("That name cannot be used: {why}.", { why: nameWhy(authFlow.why) }) : accountSaid(authFlow.error))}</div>` : "");
 const authVal = (id) => (($(id) || {}).value || "").trim();
 
 function authProviders(verb, back, needsConsent = false) {
@@ -386,7 +397,8 @@ function accountProfileBlock(a) {
         <button class="ghost-btn btn-sm" data-auth="open" data-open="profile">${aT("Edit")}</button></div>
       <div class="kv"><dt>${aT("Display name")}</dt><dd>${a.display_name ? escHtml(a.display_name) : `<span class="set-note">${aT("Not set — the username is shown")}</span>`}${
         a.display_name_hidden ? ` <span class="tag warn">${aT("hidden")}</span>` : ""}</dd><span></span></div></dl>${
-      a.display_name_hidden ? `<p class="set-note">${aT("Others see your username: a name cannot carry a link, contact details or trading.")}</p>` : ""}`;
+      a.display_name_hidden ? `<p class="set-note">${escHtml(trF("Your display name is hidden, so others see your username. Reason: {why}. Changing your display name shows it again.",
+        { why: nameWhy(a.display_name_why) }))}</p>` : ""}`;
   return `<div class="block" id="profile"><div class="bh"><h2>${aT("Profile")}</h2></div><div class="bb">${body}</div></div>`;
 }
 
@@ -953,7 +965,7 @@ async function authAct(el) {
   const kind = authFlow.kind;
   const main = $("auth-page");
   authFlow.error = null;
-  const fail = (r) => { authFlow.error = (r && r.reason) || "send_failed"; renderAuthPage(kind); };
+  const fail = (r) => { authFlow.error = (r && r.reason) || "send_failed"; authFlow.why = (r && r.why) || null; renderAuthPage(kind); };
   const mailed = (email) => { authFlow = { ...authFlow, step: 2, email, sentAt: Date.now() }; renderAuthPage(kind); };
   el.disabled = true;
   try {

@@ -436,12 +436,13 @@ const PERIODS = { all: "points", recent: "recent", week: "week" };
 /// points — the one list every ranking and every account's place is cut from.
 export async function standings(env, day = keyDay()) {
   const { results } = await env.ACCOUNTS.prepare(
-    `SELECT a.id, a.username, a.display_name, c.named, s.verifier, s.from_hour, s.until_hour FROM device_spans s
-       JOIN accounts a ON a.id = s.account LEFT JOIN contribution_choice c ON c.account = s.account`).all();
+    `SELECT a.id, a.username, a.display_name, h.display_name AS held_name, h.reason AS held_reason, c.named, s.verifier, s.from_hour, s.until_hour
+       FROM device_spans s JOIN accounts a ON a.id = s.account LEFT JOIN contribution_choice c ON c.account = s.account
+       LEFT JOIN display_name_holds h ON h.account = s.account`).all();
   const work = await spanWork(env, results);
   const by = new Map();
   for (const [i, r] of results.entries()) {
-    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: shownName(r.display_name, r.username), work: 0, recent: 0, week: 0, ws: [] };
+    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: shownName(r.display_name, r.username, r.held_name ? { display_name: r.held_name, reason: r.held_reason } : null), work: 0, recent: 0, week: 0, ws: [] };
     const w = work[i];
     e.work += w.work;
     e.recent += w.recent;

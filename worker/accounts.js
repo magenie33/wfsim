@@ -15,7 +15,7 @@
 // provider's secrets are absent, and `/api/account` says which are configured,
 // so the page offers only the ways in that work.
 
-import { nameBlocked } from "./names.js";
+import { nameReason, hiddenWhy } from "./names.js";
 import { cloudEnd, cloudExport } from "./cloud.js";
 import { agentsOf } from "./agents.js";
 
@@ -489,14 +489,18 @@ async function accountView(env, account) {
     "SELECT id, created_at, username, display_name, username_changed_at, delete_after FROM accounts WHERE id = ?1",
   ).bind(account).first();
   if (!a) return null;
+  const why = hiddenWhy(a.display_name, await heldName(env.ACCOUNTS, account));
   const { results } = await env.ACCOUNTS.prepare(
     "SELECT provider, label, linked_at, CASE WHEN password_hash IS NULL THEN 0 ELSE 1 END AS has_password FROM identities WHERE account = ?1",
   ).bind(account).all();
   return { id: a.id, created_at: a.created_at, username: a.username, display_name: a.display_name, delete_after: a.delete_after || null,
-    display_name_hidden: !!a.display_name && nameBlocked(a.display_name), rename_after: renameAfter(a),
+    display_name_hidden: !!why, display_name_why: why, rename_after: renameAfter(a),
     identities: SLOTS.map((s) => results.find((r) => r.provider === s)).filter(Boolean)
       .map(({ has_password, ...r }) => (r.provider === "email" ? { ...r, has_password: !!has_password } : r)) };
 }
+
+/// THE HOLD ON THIS ACCOUNT'S DISPLAY NAME, `{ display_name, reason }`, or null.
+const heldName = (db, account) => db.prepare("SELECT display_name, reason FROM display_name_holds WHERE account = ?1").bind(account).first();
 
 /// When this account may next change its username, or null for now: the first
 /// change is free, each later one waits a day after the last.
@@ -522,15 +526,18 @@ async function profile(env, account, b) {
   if ("display_name" in b) {
     const shown = String(b.display_name ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
     if ([...shown].length > DISPLAY_NAME_MAX) return no("bad_display_name");
-    if (nameBlocked(shown)) return no("name_not_allowed");
-    writes.push(db.prepare("UPDATE accounts SET display_name = ?1 WHERE id = ?2").bind(shown || null, account));
+    const why = hiddenWhy(shown, await heldName(db, account));
+    if (why) return no("name_not_allowed", 400, { why });
+    // A NEW NAME ENDS A HOLD: the held name is not kept past the name it was about.
+    writes.push(db.prepare("UPDATE accounts SET display_name = ?1 WHERE id = ?2").bind(shown || null, account),
+      db.prepare("DELETE FROM display_name_holds WHERE account = ?1").bind(account));
   }
   if ("username" in b) {
     const name = String(b.username ?? "").trim().toLowerCase();
     if (name !== a.username) {
       if (!USERNAME.test(name)) return no("bad_username");
       if (name.startsWith(USERNAME_BORN) || USERNAMES_RESERVED.has(name)) return no("username_reserved");
-      if (nameBlocked(name)) return no("name_not_allowed");
+      if (nameReason(name)) return no("name_not_allowed", 400, { why: nameReason(name) });
       const after = renameAfter(a);
       if (after) return no("rename_too_soon", 429, { rename_after: after });
       const held = await db.prepare("SELECT account FROM username_holds WHERE username = ?1 AND held_until > ?2")
@@ -687,7 +694,7 @@ export async function accountRoute(request, env, path) {
   const meritLedger = (await env.ACCOUNTS.prepare("SELECT at, kind, amount, balance, note FROM merit_ledger WHERE account = ?1 ORDER BY id")
     .bind(account).all()).results;
   return json({ ok: true, account: await accountView(env, account), agents: await agentsOf(env, account), devices,
-    contribution_choice: choice || null, merit: merit || null, merit_ledger: meritLedger,
+    contribution_choice: choice || null, display_name_hold: await heldName(env.ACCOUNTS, account), merit: merit || null, merit_ledger: meritLedger,
     ...(await cloudExport(env, account)),
     exported_at: now() }, 200,
     { "content-disposition": 'attachment; filename="wfsim-account.json"' });

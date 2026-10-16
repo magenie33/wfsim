@@ -1965,7 +1965,9 @@ traced back to you, nor withdrawn once sent.</li>
 <p>An account is a random id with a name: a username, which starts as
 <code>user_</code> and six random characters until you choose one, and a display
 name if you set one. A name you give up is held for seven days so nobody else
-can take it at once.</p>
+can take it at once. A display name that breaks the naming rules is hidden, so
+others see your username, and your account page says why; if WFSim hides one by
+hand, it keeps that name and the reason until you change it.</p>
 <p>You reach an account through up to four ways to sign in —
 Google, Discord, GitHub and an email address — and for each one you link WFSim
 keeps:</p>

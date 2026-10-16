@@ -55,7 +55,8 @@ shows everywhere at once.
 | a name given up, or a deleted account's, is held seven days for its old owner, who may take it back | `username_holds`, `holdUsername` |
 | a display name is free text, at most 32 characters, unique to nobody; empty shows the username | `profile` |
 | a name says who someone is and points nowhere else: no link, contact details, offer to trade or claim to speak for WFSim, and no word from the bundled list; any handle passes, a Bilibili one included | `nameBlocked` in `worker/names.js` |
-| a display name set before a rule that refuses it is kept and hidden: others see the username, and the account page says why | `shownName`, `display_name_hidden` |
+| a display name set before a rule that refuses it is kept and hidden: others see the username, and the account page says which rule (`display_name_why`) | `shownName`, `hiddenWhy`, `NAME_REASONS` |
+| a display name the owner holds by hand is hidden the same way, with the reason chosen; it cannot be set again as it was, and a new name deletes the hold | `display_name_holds`, written by the paid half |
 
 `POST /api/account/profile` `{username?, display_name?}` changes either; the
 `/account` page's Profile block is the form, and the top bar shows the display

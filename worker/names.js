@@ -21,18 +21,31 @@ const LINK_SPELLED = new RegExp(`(?:点|dot)(?:${TLD})`);
 const RECRUIT = "招人|招新|收人|纳新|招募|入群|进群";
 const CONTACT = new RegExp(`(?:qq|扣扣|企鹅|微信|weixin|威信|薇信|vx|wx|群号|加群|q群|电话|手机|tel|${RECRUIT})\\d{5,}`
   + `|\\d{5,}(?:qq|群|${RECRUIT})|加微|加v|加q|1[3-9]\\d{9}`);
-const ELSEWHERE = ["代刷", "代练", "代打", "代肝", "出售", "收购", "接单", "出白金", "收白金", "卖白金", "白金出",
-  "淘宝", "闲鱼", "拼多多", "店铺", "官方", "管理员", "客服", "wfsim作者", "wfsimofficial", "wfsim团队"];
+const TRADE = ["代刷", "代练", "代打", "代肝", "出售", "收购", "接单", "出白金", "收白金", "卖白金", "白金出",
+  "淘宝", "闲鱼", "拼多多", "店铺"];
+const SPEAKS_FOR = ["官方", "管理员", "客服", "wfsim作者", "wfsimofficial", "wfsim团队"];
 
-const pointsElsewhere = (s, n) => LINK.test(String(s).normalize("NFKC").toLowerCase())
-  || LINK_SPELLED.test(n) || CONTACT.test(n) || ELSEWHERE.some((w) => n.includes(w));
-
-export function nameBlocked(s) {
+/// WHY A NAME MAY NOT BE SHOWN, as its owner is told it, or null when it may.
+/// `advert` is never found here: it is the owner's word for a name held by hand.
+export const NAME_REASONS = ["contact", "link", "trade", "impersonation", "offensive", "advert"];
+export function nameReason(s) {
   const n = foldName(s);
-  return !!n && (WORDS.some((w) => n.includes(w)) || pointsElsewhere(s, n));
+  if (!n) return null;
+  if (CONTACT.test(n)) return "contact";
+  if (LINK.test(String(s).normalize("NFKC").toLowerCase()) || LINK_SPELLED.test(n)) return "link";
+  if (TRADE.some((w) => n.includes(w))) return "trade";
+  if (SPEAKS_FOR.some((w) => n.includes(w))) return "impersonation";
+  if (WORDS.some((w) => n.includes(w))) return "offensive";
+  return null;
 }
+export const nameBlocked = (s) => nameReason(s) !== null;
+
+/// WHY THIS DISPLAY NAME IS HIDDEN, or null: the rules above, or a hold the
+/// owner put on exactly this text (`display_name_holds`).
+export const hiddenWhy = (display, hold) =>
+  (!display ? null : nameReason(display) || (hold && hold.display_name === display ? hold.reason : null));
 
 /// THE NAME OTHERS ARE SHOWN: the display name, or the username where there is
-/// none or where it would not pass today — a name set before a rule existed is
-/// hidden by it, never deleted.
-export const shownName = (display, username) => (display && !nameBlocked(display) ? display : username);
+/// none or where it is hidden — a name set before a rule existed is hidden by
+/// it, never deleted.
+export const shownName = (display, username, hold = null) => (display && !hiddenWhy(display, hold) ? display : username);
