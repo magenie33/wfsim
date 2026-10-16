@@ -4,7 +4,7 @@ Chinese name: 迅发电浆炮 Prime
 
 Rifle · Primary · Mastery Rank 14. 44 base damage (impact 44), 34% crit chance, 3x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

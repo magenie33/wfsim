@@ -4,7 +4,7 @@ Chinese name: 暗杀者 Prime
 
 Pistol · Secondary · Mastery Rank 14. 50 base damage (impact 20, puncture 15, slash 15), 25% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

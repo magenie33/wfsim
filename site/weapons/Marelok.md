@@ -4,7 +4,7 @@ Chinese name: 玛瑞火枪
 
 Pistol · Secondary · Mastery Rank 7. 160 base damage (impact 80, puncture 16, slash 64), 15% crit chance, 1.5x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

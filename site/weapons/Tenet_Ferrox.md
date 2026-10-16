@@ -4,7 +4,7 @@ Chinese name: 信条·铁晶磁轨炮
 
 Rifle · Primary · Mastery Rank 16. 200 base damage (impact 20, puncture 140, slash 40), 34% crit chance, 3x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

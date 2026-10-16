@@ -4,7 +4,7 @@ Chinese name: 终幕·异化者
 
 Pistol · Secondary · Mastery Rank 17. 56 base damage (corrosive 56), 11% crit chance, 2.9x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 58.9202 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Critical Mutation, Secondary Enervate | 2026-10-09 17:54 UTC · 77fd7f0324 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 116.0020 | Frostbite, Pistol Pestilence, Primed Convulsion, Seeker, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Secondary Enervate | 2026-10-09 16:51 UTC · ca98611dee |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 10.1587 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-10-09 16:44 UTC · ca98611dee |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 40.3710 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Critical Mutation, Secondary Enervate | 2026-10-09 16:51 UTC · ca98611dee |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 58.9202 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Critical Mutation, Secondary Enervate | 2026-10-16 00:17 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 116.0020 | Frostbite, Pistol Pestilence, Primed Convulsion, Seeker, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Secondary Enervate | 2026-10-15 22:53 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 10.1587 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-10-15 22:51 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 40.3710 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Critical Mutation, Secondary Enervate | 2026-10-15 22:53 UTC |
 
 ## Not modelled here
 

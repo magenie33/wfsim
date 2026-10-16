@@ -4,7 +4,7 @@ Chinese name: 保障·潘塔
 
 Launcher · Primary · Mastery Rank 12. 75 base damage (impact 75), 26% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

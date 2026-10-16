@@ -4,7 +4,7 @@ Chinese name: 双子葛拉卡达
 
 Dual Pistols · Secondary · Mastery Rank 9. 10 base damage x2 multishot (impact 4, puncture 3.33, slash 2.67), 25% crit chance, 2.7x crit multiplier, 16.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

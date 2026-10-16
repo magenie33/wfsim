@@ -4,6 +4,19 @@ Chinese name: 终幕·噬轮
 
 Hammer · Melee · Mastery Rank 17. 250 base damage (impact 83.325, puncture 83.325, slash 83.35), 25% crit chance, 2.3x crit multiplier, 30% status chance.
 
+## Best riven-free build on the WFSim board, as of 2026-10-16
+
+A score belongs to its ruler: compare it only with scores under the same ruler.
+
+Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
+
+| Ruler | Fight | Mode | Score | Build | Measured |
+| --- | --- | --- | ---: | --- | --- |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2142 | Blood Rush, Primed Pressure Point, Galvanized Reflex, Galvanized Steel, Primed Heavy Trauma, Amalgam Organ Shatter, Collision Force, Killing Blow, Crushing Ruin, Dispatch Overdrive, Melee Exposure | 2026-10-15 07:13 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2142 | Blood Rush, Primed Pressure Point, Galvanized Reflex, Galvanized Steel, Primed Heavy Trauma, Amalgam Organ Shatter, Collision Force, Killing Blow, Crushing Ruin, Dispatch Overdrive, Melee Exposure | 2026-10-15 07:11 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.01087 | Blood Rush, Primed Pressure Point, Galvanized Reflex, Galvanized Steel, Primed Heavy Trauma, Amalgam Organ Shatter, Collision Force, Killing Blow, Crushing Ruin, Dispatch Overdrive, Melee Exposure | 2026-10-15 07:13 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.09684 | Blood Rush, Primed Pressure Point, Galvanized Reflex, Galvanized Steel, Primed Heavy Trauma, Amalgam Organ Shatter, Collision Force, Killing Blow, Crushing Ruin, Dispatch Overdrive, Melee Exposure | 2026-10-15 07:11 UTC |
+
 ## Not modelled here
 
 - One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.

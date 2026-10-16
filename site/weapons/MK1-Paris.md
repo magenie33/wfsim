@@ -4,7 +4,7 @@ Chinese name: MK1-帕里斯
 
 Bow · Primary · Mastery Rank 0. 230 base damage (impact 11.5, puncture 184, slash 34.5), 30% crit chance, 2x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

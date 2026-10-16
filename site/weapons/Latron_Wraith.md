@@ -4,7 +4,7 @@ Chinese name: 拉特昂·亡魂
 
 Rifle · Primary · Mastery Rank 7. 62 base damage (impact 15.5, puncture 43.4, slash 3.1), 26% crit chance, 2.8x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

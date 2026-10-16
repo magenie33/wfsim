@@ -4,7 +4,7 @@ Chinese name: 通量步枪
 
 Rifle · Primary · Mastery Rank 6. 22 base damage (puncture 4.84, slash 17.16), 10% crit chance, 2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

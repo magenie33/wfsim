@@ -4,7 +4,7 @@ Chinese name: 极速电磁步枪
 
 Archgun · Archgun · Mastery Rank 0. 3200 base damage (impact 800, magnetic 800, puncture 800, slash 800), 60% crit chance, 3.6x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-15
+## Best riven-free build on the WFSim board, as of 2026-10-16
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
