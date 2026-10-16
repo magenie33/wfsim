@@ -66,9 +66,9 @@ jobs:
     runs-on: ubuntu-latest
     # Capped for the reason `scores.yml` states: one pending run per group, so a
     # hung call costs every tick behind it rather than only its own. The
-    # reconciliation reads the queue twice and walks every ruler, which a queue of
-    # a million rows takes most of an hour to do; a tick that finds it running waits.
-    timeout-minutes: 110
+    # reconciliation reads the queue twice and walks every ruler at once, which a
+    # queue of 1.3 million rows took 46 minutes to do; a tick that finds it running waits.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
