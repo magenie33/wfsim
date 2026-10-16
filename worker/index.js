@@ -20,7 +20,7 @@
 
 import { decodeShare, useShareHost } from "./share_codec.js";
 import { accountRoute, purgeDeleted, sessionAccount, initiatorCode } from "./accounts.js";
-import { cloudPath, cloudRoute } from "./cloud.js";
+import { cloudPath, cloudRoute, READ_ONLY_CLOUD } from "./cloud.js";
 import { agentRoute } from "./agents.js";
 import { BOT_AUTH_DIRECTORY, botAuthDirectory } from "./bot_auth.js";
 import { rollupUsage } from "./usage_days.js";
@@ -791,7 +791,6 @@ export default {
 /// A REQUEST THAT MAY WRITE THE ACCOUNTS: any sign-in step (an OAuth return is
 /// a GET that makes a session), and any change to an account, its devices or
 /// what the paid half keeps for it.
-const READ_ONLY_CLOUD = new Set(["/api/cloud/page.js", "/api/cloud/thanks"]);
 function accountWrite(request, path) {
   if (path.startsWith("/api/auth/")) return true;
   if (request.method === "GET" || request.method === "HEAD") return false;

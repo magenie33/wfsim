@@ -1382,6 +1382,10 @@ are written to the public bucket under `stats/` and read from
   and neither may reach the Hetzner box. Its rows are `everyoneOf`'s, the
   ones every answer is cut from, ordered per period by the same `ordered`:
   `{ ok, v: 1, at, day, computing, pool, rankings: { all, recent, week } }`.
+- **A RANKING WITHOUT ITS MARKS IS NOT WRITTEN.** The cron waits for the paid
+  half however long it takes (a reader's ask waits four seconds), and when it
+  does not answer the last file stays served: a badge gone for ten minutes
+  reads to everyone as a membership refunded.
 - **Nothing in it names anyone who did not agree**: no account id, and a
   name, a mark or the honour only on a named row. `check_contribution`
   asserts it, and that the same test finds each one planted.

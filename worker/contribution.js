@@ -530,19 +530,22 @@ async function kept(request, env) {
   return body;
 }
 /// THE NAMED ROWS' MARKS, asked of the paid half every `MARKS_KEEP_MS` an
-/// isolate and waited on `MARKS_WAIT_MS` at most: a mark is a tier or a title,
-/// which moves in days, and the asking is seconds — so a slow answer leaves the
-/// last marks drawn and lands for the next ranking instead.
+/// isolate: a mark is a tier or a title, which moves in days, and the asking is
+/// seconds. A reader's ask waits `MARKS_WAIT_MS` at most and falls back to the
+/// last marks drawn; the published ranking waits for the answer (`wait`) and is
+/// null without one, since a badge gone for ten minutes reads as a refund.
 const MARKS_KEEP_MS = 10 * 60_000, MARKS_WAIT_MS = 4_000;
 let marksHere = null;
-async function marksOfNamed(env, named) {
-  if (marksHere && Date.now() - marksHere.at < MARKS_KEEP_MS && named.every((id) => marksHere.asked.has(id))) return marksHere.marks;
+async function marksOfNamed(env, named, wait = false) {
+  if (!wait && marksHere && Date.now() - marksHere.at < MARKS_KEEP_MS && named.every((id) => marksHere.asked.has(id))) return marksHere.marks;
   const parts = [];
   for (let i = 0; i < named.length; i += PER_STATEMENT) parts.push(cloudMarks(env, named.slice(i, i + PER_STATEMENT)));
   const asking = Promise.all(parts).then((got) => {
+    if (got.some((g) => g === null)) return null;
     marksHere = { at: Date.now(), asked: new Set(named), marks: Object.assign({}, ...got) };
     return marksHere.marks;
   });
+  if (wait) return asking;
   const late = new Promise((res) => setTimeout(() => res(null), MARKS_WAIT_MS));
   return (await Promise.race([asking, late])) || (marksHere ? marksHere.marks : {});
 }
@@ -561,11 +564,13 @@ async function keptWorkedOut(request, env) {
   return body;
 }
 /// EVERY ROW AS IT MAY BE SERVED: no account id, and a name, a mark or the
-/// honour only on a row whose account agreed to be named.
-async function everyoneOf(env) {
+/// honour only on a row whose account agreed to be named. Null when `wait`
+/// and the paid half did not answer for the marks.
+async function everyoneOf(env, wait = false) {
   const day = keyDay(), rows = await standings(env, day);
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
-  const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id));
+  const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id), wait);
+  if (!marks) return null;
   const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
     points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
@@ -593,7 +598,10 @@ export async function publishContributors(env, now = Date.now()) {
   const head = await env.PUBLIC.head(CONTRIBUTORS_KEY).catch(() => null);
   // A CRON A FEW SECONDS EARLY still writes: the dial is a period, not a deadline.
   if (head && head.uploaded && now - new Date(head.uploaded).getTime() < every - 60_000) return false;
-  const file = contributorsFile(await everyoneOf(env), iso(now));
+  // A RANKING WITHOUT ITS MARKS IS NOT PUBLISHED: the last file stays served while fresh.
+  const body = await everyoneOf(env, true);
+  if (!body) { console.log(JSON.stringify({ event: "contributors.unmarked" })); return false; }
+  const file = contributorsFile(body, iso(now));
   await env.PUBLIC.put(CONTRIBUTORS_KEY, JSON.stringify(file), { httpMetadata: { contentType: "application/json",
     cacheControl: `public, max-age=${Math.round(Math.min(every, 600_000) / 2000)}` } });
   return true;

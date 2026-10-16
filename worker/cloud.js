@@ -17,6 +17,10 @@ const WEBHOOK = "/api/stripe/webhook";
 export const cloudPath = (path) =>
   path === "/api/billing" || path.startsWith("/api/billing/") || path.startsWith("/api/cloud/") || path.startsWith("/api/stripe/");
 
+/// THE PAID HALF'S PAGES FOR ANYONE: the same answer whoever asks, so they
+/// write nothing and are never held up by a session lookup.
+export const READ_ONLY_CLOUD = new Set(["/api/cloud/page.js", "/api/cloud/thanks"]);
+
 export async function cloudRoute(request, env, path) {
   if (!env.CLOUD) return path === "/api/billing" ? json({ ok: true, configured: false }) : no("unavailable", 503);
   const headers = new Headers(request.headers);
@@ -27,8 +31,8 @@ export async function cloudRoute(request, env, path) {
     headers.delete("cookie");
     // A CLAIMED AGENT'S KEY acts for its account on a feature's route, and on
     // nothing of billing: an agent never buys, and never sees what was bought.
-    const account = await sessionAccount(env, request)
-      || (path.startsWith("/api/cloud/") ? await agentAccount(env, request) : null);
+    const account = READ_ONLY_CLOUD.has(path) ? null : (await sessionAccount(env, request)
+      || (path.startsWith("/api/cloud/") ? await agentAccount(env, request) : null));
     headers.delete("authorization");
     if (account) headers.set(ACCOUNT_HEADER, account);
   }
@@ -69,16 +73,16 @@ export async function cloudEnd(env, account) {
 
 /// THE MARKS OF THE NAMED ACCOUNTS ON THE CONTRIBUTION RANKING — `{ account:
 /// mark }` as the paid half proves them, passed through unread; empty with none
-/// bound or none answering, and the ranking stands without them.
+/// bound, and null when it does not answer — which is not "nobody has a mark".
 export async function cloudMarks(env, accounts) {
   if (!env.CLOUD || !accounts.length) return {};
   try {
     const r = await env.CLOUD.fetch(new Request("https://cloud.internal/internal/marks",
       { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ accounts }) }));
     const j = await r.json();
-    return (j && j.ok && j.marks) || {};
+    return j && j.ok && j.marks ? j.marks : null;
   } catch (_) {
-    return {};
+    return null;
   }
 }
 

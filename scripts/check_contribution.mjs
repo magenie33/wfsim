@@ -386,6 +386,23 @@ check("the cron writes the ranking's file, a period's half its edge life",
   && bucket.get(CONTRIBUTORS_KEY).meta.contentType === "application/json", JSON.stringify(bucket.get(CONTRIBUTORS_KEY)?.meta));
 check("...once a period: a cron inside it writes nothing, one a period on writes again",
   !(await publishContributors(env)) && await publishContributors(env, Date.now() + 10 * 60_000));
+// A RANKING WITHOUT ITS MARKS IS NOT PUBLISHED: a slow paid half is waited
+// for past a reader's four seconds, and a silent one leaves the last file.
+const published = bucket.get(CONTRIBUTORS_KEY);
+const cloudOf = (f) => ({ ...env, CLOUD: { fetch: f } });
+const slow = cloudOf(async (req) => {
+  const { accounts: ids } = await req.json();
+  await new Promise((r) => setTimeout(r, 5_000));
+  return new Response(JSON.stringify({ ok: true, marks: Object.fromEntries(ids.map((i) => [i, { tier: "member", titles: [] }])) }));
+});
+const marksIn = () => JSON.parse(bucket.get(CONTRIBUTORS_KEY).body).rankings.all.filter((e) => e.mark).length;
+check("the cron waits for a paid half slower than a reader's wait, and its file keeps the marks",
+  await publishContributors(slow, Date.now() + 20 * 60_000) && marksIn() > 0, String(marksIn()));
+const lastFile = bucket.get(CONTRIBUTORS_KEY).body;
+check("...and one that does not answer publishes nothing, so the last marks stay served",
+  !(await publishContributors(cloudOf(async () => { throw new Error("down"); }), Date.now() + 30 * 60_000))
+  && bucket.get(CONTRIBUTORS_KEY).body === lastFile && marksIn() > 0);
+bucket.set(CONTRIBUTORS_KEY, published);
 const text = bucket.get(CONTRIBUTORS_KEY).body, file = JSON.parse(text);
 check("the file carries no account id, no device's id, and no name an account did not agree to show",
   leaksOf(text).length === 0, JSON.stringify(leaksOf(text)));
