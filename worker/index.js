@@ -608,7 +608,7 @@ async function shareFetch(id, env) {
 /// renamed event is a broken time series, and history cannot be backfilled.
 /// EXPORTED so `check_usage_events.mjs` holds it against what the page sends.
 export const USAGE_EVENTS = [
-  "app.boot", "app.view", "app.error", "app.device", "engine.fail", "compute.background",
+  "app.boot", "app.view", "app.error", "app.device", "engine.fail", "engine.fail_lane", "compute.background",
   "builder.weapon", "builder.warframe", "builder.operator", "builder.riven",
   "builder.companion", "builder.enemy",
   "simulator.start", "simulator.run", "optimizer.start", "optimizer.run",

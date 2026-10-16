@@ -298,8 +298,13 @@ check(
 // nothing, so it is wrapped here to be read.
 await evaluate(`(() => {
   window.__fails = [];
+  window.__lanes = [];
   const sent = track;
-  track = (e, s, n) => { if (e === 'engine.fail') window.__fails.push(s); return sent(e, s, n); };
+  track = (e, s, n) => {
+    if (e === 'engine.fail') window.__fails.push(s);
+    if (e === 'engine.fail_lane') window.__lanes.push(s + ':' + n);
+    return sent(e, s, n);
+  };
 })()`);
 await evaluate(`(() => {
   LANE_WATCHDOG.stall = 8000;
@@ -323,6 +328,10 @@ check(
 );
 const silentSaid = await evaluate(`window.__fails.slice()`);
 check("…and says it fell silent after speaking", JSON.stringify(silentSaid) === '["worker_silent"]', JSON.stringify(silentSaid));
+// A FROZEN PAGE MAY STAY HIDDEN after it thaws: the sight is the page's own word.
+const silentWhere = await evaluate(`({ said: window.__lanes.splice(0), hidden: document.hidden })`);
+check("…and where: a reader's lane, in the sight the page says",
+  JSON.stringify(silentWhere.said) === JSON.stringify([`reader_${silentWhere.hidden ? "hidden" : "shown"}:0`]), JSON.stringify(silentWhere));
 
 // A MODULE THAT WILL NOT DOWNLOAD IS A FAILURE NOW, not after the 90 s watchdog
 // — the wait a reader on a bad connection closed the tab during. Last, because
@@ -367,6 +376,17 @@ const staleSaid = await evaluate(`(async () => {
   window.fetch = real;
   return window.__fails.slice();
 })()`);
+// A COMMUNITY LANE LOST IN A HIDDEN TAB says so, with the minutes out of sight.
+const hiddenWhere = await evaluate(`(async () => {
+  window.__lanes.length = 0;
+  hiddenSince = Date.now() - 3 * 60_000;
+  boardPool = [];
+  await boardLaneAt(0).call('/api/meta');
+  hiddenSince = null;
+  return window.__lanes.slice();
+})()`);
+check("a community lane lost while the page is hidden says board, hidden, and for how long",
+  JSON.stringify(hiddenWhere) === '["board_hidden:3"]', JSON.stringify(hiddenWhere));
 check("a lane that will not load says whether the download failed or a newer release left the page behind",
   JSON.stringify(loadSaid) === '["worker_load_network"]' && JSON.stringify(staleSaid) === '["worker_load_stale"]',
   `same release ${JSON.stringify(loadSaid)}, newer ${JSON.stringify(staleSaid)}`);

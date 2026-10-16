@@ -224,7 +224,18 @@ function watchSilence(giveUp) {
 /// body mid-download, `compile` the bytes, `memory` an instance it could not have.
 const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "unclassified"];
 
-function makeLane() {
+/// WHERE A LANE WAS LOST, beside its `engine.fail`: which pool's (`reader`, the
+/// reader's own; `board`, the community's) and whether the page was in sight,
+/// `n` the minutes it had been out of it. A hidden tab is throttled or frozen by
+/// the browser, so without this a lane it starved reads as a lane that broke.
+let hiddenSince = document.hidden ? Date.now() : null;
+document.addEventListener("visibilitychange", () => { hiddenSince = document.hidden ? (hiddenSince ?? Date.now()) : null; });
+function laneLost(pool) {
+  track("engine.fail_lane", `${pool}_${hiddenSince === null ? "shown" : "hidden"}`,
+    hiddenSince === null ? 0 : Math.round((Date.now() - hiddenSince) / 60_000));
+}
+
+function makeLane(pool = "reader") {
   const w = new Worker("/worker.js");
   const pending = new Map();
   const progress = new Map();
@@ -254,6 +265,7 @@ function makeLane() {
   // every few seconds, so silence from the start is a load, not a stall.
   const wd = watchSilence((spoke) => {
     track("engine.fail", spoke ? "worker_silent" : "worker_load_timeout", Math.round(performance.now()));
+    laneLost(pool);
     perish("worker stopped answering");
   });
   // A LANE THAT CANNOT LOAD IS A LANE, NOT A DEAD PAGE.
@@ -275,6 +287,7 @@ function makeLane() {
     if (e && e.preventDefault) e.preventDefault();
     dead = true;
     perish(String((e && e.message) || "worker failed to load"));
+    laneLost(pool);
     releaseAfterLaneFailed(Math.round(performance.now()), () => loadCause);
   };
   w.onmessage = (e) => {
@@ -409,7 +422,7 @@ const lanes = async (n = poolSize()) => {
 /// the reader's, so neither share queues behind the other's calls.
 let boardPool = [];
 const boardLaneAt = (i) => {
-  if (!boardPool[i] || boardPool[i].dead) boardPool[i] = makeLane();
+  if (!boardPool[i] || boardPool[i].dead) boardPool[i] = makeLane("board");
   return boardPool[i];
 };
 const boardLanes = async (n) => {
