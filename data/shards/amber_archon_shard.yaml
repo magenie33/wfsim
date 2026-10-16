@@ -33,8 +33,7 @@ effects:
     tauforged: 0.75
   - id: casting_speed
     text: "Casting Speed"
-    kind: out_of_scope
-    applies_to: the Warframe layer
+    kind: casting_speed
     value: 0.25
     unit: pct
     tauforged: 0.375

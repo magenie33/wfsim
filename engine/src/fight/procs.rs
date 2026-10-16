@@ -648,7 +648,7 @@ pub(super) fn settle_procs(
     // RETURNS THE DOT IT PUSHED, so an AREA proc can post a copy to
     // `DebuffState::area_out` for everybody standing near this body.
     // WHAT A SEED IS MADE OF, kept by the record for the row its ticks write.
-    let seed_of = |coefficient: f64, body_part: f64| crate::record::Seed {
+    let seed_of = |coefficient: f64, body_part: f64, sdm: f64| crate::record::Seed {
         base: mb_live,
         coefficient,
         status_damage: sdm,
@@ -677,6 +677,8 @@ pub(super) fn settle_procs(
         // until somebody measures them, which is what `dot_takes_weakpoint`
         // exists to make a one-line change.
         let part = if dot_takes_weakpoint(dtype) { part_factor } else { 1.0 };
+        // ONE ELEMENT'S OWN STATUS DAMAGE joins the sum for its procs only.
+        let sdm = sdm + params.status_damage_of(dtype);
         let dot = Dot {
                 owner,
                 next_tick: at + delay,
@@ -701,7 +703,7 @@ pub(super) fn settle_procs(
                 source_scaled: true,
                 dtype,
                 ignores_armor,
-                seed: rec.seed(seed_of(coeff, part)),
+                seed: rec.seed(seed_of(coeff, part, sdm)),
         };
         debuffs.push_dot_capped(dot, dot_cap_of(dtype));
         dot
@@ -965,7 +967,7 @@ pub(super) fn settle_procs(
                         attrition: 1.0,
                         ability_final: 1.0,
                         faction: fm2,
-                        ..seed_of(BLAST_COEFFICIENT, part_factor)
+                        ..seed_of(BLAST_COEFFICIENT, part_factor, sdm)
                     }),
                 });
                 if debuffs.blast.len() >= TEN_STACK_CAP {

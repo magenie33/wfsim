@@ -24,10 +24,19 @@ effects:
     value: 0.3
     unit: pct
     tauforged: 0.45
+    # "Gain an additional +10% (+15%) per Crimson, Azure, or Violet Archon Shard
+    # equipped." (W`Archon_Shard`)
+    per_shard:
+      value: 0.1
+      tauforged: 0.15
+      colours: [crimson, azure, violet]
   - id: melee_crit_damage
     text: "Melee Critical Damage"
-    kind: out_of_scope
-    applies_to: "no melee in this fight"
+    kind: crit_damage
+    slot: melee
+    # "When Max Energy is over 500, the damage boost doubles" — and "you must
+    # have 501 or more" (W`Archon_Shard`).
+    doubled_when: "max_energy > 500"
     value: 0.25
     unit: pct
     tauforged: 0.375

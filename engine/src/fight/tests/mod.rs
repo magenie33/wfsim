@@ -159,6 +159,7 @@ impl Default for FightParams {
             weakpoint_open: None,
             crit_chance_stack: None,
             status_damage_multiplier: 1.0,
+            status_damage_of_type: Vec::new(),
             elem_dot_bonus: Vec::new(),
             faction_multiplier: 1.0,
             abilities: Vec::new(),

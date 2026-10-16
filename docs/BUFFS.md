@@ -906,12 +906,27 @@ the base damage as Serration and Heavy Caliber do"*. So an amp is worth LESS
 the more Serration is already in the sum, and a reader wants to see it in
 there.
 
-AN EFFECT IS APPLIED OR IT SAYS WHY NOT, never neither and never both. Twenty
-of the twenty-seven shard effects pay nothing in this arena, and THREE of
-those are real weapon-damage quantities transcribed correctly and still not
-paid, because the bucket they need is narrower than any this engine has.
+AN EFFECT IS APPLIED OR IT SAYS WHY NOT, never neither and never both.
 `ShardEffect::unmodelled_reason` is the one answer and the page prints it; the
-test that holds it is DERIVED from the roster.
+test that holds it is DERIVED from the roster. What a shard pays, and where:
+
+- **A mod bucket** (`Tenno::shard_bonuses`): Crimson's Primary Status Chance,
+  Secondary Critical Chance and Melee Critical Damage, and Violet's Melee
+  Critical Damage, which doubles with Max Energy over 500 (*"you must have 501
+  or more"*). Each is *"additive with similar buffs"* and paid to its slot only.
+- **An element placed LAST** (`Tenno::shard_elements`): Violet's Primary
+  Electricity, 30% plus 10% per Crimson, Azure or Violet socket, itself
+  included. It *"will combine with Mods"*: it enters the hierarchy after the
+  innate elements as Frenzy's injection does (docs/MECHANICS.md §3 rule 8), and
+  raises Electricity's DoT bracket as Stormbringer does.
+- **One element's status damage** (`Tenno::shard_status_damage_of_type`):
+  Emerald's Toxin, added to the global sum for Toxin ticks only.
+- **The wielder's resolved stats**: strength, duration, casting speed, health,
+  shields, armor and energy reach the fight through the wielder build.
+- **Nothing**: the pickups, regeneration and kill rewards of a fight nobody
+  shoots back in, Ability Damage (no ability deals damage here), and Topaz's
+  crit per Heat-affected kill, because a kill does not yet say which statuses
+  the body carried.
 
 A LOCALE'S TABLES ARE NO LONGER A HAND LIST: `LocaleSpec::merge` is tested by
 serializing the merged spec and asking the question of every field there is.

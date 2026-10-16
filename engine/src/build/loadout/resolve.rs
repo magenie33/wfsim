@@ -147,8 +147,8 @@ pub fn resolve_for(
     // other bonuses" does not make an exception for where the bonus came from.
     let fb = &tenno.bonuses;
     // …AND THE ARCHON SHARDS, which land in the SAME buckets a mod of that stat
-    // feeds — the two Crimson ones are the whole family that does, and
-    // `unmodelled_reason` names why each of the others does not. Added into
+    // feeds (chance, status chance, Melee Critical Damage); `unmodelled_reason`
+    // names why any other pays nothing. Added into
     // `fb`'s own terms rather than beside them, so every lock, every panel line
     // and the optimizer's scoring treat a socket as one more card.
     let shards = tenno.shard_bonuses(base.slot);
@@ -170,7 +170,7 @@ pub fn resolve_for(
             + base.evo_base_damage_bonus,
         fb.multishot,
         fb.crit_chance + shards.crit_chance,
-        fb.crit_damage,
+        fb.crit_damage + shards.crit_damage,
         fb.status_chance + shards.status_chance,
         // NOT doubled by `fire_rate_mod_multiplier`: the bow x2 is printed on
         // the CARD of a fire-rate mod, and a fight bonus has no card.
@@ -1045,7 +1045,8 @@ pub fn resolve_for(
     // THE BASE-DAMAGE BUCKET IS AN ARGUMENT because one attack part takes none
     // of it: the Okina's spectral dagger is "not affected by melee damage
     // bonuses", and on a melee weapon that bucket is exactly those.
-    let build_in = |base_vector: &DamageVector,
+    let shard_elements = tenno.shard_elements(base.slot);
+    let build_in =|base_vector: &DamageVector,
                      elem_bonus: Option<&mut Vec<(DamageType, f64)>>,
                      base_damage: f64,
                      inject: bool|
@@ -1116,6 +1117,18 @@ pub fn resolve_for(
                     x.1 += bonus;
                 } else {
                     eb.push((t, bonus));
+                }
+            }
+        }
+        // …AND THE ARCHON SHARDS' ELEMENTS, last of all and on every hit
+        // (`Tenno::shard_elements`). Their DoT share joins the element's
+        // bracket as an elemental mod's does.
+        for (t, bonus) in &shard_elements {
+            input.injected.push((*t, modified_base * bonus));
+            if let Some(eb) = elem_bonus.as_deref_mut() {
+                match eb.iter_mut().find(|(a, _)| a == t) {
+                    Some(x) => x.1 += bonus,
+                    None => eb.push((*t, *bonus)),
                 }
             }
         }
@@ -1997,6 +2010,7 @@ pub fn resolve_for(
         on_weakpoint,
         crit_chance_stack,
         status_damage_multiplier: 1.0 + status_damage,
+        status_damage_of_type: tenno.shard_status_damage_of_type(base.slot),
         status_duration_multiplier: 1.0 + sdur,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
         indirect,

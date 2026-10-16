@@ -23,6 +23,7 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 use crate::model::{TennoCondition, TennoScaledTerm, TennoStat};
+use crate::rules::damage::DamageType;
 
 /// The player's stat block plus what the player is doing — the fight's second
 /// actor, and the counterpart of [`crate::target::Foe`].
@@ -203,12 +204,13 @@ impl Tenno {
 
     /// THE SHARD BONUSES THAT LAND IN A MOD BUCKET, for a weapon in this SLOT.
     ///
-    /// Two of the twenty-seven do, exactly: Crimson's *"+25% Primary Status
-    /// Chance"* and *"+25% Secondary Critical Chance"* are the same quantity a
-    /// mod of that stat feeds, so they go in the same bucket and every lock,
-    /// every panel line and the optimizer's scoring treat them as one more
-    /// card. The rest either pay a different layer or are narrower than any
-    /// bucket here, and [`ShardEffect::unmodelled_reason`] is what says which.
+    /// Crimson's *"+25% Primary Status Chance"*, *"+25% Secondary Critical
+    /// Chance"* and the Melee Critical Damage pair are the same quantity a mod
+    /// of that stat feeds, so they go in the same bucket and every lock, every
+    /// panel line and the optimizer's scoring treat them as one more card. The
+    /// rest pay through [`Self::shard_elements`],
+    /// [`Self::shard_status_damage_of_type`], the wielder's resolved stats or
+    /// not at all, and [`ShardEffect::unmodelled_reason`] is what says which.
     ///
     /// [`ShardEffect::unmodelled_reason`]: crate::data::shards::ShardEffect::unmodelled_reason
     pub fn shard_bonuses(&self, slot: &str) -> StatBonuses {
@@ -225,10 +227,64 @@ impl Tenno {
             if o.slot.as_deref().is_some_and(|s| s != slot) {
                 continue;
             }
+            let v = o.value_on(pick.tauforged, self);
             match o.at(pick.tauforged) {
-                ShardEffect::StatusChance(v, _) => out.status_chance += v,
-                ShardEffect::CritChance(v, _) => out.crit_chance += v,
+                ShardEffect::StatusChance(..) => out.status_chance += v,
+                ShardEffect::CritChance(..) => out.crit_chance += v,
+                ShardEffect::CritDamage(_) => out.crit_damage += v,
                 _ => {}
+            }
+        }
+        out
+    }
+
+    /// The sockets' option and value for every pick paying a weapon in `slot`.
+    fn shard_terms(&self, slot: &str) -> Vec<(crate::data::shards::ShardEffect, f64)> {
+        self.shards
+            .iter()
+            .take(5)
+            .filter_map(|pick| {
+                let d = crate::data::shards::all().iter().find(|x| x.id == pick.shard)?;
+                let o = d.options.iter().find(|o| o.id == pick.effect)?;
+                if o.slot.as_deref().is_some_and(|s| s != slot) {
+                    return None;
+                }
+                Some((o.at(pick.tauforged), o.value_on(pick.tauforged, self)))
+            })
+            .collect()
+    }
+
+    /// THE ELEMENTS THE SOCKETS ADD to a weapon in `slot`, as fractions of its
+    /// modified base. Violet's Electricity *"will combine with Mods"* and is
+    /// *"additive with similar buffs such as Stormbringer"* (W`Archon_Shard`):
+    /// it enters the hierarchy LAST, after the innate elements, and pools into
+    /// a position an Electricity mod already holds — the rule-8 injection
+    /// (`rules::elements::ElementalInput::injected`).
+    pub fn shard_elements(&self, slot: &str) -> Vec<(DamageType, f64)> {
+        let mut out: Vec<(DamageType, f64)> = Vec::new();
+        for (e, v) in self.shard_terms(slot) {
+            if let crate::data::shards::ShardEffect::ElementDamageOfType(_, t) = e {
+                let t = DamageType::from_name(&t).unwrap_or_else(|| panic!("shard element `{t}`"));
+                match out.iter_mut().find(|(x, _)| *x == t) {
+                    Some(x) => x.1 += v,
+                    None => out.push((t, v)),
+                }
+            }
+        }
+        out
+    }
+
+    /// Status DAMAGE the sockets add to ONE element's procs (Emerald's Toxin),
+    /// on a weapon in `slot`.
+    pub fn shard_status_damage_of_type(&self, slot: &str) -> Vec<(DamageType, f64)> {
+        let mut out: Vec<(DamageType, f64)> = Vec::new();
+        for (e, v) in self.shard_terms(slot) {
+            if let crate::data::shards::ShardEffect::StatusDamageOfType(_, t) = e {
+                let t = DamageType::from_name(&t).unwrap_or_else(|| panic!("shard status `{t}`"));
+                match out.iter_mut().find(|(x, _)| *x == t) {
+                    Some(x) => x.1 += v,
+                    None => out.push((t, v)),
+                }
             }
         }
         out
@@ -775,13 +831,11 @@ mod tests {
     /// AN ARCHON SHARD LANDS IN THE BUCKET A MOD OF THAT STAT FEEDS, and only
     /// for the SLOT its card names.
     ///
-    /// Two of the twenty-seven do — Crimson's *"+25% Primary Status Chance"*
-    /// and *"+25% Secondary Critical Chance"* — and the slot gate is the thing
-    /// worth asserting: the two live on the same shard, so a build that read
-    /// the colour instead of the option would pay both to everything.
-    ///
-    /// The other twenty-five are covered from the other side: every one of them
-    /// must be able to SAY why it pays nothing.
+    /// The slot gate is the thing worth asserting: Crimson's Primary Status
+    /// Chance and Secondary Critical Chance live on the same shard, so a build
+    /// that read the colour instead of the option would pay both to everything.
+    /// The effects that pay nothing are covered from the other side: every one
+    /// of them must be able to SAY why.
     #[test]
     fn a_shard_pays_its_own_slot_and_the_rest_say_why_they_do_not() {
         use crate::data::shards::ShardPick;
@@ -829,6 +883,10 @@ mod tests {
                     o.at(false),
                     crate::data::shards::ShardEffect::StatusChance(..)
                         | crate::data::shards::ShardEffect::CritChance(..)
+                        | crate::data::shards::ShardEffect::CritDamage(_)
+                        | crate::data::shards::ShardEffect::StatusDamageOfType(..)
+                        | crate::data::shards::ShardEffect::ElementDamageOfType(..)
+                        | crate::data::shards::ShardEffect::WielderStat(_)
                         | crate::data::shards::ShardEffect::Armor(_)
                         | crate::data::shards::ShardEffect::EnergyMax(_)
                         | crate::data::shards::ShardEffect::StatusStackCap(..)

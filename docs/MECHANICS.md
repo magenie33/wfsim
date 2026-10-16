@@ -251,6 +251,8 @@ authoritative rules):
    injection (M111). It is a BUFF's element: the fight resolves the hit
    with and without it (`ResolvedPanel::resting`) and each shot takes the
    one Frenzy's clock says, and a DoT reads it per tick (`element_at`).
+   A Violet Archon Shard's Primary Electricity enters the same way, after
+   any buff's, on every hit (docs/BUFFS.md §What the Warframe brings).
 
 Worked example (Load Order): Prova/Lecta (innate Electricity) + Cold(1)
 Toxin(2) Heat(3) → Cold+Toxin = **Viral**, then Heat pairs with the

@@ -12,8 +12,8 @@ colour: crimson
 effects:
   - id: melee_crit_damage
     text: "Melee Critical Damage"
-    kind: out_of_scope
-    applies_to: "no melee in this fight"
+    kind: crit_damage
+    slot: melee
     value: 0.25
     unit: pct
     tauforged: 0.375

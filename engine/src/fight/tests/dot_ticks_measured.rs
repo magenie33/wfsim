@@ -485,3 +485,24 @@ fn only_a_finite_reserve_ends_a_run_early_and_its_size_then_matters() {
     let one = shots(&params(true, 0.0));
     assert!((one - 10.0).abs() < 1e-9, "just the magazine: {one}");
 }
+
+/// A STATUS DAMAGE NAMED FOR ONE ELEMENT PAYS THAT ELEMENT'S TICKS AND NO
+/// OTHER: Emerald's *"Toxin Status Effects deal +30% (+45%) more damage"*,
+/// *"additive with other sources of Status Damage such as Rifle
+/// Elementalist"* (W`Archon_Shard`).
+#[test]
+fn a_toxin_status_damage_pays_toxin_ticks_and_nothing_else() {
+    let dot = |t: DamageType, extra: Vec<(DamageType, f64)>, sdm: f64| {
+        let p = FightParams { status_damage_of_type: extra, status_damage_multiplier: sdm, ..bare(t) };
+        monte_carlo(&p, 4, 1).mean_dot_damage
+    };
+    let tox = dot(DamageType::Toxin, vec![], 1.0);
+    assert!(tox > 0.0);
+    let with = dot(DamageType::Toxin, vec![(DamageType::Toxin, 0.3)], 1.0);
+    assert!((with / tox - 1.3).abs() < 1e-9, "x{}", with / tox);
+    // ADDITIVE with the global bucket: 1 + 0.6 + 0.3, not 1.6 x 1.3.
+    let both = dot(DamageType::Toxin, vec![(DamageType::Toxin, 0.3)], 1.6);
+    assert!((both / tox - 1.9).abs() < 1e-9, "x{}", both / tox);
+    let heat = dot(DamageType::Heat, vec![], 1.0);
+    assert_eq!(dot(DamageType::Heat, vec![(DamageType::Toxin, 0.3)], 1.0), heat);
+}

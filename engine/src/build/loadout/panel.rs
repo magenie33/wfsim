@@ -699,6 +699,9 @@ pub struct ResolvedPanel {
     pub crit_chance_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_multiplier: f64,
+    /// Status damage paid to ONE element's procs only, added to the multiplier
+    /// above for that element (Emerald's Toxin, `Tenno::shard_status_damage_of_type`).
+    pub status_damage_of_type: Vec<(DamageType, f64)>,
     /// (1 + Σ status duration) — scales status-effect DoT durations.
     pub status_duration_multiplier: f64,
     /// Σ chance for a CRITICAL hit to apply a Slash status (Hunter

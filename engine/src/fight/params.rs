@@ -372,6 +372,8 @@ pub struct FightParams {
     pub crit_chance_stack: Option<crate::model::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_multiplier: f64,
+    /// Added to it for one element's procs (`ResolvedPanel::status_damage_of_type`).
+    pub status_damage_of_type: Vec<(DamageType, f64)>,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
     pub elem_dot_bonus: Vec<(DamageType, f64)>,
     /// (1 + Σ faction bonuses matching THIS target's faction) — the resolved
@@ -815,6 +817,11 @@ pub struct FightParams {
 
 #[wfsim_gas_macro::metered]
 impl FightParams {
+    /// What `status_damage_of_type` adds for `t`'s procs, 0 for any other.
+    pub fn status_damage_of(&self, t: DamageType) -> f64 {
+        self.status_damage_of_type.iter().filter(|(x, _)| *x == t).map(|(_, v)| *v).sum()
+    }
+
     /// A HEAD'S MULTIPLIER BEFORE THE HEADSHOT BRACKET: the part's own plus Weak
     /// Point Damage at `weakpoint_rate`, unless the weapon overrules the part —
     /// and then acuity pays nothing. VERBATIM (wiki `Enemy_Body_Parts`): these

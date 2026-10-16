@@ -2252,18 +2252,12 @@ ui:
   "a TAUFORGED shard of the same colour grants 50% higher stat bonuses": "同色的 **Tau 融造**版源力石，属性加成高 50%"
   "not modelled": "未建模"
   "nobody shoots back": "这场战斗没有人向你开火"
-  "no melee in this fight": "这场战斗没有近战"
   "pickups": "拾取物"
   "energy economy": "能量循环"
   "movement": "移动"
-  "the Warframe layer": "战甲层"
-  "Ability Strength — the Warframe layer": "技能强度 —— 战甲层"
-  "Ability Duration — the Warframe layer": "技能持续时间 —— 战甲层"
-  "Ability Damage — the Warframe layer": "技能伤害 —— 战甲层"
+  "Ability Damage — no ability deals damage in this fight, and the card excludes Exalted weapons": "技能伤害 —— 这场战斗里没有技能造成伤害，且卡面说明不作用于显赫武器"
   "not a weapon-damage quantity": "不是武器伤害相关的量"
-  "status damage for ONE element — this engine's status-damage bucket is global": "只加**单一元素**的异常伤害 —— 本引擎的异常伤害加成桶是全局的"
-  "damage for ONE element — this engine has no per-element damage bucket": "只加**单一元素**的伤害 —— 本引擎没有按元素分开的伤害加成桶"
-  "earned per kill — not built as a stacking buff yet": "靠击杀累积 —— 还没有做成可叠加的增益"
+  "earned per kill of a Heat-affected enemy — a kill here does not yet say which statuses the body carried": "靠击杀带火焰异常的敌人累积 —— 这里的击杀还不会记录目标身上有哪些异常"
 
   # ---- THE COMBAT RECORD ------------------------------------------------
   #

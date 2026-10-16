@@ -25,11 +25,22 @@ pub enum ShardEffect {
     /// Straight into a mod bucket, for the weapon class named.
     StatusChance(f64, String),
     CritChance(f64, String),
-    /// Status DAMAGE for ONE element — narrower than the `status_damage`
-    /// bucket, which is global.
+    /// Vital Sense's bucket — *"additive with similar buffs such as Organ
+    /// Shatter"* (W`Archon_Shard`).
+    CritDamage(f64),
+    /// Status DAMAGE for ONE element: *"additive with other sources of Status
+    /// Damage such as Rifle Elementalist"*, paid to that element's procs only.
     StatusDamageOfType(f64, String),
-    /// Element damage for ONE type on ONE weapon class (Violet's Electricity).
+    /// Element damage for ONE type on ONE weapon slot (Violet's Electricity),
+    /// which "will combine with Mods" — see [`Tenno::shard_elements`].
+    ///
+    /// [`Tenno::shard_elements`]: crate::data::tenno::Tenno::shard_elements
     ElementDamageOfType(f64, String),
+    /// A Warframe stat the WIELDER BUILD resolves (`data::warframes::resolve`),
+    /// so a fight already holds it in the Tenno's own field: strength and
+    /// duration for casts and Exalted weapons, casting speed for cast time,
+    /// health and shields for the cards that read them.
+    WielderStat(String),
     /// Azure's flat additions to the two Warframe stats a weapon arcane reads.
     Armor(f64),
     EnergyMax(f64),
@@ -67,6 +78,23 @@ struct RawEffect {
     /// 1 is a percent") is wrong on Amber's *"+100% Health Orb Effectiveness"*,
     /// whose value is exactly 1.0.
     unit: String,
+    /// A `condition:` spelling (`TennoCondition::from_id`) under which the
+    /// value DOUBLES — Violet's *"When Max Energy is over 500, the damage
+    /// boost doubles"*.
+    #[serde(default)]
+    doubled_when: Option<String>,
+    #[serde(default)]
+    per_shard: Option<PerShard>,
+}
+
+/// *"Gain an additional +10% (+15%) per Crimson, Azure, or Violet Archon Shard
+/// equipped"*: a term per socket of the named colours, sized by THIS shard's
+/// Tauforging. The socket carrying it is one of them, as the sentence reads.
+#[derive(Debug, Clone, Deserialize)]
+pub struct PerShard {
+    pub value: f64,
+    pub tauforged: f64,
+    pub colours: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -89,6 +117,8 @@ pub struct ShardOption {
     pub applies_to: Option<String>,
     pub slot: Option<String>,
     pub unit: String,
+    pub doubled_when: Option<crate::model::TennoCondition>,
+    pub per_shard: Option<PerShard>,
 }
 
 impl ShardOption {
@@ -96,6 +126,28 @@ impl ShardOption {
     pub fn at(&self, tauforged: bool) -> ShardEffect {
         let v = if tauforged { self.tauforged } else { self.value };
         (self.kind_of)(v, self.applies_to.as_deref())
+    }
+
+    /// The value this socket pays on `wielder`, whose `shards` it is one of:
+    /// the card's number, doubled under `doubled_when`, plus `per_shard` for
+    /// every socket of a named colour.
+    pub fn value_on(&self, tauforged: bool, wielder: &crate::data::tenno::Tenno) -> f64 {
+        let mut v = if tauforged { self.tauforged } else { self.value };
+        if self.doubled_when.is_some_and(|c| c.holds(wielder)) {
+            v *= 2.0;
+        }
+        if let Some(p) = &self.per_shard {
+            let per = if tauforged { p.tauforged } else { p.value };
+            let n = wielder
+                .shards
+                .iter()
+                .take(5)
+                .filter_map(|s| all().iter().find(|d| d.id == s.shard))
+                .filter(|d| p.colours.contains(&d.colour))
+                .count();
+            v += per * n as f64;
+        }
+        v
     }
 }
 
@@ -123,18 +175,22 @@ fn kind_fn(kind: &str) -> fn(f64, Option<&str>) -> ShardEffect {
     match kind {
         "status_chance" => |v, a| ShardEffect::StatusChance(v, a.unwrap_or("").into()),
         "crit_chance" => |v, a| ShardEffect::CritChance(v, a.unwrap_or("").into()),
+        "crit_damage" => |v, _| ShardEffect::CritDamage(v),
         "status_damage_of_type" => |v, a| ShardEffect::StatusDamageOfType(v, a.unwrap_or("").into()),
         "element_damage_of_type" => |v, a| ShardEffect::ElementDamageOfType(v, a.unwrap_or("").into()),
         "wf_armor" => |v, _| ShardEffect::Armor(v),
         "wf_energy" => |v, _| ShardEffect::EnergyMax(v),
         "status_stack_cap" => |v, a| ShardEffect::StatusStackCap(v, a.unwrap_or("").into()),
         "crit_chance_on_heat_kill" => |v, a| ShardEffect::CritOnStatusKill(v, a.unwrap_or("").into()),
-        // NAMED, not silent: each of these is a real effect about a layer this
-        // simulator does not have, and saying which layer is the whole value of
-        // listing it at all.
-        "ability_strength" => |_, _| ShardEffect::OutOfScope("Ability Strength — the Warframe layer".into()),
-        "ability_duration" => |_, _| ShardEffect::OutOfScope("Ability Duration — the Warframe layer".into()),
-        "ability_damage" => |_, _| ShardEffect::OutOfScope("Ability Damage — the Warframe layer".into()),
+        "ability_strength" => |_, _| ShardEffect::WielderStat("ability_strength".into()),
+        "ability_duration" => |_, _| ShardEffect::WielderStat("ability_duration".into()),
+        "casting_speed" => |_, _| ShardEffect::WielderStat("casting_speed".into()),
+        "wf_health" => |_, _| ShardEffect::WielderStat("health".into()),
+        "wf_shield" => |_, _| ShardEffect::WielderStat("shield".into()),
+        // NAMED, not silent: a real effect about a layer this simulator does
+        // not have, and saying which layer is the whole value of listing it.
+        "ability_damage" => |_, _| ShardEffect::OutOfScope(
+            "Ability Damage — no ability deals damage in this fight, and the card excludes Exalted weapons".into()),
         "out_of_scope" => |_, a| ShardEffect::OutOfScope(
             a.unwrap_or("not a weapon-damage quantity").into()),
         other => panic!("unknown shard effect kind: {other}"),
@@ -144,30 +200,18 @@ fn kind_fn(kind: &str) -> fn(f64, Option<&str>) -> ShardEffect {
 impl ShardEffect {
     /// WHY THIS PAYS NOTHING HERE, or `None` when it does pay.
     ///
-    /// `OutOfScope` alone could not answer this. Three effects below are real
-    /// weapon-damage quantities, transcribed correctly, and STILL not applied —
-    /// each because the bucket they need is narrower than any this engine has.
-    /// A page that read `OutOfScope` as the whole answer would have offered
-    /// them as working, which is exactly the failure `arc_condition` was
-    /// written to end: a rule stated and not applied reads, to anyone auditing,
-    /// as a rule being applied.
+    /// `OutOfScope` alone could not answer this: an effect can be a real
+    /// weapon-damage quantity, transcribed correctly, and STILL not applied. A
+    /// rule stated and not applied reads, to anyone auditing, as a rule being
+    /// applied.
     pub fn unmodelled_reason(&self) -> Option<String> {
         match self {
             ShardEffect::OutOfScope(w) => Some(w.clone()),
-            // The bucket is GLOBAL status damage; this shard pays ONE element,
-            // so feeding it would overpay every other status on the build.
-            ShardEffect::StatusDamageOfType(..) => {
-                Some("status damage for ONE element — this engine's status-damage bucket is global".into())
-            }
-            // Same shape on the damage side: there is no per-element damage
-            // bucket, only the elemental MODS, and this is not one.
-            ShardEffect::ElementDamageOfType(..) => {
-                Some("damage for ONE element — this engine has no per-element damage bucket".into())
-            }
-            // A stacking buff earned per KILL. The engine has the shape and
-            // this does not build one yet.
+            // A stacking buff earned per KILL of a Heat-affected enemy. A fight's
+            // kill does not yet say which statuses the body carried, nor whether
+            // the killing blow applied Heat, which the card also counts.
             ShardEffect::CritOnStatusKill(..) => {
-                Some("earned per kill — not built as a stacking buff yet".into())
+                Some("earned per kill of a Heat-affected enemy — a kill here does not yet say which statuses the body carried".into())
             }
             _ => None,
         }
@@ -198,6 +242,11 @@ pub fn all() -> &'static [ShardDef] {
                             applies_to: e.applies_to,
                             slot: e.slot,
                             unit: e.unit,
+                            doubled_when: e.doubled_when.as_deref().map(|c| {
+                                crate::model::TennoCondition::from_id(c)
+                                    .unwrap_or_else(|| panic!("{p}: unknown condition `{c}`"))
+                            }),
+                            per_shard: e.per_shard,
                         })
                         .collect(),
                 }

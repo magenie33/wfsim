@@ -12,15 +12,13 @@ colour: azure
 effects:
   - id: max_health
     text: "Max Health"
-    kind: out_of_scope
-    applies_to: nobody shoots back
+    kind: wf_health
     value: 150
     unit: flat
     tauforged: 225
   - id: shield_capacity
     text: "Shield Capacity"
-    kind: out_of_scope
-    applies_to: nobody shoots back
+    kind: wf_shield
     value: 150
     unit: flat
     tauforged: 225

@@ -2445,3 +2445,104 @@ fn a_multishot_lock_takes_an_evolutions_base_multishot_back_off() {
     assert!((locked.multishot - bare.base_multishot).abs() < 1e-9, "locked: {}", locked.multishot);
     assert!((locked.base_multishot - bare.base_multishot).abs() < 1e-9, "and the sim's base agrees");
 }
+
+fn wielding(shards: &[(&str, &str, bool)], energy: f64) -> crate::data::tenno::Tenno {
+    let mut t = crate::data::tenno::default_tenno().clone();
+    t.energy = energy;
+    t.shards = shards
+        .iter()
+        .map(|&(s, e, tau)| crate::data::shards::ShardPick {
+            shard: format!("{s}_archon_shard"),
+            effect: e.into(),
+            tauforged: tau,
+        })
+        .collect();
+    t
+}
+
+/// VIOLET'S ELECTRICITY IS AN ELEMENT LIKE A MOD'S, PLACED LAST: *"Electricity
+/// will combine with Mods"*, *"additive with similar buffs such as
+/// Stormbringer"* (W`Archon_Shard`). It pairs with the last unpaired element,
+/// after the innate ones, and pools where an Electricity mod already stands.
+#[test]
+fn the_violet_shard_electricity_combines_last() {
+    let heat = m("hellfire", vec![ModEffect::Element(Heat, 0.90)]);
+    let tox = m("infected_clip", vec![ModEffect::Element(Toxin, 0.90)]);
+    let elec = m("stormbringer", vec![ModEffect::Element(Electricity, 0.90)]);
+    let violet = wielding(&[("violet", "primary_electricity_damage", false)], 0.0);
+    let base = WeaponBase::from_data("braton_prime", false, &[]);
+    let plain = resolve(&base, &[&heat], StackPolicy::BaseOnly);
+    let mb = plain.damage.get(Heat) / 0.9;
+    // One socket: 30% + 10% for itself.
+    let p = resolve_for(&base, &[&heat], StackPolicy::BaseOnly, &violet);
+    assert!((p.damage.get(Radiation) - mb * 1.3).abs() < 1e-9, "Heat mod + shard -> Radiation");
+    assert_eq!(p.damage.get(Electricity), 0.0);
+    let p = resolve_for(&base, &[&tox], StackPolicy::BaseOnly, &violet);
+    assert!((p.damage.get(Corrosive) - mb * 1.3).abs() < 1e-9, "Toxin mod + shard -> Corrosive");
+    // Two mods already paired: the shard stays pure.
+    let p = resolve_for(&base, &[&heat, &tox], StackPolicy::BaseOnly, &violet);
+    assert!((p.damage.get(Gas) - mb * 1.8).abs() < 1e-9);
+    assert!((p.damage.get(Electricity) - mb * 0.4).abs() < 1e-9);
+    // An Electricity mod placed first holds the position the shard pools into.
+    let p = resolve_for(&base, &[&elec, &heat], StackPolicy::BaseOnly, &violet);
+    assert!((p.damage.get(Radiation) - mb * 2.2).abs() < 1e-9);
+    // …and it raises Electricity's DoT bracket as Stormbringer does.
+    assert!(p.elem_dot_bonus.iter().any(|&(t, v)| t == Electricity && (v - 2.3).abs() < 1e-9));
+    // AFTER THE INNATE: Torid's innate Toxin meets the Heat mod first.
+    let torid = WeaponBase::from_data("torid", false, &[]);
+    let p = resolve_for(&torid, &[&heat], StackPolicy::BaseOnly, &violet);
+    assert!(p.damage.get(Gas) > 0.0, "Heat mod + innate Toxin");
+    assert!(p.damage.get(Electricity) > 0.0, "the shard, last, stays pure");
+    assert_eq!(p.damage.get(Radiation), 0.0, "a shard before the innate would have made Radiation");
+    // A PRIMARY shard: a secondary gets nothing.
+    let lex = WeaponBase::from_data("lex_prime", false, &[]);
+    let p = resolve_for(&lex, &[], StackPolicy::BaseOnly, &violet);
+    assert_eq!(p.damage.get(Electricity), 0.0);
+}
+
+/// *"Gain an additional +10% (+15%) per Crimson, Azure, or Violet Archon Shard
+/// equipped"*: one Violet among four Crimson is 30% + 5 x 10%; an Amber or
+/// Emerald socket adds nothing. A Tauforged Violet counts 15% a socket.
+#[test]
+fn the_violet_shard_electricity_counts_the_named_colours() {
+    let base = WeaponBase::from_data("braton_prime", false, &[]);
+    let elec = |shards: &[(&str, &str, bool)]| {
+        let p = resolve_for(&base, &[], StackPolicy::BaseOnly, &wielding(shards, 0.0));
+        p.damage.get(Electricity)
+    };
+    let one = elec(&[("violet", "primary_electricity_damage", false)]);
+    let crimson = ("crimson", "ability_strength", false);
+    let full = elec(&[("violet", "primary_electricity_damage", false), crimson, crimson, crimson, crimson]);
+    assert!((full / one - 0.8 / 0.4).abs() < 1e-9);
+    let amber = ("amber", "casting_speed", false);
+    let amb = elec(&[("violet", "primary_electricity_damage", false), amber, amber]);
+    assert!((amb - one).abs() < 1e-9, "Amber is not a named colour");
+    let tau = elec(&[("violet", "primary_electricity_damage", true), crimson]);
+    assert!((tau / one - (0.45 + 0.3) / 0.4).abs() < 1e-9);
+}
+
+/// MELEE CRITICAL DAMAGE joins Organ Shatter's bucket (*"additive with similar
+/// buffs such as Organ Shatter"*), for a melee weapon only; Violet's doubles
+/// with Max Energy OVER 500 — *"you must have 501 or more"*.
+#[test]
+fn the_melee_crit_damage_shards_join_the_crit_damage_bucket() {
+    let base = WeaponBase::from_data("skana", false, &[]);
+    let cd = |shards: &[(&str, &str, bool)], energy: f64| {
+        resolve_for(&base, &[], StackPolicy::BaseOnly, &wielding(shards, energy)).crit_damage
+    };
+    let none = cd(&[], 0.0);
+    let ratio = |x: f64| x / none;
+    assert!((ratio(cd(&[("crimson", "melee_crit_damage", false)], 0.0)) - 1.25).abs() < 1e-9);
+    assert!((ratio(cd(&[("crimson", "melee_crit_damage", true)], 0.0)) - 1.375).abs() < 1e-9);
+    let violet = [("violet", "melee_crit_damage", false)];
+    assert!((ratio(cd(&violet, 500.0)) - 1.25).abs() < 1e-9, "500 is not over 500");
+    assert!((ratio(cd(&violet, 501.0)) - 1.5).abs() < 1e-9, "doubled at 501");
+    assert!((ratio(cd(&[("violet", "melee_crit_damage", true)], 501.0)) - 1.75).abs() < 1e-9);
+    // A gun is not a melee weapon.
+    let gun = WeaponBase::from_data("braton_prime", false, &[]);
+    let crimson = wielding(&[("crimson", "melee_crit_damage", false)], 0.0);
+    assert_eq!(
+        resolve_for(&gun, &[], StackPolicy::BaseOnly, &crimson).crit_damage,
+        resolve(&gun, &[], StackPolicy::BaseOnly).crit_damage
+    );
+}
