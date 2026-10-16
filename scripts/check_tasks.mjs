@@ -376,10 +376,12 @@ console.log("\nthe watchdog");
   const said = async () => (await db.all("SELECT cause, said FROM watchdog_said ORDER BY at")).filter((x) => x.cause === "unsettled");
   await watchdog(tell, later);
   await watchdog(tell, later + 600_000);
-  check("the watchdog writes a cause down once", (await said()).length === 1 && /unsettled/.test((await said())[0].said), JSON.stringify(await said()));
+  check("the watchdog writes a round down, then nothing within the hour", (await said()).length === 1 && /unsettled/.test((await said())[0].said), JSON.stringify(await said()));
   check("...and sends nobody anything", sent.length === 0, JSON.stringify(sent));
-  await watchdog(tell, later + 7 * 3_600_000);
-  check("...and again once it has stood six hours", (await said()).length === 2);
+  const round = await watchdog(tell, later + 3_600_000);
+  check("...and the next round once the hour is up", (await said()).length === 2);
+  const latest = await db.all("SELECT cause FROM watchdog_said WHERE at = (SELECT max(at) FROM watchdog_said)");
+  check("...a round is every finding, under one instant", latest.length === round.length && round.length > 0, JSON.stringify(latest));
   await watchdog(tell, later + 40 * 24 * 3_600_000);
   check("...each saying kept thirty days", (await said()).length === 1, JSON.stringify(await said()));
 }

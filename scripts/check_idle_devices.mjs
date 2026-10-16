@@ -2,8 +2,8 @@
 // COMPUTERS ON BUT IDLE (worker/idle_devices.js), found and said by the watchdog.
 // Plain node on PGlite: ids that asked in the last half hour are sorted into an
 // old engine, an asking loop and not computing; one that holds a row, answered,
-// only just opened or went away is none of them; the watchdog says each kind in
-// Chinese once, and again only when a device it has not said joins it.
+// only just opened or went away is none of them; the watchdog writes each kind
+// down in Chinese, once a round, listing all of its devices.
 import { testDb } from "./pg/test_db.mjs";
 import { idleFindings, loopAsksPerHour } from "../worker/idle_devices.js";
 import { watchdog } from "../worker/factory.js";
@@ -48,17 +48,18 @@ console.log("\nwhat the watchdog says");
 await watchdog(env, NOW);
 const saidIdle = async () => (await db.all("SELECT said FROM watchdog_said ORDER BY at, cause")).map((x) => x.said).filter((t) => /idle:/.test(t));
 let idleSaid = await saidIdle();
-check("each kind is written down once, in Chinese", idleSaid.length === 3 && idleSaid.some((t) => t.includes("停在旧引擎"))
+check("each kind is written down once, in Chinese, in one round", idleSaid.length === 3 && (await db.all("SELECT DISTINCT at FROM watchdog_said")).length === 1 && idleSaid.some((t) => t.includes("停在旧引擎"))
   && idleSaid.some((t) => t.includes("频繁请求")) && idleSaid.some((t) => t.includes("在线但没在算")), JSON.stringify(idleSaid));
 check("…and sent to nobody", sent.length === 0, JSON.stringify(sent));
 await watchdog(env, NOW + 60_000);
 idleSaid = await saidIdle();
-check("…and not again while only the same devices are idle", idleSaid.length === 3, String(idleSaid.length));
+check("…and not again within the hour", idleSaid.length === 3, String(idleSaid.length));
 await on("g");
+await db.run("UPDATE watchdog_said SET at = ?", iso(NOW - 3_600_000));
 await watchdog(env, NOW + 120_000);
-const again = (await saidIdle()).slice(3);
-check("…but again when a device it has not said joins a kind, listing both", again.length === 1 && again[0].includes(id("c").slice(0, 8))
-  && again[0].includes(id("g").slice(0, 8)) && again[0].includes("新出现 1 台"), JSON.stringify(again));
+const again = (await saidIdle()).slice(3).filter((t) => t.includes("在线但没在算"));
+check("…and the next round lists every idle device of a kind, a new one with the rest", again.length === 1
+  && again[0].includes(id("c").slice(0, 8)) && again[0].includes(id("g").slice(0, 8)), JSON.stringify(again));
 check("every idle kind has its own words, none the fallback", ["old_engine", "asking_loop", "not_computing"].every((why) =>
   !watchdogText({ kind: `idle:${why}`, devices: [{ device: id("z"), engine: "e1", protocol: 8, lanes: 4, asks: 3, last_answer: null, label: null, why }],
     online: 10, served: "e1", loop_per_hour: 120 }, NOW).includes("没有这一类的说明")));

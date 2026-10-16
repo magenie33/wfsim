@@ -38,14 +38,14 @@ function describe(f, now) {
   if (f.kind === "unsettled") {
     return ["watch", "争议/抽查题等官方结算",
       `${f.questions} 个题最后一个回答之后已超过 2 小时还没结算。settle 每小时跑一次（GitHub 常晚开半小时）。` +
-      `\n偶尔一次可能是 settle 晚开；6 小时后再报，就看 GitHub Actions 里 settle 有没有跑、有没有领到题。`];
+      `\n偶尔一轮可能是 settle 晚开；连续几轮都在，就看 GitHub Actions 里 settle 有没有跑、有没有领到题。`];
   }
   if (f.kind === "overdue") {
     const oldest = f.producers.reduce((m, p) => Math.max(m, hoursAgo(p.oldest_due, now)), 0);
     const by = f.producers.map((p) => `${p.producer} ${p.questions}`).join("，");
     return ["watch", "过了截止时间还没做的题",
       `${f.questions} 个题已过截止时间（${by}），最久的超期 ${fmtHours(oldest)}。` +
-      `\n高峰时偶尔出现可以等；6 小时后还在、数字没降，说明志愿者和官方后备都跟不上，要加算力或叫 agent 查派发。`];
+      `\n高峰时偶尔出现可以等；连续几轮还在、数字没降，说明志愿者和官方后备都跟不上，要加算力或叫 agent 查派发。`];
   }
   if (f.kind === "disagreeing") {
     const top = f.owners.map((o) => `${o.owner ?? "未认领"} ${o.differ}/${o.answers}（${o.devices} 台）`).join("，");
@@ -78,7 +78,7 @@ function idleSaid(f, now) {
   };
   const list = f.devices.slice(0, IDLE_LISTED).map(line).join("\n")
     + (f.devices.length > IDLE_LISTED ? `\n……另有 ${f.devices.length - IDLE_LISTED} 台` : "");
-  const head = `在线 ${f.online} 台里有 ${f.devices.length} 台（新出现 ${f.fresh ?? f.devices.length} 台）`;
+  const head = `在线 ${f.online} 台里有 ${f.devices.length} 台`;
   if (f.kind === "idle:old_engine") {
     return ["watch", "设备停在旧引擎上，拿不到单",
       `${head}还在用旧引擎来要单，服务端只认 ${f.served}，给不了它们活。\n\`\`\`\n${list}\n\`\`\`\n` +

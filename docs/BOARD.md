@@ -660,17 +660,19 @@ deadline and what only they may settle.
   non-deterministic question, a dispute or spot nobody settled in two hours
   since its last answer, a backlog past due (a thousand questions, or one three
   hours late — a refresh past due is a row past fifteen days), and clients disagreeing with the hour's facts on
-  the served engine (thirty answers and 3% of them, by owner) are written to
-  `watchdog_said`, once a cause until it has stood six hours, and kept thirty
-  days. Nothing is sent to anyone: whoever fixes it reads the table. So is a scene still
+  the served engine (thirty answers and 3% of them, by owner) are found every
+  round. So is a scene still
   filling, its cell rulers' rows measured, measured in six hours, and owed —
   a cell that measured none is said as needing someone. Each is said with a
   level, what it means and what to do (`worker/watchdog_say.js`). **COMPUTERS ON
   BUT IDLE** (`worker/idle_devices.js`): an id that asked in the last half hour
   yet holds no row and answered nothing in it — on an old engine, asking more
   than twice what a page asks when handed nothing, or on the served engine and
-  not computing — said by device: a kind is said when it holds one not said in
-  six hours, so a new idle computer is heard of within ten minutes.
+  not computing. **WHAT IS FOUND IS WRITTEN DOWN** in `watchdog_said` as a
+  round — every finding at once, one row each under one `at` — at most hourly,
+  and within ten minutes of a trouble after a quiet spell; kept thirty days.
+  Nothing is sent to anyone: whoever fixes it reads the latest round,
+  `SELECT cause, said FROM watchdog_said WHERE at = (SELECT max(at) FROM watchdog_said)`.
 - **WHO IS ON**: a page's ask for work is recorded once a minute
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.
@@ -695,7 +697,7 @@ through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
 | database | holds | worker binding | DDL |
 | --- | --- | --- | --- |
-| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_told, watchdog_said, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
+| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_said, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
 | `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
 `withDatabases` opens each from its binding; every query is Postgres text.

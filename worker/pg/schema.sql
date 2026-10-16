@@ -217,15 +217,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS answers_once ON answers (question, device, eng
 -- WHEN AN ENGINE'S UNIT OF WORK BEGAN, one seek (worker/fair.js `tableOf`).
 CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
 
--- WHAT THE WATCHDOG LAST SAID, per cause (worker/factory.js `watchdog`), so a
--- cause is said once until it has stood six hours.
-CREATE TABLE IF NOT EXISTS watchdog_told (
-  cause   TEXT COLLATE "C" PRIMARY KEY,
-  told_at TEXT COLLATE "C" NOT NULL
-);
-
--- WHAT THE WATCHDOG SAID, one row a saying (worker/factory.js `watchdog`): read
--- here by whoever fixes it, never sent to anyone. Kept thirty days.
+-- WHAT THE WATCHDOG SAID, a round at most hourly, one row a finding under one
+-- `at` (worker/factory.js `watchdog`): read here by whoever fixes it, never
+-- sent to anyone. Kept thirty days.
 CREATE TABLE IF NOT EXISTS watchdog_said (
   at    TEXT COLLATE "C" NOT NULL,
   cause TEXT COLLATE "C" NOT NULL,

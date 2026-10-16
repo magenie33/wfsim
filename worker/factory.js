@@ -195,25 +195,22 @@ export async function notePause(env, now) {
   await noteEvent(env.LIBRARY, "pause", now, PAUSE_GAP_MS);
 }
 
-/// THE WATCHDOG'S SCHEDULE (wrangler.jsonc `triggers`), and how long one cause
-/// stays said before it is said again.
+/// THE WATCHDOG'S SCHEDULE (wrangler.jsonc `triggers`), how often what is wrong
+/// is written down, and how long a round of it is kept.
 export const WATCHDOG_CRON = "*/10 * * * *";
-const RETELL_MS = 6 * 3_600_000, SAID_KEPT_MS = 30 * 24 * 3_600_000;
+const SAY_EVERY_MS = 3_600_000, SAID_KEPT_MS = 30 * 24 * 3_600_000;
 /// THE SETTLER IS GONE once it has not beaten this long, and the cron settles its queue.
 export const SETTLER_SILENT_MS = 5 * 60_000;
 
-/// WHAT IS WRONG IS WRITTEN DOWN (worker/tasks.js `audit`) in `watchdog_said`,
-/// once a cause until it has stood for `RETELL_MS`: a queue that stops moving
-/// is found by this, within the hour, and not by a player asking why. Nothing is
-/// sent to the owner — the bot's messages are his clan's. A SCENE STILL FILLING
-/// is said on the same clock, its progress read only when it is to be said.
+/// WHAT IS WRONG IS WRITTEN DOWN in `watchdog_said` as a ROUND: every finding at
+/// once, one row each under one `at`, at most every `SAY_EVERY_MS` — so the
+/// latest round is the whole picture and the rounds before it are its history.
+/// A trouble after a quiet spell is written within ten minutes. Nothing is sent
+/// to the owner — the bot's messages are his clan's. A scene still filling and
+/// idle computers are read only for a round that is written.
 export async function watchdog(env, now = Date.now()) {
   if (!env.LIBRARY) return [];
   const db = env.LIBRARY;
-  const stale = async (kind) => {
-    const told = await db.prepare("SELECT told_at FROM watchdog_told WHERE cause = ?").bind(kind).first();
-    return !told || Date.parse(told.told_at) <= now - RETELL_MS;
-  };
   // THE SETTLER'S QUEUE, emptied here when the daemon beside the database has
   // not beaten in `SETTLER_SILENT_MS` (dial `settle_async`): its rows are handed
   // to anyone again after the grace, but nobody else settles them.
@@ -229,32 +226,14 @@ export async function watchdog(env, now = Date.now()) {
   if (engine) await fairShadow(env, engine, now).catch(() => null);
   // EVERY ROUND IT STANDS, not only when it is said: the event's span is the outage's.
   for (const f of found) await noteEvent(db, `alert:${f.kind}`, now, 3 * 10 * 60_000);
-  if (await stale("cells_filling")) {
-    const cells = await cellsFilling(env, now);
-    if (cells.length) found.push({ kind: "cells_filling", cells });
-  }
-  const told = (cause) => db.prepare(`INSERT INTO watchdog_told (cause, told_at) VALUES (?, ?)
-                        ON CONFLICT (cause) DO UPDATE SET told_at = excluded.told_at`).bind(cause, iso(now)).run();
-  const say = (f) => db.prepare("INSERT INTO watchdog_said (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
-    .bind(iso(now), f.kind, watchdogText(f, now)).run();
+  const last = await db.prepare("SELECT max(at) AS at FROM watchdog_said").first();
+  if (last?.at && Date.parse(last.at) > now - SAY_EVERY_MS) return found;
+  const cells = await cellsFilling(env, now);
+  if (cells.length) found.push({ kind: "cells_filling", cells });
+  if (engine) found.push(...await idleFindings(env, engine, now).catch(() => []));
   for (const f of found) {
-    if (!(await stale(f.kind))) continue;
-    await say(f);
-    await told(f.kind);
-  }
-  // COMPUTERS ON BUT IDLE (worker/idle_devices.js), said BY DEVICE: a kind is said
-  // when it holds one not said within `RETELL_MS`, listing all of it, so a new
-  // idle computer is heard of within ten minutes and a known one twice a day.
-  if (engine) {
-    for (const f of await idleFindings(env, engine, now).catch(() => [])) {
-      found.push(f);
-      const fresh = [];
-      for (const x of f.devices) if (await stale(`${f.kind}:${x.device}`)) fresh.push(x.device);
-      if (!fresh.length) continue;
-      await say({ ...f, fresh: fresh.length });
-      for (const x of f.devices) await told(`${f.kind}:${x.device}`);
-    }
-    await db.prepare("DELETE FROM watchdog_told WHERE cause LIKE 'idle:%' AND told_at < ?").bind(iso(now - RETELL_MS)).run();
+    await db.prepare("INSERT INTO watchdog_said (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
+      .bind(iso(now), f.kind, watchdogText(f, now)).run();
   }
   await db.prepare("DELETE FROM watchdog_said WHERE at < ?").bind(iso(now - SAID_KEPT_MS)).run();
   return found;
