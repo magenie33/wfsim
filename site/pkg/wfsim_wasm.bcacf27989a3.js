@@ -94,6 +94,18 @@ let wasm_bindgen = (function(exports) {
     exports.optimize_resume = optimize_resume;
 
     /**
+     * EVERY ENGINE CALL SAYS IT IS ALIVE, not only a simulate: `beat` is called
+     * from inside the engine's work (`wfsim_engine::alive`), so the worker can tell the
+     * page it is computing while the blocking call runs, and the page tells a slow
+     * call from a dead worker. The worker throttles what it posts; `None` stops it.
+     * @param {Function | null} [beat]
+     */
+    function set_heartbeat(beat) {
+        wasm.set_heartbeat(isLikeNone(beat) ? 0 : addToExternrefTable0(beat));
+    }
+    exports.set_heartbeat = set_heartbeat;
+
+    /**
      * …AND THE MERGE, which turns the fleet's shards into the ordinary response.
      *
      * Every field of the answer is computed in Rust, so there is ONE
@@ -191,6 +203,10 @@ let wasm_bindgen = (function(exports) {
             __wbg___wbindgen_throw_344f42d3211c4765: function(arg0, arg1) {
                 throw new Error(getStringFromWasm0(arg0, arg1));
             },
+            __wbg_call_8a2dd23819f8a60a: function() { return handleError(function (arg0, arg1) {
+                const ret = arg0.call(arg1);
+                return ret;
+            }, arguments); },
             __wbg_call_a6e5c5dce5018821: function() { return handleError(function (arg0, arg1, arg2) {
                 const ret = arg0.call(arg1, arg2);
                 return ret;
@@ -254,6 +270,10 @@ let wasm_bindgen = (function(exports) {
             const idx = addToExternrefTable0(e);
             wasm.__wbindgen_exn_store(idx);
         }
+    }
+
+    function isLikeNone(x) {
+        return x === undefined || x === null;
     }
 
     function passStringToWasm0(arg, malloc, realloc) {

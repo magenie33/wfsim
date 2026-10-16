@@ -4,7 +4,7 @@ Chinese name: 终幕·噬轮
 
 Hammer · Melee · Mastery Rank 17. 250 base damage (impact 83.325, puncture 83.325, slash 83.35), 25% crit chance, 2.3x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-16
+## Best riven-free build on the WFSim board, as of 2026-10-17
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

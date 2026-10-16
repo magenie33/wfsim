@@ -4,7 +4,7 @@ Chinese name: 奏凯
 
 Pistol · Secondary · Mastery Rank 14. 160 base damage (impact 64, slash 96), 22% crit chance, 2.2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-16
+## Best riven-free build on the WFSim board, as of 2026-10-17
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

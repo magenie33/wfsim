@@ -4,7 +4,7 @@ Chinese name: 齐射玻刃
 
 Pistol · Secondary · Mastery Rank 7. 77 base damage (puncture 30.8, slash 46.2), 23% crit chance, 1.7x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-16
+## Best riven-free build on the WFSim board, as of 2026-10-17
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

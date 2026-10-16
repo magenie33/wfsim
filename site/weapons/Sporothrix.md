@@ -4,7 +4,7 @@ Chinese name: 孢丝感染枪
 
 Sniper · Primary · Mastery Rank 13. 371 base damage (impact 100.17, puncture 115.01, slash 155.82), 1% crit chance, 3x crit multiplier, 53% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-16
+## Best riven-free build on the WFSim board, as of 2026-10-17
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

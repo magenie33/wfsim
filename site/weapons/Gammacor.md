@@ -4,7 +4,7 @@ Chinese name: 咖玛腕甲枪
 
 Pistol · Secondary · Mastery Rank 2. 16 base damage (magnetic 16), 8% crit chance, 1.8x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-16
+## Best riven-free build on the WFSim board, as of 2026-10-17
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

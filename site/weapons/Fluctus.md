@@ -4,7 +4,7 @@ Chinese name: 巨浪
 
 Archgun · Archgun · Mastery Rank 2. 500 base damage (impact 100, puncture 50, slash 350), 22% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-16
+## Best riven-free build on the WFSim board, as of 2026-10-17
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
