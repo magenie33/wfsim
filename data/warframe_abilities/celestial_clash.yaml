@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: celestial_clash
+name: "Celestial Clash"
+frame: orion_sirius
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/SiriusOrionUltimateAbility
+icon: CelestialClashIcon(xWhite).png
+description: "Sirius & Orion take to the skies in a cosmic duel. Each attack consumes a Constellation Star to inflict colossal collateral Heat or Slash damage. Match the star's color to the Warframes color to gain increased Critical Chance.\n\n|LEFT_ATTACK| Sirius attacks\n|RIGHT_ATTACK| Orion attacks\n\nGenerate Constellation Stars by using abilities. No more than two stars of the same color can be added in a row."
+
+source:
+  url: https://wiki.warframe.com/w/Celestial_Clash

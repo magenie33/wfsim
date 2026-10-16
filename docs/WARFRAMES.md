@@ -283,8 +283,8 @@ the hosts and no frame.
 `Module:Warframes/data` and `Module:Ability/data` (cached under `vendor/wiki/`;
 `--refresh` fetches again), with the cards' zh names from DE's export. It never
 rewrites a file that exists, so the steps below are how a generated frame
-becomes a modelled one. The Necramechs, the Helminth and Sirius & Orion (two
-bodies, one build) are not builder frames.
+becomes a modelled one. The Necramechs and the Helminth are not builder frames;
+Sirius and Orion are two, each with its own build.
 
 The wiki's `Aura` polarity is Omni's: W`Polarity` lists it as "Any - O (Any
 polarity except Umbra)", innate on Dante, Jade and Protea. A frame file spells

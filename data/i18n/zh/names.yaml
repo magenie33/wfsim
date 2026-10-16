@@ -3096,6 +3096,11 @@ warframe_abilities:
   widows_brood: "蛛心毒裔"
   wil_o_wisp: "幻影鬼火"
   wormhole: "虫洞"
+  celestial_clash: "天体冲突"
+  coronal_ejection: "日冕抛射"
+  event_horizon: "事件视界"
+  gravitic_slash: "重力斩"
+  lights_sanctuary: "光之圣域"
 
 warframe_mods:
   adaptation: 适应

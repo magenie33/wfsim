@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: event_horizon
+name: "Event Horizon"
+frame: orion_sirius
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/OrionVortexAbility
+icon: EventHorizonIcon(xWhite).png
+description: "Orion forms a drifting black hole, trapping enemies within its gravity. Hitting the black hole with Gravitic Slash or Coronal Ejection will extend its duration and change its trajectory: Gravitic Slash will direct it away from Orion, and Coronal Ejection will pull it towards Sirius.\n\n(HOLD) Swap to Sirius and use Light's Sanctuary."
+
+source:
+  url: https://wiki.warframe.com/w/Event_Horizon

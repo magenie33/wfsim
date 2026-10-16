@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: gravitic_slash
+name: "Gravitic Slash"
+frame: orion_sirius
+slot: 1
+energy_cost: 15
+internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/OrionScytheAbility
+icon: GraviticSlashIcon(xWhite).png
+description: "Repel enemies with Orion's sinister scythe, dealing Slash Damage and Status Effect while reducing shields and armor.\n\n(HOLD) Swap to Sirius and use Coronal Ejection."
+
+source:
+  url: https://wiki.warframe.com/w/Gravitic_Slash

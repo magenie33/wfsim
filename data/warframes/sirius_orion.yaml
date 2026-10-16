@@ -1,0 +1,18 @@
+# SIRIUS, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: sirius_orion
+name: Sirius
+internal_name: /Lotus/Powersuits/SiriusOrion/SiriusSuit
+
+health: 575
+shield: 455
+
+polarities: [vazarin, naramon, omni]
+aura_polarity: vazarin
+
+passive: "Swapping between them grants 45% Ability Efficiency for the next 2 casts.\n\nWhen below 50 energy, Sirius & Orion will steal energy from each other."
+passive_unmodelled: frame
+abilities: [coronal_ejection, jade_stars, lights_sanctuary, celestial_clash]
+
+source:
+  url: https://wiki.warframe.com/w/Sirius_&_Orion#Sirius

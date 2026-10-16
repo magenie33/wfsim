@@ -34,9 +34,11 @@ FRAMES = ROOT / "data" / "warframes"
 ABILITIES = ROOT / "data" / "warframe_abilities"
 NAMES = ROOT / "data" / "i18n" / "zh" / "names.yaml"
 
-# Not builder frames: a Necramech seats another mod set, the Helminth is the
-# infusion pool, and Sirius & Orion is two bodies sharing one build.
-SKIP = {"bonewidow", "voidrig", "helminth", "orion_sirius", "sirius_orion"}
+# Not builder frames: a Necramech seats another mod set, and the Helminth is
+# the infusion pool, not a body. Sirius and Orion ARE two frames: "separate
+# upgrade menus, allowing them to have different Mods, Auras, Arcane
+# Enhancements" (W`Sirius_&_Orion`).
+SKIP = {"bonewidow", "voidrig", "helminth"}
 POLARITIES = {"madurai", "naramon", "vazarin", "zenurik", "unairu", "penjaga", "umbra", "omni"}
 # THE PASSIVE MOVES A NUMBER A WEAPON'S FIGHT READS — damage, crit, status,
 # fire rate, punch through, or the frame's armor or health a weapon perk reads —

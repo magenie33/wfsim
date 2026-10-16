@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: lights_sanctuary
+name: "Light's Sanctuary"
+frame: sirius_orion
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/SiriusFieldAbility
+icon: Light'sSanctuaryIcon(xWhite).png
+description: "Sirius creates a well of light that heals and revives allies, while reducing incoming damage. The well slowly grows in size and power.\n\n(HOLD) Swap to Orion and use Event Horizon."
+
+source:
+  url: https://wiki.warframe.com/w/Light's_Sanctuary

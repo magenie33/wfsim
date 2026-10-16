@@ -1,6 +1,6 @@
 id: astral_shell
 name: "Astral Shell"
-frame: orion
+frame: orion_sirius
 slot: 2
 energy_cost: 50
 subsumable: true

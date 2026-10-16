@@ -1,6 +1,6 @@
 id: jade_stars
 name: "Jade Stars"
-frame: sirius
+frame: sirius_orion
 slot: 2
 energy_cost: 50
 subsumable: true

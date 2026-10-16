@@ -1,0 +1,18 @@
+# ORION, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: orion_sirius
+name: Orion
+internal_name: /Lotus/Powersuits/SiriusOrion/OrionSuit
+
+health: 450
+shield: 370
+
+polarities: [madurai, naramon, omni]
+aura_polarity: naramon
+
+passive: "Swapping between them grants 45% Ability Efficiency for the next 2 casts.\n\nWhen below 50 energy, Sirius & Orion will steal energy from each other."
+passive_unmodelled: frame
+abilities: [gravitic_slash, astral_shell, event_horizon, celestial_clash]
+
+source:
+  url: https://wiki.warframe.com/w/Sirius_&_Orion#Orion

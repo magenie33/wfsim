@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: coronal_ejection
+name: "Coronal Ejection"
+frame: sirius_orion
+slot: 1
+energy_cost: 15
+internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/SiriusScytheAbility
+icon: CoronalEjectionIcon(xWhite).png
+description: "Hurl Sirius' Jade Light infused scythe, dealing Heat Damage while collecting any pickups in its path.\n\n(HOLD) Swap to Orion and use Gravitic Slash."
+
+source:
+  url: https://wiki.warframe.com/w/Coronal_Ejection
