@@ -97,6 +97,24 @@ MIME = {
 }
 
 
+# A DROPPED CONNECTION IS ASKED AGAIN: a run reaching COS from a hosted runner
+# loses one now and then ("Remote end closed connection without response"),
+# and a list or a put is safe to repeat. An HTTP answer is final, never retried.
+TRIES = 3
+
+
+def _open(req: urllib.request.Request, timeout: int):
+    for tried in range(1, TRIES + 1):
+        try:
+            return urllib.request.urlopen(req, timeout=timeout)
+        except urllib.error.HTTPError:
+            raise
+        except OSError:
+            if tried == TRIES:
+                raise
+            time.sleep(2 * tried)
+
+
 def put(c: dict, key: str, body: bytes, content_type: str | None = None) -> int:
     """Upload one object. `key` has no leading slash."""
     url = f"https://{host(c)}/{key}"
@@ -105,7 +123,7 @@ def put(c: dict, key: str, body: bytes, content_type: str | None = None) -> int:
     ext = "." + key.rsplit(".", 1)[-1] if "." in key else ""
     req.add_header("Content-Type", content_type or MIME.get(ext, "application/octet-stream"))
     try:
-        with urllib.request.urlopen(req, timeout=300) as r:
+        with _open(req, 300) as r:
             return r.status
     except urllib.error.HTTPError as e:
         raise SystemExit(
@@ -146,7 +164,7 @@ def list_keys(c: dict, prefix: str = "") -> set[str]:
         req = urllib.request.Request(f"https://{host(c)}/{q}", method="GET")
         req.add_header("Authorization", sign("get", "/", c["secret_id"], c["secret_key"]))
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:
+            with _open(req, 120) as r:
                 body = r.read()
         except urllib.error.HTTPError as e:
             raise SystemExit(
