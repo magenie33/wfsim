@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: stinkbrain
+name: "Stinkbrain"
+frame: nokko
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Nokko/Abilities/NokkoToxicShroomAbility
+icon: StinkbrainIcon(xWhite).png
+description: "Throw a mushroom that periodically sheds poisonous spores, inflicting  Viral Damage and Status Effect upon nearby enemies while also lulling them to sleep."
+
+source:
+  url: https://wiki.warframe.com/w/Stinkbrain

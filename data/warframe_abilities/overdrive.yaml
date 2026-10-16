@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: overdrive
+name: "Overdrive"
+frame: temple
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Temple/Abilities/TempleSpeakersAbility
+icon: OverdriveIcon(xWhite).png
+description: "Drive loudspeakers into epic distortion to create a damaging wave of Heat Damage while also increasing vulnerability to Critical Chance. \n\nBackbeat Timing: Doubles Critical Chance. Increases the Duration and Heat Damage of Ripper's Wail when it deals damage."
+
+source:
+  url: https://wiki.warframe.com/w/Overdrive

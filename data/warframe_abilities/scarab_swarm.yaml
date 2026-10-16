@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: scarab_swarm
+name: "Scarab Swarm"
+frame: inaros
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Sandman/Abilities/SandmanSwarmAbility
+icon: ScarabSwarmIcon(xWhite).png
+description: "Summon a Scarab Swarm to attack enemies with guaranteed Corrosive Status. Damage scales with Inaros' Health. Enemies killed while immersed in the swarm summon a Swarm Kavat that fights alongside Inaros and guides the scarabs to other enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Scarab_Swarm

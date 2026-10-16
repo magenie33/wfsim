@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: plein_air
+name: "Plein Air"
+frame: follie
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Inkblot/Abilities/InkBalloonAbility
+icon: PleinAirIcon(xWhite).png
+description: "Tie nearby enemies to floating balloons that douse them with Inkblot. Pop the balloons to send them crashing to the ground, splashing damage on nearby enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Plein_Air

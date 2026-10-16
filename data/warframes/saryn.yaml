@@ -1,0 +1,18 @@
+# SARYN, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: saryn
+name: Saryn
+internal_name: /Lotus/Powersuits/Saryn/Saryn
+
+health: 465
+shield: 370
+
+polarities: [naramon, vazarin]
+aura_polarity: vazarin
+
+passive: "Status Effects inflicted upon enemies last 25% longer."
+passive_unmodelled: weapon
+abilities: [spores, molt, toxic_lash, miasma]
+
+source:
+  url: https://wiki.warframe.com/w/Saryn

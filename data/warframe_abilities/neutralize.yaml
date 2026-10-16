@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: neutralize
+name: "Neutralize"
+frame: cyte_09
+slot: 4
+energy_cost: 5
+internal_name: /Lotus/Powersuits/Frumentarius/Abilities/FrumentariusSniperAbility
+icon: NeutralizeIcon(xWhite).png
+description: "Summon the Neutralizer, Cyte-09's exalted Sniper Rifle. Bullets ricochet off Weak Points to seek out other nearby Weak Points. Alt fire lobs a Cold grenade that completely freezes enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Neutralize

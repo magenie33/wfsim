@@ -1,0 +1,18 @@
+# KULLERVO, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: kullervo
+name: Kullervo
+internal_name: /Lotus/Powersuits/PaxDuviricus/PaxDuviricus
+
+health: 1205
+shield: 0
+
+polarities: [madurai, madurai]
+aura_polarity: naramon
+
+passive: "Kullervo boasts +75% Heavy Attack Efficiency and +100% Heavy Attack Wind Up Speed on all melee weapons."
+passive_unmodelled: weapon
+abilities: [wrathful_advance, recompense, collective_curse, storm_of_ukko]
+
+source:
+  url: https://wiki.warframe.com/w/Kullervo

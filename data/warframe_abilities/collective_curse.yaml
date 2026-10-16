@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: collective_curse
+name: "Collective Curse"
+frame: kullervo
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/PaxDuviricus/Abilities/PaxLinkAbility
+icon: CollectiveCurseIcon(xWhite).png
+description: "Kullervo sends forth a curse that binds enemies. When a cursed enemy takes damage from him, every other cursed enemy also suffers a portion of that damage."
+
+source:
+  url: https://wiki.warframe.com/w/Collective_Curse

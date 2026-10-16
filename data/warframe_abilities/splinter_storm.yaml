@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: splinter_storm
+name: "Splinter Storm"
+frame: gara
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Glass/Abilities/GlassShatterAbility
+icon: SplinterStormIcon(xWhite).png
+description: "Gara's armor splinters into a maelstrom of shattered glass. Allies who contact the cloud are fortified against damage."
+
+source:
+  url: https://wiki.warframe.com/w/Splinter_Storm

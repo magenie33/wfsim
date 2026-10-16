@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: redline
+name: "Redline"
+frame: gauss
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Runner/Abilities/RunnerRedlineAbility
+icon: RedlineIcon(xWhite).png
+description: "Push Gauss' battery beyond the redline, supercharging his Abilities and setting Fire Rate, Attack Speed, Reload Speed, and Casting Speed into overdrive. When past the redline, bolts of arcing electricity dance periodically from Gauss, exploding en masse when the ability is deactivated."
+
+source:
+  url: https://wiki.warframe.com/w/Redline

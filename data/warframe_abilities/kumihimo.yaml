@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: kumihimo
+name: "Kumihimo"
+frame: koumei
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Koumei/Abilities/KoumeiStringsAbility
+icon: KumihimoIcon(xWhite).png
+description: "Weave the threads of destiny. Enemies who touch the threads suffer a random Elemental Status Effect.\n\nA roll of triple sixes creates threads that inflict one of every Elemental Status Effect."
+
+source:
+  url: https://wiki.warframe.com/w/Kumihimo

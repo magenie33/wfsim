@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: disometric_guard
+name: "Disometric Guard"
+frame: qorvex
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/ConcreteFrame/Abilities/ConcreteAuraAbility
+icon: DisometricGuardIcon(xWhite).png
+description: "Guard yourself and nearby allies against Status Effects. Each time Qorvex kills or assists in killing an enemy affected by Radiation Status, the number of Status Effects Disometric Guard can prevent increases."
+
+source:
+  url: https://wiki.warframe.com/w/Disometric_Guard

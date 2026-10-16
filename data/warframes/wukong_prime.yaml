@@ -1,0 +1,18 @@
+# WUKONG PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: wukong_prime
+name: Wukong Prime
+internal_name: /Lotus/Powersuits/MonkeyKing/WukongPrime
+
+health: 555
+shield: 445
+
+polarities: [naramon, vazarin, madurai]
+aura_polarity: madurai
+
+passive: "After taking fatal damage Wukong automatically uses one of his mastered survival techniques. These techniques can only be invoked three times per mission."
+passive_unmodelled: frame
+abilities: [celestial_twin, cloud_walker, defy, primal_fury]
+
+source:
+  url: https://wiki.warframe.com/w/Wukong/Prime

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: hallowed_ground
+name: "Hallowed Ground"
+frame: oberon
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Paladin/Abilities/StairwayToHeavenAbility
+icon: HallowedGroundIcon(xWhite).png
+description: "Sanctifies the ground around Oberon, inflicting Radiation Damage to all enemies within the radius. Also grants protection against Status Effects for Oberon and his allies."
+
+source:
+  url: https://wiki.warframe.com/w/Hallowed_Ground

@@ -1,0 +1,18 @@
+# OBERON PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: oberon_prime
+name: Oberon Prime
+internal_name: /Lotus/Powersuits/Paladin/PaladinPrime
+
+health: 465
+shield: 370
+
+polarities: [naramon, naramon, madurai, madurai]
+aura_polarity: madurai
+
+passive: "Oberon grants Righteous Negation to himself and his allies in Affinity Range when he collects Health Orbs, protecting players against the next instance of damage. Stacks up to 3 times."
+passive_unmodelled: frame
+abilities: [smite, hallowed_ground, renewal, reckoning]
+
+source:
+  url: https://wiki.warframe.com/w/Oberon/Prime

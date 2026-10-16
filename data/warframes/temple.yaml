@@ -1,0 +1,20 @@
+# TEMPLE, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: temple
+name: Temple
+internal_name: /Lotus/Powersuits/Temple/Temple
+
+health: 505
+shield: 325
+
+polarities: [madurai, vazarin]
+aura_polarity: naramon
+
+passive: "Play abilities in sync with the Backbeat metronome to invigorate ability effects while increasing Ability Efficiency by 50%."
+passive_unmodelled: frame
+abilities: [pyrotechnics, overdrive, rippers_wail, exalted_solo]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: rippers_wail
+
+source:
+  url: https://wiki.warframe.com/w/Temple

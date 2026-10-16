@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: exalted_blade
+name: "Exalted Blade"
+frame: excalibur
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Excalibur/Abilities/SwordOfDoomAbility
+icon: ExaltedBladeIcon(xWhite).png
+description: "Summon a sword of pure light and immense power."
+
+source:
+  url: https://wiki.warframe.com/w/Exalted_Blade

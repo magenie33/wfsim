@@ -1,0 +1,18 @@
+# IVARA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: ivara_prime
+name: Ivara Prime
+internal_name: /Lotus/Powersuits/Ranger/IvaraPrime
+
+health: 280
+shield: 555
+
+polarities: [madurai, vazarin, naramon]
+aura_polarity: naramon
+
+passive: "Senses nearby enemies within 50m."
+passive_unmodelled: frame
+abilities: [quiver, navigator, prowl, artemis_bow]
+
+source:
+  url: https://wiki.warframe.com/w/Ivara/Prime

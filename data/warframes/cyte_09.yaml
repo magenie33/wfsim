@@ -1,0 +1,20 @@
+# CYTE-09, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: cyte_09
+name: Cyte-09
+internal_name: /Lotus/Powersuits/Frumentarius/Frumentarius
+
+health: 325
+shield: 235
+
+polarities: [madurai, vazarin]
+aura_polarity: madurai
+
+passive: "Weak Point Kills increase Cyte-09's Weak Point Critical Chance by 1% up to 300% for the duration of the current mission."
+passive_unmodelled: weapon
+abilities: [seek, resupply, evade, neutralize]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: resupply
+
+source:
+  url: https://wiki.warframe.com/w/Cyte-09

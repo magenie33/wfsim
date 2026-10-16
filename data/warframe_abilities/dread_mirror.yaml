@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: dread_mirror
+name: "Dread Mirror"
+frame: garuda
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Garuda/Abilities/GarudaShieldAbility
+icon: DreadMirrorIcon(xWhite).png
+description: "Rip the life force from an enemy and use it as a shield that captures damage, this kills significantly weakened enemies instantly. Charge to channel the captured damage into an explosive projectile."
+
+source:
+  url: https://wiki.warframe.com/w/Dread_Mirror

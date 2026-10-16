@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: demonium
+name: "Demonium"
+frame: uriel
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/DemonFrame/Abilities/DemonFrameCloneAbility
+icon: DemoniumIcon(xWhite).png
+description: "Uriel rips out the souls of his demons, draining their health, and sends them in search of new victims. Souls explode on contact with an enemy, rendering it vulnerable to Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Demonium

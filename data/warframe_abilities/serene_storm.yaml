@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: serene_storm
+name: "Serene Storm"
+frame: baruuk
+slot: 4
+energy_cost: 0
+unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
+internal_name: /Lotus/Powersuits/Pacifist/Abilities/PacifistFistAbility
+icon: SereneStormIcon(xWhite).png
+description: "With his Restraint eroded, Baruuk commands the Desert Wind to deliver powerful radial strikes with his fists and feet. Each moment commanding the storm restores his Restraint."
+
+source:
+  url: https://wiki.warframe.com/w/Serene_Storm

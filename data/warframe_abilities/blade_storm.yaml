@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: blade_storm
+name: "Blade Storm"
+frame: ash
+slot: 4
+energy_cost: 0
+unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
+internal_name: /Lotus/Powersuits/Ninja/Abilities/NinjaStormAbility
+icon: BladeStormIcon(xWhite).png
+description: "Project fierce Shadow Clones of Ash upon groups of distant enemies. Join the fray using Teleport. The Shadow Clones can be upgraded with mods."
+
+source:
+  url: https://wiki.warframe.com/w/Blade_Storm

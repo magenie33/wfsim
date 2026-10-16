@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: smoke_screen
+name: "Smoke Screen"
+frame: ash
+slot: 2
+energy_cost: 35
+internal_name: /Lotus/Powersuits/Ninja/Abilities/SmokeScreenAbility
+icon: SmokeScreenIcon(xWhite).png
+description: "Drops a smoke bomb that stuns enemies and obscures their vision, rendering Ash invisible for a short time."
+
+source:
+  url: https://wiki.warframe.com/w/Smoke_Screen

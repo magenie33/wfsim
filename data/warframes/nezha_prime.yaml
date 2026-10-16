@@ -1,0 +1,18 @@
+# NEZHA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nezha_prime
+name: Nezha Prime
+internal_name: /Lotus/Powersuits/Nezha/NezhaPrime
+
+health: 465
+shield: 185
+
+polarities: [vazarin, madurai, naramon]
+aura_polarity: naramon
+
+passive: "Slide 60% faster and go 35% farther."
+passive_unmodelled: frame
+abilities: [fire_walker, blazing_chakram, warding_halo, divine_spears]
+
+source:
+  url: https://wiki.warframe.com/w/Nezha/Prime

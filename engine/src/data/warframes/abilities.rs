@@ -42,6 +42,8 @@ pub struct Ability {
     /// When the cost is not energy (shields, health …), what it is.
     pub cost_type: Option<String>,
     pub subsumable: bool,
+    /// Infused, it may replace only the frame's `helminth_damage_buff_slot`.
+    pub helminth_damage_buff: bool,
     pub augments: Vec<String>,
     pub icon: String,
     pub description: String,
@@ -94,6 +96,8 @@ pub(super) struct RawAbility {
     pub(super) cost_type: Option<String>,
     #[serde(default)]
     pub(super) subsumable: bool,
+    #[serde(default)]
+    pub(super) helminth_damage_buff: bool,
     #[serde(default)]
     pub(super) augments: Vec<String>,
     #[serde(default)]
@@ -162,6 +166,7 @@ pub fn abilities() -> &'static [Ability] {
                     energy_cost: r.energy_cost,
                     cost_type: r.cost_type,
                     subsumable: r.subsumable,
+                    helminth_damage_buff: r.helminth_damage_buff,
                     augments: r.augments,
                     icon: r.icon,
                     description: r.description,

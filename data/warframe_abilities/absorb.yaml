@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: absorb
+name: "Absorb"
+frame: nyx
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Jade/Abilities/SelfBulletAttractorAbility
+icon: AbsorbIcon(xWhite).png
+description: "Nyx draws in and contains the damage dealt to her and the damage confused enemies deal to each other then converts it into a devastating radial blast. Following the blast, she enters a brief invulnerable state and gains a Weapon Damage boost proportional to the absorbed damage."
+
+source:
+  url: https://wiki.warframe.com/w/Absorb

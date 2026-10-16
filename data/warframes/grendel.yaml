@@ -1,0 +1,18 @@
+# GRENDEL, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: grendel
+name: Grendel
+internal_name: /Lotus/Powersuits/Devourer/Devourer
+
+health: 1295
+shield: 95
+
+polarities: [naramon, vazarin, vazarin]
+aura_polarity: naramon
+
+passive: "Each enemy consumed grants 250 bonus armor."
+passive_unmodelled: weapon
+abilities: [feast, nourish, pulverize, regurgitate]
+
+source:
+  url: https://wiki.warframe.com/w/Grendel

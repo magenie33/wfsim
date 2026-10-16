@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: regurgitate
+name: "Regurgitate"
+frame: grendel
+slot: 4
+energy_cost: 0
+unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
+internal_name: /Lotus/Powersuits/Devourer/Abilities/DevourerRegurgitateAbility
+icon: RegurgitateIcon(xWhite).png
+description: "Violently puke out a bile soaked enemy from Grendel's gut, turning the consumed into a toxic projectile. Nearby enemies are slowed and have their armor dissolved by the bile."
+
+source:
+  url: https://wiki.warframe.com/w/Regurgitate

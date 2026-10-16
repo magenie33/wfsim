@@ -4,6 +4,8 @@ frame: mirage
 slot: 3
 energy_cost: 25
 subsumable: true
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff: true
 augments: [total_eclipse]
 internal_name: /Lotus/Powersuits/Harlequin/Abilities/LightAbility
 icon: EclipseIcon(xWhite).png

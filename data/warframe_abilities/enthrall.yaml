@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: enthrall
+name: "Enthrall"
+frame: revenant
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Revenant/Abilities/RevenantMarkAbility
+icon: EnthrallIcon(xWhite).png
+description: "Convert a target into a zealous thrall. Thralls turn on their allies and enthrall through damage. On death, they disintegrate into a damaging pillar of energy. The thrall horde remains under Revenants spell until this ability runs out."
+
+source:
+  url: https://wiki.warframe.com/w/Enthrall

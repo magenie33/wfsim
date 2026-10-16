@@ -1,0 +1,20 @@
+# ORAXIA, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: oraxia
+name: Oraxia
+internal_name: /Lotus/Powersuits/Oraxia/Oraxia
+
+health: 675
+shield: 225
+
+polarities: [madurai, naramon]
+aura_polarity: madurai
+
+passive: "Wall Latching grants Predator's Lurk, rendering Oraxia invisible for 8s."
+passive_unmodelled: frame
+abilities: [mercys_kiss, webbed_embrace, widows_brood, silken_stride]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: silken_stride
+
+source:
+  url: https://wiki.warframe.com/w/Oraxia

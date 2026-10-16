@@ -1,0 +1,20 @@
+# RHINO PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: rhino_prime
+name: Rhino Prime
+internal_name: /Lotus/Powersuits/Rhino/RhinoPrime
+
+health: 370
+shield: 555
+
+polarities: [vazarin, vazarin, naramon]
+aura_polarity: madurai
+
+passive: "Emit a shockwave dealing 100 damage after landing from a great height."
+passive_unmodelled: frame
+abilities: [rhino_charge, iron_skin, roar, rhino_stomp]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: roar
+
+source:
+  url: https://wiki.warframe.com/w/Rhino/Prime

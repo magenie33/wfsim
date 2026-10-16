@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: mend_maim
+name: "Mend & Maim"
+frame: equinox
+slot: 4
+energy_cost: 50
+internal_name: /Lotus/Powersuits/YinYang/Abilities/YinYangBurstAbility
+icon: MendMaimIcon(xWhite).png
+description: "In Night-Form, allies' Shields are replenished with each nearby enemy killed. In Day-Form, enemies are inflicted with Slash Status Effect. Deactivate while in Night-Form to restore Health and Shields for Equinox and allies. Deactivate while in Day-Form to cast a wave of slashing force."
+
+source:
+  url: https://wiki.warframe.com/w/Mend_&_Maim

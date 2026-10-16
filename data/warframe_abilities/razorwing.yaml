@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: razorwing
+name: "Razorwing"
+frame: titania
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Fairy/Abilities/FairyFlightAbility
+icon: RazorwingIcon(xWhite).png
+description: "Shrink down and take flight, while razorflies attack nearby enemies and amplify the damage they take."
+
+source:
+  url: https://wiki.warframe.com/w/Razorwing

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: energy_vampire
+name: "Energy Vampire"
+frame: trinity
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Trinity/Abilities/EnergyVampireAbility
+icon: EnergyVampireIcon(xWhite).png
+description: "Allies will gain energy over time when enemies are marked with Energy Vampire."
+
+source:
+  url: https://wiki.warframe.com/w/Energy_Vampire

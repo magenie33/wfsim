@@ -1,0 +1,20 @@
+# MIRAGE, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: mirage
+name: Mirage
+internal_name: /Lotus/Powersuits/Harlequin/Harlequin
+
+health: 300
+shield: 300
+
+polarities: [vazarin, madurai]
+aura_polarity: naramon
+
+passive: "Sliding lasts 85% longer and acrobatic maneuvers are 50% faster."
+passive_unmodelled: frame
+abilities: [hall_of_mirrors, sleight_of_hand, eclipse, prism]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: eclipse
+
+source:
+  url: https://wiki.warframe.com/w/Mirage

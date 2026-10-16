@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: sea_snares
+name: "Sea Snares"
+frame: yareli
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Yareli/Abilities/YareliBubbleAbility
+icon: SeaSnaresIcon(xWhite).png
+description: "Form five water globules that seek out enemies and expand on contact, simultaneously damaging and immobilizing their victims.\nEnemies hit by the globules take increased damage from all sources."
+
+source:
+  url: https://wiki.warframe.com/w/Sea_Snares

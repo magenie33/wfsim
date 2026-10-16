@@ -1,0 +1,18 @@
+# FROST PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: frost_prime
+name: Frost Prime
+internal_name: /Lotus/Powersuits/Frost/FrostPrime
+
+health: 370
+shield: 650
+
+polarities: [naramon, vazarin, vazarin]
+aura_polarity: vazarin
+
+passive: "Cold Status Effects from Frost's Abilities last 100% longer. Frost gains 50 Armor per enemy afflicted with Cold Status within Affinity Range."
+passive_unmodelled: weapon
+abilities: [freeze, ice_wave, snow_globe, avalanche]
+
+source:
+  url: https://wiki.warframe.com/w/Frost/Prime

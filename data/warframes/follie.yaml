@@ -1,0 +1,18 @@
+# FOLLIE, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: follie
+name: Follie
+internal_name: /Lotus/Powersuits/Inkblot/Inkblot
+
+health: 585
+shield: 325
+
+polarities: [vazarin, naramon]
+aura_polarity: vazarin
+
+passive: "INKBLOT: Follie's abilities coat enemies in ink that slows their movement by 50% for 10s. Afflicted enemies have a 20% chance to drop Health and Energy Orbs."
+passive_unmodelled: frame
+abilities: [forced_perspective, shadowgraph, self_portrait, plein_air]
+
+source:
+  url: https://wiki.warframe.com/w/Follie

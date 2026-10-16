@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: amp
+name: "Amp"
+frame: octavia
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Bard/Abilities/BardAmplifyAbility
+icon: AmpIcon(xWhite).png
+description: "Draws power from the decibel level of sound in the area and uses it to amplify a damage buff for Octavia and her allies. It also doubles the damage and range of nearby Mallets."
+
+source:
+  url: https://wiki.warframe.com/w/Amp_(Ability)

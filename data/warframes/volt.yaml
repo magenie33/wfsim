@@ -1,0 +1,18 @@
+# VOLT, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: volt
+name: Volt
+internal_name: /Lotus/Powersuits/Volt/Volt
+
+health: 370
+shield: 555
+
+polarities: [naramon, madurai]
+aura_polarity: madurai
+
+passive: "Grounded movement generates an electrical charge building up 1000 Damage per meter that is unleashed with the next attack."
+passive_unmodelled: weapon
+abilities: [shock, speed, electric_shield, discharge]
+
+source:
+  url: https://wiki.warframe.com/w/Volt

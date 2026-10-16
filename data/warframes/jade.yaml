@@ -1,0 +1,18 @@
+# JADE, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: jade
+name: Jade
+internal_name: /Lotus/Powersuits/Choir/Choir
+
+health: 465
+shield: 550
+
+polarities: [naramon]
+aura_polarity: omni
+
+passive: "Jade's profound understanding of the relationship between life and death grants her two Aura Mod Slots. Some of her Abilities apply Judgments, increasing enemy damage vulnerability by 50% for 10s."
+passive_unmodelled: weapon
+abilities: [lights_judgment, symphony_of_mercy, ophanim_eyes, glory_on_high]
+
+source:
+  url: https://wiki.warframe.com/w/Jade

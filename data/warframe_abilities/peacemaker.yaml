@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: peacemaker
+name: "Peacemaker"
+frame: mesa
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Cowgirl/Abilities/GunFuAbility
+icon: PeacemakerIcon(xWhite).png
+description: "With intense focus, Mesa draws her Regulator pistols, shooting down her foes in rapid succession."
+
+source:
+  url: https://wiki.warframe.com/w/Peacemaker

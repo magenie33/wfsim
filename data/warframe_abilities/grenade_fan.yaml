@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: grenade_fan
+name: "Grenade Fan"
+frame: protea
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Odalisk/Abilities/OdaliskFanAbility
+icon: GrenadeFanIcon(xWhite).png
+description: "Throw out grenades in an arc.\n\n(TAP) SHRAPNEL VORTEX\nCreates a slashing, staggering swirl of shrapnel.\n\n(HOLD) SHIELD SATELLITES\nProtea reconfigures Grenades to work as overcharging shield generators, protecting her, her allies and companions. When Shields break, a Satellite is destroyed to double minimum Shield Gate invincibility time."
+
+source:
+  url: https://wiki.warframe.com/w/Grenade_Fan

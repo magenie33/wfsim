@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: haven
+name: "Haven"
+frame: hildryn
+slot: 3
+energy_cost: 250
+cost_type: "shield"
+internal_name: /Lotus/Powersuits/IronFrame/Abilities/IronFrameAuraAbility
+icon: HavenIcon(xWhite).png
+description: "Create a shield aura around allies. Enemies that approach shielded allies will take damage."
+
+source:
+  url: https://wiki.warframe.com/w/Haven

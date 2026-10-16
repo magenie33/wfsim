@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: navigator
+name: "Navigator"
+frame: ivara
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Ranger/Abilities/RangerControlAbility
+icon: NavigatorIcon(xWhite).png
+description: "Assume control of any projectile launched by Ivara and guide it to the target."
+
+source:
+  url: https://wiki.warframe.com/w/Navigator

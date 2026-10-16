@@ -1,0 +1,18 @@
+# NYX PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nyx_prime
+name: Nyx Prime
+internal_name: /Lotus/Powersuits/Jade/NyxPrime
+
+health: 370
+shield: 465
+
+polarities: [madurai, naramon, vazarin]
+aura_polarity: naramon
+
+passive: "Nyx gains +40% Critical Chance on Primary and Secondary weapons per confused enemy within Affinity Range, up to +200%."
+passive_unmodelled: weapon
+abilities: [mind_control, psychic_bolts, chaos, absorb]
+
+source:
+  url: https://wiki.warframe.com/w/Nyx/Prime

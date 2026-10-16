@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: shadowgraph
+name: "Shadowgraph"
+frame: follie
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Inkblot/Abilities/InkSketchAbility
+icon: ShadowgraphIcon(xWhite).png
+description: "Bring shadowgraphs from Follie's sketchbook to life as items that can be used for tactical advantage. Shadowgraphs splash Inkblot onto nearby enemies when created.\n\nHOLD to open the Shadowgraph gear wheel."
+
+source:
+  url: https://wiki.warframe.com/w/Shadowgraph

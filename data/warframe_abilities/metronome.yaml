@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: metronome
+name: "Metronome"
+frame: octavia
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Bard/Abilities/BardJamAbility
+icon: MetronomeIcon(xWhite).png
+description: "Grants buffs to those who consistently perform actions in time to Octavia's music. Timed jumps offer the Vivace speed buff. Crouching on the beat grants cloaking with the Nocturne buff. Firing rhythmically bestows Opera multishot buff. Timed melee swings give the Forte damage buff."
+
+source:
+  url: https://wiki.warframe.com/w/Metronome

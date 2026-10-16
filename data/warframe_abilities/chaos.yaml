@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: chaos
+name: "Chaos"
+frame: nyx
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Jade/Abilities/ChaosAbility
+icon: ChaosIcon(xWhite).png
+description: "Nyx releases a devastating psychic pulse, disorienting enemies in a wide radius and forcing them to turn on each other. Confused foes lash out at random factions."
+
+source:
+  url: https://wiki.warframe.com/w/Chaos

@@ -1,0 +1,18 @@
+# HYDROID PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: hydroid_prime
+name: Hydroid Prime
+internal_name: /Lotus/Powersuits/Pirate/HydroidPrime
+
+health: 650
+shield: 370
+
+polarities: [madurai, vazarin, naramon, naramon]
+aura_polarity: naramon
+
+passive: "Enemies damaged by Hydroid are more vulnerable to Corrosion Status, with initial status reducing armor by 50%."
+passive_unmodelled: weapon
+abilities: [tempest_barrage, tidal_surge, plunder, tentacle_swarm]
+
+source:
+  url: https://wiki.warframe.com/w/Hydroid/Prime

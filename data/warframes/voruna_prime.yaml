@@ -1,0 +1,18 @@
+# VORUNA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: voruna_prime
+name: Voruna Prime
+internal_name: /Lotus/Powersuits/Werewolf/VorunaPrime
+
+health: 555
+shield: 370
+
+polarities: [madurai, madurai, vazarin]
+aura_polarity: vazarin
+
+passive: "Voruna never fights alone. In mission, hold Abilities to call upon each wolf's unique Passive power."
+passive_unmodelled: weapon
+abilities: [shroud_of_dynar, fangs_of_raksh, lycaths_hunt, ulfruns_descent]
+
+source:
+  url: https://wiki.warframe.com/w/Voruna/Prime

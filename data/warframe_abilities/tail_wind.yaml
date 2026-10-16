@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: tail_wind
+name: "Tail Wind"
+frame: zephyr
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Tengu/Abilities/TailWindAbility
+icon: TailWindIcon(xWhite).png
+description: "Hold while airborne to hover Zephyr with reduced movement. From the air, tap to dash forward, or aim down to dive bomb enemies below."
+
+source:
+  url: https://wiki.warframe.com/w/Tail_Wind

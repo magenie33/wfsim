@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: freeze
+name: "Freeze"
+frame: frost
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Frost/Abilities/IcicleAbility
+icon: FreezeIcon(xWhite).png
+description: "A frigid energy blast that freezes targets in their tracks."
+
+source:
+  url: https://wiki.warframe.com/w/Freeze

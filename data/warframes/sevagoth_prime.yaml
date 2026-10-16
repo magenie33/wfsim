@@ -1,0 +1,17 @@
+# SEVAGOTH PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: sevagoth_prime
+name: Sevagoth Prime
+internal_name: /Lotus/Powersuits/Wraith/SevagothPrime
+
+health: 370
+shield: 370
+
+polarities: [vazarin, naramon, madurai]
+
+passive: "On death, become Sevagoth's Shadow and fight to resurrect him by collecting the souls needed to rebuild his tombstone."
+passive_unmodelled: frame
+abilities: [reap, sow, gloom, exalted_shadow]
+
+source:
+  url: https://wiki.warframe.com/w/Sevagoth/Prime

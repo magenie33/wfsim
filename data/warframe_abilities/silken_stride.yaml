@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: silken_stride
+name: "Silken Stride"
+frame: oraxia
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Oraxia/Abilities/OraxiaClimbAbility
+icon: SilkenStrideIcon(xWhite).png
+description: "Unfurl Oraxia's spider legs and go on the prowl. Oraxia is immune to Status Effects and has increased Maximum Health. Ranged Weapons are imbued with  Toxin Damage. Killing enemies causes them to burst with Toxin.\n\nSilken Thread: Tap Dodge to leap to a targeted surface."
+
+source:
+  url: https://wiki.warframe.com/w/Silken_Stride

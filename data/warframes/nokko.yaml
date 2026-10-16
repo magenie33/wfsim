@@ -1,0 +1,18 @@
+# NOKKO, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nokko
+name: Nokko
+internal_name: /Lotus/Powersuits/Nokko/Nokko
+
+health: 250
+shield: 400
+
+polarities: [madurai, naramon]
+aura_polarity: madurai
+
+passive: "Upon receiving fatal damage, Nokko reverts to his Sprodling form and his active mushrooms will glow, reviving Nokko when touched. Orbs spawned will grant a speed boost but not healing. If a glowing mushroom is not reached in time, Nokko will automatically use a self-revive."
+passive_unmodelled: frame
+abilities: [stinkbrain, brightbonnet, reroot, sporespring]
+
+source:
+  url: https://wiki.warframe.com/w/Nokko

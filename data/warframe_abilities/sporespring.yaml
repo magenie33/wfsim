@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: sporespring
+name: "Sporespring"
+frame: nokko
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Nokko/Abilities/NokkoLaunchAbility
+icon: SporespringIcon(xWhite).png
+description: "Unleash a chaotic ballistic mushroom that seeks enemies and bounces explosively off whatever it touches. Contact with any of Nokko's mushrooms invigorates them, doubling their pulse rate."
+
+source:
+  url: https://wiki.warframe.com/w/Sporespring

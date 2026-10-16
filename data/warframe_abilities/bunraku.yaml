@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: bunraku
+name: "Bunraku"
+frame: koumei
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Koumei/Abilities/KoumeiPuppetAbility
+icon: BunrakuIcon(xWhite).png
+description: "Wield your foe's fate threads like the strings of marionettes. Koumei's dice determine how many Status Effects foes in front of Koumei will suffer.\n\nA roll of triple sixes causes further Status Effects over time and extends Bunraku to enemies behind Koumei."
+
+source:
+  url: https://wiki.warframe.com/w/Bunraku

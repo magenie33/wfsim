@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: turbulence
+name: "Turbulence"
+frame: zephyr
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Tengu/Abilities/TurbulenceAbility
+icon: TurbulenceIcon(xWhite).png
+description: "Creates a wind shield around Zephyr, redirecting all incoming projectiles."
+
+source:
+  url: https://wiki.warframe.com/w/Turbulence

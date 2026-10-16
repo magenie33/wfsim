@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: tentacle_swarm
+name: "Tentacle Swarm"
+frame: hydroid
+slot: 4
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Pirate/Abilities/KrakenAbility
+icon: TentacleSwarmIcon(xWhite).png
+description: "Summon a creature from the depths. Its watery tentacles emerge from nearby surfaces to wreak havoc."
+
+source:
+  url: https://wiki.warframe.com/w/Tentacle_Swarm

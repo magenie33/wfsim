@@ -1,0 +1,20 @@
+# OCTAVIA, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: octavia
+name: Octavia
+internal_name: /Lotus/Powersuits/Bard/Bard
+
+health: 370
+shield: 280
+
+polarities: [naramon, naramon]
+aura_polarity: naramon
+
+passive: "Replenish 30 energy over 30s for Octavia and allies within 15m when abilities are activated."
+passive_unmodelled: frame
+abilities: [mallet, resonator, metronome, amp]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: amp
+
+source:
+  url: https://wiki.warframe.com/w/Octavia

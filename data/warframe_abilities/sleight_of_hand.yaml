@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: sleight_of_hand
+name: "Sleight of Hand"
+frame: mirage
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Harlequin/Abilities/HarlequinObjectChangeAbility
+icon: SleightOfHandIcon(xWhite).png
+description: "Booby trap nearby objects while conjuring an irresistible jewel that bursts with radial blind when touched in darkness, or a radial explosion in light. Conjure multiple smaller jewels with the help of Hall of Mirrors."
+
+source:
+  url: https://wiki.warframe.com/w/Sleight_of_Hand

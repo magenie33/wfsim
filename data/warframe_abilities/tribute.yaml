@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: tribute
+name: "Tribute"
+frame: titania
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Fairy/Abilities/FairySoulAbility
+icon: TributeIcon(xWhite).png
+description: "Cycle through and extract one of the four Buffs when cast on an enemy. Thorns reduces incoming damage. Dust degrades enemy accuracy. Full Moon increases companion damage. Entangle slows enemies within range."
+
+source:
+  url: https://wiki.warframe.com/w/Tribute

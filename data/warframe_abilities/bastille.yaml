@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: bastille
+name: "Bastille"
+frame: vauban
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Trapper/Abilities/LevTrapAbility
+icon: BastilleIcon(xWhite).png
+description: "Erect a containment field to capture enemies and suspend them in stasis, stripping their armor and granting it to Vauban and any allies within Bastille's field.\n\nHOLD to collapse all Bastilles into a single damaging vortex."
+
+source:
+  url: https://wiki.warframe.com/w/Bastille

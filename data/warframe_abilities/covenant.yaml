@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: covenant
+name: "Covenant"
+frame: harrow
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Priest/Abilities/PriestPactAbility
+icon: CovenantIcon(xWhite).png
+description: "Protect nearby allies with an energy force that absorbs all damage and converts it to a Critical Chance bonus for all those under the Covenant. Weak Points are amplified even further."
+
+source:
+  url: https://wiki.warframe.com/w/Covenant

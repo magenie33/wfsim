@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: mesmer_skin
+name: "Mesmer Skin"
+frame: revenant
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Revenant/Abilities/RevenantSentientAbility
+icon: MesmerSkinIcon(xWhite).png
+description: "Become enveloped in Sentient energy, redirecting damage and stunning all those who dare attack. Stunned enemies can be Enthralled at no energy cost."
+
+source:
+  url: https://wiki.warframe.com/w/Mesmer_Skin

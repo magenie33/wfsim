@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: renewal
+name: "Renewal"
+frame: oberon
+slot: 3
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Paladin/Abilities/RegenerationAbility
+icon: RenewalIcon(xWhite).png
+description: "Generates a protective aura that grants bonus Armor to Oberon and his allies and restores allies' Health over time. Healing is doubled while within the radius of Hallowed Ground."
+
+source:
+  url: https://wiki.warframe.com/w/Renewal

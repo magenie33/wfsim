@@ -1,0 +1,20 @@
+# CHROMA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: chroma_prime
+name: Chroma Prime
+internal_name: /Lotus/Powersuits/Dragon/ChromaPrime
+
+health: 370
+shield: 370
+
+polarities: [naramon, vazarin, madurai, naramon]
+aura_polarity: madurai
+
+passive: "Wings sprout for an additional jump and bullet jump."
+passive_unmodelled: frame
+abilities: [spectral_scream, elemental_ward, vex_armor, effigy]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: vex_armor
+
+source:
+  url: https://wiki.warframe.com/w/Chroma/Prime

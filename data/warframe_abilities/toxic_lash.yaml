@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: toxic_lash
+name: "Toxic Lash"
+frame: saryn
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Saryn/Abilities/WeaponPoisonAbility
+icon: ToxicLashIcon(xWhite).png
+description: "While active, attacks deal additional Toxin Damage; this effect is doubled for Melee Strikes. Instantly burst spores when attacking afflicted enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Toxic_Lash

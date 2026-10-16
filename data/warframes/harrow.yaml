@@ -1,0 +1,18 @@
+# HARROW, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: harrow
+name: Harrow
+internal_name: /Lotus/Powersuits/Priest/Priest
+
+health: 370
+shield: 555
+
+polarities: [vazarin, naramon]
+aura_polarity: naramon
+
+passive: "Overshield capacity doubled.\nStart missions at maximum energy."
+passive_unmodelled: frame
+abilities: [condemn, penance, thurible, covenant]
+
+source:
+  url: https://wiki.warframe.com/w/Harrow

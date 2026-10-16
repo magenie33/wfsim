@@ -923,6 +923,10 @@ pub fn meta_json() -> Value {
             "id": f.id,
             "name": f.name,
             "image": assets().warframes.get(&f.id),
+            // A PASSIVE THAT WOULD MOVE THIS WEAPON'S NUMBERS AND IS NOT RUN: the
+            // weapon page lists it among what its numbers leave out.
+            "weapon_passive_unmodelled": (f.passive_unmodelled == Some(wfsim_engine::data::warframes::PassiveReach::Weapon))
+                .then_some(&f.passive),
         })).collect::<Vec<_>>(),
         // THE COMPANIONS A ROBOTIC WEAPON CAN BE HELD BY — a Sentinel or a MOA;
         // their stat block is `sentinel_floor` below.

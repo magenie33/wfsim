@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: merulina
+name: "Merulina"
+frame: yareli
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Yareli/Abilities/YareliBoardAbility
+icon: MerulinaIcon(xWhite).png
+description: "Summon Merulina, a rideable creature of the waves, and the inspiration for K-Driving. Merulina protects Yareli by absorbing a large portion of incoming damage."
+
+source:
+  url: https://wiki.warframe.com/w/Merulina

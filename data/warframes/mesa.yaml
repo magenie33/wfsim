@@ -1,0 +1,18 @@
+# MESA, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: mesa
+name: Mesa
+internal_name: /Lotus/Powersuits/Cowgirl/Cowgirl
+
+health: 465
+shield: 280
+
+polarities: [naramon, naramon]
+aura_polarity: madurai
+
+passive: "Shoot dual-wielded sidearms 15% faster and reload single-handed sidearms 25% more rapidly. Gain 50 Bonus Health when not using Melee Weapons."
+passive_unmodelled: weapon
+abilities: [ballistic_battery, shooting_gallery, shatter_shield, peacemaker]
+
+source:
+  url: https://wiki.warframe.com/w/Mesa

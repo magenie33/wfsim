@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: switch_teleport
+name: "Switch Teleport"
+frame: loki
+slot: 3
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Loki/Abilities/SwitchTeleportAbility
+icon: SwitchTeleportIcon(xWhite).png
+description: "Loki instantaneously swaps positions with a target, confusing the enemy."
+
+source:
+  url: https://wiki.warframe.com/w/Switch_Teleport

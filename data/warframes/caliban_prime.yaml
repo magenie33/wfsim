@@ -1,0 +1,18 @@
+# CALIBAN PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: caliban_prime
+name: Caliban Prime
+internal_name: /Lotus/Powersuits/Sentient/CalibanPrime
+
+health: 370
+shield: 740
+
+polarities: [vazarin, madurai, madurai]
+aura_polarity: naramon
+
+passive: "Allies within Affinity range gain increased resistance to the types of damage they are currently taking."
+passive_unmodelled: frame
+abilities: [razor_gyre, sentient_wrath, lethal_progeny, fusion_strike]
+
+source:
+  url: https://wiki.warframe.com/w/Caliban/Prime

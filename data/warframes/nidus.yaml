@@ -1,0 +1,18 @@
+# NIDUS, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nidus
+name: Nidus
+internal_name: /Lotus/Powersuits/Infestation/Infestation
+
+health: 775
+shield: 0
+
+polarities: [madurai, vazarin]
+aura_polarity: madurai
+
+passive: "If Nidus is killed with at least 15 stacks of Mutation, those 15 stacks are consumed; this grants 5s of invulnerability and restores Health to 50%."
+passive_unmodelled: frame
+abilities: [virulence, larva, parasitic_link, ravenous]
+
+source:
+  url: https://wiki.warframe.com/w/Nidus

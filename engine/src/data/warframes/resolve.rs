@@ -267,6 +267,13 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
     let frame = warframe(&b.frame).ok_or_else(|| format!("unknown Warframe: {}", b.frame))?;
     let mut refused: Vec<String> = Vec::new();
     let mut admissions: Vec<Admission> = Vec::new();
+    if frame.passive_unmodelled.is_some() {
+        admissions.push(Admission {
+            from: frame.id.clone(),
+            text: format!("Passive not modelled: {}", frame.passive),
+            kind: AdmissionKind::Unmodelled,
+        });
+    }
 
     // THE LOADOUT FIRST, because an augment pays only while its ability is in it.
     let mut loadout: Vec<(u8, &'static Ability, bool)> = frame
@@ -283,6 +290,17 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             Some(a) if !a.subsumable => refused.push(format!("{} cannot be infused", a.name)),
             Some(a) if frame.abilities.contains(&a.id) => {
                 refused.push(format!("{} already has {}", frame.name, a.name))
+            }
+            // W`Helminth` §Damage buff restrictions: Eclipse, Roar and Xata's
+            // Whisper "can only replace the following ability when infused into
+            // these Warframes"; any other frame leaves every slot open.
+            Some(a) if a.helminth_damage_buff
+                && frame.helminth_damage_buff_slot.as_ref().is_some_and(|only| {
+                    (h.slot as usize).checked_sub(1).and_then(|i| frame.abilities.get(i)).is_none_or(|over| over != only)
+                }) =>
+            {
+                let only = frame.helminth_damage_buff_slot.as_deref().and_then(ability).map_or("", |o| o.name.as_str());
+                refused.push(format!("On {}, {} can only replace {}", frame.name, a.name, only))
             }
             Some(a) if (1..=loadout.len() as u8).contains(&h.slot) => loadout[h.slot as usize - 1] = (h.slot, a, true),
             Some(_) => refused.push(format!("there is no ability slot {}", h.slot)),
@@ -631,6 +649,15 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                         });
                     }
                 }
+            }
+            // A CARD WITHOUT `stats:` shows no numbers, which must not read as an
+            // ability that has none.
+            if a.stats.is_empty() {
+                admissions.push(Admission {
+                    from: a.id.clone(),
+                    text: "Its numbers are not entered.".to_string(),
+                    kind: AdmissionKind::Unmodelled,
+                });
             }
             for t in &a.unmodelled {
                 admissions.push(Admission { from: a.id.clone(), text: t.clone(), kind: AdmissionKind::Unmodelled });

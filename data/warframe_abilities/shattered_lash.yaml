@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: shattered_lash
+name: "Shattered Lash"
+frame: gara
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Glass/Abilities/GlassShankAbility
+icon: ShatteredLashIcon(xWhite).png
+description: "Lash out with stream of shattered glass, or hold for an arcing strike. Stats are boosted by the equipped mods on Shattered Lash."
+
+source:
+  url: https://wiki.warframe.com/w/Shattered_Lash

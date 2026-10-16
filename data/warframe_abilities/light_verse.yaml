@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: light_verse
+name: "Light Verse"
+frame: dante
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Pagemaster/Abilities/PagemasterLifeAbility
+icon: LightVerseIcon(xWhite).png
+description: "Dante's vitalizing composition grants him and his allies Overguard and restores their Health."
+
+source:
+  url: https://wiki.warframe.com/w/Light_Verse

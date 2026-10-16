@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: grave_spirit
+name: "Grave Spirit"
+frame: dagath
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Dagath/Abilities/DagathApparitionAbility
+icon: GraveSpiritIcon(xWhite).png
+description: "Supercharge Dagath's weapons with extra Critical Damage. The effects are doubled on Doomed enemies. Escape fatal blows by briefly assuming a spectral form."
+
+source:
+  url: https://wiki.warframe.com/w/Grave_Spirit

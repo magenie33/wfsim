@@ -1,0 +1,19 @@
+# HILDRYN, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: hildryn
+name: Hildryn
+internal_name: /Lotus/Powersuits/IronFrame/IronFrame
+
+health: 280
+shield: 1780
+
+polarities: [vazarin, vazarin]
+aura_polarity: naramon
+exilus_polarity: vazarin
+
+passive: "Hildryn's full Shield Gate is high. After her Shields are depleted, she is invulnerable to damage up to 3.5s."
+passive_unmodelled: frame
+abilities: [balefire, pillage, haven, aegis_storm]
+
+source:
+  url: https://wiki.warframe.com/w/Hildryn

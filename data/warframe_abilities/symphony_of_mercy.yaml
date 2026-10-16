@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: symphony_of_mercy
+name: "Symphony of Mercy"
+frame: jade
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Choir/Abilities/ChoirChorusAbility
+icon: SymphonyOfMercyIcon(xWhite).png
+description: "Cycle through three songs that strengthen allies. Power of The Seven increases Ability Strength. Deathbringer increases Weapon Damage. Spirit of Resilience increases Shield Effectiveness. Extend the duration of each song by killing enemies surrounded by Judgments."
+
+source:
+  url: https://wiki.warframe.com/w/Symphony_of_Mercy

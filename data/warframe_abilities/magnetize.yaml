@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: magnetize
+name: "Magnetize"
+frame: mag
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Mag/Abilities/BulletAttractorAbility
+icon: MagnetizeIcon(xWhite).png
+description: "(TAP) Enclose a target in a magnetic field that ensnares nearby enemies and deals damage over time. The field pulls Polarize Shards that orbited Mag and shrapnel into the deadly mix.\n(HOLD) Mag surrounds herself in a magnetic field that absorbs ranged attacks and reflects damage back in a destructive cone."
+
+source:
+  url: https://wiki.warframe.com/w/Magnetize

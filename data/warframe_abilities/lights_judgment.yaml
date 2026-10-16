@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: lights_judgment
+name: "Light's Judgment"
+frame: jade
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Choir/Abilities/ChoirPoolAbility
+icon: Light'sJudgmentIcon(xWhite).png
+description: "Create a well of light that heals allies and hurts enemies. Those who enter the well will be highlighted by Judgments."
+
+source:
+  url: https://wiki.warframe.com/w/Light's_Judgment

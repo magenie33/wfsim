@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: sound_quake
+name: "Sound Quake"
+frame: banshee
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Banshee/Abilities/SonicEarthQuakeAbility
+icon: SoundQuakeIcon(xWhite).png
+description: "Channeling all of her acoustic energy into the environment, Banshee uses ultrasonic reverberations to violently shake the ground in a targeted area."
+
+source:
+  url: https://wiki.warframe.com/w/Sound_Quake

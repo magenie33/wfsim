@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: rally_point
+name: "Rally Point"
+frame: styanax
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Hoplite/Abilities/HopliteRallyAbility
+icon: RallyPointIcon(xWhite).png
+description: "Draw enemy attention to Styanax. His resolve uplifts him and nearby allies, regenerating the squad's energy over time. Styanax and his allies also regenerate shields for every kill assist they contribute."
+
+source:
+  url: https://wiki.warframe.com/w/Rally_Point

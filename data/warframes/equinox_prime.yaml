@@ -1,0 +1,18 @@
+# EQUINOX PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: equinox_prime
+name: Equinox Prime
+internal_name: /Lotus/Powersuits/YinYang/EquinoxPrime
+
+health: 465
+shield: 370
+
+polarities: [vazarin, vazarin, madurai, madurai]
+aura_polarity: naramon
+
+passive: "10% of Health Orbs are converted into Energy, and 10% of Energy Orbs are converted into Health."
+passive_unmodelled: frame
+abilities: [metamorphosis, rest_rage, pacify_provoke, mend_maim]
+
+source:
+  url: https://wiki.warframe.com/w/Equinox/Prime

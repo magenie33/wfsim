@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: lethal_progeny
+name: "Lethal Progeny"
+frame: caliban
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Sentient/Abilities/SentientSummonAbility
+icon: LethalProgenyIcon(xWhite).png
+description: "Cycle through Sentient unit types, then summon them to Caliban's side. Conculysts focus on raw melee damage. Ortholysts specialize in ranged attacks and inflict Tau Status Effect. Summulysts summon their own Choralysts and provide shield protection for the squad."
+
+source:
+  url: https://wiki.warframe.com/w/Lethal_Progeny

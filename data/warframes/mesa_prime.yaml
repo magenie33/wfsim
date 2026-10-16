@@ -1,0 +1,18 @@
+# MESA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: mesa_prime
+name: Mesa Prime
+internal_name: /Lotus/Powersuits/Cowgirl/MesaPrime
+
+health: 500
+shield: 280
+
+polarities: [naramon, naramon, vazarin, madurai]
+aura_polarity: madurai
+
+passive: "Shoot dual-wielded sidearms 15% faster and reload single-handed sidearms 25% more rapidly. Gain 50 Bonus Health when not using Melee Weapons."
+passive_unmodelled: weapon
+abilities: [ballistic_battery, shooting_gallery, shatter_shield, peacemaker]
+
+source:
+  url: https://wiki.warframe.com/w/Mesa/Prime

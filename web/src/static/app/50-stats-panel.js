@@ -86,6 +86,11 @@ function renderPanel(r) {
     if (wInfo.passive_unmodeled) {
       gaps.unshift(tr("this weapon's passive is not modelled yet"));
     }
+    // THE WIELDER'S PASSIVE, when it would move these numbers and is not run.
+    const holder = ((META && META.warframes) || []).find((f) => f.id === (buildWielder || {}).frame);
+    if (holder && holder.weapon_passive_unmodelled) {
+      gaps.push(`${holder.name} — ${tr("passive not modelled")}: ${holder.weapon_passive_unmodelled}`);
+    }
     passiveNote.hidden = !gaps.length;
     passiveNote.innerHTML = gaps.length
       ? `<div class="unmod-h">◈ ${escHtml(tr("not modelled on this weapon — the numbers below are a floor, not its full output"))}</div>`

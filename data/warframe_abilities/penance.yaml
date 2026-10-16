@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: penance
+name: "Penance"
+frame: harrow
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Priest/Abilities/PriestPenanceAbility
+icon: PenanceIcon(xWhite).png
+description: "Sacrifice Shields to boost Reload Speed, and Fire Rate while converting damage inflicted on enemies into health for Harrow and nearby allies."
+
+source:
+  url: https://wiki.warframe.com/w/Penance

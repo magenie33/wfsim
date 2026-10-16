@@ -1,8 +1,8 @@
 # Warframes — the builder's frame
 
-A Warframe has a BUILDER and nothing else. What it produces is a frame's stats
-and its four abilities at those stats; nothing here reaches a fight yet, and a
-weapon page does not read it. `engine::data::warframes` is the whole engine side,
+A Warframe has a BUILDER. What it produces is a frame's stats and its four
+abilities at those stats, and a saved build reaches a fight as a weapon's
+wielder (§A weapon's wielder). `engine::data::warframes` is the whole engine side,
 `/api/warframe/catalog` and `/api/warframe/panel` are its two doors, and
 `/warframes/<Wiki_Name>` is the page.
 
@@ -176,16 +176,26 @@ module's `Subsumable` flag, which covers the Helminth's own abilities too.
 - **A frame is never offered its own ability.** No page states it either way,
   and infusing Valkyr with Warcry would put two copies of one ability in a
   loadout.
-- **The damage-buff restriction is not modelled**: Eclipse, Roar and Xata's
-  Whisper may only replace a named ability on nine frames (W`Helminth`
-  §Damage buff restrictions). No frame in `data/warframes/` is one of them.
+- **The damage-buff restriction**: Eclipse, Roar and Xata's Whisper
+  (`helminth_damage_buff: true`) may only replace the frame's
+  `helminth_damage_buff_slot` on the nine frames W`Helminth` §Damage buff
+  restrictions names, and their Primes; anywhere else is refused, and the page
+  does not offer it.
 - **An augment pays only while its ability is in the loadout**; otherwise the
   card is seated and says it is inert.
 
 ## Passives
 
-**A PASSIVE THAT MOVES A WEAPON'S NUMBER IS SIMULATED**, and it reaches a fight
-through the wielder. Valkyr's Nimble moves none. Rage is `rage:` on both
+**A PASSIVE THE ENGINE DOES NOT RUN IS ADMITTED**, by `passive_unmodelled:` on
+the frame: the builder lists it among what the panel does not compute. `weapon`
+— it moves a number a weapon's fight reads (damage, crit, status, fire rate,
+punch through, or the armor and health a perk reads) — also lists it on the
+weapon page of every weapon that frame holds; `frame` is the frame's own side
+(movement, pickups, survival). An ability card without `stats:` admits that
+its numbers are not entered.
+
+**A PASSIVE THAT IS SIMULATED** reaches a fight through the wielder. Valkyr's
+Nimble moves none. Rage is `rage:` on both
 Valkyrs, run by `engine::data::rage`:
 
 - Every body a melee hit lands on adds 3% and every melee kill 12%, up to 300%.
@@ -267,6 +277,18 @@ the hosts and no frame.
   is a link a companion does not carry yet.
 
 ## Adding a frame
+
+`python scripts/wiki_warframes.py --write` writes every frame in
+`data/frames.yaml` that has no file yet, and each missing ability card, from
+`Module:Warframes/data` and `Module:Ability/data` (cached under `vendor/wiki/`;
+`--refresh` fetches again), with the cards' zh names from DE's export. It never
+rewrites a file that exists, so the steps below are how a generated frame
+becomes a modelled one. The Necramechs, the Helminth and Sirius & Orion (two
+bodies, one build) are not builder frames.
+
+The wiki's `Aura` polarity is Omni's: W`Polarity` lists it as "Any - O (Any
+polarity except Umbra)", innate on Dante, Jade and Protea. A frame file spells
+it `omni`.
 
 1. `data/warframes/<id>.yaml`: rank-30 `health` and `shield`, the innate
    `polarities`, `aura_polarity`, `passive`, and the four ability ids.

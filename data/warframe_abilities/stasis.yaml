@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: stasis
+name: "Stasis"
+frame: limbo
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Magician/Abilities/MagicianStasisAbility
+icon: StasisIcon(xWhite).png
+description: "Freezes Rift-bound enemies. While active, enemy projectiles are arrested in mid-air, resuming its trajectory when stasis ends."
+
+source:
+  url: https://wiki.warframe.com/w/Stasis

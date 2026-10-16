@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: prismatic_gem
+name: "Prismatic Gem"
+frame: citrine
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Geode/Abilities/GeodeCrystalAbility
+icon: PrismaticGemIcon(xWhite).png
+description: "Deploy a gem that shoots prismatic beams. The gem targets enemies that are taking weapon damage from Citrine and her allies. Its beams inflict Heat, Cold, Toxin, and Electricity Status Effects. Status Chance and Status Duration increase for nearby allies."
+
+source:
+  url: https://wiki.warframe.com/w/Prismatic_Gem

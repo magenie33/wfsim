@@ -1,0 +1,18 @@
+# HYDROID, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: hydroid
+name: Hydroid
+internal_name: /Lotus/Powersuits/Pirate/Pirate
+
+health: 465
+shield: 370
+
+polarities: [madurai, naramon]
+aura_polarity: naramon
+
+passive: "Enemies damaged by Hydroid are more vulnerable to Corrosion Status, with initial status reducing armor by 50%."
+passive_unmodelled: weapon
+abilities: [tempest_barrage, tidal_surge, plunder, tentacle_swarm]
+
+source:
+  url: https://wiki.warframe.com/w/Hydroid

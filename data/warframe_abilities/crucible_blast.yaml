@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: crucible_blast
+name: "Crucible Blast"
+frame: qorvex
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/ConcreteFrame/Abilities/ConcreteLaserAbility
+icon: CrucibleBlastIcon(xWhite).png
+description: "Release a beam from Qorvex's Crucible Core. Each enemy struck suffers Radiation Damage with a guaranteed Status Effect. Enemies affected by Radiation Status explode in a chain reaction."
+
+source:
+  url: https://wiki.warframe.com/w/Crucible_Blast

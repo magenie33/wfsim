@@ -1,0 +1,18 @@
+# ZEPHYR PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: zephyr_prime
+name: Zephyr Prime
+internal_name: /Lotus/Powersuits/Tengu/ZephyrPrime
+
+health: 555
+shield: 555
+
+polarities: [madurai, madurai, vazarin, naramon]
+aura_polarity: vazarin
+
+passive: "Zephyr moves faster and falls slower while airborne. Also gain 150% Critical Hit chance with weapons while airborne."
+passive_unmodelled: weapon
+abilities: [tail_wind, airburst, turbulence, tornado]
+
+source:
+  url: https://wiki.warframe.com/w/Zephyr/Prime

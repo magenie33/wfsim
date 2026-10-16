@@ -1,0 +1,19 @@
+# GAUSS, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: gauss
+name: Gauss
+internal_name: /Lotus/Powersuits/Runner/Runner
+
+health: 370
+shield: 555
+
+polarities: [madurai, vazarin]
+aura_polarity: naramon
+exilus_polarity: naramon
+
+passive: "Moving generates an electrical current that fills Gauss' battery. Shields recharge up to 120% faster while the Recharge Delay is up to 80% shorter, based on the battery level."
+passive_unmodelled: frame
+abilities: [mach_rush, kinetic_plating, thermal_sunder, redline]
+
+source:
+  url: https://wiki.warframe.com/w/Gauss

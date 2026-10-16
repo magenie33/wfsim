@@ -1,0 +1,18 @@
+# NEZHA, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nezha
+name: Nezha
+internal_name: /Lotus/Powersuits/Nezha/Nezha
+
+health: 465
+shield: 185
+
+polarities: [vazarin, madurai]
+aura_polarity: naramon
+
+passive: "Slide 60% faster and go 35% farther."
+passive_unmodelled: frame
+abilities: [fire_walker, blazing_chakram, warding_halo, divine_spears]
+
+source:
+  url: https://wiki.warframe.com/w/Nezha

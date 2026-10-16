@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: containment_wall
+name: "Containment Wall"
+frame: qorvex
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/ConcreteFrame/Abilities/ConcreteWallAbility
+icon: ContainmentWallIcon(xWhite).png
+description: "Contain the threat. Qorvex summons walls that slam together, damaging all enemies caught between them and inflicting Radiation Status."
+
+source:
+  url: https://wiki.warframe.com/w/Containment_Wall

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: riptide
+name: "Riptide"
+frame: yareli
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Yareli/Abilities/YareliSpoutAbility
+icon: RiptideIcon(xWhite).png
+description: "Drag enemies into a crushing maelstrom and then blow them away in a watery burst. Each enemy trapped in the vortex increases the burst's damage."
+
+source:
+  url: https://wiki.warframe.com/w/Riptide

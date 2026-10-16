@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: pacify_provoke
+name: "Pacify & Provoke"
+frame: equinox
+slot: 3
+energy_cost: 10
+internal_name: /Lotus/Powersuits/YinYang/Abilities/YinYangAuraAbility
+icon: PacifyProvokeIcon(xWhite).png
+description: "In Night-Form, reduces damage inflicted by nearby enemies. In Day-Form, increases Ability Strength of nearby allies."
+
+source:
+  url: https://wiki.warframe.com/w/Pacify_&_Provoke

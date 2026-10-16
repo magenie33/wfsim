@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: tornado
+name: "Tornado"
+frame: zephyr
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Tengu/Abilities/TornadoAbility
+icon: TornadoIcon(xWhite).png
+description: "Create deadly tornadoes that seek out and engulf enemies. Tornadoes deal the elemental Damage Type they absorb the most. Shoot engulfed enemies to inflict extra damage. Hold for stationary tornadoes or tap for wandering ones."
+
+source:
+  url: https://wiki.warframe.com/w/Tornado

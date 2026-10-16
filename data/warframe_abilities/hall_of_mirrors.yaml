@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: hall_of_mirrors
+name: "Hall of Mirrors"
+frame: mirage
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Harlequin/Abilities/IllusionAbility
+icon: HallOfMirrorsIcon(xWhite).png
+description: "Mirage creates an entourage of doppelgangers to confuse and distract the enemy."
+
+source:
+  url: https://wiki.warframe.com/w/Hall_of_Mirrors

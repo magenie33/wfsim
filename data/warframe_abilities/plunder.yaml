@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: plunder
+name: "Plunder"
+frame: hydroid
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Pirate/Abilities/PirateArmourAbility
+icon: PlunderIcon(xWhite).png
+description: "Plunder Armor from nearby enemies and increase Corrosive Damage on your Abilities and weapons. Enemies affected by Corrosive Status offer a greater increase."
+
+source:
+  url: https://wiki.warframe.com/w/Plunder

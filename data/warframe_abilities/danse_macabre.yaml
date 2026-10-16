@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: danse_macabre
+name: "Danse Macabre"
+frame: revenant
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Revenant/Abilities/RevenantRebornAbility
+icon: DanseMacabreIcon(xWhite).png
+description: "Erupt with a multitude of Eidolon energy beams and sweep a circle of death around Revenant. The beams will modify their Damage Type to target select defenses, while incoming damage is redirected back into the beams. Hold fire to boost Status Effects and Damage, at the cost of increased energy consumption. Thralls killed by this ability leave overshield pickups."
+
+source:
+  url: https://wiki.warframe.com/w/Danse_Macabre

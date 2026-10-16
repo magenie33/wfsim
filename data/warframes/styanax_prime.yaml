@@ -1,0 +1,18 @@
+# STYANAX PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: styanax_prime
+name: Styanax Prime
+internal_name: /Lotus/Powersuits/Hoplite/StyanaxPrime
+
+health: 370
+shield: 1025
+
+polarities: [vazarin, naramon, naramon]
+aura_polarity: naramon
+
+passive: "Styanax's critical chance increases with his shields and doubles for spearguns."
+passive_unmodelled: weapon
+abilities: [axios_javelin, tharros_strike, rally_point, final_stand]
+
+source:
+  url: https://wiki.warframe.com/w/Styanax/Prime

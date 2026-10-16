@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: invisibility
+name: "Invisibility"
+frame: loki
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Loki/Abilities/InvisibilityAbility
+icon: InvisibilityIcon(xWhite).png
+description: "Loki camouflages himself, becoming invisible to enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Invisibility

@@ -1,0 +1,20 @@
+# XAKU, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: xaku
+name: Xaku
+internal_name: /Lotus/Powersuits/BrokenFrame/BrokenFrame
+
+health: 359
+shield: 329
+
+polarities: [vazarin, vazarin]
+aura_polarity: naramon
+
+passive: "25% Damage Reduction on AOE attacks and chance to avoid incoming weapon damage."
+passive_unmodelled: frame
+abilities: [xatas_whisper, grasp_of_lohk, the_lost, the_vast_untime]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: xatas_whisper
+
+source:
+  url: https://wiki.warframe.com/w/Xaku

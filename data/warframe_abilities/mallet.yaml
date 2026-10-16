@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: mallet
+name: "Mallet"
+frame: octavia
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Bard/Abilities/BardMusicAbility
+icon: MalletIcon(xWhite).png
+description: "Rhythmically beats damage into nearby enemies and draws their fire. Damage inflicted on the Mallet increases its lethality."
+
+source:
+  url: https://wiki.warframe.com/w/Mallet

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: sonic_boom
+name: "Sonic Boom"
+frame: banshee
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Banshee/Abilities/PushAbility
+icon: SonicBoomIcon(xWhite).png
+description: "Banshee emits a sonic shockwave that pushes targets in range with enough force to incapacitate attackers and reduce their Armor."
+
+source:
+  url: https://wiki.warframe.com/w/Sonic_Boom

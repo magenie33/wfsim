@@ -21,9 +21,32 @@ pub struct WarframeDef {
     pub passive_tags: Vec<TagGrant>,
     /// A passive that is a meter on melee damage, simulated (`crate::data::rage`).
     pub rage: Option<RageSpec>,
+    /// A passive the engine does not run, and whether a weapon's fight would read it.
+    pub passive_unmodelled: Option<PassiveReach>,
+    /// The one ability a damage-buff infusion may replace on this frame (W`Helminth`
+    /// §Damage buff restrictions); `None` leaves every slot open.
+    pub helminth_damage_buff_slot: Option<String>,
     /// Ability ids in slot order.
     pub abilities: Vec<String>,
     pub url: Option<String>,
+}
+
+/// WHERE AN UNMODELLED PASSIVE WOULD SHOW. `Weapon` moves a number a weapon's fight
+/// reads, so the weapon page admits it too; `Frame` is the frame's own side.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PassiveReach {
+    Weapon,
+    Frame,
+}
+
+impl PassiveReach {
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Weapon => "weapon",
+            Self::Frame => "frame",
+        }
+    }
 }
 
 /// RAGE's numbers, as the frame's file states them — `crate::data::rage` runs them.
@@ -64,6 +87,10 @@ pub(super) struct RawFrame {
     pub(super) passive_tags: Vec<RawTag>,
     #[serde(default)]
     pub(super) rage: Option<RageSpec>,
+    #[serde(default)]
+    pub(super) passive_unmodelled: Option<PassiveReach>,
+    #[serde(default)]
+    pub(super) helminth_damage_buff_slot: Option<String>,
     pub(super) abilities: Vec<String>,
     #[serde(default)]
     pub(super) source: SourceFile,
@@ -94,6 +121,9 @@ pub fn warframes() -> &'static [WarframeDef] {
                     let own = |v: Option<f64>, what: &str| v.unwrap_or_else(|| panic!("{p}: no {what}"));
                     (own(r.health, "health"), own(r.shield, "shield"), roster.armor, roster.energy, roster.sprint)
                 };
+                if let Some(only) = &r.helminth_damage_buff_slot {
+                    assert!(r.abilities.contains(only), "{p}: helminth_damage_buff_slot `{only}` is not one of its abilities");
+                }
                 WarframeDef {
                     id: r.id,
                     name: r.name,
@@ -109,6 +139,8 @@ pub fn warframes() -> &'static [WarframeDef] {
                     passive_tags: tags_of(p, &r.passive_tags),
                     passive: r.passive,
                     rage: r.rage,
+                    passive_unmodelled: r.passive_unmodelled,
+                    helminth_damage_buff_slot: r.helminth_damage_buff_slot,
                     abilities: r.abilities,
                     url: r.source.url,
                 }

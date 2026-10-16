@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: glory_on_high
+name: "Glory on High"
+frame: jade
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Choir/Abilities/ChoirEruptAbility
+icon: GloryOnHighIcon(xWhite).png
+description: "Soar with destructive power. Use alternate-fire to detonate Judgments, causing an explosion of Jade Light. Enemies inside the Light's Judgment radius empower the explosion."
+
+source:
+  url: https://wiki.warframe.com/w/Glory_on_High

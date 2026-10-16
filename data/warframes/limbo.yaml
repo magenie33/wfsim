@@ -1,0 +1,18 @@
+# LIMBO, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: limbo
+name: Limbo
+internal_name: /Lotus/Powersuits/Magician/Magician
+
+health: 370
+shield: 280
+
+polarities: [madurai, madurai]
+aura_polarity: naramon
+
+passive: "Dodge to enter and exit the Rift. Entering leaves behind a small Rift portal lasting 5s. Energy slowly recharges in the Rift, and each enemy killed in there also gives 10 Energy."
+passive_unmodelled: frame
+abilities: [banish, stasis, rift_surge, cataclysm]
+
+source:
+  url: https://wiki.warframe.com/w/Limbo

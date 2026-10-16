@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: fusion_strike
+name: "Fusion Strike"
+frame: caliban
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Sentient/Abilities/SentientBlastAbility
+icon: FusionStrikeIcon(xWhite).png
+description: "Converge three streams of raw energy upon a single point, causing a massive explosion. The streams strip armor and shields, and each enemy struck detonates on stream convergence. Summoned Conculysts can wield their own mini Fusion Strikes."
+
+source:
+  url: https://wiki.warframe.com/w/Fusion_Strike

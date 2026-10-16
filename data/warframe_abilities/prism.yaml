@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: prism
+name: "Prism"
+frame: mirage
+slot: 4
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Harlequin/Abilities/Prism
+icon: PrismIcon(xWhite).png
+description: "Fires an energy prism that shoots lasers in all directions. Activating again detonates the prism, blinding nearby foes."
+
+source:
+  url: https://wiki.warframe.com/w/Prism

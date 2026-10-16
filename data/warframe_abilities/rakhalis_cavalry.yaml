@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: rakhalis_cavalry
+name: "Rakhali's Cavalry"
+frame: dagath
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Dagath/Abilities/DagathHorseAbility
+icon: RakhalisCavalryIcon(xWhite).png
+description: "Phantom Kaithes charge forth, inflicting Viral Damage upon all in their path. Their attack strips the defenses of Doomed enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Rakhali's_Cavalry

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: iron_skin
+name: "Iron Skin"
+frame: rhino
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Rhino/Abilities/IronSkinAbility
+icon: IronSkinIcon(xWhite).png
+description: "Rhino hardens his skin, insulating himself from all damage and gaining Overguard."
+
+source:
+  url: https://wiki.warframe.com/w/Iron_Skin

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: artemis_bow
+name: "Artemis Bow"
+frame: ivara
+slot: 4
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Ranger/Abilities/RangerBowAbility
+icon: ArtemisBowIcon(xWhite).png
+description: "Summon a mighty bow and unleash a volley of devastating arrows."
+
+source:
+  url: https://wiki.warframe.com/w/Artemis_Bow

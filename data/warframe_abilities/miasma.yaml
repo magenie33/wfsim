@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: miasma
+name: "Miasma"
+frame: saryn
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Saryn/Abilities/ExplosiveDissolveAbility
+icon: MiasmaIcon(xWhite).png
+description: "Release a poisonous miasma that deals Viral Damage to enemies in range. Foes afflicted by spores are more susceptible to the mist."
+
+source:
+  url: https://wiki.warframe.com/w/Miasma

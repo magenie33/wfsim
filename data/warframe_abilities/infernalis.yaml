@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: infernalis
+name: "Infernalis"
+frame: uriel
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/DemonFrame/Abilities/DemonFrameFireBallAbility
+icon: InfernalisIcon(xWhite).png
+description: "Manifest an aura of flames inflicting Heat Damage and Status Effect on nearby enemies.\n\nTap Dodge while airborne to take flight as a flaming meteor of destruction."
+
+source:
+  url: https://wiki.warframe.com/w/Infernalis

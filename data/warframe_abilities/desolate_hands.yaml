@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: desolate_hands
+name: "Desolate Hands"
+frame: baruuk
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Pacifist/Abilities/PacifistDisarmAbility
+icon: DesolateHandsIcon(xWhite).png
+description: "Summon a bevy of orbiting daggers to seek out enemy guns, destroying them with a small explosion. Combine with Elude to double the range."
+
+source:
+  url: https://wiki.warframe.com/w/Desolate_Hands

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: landslide
+name: "Landslide"
+frame: atlas
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Brawler/Abilities/BrawlerPunchAbility
+icon: LandslideIcon(xWhite).png
+description: "Bash enemies with an explosive sliding punch, repeat up to three times for a combo attack. Each hit in the three-punch combo increases the radius of the attack. Energy cost is reduced with each hit of Landslide. Install mods on the Landslide Fists to boost stats."
+
+source:
+  url: https://wiki.warframe.com/w/Landslide

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: reckoning
+name: "Reckoning"
+frame: oberon
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Paladin/Abilities/ReckoningAbility
+icon: ReckoningIcon(xWhite).png
+description: "Lifts enemies into the air and then hurls them down with conviction, removing their Armor. Enemies hit by this ability will grant Oberon additional Armor and have a chance to spawn a Health Orb when they die."
+
+source:
+  url: https://wiki.warframe.com/w/Reckoning

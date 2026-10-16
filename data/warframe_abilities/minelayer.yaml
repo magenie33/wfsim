@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: minelayer
+name: "Minelayer"
+frame: vauban
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Trapper/Abilities/TrapperMultinadeAbility
+icon: MinelayerIcon(xWhite).png
+description: "Control the battelfield with masterful mines. Vauban's Tether-Flechette orb immobilizes and draws in enemies while launching deadly nails in all directions.\n\nHOLD to launch a Vector-Overdrive pad that accelerates foes and allies alike in the pad's direction, increasing ally Movement Speed and Weapon Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Minelayer

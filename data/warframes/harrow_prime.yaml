@@ -1,0 +1,18 @@
+# HARROW PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: harrow_prime
+name: Harrow Prime
+internal_name: /Lotus/Powersuits/Priest/HarrowPrime
+
+health: 370
+shield: 740
+
+polarities: [madurai, vazarin, naramon]
+aura_polarity: naramon
+
+passive: "Overshield capacity doubled.\nStart missions at maximum energy."
+passive_unmodelled: frame
+abilities: [condemn, penance, thurible, covenant]
+
+source:
+  url: https://wiki.warframe.com/w/Harrow/Prime

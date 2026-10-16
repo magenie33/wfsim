@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: parasitic_link
+name: "Parasitic Link"
+frame: nidus
+slot: 3
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Infestation/Abilities/InfestLinkAbility
+icon: ParasiticLinkIcon(xWhite).png
+description: "Bind to a target with parasitic link. When cast on an ally, both the host and Nidus have their Ability Strength and Weapon Damage increased. Linked enemies take some of the damage inflicted on Nidus."
+
+source:
+  url: https://wiki.warframe.com/w/Parasitic_Link

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: exalted_solo
+name: "Exalted Solo"
+frame: temple
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Temple/Abilities/TempleGuitarAbility
+icon: ExaltedSoloIcon(xWhite).png
+description: "Once a charge has been built up on the Backbeat metronome, set Lizzie aflame and torch enemies with Heat. While aimed, Lizzie blasts enemies with thunderous elemental sound waves, use ability controls to change the Elemental Damage type.\n\nBackbeat Timing: No Energy consumed."
+
+source:
+  url: https://wiki.warframe.com/w/Exalted_Solo

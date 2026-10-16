@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: tidal_surge
+name: "Tidal Surge"
+frame: hydroid
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Pirate/Abilities/TidalWaveAbility
+icon: TidalSurgeIcon(xWhite).png
+description: "Crash through enemies in a ferocious wall of water."
+
+source:
+  url: https://wiki.warframe.com/w/Tidal_Surge

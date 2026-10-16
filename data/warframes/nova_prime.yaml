@@ -1,0 +1,18 @@
+# NOVA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nova_prime
+name: Nova Prime
+internal_name: /Lotus/Powersuits/AntiMatter/NovaPrime
+
+health: 370
+shield: 370
+
+polarities: [madurai, madurai, madurai]
+aura_polarity: naramon
+
+passive: "Enemies killed while slowed down have 15% to drop health orbs. Enemies killed while sped up have 15% to drop energy orbs."
+passive_unmodelled: frame
+abilities: [null_star, antimatter_drop, wormhole, molecular_prime]
+
+source:
+  url: https://wiki.warframe.com/w/Nova/Prime

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: mercys_kiss
+name: "Mercy's Kiss"
+frame: oraxia
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Oraxia/Abilities/OraxiaLungeAbility
+icon: Mercy'sKissIcon(xWhite).png
+description: "Leap onto an enemy and pierce them with Oraxia's spider legs, dealing Toxin Damage. Enemies defeated by this attack have a chance to drop Health or Energy Orbs."
+
+source:
+  url: https://wiki.warframe.com/w/Mercy's_Kiss

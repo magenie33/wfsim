@@ -1264,6 +1264,17 @@ mod tests {
         Loadout { main: main.to_vec(), ..Default::default() }
     }
 
+    /// EVERY FRAME IS A BOARD, and Protea's innate Aura polarity is Omni's:
+    /// W`Polarity` "Any - O (Any polarity except Umbra)".
+    #[test]
+    fn every_frame_is_a_board_and_an_aura_polarity_is_omni() {
+        for f in crate::data::warframes::warframes() {
+            Board::warframe(f);
+        }
+        let protea = crate::data::warframes::warframe("protea").unwrap();
+        assert_eq!(Board::warframe(protea).grant.unwrap().innate, Some(Omni));
+    }
+
     /// A build that fits bare costs nothing, and the item keeps its colours.
     #[test]
     fn a_free_build_stays_free() {

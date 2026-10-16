@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: exalted_shadow
+name: "Exalted Shadow"
+frame: sevagoth
+slot: 4
+energy_cost: 0
+unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
+internal_name: /Lotus/Powersuits/Wraith/Abilities/WraithReaperAbility
+icon: ExaltedShadowIcon(xWhite).png
+description: "When the Death Well fills, Sevagoth's Shadow form is ready to be released. Tear the enemy asunder with a collection of melee-focused abilities."
+
+source:
+  url: https://wiki.warframe.com/w/Exalted_Shadow

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: reap
+name: "Reap"
+frame: sevagoth
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Wraith/Abilities/WraithReapAbility
+icon: ReapIcon(xWhite).png
+description: "Sevagoth's Shadow flies outward ravaging enemies in his path. Survivors are damaged by Death's Harvest over time. The souls of the dead fill the Death Well."
+
+source:
+  url: https://wiki.warframe.com/w/Reap

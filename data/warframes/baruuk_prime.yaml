@@ -1,0 +1,19 @@
+# BARUUK PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: baruuk_prime
+name: Baruuk Prime
+internal_name: /Lotus/Powersuits/Pacifist/BaruukPrime
+
+health: 280
+shield: 465
+
+polarities: [naramon, vazarin, madurai]
+aura_polarity: naramon
+exilus_polarity: naramon
+
+passive: "Each projectile dodged, each enemy lulled or disarmed, erodes Baruuk's restraint and fuels the storm within. As Baruuk's restraint is diminished he becomes up to 50% more resistant to damage."
+passive_unmodelled: frame
+abilities: [elude, lull, desolate_hands, serene_storm]
+
+source:
+  url: https://wiki.warframe.com/w/Baruuk/Prime

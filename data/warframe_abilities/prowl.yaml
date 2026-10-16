@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: prowl
+name: "Prowl"
+frame: ivara
+slot: 3
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Ranger/Abilities/RangerStealAbility
+icon: ProwlIcon(xWhite).png
+description: "Become invisible and steal loot from unsuspecting enemies or take out prey with deadly headshots."
+
+source:
+  url: https://wiki.warframe.com/w/Prowl

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: storm_of_ukko
+name: "Storm of Ukko"
+frame: kullervo
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/PaxDuviricus/Abilities/PaxFieldAbility
+icon: StormOfUkkoIcon(xWhite).png
+description: "The Void answers Kullervo's invocation with a storm of daggers that rain down upon his enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Storm_of_Ukko

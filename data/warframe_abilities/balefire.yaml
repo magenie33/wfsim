@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: balefire
+name: "Balefire"
+frame: hildryn
+slot: 1
+energy_cost: 50
+cost_type: "shield"
+internal_name: /Lotus/Powersuits/IronFrame/Abilities/IronFrameBlastAbility
+icon: BalefireIcon(xWhite).png
+description: "Charge and launch devastating bolts of electricity."
+
+source:
+  url: https://wiki.warframe.com/w/Balefire

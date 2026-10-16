@@ -1,0 +1,18 @@
+# VAUBAN, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: vauban
+name: Vauban
+internal_name: /Lotus/Powersuits/Trapper/Trapper
+
+health: 370
+shield: 280
+
+polarities: [naramon, madurai]
+aura_polarity: naramon
+
+passive: "Deal 25% Extra Damage to incapacitated enemies."
+passive_unmodelled: weapon
+abilities: [tesla_nervos, minelayer, photon_strike, bastille]
+
+source:
+  url: https://wiki.warframe.com/w/Vauban

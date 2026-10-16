@@ -1,0 +1,18 @@
+# QORVEX, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: qorvex
+name: Qorvex
+internal_name: /Lotus/Powersuits/ConcreteFrame/ConcreteFrame
+
+health: 700
+shield: 300
+
+polarities: [naramon, vazarin]
+aura_polarity: vazarin
+
+passive: "Weapons wield by Qorvex have an additional +3 Punch Through."
+passive_unmodelled: weapon
+abilities: [chyrinka_pillar, containment_wall, disometric_guard, crucible_blast]
+
+source:
+  url: https://wiki.warframe.com/w/Qorvex

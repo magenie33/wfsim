@@ -1,0 +1,19 @@
+# INAROS PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: inaros_prime
+name: Inaros Prime
+internal_name: /Lotus/Powersuits/Sandman/InarosPrime
+
+health: 2415
+shield: 0
+
+polarities: [madurai, vazarin, vazarin]
+aura_polarity: naramon
+exilus_polarity: naramon
+
+passive: "When Inaros takes lethal damage, he entombs himself in a sarcophagus and incarnates as sand to attack enemies, draining their lifeforce to revive himself."
+passive_unmodelled: frame
+abilities: [desiccation, sandstorm, scarab_shell, scarab_swarm]
+
+source:
+  url: https://wiki.warframe.com/w/Inaros/Prime

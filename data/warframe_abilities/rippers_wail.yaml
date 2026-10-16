@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: rippers_wail
+name: "Ripper's Wail"
+frame: temple
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Temple/Abilities/TempleSoloAbility
+icon: Ripper'sWailIcon(xWhite).png
+description: "Rip on the guitar to make Temple briefly invulnerable while healing them. Ally's weapons in Affinity Range are lit-up with extra Heat Damage each time an ability is used on the Backbeat and successfully hits enemies.\n\nBackbeat Timing: Invulnerability lasts longer."
+
+source:
+  url: https://wiki.warframe.com/w/Ripper's_Wail

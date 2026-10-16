@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: wil_o_wisp
+name: "Wil-O-Wisp"
+frame: wisp
+slot: 2
+energy_cost: 35
+internal_name: /Lotus/Powersuits/Wisp/Abilities/WispLightAbility
+icon: Wil-O-WispIcon(xWhite).png
+description: "Cast forward a spectral image of Wisp to confuse and distract enemies. Reactivate to travel to its position. Hold to have the image travel faster and teleport to its position on release."
+
+source:
+  url: https://wiki.warframe.com/w/Wil-O-Wisp

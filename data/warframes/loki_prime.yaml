@@ -1,0 +1,18 @@
+# LOKI PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: loki_prime
+name: Loki Prime
+internal_name: /Lotus/Powersuits/Loki/LokiPrime
+
+health: 280
+shield: 280
+
+polarities: [vazarin, vazarin, madurai, naramon]
+aura_polarity: naramon
+
+passive: "Able to hang from walls 10x longer than normal."
+passive_unmodelled: frame
+abilities: [decoy, invisibility, switch_teleport, radial_disarm]
+
+source:
+  url: https://wiki.warframe.com/w/Loki/Prime

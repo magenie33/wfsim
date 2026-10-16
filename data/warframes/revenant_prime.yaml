@@ -1,0 +1,18 @@
+# REVENANT PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: revenant_prime
+name: Revenant Prime
+internal_name: /Lotus/Powersuits/Revenant/RevenantPrime
+
+health: 370
+shield: 925
+
+polarities: [naramon, madurai, vazarin]
+aura_polarity: naramon
+
+passive: "Shield depletion smashes enemies within 7.5m with a 100 Damage knockdown shockwave."
+passive_unmodelled: frame
+abilities: [enthrall, mesmer_skin, reave, danse_macabre]
+
+source:
+  url: https://wiki.warframe.com/w/Revenant/Prime

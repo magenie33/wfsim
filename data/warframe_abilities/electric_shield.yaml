@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: electric_shield
+name: "Electric Shield"
+frame: volt
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Volt/Abilities/ShieldAbility
+icon: ElectricShieldIcon(xWhite).png
+description: "Volt deploys an electric shield that blocks enemy fire and adds Electricity Damage to projectiles.\n \nHOLD to equip the shield for mobile cover."
+
+source:
+  url: https://wiki.warframe.com/w/Electric_Shield

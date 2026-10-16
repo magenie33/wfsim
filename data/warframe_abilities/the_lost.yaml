@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: the_lost
+name: "The Lost"
+frame: xaku
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/BrokenFrame/Abilities/BrokenEmbraceAbility
+icon: TheLostIcon(xWhite).png
+description: "Cycle through a trio of lost Warframe powers. Accuse manifests a Void fissure to corrupt enemies into allies. Gaze grasps targets in Void tendrils that capture damage and inflict it when the target is released. Deny annihilates with a beam of Void energy, wiping Sentient resistances."
+
+source:
+  url: https://wiki.warframe.com/w/The_Lost

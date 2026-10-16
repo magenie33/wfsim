@@ -4,6 +4,8 @@ frame: xaku
 slot: 1
 energy_cost: 25
 subsumable: true
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff: true
 internal_name: /Lotus/Powersuits/BrokenFrame/Abilities/BrokenRotAbility
 icon: Xata'sWhisperIcon(xWhite).png
 description: "Wield Void Damage for all attacks from equipped weapons when activated."

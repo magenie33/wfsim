@@ -1,0 +1,18 @@
+# LAVOS PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: lavos_prime
+name: Lavos Prime
+internal_name: /Lotus/Powersuits/Alchemist/LavosPrime
+
+health: 800
+shield: 410
+
+polarities: [vazarin, naramon, naramon]
+aura_polarity: naramon
+
+passive: "Energy and Universal Orbs give Lavos status immunity for 10s.\n\nHold any ability to imbue the next cast with additional Elemental Damage and Status."
+passive_unmodelled: frame
+abilities: [ophidian_bite, vial_rush, transmutation_probe, catalyze]
+
+source:
+  url: https://wiki.warframe.com/w/Lavos/Prime

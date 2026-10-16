@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: celestial_twin
+name: "Celestial Twin"
+frame: wukong
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/MonkeyKing/Abilities/MonkeyHairAbility
+icon: CelestialTwinIcon(xWhite).png
+description: "Shedding part of himself, Wukong creates a twin to fight by his side. Attack at range and the twin will melee, pull a blade and the twin will lay down covering fire.\nUse again to command the twin to attack a target with increased damage."
+
+source:
+  url: https://wiki.warframe.com/w/Celestial_Twin

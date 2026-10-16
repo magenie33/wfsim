@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: metamorphosis
+name: "Metamorphosis"
+frame: equinox
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/YinYang/Abilities/YinYangSwitchAbility
+icon: MetamorphosisIcon(xWhite).png
+description: "Switch forms, temporarily gaining bonus Shields and Armor in Night-Form, or bonus Damage and Speed in Day-Form."
+
+source:
+  url: https://wiki.warframe.com/w/Metamorphosis

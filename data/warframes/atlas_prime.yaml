@@ -1,0 +1,18 @@
+# ATLAS PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: atlas_prime
+name: Atlas Prime
+internal_name: /Lotus/Powersuits/Brawler/AtlasPrime
+
+health: 650
+shield: 555
+
+polarities: [naramon, vazarin, madurai, madurai]
+aura_polarity: madurai
+
+passive: "Becomes immune to Knockdown effects while on the ground."
+passive_unmodelled: frame
+abilities: [landslide, tectonics, petrify, rumblers]
+
+source:
+  url: https://wiki.warframe.com/w/Atlas/Prime

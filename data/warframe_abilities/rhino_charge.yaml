@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: rhino_charge
+name: "Rhino Charge"
+frame: rhino
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Rhino/Abilities/RhinoChargeAbility
+icon: RhinoChargeIcon(xWhite).png
+description: "Rhino charges towards a target, clobbering any in his path and goring his victim."
+
+source:
+  url: https://wiki.warframe.com/w/Rhino_Charge

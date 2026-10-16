@@ -1,0 +1,18 @@
+# PROTEA PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: protea_prime
+name: Protea Prime
+internal_name: /Lotus/Powersuits/Odalisk/ProteaPrime
+
+health: 370
+shield: 555
+
+polarities: [madurai, naramon, naramon]
+aura_polarity: omni
+
+passive: "Every 4th Power Cast is granted +100% Ability Strength."
+passive_unmodelled: frame
+abilities: [grenade_fan, blaze_artillery, dispensary, temporal_anchor]
+
+source:
+  url: https://wiki.warframe.com/w/Protea/Prime

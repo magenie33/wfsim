@@ -1,0 +1,18 @@
+# YARELI, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: yareli
+name: Yareli
+internal_name: /Lotus/Powersuits/Yareli/Yareli
+
+health: 370
+shield: 555
+
+polarities: [madurai, naramon]
+aura_polarity: madurai
+
+passive: "Yareli gains +200% Critical Chance for Secondary weapons when she has been moving for at least 1.5s."
+passive_unmodelled: weapon
+abilities: [sea_snares, merulina, aquablades, riptide]
+
+source:
+  url: https://wiki.warframe.com/w/Yareli

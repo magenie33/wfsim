@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: the_vast_untime
+name: "The Vast Untime"
+frame: xaku
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/BrokenFrame/Abilities/BrokenDestructAbility
+icon: TheVastUntimeIcon(xWhite).png
+description: "Temporarily shed the outer pieces of Xaku in a destructive blast, then stalk the battlefield in a new, swifter skeletal form. Enemies damaged by the body shrapnel are rendered weaker to Void Damage. Xaku's other active abilities' duration is frozen in time and resumes once The Vast Untime expires."
+
+source:
+  url: https://wiki.warframe.com/w/The_Vast_Untime

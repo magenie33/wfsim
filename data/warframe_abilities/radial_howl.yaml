@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: radial_howl
+name: "Radial Howl"
+frame: excalibur_umbra
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Excalibur/Abilities/UmbraRadialRoarAbility
+icon: RadialHowlIcon(xWhite).png
+description: "Let out ferocious howl that stuns nearby enemies and causes Sentients to shed any built up resistances."
+
+source:
+  url: https://wiki.warframe.com/w/Radial_Howl

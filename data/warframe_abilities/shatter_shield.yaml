@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: shatter_shield
+name: "Shatter Shield"
+frame: mesa
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Cowgirl/Abilities/RicochetArmorAbility
+icon: ShatterShieldIcon(xWhite).png
+description: "Envelops Mesa in a barrier of energy, reflecting back incoming bullet damage."
+
+source:
+  url: https://wiki.warframe.com/w/Shatter_Shield

@@ -1,0 +1,17 @@
+# NEKROS, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: nekros
+name: Nekros
+internal_name: /Lotus/Powersuits/Necro/Necro
+
+health: 370
+shield: 335
+
+polarities: [vazarin, madurai]
+
+passive: "Restore 5 Health with every enemy death within 10m."
+passive_unmodelled: frame
+abilities: [soul_punch, terrify, desecrate, shadows_of_the_dead]
+
+source:
+  url: https://wiki.warframe.com/w/Nekros

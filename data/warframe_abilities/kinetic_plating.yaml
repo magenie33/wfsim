@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: kinetic_plating
+name: "Kinetic Plating"
+frame: gauss
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Runner/Abilities/RunnerPlatingAbility
+icon: KineticPlatingIcon(xWhite).png
+description: "Generate armor plating that converts a portion of absorbed Kinetic Damage (Physical, Heat, Cold, and Blast) into Energy. Also protects Gauss from being staggered or knocked down. Damage Resistance is relative to the battery level."
+
+source:
+  url: https://wiki.warframe.com/w/Kinetic_Plating

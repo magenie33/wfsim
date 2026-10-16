@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: noctua
+name: "Noctua"
+frame: dante
+slot: 1
+energy_cost: 5
+internal_name: /Lotus/Powersuits/Pagemaster/Abilities/PagemasterBookAbility
+icon: NoctuaIcon(xWhite).png
+description: "Open Noctua, Dante's Exalted Tome, and unleash a tale of woe upon his enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Noctua

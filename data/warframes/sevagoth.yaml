@@ -1,0 +1,17 @@
+# SEVAGOTH, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: sevagoth
+name: Sevagoth
+internal_name: /Lotus/Powersuits/Wraith/Wraith
+
+health: 370
+shield: 335
+
+polarities: [vazarin, madurai]
+
+passive: "On death, become Sevagoth's Shadow and fight to resurrect him by collecting the souls needed to rebuild his tombstone."
+passive_unmodelled: frame
+abilities: [reap, sow, gloom, exalted_shadow]
+
+source:
+  url: https://wiki.warframe.com/w/Sevagoth

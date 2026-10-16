@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: mass_vitrify
+name: "Mass Vitrify"
+frame: gara
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Glass/Abilities/GlassRingAbility
+icon: MassVitrifyIcon(xWhite).png
+description: "Create an expanding ring of molten glass that slowly crystallizes enemies who enter. When the expansion is complete, the ring hardens to block weapons fire. The ring draws extra strength from the health and shields of crystallized enemies. Use Shattered Lash to smash the ring and send razor-sharp glass flying."
+
+source:
+  url: https://wiki.warframe.com/w/Mass_Vitrify

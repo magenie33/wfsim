@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: final_stand
+name: "Final Stand"
+frame: styanax
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Hoplite/Abilities/HopliteArmyAbility
+icon: FinalStandIcon(xWhite).png
+description: "Exude might and valor. Rise into the air and throw a barrage of Axios Javelins. The javelins deal damage to nearby enemies wherever they land. Direct hits to enemies deal greater damage."
+
+source:
+  url: https://wiki.warframe.com/w/Final_Stand

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: axios_javelin
+name: "Axios Javelin"
+frame: styanax
+slot: 1
+energy_cost: 15
+internal_name: /Lotus/Powersuits/Hoplite/Abilities/HopliteImpaleAbility
+icon: AxiosJavelinIcon(xWhite).png
+description: "Throw an Axios Javelin. When the javelin impales an enemy against a wall, surrounding enemies are pulled into the area and suffer a burst of damage."
+
+source:
+  url: https://wiki.warframe.com/w/Axios_Javelin

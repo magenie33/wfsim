@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: venari
+name: "Venari"
+frame: khora
+slot: 3
+energy_cost: 0
+unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
+internal_name: /Lotus/Powersuits/Khora/Abilities/KhoraKavatAbility
+icon: VenariIcon(xWhite).png
+description: "Command Venari to focus on a target. Hold to cycle between Attack, Protect, and Heal postures. If Venari is killed, use this ability to revive her instantly."
+
+source:
+  url: https://wiki.warframe.com/w/Venari

@@ -1,0 +1,18 @@
+# MAG PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: mag_prime
+name: Mag Prime
+internal_name: /Lotus/Powersuits/Mag/MagPrime
+
+health: 370
+shield: 555
+
+polarities: [naramon, naramon, madurai]
+aura_polarity: madurai
+
+passive: "Nearby items gravitate towards Mag for easy collection."
+passive_unmodelled: frame
+abilities: [pull, magnetize, polarize, crush]
+
+source:
+  url: https://wiki.warframe.com/w/Mag/Prime

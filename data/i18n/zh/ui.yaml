@@ -1789,6 +1789,9 @@ ui:
   "This weapon never reloads on its own; the sim reloads it, so forgetting to costs nothing here.": "这把武器不会自动换弹；模拟会替你换弹，所以忘记换弹在这里没有代价。"
   "this weapon's passive is not modelled yet — the numbers below are a floor, not its full output": 这把武器的被动尚未建模——下面的数字是下限，不是它的完整输出
   "this weapon's passive is not modelled yet": 这把武器的被动尚未建模
+  "passive not modelled": 被动尚未建模
+  "Its numbers are not entered.": 数值尚未录入。
+  "Its cost is not paid per cast and is not entered; see its page.": 它的消耗不是每次施放支付，尚未录入；见其页面。
   "this works, and its own card describes it wrongly — the simulation follows the game": "这一条是生效的，但它自己的卡面描述有误 —— 模拟按游戏实际行为计算"
   "tied": 并列
   "total": 合计

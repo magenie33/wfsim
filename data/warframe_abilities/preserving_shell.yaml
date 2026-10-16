@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: preserving_shell
+name: "Preserving Shell"
+frame: citrine
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Geode/Abilities/GeodeShellAbility
+icon: PreservingShellIcon(xWhite).png
+description: "Citrine guards herself and nearby allies with a crystalline shell that gradually decays. Kills and assists increase the defensive power of the shell."
+
+source:
+  url: https://wiki.warframe.com/w/Preserving_Shell

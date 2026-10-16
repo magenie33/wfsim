@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: forced_perspective
+name: "Forced Perspective"
+frame: follie
+slot: 1
+energy_cost: 15
+internal_name: /Lotus/Powersuits/Inkblot/Abilities/InkFieldAbility
+icon: ForcedPerspectiveIcon(xWhite).png
+description: "Drop through an inky frame and emerge invulnerable at the aimed location in a splash of ink that inflicts Inkblot on nearby enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Forced_Perspective

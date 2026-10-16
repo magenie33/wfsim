@@ -1,0 +1,18 @@
+# DANTE, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: dante
+name: Dante
+internal_name: /Lotus/Powersuits/Pagemaster/Pagemaster
+
+health: 390
+shield: 240
+
+polarities: [madurai, naramon]
+aura_polarity: omni
+
+passive: "Noctua scans targets, recording information for your Codex. Status Chance increases by 50% on fully scanned targets."
+passive_unmodelled: weapon
+abilities: [noctua, light_verse, dark_verse, final_verse]
+
+source:
+  url: https://wiki.warframe.com/w/Dante

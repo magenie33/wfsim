@@ -1,0 +1,18 @@
+# IVARA, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: ivara
+name: Ivara
+internal_name: /Lotus/Powersuits/Ranger/Ranger
+
+health: 280
+shield: 370
+
+polarities: [vazarin, naramon]
+aura_polarity: naramon
+
+passive: "Senses nearby enemies within 50m."
+passive_unmodelled: frame
+abilities: [quiver, navigator, prowl, artemis_bow]
+
+source:
+  url: https://wiki.warframe.com/w/Ivara

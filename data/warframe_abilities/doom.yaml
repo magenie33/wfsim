@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: doom
+name: "Doom"
+frame: dagath
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Dagath/Abilities/DagathCurseAbility
+icon: DoomIcon(xWhite).png
+description: "Condemn nearby enemies to their doom. A portion of the damage Dagath deals is revisited upon them by a Wyrd Scythe. They also suffer Viral Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Doom

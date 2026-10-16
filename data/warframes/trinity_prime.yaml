@@ -1,0 +1,18 @@
+# TRINITY PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: trinity_prime
+name: Trinity Prime
+internal_name: /Lotus/Powersuits/Trinity/TrinityPrime
+
+health: 370
+shield: 555
+
+polarities: [vazarin, vazarin, madurai, naramon]
+aura_polarity: vazarin
+
+passive: "Allies in Affinity Range gain 50% of Trinity's Max Energy as Health."
+passive_unmodelled: weapon
+abilities: [well_of_life, energy_vampire, link, blessing]
+
+source:
+  url: https://wiki.warframe.com/w/Trinity/Prime

@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: speed
+name: "Speed"
+frame: volt
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Volt/Abilities/SpeedAbility
+icon: SpeedIcon(xWhite).png
+description: "Embody an electric current. Volt and his allies receive a brief movement speed boost and a reload speed buff."
+
+source:
+  url: https://wiki.warframe.com/w/Speed

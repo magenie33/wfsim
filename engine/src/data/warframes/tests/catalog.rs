@@ -147,6 +147,31 @@ fn the_helminth_replaces_one_slot_with_its_own_numbers() {
     assert!(!r.abilities[0].ability.infused_notes.is_empty());
 }
 
+/// W`Helminth` §Damage buff restrictions: on Chroma, Roar may only replace Vex
+/// Armor; on a frame the page does not list, any slot.
+#[test]
+fn a_damage_buff_infusion_replaces_only_the_listed_ability() {
+    for (frame, slot, refused) in [("chroma", 1, true), ("chroma", 3, false), ("chroma_prime", 2, true), ("ash", 1, false)] {
+        let b = Build { frame: frame.into(), helminth: Some(HelminthPick { slot, ability: "roar".into() }), ..Build::default() };
+        assert_eq!(!resolve(&b).unwrap().refused.is_empty(), refused, "{frame} slot {slot}");
+    }
+    // Pillage is no damage buff: every slot stays open on Chroma.
+    let b = Build { frame: "chroma".into(), helminth: Some(HelminthPick { slot: 1, ability: "pillage".into() }), ..Build::default() };
+    assert!(resolve(&b).unwrap().refused.is_empty());
+}
+
+/// A FRAME THE BUILDER SEATS WITHOUT ITS RULES SAYS SO: the passive, and every
+/// ability card with no numbers.
+#[test]
+fn an_unmodelled_passive_and_an_unnumbered_ability_are_admitted() {
+    let r = resolve(&Build { frame: "ash".into(), ..Build::default() }).unwrap();
+    let from = |id: &str| r.admissions.iter().any(|a| a.from == id && a.kind == AdmissionKind::Unmodelled);
+    assert!(from("ash") && from("blade_storm"), "{:?}", r.admissions);
+    // Rage is run, so Valkyr admits no passive.
+    let r = resolve(&build(&[])).unwrap();
+    assert!(!r.admissions.iter().any(|a| a.from == "valkyr"), "{:?}", r.admissions);
+}
+
 #[test]
 fn an_augment_without_its_ability_pays_nothing_and_says_so() {
     let mut b = build(&["eternal_war"]);

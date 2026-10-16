@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: divine_spears
+name: "Divine Spears"
+frame: nezha
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Nezha/Abilities/NezhaSpearAbility
+icon: DivineSpearsIcon(xWhite).png
+description: "Impale nearby enemies on spears that erupt from the below. Activate again to slam surviving enemies back into the ground."
+
+source:
+  url: https://wiki.warframe.com/w/Divine_Spears

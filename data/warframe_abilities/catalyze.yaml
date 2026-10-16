@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: catalyze
+name: "Catalyze"
+frame: lavos
+slot: 4
+energy_cost: 30
+cost_type: "time"
+internal_name: /Lotus/Powersuits/Alchemist/Abilities/AlchemistDistillAbility
+icon: CatalyzeIcon(xWhite).png
+description: "Catalyst Probes erupt from Lavos and douse combatants in a fiery gel. Damage is doubled for each element afflicting an enemy.\n\nHold to imbue the next ability cast with Heat."
+
+source:
+  url: https://wiki.warframe.com/w/Catalyze

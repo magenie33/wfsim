@@ -1,0 +1,18 @@
+# DAGATH, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: dagath
+name: Dagath
+internal_name: /Lotus/Powersuits/Dagath/Dagath
+
+health: 666
+shield: 250
+
+polarities: [madurai, vazarin]
+aura_polarity: zenurik
+
+passive: "There is a 35% chance that Energy and Health Orbs will be 300% more effective on Dagath."
+passive_unmodelled: frame
+abilities: [wyrd_scythes, doom, grave_spirit, rakhalis_cavalry]
+
+source:
+  url: https://wiki.warframe.com/w/Dagath

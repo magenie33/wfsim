@@ -1,0 +1,18 @@
+# ASH, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: ash
+name: Ash
+internal_name: /Lotus/Powersuits/Ninja/Ninja
+
+health: 555
+shield: 370
+
+polarities: [madurai, madurai]
+aura_polarity: madurai
+
+passive: "Bleed effects inflicted on enemies do 25% increased damage and last 50% longer."
+passive_unmodelled: weapon
+abilities: [shuriken, smoke_screen, teleport, blade_storm]
+
+source:
+  url: https://wiki.warframe.com/w/Ash

@@ -1,0 +1,13 @@
+# see notes: generated_ability
+id: transmutation_probe
+name: "Transmutation Probe"
+frame: lavos
+slot: 3
+energy_cost: 10
+cost_type: "time"
+internal_name: /Lotus/Powersuits/Alchemist/Abilities/AlchemistTransmuteAbility
+icon: TransmutationProbeIcon(xWhite).png
+description: "Launch a probe that converts Health and Energy Orbs into Universal Orbs that provide both, and ammo pickups into Universal Ammo Pickups. The probe shocks enemies in close proximity. Each electrocuted foe reduces other ability cooldowns by 1.5s.\n\nHold to imbue the next ability cast with Electricity."
+
+source:
+  url: https://wiki.warframe.com/w/Transmutation_Probe

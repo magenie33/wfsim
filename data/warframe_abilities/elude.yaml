@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: elude
+name: "Elude"
+frame: baruuk
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Pacifist/Abilities/PacifistDodgeAbility
+icon: EludeIcon(xWhite).png
+description: "Dodge all incoming projectiles, but only while not attacking. Use again to deactivate this ability."
+
+source:
+  url: https://wiki.warframe.com/w/Elude

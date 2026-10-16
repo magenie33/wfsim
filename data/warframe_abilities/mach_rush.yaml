@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: mach_rush
+name: "Mach Rush"
+frame: gauss
+slot: 1
+energy_cost: 15
+internal_name: /Lotus/Powersuits/Runner/Abilities/RunnerRushAbility
+icon: MachRushIcon(xWhite).png
+description: "Burst into a hyper-sprint bowling over enemies and charging the battery. Crashing into solid objects generates a powerful shockwave. Hold to rush continuously."
+
+source:
+  url: https://wiki.warframe.com/w/Mach_Rush

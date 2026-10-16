@@ -1,0 +1,18 @@
+# OBERON, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: oberon
+name: Oberon
+internal_name: /Lotus/Powersuits/Paladin/Paladin
+
+health: 465
+shield: 370
+
+polarities: [madurai, madurai]
+aura_polarity: madurai
+
+passive: "Oberon grants Righteous Negation to himself and his allies in Affinity Range when he collects Health Orbs, protecting players against the next instance of damage. Stacks up to 3 times."
+passive_unmodelled: frame
+abilities: [smite, hallowed_ground, renewal, reckoning]
+
+source:
+  url: https://wiki.warframe.com/w/Oberon

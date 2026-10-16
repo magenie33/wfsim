@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: brimstone
+name: "Brimstone"
+frame: uriel
+slot: 4
+energy_cost: 75
+internal_name: /Lotus/Powersuits/DemonFrame/Abilities/DemonFrameBrimstoneAbility
+icon: BrimstoneIcon(xWhite).png
+description: "Uriel and his demons create a growing ring of flaming brimstone. Charge the ability by utilizing demon abilities. Damage inflicted increases with each consecutive hit."
+
+source:
+  url: https://wiki.warframe.com/w/Brimstone

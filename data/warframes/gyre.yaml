@@ -1,0 +1,18 @@
+# GYRE, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: gyre
+name: Gyre
+internal_name: /Lotus/Powersuits/Gyre/Gyre
+
+health: 370
+shield: 650
+
+polarities: [madurai, vazarin]
+aura_polarity: naramon
+
+passive: "Gyre's abilities have a 10% chance to deal critical damage for each Electrical status that affects the enemy."
+passive_unmodelled: frame
+abilities: [arcsphere, coil_horizon, cathode_grace, rotorswell]
+
+source:
+  url: https://wiki.warframe.com/w/Gyre

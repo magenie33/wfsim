@@ -1,0 +1,18 @@
+# GARA, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: gara
+name: Gara
+internal_name: /Lotus/Powersuits/Glass/Glass
+
+health: 370
+shield: 370
+
+polarities: [madurai, madurai]
+aura_polarity: vazarin
+
+passive: "A chance to create a radial blind lasting 10s when Gara casts abilities."
+passive_unmodelled: frame
+abilities: [shattered_lash, splinter_storm, spectrorage, mass_vitrify]
+
+source:
+  url: https://wiki.warframe.com/w/Gara

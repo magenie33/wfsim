@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: resupply
+name: "Resupply"
+frame: cyte_09
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Frumentarius/Abilities/FrumentariusAmmoAbility
+icon: ResupplyIcon(xWhite).png
+description: "Throw two Elemental Ammo Packs that instantly refill the active weapon's magazine, while granting the weapon an additional instance of the selected Elemental Damage and Status Effect. Reload clears the effect. Sniper Rifles gain extra damage.\n\nHold the ability to select the Elemental Damage type."
+
+source:
+  url: https://wiki.warframe.com/w/Resupply

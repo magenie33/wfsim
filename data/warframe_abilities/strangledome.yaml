@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: strangledome
+name: "Strangledome"
+frame: khora
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Khora/Abilities/KhoraCageAbility
+icon: StrangledomeIcon(xWhite).png
+description: "Weave a dome of living chain that ensnares and strangles any enemy within, and any foolish enough to approach. Foes outside the trap will try to hasten their comrade's deaths by shooting them. Crack Whipclaw on the dome to further damage any trapped enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Strangledome

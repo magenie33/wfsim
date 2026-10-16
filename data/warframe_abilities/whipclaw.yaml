@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: whipclaw
+name: "Whipclaw"
+frame: khora
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Khora/Abilities/KhoraCrackAbility
+icon: WhipclawIcon(xWhite).png
+description: "Send enemies reeling with a deafening whipcrack. Stats are boosted by the equipped mods on Whipclaw."
+
+source:
+  url: https://wiki.warframe.com/w/Whipclaw

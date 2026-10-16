@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: sandstorm
+name: "Sandstorm"
+frame: inaros
+slot: 2
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Sandman/Abilities/SandmanStormAbility
+icon: SandstormIcon(xWhite).png
+description: "Become a sandstorm. Inaros devours enemies pulled into his whirlwind, healing himself."
+
+source:
+  url: https://wiki.warframe.com/w/Sandstorm

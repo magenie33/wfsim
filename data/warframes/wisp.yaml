@@ -1,0 +1,18 @@
+# WISP, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: wisp
+name: Wisp
+internal_name: /Lotus/Powersuits/Wisp/Wisp
+
+health: 370
+shield: 280
+
+polarities: [madurai, vazarin]
+aura_polarity: naramon
+
+passive: "Flowing between dimensions Wisp becomes invisible to enemies while in the air."
+passive_unmodelled: frame
+abilities: [reservoirs, wil_o_wisp, breach_surge, sol_gate]
+
+source:
+  url: https://wiki.warframe.com/w/Wisp

@@ -1,0 +1,18 @@
+# REVENANT, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: revenant
+name: Revenant
+internal_name: /Lotus/Powersuits/Revenant/Revenant
+
+health: 370
+shield: 735
+
+polarities: [madurai, vazarin]
+aura_polarity: naramon
+
+passive: "Shield depletion smashes enemies within 7.5m with a 100 Damage knockdown shockwave."
+passive_unmodelled: frame
+abilities: [enthrall, mesmer_skin, reave, danse_macabre]
+
+source:
+  url: https://wiki.warframe.com/w/Revenant

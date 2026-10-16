@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: fangs_of_raksh
+name: "Fangs of Raksh"
+frame: voruna
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Werewolf/Abilities/WerewolfBiteAbility
+icon: FangsofRakshIcon(xWhite).png
+description: "(TAP) Raksh's fangs tear into your enemies. 5 random Status Effects are applied at 10 Stacks each on an enemy. On target's death, spread the Status Effects to other nearby enemies.\n\n(HOLD) Raksh guards Voruna with Status Effect resistance."
+
+source:
+  url: https://wiki.warframe.com/w/Fangs_of_Raksh

@@ -1,0 +1,20 @@
+# URIEL, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: uriel
+name: Uriel
+internal_name: /Lotus/Powersuits/DemonFrame/DemonFrame
+
+health: 666
+shield: 666
+
+polarities: [naramon, vazarin]
+aura_polarity: madurai
+
+passive: "Uriel commands, empowers, and protects three unique demons.\n\nCATENACH: Snares and slows enemies chaining them together. Damage dealt to any target in the chain is inflicted on all snared enemies. (Unlocks with Infernalis)\n\nGULPHAGOR : Latches onto foes dealing damage over time. If killed, a circle of pain is spawned. (Unlocks with Remedium)\n\nVYTHELAS: Inscribes demonic runes upon fallen foes that add Fire Rate and Heat Damage when collected. (Unlocks with Demonium)"
+passive_unmodelled: weapon
+abilities: [infernalis, remedium, demonium, brimstone]
+# see notes: helminth_damage_buff_restriction
+helminth_damage_buff_slot: demonium
+
+source:
+  url: https://wiki.warframe.com/w/Uriel

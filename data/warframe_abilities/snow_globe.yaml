@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: snow_globe
+name: "Snow Globe"
+frame: frost
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Frost/Abilities/IceShieldAbility
+icon: SnowGlobeIcon(xWhite).png
+description: "Frost deep freezes any vapor and moisture in the area, creating a protective sphere with brief invulnerability to boost its strength."
+
+source:
+  url: https://wiki.warframe.com/w/Snow_Globe

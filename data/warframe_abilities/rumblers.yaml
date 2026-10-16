@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: rumblers
+name: "Rumblers"
+frame: atlas
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Brawler/Abilities/BrawlerSummonAbility
+icon: RumblersIcon(xWhite).png
+description: "Summon two elemental stone brawlers to the melee. Summoning petrifies enemies in close proximity to Atlas. When finished, Rumblers collapse into a pile of healing Rubble."
+
+source:
+  url: https://wiki.warframe.com/w/Rumblers

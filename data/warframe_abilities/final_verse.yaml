@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: final_verse
+name: "Final Verse"
+frame: dante
+slot: 4
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Pagemaster/Abilities/PagemasterFinalChapterAbility
+icon: FinalVerseIcon(xWhite).png
+description: "Dante must compose two other Verses before his Final Verse.\n\nTRIUMPH: Two Light Verses cast in succession invigorate allies with a buff that increases Health and grants Overguard. Kills and assists briefly regenerate Overguard.Dante must compose two other Verses before his Final Verse.\n\nTRAGEDY: Two Dark Verses cast in succession attack enemies. Damage Over Time from Slash, Heat and Toxin Status Effects accumulates in a single blast.Dante must compose two other Verses before his Final Verse.\n\nWORDWARDEN: A Light Verse followed by a Dark Verse supports allies with copies of Noctua. Noctua copies synchronize their attacks with their designated ally's attacks.Dante must compose two other Verses before his Final Verse.\n\nPAGEFLIGHT: A Dark Verse followed by a Light Verse summons Paragrimms that swoop at enemies, making them vulnerable to Status Chance and Status Damage, as well as drawing enemy attacks away from allies."
+
+source:
+  url: https://wiki.warframe.com/w/Final_Verse

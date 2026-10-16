@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: seek
+name: "Seek"
+frame: cyte_09
+slot: 1
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Frumentarius/Abilities/FrumentariusScanAbility
+icon: SeekIcon(xWhite).png
+description: "Plant an antenna that projects a forward wave scan. Detected enemies take increased Weak Point Damage, and become visible through walls. Weapons gain Punch through."
+
+source:
+  url: https://wiki.warframe.com/w/Seek

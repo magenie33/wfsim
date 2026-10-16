@@ -1,0 +1,18 @@
+# KOUMEI, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: koumei
+name: Koumei
+internal_name: /Lotus/Powersuits/Koumei/Koumei
+
+health: 444
+shield: 222
+
+polarities: [madurai, naramon]
+aura_polarity: madurai
+
+passive: "Every 60 seconds, one of Koumei's weapons will inflict random Status Effects for 60 seconds"
+passive_unmodelled: weapon
+abilities: [kumihimo, omikuji, omamori, bunraku]
+
+source:
+  url: https://wiki.warframe.com/w/Koumei

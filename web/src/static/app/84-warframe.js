@@ -466,7 +466,11 @@ function renderWfShards() {
 function renderWfHelminth() {
   const f = wfFrame(wf.frame);
   // NEVER HER OWN: a frame offered its own ability would carry two copies of it.
-  const pool = WFCAT.abilities.filter((a) => a.subsumable && !f.abilities.includes(a.id));
+  // A DAMAGE BUFF over another slot than the frame's one allowed is refused by
+  // the engine (W`Helminth` §Damage buff restrictions), so it is not offered.
+  const over = f.abilities[(wf.helminth.slot || 0) - 1];
+  const pool = WFCAT.abilities.filter((a) => a.subsumable && !f.abilities.includes(a.id)
+    && !(a.helminth_damage_buff && f.helminth_damage_buff_slot && over !== f.helminth_damage_buff_slot));
   const items = pool.map((a) => ({ value: a.id, label: a.name, group: frameName(a.frame),
     hint: `${a.energy_cost} ${tr("energy")}` }))
     .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));

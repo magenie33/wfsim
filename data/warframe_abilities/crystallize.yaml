@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: crystallize
+name: "Crystallize"
+frame: citrine
+slot: 4
+energy_cost: 100
+internal_name: /Lotus/Powersuits/Geode/Abilities/GeodeGrowthsAbility
+icon: CrystallizeIcon(xWhite).png
+description: "Citrine summons crystal fractals. The fractals rush forward, seeking enemies. Enemies touched by the fractals are paralyzed by crystalline growths. Hit the growths to deal Critical Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Crystallize

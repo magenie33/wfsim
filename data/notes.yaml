@@ -680,6 +680,17 @@ notes:
     NOT A GENERALISATION TO WEAPONS WITHOUT A ROW. The default stays what the
     catalog says it is: follow the wiki, and let a MEASUREMENT
     re-certify an entry. Absence still means ordinary.
+  generated_ability: |
+    WRITTEN BY scripts/wiki_warframes.py from Module:Ability/data, which states
+    the card and no numbers. With no `stats:` the builder admits that its numbers
+    are not entered; a hand edit that adds them is kept, as the script never
+    rewrites a file that exists.
+  generated_frame: |
+    WRITTEN BY scripts/wiki_warframes.py from Module:Warframes/data. Health and
+    shield are rank 30 by Module:Warframes/infobox's rule (`HealthRank30 or
+    Health+100`, the same for shields). `passive_unmodelled:` admits the passive:
+    `weapon` when it moves a number a weapon's fight reads, `frame` otherwise.
+    A hand edit is kept, as the script never rewrites a file that exists.
   genesis_family_s_adapter: |
     THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
     of them carry the same ladder; a value that differs between them is
@@ -771,6 +782,13 @@ notes:
     HEALTH, not the pools in front of it: a target still on its shields or its
     overguard is not below half HEALTH, and reading the total would switch this
     on at the start of every fight against an Eximus.
+  helminth_damage_buff_restriction: |
+    W`Helminth` §Damage buff restrictions: "Eclipse, Roar, Xata's Whisper can
+    only replace the following ability when infused into these Warframes" —
+    Chroma's Vex Armor, Cyte-09's Resupply, Mirage's Eclipse, Octavia's Amp,
+    Oraxia's Silken Stride, Rhino's Roar, Temple's Ripper's Wail, Uriel's
+    Demonium, Xaku's Xata's Whisper. "Abilities and Warframes not listed above
+    are not restricted in any way." A Prime is its frame.
   identical_wording_value_burston: |
     Identical in wording and value to the Burston's Fatal Affliction, which has
     carried this since it was hand-checked; these ten were left inert only

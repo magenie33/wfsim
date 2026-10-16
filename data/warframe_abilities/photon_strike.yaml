@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: photon_strike
+name: "Photon Strike"
+frame: vauban
+slot: 3
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Trapper/Abilities/TrapperStrikeAbility
+icon: PhotonStrikeIcon(xWhite).png
+description: "Drop a targeting beacon that calls in a devastating laser artillery strike. Deals doubled damage to enemies with Overguard."
+
+source:
+  url: https://wiki.warframe.com/w/Photon_Strike

@@ -1,0 +1,18 @@
+# LAVOS, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: lavos
+name: Lavos
+internal_name: /Lotus/Powersuits/Alchemist/Alchemist
+
+health: 740
+shield: 370
+
+polarities: [vazarin, naramon]
+aura_polarity: naramon
+
+passive: "Energy and Universal Orbs give Lavos status immunity for 10s.\n\nHold any ability to imbue the next cast with additional Elemental Damage and Status."
+passive_unmodelled: frame
+abilities: [ophidian_bite, vial_rush, transmutation_probe, catalyze]
+
+source:
+  url: https://wiki.warframe.com/w/Lavos

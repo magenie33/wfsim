@@ -425,7 +425,8 @@ pub fn polarity(name: &str) -> Polarity {
         // A SLOT polarity only — no mod carries it, and the enum spells it `Omni`
         // after the Forma that grants it. `rules::capacity::slot_drain` already
         // knew about it; only this parser did not.
-        "universal" => Polarity::Omni,
+        // `omni` is the spelling a Warframe file uses, after the Forma.
+        "universal" | "omni" => Polarity::Omni,
         // …and the other slot-only one, which matches nothing at all.
         "aura" => Polarity::Aura,
         other => panic!("unknown polarity in weapon data: {other}"),

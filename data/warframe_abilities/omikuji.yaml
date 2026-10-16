@@ -1,0 +1,12 @@
+# see notes: generated_ability
+id: omikuji
+name: "Omikuji"
+frame: koumei
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Koumei/Abilities/KoumeiFortuneAbility
+icon: OmikujiIcon(xWhite).png
+description: "Koumei glimpses a favorable future and the precise steps needed to reach it. Complete the challenge to earn a Decree. Unlucky rolls add a debuff, but you can hold the ability to reject the Omikuji.\n\nA roll of triple sixes grants a Decree without a challenge."
+
+source:
+  url: https://wiki.warframe.com/w/Omikuji
