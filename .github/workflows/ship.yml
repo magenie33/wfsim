@@ -57,9 +57,11 @@ jobs:
         run: |
           set -euo pipefail
           src=$(git log -1 --format=%H -- . ':!site' ':!desktop/payload' ':!mcp/engine.js' ':!data/board_state.yaml')
-          built=$(jq -r '.commit' site/release.json)
+          # A BUILD MARKS ITS COMMIT `+` FOR A DIRTY TREE, and writing site/ is what
+          # dirties it, so every build carries one: the commit is the part before.
+          built=$(jq -r '.commit' site/release.json); built=${built%+}
           echo "source ${src:0:10}, site/ built from $built"
-          if [ "${built%+}" = "$built" ] && [ "${src:0:${#built}}" = "$built" ]; then
+          if [ -n "$built" ] && [ "${src:0:${#built}}" = "$built" ]; then
             echo "::notice::ship: site/ is already built from ${src:0:10} — nothing to ship"
             echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
