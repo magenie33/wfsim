@@ -660,8 +660,9 @@ deadline and what only they may settle.
   non-deterministic question, a dispute or spot nobody settled in two hours
   since its last answer, a backlog past due (a thousand questions, or one three
   hours late — a refresh past due is a row past fifteen days), and clients disagreeing with the hour's facts on
-  the served engine (thirty answers and 3% of them, by owner) are said to the
-  owner, once a cause until it has stood six hours. So is a scene still
+  the served engine (thirty answers and 3% of them, by owner) are written to
+  `watchdog_said`, once a cause until it has stood six hours, and kept thirty
+  days. Nothing is sent to anyone: whoever fixes it reads the table. So is a scene still
   filling, its cell rulers' rows measured, measured in six hours, and owed —
   a cell that measured none is said as needing someone. Each is said with a
   level, what it means and what to do (`worker/watchdog_say.js`). **COMPUTERS ON
@@ -694,7 +695,7 @@ through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
 | database | holds | worker binding | DDL |
 | --- | --- | --- | --- |
-| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_told, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
+| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_told, watchdog_said, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
 | `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
 `withDatabases` opens each from its binding; every query is Postgres text.

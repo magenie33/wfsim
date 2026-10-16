@@ -6,7 +6,6 @@ import { factory, canon, nearAnswer, inIdOrder } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board_tasks.js";
 import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } from "./verify.js";
-import { cloudTell } from "./cloud.js";
 import { watchdogText } from "./watchdog_say.js";
 import { idleFindings } from "./idle_devices.js";
 import { iso } from "./instant.js";
@@ -199,13 +198,14 @@ export async function notePause(env, now) {
 /// THE WATCHDOG'S SCHEDULE (wrangler.jsonc `triggers`), and how long one cause
 /// stays said before it is said again.
 export const WATCHDOG_CRON = "*/10 * * * *";
-const RETELL_MS = 6 * 3_600_000;
+const RETELL_MS = 6 * 3_600_000, SAID_KEPT_MS = 30 * 24 * 3_600_000;
 /// THE SETTLER IS GONE once it has not beaten this long, and the cron settles its queue.
 export const SETTLER_SILENT_MS = 5 * 60_000;
 
-/// WHAT IS WRONG IS SAID TO THE OWNER (worker/tasks.js `audit`), once a cause
-/// until it has stood for `RETELL_MS`: a queue that stops moving is found by
-/// this, within the hour, and not by a player asking why. A SCENE STILL FILLING
+/// WHAT IS WRONG IS WRITTEN DOWN (worker/tasks.js `audit`) in `watchdog_said`,
+/// once a cause until it has stood for `RETELL_MS`: a queue that stops moving
+/// is found by this, within the hour, and not by a player asking why. Nothing is
+/// sent to the owner — the bot's messages are his clan's. A SCENE STILL FILLING
 /// is said on the same clock, its progress read only when it is to be said.
 export async function watchdog(env, now = Date.now()) {
   if (!env.LIBRARY) return [];
@@ -235,10 +235,12 @@ export async function watchdog(env, now = Date.now()) {
   }
   const told = (cause) => db.prepare(`INSERT INTO watchdog_told (cause, told_at) VALUES (?, ?)
                         ON CONFLICT (cause) DO UPDATE SET told_at = excluded.told_at`).bind(cause, iso(now)).run();
+  const say = (f) => db.prepare("INSERT INTO watchdog_said (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
+    .bind(iso(now), f.kind, watchdogText(f, now)).run();
   for (const f of found) {
     if (!(await stale(f.kind))) continue;
-    if (await cloudTell(env, `WFSim compute watchdog
-${watchdogText(f, now)}`)) await told(f.kind);
+    await say(f);
+    await told(f.kind);
   }
   // COMPUTERS ON BUT IDLE (worker/idle_devices.js), said BY DEVICE: a kind is said
   // when it holds one not said within `RETELL_MS`, listing all of it, so a new
@@ -249,10 +251,11 @@ ${watchdogText(f, now)}`)) await told(f.kind);
       const fresh = [];
       for (const x of f.devices) if (await stale(`${f.kind}:${x.device}`)) fresh.push(x.device);
       if (!fresh.length) continue;
-      if (await cloudTell(env, `WFSim compute watchdog
-${watchdogText({ ...f, fresh: fresh.length }, now)}`)) for (const x of f.devices) await told(`${f.kind}:${x.device}`);
+      await say({ ...f, fresh: fresh.length });
+      for (const x of f.devices) await told(`${f.kind}:${x.device}`);
     }
     await db.prepare("DELETE FROM watchdog_told WHERE cause LIKE 'idle:%' AND told_at < ?").bind(iso(now - RETELL_MS)).run();
   }
+  await db.prepare("DELETE FROM watchdog_said WHERE at < ?").bind(iso(now - SAID_KEPT_MS)).run();
   return found;
 }

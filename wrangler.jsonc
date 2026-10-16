@@ -116,6 +116,6 @@
   // day before is finished. Reads the dataset with the secrets USAGE_ACCOUNT and
   // USAGE_READ_TOKEN (Account Analytics: Read); without them it does nothing.
   // AND THE FACT FACTORY'S WATCHDOG every ten minutes (worker/factory.js
-  // `watchdog`): a stall said to the owner within the hour, not by a player.
+  // `watchdog`): a stall written down within the hour, not found by a player.
   "triggers": { "crons": ["30 0 * * *", "*/10 * * * *"] }
 }

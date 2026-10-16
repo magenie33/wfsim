@@ -224,6 +224,15 @@ CREATE TABLE IF NOT EXISTS watchdog_told (
   told_at TEXT COLLATE "C" NOT NULL
 );
 
+-- WHAT THE WATCHDOG SAID, one row a saying (worker/factory.js `watchdog`): read
+-- here by whoever fixes it, never sent to anyone. Kept thirty days.
+CREATE TABLE IF NOT EXISTS watchdog_said (
+  at    TEXT COLLATE "C" NOT NULL,
+  cause TEXT COLLATE "C" NOT NULL,
+  said  TEXT NOT NULL,
+  PRIMARY KEY (cause, at)
+);
+
 -- THE FACTORY'S DIALS (worker/dials.js): a value the owner set, overriding the
 -- code's default within the code's bounds, and every change ever made to one.
 CREATE TABLE IF NOT EXISTS factory_dials (

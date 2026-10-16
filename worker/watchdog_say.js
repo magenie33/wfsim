@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// WHAT THE WATCHDOG SAYS TO THE OWNER (worker/factory.js `watchdog`): a level,
-// what happened, whether it is healthy and what to do, then the raw finding.
-// Chinese, because the owner is its one reader; the raw finding stays English.
+// WHAT THE WATCHDOG WRITES DOWN (worker/factory.js `watchdog`, `watchdog_said`):
+// a level, what happened, whether it is healthy and what to do, then the raw
+// finding. Chinese, because the owner may read it; the raw finding stays English.
 
 /// 🔴 needs someone now, 🟡 watch whether it clears, 🟢 progress only.
 const LEVEL = { act: "🔴 要处理", watch: "🟡 留意", info: "🟢 进度" };
@@ -13,8 +13,6 @@ const fmtHours = (h) => (h < 1 ? `${Math.round(h * 60)} 分钟` : `${h < 10 ? h.
 /// one without falls back to the raw finding under 🟡, never to silence.
 export function watchdogText(f, now = Date.now()) {
   const [level, title, body] = describe(f, now);
-  // A RULER ID HAS `__`, which Discord reads as underline: the raw finding goes
-  // in a code block, and ids in the prose are written with ` · `.
   return `${LEVEL[level]} · ${title}\n${body}\n\`\`\`\n${f.kind} ${JSON.stringify(f)}\n\`\`\``;
 }
 

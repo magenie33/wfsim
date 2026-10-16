@@ -17,10 +17,10 @@ const check = (name, ok, detail) => {
   if (!ok) failures++;
 };
 
-const db = await testDb("library"), said = [];
+const db = await testDb("library"), sent = [];
 const env = { LIBRARY: db,
   ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1", accepted: [] })) },
-  CLOUD: { fetch: async (r) => { said.push((await r.json()).text); return new Response('{"ok":true}'); } } };
+  CLOUD: { fetch: async (r) => { sent.push((await r.json()).text); return new Response('{"ok":true}'); } } };
 const NOW = Date.now(), hour = iso(NOW).slice(0, 13);
 const id = (c) => c.repeat(24);
 const on = async (c, { engine = "e1", ago = 60_000, asks = 3 } = {}) => {
@@ -46,14 +46,17 @@ check("one that answered, only just asked once, or went away is none of them",
 
 console.log("\nwhat the watchdog says");
 await watchdog(env, NOW);
-const idleSaid = () => said.filter((t) => /idle:/.test(t));
-check("each kind is said once, in Chinese", idleSaid().length === 3 && idleSaid().some((t) => t.includes("停在旧引擎"))
-  && idleSaid().some((t) => t.includes("频繁请求")) && idleSaid().some((t) => t.includes("在线但没在算")), JSON.stringify(idleSaid()));
+const saidIdle = async () => (await db.all("SELECT said FROM watchdog_said ORDER BY at, cause")).map((x) => x.said).filter((t) => /idle:/.test(t));
+let idleSaid = await saidIdle();
+check("each kind is written down once, in Chinese", idleSaid.length === 3 && idleSaid.some((t) => t.includes("停在旧引擎"))
+  && idleSaid.some((t) => t.includes("频繁请求")) && idleSaid.some((t) => t.includes("在线但没在算")), JSON.stringify(idleSaid));
+check("…and sent to nobody", sent.length === 0, JSON.stringify(sent));
 await watchdog(env, NOW + 60_000);
-check("…and not again while only the same devices are idle", idleSaid().length === 3, String(idleSaid().length));
+idleSaid = await saidIdle();
+check("…and not again while only the same devices are idle", idleSaid.length === 3, String(idleSaid.length));
 await on("g");
 await watchdog(env, NOW + 120_000);
-const again = idleSaid().slice(3);
+const again = (await saidIdle()).slice(3);
 check("…but again when a device it has not said joins a kind, listing both", again.length === 1 && again[0].includes(id("c").slice(0, 8))
   && again[0].includes(id("g").slice(0, 8)) && again[0].includes("新出现 1 台"), JSON.stringify(again));
 check("every idle kind has its own words, none the fallback", ["old_engine", "asking_loop", "not_computing"].every((why) =>

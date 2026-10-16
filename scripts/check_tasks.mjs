@@ -370,14 +370,18 @@ console.log("\nthe watchdog");
   check("a dispute nobody settled in two hours since its last answer is said",
     (await f.audit(env, later + 2 * 3_600_000)).find((x) => x.kind === "unsettled")?.questions === 2);
   // SAID ONCE, then again only once it has stood six hours.
-  const said = [];
+  const sent = [];
   const { watchdog } = await import("../worker/factory.js");
-  const tell = { LIBRARY: db, CLOUD: { fetch: async (r) => { said.push(await r.json()); return new Response('{"ok":true}'); } } };
+  const tell = { LIBRARY: db, CLOUD: { fetch: async (r) => { sent.push(await r.json()); return new Response('{"ok":true}'); } } };
+  const said = async () => (await db.all("SELECT cause, said FROM watchdog_said ORDER BY at")).filter((x) => x.cause === "unsettled");
   await watchdog(tell, later);
   await watchdog(tell, later + 600_000);
-  check("the watchdog tells the owner once", said.length === 1 && /unsettled/.test(said[0].text), JSON.stringify(said));
+  check("the watchdog writes a cause down once", (await said()).length === 1 && /unsettled/.test((await said())[0].said), JSON.stringify(await said()));
+  check("...and sends nobody anything", sent.length === 0, JSON.stringify(sent));
   await watchdog(tell, later + 7 * 3_600_000);
-  check("...and again once it has stood six hours", said.length === 2);
+  check("...and again once it has stood six hours", (await said()).length === 2);
+  await watchdog(tell, later + 40 * 24 * 3_600_000);
+  check("...each saying kept thirty days", (await said()).length === 1, JSON.stringify(await said()));
 }
 {
   // A BACKLOG PAST DUE: one question four hours late is said, one an hour late is not.
@@ -412,19 +416,20 @@ console.log("\nthe watchdog");
 }
 {
   // A SCENE STILL FILLING is said with its progress, and nothing once it is full.
-  const db = await testDb("library"), said = [];
+  const db = await testDb("library");
   const { watchdog } = await import("../worker/factory.js");
-  const env = { LIBRARY: db, CLOUD: { fetch: async (r) => { said.push(await r.json()); return new Response('{"ok":true}'); } } };
+  const env = { LIBRARY: db };
   await db.exec(`INSERT INTO batches (id, at, why, total) VALUES ('b', 'x', 'test', 2);
     INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', 'x1', 'sst__sp200', 'base'), ('b', 'x2', 'sst__sp200', 'base'), ('b', 'x3', 'sst', 'base');
     INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES ('x0', 'sst__sp200', 'base', 'v', 1, 'kpm', 0, 'x', '${iso(NOW - 7 * 3_600_000)}');`);
   const found = (await watchdog(env, NOW)).find((x) => x.kind === "cells_filling");
+  const said = (await db.all("SELECT said FROM watchdog_said")).map((x) => x.said);
   check("a scene still filling is said: measured and owed, per cell ruler",
     found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, recent: 0, recent_hours: 6, owed: 2 }])
-      && said.some((x) => /cells_filling/.test(x.text)), JSON.stringify(found));
+      && said.some((x) => /cells_filling/.test(x)), JSON.stringify(found));
   check("...and a cell that measured nothing in six hours is said as needing someone",
-    said.some((x) => x.text.includes("🔴 要处理") && x.text.includes("sst · sp200")), JSON.stringify(said));
+    said.some((x) => x.includes("🔴 要处理") && x.includes("sst · sp200")), JSON.stringify(said));
   const { watchdogText } = await import("../worker/watchdog_say.js");
   const moving = watchdogText({ kind: "cells_filling", cells: [{ ruler: "sst__sp200", measured: 30, recent: 12, recent_hours: 6, owed: 60 }] }, NOW);
   check("...a cell that is moving is progress, with its pace and time left",
