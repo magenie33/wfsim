@@ -45,8 +45,7 @@ fn forma_polarity(x: &Value) -> Result<Option<Polarity>, String> {
     match x.as_str() {
         None => Ok(None),
         Some(s) => match s.to_lowercase().as_str() {
-            "omni" | "universal" => Ok(Some(Polarity::Omni)),
-            "aura" => Ok(Some(Polarity::Aura)),
+            "omni" | "universal" | "aura" => Ok(Some(Polarity::Omni)),
             p @ ("madurai" | "naramon" | "vazarin" | "zenurik" | "unairu" | "penjaga" | "umbra") => {
                 Ok(Some(wfsim_engine::data::weapons::polarity(p)))
             }

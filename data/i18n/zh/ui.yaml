@@ -1701,7 +1701,6 @@ ui:
   "The sawblade is deployed 6 m in front of the wielder and stays there; the engine fires it like a beam at the target, so if the enemy is not on that spot the number reads high.": "锯片会部署在使用者前方 6 米处并停留；引擎把它当作朝目标发射的光束，所以敌人不站在那个位置时数字偏高。"
   "the scenario the simulator is set to": 模拟器当前选中的场景
   "the search ranks by kills — the scenario's {m} measure applies to the simulator": 搜索按击杀排名——场景里的 {m} 指标只作用于模拟器
-  "Its second innate polarity is an Aura polarity, which no weapon mod matches, so that slot is left without polarity here. In game it cannot be worse than that, so capacity here is a floor.": "它的第二个自带极性是光环极性，没有任何武器 MOD 能匹配，所以这里这个槽位按无极性处理。游戏里它不会比无极性更差，所以这里的容量是下限。"
   "The self-stagger from its own explosion at close range is not modelled; it deals the firer no damage.": "近距离自身爆炸造成的踉跄未建模；它不会伤害开火者。"
   "The semi-auto mode is entered by deploying a disc that lasts until a reload and highlights enemy heads within 20 m through walls (wiki). The sim does not use the highlight or the disc's timer, so the mode is available from the first shot.": "进入半自动模式需要部署一个圆盘，它持续到下一次换弹，并能透墙高亮 20 米内敌人的头部（wiki）。模拟不使用高亮，也不计圆盘的时间，所以这个模式从第一发起就可用。"
   "The bomblets take no Condition Overload: the wiki's catalog gives them a rule of their own ({row}), and the engine sets the rule per weapon. They read low by that term only.": "子炸弹不吃异况超量：wiki 目录给它们单独一条规则（{row}），而引擎按武器设定规则。它们只在这一项上偏低。"

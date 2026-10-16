@@ -517,7 +517,7 @@ pub fn optimize(
 }
 
 const MAX_SLOTS: usize = 12;
-const NSYM: usize = 10;
+const NSYM: usize = 9;
 /// A polarity as an index; 0 is a bare slot.
 const SYMS: [Option<Polarity>; NSYM] = [
     None,
@@ -528,13 +528,11 @@ const SYMS: [Option<Polarity>; NSYM] = [
     Some(Polarity::Unairu),
     Some(Polarity::Penjaga),
     Some(Polarity::Umbra),
-    Some(Polarity::Aura),
     Some(Polarity::Omni),
 ];
 const BLANK: usize = 0;
 const UMBRA: usize = 7;
-const AURA: usize = 8;
-const OMNI: usize = 9;
+const OMNI: usize = 8;
 const REGULAR: std::ops::RangeInclusive<usize> = 1..=6;
 
 fn sym(p: Option<Polarity>) -> usize {
@@ -910,9 +908,7 @@ impl<'a> Space<'a> {
                     if board.grant.is_some() && !grant_in_pool && g != s_grant {
                         ops[g] += 1;
                     }
-                    // No Forma makes the Aura colour; only an item born with it has one.
-                    if ops[AURA] > 0
-                        || (rules.umbra == UmbraUse::Never && ops[UMBRA] > 0)
+                    if (rules.umbra == UmbraUse::Never && ops[UMBRA] > 0)
                         || (rules.omni == OmniUse::Never && ops[OMNI] > 0)
                         || (rules.omni == OmniUse::Preferred && REGULAR.clone().any(|k| ops[k] > 0))
                     {
@@ -1417,7 +1413,7 @@ mod tests {
             let cards: Vec<Card> = (0..k)
                 .map(|_| Card { drain: 1 + next(20) as u32, polarity: pols[next(4) as usize], ordered: false })
                 .collect();
-            let syms: Vec<u8> = (0..n).map(|_| [BLANK, 1, 2, 3, UMBRA, AURA, OMNI][next(7) as usize] as u8).collect();
+            let syms: Vec<u8> = (0..n).map(|_| [BLANK, 1, 2, 3, UMBRA, OMNI][next(6) as usize] as u8).collect();
             let (want, _) = assign(k, n, |r, c| i64::from(cost_on(cards[r], syms[c] as usize)));
             let got = free_drain(&Prepared::of(&Loadout { main: cards.iter().map(|&c| Some(c)).collect(), ..Default::default() }).sorted, &syms);
             assert_eq!(i64::from(got), want, "{cards:?} on {syms:?}");
