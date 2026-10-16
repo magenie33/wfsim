@@ -13,8 +13,22 @@ db_configured() {
 
 # THE TRANSPORT, a body on stdin and the answer on stdout. A self-test
 # redefines it after sourcing this, so the stub never reaches a database.
+# ONE PROCESS AND ONE CONNECTION FOR THE SCRIPT (`pgq.mjs --lines`): a process
+# and a connect a statement cost seconds a page, minutes a paged read. A
+# subshell cannot reach its parent's coprocess, so one sends on its own.
+DB_PROC_OWNER=""
 db_send() {
-  node "$DB_HERE/pgq.mjs"
+  local body line
+  body=$(jq -c . | tr -d '\r') || return 1
+  if [ "$DB_PROC_OWNER" != "$BASHPID" ]; then
+    if [ -n "$DB_PROC_OWNER" ]; then printf '%s' "$body" | node "$DB_HERE/pgq.mjs"; return; fi
+    coproc DB_PROC { node "$DB_HERE/pgq.mjs" --lines; }
+    DB_PROC_OWNER=$BASHPID
+  fi
+  printf '%s\n' "$body" >&"${DB_PROC[1]}"
+  IFS= read -r line <&"${DB_PROC[0]}" || return 1
+  printf '%s' "$line"
+  printf '%s' "$line" | jq -e '.success' > /dev/null
 }
 
 db_query() {
@@ -25,6 +39,7 @@ db_query() {
     DB_CODE="000"
     return 1
   fi
-  if printf '%s' "$1" | db_send > "$DB_OUT"; then DB_CODE=200; else DB_CODE=500; fi
+  # NOT A PIPE: each side of one is a subshell, which `db_send` cannot keep open.
+  if db_send <<< "$1" > "$DB_OUT"; then DB_CODE=200; else DB_CODE=500; fi
   [ "$DB_CODE" = "200" ]
 }

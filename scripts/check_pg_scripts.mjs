@@ -6,7 +6,7 @@
 // purged — and each table must hold what the pass says it wrote.
 //   npm ci --prefix scripts/pg && node scripts/check_pg_scripts.mjs
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, chmodSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -55,6 +55,22 @@ check("a batch is asked for once a row, its total counting every ask",
   (await query("SELECT count(*) AS n FROM queue"))[0].n === 2 && (await query("SELECT total FROM batches"))[0]?.total === 4);
 check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") === 0
   && read("queue.ndjson").map((l) => JSON.parse(l).ruler).join() === "heavy_gunner,standard_single_target");
+// …OVER ONE CONNECTION (scripts/db.sh `db_send`): a read is two statements at
+// least, the batches and a page, and a process a statement cost seconds a page.
+{
+  const bin = join(dir, "bin"), log = join(dir, "node.log");
+  rmSync(log, { force: true });
+  mkdirSync(bin, { recursive: true });
+  const posix = (p) => p.replace(/\\/g, "/");
+  file("bin/node", `#!/usr/bin/env bash\necho "$*" >> '${posix(log)}'\nexec '${posix(process.execPath)}' "$@"\n`);
+  chmodSync(join(bin, "node"), 0o755);
+  const path = process.env.PATH;
+  process.env.PATH = `${bin}${process.platform === "win32" ? ";" : ":"}${path}`;
+  const status = await run("fetch_queue.sh", "queue.ndjson");
+  process.env.PATH = path;
+  const spawned = readFileSync(log, "utf8").split("\n").filter((l) => l.includes("pgq.mjs"));
+  check("...over one database process, not one a statement", status === 0 && spawned.length === 1, spawned.join(" | "));
+}
 
 const fact = { identity: "b1", ruler: "heavy_gunner", mode: "base", measured_by: "sha", score: 12.5, metric: "kpm",
   cost_seconds: 3, started_at: "2026-10-01T00:00:00.000Z", finished_at: "2026-10-01T00:00:03.000Z" };
