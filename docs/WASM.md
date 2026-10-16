@@ -176,6 +176,30 @@ the only mark here stays ours.
 A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the FETCHER
 takes it from the wiki; the cached name and the page's URL are the bare name.
 
+## Memory
+
+**A LANE KEEPS ITS PEAK FOR LIFE.** A wasm instance's linear memory grows and
+never shrinks, so what a lane holds is the HIGHEST it ever went, not what is
+live. Every lane is its own instance, and a reader who gives the board N lanes
+pays it N times. The cost to watch is therefore a LOADER's transient peak: a
+catalog that builds its whole input at once and then throws it away keeps that
+input's size anyway.
+
+- **The weapon catalog holds only parents' yaml trees** (`weapons::catalog::all`):
+  the parents are read off the text first, and every other file is parsed,
+  merged and converted one at a time. Holding all of them, plus a copy of each
+  for the id lookup, made every lane 50 MB where it is now 20.
+- **Rare blocks of `AttackSpec` are boxed.** A handful of weapons fill them,
+  and inline they put kilobytes on every one of two thousand entries.
+- **A lane is warmed with a `rest`, never an endpoint.** The worker answers it
+  after the module loads without entering the engine; `/api/meta` is the
+  costliest answer there is (~70 MB to build), so a warm-up that asked for it
+  left that lane at 70 MB.
+
+`check_lane_memory` holds the ceiling. To find where a peak comes from,
+profile the native endpoint under `dhat` — its "at t-gmax" view is the number
+that matters here, not "at t-end".
+
 ## The quick descent across the fleet
 
 The optimizer's search is a descent from each start (docs/OPTIMIZER.md, "The

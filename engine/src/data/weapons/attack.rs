@@ -341,7 +341,7 @@ pub struct AttackSpec {
     pub ricochet: Option<RicochetSpec>,
     /// A THROWN GLAIVE'S BOUNCES — a throw form's, and nothing else's.
     #[serde(default)]
-    pub thrown_bounce: Option<ThrownBounceSpec>,
+    pub thrown_bounce: Option<Box<ThrownBounceSpec>>,
     /// DAMAGE FALLOFF on the direct hit — the shotgun's, and the one the
     /// Arsenal lists as a range in metres. The fight applies it at each body's
     /// own distance (`build::loadout::Falloff`).
@@ -450,13 +450,13 @@ pub struct AttackSpec {
     pub extra_hit_reads: Option<ExtraHitReads>,
     /// The BOMBLETS this attack's explosion throws out — see [`ClusterSpec`].
     #[serde(default)]
-    pub cluster: Option<ClusterSpec>,
+    pub cluster: Option<Box<ClusterSpec>>,
     /// THE GRENADES A RELOAD THROWS — see [`ReloadGrenadeSpec`].
     #[serde(default)]
-    pub reload_grenade: Option<ReloadGrenadeSpec>,
+    pub reload_grenade: Option<Box<ReloadGrenadeSpec>>,
     /// A BLOB THAT EMBEDS AND DETONATES LATER — see [`BlobSpec`].
     #[serde(default)]
-    pub blob: Option<BlobSpec>,
+    pub blob: Option<Box<BlobSpec>>,
     /// PRIMARY COMPRESSION's row for this attack — see [`CompressionSpec`].
     /// `None` means the weapon is absent from the table, which is not the same
     /// as 0%: absent is untested or inapplicable (every secondary, since the
@@ -465,15 +465,15 @@ pub struct AttackSpec {
     pub compression: Option<CompressionSpec>,
     /// A LINGERING FIELD left by every landed projectile (Torid's cloud).
     #[serde(default)]
-    pub lingering: Option<LingeringSpec>,
+    pub lingering: Option<Box<LingeringSpec>>,
     /// A DEPLOYED ORB — see [`OrbSpec`]. An attack that has one settles no
     /// collision and no explosion of its own: the orb delivers both.
     #[serde(default)]
-    pub orb: Option<OrbSpec>,
+    pub orb: Option<Box<OrbSpec>>,
     /// THE DAGGER A KILL MAKES — see [`SpectralDaggerSpec`]. Only a Genesis
     /// tier that says so fires it.
     #[serde(default)]
-    pub spectral_dagger: Option<SpectralDaggerSpec>,
+    pub spectral_dagger: Option<Box<SpectralDaggerSpec>>,
     /// THE METER THAT GATES THIS FORM — see [`MeterSpec`].
     ///
     /// Declaring one makes this form GAUGE-FED, which `play_modes` reads off
@@ -486,7 +486,7 @@ pub struct AttackSpec {
     pub meter: Option<MeterSpec>,
     /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
     #[serde(default)]
-    pub beam: Option<BeamSpec>,
+    pub beam: Option<Box<BeamSpec>>,
 }
 
 /// THE SPECTRAL DAGGER — the infobox's `Spectral Dagger` attack and its

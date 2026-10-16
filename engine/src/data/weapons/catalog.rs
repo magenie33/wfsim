@@ -86,22 +86,30 @@ pub fn all() -> &'static [WeaponSpec] {
         // struct: `WeaponSpec`'s fields have defaults, so once it is
         // deserialized "absent" and "stated at the default" are the same
         // thing, and a form could not inherit a `false` or a `0`.
+        // ONLY A PARENT'S TREE IS HELD, and every other file lives one at a time:
+        // a wasm lane's memory never shrinks, so holding all 2,000 trees at once
+        // was the peak every compute lane kept for life (docs/WASM.md §"Memory").
         use serde_norway::Value;
-        let raw: Vec<(&str, Value)> = crate::data::files_under("weapons/")
+        let files: Vec<(&str, &str)> = crate::data::files_under("weapons/")
             .filter(|(p, _)| p.ends_with(".yaml"))
-            .map(|(p, text)| {
-                (p, serde_norway::from_str::<Value>(text)
-                    .unwrap_or_else(|e| panic!("parse {p}: {e}")))
-            })
             .collect();
-        let by_id: std::collections::HashMap<String, Value> = raw
+        let parse = |p: &str, text: &str| {
+            serde_norway::from_str::<Value>(text).unwrap_or_else(|e| panic!("parse {p}: {e}"))
+        };
+        let parents: std::collections::HashSet<&str> =
+            files.iter().filter_map(|(_, text)| top_level(text, "inherits")).collect();
+        let by_id: std::collections::HashMap<String, Value> = files
             .iter()
-            .filter_map(|(_, v)| {
-                v.get("id").and_then(Value::as_str).map(|i| (i.to_string(), v.clone()))
+            .filter(|(_, text)| top_level(text, "id").is_some_and(|i| parents.contains(i)))
+            .filter_map(|(p, text)| {
+                let v = parse(p, text);
+                v.get("id").and_then(Value::as_str).map(str::to_string).map(|i| (i, v))
             })
             .collect();
-        raw.into_iter()
-            .map(|(p, mut v)| {
+        files
+            .iter()
+            .map(|&(p, text)| {
+                let mut v = parse(p, text);
                 if let Some(parent) = v.get("inherits").and_then(Value::as_str) {
                     let up = by_id
                         .get(parent)
@@ -129,6 +137,16 @@ pub fn all() -> &'static [WeaponSpec] {
                     .unwrap_or_else(|e| panic!("parse {p}: {e}"))
             })
             .collect()
+    })
+}
+
+/// A top-level scalar read off the text, so the parents are known before any
+/// tree is built. A miss cannot pass silently: a child whose parent was not
+/// found panics with `inherits unknown id` on the first load.
+fn top_level<'a>(text: &'a str, key: &str) -> Option<&'a str> {
+    text.lines().find_map(|l| {
+        let v = l.strip_prefix(key)?.strip_prefix(':')?.split(" #").next()?.trim();
+        Some(v.trim_matches(|c| c == '"' || c == '\'')).filter(|v| !v.is_empty())
     })
 }
 

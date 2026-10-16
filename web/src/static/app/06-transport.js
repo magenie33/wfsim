@@ -362,14 +362,17 @@ function makeLane(pool = "reader") {
       );
     },
     get warm() { return warm; },
-    // THE CHEAPEST QUESTION THERE IS, asked only to find out when this worker's
-    // module has finished loading. `lanes` opens the first lane alone and waits
-    // on this, so the rest are served the module from the HTTP cache instead of
-    // asking the network for it N times at once. A failure still resolves: this
-    // is a starting gun, not a health check, and `laneAsk` handles a dead lane.
+    // A REST OF NOTHING, asked only to find out when this worker's module has
+    // finished loading: the worker answers it after `ready` without entering
+    // the engine. `/api/meta` here left the lane at the 70 MB that answer costs
+    // to build, for life (wasm memory never shrinks). `lanes` opens the first
+    // lane alone and waits on this, so the rest are served the module from the
+    // HTTP cache instead of asking the network for it N times at once. A
+    // failure still resolves: this is a starting gun, not a health check, and
+    // `laneAsk` handles a dead lane.
     warmed() {
       if (!warming) {
-        warming = lane.call("/api/meta")
+        warming = lane.send({ kind: "rest", ms: 0 })
           .then(() => { warm = true; })
           .catch(() => { warm = true; });
       }

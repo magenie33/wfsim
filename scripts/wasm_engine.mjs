@@ -8,6 +8,7 @@
 //   const e = loadEngine();                       // site/pkg, by site/release.json
 //   const e2 = loadEngine({ pkg: "<dir>" });      // wfsim_wasm.js + wfsim_wasm_bg.wasm
 //   e.api("/api/board/order", { record, ruler, mode })   // any wasm door, JSON in and out
+//   e.memoryBytes()                               // its linear memory, which never shrinks
 //   await measureRow([e], { record, ruler, mode })       // → { score, metric, work, counts, ... }
 
 import fs from "node:fs";
@@ -32,10 +33,11 @@ export function loadEngine({ pkg = "" } = {}) {
   // Built inside the context: the shim tells its argument's shape by the
   // context's own `Object.prototype`.
   ctx.bytes = fs.readFileSync(wasm);
-  vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
+  const exports = vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
   return {
     release,
     api: (p, body) => JSON.parse(ctx.wasm_bindgen.api(p, JSON.stringify(body))),
+    memoryBytes: () => exports.memory.buffer.byteLength,
   };
 }
 

@@ -44,6 +44,8 @@ jobs:
           bindgen=$(awk '/^name = "wasm-bindgen"$/ {getline; gsub(/version = |"/, ""); print; exit}' Cargo.lock)
           curl -sSfL "https://github.com/rustwasm/wasm-bindgen/releases/download/$bindgen/wasm-bindgen-$bindgen-x86_64-unknown-linux-musl.tar.gz" | tar xz
           WASM_BINDGEN="$PWD/wasm-bindgen-$bindgen-x86_64-unknown-linux-musl/wasm-bindgen" node scripts/check_gas.mjs build
+      - name: A compute lane stays small
+        run: node scripts/check_lane_memory.mjs pkg=target/gas-check-pkg
 
   # THE PUBLISHED SNAPSHOT IS A LEGAL BOARD — a fact about publish.yml's output,
   # so it is a job of its own: inside `test` it stopped the one run that repairs

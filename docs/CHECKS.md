@@ -358,6 +358,14 @@ native process and the same wasm instance, counts what it did first. It failed
 with one weight changed in the wasm build only, and with a charge made once a
 thread in `run_once`.
 
+## `check_lane_memory`
+
+CI's `gas` job, on the wasm it built: one fresh instance fights the rows of
+`tests/gas/rows.json` as a board lane does, and its linear memory — which never
+shrinks, so it is that lane's for life — stays under `CEILING_MB`. Without
+`pkg=` it reads `site/pkg`. It failed at 50.0 MB on the build whose weapon
+catalog held every file's yaml tree at once (docs/WASM.md §"Memory").
+
 ## `check_clients_doc`
 
 Plain node. Every key of docs/CLIENTS.md's `Values` block is the constant it

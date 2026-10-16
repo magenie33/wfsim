@@ -683,7 +683,7 @@ pub fn base_panel_assembled(
         follow_through: s.attack.follow_through,
         spends_combo: s.attack.spends_combo,
         combo_duration_seconds: s.combo_duration_seconds,
-        orb: s.attack.orb,
+        orb: s.attack.orb.as_deref().copied(),
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::model::Ricochet {
             bounces: r.bounces,
