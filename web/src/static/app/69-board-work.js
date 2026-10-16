@@ -263,7 +263,7 @@ async function takeDevicePoints(r) {
 /// EVERY ASK HAS A CLOCK: one call that never answers — a laptop waking on a
 /// dead connection — would otherwise hold the work loop for good.
 const BOARD_ASK_MS = 30_000;
-const boardSignal = () => (typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(BOARD_ASK_MS) : undefined);
+const boardSignal = () => timeoutSignal(BOARD_ASK_MS);
 const postBoardTo = (base, path, body) => fetch(base + path, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -296,7 +296,7 @@ async function timeRoute(base) {
   for (let i = 0; i < ROUTE_TRIES; i++) {
     const t = performance.now();
     try {
-      const r = await fetch(base + "/api/board/ping", { cache: "no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(5_000) : undefined });
+      const r = await fetch(base + "/api/board/ping", { cache: "no-store", signal: timeoutSignal(5_000) });
       if (!r.ok) return Infinity;
       await r.json();
     } catch (_) { return Infinity; }
@@ -365,7 +365,7 @@ async function roadProbe() {
     let ok = false;
     try {
       const r = await fetch(`${base}/board.meta.json`, { cache: "no-store",
-        signal: AbortSignal.timeout ? AbortSignal.timeout(ROAD_PROBE_MS) : undefined });
+        signal: timeoutSignal(ROAD_PROBE_MS) });
       ok = r.ok && !!(await r.json());
     } catch (_) { /* a failed road is the point */ }
     track("road.probe", `${road}_${ok ? "ok" : "failed"}`, Math.round(performance.now() - t));

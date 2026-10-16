@@ -611,6 +611,9 @@ function wireReplay(r) {
   replayState = st;
 
   const draw = () => {
+    // A PANEL REDRAWN WITHOUT THIS REPLAY ENDS IT: the play loop and a record
+    // arriving late would otherwise write into elements that are gone.
+    if (replayState !== st || !$("rp-clock")) { st.playing = false; return; }
     const was = st.i;
     st.i = Math.max(0, Math.min(rp.t.length - 1, Math.round(st.pos)));
     replayApply(rp, st.i);
@@ -625,7 +628,7 @@ function wireReplay(r) {
   };
   const stop = () => {
     st.playing = false; st.last = 0;
-    $("rp-play").textContent = `▶ ${tr("play")}`;
+    if ($("rp-play")) $("rp-play").textContent = `▶ ${tr("play")}`;
   };
   // THE NUMBERS ARE THE RECORD, so reaching for the replay is what asks for
   // it — and it asks for the WINDOW it is looking at. It is deliberately NOT

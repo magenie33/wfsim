@@ -265,15 +265,16 @@ check(
   `stopped ${s2.stopped}, pending cleared ${s2.pendingCleared}, workers dropped ${s2.workersDropped} (had ${s2.hadWorkers})`,
 );
 
-// A MODULE THAT IS ONLY SLOW IS NOT A DEAD LANE. The worker says so while it
-// downloads, and the watchdog resets on any word: with the loading window cut
-// to 7.5 s and the wasm held back 16 s by the server — nothing in Chrome slows a
-// worker's own fetch — the lane must still answer. The watchdog looks every
+// A MODULE THAT IS ONLY SLOW IS NOT A DEAD LANE. The worker says so while the
+// page downloads it, and the watchdog resets on any word: with the loading
+// window cut to 7.5 s, the module the page holds dropped and the wasm held back
+// 16 s by the server, the lane must still answer. The watchdog looks every
 // 5 s, so the hold has to outlast two looks for a silent lane to be caught at
 // all. Its own page, so the hold reaches nothing above.
 const slowApp = await openApp({ boot: 30000, delay: { ".wasm": 16000 }, profile: `wfsim-calc-slow-${process.pid}` });
 const slowLane = await slowApp.evaluate(`(async () => {
   LANE_WATCHDOG.loading = 7500;
+  engineModule = null;
   const t0 = performance.now();
   const r = await Promise.race([
     makeLane().call('/api/meta'),
@@ -333,10 +334,9 @@ const silentWhere = await evaluate(`({ said: window.__lanes.splice(0), hidden: d
 check("…and where: a reader's lane, in the sight the page says",
   JSON.stringify(silentWhere.said) === JSON.stringify([`reader_${silentWhere.hidden ? "hidden" : "shown"}:0`]), JSON.stringify(silentWhere));
 
-// A MODULE THAT WILL NOT DOWNLOAD IS A FAILURE NOW, not after the 90 s watchdog
-// — the wait a reader on a bad connection closed the tab during. Last, because
-// it blocks the wasm for the rest of the page. BLOCKED IN EACH WORKER'S OWN
-// SESSION: the page's `Network.setBlockedURLs` does not reach a worker's fetch.
+// ONE ENGINE A PAGE: lanes made after boot are handed the module the page
+// already compiled. The wasm is BLOCKED IN EACH WORKER'S OWN SESSION, so a
+// worker that downloaded its own would die here instead of answering.
 app.on("Target.attachedToTarget", ({ sessionId, targetInfo }) => {
   if (targetInfo.type !== "worker") return;
   [["Network.enable", {}], ["Network.setCacheDisabled", { cacheDisabled: true }],
@@ -345,8 +345,29 @@ app.on("Target.attachedToTarget", ({ sessionId, targetInfo }) => {
       { sessionId, message: JSON.stringify({ id: i + 1, method, params }) }));
 });
 await send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: false });
+const shared = await evaluate(`(async () => {
+  const lanes = [makeLane(), makeLane(), makeLane()];
+  const answers = await Promise.race([
+    Promise.all(lanes.map((l) => l.call('/api/meta'))),
+    new Promise((res) => setTimeout(() => res([]), 30000)),
+  ]);
+  lanes.forEach((l) => l.worker.terminate());
+  return answers.filter((a) => a && !a.worker_dead && !a.error).length;
+})()`);
+check("lanes made after boot answer from the page's module, downloading nothing themselves",
+  shared === 3, `${shared} of 3 answered`);
+
+// A MODULE THAT WILL NOT DOWNLOAD IS A FAILURE NOW, not after the 90 s watchdog
+// — the wait a reader on a bad connection closed the tab during. Last, because
+// it blocks the wasm for the rest of the page. BLOCKED IN THE PAGE'S SESSION,
+// which downloads the module for every worker (`spawnEngine`); the one it
+// already holds is dropped, so the next lane has to download it again.
+await send("Network.enable", {});
+await send("Network.setCacheDisabled", { cacheDisabled: true });
+await send("Network.setBlockedURLs", { urls: ["*.wasm"] });
 const m = await evaluate(`(async () => {
   LANE_WATCHDOG.loading = 90000;
+  engineModule = null;
   const t0 = performance.now();
   const r = await Promise.race([
     makeLane().call('/api/meta'),

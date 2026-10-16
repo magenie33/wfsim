@@ -55,6 +55,30 @@ module and `api()` is worker RPC, with optimize start/status/cancel emulated
 against it so the progress UI is the same. Unset (the native server), `api()`
 is plain fetch. Cancel terminates the worker and re-initialises it.
 
+## One engine a page
+
+**THE PAGE DOWNLOADS AND COMPILES THE MODULE ONCE, and every worker is handed
+the compiled `WebAssembly.Module`** (`06-transport.js` `spawnEngine`, the one
+place a worker is made). `worker.js` loads nothing but its glue: it waits for
+an `engine` message carrying the module, or its `url` when the browser will not
+post a module across, or the `cause` of a download the page could not make,
+which it reports as its own `load_failed`.
+
+A worker that fetched its own module made a page's every lane a fresh 9 MB
+download: eight at once on a run, before the first could fill the cache, and
+another for each lane made later — a cancel, a dead lane, the community's
+work. On a slow line any of them was cut mid-body, and a page left behind by a
+release asked for a module the site no longer served. A module in the page's
+memory is none of these.
+
+- **A stalled download ends** (`ENGINE_STALL_MS` with no bytes), and a `cut`
+  or `network` failure is tried once more; a failed download is forgotten, so
+  the next lane made is the next try.
+- **The boot screen's progress is the page's** (`__wfsimBootProgress`).
+- `check_calc_recovers.mjs` blocks the module in every worker's own session and
+  proves lanes still answer; then blocks it at the page and proves the lane
+  fails at once, saying why.
+
 ## Checkpoint / resume (a reload kills the run)
 
 A page reload terminates the dedicated worker, and no browser mechanism

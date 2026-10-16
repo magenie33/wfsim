@@ -224,6 +224,83 @@ function watchSilence(giveUp) {
 /// body mid-download, `compile` the bytes, `memory` an instance it could not have.
 const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "unclassified"];
 
+/// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
+/// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
+/// writes in the hashed name and the size; the dev server serves no workers.
+const ENGINE_WASM = "/pkg/wfsim_wasm_bg.wasm";
+const ENGINE_WASM_BYTES = 0;
+/// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
+/// in a failure the lanes can report rather than in lanes that wait for ever.
+const ENGINE_STALL_MS = 60_000;
+/// One download at a time: the lanes asked together share it, and a failed one
+/// is forgotten, so the next lane made is the next try.
+let engineModule = null;
+function engineLoad() {
+  if (!engineModule) {
+    const once = () => engineCompile().catch((err) => { if (!err.loadCause) err.loadCause = engineCauseOf(err); throw err; });
+    engineModule = once().catch((err) => (err.loadCause === "cut" || err.loadCause === "network" ? once() : Promise.reject(err)));
+    engineModule.catch(() => { engineModule = null; });
+  }
+  return engineModule;
+}
+const engineCauseOf = (err) => (err instanceof WebAssembly.CompileError ? "compile"
+  : err instanceof RangeError ? "memory" : "unclassified");
+const engineFailed = (cause, err) => Object.assign(err || new Error(`engine ${cause}`), { loadCause: cause });
+async function engineCompile() {
+  // THE CLOCK IS ON THE HEADERS ONLY: a signal left armed would cut a slow
+  // body that is still arriving.
+  const ctl = new AbortController();
+  const late = setTimeout(() => ctl.abort(), ENGINE_STALL_MS);
+  let r;
+  try {
+    r = await fetch(ENGINE_WASM, { signal: ctl.signal });
+  } catch (err) {
+    throw engineFailed("network", err);
+  } finally {
+    clearTimeout(late);
+  }
+  if (!r.ok) throw engineFailed("http", new Error(`wasm ${r.status}`));
+  // THE DOWNLOAD IS COUNTED for the boot screen (index.html), so a slow line
+  // reads as progress rather than as a hang.
+  const reader = r.body && r.body.getReader();
+  if (!reader) return WebAssembly.compile(await r.arrayBuffer());
+  const parts = [];
+  let got = 0, said = 0;
+  const say = () => { said = Date.now(); if (window.__wfsimBootProgress) window.__wfsimBootProgress(got, ENGINE_WASM_BYTES); };
+  for (;;) {
+    let stall;
+    const part = await Promise.race([
+      reader.read(),
+      new Promise((_, no) => { stall = setTimeout(() => no(new Error("engine download stalled")), ENGINE_STALL_MS); }),
+    ]).catch((err) => { reader.cancel().catch(() => {}); throw engineFailed("cut", err); })
+      .finally(() => clearTimeout(stall));
+    if (part.done) break;
+    parts.push(part.value);
+    got += part.value.byteLength;
+    if (Date.now() - said > 250) say();
+  }
+  say();
+  const bytes = new Uint8Array(got);
+  let at = 0;
+  for (const p of parts) { bytes.set(p, at); at += p.byteLength; }
+  return WebAssembly.compile(bytes);
+}
+
+/// EVERY ENGINE WORKER IS MADE HERE — `worker.js` waits for its `engine`
+/// message and loads nothing itself. A module the browser will not post across
+/// is sent as its address instead, and that worker fetches its own.
+function spawnEngine() {
+  const w = new Worker("/worker.js");
+  engineLoad().then((module) => {
+    try {
+      w.postMessage({ kind: "engine", module });
+    } catch (_) {
+      w.postMessage({ kind: "engine", url: ENGINE_WASM });
+    }
+  }, (err) => w.postMessage({ kind: "engine", cause: err.loadCause }));
+  return w;
+}
+
 /// WHERE A LANE WAS LOST, beside its `engine.fail`: which pool's (`reader`, the
 /// reader's own; `board`, the community's) and whether the page was in sight,
 /// `n` the minutes it had been out of it. A hidden tab is throttled or frozen by
@@ -236,7 +313,7 @@ function laneLost(pool) {
 }
 
 function makeLane(pool = "reader") {
-  const w = new Worker("/worker.js");
+  const w = spawnEngine();
   const pending = new Map();
   const progress = new Map();
   let seq = 0, dead = false, busy = 0, warm = false, warming = null, loadCause = null;
@@ -296,11 +373,6 @@ function makeLane(pool = "reader") {
     wd.heard();
     if (e.data.kind === "load_failed") {
       loadCause = LOAD_CAUSES.includes(e.data.cause) ? e.data.cause : null;
-      return;
-    }
-    // THE ENGINE'S DOWNLOAD, for the boot screen (index.html).
-    if (e.data.kind === "loading") {
-      if (window.__wfsimBootProgress) window.__wfsimBootProgress(e.data.got, e.data.total);
       return;
     }
     if (e.data.kind === "progress") {
@@ -366,10 +438,10 @@ function makeLane(pool = "reader") {
     // finished loading: the worker answers it after `ready` without entering
     // the engine. `/api/meta` here left the lane at the 70 MB that answer costs
     // to build, for life (wasm memory never shrinks). `lanes` opens the first
-    // lane alone and waits on this, so the rest are served the module from the
-    // HTTP cache instead of asking the network for it N times at once. A
-    // failure still resolves: this is a starting gun, not a health check, and
-    // `laneAsk` handles a dead lane.
+    // lane alone and waits on this, so the page's one download (`spawnEngine`)
+    // is not shared with N instantiations at once. A failure still resolves:
+    // this is a starting gun, not a health check, and `laneAsk` handles a dead
+    // lane.
     warmed() {
       if (!warming) {
         warming = lane.send({ kind: "rest", ms: 0 })

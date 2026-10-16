@@ -368,7 +368,7 @@ function loadSceneRows(id, base) {
   const listed = (BOARD_META && BOARD_META.scene_weapons) || {};
   for (const dir of benchScenes().filter(Boolean)) {
     if (Array.isArray(listed[dir]) && !listed[dir].includes(id)) continue;
-    fetch(`${sceneBase}/board/${dir}/${id}.json`, { cache: "no-cache", signal: AbortSignal.timeout(SCENE_ROWS_WITHIN_MS) })
+    fetch(`${sceneBase}/board/${dir}/${id}.json`, { cache: "no-cache", signal: timeoutSignal(SCENE_ROWS_WITHIN_MS) })
       .then((r) => (r.ok ? r.json() : null))
       .then((more) => {
         if (!Array.isArray(more) || !more.length || !BOARD[id]) return;

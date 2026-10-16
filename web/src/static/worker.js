@@ -22,67 +22,32 @@ try {
   throw err;
 }
 
-// A MODULE THAT WILL NOT DOWNLOAD IS SAID OUT LOUD, after one retry. A rejected
-// `ready` only rejects each message's await, which the page never sees, so the
-// lane sat silent until `LANE_WATCHDOG.loading` ran out; a throw from a task
-// reaches the page's `onerror` now, which settles the lane as dead.
-// THE DOWNLOAD IS COUNTED, so a slow line shows the reader how far it has got
-// rather than a blank page and then a banner (index.html's boot guard).
-// `WASM_BYTES` is the module's size, written in by build_site_app.py; 0 on the
-// dev server, where the page shows the bytes alone.
-const WASM_BYTES = 0;
-// WHERE THE DOWNLOAD BROKE is noted at the break, since what reaches `ready`'s
-// catch is the compiler's rewrapping of it; what the compiler throws itself
-// (`CompileError`, a `RangeError` for memory it cannot have) is read off the error.
-let downloadBroke = null;
-const counted = async () => {
-  downloadBroke = null;
-  let r;
-  try {
-    r = await fetch("pkg/wfsim_wasm_bg.wasm");
-  } catch (err) {
-    downloadBroke = "network";
-    throw err;
-  }
-  if (!r.ok) { downloadBroke = "http"; throw new Error(`wasm ${r.status}`); }
-  if (!r.body) return r;
-  const reader = r.body.getReader();
-  let got = 0, said = 0;
-  const say = () => { said = Date.now(); postMessage({ kind: "loading", got, total: WASM_BYTES }); };
-  return new Response(new ReadableStream({
-    async pull(c) {
-      let part;
-      try {
-        part = await reader.read();
-      } catch (err) {
-        downloadBroke = "cut";
-        throw err;
-      }
-      const { done, value } = part;
-      if (done) { say(); c.close(); return; }
-      got += value.byteLength;
-      if (Date.now() - said > 250) say();
-      c.enqueue(value);
-    },
-    cancel: (why) => reader.cancel(why),
-  }), { headers: { "content-type": "application/wasm" } });
-};
-const load = () => wasm_bindgen({ module_or_path: counted() });
-const ready = load().catch(load);
+// THE ENGINE ARRIVES FROM THE PAGE, compiled, in the first `engine` message:
+// the page downloads it once for all its workers (06-transport.js
+// `spawnEngine`). A module the browser would not post comes as its `url`,
+// fetched here; a download the page could not make comes as its `cause`.
+// A FAILED LOAD IS SAID, then thrown from a task, which reaches the page's
+// `onerror` and settles the lane as dead.
+let handed;
+const ready = new Promise((res) => { handed = res; }).then(({ module, url, cause }) => {
+  if (cause) throw Object.assign(new Error(`engine ${cause}`), { loadCause: cause });
+  return wasm_bindgen({ module_or_path: module || url }).catch((err) => {
+    throw Object.assign(err, { loadCause: err instanceof WebAssembly.CompileError ? "compile"
+      : err instanceof RangeError ? "memory" : url ? "network" : "unclassified" });
+  });
+});
 ready.catch((err) => {
-  loadFailed(downloadBroke
-    || (err instanceof WebAssembly.CompileError ? "compile"
-      : err instanceof RangeError ? "memory" : "unclassified"));
+  loadFailed(err.loadCause);
   setTimeout(() => { throw err; });
 });
-// …AND ONE THAT IS STILL DOWNLOADING SAYS SO, so a slow line is not taken for a
-// dead lane: the page's watchdog resets on any word. It says so for five
-// minutes at most, so a download that has truly stalled still ends.
+// …AND ONE STILL WAITING FOR IT SAYS SO, so a slow line is not taken for a dead
+// lane: the page's watchdog resets on any word. The page's download ends on
+// its own clock (`ENGINE_STALL_MS`), so this ends with it.
 const arriving = setInterval(() => postMessage({ kind: "alive" }), 5000);
-setTimeout(() => clearInterval(arriving), 300000);
 ready.then(() => clearInterval(arriving), () => clearInterval(arriving));
 
 onmessage = async (e) => {
+  if (e.data.kind === "engine") { handed(e.data); return; }
   await ready;
   const msg = e.data;
   if (msg.kind === "shard") {

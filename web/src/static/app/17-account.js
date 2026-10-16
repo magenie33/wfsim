@@ -116,7 +116,7 @@ async function accountCall(method, path, body, timeoutMs = 0) {
       method, credentials: "same-origin",
       headers: body ? { "content-type": "application/json" } : {},
       ...(body ? { body: JSON.stringify(body) } : {}),
-      ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
+      ...(timeoutMs ? { signal: timeoutSignal(timeoutMs) } : {}),
     });
     return await r.json();
   } catch (_) {

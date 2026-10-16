@@ -2543,16 +2543,9 @@ def main() -> None:
     # `/asset/pkg/…` and 404s. The dev server keeps the relative form and the
     # plain names, and there the worker IS at the root.
     worker = (APP / "worker.js").read_text(encoding="utf-8")
-    named = (worker.replace("pkg/wfsim_wasm.js", f"/pkg/{pkg['glue']}")
-                   .replace("pkg/wfsim_wasm_bg.wasm", f"/pkg/{pkg['wasm']}"))
+    named = worker.replace("pkg/wfsim_wasm.js", f"/pkg/{pkg['glue']}")
     if named == worker:
-        sys.exit("worker.js: neither pkg/ path found — the module would 404")
-    # …AND THE MODULE'S SIZE, so the boot screen can say how far its download is.
-    size = (APP / "pkg" / pkg["wasm"]).stat().st_size
-    sized = named.replace("const WASM_BYTES = 0;", f"const WASM_BYTES = {size};")
-    if sized == named:
-        sys.exit("worker.js: `const WASM_BYTES = 0;` not found — the boot screen would show no total")
-    named = sized
+        sys.exit("worker.js: pkg/wfsim_wasm.js not found — the glue would 404")
     (APP / "worker.js").write_text(named, encoding="utf-8", newline=chr(10))
 
     html = (STATIC / "index.html").read_text(encoding="utf-8")
@@ -2623,6 +2616,15 @@ def main() -> None:
                                f'const ENGINE_ID = "{engine_id()}";', 1)
     if engined == released:
         sys.exit("app.js: ENGINE_ID placeholder not found")
+    # …AND THE MODULE, which the PAGE downloads once for every worker
+    # (06-transport.js `spawnEngine`), with its size for the boot screen.
+    size = (APP / "pkg" / pkg["wasm"]).stat().st_size
+    for old, new in (('const ENGINE_WASM = "/pkg/wfsim_wasm_bg.wasm";',
+                      f'const ENGINE_WASM = "/pkg/{pkg["wasm"]}";'),
+                     ("const ENGINE_WASM_BYTES = 0;", f"const ENGINE_WASM_BYTES = {size};")):
+        if old not in engined:
+            sys.exit(f"app.js: `{old}` not found — the engine would 404 or show no total")
+        engined = engined.replace(old, new, 1)
     (APP / "app.js").write_text(engined, encoding="utf-8", newline=chr(10))
     # …AND ONLY NOW ARE THE THREE FINAL. Every substitution above rewrites the
     # bytes, so a digest taken before any of them would name a file that is no

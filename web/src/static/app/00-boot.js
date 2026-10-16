@@ -4,6 +4,15 @@
 // official polarity icons from the wiki, art from DE's Public Export.
 
 const $ = (id) => document.getElementById(id);
+/// A SIGNAL THAT ABORTS AFTER `ms`, for every fetch with a clock. Never
+/// `AbortSignal.timeout` bare: it is Chrome 103 / Safari 16, and an older phone
+/// threw on it during boot, which the page reports as "could not start".
+const timeoutSignal = (ms) => {
+  if (AbortSignal.timeout) return AbortSignal.timeout(ms);
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+};
 /// AN INPUT METHOD IS COMPOSING (pinyin before its characters are picked).
 /// A box that redraws itself must wait for `onTyped`, and an Enter or Esc
 /// during it picks or cancels a candidate — never the page's own action.

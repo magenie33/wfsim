@@ -196,7 +196,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     if (o) await pause(i, ms);
     return o;
   };
-  const grow = (k) => { while (job.workers.length < k) job.workers.push(fleetKept.pop() || new Worker("/worker.js")); };
+  const grow = (k) => { while (job.workers.length < k) job.workers.push(fleetKept.pop() || spawnEngine()); };
   grow(job.shards);
   show();
   (async () => {
@@ -285,7 +285,7 @@ function woptStart(body, checkpoint) {
     };
   };
   for (let i = 0; i < shards; i++) {
-    const w = new Worker("/worker.js");
+    const w = spawnEngine();
     job.workers.push(w);
     // THE SEARCH'S WORKERS ARE WATCHED TOO. They are not lanes — they are made
     // here and run one long call — but the failure is the same: a reclaimed

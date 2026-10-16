@@ -112,11 +112,11 @@ const worker = read(`asset/${workerName}`);
 check(app.includes(`new Worker("/asset/${workerName}")`),
   "the page's script starts the hashed worker",
   "app.js still names /worker.js, which this build does not serve");
-for (const f of [wasm[0], glue[0]].filter(Boolean)) {
-  check(worker.includes(`pkg/${f}`), `worker.js asks for pkg/${f}`, "the module would 404");
-}
-check(!/pkg\/wfsim_wasm(_bg\.wasm|\.js)/.test(worker),
-  "…and for no unhashed name", "an unhashed path is a cache that can hold the wrong engine");
+// THE PAGE DOWNLOADS THE MODULE (`spawnEngine`) and the worker only its glue.
+if (glue[0]) check(worker.includes(`pkg/${glue[0]}`), `worker.js asks for pkg/${glue[0]}`, "the glue would 404");
+if (wasm[0]) check(app.includes(`const ENGINE_WASM = "/pkg/${wasm[0]}";`), `app.js asks for pkg/${wasm[0]}`, "the module would 404");
+check(!/pkg\/wfsim_wasm(_bg\.wasm|\.js)/.test(worker) && !/"\/pkg\/wfsim_wasm(_bg\.wasm|\.js)"/.test(app),
+  "…and neither for an unhashed name", "an unhashed path is a cache that can hold the wrong engine");
 
 // A HASHED NAME IS ONLY HALF OF IT: without the header the edge still revalidates
 // on every load, and the immutability the name promises is never taken.

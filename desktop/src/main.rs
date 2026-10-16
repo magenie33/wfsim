@@ -545,11 +545,11 @@ const MEASURE_PROBE: &str = r#"
     const n = window.__WFSIM_MEASURE_LANES__;
     const lanes = [];
     for (let i = 0; i < n; i++) {
-      const w = new Worker('/worker.js');
+      const w = spawnEngine();
       lanes.push(new Promise((res, rej) => {
         const t = setTimeout(() => rej(new Error('lane ' + i + ' timed out')), 120000);
         w.onerror = (e) => { clearTimeout(t); rej(new Error(e.message || 'lane failed')); };
-        w.onmessage = () => { clearTimeout(t); res(); };
+        w.onmessage = (e) => { if (e.data.id !== i) return; clearTimeout(t); res(); };
         // /api/meta forces the module to instantiate — an idle Worker has not
         // paid for the wasm yet, and an idle lane is not what we are sizing.
         w.postMessage({ id: i, kind: 'api', path: '/api/meta', body: {} });
