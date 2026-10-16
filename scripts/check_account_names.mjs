@@ -115,4 +115,15 @@ check("...nothing is sent until it is ticked", s.blocked, JSON.stringify(s));
 check("...nor does a provider's button go anywhere", s.provHeld, JSON.stringify(s));
 check("...and ticked, the sign-up goes through", s.sent, JSON.stringify(s));
 
+// MERIT NOTHING SPENDS YET SAYS SO, and the note goes once priority is offered.
+const merit = JSON.parse(await evaluate(`(() => {
+  const base = { ok: true, on: true, balance: 1200, cap: 160000, minted_today: 200, daily: 16000, auto_priority: false };
+  meritState = { ...base, priority: false }; const off = meritHtml();
+  meritState = { ...base, priority: true }; const on = meritHtml();
+  meritState = null;
+  const note = aT("Nothing spends merit yet: it is kept for you until something does.");
+  return JSON.stringify({ off: off.includes(note), on: on.includes(note) });
+})()`));
+check("merit says nothing spends it yet, until priority is offered", merit.off && !merit.on, JSON.stringify(merit));
+
 await app.finish("an account's name is set on the page and shown where the account is");

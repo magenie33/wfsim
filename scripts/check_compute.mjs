@@ -500,4 +500,31 @@ check("a device is first called by its system and browser, read by the library t
   here.lib && / · /.test(here.label), JSON.stringify(here));
 check("...and a phone by its maker and model, a browser inside WeChat by WeChat", wx === "Vivo V2227A · WeChat", wx);
 
+// TODAY IS THE UTC DAY, its start said in the reader's own time; and the time
+// this browser computed counts a task in hand between its signs of life, a
+// freeze adding no more than one gap.
+const day = await evaluate(`(() => {
+  const out = {};
+  out.since = pointsSince() === new Date().toISOString().slice(0, 10) + "T00";
+  localStorage.removeItem(COMPUTED_KEY);
+  computeStart({ kind: "board", weapon: "torid", ruler: "standard_single_target", mode: "base" });
+  computedLast = Date.now() - 30_000; computeProgress(1, 10);
+  out.ticked = Math.round(computedToday() / 1000);
+  computedLast = Date.now() - 600_000; computeProgress(2, 10);
+  out.frozen = Math.round((computedToday() - out.ticked * 1000) / 1000);
+  computeEnd(null);
+  const before = computedToday(); computeProgress(3, 10); out.idle = computedToday() === before;
+  localStorage.setItem(COMPUTED_KEY, JSON.stringify({ day: "2000-01-01", ms: 5_000_000 }));
+  out.yesterday = computedToday();
+  localStorage.removeItem(COMPUTED_KEY);
+  const midnight = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
+  out.note = computeDayHtml().includes(new Intl.DateTimeFormat(accountLocale(), { hour: "2-digit", minute: "2-digit" }).format(midnight));
+  return out;
+})()`);
+check("today's points are asked from the UTC day's first hour", day.since, JSON.stringify(day));
+check("...and the page says when that is, in the reader's own time", day.note, JSON.stringify(day));
+check("time computing counts a task in hand between its signs of life", Math.abs(day.ticked - 30) <= 1, JSON.stringify(day));
+check("...a frozen page adding at most one gap, nothing with no task, and nothing of another day",
+  Math.abs(day.frozen - 120) <= 1 && day.idle && day.yesterday === 0, JSON.stringify(day));
+
 await app.finish("the compute page shows what each device does, by kind, and nothing private");

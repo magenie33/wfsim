@@ -248,10 +248,10 @@ async function loadDevicePoints() {
   const r = await postBoardWork("/api/board/points", { verifier: id, since: pointsSince() });
   if (r && r.ok) await takeDevicePoints(r);
 }
-/// …AND ITS OWN "TODAY", from this reader's midnight, as the UTC hour it falls in.
+/// …AND ITS "TODAY": THE UTC DAY, as every period of the product is, its start
+/// said on the page in the reader's own zone (73-compute.js `computeDayHtml`).
 function pointsSince() {
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-  return midnight.toISOString().slice(0, 13);
+  return new Date().toISOString().slice(0, 10) + "T00";
 }
 async function takeDevicePoints(r) {
   devicePoints = r;

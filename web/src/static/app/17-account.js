@@ -165,7 +165,8 @@ async function loadDevices() {
 }
 
 /// THE READER'S MERIT (docs/BOARD.md §"Merit"): the balance under its cap, what
-/// today minted, and — once priority is offered — the switch that spends it.
+/// today minted, and — once priority is offered — the switch that spends it;
+/// until then, that nothing spends it yet.
 function meritHtml() {
   const m = meritState;
   if (!m) return "";
@@ -174,7 +175,7 @@ function meritHtml() {
       <button class="ghost-btn btn-sm" data-auth="merit-auto" data-on="${m.auto_priority ? "no" : "yes"}">${aT(m.auto_priority ? "Turn off" : "Turn on")}</button></dd></div>` : "";
   return `<div class="block"><div class="bb"><dl class="kvs"><div class="kv"><dt>${aT("Merit")}</dt>
       <dd>${n(m.balance)} / ${n(m.cap)} · ${escHtml(trF(tr("{x} of {y} minted today (UTC)"), { x: Number(m.minted_today).toLocaleString(accountLocale()), y: Number(m.daily).toLocaleString(accountLocale()) }))}</dd></div>${prio}</dl>
-      <p class="set-note" style="margin:8px 0 0">${aT("Merit is minted from your contribution points, one for one: it cannot be bought or given away, and it never expires. Your contribution rank sets how much a day can mint and how much you can hold; the day starts at 00:00 UTC.")}</p></div></div>`;
+      <p class="set-note" style="margin:8px 0 0">${aT("Merit is minted from your contribution points, one for one: it cannot be bought or given away, and it never expires. Your contribution rank sets how much a day can mint and how much you can hold; the day starts at 00:00 UTC.")}${m.priority ? "" : ` ${aT("Nothing spends merit yet: it is kept for you until something does.")}`}</p></div></div>`;
 }
 
 async function loadAgents() {

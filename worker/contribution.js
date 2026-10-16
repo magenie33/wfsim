@@ -13,7 +13,7 @@
 //   POST /api/account/devices/label  { id, label }        → { ok }
 //   POST /api/account/devices/remove { id }               → { ok }
 //   POST /api/account/contribution   { named }    → { ok }
-//   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the page's midnight as a UTC hour;
+//   POST /api/board/points           { verifier, since? } → { points, recent, week, claimed, today? } — `since` the UTC day's first hour;
 //        the points are what no account holds yet, so 0 once it is claimed
 //   POST /api/board/ledger           { verifier, from? } → the device's ledger (`ledgerOf`), the signed-in reader's account its `you`
 //   POST /api/account/devices/ledger { id, from? }       → the same, for one of the account's devices by its six characters

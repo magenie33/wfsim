@@ -10,6 +10,24 @@ const COMPUTE_LOG_KEY = "wfsim-compute-log";
 const COMPUTE_LOG_MAX = 50;
 /// The task this browser is on: `{ kind, ...facts, started, done, total }`.
 let computeNow = null;
+/// HOW LONG THIS BROWSER COMPUTED TODAY (the UTC day): the time a task was in
+/// hand, counted between its signs of life — a start, a progress tick, an end —
+/// each gap at most `COMPUTED_GAP_MS`, so a page the browser froze holding a task
+/// adds nothing for the freeze. Kept in this browser, as its task list is.
+const COMPUTED_KEY = "wfsim-computed-today", COMPUTED_GAP_MS = 120_000;
+let computedLast = 0;
+const utcDay = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
+function computedToday() {
+  try { const v = JSON.parse(localStorage.getItem(COMPUTED_KEY) || "null"); return v && v.day === utcDay() ? Number(v.ms) || 0 : 0; }
+  catch (_) { return 0; }
+}
+function computedTick(now = Date.now()) {
+  if (computedLast) {
+    const from = Math.max(computedLast, Date.parse(utcDay(now) + "T00:00:00Z"), now - COMPUTED_GAP_MS);
+    if (now > from) try { localStorage.setItem(COMPUTED_KEY, JSON.stringify({ day: utcDay(now), ms: computedToday() + (now - from) })); } catch (_) { /* shown as nothing more */ }
+  }
+  computedLast = now;
+}
 let computeEditing = null;
 let computeRemoving = null;
 let computeDrawnAt = 0;
@@ -134,17 +152,20 @@ function computeLog() {
 /// A TASK BEGUN, advanced and ended — called by whatever does the work.
 function computeStart(task) {
   computeNow = { ...task, started: Date.now(), done: 0, total: 0 };
+  computedLast = 0; computedTick();
   computeRedraw();
   computeChrome();
 }
 /// `search`: a search's own status (08-checkpoint-api.js `quickFleet`), its starts drawn as lanes.
 function computeProgress(done, total, search) {
-  if (computeNow) { computeNow.done = done; computeNow.total = total; if (search) computeNow.search = search; }
+  if (computeNow) { computeNow.done = done; computeNow.total = total; if (search) computeNow.search = search; computedTick(); }
   computeRedraw(true);
 }
 function computeEnd(result) {
   const t = computeNow;
   computeNow = null;
+  if (t) computedTick();
+  computedLast = 0;
   if (t && result) {
     const { done: _d, total: _t, search: _s, ...facts } = t;
     const entry = { ...facts, at: Date.now(), ms: result.ms, ...(result.cpu_ms != null ? { cpu_ms: result.cpu_ms } : {}),
@@ -233,8 +254,11 @@ const computeAgo = (iso) => {
   if (m < 48 * 60) return tr("{n} h ago").replace("{n}", String(Math.floor(m / 60)));
   return new Date(t).toLocaleDateString(accountLocale());
 };
+/// AN HOUR OR MORE IS SAID IN HOURS: a day's core time summed over a machine's
+/// cores runs to hundreds of hours, and "16112 min" is not a number anyone reads.
 const computeTook = (ms) => (ms < 60000 ? tr("{n} s").replace("{n}", String(Math.max(1, Math.round(ms / 1000))))
-  : tr("{n} min").replace("{n}", String(Math.round(ms / 60000))));
+  : ms < 3_600_000 ? tr("{n} min").replace("{n}", String(Math.round(ms / 60000)))
+  : tr("{n} h").replace("{n}", (ms / 3_600_000).toLocaleString(accountLocale(), { maximumFractionDigits: 1 })));
 const computePts = (n) => escHtml(Number(n || 0).toLocaleString(accountLocale()));
 /// HOW LONG A TASK TOOK is the clock from taken to done. A board order's
 /// `cpu_ms` is its pieces' time SUMMED OVER ITS CORES — six cores for five
@@ -380,6 +404,13 @@ const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
 let computeOpenTask = null;
 const computeStill = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const computeCount = (x) => Number(x || 0).toLocaleString(accountLocale());
+/// WHEN "TODAY" STARTS OVER: 00:00 UTC, said in the reader's own time and zone.
+function computeDayHtml() {
+  const midnight = new Date(utcDay() + "T00:00:00Z");
+  const at = new Intl.DateTimeFormat(accountLocale(), { hour: "2-digit", minute: "2-digit" }).format(midnight);
+  const zone = new Intl.DateTimeFormat(accountLocale(), { timeZoneName: "short" }).formatToParts(midnight).find((x) => x.type === "timeZoneName");
+  return `<p class="set-note" data-day style="margin:6px 0 0">${escHtml(trF(tr("Today starts over every day at {time} ({zone}), for everyone at once."), { time: at, zone: zone ? zone.value : "" }))}</p>`;
+}
 function computeRecentHtml() {
   // NOT BEFORE THE META: a reader landing on /compute is drawn once before it
   // arrives, and a task names its weapon, ruler and metric through it.
@@ -388,7 +419,8 @@ function computeRecentHtml() {
     <div class="rt-today"><div class="rt-tile"><b data-tile="tasks"></b><span>${aT("tasks finished today")}</span></div>
       <div class="rt-tile gold" data-gold><b data-tile="points"></b><span>${aT("points credited today")}</span></div>
       <div class="rt-tile"><b data-tile="pending"></b><span>${aT("points pending verification")}</span></div>
-      <div class="rt-tile"><b data-tile="ms"></b><span>${aT("core time today")}</span></div></div>
+      <div class="rt-tile"><b data-tile="ms"></b><span>${aT("time computing today")}</span></div></div>
+    ${computeDayHtml()}
     <div data-now></div><div class="rt-list" data-list></div>
     <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
     <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another device, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
@@ -458,7 +490,7 @@ function computeLiveTiles(root) {
   // PENDING: results kept here or taken that no fact has confirmed yet (69-board-work.js `pendingPoints`).
   if (tile("pending")) computeRoll(tile("pending"), boardProtocol === 8 ? pendingPoints() : 0, (x) => `+${computeCount(Math.round(x))}`);
   // NONE IS NONE: `computeTook` never says less than a second.
-  computeRoll(tile("ms"), Number(day.ms || 0), (x) => (x < 500 ? "0" : computeTook(x)));
+  computeRoll(tile("ms"), computedToday(), (x) => (x < 500 ? "0" : computeTook(x)));
 }
 
 /// THE TASK BEING COMPUTED: one card that stays while computing is on, task or

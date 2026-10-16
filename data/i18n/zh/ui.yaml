@@ -2647,7 +2647,8 @@ ui:
   "The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.": "志愿者们的设备一起算出了 WF模拟 给所有人的免费功能。算出的一切免费给所有玩家，WF模拟 不会拿它赚钱。"
   "The volunteers whose devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.": "这些志愿者的设备一起算出了 WF模拟 给所有人的免费功能。算出的一切免费给所有玩家，WF模拟 不会拿它赚钱。"
   "{t} of core time": "各核心合计 {t}"
-  "core time today": 今日核心时间
+  "time computing today": 今天在线计算时长
+  "Today starts over every day at {time} ({zone}), for everyone at once.": "“今天”每天 {time}（{zone}）所有人同时重新计算。"
   "{n} device": "{n} 台设备"
   "{n} devices": "{n} 台设备"
   "Ranking": 排行
@@ -2721,6 +2722,7 @@ ui:
   "Turn on": 开启
   "Turn off": 关闭
   "Merit is minted from your contribution points, one for one: it cannot be bought or given away, and it never expires. Your contribution rank sets how much a day can mint and how much you can hold; the day starts at 00:00 UTC.": "功勋由你的贡献积分 1:1 铸出：不能购买，不能转让，永不过期。贡献段位决定每天最多铸多少、最多能存多少；每天从 UTC 0 点算起。"
+  "Nothing spends merit yet: it is kept for you until something does.": 功勋暂时还没有用途，先为你存着。
   "Contributor rank {n}": "贡献段位 {n}"
   "{x} / {y} experience to rank {n}": "{x} / {y} 经验，升到 {n} 段"
   "The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.": "名字前的徽章是贡献段位：10 积分算 1 经验，升段方式和游戏的段位一样。"
