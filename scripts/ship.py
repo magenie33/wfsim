@@ -19,6 +19,10 @@ asked which engine they run.
     python scripts/ship.py --verify     # only: do the two agree right now?
     python scripts/ship.py --no-push    # publish the channel, leave git alone
     python scripts/ship.py --no-bot     # everything but the QQ bot, said out loud
+    python scripts/ship.py --built      # site/ is already built (CI's artifact): publish it
+
+RUN BY `.github/workflows/ship.yml` once CI passes on main, the keys its
+secrets; by hand only where that workflow cannot (docs/DISTRIBUTION.md).
 
 A DIRTY TREE IS REFUSED, because what ships would then be in no commit and no
 later checkout could reproduce it. `--dirty` says so out loud.
@@ -26,6 +30,7 @@ later checkout could reproduce it. `--dirty` says so out loud.
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -44,6 +49,9 @@ CHANNEL = "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com"
 # The MCP server, and the file naming the engine it must be running.
 MCP = "https://mcp.wfsim.app/mcp"
 MCP_ENGINE = ROOT / "mcp" / "engine.js"
+# PINNED: the release job holds the signing key, and an unpinned `npx wrangler`
+# runs whatever the registry serves that minute.
+WRANGLER = "wrangler@4.151.0"
 
 
 def cargo() -> str:
@@ -128,6 +136,7 @@ def main() -> None:
     ap.add_argument("--no-push", action="store_true")
     ap.add_argument("--dirty", action="store_true")
     ap.add_argument("--no-bot", action="store_true")
+    ap.add_argument("--built", action="store_true")
     args = ap.parse_args()
 
     if args.verify:
@@ -154,7 +163,13 @@ def main() -> None:
             "out again.\nPass --dirty to publish anyway."
         )
 
-    run(sys.executable, str(ROOT / "scripts" / "build_site_app.py"))
+    # BUILT ALREADY (`--built`): CI's `site` job built and checked this tree's
+    # site/, and ship.yml laid it here — all but the board, the bots', whose
+    # stamp is taken again over the board this checkout holds.
+    if args.built:
+        run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
+    else:
+        run(sys.executable, str(ROOT / "scripts" / "build_site_app.py"))
     # The payload list is `desktop/build.rs`'s, and it is rebuilt HERE so the
     # channel cannot describe a `site/` older than the one just built.
     run(cargo(), "build", "--manifest-path", str(ROOT / "desktop" / "Cargo.toml"))
@@ -195,14 +210,21 @@ def main() -> None:
             run("git", "commit", "-m", "site: regenerate, and the desktop channel with it")
         else:
             print("\nsite/ is unchanged — nothing to commit")
-        run("git", "push")
+        # A PUSH REJECTED IN THE SHIP WORKFLOW IS A NEWER MAIN, not a failure:
+        # the workflow builds main again (`.github/workflows/ship.yml`, exit 75).
+        print("\n$ git push", flush=True)
+        if subprocess.run(("git", "push"), cwd=ROOT).returncode != 0:
+            if os.environ.get("GITHUB_ACTIONS"):
+                print("::notice::ship: main moved while this built — the workflow builds it again")
+                sys.exit(75)
+            sys.exit("ship: `git push` failed — nothing after this ran")
 
     run(*release)
     # …AND `latest.json` NAMES IT once the site serves it.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])
     # THE MCP SERVER AFTER THE PUSH, from the same tree: its engine is the one
     # just published, and a server deployed ahead of the site answers with it.
-    run(shutil.which("npx") or "npx", "wrangler", "deploy", "-c", str(ROOT / "mcp" / "wrangler.jsonc"))
+    run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "mcp" / "wrangler.jsonc"))
     # …AND THE BOT, the same engine on a server nothing else deploys to.
     if not args.no_bot:
         import ship_bot  # noqa: E402

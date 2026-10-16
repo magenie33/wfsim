@@ -208,7 +208,8 @@ def wiki_path(spec: dict) -> str:
 CARD_BG, CARD_TEXT, CARD_MUTED, CARD_GOLD = "#0e1014", "#f2f4f8", "#a6adbb", "#e8c37a"
 # CJK-capable, in preference order; the last entry is the graceful give-up.
 CARD_FONTS = ("C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/msyh.ttc",
-              "C:/Windows/Fonts/simhei.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+              "C:/Windows/Fonts/simhei.ttf", "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 
 
 def card_font(size: int):
@@ -755,9 +756,10 @@ def ship_native_engine() -> None:
     name, and `engine.json` naming it, its engine id, its SHA-256 and the rows
     the page proves it on against the wasm before using it (`82-desktop.js`).
 
-    BUILT ONLY WHERE IT CAN BE, on Windows, and only when the engine id moved —
-    the library is committed, so an unmoved engine keeps the bytes already
-    staged. Elsewhere a stale one is said, and harmless: the page compares its
+    BUILT ONLY WHERE IT CAN BE — on Windows, or elsewhere through `cargo xwin`
+    (the ship workflow's Linux runner) — and only when the engine id moved: the
+    library is committed, so an unmoved engine keeps the bytes already staged.
+    Neither at hand, a stale one is said, and harmless: the page compares its
     own engine id with the one named here and computes on wasm when they differ.
     """
     want = engine_id()
@@ -769,14 +771,15 @@ def ship_native_engine() -> None:
     if current:
         print(f"+ native engine {want} unchanged — not rebuilt")
         return
-    if sys.platform != "win32":
+    xwin = sys.platform != "win32"
+    if xwin and not shutil.which("cargo-xwin"):
         print(f"!! desktop/payload/native/ is engine {named.get('engine')}, this tree is {want}: "
-              "the desktop client computes on wasm until a build on Windows")
+              "the desktop client computes on wasm until a build on Windows or with cargo-xwin")
         return
     # THE C RUNTIME LINKED IN (`crt-static`): a third party loads this DLL on
     # machines without the VC++ 2015-2022 redistributable, where it would not load.
-    print("+ cargo build --release -p wfsim-native --target", NATIVE_TARGET, "(crt-static)")
-    subprocess.run(["cargo", "build", "--release", "-p", "wfsim-native", "--target", NATIVE_TARGET], cwd=ROOT, check=True,
+    print("+ cargo", "xwin build" if xwin else "build", "--release -p wfsim-native --target", NATIVE_TARGET, "(crt-static)")
+    subprocess.run(["cargo", *(["xwin", "build"] if xwin else ["build"]), "--release", "-p", "wfsim-native", "--target", NATIVE_TARGET], cwd=ROOT, check=True,
                    env={**os.environ, "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS": "-C target-feature=+crt-static"})
     body = NATIVE_DLL.read_bytes()
     sha = hashlib.sha256(body).hexdigest()
@@ -1119,8 +1122,11 @@ def ladder_cells() -> list:
     return out
 
 
+@functools.lru_cache(maxsize=1)
 def board_best() -> dict:
     """weapon id -> [(ruler name, row)], the best RIVEN-FREE row under each.
+    READ ONCE A BUILD: every weapon page asks, and each read is all of
+    `site/board/` — twelve hundred of them were most of a build's time.
 
     THE NUMBER TRAVELS WITH ITS FIGHT. A score is meaningless without the
     scenario that produced it, and a benchmark's `name` already states that

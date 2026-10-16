@@ -131,6 +131,19 @@ def put(c: dict, key: str, body: bytes, content_type: str | None = None) -> int:
         ) from e
 
 
+def get(c: dict, key: str) -> bytes | None:
+    """One object's bytes, or None where the bucket has none."""
+    req = urllib.request.Request(f"https://{host(c)}/{key}", method="GET")
+    req.add_header("Authorization", sign("get", "/" + key, c["secret_id"], c["secret_key"]))
+    try:
+        with _open(req, 600) as r:
+            return r.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise SystemExit(f"download failed for {key}: HTTP {e.code}") from e
+
+
 def head(c: dict, key: str) -> int | None:
     """Object size if it exists, else None."""
     url = f"https://{host(c)}/{key}"

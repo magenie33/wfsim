@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A BRANCH'S BUILD ON DEMAND, to try a change to the build itself before main.
+  workflow_dispatch:
 
 jobs:
   test:
@@ -78,14 +80,54 @@ jobs:
           if ! git cat-file -e "$from^{commit}" 2>/dev/null; then from="$HEAD_SHA~1"; fi
           node scripts/check_commit_trailers.mjs "$from..$HEAD_SHA"
 
+  # THE SITE THIS COMMIT BUILDS — built here, once: `parity` checks it and
+  # ship.yml publishes this very artifact, so what ships is what was checked.
+  # A pull request has no keys to the build cache and is checked against the
+  # committed site/ instead.
+  site:
+    if: github.event_name != 'pull_request'
+    # PINNED, not ubuntu-latest: the image a release is built on moves when we move it.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/site-tools
+        with:
+          cos_secret_id: ${{ secrets.COS_SECRET_ID }}
+          cos_secret_key: ${{ secrets.COS_SECRET_KEY }}
+          cos_bucket: ${{ secrets.COS_BUCKET }}
+          cos_region: ${{ secrets.COS_REGION }}
+      - name: Build site/
+        run: python scripts/build_site_app.py
+      # NOT site/board/: the board bots own it, and ship.yml lays this over a
+      # checkout whose board may be newer than the one this read.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: site-built
+          path: |
+            site/
+            !site/board/
+            desktop/payload/
+            mcp/engine.js
+          # site/.well-known/ is the agents' door, and a dot directory.
+          include-hidden-files: true
+          retention-days: 7
+
   # The page is not something `cargo test` can see. This drives headless
-  # Chrome over the COMMITTED site/ — the artefact Cloudflare deploys — and
-  # asserts the builder and the optimizer offer the same options and the same
-  # visibility on every axis of every weapon. No Rust, so it runs alongside.
+  # Chrome over the site this commit builds — the artefact Cloudflare will
+  # deploy — and asserts the builder and the optimizer offer the same options
+  # and the same visibility on every axis of every weapon.
   parity:
+    needs: site
+    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - if: needs.site.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: .
       - uses: actions/setup-node@v4
         with:
           # >= 22 for the global WebSocket the CDP client uses.

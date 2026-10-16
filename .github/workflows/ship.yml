@@ -1,0 +1,154 @@
+# SHIP WHAT MAIN SAYS, ONCE CI HAS PASSED IT — `scripts/ship.py --built`.
+#
+# A push is source only. CI's `site` job builds `site/` — the desktop client's
+# Windows engine library through `cargo xwin` — and its page checks run on that
+# build. When CI passes on main, this lays that very artifact over main, commits
+# it, pushes, publishes the desktop channel, deploys the MCP server and the QQ
+# bot, and verifies that all four serve one engine: what ships is what was
+# checked, built once, on nobody's machine, from nothing uncommitted.
+#
+# WHAT IS DUE: the newest commit on main touching anything but the build's own
+# products (`site/`, `desktop/payload/`, `mcp/engine.js`) and the board bots'
+# (`data/board_state.yaml`), against the commit `site/release.json` was built
+# from. Equal, there is nothing to ship — so every trigger is safe to fire
+# twice, a bot's commit included. A newer source commit than the one CI built
+# waits for its own CI run, which brings this back.
+#
+# THE KEYS LIVE IN THE `release` ENVIRONMENT, which only main may use, and only
+# the `ship` job asks for it. Every action is pinned to a commit and every tool
+# downloaded to a digest (.github/actions/site-tools): each is code run beside
+# the signing key.
+name: ship
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: lay the build and build the shell, publish nothing
+        type: boolean
+        default: false
+# ONE AT A TIME, never cancelled half way: a run stopped between its push and
+# its channel publish is the drift this exists to end. A newer trigger waits.
+concurrency:
+  group: ship
+  cancel-in-progress: false
+permissions:
+  contents: read
+
+jobs:
+  # ---- 1. is there anything to ship, and which CI run built it? -----------
+  due:
+    runs-on: ubuntu-26.04
+    outputs:
+      go: ${{ steps.due.outputs.go }}
+      run: ${{ steps.due.outputs.run }}
+      src: ${{ steps.due.outputs.src }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 200
+      - id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          src=$(git log -1 --format=%H -- . ':!site' ':!desktop/payload' ':!mcp/engine.js' ':!data/board_state.yaml')
+          built=$(jq -r '.commit' site/release.json)
+          echo "source ${src:0:10}, site/ built from $built"
+          if [ "${built%+}" = "$built" ] && [ "${src:0:${#built}}" = "$built" ]; then
+            echo "::notice::ship: site/ is already built from ${src:0:10} — nothing to ship"
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # CI ON THAT COMMIT, passed, its build kept: nothing else is shipped.
+          run=$(gh run list --workflow CI --commit "$src" --json databaseId,conclusion \
+                  --jq '[.[] | select(.conclusion == "success")][0].databaseId // empty')
+          if [ -z "$run" ]; then
+            echo "::notice::ship: CI has not passed ${src:0:10} yet — its own CI run brings this back"
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "go=true" >> "$GITHUB_OUTPUT"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "src=$src" >> "$GITHUB_OUTPUT"
+
+  # ---- 2. lay the build, push, publish, deploy, verify ----------------------
+  ship:
+    needs: due
+    if: needs.due.outputs.go == 'true'
+    runs-on: ubuntu-26.04
+    environment: release
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 200
+      - uses: ./.github/actions/site-tools
+        with:
+          build: "false"
+          cos_secret_id: ${{ secrets.COS_SECRET_ID }}
+          cos_secret_key: ${{ secrets.COS_SECRET_KEY }}
+          cos_bucket: ${{ secrets.COS_BUCKET }}
+          cos_region: ${{ secrets.COS_REGION }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: ${{ runner.temp }}/built
+          run-id: ${{ needs.due.outputs.run }}
+          github-token: ${{ github.token }}
+      # THE BUILD, EXACTLY: what it holds replaces what main holds, a file it
+      # dropped included — all but site/board/, the bots', which it never carried.
+      - name: lay CI's build over main
+        id: lay
+        env:
+          SRC: ${{ needs.due.outputs.src }}
+        run: |
+          set -euo pipefail
+          now=$(git log -1 --format=%H -- . ':!site' ':!desktop/payload' ':!mcp/engine.js' ':!data/board_state.yaml')
+          # A NEWER SOURCE COMMIT is its own CI run's to ship, and that run brings this back.
+          if [ "$now" != "$SRC" ]; then
+            echo "::notice::ship: main moved past ${SRC:0:10} since this run began — its CI ships it"
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          built="$RUNNER_TEMP/built"
+          find site -mindepth 1 -maxdepth 1 ! -name board -exec rm -rf {} +
+          rm -rf desktop/payload
+          (cd "$built" && tar cf - --exclude=site/board .) | tar xf -
+          git status --short | head -20
+      - name: ship
+        if: steps.lay.outputs.skip != 'true'
+        env:
+          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKERS_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          UPDATE_KEY: ${{ secrets.UPDATE_KEY }}
+          BOT_TARGET: ${{ secrets.BOT_TARGET }}
+          BOT_SSH_KEY: ${{ secrets.BOT_SSH_KEY }}
+          BOT_KNOWN_HOSTS: ${{ secrets.BOT_KNOWN_HOSTS }}
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          # THE KEYS AS ship.py READS THEM, under private/ (gitignored), for this step alone.
+          (umask 077; mkdir -p private/qq
+           printf '%s' "$UPDATE_KEY" > private/wfsim_update_key
+           printf '%s' "$BOT_TARGET" > private/qq/bot.json
+           printf '%s\n' "$BOT_SSH_KEY" > private/qq/wfsim-bot
+           printf '%s\n' "$BOT_KNOWN_HOSTS" > private/qq/known_hosts)
+          trap 'rm -rf private' EXIT
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "$DRY_RUN" = "true" ]; then python scripts/ship.py --built --dry-run; exit 0; fi
+          code=0; python scripts/ship.py --built || code=$?
+          # 75: main moved while this ran — look again, after this run.
+          if [ "$code" = 75 ]; then gh workflow run ship.yml --ref main; exit 0; fi
+          exit "$code"

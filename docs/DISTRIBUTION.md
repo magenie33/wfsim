@@ -110,10 +110,10 @@ toolchain). `ship.py` holds the two outputs against each other on every run.
 
 What the client ADDS is `desktop/payload/`, at the paths it is served under:
 `native/engine.json` and the library it names, `native/wfsim_engine.<hash>.dll`.
-**GENERATED, like `site/`, never hand-edited, and committed with it**, because
-the stage job publishes the committed tree and cannot build a Windows library.
-`build_site_app.py` writes it — on Windows, when the engine id moved; elsewhere
-it says the library is stale, and a stale one is harmless: the page uses it only
+**GENERATED, like `site/`, never hand-edited, and committed with it** by the
+ship workflow (§"Shipping"). `build_site_app.py` writes it when the engine id
+moved — on Windows, or on Linux through `cargo xwin`; with neither it says the
+library is stale, and a stale one is harmless: the page uses it only
 when its engine id is the page's own. It is never deployed to the web. Both
 producers append it whole after `site/`'s files, and refuse a path both hold.
 
@@ -155,6 +155,27 @@ reads as an attack and is a publish landing between two GETs.
 A client verifies the signature, fetches `manifest/<digest>.json`, and checks
 that what came back hashes to the digest it just verified. The manifest is then
 content-addressed and cacheable for ever.
+
+### Shipping
+
+**A push of source to `main` is the whole of shipping; nobody commits `site/`.**
+
+1. CI's `site` job builds `site/`, `desktop/payload/` and `mcp/engine.js` on
+   Linux (`.github/actions/site-tools` names every tool, pinned; the gitignored
+   `web/cache/` comes from the bucket, `scripts/build_cache.py`) and keeps
+   them as an artifact. `parity` runs the page checks on that build.
+2. Once CI passes on main, `.github/workflows/ship.yml` lays that artifact over
+   main — all but `site/board/`, the bots' — and runs `ship.py --built`:
+   commit, push, stage and sign the channel, the engine library, the MCP
+   server, the bot, and the read-back that all four serve one engine.
+3. What is due is decided by commit: the newest touching anything but the
+   build's products and the board bots', against the commit
+   `site/release.json` names. Equal, nothing ships — so any trigger may fire
+   twice. A main that moved while a run worked is the next CI run's to ship.
+
+The signing key, the bot's SSH key and its address live in the `release`
+environment, which only `main` may use and only the `ship` job asks for.
+`stage.yml` and `promote.py` remain for staging or signing by hand.
 
 ### Keys
 

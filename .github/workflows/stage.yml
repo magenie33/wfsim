@@ -14,9 +14,9 @@
 # asked to be able to run teaches people to ignore the colour.
 name: stage
 
+# BY HAND ONLY: ship.yml stages and signs every release itself, and a push of
+# source alone would stage a site/ no longer the one about to ship.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # One at a time, and the newest wins: a run staging an older commit while a

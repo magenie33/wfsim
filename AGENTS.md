@@ -86,16 +86,13 @@ Each of these fails silently. That is why it is here and not in a document.
   treat a yaml as a source dependency, so a test run right after a yaml edit
   reads the data compiled into the previous binary. When proving a check bites,
   revert the data, `touch` any `.rs` in that crate, then run.
-- **Regenerate the site after frontend or engine changes**: `python
-  scripts/build_site_app.py`, and commit the regenerated `site/` (crawlers
-  read its prerendered pages). wasm-bindgen-cli must match Cargo.lock.
-- **SHIPPING IS `python scripts/ship.py`, not a push.** A push deploys `site/`
-  and NOTHING reaches the desktop client, whose content channel is published
-  separately; the two then drift silently, and the client is the site — same
-  files, same bugs. `--verify` asks whether they agree right now.
+- **SHIPPING IS A PUSH OF SOURCE TO `main`. NEVER COMMIT `site/`.** CI's `site`
+  job builds it and the page checks run on that build; once CI passes,
+  `ship.yml` publishes that very build — `site/`, the desktop channel, the MCP
+  server, the bot — as one (`ship.py --built`). A `site/` committed by hand is
+  a release no channel follows. `ship.py --verify`: do all four agree now?
 - **CI is `cargo clippy --workspace --all-targets -- -D warnings` + `cargo test
-  --workspace`.** Run both before pushing. Deploy = push to `main`; Cloudflare
-  picks up `site/` in 1–2 minutes and there is no deploy step in CI.
+  --workspace`.** Run both before pushing.
 - **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/scores.yml` does it and
   the bot commits `site/board/`; the numbers come from the `scores` table and
   nothing local may write one. Running `wfsim-board` by hand in the repo
@@ -191,8 +188,8 @@ Each of these fails silently. That is why it is here and not in a document.
 - **THE SLOW STEP GOES LAST.** `build_site_app.py` is minutes and each browser
   check is another, so running that loop to DISCOVER the next thing to fix is
   how an afternoon goes. Enumerate the call sites by READING first, debug
-  against the dev server (`openApp({base})`), regenerate `site/` once, then run
-  the checks — `docs/DEVELOPMENT.md`. **The dev server reads `site/` for the
+  against the dev server (`openApp({base})`), build `site/` once (never commit
+  it), then run the checks — `docs/DEVELOPMENT.md`. **The dev server reads `site/` for the
   board**, so a board check there is only as current as the last build.
 - Run the checks a change touches — `docs/CHECKS.md` lists what each asserts.
   They drive headless Chrome over CDP through `scripts/cdp.mjs`.

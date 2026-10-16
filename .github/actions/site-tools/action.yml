@@ -1,0 +1,99 @@
+# WHAT BUILDING AND SHIPPING `site/` NEEDS ON A LINUX RUNNER, said once for
+# ci.yml's `site` job (which builds) and ship.yml (which publishes the build).
+#
+# Every action is pinned to a commit and every tool downloaded to a digest:
+# ship.yml runs this beside the signing key, and a tag can be moved under it.
+name: site tools
+description: the toolchain, tools and build cache scripts/build_site_app.py and scripts/ship.py run with
+inputs:
+  build:
+    description: "'true': the wasm tools, cargo-xwin and web/cache too, for building site/"
+    default: "true"
+  cos_secret_id: { required: true }
+  cos_secret_key: { required: true }
+  cos_bucket: { required: true }
+  cos_region: { required: true }
+runs:
+  using: composite
+  steps:
+    # THE DESKTOP SHELL'S LIBRARIES (Tauri's list for Ubuntu), a CJK font for the
+    # link cards, which drawn without one are boxes, and the runner's newest
+    # clang first for cargo xwin: the MSVC headers refuse one before 19
+    # ("STL1000: expected Clang 19"). Runs on ubuntu-26.04, which carries 20-22.
+    - shell: bash
+      run: |
+        set -euo pipefail
+        llvm=$(ls -d /usr/lib/llvm-* | sort -V | tail -1); v=${llvm##*-}
+        [ "$v" -ge 19 ] || { echo "::error::newest clang on this runner is $v; cargo xwin needs 19"; exit 1; }
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev           fonts-noto-cjk "lld-$v" > /dev/null
+        test -f /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
+        echo "$llvm/bin" >> "$GITHUB_PATH"
+    - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+      with:
+        # keep in sync with mise.toml
+        toolchain: "1.97.1"
+        targets: wasm32-unknown-unknown, x86_64-pc-windows-msvc
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      with:
+        workspaces: |
+          . -> target
+          desktop -> desktop/target
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      with:
+        python-version: "3.14"
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: "22.20.0"
+    - shell: bash
+      run: python -m pip install --quiet pyyaml==6.0.3 pillow==12.2.0
+    - if: inputs.build == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        bindgen=$(awk '/^name = "wasm-bindgen"$/ {getline; gsub(/version = |"/, ""); print; exit}' Cargo.lock)
+        [ "$bindgen" = "0.2.126" ] || { echo "::error::Cargo.lock names wasm-bindgen $bindgen; pin its digest in .github/actions/site-tools"; exit 1; }
+        tools="$RUNNER_TEMP/tools"; mkdir -p "$tools"
+        get() { curl -sSfL "$1" -o "$tools/t.tgz" && echo "$2  $tools/t.tgz" | sha256sum -c --quiet && tar xzf "$tools/t.tgz" -C "$tools" && rm "$tools/t.tgz"; }
+        get "https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.126/wasm-bindgen-0.2.126-x86_64-unknown-linux-musl.tar.gz" \
+          064948d58e2d6c0a745216477a639ba696216d6309aaa902939d1b865b1d869d
+        get "https://github.com/WebAssembly/binaryen/releases/download/version_132/binaryen-version_132-x86_64-linux.tar.gz" \
+          195ddc94f9bc89f45abdabb0b9eea86023d727ba90eac8b35b80f2544fc30572
+        get "https://github.com/rust-cross/cargo-xwin/releases/download/v0.23.1/cargo-xwin-v0.23.1.x86_64-unknown-linux-musl.tar.gz" \
+          c492c6dfb7e5ac0eee586b796e0fc950ba13077e7f0bbb046f445d71790d5360
+        echo "$tools/wasm-bindgen-0.2.126-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
+        echo "$tools/binaryen-version_132/bin" >> "$GITHUB_PATH"
+        echo "$tools" >> "$GITHUB_PATH"
+        echo "XWIN_ACCEPT_LICENSE=1" >> "$GITHUB_ENV"
+    # THE MSVC RUNTIME cargo-xwin links the desktop library against, kept — the
+    # runtime alone: its clang-cl links name this image's clang, and restored on
+    # another image they block cargo xwin making its own ("File exists").
+    - if: inputs.build == 'true'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ~/.cache/cargo-xwin/xwin
+        key: cargo-xwin-0.23.1-runtime
+    # THE BUILD'S CACHE (scripts/build_cache.py), kept by the digest the bucket names.
+    - if: inputs.build == 'true'
+      id: digest
+      shell: bash
+      env:
+        COS_SECRET_ID: ${{ inputs.cos_secret_id }}
+        COS_SECRET_KEY: ${{ inputs.cos_secret_key }}
+        COS_BUCKET: ${{ inputs.cos_bucket }}
+        COS_REGION: ${{ inputs.cos_region }}
+      run: echo "digest=$(python scripts/build_cache.py digest)" >> "$GITHUB_OUTPUT"
+    - if: inputs.build == 'true'
+      id: kept
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: web/cache
+        key: build-cache-${{ steps.digest.outputs.digest }}
+    - if: inputs.build == 'true' && steps.kept.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        COS_SECRET_ID: ${{ inputs.cos_secret_id }}
+        COS_SECRET_KEY: ${{ inputs.cos_secret_key }}
+        COS_BUCKET: ${{ inputs.cos_bucket }}
+        COS_REGION: ${{ inputs.cos_region }}
+      run: python scripts/build_cache.py pull
