@@ -36,25 +36,22 @@ missing=$(mktemp)
 : > "$missing"
 orphans=$(mktemp)
 : > "$orphans"
-for id in $("$BOARD" --rulers); do
-  one=$(mktemp)
-  # `--gate` IS WHAT MAKES THE ARRIVALS PATH OBEY THE ENTRY LINE. A build that
-  # reaches a tenth of some group's leader keeps earning every row it lacks; one
-  # that reaches it nowhere keeps the facts it has and is asked for nothing more.
-  # The RESCORE button in `queue.yml` deliberately does NOT pass it — a model
-  # correction is the case where a parked build may deserve another look.
-  "$BOARD" "$id" \
-    --dry-run \
-    --gate \
-    --facts-in "$FACTS" \
-    --queue-in "$OUT" \
-    --queue-missing "$one" \
-    --queue-orphans "$one.orphans" \
-    < "$LIB" > /dev/null
-  cat "$one" >> "$missing"
-  cat "$one.orphans" >> "$orphans" 2>/dev/null || true
-  rm -f "$one" "$one.orphans"
+parts=$(mktemp -d)
+# `--gate` IS WHAT MAKES THE ARRIVALS PATH OBEY THE ENTRY LINE. A build that
+# reaches a tenth of some group's leader keeps earning every row it lacks; one
+# that reaches it nowhere keeps the facts it has and is asked for nothing more.
+# The RESCORE button in `queue.yml` deliberately does NOT pass it — a model
+# correction is the case where a parked build may deserve another look.
+# THE RULERS AT ONCE (`each_ruler.sh`), each into its own files, joined in
+# roster order.
+export WFSIM_BOARD="$BOARD" LIB FACTS OUT PARTS="$parts"
+bash scripts/each_ruler.sh '"$WFSIM_BOARD" "$id" --dry-run --gate --facts-in "$FACTS" --queue-in "$OUT" \
+  --queue-missing "$PARTS/$id.missing" --queue-orphans "$PARTS/$id.orphans" < "$LIB" > /dev/null'
+for id in $("$BOARD" --rulers | tr -d '\r'); do
+  cat "$parts/$id.missing" >> "$missing" 2>/dev/null || true
+  cat "$parts/$id.orphans" >> "$orphans" 2>/dev/null || true
 done
+rm -rf "$parts"
 
 # A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
 # one run asking a whole board floods the factory's open questions. At most

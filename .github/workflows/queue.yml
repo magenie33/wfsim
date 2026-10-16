@@ -198,8 +198,10 @@ jobs:
           set -euo pipefail
           older=$(date -u -d '3 days ago' +'%Y-%m-%dT%H:%M:%S.000Z')
           : > refresh-all.ndjson
+          # THE RULERS AT ONCE (scripts/each_ruler.sh), joined in roster order.
+          export older
+          bash scripts/each_ruler.sh './target/release/wfsim-board "$id" --dry-run --gate --facts-in facts-known.ndjson --queue-in queue.ndjson --queue-older "$older" --queue-missing "refresh-$id.ndjson" < library.json > /dev/null'
           for id in $(./target/release/wfsim-board --rulers); do
-            ./target/release/wfsim-board "$id"               --dry-run               --gate               --facts-in facts-known.ndjson               --queue-in queue.ndjson               --queue-older "$older"               --queue-missing "refresh-$id.ndjson"               < library.json > /dev/null
             cat "refresh-$id.ndjson" >> refresh-all.ndjson
           done
           live=$(curl -s --connect-timeout 15 --max-time 120 -X POST -H "Authorization: Bearer $FACTORY_TOKEN" -H "content-type: application/json" -H "user-agent: wfsim-scorer" --data-binary '{"witness":"official:queue","report":"refresh_live"}' "$FACTORY_ORIGIN/api/tasks/official/report" | jq -r '.n // empty') || live=""
