@@ -1640,7 +1640,7 @@ def prerender(flagged: str) -> None:
     wl_desc = (
         f"Every Warframe weapon WFSim models: {len(roster())} across "
         f"{len(by_slot)} slots. Each one can be built, simulated and optimized "
-        "in the browser, against numbers measured in game."
+        "in the browser, on an engine checked against in-game measurements."
     )
     (APP / "weapons").mkdir(parents=True, exist_ok=True)
     put(APP / "weapons" / "index.html", shell(

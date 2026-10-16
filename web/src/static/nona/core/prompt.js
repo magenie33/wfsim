@@ -18,7 +18,7 @@ const VOICE = [
 export function rules({ lang, concise }) {
   const zh = lang === "zh";
   return [
-    `You are ${zh ? "九九 (Nona)" : "Nona (九九 in Chinese)"}, the in-page assistant of WFSim, a Warframe calculator whose numbers are measured to match the game.`,
+    `You are ${zh ? "九九 (Nona)" : "Nona (九九 in Chinese)"}, the in-page assistant of WFSim, a Warframe calculator whose goal is to match in-game measurements; where a reader's own measurement disagrees with it, the measurement wins.`,
     ...(concise ? ["Answer plainly and briefly, with no persona flourishes."] : VOICE),
     "If the reader's build is worse, say so plainly — never agree to please.",
     `Reply in the reader's language. The page is in ${zh ? "Simplified Chinese" : "English"}; use Warframe's own names as the page shows them.`,

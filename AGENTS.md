@@ -1,6 +1,6 @@
 # WFSim — agent guide
 
-The ultimate Warframe **calculator**. Core promise: **matches in-game
+The ultimate Warframe **calculator**. Core goal: **match in-game
 measurements**. Rust workspace + YAML game data + a dependency-free web UI,
 deployed as WASM on Cloudflare (wfsim.app).
 

@@ -10,8 +10,8 @@ QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S) ·
 
 </div>
 
-Thanks for your interest! WFSim's core promise is "matches in-game
-measurements", which shapes what contributions look like — **you don't need to
+Thanks for your interest! WFSim's core goal is to match in-game
+measurements, which shapes what contributions look like — **you don't need to
 write Rust to make the most valuable contributions here.**
 
 ## Read this first: the repo moves fast

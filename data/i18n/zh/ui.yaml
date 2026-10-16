@@ -19,7 +19,7 @@ ui:
   "Every number here is the WFSim engine's — open the link to run it yourself.": "这里的每个数字都来自 WF模拟 引擎——打开链接，自己跑一遍。"
   "Stance": 架式
   "Back it ↗": "支持一下 ↗"
-  "The Warframe calculator that matches the game, measured item by item. The calculator is free for everyone, and the same for everyone.":
+  "A Warframe calculator built to match the game, checked against in-game measurements item by item. The calculator is free for everyone, and the same for everyone.":
     "一个对着游戏实测、逐项校准的 Warframe 计算器。计算器对所有人免费，对所有人都一样。"
   "{n} results": "{n} 个结果"
   "Send": 发送
@@ -908,8 +908,8 @@ ui:
   "One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon.": 这是玩家实际会打的一场具体战斗，按它本来的样子来测，不代表大多数情况：一整支小队面对的爆破使，由一把武器单独拆掉。
   "One specific fight players run, measured as it is rather than as a stand-in for most play: the Eximus Corrupted Heavy Gunner of the Void Fissures, taken apart by one weapon.": 这是玩家实际会打的一场具体战斗，按它本来的样子来测，不代表大多数情况：虚空裂缝里的卓越者堕落重型机枪手，由一把武器单独拆掉。
   "Skull Shots and Stinging Truth, the Viper-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Skull Shots」和「Stinging Truth」，Viper 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
-  "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
-    有时候它会说：数字没错，是游戏错了——顺带指出那个下次热修可能就没了的 bug。
+  "Where the game does something its card does not say, it follows the game and says so — a hotfix could change that number.":
+    有时游戏自己的行为和卡面不符，它会照实标出来——以后热修可能会改变这个数字。
   "Sort": 排序
   "Not offered here: Spring-Loaded Broadhead and the bow-exclusive Thunderbolt. Thunderbolt turns every arrow into a grenade, a second damage source.": "这里不提供：Spring-Loaded Broadhead 和弓专属的 Thunderbolt。Thunderbolt 会把每支箭变成一颗手雷，是一整个第二伤害来源。"
   "Not offered here: Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt.": "这里不提供：Spring-Loaded Broadhead、Amalgam Daikyu Target Acquired 和弓专属的 Thunderbolt。"
