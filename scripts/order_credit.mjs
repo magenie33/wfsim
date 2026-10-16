@@ -10,11 +10,12 @@
 // running it beside `ship_facts.sh` every minute tells the factory each fact once.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { BOARD_PRODUCERS } from "../worker/board_tasks.js";
 
 const ORIGIN = process.env.FACTORY_ORIGIN || "https://wfsim.app";
 const WITNESS = process.env.WITNESS || "official:scorer";
-/// The board's producers, whose demands a fact line answers (worker/board_tasks.js `BOARD_PRODUCERS`).
-export const BOARD_KINDS = ["new_build", "refresh", "sweep"];
+/// The board's producers, whose demands a fact line answers.
+export const BOARD_KINDS = Object.keys(BOARD_PRODUCERS);
 const PER_CALL = 200;
 
 /// ONE CALL TO THE OFFICIAL WITNESS'S DOOR (worker/factory.js `officialRoute`).

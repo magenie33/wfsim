@@ -16,7 +16,7 @@ import { verifyRoute, LEASE_MS, PACK_PROTOCOL as PROTOCOL, PACKS_HELD, PACK_FIRS
 import { RENEW_MS } from "../worker/tasks.js";
 import { setDial, forgetDials } from "../worker/dials.js";
 import { costOf } from "../worker/factory_calls.js";
-import { boardTasksRoute } from "../worker/board_tasks.js";
+import { boardTasksRoute, BOARD_PRODUCERS } from "../worker/board_tasks.js";
 import { officialRoute, refusalsFor } from "../worker/factory.js";
 refusalsFor(true);
 import { coolDownMs } from "../worker/tasks.js";
@@ -103,6 +103,15 @@ check("...a new build's by `new_build`, an old build's in the same batch by `swe
   (await demand("one")).producer === "new_build" && (await demand("old")).producer === "sweep");
 check("...and its question is the build's record on the ruler, simulated",
   (await question("one")).verb === "simulate" && JSON.parse((await question("one")).request).record.weapon === "braton_prime");
+// A SURVEY'S WINNER, submitted as WFSim (`system`), is its own producer and
+// due in three days: asked as a new build, a batch of them starved the rest.
+await build("surveyed");
+await L.run("INSERT INTO queue (batch, build_id, ruler, mode, initiator) VALUES (?, 'surveyed', 'standard_single_target', 'base', 'system')", arrivals);
+await ask(arrivals, "surveyed");
+const surveyAsk = await demand("surveyed") || {};
+check("...a survey's winner by `survey_build`, due three days after it is asked",
+  surveyAsk.producer === "survey_build" && Date.parse(surveyAsk.due_at) - Date.parse(surveyAsk.asked_at) === 3 * 86_400_000,
+  `${surveyAsk.producer} ${surveyAsk.asked_at} -> ${surveyAsk.due_at}`);
 await build("cell");
 await L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, 'cell', 'standard_single_target__sp200', 'base')", arrivals);
 await post(boardTasksRoute, "/api/board/ask", { batch: arrivals, rows: [{ identity: "cell", ruler: "standard_single_target__sp200", mode: "base" }] }, TOKEN);
@@ -242,6 +251,8 @@ await L.run("UPDATE questions SET lease = 'x', lease_until = '2999-01-01T00:00:0
 // THE SCORER'S OWN READ, run on the schema: the batches in order, then each
 // one's rows after a cursor along the key.
 const body = (...a) => JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", ...a]).toString());
+check("the scorer claims every board producer the worker asks by",
+  JSON.stringify(body("claim").producers) === JSON.stringify(Object.keys(BOARD_PRODUCERS)), JSON.stringify(body("claim").producers));
 const listed = body("batches");
 check("the read lists the batch that holds rows", (await L.all(listed.sql, ...listed.params)).some((b) => b.batch === arrivals));
 const page = body("page", "100", arrivals);

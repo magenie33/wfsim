@@ -73,7 +73,7 @@ page_body() {
 FACTORY_ORIGIN="${FACTORY_ORIGIN:-https://wfsim.app}"
 # THE BOARD'S KINDS (worker/board_tasks.js `BOARD_PRODUCERS`): every question a
 # board row is, whoever asked it.
-BOARD_KINDS='["new_build","refresh","sweep"]'
+BOARD_KINDS='["new_build","survey_build","refresh","sweep"]'
 WITNESS="${WITNESS:-official:scorer}"
 CLAIM_PAGE=2000
 CLAIM_MAX="${CLAIM_MAX:-40000}"

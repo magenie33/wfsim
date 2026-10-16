@@ -2,7 +2,8 @@
 // THE BOARD AS A PRODUCER of the fact factory (worker/tasks.js; docs/BOARD.md
 // §"Compute orders"). Every owed row — `queue` holds what is owed — is a
 // question: verb `simulate`, request `{ record, ruler, mode }`, asked by
-// `new_build` (a new build's row, someone waiting to see it ranked), `refresh`
+// `new_build` (a new build's row, someone waiting to see it ranked),
+// `survey_build` (a survey's winner's row, WFSim's own), `refresh`
 // (a row measured three days ago or more, due when it is fifteen) or `sweep` (a
 // rescore's, or an older build's first pass on a ruler), whose deadlines are
 // worker/factory.js `DEADLINE_MS` and `REFRESH_WITHIN_MS`. What a row is FOR stays here: an agreed number written to
@@ -76,7 +77,7 @@ const boardProducer = {
     ]);
   },
 };
-export const BOARD_PRODUCERS = { new_build: boardProducer, refresh: boardProducer, sweep: boardProducer };
+export const BOARD_PRODUCERS = { new_build: boardProducer, survey_build: boardProducer, refresh: boardProducer, sweep: boardProducer };
 /// THE BOARD'S KINDS as an SQL list, for a query over its demands.
 export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ")})`;
 
@@ -113,17 +114,21 @@ export const boardPackTask = (q) => ({ question: q.question, identity: q.demands
 /// batch, and is a sweep. A `backfill-` batch is the reconciliation's — rows
 /// nobody ordered — and always a sweep: classed by build age, a day's library
 /// growth queued inside `new_build` ahead of a submission somebody waits on.
+/// A SURVEY'S WINNER is `survey_build`: WFSim submits it (`system`, worker/
+/// appraise.js), a batch of them owes millions of rows, and asked as a new
+/// build they all fell due in six hours and starved every other producer.
 ///
 /// A LADDER CELL'S ROW IS NEVER `new_build`'s: a new build waits on its base
 /// rulers' rows, and every other scene is owed it at a sweep's pace — or each
 /// scene added would multiply what must land inside six hours. A cell's id is
 /// its base's plus `__<rung>` (`engine::board::benchmarks::expand_ladder`).
 export const isLadderCell = (ruler) => ruler.includes("__");
-const producerOf = (batch, builtAt, ruler) => {
+const producerOf = (batch, builtAt, ruler, initiator) => {
   if (batch.startsWith("refresh-")) return "refresh";
   if (isLadderCell(ruler)) return "sweep";
   const day = batch.startsWith("arrivals-") && batch.slice(9, 19);
-  return day && builtAt && builtAt.slice(0, 10) >= iso(Date.parse(day) - 86_400_000).slice(0, 10) ? "new_build" : "sweep";
+  const fresh = day && builtAt && builtAt.slice(0, 10) >= iso(Date.parse(day) - 86_400_000).slice(0, 10);
+  return !fresh ? "sweep" : initiator === "system" ? "survey_build" : "new_build";
 };
 
 /// ONE ROW'S ASK: the question its record and ruler make, by its producer. A
@@ -143,7 +148,7 @@ const isPlayer = (initiator) => typeof initiator === "string" && (initiator.star
 /// is waited: a survey's or a chat's riven gain, or an arrival nobody recorded,
 /// is an ordinary row, as is a backfill's re-ask.
 export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
-  const producer = producerOf(batch, builtAt, r.ruler);
+  const producer = producerOf(batch, builtAt, r.ruler, r.initiator);
   const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
   const due_in_ms = Number.isFinite(measured) ? measured + REFRESH_WITHIN_MS - now
     : isLadderCell(r.ruler) && !measuredAt ? SCENE_FIRST_MS : DEADLINE_MS[producer];

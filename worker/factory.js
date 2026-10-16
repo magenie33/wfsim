@@ -20,6 +20,7 @@ import { fairShadow, settleBatch } from "./settler.js";
 export const DEADLINE_MS = {
   chat: 2 * 60_000,
   new_build: 6 * 3_600_000,
+  survey_build: 3 * 86_400_000,
   survey: 86_400_000,
   refresh: 12 * 86_400_000,
   sweep: 7 * 86_400_000,
@@ -141,9 +142,8 @@ export async function officialRoute(request, env, path) {
 ///   refresh_live                                            → { n } (queue.yml)
 ///   unverified                                              → open board rows' first answers (scripts/live_orders.mjs)
 ///   calibration { since, offset }                           → paid questions, 2000 a page (scripts/work_calibrate.mjs)
-const BOARD_KINDS = ["new_build", "refresh", "sweep"];
 async function report(db, b) {
-  const kinds = BOARD_KINDS.map((k) => `'${k}'`).join(", ");
+  const kinds = Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ");
   if (b.report === "claimed") {
     const rows = (Array.isArray(b.rows) ? b.rows : []).filter((r) => r && typeof r.build_id === "string").slice(0, 10_000);
     const refs = rows.map((r) => `${r.build_id}|${r.ruler}|${r.mode}`);

@@ -1020,7 +1020,8 @@ questions, never a heavier client.
   ahead of the build's other rows and every row nobody waits on; a backfill's
   re-ask of it is an ordinary row. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
-  (due in six hours), `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
+  (due in six hours) — `survey_build` when WFSim submitted it, a survey's winner
+  (due in three days: a batch of them owes millions of rows) — `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
   `sweep` for a rescore's, an older build's first pass, or a `backfill-`
   batch's (due in a week). The reconciliation ships `backfill-`, rows nobody
   ordered: under `arrivals-` a day's library growth queued inside `new_build`
