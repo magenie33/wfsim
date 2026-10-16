@@ -278,6 +278,8 @@ jobs:
         run: node scripts/check_agent_coverage.mjs
       - name: The compute page shows what each device does, by kind, and nothing private
         run: node scripts/check_compute.mjs
+      - name: A lost lane is replaced and says where, and a slow call is not taken for a dead one
+        run: node scripts/check_calc_recovers.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
         run: node scripts/check_compute_queue.mjs
       - name: The home tally and the ranking are CDN files first, the worker their fallback

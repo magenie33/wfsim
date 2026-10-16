@@ -134,11 +134,17 @@ function usagePlace(text) {
   const file = (USAGE_FILES.find(([p]) => m[1].startsWith(p)) || [, "page"])[1];
   return `${file}_${m[2]}_${m[3]}`;
 }
+/// THE PAGE'S SKELETON, which this code never takes out: our own code failing
+/// with any of it gone failed on a page something else took apart — an
+/// extension, a translator, a reader mode — and is said `foreign_…`, apart from
+/// the failures that are ours to fix.
+const USAGE_SKELETON = ["home-page", "auth-page", "support-page", "download-page", "bench-page", "utility-page", "topmenu", "account", "weapon"];
+const usageForeign = () => USAGE_SKELETON.some((id) => !document.getElementById(id));
 /// `place` is null for another origin's failure, "" for ours with no position.
 function usageError(kind, place) {
   if (place === null) return;
   const k = window.__wfsimReady ? kind : "boot";
-  track("app.error", (place ? `${k}_${place}` : k).slice(0, 64), Math.round(performance.now()));
+  track("app.error", `${usageForeign() ? "foreign_" : ""}${place ? `${k}_${place}` : k}`.slice(0, 64), Math.round(performance.now()));
 }
 window.addEventListener("error", (e) => usageError("script",
   e && typeof e.filename === "string" && e.filename.startsWith(location.origin + "/")

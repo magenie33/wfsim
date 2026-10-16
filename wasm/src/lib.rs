@@ -24,6 +24,28 @@ pub fn api(endpoint: &str, body: &str) -> String {
     wfsim_webapi::route_text(endpoint, body)
 }
 
+thread_local! {
+    static HEARTBEAT: std::cell::RefCell<Option<js_sys::Function>> = const { std::cell::RefCell::new(None) };
+}
+fn heartbeat() {
+    HEARTBEAT.with(|h| {
+        if let Some(f) = h.borrow().as_ref() {
+            let _ = f.call0(&JsValue::NULL);
+        }
+    });
+}
+
+/// EVERY ENGINE CALL SAYS IT IS ALIVE, not only a simulate: `beat` is called
+/// from inside the engine's work (`wfsim_engine::alive`), so the worker can tell the
+/// page it is computing while the blocking call runs, and the page tells a slow
+/// call from a dead worker. The worker throttles what it posts; `None` stops it.
+#[wasm_bindgen]
+pub fn set_heartbeat(beat: Option<js_sys::Function>) {
+    let on = beat.is_some();
+    HEARTBEAT.with(|h| *h.borrow_mut() = beat);
+    wfsim_webapi::set_heartbeat(if on { Some(heartbeat) } else { None });
+}
+
 /// A SIMULATE THAT SAYS HOW FAR IT HAS GOT.
 ///
 /// Its own entry point rather than a flag on [`api`], because it is the one

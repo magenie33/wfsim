@@ -99,6 +99,12 @@ pub fn route(path: &str, body: &Value) -> Option<Value> {
     ROUTES.iter().find(|(p, _)| *p == path).map(|(_, f)| f(body))
 }
 
+/// A CALL THAT SAYS IT IS ALIVE: `beat` runs from inside the engine's work, every
+/// fight run and every data file read (`wfsim_engine::alive`), whatever the endpoint.
+pub fn set_heartbeat(beat: Option<fn()>) {
+    wfsim_engine::alive::set(beat);
+}
+
 /// [`route`] as text in and text out: the door the wasm module's `api` and the
 /// desktop's native library both are, so the two answer one request one way.
 /// A body that is not JSON is `null`; a path [`ROUTES`] does not hold is an error.

@@ -45,6 +45,14 @@ ready.catch((err) => {
 // its own clock (`ENGINE_STALL_MS`), so this ends with it.
 const arriving = setInterval(() => postMessage({ kind: "alive" }), 5000);
 ready.then(() => clearInterval(arriving), () => clearInterval(arriving));
+// …AND ONCE LOADED IT SAYS SO FROM INSIDE EVERY ENGINE CALL (wasm
+// `set_heartbeat`): the call blocks this thread, so a long one was silence the
+// page could not tell from a worker the browser had reclaimed. One word in 2 s.
+let beatAt = 0;
+ready.then(() => wasm_bindgen.set_heartbeat(() => {
+  const now = performance.now();
+  if (now - beatAt >= 2000) { beatAt = now; postMessage({ kind: "alive" }); }
+}), () => {});
 
 onmessage = async (e) => {
   if (e.data.kind === "engine") { handed(e.data); return; }

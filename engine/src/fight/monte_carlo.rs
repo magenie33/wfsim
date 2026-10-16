@@ -576,6 +576,7 @@ pub fn shard_onto(
         // with.
         let state = seed ^ u64::from(i).wrapping_mul(GOLDEN_GAP);
         let r = run_once(params, &mut Rng::new(state));
+        crate::alive::beat();
         a.index.push(RunKey::new(params.sample_by.of(&r), state));
         on_run(a.index.len() as u32);
         if keep {

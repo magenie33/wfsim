@@ -162,7 +162,9 @@ let readerInFlight = 0;
 /// Lowered by `check_calc_recovers.mjs`, which has to wedge a worker and then
 /// outlive the window to prove the recovery happens at all.
 /// `tick` is how often it looks.
-const LANE_WATCHDOG = { loading: 90000, stall: 45000, tick: 5000 };
+/// `stall` is 30 s, fifteen of the engine's beats (`wfsim_engine::alive`, one in
+/// 2 s at most): silence that long is a worker the browser reclaimed.
+const LANE_WATCHDOG = { loading: 90000, stall: 30000, tick: 5000 };
 
 /// A WORKER THAT NEITHER ANSWERS NOR FAILS, watched — ONE implementation, used
 /// by both fleets.
@@ -173,9 +175,10 @@ const LANE_WATCHDOG = { loading: 90000, stall: 45000, tick: 5000 };
 /// a request starts a clock, any word from the worker resets it, and a worker
 /// past its window is handed to `giveUp` and settled like any other dead one.
 ///
-/// BOTH FLEETS BEAT. A simulate reports progress once a run and the optimizer
-/// posts at about 4 Hz, so being slow and being gone are told apart by what the
-/// worker SAYS rather than by how long it is taking.
+/// EVERY CALL BEATS. The engine says it is alive from inside its work, every
+/// endpoint (worker.js `set_heartbeat`), a simulate reports progress too and the
+/// optimizer posts at about 4 Hz, so being slow and being gone are told apart by
+/// what the worker SAYS rather than by how long it is taking.
 function watchSilence(giveUp) {
   // SILENCE IS THE WORKER'S, NOT A REQUEST'S — one clock, not one per id.
   //
@@ -302,15 +305,21 @@ function spawnEngine() {
 }
 
 /// WHERE A LANE WAS LOST, beside its `engine.fail`: which pool's (`reader`, the
-/// reader's own; `board`, the community's) and whether the page was in sight,
-/// `n` the minutes it had been out of it. A hidden tab is throttled or frozen by
-/// the browser, so without this a lane it starved reads as a lane that broke.
+/// reader's own; `board`, the community's), whether the page was in sight, and
+/// the call it was running (`load` before it ever answered) — `n` the minutes it
+/// had been out of sight. A hidden tab is throttled or frozen by the browser, so
+/// without these a lane it starved reads as a lane that broke, and a lane lost
+/// mid-call names the call to look at.
 let hiddenSince = document.hidden ? Date.now() : null;
 document.addEventListener("visibilitychange", () => { hiddenSince = document.hidden ? (hiddenSince ?? Date.now()) : null; });
-function laneLost(pool) {
-  track("engine.fail_lane", `${pool}_${hiddenSince === null ? "shown" : "hidden"}`,
+function laneLost(pool, call) {
+  track("engine.fail_lane", `${pool}_${hiddenSince === null ? "shown" : "hidden"}_${call}`.slice(0, 64),
     hiddenSince === null ? 0 : Math.round((Date.now() - hiddenSince) / 60_000));
 }
+
+/// A CALL NAMED AS A SUBJECT CAN CARRY IT: the endpoint without `/api/`, else the message kind.
+const callLabel = (msg) => String(msg.kind === "api" ? String(msg.path || "").replace(/^\/api\//, "") : msg.kind || "other")
+  .toLowerCase().replace(/[^a-z0-9_]+/g, "_").slice(0, 32) || "other";
 
 function makeLane(pool = "reader") {
   const w = spawnEngine();
@@ -332,17 +341,20 @@ function makeLane(pool = "reader") {
   // for the window below is presumed gone and settled like any other dead one.
   // Which pending calls are the reader's — see `readerInFlight`.
   const readerIds = new Set();
+  // WHAT EACH PENDING CALL IS, oldest first — the oldest is the one running.
+  const calls = new Map();
+  const running = () => calls.values().next().value;
   const settleReaders = () => { readerInFlight = Math.max(0, readerInFlight - readerIds.size); readerIds.clear(); };
   const perish = (why) => {
     dead = true;
     pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
-    pending.clear(); progress.clear(); wd.clear(); busy = 0; settleReaders();
+    pending.clear(); progress.clear(); calls.clear(); wd.clear(); busy = 0; settleReaders();
   };
   // A WORKER THAT NEVER SPOKE NEVER LOADED: `worker.js` says it is downloading
   // every few seconds, so silence from the start is a load, not a stall.
   const wd = watchSilence((spoke) => {
     track("engine.fail", spoke ? "worker_silent" : "worker_load_timeout", Math.round(performance.now()));
-    laneLost(pool);
+    laneLost(pool, spoke ? (running() || {}).label || "idle" : "load");
     perish("worker stopped answering");
   });
   // A LANE THAT CANNOT LOAD IS A LANE, NOT A DEAD PAGE.
@@ -364,7 +376,7 @@ function makeLane(pool = "reader") {
     if (e && e.preventDefault) e.preventDefault();
     dead = true;
     perish(String((e && e.message) || "worker failed to load"));
-    laneLost(pool);
+    laneLost(pool, "load");
     releaseAfterLaneFailed(Math.round(performance.now()), () => loadCause);
   };
   w.onmessage = (e) => {
@@ -384,6 +396,7 @@ function makeLane(pool = "reader") {
     if (r) {
       pending.delete(e.data.id);
       progress.delete(e.data.id);
+      calls.delete(e.data.id);
       wd.done();
       busy = Math.max(0, busy - 1);
       if (readerIds.delete(e.data.id)) readerInFlight = Math.max(0, readerInFlight - 1);
@@ -408,6 +421,7 @@ function makeLane(pool = "reader") {
       pending.forEach((res) => res({ ok: false, cancelled: true }));
       pending.clear();
       progress.clear();
+      calls.clear();
       wd.clear();
       busy = 0;
       settleReaders();
@@ -417,6 +431,7 @@ function makeLane(pool = "reader") {
         if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
         pending.set(id, res);
+        calls.set(id, { label: callLabel(msg) });
         wd.start();
         busy += 1;
         if (!community) { readerIds.add(id); readerInFlight += 1; }

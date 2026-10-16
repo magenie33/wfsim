@@ -45,7 +45,7 @@ pub fn file(path: &str) -> Option<&'static str> {
 
 /// All embedded files under `prefix` (e.g. `"mods/pistol/"`), in path order.
 pub fn files_under(prefix: &str) -> impl Iterator<Item = (&'static str, &'static str)> + '_ {
-    FILES.iter().copied().filter(move |(p, _)| p.starts_with(prefix))
+    FILES.iter().copied().filter(move |(p, _)| p.starts_with(prefix)).inspect(|_| crate::alive::beat())
 }
 
 #[cfg(test)]

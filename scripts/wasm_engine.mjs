@@ -38,6 +38,8 @@ export function loadEngine({ pkg = "" } = {}) {
     release,
     api: (p, body) => JSON.parse(ctx.wasm_bindgen.api(p, JSON.stringify(body))),
     memoryBytes: () => exports.memory.buffer.byteLength,
+    // What the worker hands it (worker.js): called from inside the engine's work.
+    heartbeat: (f) => ctx.wasm_bindgen.set_heartbeat(f),
   };
 }
 

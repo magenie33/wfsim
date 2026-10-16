@@ -123,7 +123,7 @@ if (!native || !pkg) {
     .split("\n").filter(Boolean).map((l) => JSON.parse(l));
   const bits = (s) => `${JSON.stringify(s.score)} ${s.metric} ${s.work} ${s.gas}`;
   const A = loadEngine({ pkg });
-  let first = null;
+  let first = null, heaviest = null;
   rows.forEach((row, i) => {
     const name = `${row.record.weapon} ${row.ruler} ${row.mode}`;
     const order = A.api("/api/board/order", row), req = order.request;
@@ -150,11 +150,21 @@ if (!native || !pkg) {
     check(`${name}: the work is gas.rs's price of the count`, BigInt(w.work) === want, `${w.work} vs ${want}`);
     check(`${name}: a thousand full rows of it is an exact JSON number`, Number.isSafeInteger(w.gas * 10000) && Number.isSafeInteger(w.work * 10000));
     if (i === 0) first = { req, n, w, scoreOn };
+    if (!heaviest || BigInt(w.gas) > BigInt(heaviest.w.gas)) heaviest = { req, n, w, scoreOn, row };
   });
   const again = first.scoreOn(A, A.api("/api/board/fold", { request: first.req, from: 0, count: first.n }).acc);
   check(`${rows[0].record.weapon}, fought again after every other row in one process: native and wasm count what they did first`,
     nat[rows.length] && bits(nat[rows.length]) === bits(nat[0]) && bits(again) === bits(first.w),
     `native ${nat[rows.length] && bits(nat[rows.length])} vs ${bits(nat[0])}, wasm ${bits(again)} vs ${bits(first.w)}`);
+  // EVERY ENGINE CALL SAYS IT IS ALIVE from inside its work (worker.js hands it
+  // the heartbeat), and saying so changes no bit of what it counts.
+  const B = loadEngine({ pkg });
+  let beats = 0;
+  B.heartbeat(() => { beats += 1; });
+  const h = heaviest;
+  const beat = h.scoreOn(B, B.api("/api/board/fold", { request: h.req, from: 0, count: h.n }).acc);
+  check(`${h.row.record.weapon}: a board fold, which reports no progress, beats from inside the engine`, beats > 0, `${beats} beats over gas ${h.w.gas}`);
+  check("...and a heartbeat changes no bit of score, work or gas", bits(beat) === bits(h.w), `${bits(beat)} vs ${bits(h.w)}`);
 }
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

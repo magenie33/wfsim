@@ -233,7 +233,7 @@ const s2 = await evaluate(`(async () => {
   // silent worker cheap to prove; a real scan measured under 1.5 s of patience
   // is killed on its own baseline.
   LANE_WATCHDOG.loading = 90000;
-  LANE_WATCHDOG.stall = 45000;
+  LANE_WATCHDOG.stall = 30000;
   const box = document.getElementById('gp-on');
   out.switchThere = !!box;
   if (!box) return out;
@@ -300,13 +300,27 @@ check(
 await evaluate(`(() => {
   window.__fails = [];
   window.__lanes = [];
+  window.__errors = [];
   const sent = track;
   track = (e, s, n) => {
     if (e === 'engine.fail') window.__fails.push(s);
     if (e === 'engine.fail_lane') window.__lanes.push(s + ':' + n);
+    if (e === 'app.error') window.__errors.push(s);
     return sent(e, s, n);
   };
 })()`);
+// AN ERROR ON A PAGE SOMETHING ELSE TOOK APART is said apart from ours: with a
+// part of the skeleton gone it is `foreign_`, the same place otherwise.
+const foreign = await evaluate(`(() => {
+  usageError('script', 'app_1_2');
+  const part = document.getElementById('auth-page'), at = part.nextSibling, parent = part.parentNode;
+  part.remove();
+  usageError('script', 'app_1_2');
+  parent.insertBefore(part, at);
+  return window.__errors.splice(0);
+})()`);
+check("an error on a page an extension took apart is said foreign, the same place otherwise",
+  JSON.stringify(foreign) === JSON.stringify(["script_app_1_2", "foreign_script_app_1_2"]), JSON.stringify(foreign));
 await evaluate(`(() => {
   LANE_WATCHDOG.stall = 8000;
   LANE_WATCHDOG.tick = 500;
@@ -321,7 +335,7 @@ await sleep(5500);
 const thawed = await evaluate(`window.__frozenLane.dead`);
 await sleep(7000);
 const lapsed = await evaluate(`window.__frozenLane.dead`);
-await evaluate(`LANE_WATCHDOG.stall = 45000; LANE_WATCHDOG.tick = 5000;`);
+await evaluate(`LANE_WATCHDOG.stall = 30000; LANE_WATCHDOG.tick = 5000;`);
 check(
   "a lane waiting through a frozen page lives through the waking, and still dies of silence awake",
   thawed === false && lapsed === true,
@@ -331,8 +345,8 @@ const silentSaid = await evaluate(`window.__fails.slice()`);
 check("…and says it fell silent after speaking", JSON.stringify(silentSaid) === '["worker_silent"]', JSON.stringify(silentSaid));
 // A FROZEN PAGE MAY STAY HIDDEN after it thaws: the sight is the page's own word.
 const silentWhere = await evaluate(`({ said: window.__lanes.splice(0), hidden: document.hidden })`);
-check("…and where: a reader's lane, in the sight the page says",
-  JSON.stringify(silentWhere.said) === JSON.stringify([`reader_${silentWhere.hidden ? "hidden" : "shown"}:0`]), JSON.stringify(silentWhere));
+check("…and where: a reader's lane, in the sight the page says, on the call it was running",
+  JSON.stringify(silentWhere.said) === JSON.stringify([`reader_${silentWhere.hidden ? "hidden" : "shown"}_never_answered:0`]), JSON.stringify(silentWhere));
 
 // ONE ENGINE A PAGE: lanes made after boot are handed the module the page
 // already compiled. The wasm is BLOCKED IN EACH WORKER'S OWN SESSION, so a
@@ -407,7 +421,7 @@ const hiddenWhere = await evaluate(`(async () => {
   return window.__lanes.slice();
 })()`);
 check("a community lane lost while the page is hidden says board, hidden, and for how long",
-  JSON.stringify(hiddenWhere) === '["board_hidden:3"]', JSON.stringify(hiddenWhere));
+  JSON.stringify(hiddenWhere) === '["board_hidden_load:3"]', JSON.stringify(hiddenWhere));
 check("a lane that will not load says whether the download failed or a newer release left the page behind",
   JSON.stringify(loadSaid) === '["worker_load_network"]' && JSON.stringify(staleSaid) === '["worker_load_stale"]',
   `same release ${JSON.stringify(loadSaid)}, newer ${JSON.stringify(staleSaid)}`);
