@@ -63,6 +63,16 @@ def host(c: dict) -> str:
     return f"{c['bucket']}.cos.{c['region']}.myqcloud.com"
 
 
+# AN UPLOAD FROM OUTSIDE MAINLAND CHINA GOES THROUGH GLOBAL ACCELERATION
+# (`COS_ACCELERATE=1`, set by ship.yml): measured from a runner and from Hetzner,
+# a plain PUT to the Shanghai bucket ran ~20 KB/s and a 10 MB one stalled past
+# its timeout; accelerated, 30 MB took 4 s. Reads and a mainland machine's
+# writes keep the plain host, which costs nothing extra.
+def put_host(c: dict) -> str:
+    import os
+    return f"{c['bucket']}.cos.accelerate.myqcloud.com" if os.environ.get("COS_ACCELERATE") == "1" else host(c)
+
+
 def sign(method: str, path: str, secret_id: str, secret_key: str, expire: int = 900) -> str:
     """COS `q-sign-algorithm=sha1`. Empty header and param lists — nothing else
     is signed, so the request must not depend on a signed header."""
@@ -117,7 +127,7 @@ def _open(req: urllib.request.Request, timeout: int):
 
 def put(c: dict, key: str, body: bytes, content_type: str | None = None) -> int:
     """Upload one object. `key` has no leading slash."""
-    url = f"https://{host(c)}/{key}"
+    url = f"https://{put_host(c)}/{key}"
     req = urllib.request.Request(url, data=body, method="PUT")
     req.add_header("Authorization", sign("put", "/" + key, c["secret_id"], c["secret_key"]))
     ext = "." + key.rsplit(".", 1)[-1] if "." in key else ""
@@ -142,6 +152,18 @@ def get(c: dict, key: str) -> bytes | None:
         if e.code == 404:
             return None
         raise SystemExit(f"download failed for {key}: HTTP {e.code}") from e
+
+
+def delete(c: dict, key: str) -> None:
+    """Remove one object; one the bucket does not hold is already removed."""
+    req = urllib.request.Request(f"https://{put_host(c)}/{key}", method="DELETE")
+    req.add_header("Authorization", sign("delete", "/" + key, c["secret_id"], c["secret_key"]))
+    try:
+        with _open(req, 60):
+            pass
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise SystemExit(f"delete failed for {key}: HTTP {e.code}") from e
 
 
 def head(c: dict, key: str) -> int | None:

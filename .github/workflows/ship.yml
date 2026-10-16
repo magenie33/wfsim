@@ -130,6 +130,10 @@ jobs:
           COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
           COS_BUCKET: ${{ secrets.COS_BUCKET }}
           COS_REGION: ${{ secrets.COS_REGION }}
+          # A RUNNER IS OUTSIDE MAINLAND CHINA: its uploads go through acceleration (scripts/cos.py).
+          COS_ACCELERATE: "1"
+          # …and reaches the bot's server through the bucket, not scp (scripts/ship_bot.py `send`).
+          BOT_VIA_COS: "1"
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKERS_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           UPDATE_KEY: ${{ secrets.UPDATE_KEY }}

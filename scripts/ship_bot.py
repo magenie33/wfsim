@@ -58,15 +58,41 @@ def engine_digest(text: str) -> str:
     return m.group(1) if m else ""
 
 
+def send(t: dict, files: list, dest: str) -> None:
+    """FILES INTO A DIRECTORY ON THE SERVER: scp, or through the bucket.
+
+    A RUNNER OUTSIDE MAINLAND CHINA REACHES THE SERVER AT A CRAWL (measured: 20
+    MB by scp unfinished after ten minutes), while the server reads the bucket
+    in seconds. So the ship workflow (`BOT_VIA_COS=1`) packs the files, puts
+    them under an unguessable key through acceleration (`cos.py`), has the
+    server fetch and unpack them, and deletes the key."""
+    import os
+    if os.environ.get("BOT_VIA_COS") != "1":
+        run(["scp", "-q", *ssh_opts(t), *[str(f) for f in files], f"{t['host']}:{dest}/"])
+        return
+    import io, secrets, tarfile
+    import cos
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for f in files:
+            tar.add(ROOT / f, arcname=pathlib.Path(f).name)
+    c, key = cos.creds(), f"bot-courier/{secrets.token_hex(16)}.tar.gz"
+    cos.put(c, key, buf.getvalue(), "application/gzip")
+    try:
+        run(["ssh", *ssh_opts(t), t["host"], f"curl -sSf --retry 3 https://{cos.host(c)}/{key} | tar xzf - -C {dest}"])
+    finally:
+        cos.delete(c, key)
+
+
 def deploy() -> None:
     t = target()
     src = ENGINE.read_text(encoding="utf-8")
     wasm = re.search(r'^import module from "\.\./site/pkg/([^"]+)";$', src, re.M).group(1)
     root, host, o = t["root"], t["host"], ssh_opts(t)
     bot = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "bot").glob("*.mjs"))
-    run(["scp", "-q", *o, *bot, f"{host}:{root}/bot/"])
-    run(["scp", "-q", *o, "mcp/engine.js", "mcp/headless.js", f"{host}:{root}/mcp/"])
-    run(["scp", "-q", *o, f"site/pkg/{wasm}", f"{host}:{root}/site/pkg/"])
+    send(t, bot, f"{root}/bot")
+    send(t, ["mcp/engine.js", "mcp/headless.js"], f"{root}/mcp")
+    send(t, [f"site/pkg/{wasm}"], f"{root}/site/pkg")
     # ONE WASM ON THE SERVER: the engine names exactly one, and an old one left
     # beside it is a file nothing reads that a later glance mistakes for live.
     run(["ssh", *o, host, f"cd {root}/site/pkg && ls | grep -vx '{wasm}' | xargs -r rm -f; "
@@ -123,16 +149,15 @@ def deploy_live(t: dict) -> None:
     # INTO A SPARE DIRECTORY, THEN RENAMED: the live board may be running the
     # binary this replaces, and a running file cannot be written over — but it
     # can be renamed over, which also never leaves half a binary in place.
-    run(["scp", "-q", *o, str(out / "wfsim-intake"), str(out / "wfsim-board"),
-         str(out / "VERSION"), str(out / "ENGINE"), f"{host}:{root}/bin/incoming/"])
+    send(t, [out / "wfsim-intake", out / "wfsim-board", out / "VERSION", out / "ENGINE"], f"{root}/bin/incoming")
     run(["ssh", *o, host, f"chmod +x {root}/bin/incoming/wfsim-*; mv -f {root}/bin/incoming/* {root}/bin/"])
-    run(["scp", "-q", *o, *LIVE_SCRIPTS, f"{host}:{root}/scripts/"])
+    send(t, LIVE_SCRIPTS, f"{root}/scripts")
     # THE LIBRARY IN POSTGRES (scripts/db.mjs): its one shared piece of the
     # worker, and the client, installed there. /etc/wfsim-live.env's PG_URL
     # moves the live board onto it (deploy/wfsim-live.service).
     run(["ssh", *o, host, f"mkdir -p {root}/worker {root}/scripts/pg"])
-    run(["scp", "-q", *o, "worker/placeholders.js", f"{host}:{root}/worker/"])
-    run(["scp", "-q", *o, "scripts/pg/package.json", "scripts/pg/package-lock.json", f"{host}:{root}/scripts/pg/"])
+    send(t, ["worker/placeholders.js"], f"{root}/worker")
+    send(t, ["scripts/pg/package.json", "scripts/pg/package-lock.json"], f"{root}/scripts/pg")
     # INSTALLED ONLY WHEN THE LOCK MOVED: the server has node and no npm, so an
     # install it does not need must not be what fails the deploy.
     run(["ssh", *o, host, f"cd {root}/scripts/pg && (cmp -s package-lock.json .installed-lock"
@@ -141,9 +166,8 @@ def deploy_live(t: dict) -> None:
     # one that counts the volunteers' work, which no native build can.
     wasm = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))["wasm"]
     run(["ssh", *o, host, f"rm -rf {root}/bin/witness.next && mkdir -p {root}/bin/witness.next/pkg"])
-    run(["scp", "-q", *o, "site/release.json", f"{host}:{root}/bin/witness.next/"])
-    run(["scp", "-q", *o, f"site/pkg/wfsim_wasm.{wasm}.js", f"site/pkg/wfsim_wasm_bg.{wasm}.wasm",
-         f"{host}:{root}/bin/witness.next/pkg/"])
+    send(t, ["site/release.json"], f"{root}/bin/witness.next")
+    send(t, [f"site/pkg/wfsim_wasm.{wasm}.js", f"site/pkg/wfsim_wasm_bg.{wasm}.wasm"], f"{root}/bin/witness.next/pkg")
     run(["ssh", *o, host, f"rm -rf {root}/bin/witness && mv {root}/bin/witness.next {root}/bin/witness"])
     # RESTARTED ONLY ONCE INSTALLED: the unit and its read token are put on the
     # server by hand (`deploy/wfsim-live.service`), and until then there is

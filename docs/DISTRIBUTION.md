@@ -173,6 +173,13 @@ content-addressed and cacheable for ever.
    `site/release.json` names. Equal, nothing ships — so any trigger may fire
    twice. A main that moved while a run worked is the next CI run's to ship.
 
+A runner is outside mainland China, and both of its roads there crawl: a
+plain upload to the Shanghai bucket ran ~20 KB/s, and scp to the bot's server
+did not finish 20 MB in ten minutes. So its uploads go through the bucket's
+global acceleration (`COS_ACCELERATE=1`, `scripts/cos.py`), and the bot's
+files go through the bucket too: packed, put under an unguessable key, fetched
+by the server, deleted (`BOT_VIA_COS=1`, `scripts/ship_bot.py` `send`).
+
 The signing key, the bot's SSH key and its address live in the `release`
 environment, which only `main` may use and only the `ship` job asks for.
 `stage.yml` and `promote.py` remain for staging or signing by hand.
