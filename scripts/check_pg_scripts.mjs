@@ -12,7 +12,7 @@ import { join } from "node:path";
 
 const dir = mkdtempSync(join(tmpdir(), "wfsim-pg-scripts-"));
 process.env.PG_URL = `pglite:${join(dir, "db")}`;
-const { query, close } = await import("./db.mjs");
+const { query, close, answer, useClient, READ_TRIES } = await import("./db.mjs");
 let failed = 0;
 const check = (name, ok, detail = "") => { console.log(`  ${ok ? "ok  " : "FAIL"} ${name}${ok ? "" : ` — ${detail}`}`); if (!ok) failed++; };
 const ROOT = new URL("..", import.meta.url);
@@ -70,6 +70,21 @@ check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") 
   process.env.PATH = path;
   const spawned = readFileSync(log, "utf8").split("\n").filter((l) => l.includes("pgq.mjs"));
   check("...over one database process, not one a statement", status === 0 && spawned.length === 1, spawned.join(" | "));
+}
+
+// A READ THE TUNNEL CUT IS READ AGAIN; A WRITE IS NOT, since it may have landed.
+{
+  await close();
+  let calls = 0;
+  const cut = () => { calls++; if (calls < READ_TRIES) throw Object.assign(new Error("write CONNECTION_CLOSED"), { code: "CONNECTION_CLOSED" }); return { rows: [{ n: 1 }], changes: 0 }; };
+  useClient("library", { run: async () => cut(), end: async () => {} });
+  const read = await answer("SELECT 1 AS n");
+  const readCalls = calls;
+  calls = 0;
+  const write = await answer("DELETE FROM queue");
+  check("a read cut by the tunnel is read again, a write is not",
+    read.success && readCalls === READ_TRIES && !write.success && calls === 1, `read ${JSON.stringify(read)} in ${readCalls}, write ${calls}`);
+  await close();
 }
 
 const fact = { identity: "b1", ruler: "heavy_gunner", mode: "base", measured_by: "sha", score: 12.5, metric: "kpm",

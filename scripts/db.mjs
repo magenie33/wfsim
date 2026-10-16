@@ -15,6 +15,8 @@ const URLS = { library: "PG_URL", accounts: "PG_ACCOUNTS_URL" };
 const STATEMENT_MS = 180_000;
 
 const clients = new Map();
+/// A CHECK'S STAND-IN for a database's client, `{ run(text, params), end() }`.
+export const useClient = (database, c) => clients.set(database, c);
 async function client(database) {
   if (clients.has(database)) return clients.get(database);
   const name = URLS[database];
@@ -43,12 +45,22 @@ async function client(database) {
 /// ONE STATEMENT'S ANSWER — `{ success, result: [{ results, meta: { changes } }] }`,
 /// the shape the shell scripts parse (scripts/pgq.mjs); a refusal, or a
 /// database whose URL is not set, is `{ success: false, errors }`.
+/// A READ CUT BY THE TUNNEL IS READ AGAIN on a new connection: the CI's road to
+/// Postgres (`cloudflared access tcp`) drops a connection now and then, and one
+/// dropped read failed a whole scorer run. A write is never retried — whether
+/// it landed before the cut is unknown.
+const CUT = ["CONNECTION_CLOSED", "CONNECTION_ENDED", "CONNECTION_DESTROYED", "CONNECT_TIMEOUT", "ECONNRESET", "ECONNREFUSED", "EPIPE"];
+export const READ_TRIES = 3;
 export async function answer(sql, params = [], database = "library") {
-  try {
-    const r = await (await client(database)).run(placeholders(sql), params);
-    return { success: true, result: [{ results: r.rows, success: true, meta: { changes: r.changes } }] };
-  } catch (e) {
-    return { success: false, errors: [{ code: e.code || "", message: e.message }] };
+  const read = /^\s*SELECT\b/i.test(sql);
+  for (let tried = 1; ; tried++) {
+    try {
+      const r = await (await client(database)).run(placeholders(sql), params);
+      return { success: true, result: [{ results: r.rows, success: true, meta: { changes: r.changes } }] };
+    } catch (e) {
+      if (read && tried < READ_TRIES && CUT.includes(e.code)) { await new Promise((res) => setTimeout(res, 2000 * tried)); continue; }
+      return { success: false, errors: [{ code: e.code || "", message: e.message }] };
+    }
   }
 }
 
