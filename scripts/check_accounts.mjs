@@ -427,11 +427,11 @@ nr = await setName(n2, { display_name: "做 . 爱" });
 check("...and never one carrying a listed word, however it is spaced out", nr.reason === "name_not_allowed", JSON.stringify(nr));
 nr = await setName(n2, { display_name: "JS大佬" });
 check("...while an ordinary name that only looks close passes", nr.ok && nr.account.display_name === "JS大佬", JSON.stringify(nr));
-for (const bad of ["wf.jiuuvd.cn", "https://x.io/a", "jiuuvd点cn", "QQ 123456", "加群 7788990", "代刷白金", "WFSim官方"]) {
+for (const bad of ["wf.jiuuvd.cn", "https://x.io/a", "jiuuvd点cn", "QQ 123456", "加群 7788990", "代刷白金", "WFSim官方", "暗海之星氏族招人681283068"]) {
   nr = await setName(n2, { display_name: bad });
   check(`...nor one pointing elsewhere: ${bad}`, nr.reason === "name_not_allowed", JSON.stringify(nr));
 }
-for (const good of ["B站-星空笨鱼鱼", "dna980560", "SG91", "J.P."]) {
+for (const good of ["B站-星空笨鱼鱼", "dna980560", "SG91", "J.P.", "暗海之星氏族招人", "招人喜欢"]) {
   nr = await setName(n2, { display_name: good });
   check(`...while a handle passes: ${good}`, nr.ok && nr.account.display_name === good, JSON.stringify(nr));
 }
