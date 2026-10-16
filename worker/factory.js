@@ -232,8 +232,9 @@ export async function watchdog(env, now = Date.now()) {
   if (cells.length) found.push({ kind: "cells_filling", cells });
   if (engine) found.push(...await idleFindings(env, engine, now).catch(() => []));
   for (const f of found) {
+    const said = watchdogText(f, now);
     await db.prepare("INSERT INTO watchdog_said (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
-      .bind(iso(now), f.kind, watchdogText(f, now)).run();
+      .bind(iso(now), f.kind, said).run();
   }
   await db.prepare("DELETE FROM watchdog_said WHERE at < ?").bind(iso(now - SAID_KEPT_MS)).run();
   return found;
