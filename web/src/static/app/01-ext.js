@@ -35,13 +35,21 @@ const extKindOf = (path) => Object.keys(EXT.pages).find((k) => EXT.pages[k].path
 let extSettled = false;
 /// MOUNTED ONCE, BEFORE THE FIRST ROUTE: `route` waits on this, so an
 /// extension's address opens its page rather than the home grid. It is in
-/// flight while the engine boots, so the wait is the slower of the two.
+/// flight while the engine boots, so the wait is the slower of the two. A
+/// SERVER ERROR IS TRIED ONCE MORE: without the bundle the page lives a whole
+/// session with no paid pages and no marks beside a name. A 503 is a site with
+/// no paid half, and asking it twice only delays the first route.
 const extReady = (async () => {
-  try {
-    const r = await fetch("/api/cloud/page.js", { credentials: "same-origin" });
-    if (!r.ok || !/javascript/.test(r.headers.get("content-type") || "")) return;
-    const s = document.createElement("script");
-    s.textContent = await r.text();
-    document.head.appendChild(s);
-  } catch (_) { /* nothing mounted */ }
+  for (let tries = 0; tries < 2; tries++) {
+    let r = null;
+    try { r = await fetch("/api/cloud/page.js", { credentials: "same-origin" }); } catch (_) { return; }
+    if (r.ok && /javascript/.test(r.headers.get("content-type") || "")) {
+      const s = document.createElement("script");
+      s.textContent = await r.text();
+      document.head.appendChild(s);
+      return;
+    }
+    if (r.status < 500 || r.status === 503) return;
+    await new Promise((res) => setTimeout(res, 1500));
+  }
 })().finally(() => { extSettled = true; });

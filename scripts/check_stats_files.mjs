@@ -25,6 +25,7 @@ await app.send("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
       window.__calls.push("file:" + file[1]);
       const s = window.__stats[file[1]];
       if (s === "fail" || s === undefined) throw new TypeError("unreachable");
+      if (window.__slow) await new Promise((r) => setTimeout(r, window.__slow));
       return reply(s);
     }
     if (u.endsWith("/api/board/tally")) {
@@ -77,6 +78,29 @@ const out = JSON.parse(await evaluate(`(async () => {
   o.noFile = await ranked("fail");
   accountState.account = BREAK === "signedin" ? null : { id: "x", username: "u" };
   o.signedIn = await ranked(ranking(today));
+  accountState.account = null;
+  // A TAB CHOSEN WHILE A LOAD IS IN FLIGHT is loaded once that one lands.
+  window.__stats.contributors = ranking(today); window.__slow = 400;
+  contributorsPeriod = "week"; contributorsLimit = 10; contributorsState = []; contributorsLoading = false;
+  const first = contributorsLoad();
+  await new Promise((r) => setTimeout(r, 50));
+  if (BREAK !== "tab") { contributorsPeriod = "all"; contributorsState = undefined; contributorsLoad(); }
+  await first; await new Promise((r) => setTimeout(r, 800)); window.__slow = 0;
+  o.tab = { keys: (contributorsState || []).map((c) => c.key), loading: contributorsLoading };
+  // A REFRESH THAT ONLY MOVES ROWS still redraws the period line and the totals.
+  nav("/contributors");
+  await new Promise((r) => setTimeout(r, 300));
+  contributorsPeriod = "week"; contributorsState = null; renderAuthPage("contributors");
+  await new Promise((r) => setTimeout(r, 300));
+  const shown = () => ($("rank-window")?.textContent || "") + "|" + ($("rank-totals")?.textContent || "");
+  const before = shown();
+  const later = ranking(today);
+  later.windows = { week: { from: "2031-03-03T00:00:00.000Z", until: "2031-03-10T00:00:00.000Z" } };
+  later.pool = { points: 777, deleted_account: 1, refused: 2 };
+  window.__stats.contributors = later;
+  if (BREAK === "patch") contributorsPatch = () => true;
+  await contributorsLoad();
+  o.patch = { list: !!document.querySelector(".rank-list"), before, after: shown() };
   accountState.account = was;
   return JSON.stringify(o);
 })()`).catch((e) => JSON.stringify({ error: String(e) })));
@@ -94,5 +118,10 @@ check("...a file of another day, or none, is passed over for the worker",
   && JSON.stringify(out.noFile?.keys) === JSON.stringify(["from-worker"]) && only(out.noFile, "file:contributors", "api:contributors"), said);
 check("signed in, the worker is asked, for the reader's own row, and the file is never read",
   JSON.stringify(out.signedIn?.keys) === JSON.stringify(["from-worker"]) && only(out.signedIn, "api:contributors"), said);
+
+check("a tab chosen while a load is in flight is loaded when that one lands, not left empty",
+  JSON.stringify(out.tab?.keys) === JSON.stringify(["k1", "k2", "k3"]) && out.tab.loading === false, said);
+check("a refresh that only moves rows still redraws the period line and the totals",
+  out.patch?.list && /777/.test(out.patch.after) && out.patch.after !== out.patch.before && out.patch.after.split("|")[0].trim() !== "", said);
 
 await app.finish("the home tally and the ranking are files first, the worker when a file is stale, missing or not the reader's");

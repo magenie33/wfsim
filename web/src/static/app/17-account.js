@@ -100,12 +100,13 @@ let contributorsMerit = null;
 /// THE WEEK AND THE MONTH BEING COUNTED, as the worker served them (`windows`), or null.
 let contributorsWindows = null;
 
-async function accountCall(method, path, body) {
+async function accountCall(method, path, body, timeoutMs = 0) {
   try {
     const r = await fetch(path, {
       method, credentials: "same-origin",
       headers: body ? { "content-type": "application/json" } : {},
       ...(body ? { body: JSON.stringify(body) } : {}),
+      ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
     });
     return await r.json();
   } catch (_) {
@@ -568,6 +569,8 @@ const CONTRIBUTORS_PAGE = 100, CONTRIBUTORS_MOST = 2000, CONTRIBUTORS_EVERY_MS =
 let contributorsTotal = 0, contributorsLimit = CONTRIBUTORS_PAGE, contributorsAt = 0, contributorsLoading = false;
 /// …A RANKING FILE OLDER THAN THIS is passed over for the worker: two of the cron's ten minutes and a margin.
 const CONTRIBUTORS_STALE_MS = 30 * 60_000;
+/// An ask unanswered this long is dropped, so the next tick asks again.
+const CONTRIBUTORS_WAIT_MS = 15_000;
 let contributorsFrom = new Map(), contributorsTick = 0, contributorsMore = null;
 function contributorShown(c) {
   const to = c[contributorsColumn()[0]] || 0;
@@ -597,9 +600,10 @@ async function contributorsLoad() {
   const ranked = file && file.day === new Date(serverNow()).toISOString().slice(0, 10) && file.rankings && file.rankings[period];
   const r = ranked ? { ok: true, period, computing: file.computing, total: ranked.length, contributors: ranked.slice(0, limit), pool: file.pool, merit: file.merit,
     windows: file.windows }
-    : await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`);
+    : await accountCall("GET", `/api/contributors?${period === "all" ? "" : `period=${period}&`}limit=${limit}`, null, CONTRIBUTORS_WAIT_MS);
   contributorsLoading = false;
-  if (period !== contributorsPeriod) return;
+  // A TAB CHOSEN WHILE THIS WAS IN FLIGHT asked nothing (one load at a time), so it is asked now.
+  if (period !== contributorsPeriod) return contributorsLoad();
   // WHAT EACH ROW SHOWS NOW is where it rolls from.
   contributorsFrom = new Map((contributorsState || []).map((c) => [c.key, contributorShown(c)]));
   contributorsState = (r && r.ok && r.contributors) || contributorsState || [];
@@ -609,7 +613,9 @@ async function contributorsLoad() {
   if (r && r.ok && r.windows) contributorsWindows = r.windows;
   contributorsAt = Date.now();
   if (authKindOf(location.pathname) !== "contributors") return;
-  if (!contributorsPatch()) renderAuthPage("contributors");
+  // THE READER'S OWN LINE, if its ask failed, is asked again with the ranking.
+  const youMissing = accountState.account && !devicesState && devicesAskedFor === null;
+  if (youMissing || !contributorsPatch()) renderAuthPage("contributors");
 }
 
 /// THE LIST CHANGES IN PLACE: each row keeps its element, so it can slide.
@@ -629,6 +635,10 @@ function contributorsPatch() {
   });
   contributorsMove(ol, ordered);
   contributorsWatchMore();
+  // EVERYTHING ELSE THE ANSWER CARRIES is drawn again with the rows.
+  const w = $("rank-window"), t = $("rank-totals");
+  if (w) w.innerHTML = periodWindowHtml();
+  if (t) t.innerHTML = contributorsTotalsHtml();
   return true;
 }
 
@@ -713,16 +723,21 @@ function contributorsPage() {
   return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Contributors")}</h1>
     <p class="set-note">${aT("The volunteers whose devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p>
     ${contributorsYouHtml()}
-    <div class="block"><div class="bh"><span class="oseg">${tab("week", "Weekly ranking")} ${tab("recent", "Monthly ranking")} ${tab("all", "All-time ranking")}</span></div><div class="bb">${periodWindowHtml()}${list == null ? ""
+    <div class="block"><div class="bh"><span class="oseg">${tab("week", "Weekly ranking")} ${tab("recent", "Monthly ranking")} ${tab("all", "All-time ranking")}</span></div><div class="bb"><div id="rank-window">${periodWindowHtml()}</div>${list == null ? ""
       : rows ? `<ol class="rank-list">${head}${rows}</ol><div id="rank-more"></div>` : `<p class="set-note" style="margin:0">${aT("Nobody yet.")}</p>`}</div></div>
-    ${contributorsPool ? `<p class="set-note">${escHtml(trF("Official pool: {n} points — {d} from deleted accounts, {r} taken back from refused clients. Points are compute, so none is lost.", {
+    <div id="rank-totals">${contributorsTotalsHtml()}</div>
+    <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
+      ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.")}</p></div></div>`;
+}
+
+/// THE POOL AND MERIT LINES, as the last answer carried them.
+function contributorsTotalsHtml() {
+  return `${contributorsPool ? `<p class="set-note">${escHtml(trF("Official pool: {n} points — {d} from deleted accounts, {r} taken back from refused clients. Points are compute, so none is lost.", {
       n: contributorsPool.points.toLocaleString(accountLocale()), d: contributorsPool.deleted_account.toLocaleString(accountLocale()),
       r: contributorsPool.refused.toLocaleString(accountLocale()) }))}</p>` : ""}
     ${contributorsMerit ? `<p class="set-note">${escHtml(trF(tr("Merit, everyone together: {g} granted, {m} minted since, {s} spent, {h} held."), {
       g: contributorsMerit.granted.toLocaleString(accountLocale()), m: contributorsMerit.minted.toLocaleString(accountLocale()),
-      s: Math.max(0, contributorsMerit.spent - contributorsMerit.refunded).toLocaleString(accountLocale()), h: contributorsMerit.held.toLocaleString(accountLocale()) }))}</p>` : ""}
-    <p class="set-note">${aT("Points count verified compute and nothing else. A membership adds none.")}
-      ${aT("The badge is the contributor rank: ten points are one experience, and the ranks climb as Mastery Rank does.")}</p></div></div>`;
+      s: Math.max(0, contributorsMerit.spent - contributorsMerit.refunded).toLocaleString(accountLocale()), h: contributorsMerit.held.toLocaleString(accountLocale()) }))}</p>` : ""}`;
 }
 
 /// THE READER'S OWN LINE: signed out, how to be on it; signed in and not yet
@@ -842,7 +857,10 @@ function renderAuthPage(kind) {
     const who = accountState.account && accountState.account.id;
     if (who && !devicesState && devicesAskedFor !== who) {
       devicesAskedFor = who;
-      loadDevices().then(() => { if (authKindOf(location.pathname) === "contributors") renderAuthPage(kind); });
+      loadDevices().then(() => {
+        if (!devicesState) { devicesAskedFor = null; return; }
+        if (authKindOf(location.pathname) === "contributors") renderAuthPage(kind);
+      });
     }
     if (contributorsState === null) {
       contributorsState = undefined;
