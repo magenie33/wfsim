@@ -6,21 +6,25 @@
 //
 //   echo '{"sql":"SELECT count(*) AS n FROM builds"}' | node scripts/pgq.mjs [library|accounts]
 //
-// `--lines`: one body a line in, one answer a line out, over one connection
-// until stdin ends — what `db.sh` keeps open so a paged read pays for one
-// process and one connect, not one a page.
+// `--lines <file>`: one body a line in, over one connection until stdin ends —
+// what `db.sh` keeps open so a paged read pays for one process and one
+// connect, not one a page. Each answer is written to <file> and its line out
+// is only `ok` or `refused`: bash reads a pipe a byte at a time, and a page of
+// facts is megabytes.
 import { createInterface } from "node:readline";
+import { writeFileSync } from "node:fs";
 import { answer, close } from "./db.mjs";
 
 const lines = process.argv[2] === "--lines";
-const database = process.argv[lines ? 3 : 2] || "library";
+const database = process.argv[lines ? 4 : 2] || "library";
 if (lines) {
   for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
     if (!line.trim()) continue;
     let j;
     try { const body = JSON.parse(line); j = await answer(body.sql, body.params || [], database); }
     catch (e) { j = { success: false, errors: [{ code: "", message: String(e && e.message || e) }] }; }
-    process.stdout.write(JSON.stringify(j) + "\n");
+    writeFileSync(process.argv[3], JSON.stringify(j));
+    process.stdout.write(j.success ? "ok\n" : "refused\n");
   }
   await close();
 } else {

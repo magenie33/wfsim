@@ -71,6 +71,17 @@ check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") 
   const spawned = readFileSync(log, "utf8").split("\n").filter((l) => l.includes("pgq.mjs"));
   check("...over one database process, not one a statement", status === 0 && spawned.length === 1, spawned.join(" | "));
 }
+// …ITS ANSWERS IN A FILE, the pipe saying only whether: bash reads a pipe a
+// byte at a time, and a page of facts through it cost minutes a read.
+{
+  await close();
+  const out = join(dir, "answer.json");
+  const r = spawnSync(process.execPath, [new URL("./pgq.mjs", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "--lines", out],
+    { input: `${JSON.stringify({ sql: "SELECT repeat('x', 100000) AS s" })}\n`, encoding: "utf8", env: process.env });
+  const kept = (() => { try { return JSON.parse(readFileSync(out, "utf8")); } catch (_) { return null; } })();
+  check("...its answer in a file, the pipe saying only ok", r.stdout === "ok\n" && kept?.result?.[0]?.results?.[0]?.s?.length === 100000,
+    `stdout ${JSON.stringify(r.stdout.slice(0, 80))} ${r.stderr.slice(0, 200)}`);
+}
 
 // A READ THE TUNNEL CUT IS READ AGAIN; A WRITE IS NOT, since it may have landed.
 {
