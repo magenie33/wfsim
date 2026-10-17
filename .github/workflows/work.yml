@@ -39,7 +39,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build the engine the site would ship, and its native twin
         run: |
-          cargo build --release -p wfsim-wasm --target wasm32-unknown-unknown
+          # The shipped module carries no data; its packs are handed to it.
+          WFSIM_DATA_APART=1 cargo build --release -p wfsim-wasm --target wasm32-unknown-unknown
           cargo build --release -p wfsim-cli --bin wfsim-gas
           # wasm-bindgen at Cargo.lock's version; binaryen at the site build's.
           bindgen=$(awk '/^name = "wasm-bindgen"$/ {getline; gsub(/version = |"/, ""); print; exit}' Cargo.lock)
@@ -48,7 +49,7 @@ jobs:
           curl -sSfL https://github.com/WebAssembly/binaryen/releases/download/version_132/binaryen-version_132-x86_64-linux.tar.gz | tar xz
           ./binaryen-version_132/bin/wasm-opt -Oz -o pkg/wfsim_wasm_bg.wasm pkg/wfsim_wasm_bg.wasm
           # …and its data packs, which the module is handed before its first call.
-          python3 scripts/data_packs.py pkg
+          WFSIM_DATA_APART=1 python3 scripts/data_packs.py pkg
           cp target/release/wfsim-gas pkg/
       - uses: actions/upload-artifact@v4
         with:

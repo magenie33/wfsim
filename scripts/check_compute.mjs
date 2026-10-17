@@ -290,17 +290,18 @@ check("a road the reader names in the menu is the only one taken, even when it d
 // WHEN THE READER COMPUTES, WHATEVER THEY RUN (69-board-work.js `readerBusy`),
 // which is when solo and together past 100% share in proportion: a call of
 // theirs counts and a together call does not, a search between calls counts,
-// and so does another tab's word.
+// and so does another tab's word. A computation, not a catalog: those are the
+// build's files and never reach a lane (docs/WASM.md §"Answers the build already knows").
 const y = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const out = {};
   for (let i = 0; i < 200 && readerBusy(); i++) await sleep(50);
   out.idle = !readerBusy();
-  const mine = api("/api/meta");
+  const mine = api("/api/targets", {});
   out.reader = readerInFlight > 0 && readerBusy();
   await mine;
   out.after = !readerBusy();
-  const theirs = api("/api/meta", null, null, { community: true });
+  const theirs = api("/api/targets", {}, null, { community: true });
   out.community = readerInFlight === 0 && !readerBusy();
   await theirs;
   optJobId = 12345; optHeardAt = Date.now(); out.search = readerBusy();
