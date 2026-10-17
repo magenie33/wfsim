@@ -1054,7 +1054,7 @@ def guard_board_files() -> None:
 # answers every route, so all five ship in every page and exactly one of them is
 # the heading of the page being served. `w-name` is the weapon route's, empty in
 # the shell and filled by `app.js` on boot.
-ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-utility", "h-support", "w-name", "wf-name", "comp-name", "op-name")
+ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-utility", "h-support", "w-name", "wf-name", "comp-name", "op-name", "slot-name")
 
 
 def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
