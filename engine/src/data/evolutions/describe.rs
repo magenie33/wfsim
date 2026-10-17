@@ -148,6 +148,16 @@ impl EvolutionDef {
                 EvoEffect::InitialCombo(v) => format!(
                     "the melee combo counter opens at +{v:.0} and returns to it, regenerating 40                      points a second — which is what a heavy build spends"
                 ),
+                EvoEffect::MeleeComboDuration(v) => {
+                    format!("+{v:.0} s on the melee combo's clock, the bucket Body Count is in")
+                }
+                EvoEffect::ComboCountChance(v) => {
+                    format!("+{:.0}% additional combo count chance, summed with Quickening's", v * 100.0)
+                }
+                EvoEffect::HeavyAttackEfficiency(v) => format!(
+                    "+{:.0}% heavy attack efficiency, summed with Reflex Coil's and capped at 90%",
+                    v * 100.0
+                ),
                 EvoEffect::IncarnonWindow { arm_at_combo, seconds } => match (arm_at_combo, seconds) {
                     (Some(a), Some(s)) => format!(
                         "on for {s:.0}s from the heavy attack that arms it, which needs {a:.0}x combo"

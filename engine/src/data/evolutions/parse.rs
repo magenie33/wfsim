@@ -94,6 +94,9 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
         // …AND THE RELATIVE ONE, which is how a MELEE Genesis is written.
         "base_damage_bonus" => EvoEffect::BaseDamageBonus(f(v, "value").unwrap_or(0.0)),
         "initial_combo" => EvoEffect::InitialCombo(f(v, "value").unwrap_or(0.0)),
+        "melee_combo_duration" => EvoEffect::MeleeComboDuration(f(v, "value").unwrap_or(0.0)),
+        "combo_count_chance" => EvoEffect::ComboCountChance(f(v, "value").unwrap_or(0.0)),
+        "heavy_attack_efficiency" => EvoEffect::HeavyAttackEfficiency(f(v, "value").unwrap_or(0.0)),
         "incarnon_window" => EvoEffect::IncarnonWindow {
             arm_at_combo: f(v, "arm_at_combo"),
             seconds: f(v, "seconds"),

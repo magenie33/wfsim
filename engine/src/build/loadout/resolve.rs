@@ -282,14 +282,15 @@ pub fn resolve_for(
     // a heavy attack on a form that is not (a detonated glaive).
     let mut cc_heavy_again = 0.0f64;
     let mut sc_per_combo = 0.0f64;
-    let mut combo_duration_add = 0.0f64;
+    // AN EVOLUTION'S COMBO TERMS JOIN THE MODS' BUCKETS, the same sums.
+    let mut combo_duration_add = base.evo_melee_combo_duration;
     let mut initial_combo = 0.0f64;
-    let mut heavy_efficiency = 0.0f64;
+    let mut heavy_efficiency = base.evo_heavy_attack_efficiency;
     let mut combo_duration_mult = 1.0f64;
     let mut melee_range_add = 0.0f64;
     let mut slam_damage = 0.0f64;
     let mut heavy_damage = 0.0f64;
-    let mut combo_count_chance = 0.0f64;
+    let mut combo_count_chance = base.evo_combo_count_chance;
     let mut combo_count_chance_on_lifted = 0.0f64;
     let mut combo_gain_chance = 0.0f64;
     let mut status_chance_on_lifted = 0.0f64;
