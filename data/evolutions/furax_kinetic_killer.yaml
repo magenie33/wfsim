@@ -1,0 +1,18 @@
+id: furax_kinetic_killer
+name: Kinetic Killer
+weapon: furax
+tier: 4
+position_in_tier: 2
+icon: CritDamageOnSlideAttacks(xWhite).png
+description: "Increase Base Critical Damage Multiplier to 4x on Slide Attacks."
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Damage Multiplier to 4x on Slide
+  # Attacks" — a SET, not an addition, and only while sliding: the page
+  # says it reaches any attack "if user is sliding at the time of strike".
+  - kind: unmodelled_base_crit_multiplier_set_on_slide_attacks
+    value: 4.0
+
+source:
+  url: https://wiki.warframe.com/w/Furax_Incarnon_Genesis

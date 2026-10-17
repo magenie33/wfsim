@@ -1,0 +1,21 @@
+id: mk1_bo_swordsmans_flourish
+name: Swordsman's Flourish
+weapon: mk1_bo
+tier: 2
+position_in_tier: 2
+icon: DamageAndComboGainInSwordAloneMode(xWhite).png
+description: "Increase Base Damage by +85.\nWith Melee Weapon Equipped: +100% Combo Count Chance."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 85.0
+  # The page's Known Bugs: "Combo count is unaffected by the evolution's
+  # +100% Combo Count Chance."
+  # from: "With Melee Weapon Equipped: +100% Combo Count Chance". No
+  # evolution kind carries combo count chance, gated or not.
+  - kind: unmodelled_with_melee_weapon_equipped_combo_count_chance
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Bo_Incarnon_Genesis

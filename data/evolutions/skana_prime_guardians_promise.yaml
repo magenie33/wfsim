@@ -1,0 +1,19 @@
+id: skana_prime_guardians_promise
+name: Guardian's Promise
+weapon: skana_prime
+tier: 2
+position_in_tier: 1
+icon: DamageAndHeavyEfficiencyWithOvershield(xWhite).png
+description: "Increase Base Damage by +10.\nWith Overshields: +80% Heavy Attack Efficiency."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 10.0
+  # from: "With Overshields: +80% Heavy Attack Efficiency" — the
+  # overshield gate exists, but not for this bucket.
+  - kind: unmodelled_with_overshields_heavy_attack_efficiency
+    value: 0.8
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

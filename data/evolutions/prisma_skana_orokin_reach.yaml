@@ -1,0 +1,16 @@
+id: prisma_skana_orokin_reach
+name: Orokin Reach
+weapon: prisma_skana
+tier: 3
+position_in_tier: 1
+icon: MoreRange(xWhite).png
+description: "+0.4 Range"
+selection: choose_one
+
+effects:
+  # from: "+0.4 Range" — metres, the quantity Reach buys.
+  - kind: melee_range_bonus_m
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

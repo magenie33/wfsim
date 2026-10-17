@@ -1,0 +1,15 @@
+id: skana_prime_absolute_valor
+name: Absolute Valor
+weapon: skana_prime
+tier: 4
+position_in_tier: 3
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +4%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.04
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

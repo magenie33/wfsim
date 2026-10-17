@@ -1,0 +1,32 @@
+id: prisma_skana_evo1_incarnon_form
+name: Incarnon Form
+weapon: prisma_skana
+tier: 1
+position_in_tier: 1
+icon: RadialStunOnActivationFinisherKillsPulseStun(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form.\nIncarnon Form stuns nearby enemies when it enters Incarnon Form and after Finisher attacks.\n+100% Melee Damage\n+20% Sprint Speed\n+20% Parkour Velocity"
+# A MELEE INCARNON IS NOT A FORM: it changes numbers on the ways the weapon
+# is already swung and unlocks no second entry (docs/MELEE.md §7).
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form";
+  # the seconds are the page's Overview, "Once activated, the Incarnon form
+  # lasts for 180 seconds", and the module's `IncarnonDuration = 180`.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage" — a bracket term beside Pressure Point.
+  - kind: base_damage_bonus
+    value: 1.0
+  # from: "stuns nearby enemies when it enters Incarnon Form and after
+  # Finisher attacks"; the notes: "within 10 meters". Nothing in the
+  # fight is stunned.
+  - kind: unmodelled_stuns_enemies_within_10m_on_activation_and_after_finishers
+    value: 10.0
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

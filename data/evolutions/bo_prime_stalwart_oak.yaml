@@ -1,0 +1,22 @@
+id: bo_prime_stalwart_oak
+name: Stalwart Oak
+weapon: bo_prime
+tier: 2
+position_in_tier: 1
+icon: DmgAndIncreasedBlockAngleComboFromBlockedShotsWArmor(xWhite).png
+description: "Increase Base Damage by +34.\nWith Armor over 450:\n+30 Parry Angle\n+300% Combo Count Chance while Blocking."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 34.0
+  # from: "With Armor over 450: +300% Combo Count Chance while
+  # Blocking". No evolution kind carries combo count chance.
+  - kind: unmodelled_with_armor_over_450_combo_count_chance_while_blocking
+    value: 3.0
+  - kind: out_of_scope
+    clause: "With Armor over 450: +30 Parry Angle"
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Bo_Incarnon_Genesis

@@ -1,0 +1,15 @@
+id: mk1_furax_absolute_dominion
+name: Absolute Dominion
+weapon: mk1_furax
+tier: 4
+position_in_tier: 3
+icon: HighStatus(xWhite).png
+description: "Increase Base Status Chance by +22%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_status_chance
+    value: 0.22
+
+source:
+  url: https://wiki.warframe.com/w/Furax_Incarnon_Genesis
