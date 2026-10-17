@@ -1,0 +1,15 @@
+id: thalys_adept_reflexes
+name: Adept Reflexes
+weapon: thalys
+tier: 3
+position_in_tier: 3
+icon: EvolutionAdeptReflexes(xWhite).png
+description: "+20 Initial Combo"
+selection: choose_one
+
+effects:
+  - kind: initial_combo
+    value: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

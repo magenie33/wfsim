@@ -1,0 +1,16 @@
+id: innodem_stunning_brutality
+name: Stunning Brutality
+weapon: innodem
+tier: 5
+position_in_tier: 2
+icon: EvolutionStunningBrutality(xWhite).png
+description: "On Finisher: Stun aware enemies in a 10m Radius"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "On Finisher: Stun aware enemies in a 10m Radius"
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

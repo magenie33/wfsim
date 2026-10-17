@@ -1,0 +1,19 @@
+id: thalys_raging_drift
+name: Raging Drift
+weapon: thalys
+tier: 2
+position_in_tier: 3
+icon: SlideAttackSpeed(xWhite).png
+description: "+80% Attack Speed while sliding. +20% Slide"
+selection: choose_one
+
+effects:
+  # No condition reads sliding alone.
+  - kind: unmodelled_attack_speed_while_sliding
+    value: 0.8
+  - kind: out_of_scope
+    clause: "+20% Slide"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

@@ -1,0 +1,17 @@
+id: innodem_swooping_lunge
+name: Swooping Lunge
+weapon: innodem
+tier: 4
+position_in_tier: 2
+icon: EvolutionSwoopingLunge(xWhite).png
+description: "On Airborne Melee Kill: +50% Melee Damage for 10s. Stacks up to 3x."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_on_airborne_melee_kill_melee_damage_for_10s
+    value: 0.5
+  # VERBATIM: "Stacks up to 3x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

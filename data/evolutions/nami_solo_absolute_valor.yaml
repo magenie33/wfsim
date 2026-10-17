@@ -1,0 +1,15 @@
+id: nami_solo_absolute_valor
+name: Absolute Valor
+weapon: nami_solo
+tier: 4
+position_in_tier: 1
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +21%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.21
+
+source:
+  url: https://wiki.warframe.com/w/Nami_Solo_Incarnon_Genesis

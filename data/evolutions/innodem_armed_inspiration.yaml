@@ -1,0 +1,16 @@
+id: innodem_armed_inspiration
+name: Armed Inspiration
+weapon: innodem
+tier: 5
+position_in_tier: 3
+icon: EvolutionAmmoToCombo(xWhite).png
+description: "Collecting ammo grants 5 Melee Combo counter"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Collecting ammo grants 5 Melee Combo counter"
+    reason: infinite_ammo
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

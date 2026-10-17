@@ -1,0 +1,21 @@
+id: hate_stalkers_legacy
+name: Stalker's Legacy
+weapon: hate
+tier: 2
+position_in_tier: 2
+icon: ComboAndHeavyEfficiencyWithDreadAndDespairEquipped(xWhite).png
+description: "Increase Base Damage by +30. With Dread and Despair equipped: +30 Initial Combo."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 30.0
+  # The Despair's Stalker's Vendetta and the Dread's Stalker's Resentment ask
+  # the same of the loadout, and the other slots are unspecified
+  # (docs/UNMODELLED.md, "THE OTHER SLOTS ARE OCCUPIED").
+  - kind: out_of_scope
+    clause: "With Dread and Despair equipped: +30 Initial Combo"
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Hate_Incarnon_Genesis

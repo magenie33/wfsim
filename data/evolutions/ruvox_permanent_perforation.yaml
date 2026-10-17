@@ -1,0 +1,15 @@
+id: ruvox_permanent_perforation
+name: Permanent Perforation
+weapon: ruvox
+tier: 5
+position_in_tier: 3
+icon: ImpaledPuncProcCrit(xWhite).png
+description: "Enemies suffer 5 Puncture Status while impaled"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_enemies_suffer_5_puncture_status_while_impaled
+    value: 5.0
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

@@ -1,0 +1,15 @@
+id: innodem_protracted_execution
+name: Protracted Execution
+weapon: innodem
+tier: 4
+position_in_tier: 3
+icon: EvolutionProtractedExecution(xWhite).png
+description: "On Finisher: 20 Combo on Finisher"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_on_finisher_combo_count
+    value: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

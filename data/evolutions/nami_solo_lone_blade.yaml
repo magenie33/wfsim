@@ -1,0 +1,17 @@
+id: nami_solo_lone_blade
+name: Lone Blade
+weapon: nami_solo
+tier: 3
+position_in_tier: 1
+icon: MoreRange(xWhite).png
+description: "With Melee Weapon Equipped: Increase Base Follow Through by +60%"
+selection: choose_one
+
+effects:
+  # `follow_through_bonus` reads no condition, so the gated clause stays
+  # declared rather than paid unconditionally.
+  - kind: unmodelled_with_melee_weapon_equipped_base_follow_through
+    value: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Nami_Solo_Incarnon_Genesis

@@ -1,0 +1,15 @@
+id: innodem_blood_anointed
+name: Blood Anointed
+weapon: innodem
+tier: 5
+position_in_tier: 1
+icon: EvolutionBloodAnointed(xWhite).png
+description: "On Finisher: +40% Heavy Attack Efficiency for 40s"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_on_finisher_heavy_attack_efficiency_for_40s
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

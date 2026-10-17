@@ -1,0 +1,19 @@
+id: sibear_masters_shatter
+name: Master's Shatter
+weapon: sibear
+tier: 2
+position_in_tier: 1
+icon: IncreasedComboGainOnTargetsWithFreeze(xWhite).png
+description: "Increase Base Damage by +20. 10 additional Combo on targets affected by Cold Status."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 20.0
+  # The Okina's Seeing Red with Cold in the place of Slash.
+  - kind: combo_count_on_status_hit
+    status: cold
+    value: 10.0
+
+source:
+  url: https://wiki.warframe.com/w/Sibear_Incarnon_Genesis

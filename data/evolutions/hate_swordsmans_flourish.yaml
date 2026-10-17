@@ -1,0 +1,18 @@
+id: hate_swordsmans_flourish
+name: Swordsman's Flourish
+weapon: hate
+tier: 2
+position_in_tier: 1
+icon: ComboGainInSwordAloneMode(xWhite).png
+description: "Increase Base Damage by +30. With Melee Weapon Equipped: +100% Combo Count Chance"
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 30.0
+  # No evolution kind carries Combo Count Chance, nor this gate on it.
+  - kind: unmodelled_with_melee_weapon_equipped_combo_count_chance
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Hate_Incarnon_Genesis

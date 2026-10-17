@@ -1,0 +1,16 @@
+id: ruvox_seismic_slam
+name: Seismic Slam
+weapon: ruvox
+tier: 3
+position_in_tier: 2
+icon: IncarnonSlamRadius(xWhite).png
+description: "+60% Slam Radius"
+selection: choose_one
+
+effects:
+  # "Does not affect the impale radius from Heavy Slam attacks" (W`Ruvox`).
+  - kind: slam_radius_bonus
+    value: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

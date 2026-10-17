@@ -1,0 +1,14 @@
+id: thalys_chain_shatter
+name: Chain Shatter
+weapon: thalys
+tier: 5
+position_in_tier: 2
+icon: HeavyAttackDetonateShards(xWhite).png
+description: "Heavy attacks detonate shards. Shards caught within the blast radius will also detonate"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_heavy_attacks_detonate_shards
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

@@ -1,0 +1,15 @@
+id: thalys_echoes_of_rage
+name: Echoes of Rage
+weapon: thalys
+tier: 3
+position_in_tier: 2
+icon: ComboCountonShardEcho(xWhite).png
+description: "+1 Combo Count on Shard Damage"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_combo_count_on_shard_damage
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

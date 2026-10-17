@@ -1,0 +1,15 @@
+id: thalys_nimble_scythe
+name: Nimble Scythe
+weapon: thalys
+tier: 3
+position_in_tier: 1
+icon: ComboPointOnSlide(xWhite).png
+description: "For each enemy hit by Slide Attack, gain +5 Combo Count"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_combo_count_per_enemy_hit_by_slide_attack
+    value: 5.0
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

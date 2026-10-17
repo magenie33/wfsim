@@ -1,0 +1,31 @@
+id: hate_evo1_incarnon_form
+name: Incarnon Form
+weapon: hate
+tier: 1
+position_in_tier: 1
+icon: NeutralStanceAttacksFlingSpinningBlades(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 180 seconds. Forward and Neutral Combos embed explosive blades. +100% Melee Damage, +20% Sprint Speed, +20% to Parkour Velocity."
+# A MELEE INCARNON IS NOT A FORM: it changes numbers on the ways the weapon
+# is already swung and unlocks no second entry (docs/MELEE.md §7). The window
+# is simulated: the fight opens un-armed and buys it with a heavy attack.
+selection: fixed
+
+effects:
+  # 180 s is W`Hate_Incarnon_Genesis`'s overview: "Once activated, the Incarnon form lasts
+  # for 180 seconds".
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage" -- a bracket term beside Pressure Point.
+  - kind: base_damage_bonus
+    value: 1.0
+  # from: "Forward and Neutral Combos embed explosive blades" -- an attack
+  # the form MAKES ("Spectral Blade" and "Spectral Blade Explosion" in the
+  # module), carrying none of the +100% or the EVO2 base damage (W`Hate_Incarnon_Genesis`).
+  - kind: unmodelled_forward_and_neutral_combos_embed_explosive_blades
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% to Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Hate_Incarnon_Genesis

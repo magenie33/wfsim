@@ -1,0 +1,15 @@
+id: thalys_void_splinters
+name: Void Splinters
+weapon: thalys
+tier: 5
+position_in_tier: 3
+icon: LongLastingShards(xWhite).png
+description: "Shard duration is increased to 30s. Shards become weak spots that have +100% Critical Chance when damaged. Shard damage is reduced by -50%."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_shards_become_weak_spots_with_critical_chance
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

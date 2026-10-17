@@ -1,0 +1,19 @@
+id: sibear_red_right_hand
+name: Red Right Hand
+weapon: sibear
+tier: 4
+position_in_tier: 3
+icon: CritDamageOnFirstAttackFromAGunEquipped(xWhite).png
+description: "On First Attack With Primary Equipped: Increase Base Critical Damage Multiplier by +2x."
+selection: choose_one
+
+effects:
+  # "First attack from quickswap melee deals bonus critical damage"
+  # (W`Sibear_Incarnon_Genesis`): a swap out of a gun, which this arena never
+  # performs — the Deathtrap Trigger family's reason.
+  - kind: out_of_scope
+    clause: "On First Attack With Primary Equipped: Increase Base Critical Damage Multiplier by +2x"
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Sibear_Incarnon_Genesis

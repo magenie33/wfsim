@@ -1,0 +1,15 @@
+id: innodem_orokin_reach
+name: Orokin Reach
+weapon: innodem
+tier: 2
+position_in_tier: 1
+icon: EvolutionOrokinReach(xWhite).png
+description: "+0.5 Range"
+selection: choose_one
+
+effects:
+  - kind: melee_range_bonus_m
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

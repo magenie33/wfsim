@@ -1,0 +1,16 @@
+id: innodem_hawk_momentum
+name: Hawk Momentum
+weapon: innodem
+tier: 3
+position_in_tier: 1
+icon: EvolutionHawkMomentum(xWhite).png
+description: "Gain 5 Combo for every 10m of continuous slide"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Gain 5 Combo for every 10m of continuous slide"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

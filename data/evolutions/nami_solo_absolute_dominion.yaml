@@ -1,0 +1,15 @@
+id: nami_solo_absolute_dominion
+name: Absolute Dominion
+weapon: nami_solo
+tier: 4
+position_in_tier: 3
+icon: HighStatus(xWhite).png
+description: "Increase Base Status Chance by +30%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_status_chance
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Nami_Solo_Incarnon_Genesis

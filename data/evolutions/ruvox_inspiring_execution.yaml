@@ -1,0 +1,15 @@
+id: ruvox_inspiring_execution
+name: Inspiring Execution
+weapon: ruvox
+tier: 4
+position_in_tier: 3
+icon: ComboFromFinishers(xWhite).png
+description: "+30% Combo Count Chance on Finishers for 20s"
+selection: choose_one
+
+effects:
+  - kind: unmodelled_combo_count_chance_on_finishers_for_20s
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

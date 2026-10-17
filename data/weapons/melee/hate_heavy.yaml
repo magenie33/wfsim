@@ -8,7 +8,6 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - reason: melee_attack_unmodelled
     attacks: "Spectral Blade and Spectral Blade Explosion"
-  - reason: melee_incarnon_unmodelled
   - reason: melee_slide_unpublished
   - reason: heavy_charge_share_assumed
     published: 1.0

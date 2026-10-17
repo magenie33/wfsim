@@ -1,0 +1,15 @@
+id: nami_solo_swift_break
+name: Swift Break
+weapon: nami_solo
+tier: 3
+position_in_tier: 2
+icon: IncarnonWindUp(xWhite).png
+description: "+50% Heavy Attack Windup Speed"
+selection: choose_one
+
+effects:
+  - kind: heavy_windup_speed_bonus
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Nami_Solo_Incarnon_Genesis

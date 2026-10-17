@@ -1,0 +1,20 @@
+id: sibear_thanes_wrath
+name: Thane's Wrath
+weapon: sibear
+tier: 2
+position_in_tier: 2
+icon: DamageWithArmorAboveX(xWhite).png
+description: "Increase Base Damage by +20. With Armor Over 450: Increase Base Damage by +40."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 20.0
+  # Gated on the Warframe's armour, the Fortress Salvo gate.
+  - kind: gated_by_tenno
+    condition: "armor > 450"
+    grants: flat_base_damage
+    value: 40.0
+
+source:
+  url: https://wiki.warframe.com/w/Sibear_Incarnon_Genesis

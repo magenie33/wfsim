@@ -1,0 +1,17 @@
+id: hate_resolute_force
+name: Resolute Force
+weapon: hate
+tier: 3
+position_in_tier: 3
+icon: IncarnonComboTimer(xWhite).png
+description: "+10s Combo Duration."
+selection: choose_one
+
+effects:
+  # from: "+10s Combo Duration" -- the mods' `melee_combo_duration_bonus`
+  # has no evolution spelling yet.
+  - kind: unmodelled_combo_duration_seconds
+    value: 10.0
+
+source:
+  url: https://wiki.warframe.com/w/Hate_Incarnon_Genesis

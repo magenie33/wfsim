@@ -8,7 +8,6 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - reason: melee_attack_unmodelled
     attacks: "Dagger Projectile"
-  - reason: melee_incarnon_unmodelled
   - reason: heavy_charge_share_assumed
     published: 0.4
     charge: 0.1333

@@ -1,0 +1,33 @@
+id: thalys_evo1_incarnon_form
+name: Incarnon Form
+weapon: thalys
+tier: 1
+position_in_tier: 1
+icon: VoidScytheTier0(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 90 seconds. Attacks embed a damaging shard in enemies. Each time a new shard is created, existing shards deal 75% of weapon damage to embedded foes. +3 Range, +40% Attack Speed."
+# AN INNATE INCARNON, not a Genesis: there is no adapter, and a melee
+# Incarnon grants no `unlocks_weapon` (docs/MELEE.md §7). Ninety seconds is
+# half a 180 s engagement, and the window is simulated.
+selection: fixed
+
+effects:
+  # 90 s is W`Thalys`'s overview: "the Incarnon form lasts for 90
+  # seconds".
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 90.0
+  # "non-Heavy Slams may be used as well" to activate it (W`Thalys`); the
+  # window arms on a heavy attack only.
+  - kind: unmodelled_slam_attack_also_activates_incarnon_form
+  - kind: melee_range_bonus_m
+    value: 3.0
+  # from: "+40% Attack Speed" -- the fire-rate bucket.
+  - kind: fire_rate_bonus
+    value: 0.4
+  # "Shard trigger damage is 75% of Thalys's base damage" (W`Thalys`) -- a
+  # damage instance the form MAKES on other bodies.
+  - kind: unmodelled_attacks_embed_a_damaging_shard_in_enemies
+    value: 0.75
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

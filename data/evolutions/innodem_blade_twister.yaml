@@ -1,0 +1,16 @@
+id: innodem_blade_twister
+name: Blade Twister
+weapon: innodem
+tier: 3
+position_in_tier: 3
+icon: EvolutionBladeTwister(xWhite).png
+description: "+60% Finisher Damage"
+selection: choose_one
+
+effects:
+  # Nothing here performs a finisher (docs/UNMODELLED.md).
+  - kind: unmodelled_finisher_damage
+    value: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

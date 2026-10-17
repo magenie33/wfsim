@@ -1,0 +1,18 @@
+id: thalys_dreadful_reach
+name: Dreadful Reach
+weapon: thalys
+tier: 2
+position_in_tier: 1
+icon: StatusProcIncreasesRange(xWhite).png
+description: "On Weapon Status Effect: +0.1 Range for 8 seconds. Stacks 20x"
+selection: choose_one
+
+effects:
+  # No stacking payload grants range.
+  - kind: unmodelled_on_weapon_status_effect_range_for_8s
+    value: 0.1
+  # VERBATIM: "Stacks 20x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

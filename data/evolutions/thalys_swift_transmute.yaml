@@ -1,0 +1,17 @@
+id: thalys_swift_transmute
+name: Swift Transmute
+weapon: thalys
+tier: 4
+position_in_tier: 1
+icon: HeavyAttackTransformAt3x(xWhite).png
+description: "Reach 3x Combo and Heavy Attack to activate Incarnon Form"
+selection: choose_one
+
+effects:
+  # A cheaper activation and nothing else; the 90 s stay where tier 1
+  # states them.
+  - kind: incarnon_window
+    arm_at_combo: 3.0
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

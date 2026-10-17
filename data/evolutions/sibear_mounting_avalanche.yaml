@@ -1,0 +1,17 @@
+id: sibear_mounting_avalanche
+name: Mounting Avalanche
+weapon: sibear
+tier: 4
+position_in_tier: 1
+icon: KillingTargetStacksFreezeAddsOvershields(xWhite).png
+description: "On Killing Enemy With 3+ Cold Stacks: +15 Initial Combo for 10s. Stacks up to 4x."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_on_kill_with_3_cold_stacks_initial_combo_for_10s
+    value: 15.0
+  # VERBATIM: "Stacks up to 4x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Sibear_Incarnon_Genesis

@@ -1,0 +1,21 @@
+id: ruvox_lethal_impetus
+name: Lethal Impetus
+weapon: ruvox
+tier: 2
+position_in_tier: 2
+icon: IncarnonAttackSpeed(xWhite).png
+description: "On Kill: +15% Attack Speed for 15s. Stacks up to 3x."
+selection: choose_one
+
+effects:
+  # from: "On Kill: +15% Attack Speed for 15s. Stacks up to 3x" -- the
+  # fire-rate bucket, which for melee IS attack speed.
+  - kind: stacking_buff
+    trigger: kill
+    grants: fire_rate
+    per_stack: 0.15
+    max_stacks: 3
+    duration_seconds: 15.0
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

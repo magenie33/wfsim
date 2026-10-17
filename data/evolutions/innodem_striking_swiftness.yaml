@@ -1,0 +1,16 @@
+id: innodem_striking_swiftness
+name: Striking Swiftness
+weapon: innodem
+tier: 2
+position_in_tier: 3
+icon: EvolutionStrikingSwiftness(xWhite).png
+description: "+30% Sprint Speed"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "+30% Sprint Speed"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Innodem
