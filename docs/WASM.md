@@ -75,6 +75,9 @@ memory is none of these.
   or `network` failure is tried once more; a failed download is forgotten, so
   the next lane made is the next try.
 - **The boot screen's progress is the page's** (`__wfsimBootProgress`).
+- **It starts with the page and compiles as it arrives**: `index.html` preloads
+  the module, so its download overlaps app.js's rather than following it, and
+  `compileStreaming` compiles the body as it comes in.
 - `check_calc_recovers.mjs` blocks the module in every worker's own session and
   proves lanes still answer; then blocks it at the page and proves the lane
   fails at once, saying why.

@@ -2648,6 +2648,11 @@ def main() -> None:
             sys.exit(f"app.js: `{old}` not found — the engine would 404 or show no total")
         engined = engined.replace(old, new, 1)
     (APP / "app.js").write_text(engined, encoding="utf-8", newline=chr(10))
+    # …AND THE PAGE'S PRELOAD names the same module, or the page downloads two.
+    preload = quote_attr("/pkg/wfsim_wasm_bg.wasm")
+    if preload not in flagged:
+        sys.exit("index.html: the engine's preload not found — the module would download after app.js")
+    flagged = flagged.replace(preload, quote_attr(f"/pkg/{pkg['wasm']}"))
     # …AND ONLY NOW ARE THE THREE FINAL. Every substitution above rewrites the
     # bytes, so a digest taken before any of them would name a file that is no
     # longer what was hashed.

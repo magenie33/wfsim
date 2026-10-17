@@ -28,8 +28,23 @@ const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
 
 await evaluate(`localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')`);
+// THE PAGE ASKS FOR THE ENGINE ONCE, before app.js has arrived: the preload
+// and `engineCompile`'s fetch are one request only while the two match, and a
+// mismatch is a second full download that every page still survives.
+const boot = { wasm: [], appEnd: null, app: null };
+app.on("Network.requestWillBeSent", (p) => {
+  if (/\.wasm$/.test(p.request.url)) boot.wasm.push(p.timestamp);
+  if (/\/asset\/app\.[0-9a-f]+\.js$/.test(p.request.url)) boot.app = p.requestId;
+});
+app.on("Network.loadingFinished", (p) => { if (p.requestId === boot.app) boot.appEnd = p.timestamp; });
+await send("Network.enable");
+await send("Network.setCacheDisabled", { cacheDisabled: true });
 await send("Page.navigate", { url: BASE });
 await sleep(12000);
+await send("Network.disable");
+check("the engine is one download, asked for before app.js has arrived",
+  boot.wasm.length === 1 && boot.appEnd !== null && boot.wasm[0] < boot.appEnd,
+  `${boot.wasm.length} wasm request(s), first ${boot.wasm.length ? Math.round((boot.wasm[0] - (boot.appEnd ?? 0)) * 1000) : "-"} ms from app.js's end`);
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

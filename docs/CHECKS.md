@@ -944,6 +944,12 @@ while the page downloads its module; with the loading watchdog cut to 7.5 s,
 the page's module dropped and the wasm held back 16 s by the test server
 (`openApp`'s `delay`), the lane still answers `/api/meta`. Verified to bite: with the beat removed, the lane dies.
 
+**ONE DOWNLOAD, STARTED WITH THE PAGE.** A cold load makes exactly one wasm
+request, and it begins before app.js has finished arriving: the page's preload
+and `engineCompile`'s fetch only share a response while the two match, and a
+mismatch is a second full download every boot survives. Verified to bite: with
+the preload removed, the request starts after app.js.
+
 **ONE ENGINE A PAGE.** With the wasm blocked in every worker's own CDP session,
 three lanes made after boot still answer: they are handed the page's compiled
 module and download nothing (docs/WASM.md §"One engine a page").

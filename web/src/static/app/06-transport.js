@@ -267,22 +267,43 @@ async function engineCompile() {
   // reads as progress rather than as a hang.
   const reader = r.body && r.body.getReader();
   if (!reader) return WebAssembly.compile(await r.arrayBuffer());
-  const parts = [];
-  let got = 0, said = 0;
+  let got = 0, said = 0, cut = null;
   const say = () => { said = Date.now(); if (window.__wfsimBootProgress) window.__wfsimBootProgress(got, ENGINE_WASM_BYTES); };
-  for (;;) {
+  const next = async () => {
     let stall;
     const part = await Promise.race([
       reader.read(),
       new Promise((_, no) => { stall = setTimeout(() => no(new Error("engine download stalled")), ENGINE_STALL_MS); }),
-    ]).catch((err) => { reader.cancel().catch(() => {}); throw engineFailed("cut", err); })
+    ]).catch((err) => { reader.cancel().catch(() => {}); throw (cut = engineFailed("cut", err)); })
       .finally(() => clearTimeout(stall));
+    if (part.done) say();
+    else {
+      got += part.value.byteLength;
+      if (Date.now() - said > 250) say();
+    }
+    return part;
+  };
+  // COMPILED AS IT ARRIVES where the browser can, so the compile is not a
+  // second wait after the last byte. A cut body rejects the compile with the
+  // browser's own error, so the cause is the one this stream recorded.
+  if (WebAssembly.compileStreaming) {
+    const body = new ReadableStream({
+      async pull(ctl) {
+        const part = await next();
+        if (part.done) ctl.close();
+        else ctl.enqueue(part.value);
+      },
+      cancel() { reader.cancel().catch(() => {}); },
+    });
+    return WebAssembly.compileStreaming(new Response(body, { headers: { "content-type": "application/wasm" } }))
+      .catch((err) => { throw cut || err; });
+  }
+  const parts = [];
+  for (;;) {
+    const part = await next();
     if (part.done) break;
     parts.push(part.value);
-    got += part.value.byteLength;
-    if (Date.now() - said > 250) say();
   }
-  say();
   const bytes = new Uint8Array(got);
   let at = 0;
   for (const p of parts) { bytes.set(p, at); at += p.byteLength; }

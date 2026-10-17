@@ -33,6 +33,10 @@
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
   <link rel="stylesheet" href="/style.css" />
+  <!-- THE ENGINE IS ASKED FOR WITH THE PAGE, so its download overlaps app.js's
+       instead of queueing behind it. `engineCompile`'s fetch takes this response
+       only while the two requests match: `crossorigin` is what makes them. -->
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.wasm" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
