@@ -1,0 +1,15 @@
+id: prisma_obex_orokin_reach
+name: Orokin Reach
+weapon: prisma_obex
+tier: 3
+position_in_tier: 2
+icon: MoreRange(xWhite).png
+description: "+1.2 Range."
+selection: choose_one
+
+effects:
+  - kind: melee_range_bonus_m
+    value: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

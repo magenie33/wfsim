@@ -1,0 +1,25 @@
+id: ceramic_dagger_evo1_incarnon_form
+name: Incarnon Form
+weapon: ceramic_dagger
+tier: 1
+position_in_tier: 1
+icon: HeavyAttacksThrowSpectralDaggers(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form. Heavy Attacks sends forth spectral daggers. +100% Melee Damage, +25% Sprint Speed, +25% to Parkour Velocity."
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack"; "the Incarnon form lasts for
+  # 180 seconds" (W`Ceramic_Dagger_Incarnon_Genesis`, overview).
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage"
+  - kind: base_damage_bonus
+    value: 1.0
+  - kind: unmodelled_heavy_attacks_send_forth_spectral_daggers
+  - kind: out_of_scope
+    clause: "+25% Sprint Speed, +25% to Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Ceramic_Dagger_Incarnon_Genesis

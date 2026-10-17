@@ -1,0 +1,16 @@
+id: obex_rapid_conclusion
+name: Rapid Conclusion
+weapon: obex
+tier: 3
+position_in_tier: 1
+icon: OnFinisherIncreaseParkourVelocity(xWhite).png
+description: "On Finisher Kill: +2.5% Parkour Velocity. Stacks up to 16x."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "On Finisher Kill: +2.5% Parkour Velocity. Stacks up to 16x."
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

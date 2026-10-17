@@ -1,0 +1,19 @@
+id: ceramic_dagger_gun_and_blade
+name: Gun and Blade
+weapon: ceramic_dagger
+tier: 2
+position_in_tier: 1
+icon: InitialComboPerKillWithPrimaryWeapon(xWhite).png
+description: "Increase Base Damage by +100. On Primary Kill: +1 Initial Combo. Stacks up to 100x."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 100.0
+  # A primary's kill needs a second weapon, and this arena swings one.
+  - kind: out_of_scope
+    clause: "On Primary Kill: +1 Initial Combo. Stacks up to 100x."
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Ceramic_Dagger_Incarnon_Genesis

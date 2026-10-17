@@ -1,0 +1,17 @@
+id: ack_and_brunt_templars_wrath
+name: Templar's Wrath
+weapon: ack_and_brunt
+tier: 2
+position_in_tier: 1
+icon: HeavyEfficiencyWithArmour(xWhite).png
+description: "Increase Base Damage by +150. With Armor Over 450: +70% Heavy Attack Efficiency."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 150.0
+  - kind: unmodelled_heavy_attack_efficiency_with_armor_over_450
+    value: 0.7
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

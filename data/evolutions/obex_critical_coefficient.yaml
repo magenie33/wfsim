@@ -1,0 +1,19 @@
+id: obex_critical_coefficient
+name: Critical Coefficient
+weapon: obex
+tier: 4
+position_in_tier: 3
+icon: CritDamage(xWhite).png
+description: "Increase Base Critical Damage Multiplier by +0.6x. Effect doubles in Incarnon Form."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_multiplier
+    value: 0.6
+  # Only tier 1 is resolved in and out of the form, so the second +0.6x has
+  # no panel to land on.
+  - kind: unmodelled_crit_multiplier_doubles_in_incarnon_form
+    value: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

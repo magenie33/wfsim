@@ -1,0 +1,15 @@
+id: destreza_adept_reflexes
+name: Adept Reflexes
+weapon: destreza
+tier: 3
+position_in_tier: 3
+icon: InitialComboCount(xWhite).png
+description: "+20 Initial Combo."
+selection: choose_one
+
+effects:
+  - kind: initial_combo
+    value: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

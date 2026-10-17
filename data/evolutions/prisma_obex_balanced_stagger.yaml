@@ -1,0 +1,17 @@
+id: prisma_obex_balanced_stagger
+name: Balanced Stagger
+weapon: prisma_obex
+tier: 2
+position_in_tier: 1
+icon: NeutralComboChanceToStunAndFinishers(xWhite).png
+description: "Increase Base Damage by +10. 20% chance to stun enemies hit by a Neutral Combo, opening them to finishers."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 10.0
+  - kind: unmodelled_chance_to_stun_on_neutral_combo_opening_finishers
+    value: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

@@ -1,0 +1,17 @@
+id: prisma_obex_subtle_force
+name: Subtle Force
+weapon: prisma_obex
+tier: 4
+position_in_tier: 1
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +12%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.1
+  - kind: flat_base_status_chance
+    value: 0.12
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

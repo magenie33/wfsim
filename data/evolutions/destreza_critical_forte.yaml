@@ -1,0 +1,15 @@
+id: destreza_critical_forte
+name: Critical Forte
+weapon: destreza
+tier: 4
+position_in_tier: 2
+icon: IncarnonBonusCritDamage(xWhite).png
+description: "Increase Base Critical Multiplier by +1.2x."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_multiplier
+    value: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

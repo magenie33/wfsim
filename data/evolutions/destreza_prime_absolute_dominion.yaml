@@ -1,0 +1,15 @@
+id: destreza_prime_absolute_dominion
+name: Absolute Dominion
+weapon: destreza_prime
+tier: 4
+position_in_tier: 1
+icon: HighStatus(xWhite).png
+description: "Increase Base Status Chance by +16%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_status_chance
+    value: 0.16
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

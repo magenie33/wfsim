@@ -1,0 +1,17 @@
+id: dual_ichor_ronins_rush
+name: Ronin's Rush
+weapon: dual_ichor
+tier: 2
+position_in_tier: 2
+icon: AttackSpeedForXOnKnockdown(xWhite).png
+description: "Increase Base Damage by +90. On striking target with final move of Neutral Combo: +30% Attack Speed for 33s."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 90.0
+  - kind: unmodelled_attack_speed_on_final_move_of_neutral_combo_for_33s
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis

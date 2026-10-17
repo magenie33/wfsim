@@ -1,0 +1,15 @@
+id: ack_and_brunt_absolute_valor
+name: Absolute Valor
+weapon: ack_and_brunt
+tier: 4
+position_in_tier: 2
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +17%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.17
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

@@ -1,0 +1,16 @@
+id: anku_swordsmans_celerity
+name: Swordsman's Celerity
+weapon: anku
+tier: 3
+position_in_tier: 2
+icon: MovementSpeedWhileEquipped(xWhite).png
+description: "+20% Movement Speed."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "+20% Movement Speed"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Anku_Incarnon_Genesis

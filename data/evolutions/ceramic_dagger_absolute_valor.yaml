@@ -1,0 +1,15 @@
+id: ceramic_dagger_absolute_valor
+name: Absolute Valor
+weapon: ceramic_dagger
+tier: 4
+position_in_tier: 3
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +30%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Ceramic_Dagger_Incarnon_Genesis

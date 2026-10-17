@@ -1,0 +1,17 @@
+id: ack_and_brunt_rogue_readiness
+name: Rogue Readiness
+weapon: ack_and_brunt
+tier: 4
+position_in_tier: 1
+icon: ChanceToReplenishMagOnHeadshot(xWhite).png
+description: "On Kill: 50% chance for Primary and Secondary weapons instantly reload."
+selection: choose_one
+
+effects:
+  # It reloads the other two weapons, and this arena swings one.
+  - kind: out_of_scope
+    clause: "On Kill: 50% chance for Primary and Secondary weapons instantly reload."
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

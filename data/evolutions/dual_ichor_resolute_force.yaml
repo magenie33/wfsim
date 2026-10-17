@@ -1,0 +1,15 @@
+id: dual_ichor_resolute_force
+name: Resolute Force
+weapon: dual_ichor
+tier: 3
+position_in_tier: 2
+icon: IncarnonComboTimer(xWhite).png
+description: "+7s Combo Duration."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_combo_duration_seconds
+    value: 7.0
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis
