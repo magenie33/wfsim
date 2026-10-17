@@ -1,0 +1,15 @@
+id: thalys_explosive_growth
+name: Explosive Growth
+weapon: thalys
+tier: 5
+position_in_tier: 1
+icon: GrowingShards(xWhite).png
+description: "Shards grow when a new shard is created, up to 3 times. Fully grown shards erupt out of the embedded enemy, dealing x2 damage and impaling them on the spot."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_shards_grow_and_erupt_for_double_damage
+    value: 2.0
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

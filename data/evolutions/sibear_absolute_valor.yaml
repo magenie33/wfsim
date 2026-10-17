@@ -1,0 +1,15 @@
+id: sibear_absolute_valor
+name: Absolute Valor
+weapon: sibear
+tier: 4
+position_in_tier: 2
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +25%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.25
+
+source:
+  url: https://wiki.warframe.com/w/Sibear_Incarnon_Genesis

@@ -1,0 +1,15 @@
+id: ruvox_brutal_efficiency
+name: Brutal Efficiency
+weapon: ruvox
+tier: 5
+position_in_tier: 1
+icon: HeavyEffOnMultImpaled(xWhite).png
+description: "Gain +40% Heavy Attack Efficiency for 20s when impaling 5 or more enemies."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_heavy_attack_efficiency_for_20s_when_impaling_5_enemies
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

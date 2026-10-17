@@ -1,0 +1,30 @@
+id: sibear_evo1_incarnon_form
+name: Incarnon Form
+weapon: sibear
+tier: 1
+position_in_tier: 1
+icon: SlamsCreateIceFields(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 180 seconds. Create a Cold Blast Radius with Heavy Slams. +100% Melee Damage, +50% Heavy Attack Wind Up Speed, +10% Sprint Speed, +10% to Parkour Velocity."
+# A MELEE INCARNON IS NOT A FORM: it changes numbers on the ways the weapon
+# is already swung and unlocks no second entry (docs/MELEE.md §7). The window
+# is simulated: the fight opens un-armed and buys it with a heavy attack.
+selection: fixed
+
+effects:
+  # 180 s is W`Sibear_Incarnon_Genesis`'s overview and the module's `IncarnonDuration = 180`.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  - kind: base_damage_bonus
+    value: 1.0
+  - kind: heavy_windup_speed_bonus
+    value: 0.5
+  # "Heavy slams create a slowing field over the radius of the slam for
+  # 4 seconds" (W`Sibear_Incarnon_Genesis`) -- a field the form MAKES.
+  - kind: unmodelled_heavy_slams_create_cold_blast_radius
+  - kind: out_of_scope
+    clause: "+10% Sprint Speed, +10% to Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Sibear_Incarnon_Genesis

@@ -1,0 +1,33 @@
+id: ruvox_evo1_incarnon_form
+name: Incarnon Form
+weapon: ruvox
+tier: 1
+position_in_tier: 1
+icon: HeavyAtkVoidSpikesComboCt(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 90 seconds. Heavy Slam attacks impale nearby enemies on Void Spikes. +3 Range, -35% Max Melee Attack Speed, +100% of Impact Damage converted to Puncture Damage."
+# AN INNATE INCARNON, not a Genesis: there is no adapter, and a melee
+# Incarnon grants no `unlocks_weapon` (docs/MELEE.md §7). Ninety seconds is
+# half a 180 s engagement, and the window is simulated.
+selection: fixed
+
+effects:
+  # 90 s is W`Ruvox`'s overview: "the Incarnon form lasts for 90
+  # seconds".
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 90.0
+  - kind: melee_range_bonus_m
+    value: 3.0
+  # NOT `fire_rate_bonus`: "Melee Attack Speed curse is multiplicative to
+  # all other attack speed buffs" (W`Ruvox`), and that bucket is additive.
+  - kind: unmodelled_max_melee_attack_speed_multiplier
+    value: -0.35
+  # No evolution kind converts one damage type into another.
+  - kind: unmodelled_impact_damage_converted_to_puncture
+    value: 1.0
+  # "Heavy Slam attacks impale enemies within 8 meters on Void spikes
+  # for 1.5s + 1.0s * (combo multiplier - 1)" (W`Ruvox`).
+  - kind: unmodelled_heavy_slam_attacks_impale_nearby_enemies_on_void_spikes
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

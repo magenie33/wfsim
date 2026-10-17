@@ -6,7 +6,6 @@ form: slide
 transform_group: sibear
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_incarnon_unmodelled
   - reason: melee_passive_unmodelled
     passive: "a heavy attack grants +50% Status Chance, flat and after mods, for 4 s"
 attack:

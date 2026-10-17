@@ -1,0 +1,19 @@
+id: nami_solo_brigands_frenzy
+name: Brigand's Frenzy
+weapon: nami_solo
+tier: 2
+position_in_tier: 1
+icon: IncarnonAttackSpeed(xWhite).png
+description: "Increase Base Damage by +80. On Equip: +30% Attack Speed for 4s."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 80.0
+  # see notes: edge_gap_see_docs
+  - kind: out_of_scope
+    clause: "On Equip: +30% Attack Speed for 4s"
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Nami_Solo_Incarnon_Genesis

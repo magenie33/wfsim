@@ -1,0 +1,16 @@
+id: ruvox_ternary_vault
+name: Ternary Vault
+weapon: ruvox
+tier: 4
+position_in_tier: 2
+icon: IncarnonTripleJump(xWhite).png
+description: "Gain +1 mid-air jumps"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Gain +1 mid-air jumps"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

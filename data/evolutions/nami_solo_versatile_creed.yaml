@@ -1,0 +1,17 @@
+id: nami_solo_versatile_creed
+name: Versatile Creed
+weapon: nami_solo
+tier: 4
+position_in_tier: 2
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +14%. Increase Base Status Chance by +14%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.14
+  - kind: flat_base_status_chance
+    value: 0.14
+
+source:
+  url: https://wiki.warframe.com/w/Nami_Solo_Incarnon_Genesis

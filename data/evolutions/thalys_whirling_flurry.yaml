@@ -1,0 +1,15 @@
+id: thalys_whirling_flurry
+name: Whirling Flurry
+weapon: thalys
+tier: 2
+position_in_tier: 2
+icon: EvolutionAttackSpeed(xWhite).png
+description: "+20% Attack Speed"
+selection: choose_one
+
+effects:
+  - kind: fire_rate_bonus
+    value: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

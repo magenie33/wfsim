@@ -6,7 +6,6 @@ form: heavy
 transform_group: nami_solo
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_incarnon_unmodelled
   - reason: heavy_charge_share_assumed
     published: 0.7
     charge: 0.2333

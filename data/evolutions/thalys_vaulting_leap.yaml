@@ -1,0 +1,16 @@
+id: thalys_vaulting_leap
+name: Vaulting Leap
+weapon: thalys
+tier: 4
+position_in_tier: 2
+icon: JumpHeight(xWhite).png
+description: "+100% Jump and Double Jump Height"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "+100% Jump and Double Jump Height"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

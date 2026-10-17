@@ -1,0 +1,17 @@
+id: innodem_skyborne_hunter
+name: Skyborne Hunter
+weapon: innodem
+tier: 3
+position_in_tier: 2
+icon: EvolutionSkyborneHunter(xWhite).png
+description: "Increase range of aerial melee attacks by +0.5m."
+selection: choose_one
+
+effects:
+  # A bonus to ONE mode's reach, and no stance script here swings an
+  # aerial attack; the Praedos's Reaching Lunge is the same shape.
+  - kind: unmodelled_aerial_attack_range_metres
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Innodem

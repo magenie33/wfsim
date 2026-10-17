@@ -1,0 +1,16 @@
+id: thalys_devastating_mercy
+name: Devastating Mercy
+weapon: thalys
+tier: 4
+position_in_tier: 3
+icon: RadialAttackGroundFinisherKnockdown(xWhite).png
+description: "Ground Finishers knock enemies down in 6m radius"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Ground Finishers knock enemies down in 6m radius"
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Thalys

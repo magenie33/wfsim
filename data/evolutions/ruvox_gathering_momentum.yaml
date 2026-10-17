@@ -1,0 +1,16 @@
+id: ruvox_gathering_momentum
+name: Gathering Momentum
+weapon: ruvox
+tier: 2
+position_in_tier: 3
+icon: MoveSpdComboMult(xWhite).png
+description: "Gain +5% Movement Speed per Melee Combo Multiplier"
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Gain +5% Movement Speed per Melee Combo Multiplier"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Ruvox

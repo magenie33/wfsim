@@ -1,0 +1,15 @@
+id: hate_absolute_valor
+name: Absolute Valor
+weapon: hate
+tier: 4
+position_in_tier: 1
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +10%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.1
+
+source:
+  url: https://wiki.warframe.com/w/Hate_Incarnon_Genesis

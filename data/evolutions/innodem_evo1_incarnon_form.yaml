@@ -1,0 +1,33 @@
+id: innodem_evo1_incarnon_form
+name: Incarnon Form
+weapon: innodem
+tier: 1
+position_in_tier: 1
+icon: EvolutionIncarnonFormBlade.png
+description: "Reach 5x Combo and then Heavy Attack to activate Incarnon Form for 90 seconds. Aerial Attacks while Aim Gliding launch Radiation Damage projectiles, and Finishers increase Damage Reduction. +3 Range, +40% Attack Speed."
+# AN INNATE INCARNON, not a Genesis: there is no adapter, and a melee
+# Incarnon grants no `unlocks_weapon` (docs/MELEE.md §7). Ninety seconds is
+# half a 180 s engagement, and the window is simulated.
+selection: fixed
+
+effects:
+  # 90 s is W`Innodem`'s overview: "the Incarnon form lasts for 90
+  # seconds".
+  - kind: incarnon_window
+    arm_at_combo: 5.0
+    seconds: 90.0
+  - kind: melee_range_bonus_m
+    value: 3.0
+  # from: "+40% Attack Speed" -- the fire-rate bucket.
+  - kind: fire_rate_bonus
+    value: 0.4
+  # "Aim glide melee attacks launch projectiles which deal 360 Radiation
+  # damage" (W`Innodem`) -- an attack the form MAKES, from a mode no
+  # stance script here performs.
+  - kind: unmodelled_aim_glide_aerial_attacks_launch_radiation_projectiles
+  - kind: out_of_scope
+    clause: "Finishers increase Damage Reduction"
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Innodem
