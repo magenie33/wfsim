@@ -8,7 +8,8 @@ description: "+7s Combo Duration."
 selection: choose_one
 
 effects:
-  - kind: unmodelled_combo_duration_seconds
+  # from: "+7s Combo Duration" — the bucket Body Count fills.
+  - kind: melee_combo_duration
     value: 7.0
 
 source:

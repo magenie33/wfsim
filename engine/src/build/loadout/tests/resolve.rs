@@ -2599,3 +2599,18 @@ fn an_ability_weapon_takes_only_the_cards_its_page_allows() {
     assert!(valkyr.contains(&"primed_fury") && valkyr.contains(&"reflex_coil"));
     assert!(crate::data::weapons::has_exilus_slot("valkyr_talons"));
 }
+
+/// **AN EVOLUTION'S COMBO TERMS LAND IN THE MODS' BUCKETS.** Resolute Force's
+/// "+6s Combo Duration" adds to the clock Body Count adds to, and Swordsman's
+/// Flourish's combo count chance to Quickening's sum.
+#[test]
+fn an_evolutions_combo_terms_land_in_the_mods_buckets() {
+    let panel = |weapon: &str, evos: &[&str]| {
+        let base = WeaponBase::from_data(weapon, false, evos);
+        resolve(&base, &[], StackPolicy::Emergent)
+    };
+    let (bare, timed) = (panel("skana", &[]), panel("skana", &["skana_resolute_force"]));
+    assert!((timed.combo_duration_seconds - bare.combo_duration_seconds - 6.0).abs() < 1e-9);
+    let (bare, quick) = (panel("hate", &[]), panel("hate", &["hate_swordsmans_flourish"]));
+    assert!((quick.combo_count_chance - bare.combo_count_chance - 1.0).abs() < 1e-9);
+}
