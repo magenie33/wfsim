@@ -6,6 +6,10 @@ base_drain: 2
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarParryMeleeMod
 description: "+96% chance to open enemies to Finisher Attacks after Warframe blocks Melee"
+# THE WEAPON'S REFUSAL, from its page: an ability's weapon that cannot block
+# or heavy-attack "cannot equip related mods (e.g. Parry, Reflex Coil, Mentor's
+# Legacy" (W`Shattered_Lash_(Weapon)`); DE's tag for that weapon is POWER_WEAPON_LITE.
+excludes_weapon: [power_weapon_lite]
 exilus: true
 
 # Rank 0: +16% chance to open enemies to Finisher Attacks after Warframe blocks Melee

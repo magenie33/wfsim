@@ -682,6 +682,8 @@ pub fn base_panel_assembled(
         evo_proc_conversion: None,
         follow_through: s.attack.follow_through,
         spends_combo: s.attack.spends_combo,
+        combo_multiplies_damage: s.attack.combo_multiplies_damage,
+        paced_by_casting: s.attack.paced_by_casting,
         combo_duration_seconds: s.combo_duration_seconds,
         orb: s.attack.orb.as_deref().copied(),
         meter: s.attack.meter,

@@ -2155,3 +2155,38 @@ fn every_combo_script_ends_on_a_row_that_closes_an_input() {
     }
     assert!(open.is_empty(), "scripts whose last strikes close no input: {open:?}");
 }
+
+/// **AN ABILITY'S WEAPON IS MULTIPLIED BY ITS COMBO, AND NEVER SPENDS IT.**
+/// Shattered Lash earns 20 a cast and every hit takes "a damage multiplier of
+/// 1.0x per Combo Counter up to the cap of 12.0x" (W`Shattered_Lash_(Weapon)`):
+/// the k-th cast deals min(1 + k, 12) of the first. The same fight with the
+/// counter read as an ordinary swing reads it — not at all — is the ratio's
+/// denominator. NO CRIT, NO STATUS AND ONE BODY PART, because Puncture procs
+/// raise the crit chance of the later, bigger hits and a head is worth twice a
+/// torso: either would ride the ratio off the counter's.
+#[test]
+fn an_ability_weapon_is_multiplied_by_its_combo_and_never_spends_it() {
+    let base = crate::model::WeaponBase::from_data("shattered_lash", true, &[]);
+    let mut panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    panel.crit_chance = 0.0;
+    panel.status_chance = 0.0;
+    let mut arena = crate::arena::Arena::training(60.0);
+    arena.body_parts = vec![crate::target::BodyPart {
+        name: "torso".into(),
+        aim_weight: 1.0,
+        multiplier: 1.0,
+        is_head: false,
+        is_weak_point: false,
+        crit_bonus: false,
+    }];
+    let p = FightParams::for_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none(), || panel.clone());
+    let mut flat = p.clone();
+    flat.combo_multiplies_damage = false;
+    let (with, without) = (monte_carlo(&p, 10, 3), monte_carlo(&flat, 10, 3));
+    // Sixty casts at one a second: (1 + … + 12) + 12 × 48, over 60.
+    let want = (78.0 + 12.0 * 48.0) / 60.0;
+    let got = with.mean_damage / without.mean_damage;
+    assert!((got - want).abs() < 1e-6, "combo pays {got:.3}x over the fight, the counter says {want:.3}x");
+}
+
+

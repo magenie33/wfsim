@@ -196,6 +196,7 @@ impl Default for FightParams {
             heavy: None,
             tennokai: crate::model::Tennokai::default(),
             spends_combo: false,
+            combo_multiplies_damage: false,
             combo_duration_seconds: 0.0,
             combo_frozen: false,
             initial_combo: 0.0,

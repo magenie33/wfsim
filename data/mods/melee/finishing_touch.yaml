@@ -6,6 +6,9 @@ base_drain: 2
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFinisherDamageMod
 description: "+60% Finisher Damage"
+# THE WEAPON'S REFUSAL: "Cannot perform Finishers and as such cannot equip
+# Finishing Touch" (W`Shattered_Lash_(Weapon)`), its tag NO_FINISHER.
+excludes_weapon: [no_finisher]
 
 # Rank 0: +15% Finisher Damage
 effects:

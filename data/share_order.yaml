@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 1e05c667ca5c3542
-count: 3428
+digest: e16ba0aa1ad28910
+count: 3430
 ids:
   - acceltra
   - acceltra_prime
@@ -3438,3 +3438,5 @@ ids:
   - volatile_quick_return
   - volatile_rebound
   - whirlwind
+  - shattered_lash
+  - shattered_lash_hold

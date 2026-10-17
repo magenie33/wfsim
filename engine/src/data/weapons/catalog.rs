@@ -58,8 +58,9 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-pub(super) const INHERITED: [&str; 29] = [
+pub(super) const INHERITED: [&str; 30] = [
     "slot", "class", "weapon_type", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
+    "no_exilus_slot",
     "compatibility_tags",
     "summoned_by",
     "wielders", "wielder_names",

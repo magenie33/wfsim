@@ -790,6 +790,28 @@ entry per mode (`data/weapons/exalted/valkyr_talons*.yaml`). Three things differ
 Valkyr Prime Talons are the same weapon — "their stats are, however, identical"
 — so there is one entry, not two.
 
+## 7d. AN ABILITY'S WEAPON SWUNG BY ITS CAST — Shattered Lash
+
+Gara's Shattered Lash is the other kind of Exalted weapon: the player never
+swings it. Every attack is a CAST of the ability, which fixes how it hits, and
+the weapon's mods price each hit (`data/weapons/exalted/shattered_lash*.yaml`).
+Two modes, named for the key: `tap_cast` (the Puncture thrust) and `hold_cast`
+(the Slash sweep), `FormKind::TapCast`/`HoldCast`, the list's `tap_cast` and
+`hold_cast`. Three things differ from a swung weapon.
+
+- **CASTING SPEED PACES IT** (`paced_by_casting`): the weapon's attack speed is
+  locked like an Acuity's stat, so Fury and its kin buy nothing and are
+  refused, and the wielder's Casting Speed fills the bucket.
+- **THE COMBO MULTIPLIES EVERY HIT** (`combo_multiplies_damage`): the Ability
+  Combo Counter earns 20 a cast and pays 1x per tier to 12x, read and never
+  spent, so Blood Rush and Weeping Wounds ride it as on any combo.
+- **ITS PAGE SAYS WHAT IT REFUSES**: no block, heavy, finisher or exilus slot
+  (`no_exilus_slot`, its tags `power_weapon_lite`, `no_finisher`,
+  `no_attack_speed`).
+
+A cast's length is unpublished and energy is unlimited, as for every cast
+(docs/BUFFS.md §Cast); both are stated on the weapon.
+
 ## 8. JOINING A MELEE MOD
 
 The export carries `Beginner / Intermediate / Expert` internal tiers of the same

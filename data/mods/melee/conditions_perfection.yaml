@@ -6,6 +6,8 @@ base_drain: 4
 max_rank: 3
 internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/PerfectCondition
 description: "Enables Tennokai. Increases status chance by +X% on Tennokai attacks."
+# see notes: de_s_own_incompatibility
+excludes_weapon: [power_weapon_lite, no_heavy_attack]
 exilus: true
 
 # Rank 0: Enables Tennokai. Increases status chance by +25% on Tennokai attacks.

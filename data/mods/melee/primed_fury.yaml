@@ -6,6 +6,9 @@ base_drain: 4
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponFireRateModExpert
 description: "+X% Attack Speed"
+# THE WEAPON'S REFUSAL: "Does not benefit from Attack Speed and as such cannot
+# equip Fury" — and its Primed card is the same stat (W`Shattered_Lash_(Weapon)`), its tag NO_ATTACK_SPEED.
+excludes_weapon: [no_attack_speed]
 
 # Rank 0: +5% Attack Speed
 effects:

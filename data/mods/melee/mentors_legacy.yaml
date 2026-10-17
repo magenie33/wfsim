@@ -6,6 +6,8 @@ base_drain: 4
 max_rank: 0
 internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/TennokaiBaseMod
 description: "Enables Tennokai."
+# see notes: de_s_own_incompatibility
+excludes_weapon: [power_weapon_lite, no_heavy_attack]
 exilus: true
 
 # Rank 0: (no ladder)

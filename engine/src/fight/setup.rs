@@ -1424,6 +1424,7 @@ impl FightParams {
             heavy: panel.heavy,
             tennokai: panel.tennokai,
             spends_combo: panel.spends_combo,
+            combo_multiplies_damage: panel.combo_multiplies_damage,
             combo_duration_seconds: panel.combo_duration_seconds,
             combo_frozen: panel.combo_frozen,
             initial_combo: panel.initial_combo,

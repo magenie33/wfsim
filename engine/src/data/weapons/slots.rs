@@ -72,7 +72,7 @@ pub fn exilus_polarity(id: &str) -> Option<Polarity> {
 /// (`rules::capacity::plan_forma`).
 pub fn has_exilus_slot(id: &str) -> bool {
     let Some(s) = spec(id) else { return false };
-    !s.class.contains("sentinel") && matches!(s.rules_slot(), "primary" | "secondary" | "melee")
+    !s.class.contains("sentinel") && !s.no_exilus_slot && matches!(s.rules_slot(), "primary" | "secondary" | "melee")
 }
 
 /// …AND THE STANCE SLOT'S, which is a capacity GRANT rather than a discount.

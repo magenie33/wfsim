@@ -6,6 +6,8 @@ base_drain: 6
 max_rank: 3
 internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/CursedSyndicateEmpoweredHeavyMeleeMod
 description: "Enables Tennokai. Tennokai kills grant an additional 4s Tennokai opportunity and increase Tennokai damage by 120%.  CURSE: Suffer 100 <DT_FIRE_COLOR>Heat Damage/s for 6s.  / +1 'Truth'"
+# see notes: de_s_own_incompatibility
+excludes_weapon: [power_weapon_lite, no_heavy_attack]
 exilus: true
 
 # Rank 0: Enables Tennokai.\nTennokai kills grant an additional 4s Tennokai opportunity and increase Tennokai damage by 30%.\n\nCURSE: Suffer 25 <DT_FIRE_COLOR>Heat Damage/s for 6s.\n / +0.3 'Truth'

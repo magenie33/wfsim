@@ -73,6 +73,10 @@ pub enum Action {
     /// A glaive's throw, quick or held to the full charge — each its own press.
     Throw,
     ChargedThrow,
+    /// An ability's weapon swung by its cast, the key tapped or held
+    /// (`FormKind::TapCast`, Shattered Lash).
+    TapCast,
+    HoldCast,
     /// THE HEAVY ATTACK WHILE THE GLAIVE IS IN FLIGHT: *"it can be activated
     /// while the thrown weapon is in flight, resulting in an explosion that
     /// deals Heavy Attack damage and returns the weapon to the user's hand"*
@@ -126,6 +130,8 @@ impl Action {
                 | Action::HeavySlam
                 | Action::Throw
                 | Action::ChargedThrow
+                | Action::TapCast
+                | Action::HoldCast
                 | Action::Detonate
         )
     }
@@ -155,6 +161,8 @@ impl Action {
             F::HeavySlam => Action::HeavySlam,
             F::Throw => Action::Throw,
             F::ChargedThrow => Action::ChargedThrow,
+            F::TapCast => Action::TapCast,
+            F::HoldCast => Action::HoldCast,
         }
     }
 }
@@ -231,6 +239,8 @@ impl Rule {
             Action::HeavySlam => "heavy_slam".into(),
             Action::Throw => "throw".into(),
             Action::ChargedThrow => "charged_throw".into(),
+            Action::TapCast => "tap_cast".into(),
+            Action::HoldCast => "hold_cast".into(),
             Action::Detonate => "detonate".into(),
             Action::Reload => "reload".into(),
             Action::TransformIn => "transform_in".into(),
@@ -573,10 +583,10 @@ prio: 3
         let word = |f: F| Rule { action: Action::firing(f), when: When::Always }.to_simc();
         // The melee half is named for the BUTTON, and each button is its own.
         let melee = [F::Neutral, F::Forward, F::Block, F::BlockForward, F::Slide,
-                     F::Heavy, F::HeavySlam, F::Throw, F::ChargedThrow];
+                     F::Heavy, F::HeavySlam, F::Throw, F::ChargedThrow, F::TapCast, F::HoldCast];
         let mut seen: Vec<String> = melee.iter().map(|f| word(*f)).collect();
         assert_eq!(seen, ["neutral", "forward", "block", "block_forward", "slide",
-                          "heavy", "heavy_slam", "throw", "charged_throw"]);
+                          "heavy", "heavy_slam", "throw", "charged_throw", "tap_cast", "hold_cast"]);
         // …and a melee form's mode id IS that button (`play_modes::free_form_id`),
         // so the list a reader sees names the mode they picked.
         for f in melee {

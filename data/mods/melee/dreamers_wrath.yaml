@@ -6,6 +6,8 @@ base_drain: 6
 max_rank: 3
 internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/FocusedAttack
 description: "Enables Tennokai. Increases opportunity chance by X% and critical damage by X% for Tennokai attacks."
+# see notes: de_s_own_incompatibility
+excludes_weapon: [power_weapon_lite, no_heavy_attack]
 exilus: true
 
 # Rank 0: Enables Tennokai. Increases opportunity chance by 12.5% and critical damage by 8% for Tennokai attacks.

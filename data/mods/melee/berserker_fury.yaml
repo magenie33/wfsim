@@ -8,6 +8,9 @@ base_drain: 4
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritFireRateBonusMod
 description: "On Melee Kill:\n+X% Attack Speed for 10s. Stacks up to 2x."
+# REFUSED WHERE FURY IS: its one stat is Attack Speed, which an ability's weapon
+# "Does not benefit from" (W`Shattered_Lash_(Weapon)`), the reason that page bars Fury.
+excludes_weapon: [no_attack_speed]
 
 # Rank 0: On Melee Kill:\n+5.8% Attack Speed for 10s. Stacks up to 2x.
 effects:

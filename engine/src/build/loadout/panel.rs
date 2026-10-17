@@ -432,6 +432,8 @@ pub struct ResolvedPanel {
     pub tennokai: Tennokai,
     /// Does a swing of this form spend the combo counter?
     pub spends_combo: bool,
+    /// …or does the counter multiply every swing without being spent?
+    pub combo_multiplies_damage: bool,
     /// Seconds the combo counter survives untouched, mods included.
     pub combo_duration_seconds: f64,
     /// THE WINDOW THIS BUILD'S MELEE INCARNON IS ON FOR — see

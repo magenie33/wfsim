@@ -341,6 +341,12 @@ pub enum FormKind {
     /// …HELD TO THE FULL CHARGE, which is the heavy attack's wind-up clock
     /// (`ChargeTime = 1.192` on every Charged Throw in the wiki's module).
     ChargedThrow,
+    /// AN ABILITY'S WEAPON SWUNG BY CASTING IT (Gara's Shattered Lash): the
+    /// ability key tapped. The press is the cast, so the ability fixes the
+    /// attack — no stance, no combo to choose — and Casting Speed paces it.
+    TapCast,
+    /// …and the same key HELD, the other attack the ability makes.
+    HoldCast,
 }
 
 #[wfsim_gas_macro::metered]
@@ -364,6 +370,8 @@ impl FormKind {
             FormKind::HeavySlam => "heavy_slam",
             FormKind::Throw => "throw",
             FormKind::ChargedThrow => "charged_throw",
+            FormKind::TapCast => "tap_cast",
+            FormKind::HoldCast => "hold_cast",
         }
     }
 
@@ -389,6 +397,8 @@ impl FormKind {
             FormKind::HeavySlam => "Heavy Slam",
             FormKind::Throw => "Throw",
             FormKind::ChargedThrow => "Charged Throw",
+            FormKind::TapCast => "Tap Cast",
+            FormKind::HoldCast => "Hold Cast",
         }
     }
 
@@ -426,6 +436,8 @@ impl FormKind {
                 | FormKind::HeavySlam
                 | FormKind::Throw
                 | FormKind::ChargedThrow
+                | FormKind::TapCast
+                | FormKind::HoldCast
         )
     }
 
@@ -462,6 +474,8 @@ impl FormKind {
             "heavy_slam" => FormKind::HeavySlam,
             "throw" => FormKind::Throw,
             "charged_throw" => FormKind::ChargedThrow,
+            "tap_cast" => FormKind::TapCast,
+            "hold_cast" => FormKind::HoldCast,
             other => panic!("unknown form kind in weapon data: {other}"),
         }
     }
@@ -852,6 +866,10 @@ pub struct WeaponBase {
     pub heavy: Option<crate::model::HeavyAttack>,
     /// See [`crate::data::weapons::AttackSpec::spends_combo`].
     pub spends_combo: bool,
+    /// See [`crate::data::weapons::AttackSpec::combo_multiplies_damage`].
+    pub combo_multiplies_damage: bool,
+    /// See [`crate::data::weapons::AttackSpec::paced_by_casting`].
+    pub paced_by_casting: bool,
     /// See [`crate::data::weapons::WeaponSpec::combo_duration_seconds`] —
     /// unmodded; `resolve` adds the Drifting Contact bucket and floors it.
     pub combo_duration_seconds: f64,

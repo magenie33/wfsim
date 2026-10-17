@@ -317,6 +317,11 @@ pub struct WeaponSpec {
     /// MEASUREMENTS M94) — so it is the weapon's fact and a build only repeats it.
     #[serde(default)]
     pub fixed_stance: Option<String>,
+    /// NO EXILUS SLOT, on a weapon whose slot would otherwise have one: an
+    /// ability's weapon that cannot block or heavy-attack "does not have an
+    /// Exilus Slot" (W`Shattered_Lash_(Weapon)`).
+    #[serde(default)]
+    pub no_exilus_slot: bool,
     /// THE ABILITY THAT SUMMONS IT, by `data/warframe_abilities/` id — an
     /// Exalted weapon's damage is the Ability Strength that cast snapshotted
     /// (`data::casting`).

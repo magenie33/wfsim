@@ -512,6 +512,9 @@ pub struct FightParams {
     pub tennokai: crate::model::Tennokai,
     /// Does a swing SPEND the combo counter? True on the two heavy forms.
     pub spends_combo: bool,
+    /// Does the counter multiply every swing without being spent? An
+    /// ability's weapon on the Ability Combo Counter.
+    pub combo_multiplies_damage: bool,
     /// SECONDS THE COUNTER SURVIVES with nothing added to it. 5.0 on almost
     /// every melee weapon; the wiki names the handful that differ (Guandao
     /// Prime 6, Pulmonars 9, Vitrica 10) and the mods that extend it.

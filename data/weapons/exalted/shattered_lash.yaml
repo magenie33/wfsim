@@ -1,0 +1,93 @@
+id: shattered_lash
+name: Shattered Lash
+slot: exalted
+weapon_type: melee
+# The module's `Class = "Exalted Weapon"`: no stance class and no class mods.
+class: exalted_weapon
+# THE ABILITY KEY TAPPED: the thrust, the arsenal's own attack.
+form: tap_cast
+default_form: true
+transform_group: shattered_lash
+mod_pools: [melee]
+mastery_rank: 0
+max_rank: 30
+
+# GARA'S EXALTED WEAPON, and the first one SWUNG BY ITS CAST. Every attack is a
+# cast of Shattered Lash: the ability decides when and how it hits, and the
+# weapon's mods price each hit, as the ability's text says — "Stats are boosted
+# by the equipped mods on Shattered Lash" (W`Shattered_Lash`). One entry for
+# both frames: the Prime copy differs in name and owner only (the export,
+# GaraShankWeapon / GaraShankWeaponPrime).
+#
+# ITS DAMAGE IS THE ABILITY'S, AT 100% STRENGTH: "dealing 250 / 300 / 350 / 400
+# Puncture damage" by rank, with the Strength icon (W`Shattered_Lash`), and the
+# module's 400 is rank 3. The wielder's strength scales it (`exalted`).
+exalted: true
+wielders: [gara_prime, gara]
+wielder_names:
+  gara_prime: Shattered Lash Prime
+# see notes: de_compatibility_tags
+compatibility_tags: [power_weapon, power_weapon_lite, no_finisher, no_slide, no_attack_speed]
+# It "Cannot perform blocking or heavy attacks … and does not have an Exilus
+# Slot" (W`Shattered_Lash_(Weapon)`).
+no_exilus_slot: true
+accuracy: ~
+# "pre-installed Orokin Catalyst, along with one Madurai and one Naramon
+# polarity" (Update 38.5, W`Exalted_Weapon`).
+polarities: [naramon, madurai]
+stance_polarity: zenurik
+introduced: "Update 38.5"
+internal_name: /Lotus/Powersuits/Glass/GaraShankWeapon
+traits: [tenno]
+
+# NO AMMO AT ALL: a melee weapon has no magazine, no reserve and no reload.
+ammo_max: ~
+
+# The module's ComboDur: "Default Combo Duration is 5 seconds, with duration
+# resetting on any combo generation" (W`Shattered_Lash_(Weapon)`).
+combo_duration_seconds: 5.0
+
+co_behavior: additive_with_base_damage
+
+unmodeled:
+  - "A cast's length is unpublished: each cast here takes one second at 1.0x Casting Speed, which sets how often it hits and changes no single hit."
+  - "Energy is unlimited here: every cast costs 25, scaled by Efficiency, and nothing runs dry."
+  - "The combo counter gains 20 once per cast that hits; here a cast earns it per body it hits, which is the same against one target."
+  - "Mass Vitrify's barrier, which this attack explodes, and Splinter Storm's amplification are not modelled."
+
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  # ONE CAST A SECOND AT 1.0x, the bucket Casting Speed fills (`paced_by_casting`):
+  # "Speed is scaled by Cast Speed, rather than Attack Speed" (W`Shattered_Lash`).
+  fire_rate: 1.0
+  paced_by_casting: true
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # REACH: the module's MeleeRange 12 at rank 3, which Ability Range and Reach
+  # extend in game; held at 12 here.
+  range_m: 12.0
+  follow_through: 0.5
+  # THE ABILITY COMBO COUNTER: "a damage multiplier of 1.0x per Combo Counter up
+  # to the cap of 12.0x" (W`Shattered_Lash_(Weapon)`), read on every hit and
+  # never spent.
+  combo_multiplies_damage: true
+  # "dealing … Puncture damage" on the tap (W`Shattered_Lash`), the module's
+  # `Damage = { Puncture = 400 }`.
+  damage: { puncture: 400.0 }
+  # ONE CAST, ONE HIT. "Hitting at least one enemy on ability cast will increase
+  # combo count by 20 hits", and a combo chance "only awards one additional hit
+  # alongside the initial 20" (W`Shattered_Lash_(Weapon)`): 20 points on a base
+  # of one.
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.0, combo_points: 20, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Shattered_Lash_(Weapon)
+  # The ability's numbers: https://wiki.warframe.com/w/Shattered_Lash

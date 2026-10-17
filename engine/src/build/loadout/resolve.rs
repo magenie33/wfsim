@@ -372,6 +372,11 @@ pub fn resolve_for(
     // Stats LOCKED from modding by an equipped mod (Pistol Acuity → multishot,
     // Semi-Pistol Cannonade → fire_rate). Their bucket is zeroed after the loop.
     let mut disabled: Vec<&str> = Vec::new();
+    // PACED BY CASTING: the weapon's attack speed is held at its base like an
+    // Acuity's stat, and Casting Speed fills the bucket after the locks.
+    if base.paced_by_casting {
+        disabled.push("fire_rate");
+    }
 
     for m in mods {
         // `requires`: a mod whose required weapon trait is absent is INERT here
@@ -956,6 +961,9 @@ pub fn resolve_for(
             }
             _ => {}
         }
+    }
+    if base.paced_by_casting {
+        fr = tenno.casting_speed_bonus;
     }
 
     // The vector build, shared by the direct hit and the radial part: both
@@ -1639,6 +1647,7 @@ pub fn resolve_for(
             .follow_through
             .map(|f| f * (1.0 + base.evo_follow_through_bonus)),
         spends_combo: base.spends_combo,
+        combo_multiplies_damage: base.combo_multiplies_damage,
         // *"Melee Combo duration cannot be reduced below 0.1 seconds"* (wiki),
         // which is a floor rather than a clamp on the bucket: a negative mod
         // could otherwise stop the counter existing at all.

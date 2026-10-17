@@ -829,7 +829,7 @@ pub(super) fn swing_this_shot(
                 })
     } else {
         swing.as_ref().map_or(1.0, |h| h.multiplier)
-            * if active.spends_combo { combo_multiplier } else { 1.0 }
+            * if active.spends_combo || active.combo_multiplies_damage { combo_multiplier } else { 1.0 }
             * mode_damage
     };
     // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes

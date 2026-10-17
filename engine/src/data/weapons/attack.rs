@@ -283,6 +283,18 @@ pub struct AttackSpec {
     /// the mods.
     #[serde(default)]
     pub spends_combo: bool,
+    /// Does the combo multiplier multiply EVERY swing, without spending it?
+    /// An ability's weapon on the Ability Combo Counter: "receiving a damage
+    /// multiplier of 1.0x per Combo Counter up to the cap of 12.0x"
+    /// (W`Shattered_Lash_(Weapon)`). An ordinary swing's never does.
+    #[serde(default)]
+    pub combo_multiplies_damage: bool,
+    /// IS IT PACED BY CASTING SPEED, not attack speed? "Speed is scaled by Cast
+    /// Speed, rather than Attack Speed" (W`Shattered_Lash`): the weapon's own
+    /// attack speed is locked at its base, as an Acuity locks a stat, and the
+    /// wielder's Casting Speed takes the bucket.
+    #[serde(default)]
+    pub paced_by_casting: bool,
     pub crit_chance: f64,
     pub crit_multiplier: f64,
     pub status_chance: f64,

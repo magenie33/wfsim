@@ -6,6 +6,8 @@ base_drain: 4
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Melee/MoveSpeedOnChannelKillMod
 description: "On Heavy Attack Hit:\n+60% Movement Speed for 15s"
+# see notes: de_s_own_incompatibility
+excludes_weapon: [sentinel_weapon, hound_weapon, power_weapon_lite, no_heavy_attack]
 exilus: true
 
 # Rank 0: On Heavy Attack Hit:\n+10% Movement Speed for 3s

@@ -2546,3 +2546,46 @@ fn the_melee_crit_damage_shards_join_the_crit_damage_bucket() {
         resolve(&gun, &[], StackPolicy::BaseOnly).crit_damage
     );
 }
+
+/// **AN ABILITY'S WEAPON IS PACED BY CASTING SPEED, AND NEVER ATTACK SPEED.**
+/// Shattered Lash: "Speed is scaled by Cast Speed, rather than Attack Speed"
+/// (W`Shattered_Lash`). A Fury in its bucket is locked out like an Acuity's
+/// stat, and Casting Speed fills it — on this weapon alone.
+#[test]
+fn an_ability_weapon_is_paced_by_casting_speed_and_never_attack_speed() {
+    let melee = crate::data::mods::class_pool("melee");
+    let fury = melee.iter().find(|m| m.id == "primed_fury").expect("Primed Fury");
+    let rate = |weapon: &str, casting: f64, mods: &[&ModDef]| {
+        let base = WeaponBase::from_data(weapon, false, &[]);
+        let mut t = crate::data::tenno::default_tenno().clone();
+        t.casting_speed_bonus = casting;
+        resolve_for(&base, mods, StackPolicy::Emergent, &t).fire_rate
+    };
+    assert!((rate("shattered_lash", 0.0, &[]) - 1.0).abs() < 1e-12);
+    assert!((rate("shattered_lash", 0.5, &[]) - 1.5).abs() < 1e-12, "Casting Speed paces the cast");
+    assert_eq!(rate("shattered_lash", 0.0, &[fury]), rate("shattered_lash", 0.0, &[]), "attack speed is locked");
+    assert!((rate("shattered_lash_hold", 0.5, &[]) - 1.5).abs() < 1e-12, "and the held cast alike");
+    // A WEAPON THE PLAYER SWINGS is paced by attack speed and nothing else.
+    assert_eq!(rate("valkyr_talons", 0.5, &[]), rate("valkyr_talons", 0.0, &[]));
+    assert!(rate("valkyr_talons", 0.0, &[fury]) > rate("valkyr_talons", 0.0, &[]));
+}
+
+/// **ITS POOL IS WHAT ITS PAGE SAYS IT CAN TAKE.** No attack speed, no
+/// finisher, no block or heavy attack, so no Fury, Finishing Touch, Parry,
+/// Reflex Coil or Tennokai card, and no exilus slot (W`Shattered_Lash_(Weapon)`);
+/// the combo cards Exalted weapons regained stay.
+#[test]
+fn an_ability_weapon_takes_only_the_cards_its_page_allows() {
+    let pool: Vec<&str> = crate::data::mods::pool_for_build("shattered_lash", &[]).into_iter().map(|m| m.id).collect();
+    for id in ["fury", "primed_fury", "finishing_touch", "parry", "reflex_coil", "mentors_legacy", "conditions_perfection"] {
+        assert!(!pool.contains(&id), "{id} is refused");
+    }
+    for id in ["blood_rush", "weeping_wounds", "condition_overload", "primed_pressure_point", "organ_shatter"] {
+        assert!(pool.contains(&id), "{id} is offered");
+    }
+    assert!(!crate::data::weapons::has_exilus_slot("shattered_lash"));
+    // …and nothing changed for the weapons that had them.
+    let valkyr: Vec<&str> = crate::data::mods::pool_for_build("valkyr_talons", &[]).into_iter().map(|m| m.id).collect();
+    assert!(valkyr.contains(&"primed_fury") && valkyr.contains(&"reflex_coil"));
+    assert!(crate::data::weapons::has_exilus_slot("valkyr_talons"));
+}
