@@ -8,9 +8,20 @@
 // Usage:
 //   node scripts/check_parity.mjs                 serves site/ itself
 //   node scripts/check_parity.mjs http://host:port  against a running server
+//   WFSIM_PARITY_SHARD=1/4 node scripts/check_parity.mjs   every fourth weapon, from the second
 //
 // Exits non-zero on any mismatch, so it can gate a push.
 import { openApp } from "./cdp.mjs";
+
+// A SHARD IS EVERY N-TH WEAPON, so CI sweeps the roster in parallel jobs and
+// each job's share stays even as the roster grows. The checks of one build run
+// in every shard: they are seconds, and a shard that skipped them could not fail.
+const [SHARD, SHARDS] = (process.env.WFSIM_PARITY_SHARD || "0/1").split("/").map(Number);
+if (!(SHARDS >= 1 && SHARD >= 0 && SHARD < SHARDS)) {
+  console.error(`WFSIM_PARITY_SHARD must be i/n with 0 <= i < n, not ${process.env.WFSIM_PARITY_SHARD}`);
+  process.exit(2);
+}
+const MINE = `META.weapons.filter((_, i) => i % ${SHARDS} === ${SHARD})`;
 
 // ---- the comparison ------------------------------------------------------
 // Both sides are read from the SAME page by calling the functions each module
@@ -18,7 +29,7 @@ import { openApp } from "./cdp.mjs";
 const PROBE = `(async () => {
   const S = (a) => [...new Set(a)].sort();
   const out = [];
-  for (const w of META.weapons) {
+  for (const w of ${MINE}) {
     switchWeapon(w.id);
     await new Promise((r) => setTimeout(r, 120));
     const AX = weaponAxes(w.id);
@@ -195,7 +206,7 @@ const settled = async (id) => {
 const VIS = await app.evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   const out = { checked: 0, missing: [] };
-  for (const w of META.weapons) {
+  for (const w of ${MINE}) {
     const info = META.weapons.find(x => x.id === w.id);
     const flagged = [];
     for (const t of (info.evolutions || [])) {

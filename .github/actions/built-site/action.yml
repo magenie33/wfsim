@@ -1,0 +1,26 @@
+# THE BUILD, EXACTLY, as ship.yml lays it, for every job that checks it: what
+# the build dropped is gone too, or the committed generation sits beside the two
+# it carries. Without a build (a pull request) the committed site/ is checked.
+name: built site
+description: the site/ this commit built, laid over the checkout, and the node the checks run on
+inputs:
+  built:
+    description: "'true' when the site job built this commit"
+    required: true
+runs:
+  using: composite
+  steps:
+    - if: inputs.built == 'true'
+      shell: bash
+      run: |
+        find site -mindepth 1 -maxdepth 1 ! -name board -exec rm -rf {} +
+        rm -rf desktop/payload
+    - if: inputs.built == 'true'
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      with:
+        name: site-built
+        path: .
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        # >= 22 for the global WebSocket the CDP client uses.
+        node-version: "22"

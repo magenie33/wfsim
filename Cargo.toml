@@ -36,3 +36,13 @@ serde_norway = "0.9"
 # +14% per shot for the same source split into files, and ±noise with this.
 [profile.release]
 codegen-units = 1
+
+# THE ENGINE AND THE SEARCH ARE OPTIMISED IN TESTS TOO. The optimizer's and the
+# endpoints' tests run real searches, which unoptimised were most of CI's test
+# time; overflow checks and debug assertions stay on, so a test catches the same.
+[profile.dev.package.wfsim-engine]
+opt-level = 3
+[profile.dev.package.wfsim-optimizer]
+opt-level = 3
+[profile.dev.package.wfsim-webapi]
+opt-level = 3

@@ -199,6 +199,8 @@ exactly when it has options (and `weaponAxes` answers for the weapon it was
 ASKED about), the served polarities arrive intact, an unmodelled evolution is
 marked on the tile where it is chosen, and every axis a build has travels in a
 board submission. Run it after adding a weapon or anything a weapon can carry.
+It opens every weapon's page, so CI shards it: `WFSIM_PARITY_SHARD=i/n` takes
+every n-th weapon from the i-th, and four jobs sweep the roster in parallel.
 
 ## `check_board_submit`
 

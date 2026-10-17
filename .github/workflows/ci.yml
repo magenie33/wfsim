@@ -100,6 +100,10 @@ jobs:
           cos_bucket: ${{ secrets.COS_BUCKET }}
           cos_region: ${{ secrets.COS_REGION }}
       - name: Build site/
+        # UNBUFFERED, so each line is stamped when it was said and the log shows
+        # which part of the build the time went to.
+        env:
+          PYTHONUNBUFFERED: "1"
         run: python scripts/build_site_app.py
       # NOT site/board/: the board bots own it, and ship.yml lays this over a
       # checkout whose board may be newer than the one this read.
@@ -115,31 +119,20 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
-  # The page is not something `cargo test` can see. This drives headless
-  # Chrome over the site this commit builds — the artefact Cloudflare will
-  # deploy — and asserts the builder and the optimizer offer the same options
-  # and the same visibility on every axis of every weapon.
-  parity:
+  # The page is not something `cargo test` can see. These jobs check the site
+  # this commit builds — the artefact Cloudflare will deploy — in PARALLEL, each
+  # laying it the same way, so CI takes as long as the slowest of them: a check
+  # goes in the job of its kind, and one that grows past the others is split.
+  # This one: the files, the door and the Postgres pipeline, no page.
+  checks:
     needs: site
     if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # THE BUILD, EXACTLY, as ship.yml lays it: what it dropped is gone too, or
-      # the committed generation sits beside the two it carries.
-      - if: needs.site.result == 'success'
-        run: |
-          find site -mindepth 1 -maxdepth 1 ! -name board -exec rm -rf {} +
-          rm -rf desktop/payload
-      - if: needs.site.result == 'success'
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: ./.github/actions/built-site
         with:
-          name: site-built
-          path: .
-      - uses: actions/setup-node@v4
-        with:
-          # >= 22 for the global WebSocket the CDP client uses.
-          node-version: "22"
+          built: ${{ needs.site.result == 'success' }}
       # EVERY CHECK SCRIPT PARSES, before any of them is run. A stray backtick
       # in a comment closes the template literal a browser check hands the page,
       # and it has done so seven times — each one costing a full browser run to
@@ -262,6 +255,21 @@ jobs:
         run: node scripts/check_riven_gain.mjs
       - name: The site reads the live board, and the committed one only until it exists
         run: node scripts/check_board_live.mjs
+
+  # The page in headless Chrome: its controls, lanes and queue.
+  page:
+    needs: site
+    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/built-site
+        with:
+          built: ${{ needs.site.result == 'success' }}
+      # THE DATABASE THE CHECKS BELOW RUN THE WORKER ON: an in-memory Postgres
+      # (scripts/pg/test_db.mjs), and the client the pipeline's scripts use.
+      - name: The checks' Postgres
+        run: npm ci --silent --prefix scripts/pg
       # A BOX THAT REDRAWS UNDER A COMPOSITION takes no Chinese at all, while
       # Latin typing looks fine.
       - name: Every search box takes a Chinese input method
@@ -284,10 +292,42 @@ jobs:
         run: node scripts/check_compute_queue.mjs
       - name: The home tally and the ranking are CDN files first, the worker their fallback
         run: node scripts/check_stats_files.mjs
+
+  # The builder against every weapon: the slowest sweep, so it is SHARDED, every
+  # fourth weapon to a job (WFSIM_PARITY_SHARD).
+  parity:
+    needs: site
+    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/built-site
+        with:
+          built: ${{ needs.site.result == 'success' }}
       - name: Builder axes match the weapon and reach the board
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
+        env:
+          WFSIM_PARITY_SHARD: ${{ matrix.shard }}/4
         run: node scripts/check_parity.mjs
+
+  # The rest of the page, the board's library and the MCP server.
+  page-rest:
+    needs: site
+    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/built-site
+        with:
+          built: ${{ needs.site.result == 'success' }}
+      # THE DATABASE THE CHECKS BELOW RUN THE WORKER ON: an in-memory Postgres
+      # (scripts/pg/test_db.mjs), and the client the pipeline's scripts use.
+      - name: The checks' Postgres
+        run: npm ci --silent --prefix scripts/pg
       # THE FIGHT'S PLAYER, in the same browser job. Its controls move between
       # blocks as the page is reorganised, and a check nobody runs goes stale
       # without a sound: a moved control is a null, and every assertion after
