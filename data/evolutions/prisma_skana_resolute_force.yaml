@@ -8,9 +8,8 @@ description: "+6s Combo Duration"
 selection: choose_one
 
 effects:
-  # from: "+6s Combo Duration" — the evolution loader has no kind for
-  # the counter's timer.
-  - kind: unmodelled_combo_duration_seconds
+  # from: \"+6s Combo Duration\" — the bucket Body Count fills.
+  - kind: melee_combo_duration
     value: 6.0
 
 source:

@@ -239,6 +239,7 @@ ui:
   "The heavy attack is the infobox's {infobox}x; the class's heavy table implies {table}x. Unmeasured.": "重击按信息框取 {infobox}x；类别重击表对应 {table}x。未实测。"
   "The Dark Split-Sword splits into a pair of Dual Swords with their own stats and stance; only the Heavy Blade form is entered here.": "Dark Split-Sword 可以拆分成一对双剑，有自己的数值和架式；这里只录入了巨刃形态。"
   "Its Incarnon evolutions and Incarnon Form are not modelled.": "它的灵化进化和灵化形态未建模。"
+  "A plain slam at the arming combo also activates its Incarnon Form; here only a heavy attack does, so a loop that slams without a heavy arms it later than in a mission, or never.": "连击达到开启倍率时，普通的震地攻击也能开启它的灵化形态；这里只有重击能开启，所以只震地不重击的打法会比实战更晚开启，或者根本开不了。"
   "Its {family} valence bonus is not modelled: the build cannot state the element and bonus this copy rolled, so it reads without one.": "它的 {family} 元素加成未建模：配装无法填写这一把随机到的元素和加成，所以按没有加成计算。"
   "THE OPENER IS A SLAM, and Seismic Wave pays it on the ability page. It is a swing here, so Seismic Wave pays it nothing and it reaches the body in front rather than a sphere": "**第一击是捶地**，技能页说 Seismic Wave 会加成它。这里按挥砍处理，所以 Seismic Wave 不加成，而且只打到面前的目标，不是一个球形范围"
   "two of the second input's five hits force Slash; the five land as one row here, so none of them is forced — the conservative direction": "第二次输入的五下里有两下强制切割；这里五下作为一行同时结算，所以一下都不强制——偏保守的方向"

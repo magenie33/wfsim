@@ -22,9 +22,8 @@ effects:
   # from: "+4 Range" — metres, the quantity Reach buys.
   - kind: melee_range_bonus_m
     value: 4.0
-  # from: "+50% Heavy Attack Efficiency" — a mod bucket the
-  # evolution loader has no kind for.
-  - kind: unmodelled_heavy_attack_efficiency
+  # from: "+50% Heavy Attack Efficiency" — Reflex Coil's bucket.
+  - kind: heavy_attack_efficiency
     value: 0.5
   - kind: out_of_scope
     clause: "+20% Sprint Speed, +20% to Bullet Jump"

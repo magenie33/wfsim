@@ -10,8 +10,9 @@ selection: choose_one
 effects:
   - kind: flat_base_damage
     value: 30.0
-  # No evolution kind carries Combo Count Chance, nor this gate on it.
-  - kind: unmodelled_with_melee_weapon_equipped_combo_count_chance
+  # from: "With Melee Weapon Equipped: +100% Combo Count Chance" — every swing
+  # is made with it equipped, so the gate is always open here; Quickening's sum.
+  - kind: combo_count_chance
     value: 1.0
 
 source:

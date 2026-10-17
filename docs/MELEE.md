@@ -709,6 +709,14 @@ sim reports rather than assumes away:
 and `magistar_evo_armed` holds the window open where a test means to ask what
 the Genesis is WORTH rather than whether the mode can arm it.
 
+**EVERY MELEE INCARNON IS ENTERED**, to docs/INCARNON.md's ROUGH standard: a
+clause an existing kind reads exactly is applied (an evolution's combo
+duration, combo count chance and heavy attack efficiency join the mods'
+buckets), and what the form MAKES, a gated clause or a finisher is an
+`unmodelled_*` effect the tile names. Where a page says a plain slam also arms
+the form, the weapon says the engine arms it on a heavy only
+(`melee_incarnon_slam_arms_unmodelled`).
+
 ### …and the Okina's, which also MAKES something
 
 The Okina's Incarnon Form turns every kill into a SPECTRAL DAGGER

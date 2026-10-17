@@ -180,10 +180,11 @@ fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
     // — and these are what is left: a window a KILL opens, a trigger that
     // reads a punch-through hit, and two radius clauses.
     //
-    // THE REST ARE MELEE GENESES, each a thing the form MAKES (rapiers, axes,
-    // toxin fields, finisher radials) or a heavy-efficiency, finisher or
-    // per-kill clause no kind expresses yet.
-    const CEILING: usize = 36;
+    // THE REST ARE THE MELEE GENESES, every one entered at once: each a thing
+    // the form MAKES (rapiers, axes, fields, shards, finisher radials) or a
+    // gated, finisher or per-kill clause no kind expresses yet. They were one
+    // weapon-level admission each before; now every clause is counted.
+    const CEILING: usize = 94;
     let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
     assert!(
         n <= CEILING,

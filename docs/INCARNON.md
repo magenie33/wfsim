@@ -48,9 +48,9 @@ therefore never equippable on an Incarnon weapon: tier 1 is always there.
 - Every weapon here is **two entries** in `data/weapons/` (base form + Incarnon
   form — the TWO WEAPONS MODEL, see `data/weapons/primary/torid.yaml`), so 69
   weapons is ~138 weapon files.
-- **Melee is out of scope**: 14 melee Genesis adapters, plus Innodem, Praedos,
-  Ruvox and Thalys. Thalys (Isleweaver) shows up in the wiki's Incarnon gallery
-  and is a Heavy Scythe — not a gun, not part of this program.
+- **Melee is docs/MELEE.md §7's**: every melee Genesis and natural Incarnon
+  (Innodem, Praedos, Ruvox, Thalys) is entered to the same ROUGH standard, its
+  form a buff on the swings rather than a second entry.
 
 ## BULK vs HAND — what "rough" means, precisely
 
