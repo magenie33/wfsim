@@ -87,7 +87,8 @@ let fissureNew = fissureNewEmpty();
 /// and a node's planet is the node's own.
 let fissureSeenOf = null, fissureSeenRows = [];
 function fissureSeen() {
-  const rows = (worldNames && worldNames.fissures) || [];
+  if (!worldNames) return [];
+  const rows = worldNames.fissures || [];
   if (fissureSeenOf === rows) return fissureSeenRows;
   const nodes = worldNames.nodes || {};
   fissureSeenOf = rows;
@@ -113,7 +114,7 @@ function fissurePossible(r) {
 /// the last opened. Null before the log is read.
 function fissureStats(r, open) {
   const seen = fissureSeen().filter((c) => fissureHolds(c, r.attributes || {}));
-  if (!seen.length) return null;
+  if (!seen.length || !worldNames.window_ms) return null;
   const recent = seen.reduce((s, c) => s + c.recent, 0);
   const last = Math.max(...seen.map((c) => c.last_ms));
   const often = recent ? trF("About every {every} in the last 7 days", { every: utilitySpan(worldNames.window_ms / recent) })

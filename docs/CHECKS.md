@@ -77,6 +77,15 @@ often it is relayed, and `/api/world/names` hands back each combination with
 how many opened inside the window — an older one on the same node is not
 counted — when the last did, and the nodes and planets they name.
 
+## `check_reminder_notices`
+
+Fires stubbed reminders on a page in both widths. One firing is one card in
+the corner, below the bar and clear of Nona's button, and a count on the bell;
+five at once is one card that counts them; never more than three stand; a
+quiet reminder (its Pop up chip off) adds to the count and draws no card; the
+bell's panel lists what fired and reads it, clearing the cards; a card leaves
+on its own; on a phone the bell stays on the bar and its panel on screen.
+
 ## `check_fx_lines`
 
 The bot's `fx` reader with a fixture pool, no network: a line reads with or

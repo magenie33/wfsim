@@ -1024,7 +1024,10 @@ none of it feeds the builder, the simulator or the optimizer (`docs/CORE.md`
 | a fissure reminder says how often one like it opened in the last 7 days, and with none open, how long ago the last did — counted from the same log | `fissureStats`, `SEEN_WINDOW_MS` |
 | a saved reminder nothing can ever match says so in red — no fissure the game has opened holds its picks, or no node of the arbitration schedule does | `possible`, `fissurePossible`, `arbitrationPossible` |
 | what a new reminder already matches is seen, so it fires for what opens later | `reminderAdd` |
-| reminders sync with a signed-in account as a pool of their own; they fire on each browser while the site is open there, on any page: once per item, never for one open when the reminder was made, said on the page, counted on the Utility link until Reminders is opened | `reminderCheck`, `reminderRead`, `syncPool` |
+| reminders sync with a signed-in account as a pool of their own; they fire on each browser while the site is open there, on any page: once per item, never for one open when the reminder was made | `reminderCheck`, `syncPool` |
+| what fired is kept under a bell on the bar, beside the account and outside the phone menu, counted until its panel or Reminders is opened; the bell is drawn once the reader has a reminder | `renderBell`, `reminderRead` |
+| as one fires, a card in the bottom corner says it and leaves after 8 s, held while the pointer is on it; at most three at once, and more firing together is one card that counts them; none on the Reminders tab itself — nothing covers the page | `reminderToast`, `TOAST_MS`, `TOASTS_MAX` |
+| a reminder set quiet (its Pop up chip off) fires into the bell only: no card, no system notification | `reminderQuiet` |
 | a system notification as well only when the reader turns it on, which is when the browser asks, and only for a tab in the background | `reminderSystemOn` |
 
 Where the names come from: `docs/DATA_SOURCES.md` §"The world state".

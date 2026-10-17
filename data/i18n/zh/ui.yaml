@@ -432,6 +432,9 @@ ui:
   "{n} open now": "当前开启 {n} 个"
   "No reminders yet. Make one above, or with the bell on a row of a list.": 还没有提醒。在上面新建，或者点列表里某一行的铃铛。
   "Recently fired": 最近触发
+  "All reminders": 全部提醒
+  "Pop up": 弹出
+  "Off: kept under the bell only": 关闭后只记入铃铛，不弹出
   "ended": 已结束
   "Nothing has fired yet.": 还没有触发过提醒。
   "Arbitrations": 仲裁

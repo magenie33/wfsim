@@ -330,6 +330,7 @@ const AGENT_EXEMPT = [
   { sel: "#jump-grip", kind: "view", why: "the jump menu scrolls the page" },
   { sel: "#topmenu", kind: "view", why: "moves between the site's pages" },
   { sel: "#tbmore-toggle", kind: "view", why: "opens the topbar's overflow" },
+  { sel: "#rem-bell", kind: "view", why: "shows the reminders that fired" },
   { sel: "#account", kind: "reader", why: "signing in and the account are the reader's own" },
   { sel: "#sim-buffs-all", kind: "view", why: "shows every buff that could apply, not only this build's" },
   { sel: "#nona-fab", kind: "view", why: "opens Nona herself" },

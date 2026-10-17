@@ -34,7 +34,7 @@ function showUtility(tab) {
   utilityTab = tab;
   $("h-utility").textContent = tr(utilityTitle(tab));
   for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = t !== tab;
-  if (tab === "reminders") { reminderRead(); if ($("reminder-note")) $("reminder-note").remove(); }
+  if (tab === "reminders") { reminderRead(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
   renderUtility();
   if (Date.now() - worldAt >= WORLD_ON_PAGE_MS) worldLoad().then(renderUtility);
   utilityClock();
@@ -42,8 +42,7 @@ function showUtility(tab) {
 
 function renderUtility() {
   const unread = reminderHits().filter((h) => !h.read).length;
-  const badge = $("utility-badge");
-  if (badge) { badge.hidden = !unread; badge.textContent = unread ? String(unread) : ""; }
+  renderBell(unread);
   if (!utilityTab || $("utility-page").hidden) return;
   $("utility-tabs").innerHTML = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
     escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`).join("");
@@ -132,10 +131,9 @@ function utilityClock() {
     const onPage = !$("utility-page").hidden;
     if (!onPage && !reminders().length) { clearInterval(utilityTimer); utilityTimer = null; return; }
     if (!worldAsk && Date.now() - worldAt >= (onPage ? WORLD_ON_PAGE_MS : WORLD_ELSEWHERE_MS)) worldLoad().then(renderUtility);
-    if (!onPage) return;
     const now = Date.now();
     let ended = false;
-    $("utility-page").querySelectorAll("[data-ends]").forEach((el) => {
+    document.querySelectorAll(`${onPage ? "#utility-page [data-ends], " : ""}#rem-bell.open [data-ends], #rem-toasts [data-ends]`).forEach((el) => {
       const left = Number(el.dataset.ends) - now;
       if (left <= 0) ended = true;
       el.textContent = utilityLeft(left);
@@ -148,8 +146,8 @@ function utilityClock() {
 //
 // KEPT IN THIS BROWSER, synced to a signed-in account like a saved build
 // (37-sync.js), and fired while the site is open, on any page. A reminder is
-// `{id, kind, attributes, names, made_at_ms}` and matches an item of its kind
-// whose attributes hold every one it states (`reminderMatches`).
+// `{id, kind, attributes, names, made_at_ms, quiet?}` and matches an item of its
+// kind whose attributes hold every one it states (`reminderMatches`).
 
 const REMINDERS_KEY = "wfsim-reminders";
 /// Items a reminder already fired for (id → its end), so one fires once.
@@ -187,6 +185,12 @@ function reminderRemove(id) {
   storeJson(REMINDERS_KEY, reminders().filter((r) => r.id !== id));
   syncSoon();
 }
+/// A QUIET REMINDER fires into the bell only — no card, no system notification.
+function reminderQuiet(id) {
+  storeJson(REMINDERS_KEY, reminders().map((r) => r.id !== id ? r
+    : r.quiet ? Object.fromEntries(Object.entries(r).filter(([k]) => k !== "quiet")) : { ...r, quiet: true }));
+  syncSoon();
+}
 
 /// ON EVERY ROUTE: a reader with a reminder has the clock running, and a first
 /// answer asked for, whichever page they are on.
@@ -198,8 +202,9 @@ function reminderWatch() {
 }
 
 /// WHAT FIRED SINCE THE LAST ANSWER: each open item a reminder matches and has
-/// not fired for. It is said on the page, counted on the Utility link, and — if
-/// the reader asked and the tab is in the background — in a system notification.
+/// not fired for. It is kept under the bell and counted on it; a reminder not
+/// set quiet also says it in a card in the corner, and — if the reader asked
+/// and the tab is in the background — in a system notification.
 function reminderCheck() {
   if (!world) return;
   const rs = reminders();
@@ -218,32 +223,106 @@ function reminderCheck() {
   storeJson(REMINDERS_SEEN_KEY, seen);
   if (!fresh.length) return;
   storeJson(REMINDERS_HITS_KEY, [...fresh, ...reminderHits()].slice(0, REMINDERS_HITS_MAX));
-  const said = fresh.map(reminderSay);
+  const loud = fresh.filter((h) => !(rs.find((x) => x.id === h.reminder) || {}).quiet);
   if (utilityTab === "reminders" && !$("utility-page").hidden) reminderRead();
-  else reminderNotice(said.length === 1 ? said[0] : trF("{n} reminders fired", { n: said.length }));
+  else if (loud.length) reminderToast(loud);
   if (reminderSystemOn() && document.hidden) {
-    for (const [i, text] of said.entries()) {
+    for (const h of loud) {
       try {
-        const n = new Notification("WFSim", { body: text, tag: fresh[i].id });
+        const n = new Notification("WFSim", { body: reminderSay(h), tag: h.id });
         n.onclick = () => { window.focus(); nav("/utility/reminders"); n.close(); };
-      } catch (_) { /* the browser refused; the page already said it */ }
+      } catch (_) { /* the browser refused; the bell already holds it */ }
     }
   }
   renderUtility();
 }
-/// SAID AT THE TOP OF WHATEVER PAGE IS OPEN, until clicked away or followed.
-function reminderNotice(text) {
-  let el = $("reminder-note");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "reminder-note";
-    el.className = "page-note rem-note";
-    el.addEventListener("click", (e) => { if (!e.target.closest("a")) el.remove(); });
-    document.body.appendChild(el);
+
+// ---- WHERE A FIRED REMINDER IS SAID -----------------------------------------
+//
+// THE BELL on the bar keeps every one (`reminderHits`), counted until its panel
+// or the Reminders tab is opened; a CARD in the corner says one as it fires and
+// leaves on its own, so nothing covers the page. docs/UI.md §"Utility".
+
+/// A card stays this long, held while the pointer is on it.
+const TOAST_MS = 8000;
+/// AT MOST THIS MANY CARDS: more firing at once is one card that counts them.
+const TOASTS_MAX = 3;
+const BELL_PANEL_ROWS = 8;
+
+function reminderToast(hits) {
+  let box = $("rem-toasts");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "rem-toasts";
+    box.className = "rtoasts";
+    box.setAttribute("aria-live", "polite");
+    document.body.appendChild(box);
   }
-  el.innerHTML = `${escHtml(text)}<a href="/utility/reminders">${escHtml(tr("View"))}</a>`;
-  el.querySelector("a").onclick = () => setTimeout(() => el.remove(), 0);
+  const now = Date.now();
+  const cards = hits.length > TOASTS_MAX
+    ? [{ title: trF("{n} reminders fired", { n: hits.length }), ends: null }]
+    : hits.map((h) => ({ title: (UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h), ends: h.ends_at_ms }));
+  for (const c of cards) {
+    const el = document.createElement("div");
+    el.className = "rtoast";
+    el.innerHTML = `<span class="rtoast-ic">${BELL_SVG}</span>
+      <span class="rtoast-b"><span class="rtoast-t">${escHtml(c.title)}</span>
+        <span class="rtoast-s">${c.ends ? `${escHtml(tr("Time left"))} <span data-ends="${c.ends}">${utilityLeft(c.ends - now)}</span> · ` : ""}<a href="/utility/reminders">${escHtml(tr("View"))}</a></span></span>
+      <button type="button" class="rtoast-x" aria-label="${escHtml(tr("Close"))}">×</button>`;
+    let timer = null;
+    const go = () => { clearTimeout(timer); el.remove(); };
+    const wait = () => { clearTimeout(timer); timer = setTimeout(go, TOAST_MS); };
+    el.addEventListener("mouseenter", () => clearTimeout(timer));
+    el.addEventListener("mouseleave", wait);
+    el.querySelector(".rtoast-x").onclick = go;
+    el.querySelector("a").addEventListener("click", () => setTimeout(go, 0));
+    box.appendChild(el);
+    wait();
+  }
+  while (box.children.length > TOASTS_MAX) box.firstElementChild.remove();
 }
+
+/// THE BELL: drawn once the reader has a reminder or something fired, its count
+/// what is unread, its panel the latest that fired.
+function renderBell(unread) {
+  const bell = $("rem-bell");
+  if (!bell) return;
+  const hits = reminderHits();
+  bell.hidden = !hits.length && !reminders().length;
+  const count = $("rem-bell-count");
+  count.hidden = !unread;
+  count.textContent = unread ? String(unread) : "";
+  if (!bell.classList.contains("open")) return;
+  const now = Date.now();
+  $("rem-bell-panel").innerHTML = `<div class="rbell-h">${escHtml(tr("Recently fired"))}</div>
+    ${hits.length ? `<div class="bench-rows">${hits.slice(0, BELL_PANEL_ROWS).map((h) => reminderHitHtml(h, now)).join("")}</div>`
+      : `<div class="sim-empty">${escHtml(tr("Nothing has fired yet."))}</div>`}
+    <a class="tbmenu-link rbell-all" href="/utility/reminders">${escHtml(tr("All reminders"))}</a>`;
+}
+(function () {
+  const bell = $("rem-bell");
+  if (!bell) return;
+  const set = (open) => {
+    bell.classList.toggle("open", open);
+    $("rem-bell-btn").setAttribute("aria-expanded", open ? "true" : "false");
+    // OPENED, it says what the cards said: they go, read.
+    if (open) { reminderRead(); utilityClock(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
+    renderUtility();
+  };
+  $("rem-bell-btn").addEventListener("click", (e) => { e.stopPropagation(); set(!bell.classList.contains("open")); });
+  $("rem-bell-panel").addEventListener("click", (e) => { if (e.target.closest("a[href]")) set(false); });
+  document.addEventListener("click", (e) => { if (bell.classList.contains("open") && !bell.contains(e.target)) set(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && bell.classList.contains("open") && !imeComposing(e)) set(false); });
+})();
+
+/// ONE FIRED ITEM AS A ROW, the same under the bell and on the Reminders tab.
+const reminderHitHtml = (h, now) => `
+      <div class="brow frow${h.ends_at_ms <= now ? " none" : ""}">
+        <span class="bname">${escHtml((UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h))}
+          <span class="fnode">${escHtml(new Date(h.at_ms).toLocaleString(LANG === "zh" ? "zh-CN" : "en-GB", { dateStyle: "short", timeStyle: "short" }))}</span></span>
+        ${h.ends_at_ms > now ? `<span class="bscore" data-ends="${h.ends_at_ms}">${utilityLeft(h.ends_at_ms - now)}</span>`
+          : `<span class="bnone">${escHtml(tr("ended"))}</span>`}
+      </div>`;
 /// ONE FIRED ITEM IN A SENTENCE: what it is, and how long it stays open.
 const reminderSay = (h) => trF("{what} is open — {left} left", {
   what: (UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h),
@@ -392,20 +471,18 @@ function renderReminders() {
         <span class="bname">${escHtml(reminderLabel(r))}
           <span class="fnode${st.never ? " warn" : ""}">${escHtml(st.text)}${
             r.cloud_sync === false && accountState.account ? ` · ${escHtml(tr("This browser only"))}` : ""}</span></span>
+        ${filterChip(tr("Pop up"), !r.quiet, `data-rquiet="${escHtml(r.id)}" title="${escHtml(tr("Off: kept under the bell only"))}"`)}
         <button type="button" class="ghost-btn small" data-rdel="${escHtml(r.id)}">${escHtml(tr("Delete"))}</button>
       </div>`; }).join("")}</div>`
       : `<div class="sim-empty">${escHtml(tr("No reminders yet. Make one above, or with the bell on a row of a list."))}</div>`}
     <h3 class="wgroup-h">${escHtml(tr("Recently fired"))}</h3>
-    ${hits.length ? `<div class="bench-rows">${hits.map((h) => `
-      <div class="brow frow${h.ends_at_ms <= now ? " none" : ""}">
-        <span class="bname">${escHtml((UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h))}
-          <span class="fnode">${escHtml(new Date(h.at_ms).toLocaleString(LANG === "zh" ? "zh-CN" : "en-GB", { dateStyle: "short", timeStyle: "short" }))}</span></span>
-        ${h.ends_at_ms > now ? `<span class="bscore" data-ends="${h.ends_at_ms}">${utilityLeft(h.ends_at_ms - now)}</span>`
-          : `<span class="bnone">${escHtml(tr("ended"))}</span>`}
-      </div>`).join("")}</div>`
+    ${hits.length ? `<div class="bench-rows">${hits.map((h) => reminderHitHtml(h, now)).join("")}</div>`
       : `<div class="sim-empty">${escHtml(tr("Nothing has fired yet."))}</div>`}`;
   box.querySelectorAll("[data-rdel]").forEach((el) => {
     el.onclick = () => { reminderRemove(el.dataset.rdel); renderUtility(); };
+  });
+  box.querySelectorAll("[data-rquiet]").forEach((el) => {
+    el.onclick = () => { reminderQuiet(el.dataset.rquiet); renderUtility(); };
   });
   // ONE BUILDER AT A TIME, the picked kind's own (`UTILITY_KINDS[kind].build`).
   const tabAt = (k) => UTILITY_TABS.findIndex(([t]) => t === k.tab);
