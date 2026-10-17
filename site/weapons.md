@@ -1,4 +1,4 @@
-# All 624 Warframe weapons in WFSim
+# All 625 Warframe weapons in WFSim
 
 Each links to its page as markdown; drop `.md` for the calculator.
 
@@ -25,10 +25,11 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Prisma Dual Decurions](https://wfsim.app/weapons/Prisma_Dual_Decurions.md): Archgun · Archgun · Mastery Rank 1
 - [Velocitus](https://wfsim.app/weapons/Velocitus.md): Archgun · Archgun · Mastery Rank 0
 
-## Exalted (3)
+## Exalted (4)
 
 - [Garuda Prime Talons](https://wfsim.app/weapons/Garuda_Prime_Talons.md): Claws · Exalted · Mastery Rank 1
 - [Garuda Talons](https://wfsim.app/weapons/Garuda_Talons.md): Claws · Exalted · Mastery Rank 1
+- [Shattered Lash](https://wfsim.app/weapons/Shattered_Lash.md): Exalted Weapon · Exalted · Mastery Rank 0
 - [Valkyr Talons](https://wfsim.app/weapons/Valkyr_Talons.md): Claws · Exalted · Mastery Rank 0
 
 ## Melee (225)

@@ -480,6 +480,7 @@
 - [Sepulcrum](https://wfsim.app/weapons/Sepulcrum.md): Pistol · Secondary · Mastery Rank 14
 - [Serro](https://wfsim.app/weapons/Serro.md): Polearm · Melee · Mastery Rank 6
 - [Shaku](https://wfsim.app/weapons/Shaku.md): Nunchaku · Melee · Mastery Rank 10
+- [Shattered Lash](https://wfsim.app/weapons/Shattered_Lash.md): Exalted Weapon · Exalted · Mastery Rank 0
 - [Shedu](https://wfsim.app/weapons/Shedu.md): Rifle · Primary · Mastery Rank 13
 - [Sheev](https://wfsim.app/weapons/Sheev.md): Dagger · Melee · Mastery Rank 5
 - [Sibear](https://wfsim.app/weapons/Sibear.md): Hammer · Melee · Mastery Rank 6
