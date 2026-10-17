@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6367 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-10 17:08 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.6755 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-10 17:03 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6367 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-16 14:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.6755 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-16 14:58 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.06732 | Primed Cryo Rounds, Malignant Force, Hellfire, Wildfire, Thermite Rounds, Split Chamber, Serration, Vile Acceleration | 2026-10-11 08:17 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.3383 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-10 17:13 UTC · 22610331fe |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.3383 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-16 15:04 UTC |
 
 ## Not modelled here
 

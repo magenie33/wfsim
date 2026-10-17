@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 25.8018 | Primed Polar Magazine, Primed Venomous Clip, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-10 18:06 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 25.8018 | Primed Polar Magazine, Primed Venomous Clip, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-10 17:49 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 3.3218 | Contamination Casing, Hypothermic Shell, Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Critical Focus, Hollowed Bullets, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-10 21:52 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 15.1019 | Primed Polar Magazine, Primed Venomous Clip, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-10 22:02 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 25.8018 | Primed Polar Magazine, Primed Venomous Clip, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-16 17:01 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 25.8018 | Primed Polar Magazine, Primed Venomous Clip, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-16 17:04 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 3.3218 | Contamination Casing, Hypothermic Shell, Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Critical Focus, Hollowed Bullets, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-16 21:45 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 15.1019 | Primed Polar Magazine, Primed Venomous Clip, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Deadhead | 2026-10-16 21:56 UTC |
 
 ## Not modelled here
 

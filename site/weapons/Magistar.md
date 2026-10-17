@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 2.6427 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-10 17:34 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 11.4973 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-10 16:50 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | forward | 0.2406 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-10 16:44 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | forward | 0.8525 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-10 16:47 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 2.6427 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-16 15:36 UTC · f960f40bb8 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 11.4973 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 14:01 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | forward | 0.2406 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-16 13:57 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | forward | 0.8525 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-16 13:59 UTC |
 
 ## Not modelled here
 

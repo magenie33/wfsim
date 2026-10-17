@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 22.2867 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Accelerated Isotope, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-10 21:10 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 22.2867 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Accelerated Isotope, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-10 21:20 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 22.2867 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Accelerated Isotope, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-16 20:52 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 22.2867 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Accelerated Isotope, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-16 20:52 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 2.4172 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-11 08:14 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 13.7971 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Gunslinger, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-10 22:27 UTC · 22610331fe |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 13.7971 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Gunslinger, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-16 23:03 UTC |
 
 ## Not modelled here
 

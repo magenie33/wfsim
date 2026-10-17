@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.0580 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-10 18:08 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 124.6414 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Primary Debilitate | 2026-10-10 16:56 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.3145 | Frigid Blast, Toxic Barrage, Incendiary Coat, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-10 16:42 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 10.9649 | Frigid Blast, Toxic Barrage, Incendiary Coat, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-10 20:49 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.0580 | Frigid Blast, Toxic Barrage, Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-16 16:53 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 124.6414 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Primary Debilitate | 2026-10-16 15:03 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.3145 | Frigid Blast, Toxic Barrage, Incendiary Coat, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-16 14:41 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 10.9649 | Frigid Blast, Toxic Barrage, Incendiary Coat, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-10-16 20:35 UTC |
 
 ## In WFSim
 

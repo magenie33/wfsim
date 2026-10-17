@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.2492 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 03:36 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.2492 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 03:37 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4103 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 03:37 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.4025 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-11 03:36 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.2492 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-16 23:50 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.2492 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-16 23:50 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4103 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-17 00:00 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.4025 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-16 23:50 UTC |
 
 ## Not modelled here
 

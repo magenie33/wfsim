@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.5014 | Malignant Force, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-10 22:17 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.5645 | Infected Clip, Heavy Caliber, Primary Acuity, Primed Shred, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-10 20:56 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6858 | High Voltage, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Grineer, Serration, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-10 20:46 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.1423 | High Voltage, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Grineer, Serration, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-10 20:51 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.5014 | Malignant Force, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-16 23:23 UTC · 8cd2ec649f |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.5645 | Infected Clip, Heavy Caliber, Primary Acuity, Primed Shred, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-16 19:48 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6858 | High Voltage, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Grineer, Serration, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-16 19:41 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.1423 | High Voltage, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Grineer, Serration, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-16 19:58 UTC |
 
 ## Not modelled here
 

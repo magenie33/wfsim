@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 46.7058 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-10 22:13 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 46.7058 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-10 22:08 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 6.5596 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-10 21:54 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 31.4151 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-10 22:03 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 46.7058 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 21:56 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 46.7058 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 21:55 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 6.5596 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 21:56 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 31.4151 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 22:05 UTC |
 
 ## In WFSim
 

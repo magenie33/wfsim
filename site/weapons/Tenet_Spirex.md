@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.1930 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-09 22:59 UTC · 77fd7f0324 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.1930 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-09 23:50 UTC · 77fd7f0324 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2077 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-09 23:41 UTC · 77fd7f0324 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.1930 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-16 07:13 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.1930 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-16 07:50 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2077 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-16 06:00 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.6015 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-15 22:53 UTC |
 
 ## Not modelled here

@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 23.8105 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-10 21:07 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 60.9912 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-10 22:24 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.1945 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-10 21:53 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 13.1768 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-10 22:00 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 23.8105 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 20:41 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 38.5576 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 23:03 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.1945 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 21:53 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 13.1768 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 21:55 UTC |
 
 ## In WFSim
 

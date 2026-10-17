@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | auto | 6.5601 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-16 00:07 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.9029 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Hammer Shot, Vile Acceleration, Vital Sense, Aerial Ace, Primary Deadhead | 2026-10-16 00:08 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | auto | 0.8448 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-09 21:45 UTC · 77fd7f0324 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | auto | 6.5601 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-16 01:22 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.9029 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Hammer Shot, Vile Acceleration, Vital Sense, Aerial Ace, Primary Deadhead | 2026-10-16 01:22 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | auto | 0.8448 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-16 03:19 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.7349 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Hammer Shot, Vile Acceleration, Vital Sense, Aerial Ace, Primary Deadhead | 2026-10-15 22:52 UTC |
 
 ## Not modelled here

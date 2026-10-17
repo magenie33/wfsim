@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 1.0304 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-10 11:20 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 32.9757 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-10 11:20 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy slam | 0.07406 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-10 11:20 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy slam | 0.4119 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-10 11:20 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 1.0304 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-16 12:59 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 32.9757 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-16 12:51 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy slam | 0.07406 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-16 13:00 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy slam | 0.4119 | Primed Fever Strike, Voltaic Strike, Lasting Sting, Sacrificial Steel, Primed Pressure Point, Galvanized Reflex, Organ Shatter, Seismic Wave, Vengeful Revenant, Dispatch Overdrive, Melee Duplicate | 2026-10-16 12:42 UTC |
 
 ## Not modelled here
 

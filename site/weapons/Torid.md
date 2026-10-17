@@ -13,7 +13,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 29.3165 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-12 09:26 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 107.7488 | Primed Cryo Rounds, Thermite Rounds, High Voltage, Amalgam Serration, Galvanized Chamber, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-12 09:55 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 111.2637 | Primed Cryo Rounds, Thermite Rounds, High Voltage, Galvanized Chamber, Serration, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 09:50 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 4.5943 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-12 09:27 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 20.0296 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Orokin, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-14 09:56 UTC |
 

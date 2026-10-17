@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 13.4722 | Ice Storm, Pistol Pestilence, Scorch, Galvanized Diffusion, Magnum Force, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-10 12:55 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 79.5492 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Pistol Elementalist, Magnetic Might, Eject Magazine, Secondary Fortifier | 2026-10-10 08:11 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 13.4722 | Ice Storm, Pistol Pestilence, Scorch, Galvanized Diffusion, Magnum Force, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-16 14:03 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 76.1920 | Ice Storm, Pistol Pestilence, Scorch, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-11 07:37 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.3451 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Galvanized Diffusion, Hornet Strike, Primed Expel Grineer, Pistol Elementalist, Primed Pistol Ammo Mutation, Cascadia Flare | 2026-10-11 05:32 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 5.2774 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-12 00:24 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 5.2942 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Primed Pistol Gambit, Pistol Elementalist, Magnetic Might, Primed Pistol Ammo Mutation, Cascadia Flare | 2026-10-16 16:14 UTC |
 
 ## Not modelled here
 

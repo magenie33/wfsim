@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.1860 | Primed Charged Shell, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Shotgun Vendetta | 2026-10-10 17:08 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 19.4443 | Incendiary Coat, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Magnetic Strafe, Primary Crux | 2026-10-10 16:57 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4091 | Incendiary Coat, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Magnetic Strafe, Primary Crux | 2026-10-10 16:42 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.4988 | Incendiary Coat, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Magnetic Strafe, Primary Crux | 2026-10-10 17:08 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.1860 | Primed Charged Shell, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Shotgun Vendetta | 2026-10-16 14:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 19.4443 | Incendiary Coat, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Magnetic Strafe, Primary Crux | 2026-10-16 14:50 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4091 | Incendiary Coat, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Magnetic Strafe, Primary Crux | 2026-10-16 13:49 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.4988 | Incendiary Coat, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Magnetic Strafe, Primary Crux | 2026-10-16 14:58 UTC |
 
 ## In WFSim
 

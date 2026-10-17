@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.7803 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-10 17:31 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.7803 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-10 17:24 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1320 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-10 16:46 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.7803 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-16 14:57 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.7803 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-16 15:15 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1320 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-16 13:51 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.7399 | Deep Freeze, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Magnum Force, Primed Target Cracker, Anemic Agility, Secondary Deadhead | 2026-10-11 08:18 UTC |
 
 ## Not modelled here

@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate cycle | 63.4737 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-10 17:08 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate cycle | 301.5450 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-10 16:50 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate cycle | 63.4737 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-16 14:50 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate cycle | 301.5450 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-16 14:41 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate cycle | 11.8148 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Lethal Momentum, Cascadia Flare | 2026-10-15 02:45 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate cycle | 36.1185 | Pathogen Rounds, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Cascadia Flare | 2026-10-10 16:50 UTC · 22610331fe |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate cycle | 36.1185 | Pathogen Rounds, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Cascadia Flare | 2026-10-16 14:08 UTC |
 
 ## Not modelled here
 

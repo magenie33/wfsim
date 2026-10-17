@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.0593 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Shotgun Ammo Mutation, Primary Debilitate | 2026-10-10 17:11 UTC · 22610331fe |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 111.1610 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Shotgun Ammo Mutation, Primary Debilitate | 2026-10-10 17:45 UTC · 22610331fe |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.5505 | Frigid Blast, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Vigilante Armaments, Magnetic Strafe, Primary Crux | 2026-10-10 16:43 UTC · 22610331fe |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.1705 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Shotgun Ammo Mutation, Primary Debilitate | 2026-10-10 17:10 UTC · 22610331fe |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.0593 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Shotgun Ammo Mutation, Primary Debilitate | 2026-10-16 15:33 UTC · f960f40bb8 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 111.1610 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Shotgun Ammo Mutation, Primary Debilitate | 2026-10-16 15:04 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.5505 | Frigid Blast, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Vigilante Armaments, Magnetic Strafe, Primary Crux | 2026-10-16 13:57 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.1705 | Frigid Blast, Toxic Barrage, Primed Charged Shell, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Shotgun Elementalist, Magnetic Strafe, Shotgun Ammo Mutation, Primary Debilitate | 2026-10-16 14:52 UTC |
 
 ## In WFSim
 
