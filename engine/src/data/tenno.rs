@@ -227,7 +227,7 @@ impl Tenno {
             if o.slot.as_deref().is_some_and(|s| s != slot) {
                 continue;
             }
-            let v = o.value_on(pick.tauforged, self);
+            let v = self.shard_value(o, pick.tauforged);
             match o.at(pick.tauforged) {
                 ShardEffect::StatusChance(..) => out.status_chance += v,
                 ShardEffect::CritChance(..) => out.crit_chance += v,
@@ -236,6 +236,29 @@ impl Tenno {
             }
         }
         out
+    }
+
+    /// The value socket option `o` pays on this wielder, whose `shards` it is
+    /// one of: the card's number, doubled under `doubled_when`, plus `per_shard`
+    /// for every socket of a named colour. Here and not on the option, because
+    /// `data::shards` is below this module and may not name it.
+    fn shard_value(&self, o: &crate::data::shards::ShardOption, tauforged: bool) -> f64 {
+        let mut v = if tauforged { o.tauforged } else { o.value };
+        if o.doubled_when.is_some_and(|c| c.holds(self)) {
+            v *= 2.0;
+        }
+        if let Some(p) = &o.per_shard {
+            let per = if tauforged { p.tauforged } else { p.value };
+            let n = self
+                .shards
+                .iter()
+                .take(5)
+                .filter_map(|s| crate::data::shards::all().iter().find(|d| d.id == s.shard))
+                .filter(|d| p.colours.contains(&d.colour))
+                .count();
+            v += per * n as f64;
+        }
+        v
     }
 
     /// The sockets' option and value for every pick paying a weapon in `slot`.
@@ -249,7 +272,7 @@ impl Tenno {
                 if o.slot.as_deref().is_some_and(|s| s != slot) {
                     return None;
                 }
-                Some((o.at(pick.tauforged), o.value_on(pick.tauforged, self)))
+                Some((o.at(pick.tauforged), self.shard_value(o, pick.tauforged)))
             })
             .collect()
     }

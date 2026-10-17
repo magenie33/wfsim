@@ -128,27 +128,6 @@ impl ShardOption {
         (self.kind_of)(v, self.applies_to.as_deref())
     }
 
-    /// The value this socket pays on `wielder`, whose `shards` it is one of:
-    /// the card's number, doubled under `doubled_when`, plus `per_shard` for
-    /// every socket of a named colour.
-    pub fn value_on(&self, tauforged: bool, wielder: &crate::data::tenno::Tenno) -> f64 {
-        let mut v = if tauforged { self.tauforged } else { self.value };
-        if self.doubled_when.is_some_and(|c| c.holds(wielder)) {
-            v *= 2.0;
-        }
-        if let Some(p) = &self.per_shard {
-            let per = if tauforged { p.tauforged } else { p.value };
-            let n = wielder
-                .shards
-                .iter()
-                .take(5)
-                .filter_map(|s| all().iter().find(|d| d.id == s.shard))
-                .filter(|d| p.colours.contains(&d.colour))
-                .count();
-            v += per * n as f64;
-        }
-        v
-    }
 }
 
 #[derive(Debug, Clone)]
