@@ -43,6 +43,28 @@ function startPayload(s) {
   };
 }
 
+/// A RIVEN NO CARD OF THIS READER'S NAMES — the board's bare slot id, or a card
+/// since deleted. In `stance` or the `mods` scope one refuses the whole search
+/// ("unknown mod id: riven"), and a RESUMED body is whatever an older page
+/// stored, so every body is passed through `nameableOptimizeBody` on its way
+/// out. The stored start keeps the card: one not yet loaded reads the same.
+const unnamedRiven = (id) => !!id && (splitRank(id)[0] === BOARD_RIVEN_SLOT || (isRivenId(id) && !modById(splitRank(id)[0])));
+const unnamedRivenSlots = (b) => (b.slots || []).map((x, i) => (x && unnamedRiven(x.mod) ? i : -1)).filter((i) => i >= 0);
+function nameableOptimizeBody(body) {
+  const out = { ...body };
+  if (unnamedRiven(out.stance)) out.stance = "";
+  if (out.mods && typeof out.mods === "object" && !Array.isArray(out.mods)) {
+    out.mods = Object.fromEntries(Object.entries(out.mods).filter(([id]) => !unnamedRiven(id)));
+  }
+  out.starts = (out.starts || []).map((s) => {
+    const gone = new Set(((s && s.slots) || []).map((id, i) => (unnamedRiven(id) ? i : -1)).filter((i) => i >= 0));
+    if (!gone.size) return s;
+    return { ...s, slots: s.slots.map((id, i) => (gone.has(i) ? null : id)),
+      fixed: (s.fixed || []).filter((f) => !(f.kind === "mods" && gone.has(f.idx))) };
+  });
+  return out;
+}
+
 /// THERE IS ALWAYS A START, the way the builder always holds a build: a new
 /// search holds one BLANK start — the search fills it in its own order — and
 /// removing the last start leaves a blank one.
@@ -92,9 +114,11 @@ function renderOptStarts() {
 /// What the limits do to a start, under its card: a pinned conflict in red,
 /// what will be replaced in grey.
 function startConflictHtml(s) {
-  if (!opt.limits) return "";
+  const unnamed = unnamedRivenSlots(s.build).length
+    ? `<div class="opt-start-swap">${escHtml(tr("a riven you do not have is left out of this start — add it in Rivens to search with it"))}</div>` : "";
+  if (!opt.limits) return unnamed;
   const c = startConflicts(s);
-  return (c.blocked.length ? `<div class="opt-start-clash">${escHtml(tr("pinned, and ruled out by the limits — this start cannot run:"))} ${c.blocked.map(escHtml).join(" · ")}</div>` : "")
+  return unnamed + (c.blocked.length ? `<div class="opt-start-clash">${escHtml(tr("pinned, and ruled out by the limits — this start cannot run:"))} ${c.blocked.map(escHtml).join(" · ")}</div>` : "")
     + (c.replaced.length ? `<div class="opt-start-swap">${escHtml(tr("ruled out by the limits, so the search replaces:"))} ${c.replaced.map(escHtml).join(" · ")}</div>` : "");
 }
 

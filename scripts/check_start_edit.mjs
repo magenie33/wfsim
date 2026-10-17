@@ -105,4 +105,20 @@ c("leaving the builder by a tab ends the edit as done does", r.leftOpen === fals
   JSON.stringify([r.leftOpen, r.leftKept, r.leftBack]));
 c("an optimize from the start is a quick descent from 1 start", r.optOk === true && r.optStrategy === "descent" && r.optStarts === 1 && r.rows > 0);
 c("...and every answer keeps the fixed card", r.allHellfire === true);
+
+// A RIVEN NO CARD NAMES never reaches /api/optimize: in `stance` or the `mods`
+// scope the server refuses the whole search over it ("unknown mod id: riven").
+const u = await app.evaluate(`(() => {
+  const b = nameableOptimizeBody({ ...optimizeBody(), stance: 'riven', mods: { riven: 'fixed', 'riven:gone': 'search', serration: 'search' },
+    starts: [{ slots: ['riven', 'serration'], fixed: [{ kind: 'mods', idx: 0 }, { kind: 'mods', idx: 1 }] }] });
+  opt.starts.push({ build: stateFromBuild({ mods: ['serration'] }, $('weapon').value), fixed: [] });
+  opt.starts[opt.starts.length - 1].build.slots[1].mod = 'riven';
+  renderOptStarts();
+  const noted = !!([...document.querySelectorAll('.opt-start')].pop() || document).querySelector('.opt-start-swap');
+  opt.starts.pop(); renderOptStarts();
+  return { stance: b.stance, mods: Object.keys(b.mods), slots: b.starts[0].slots, fixed: b.starts[0].fixed.map((f) => f.idx), noted };
+})()`);
+c("an unnamed riven is taken out of the stance, the mods scope and a start's slots and pins",
+  u.stance === "" && u.mods.join() === "serration" && u.slots.join() === ",serration" && u.fixed.join() === "1", JSON.stringify(u));
+c("...and the start says so under its card", u.noted === true);
 await app.finish("start edit");

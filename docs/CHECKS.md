@@ -1071,7 +1071,10 @@ builder (banner up, build bar away, a pin on every position), a card pinned and
 another changed; Done writes both into the start, Discard leaves it as it was,
 and each time the player's build and preset come back with identical contents.
 An optimize from the start is a quick descent whose every answer keeps the
-pinned card.
+pinned card. A riven no card of the reader's names — the board's bare `riven`,
+or a deleted card — is taken out of the stance, the `mods` scope and a start's
+slots and pins before a body is sent (`nameableOptimizeBody`), and the start
+says so under its card.
 
 ## `check_result_to_start`
 

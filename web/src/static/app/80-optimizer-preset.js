@@ -283,7 +283,7 @@ async function runOptimize() {
   $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
   $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
   try {
-    const body = optimizeBody();
+    const body = nameableOptimizeBody(optimizeBody());
     // STARTED, beside `optimizer.run` for finished: the gap is what was cancelled or failed.
     track("optimizer.start", $("weapon").value);
     const r = await postJson("/api/optimize", body);
@@ -468,7 +468,7 @@ async function resumeOptimize(saved) {
     // would let an edited setting resume into a run it never belonged to.
     // A RESUME IS A START: its finish is an `optimizer.run` like any other.
     track("optimizer.start", $("weapon").value);
-    const r = await postJson("/api/optimize", { ...saved.body, __resume: saved.cp });
+    const r = await postJson("/api/optimize", { ...nameableOptimizeBody(saved.body), __resume: saved.cp });
     if (!r || r.ok === false) {
       clearCheckpoint();
       optFinish(`<div class="error">resume failed: ${r ? r.error : "no data"}</div>`);
