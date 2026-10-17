@@ -727,6 +727,10 @@ ui:
   # DE's own word, from 奋力一掷's card (`投掷伤害`). "Charged Throw" has no
   # Chinese source that could be reached, so it is left out and reads in English.
   "Throw": 投掷
+  # An ability's weapon swung by its cast (Shattered Lash): DE's client names
+  # neither press, so these say the key, tapped and held.
+  "Tap Cast": 点按施放
+  "Hold Cast": 按住施放
   "{form}, detonated": "{form}·引爆"
   "{form}, then detonated in flight where the explosion catches the most enemies: the throw earns the combo counter and the explosion spends it, multiplied by it.": "{form}，然后在空中爆炸能波及最多敌人的位置引爆：投掷命中积攒连击计数，爆炸消耗它并吃它的倍率。"
   "{form}, left to fly out and back before the next one; nothing explodes.": "{form}，等它飞出去再飞回来才投下一次；不引爆。"
