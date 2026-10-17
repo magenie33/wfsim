@@ -1,5 +1,9 @@
 id: melee_animosity
 name: Melee Animosity
+# REFUSED WHERE NO HEAVY ATTACK IS: an ability's weapon that "Cannot perform
+# blocking or heavy attacks … cannot equip related mods (e.g. … Melee Animosity)"
+# (W`Shattered_Lash_(Weapon)`), its tag POWER_WEAPON_LITE.
+excludes_weapon: [power_weapon_lite]
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/HeavyCritOnRegularMelee

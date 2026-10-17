@@ -49,6 +49,11 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
                 .iter()
                 .map(|s| &*Box::leak(s.clone().into_boxed_str()))
                 .collect(),
+            excludes_weapon: af
+                .excludes_weapon
+                .iter()
+                .map(|s| &*Box::leak(s.clone().into_boxed_str()))
+                .collect(),
             equip_classes: af
                 .equip_classes
                 .into_iter()
@@ -118,6 +123,7 @@ pub fn pool_for_weapon(weapon: &str, slot: &str) -> Vec<&'static ArcaneDef> {
                 // both, and each list it states has to be satisfied.
                 && (a.equip_traits.is_empty()
                     || a.equip_traits.iter().all(|t| traits.iter().any(|w| w == t)))
+                && !spec.is_some_and(|s| s.compatibility_tags.iter().any(|t| a.excludes_weapon.contains(&t.as_str())))
         })
         .collect()
 }

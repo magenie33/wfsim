@@ -32,6 +32,10 @@ pub struct ArcaneDef {
     /// would be a worse way of saying the same thing. Both are ANDed — an
     /// arcane may narrow by either, or by both.
     pub equip_traits: Vec<&'static str>,
+    /// DE'S COMPATIBILITY TAGS IT REFUSES, as a mod's `excludes_weapon`: an
+    /// arcane is not offered on a weapon stating one of them (Melee Crescendo
+    /// off a weapon that cannot perform finishers, `no_finisher`).
+    pub excludes_weapon: Vec<&'static str>,
     /// WHICH ARCANE SEATS this arcane fits — `primary`, `secondary`, `melee`.
     ///
     /// Almost always the one directory it is filed under, which is the default

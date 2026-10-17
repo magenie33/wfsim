@@ -2584,6 +2584,16 @@ fn an_ability_weapon_takes_only_the_cards_its_page_allows() {
         assert!(pool.contains(&id), "{id} is offered");
     }
     assert!(!crate::data::weapons::has_exilus_slot("shattered_lash"));
+    // THE ARCANES ALIKE: Melee Crescendo needs a finisher and Melee Animosity a
+    // heavy attack, so neither is offered; Melee Duplicate is.
+    let arcanes = |w: &str| -> Vec<String> {
+        crate::data::arcanes::pool_for_weapon(w, "melee").into_iter().map(|a| a.id.clone()).collect()
+    };
+    let lash = arcanes("shattered_lash");
+    assert!(!lash.iter().any(|a| a == "melee_crescendo" || a == "melee_animosity"), "{lash:?}");
+    assert!(lash.iter().any(|a| a == "melee_duplicate"));
+    let talons = arcanes("valkyr_talons");
+    assert!(talons.iter().any(|a| a == "melee_crescendo") && talons.iter().any(|a| a == "melee_animosity"));
     // …and nothing changed for the weapons that had them.
     let valkyr: Vec<&str> = crate::data::mods::pool_for_build("valkyr_talons", &[]).into_iter().map(|m| m.id).collect();
     assert!(valkyr.contains(&"primed_fury") && valkyr.contains(&"reflex_coil"));

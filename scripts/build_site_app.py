@@ -2671,8 +2671,7 @@ def main() -> None:
     ship_art()
     ship_pinned("ocr", "25-riven-ocr.js")
     ship_pinned("lib", "73-compute.js")
-    guard_board_files()
-    run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
+    board_files()
     prerender(flagged)
     ship_share_names()
 
@@ -2696,8 +2695,21 @@ def main() -> None:
     print(f"site/ ready — release {release}, wasm {size / 1e6:.1f} MB")
 
 
+def board_files() -> None:
+    """`--board-files`: the board directory made the roster's shape and stamped,
+    and nothing else built.
+
+    A BUILT site/ IS LAID WITHOUT ITS BOARD (the bots own it), so a weapon the
+    roster gained has no file in the checkout it lands in and one it lost keeps
+    its file. `ship.py --built` and CI's checks lay the build and then run this,
+    the same two steps a full build ends with.
+    """
+    guard_board_files()
+    run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
+
+
 if __name__ == "__main__":
     # A DEPLOY MUST NOT TAKE A HALF-WRITTEN site/ (scripts/checkout_lock.py).
     import checkout_lock
     with checkout_lock.hold("build_site_app.py"):
-        main()
+        board_files() if sys.argv[1:] == ["--board-files"] else main()

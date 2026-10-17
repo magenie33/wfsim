@@ -19,6 +19,8 @@ pub(super) struct ArcaneFile {
     #[serde(default)]
     pub(super) equip_traits: Vec<String>,
     #[serde(default)]
+    pub(super) excludes_weapon: Vec<String>,
+    #[serde(default)]
     pub(super) seats: Vec<String>,
     /// Custom perk implementation id (Secondary Enervate's ramp/reset lives
     /// in `engine::perks`, not in the declarative effect vocabulary).

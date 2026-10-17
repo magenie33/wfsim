@@ -20,6 +20,13 @@ runs:
       with:
         name: site-built
         path: .
+    # …AND ITS BOARD MADE THE ROSTER'S SHAPE AND STAMPED, as `ship.py --built`
+    # does after laying it: a weapon the roster gained has no file here yet.
+    - if: inputs.built == 'true'
+      shell: bash
+      run: |
+        python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+        python3 scripts/build_site_app.py --board-files
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         # >= 22 for the global WebSocket the CDP client uses.

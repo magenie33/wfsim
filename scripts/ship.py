@@ -164,10 +164,10 @@ def main() -> None:
         )
 
     # BUILT ALREADY (`--built`): CI's `site` job built and checked this tree's
-    # site/, and ship.yml laid it here — all but the board, the bots', whose
-    # stamp is taken again over the board this checkout holds.
+    # site/, and ship.yml laid it here — all but the board, the bots', which is
+    # made the roster's shape and stamped again over what this checkout holds.
     if args.built:
-        run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
+        run(sys.executable, str(ROOT / "scripts" / "build_site_app.py"), "--board-files")
     else:
         run(sys.executable, str(ROOT / "scripts" / "build_site_app.py"))
     # The payload list is `desktop/build.rs`'s, and it is rebuilt HERE so the
