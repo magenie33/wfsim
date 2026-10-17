@@ -75,10 +75,12 @@ replayed through the proxy, so the session lands in the shell.
 
 **THE NATIVE ENGINE IS CONTENT, NOT SHELL.** `wfsim-native` (`native/`, a
 cdylib over `webapi::route_text`, the wasm `api`'s own door) ships in the
-release as `native/wfsim_engine.<hash>.dll` beside `native/engine.json`, which
-names it, its engine id and its SHA-256, so an engine change reaches every
-client as a file swap. The shell holds it by two C functions (`wfsim_api`,
-`wfsim_free`) and nothing else, so it still compiles nothing of the engine.
+release as `native/wfsim_engine.<hash>.dll` beside its data pack and
+`native/engine.json`, which names both, the engine id and their SHA-256s, so an
+engine change reaches every client as a file swap. The shell holds it by three
+C functions (`wfsim_install_data`, called once with the pack before the first
+call, `wfsim_api`, `wfsim_free`) and nothing else, so it still compiles nothing
+of the engine; a library without the first carries its own data.
 `native.rs` loads it from a hashed copy under the data root, never from
 `current/`, which every update renames and a mapped library would pin; refuses
 any engine id but the one the page asks for; and runs each `engine(path, body)`

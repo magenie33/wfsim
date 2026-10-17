@@ -16,6 +16,7 @@ use sha2::{Digest, Sha256};
 
 type ApiFn = unsafe extern "C" fn(*const u8, usize, *const u8, usize, *mut usize) -> *mut u8;
 type FreeFn = unsafe extern "C" fn(*mut u8, usize);
+type InstallFn = unsafe extern "C" fn(*const u8, usize, *mut usize) -> *mut u8;
 
 struct Library {
     api: ApiFn,
@@ -106,6 +107,27 @@ impl Native {
         let l = unsafe {
             let api = *lib.get::<ApiFn>(b"wfsim_api\0").map_err(|e| e.to_string())?;
             let free = *lib.get::<FreeFn>(b"wfsim_free\0").map_err(|e| e.to_string())?;
+            // ITS DATA, BEFORE THE FIRST CALL (abi 2, docs/CLIENTS.md §"The
+            // official data pack"): the pack `engine.json` names, checked as the
+            // library is. A library without the door carries its data.
+            if let (Some(data), Some(sha)) = (named["data"].as_str(), named["data_sha256"].as_str()) {
+                if data.contains(['/', '\\']) {
+                    return Err("native/engine.json names no data file".into());
+                }
+                let pack = std::fs::read(self.current.join("native").join(data)).map_err(|e| format!("{data}: {e}"))?;
+                if format!("{:x}", Sha256::digest(&pack)) != sha {
+                    return Err(format!("{data} is not the file native/engine.json names"));
+                }
+                if let Ok(install) = lib.get::<InstallFn>(b"wfsim_install_data\0") {
+                    let mut len = 0usize;
+                    let p = install(pack.as_ptr(), pack.len(), &mut len);
+                    let said = String::from_utf8_lossy(std::slice::from_raw_parts(p, len)).into_owned();
+                    free(p, len);
+                    if !said.is_empty() {
+                        return Err(format!("{data}: {said}"));
+                    }
+                }
+            }
             Arc::new(Library { api, free, _lib: lib })
         };
         // The copies of engines no longer shipped; one still mapped stays put.

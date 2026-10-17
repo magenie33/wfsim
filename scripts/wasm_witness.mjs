@@ -29,7 +29,9 @@ const CACHE = path.join(HERE, "..", ".wasm-witness");
 export async function enginePackage(pkg = "", site = SITE) {
   if (pkg) {
     const wasm = fs.readFileSync(path.join(pkg, "wfsim_wasm_bg.wasm"));
-    return { js: fs.readFileSync(path.join(pkg, "wfsim_wasm.js"), "utf8"), wasm,
+    const packs = fs.readdirSync(pkg).filter((f) => /^pack[.].+[.]json$/.test(f)).sort()
+      .map((f) => fs.readFileSync(path.join(pkg, f), "utf8"));
+    return { js: fs.readFileSync(path.join(pkg, "wfsim_wasm.js"), "utf8"), wasm, packs,
       id: createHash("sha256").update(wasm).digest("hex").slice(0, 12), engine: null };
   }
   const local = !/^https?:/.test(site);
@@ -49,15 +51,26 @@ export async function enginePackage(pkg = "", site = SITE) {
   const wasm = await get(`wfsim_wasm_bg.${rel.wasm}.wasm`);
   // A FILE IS ITS HASH: a cached or served one that is not is never run.
   if (createHash("sha256").update(wasm).digest("hex").slice(0, 12) !== rel.wasm) throw new Error(`wasm ${rel.wasm}: hash differs`);
-  return { js: (await get(`wfsim_wasm.${rel.wasm}.js`)).toString("utf8"), wasm, id: rel.wasm, engine: rel.engine, commit: rel.commit || null };
+  // …AND SO IS EACH DATA PACK, named `pack.<name>.<hash>.json`.
+  const packs = [];
+  for (const name of rel.packs || []) {
+    const body = await get(name);
+    if (!name.includes(`.${createHash("sha256").update(body).digest("hex").slice(0, 12)}.`)) throw new Error(`${name}: hash differs`);
+    packs.push(body.toString("utf8"));
+  }
+  return { js: (await get(`wfsim_wasm.${rel.wasm}.js`)).toString("utf8"), wasm, packs, id: rel.wasm, engine: rel.engine, commit: rel.commit || null };
 }
 
 /// ONE INSTANCE, called as the page's lane calls its worker.
-function instance({ js, wasm }) {
+function instance({ js, wasm, packs = [] }) {
   const ctx = vm.createContext({ console, TextEncoder, TextDecoder, WebAssembly });
   vm.runInContext(js + "\nthis.wasm_bindgen = wasm_bindgen;", ctx);
   ctx.bytes = wasm;
   vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
+  for (const p of packs) {
+    const err = ctx.wasm_bindgen.install_data(p);
+    if (err) throw new Error(err);
+  }
   return (p, body) => {
     const r = JSON.parse(ctx.wasm_bindgen.api(p, JSON.stringify(body)));
     if (!r || r.ok === false) throw new Error(`${p}: ${(r && r.error) || "failed"}`);

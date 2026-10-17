@@ -224,14 +224,24 @@ function watchSilence(giveUp) {
 /// WHERE A WORKER'S LOAD BROKE, as `worker.js` says it in `load_failed`, and the
 /// suffix of the `engine.fail` subject (docs/ANALYTICS.md): `glue` the script
 /// beside the module, `network` the module's fetch, `http` its status, `cut` its
-/// body mid-download, `compile` the bytes, `memory` an instance it could not have.
-const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "unclassified"];
+/// body mid-download, `compile` the bytes, `memory` an instance it could not have,
+/// `data` a pack the engine would not install.
+const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "data", "unclassified"];
 
 /// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
 /// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
-/// writes in the hashed name and the size; the dev server serves no workers.
+/// writes in the hashed names and the size; the dev server serves no workers.
 const ENGINE_WASM = "/pkg/wfsim_wasm_bg.wasm";
+/// …AND ITS DATA: the module is code, and these packs are installed into every
+/// instance before its first call (docs/WASM.md §"Code and data"), so a data
+/// edit is a new pack and the module stays cached.
+const ENGINE_PACKS = [];
+/// The module's and the packs' bytes together, for the boot screen.
 const ENGINE_WASM_BYTES = 0;
+/// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
+/// a page reads its catalog from these and draws before the engine has
+/// downloaded, which then only has to be there by the first computation.
+const ENGINE_VIEWS = {};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -240,86 +250,114 @@ const ENGINE_STALL_MS = 60_000;
 let engineModule = null;
 function engineLoad() {
   if (!engineModule) {
-    const once = () => engineCompile().catch((err) => { if (!err.loadCause) err.loadCause = engineCauseOf(err); throw err; });
+    const once = () => {
+      engineGot = 0;
+      return Promise.all([engineCompile(), ...ENGINE_PACKS.map(enginePack)])
+        .then(([module, ...packs]) => ({ module, packs }))
+        .catch((err) => { if (!err.loadCause) err.loadCause = engineCauseOf(err); throw err; });
+    };
     engineModule = once().catch((err) => (err.loadCause === "cut" || err.loadCause === "network" ? once() : Promise.reject(err)));
     engineModule.catch(() => { engineModule = null; });
+    // HOW LONG THE ENGINE TOOK, now that the page no longer waits for it to draw.
+    engineModule.then(() => track("engine.ready", "", Math.round(performance.now())), () => {});
   }
   return engineModule;
 }
 const engineCauseOf = (err) => (err instanceof WebAssembly.CompileError ? "compile"
   : err instanceof RangeError ? "memory" : "unclassified");
 const engineFailed = (cause, err) => Object.assign(err || new Error(`engine ${cause}`), { loadCause: cause });
-async function engineCompile() {
+/// THE DOWNLOAD IS COUNTED for the boot screen (index.html), module and packs
+/// together, so a slow line reads as progress rather than as a hang.
+let engineGot = 0, engineSaid = 0;
+const engineSay = () => {
+  engineSaid = Date.now();
+  if (window.__wfsimBootProgress) window.__wfsimBootProgress(engineGot, ENGINE_WASM_BYTES);
+};
+/// One engine file's response, read a part at a time: `next()` resolves each
+/// part, and a body that stalls is cut with the cause recorded on `cut`.
+async function engineFetch(url) {
   // THE CLOCK IS ON THE HEADERS ONLY: a signal left armed would cut a slow
   // body that is still arriving.
   const ctl = new AbortController();
   const late = setTimeout(() => ctl.abort(), ENGINE_STALL_MS);
   let r;
   try {
-    r = await fetch(ENGINE_WASM, { signal: ctl.signal });
+    r = await fetch(url, { signal: ctl.signal });
   } catch (err) {
     throw engineFailed("network", err);
   } finally {
     clearTimeout(late);
   }
-  if (!r.ok) throw engineFailed("http", new Error(`wasm ${r.status}`));
-  // THE DOWNLOAD IS COUNTED for the boot screen (index.html), so a slow line
-  // reads as progress rather than as a hang.
+  if (!r.ok) throw engineFailed("http", new Error(`${url} ${r.status}`));
   const reader = r.body && r.body.getReader();
-  if (!reader) return WebAssembly.compile(await r.arrayBuffer());
-  let got = 0, said = 0, cut = null;
-  const say = () => { said = Date.now(); if (window.__wfsimBootProgress) window.__wfsimBootProgress(got, ENGINE_WASM_BYTES); };
-  const next = async () => {
+  const got = { r, reader, cut: null };
+  got.next = async () => {
     let stall;
     const part = await Promise.race([
       reader.read(),
       new Promise((_, no) => { stall = setTimeout(() => no(new Error("engine download stalled")), ENGINE_STALL_MS); }),
-    ]).catch((err) => { reader.cancel().catch(() => {}); throw (cut = engineFailed("cut", err)); })
+    ]).catch((err) => { reader.cancel().catch(() => {}); throw (got.cut = engineFailed("cut", err)); })
       .finally(() => clearTimeout(stall));
-    if (part.done) say();
+    if (part.done) engineSay();
     else {
-      got += part.value.byteLength;
-      if (Date.now() - said > 250) say();
+      engineGot += part.value.byteLength;
+      if (Date.now() - engineSaid > 250) engineSay();
     }
     return part;
   };
+  return got;
+}
+async function engineBytes(f) {
+  const parts = [];
+  let n = 0;
+  for (;;) {
+    const part = await f.next();
+    if (part.done) break;
+    parts.push(part.value);
+    n += part.value.byteLength;
+  }
+  const bytes = new Uint8Array(n);
+  let at = 0;
+  for (const p of parts) { bytes.set(p, at); at += p.byteLength; }
+  return bytes;
+}
+async function engineCompile() {
+  const f = await engineFetch(ENGINE_WASM);
+  if (!f.reader) return WebAssembly.compile(await f.r.arrayBuffer());
   // COMPILED AS IT ARRIVES where the browser can, so the compile is not a
   // second wait after the last byte. A cut body rejects the compile with the
   // browser's own error, so the cause is the one this stream recorded.
   if (WebAssembly.compileStreaming) {
     const body = new ReadableStream({
       async pull(ctl) {
-        const part = await next();
+        const part = await f.next();
         if (part.done) ctl.close();
         else ctl.enqueue(part.value);
       },
-      cancel() { reader.cancel().catch(() => {}); },
+      cancel() { f.reader.cancel().catch(() => {}); },
     });
     return WebAssembly.compileStreaming(new Response(body, { headers: { "content-type": "application/wasm" } }))
-      .catch((err) => { throw cut || err; });
+      .catch((err) => { throw f.cut || err; });
   }
-  const parts = [];
-  for (;;) {
-    const part = await next();
-    if (part.done) break;
-    parts.push(part.value);
-  }
-  const bytes = new Uint8Array(got);
-  let at = 0;
-  for (const p of parts) { bytes.set(p, at); at += p.byteLength; }
-  return WebAssembly.compile(bytes);
+  return WebAssembly.compile(await engineBytes(f));
+}
+/// One data pack, as the text the engine's `install_data` reads.
+async function enginePack(url) {
+  const f = await engineFetch(url);
+  return f.reader ? new TextDecoder().decode(await engineBytes(f)) : f.r.text();
 }
 
 /// EVERY ENGINE WORKER IS MADE HERE — `worker.js` waits for its `engine`
 /// message and loads nothing itself. A module the browser will not post across
-/// is sent as its address instead, and that worker fetches its own.
+/// is sent as its address instead, and that worker fetches its own; the packs
+/// always travel as text.
 function spawnEngine() {
   const w = new Worker("/worker.js");
-  engineLoad().then((module) => {
+  engineLoad().then(({ module, packs }) => {
     try {
-      w.postMessage({ kind: "engine", module });
+      w.postMessage({ kind: "engine", module, packs });
     } catch (_) {
-      w.postMessage({ kind: "engine", url: ENGINE_WASM });
+      w.postMessage({ kind: "engine", url: ENGINE_WASM, packs });
     }
   }, (err) => w.postMessage({ kind: "engine", cause: err.loadCause }));
   return w;

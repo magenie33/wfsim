@@ -27,6 +27,12 @@ check("the engine the worker bundles is a file the site serves", existsSync(wasm
 const glue = src.split("\n").filter((l) => !/^(import|export) /.test(l)).join("\n");
 const engine = new Function(`${glue}\nreturn wasm_bindgen;`)();
 engine.initSync({ module: new WebAssembly.Module(readFileSync(wasmPath)) });
+const packs = [...src.matchAll(/^import pack\d+ from "([^"]+)";$/gm)].map(([, p]) => resolve(ROOT, "mcp", p));
+check("the engine bundles its data packs, each a file the site serves", packs.length > 0 && packs.every(existsSync), packs.join(", "));
+for (const p of packs) {
+  const err = engine.install_data(readFileSync(p, "utf8"));
+  check(`the pack ${p.split(/[\\/]/).pop()} installs`, !err, err);
+}
 const api = (path, body) => JSON.parse(engine.api(path, JSON.stringify(body ?? {})));
 
 const meta = api("/api/meta");

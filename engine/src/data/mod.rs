@@ -4,8 +4,9 @@
 //! (docs/WASM.md phase 1).
 //!
 //! `build.rs` scans `../data` and generates the `FILES` table; every loader
-//! (mods, arcanes, evolutions, enemies) reads from it. Native binaries, the
-//! CLI, and the wasm build therefore all carry the identical data set, and
+//! (mods, arcanes, evolutions, enemies) reads it through `file` and
+//! `files_under`. Native binaries and the CLI embed every file; the wasm build
+//! embeds none and is handed the same lean files as packs (`install`), so
 //! nothing depends on the current working directory or a filesystem — the
 //! browser has neither.
 //!
@@ -39,14 +40,73 @@ pub mod weapons;
 
 include!(concat!(env!("OUT_DIR"), "/embedded_data.rs"));
 
-/// The embedded file at `path` (relative to `data/`, forward slashes).
-pub fn file(path: &str) -> Option<&'static str> {
-    FILES.iter().find(|(p, _)| *p == path).map(|(_, c)| *c)
+type Files = Vec<(&'static str, &'static str)>;
+
+/// Packs handed in by the host (`install`), until the first read seals them.
+static INSTALLED: std::sync::Mutex<(Files, Vec<String>)> = std::sync::Mutex::new((Vec::new(), Vec::new()));
+static ALL: std::sync::OnceLock<Files> = std::sync::OnceLock::new();
+
+/// THE FILES THIS BUILD READS, in path order: each installed pack's, and the
+/// embedded files of every pack not installed. Sealed by the first read, so
+/// every catalog is cached from one set.
+fn all() -> &'static [(&'static str, &'static str)] {
+    ALL.get_or_init(|| {
+        let (installed, names) = INSTALLED.lock().map(|g| g.clone()).unwrap_or_default();
+        let mut out: Files = FILES
+            .iter()
+            .filter(|(_, pack, _)| !names.iter().any(|n| n == pack))
+            .map(|(p, _, c)| (*p, *c))
+            .collect();
+        out.extend(installed);
+        out.sort_by(|a, b| a.0.cmp(b.0));
+        out
+    })
 }
 
-/// All embedded files under `prefix` (e.g. `"mods/pistol/"`), in path order.
+/// HAND THIS BUILD A PACK (`build.rs` `pack_of`): `name` and its files as
+/// (path, lean contents). It REPLACES whatever this build embeds of that pack,
+/// so one host installs on any build; a build made apart reads nothing before
+/// every pack in `EXPECTED_PACKS` is here. After the first read a pack would be
+/// invisible to every cached catalog, so it is refused.
+pub fn install(name: &str, files: Vec<(String, String)>) -> Result<usize, String> {
+    if ALL.get().is_some() {
+        return Err(format!("pack {name}: the data was read before it was installed"));
+    }
+    let mut g = INSTALLED.lock().map_err(|_| "pack registry poisoned".to_string())?;
+    if g.1.iter().any(|n| n == name) {
+        return Err(format!("pack {name} is already installed"));
+    }
+    let n = files.len();
+    let mut add: Files = Vec::with_capacity(n);
+    for (p, c) in files {
+        if g.0.iter().any(|(q, _)| *q == p) {
+            return Err(format!("pack {name}: {p} is already in another pack"));
+        }
+        add.push((Box::leak(p.into_boxed_str()), Box::leak(c.into_boxed_str())));
+    }
+    g.0.extend(add);
+    g.1.push(name.to_string());
+    Ok(n)
+}
+
+/// The packs this build still waits for; empty once it can answer.
+pub fn missing_packs() -> Vec<&'static str> {
+    let g = INSTALLED.lock();
+    EXPECTED_PACKS
+        .iter()
+        .copied()
+        .filter(|p| !g.as_ref().is_ok_and(|g| g.1.iter().any(|n| n == p)))
+        .collect()
+}
+
+/// The file at `path` (relative to `data/`, forward slashes).
+pub fn file(path: &str) -> Option<&'static str> {
+    all().iter().find(|(p, _)| *p == path).map(|(_, c)| *c)
+}
+
+/// All files under `prefix` (e.g. `"mods/pistol/"`), in path order.
 pub fn files_under(prefix: &str) -> impl Iterator<Item = (&'static str, &'static str)> + '_ {
-    FILES.iter().copied().filter(move |(p, _)| p.starts_with(prefix)).inspect(|_| crate::alive::beat())
+    all().iter().copied().filter(move |(p, _)| p.starts_with(prefix)).inspect(|_| crate::alive::beat())
 }
 
 #[cfg(test)]

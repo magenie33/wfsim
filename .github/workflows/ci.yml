@@ -47,6 +47,23 @@ jobs:
       - name: A compute lane stays small
         run: node scripts/check_lane_memory.mjs pkg=target/gas-check-pkg
 
+  # THE ENGINE IS ITS CODE (docs/WASM.md §"Code and data"): the shipped module
+  # built at another path, with a weapon's number edited, is the same bytes,
+  # and only the data pack moves — so a data release never costs a reader the
+  # module, and one source never builds two.
+  engine-apart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          # keep in sync with mise.toml
+          toolchain: "1.97.1"
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: One source builds one module, and data moves only the pack
+        run: python3 scripts/check_engine_apart.py
+
   # THE PUBLISHED SNAPSHOT IS A LEGAL BOARD — a fact about publish.yml's output,
   # so it is a job of its own: inside `test` it stopped the one run that repairs
   # it, since publish.yml waits for `test` and a tightened door leaves the

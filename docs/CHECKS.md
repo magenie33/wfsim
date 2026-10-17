@@ -43,7 +43,10 @@ mixed with another's. No browser — every assertion is a fact about the files,
 so it runs on every change rather than the ones somebody remembered. It holds
 five things: `site/release.json` and the `RELEASE_ID` stamped into `app.js`
 agree; `pkg/` holds exactly one module, named by its own digest, with the glue
-carrying the same one; `worker.js` asks for those names and for no unhashed
+carrying the same one, and its data packs and catalog files each named by their
+own digest, the packs those `release.json` names and every one `app.js` names a
+file of this build, each kind at most one generation deep; `worker.js` asks for
+those names and for no unhashed
 one; `board.meta.json` stamps the board sitting beside it; and the page reads
 its age and its submission count from that stamp rather than from the copy of
 `board_state.yaml` compiled into the wasm, which is as old as the build. The
@@ -226,6 +229,16 @@ part every kitgun; anything else — mechanics, shared data — moves everything
 and that engine is accepted to join the served one (`join`). Tests are never
 compared. An engine replaced more than `ENGINE_GRACE_DAYS` ago is dropped with
 its file list.
+
+## `check_engine_apart.py`
+
+The engine is its code (docs/WASM.md §"Code and data"). The shipped module
+(`WFSIM_DATA_APART=1`) is built here and in a second checkout at another path in
+which one weapon's number and one note were changed: the two modules must be
+the same bytes, and the two `data` packs must differ in exactly that file. A
+module that reads a path, a date or a data file at compile time fails the
+first; a pack that missed the edit fails the second. Verified to bite: built
+without `WFSIM_DATA_APART`, the module embeds the data and the two differ.
 
 ## `check_accounts_pause`
 

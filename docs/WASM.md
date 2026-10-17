@@ -82,6 +82,42 @@ memory is none of these.
   proves lanes still answer; then blocks it at the page and proves the lane
   fails at once, saying why.
 
+## Code and data
+
+**THE MODULE IS CODE, AND ITS DATA TRAVELS AS PACKS.** `engine/build.rs`
+strips each `data/**.yaml` of its comments and sorts it into a pack by how
+often it moves (`pack_of`): `data`, what a number is computed from; `text`, the
+locales; `site`, the board's bookkeeping, the image map and the market's names.
+A native build embeds every file. A wasm build embeds none and answers nothing
+until each pack is handed to it (`install_data`, `engine::data::install`), so a
+translation, a rescore or a measured weapon is a new pack of a few hundred
+kilobytes, and the module a reader already holds stays cached.
+
+- **Published beside the module** under `pack.<name>.<hash>.json`
+  (`scripts/data_packs.py`, which finds them through cargo's report of the
+  build) and named in `/release.json` `packs`, app.js `ENGINE_PACKS`, a preload
+  each, and `mcp/engine.js`'s imports.
+- **Every host installs what it calls for**: a call reads `data`, `/api/meta`
+  and `/api/warframe/catalog` read `site` too, and `/api/i18n` reads `text`
+  (wasm/src/lib.rs `needs`). The
+  MCP worker, the bot, the witness and `scripts/wasm_engine.mjs` install all
+  three; the page's workers only `data`, handed with the module, because the
+  page reads those answers from the build's files.
+- **The engine id reads the same files** (`lean_yaml`), so a source note moves
+  no engine; `ship_data_packs` holds its list and its stripping to the `data`
+  pack's, file for file, and fails the build where they part.
+
+## Answers the build already knows
+
+The catalogs (`/api/meta`, `/api/i18n`, `/api/warframe/catalog`,
+`/api/catalogue`) take no body and depend on the module and its packs alone, so
+the build asks the module it publishes once (`scripts/engine_views.mjs`
+`VIEWS`) and writes each answer beside it as `<view>.<hash>.json`, named in
+app.js `ENGINE_VIEWS`; the two every boot reads are preloaded. `api()` reads the file and asks a lane only where the file did not
+come. The page starts the engine at boot and does not wait for it: it draws
+from the catalog, and the first computation is what waits (`engine.ready`
+says how long the engine took).
+
 ## Checkpoint / resume (a reload kills the run)
 
 A page reload terminates the dedicated worker, and no browser mechanism

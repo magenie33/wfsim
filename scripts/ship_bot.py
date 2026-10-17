@@ -88,14 +88,17 @@ def deploy() -> None:
     t = target()
     src = ENGINE.read_text(encoding="utf-8")
     wasm = re.search(r'^import module from "\.\./site/pkg/([^"]+)";$', src, re.M).group(1)
+    packs = re.findall(r'^import pack[0-9]+ from "[.][.]/site/pkg/([^"]+)";$', src, re.M)
     root, host, o = t["root"], t["host"], ssh_opts(t)
     bot = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "bot").glob("*.mjs"))
     send(t, bot, f"{root}/bot")
     send(t, ["mcp/engine.js", "mcp/headless.js"], f"{root}/mcp")
-    send(t, [f"site/pkg/{wasm}"], f"{root}/site/pkg")
-    # ONE WASM ON THE SERVER: the engine names exactly one, and an old one left
-    # beside it is a file nothing reads that a later glance mistakes for live.
-    run(["ssh", *o, host, f"cd {root}/site/pkg && ls | grep -vx '{wasm}' | xargs -r rm -f; "
+    send(t, [f"site/pkg/{n}" for n in (wasm, *packs)], f"{root}/site/pkg")
+    # ONE WASM ON THE SERVER, and its packs: the engine names exactly those, and
+    # an old one left beside them is a file nothing reads that a later glance
+    # mistakes for live.
+    keep = " ".join(f"-e '{n}'" for n in (wasm, *packs))
+    run(["ssh", *o, host, f"cd {root}/site/pkg && ls | grep -vx {keep} | xargs -r rm -f; "
                           f"sudo systemctl restart {t['service']}"])
     deploy_live(t)
 
@@ -164,10 +167,12 @@ def deploy_live(t: dict) -> None:
                           " || (npm ci --silent --omit=dev && cp package-lock.json .installed-lock))"])
     # THE WITNESS'S ENGINE IS THE SITE'S OWN WASM (scripts/wasm_witness.mjs): the
     # one that counts the volunteers' work, which no native build can.
-    wasm = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))["wasm"]
+    rel = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))
+    wasm = rel["wasm"]
     run(["ssh", *o, host, f"rm -rf {root}/bin/witness.next && mkdir -p {root}/bin/witness.next/pkg"])
     send(t, ["site/release.json"], f"{root}/bin/witness.next")
-    send(t, [f"site/pkg/wfsim_wasm.{wasm}.js", f"site/pkg/wfsim_wasm_bg.{wasm}.wasm"], f"{root}/bin/witness.next/pkg")
+    send(t, [f"site/pkg/wfsim_wasm.{wasm}.js", f"site/pkg/wfsim_wasm_bg.{wasm}.wasm",
+             *(f"site/pkg/{n}" for n in rel.get("packs", []))], f"{root}/bin/witness.next/pkg")
     run(["ssh", *o, host, f"rm -rf {root}/bin/witness && mv {root}/bin/witness.next {root}/bin/witness"])
     # RESTARTED ONLY ONCE INSTALLED: the unit and its read token are put on the
     # server by hand (`deploy/wfsim-live.service`), and until then there is

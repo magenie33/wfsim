@@ -330,13 +330,18 @@ async function init() {
       el.title = `commit ${BUILD_SHA} · release ${RELEASE_ID} · page ${BUILD_ID}`;
     }
   }
+  // THE ENGINE IS STARTED NOW and not awaited: the catalog and the names come
+  // from the build's files (`ENGINE_VIEWS`), so the page draws while the module
+  // compiles, and the first computation is what waits for it.
+  if (WASM) engineLoad().catch(() => {});
+  const names = api("/api/i18n").catch(() => null);
   META = await bootMeta();
   META.benchmarks = benchScenesFirst(META.benchmarks || []);
   // …AND THE FLOOR THE ARENA DRAWS ON IS THE ENGINE'S, before anything is drawn.
   adoptBodyRadius(META);
   {
     let all = null;
-    try { all = await api("/api/i18n"); } catch (_) { all = null; }
+    all = await names;
     I18N = (LANG !== "en" && all && all[LANG]) || null;
     // Keep the OTHER locales' name tables for the search blob. English is not
     // among them — it is already on every entity as `name` or `name_en`.
@@ -358,7 +363,7 @@ async function init() {
   // letting `route` switch drew the roster's first weapon on screen for as long
   // as anything in between waited on the network.
   const bootWeapon = routeWeaponId() || META.defaults.weapon;
-  // THE ENGINE ANSWERED: the denominator every other point is read against,
+  // THE CATALOG ARRIVED: the denominator every other point is read against,
   // with how the page was reached and how long the reader waited for it.
   track("app.boot", usageArrival(), Math.round(performance.now()));
   const device = usageDevice();

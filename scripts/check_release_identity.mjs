@@ -81,12 +81,29 @@ check(wasm.length === 1 && glue.length === 1,
   `this generation names ${[...wasm, ...glue].join(" ") || "nothing"}`);
 // …AND ONE PREVIOUS GENERATION BESIDE IT, NEVER TWO. One is the width of a
 // deploy and is deliberate; two is a stale module nothing references, which is
-// 5 MB of payload sitting there until somebody notices.
-const generations = new Set(
-  pkg.map((f) => (f.match(/\.([0-9a-f]{12})\./) || [])[1]).filter(Boolean),
-);
-check(generations.size <= 2, "…beside at most one previous generation",
-  `pkg/ holds ${generations.size} generations: ${[...generations].join(" ")}`);
+// 5 MB of payload sitting there until somebody notices. A generation is a
+// module, its glue, its packs and its views, so each KIND is counted.
+const kinds = {};
+for (const f of pkg) {
+  const m = f.match(/^(.*)[.]([0-9a-f]{12})[.](wasm|js|json)$/);
+  if (m) (kinds[m[1]] ||= []).push(f);
+}
+const over = Object.entries(kinds).filter(([, fs]) => fs.length > 2);
+check(over.length === 0, "…beside at most one previous generation",
+  over.map(([k, fs]) => `${k}: ${fs.length}`).join(", "));
+
+// THE MODULE'S DATA AND ITS VIEWS ARE THEIR DIGESTS TOO, and every name the
+// release, the page and the preloads give is a file of this generation.
+const packs = ours("pkg", /^pack[.].+[.]json$/);
+check(packs.length >= 1 && JSON.stringify([...packs].sort()) === JSON.stringify([...(rel.packs || [])].sort()),
+  "release.json names this generation's packs", `${(rel.packs || []).join(" ")} against ${packs.join(" ")}`);
+for (const f of [...packs, ...ours("pkg", /^(meta|i18n|warframes|catalogue)[.].+[.]json$/)]) {
+  const d = createHash("sha256").update(readFileSync(resolve(SITE, "pkg", f))).digest("hex").slice(0, 12);
+  check(f.includes(`.${d}.`), `${f} is named by its digest`, `it hashes to ${d}`);
+}
+const viewsNamed = [...app.matchAll(/"[/]pkg[/]((?:pack|meta|i18n|warframes|catalogue)[.][^"]+)"/g)].map((m) => m[1]);
+check(viewsNamed.length >= 3 && viewsNamed.every((f) => pkg.includes(f) && ours("pkg", /./).includes(f)),
+  "app.js names its packs and views, each a file of this build", viewsNamed.join(" "));
 
 const digest = (wasm[0] || "").match(/\.([0-9a-f]{12})\.wasm$/);
 check(!!digest, "the module is named by its digest",

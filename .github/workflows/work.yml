@@ -47,6 +47,8 @@ jobs:
           "./wasm-bindgen-$bindgen-x86_64-unknown-linux-musl/wasm-bindgen" target/wasm32-unknown-unknown/release/wfsim_wasm.wasm --target no-modules --no-typescript --out-dir pkg
           curl -sSfL https://github.com/WebAssembly/binaryen/releases/download/version_132/binaryen-version_132-x86_64-linux.tar.gz | tar xz
           ./binaryen-version_132/bin/wasm-opt -Oz -o pkg/wfsim_wasm_bg.wasm pkg/wfsim_wasm_bg.wasm
+          # …and its data packs, which the module is handed before its first call.
+          python3 scripts/data_packs.py pkg
           cp target/release/wfsim-gas pkg/
       - uses: actions/upload-artifact@v4
         with:

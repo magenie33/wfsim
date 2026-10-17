@@ -376,6 +376,14 @@ async function api(path, body, onProgress, opts) {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
     })).json();
   }
+  // A FILE THE BUILD WROTE answers before any lane would; the engine is asked
+  // only where the file did not come.
+  if (ENGINE_VIEWS[path]) {
+    try {
+      const r = await fetch(ENGINE_VIEWS[path]);
+      if (r.ok) return await r.json();
+    } catch (_) { /* the engine answers it */ }
+  }
   if (path === "/api/optimize") return woptStart(body, body && body.__resume);
   if (path === "/api/optimize/status") return woptStatus();
   if (path === "/api/optimize/cancel") return woptCancel();

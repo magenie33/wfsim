@@ -18,15 +18,21 @@ import vm from "node:vm";
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
 
 /// ONE ENGINE INSTANCE: its own memory, as one of the page's lanes is.
-export function loadEngine({ pkg = "" } = {}) {
-  let js, wasm, release = {};
-  if (pkg) {
+export function loadEngine({ pkg = "", files = null } = {}) {
+  let js, wasm, packs, release = {};
+  if (files) {
+    // THE BUILD'S OWN, by path, before any release.json names them.
+    ({ js, wasm, packs } = files);
+  } else if (pkg) {
     js = path.join(pkg, "wfsim_wasm.js");
     wasm = path.join(pkg, "wfsim_wasm_bg.wasm");
+    // `scripts/data_packs.py <pkg>` writes them there.
+    packs = fs.readdirSync(pkg).filter((f) => /^pack\..+\.json$/.test(f)).sort().map((f) => path.join(pkg, f));
   } else {
     release = JSON.parse(fs.readFileSync(path.join(ROOT, "site/release.json"), "utf8"));
     js = path.join(ROOT, `site/pkg/wfsim_wasm.${release.wasm}.js`);
     wasm = path.join(ROOT, `site/pkg/wfsim_wasm_bg.${release.wasm}.wasm`);
+    packs = (release.packs || []).map((f) => path.join(ROOT, "site/pkg", f));
   }
   const ctx = vm.createContext({ console, TextEncoder, TextDecoder, WebAssembly });
   vm.runInContext(fs.readFileSync(js, "utf8") + "\nthis.wasm_bindgen = wasm_bindgen;", ctx);
@@ -34,6 +40,11 @@ export function loadEngine({ pkg = "" } = {}) {
   // context's own `Object.prototype`.
   ctx.bytes = fs.readFileSync(wasm);
   const exports = vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
+  // THE MODULE IS CODE: its data packs go in before the first call.
+  for (const p of packs) {
+    const err = ctx.wasm_bindgen.install_data(fs.readFileSync(p, "utf8"));
+    if (err) throw new Error(`${p}: ${err}`);
+  }
   return {
     release,
     api: (p, body) => JSON.parse(ctx.wasm_bindgen.api(p, JSON.stringify(body))),

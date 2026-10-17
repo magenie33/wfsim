@@ -14,8 +14,8 @@ export async function resolve(spec, ctx, next) {
     return { url: "data:text/javascript," + encodeURIComponent(
       "const META = { weapons: [{ id: 'torid', name: 'Torid', evolutions: [], arcane_pools: ['primary'] }]," +
       " mod_pools: { rifle: [{ id: 'serration', max_rank: 10 }, { id: 'split_chamber', max_rank: 5 }] } };" +
-      "export const wasm_bindgen = { initSync() {}, api(path) { return path === '/api/meta' ? JSON.stringify(META) : '{}'; } };" +
-      "export const module = null; export const ENGINE_DIGEST = 'test';"), shortCircuit: true };
+      "export const wasm_bindgen = { initSync() {}, install_data() { return ''; }, api(path) { return path === '/api/meta' ? JSON.stringify(META) : '{}'; } };" +
+      "export const module = null; export const ENGINE_DIGEST = 'test'; export const ENGINE_PACKS = [];"), shortCircuit: true };
   }
   return next(spec, ctx);
 }`));

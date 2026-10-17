@@ -23,6 +23,13 @@
 //! THE BUILD PROVES IT RATHER THAN A TEST: every file is parsed before and
 //! after and the two `Value`s must be equal, so a stripper that changed a
 //! meaning cannot compile. `serde_norway` also refuses a DUPLICATE KEY.
+//!
+//! THE SHIPPED ENGINE CARRIES NO DATA. The lean files travel as PACKS
+//! (`$OUT_DIR/packs/<pack>.json`, `pack_of`) a host installs before the first
+//! call, so a data edit is a new pack and not a new module. `WFSIM_DATA_APART=1`
+//! (scripts/data_packs.py `apart`) builds without them; any other build embeds
+//! every file, and an installed pack still replaces its embedded files.
+//! docs/WASM.md §"Code and data".
 
 use std::env;
 use std::fmt::Write as _;
@@ -93,6 +100,47 @@ fn strip_comments(text: &str) -> String {
     out
 }
 
+/// THE PACK FORMAT a host reads (docs/CLIENTS.md §"The official data pack"):
+/// `{"pack", "format", "files": {path: lean text}}`, written into the engine as
+/// `data::PACK_FORMAT`, and a pack of another format is refused.
+const PACK_FORMAT: u32 = 1;
+
+/// WHICH PACK A FILE TRAVELS IN, by how often it moves and whether a number
+/// reads it: `data` is what the engine computes from; `text` the locales;
+/// `site` the board's bookkeeping, the image map and the market's names, which
+/// move with every rescore. None is a file only native code reads.
+fn pack_of(rel: &str) -> Option<&'static str> {
+    if rel.starts_with("i18n/") {
+        Some("text")
+    } else if matches!(rel, "board_state.yaml" | "assets.yaml" | "market.yaml") {
+        Some("site")
+    } else if rel == "notes.yaml" {
+        None
+    } else {
+        Some("data")
+    }
+}
+
+fn json_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => {
+                let _ = write!(out, "\\u{:04x}", c as u32);
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
 fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     // No canonicalize: on Windows it yields `\\?\`-prefixed paths, which
@@ -120,16 +168,19 @@ fn main() {
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let lean_root = out_dir.join("data");
+    println!("cargo:rerun-if-env-changed=WFSIM_DATA_APART");
+    let apart = env::var("WFSIM_DATA_APART").is_ok_and(|v| v == "1");
+    let mut packs: std::collections::BTreeMap<&str, Vec<String>> = std::collections::BTreeMap::new();
 
     let mut src = String::from(
-        "/// Every `data/**.yaml`, as (path relative to `data/`, contents), sorted by path.\n\
+        "/// Every embedded `data/**.yaml`, as (path relative to `data/`, its pack or \"\", contents), sorted by path.\n\
          ///\n\
          /// The contents are the source file with its full-line COMMENTS removed\n\
          /// (see `build.rs`): 43% of `data/` is prose citing sources, which is a\n\
          /// rule about the repo and not about what a browser downloads. Every\n\
          /// line that survives is byte for byte the source's, and the build\n\
          /// proves each file still parses to the same value.\n\
-         pub static FILES: &[(&str, &str)] = &[\n",
+         pub static FILES: &[(&str, &str, &str)] = &[\n",
     );
     for (rel, abs) in &entries {
         let raw = fs::read_to_string(abs).unwrap_or_else(|e| panic!("read {abs}: {e}"));
@@ -151,10 +202,34 @@ fn main() {
             .unwrap_or_else(|e| panic!("mkdir for {rel}: {e}"));
         fs::write(&dest, &lean).unwrap_or_else(|e| panic!("write {}: {e}", dest.display()));
 
+        let pack = pack_of(rel);
+        if let Some(p) = pack {
+            packs.entry(p).or_default().push(format!("{}:{}", json_string(rel), json_string(&lean)));
+            if apart {
+                continue;
+            }
+        }
         let dest = dest.to_string_lossy().replace('\\', "/");
-        writeln!(src, "    ({rel:?}, include_str!({dest:?})),").unwrap();
+        let pack = pack.unwrap_or("");
+        writeln!(src, "    ({rel:?}, {pack:?}, include_str!({dest:?})),").unwrap();
     }
     src.push_str("];\n");
+    // What a host must install before the first call: every pack, when apart.
+    let expected: Vec<&str> = if apart { packs.keys().copied().collect() } else { Vec::new() };
+    writeln!(src, "/// The packs this build must be handed before it reads a file.\npub static EXPECTED_PACKS: &[&str] = &{expected:?};").unwrap();
+    writeln!(src, "/// The pack format this build reads (`build.rs` `PACK_FORMAT`).\npub const PACK_FORMAT: u32 = {PACK_FORMAT};").unwrap();
+
+    let pack_dir = out_dir.join("packs");
+    fs::create_dir_all(&pack_dir).unwrap_or_else(|e| panic!("mkdir {}: {e}", pack_dir.display()));
+    for (name, entries) in &packs {
+        let body = format!(
+            "{{\"pack\":{},\"format\":{PACK_FORMAT},\"files\":{{{}}}}}",
+            json_string(name),
+            entries.join(",")
+        );
+        let dest = pack_dir.join(format!("{name}.json"));
+        fs::write(&dest, body).unwrap_or_else(|e| panic!("write {}: {e}", dest.display()));
+    }
 
     let out = out_dir.join("embedded_data.rs");
     fs::write(&out, src).unwrap_or_else(|e| panic!("write {}: {e}", out.display()));

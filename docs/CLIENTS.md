@@ -130,14 +130,17 @@ already multiplied by the owner's `sync_scale_pct`.
 
 ## The engine
 
-- `GET /release.json` → `{ release, commit, wasm, engine, accepted, protocol,
-  protocols_served }`. `engine` is the id a
+- `GET /release.json` → `{ release, commit, wasm, data, data_format, engine,
+  accepted, protocol, protocols_served }`. `engine` is the id a
   client sends; `wasm` names the module: `/pkg/wfsim_wasm.<wasm>.js` and
   `/pkg/wfsim_wasm_bg.<wasm>.wasm`, `<wasm>` the first 12 hex of the module's
-  SHA-256. The module exports `api(path, body)`, JSON text in and out.
+  SHA-256; `data` names its data (§"The official data pack"), installed with
+  `install_data(text)` before the first call. The module exports
+  `api(path, body)`, JSON text in and out.
 - `engine` is `engine_id()` in scripts/build_site_app.py: SHA-256 over
-  `engine/src`, `webapi/src`, `wasm/src`, `native/src`, `tools/gas-macro`, `data` (less
-  `ENGINE_SOURCES_NOT`) and `Cargo.lock`, CRLF normalised, first 12 hex. A
+  `engine/src`, `webapi/src`, `wasm/src`, `native/src`, `tools/gas-macro`, the
+  `data` pack's files with their full-line comments and blank lines removed, and
+  `Cargo.lock`, tests left out, CRLF normalised, first 12 hex. A
   native build is of the commit `/release.json` names (`commit`), unmodified,
   built without `WFSIM_GAS_OFF` (which turns the meter off), and its engine id
   equals the served one.
@@ -173,23 +176,104 @@ and a download is all that costs.
 
 - `GET https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/latest.json`
   (or `engine/<engine>.json` for one engine) → `{ sig, signed }`. `signed` is
-  JSON text `{ engine, commit, abi, files }`, `files` by target
+  JSON text `{ engine, commit, abi, files, data }`, `files` by target
   (`x86_64-windows`, `x86_64-linux`) each `{ path, sha256, size }`, the library
-  at `<bucket>/<path>`. `sig` is the hex Ed25519 signature of the bytes of
+  at `<bucket>/<path>`, and `data` the official data pack the same way. `sig` is the hex Ed25519 signature of the bytes of
   `signed` under the key the desktop client verifies
   (`b488481177cb0a459a685c5d66f646768e7f66c405b92ecde81025581419a95e`). Verify
   the signature, then the SHA-256, before loading; refuse either mismatch.
 - The Linux library needs glibc 2.31 or newer.
-- `abi: 1` is two C functions: `wfsim_api(path, path_len, body, body_len,
-  &len) -> ptr`, UTF-8 in and out, the wasm module's `api(path, body)`
-  exactly, and `wfsim_free(ptr, len)` to give each answer back. Calls are
-  independent; one library serves any number of threads.
+- `abi: 2` is three C functions: `wfsim_install_data(body, body_len, &len) ->
+  ptr`, the wasm module's `install_data`, called once before the first call;
+  `wfsim_api(path, path_len, body, body_len, &len) -> ptr`, UTF-8 in and out,
+  the wasm module's `api(path, body)` exactly; and `wfsim_free(ptr, len)` to
+  give each answer of either back. `abi: 1` was the last two alone. Calls are
+  independent; one library serves any number of threads, and one install
+  serves them all.
 - To follow the served engine: when `/release.json` names an engine other than
-  the loaded one, fetch its `engine/<engine>.json`, verify, download, load, and
-  compute the next pack on it. The old one keeps working meanwhile within its
+  the loaded one, fetch its `engine/<engine>.json`, verify, download the
+  library and its `data`, load, install, and compute the next pack on it. The old one keeps working meanwhile within its
   `accepted` days. A library is published before the site serves its engine.
 - A client may still build the engine itself from `commit`; the terms of
   §"The engine" are the same either way.
+
+## The official data pack
+
+The engine is code; the game data it computes from is the official data pack,
+published beside it. A host installs the pack once, after loading the engine
+and before its first call. Until 2026-10-25 01:00 UTC every engine still
+carries its data as well, and a pack installed replaces it; from then on an
+engine with no pack answers every call with `{ error: "engine data not
+installed: data" }`.
+
+- **Which pack.** `/release.json` names it: `data` is its version, the first 12
+  hex of the file's SHA-256, and `data_format` its format. It is
+  `/pkg/pack.data.<data>.json` on the site, and `data` in the engine library's
+  signed body (§"The official engine library").
+- **Its format** (`data_format: 1`): one JSON object `{ "pack": "data",
+  "format": 1, "files": { "<path>": "<text>" } }`. Each path is a file of the
+  repository's `data/` at `commit`, relative to `data/`; each text is that
+  file with its full-line comments and blank lines removed. An engine refuses
+  a pack of a format it does not read.
+- **Verify it** before installing: its SHA-256 begins with `data` (and equals
+  the signed `sha256` for the library). Refuse a mismatch, as for the engine.
+- **Install it**: wasm `install_data(text)`, native `wfsim_install_data(body,
+  body_len, &len) -> ptr`. The answer is `""` on success and the reason
+  otherwise. Once per engine instance, before the first call: an instance that
+  has answered a call refuses it. A wasm host makes one instance per thread, so
+  it installs once per instance.
+- **It moves with the engine.** `engine` covers the pack's files, so a new
+  `data` is always a new `engine`; follow `engine` as before and take the pack
+  named beside it. Never pair an engine with another release's pack.
+- **Anyone can rebuild it**: `engine/build.rs` writes it from `data/` at
+  `commit` (`cargo build --release -p wfsim-wasm --target
+  wasm32-unknown-unknown`, then `python scripts/data_packs.py <dir>`), and CI
+  holds the published one to the source.
+- The site also publishes `text` and `site` packs (`/release.json` `packs`).
+  They are its own catalogs' data, not part of this contract, and no
+  computation reads them.
+
+## Migrating to the data pack
+
+A checklist for a client's author, or an agent working for one. Nothing here
+touches the protocol: 8 and 7 are unchanged.
+
+1. **Read the release as before**, and also `data`. Keep `wasm` and `engine` as
+   they were.
+2. **Download the pack** with the engine: a wasm client
+   `https://wfsim.app/pkg/pack.data.<data>.json`; a library client the signed
+   body's `data.path` under the bucket. Cache it by `data`, as the engine by
+   its digest.
+3. **Verify** its SHA-256 (above).
+4. **Install** it into every engine instance, right after loading it:
+
+   ```js
+   // wasm (the glue from /pkg/wfsim_wasm.<wasm>.js, any JS host)
+   wasm_bindgen.initSync({ module });
+   const err = wasm_bindgen.install_data(packText);
+   if (err) throw new Error(`data pack: ${err}`);
+   ```
+
+   ```c
+   /* native library, abi 2 */
+   size_t n = 0;
+   uint8_t *r = wfsim_install_data(pack, pack_len, &n);
+   int ok = (n == 0);           /* any text is the reason it was refused */
+   wfsim_free(r, n);
+   ```
+
+   A Rust host loading the library with `libloading` declares it
+   `unsafe extern "C" fn(*const u8, usize, *mut usize) -> *mut u8`.
+5. **When `engine` moves**, load the new engine AND its pack, and drop the old
+   pair together.
+6. **Prove it** before the cutoff: install the pack, then measure the rows of
+   `tests/gas/rows.json` (§"Conformance", item 7); the bits must be those the
+   script there prints.
+7. **Know the failure**: an engine built after the cutoff answers every call
+   with `{ error: "engine data not installed: data" }` until the pack is in.
+
+A client that has not migrated stops getting work it can do after the cutoff,
+and never produces a wrong number.
 
 ## The cycle, protocol 8
 
@@ -312,6 +396,12 @@ checks. Protocol 7 stays served while anyone uses it.
 
 ## Changelog
 
+- **2026-10-18 — the official data pack.** `/release.json` names `data` and
+  `data_format`; the engine library is `abi: 2`, its signed body names `data`,
+  and it gains `wfsim_install_data`, as the wasm module gains `install_data`.
+  From 2026-10-25 01:00 UTC the engine carries no data and a host must install
+  the pack (§"Migrating to the data pack"). A source note in a data file or a
+  test no longer moves `engine`.
 - **2026-10-14 — protocol 8.** `/api/board/sync` and the work signal; 7 and 6
   still served. `/release.json` and every hand-out reply carry `protocol` and
   `protocols_served`. Asking computers now count a client that holds a live
@@ -465,7 +555,9 @@ simulation runs on a worker fleet").
 2. A statement is shown and a yes recorded before the first ask; `consent`
    travels with every ask; a new statement asks again.
 3. `protocol` is in `PROTOCOLS_SERVED`; `engine` equals `/release.json`'s; on
-   `stale` the client fetches the release again before asking.
+   `stale` the client fetches the release again before asking. Every engine
+   instance has the official data pack named beside its `engine` installed,
+   verified by its SHA-256, before its first call.
 4. Protocol 8: every sync names everything held; work is asked for only after
    `next_ms`; an idle client reads the work signal and syncs on `open`/`urgent`
    after its jitter; results are kept until `taken` or `dropped`; a row its
@@ -490,6 +582,8 @@ git clone https://github.com/magenie33/wfsim && cd wfsim
 mkdir -p /tmp/pkg && w=$(curl -s https://wfsim.app/release.json | node -pe 'JSON.parse(require("fs").readFileSync(0)).wasm')
 curl -so /tmp/pkg/wfsim_wasm.js https://wfsim.app/pkg/wfsim_wasm.$w.js
 curl -so /tmp/pkg/wfsim_wasm_bg.wasm https://wfsim.app/pkg/wfsim_wasm_bg.$w.wasm
+d=$(curl -s https://wfsim.app/release.json | node -pe 'JSON.parse(require("fs").readFileSync(0)).data')
+curl -so /tmp/pkg/pack.data.json https://wfsim.app/pkg/pack.data.$d.json
 node --input-type=module -e '
 import fs from "node:fs"; import { loadEngine, measureRow } from "./scripts/wasm_engine.mjs";
 const e = loadEngine({ pkg: "/tmp/pkg" });

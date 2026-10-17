@@ -100,6 +100,8 @@ if (process.argv.includes("build")) {
   run("cargo", ["build", "--release", "-q", "-p", "wfsim-wasm", "--target", "wasm32-unknown-unknown"]);
   pkg = path.join(ROOT, "target", "gas-check-pkg");
   run(process.env.WASM_BINDGEN || "wasm-bindgen", ["target/wasm32-unknown-unknown/release/wfsim_wasm.wasm", "--target", "no-modules", "--no-typescript", "--out-dir", pkg]);
+  // …AND ITS DATA, the packs the module is handed (docs/WASM.md §"Code and data").
+  run(process.platform === "win32" ? "python" : "python3", ["scripts/data_packs.py", pkg]);
   native = path.join(ROOT, "target", "release", process.platform === "win32" ? "wfsim-gas.exe" : "wfsim-gas");
 }
 

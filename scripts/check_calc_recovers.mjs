@@ -292,11 +292,11 @@ const slowLane = await slowApp.evaluate(`(async () => {
   engineModule = null;
   const t0 = performance.now();
   const r = await Promise.race([
-    makeLane().call('/api/meta'),
+    makeLane().call('/api/catalogue'),
     new Promise((res) => setTimeout(() => res({ timedOut: true }), 60000)),
   ]);
   LANE_WATCHDOG.loading = 90000;
-  return { dead: !!(r && r.worker_dead), timedOut: !!(r && r.timedOut), meta: !!(r && r.weapons), ms: Math.round(performance.now() - t0) };
+  return { dead: !!(r && r.worker_dead), timedOut: !!(r && r.timedOut), meta: !!(r && !r.error && !r.worker_dead && Object.keys(r).length), ms: Math.round(performance.now() - t0) };
 })()`);
 await slowApp.close();
 check(
@@ -340,7 +340,7 @@ await evaluate(`(() => {
   LANE_WATCHDOG.stall = 8000;
   LANE_WATCHDOG.tick = 500;
   window.__frozenLane = makeLane();
-  return window.__frozenLane.call('/api/meta').then(() => { window.__frozenLane.send({ kind: 'never-answered' }); });
+  return window.__frozenLane.call('/api/catalogue').then(() => { window.__frozenLane.send({ kind: 'never-answered' }); });
 })()`);
 await send("Page.setWebLifecycleState", { state: "frozen" });
 await sleep(12000);
@@ -377,7 +377,7 @@ await send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: t
 const shared = await evaluate(`(async () => {
   const lanes = [makeLane(), makeLane(), makeLane()];
   const answers = await Promise.race([
-    Promise.all(lanes.map((l) => l.call('/api/meta'))),
+    Promise.all(lanes.map((l) => l.call('/api/catalogue'))),
     new Promise((res) => setTimeout(() => res([]), 30000)),
   ]);
   lanes.forEach((l) => l.worker.terminate());
@@ -399,7 +399,7 @@ const m = await evaluate(`(async () => {
   engineModule = null;
   const t0 = performance.now();
   const r = await Promise.race([
-    makeLane().call('/api/meta'),
+    makeLane().call('/api/catalogue'),
     new Promise((res) => setTimeout(() => res({ timedOut: true }), 20000)),
   ]);
   return { dead: !!r.worker_dead, timedOut: !!r.timedOut, ms: Math.round(performance.now() - t0) };
@@ -421,7 +421,7 @@ const staleSaid = await evaluate(`(async () => {
     : real(u, o));
   releaseAskedAt = 0;
   window.__fails.length = 0;
-  await makeLane().call('/api/meta');
+  await makeLane().call('/api/catalogue');
   await new Promise((res) => setTimeout(res, 2000));
   window.fetch = real;
   return window.__fails.slice();
@@ -431,7 +431,7 @@ const hiddenWhere = await evaluate(`(async () => {
   window.__lanes.length = 0;
   hiddenSince = Date.now() - 3 * 60_000;
   boardPool = [];
-  await boardLaneAt(0).call('/api/meta');
+  await boardLaneAt(0).call('/api/catalogue');
   hiddenSince = null;
   return window.__lanes.slice();
 })()`);
@@ -440,17 +440,21 @@ check("a community lane lost while the page is hidden says board, hidden, and fo
 check("a lane that will not load says whether the download failed or a newer release left the page behind",
   JSON.stringify(loadSaid) === '["worker_load_network"]' && JSON.stringify(staleSaid) === '["worker_load_stale"]',
   `same release ${JSON.stringify(loadSaid)}, newer ${JSON.stringify(staleSaid)}`);
-// …AND A PAGE THAT BOOTS WITH IT BLOCKED SAYS THE ENGINE DID NOT START. Read
-// without an answer, the engine's first reply threw a TypeError the reader saw
-// as "could not start" over a stack. The guard below this file's own reads
-// would latch it as a broken boot, which here is the subject.
+// …AND A PAGE THAT BOOTS WITH IT BLOCKED STILL DRAWS. Its catalog is the
+// build's file (docs/WASM.md §"Answers the build already knows"), so the page
+// comes up, and the first computation is what says the engine did not load,
+// as a dead lane rather than a crash reading an answer that never came.
 app.bootBroken = true;
 await send("Page.reload", {});
 await sleep(25000);
-const note = await evaluate(`(document.getElementById('boot-note') || {}).textContent || ''`);
+const blocked = await evaluate(`(async () => ({
+  note: (document.getElementById('boot-note') || {}).textContent || '',
+  weapons: typeof META !== 'undefined' && META && META.weapons ? META.weapons.length : 0,
+  answer: await api('/api/build/keys', {}),
+}))()`);
 check(
-  "a boot whose engine cannot download says the engine did not start, not a crash reading its answer",
-  /engine could not start/.test(note) && !/Cannot read properties/.test(note),
-  note.replace(/\s+/g, " ").slice(0, 160),
+  "a page whose engine cannot download still draws, and its first computation says the engine did not load",
+  !blocked.note && blocked.weapons > 0 && !!(blocked.answer && blocked.answer.worker_dead),
+  `note "${blocked.note.replace(/\s+/g, " ").slice(0, 120)}", ${blocked.weapons} weapons, answer ${JSON.stringify(blocked.answer).slice(0, 120)}`,
 );
 process.exit(0);

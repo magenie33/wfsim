@@ -16,6 +16,13 @@ use std::sync::atomic::Ordering;
 use wasm_bindgen::prelude::*;
 use wfsim_optimizer::FunnelState;
 
+/// HAND THE ENGINE ONE DATA PACK (docs/CLIENTS.md §"The official data pack"):
+/// every pack goes in before the first call; returns "" or what was wrong.
+#[wasm_bindgen]
+pub fn install_data(pack: &str) -> String {
+    wfsim_webapi::install_pack(pack)
+}
+
 /// Dispatch a quick endpoint call: `endpoint` is the API path as the
 /// frontend knows it (any path in `wfsim_webapi::ROUTES`), `body` the request
 /// JSON ("" or "{}" for /api/meta). Returns the response JSON as a string.
@@ -59,6 +66,9 @@ pub fn set_heartbeat(beat: Option<js_sys::Function>) {
 /// cost more than the fight. One per percent, and always the last one.
 #[wasm_bindgen]
 pub fn simulate_progress(body: &str, on_progress: &js_sys::Function) -> String {
+    if let Some(e) = wfsim_webapi::packs_missing("") {
+        return e;
+    }
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let mut last = u32::MAX;
     let mut tick = |done: u32, total: u32| {
@@ -87,6 +97,9 @@ pub fn simulate_progress(body: &str, on_progress: &js_sys::Function) -> String {
 /// thousand runs against the 8 MB a thousand `RunResult`s would be.
 #[wasm_bindgen]
 pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::Function) -> String {
+    if let Some(e) = wfsim_webapi::packs_missing("") {
+        return e;
+    }
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let mut last = u32::MAX;
     let mut tick = |done: u32, total: u32| {
@@ -110,6 +123,9 @@ pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::F
 /// that drift — the page only schedules and collects.
 #[wasm_bindgen]
 pub fn simulate_merged(body: &str, shards: &str) -> String {
+    if let Some(e) = wfsim_webapi::packs_missing("") {
+        return e;
+    }
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let parts: Vec<serde_json::Value> = serde_json::from_str(shards).unwrap_or_default();
     wfsim_webapi::simulate_merged_json(&v, &parts).to_string()
@@ -166,6 +182,9 @@ fn optimize_inner(
     on_checkpoint: &js_sys::Function,
     on_board: &js_sys::Function,
 ) -> String {
+    if let Some(e) = wfsim_webapi::packs_missing("") {
+        return e;
+    }
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let plan = match wfsim_webapi::parse_optimize(&v) {
         Ok(p) => p,

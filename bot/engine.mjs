@@ -19,6 +19,11 @@ export async function loadEngine() {
   const glue = src.split("\n").filter((l) => !/^(import|export) /.test(l)).join("\n");
   const engine = new Function(`${glue}\nreturn wasm_bindgen;`)();
   engine.initSync({ module: new WebAssembly.Module(readFileSync(wasmPath)) });
+  // …AND ITS DATA, the packs `engine.js` imports beside the module.
+  for (const [, p] of src.matchAll(/^import pack\d+ from "([^"]+)";$/gm)) {
+    const err = engine.install_data(readFileSync(resolve(ROOT, "mcp", p), "utf8"));
+    if (err) throw new Error(err);
+  }
   const api = (path, body) => JSON.parse(engine.api(path, JSON.stringify(body ?? {})));
   const meta = api("/api/meta");
   const i18n = api("/api/i18n");

@@ -108,10 +108,54 @@ pub fn set_heartbeat(beat: Option<fn()>) {
     wfsim_engine::alive::set(beat);
 }
 
+/// INSTALL ONE DATA PACK, as the wasm module's `install_data` and the native
+/// library's `wfsim_install_data` both do: `{"pack", "format", "files":
+/// {path: text}}` (docs/CLIENTS.md §"The official data pack"). Returns "" or
+/// what was wrong.
+pub fn install_pack(text: &str) -> String {
+    #[derive(serde::Deserialize)]
+    struct Pack {
+        pack: String,
+        format: u32,
+        files: std::collections::BTreeMap<String, String>,
+    }
+    match serde_json::from_str::<Pack>(text) {
+        Ok(p) if p.format != wfsim_engine::data::PACK_FORMAT => {
+            format!("pack {}: format {} is not the {} this engine reads", p.pack, p.format, wfsim_engine::data::PACK_FORMAT)
+        }
+        Ok(p) => wfsim_engine::data::install(&p.pack, p.files.into_iter().collect()).err().unwrap_or_default(),
+        Err(e) => format!("not a data pack: {e}"),
+    }
+}
+
+/// THE PACKS A CALL READS: `data` always, and the two only a catalog reads —
+/// which a page taking those catalogs from the build's files never downloads
+/// (docs/WASM.md §"Answers the build already knows").
+fn packs_needed(endpoint: &str) -> &'static [&'static str] {
+    match endpoint {
+        "/api/meta" | "/api/warframe/catalog" => &["data", "site"],
+        "/api/i18n" => &["text"],
+        _ => &["data"],
+    }
+}
+
+/// A CALL BEFORE ITS PACKS ARE IN is answered with what is missing, never with
+/// a catalog that silently lacks it. `endpoint` "" is a computation.
+pub fn packs_missing(endpoint: &str) -> Option<String> {
+    let missing: Vec<&str> = wfsim_engine::data::missing_packs()
+        .into_iter()
+        .filter(|p| packs_needed(endpoint).contains(p))
+        .collect();
+    (!missing.is_empty()).then(|| err_json(format!("engine data not installed: {}", missing.join(", "))).to_string())
+}
+
 /// [`route`] as text in and text out: the door the wasm module's `api` and the
 /// desktop's native library both are, so the two answer one request one way.
 /// A body that is not JSON is `null`; a path [`ROUTES`] does not hold is an error.
 pub fn route_text(path: &str, body: &str) -> String {
+    if let Some(e) = packs_missing(path) {
+        return e;
+    }
     let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     route(path, &v).unwrap_or_else(|| err_json(format!("unknown endpoint: {path}"))).to_string()
 }

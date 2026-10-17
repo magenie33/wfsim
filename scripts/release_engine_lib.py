@@ -20,6 +20,10 @@ push, so it never names an engine the site does not serve yet.
 BUILT ONLY FOR AN ENGINE NOT YET PUBLISHED: the Windows library is the one
 `desktop/payload/native/` holds for this engine; the Linux one is built in
 Docker on Debian bullseye, so it loads on any glibc from 2.31.
+
+ITS DATA TRAVELS BESIDE IT (abi 2): the official data pack the site serves,
+under `engine/<engine>/`, signed in the same body as `data`, and installed
+by a client before the first call (docs/CLIENTS.md §"The official data pack").
 """
 import hashlib
 import json
@@ -30,6 +34,7 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
+import data_packs  # noqa: E402
 from release_desktop import updatekit  # noqa: E402
 from ship_bot import toolchain  # noqa: E402
 
@@ -46,7 +51,9 @@ def linux_library() -> bytes | None:
     OUT.mkdir(parents=True, exist_ok=True)
     r = subprocess.run(["docker", "run", "--rm", "-v", f"{ROOT}:/src:ro", "-v", f"{OUT}:/out",
                         "-v", "wfsim-lib-target:/target", "-v", "wfsim-cargo-reg:/usr/local/cargo/registry",
-                        "-e", "CARGO_TARGET_DIR=/target", "-w", "/src", f"rust:{toolchain()}-bullseye", "bash", "-c",
+                        "-e", "CARGO_TARGET_DIR=/target",
+                        *(["-e", "WFSIM_DATA_APART=1"] if data_packs.apart() else []),
+                        "-w", "/src", f"rust:{toolchain()}-bullseye", "bash", "-c",
                         "cargo build --release --locked -p wfsim-native && cp /target/release/libwfsim_native.so /out/"],
                        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
@@ -95,7 +102,13 @@ def main() -> None:
             cos.put(c, path, body, "application/octet-stream")
         files[target] = {"path": path, "sha256": sha, "size": len(body)}
         print(f"engine library {target}: {len(body) / 1e6:.1f} MB")
-    body = json.dumps({"engine": engine, "commit": commit, "abi": 1, "files": files},
+    data_name = f"pack.data.{release['data']}.json"
+    pack = (ROOT / "site" / "pkg" / data_name).read_bytes()
+    data = {"path": f"engine/{engine}/{data_name}", "sha256": hashlib.sha256(pack).hexdigest(), "size": len(pack)}
+    if not dry:
+        cos.put(c, data["path"], pack, "application/json; charset=utf-8")
+    print(f"engine library data: {data_name}, {len(pack) / 1e6:.1f} MB")
+    body = json.dumps({"engine": engine, "commit": commit, "abi": 2, "files": files, "data": data},
                       ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     pointer = signed(body)
     if not dry:

@@ -29,11 +29,17 @@ try {
 // A FAILED LOAD IS SAID, then thrown from a task, which reaches the page's
 // `onerror` and settles the lane as dead.
 let handed;
-const ready = new Promise((res) => { handed = res; }).then(({ module, url, cause }) => {
+const ready = new Promise((res) => { handed = res; }).then(({ module, url, cause, packs = [] }) => {
   if (cause) throw Object.assign(new Error(`engine ${cause}`), { loadCause: cause });
   return wasm_bindgen({ module_or_path: module || url }).catch((err) => {
     throw Object.assign(err, { loadCause: err instanceof WebAssembly.CompileError ? "compile"
       : err instanceof RangeError ? "memory" : url ? "network" : "unclassified" });
+  }).then(() => {
+    // THE MODULE IS CODE: its data packs go in before the first call.
+    for (const p of packs) {
+      const err = wasm_bindgen.install_data(p);
+      if (err) throw Object.assign(new Error(err), { loadCause: "data" });
+    }
   });
 });
 ready.catch((err) => {

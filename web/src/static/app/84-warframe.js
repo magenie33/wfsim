@@ -37,6 +37,7 @@ const frameName = (id) => (id === "helminth" ? "Helminth"
 async function loadWarframeCatalog() {
   if (WFCAT) return WFCAT;
   const c = await api("/api/warframe/catalog", {});
+  if (!c || !Array.isArray(c.mods)) throw new Error((c && c.error) || "the Warframe catalog did not load");
   const over = (x, table) => { x.name_en = x.name; x.name = LN(table, x.id, x.name); };
   c.mods.forEach((m) => over(m, I18N && (I18N.auras || {})[m.id] ? "auras" : "warframe_mods"));
   c.arcanes.forEach((a) => over(a, "warframe_arcanes"));
