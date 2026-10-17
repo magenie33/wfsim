@@ -104,17 +104,29 @@ $$;
 -- The pick skips rows another pick holds (two asks at once deadlocked), and the
 -- row itself is checked again once locked, as another may have taken it since.
 -- $1 at, $2 lanes, $3 engine, $4 siblings, $5 owner, $6 net, $7 before, $8, $9 as above.
+-- THE JOIN PICK STARTS FROM THE SERVED ENGINE'S ANSWERS, in its own statement:
+-- walked down the order, a new engine's few answers among a million open rows
+-- took ten seconds and more, under the producer_use lock every sync waits on.
 CREATE OR REPLACE FUNCTION factory_take(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint)
-RETURNS SETOF text LANGUAGE sql AS $$
-  SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
-  WHERE e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
-    AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
-    AND ($12 IS NULL OR EXISTS (SELECT 1 FROM answers s WHERE s.question = e.id AND s.engine = $12 AND s.void = 0
-         AND s.owner <> $5 AND ($6 = '' OR s.net <> $6)))
-    AND ($13 IS NULL OR e.producer = $13)
-    AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
-  ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED
-$$;
+RETURNS SETOF text LANGUAGE plpgsql AS $$
+BEGIN
+  IF $12 IS NULL THEN
+    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
+    WHERE e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
+      AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
+      AND ($13 IS NULL OR e.producer = $13)
+      AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
+    ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED;
+  ELSE
+    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
+    WHERE e.id IN (SELECT s.question FROM answers s WHERE s.engine = $12 AND s.void = 0 AND s.owner <> $5 AND ($6 = '' OR s.net <> $6))
+      AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
+      AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
+      AND ($13 IS NULL OR e.producer = $13)
+      AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
+    ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED;
+  END IF;
+END $$;
 
 -- …LEASED TOGETHER as $15 until $16 to device $17 — unless it holds $18 packs
 -- already — and each producer charged its rows at its mean fight over its weight.

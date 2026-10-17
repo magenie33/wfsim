@@ -475,6 +475,27 @@ console.log("\nan older engine still accepted computes the weapons its data matc
   env.ASSETS = site("e1");
 }
 
+console.log("\nan older engine whose code moved is handed only rows a served answer leads");
+{
+  await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'");
+  const until = new Date(Date.now() + 86_400_000).toISOString();
+  env.ASSETS = { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r9", accepted: [{ engine: "ej", until, join: true }] })) };
+  await build("join-a");
+  await build("join-b");
+  await queue("join-1", "join-a", "join-b");
+  await ask("join-1", "join-a", "join-b");
+  const J1 = "1a".repeat(12), J2 = "2b".repeat(12);
+  const p = await work(J1, { ip: "203.0.113.75" });
+  const led = task(p).question;
+  await answer(task(p), J1, { ip: "203.0.113.75" });
+  await L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE state = 'open'");
+  const j = await work(J2, { engine: "ej", ip: "203.0.113.76" });
+  const got = (j.pack ? j.pack.tasks : []).map((x) => x.question);
+  check("a joining engine is handed the row the served engine's answer leads, and only that one",
+    got.length === 1 && got[0] === led && j.join === true && j.engine === "e1", JSON.stringify(j));
+  env.ASSETS = site("e1");
+}
+
 console.log("\nwhat a protocol 7 call costs the database (worker/factory_calls.js)");
 {
   // A RATCHET: the database calls one ask and one send of a pack's answers may
