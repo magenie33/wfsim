@@ -66,6 +66,14 @@ The QQ door (`worker/qq.js`) with no network: the address check signs QQ's
 published example, a signed event is kept and a changed one refused, and the
 bot server's pull hands each message out once until it is answered.
 
+## `check_world_fissures`
+
+The fissure log (`worker/world.js`) on PGlite, no network: a relayed fissure
+carries its node's planet (a Void Storm its Proxima's), is logged once however
+often it is relayed, and `/api/world/names` hands back each combination with
+how many opened inside the window — an older one on the same node is not
+counted — when the last did, and the nodes and planets they name.
+
 ## `check_fx_lines`
 
 The bot's `fx` reader with a fixture pool, no network: a line reads with or

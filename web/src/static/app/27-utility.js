@@ -11,10 +11,11 @@ const UTILITY_TABS = [["fissures", "Void Fissures"], ["arbitrations", "Arbitrati
 const utilityTitle = (tab) => (UTILITY_TABS.find(([t]) => t === tab) || UTILITY_TABS[0])[1];
 /// EACH KIND, by the worker's `kind`: `{ tab, render(), describe(item),
 /// nameOf(key, names, value), attributes: [[key]], build(box), next(r),
-/// possible(r) }` — `attributes` are what a reminder may hold, in the order its
-/// editor offers them; `build` draws a reminder made from nothing into the
-/// Reminders tab; `next`, for a kind known ahead, says when a reminder fires
-/// next; `possible` says whether anything can ever match it (null: not known yet).
+/// possible(r), stats(r, open) }` — `attributes` are what a reminder may hold,
+/// in the order its editor offers them; `build` draws a reminder made from
+/// nothing into the Reminders tab; `next`, for a kind known ahead, says when a
+/// reminder fires next; `possible` says whether anything can ever match it
+/// (null: not known yet); `stats` says how often one like it comes.
 const UTILITY_KINDS = {};
 let utilityTab = null;
 
@@ -99,18 +100,25 @@ function worldLoad() {
 /// What is open now, of one kind; null before the first answer.
 const worldOf = (kind) => world && world.items.filter((x) => x.kind === kind && x.ends_at_ms > Date.now());
 
-/// EVERYTHING A REMINDER CAN NAME, open or not — `{tiers, missions}`, each id
-/// to `{en, zh}` — asked once, when a reminder is first built from nothing.
+/// EVERYTHING A REMINDER CAN NAME, open or not — `{tiers, missions, planets,
+/// nodes}`, and every fissure combination seen with how often it came — asked
+/// once, when a reminder is first built from nothing or listed.
 let worldNames = null;
 let worldNamesAsk = null;
 let worldNamesFailed = false;
+let worldNamesAt = 0;
+/// The worker keeps its answer this long; a list on screen longer asks again,
+/// so how long ago the last fissure opened follows the log.
+const WORLD_NAMES_MS = 600_000;
+const worldNamesStale = () => Date.now() - worldNamesAt >= WORLD_NAMES_MS;
 function worldNamesLoad() {
-  if (worldNames || worldNamesAsk) return worldNamesAsk || Promise.resolve();
+  if (worldNamesAsk) return worldNamesAsk;
+  if (worldNames && !worldNamesStale()) return Promise.resolve();
   worldNamesFailed = false;
   worldNamesAsk = fetch(`${LIVE_ORIGIN}/api/world/names`).then((r) => r.json())
     .then((j) => { if (!j.ok) throw new Error(j.error); worldNames = j; })
-    .catch(() => { worldNamesFailed = true; })
-    .finally(() => { worldNamesAsk = null; });
+    .catch(() => { worldNamesFailed = !worldNames; })
+    .finally(() => { worldNamesAsk = null; worldNamesAt = Date.now(); });
   return worldNamesAsk;
 }
 
@@ -270,7 +278,25 @@ function reminderStatus(r) {
   const kind = UTILITY_KINDS[r.kind];
   if (!open && kind && kind.possible && kind.possible(r) === false) return { text: tr("The game has never opened one like this"), never: true };
   const next = !open && kind && kind.next ? kind.next(r) : null;
-  return { text: next || trF("{n} open now", { n: open }), never: false };
+  const stats = kind && kind.stats ? kind.stats(r, open) : null;
+  return { text: [next || trF("{n} open now", { n: open }), stats].filter(Boolean).join(" · "), never: false };
+}
+
+/// A LENGTH OF TIME in minutes under two hours, then hours, then days: "every
+/// 2 h" for a fissure that comes every 90 minutes would round a third away.
+function utilitySpan(ms) {
+  const m = Math.max(1, Math.round(ms / 60000));
+  if (m < 120) return trF("{n} min", { n: m });
+  const h = Math.round(m / 60);
+  return h < 48 ? trF("{n} h", { n: h }) : trF("{n} d", { n: Math.round(h / 24) });
+}
+/// A MOMENT PAST, as how long ago, in the same units.
+function utilityAgo(ms) {
+  const m = Math.floor((Date.now() - ms) / 60000);
+  if (m < 1) return tr("just now");
+  if (m < 60) return trF("{n} min ago", { n: m });
+  const h = Math.floor(m / 60);
+  return h < 48 ? trF("{n} h ago", { n: h }) : trF("{n} d ago", { n: Math.floor(h / 24) });
 }
 
 /// A MOMENT AHEAD, in the reader's own time zone: weekday, date and time.
@@ -354,7 +380,7 @@ function renderReminders() {
       ? `<p class="bench-note">${escHtml(tr("This browser blocks notifications from this site; reminders show on the page only."))}</p>`
       : `<div class="slotf-row">${filterChip(tr("Also as a system notification when this tab is in the background"),
           reminderSystemOn(), `data-rsystem="1"`)}</div>`;
-  if (!worldNames && rs.some((r) => r.kind === "fissure")) worldNamesLoad().then(renderUtility);
+  if (!worldNamesAsk && worldNamesStale() && rs.some((r) => r.kind === "fissure")) worldNamesLoad().then(renderUtility);
   box.innerHTML = `<p class="bench-note rem-lead">${escHtml(tr("Reminders live in this browser and fire while WFSim is open in it, on any page."))}</p>
     ${system}
     <h3 class="wgroup-h">${escHtml(tr("New reminder"))}</h3>

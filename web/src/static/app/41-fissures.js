@@ -19,10 +19,13 @@ const fissureListName = (v) => tr((FISSURE_LISTS.find(([k]) => k === v) || [v, v
 UTILITY_KINDS.fissure = {
   tab: "fissures",
   render: renderFissures,
-  attributes: [["list"], ["tier"], ["mission"], ["node"]],
-  nameOf: (k, names, v) => k === "list" ? fissureListName(v) : worldName((names || {})[k], v),
+  attributes: [["list"], ["tier"], ["planet"], ["mission"], ["node"]],
+  // A PLANET IS NAMED AS `system`, the name every item already carries.
+  nameOf: (k, names, v) => k === "list" ? fissureListName(v)
+    : worldName((names || {})[k === "planet" ? "system" : k] || (k === "planet" && worldNames && (worldNames.planets || {})[v]), v),
   build: fissureBuild,
   possible: fissurePossible,
+  stats: fissureStats,
   describe: (f) => [
     f.attributes && f.attributes.list !== "normal" ? fissureListName(f.attributes.list) : "",
     worldName(f.names.tier), worldName(f.names.mission),
@@ -72,30 +75,50 @@ function renderFissures() {
 }
 
 /// A REMINDER MADE FROM NOTHING, for a fissure that is not open now: its list,
-/// era and mission, each Any until picked. EACH OFFERS ONLY what some fissure
-/// the game has opened holds beside the other two picks (`/api/world/names`
-/// `fissures`, `[list, tier, mission]`), so no reminder waits for a fissure that
+/// era, planet, mission and node, each Any until picked. EACH OFFERS ONLY what
+/// some fissure the game has opened holds beside the other picks
+/// (`/api/world/names` `fissures`), so no reminder waits for a fissure that
 /// never comes. A Void Storm has no mission to match on.
-const FISSURE_NEW_KEYS = ["list", "tier", "mission"];
-let fissureNew = { list: null, tier: null, mission: null };
+const FISSURE_NEW_KEYS = ["list", "tier", "mission", "planet", "node"];
+const fissureNewEmpty = () => Object.fromEntries(FISSURE_NEW_KEYS.map((k) => [k, null]));
+let fissureNew = fissureNewEmpty();
+/// EVERY COMBINATION SEEN, as `{list, tier, mission, planet, node, recent,
+/// last_ms}`: the worker sends `[list, tier, mission, node, recent, last_ms]`,
+/// and a node's planet is the node's own.
+let fissureSeenOf = null, fissureSeenRows = [];
+function fissureSeen() {
+  const rows = (worldNames && worldNames.fissures) || [];
+  if (fissureSeenOf === rows) return fissureSeenRows;
+  const nodes = worldNames.nodes || {};
+  fissureSeenOf = rows;
+  fissureSeenRows = rows.map(([list, tier, mission, node, recent, last_ms]) => ({ list, tier, mission,
+    planet: (nodes[node] || {}).planet || null, node: node || null, recent: recent || 0, last_ms: last_ms || 0 }));
+  return fissureSeenRows;
+}
+/// Whether a seen combination holds every attribute in `picks` (null: any).
+const fissureHolds = (c, picks) => Object.entries(picks).every(([k, v]) => v == null || c[k] === v);
 /// The values of `k` some seen fissure holds with every other pick.
 function fissureOffered(k) {
-  const seen = worldNames.fissures || [];
-  const out = new Set();
-  for (const c of seen) {
-    if (FISSURE_NEW_KEYS.every((o, i) => o === k || fissureNew[o] === null || c[i] === fissureNew[o])) {
-      const v = c[FISSURE_NEW_KEYS.indexOf(k)];
-      if (v !== null) out.add(v);
-    }
-  }
-  return out;
+  const others = { ...fissureNew, [k]: null };
+  return new Set(fissureSeen().filter((c) => c[k] !== null && fissureHolds(c, others)).map((c) => c[k]));
 }
-/// Whether a seen fissure holds every list, era and mission the reminder states;
-/// a node was copied from an open fissure, so it says nothing more.
+/// Whether a seen fissure holds every attribute the reminder states.
 function fissurePossible(r) {
-  const seen = worldNames && worldNames.fissures;
-  if (!seen || !seen.length) return null;
-  return seen.some((c) => FISSURE_NEW_KEYS.every((k, i) => !(k in r.attributes) || c[i] === r.attributes[k]));
+  const seen = fissureSeen();
+  if (!seen.length) return null;
+  return seen.some((c) => fissureHolds(c, r.attributes || {}));
+}
+/// HOW OFTEN ONE LIKE IT COMES: the fissures it would have matched in the
+/// worker's window, as one every so long, and — none open now — how long ago
+/// the last opened. Null before the log is read.
+function fissureStats(r, open) {
+  const seen = fissureSeen().filter((c) => fissureHolds(c, r.attributes || {}));
+  if (!seen.length) return null;
+  const recent = seen.reduce((s, c) => s + c.recent, 0);
+  const last = Math.max(...seen.map((c) => c.last_ms));
+  const often = recent ? trF("About every {every} in the last 7 days", { every: utilitySpan(worldNames.window_ms / recent) })
+    : tr("None in the last 7 days");
+  return open || !last ? often : `${often} · ${trF("last {ago}", { ago: utilityAgo(last) })}`;
 }
 function fissureBuild(box) {
   if (!worldNames) {
@@ -108,21 +131,35 @@ function fissureBuild(box) {
     return;
   }
   if (fissureNew.list === "railjack") fissureNew.mission = null;
-  const lists = fissureOffered("list"), tiers = fissureOffered("tier"), offered = fissureOffered("mission");
+  const lists = fissureOffered("list"), tiers = fissureOffered("tier");
+  const planets = fissureOffered("planet"), offered = fissureOffered("mission"), nodes = fissureOffered("node");
   const chip = (k, v, label) => filterChip(label, fissureNew[k] === v, `data-fnew="${k}" data-v="${v === null ? "" : v}"`);
   const missions = Object.entries(worldNames.missions).filter(([id]) => offered.has(id))
     .map(([id, n]) => ({ value: id, label: worldName(n, id) }))
     .sort((a, b) => a.label.localeCompare(b.label, LANG));
+  const planetItems = Object.entries(worldNames.planets || {}).filter(([id]) => planets.has(id))
+    .map(([id, n]) => ({ value: id, label: worldName(n, id) }));
+  const planetName = (id) => worldName((worldNames.planets || {})[id], id);
+  const nodeOf = (id) => (worldNames.nodes || {})[id] || {};
+  const nodeItems = [...nodes].map((id) => ({ value: id, label: fissureNew.planet ? worldName(nodeOf(id).name, id)
+      : `${worldName(nodeOf(id).name, id)} · ${planetName(nodeOf(id).planet)}` }))
+    .sort((a, b) => a.label.localeCompare(b.label, LANG));
+  const pick = (k) => (v) => { fissureNew[k] = v || null; renderUtility(); };
   const any = Object.values(fissureNew).some((v) => v !== null);
   box.innerHTML = `<div class="frem frem-new">
       <div class="slotf-row"><span class="slotf-lab">${escHtml(tr("List"))}</span>${chip("list", null, tr("Any"))}${
         FISSURE_LISTS.filter(([k]) => lists.has(k)).map(([k, label]) => chip("list", k, tr(label))).join("")}</div>
       <div class="slotf-row"><span class="slotf-lab">${escHtml(tr("Relic era"))}</span>${chip("tier", null, tr("Any"))}${
         FISSURE_TIERS.filter((t) => tiers.has(t)).map((t) => chip("tier", t, worldName(worldNames.tiers[t], t))).join("")}</div>
+      <div class="slotf-row"><span class="slotf-lab">${escHtml(tr("Planet"))}</span>${
+        ddButton("fissure-new-planet", { value: fissureNew.planet ?? "", search: true,
+          items: [{ value: "", label: tr("Any") }, ...planetItems], onPick: pick("planet") })}</div>
       ${fissureNew.list === "railjack" ? "" : `<div class="slotf-row"><span class="slotf-lab">${escHtml(tr("Mission"))}</span>${
         ddButton("fissure-new-mission", { value: fissureNew.mission ?? "", search: true,
-          items: [{ value: "", label: tr("Any") }, ...missions],
-          onPick: (v) => { fissureNew.mission = v || null; renderUtility(); } })}</div>`}
+          items: [{ value: "", label: tr("Any") }, ...missions], onPick: pick("mission") })}</div>`}
+      <div class="slotf-row"><span class="slotf-lab">${escHtml(tr("Node"))}</span>${
+        ddButton("fissure-new-node", { value: fissureNew.node ?? "", search: true,
+          items: [{ value: "", label: tr("Any") }, ...nodeItems], onPick: pick("node") })}</div>
       <div class="frem-act">
         <button type="button" class="ghost-btn small" data-fnew-save${any ? "" : " disabled"}>${escHtml(tr("Save reminder"))}</button>
       </div>
@@ -133,9 +170,13 @@ function fissureBuild(box) {
   box.querySelector("[data-fnew-save]").onclick = () => {
     const attributes = Object.fromEntries(Object.entries(fissureNew).filter(([, v]) => v !== null));
     if (!Object.keys(attributes).length) return;
+    // A NODE NAMES ITS PLANET too, so the reminder reads like one made from a row.
+    const planet = attributes.planet || (attributes.node && nodeOf(attributes.node).planet);
     reminderAdd("fissure", attributes, { tier: worldNames.tiers[attributes.tier] || null,
-      mission: worldNames.missions[attributes.mission] || null });
-    fissureNew = { list: null, tier: null, mission: null };
+      mission: worldNames.missions[attributes.mission] || null,
+      system: (planet && (worldNames.planets || {})[planet]) || null,
+      node: (attributes.node && nodeOf(attributes.node).name) || null });
+    fissureNew = fissureNewEmpty();
     renderUtility();
     presetToast(tr("Reminder saved"));
   };
