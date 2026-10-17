@@ -16,6 +16,9 @@ const KEY = "world/items.json";
 /// The relay runs each minute; a reader is never more than this behind it.
 const FRESH_S = 30;
 const MAX_BYTES = 4 * 1024 * 1024;
+/// HOW OFTEN A FISSURE COMES is counted over this, the last week: long enough
+/// that each planet's 7-11 a day settle, short enough to follow DE's changes.
+const SEEN_WINDOW_MS = 7 * 24 * 3600 * 1000;
 const OPEN = { "access-control-allow-origin": "*" };
 
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
@@ -24,12 +27,23 @@ const msOf = (d) => Number(d && d.$date && d.$date.$numberLong) || 0;
 
 export async function worldRoute(request, env, ctx, path) {
   // WHAT A REMINDER CAN NAME BEFORE IT IS OPEN: the table the items are named
-  // from, without its nodes, and every fissure seen so far.
+  // from, every combination of list, era, mission and node seen so far — how
+  // many opened in the last `SEEN_WINDOW_MS` and when the last one did — and
+  // the nodes and planets those combinations name.
   if (path === "/api/world/names") {
-    const seen = env.LIBRARY && await env.LIBRARY.prepare("SELECT DISTINCT list, tier, mission FROM fissures").all()
-      .then((r) => r.results.map((x) => [x.list, x.tier, x.mission])).catch(() => null);
-    return json({ ok: true, tiers: NAMES.tiers, missions: NAMES.missions, fissures: seen || [] }, 200,
-      { "cache-control": "public, max-age=600" });
+    const since = new Date(Date.now() - SEEN_WINDOW_MS).toISOString();
+    const seen = env.LIBRARY && await env.LIBRARY.prepare(`SELECT list, tier, mission, node,
+        count(*) FILTER (WHERE started_at >= ?1) AS recent, max(started_at) AS last
+        FROM fissures GROUP BY list, tier, mission, node`).bind(since).all()
+      .then((r) => r.results.map((x) => [x.list, x.tier, x.mission, x.node, Number(x.recent), Date.parse(x.last)]))
+      .catch(() => null);
+    const nodes = {};
+    for (const [, , , node] of seen || []) {
+      const n = NAMES.nodes[node];
+      if (n) nodes[node] = { name: n.name, planet: n.planet };
+    }
+    return json({ ok: true, tiers: NAMES.tiers, missions: NAMES.missions, planets: NAMES.planets, nodes,
+      fissures: seen || [], window_ms: SEEN_WINDOW_MS }, 200, { "cache-control": "public, max-age=600" });
   }
   if (path === "/api/world/arbitrations") return arbitrationRoute(request, ctx, path);
   if (path !== "/api/world") return json({ ok: false, error: "not found" }, 404);
@@ -107,7 +121,7 @@ function fissuresOf(ws) {
     // whatever it plays, so a storm has no mission to match on and names the
     // node's own.
     return { id: f.id,
-      attributes: { list: f.list, tier: f.tier, mission: f.mission, node: f.node },
+      attributes: { list: f.list, tier: f.tier, mission: f.mission, planet: n.planet || null, node: f.node },
       names: { tier: NAMES.tiers[f.tier] || null,
         mission: (f.mission ? NAMES.missions[f.mission] : n.mission) || null,
         node: n.name || null, system: n.system || null },

@@ -3,8 +3,8 @@
 
 DE's world state names a fissure by ids — `SolNode717`, `MT_SURVIVAL`,
 `VoidT6` — and the arbitration schedule names a node; this table turns each
-into the words the game shows, and gives each node its mission type and
-faction. Every
+into the words the game shows, and gives each node its planet, mission type
+and faction. Every
 string is DE's own, transcribed from its localization dictionaries through
 `browse.wf/warframe-public-export-plus` (docs/DATA_SOURCES.md), joined by the
 dictionary key and never by name.
@@ -85,12 +85,17 @@ def main() -> None:
         # the page then shows the English, which is what the game would.
         return {"en": words(en[key]), **({"zh": zh[key]} if zh.get(key) else {})}
 
-    nodes, by_type = {}, {}
+    # A NODE'S PLANET is its `systemName` key, never `systemIndex`: a Proxima
+    # shares its planet's index, which would make Earth Proxima Earth.
+    nodes, by_type, planets = {}, {}, {}
     for node, r in sorted(regions.items()):
         name = both(r.get("name", ""))
         if not name:
             continue
-        nodes[node] = {"name": name, "system": both(r.get("systemName", "")),
+        system = both(r.get("systemName", ""))
+        if system:
+            planets[r["systemName"]] = (r.get("systemIndex", 99), system)
+        nodes[node] = {"name": name, "system": system, "planet": r["systemName"] if system else None,
                        "mission": both(r.get("missionName", ""), display),
                        "type": r.get("missionType"), "faction": r.get("faction")}
         if r.get("missionType") and r.get("missionName"):
@@ -103,10 +108,13 @@ def main() -> None:
     missing = [t for t, v in {**tiers, **factions}.items() if not v]
     if missing:
         sys.exit(f"dictionary lost the name of {missing}")
-    OUT.write_text(json.dumps({"tiers": tiers, "missions": missions, "factions": factions, "nodes": nodes},
+    # `planets` in the star chart's order, a Proxima beside its planet.
+    planets = {k: v for k, (_, v) in sorted(planets.items(), key=lambda kv: (kv[1][0], kv[0]))}
+    OUT.write_text(json.dumps({"tiers": tiers, "missions": missions, "factions": factions,
+                               "planets": planets, "nodes": nodes},
                               ensure_ascii=False, separators=(",", ":")) + "\n",
                    encoding="utf-8", newline="\n")
-    print(f"{OUT.relative_to(ROOT)}: {len(nodes)} nodes, {len(missions)} mission types, {len(factions)} factions")
+    print(f"{OUT.relative_to(ROOT)}: {len(nodes)} nodes, {len(planets)} planets, {len(missions)} mission types, {len(factions)} factions")
 
 
 if __name__ == "__main__":

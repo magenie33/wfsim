@@ -311,8 +311,9 @@ CREATE INDEX IF NOT EXISTS appraisal_results_by_verifier ON appraisal_results (v
 -- EVERY VOID FISSURE THE GAME OPENS, from the world state the bot server relays
 -- each minute (worker/world.js `fissureLog`). `id` is DE's own, so the minutes
 -- that see one again write nothing. `list` is normal, steel_path or railjack;
--- `mission` is NULL for a Void Storm. Which combinations a reminder may hold is
--- read from here.
+-- `mission` is NULL for a Void Storm. Which combinations a reminder may hold,
+-- and how often each comes, is read from here; a node's planet is not stored,
+-- it is the node's own (worker/world_names.json).
 CREATE TABLE IF NOT EXISTS fissures (
   id         TEXT COLLATE "C" PRIMARY KEY,
   list       TEXT COLLATE "C" NOT NULL,
