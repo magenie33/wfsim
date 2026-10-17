@@ -1,0 +1,18 @@
+id: dual_ichor_alchemists_wrath
+name: Alchemist's Wrath
+weapon: dual_ichor
+tier: 2
+position_in_tier: 1
+icon: IncreasedComboGainOnTargetsEffectedByToxin(xWhite).png
+description: "Increase Base Damage by +90. 5 additional Combos on targets affected by Toxin."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 90.0
+  - kind: combo_count_on_status_hit
+    status: toxin
+    value: 5.0
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis

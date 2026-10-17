@@ -1,0 +1,21 @@
+id: ceramic_dagger_breachers_opportunity
+name: Breacher's Opportunity
+weapon: ceramic_dagger
+tier: 2
+position_in_tier: 2
+icon: DamageOnShieldBreak(xWhite).png
+description: "Increase Base Damage by +120. On Shield Break: Increase Base Damage by +80 for 8s."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 120.0
+  # see notes: edge_gap_whose_shield
+  #
+  # see notes: personal_shields_break_when
+  - kind: out_of_scope
+    clause: "On Shield Break: Increase Base Damage by +80 for 8s."
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Ceramic_Dagger_Incarnon_Genesis

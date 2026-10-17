@@ -1,0 +1,16 @@
+id: dual_ichor_universal_readiness
+name: Universal Readiness
+weapon: dual_ichor
+tier: 4
+position_in_tier: 3
+icon: ComboOnAmmoPickup(xWhite).png
+description: "Collecting ammo grants 5 Melee Combo counter."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Collecting ammo grants 5 Melee Combo counter"
+    reason: infinite_ammo
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis

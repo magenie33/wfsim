@@ -1,0 +1,18 @@
+id: ack_and_brunt_abiding_hold
+name: Abiding Hold
+weapon: ack_and_brunt
+tier: 3
+position_in_tier: 2
+icon: IncarnonFireRate(xWhite).png
+description: "Combo Timer pauses when weapon is holstered."
+# THE ICON IS THE TABLE'S, and the table looks to have this row's and Swift
+# Break's swapped; both are transcribed as printed.
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Combo Timer pauses when weapon is holstered"
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

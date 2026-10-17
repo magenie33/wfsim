@@ -179,7 +179,11 @@ fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
     // are computed now — a punch-through gate the Boltor Prime already had
     // — and these are what is left: a window a KILL opens, a trigger that
     // reads a punch-through hit, and two radius clauses.
-    const CEILING: usize = 14;
+    //
+    // THE REST ARE MELEE GENESES, each a thing the form MAKES (rapiers, axes,
+    // toxin fields, finisher radials) or a heavy-efficiency, finisher or
+    // per-kill clause no kind expresses yet.
+    const CEILING: usize = 36;
     let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
     assert!(
         n <= CEILING,

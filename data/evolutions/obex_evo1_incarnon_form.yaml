@@ -1,0 +1,30 @@
+id: obex_evo1_incarnon_form
+name: Incarnon Form
+weapon: obex
+tier: 1
+position_in_tier: 1
+icon: VoidScytheTier0(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form. Perform a large radial attack for each Finisher strike. +100% Melee Damage, +20% Sprint Speed, +20% Parkour Velocity."
+# see notes: genesis_family_s_adapter
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack". The card states no
+  # duration; the page's overview does: "the Incarnon form lasts for 90
+  # seconds" (W`Obex_Incarnon_Genesis`). The same overview says a plain slam
+  # arms it too, which this engine does not do: only a heavy arms it here.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 90.0
+  # from: "+100% Melee Damage"
+  - kind: base_damage_bonus
+    value: 1.0
+  # "Finishers in Incarnon form will deal their damage in a 12 meter
+  # radius, with no falloff" (notes cell). No finisher is performed here.
+  - kind: unmodelled_large_radial_attack_for_each_finisher_strike
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

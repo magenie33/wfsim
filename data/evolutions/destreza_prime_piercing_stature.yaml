@@ -1,0 +1,17 @@
+id: destreza_prime_piercing_stature
+name: Piercing Stature
+weapon: destreza_prime
+tier: 2
+position_in_tier: 2
+icon: StatusChanceBasedOnModdedPunctureDamage(xWhite).png
+description: "Increase Base Damage by +40. On Puncture Status Effect: Gain +20% Status Chance for 6 seconds. Stacks 5x."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 40.0
+  - kind: unmodelled_on_puncture_status_status_chance_for_6s_stacks_5x
+    value: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

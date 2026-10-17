@@ -184,5 +184,7 @@ reasons:
     text: "The heavy attack is the infobox's {infobox}x; the class's heavy table implies {table}x. Unmeasured."
   melee_incarnon_unmodelled:
     text: "Its Incarnon evolutions and Incarnon Form are not modelled."
+  melee_incarnon_slam_arms_unmodelled:
+    text: "A plain slam at the arming combo also activates its Incarnon Form; here only a heavy attack does, so a loop that slams without a heavy arms it later than in a mission, or never."
   melee_valence_unmodelled:
     text: "Its {family} valence bonus is not modelled: the build cannot state the element and bonus this copy rolled, so it reads without one."

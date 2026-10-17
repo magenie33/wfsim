@@ -1,0 +1,20 @@
+id: anku_edge_of_justice
+name: Edge of Justice
+weapon: anku
+tier: 2
+position_in_tier: 1
+icon: AttackSpeedInSwordAloneMode(xWhite).png
+description: "Increase Base Damage by +50. With Melee Weapon Equipped: +40% Attack Speed."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 50.0
+  # "Attack Speed bonus does not affect quickswap melee attacks" (notes cell):
+  # the weapon must be drawn, which is the arena's default.
+  - kind: fire_rate_bonus
+    value: 0.4
+    condition: melee_equipped
+
+source:
+  url: https://wiki.warframe.com/w/Anku_Incarnon_Genesis

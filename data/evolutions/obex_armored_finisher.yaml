@@ -1,0 +1,17 @@
+id: obex_armored_finisher
+name: Armored Finisher
+weapon: obex
+tier: 2
+position_in_tier: 2
+icon: ArmorOver700FinisherDamage(xWhite).png
+description: "Increase Base Damage by +50. With Armor over 450: +80% Finisher Damage."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 50.0
+  - kind: unmodelled_finisher_damage_with_armor_over_450
+    value: 0.8
+
+source:
+  url: https://wiki.warframe.com/w/Obex_Incarnon_Genesis

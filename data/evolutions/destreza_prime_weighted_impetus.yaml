@@ -1,0 +1,17 @@
+id: destreza_prime_weighted_impetus
+name: Weighted Impetus
+weapon: destreza_prime
+tier: 2
+position_in_tier: 1
+icon: HeavyAttackKillsGrantWindupSpeed(xWhite).png
+description: "Increase Base Damage by +40. On Heavy Attack Kill: +100% Heavy Attack Wind Up Speed for 8s."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 40.0
+  - kind: unmodelled_on_heavy_attack_kill_heavy_attack_wind_up_speed_for_8s
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

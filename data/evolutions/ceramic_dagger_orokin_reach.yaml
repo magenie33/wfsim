@@ -1,0 +1,15 @@
+id: ceramic_dagger_orokin_reach
+name: Orokin Reach
+weapon: ceramic_dagger
+tier: 3
+position_in_tier: 1
+icon: MoreRange(xWhite).png
+description: "+1 Range."
+selection: choose_one
+
+effects:
+  - kind: melee_range_bonus_m
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Ceramic_Dagger_Incarnon_Genesis

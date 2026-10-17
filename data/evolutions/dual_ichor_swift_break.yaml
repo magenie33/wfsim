@@ -1,0 +1,15 @@
+id: dual_ichor_swift_break
+name: Swift Break
+weapon: dual_ichor
+tier: 3
+position_in_tier: 3
+icon: IncarnonWindUpSpeed(xWhite).png
+description: "+100% Heavy Attack Windup Speed."
+selection: choose_one
+
+effects:
+  - kind: heavy_windup_speed_bonus
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis

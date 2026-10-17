@@ -1,0 +1,31 @@
+id: destreza_evo1_incarnon_form
+name: Incarnon Form
+weapon: destreza
+tier: 1
+position_in_tier: 1
+icon: VoidScytheTier0(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form. Heavy Attacks summon 5 spectral rapiers with that fly forward for 2 seconds. +100% Melee Damage, +20% Sprint Speed, +20% Parkour Velocity, +10% Puncture Damage per Heavy Attack kill, up to 300% while transformed."
+# see notes: genesis_family_s_adapter
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack". The card states no
+  # duration; the page's overview does: "the Incarnon form lasts for 180
+  # seconds" (W`Destreza_Incarnon_Genesis`). The same overview says a plain
+  # slam arms it too, which this engine does not do: only a heavy arms it here.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage"
+  - kind: base_damage_bonus
+    value: 1.0
+  - kind: unmodelled_heavy_attacks_summon_spectral_rapiers
+  # On kill, so never mined as a standing +300%.
+  - kind: unmodelled_puncture_damage_per_heavy_attack_kill_while_transformed
+    value: 0.1
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

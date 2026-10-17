@@ -1,0 +1,27 @@
+id: dual_ichor_evo1_incarnon_form
+name: Incarnon Form
+weapon: dual_ichor
+tier: 1
+position_in_tier: 1
+icon: KillsLeaveAPoolOfToxicWaste(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form. Kills create a Toxin Damage field. +100% Melee Damage, +20% Sprint Speed, +20% to Bullet Jump."
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack"; "the Incarnon form lasts for
+  # 180 seconds" (W`Dual_Ichor_Incarnon_Genesis`, overview).
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage"
+  - kind: base_damage_bonus
+    value: 1.0
+  # "Fields do 350 Toxin damage (increased to 440 by EVO2) and last
+  # for 7 seconds" (notes cell).
+  - kind: unmodelled_kills_create_a_toxin_damage_field
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% to Bullet Jump"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis

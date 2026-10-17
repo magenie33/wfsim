@@ -1,0 +1,16 @@
+id: dual_ichor_poison_parasite
+name: Poison Parasite
+weapon: dual_ichor
+tier: 4
+position_in_tier: 2
+icon: KillingATargetWithToxinAddsHealthRegen(xWhite).png
+description: "On killing an enemy with 3+ Toxin Stacks: +33 Heal Regen/s for 9s."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "On killing an enemy with 3+ Toxin Stacks: +33 Heal Regen/s for 9s."
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Ichor_Incarnon_Genesis

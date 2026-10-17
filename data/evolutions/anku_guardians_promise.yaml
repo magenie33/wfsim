@@ -1,0 +1,17 @@
+id: anku_guardians_promise
+name: Guardian's Promise
+weapon: anku
+tier: 2
+position_in_tier: 2
+icon: DamageAndHeavyEfficiencyWithOvershield(xWhite).png
+description: "Increase Base Damage by +50. With Overshields: +80% Heavy Attack Efficiency."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 50.0
+  - kind: unmodelled_heavy_attack_efficiency_with_overshields
+    value: 0.8
+
+source:
+  url: https://wiki.warframe.com/w/Anku_Incarnon_Genesis

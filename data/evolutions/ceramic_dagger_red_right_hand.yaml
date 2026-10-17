@@ -1,0 +1,18 @@
+id: ceramic_dagger_red_right_hand
+name: Red Right Hand
+weapon: ceramic_dagger
+tier: 4
+position_in_tier: 1
+icon: CritDamageOnFirstAttackFromAGunEquipped(xWhite).png
+description: "On First Attack With Primary Equipped: Increase Base Critical Damage Multiplier by +2x."
+selection: choose_one
+
+effects:
+  # "Applies to the first attack from quickswap melee" (notes cell): a swing
+  # out of a drawn gun, and this arena's melee is drawn.
+  - kind: out_of_scope
+    clause: "On First Attack With Primary Equipped: Increase Base Critical Damage Multiplier by +2x."
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Ceramic_Dagger_Incarnon_Genesis

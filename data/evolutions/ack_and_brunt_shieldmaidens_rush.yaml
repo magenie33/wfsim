@@ -1,0 +1,21 @@
+id: ack_and_brunt_shieldmaidens_rush
+name: Shieldmaiden's Rush
+weapon: ack_and_brunt
+tier: 2
+position_in_tier: 2
+icon: OnShieldBreakComboGainFromBlockedHits(xWhite).png
+description: "Increase Base Damage by +150. On Shield Break: +300% Combo Count Chance while Blocking for 11 seconds."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 150.0
+  # see notes: edge_gap_whose_shield
+  #
+  # see notes: personal_shields_break_when
+  - kind: out_of_scope
+    clause: "On Shield Break: +300% Combo Count Chance while Blocking for 11 seconds."
+    reason: nobody_shoots_back
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

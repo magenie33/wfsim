@@ -1,0 +1,18 @@
+id: destreza_prime_decisive_stature
+name: Decisive Stature
+weapon: destreza_prime
+tier: 4
+position_in_tier: 3
+icon: ConvertStatusChanceToCritChance(xWhite).png
+description: "Increase Base Critical Chance by 25% of current Status Chance, up to 35%."
+selection: choose_one
+
+effects:
+  # "The maximum effect is reached when weapon status chance is at 140%"
+  # (notes cell): 0.25 x 1.40 = 0.35, so CURRENT means after mods.
+  - kind: crit_chance_from_status_chance
+    rate: 0.25
+    cap: 0.35
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

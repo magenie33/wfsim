@@ -1,0 +1,25 @@
+id: ack_and_brunt_evo1_incarnon_form
+name: Incarnon Form
+weapon: ack_and_brunt
+tier: 1
+position_in_tier: 1
+icon: HeavyAttacksSendOutSpectralAxeAndShield(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form. Send forth a spectral axe during aerial and slide attacks. +100% Melee Damage, +20% Sprint Speed, +20% to Parkour Velocity."
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack"; "the Incarnon form lasts for
+  # 180 seconds" (W`Ack_&_Brunt_Incarnon_Genesis`, overview).
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage"
+  - kind: base_damage_bonus
+    value: 1.0
+  - kind: unmodelled_spectral_axe_during_aerial_and_slide_attacks
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% to Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

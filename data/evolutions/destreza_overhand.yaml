@@ -1,0 +1,15 @@
+id: destreza_overhand
+name: Overhand
+weapon: destreza
+tier: 3
+position_in_tier: 2
+icon: IncarnonHeavyEfficiency(xWhite).png
+description: "Base Heavy Attack Efficiency set at 30%."
+selection: choose_one
+
+effects:
+  - kind: unmodelled_base_heavy_attack_efficiency_set_at
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Destreza_Incarnon_Genesis

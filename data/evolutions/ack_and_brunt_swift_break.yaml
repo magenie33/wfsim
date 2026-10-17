@@ -1,0 +1,16 @@
+id: ack_and_brunt_swift_break
+name: Swift Break
+weapon: ack_and_brunt
+tier: 3
+position_in_tier: 3
+icon: ComboCounterPausedWhenHolstered(xWhite).png
+description: "+70% Heavy Attack Windup Speed."
+# THE ICON IS THE TABLE'S; see ack_and_brunt_abiding_hold.
+selection: choose_one
+
+effects:
+  - kind: heavy_windup_speed_bonus
+    value: 0.7
+
+source:
+  url: https://wiki.warframe.com/w/Ack_%26_Brunt_Incarnon_Genesis

@@ -9,7 +9,6 @@ unmodeled:
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
   - reason: melee_attack_unmodelled
     attacks: "Spectral Axe and Spectral Axe Explosion"
-  - reason: melee_incarnon_unmodelled
   - reason: melee_slide_unpublished
   - reason: melee_passive_unmodelled
     passive: "blocking an elemental attack stores a charge adding 17.5% of that element to the next attack, up to 4"
