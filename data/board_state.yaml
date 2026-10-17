@@ -11,66 +11,66 @@
 # question and the page answers it (docs/BOARD.md).
 boards:
   demolisher:
-    submissions: 248310
-    listed: 25302
-    scored_at_epoch_seconds: 1792112632
+    submissions: 249719
+    listed: 25929
+    scored_at_epoch_seconds: 1792199045
   demolisher__archimedea500:
-    submissions: 248310
-    listed: 9207
-    scored_at_epoch_seconds: 1792112809
+    submissions: 249719
+    listed: 17392
+    scored_at_epoch_seconds: 1792199232
   demolisher__icebind1000:
-    submissions: 248310
-    listed: 5608
-    scored_at_epoch_seconds: 1792112721
+    submissions: 249719
+    listed: 10699
+    scored_at_epoch_seconds: 1792199136
   demolisher__sp200:
-    submissions: 248310
-    listed: 17078
-    scored_at_epoch_seconds: 1792112897
+    submissions: 249719
+    listed: 24067
+    scored_at_epoch_seconds: 1792199325
   heavy_gunner:
-    submissions: 248310
-    listed: 43446
-    scored_at_epoch_seconds: 1792112988
+    submissions: 249719
+    listed: 44147
+    scored_at_epoch_seconds: 1792199420
   heavy_gunner__archimedea500:
-    submissions: 248310
-    listed: 14201
-    scored_at_epoch_seconds: 1792113164
+    submissions: 249719
+    listed: 21334
+    scored_at_epoch_seconds: 1792199608
   heavy_gunner__icebind1000:
-    submissions: 248310
-    listed: 10878
-    scored_at_epoch_seconds: 1792113077
+    submissions: 249719
+    listed: 16665
+    scored_at_epoch_seconds: 1792199514
   heavy_gunner__sp200:
-    submissions: 248310
-    listed: 20471
-    scored_at_epoch_seconds: 1792113253
+    submissions: 249719
+    listed: 27433
+    scored_at_epoch_seconds: 1792199699
   standard_multi_target:
-    submissions: 248310
-    listed: 21443
-    scored_at_epoch_seconds: 1792112266
+    submissions: 249719
+    listed: 21971
+    scored_at_epoch_seconds: 1792198674
   standard_multi_target__archimedea500:
-    submissions: 248310
-    listed: 5349
-    scored_at_epoch_seconds: 1792112447
+    submissions: 249719
+    listed: 5993
+    scored_at_epoch_seconds: 1792198861
   standard_multi_target__icebind1000:
-    submissions: 248310
-    listed: 4663
-    scored_at_epoch_seconds: 1792112357
+    submissions: 249719
+    listed: 5204
+    scored_at_epoch_seconds: 1792198766
   standard_multi_target__sp200:
-    submissions: 248310
-    listed: 7871
-    scored_at_epoch_seconds: 1792112537
+    submissions: 249719
+    listed: 8668
+    scored_at_epoch_seconds: 1792198951
   standard_single_target:
-    submissions: 248310
-    listed: 63992
-    scored_at_epoch_seconds: 1792111903
+    submissions: 249719
+    listed: 64734
+    scored_at_epoch_seconds: 1792198300
   standard_single_target__archimedea500:
-    submissions: 248310
-    listed: 16812
-    scored_at_epoch_seconds: 1792112080
+    submissions: 249719
+    listed: 26075
+    scored_at_epoch_seconds: 1792198485
   standard_single_target__icebind1000:
-    submissions: 248310
-    listed: 15040
-    scored_at_epoch_seconds: 1792111993
+    submissions: 249719
+    listed: 22805
+    scored_at_epoch_seconds: 1792198396
   standard_single_target__sp200:
-    submissions: 248310
-    listed: 23419
-    scored_at_epoch_seconds: 1792112168
+    submissions: 249719
+    listed: 32325
+    scored_at_epoch_seconds: 1792198576
