@@ -2450,10 +2450,11 @@ cache restore while buying no parallelism at all. **The wall clock of a full
 rescore is `total work / the jobs in flight`**, and no shard count moves it.
 
 **AND THE CEILING IS THE WHOLE REPOSITORY'S**, not the board's. A rescore that
-takes all forty starves every other workflow, CI included. `max-parallel: 32`
-on the scoring matrix leaves eight — the board
-is a background job, CI is the one a person waits on, and a rescore a quarter
-longer against hours it already takes is the cheaper side of that trade.
+takes all forty starves every other workflow, CI included. `max-parallel: 24`
+on the scoring matrix leaves sixteen, room for CI's parallel checks beside the
+settle — the board is a background job, CI is the one a person waits on, and a
+rescore a third longer against hours it already takes is the cheaper side of
+that trade.
 
 **AND ONE ROW IS INDIVISIBLE.** The worst row is 121 minutes, so even at
 infinite fan-out a full rescore cannot finish faster than that. Row-wise
