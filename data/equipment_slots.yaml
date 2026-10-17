@@ -11,7 +11,9 @@
 # them: `sentinel` is the Companion Weapon slot and `archgun` the Arch-Gun's.
 #
 # `holds` says which list fills the section: `weapon` is the weapon roster
-# filtered by `slot`; the others are their own rosters.
+# filtered by `slot`; the others are their own rosters. `placeholder` is a
+# category the builder does not hold yet: one card, one page at /<name>, and
+# nothing simulated (docs/UI.md §A category the builder does not hold yet).
 slots:
   - { id: warframe, name: Warframe, holds: warframe, de_category: [Suits] }
   - { id: primary, name: Primary, holds: weapon, de_category: [LongGuns] }
@@ -20,5 +22,12 @@ slots:
   - { id: exalted, name: Exalted Weapon, holds: weapon, de_category: [SpecialItems] }
   - { id: companion, name: Companion, holds: companion, de_category: [Sentinels, KubrowPets] }
   - { id: sentinel, name: Companion Weapon, holds: weapon, de_category: [SentinelWeapons] }
+  - { id: archwing, name: Archwing, holds: placeholder, de_category: [SpaceSuits] }
   - { id: archgun, name: Arch-Gun, holds: weapon, de_category: [SpaceGuns] }
+  - { id: archmelee, name: Arch-Melee, holds: placeholder, de_category: [SpaceMelee] }
+  - { id: necramech, name: Necramech, holds: placeholder, de_category: [MechSuits] }
   - { id: operator, name: Operator, holds: operator, de_category: [] }
+  - { id: amp, name: Amp, holds: placeholder, de_category: [OperatorAmps] }
+  - { id: parazon, name: Parazon, holds: placeholder, de_category: [] }
+  - { id: k_drive, name: K-Drive, holds: placeholder, de_category: [] }
+  - { id: railjack, name: Railjack, holds: placeholder, de_category: [] }

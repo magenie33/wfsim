@@ -129,7 +129,9 @@ async function route() {
   const compSlug = compRoute && decodeURIComponent(compRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const compHit = compSlug && compHosts().find((c) =>
     c.id === compSlug || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
-  const m = (support || bench || dl || util || wfHit || opRoute || compHit || authKind) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/riven-analyst|\/enemies|\/benchmark|\/card)?\/?$/);
+  // `/<name>` — a category the builder does not hold yet (`holds: placeholder`).
+  const stub = placeholderSlots().find((sl) => location.pathname.replace(/\/$/, "").toLowerCase() === placeholderPath(sl)) || null;
+  const m = (support || bench || dl || util || wfHit || opRoute || compHit || stub || authKind) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/riven-analyst|\/enemies|\/benchmark|\/card)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -151,7 +153,7 @@ async function route() {
   // WHICH PAGE, as a kind and never an address: one point per kind per load.
   track("app.view", w ? `weapon_${mod || "builder"}` : support ? "support" : bench ? "benchmark"
     : dl ? "download" : util ? `utility_${util}` : wfHit ? "warframe" : opRoute ? "operator"
-    : compHit ? "companion" : authKind ? authView(authKind) : "home");
+    : compHit ? "companion" : stub ? "placeholder" : authKind ? authView(authKind) : "home");
   // WHICH WAY IN, where the link that led here names it (`?from=`): said once,
   // then taken off the address so a copied link does not carry it on.
   const door = new URLSearchParams(location.search).get("from");
@@ -161,7 +163,7 @@ async function route() {
     u.searchParams.delete("from");
     history.replaceState(history.state, "", u.pathname + u.search + u.hash);
   }
-  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !util && !wfHit && !opRoute && !compHit && !authKind);
+  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !util && !wfHit && !opRoute && !compHit && !stub && !authKind);
   document.body.classList.toggle("on-auth", !!authKind);
   $("auth-page").hidden = !authKind;
   document.body.classList.toggle("on-warframe", !!wfHit);
@@ -170,6 +172,7 @@ async function route() {
   $("warframe-page").hidden = !wfHit;
   $("operator-page").hidden = !opRoute;
   $("companion-page").hidden = !compHit;
+  $("slot-page").hidden = !stub;
   document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-benchmark", bench);
   document.body.classList.toggle("on-download", dl);
@@ -196,14 +199,14 @@ async function route() {
     const ask = ensurePageBodies(away);
     if (ask) ask.then(() => route());
   }
-  $("home-page").hidden = !!w || support || bench || dl || util || !!wfHit || opRoute || !!compHit || !!authKind;
+  $("home-page").hidden = !!w || support || bench || dl || util || !!wfHit || opRoute || !!compHit || !!stub || !!authKind;
   $("support-page").hidden = !support;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   $("utility-page").hidden = !util;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : util ? "utility" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !authKind) ? "home" : "";
+  const here = bench ? "benchmark" : util ? "utility" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !stub && !authKind) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -230,6 +233,7 @@ async function route() {
     : wfHit ? `${wfHit.name} — ${what.wf} | WFSim`
     : compHit ? `${compHit.name} — ${what.comp} | WFSim`
     : opRoute ? `${tr("Operator")} | WFSim`
+    : stub ? `${tr(stub.name)} | WFSim`
     : w ? `${w.name}${modTitle} — ${what.w} | WFSim` : `WFSim — ${tr("Warframe Calculator")}`;
   if (!servedTitleKept()) document.title = title;
   trailPush();
@@ -246,6 +250,8 @@ async function route() {
   } else if (opRoute) {
     await showOperator();
     if (gen !== routeGen) return;
+  } else if (stub) {
+    renderPlaceholder(stub);
   } else if (authKind) {
     authArrive();
     renderAuthPage(authKind);
@@ -450,6 +456,10 @@ function renderHome() {
       ${imgTag(IMG(META && META.operator_image), "wc-img")}
       <div class="wc-info"><div class="wc-name">${escHtml(tr("Operator"))}</div>
       <div class="wc-tags">${tag("Focus school")}</div></div></a>`;
+  const placeholderCard = (slot) => `<a class="wcard" href="${placeholderPath(slot)}">
+      ${imgTag(null, "wc-img")}
+      <div class="wc-info"><div class="wc-name">${escHtml(tr(slot.name))}</div>
+      <div class="wc-tags">${tag("Not built yet")}</div></div></a>`;
   // A WEAPON CARD'S TAGS say what differs INSIDE its slot: its class, its tags
   // (`WeaponSpec::tags`), and its weapon type wherever the slot is not one. A
   // Kitgun sits in each slot its grips reach — one card per slot, each opening
@@ -479,6 +489,9 @@ function renderHome() {
     if (slot.holds === "companion") {
       const all = compHosts();
       return { slot, total: all.length, cards: all.filter((c) => nameMatches(homeQuery, c.name)).map(companionCard) };
+    }
+    if (slot.holds === "placeholder") {
+      return { slot, total: 1, cards: nameMatches(homeQuery, tr(slot.name), slot.name) ? [placeholderCard(slot)] : [] };
     }
     if (slot.holds === "operator") {
       return { slot, total: 1, cards: nameMatches(homeQuery, tr("Operator"), "Operator") ? [operatorCard()] : [] };

@@ -14,8 +14,8 @@ pub struct EquipmentSlot {
     pub id: String,
     /// The game's own English; the overlay transcribes it.
     pub name: String,
-    /// Which roster fills the section: `weapon`, `warframe`, `companion` or
-    /// `operator`.
+    /// Which roster fills the section: `weapon`, `warframe`, `companion`,
+    /// `operator`, or `placeholder` for a category the builder does not hold yet.
     pub holds: String,
     /// DE's Public Export `productCategory` for what the slot holds.
     #[serde(default)]
@@ -59,7 +59,7 @@ mod tests {
         let mut seen = std::collections::HashSet::new();
         for s in all() {
             assert!(seen.insert(s.id.as_str()), "{} declared twice", s.id);
-            assert!(["weapon", "warframe", "companion", "operator"].contains(&s.holds.as_str()), "{}: holds {}", s.id, s.holds);
+            assert!(["weapon", "warframe", "companion", "operator", "placeholder"].contains(&s.holds.as_str()), "{}: holds {}", s.id, s.holds);
         }
     }
 }

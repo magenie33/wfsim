@@ -90,6 +90,12 @@ pub struct LocaleSpec {
     pub warframe_arcane_descriptions: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     pub warframe_ability_descriptions: BTreeMap<String, String>,
+    /// THE ROUGH CATALOGUE (`data/catalogue/`), keyed `<slot>/<id>`: a card's
+    /// name, and its top-rank card text as one string. Generated with it.
+    #[serde(default)]
+    pub catalogue: BTreeMap<String, String>,
+    #[serde(default)]
+    pub catalogue_descriptions: BTreeMap<String, String>,
     /// UI strings keyed by the English source string.
     #[serde(default)]
     pub ui: BTreeMap<String, String>,
@@ -180,6 +186,8 @@ impl LocaleSpec {
         lists(&mut self.warframe_mod_descriptions, other.warframe_mod_descriptions, path, "warframe_mod_descriptions");
         lists(&mut self.warframe_arcane_descriptions, other.warframe_arcane_descriptions, path, "warframe_arcane_descriptions");
         maps(&mut self.warframe_ability_descriptions, other.warframe_ability_descriptions, path, "warframe_ability_descriptions");
+        maps(&mut self.catalogue, other.catalogue, path, "catalogue");
+        maps(&mut self.catalogue_descriptions, other.catalogue_descriptions, path, "catalogue_descriptions");
 
         maps(&mut self.ui, other.ui, path, "ui");
         maps(&mut self.evolution_descriptions, other.evolution_descriptions, path, "evolution_descriptions");
@@ -512,6 +520,12 @@ mod tests {
                 assert!(
                     crate::data::warframes::ability(id).is_some(),
                     "i18n/{code}: unknown Warframe ability id '{id}'"
+                );
+            }
+            for key in spec.catalogue.keys().chain(spec.catalogue_descriptions.keys()) {
+                assert!(
+                    crate::data::catalogue::by_key(key).is_some(),
+                    "i18n/{code}: unknown catalogue card '{key}'"
                 );
             }
             for id in spec.artifact_mods.keys() {

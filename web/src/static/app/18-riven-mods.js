@@ -197,8 +197,12 @@ const deployField = (w, state) => {
     ddButton("dd-deployment", {
       value: cur,
       dataK: "deployment",
-      // The data keys are lowercase; the LABEL is the wiki's own column head.
-      items: opts.map((o) => ({ value: o, label: tr(o[0].toUpperCase() + o.slice(1)) })),
+      // The data keys are lowercase; the LABEL is the wiki's own column head,
+      // keyed apart because "Archwing" alone is the equipment category.
+      items: opts.map((o) => {
+        const en = o[0].toUpperCase() + o.slice(1), key = `${en} (environment)`, t = tr(key);
+        return { value: o, label: t === key ? en : t };
+      }),
     }) + `</label>`;
 };
 
