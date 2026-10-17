@@ -283,7 +283,6 @@ pub fn warframe_panel_json(v: &Value) -> Value {
             "kind": match x.kind {
                 wf::AdmissionKind::Unmodelled => "unmodelled",
                 wf::AdmissionKind::OutOfScope => "out_of_scope",
-                wf::AdmissionKind::Inert => "inert",
             },
         })).collect::<Vec<_>>(),
         "refused": r.refused,

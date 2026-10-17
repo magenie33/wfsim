@@ -173,12 +173,18 @@ fn an_unmodelled_passive_and_an_unnumbered_ability_are_admitted() {
     assert!(!r.admissions.iter().any(|a| a.from == "valkyr"), "{:?}", r.admissions);
 }
 
+/// An augment seats only beside its ability, and an infused ability brings
+/// its augment along.
 #[test]
-fn an_augment_without_its_ability_pays_nothing_and_says_so() {
+fn an_augment_is_exclusive_to_a_loadout_carrying_its_ability() {
     let mut b = build(&["eternal_war"]);
-    assert!(resolve(&b).unwrap().admissions.iter().all(|a| a.kind != AdmissionKind::Inert));
+    assert!(resolve(&b).unwrap().refused.is_empty());
     b.helminth = Some(HelminthPick { slot: 2, ability: "roar".into() });
-    assert!(resolve(&b).unwrap().admissions.iter().any(|a| a.kind == AdmissionKind::Inert));
+    assert_eq!(resolve(&b).unwrap().refused.len(), 1);
+    let mut on_ash = Build { frame: "ash".into(), ..build(&["eternal_war"]) };
+    assert_eq!(resolve(&on_ash).unwrap().refused.len(), 1);
+    on_ash.helminth = Some(HelminthPick { slot: 1, ability: "warcry".into() });
+    assert!(resolve(&on_ash).unwrap().refused.is_empty());
 }
 
 #[test]

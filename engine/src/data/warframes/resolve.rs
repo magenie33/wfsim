@@ -188,8 +188,6 @@ pub enum AdmissionKind {
     Unmodelled,
     /// Cannot pay out in this panel.
     OutOfScope,
-    /// Seated, and pays nothing in this build.
-    Inert,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -326,6 +324,12 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             refused.push(format!("{} {w}", m.name));
             return;
         }
+        // AN AUGMENT IS EXCLUSIVE to a loadout carrying its ability, the
+        // frame's own or an infused one, as a weapon's exclusive mod is.
+        if let Some(a) = m.augments.as_deref().filter(|a| !carries(a)) {
+            refused.push(format!("{} augments {}, which this loadout does not carry", m.name, ability(a).map_or(a, |x| x.name.as_str())));
+            return;
+        }
         if seated.iter().any(|(x, _)| x.id == m.id) {
             refused.push(format!("{} is already seated", m.name));
             return;
@@ -374,22 +378,10 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             .as_ref()
             .map_or(0, |s| seated.iter().filter(|(x, _)| x.set.as_ref() == Some(s)).count() as u32);
         let set_share = m.set_bonus.iter().filter(|(k, _)| *k <= n).map(|(_, v)| *v).next_back().unwrap_or(0.0);
-        let dead = m.augments.as_deref().filter(|a| !carries(a));
-        if let Some(a) = dead {
-            admissions.push(Admission {
-                from: m.id.clone(),
-                text: format!("augments {}, which this loadout does not carry", ability(a).map_or(a, |x| x.name.as_str())),
-                kind: AdmissionKind::Inert,
-            });
-        }
         for e in &m.effects {
             match e {
-                FrameEffect::Bonus(s, v) if dead.is_none() => {
-                    add(*s, &m.id, at_rank(*v, *rank, m.max_rank) * (1.0 + set_share), false)
-                }
-                FrameEffect::Bonus(..) => {}
-                FrameEffect::Flat(s, v) if dead.is_none() => add(*s, &m.id, *v, true),
-                FrameEffect::Flat(..) => {}
+                FrameEffect::Bonus(s, v) => add(*s, &m.id, at_rank(*v, *rank, m.max_rank) * (1.0 + set_share), false),
+                FrameEffect::Flat(s, v) => add(*s, &m.id, *v, true),
                 FrameEffect::ShieldMultiplier(r) => shield_times.push((m.id.clone(), by_rank(r, *rank))),
                 FrameEffect::ShieldGateSeconds(r) => gate_fixed = Some((m.id.clone(), by_rank(r, *rank))),
                 FrameEffect::Unmodelled(t) => admissions.push(Admission {
@@ -688,9 +680,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
     };
     claim(&frame.id, &frame.passive_tags, false);
     for (m, _) in &seated {
-        if m.augments.as_deref().is_none_or(|a| loadout.iter().any(|(_, x, _)| x.id == a)) {
-            claim(&m.id, &m.tags, false);
-        }
+        claim(&m.id, &m.tags, false);
     }
     for id in &arcane_ids {
         if let Some(a) = arcane_by_id(id) {
@@ -766,7 +756,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
 
     let augments = seated
         .iter()
-        .filter_map(|(m, _)| m.augments.as_deref().filter(|a| carries(a)).map(|_| m.id.as_str()))
+        .filter(|(m, _)| m.augments.is_some())
+        .map(|(m, _)| m.id.as_str())
         .collect();
     Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused, augments, cast_arcanes, weapon_buffs })
 }

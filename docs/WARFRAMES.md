@@ -70,8 +70,7 @@ builds. What a build states instead is a closed set of tags
 
 A tag is DATA on the item that grants it — `tags:` on a mod, arcane or ability,
 `passive_tags:` on a frame — as `{tag, when}`, with the wiki sentence quoted in a
-comment. An unknown tag panics at load. An augment whose ability is not in the
-loadout grants no tag, as it pays nothing. A CLEANSE and an IMMUNITY are two
+comment. An unknown tag panics at load. A CLEANSE and an IMMUNITY are two
 tags because they answer two questions — one removes what landed, the other
 stops what is coming — and one ability may grant both (Defy, Fire Walker).
 
@@ -181,8 +180,10 @@ module's `Subsumable` flag, which covers the Helminth's own abilities too.
   `helminth_damage_buff_slot` on the nine frames W`Helminth` §Damage buff
   restrictions names, and their Primes; anywhere else is refused, and the page
   does not offer it.
-- **An augment pays only while its ability is in the loadout**; otherwise the
-  card is seated and says it is inert.
+- **An augment is exclusive to a loadout carrying its ability**, the frame's
+  own or an infused one, as a weapon's exclusive mod is: anywhere else it is
+  refused, the page does not offer it, and an infusion that takes its ability
+  away empties its slot.
 
 ## Passives
 

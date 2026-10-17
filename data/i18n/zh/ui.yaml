@@ -262,8 +262,6 @@ ui:
   "energy drained per second": 每秒消耗的能量
   "incompatible with a card already seated": 与已装备的卡牌不兼容
   "cannot swap: the card in this slot does not fit that one": 无法交换：这个槽位的卡牌放不进那个槽位
-  "augments an ability this loadout does not carry — it would pay nothing": 强化的技能不在当前配置中——装上也没有效果
-  "inert here": 此处无效
   "this ability's numbers are not transcribed yet": 这个技能的数值还没有录入
   "What this panel does not compute": 这个面板没有计算的内容
   "not computed by this panel yet": 这个面板暂未计算
