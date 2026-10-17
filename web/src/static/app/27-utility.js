@@ -41,8 +41,8 @@ function showUtility(tab) {
 }
 
 function renderUtility() {
+  renderBell();
   const unread = reminderHits().filter((h) => !h.read).length;
-  renderBell(unread);
   if (!utilityTab || $("utility-page").hidden) return;
   $("utility-tabs").innerHTML = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
     escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`).join("");
@@ -155,7 +155,8 @@ const REMINDERS_SEEN_KEY = "wfsim-reminders-seen";
 /// What fired, newest first: `{id, reminder, kind, attributes, names, ends_at_ms, at_ms, read}`.
 const REMINDERS_HITS_KEY = "wfsim-reminders-hits";
 const REMINDERS_HITS_MAX = 30;
-/// 1 when the reader asked for a system notification as well.
+/// 1 when the reader asked for a system notification, before the choice moved
+/// to `NOTIFY_KEY` (49-notices.js), which still honours it.
 const REMINDERS_SYSTEM_KEY = "wfsim-reminders-system";
 
 function storedJson(key, empty) {
@@ -223,97 +224,15 @@ function reminderCheck() {
   storeJson(REMINDERS_SEEN_KEY, seen);
   if (!fresh.length) return;
   storeJson(REMINDERS_HITS_KEY, [...fresh, ...reminderHits()].slice(0, REMINDERS_HITS_MAX));
+  // WHERE IT IS SAID is the bell's (49-notices.js): a card and a system
+  // notification for each one not set quiet, and the bell for all of them.
   const loud = fresh.filter((h) => !(rs.find((x) => x.id === h.reminder) || {}).quiet);
   if (utilityTab === "reminders" && !$("utility-page").hidden) reminderRead();
-  else if (loud.length) reminderToast(loud);
-  if (reminderSystemOn() && document.hidden) {
-    for (const h of loud) {
-      try {
-        const n = new Notification("WFSim", { body: reminderSay(h), tag: h.id });
-        n.onclick = () => { window.focus(); nav("/utility/reminders"); n.close(); };
-      } catch (_) { /* the browser refused; the bell already holds it */ }
-    }
-  }
+  else noticeCards("reminders", loud.map((h) => ({ title: (UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h),
+    ends: h.ends_at_ms, link: "/utility/reminders" })));
+  noticeSystem("reminders", loud.map((h) => ({ tag: h.id, body: reminderSay(h), link: "/utility/reminders" })));
   renderUtility();
 }
-
-// ---- WHERE A FIRED REMINDER IS SAID -----------------------------------------
-//
-// THE BELL on the bar keeps every one (`reminderHits`), counted until its panel
-// or the Reminders tab is opened; a CARD in the corner says one as it fires and
-// leaves on its own, so nothing covers the page. docs/UI.md §"Utility".
-
-/// A card stays this long, held while the pointer is on it.
-const TOAST_MS = 8000;
-/// AT MOST THIS MANY CARDS: more firing at once is one card that counts them.
-const TOASTS_MAX = 3;
-const BELL_PANEL_ROWS = 8;
-
-function reminderToast(hits) {
-  let box = $("rem-toasts");
-  if (!box) {
-    box = document.createElement("div");
-    box.id = "rem-toasts";
-    box.className = "rtoasts";
-    box.setAttribute("aria-live", "polite");
-    document.body.appendChild(box);
-  }
-  const now = Date.now();
-  const cards = hits.length > TOASTS_MAX
-    ? [{ title: trF("{n} reminders fired", { n: hits.length }), ends: null }]
-    : hits.map((h) => ({ title: (UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h), ends: h.ends_at_ms }));
-  for (const c of cards) {
-    const el = document.createElement("div");
-    el.className = "rtoast";
-    el.innerHTML = `<span class="rtoast-ic">${BELL_SVG}</span>
-      <span class="rtoast-b"><span class="rtoast-t">${escHtml(c.title)}</span>
-        <span class="rtoast-s">${c.ends ? `${escHtml(tr("Time left"))} <span data-ends="${c.ends}">${utilityLeft(c.ends - now)}</span> · ` : ""}<a href="/utility/reminders">${escHtml(tr("View"))}</a></span></span>
-      <button type="button" class="rtoast-x" aria-label="${escHtml(tr("Close"))}">×</button>`;
-    let timer = null;
-    const go = () => { clearTimeout(timer); el.remove(); };
-    const wait = () => { clearTimeout(timer); timer = setTimeout(go, TOAST_MS); };
-    el.addEventListener("mouseenter", () => clearTimeout(timer));
-    el.addEventListener("mouseleave", wait);
-    el.querySelector(".rtoast-x").onclick = go;
-    el.querySelector("a").addEventListener("click", () => setTimeout(go, 0));
-    box.appendChild(el);
-    wait();
-  }
-  while (box.children.length > TOASTS_MAX) box.firstElementChild.remove();
-}
-
-/// THE BELL: drawn once the reader has a reminder or something fired, its count
-/// what is unread, its panel the latest that fired.
-function renderBell(unread) {
-  const bell = $("rem-bell");
-  if (!bell) return;
-  const hits = reminderHits();
-  bell.hidden = !hits.length && !reminders().length;
-  const count = $("rem-bell-count");
-  count.hidden = !unread;
-  count.textContent = unread ? String(unread) : "";
-  if (!bell.classList.contains("open")) return;
-  const now = Date.now();
-  $("rem-bell-panel").innerHTML = `<div class="rbell-h">${escHtml(tr("Recently fired"))}</div>
-    ${hits.length ? `<div class="bench-rows">${hits.slice(0, BELL_PANEL_ROWS).map((h) => reminderHitHtml(h, now)).join("")}</div>`
-      : `<div class="sim-empty">${escHtml(tr("Nothing has fired yet."))}</div>`}
-    <a class="tbmenu-link rbell-all" href="/utility/reminders">${escHtml(tr("All reminders"))}</a>`;
-}
-(function () {
-  const bell = $("rem-bell");
-  if (!bell) return;
-  const set = (open) => {
-    bell.classList.toggle("open", open);
-    $("rem-bell-btn").setAttribute("aria-expanded", open ? "true" : "false");
-    // OPENED, it says what the cards said: they go, read.
-    if (open) { reminderRead(); utilityClock(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
-    renderUtility();
-  };
-  $("rem-bell-btn").addEventListener("click", (e) => { e.stopPropagation(); set(!bell.classList.contains("open")); });
-  $("rem-bell-panel").addEventListener("click", (e) => { if (e.target.closest("a[href]")) set(false); });
-  document.addEventListener("click", (e) => { if (bell.classList.contains("open") && !bell.contains(e.target)) set(false); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && bell.classList.contains("open") && !imeComposing(e)) set(false); });
-})();
 
 /// ONE FIRED ITEM AS A ROW, the same under the bell and on the Reminders tab.
 const reminderHitHtml = (h, now) => `
@@ -331,9 +250,6 @@ function reminderRead() {
   const hs = reminderHits();
   if (hs.some((h) => !h.read)) storeJson(REMINDERS_HITS_KEY, hs.map((h) => ({ ...h, read: true })));
 }
-
-const reminderSystemOn = () => typeof Notification === "function"
-  && Notification.permission === "granted" && storedJson(REMINDERS_SYSTEM_KEY, 0) === 1;
 
 /// A REMINDER IN WORDS: each attribute it holds, by name. The names were
 /// copied from the item it was made from; an item on screen now that carries
@@ -453,15 +369,9 @@ function renderReminders() {
   const rs = reminders();
   const hits = reminderHits();
   const now = Date.now();
-  const canSystem = typeof Notification === "function";
-  const system = !canSystem ? ""
-    : Notification.permission === "denied"
-      ? `<p class="bench-note">${escHtml(tr("This browser blocks notifications from this site; reminders show on the page only."))}</p>`
-      : `<div class="slotf-row">${filterChip(tr("Also as a system notification when this tab is in the background"),
-          reminderSystemOn(), `data-rsystem="1"`)}</div>`;
   if (!worldNamesAsk && worldNamesStale() && rs.some((r) => r.kind === "fissure")) worldNamesLoad().then(renderUtility);
-  box.innerHTML = `<p class="bench-note rem-lead">${escHtml(tr("Reminders live in this browser and fire while WFSim is open in it, on any page."))}</p>
-    ${system}
+  box.innerHTML = `<p class="bench-note rem-lead">${escHtml(tr("Reminders live in this browser and fire while WFSim is open in it, on any page."))}
+      <a href="/notifications#notify-settings">${escHtml(tr("How you are told"))}</a></p>
     <h3 class="wgroup-h">${escHtml(tr("New reminder"))}</h3>
     <div id="reminder-new"></div>
     <h3 class="wgroup-h">${escHtml(tr("Your reminders"))}</h3>
@@ -495,15 +405,4 @@ function renderReminders() {
     el.onclick = () => { reminderNewKind = el.dataset.rkind; renderUtility(); };
   });
   if (reminderNewKind) UTILITY_KINDS[reminderNewKind].build(fresh.lastElementChild);
-  const sys = box.querySelector("[data-rsystem]");
-  if (sys) sys.onclick = async () => {
-    if (reminderSystemOn()) storeJson(REMINDERS_SYSTEM_KEY, 0);
-    else {
-      // THE BROWSER ASKS, on the reader's own click — its permission prompt,
-      // never one of ours.
-      const p = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-      storeJson(REMINDERS_SYSTEM_KEY, p === "granted" ? 1 : 0);
-    }
-    renderUtility();
-  };
 }

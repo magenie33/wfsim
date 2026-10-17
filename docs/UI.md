@@ -1025,10 +1025,26 @@ none of it feeds the builder, the simulator or the optimizer (`docs/CORE.md`
 | a saved reminder nothing can ever match says so in red — no fissure the game has opened holds its picks, or no node of the arbitration schedule does | `possible`, `fissurePossible`, `arbitrationPossible` |
 | what a new reminder already matches is seen, so it fires for what opens later | `reminderAdd` |
 | reminders sync with a signed-in account as a pool of their own; they fire on each browser while the site is open there, on any page: once per item, never for one open when the reminder was made | `reminderCheck`, `syncPool` |
-| what fired is kept under a bell on the bar, beside the account and outside the phone menu, counted until its panel or Reminders is opened; the bell is drawn once the reader has a reminder | `renderBell`, `reminderRead` |
-| as one fires, a card in the bottom corner says it and leaves after 8 s, held while the pointer is on it; at most three at once, and more firing together is one card that counts them; none on the Reminders tab itself — nothing covers the page | `reminderToast`, `TOAST_MS`, `TOASTS_MAX` |
+| what fired is said the way every notification is (§"Notifications"); none in a card while the Reminders tab is open | `reminderCheck` |
 | a reminder set quiet (its Pop up chip off) fires into the bell only: no card, no system notification | `reminderQuiet` |
-| a system notification as well only when the reader turns it on, which is when the browser asks, and only for a tab in the background | `reminderSystemOn` |
+
+## Notifications
+
+**EVERYTHING THE SITE TELLS THE READER IS IN ONE PLACE, AND NOTHING COVERS THE
+PAGE** (`49-notices.js`). Three sources: reminders that fired in this browser,
+what the site said (docs/ACCOUNTS.md §"Notices"), and the account's state while
+it lasts.
+
+| rule | where it is held |
+| --- | --- |
+| a bell on the bar for every reader, beside the account and outside the phone menu, its count what is unread | `renderBell`, `#rem-bell` |
+| its panel and `/notifications` list all three, the account's state pinned on top and marked, the rest newest first; filter chips All / Reminders / Messages | `noticeRows`, `noticeFilterHtml` |
+| opening either reads everything, and the rows still mark what was new; a reader with no account keeps the mark in this browser | `noticesRead`, `NOTICES_READ_KEY` |
+| as one arrives, a card in the bottom corner, above Nona's button, says it and leaves after 8 s, held while the pointer is on it; at most three, and more at once is one card that counts them | `noticeCards`, `TOAST_MS`, `TOASTS_MAX` |
+| a message arriving is said in a card once, on the first browser that sees it; a browser's first answer only sets the line, so a backlog is counted, never a stack of cards | `noticesAnnounce`, `NOTICES_SAID_KEY` |
+| per category, the reader turns the card and the system notification on or off; the system one is off in a browser until asked for (the browser asks), on in the desktop client, and comes only while the page is out of sight | `notifyOn`, `noticeSystem` |
+| the desktop client shows a Windows notification, and clicked it brings the window back on the page it names | `notify` in `desktop/src/notify.rs` |
+| the site is asked once the account is known, then every 15 minutes while the tab is on screen and never while it is not | `noticesLoad`, `NOTICES_EVERY_MS` |
 
 Where the names come from: `docs/DATA_SOURCES.md` §"The world state".
 

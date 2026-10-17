@@ -195,6 +195,24 @@ change that page in the commit that changes what is kept.
   Both pages promise that nothing about the reader travels with them, and the
   session cookie reaching those endpoints is never read by them.
 
+## Notices
+
+**THE SITE TELLS AN ACCOUNT; NOBODY ELSE DOES.** One way only: no reader writes
+to another, so there is nothing to moderate. What the page does with them — the
+bell, the cards, `/notifications` — is docs/UI.md §"Notifications".
+
+| rule | where it is held |
+| --- | --- |
+| a notice is stored (`notices`): to one account, or to every reader when `account` is NULL | `worker/notices.js`, `worker/pg/accounts.sql` |
+| one the owner writes carries its own text in both languages; one a feature writes is a kind and its params, worded by the page | `NOTICE_KINDS`, `NOTICE_WORDS` |
+| a writer that runs twice writes once: the same `dedupe_key` for the same account writes nothing | `noticeWrite`, `notices_once` |
+| what is said to everyone is served to anyone from the edge's cache, no cookie read; an account's own are never cached | `/api/notices/everyone`, `/api/notices` |
+| read is one instant per account: opening the bell or the page reads everything before it, never past the server's now and never backwards | `notice_marks`, `/api/notices/read` |
+| the account's STATE is never stored but read as it is: a device in its cool-down with the hour it ends — a ban is not told, it is for malice only | `stateOf` |
+| a notice to one account is kept 180 days, one to everyone until it expires; in the export, and deleted with the account | `purgeNotices`, `noticesExport` |
+| the owner writes with `scripts/notice_send.mjs` (`--all` or `--to <username>`, `--zh`/`--en`, `--link`, `--until`; `--list`, `--withdraw`) | `scripts/notice_send.mjs` |
+| the paid half writes the membership's: ending within three days with nothing renewing it, a renewal failing, ended | the private repo's `docs/BILLING.md` §"Told to the account" |
+
 ## Clan invites
 
 `/clan` is the in-game clan's door: a clan joins by invitation only, so a

@@ -119,9 +119,9 @@ pub fn apply_autostart(on: bool) -> Result<(), String> {
 }
 
 /// EVERYTHING THIS PROGRAM PUT ON THE MACHINE, and the only list of it: the
-/// startup entry, the app's directory (release, board, session, settings), the
-/// webview's profile (every build, scenario and riven saved in the page) and
-/// the executable itself.
+/// startup entry, the name its notifications go under (`notify.rs`), the app's
+/// directory (release, board, session, settings), the webview's profile (every
+/// build, scenario and riven saved in the page) and the executable itself.
 ///
 /// The directories and the executable are in use until the process exits, so
 /// they are removed by a command that waits for it. Each path is checked
@@ -135,6 +135,7 @@ pub fn uninstall(data_root: &Path, webview_root: Option<PathBuf>) -> Result<(), 
         const DETACHED_PROCESS: u32 = 0x0000_0008;
 
         run_key::clear()?;
+        crate::notify::clear()?;
         let named = |p: &Path, want: &str| p.file_name().is_some_and(|n| n.eq_ignore_ascii_case(want));
         if !named(data_root, "WFSim") {
             return Err(format!("refusing to remove {}", data_root.display()));

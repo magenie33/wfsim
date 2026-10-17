@@ -10,6 +10,7 @@
 
 mod layout;
 mod native;
+mod notify;
 mod payload;
 mod protocol;
 mod session;
@@ -258,6 +259,30 @@ fn tray_labels(open: String, settings: String, quit: String, menu: tauri::State<
     for (item, text) in menu.0.iter().zip([open, settings, quit]) {
         let _ = item.set_text(text);
     }
+}
+
+/// A WINDOWS NOTIFICATION the page asked for (`notify.rs`). Clicked, the window
+/// comes back and the page goes to `link`, a path on the site and nothing else.
+#[tauri::command]
+fn notify(app: tauri::AppHandle, state: tauri::State<Arc<Layout>>, title: String, body: String, link: String) -> Result<(), String> {
+    if SELFTEST.load(std::sync::atomic::Ordering::Relaxed) {
+        return Err("not during a selftest".into());
+    }
+    if !link.starts_with('/') || link.starts_with("//") {
+        return Err("a link is a path on the site".into());
+    }
+    let event = format!("window.dispatchEvent(new CustomEvent('wfsim-notify-open', {{ detail: {{ link: {} }} }}))",
+        serde_json::to_string(&link).map_err(|e| e.to_string())?);
+    notify::show(state.root(), &title, &body, move || {
+        let app = app.clone();
+        let event = event.clone();
+        let _ = app.clone().run_on_main_thread(move || {
+            show_main(&app);
+            if let Some(w) = tauri::Manager::get_webview_window(&app, "main") {
+                let _ = w.eval(&event);
+            }
+        });
+    })
 }
 
 fn show_main<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
@@ -891,7 +916,7 @@ TIMEOUT: the page never reported after {secs}s
         .invoke_handler(tauri::generate_handler![
             mark_healthy, app_version, open_external,
             update_check, update_download, update_status, update_apply, source_url,
-            desktop_settings, desktop_set, open_data_dir, uninstall, tray_labels, engine
+            desktop_settings, desktop_set, open_data_dir, uninstall, tray_labels, engine, notify
         ])
         // THE CLOSE BUTTON HIDES, when the reader chose that and there is a
         // tray icon to come back through — never a window gone with no way back.
