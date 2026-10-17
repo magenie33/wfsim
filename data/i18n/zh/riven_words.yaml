@@ -63,6 +63,21 @@ riven_words:
   弹药最大值: [ammo_maximum]
   投射物速度: [projectile_speed]
   连击持续时间: [combo_duration]
+  # …AND THE TYPE ALONE, which the card's line no longer gives, as players say it.
+  病毒: [viral]
+  毒素: [toxin]
+  火焰: [heat]
+  冰冻: [cold]
+  电击: [electricity]
+  磁力: [magnetic]
+  辐射: [radiation]
+  爆炸: [blast]
+  腐蚀: [corrosive]
+  毒气: [gas]
+  # The names this site printed before it printed DE's, which players learned.
+  触发持续时间: [status_duration]
+  弹药上限: [ammo_maximum]
+  抛射物飞行速度: [projectile_speed]
 
 riven_query_words:
   malus: [负, "-"]

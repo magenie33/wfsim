@@ -800,7 +800,7 @@ ui:
   "Primary Compression's 444% case is not modelled: the catalog gives a second value for aiming during the alt-fire, a state the sim does not have. The ordinary 100% applies.": "Primary Compression 的 444% 情形未建模：目录为「副射击期间瞄准」另给了一个数值，模拟没有这种状态。这里按常规的 100% 计算。"
   "Primary": 主要武器
   "Procs": 触发数量
-  "Projectile Speed": 抛射物飞行速度
+  "Projectile Speed": 投射物速度
   "Punch Through": 穿透
   "Body Punch Through": 躯体穿透
   "QQ group": QQ官方交流群
@@ -919,7 +919,7 @@ ui:
   "Stats": 属性
   "Status Chance": 触发几率
   "Status Damage": 触发伤害
-  "Status Duration": 触发持续时间
+  "Status Duration": 触发时间
   "Status Spread Chance": 异常扩散几率
   "Status immunity": 异常免疫
   "Steel Path": "钢铁之路"
@@ -3126,6 +3126,8 @@ effect_phrases:
   - ['\bRange\b', '攻击范围']
   - ['\bZoom\b', '变焦']
   - ['\(aiming\)', '（瞄准时）']
+  # DE's client wording too: Lingering Torment "+90% 触发时间", Ammo Drum
+  # "弹药最大值", Terminal Velocity "投射物速度", the Cleanse cards "对 X 的伤害".
   # MELEE'S OWN, every one of them DE's client wording -- from the card of the
   # mod that grants the same stat (Pressure Point, Fury, Body Count, Corrupt
   # Charge, Reflex Coil, Maiming Strike, True Punishment, Quickening, Finishing
@@ -3143,13 +3145,15 @@ effect_phrases:
   - ['Finisher Damage', '处决伤害']
   - ['Critical Chance for Slide Attack', '滑行攻击暴击几率']
   - ['\(x2 for Heavy Attacks\)', '（重击时 x2）']
+  # Speed Trigger's card: "射速（弓类武器效果加倍）".
+  - ['\s*\(x2 for Bows\)', '（弓类武器效果加倍）']
   - ['Heavy Attack Efficiency', '重击效率']
   - ['Attack Speed', '攻击速度']
   - ['Combo Duration', '连击持续时间']
   - ['Initial Combo', '初始连击']
   - ['Additional Combo Count Chance', '额外连击数几率']
   - ['Chance to Gain Combo Count', '连击数几率']
-  - ['Status Duration', '触发持续时间']
+  - ['Status Duration', '触发时间']
   - ['Critical Chance', '暴击几率']
   - ['Critical Damage', '暴击伤害']
   - ['Status Chance', '触发几率']
@@ -3160,9 +3164,9 @@ effect_phrases:
   - ['Weapon Recoil', '武器后坐力']
   - ['\bRecoil\b', '后坐力']
   - ['Punch Through', '穿透']
-  - ['Projectile Speed', '抛射物飞行速度']
+  - ['Projectile Speed', '投射物速度']
   - ['Ammo Efficiency', '弹药效率']
-  - ['Ammo Maximum', '弹药上限']
+  - ['Ammo Maximum', '弹药最大值']
   - ['Dodge Speed', '闪避速度']
   - ['\bAccuracy\b', '精准度']
   - ['Weak Point Damage', '弱点伤害']
@@ -3170,7 +3174,23 @@ effect_phrases:
   # Cleanse Orokin's card. Techrot and Scaldra have no card in the CN client
   # yet, so they keep the English name the way Grineer does.
   - ['Damage to Orokin', '对奥罗金的伤害']
-  - ['Damage to (Grineer|Corpus|Infested|Corrupted|The Murmur|Techrot|Scaldra)', '对 $1 伤害']
+  - ['Damage to (Grineer|Corpus|Infested|Corrupted|The Murmur|Techrot|Scaldra)', '对 $1 的伤害']
+  # A STAT LINE NAMES THE TYPE AS ITS DAMAGE, as every DE zh card does:
+  # Damzav-Vati "+240% 病毒伤害", Hellfire "+90% 火焰伤害". Before the rows
+  # below, which name the type alone wherever else it stands in a sentence.
+  - ['(\d%?\s*)Impact$', '$1冲击伤害']
+  - ['(\d%?\s*)Puncture$', '$1穿刺伤害']
+  - ['(\d%?\s*)Slash$', '$1切割伤害']
+  - ['(\d%?\s*)Heat$', '$1火焰伤害']
+  - ['(\d%?\s*)Cold$', '$1冰冻伤害']
+  - ['(\d%?\s*)Electricity$', '$1电击伤害']
+  - ['(\d%?\s*)Toxin$', '$1毒素伤害']
+  - ['(\d%?\s*)Blast$', '$1爆炸伤害']
+  - ['(\d%?\s*)Corrosive$', '$1腐蚀伤害']
+  - ['(\d%?\s*)Gas$', '$1毒气伤害']
+  - ['(\d%?\s*)Magnetic$', '$1磁力伤害']
+  - ['(\d%?\s*)Radiation$', '$1辐射伤害']
+  - ['(\d%?\s*)Viral$', '$1病毒伤害']
   - ['\bImpact\b', '冲击', 'g']
   - ['\bPuncture\b', '穿刺', 'g']
   - ['\bSlash\b', '切割', 'g']
