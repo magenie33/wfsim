@@ -87,6 +87,17 @@ fn every_internal_name_resolves_in_the_export() {
     assert_eq!(stated, resolved.len(), "survey row count vs entries that state a key");
 }
 
+/// AN EXALTED-SLOT WEAPON NAMES WHO HOLDS IT. Without `wielders` it falls to
+/// the Prototype, at 100% strength and with no passive, and nothing says so.
+#[test]
+fn every_exalted_weapon_names_its_wielders() {
+    for s in all() {
+        if s.exalted || s.slot == "exalted" {
+            assert!(!s.wielders.is_empty(), "{}: an Exalted-slot weapon with no `wielders:`", s.id);
+        }
+    }
+}
+
 /// A WEAPON THAT NAMES ITS WIELDERS NAMES FRAMES THE WARFRAME MODULE HAS,
 /// renames itself only for one of them, and hands both to every form.
 #[test]

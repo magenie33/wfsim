@@ -20,6 +20,10 @@ stance_polarity: madurai
 introduced: "Update 24.0"
 internal_name: /Lotus/Powersuits/Garuda/GarudaClaws
 traits: [tenno]
+# HELD BY GARUDA AND NOTHING ELSE, though no ability summons it: only she
+# equips them, in the melee slot (W`Garuda_Talons`). Her Prime holds its own
+# pair, GarudaPrimeClaws in the export.
+wielders: [garuda]
 
 ammo_max: ~
 

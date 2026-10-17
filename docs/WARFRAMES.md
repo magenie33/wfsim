@@ -230,9 +230,10 @@ different wielder and never reaches the board.
 - The FIGHT keeps what others hand the wielder: its state, its own stat bonuses,
   the squad's auras, and the ticked overrides, which replace a resolved number.
   A scenario names no frame and no shards.
-- A weapon a frame summons names its wielders (`wielders:`) and is held by the
-  first when a link names any other; `wielder_names:` renames it in one frame's
-  hands ("Valkyr Prime Talons").
+- A weapon only some frames hold names its wielders (`wielders:`) — one a
+  frame summons, or one that is hers alone, Garuda's Talons — and is held by the
+  first when a link names any other; every Exalted-slot weapon names them.
+  `wielder_names:` renames it in one frame's hands ("Valkyr Prime Talons").
 - **THE BUILD'S ABILITY STRENGTH COMES WITH IT**, as the stats do: an EXALTED
   weapon's damage is its ability's taken at 100% (`WeaponBase::exalted`), so the
   frame that summons it scales it — at the strength its summoning cast

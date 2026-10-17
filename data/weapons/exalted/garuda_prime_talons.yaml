@@ -20,6 +20,8 @@ stance_polarity: madurai
 introduced: "Update 31.3"
 internal_name: /Lotus/Powersuits/Garuda/GarudaPrimeClaws
 traits: [tenno, prime]
+# HELD BY GARUDA PRIME ALONE: the Prime's own claws, see garuda_talons.yaml.
+wielders: [garuda_prime]
 
 ammo_max: ~
 
