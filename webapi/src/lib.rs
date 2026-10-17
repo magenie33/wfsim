@@ -19,6 +19,7 @@ mod board;
 pub mod board_rows;
 mod buffs;
 mod candidates;
+mod catalogue;
 mod fight;
 mod forma;
 mod i18n;
@@ -55,6 +56,7 @@ pub use simulate::{
     riven_request, simulate_json, simulate_json_reporting, simulate_merged_json,
     simulate_request, simulate_shard_json, RIVEN_ITEM,
 };
+pub use catalogue::catalogue_json;
 pub use warframe::{operator_panel_json, warframe_catalog_json, warframe_panel_json};
 
 use serde_json::Value;
@@ -89,6 +91,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/warframe/catalog", |_| warframe_catalog_json()),
     ("/api/warframe/panel", warframe_panel_json),
     ("/api/operator/panel", operator_panel_json),
+    ("/api/catalogue", |_| catalogue_json()),
     ("/api/qr", qr::qr_json),
 ];
 

@@ -1090,6 +1090,22 @@
     </section>
   </main>
 
+  <!-- A CATEGORY THE BUILDER DOES NOT HOLD YET — `/<name>` for each
+       `holds: placeholder` slot in data/equipment_slots.yaml. docs/UI.md
+       §A category the builder does not hold yet. -->
+  <main id="slot-page" class="config-page" hidden>
+    <div class="wstrip">
+      <div>
+        <h1 id="slot-name">—</h1>
+        <div class="wpassives"><div data-i18n>This category is not built yet: nothing here is simulated.</div></div>
+      </div>
+    </div>
+    <section class="block" id="slot-cards-block" hidden>
+      <div class="bh"><h2 id="slot-cards-h"></h2><span class="sub" id="slot-cards-n"></span></div>
+      <div class="bb"><div id="slot-cards" class="combo-menu"></div></div>
+    </section>
+  </main>
+
   <div id="wf-popover" class="popover" hidden>
     <div class="addbar"><input id="wf-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
     <div id="wf-menu" class="combo-menu"></div>

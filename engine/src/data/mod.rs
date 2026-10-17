@@ -17,6 +17,7 @@ pub mod apl;
 pub mod arcanes;
 pub mod auras;
 pub mod casting;
+pub mod catalogue;
 pub mod boards;
 pub mod companions;
 pub mod buff_events;

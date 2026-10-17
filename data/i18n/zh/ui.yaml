@@ -381,9 +381,9 @@ ui:
   "critical damage added flat to the finished multiplier, after the mods and before the crit tier — the same +x on every weapon, so it is worth more the lower the weapon's own crit damage": 暴击伤害以固定值加到最终倍率上，在 MOD 之后、暴击等级之前——每把武器加的都是同样的倍数，所以武器自身暴伤越低它越值钱
   "Arcanes": 赋能
   "Arch-Guns": 曲翼枪械
-  "Archwing": 空战
+  "Archwing (environment)": 空战
   Armor: 护甲
-  "Atmosphere": 地面
+  "Atmosphere (environment)": 地面
   "Bullseye Reload, its passive: a headshot grants +25% reload speed for 4 s, stacking to 2 (wiki). It is not applied, so a headshot build reads low.": "Bullseye Reload（它的被动）：爆头会获得 4 秒 +25% 换弹速度，最多 2 层（wiki）。未应用，所以爆头配装数字偏低。"
   "The Incarnon form's fire rate falls to 60% over 51 held shots and resets when firing stops. The sim holds the trigger until the magazine is dry, so a player who taps keeps more of the 13.33/s. The spool-down itself is modelled.": "灵化形态的射速在持续开火 51 发内降到 60%，停火后立即回满。模拟会一直按到弹匣打空，所以点射的玩家能保住更多的 13.33/秒。射速衰减本身已建模。"
   "Base Damage": 基础伤害
@@ -1260,6 +1260,18 @@ ui:
   "Companion": 同伴
   "Companion Weapon": 同伴武器
   "Exalted Weapon": 显赫武器
+  # Categories the builder does not hold yet. DE's Public Export compatName
+  # (Archwing, Archmelee, Necramech, Parazon, K-Drive) and its Amp card text.
+  "Archwing": 曲翼
+  "Arch-Melee": 曲翼近战武器
+  "Necramech": 殁世机甲
+  "Amp": 增幅器
+  "Parazon": 灭骸之刃
+  "K-Drive": K 式悬浮板
+  # DE: "Consumed to upgrade the Railjack Grid and Avionics." = 用来升级航道星舰区格和航电设备
+  "Avionics": 航电设备
+  "Not built yet": 尚未建成
+  "This category is not built yet: nothing here is simulated.": 这个类别尚未建成：这里的一切都不参与模拟。
   "empty": 空
   "{n} entries": "{n} 项"
   "baseline — the floor every board is scored on": 基准战甲 —— 所有榜单都按它计算
