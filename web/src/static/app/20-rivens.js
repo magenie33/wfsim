@@ -418,8 +418,11 @@ function openRivenPicker(anchor, slot) {
   const splicedElsewhere = riven.bonuses.concat(riven.malus ? [riven.malus] : [])
     .some((x) => x !== at && (rivenStat(x.id) || {}).spliced);
   const unconfirmed = weaponInfo($("weapon").value).riven_unconfirmed || [];
+  const typed = (ALT_NAMES || []).concat(I18N ? [I18N] : [])
+    .flatMap((l) => Object.entries(l.riven_words || {}).map(([w, ids]) => [rivenQueryFold(w), ids]));
   const draw = (q) => {
     const f = (q || "").trim().toLowerCase();
+    const ff = rivenQueryFold(f);
     menu.innerHTML = rivenPool()
       // A stat cannot appear twice on one riven, and five are bonus-only
       // and can never be the malus.
@@ -428,8 +431,10 @@ function openRivenPicker(anchor, slot) {
       .filter((x) => (!used.has(x.id) || x.id === at.id)
         && (slot === "malus" ? x.malus : x.bonus !== false)
         && !(x.spliced && splicedElsewhere))
-      // Both languages match, exactly as the mod picker does.
-      .filter((x) => !f || `${rivenStatNameEn(x)} ${rivenStatName(x)}`.toLowerCase().includes(f))
+      // Both languages match, exactly as the mod picker does, and every word a
+      // player types for the stat (`riven_words`): 病毒伤害 finds Viral.
+      .filter((x) => !f || `${rivenStatNameEn(x)} ${rivenStatName(x)}`.toLowerCase().includes(f)
+        || (ff && typed.some(([w, ids]) => ids.includes(x.id) && w.includes(ff))))
       .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
         <div class="info"><div class="mn">${escHtml(rivenStatName(x))}</div>
         <div class="me">${x.spliced ? `<div>${escHtml(tr("spliced — at most one a card"))}</div>` : ""}${x.modeled ? "" : `<div>${escHtml(tr("not modeled — it rolls and it names the riven, but it adds no damage"))}</div>`}${

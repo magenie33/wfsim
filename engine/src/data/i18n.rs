@@ -257,6 +257,25 @@ mod tests {
         }
     }
 
+    /// THE CARD'S WORDING IS ONE STAT. DE's zh card prints a damage type's bonus
+    /// as `<name>伤害` (`+240% 病毒伤害`); a query reads longest word first, so
+    /// without that word it reads the name AND 伤害, Damage, as two bonuses.
+    #[test]
+    fn a_damage_stat_as_the_card_words_it_is_one_stat() {
+        let zh = &locales().iter().find(|(c, _)| c == "zh").expect("a zh locale").1;
+        let stats: std::collections::BTreeSet<String> = crate::data::mods::classes()
+            .into_iter()
+            .flat_map(|c| crate::build::rivens::pool(c).iter().map(|s| s.id.clone()))
+            .collect();
+        for (id, name) in &zh.damage_types {
+            if !stats.contains(id) {
+                continue;
+            }
+            let word = format!("{name}伤害");
+            assert_eq!(zh.riven_words.get(&word), Some(&vec![id.clone()]), "zh: riven word '{word}' must name {id} alone");
+        }
+    }
+
     /// EVERY ADMISSION IS TRANSLATED, in every locale — and a REASON is
     /// translated ONCE rather than once per set of numbers.
     ///

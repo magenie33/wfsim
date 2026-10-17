@@ -41,6 +41,28 @@ riven_words:
   对c: [damage_to_corpus]
   对i: [damage_to_infested]
   对o: [damage_to_orokin]
+  # THE CARD'S OWN WORDING, as DE's zh client prints the same stat on a mod
+  # (the zh export's levelStats; a riven's own line is not in the export).
+  # Without them 病毒伤害 read as Viral AND Damage, two bonuses.
+  病毒伤害: [viral]
+  毒素伤害: [toxin]
+  火焰伤害: [heat]
+  冰冻伤害: [cold]
+  电击伤害: [electricity]
+  磁力伤害: [magnetic]
+  辐射伤害: [radiation]
+  爆炸伤害: [blast]
+  腐蚀伤害: [corrosive]
+  毒气伤害: [gas]
+  冲击伤害: [impact]
+  穿刺伤害: [puncture]
+  切割伤害: [slash]
+  对grineer的伤害: [damage_to_grineer]
+  对corpus的伤害: [damage_to_corpus]
+  对infested的伤害: [damage_to_infested]
+  弹药最大值: [ammo_maximum]
+  投射物速度: [projectile_speed]
+  连击持续时间: [combo_duration]
 
 riven_query_words:
   malus: [负, "-"]
