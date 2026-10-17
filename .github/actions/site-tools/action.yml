@@ -97,3 +97,12 @@ runs:
         COS_BUCKET: ${{ inputs.cos_bucket }}
         COS_REGION: ${{ inputs.cos_region }}
       run: python scripts/build_cache.py pull
+    # THE DERIVED ART (build_site_app.py `ART_KEPT`), named by what it came from,
+    # so a build encodes only the art that changed. Saved anew whenever the
+    # builder or the cache moves; the newest one is what the next run starts from.
+    - if: inputs.build == 'true'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: target/art
+        key: site-art-${{ steps.digest.outputs.digest }}-${{ hashFiles('scripts/build_site_app.py') }}
+        restore-keys: site-art-

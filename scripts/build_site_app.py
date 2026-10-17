@@ -26,6 +26,7 @@ Prereqs: rustup target add wasm32-unknown-unknown;
 """
 
 import calendar
+import concurrent.futures
 import functools
 import hashlib
 import html as html_mod
@@ -34,6 +35,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import sys
 import time
 from pathlib import Path
@@ -847,10 +849,14 @@ def ship_edge_config() -> None:
 ART_MAX = 168
 ART_QUALITY = 80
 ART_SIG = "art-v1"
+# THE DERIVED ART, by what it was derived from. ci.yml's `site` job keeps it
+# between runs (`.github/actions/site-tools`).
+ART_KEPT = ROOT / "target" / "art"
 
 
-def derive_art(src: Path, dst: Path) -> Path:
-    """Downscale one cached image into the form the page asks for.
+def derive_art(src: Path, dst: Path) -> str:
+    """Downscale one cached image into the form the page asks for, and return
+    the key it is kept under.
 
     DERIVED HERE AND NOT IN THE CACHE. `web/cache/img/` holds what the CDN and
     the wiki served, byte for byte — it is the record of what was fetched, and
@@ -859,16 +865,17 @@ def derive_art(src: Path, dst: Path) -> Path:
     """
     from PIL import Image
 
-    # Same bargain as the OG cards: 855 encodes is most of a minute, and the
-    # output is a pure function of the bytes in and the settings above.
-    stat = src.stat()
+    # KEYED BY THE BYTES IN, never by an mtime: a fresh checkout or a restored
+    # cache stamps every file anew, and an mtime key re-encoded all of them on
+    # every CI run, nine minutes of a thirteen-minute build.
     key = hashlib.sha256(
-        f"{ART_SIG}\x00{ART_MAX}\x00{ART_QUALITY}\x00{stat.st_size}\x00{stat.st_mtime_ns}"
-        .encode("utf-8")).hexdigest()[:16]
-    sig = ROOT / "target" / "art-sigs" / (dst.stem + ".sig")
-    sig.parent.mkdir(parents=True, exist_ok=True)
-    if dst.exists() and sig.exists() and sig.read_text(encoding="utf-8").strip() == key:
-        return dst
+        f"{ART_SIG}\x00{ART_MAX}\x00{ART_QUALITY}\x00".encode("utf-8") + src.read_bytes()
+    ).hexdigest()[:24]
+    kept = ART_KEPT / f"{key}.webp"
+    if kept.exists():
+        if not dst.exists() or dst.read_bytes() != kept.read_bytes():
+            past_the_scanner(lambda: shutil.copyfile(kept, dst))
+        return key
     img = Image.open(src)
     img.load()
     # RGBA THROUGHOUT: 448 of these are palettized and 66 already carry alpha,
@@ -877,9 +884,14 @@ def derive_art(src: Path, dst: Path) -> Path:
     if img.mode != "RGBA":
         img = img.convert("RGBA")
     img.thumbnail((ART_MAX, ART_MAX), Image.LANCZOS)
-    past_the_scanner(lambda: img.save(dst, "WEBP", quality=ART_QUALITY, method=6))
-    sig.write_text(key, encoding="utf-8")
-    return dst
+    # TO A TEMPORARY NAME FIRST, so a run that dies mid-write keeps no half file
+    # under a key that says it is whole; a name per thread, as two names can
+    # hold one picture.
+    part = kept.with_name(f"{key}.{threading.get_ident()}.part")
+    past_the_scanner(lambda: img.save(part, "WEBP", quality=ART_QUALITY, method=6))
+    part.replace(kept)
+    past_the_scanner(lambda: shutil.copyfile(kept, dst))
+    return key
 
 
 def ship_pinned(kind: str, part: str) -> None:
@@ -967,7 +979,17 @@ def ship_art() -> None:
     # Shattering Justice — so `<stem>.webp` would silently draw one of each
     # pair on the other's card. `<name>.webp` also makes the reverse exact:
     # the native server strips the suffix and has the cached name back.
-    shipped = [derive_art(cache / name, out / (name + ".webp")) for name in sorted(want)]
+    ART_KEPT.mkdir(parents=True, exist_ok=True)
+    shipped = [out / (name + ".webp") for name in sorted(want)]
+    # PARALLEL: Pillow lets go of the GIL while it encodes, so a cold cache
+    # takes a core per image rather than one for all of them.
+    with concurrent.futures.ThreadPoolExecutor(os.cpu_count()) as pool:
+        keys = set(pool.map(derive_art, [cache / name for name in sorted(want)], shipped))
+    # What no image derives from any more leaves the kept set, so it stays the
+    # size of one build's art.
+    for old in ART_KEPT.iterdir():
+        if old.stem not in keys:
+            old.unlink()
     # A RENAMED ASSET LEAVES A GHOST otherwise: nothing here clears `site/img/`,
     # so the file the last build shipped stays, gets committed, and is deployed
     # for as long as nobody looks. The art directory is generated in full.

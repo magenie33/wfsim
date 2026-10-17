@@ -163,8 +163,8 @@ content-addressed and cacheable for ever.
 1. CI's `site` job builds `site/`, `desktop/payload/` and `mcp/engine.js` on
    Linux (`.github/actions/site-tools` names every tool, pinned; the gitignored
    `web/cache/` comes from the bucket, `scripts/build_cache.py`) and keeps
-   them as an artifact. The check jobs (`checks`, `page`, `parity`,
-   `page-rest`) run in parallel on that build.
+   them as an artifact. The check jobs (`checks`, `pipeline`, `page`,
+   `parity`, `page-rest`) run in parallel on that build.
 2. Once CI passes on main, `.github/workflows/ship.yml` lays that artifact over
    main — all but `site/board/`, the bots' — and runs `ship.py --built`:
    commit, push, stage and sign the channel, the engine library, the MCP

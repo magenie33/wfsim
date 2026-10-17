@@ -123,7 +123,7 @@ jobs:
   # this commit builds — the artefact Cloudflare will deploy — in PARALLEL, each
   # laying it the same way, so CI takes as long as the slowest of them: a check
   # goes in the job of its kind, and one that grows past the others is split.
-  # This one: the files, the door and the Postgres pipeline, no page.
+  # This one: the files, the door and the services' own checks, no page.
   checks:
     needs: site
     if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
@@ -221,6 +221,21 @@ jobs:
         run: node scripts/check_tasks.mjs
       - name: A computer on but idle is found by what the server keeps, and said once
         run: node scripts/check_idle_devices.mjs
+
+  # The board's pipeline and the factory against a real Postgres, no page.
+  pipeline:
+    needs: site
+    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/built-site
+        with:
+          built: ${{ needs.site.result == 'success' }}
+      # THE DATABASE THE CHECKS BELOW RUN THE WORKER ON: an in-memory Postgres
+      # (scripts/pg/test_db.mjs), and the client the pipeline's scripts use.
+      - name: The checks' Postgres
+        run: npm ci --silent --prefix scripts/pg
       - name: The board's pipeline reads and writes Postgres
         run: node scripts/check_pg_scripts.mjs
       - name: While work is short an account past its fair share waits, and only then
