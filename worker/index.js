@@ -39,6 +39,7 @@ import { noteFactoryCall } from "./factory_calls.js";
 import { contributionRoute, publishContributors } from "./contribution.js";
 import { meritRoute, mintMerit, settleMerit } from "./merit.js";
 import { clanRoute } from "./clan.js";
+import { noticesRoute, purgeNotices } from "./notices.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
 
@@ -770,7 +771,7 @@ export default {
         await (event.cron === WATCHDOG_CRON
           ? Promise.allSettled([watchdog(f.env), publishContributors(f.env), mintMerit(f.env), settleMerit(f.env)])
             .then((rs) => rs.forEach((r) => r.status === "rejected" && console.error("cron", r.reason)))
-          : Promise.all([rollupUsage(f.env), purgeDeleted(f.env)]));
+          : Promise.all([rollupUsage(f.env), purgeDeleted(f.env), purgeNotices(f.env)]));
       } finally {
         await f.close();
       }
@@ -794,7 +795,8 @@ export default {
 function accountWrite(request, path) {
   if (path.startsWith("/api/auth/")) return true;
   if (request.method === "GET" || request.method === "HEAD") return false;
-  return path === "/api/account" || path.startsWith("/api/account/") || (cloudPath(path) && !READ_ONLY_CLOUD.has(path));
+  return path === "/api/account" || path.startsWith("/api/account/") || path === "/api/notices/read"
+    || (cloudPath(path) && !READ_ONLY_CLOUD.has(path));
 }
 
 async function serve(request, env, ctx) {
@@ -835,6 +837,10 @@ async function serve(request, env, ctx) {
     }
     {
       const r = await clanRoute(request, env, path);
+      if (r) return r;
+    }
+    {
+      const r = await noticesRoute(request, env, path);
       if (r) return r;
     }
     if (path === "/api/merit" || path === "/api/account/merit") return meritRoute(request, env, path);

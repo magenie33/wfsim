@@ -425,16 +425,34 @@ ui:
   "Reminder saved": 提醒已保存
   "{what} is open — {left} left": "{what} 已开启，剩余 {left}"
   "{n} reminders fired": "{n} 条提醒已触发"
-  "This browser blocks notifications from this site; reminders show on the page only.": 这个浏览器屏蔽了本站的通知，提醒只会显示在页面上。
-  "Also as a system notification when this tab is in the background": 标签页在后台时也发系统通知
   "Reminders live in this browser and fire while WFSim is open in it, on any page.": 提醒保存在这个浏览器里，只要在这个浏览器里开着 WF模拟（任何页面都行）就会触发。
   "Your reminders": 我的提醒
   "{n} open now": "当前开启 {n} 个"
   "No reminders yet. Make one above, or with the bell on a row of a list.": 还没有提醒。在上面新建，或者点列表里某一行的铃铛。
   "Recently fired": 最近触发
-  "All reminders": 全部提醒
   "Pop up": 弹出
   "Off: kept under the bell only": 关闭后只记入铃铛，不弹出
+  # NOTIFICATIONS: what the site tells the reader (28-notices.js).
+  "Notifications": 通知
+  "All notifications": 全部通知
+  "Messages": 消息
+  "Nothing here yet.": 这里还没有内容。
+  "{n} new notifications": "{n} 条新通知"
+  "How you are told": 通知方式
+  "Card on the page": 页面卡片
+  "System notification": 系统通知
+  "Windows notification": Windows 通知
+  "Blocked by this browser": 已被这个浏览器屏蔽
+  "A Windows notification comes while this window is minimised or in the tray.": 窗口最小化或在托盘里时，会弹 Windows 通知。
+  "A system notification comes while this tab is in the background, if the browser allows it.": 标签页在后台时会发系统通知（需要浏览器允许）。
+  "Manage reminders": 管理提醒
+  "Your membership ends on {date}.": "你的会员将于 {date} 到期。"
+  "Your membership has ended.": 你的会员已到期。
+  "Your membership could not renew. Check the payment method.": 会员自动续费失败，请检查付款方式。
+  "{n} of your devices take no compute work until {when}.": "你有 {n} 台设备暂不领取计算任务，{when} 恢复。"
+  "One of your devices takes no compute work until {when}.": "你有一台设备暂不领取计算任务，{when} 恢复。"
+  "Your display name is hidden, so others see your username.": 你的显示名已被隐藏，其他人看到的是你的用户名。
+  "Your account will be deleted on {date}. You can still cancel.": "你的账号将于 {date} 删除，在此之前可以取消。"
   "ended": 已结束
   "Nothing has fired yet.": 还没有触发过提醒。
   "Arbitrations": 仲裁

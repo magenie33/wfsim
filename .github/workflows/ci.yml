@@ -203,6 +203,8 @@ jobs:
         run: node scripts/check_qq.mjs
       - name: A fissure is logged once with its planet, and each combination says how often it came
         run: node scripts/check_world_fissures.mjs
+      - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
+        run: node scripts/check_notices.mjs
       - name: A riven typed for fx reads every way a line is written, its side as the card says it
         run: node scripts/check_fx_lines.mjs
       - name: A riven appraisal is asked once and answered once

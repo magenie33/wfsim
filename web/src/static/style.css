@@ -2382,6 +2382,16 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rbell-panel .bench-rows{max-height:min(60vh,420px);overflow-y:auto}
 .rbell-panel .sim-empty{padding:10px 8px}
 .rbell-panel .rbell-all{justify-content:center;border-top:1px solid var(--line);margin-top:4px;padding-top:6px}
+.rbell-panel .nfilter{padding:0 8px 6px}
+/* A NOTIFICATION ROW is the board's row (`.brow`); one that links is a link
+   without looking like one, one still new carries a dot, and the account's
+   state reads as a warning. */
+a.nrow{color:inherit;text-decoration:none}
+.nrow.fresh .bname::before{content:"";display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;
+  background:var(--accent);vertical-align:1px}
+.nrow.warn{box-shadow:inset 3px 0 0 var(--warn,#c8a24a)}
+.notices-page .nfilter{margin-bottom:8px}
+.nset{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 /* On a phone the panel hangs off the bar, as the menu does: off the bell, a
    panel wider than the space left of it runs off the screen. */
 @media (max-width:768px){

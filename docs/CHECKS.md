@@ -74,14 +74,29 @@ often it is relayed, and `/api/world/names` hands back each combination with
 how many opened inside the window — an older one on the same node is not
 counted — when the last did, and the nodes and planets they name.
 
+## `check_notices`
+
+What the site tells a reader (`worker/notices.js`) on PGlite, no network: what
+is said to everyone reaches a reader with no account, from the edge's cache,
+and an expired one is not said; an account sees its own and everyone's, never
+another's; the read mark moves forward only and never past now, and a read from
+another site is refused; a feature's notice is written once however often it
+runs, and an unknown kind is refused; a device's cool-down is told with its end,
+a ban never; the purge, the export and the account's deletion each take what
+they should. It failed with an account's query widened to every account's and
+with bans counted as cool-downs.
+
 ## `check_reminder_notices`
 
-Fires stubbed reminders on a page in both widths. One firing is one card in
-the corner, below the bar and clear of Nona's button, and a count on the bell;
-five at once is one card that counts them; never more than three stand; a
-quiet reminder (its Pop up chip off) adds to the count and draws no card; the
-bell's panel lists what fired and reads it, clearing the cards; a card leaves
-on its own; on a phone the bell stays on the bar and its panel on screen.
+Fires stubbed reminders, and a stubbed message from the site, on a page in both
+widths. One firing is one card in the corner, below the bar and clear of Nona's
+button, and a count on the bell; five at once is one card that counts them;
+never more than three stand; a quiet reminder (its Pop up chip off) adds to the
+count and draws no card; a message from the site is a card once, and a
+browser's first answer only counts; the bell's panel lists everything and reads
+it, clearing the cards; `/notifications` lists them and its switches turn a
+category's card off; a card leaves on its own; on a phone the bell stays on the
+bar and its panel on screen.
 
 ## `check_fx_lines`
 

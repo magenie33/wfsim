@@ -54,6 +54,9 @@ tokio = { version = "1", features = ["sync"] }
 [target.'cfg(windows)'.dependencies]
 # The registry, for the one entry this program writes: starting with Windows.
 windows-sys = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation", "Win32_System_Registry"] }
+# A NOTIFICATION AS WINDOWS SHOWS ITS OWN (`notify.rs`): the page's reminders and
+# messages while the window is minimised or in the tray.
+tauri-winrt-notification = "0.8"
 
 [profile.release]
 # The shell ships as one file the reader downloads once; size is worth more

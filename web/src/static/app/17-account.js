@@ -17,13 +17,15 @@ const ACCOUNT_SLOTS = [
   { id: "email", name: "Email" },
 ];
 const AUTH_PATHS = { "/login": "login", "/signup": "signup", "/reset": "reset", "/account": "account",
-  "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan" };
+  "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan",
+  "/notifications": "notifications" };
 /// …and the pages an extension mounts (`EXT.pages`), routed the same way.
 const authKindOf = (path) => AUTH_PATHS[path.replace(/\/$/, "")] || extKindOf(path.replace(/\/$/, ""));
 /// EACH PAGE ITS OWN `app.view` KIND, so the way in can be read step by step;
 /// the settings pages carry `account_`, since `sync` alone could be any sync.
 const AUTH_VIEWS = { login: "login", signup: "signup", reset: "reset",
-  account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan" };
+  account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan",
+  notifications: "notifications" };
 const authView = (kind) => AUTH_VIEWS[kind] || (EXT.pages[kind] || {}).view || "other";
 /// The pages of a signed-in account; every other kind is a way in.
 const isSettings = (kind) => kind === "account" || kind === "sync" || !!(EXT.pages[kind] || {}).settings;
@@ -153,6 +155,8 @@ function loadAccount() {
     const kind = authKindOf(location.pathname);
     if (kind) renderAuthPage(kind);
     if (accountState.account) syncSoon(0);
+    // WHAT THE SITE SAYS depends on who is asking, so it is asked once that is known.
+    noticesLoad();
   })();
   return accountLoading;
 }
@@ -854,6 +858,11 @@ function renderAuthPage(kind) {
   // THE COMPUTE PAGE IS EVERYONE'S TOO: this browser's half needs no account.
   if (kind === "compute") {
     computeDraw(main);
+    return;
+  }
+  // EVERY READER'S: reminders and what is said to everyone need no account.
+  if (kind === "notifications") {
+    notificationsPage(main);
     return;
   }
   if (kind === "clan") {

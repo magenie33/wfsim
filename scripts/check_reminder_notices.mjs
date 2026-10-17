@@ -1,7 +1,8 @@
-// WHERE A FIRED REMINDER IS SAID (27-utility.js): kept under the bell on the
-// bar and counted there, said in a card in the corner that leaves on its own —
-// never a strip over the page. Many firing at once is one card, a quiet
-// reminder no card at all, and on a phone the bell stays on the bar.
+// WHERE THE SITE TELLS THE READER SOMETHING (49-notices.js): kept under the bell
+// on the bar and counted there, said in a card in the corner that leaves on its
+// own — never a strip over the page. Many at once is one card, a quiet reminder
+// no card at all, a message from the site a card once, and on a phone the bell
+// stays on the bar.
 //   node scripts/check_reminder_notices.mjs [shots=<dir>]   (WFSIM_BASE to test a server)
 import { openApp } from "./cdp.mjs";
 import { writeFileSync } from "node:fs";
@@ -20,9 +21,9 @@ const page = (body) => evaluate(`(async () => { ${body} })()`);
 
 await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
 // THE FIXTURE: reminders on an era no fissure holds, so the live feed never
-// matches one, and items made to match them.
+// matches one, and items made to match them; the site's answer is stubbed.
 await page(`
-  localStorage.removeItem(REMINDERS_KEY); localStorage.removeItem(REMINDERS_SEEN_KEY); localStorage.removeItem(REMINDERS_HITS_KEY);
+  for (const k of [REMINDERS_KEY, REMINDERS_SEEN_KEY, REMINDERS_HITS_KEY, NOTICES_READ_KEY, NOTICES_SAID_KEY, NOTICES_STATE_SEEN_KEY, NOTIFY_KEY]) localStorage.removeItem(k);
   history.pushState({}, '', '/weapons'); route();
   const make = (tier, quiet) => { const r = reminderAdd('fissure', { tier }, {}); if (quiet) reminderQuiet(r.id); };
   ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'].forEach((t) => make('Check' + t, false));
@@ -35,6 +36,11 @@ await page(`
       started_at_ms: at + 5000, ends_at_ms: at + 3600000 })) };
     reminderCheck();
   };
+  window.__said = [];
+  const real = window.fetch;
+  window.fetch = (u, o) => String(u).includes('/api/notices/everyone')
+    ? Promise.resolve(new Response(JSON.stringify({ ok: true, notices: window.__said })))
+    : real(u, o);
   renderUtility();
 `);
 
@@ -49,17 +55,17 @@ const state = () => page(`
     cardsInView: cards.every((c) => { const r = c.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; }),
     cardsClearOfNona: (() => { const f = document.querySelector('.nona-fab'); if (!f || !f.offsetParent) return true;
       const n = f.getBoundingClientRect();
-      return cards.every((c) => { const r = c.getBoundingClientRect(); return r.bottom <= n.top || r.right <= n.left || r.left >= n.right; }); })(),
-    oldBanner: !!document.getElementById('reminder-note') };
+      return cards.every((c) => { const r = c.getBoundingClientRect(); return r.bottom <= n.top || r.right <= n.left || r.left >= n.right; }); })() };
 `);
+const clearCards = () => page(`if (document.getElementById('rem-toasts')) document.getElementById('rem-toasts').replaceChildren();`);
 
 let s = await state();
-check("the bell is on the bar once the reader has a reminder", s.bellShown && s.bellInBar, JSON.stringify(s));
+check("the bell is on the bar", s.bellShown && s.bellInBar, JSON.stringify(s));
 await page(`__fire(['T1'])`);
 s = await state();
 check("one reminder firing is one card in the corner, and counted on the bell",
   s.cards.length === 1 && s.count === 1 && s.cardsBelowBar && s.cardsInView, JSON.stringify(s));
-check("…and nothing is drawn over the top of the page, nor over Nona's button", !s.oldBanner && s.cardsClearOfNona, JSON.stringify(s));
+check("…below the bar and clear of Nona's button", s.cardsBelowBar && s.cardsClearOfNona, JSON.stringify(s));
 await shot("desktop-one");
 await page(`__fire(['T2', 'T3', 'T4', 'T5', 'T6'])`);
 s = await state();
@@ -71,18 +77,58 @@ check("a quiet reminder fires into the bell only", s.cards.length === 2 && s.cou
 for (const t of ["T1", "T2", "T3"]) await page(`__fire(['${t}'])`);
 s = await state();
 check("at most three cards stand at once", s.cards.length <= 3, JSON.stringify(s));
+await clearCards();
+
+// WHAT THE SITE SAYS: the first answer a browser gets only counts; a message
+// made after it is a card, once.
+const old = new Date(Date.now() - 3600_000).toISOString();
+await page(`window.__said = [{ id: 1, kind: 'announcement', audience: 'everyone', text: { en: 'Old news', zh: '旧公告' }, created_at: '${old}' }];
+  await noticesLoad();`);
+s = await state();
+check("a browser's first answer from the site is counted, not carded", s.cards.length === 0 && s.count === 11, JSON.stringify(s));
+await page(`window.__said = [{ id: 2, kind: 'announcement', audience: 'everyone', text: { en: 'Maintenance tonight', zh: '今晚维护' }, created_at: new Date().toISOString(), link: '/support' }, ...window.__said];
+  await noticesLoad();`);
+s = await state();
+check("…and a message made after it is a card", s.cards.length === 1 && s.cards[0] === "今晚维护" && s.count === 12, JSON.stringify(s));
+await page(`await noticesLoad();`);
+s = await state();
+check("…once, however often the site is asked", s.cards.length === 1, JSON.stringify(s));
+await clearCards();
 
 const panel = await page(`
   document.getElementById('rem-bell-btn').click(); await new Promise((r) => setTimeout(r, 200));
   const p = document.getElementById('rem-bell-panel'), r = p.getBoundingClientRect();
-  return { open: r.height > 0, rows: p.querySelectorAll('.brow').length, inView: r.left >= 0 && r.right <= innerWidth,
-    count: document.getElementById('rem-bell-count').hidden, all: !!p.querySelector('a[href="/utility/reminders"]') };
+  const rows = [...p.querySelectorAll('.nrow')];
+  return { open: r.height > 0, rows: rows.length, fresh: rows.filter((x) => x.classList.contains('fresh')).length,
+    first: rows[0] && rows[0].textContent.trim().slice(0, 10), inView: r.left >= 0 && r.right <= innerWidth,
+    count: document.getElementById('rem-bell-count').hidden, all: !!p.querySelector('a[href="/notifications"]') };
 `);
-check("the bell opens on what fired, newest first, with the way to every reminder", panel.open && panel.rows === 8 && panel.all && panel.inView,
-  JSON.stringify(panel));
-check("…and opening it reads them, the cards with them", panel.count === true && (await state()).cards.length === 0);
+check("the bell opens on everything, newest first, with the way to all of it", panel.open && panel.rows === 8 && panel.all && panel.inView
+  && panel.first.startsWith("今晚维护"), JSON.stringify(panel));
+check("…opening it reads them, and the rows still show what was new", panel.count === true && panel.fresh === 8, JSON.stringify(panel));
+const filtered = await page(`
+  document.querySelector('#rem-bell-panel [data-nfilter="messages"]').click(); await new Promise((r) => setTimeout(r, 100));
+  const n = document.querySelectorAll('#rem-bell-panel .nrow').length;
+  return { n, open: document.getElementById('rem-bell').classList.contains('open') };
+`);
+check("…and its filter shows the site's messages alone, the panel still open", filtered.n === 2 && filtered.open, JSON.stringify(filtered));
 await shot("desktop-panel");
-await page(`document.body.click()`);
+await page(`document.body.click(); noticesFilter = 'all';`);
+
+// /notifications: the list, and the switches.
+const pg = await page(`
+  history.pushState({}, '', '/notifications'); route(); await new Promise((r) => setTimeout(r, 400));
+  const rows = document.querySelectorAll('#auth-page .nrow').length;
+  document.querySelector('[data-nset="messages:card"]').click(); await new Promise((r) => setTimeout(r, 100));
+  return { rows, cardOff: notifyOn('messages', 'card') === false, chipOff: !document.querySelector('[data-nset="messages:card"]').classList.contains('sel') };
+`);
+check("/notifications lists everything", pg.rows === 12, JSON.stringify(pg));
+check("…and turns a category's cards off", pg.cardOff && pg.chipOff, JSON.stringify(pg));
+await shot("notifications-page");
+await page(`window.__said = [{ id: 3, kind: 'announcement', audience: 'everyone', text: { en: 'Quiet one', zh: '静音的公告' }, created_at: new Date().toISOString() }, ...window.__said];
+  history.pushState({}, '', '/weapons'); route(); await new Promise((r) => setTimeout(r, 300)); await noticesLoad();`);
+s = await state();
+check("…after which a message is counted and not carded", s.cards.length === 0 && s.count === 1, JSON.stringify(s));
 
 // THE SWITCH on the Reminders tab: off is quiet, and quiet is what fires no card.
 const sw = await page(`
@@ -123,4 +169,4 @@ const phonePanel = await page(`
 check("…and its panel opens on screen", phonePanel.open && phonePanel.inView, JSON.stringify(phonePanel));
 await shot("phone-panel");
 
-await app.finish("a fired reminder is a card in the corner and a count on the bell");
+await app.finish("what the site tells the reader is a card in the corner and a count on the bell");

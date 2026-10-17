@@ -118,8 +118,10 @@ downloaded and never restarted into is fetched again next launch.
 
 **There is no installer**. The whole app is an
 `include_bytes!` inside the executable, so the file cargo produces is the
-product: double-click to run, delete to uninstall, no registry, no
-administrator prompt. An NSIS bundle was worth 9 MB of compression and a Start
+product: double-click to run, delete to uninstall, no administrator prompt,
+and in the registry only two entries in the reader's own hive — the startup
+entry when asked for, and the name notifications go under (§"Notifications") —
+both removed by the uninstall. An NSIS bundle was worth 9 MB of compression and a Start
 menu shortcut, and cost the **bundler** — the source of both of this project's
 "builds cleanly, ships the wrong thing" failures, below. Portability changes
 nothing about updates: the updater's target is `%LOCALAPPDATA%`, which has
@@ -129,6 +131,22 @@ The page-side updater lives in `app.js` (`mountDesktopUpdater`), not in the
 shell's injected script, for the same reason: an updater compiled into the shell
 cannot fix its own bugs, and every reader would be frozen on the broken version.
 `app.js` is the thing updates replace.
+
+## Notifications
+
+**THE PAGE DECIDES; THE SHELL ONLY SHOWS.** A reminder or a message the page
+would say in a system notification (docs/UI.md §"Notifications") goes to the
+`notify` command instead of the browser's, since the window it would come from
+is minimised or in the tray, where the page still runs. The shell shows it as
+Windows shows its own (`notify.rs`) and, clicked, brings the window back and
+sends the page to the path it names — a path on the site and nothing else.
+
+A portable program has no shortcut for Windows to learn its name and icon
+from, so the first notification of a run writes them under
+`HKCU\Software\Classes\AppUserModelId\app.wfsim.desktop`, the icon beside the
+app's data; without it each notification says it came from PowerShell. The
+uninstall removes the key. A shell without the command is an older one: the
+page falls back to the browser's notification, which the webview may not show.
 
 ## The channel
 
