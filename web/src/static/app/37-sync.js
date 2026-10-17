@@ -390,7 +390,7 @@ function syncConflict(st, c, cf, settled) {
   const mine = at >= 0 ? ps[at] : null;
   const domain = syncDomain(c.list);
   if (domain === "reminders") {
-    // A REMINDER IS NEVER EDITED, only made and deleted: the account's state is it.
+    // A REMINDER'S ONE EDIT is whether it is quiet: the account's state is it.
     if (cf.body === null) { delete st.known[c.id]; if (at >= 0) ps.splice(at, 1); }
     else { st.known[c.id] = { list: cf.list, sig: syncSig(cf.body), at: Date.now(), v: cf.version }; if (at >= 0) ps[at] = cf.body; else ps.push(cf.body); }
     settled.ids.add(c.id);

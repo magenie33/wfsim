@@ -2124,11 +2124,11 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
   .inline-form,.kvs .kv{grid-template-columns:1fr}
 }
 .tbmore{position:relative}
-.tbmore-panel{display:none;position:absolute;top:calc(100% + 10px);right:0;z-index:60;
+.tbmore-panel,.rbell-panel{display:none;position:absolute;top:calc(100% + 10px);right:0;z-index:60;
   min-width:190px;flex-direction:column;gap:2px;padding:6px;
   background:var(--surface);border:1px solid var(--line);border-radius:10px;
   box-shadow:0 8px 28px rgba(0,0,0,.35)}
-.tbmore.open .tbmore-panel{display:flex}
+.tbmore.open .tbmore-panel,.rbell.open .rbell-panel{display:flex}
 .tbmore-btn{font-size:15px;line-height:1}
 /* A MARK WORKS IN A ROW OF MARKS; A PANEL IS A LIST, AND A LIST HAS NAMES.
    The 28px icon rule above is `.topbar-inner .x-link` (0,2,0), so winning it
@@ -2366,9 +2366,49 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .frem.frem-new{margin-left:0}
 @media(max-width:520px){.frem{margin-left:0}}
 #utility-reminders .wgroup-h{margin-top:20px}
-/* UNREAD REMINDERS, on the Utility link and its Reminders tab. */
+/* UNREAD REMINDERS, on the bell and the Reminders tab. */
 .tbadge{display:inline-block;min-width:16px;margin-left:5px;padding:0 4px;border-radius:8px;
   background:var(--accent);color:var(--surface);font-size:10.5px;font-weight:600;line-height:16px;text-align:center}
+
+/* THE BELL, a 28px mark on the bar like the compute ring, its count pinned to
+   its corner so a number arriving never moves the bar. Its panel is the
+   topbar menu's (`.tbmore-panel`), wide enough for a row of the list. */
+.topbar-inner>.rbell{order:4;position:relative}
+.rbell[hidden]{display:none}
+.topbar-inner .rbell-btn{position:relative;width:28px;height:28px;padding:0;justify-content:center}
+.rbell-btn .tbadge{position:absolute;top:-5px;right:-7px;margin:0}
+.rbell-panel{width:min(360px,calc(100vw - 32px))}
+.rbell-h{padding:4px 8px 6px;font-size:12px;font-weight:600;color:var(--text-2)}
+.rbell-panel .bench-rows{max-height:min(60vh,420px);overflow-y:auto}
+.rbell-panel .sim-empty{padding:10px 8px}
+.rbell-panel .rbell-all{justify-content:center;border-top:1px solid var(--line);margin-top:4px;padding-top:6px}
+/* On a phone the panel hangs off the bar, as the menu does: off the bell, a
+   panel wider than the space left of it runs off the screen. */
+@media (max-width:768px){
+  .topbar-inner>.rbell{position:static}
+  .rbell-panel{top:calc(100% + 8px);right:18px}
+}
+
+/* A REMINDER AS IT FIRES: a card in the corner that leaves on its own, never a
+   strip over the page — the desktop update notice's card (`.dtup`). It stands
+   above Nona's button (`.nona-fab`, 44px at 18px), and above the update notice
+   when that is there too. */
+.rtoasts{position:fixed;right:18px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:9990;
+  display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+body:has(.dtup:not([hidden])) .rtoasts{bottom:130px}
+.rtoast{pointer-events:auto;display:flex;align-items:flex-start;gap:10px;width:min(360px,calc(100vw - 32px));
+  padding:10px 8px 10px 12px;border-radius:10px;background:var(--surface);
+  border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));
+  box-shadow:0 8px 28px rgba(0,0,0,.35);font-size:13px;color:var(--text);animation:rtoastin .18s ease-out}
+.rtoast-ic{flex:0 0 auto;color:var(--accent);padding-top:1px}
+.rtoast-b{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rtoast-t{font-weight:600}
+.rtoast-s{color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
+.rtoast-s a{color:var(--accent)}
+.rtoast-x{flex:0 0 auto;background:none;border:0;color:var(--text-2);font-size:16px;line-height:1;padding:0 4px;cursor:pointer}
+.rtoast-x:hover{color:var(--text)}
+@keyframes rtoastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){ .rtoast{animation:none} }
 
 /* THE FIRST PAINT. Everything else is hidden until the wasm has answered, so
    without this the page is blank for as long as that takes — and a blank page
