@@ -1943,6 +1943,7 @@ ui:
   "fx weapon [ruler] each stat with its number: the gain of your own riven — the volunteers' devices search its best build together.": "fx 武器名 [基准] 每条词条加卡上的数值：算你自己的裂罅收益，志愿者的设备会一起搜出最佳配装。"
   "Each stat needs the number on the card, like {e}. (・_・;)": "每条词条后面要跟上卡上的数值，比如 {e}。(・_・;)"
   "“{word}” names more than one stat; give each its own number. (・_・;)": "「{word}」包含不止一条词条，每条要分开写各自的数值。(・_・;)"
+  "“{word}” says positive and negative at once; give one. (・_・;)": "「{word}」又说是正面又说是负面，只能选一个。(・_・;)"
   "A riven has two or three positive stats and at most one negative. (・_・;)": "裂罅是两到三条正面词条，最多一条负面。(・_・;)"
   "This riven is not a legal one: {why} (＞﹏＜)": "这不是一张合法的裂罅：{why} (＞﹏＜)"
   "{stat} {value} is outside this weapon's range ({lo}–{hi}); the card may be from before a disposition change. (￣^￣)": "{stat} {value} 超出了这把武器裂罅的范围（{lo}–{hi}）；可能是倾向调整之前的旧卡。(￣^￣)"

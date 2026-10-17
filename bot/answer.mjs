@@ -13,6 +13,45 @@ const squash = (s) => String(s || "").normalize("NFKC").toLowerCase().replace(/\
 /// "mk-1盗贼" and "MK1 盗贼" are both MK1-盗贼.
 const nameFold = (s) => squash(s).replace(/[-_.·・'’]/g, "");
 
+/// A RIVEN'S LINES AS TYPED, `暴伤160.9 多重+120.7 负弹匣43.9 变焦-50`, spaces
+/// already squashed: `{ lines: [{ id, value, malus, word }] }` or `{ error, word }`.
+///
+/// WHICH SIDE A LINE IS ON is said two ways, and both are read. A leading 正 or
+/// 负 says it outright; the number's SIGN says it against the stat's own
+/// direction, as the card prints it — 变焦-50 is the malus, 后坐力-50 the bonus,
+/// recoil being better down. Neither is a bonus; the two disagreeing is an error.
+export function readRivenLines(left, pool, locales, rivenQuery) {
+  const LINE = /([+\-−]?)([^\d.+\-−%]+)([+\-−]?)(\d+(?:\.\d+)?)%?/gy;
+  const lines = [];
+  let at = 0;
+  for (const m of left.matchAll(LINE)) {
+    at = m.index + m[0].length;
+    let [, before, word, sign, num] = m;
+    let said = before ? (before === "+" ? "bonus" : "malus") : null;
+    const lead = word.match(/^(正|负)/);
+    if (lead) {
+      const role = lead[1] === "正" ? "bonus" : "malus";
+      if (said && said !== role) return { error: "contradicts", word: m[0] };
+      said = role;
+      word = word.slice(1);
+    }
+    const q = rivenQuery(pool, locales, word);
+    if (q.unread.length) return { error: "unread", word: q.unread[0] };
+    if (q.bonuses.length !== 1 || q.malus) return { error: "ambiguous", word };
+    const stat = pool.find((x) => x.id === q.bonuses[0]);
+    const value = Number(num);
+    if (sign) {
+      const signed = sign === "+" ? value : -value;
+      const role = (signed > 0) === (stat.base > 0) ? "bonus" : "malus";
+      if (said && said !== role) return { error: "contradicts", word: m[0] };
+      said = role;
+    }
+    lines.push({ id: stat.id, value, malus: said === "malus", word });
+  }
+  if (!lines.length || at !== left.length) return { error: "format", word: left.slice(at) };
+  return { lines };
+}
+
 export function makeAnswer({ run, meta, zh, headless, host }) {
   const t = (s, p = {}) => Object.entries(p).reduce((x, [k, v]) => x.split(`{${k}}`).join(String(v)),
     (zh.ui && zh.ui[s]) || s);
@@ -188,17 +227,13 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const ruler = named.ruler || defaultRuler();
     const cls = hit.w.riven_class;
     const pool = (meta.riven_stats || {})[cls] || [];
-    const pairs = [...named.left.matchAll(/([^\d.+%]+?)\+?(-?\d+(?:\.\d+)?)%?/g)].map((x) => ({ word: x[1], value: Math.abs(Number(x[2])) }));
-    const tail = named.left.replace(/([^\d.+%]+?)\+?(-?\d+(?:\.\d+)?)%?/g, "");
-    if (!pairs.length || tail) return t("Each stat needs the number on the card, like {e}. (・_・;)", { e: example });
-    const bonuses = [], maluses = [];
-    for (const p of pairs) {
-      const q = headless.rivenQuery(pool, [zh], p.word);
-      if (q.unread.length) return t(UNREAD, { word: q.unread[0] });
-      if (q.malus && q.malus !== "any" && q.malus !== "none" && !q.bonuses.length) maluses.push({ id: q.malus, value: p.value, word: p.word });
-      else if (q.bonuses.length === 1 && !q.malus) bonuses.push({ id: q.bonuses[0], value: p.value, word: p.word });
-      else return t("“{word}” names more than one stat; give each its own number. (・_・;)", { word: p.word });
-    }
+    const read = readRivenLines(named.left, pool, [zh], headless.rivenQuery);
+    if (read.error === "format") return t("Each stat needs the number on the card, like {e}. (・_・;)", { e: example });
+    if (read.error === "unread") return t(UNREAD, { word: read.word });
+    if (read.error === "ambiguous") return t("“{word}” names more than one stat; give each its own number. (・_・;)", { word: read.word });
+    if (read.error === "contradicts") return t("“{word}” says positive and negative at once; give one. (・_・;)", { word: read.word });
+    const bonuses = read.lines.filter((x) => !x.malus);
+    const maluses = read.lines.filter((x) => x.malus);
     if (bonuses.length < 2 || bonuses.length > 3 || maluses.length > 1) return t("A riven has two or three positive stats and at most one negative. (・_・;)");
     const rank = (meta.riven_rules || {}).max_rank ?? 8;
     const base = await host.api("/api/riven", { weapon: hit.w.id, rank, polarity: "madurai",

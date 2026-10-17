@@ -66,6 +66,13 @@ The QQ door (`worker/qq.js`) with no network: the address check signs QQ's
 published example, a signed event is kept and a changed one refused, and the
 bot server's pull hands each message out once until it is answered.
 
+## `check_fx_lines`
+
+The bot's `fx` reader with a fixture pool, no network: a line reads with or
+without spaces, `+` or 正, and its side follows 正/负 or the number's sign against
+the stat's direction (变焦-50 a malus, 后坐力-50 a bonus); the two disagreeing, a
+missing number or an unknown word is an error rather than a guess.
+
 ## `check_appraise`
 
 Riven appraisal's door (`worker/appraise.js`) with no network: only a bot opens

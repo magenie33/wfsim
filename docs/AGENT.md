@@ -360,7 +360,10 @@ the optimizer, run by the community's computers or in the browser of whoever
 opens the link — never by re-scoring known builds, which is the board's
 question (docs/BOARD.md §"The Riven Analyst").
 
-1. A chat's bot reads the card (`fx` in Chinese chats), checks it with the
+1. A chat's bot reads the card (`fx` in Chinese chats: `fx <weapon> [ruler]`
+   then each stat and its number, `readRivenLines` in `bot/answer.mjs`; a
+   line's side is its 正/负 or its number's sign against the stat's direction,
+   so 变焦-50 is the malus and 后坐力-50 a bonus), checks it with the
    engine's own riven rules and opens an appraisal at `/api/appraise/new`
    (`worker/appraise.js`): weapon, ruler, the card's rolls, and the channel's
    own note of where to answer, which nothing else reads.
