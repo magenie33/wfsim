@@ -119,6 +119,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // is a channel of its own rather than a term folded into `fr`.
                 EvoEffect::BaseDamageBonus(v) => base.evo_base_damage_bonus += v,
                 EvoEffect::InitialCombo(v) => base.evo_initial_combo += v,
+                EvoEffect::MeleeComboDuration(v) => base.evo_melee_combo_duration += v,
+                EvoEffect::ComboCountChance(v) => base.evo_combo_count_chance += v,
+                EvoEffect::HeavyAttackEfficiency(v) => base.evo_heavy_attack_efficiency += v,
                 EvoEffect::ComboCountOnSlamHit(v) => base.evo_combo_count_on_slam_hit += v,
                 EvoEffect::MeleeRange(v) => base.evo_melee_range_m += v,
                 EvoEffect::ComboCountOnStatusHit { status, value } => {

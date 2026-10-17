@@ -70,6 +70,9 @@ impl EvolutionDef {
                 }),
                 EvoEffect::BaseDamageBonus(_)
                 | EvoEffect::InitialCombo(_)
+                | EvoEffect::MeleeComboDuration(_)
+                | EvoEffect::ComboCountChance(_)
+                | EvoEffect::HeavyAttackEfficiency(_)
                 | EvoEffect::ComboCountOnSlamHit(_)
                 | EvoEffect::ComboCountOnStatusHit { .. }
                 | EvoEffect::SpectralDaggers(_)

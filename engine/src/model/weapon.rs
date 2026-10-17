@@ -1156,6 +1156,12 @@ pub struct WeaponBase {
     pub evo_base_damage_bonus: f64,
     /// Points the melee combo counter opens at, from an evolution.
     pub evo_initial_combo: f64,
+    /// Seconds an evolution adds to the melee combo's clock.
+    pub evo_melee_combo_duration: f64,
+    /// Additional combo count chance from an evolution.
+    pub evo_combo_count_chance: f64,
+    /// Heavy attack efficiency from an evolution.
+    pub evo_heavy_attack_efficiency: f64,
     /// Combo points per body a slam reached, from an evolution (Shockwave
     /// Synergy). Zero everywhere else.
     pub evo_combo_count_on_slam_hit: f64,

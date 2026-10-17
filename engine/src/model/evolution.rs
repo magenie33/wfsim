@@ -22,6 +22,15 @@ pub enum EvoEffect {
     BaseDamageBonus(f64),
     /// POINTS THE MELEE COMBO COUNTER OPENS AT and returns to.
     InitialCombo(f64),
+    /// SECONDS ADDED TO THE MELEE COMBO'S CLOCK, the bucket Body Count fills
+    /// (`ModEffect::MeleeComboDuration`).
+    MeleeComboDuration(f64),
+    /// ADDITIONAL COMBO COUNT CHANCE, Quickening's sum
+    /// (`ModEffect::ComboCountChance`).
+    ComboCountChance(f64),
+    /// HEAVY ATTACK EFFICIENCY, Reflex Coil's sum, capped with it at 90%
+    /// (`ModEffect::HeavyAttackEfficiency`).
+    HeavyAttackEfficiency(f64),
     /// COMBO POINTS PER BODY A SLAM REACHED (Shockwave Synergy's `+4`).
     ///
     /// THE ONE THING THAT EARNS COMBO ON A HEAVY MODE. A heavy attack adds
