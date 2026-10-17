@@ -26,5 +26,17 @@ check("a riven card says it is ready", await ready());
 check("…draws the riven-free leader and two rivens", (await evaluate(`document.querySelectorAll("#card-page .lc-box").length`)) === 3);
 const chips = await evaluate(`[...document.querySelectorAll("#card-page [data-riven-card] .sb-chip")].map((c) => c.textContent)`);
 check("…and every riven stat carries its value, not only its name", chips.length >= 6 && chips.every((t) => /\d+(\.\d+)?%|x\d/.test(t)), JSON.stringify(chips.slice(0, 4)));
+// RED IS THE MALUS, not a minus: recoil's malus prints +51% and its bonus -51%.
+const red = await evaluate(`(async () => {
+  const spec = { rank: 8, polarity: "madurai", bonuses: [{ id: "multishot", roll: 1 }, { id: "weapon_recoil", roll: 1 }],
+    malus: { id: "zoom", roll: 1 } };
+  rivenSpecCardHtml(weaponInfo("torid"), { name: "t", spec });
+  await new Promise((r) => setTimeout(r, 2500));
+  const box = document.createElement("div");
+  box.innerHTML = rivenSpecCardHtml(weaponInfo("torid"), { name: "t", spec });
+  return [...box.querySelectorAll(".sb-chip")].map((c) => (c.classList.contains("neg") ? "red " : "") + c.textContent);
+})()`);
+check("…and the red one is the malus, whatever its sign", red.length === 3 && red.filter((t) => t.startsWith("red ")).length === 1
+  && /-.*%/.test(red[2]) && red[2].startsWith("red ") && /-/.test(red[1]) && !red[1].startsWith("red "), JSON.stringify(red));
 
 await finish("the long image is ready when it says so");

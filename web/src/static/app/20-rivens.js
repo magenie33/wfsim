@@ -600,7 +600,9 @@ function renderRivenCard() {
     }
     if (unit) {
       unit.textContent = tf(s.text);
-      unit.className = `rv-unit${s.value < 0 ? " neg" : ""}${s.modeled ? "" : " unmodeled"}`;
+      // RED IS THE MALUS SLOT, never a minus: recoil's bonus prints -50% and its
+      // malus +50%.
+      unit.className = `rv-unit${s.slot === "malus" ? " neg" : ""}${s.modeled ? "" : " unmodeled"}`;
     }
     const roll = box.querySelector(`.rv-roll[data-slot="${s.slot}"]`);
     if (roll) roll.value = s.roll;
@@ -624,7 +626,7 @@ function renderRivenCard() {
       + rivenKinResolved.filter((k) => k && k.r && k.r.ok && !(k.r.illegal || []).length).map((k) =>
         `<div class="rv-kin"><span class="rv-meta">${escHtml(kinName(k.w))} · ${escHtml(tr("disposition"))} ${
           Number(k.r.disposition).toFixed(2)}</span><div class="rv-all-s">${(k.r.stats || []).map((x) =>
-          `<span class="rv-chip ${x.value < 0 ? "neg" : ""}">${escHtml(tf(x.text))}</span>`).join("")}</div></div>`).join("");
+          `<span class="rv-chip ${x.slot === "malus" ? "neg" : ""}">${escHtml(tf(x.text))}</span>`).join("")}</div></div>`).join("");
 }
 
 // Rivens are a PRESET COLLECTION, on the same bar as builds and the

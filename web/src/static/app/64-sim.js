@@ -185,7 +185,8 @@ const rivenCardStats = new Map();
 const rivenCardPending = new Set();
 const rivenCardBody = (name, got) => rivenCardHead(name, got.generated)
   + `<div class="sb-chips">${rivenCardChips(got.stats)}</div>`;
-const rivenCardChips = (stats) => stats.map((x) => `<span class="sb-chip${x.value < 0 ? " neg" : ""}"><span>${
+/// RED IS THE MALUS, by its slot: a sign says nothing on recoil, whose bonus is a minus.
+const rivenCardChips = (stats) => stats.map((x) => `<span class="sb-chip${x.malus ? " neg" : ""}"><span>${
   escHtml(x.label)}</span>${x.roll != null ? `<span class="rk">×${Number(x.roll).toFixed(2)}</span>` : ""}</span>`).join("");
 
 /// THE RIVEN SECTION OF A BUILD CARD. Until the engine has answered it names
@@ -203,13 +204,13 @@ function rivenSpecCardHtml(w, r) {
     const sp = r.spec;
     const rows = (sp.bonuses || []).concat(sp.malus ? [sp.malus] : []).filter((x) => x && x.id);
     const stats = rows.map((x, i) => ({ label: (i < (sp.bonuses || []).length ? "+" : "−")
-      + (rivenStat(x.id) ? rivenStatName(rivenStat(x.id)) : x.id), roll: x.roll, value: i < (sp.bonuses || []).length ? 1 : -1 }));
+      + (rivenStat(x.id) ? rivenStatName(rivenStat(x.id)) : x.id), roll: x.roll, malus: i >= (sp.bonuses || []).length }));
     got = { stats, generated: "" };
     rivenCardStats.set(key, got);
     const ask = api("/api/riven", { weapon: w.id, ...sp }).then((a) => {
       if (!a || a.ok === false) return;
       const done = { generated: a.name || "",
-        stats: (a.stats || []).map((x) => ({ label: tf(x.text), roll: x.roll, value: x.value })) };
+        stats: (a.stats || []).map((x) => ({ label: tf(x.text), roll: x.roll, malus: x.slot === "malus" })) };
       rivenCardStats.set(key, done);
       document.querySelectorAll("[data-riven-card]").forEach((el) => {
         if (el.dataset.rivenCard === key) el.innerHTML = rivenCardBody(el.dataset.rivenName, done);
