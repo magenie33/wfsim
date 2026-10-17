@@ -1,0 +1,16 @@
+id: exothermic
+name: "Exothermic"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: inferno
+internal_name: /Lotus/Powersuits/Ember/WorldOnFireAugmentCard
+description: "Inferno Augment: Enemies killed while under the effect of Inferno have a 15% chance to drop an energy orb."
+
+effects:
+  - kind: unmodelled
+    text: "Inferno Augment: Enemies killed while under the effect of Inferno have a 15% chance to drop an energy orb."
+
+source:
+  url: https://wiki.warframe.com/w/Exothermic

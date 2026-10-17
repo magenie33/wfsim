@@ -1,0 +1,16 @@
+id: safeguard
+name: "Safeguard"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: warding_halo
+internal_name: /Lotus/Powersuits/Nezha/NezhaSashAugmentCard
+description: "Warding Halo Augment: Can now be cast on allies with 50% effectiveness."
+
+effects:
+  - kind: unmodelled
+    text: "Warding Halo Augment: Can now be cast on allies with 50% effectiveness."
+
+source:
+  url: https://wiki.warframe.com/w/Safeguard

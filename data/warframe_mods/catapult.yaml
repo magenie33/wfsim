@@ -1,0 +1,17 @@
+id: catapult
+name: "Catapult"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: pulverize
+internal_name: /Lotus/Powersuits/Devourer/DevourerBowlAugmentCard
+description: "Pulverize Augment:  to launch Grendel in your aim direction. Costs 5. Crouch to slow down."
+
+effects:
+  - kind: unmodelled
+    text: "Pulverize Augment:  to launch Grendel in your aim direction. Costs 5. Crouch to slow down."
+
+source:
+  url: https://wiki.warframe.com/w/Catapult

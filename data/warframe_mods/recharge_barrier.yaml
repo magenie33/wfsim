@@ -1,0 +1,17 @@
+id: recharge_barrier
+name: "Recharge Barrier"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: recharge_barrier
+augments: electric_shield
+internal_name: /Lotus/Powersuits/Volt/ShieldPvPAugmentCard
+description: "Electric Shield Augment: Allies that pass through have 35% Shields restored."
+
+effects:
+  - kind: unmodelled
+    text: "Electric Shield Augment: Allies that pass through have 35% Shields restored."
+
+source:
+  url: https://wiki.warframe.com/w/Recharge_Barrier

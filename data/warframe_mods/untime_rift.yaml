@@ -1,0 +1,16 @@
+id: untime_rift
+name: "Untime Rift"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: the_vast_untime
+internal_name: /Lotus/Powersuits/BrokenFrame/BrokenDestructAugmentCard
+description: "The Vast Untime Augment: Creates a Rift that connects to enemies suffering from  Void Status Effect within 15m, doubling debuffs applied by The Vast Untime and maintaining  Void Status."
+
+effects:
+  - kind: unmodelled
+    text: "The Vast Untime Augment: Creates a Rift that connects to enemies suffering from  Void Status Effect within 15m, doubling debuffs applied by The Vast Untime and maintaining  Void Status."
+
+source:
+  url: https://wiki.warframe.com/w/Untime_Rift

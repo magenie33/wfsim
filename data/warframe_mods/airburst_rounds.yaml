@@ -1,0 +1,16 @@
+id: airburst_rounds
+name: "Airburst Rounds"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: airburst
+internal_name: /Lotus/Powersuits/Tengu/TenguBurstAugmentCard
+description: "Airburst Augment: Each enemy hit by Airburst increases secondary damage by 40% for 14s."
+
+effects:
+  - kind: unmodelled
+    text: "Airburst Augment: Each enemy hit by Airburst increases secondary damage by 40% for 14s."
+
+source:
+  url: https://wiki.warframe.com/w/Airburst_Rounds

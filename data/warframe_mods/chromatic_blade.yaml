@@ -1,0 +1,16 @@
+id: chromatic_blade
+name: "Chromatic Blade"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: exalted_blade
+internal_name: /Lotus/Powersuits/Excalibur/SwordOfDoomAugmentCard
+description: "Exalted Blade Augment: Exalted Blade's Damage Type changes depending on Excalibur's Emissive Color, and Status Chance is increased by 300%."
+
+effects:
+  - kind: unmodelled
+    text: "Exalted Blade Augment: Exalted Blade's Damage Type changes depending on Excalibur's Emissive Color, and Status Chance is increased by 300%."
+
+source:
+  url: https://wiki.warframe.com/w/Chromatic_Blade

@@ -1,0 +1,16 @@
+id: molecular_fission
+name: "Molecular Fission"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: molecular_prime
+internal_name: /Lotus/Powersuits/AntiMatter/MolecularPrimeAugmentCard
+description: "Molecular Prime Augment: Enemies hit by Null Stars are primed. When killed, primed enemies will restore a Null Star charge and have a 100% chance of restoring two."
+
+effects:
+  - kind: unmodelled
+    text: "Molecular Prime Augment: Enemies hit by Null Stars are primed. When killed, primed enemies will restore a Null Star charge and have a 100% chance of restoring two."
+
+source:
+  url: https://wiki.warframe.com/w/Molecular_Fission

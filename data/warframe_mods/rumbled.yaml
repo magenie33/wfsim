@@ -1,0 +1,17 @@
+id: rumbled
+name: "Rumbled"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: rumbled
+augments: rumblers
+internal_name: /Lotus/Powersuits/Brawler/BrawlerSummonPvPAugmentCard
+description: "Rumblers Augment: Atlas becomes a Rumbler with Rock Armor that grants Overguard and absorbs up to 300% of damage to Max Health."
+
+effects:
+  - kind: unmodelled
+    text: "Rumblers Augment: Atlas becomes a Rumbler with Rock Armor that grants Overguard and absorbs up to 300% of damage to Max Health."
+
+source:
+  url: https://wiki.warframe.com/w/Rumbled

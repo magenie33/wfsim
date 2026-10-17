@@ -1,0 +1,17 @@
+id: transistor_shield
+name: "Transistor Shield"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: recharge_barrier
+augments: electric_shield
+internal_name: /Lotus/Powersuits/Volt/ShieldAugmentCard
+description: "Electric Shield Augment: Allies can pick up Electric Shield. 300% of damage absorbed will be added to Volt's Static Discharge."
+
+effects:
+  - kind: unmodelled
+    text: "Electric Shield Augment: Allies can pick up Electric Shield. 300% of damage absorbed will be added to Volt's Static Discharge."
+
+source:
+  url: https://wiki.warframe.com/w/Transistor_Shield

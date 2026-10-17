@@ -4,6 +4,7 @@ name: "Energy Vampire"
 frame: trinity
 slot: 2
 energy_cost: 50
+augments: [vampire_leech]
 internal_name: /Lotus/Powersuits/Trinity/Abilities/EnergyVampireAbility
 icon: EnergyVampireIcon(xWhite).png
 description: "Allies will gain energy over time when enemies are marked with Energy Vampire."

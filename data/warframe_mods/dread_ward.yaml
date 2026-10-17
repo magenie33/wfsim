@@ -1,0 +1,16 @@
+id: dread_ward
+name: "Dread Ward"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: dread_mirror
+internal_name: /Lotus/Powersuits/Garuda/GarudaShieldAugmentCard
+description: "Dread Mirror Augment: Become unkillable for 8s when Dread Mirror kills a target by ripping its life force."
+
+effects:
+  - kind: unmodelled
+    text: "Dread Mirror Augment: Become unkillable for 8s when Dread Mirror kills a target by ripping its life force."
+
+source:
+  url: https://wiki.warframe.com/w/Dread_Ward

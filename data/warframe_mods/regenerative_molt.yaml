@@ -1,0 +1,16 @@
+id: regenerative_molt
+name: "Regenerative Molt"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: molt
+internal_name: /Lotus/Powersuits/Saryn/ShedAugmentCard
+description: "Molt Augment: After casting Molt, Saryn regenerates 50 Health/s for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Molt Augment: After casting Molt, Saryn regenerates 50 Health/s for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Regenerative_Molt

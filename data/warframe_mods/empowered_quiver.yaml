@@ -1,0 +1,17 @@
+id: empowered_quiver
+name: "Empowered Quiver"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: empowered_quiver
+augments: quiver
+internal_name: /Lotus/Powersuits/Ranger/RangerQuiverAugmentCard
+description: "Quiver Augment: Dashwire grants allies 100% Critical Damage. Cloak arrow has a 100% chance to prevent Status Effects."
+
+effects:
+  - kind: unmodelled
+    text: "Quiver Augment: Dashwire grants allies 100% Critical Damage. Cloak arrow has a 100% chance to prevent Status Effects."
+
+source:
+  url: https://wiki.warframe.com/w/Empowered_Quiver

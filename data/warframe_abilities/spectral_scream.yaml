@@ -4,6 +4,7 @@ name: "Spectral Scream"
 frame: chroma
 slot: 1
 energy_cost: 10
+augments: [afterburn]
 internal_name: /Lotus/Powersuits/Dragon/Abilities/DragonBreathAbility
 icon: SpectralScreamIcon(xWhite).png
 description: "Exhale a deep breath of elemental destruction. Tap to cycle through elements, hold to cast. The chosen element applies to all of Chroma's abilities."

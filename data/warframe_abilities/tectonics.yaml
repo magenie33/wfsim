@@ -4,6 +4,7 @@ name: "Tectonics"
 frame: atlas
 slot: 2
 energy_cost: 50
+augments: [tectonic_fracture]
 internal_name: /Lotus/Powersuits/Brawler/Abilities/BrawlerBarrierAbility
 icon: TectonicsIcon(xWhite).png
 description: "Summon a Bulwark rock-wall, activate again to send the rocks crashing toward the enemy. Bulwarks attacked by enemies release an area-of-effect Slash powered by the Health it has lost."

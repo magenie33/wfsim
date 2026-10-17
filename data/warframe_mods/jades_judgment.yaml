@@ -1,0 +1,16 @@
+id: jades_judgment
+name: "Jade's Judgment"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: lights_judgment
+internal_name: /Lotus/Powersuits/Choir/ChoirPoolAugmentCard
+description: "Light's Judgment Augment: Enemies damaged by the well have a 5% chance per hit to spawn a Jade Light above them, damaging them for 3s."
+
+effects:
+  - kind: unmodelled
+    text: "Light's Judgment Augment: Enemies damaged by the well have a 5% chance per hit to spawn a Jade Light above them, damaging them for 3s."
+
+source:
+  url: https://wiki.warframe.com/w/Jade's_Judgment

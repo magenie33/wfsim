@@ -1,0 +1,16 @@
+id: wrath_of_ukko
+name: "Wrath of Ukko"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: storm_of_ukko
+internal_name: /Lotus/Powersuits/PaxDuviricus/PaxFieldAugmentCard
+description: "Storm of Ukko Augment: Wrathful Advance moves the storm of daggers to the teleportation location and increases its duration by 6s."
+
+effects:
+  - kind: unmodelled
+    text: "Storm of Ukko Augment: Wrathful Advance moves the storm of daggers to the teleportation location and increases its duration by 6s."
+
+source:
+  url: https://wiki.warframe.com/w/Wrath_of_Ukko

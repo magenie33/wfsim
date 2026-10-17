@@ -4,6 +4,7 @@ name: "Sol Gate"
 frame: wisp
 slot: 4
 energy_cost: 25
+augments: [cataclysmic_gate]
 internal_name: /Lotus/Powersuits/Wisp/Abilities/WispSunAbility
 icon: SolGateIcon(xWhite).png
 description: "Open a portal to the sun to irradiate enemies with a devastating beam of pure solar plasma. Hold fire to double Damage at the cost of increased energy consumption. For the duration of an attack enemies damaged by Sol Gate are increasingly more vulnerable to it."

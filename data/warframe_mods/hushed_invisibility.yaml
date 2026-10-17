@@ -1,0 +1,17 @@
+id: hushed_invisibility
+name: "Hushed Invisibility"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: invisibility
+internal_name: /Lotus/Powersuits/Loki/InvisibilityAugmentCard
+description: "Invisibility Augment: Weapon noise is reduced by 100% while invisible."
+
+effects:
+  - kind: unmodelled
+    text: "Invisibility Augment: Weapon noise is reduced by 100% while invisible."
+
+source:
+  url: https://wiki.warframe.com/w/Hushed_Invisibility

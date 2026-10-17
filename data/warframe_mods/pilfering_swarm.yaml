@@ -1,0 +1,16 @@
+id: pilfering_swarm
+name: "Pilfering Swarm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tentacle_swarm
+internal_name: /Lotus/Powersuits/Pirate/KrakenAugmentCard
+description: "Tentacle Swarm Augment: Enemies held by tentacles have a 100% chance at additional drops."
+
+effects:
+  - kind: unmodelled
+    text: "Tentacle Swarm Augment: Enemies held by tentacles have a 100% chance at additional drops."
+
+source:
+  url: https://wiki.warframe.com/w/Pilfering_Swarm

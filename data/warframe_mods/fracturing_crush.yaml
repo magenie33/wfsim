@@ -1,0 +1,16 @@
+id: fracturing_crush
+name: "Fracturing Crush"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: crush
+internal_name: /Lotus/Powersuits/Mag/CrushAugmentCard
+description: "Crush Augment: Crush gains +50% casting speed. The armor of surviving enemies decreases by 75% and they are unable to move for 7s."
+
+effects:
+  - kind: unmodelled
+    text: "Crush Augment: Crush gains +50% casting speed. The armor of surviving enemies decreases by 75% and they are unable to move for 7s."
+
+source:
+  url: https://wiki.warframe.com/w/Fracturing_Crush

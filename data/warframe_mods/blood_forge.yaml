@@ -1,0 +1,16 @@
+id: blood_forge
+name: "Blood Forge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: bloodletting
+internal_name: /Lotus/Powersuits/Garuda/GarudaBloodAugmentCard
+description: "Bloodletting Augment: Garuda's equipped weapon is reloaded up to 100%."
+
+effects:
+  - kind: unmodelled
+    text: "Bloodletting Augment: Garuda's equipped weapon is reloaded up to 100%."
+
+source:
+  url: https://wiki.warframe.com/w/Blood_Forge

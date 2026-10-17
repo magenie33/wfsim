@@ -5,6 +5,7 @@ frame: lavos
 slot: 1
 energy_cost: 8
 cost_type: "time"
+augments: [swift_bite]
 internal_name: /Lotus/Powersuits/Alchemist/Abilities/AlchemistSerpentAbility
 icon: OphidianBiteIcon(xWhite).png
 description: "Lash out with a toxic serpentine strike, consuming the target to heal Lavos.\n\nHold to imbue all abilities with Toxin."

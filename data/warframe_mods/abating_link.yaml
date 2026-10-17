@@ -1,0 +1,16 @@
+id: abating_link
+name: "Abating Link"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: link
+internal_name: /Lotus/Powersuits/Trinity/LinkAugmentCard
+description: "Link Augment: Reduces Armor Rating by 60% on enemies targeted by Link."
+
+effects:
+  - kind: unmodelled
+    text: "Link Augment: Reduces Armor Rating by 60% on enemies targeted by Link."
+
+source:
+  url: https://wiki.warframe.com/w/Abating_Link

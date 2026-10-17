@@ -1,0 +1,16 @@
+id: cathode_current
+name: "Cathode Current"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: cathode_grace
+internal_name: /Lotus/Powersuits/Gyre/GyreEnergizedAugmentCard
+description: "Cathode Grace Augment: Eliminating an enemy while Cathode Grace is active will release an additional discharge from Rotorswell with 200% Damage and extend its duration by the same amount."
+
+effects:
+  - kind: unmodelled
+    text: "Cathode Grace Augment: Eliminating an enemy while Cathode Grace is active will release an additional discharge from Rotorswell with 200% Damage and extend its duration by the same amount."
+
+source:
+  url: https://wiki.warframe.com/w/Cathode_Current

@@ -1,0 +1,16 @@
+id: teleport_rush
+name: "Teleport Rush"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: teleport
+internal_name: /Lotus/Powersuits/Ninja/TeleportToAugmentCard
+description: "Teleport Augment: Using Teleport increases Parkour Velocity by 30% for 12s. Executing a target with Teleport extends Smoke Screen's duration by 5s. Teleport Mercy Kills fully refresh the duration."
+
+effects:
+  - kind: unmodelled
+    text: "Teleport Augment: Using Teleport increases Parkour Velocity by 30% for 12s. Executing a target with Teleport extends Smoke Screen's duration by 5s. Teleport Mercy Kills fully refresh the duration."
+
+source:
+  url: https://wiki.warframe.com/w/Teleport_Rush

@@ -1,0 +1,16 @@
+id: spectral_spirit
+name: "Spectral Spirit"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: grave_spirit
+internal_name: /Lotus/Powersuits/Dagath/DagathApparitionAugmentCard
+description: "Grave Spirit Augment: Immediately assume Spectral Form. 100% chance for weapons and abilities to apply Doom. Kills outside of Spectral Form decrease its cooldown by 1s."
+
+effects:
+  - kind: unmodelled
+    text: "Grave Spirit Augment: Immediately assume Spectral Form. 100% chance for weapons and abilities to apply Doom. Kills outside of Spectral Form decrease its cooldown by 1s."
+
+source:
+  url: https://wiki.warframe.com/w/Spectral_Spirit

@@ -1,0 +1,17 @@
+id: fused_reservoir
+name: "Fused Reservoir"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: reservoirs
+internal_name: /Lotus/Powersuits/Wisp/WispReservoirAugmentCard
+description: "Reservoirs Augment: Adds a fourth reservoir that gives the effects of all three. Costs 200% more Energy."
+
+effects:
+  - kind: unmodelled
+    text: "Reservoirs Augment: Adds a fourth reservoir that gives the effects of all three. Costs 200% more Energy."
+
+source:
+  url: https://wiki.warframe.com/w/Fused_Reservoir

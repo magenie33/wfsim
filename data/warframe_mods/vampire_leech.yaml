@@ -1,0 +1,16 @@
+id: vampire_leech
+name: "Vampire Leech"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: energy_vampire
+internal_name: /Lotus/Powersuits/Trinity/EnergyVampireAugmentCard
+description: "Energy Vampire Augment: Excess Energy replenishes Shields by 225%."
+
+effects:
+  - kind: unmodelled
+    text: "Energy Vampire Augment: Excess Energy replenishes Shields by 225%."
+
+source:
+  url: https://wiki.warframe.com/w/Vampire_Leech

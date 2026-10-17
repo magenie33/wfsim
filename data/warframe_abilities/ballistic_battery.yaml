@@ -4,6 +4,7 @@ name: "Ballistic Battery"
 frame: mesa
 slot: 1
 energy_cost: 25
+augments: [ballistic_bullseye]
 internal_name: /Lotus/Powersuits/Cowgirl/Abilities/BallisticBatteryAbility
 icon: BallisticBatteryIcon(xWhite).png
 description: "When activated, this power stores damage caused by guns. When triggered again, that damage is channelled through the next gunshot."

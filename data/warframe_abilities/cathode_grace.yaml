@@ -4,6 +4,7 @@ name: "Cathode Grace"
 frame: gyre
 slot: 3
 energy_cost: 75
+augments: [cathode_current]
 internal_name: /Lotus/Powersuits/Gyre/Abilities/GyreEnergizedAbility
 icon: CathodeGraceIcon(xWhite).png
 description: "Gain a brief burst of increased Critical Chance and Energy Regen, with each kill extending duration of Cathode Grace. Casting is on a cooldown."

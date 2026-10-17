@@ -1,0 +1,16 @@
+id: wrecking_wall
+name: "Wrecking Wall"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: containment_wall
+internal_name: /Lotus/Powersuits/ConcreteFrame/ConcreteWallAugmentCard
+description: "Containment Wall Augment: Strip 50% of armor and shields from struck enemies. Hitting 5 or more enemies will restart the duration of any Chyrinka Pillars and empower them."
+
+effects:
+  - kind: unmodelled
+    text: "Containment Wall Augment: Strip 50% of armor and shields from struck enemies. Hitting 5 or more enemies will restart the duration of any Chyrinka Pillars and empower them."
+
+source:
+  url: https://wiki.warframe.com/w/Wrecking_Wall

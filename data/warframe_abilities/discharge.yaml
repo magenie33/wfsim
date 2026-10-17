@@ -4,6 +4,7 @@ name: "Discharge"
 frame: volt
 slot: 4
 energy_cost: 100
+augments: [capacitance]
 internal_name: /Lotus/Powersuits/Volt/Abilities/OverLoadAbility
 icon: DischargeIcon(xWhite).png
 description: "Volt discharges the electricity that courses through him. The shockwave paralyzes and damages nearby enemies. Enemies on the edge of the shockwave are stunned."

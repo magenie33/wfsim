@@ -1,0 +1,16 @@
+id: infernum
+name: "Infernum"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: infernalis
+internal_name: /Lotus/Powersuits/DemonFrame/DemonFrameFireBallAugmentCard
+description: "Infernalis Augment: Release Fireballs for 1500Heat Damage with larger volleys when grabbing Vythelas' Runes during flight. Hits from Fireballs slowly charge Brimstone."
+
+effects:
+  - kind: unmodelled
+    text: "Infernalis Augment: Release Fireballs for 1500Heat Damage with larger volleys when grabbing Vythelas' Runes during flight. Hits from Fireballs slowly charge Brimstone."
+
+source:
+  url: https://wiki.warframe.com/w/Infernum

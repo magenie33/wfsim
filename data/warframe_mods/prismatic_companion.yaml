@@ -1,0 +1,18 @@
+id: prismatic_companion
+name: "Prismatic Companion"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: prismatic_gem
+internal_name: /Lotus/Powersuits/Geode/GeodeCrystalAugmentCard
+description: "Prismatic Gem Augment: The gem now attaches to your free-moving companion.\nPassive : +50% Prismatic Gem Duration."
+
+effects:
+  - kind: unmodelled
+    text: "Prismatic Gem Augment: The gem now attaches to your free-moving companion."
+  - kind: unmodelled
+    text: "Passive : +50% Prismatic Gem Duration."
+
+source:
+  url: https://wiki.warframe.com/w/Prismatic_Companion

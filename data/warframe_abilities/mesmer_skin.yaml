@@ -4,6 +4,7 @@ name: "Mesmer Skin"
 frame: revenant
 slot: 2
 energy_cost: 50
+augments: [mesmer_shield]
 internal_name: /Lotus/Powersuits/Revenant/Abilities/RevenantSentientAbility
 icon: MesmerSkinIcon(xWhite).png
 description: "Become enveloped in Sentient energy, redirecting damage and stunning all those who dare attack. Stunned enemies can be Enthralled at no energy cost."

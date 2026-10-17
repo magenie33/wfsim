@@ -1,0 +1,16 @@
+id: reroot_rampage
+name: "Reroot Rampage"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: reroot
+internal_name: /Lotus/Powersuits/Nokko/NokkoRerootAugmentCard
+description: "Reroot Augment: Collecting Reroot orbs summons additional Sprodlings inflicting 250  Toxin Damage with increased Critical Chance each hit."
+
+effects:
+  - kind: unmodelled
+    text: "Reroot Augment: Collecting Reroot orbs summons additional Sprodlings inflicting 250  Toxin Damage with increased Critical Chance each hit."
+
+source:
+  url: https://wiki.warframe.com/w/Reroot_Rampage

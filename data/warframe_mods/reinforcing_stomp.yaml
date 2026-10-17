@@ -1,0 +1,16 @@
+id: reinforcing_stomp
+name: "Reinforcing Stomp"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: rhino_stomp
+internal_name: /Lotus/Powersuits/Rhino/RhinoStompAugmentCard
+description: "Rhino Stomp Augment: Iron Skin Health is replenished by 4% for each enemy affected."
+
+effects:
+  - kind: unmodelled
+    text: "Rhino Stomp Augment: Iron Skin Health is replenished by 4% for each enemy affected."
+
+source:
+  url: https://wiki.warframe.com/w/Reinforcing_Stomp

@@ -1,0 +1,16 @@
+id: vampiric_grasp
+name: "Vampiric Grasp"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: grasp_of_lohk
+internal_name: /Lotus/Powersuits/BrokenFrame/GraspAugmentCard
+description: "Grasp of Lohk Augment: When a stolen weapon deals damage to an enemy affected by The Lost: Gaze or The Vast Untime, Xaku heals by 25."
+
+effects:
+  - kind: unmodelled
+    text: "Grasp of Lohk Augment: When a stolen weapon deals damage to an enemy affected by The Lost: Gaze or The Vast Untime, Xaku heals by 25."
+
+source:
+  url: https://wiki.warframe.com/w/Vampiric_Grasp

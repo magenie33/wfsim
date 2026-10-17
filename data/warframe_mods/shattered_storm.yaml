@@ -1,0 +1,16 @@
+id: shattered_storm
+name: "Shattered Storm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: shattered_lash
+internal_name: /Lotus/Powersuits/Glass/GlassShankAugmentCard
+description: "Shattered Lash Augment: When Gara breaks her Mass Vitrify ring with Shattered Lash, enemies struck by the glass suffer Splinter Storm at 100% Strength."
+
+effects:
+  - kind: unmodelled
+    text: "Shattered Lash Augment: When Gara breaks her Mass Vitrify ring with Shattered Lash, enemies struck by the glass suffer Splinter Storm at 100% Strength."
+
+source:
+  url: https://wiki.warframe.com/w/Shattered_Storm

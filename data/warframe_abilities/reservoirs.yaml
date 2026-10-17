@@ -4,6 +4,7 @@ name: "Reservoirs"
 frame: wisp
 slot: 1
 energy_cost: 25
+augments: [fused_reservoir]
 internal_name: /Lotus/Powersuits/Wisp/Abilities/WispReservoirAbility
 icon: ReservoirsIcon(xWhite).png
 description: "Choose and summon a Reservoir filled with Motes that attach to and aid Wisp and her allies. Haste Mote grants increased movement and attack speed. Vitality Mote increases maximum health and heals over time. Shock Mote stuns nearby enemies."

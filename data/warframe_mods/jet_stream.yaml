@@ -1,0 +1,16 @@
+id: jet_stream
+name: "Jet Stream"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: turbulence
+internal_name: /Lotus/Powersuits/Tengu/TurbulenceAugmentCard
+description: "Turbulence Augment: Turbulence increases Movement Speed by 40% and Projectile Speed by 100% for Zephyr and her allies."
+
+effects:
+  - kind: unmodelled
+    text: "Turbulence Augment: Turbulence increases Movement Speed by 40% and Projectile Speed by 100% for Zephyr and her allies."
+
+source:
+  url: https://wiki.warframe.com/w/Jet_Stream

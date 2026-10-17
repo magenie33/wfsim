@@ -1,0 +1,17 @@
+id: damage_decoy
+name: "Damage Decoy"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: damage_decoy
+augments: decoy
+internal_name: /Lotus/Powersuits/Loki/DecoyAugmentTwoCard
+description: "Decoy Augment: Decoy can be cast on enemies. Enemies who attack that decoy receive 5 random Status Effects, and the reflected damage is increased by 350%."
+
+effects:
+  - kind: unmodelled
+    text: "Decoy Augment: Decoy can be cast on enemies. Enemies who attack that decoy receive 5 random Status Effects, and the reflected damage is increased by 350%."
+
+source:
+  url: https://wiki.warframe.com/w/Damage_Decoy

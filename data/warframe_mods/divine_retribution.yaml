@@ -1,0 +1,16 @@
+id: divine_retribution
+name: "Divine Retribution"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: divine_spears
+internal_name: /Lotus/Powersuits/Nezha/NezhaSpearAugmentTwoCard
+description: "Divine Spears Augment: Status Effects spread to all speared enemies. Spear explosions scale by 1.5x of remaining Slash, Toxin and Heat Status Effects. Base Radius is 14m."
+
+effects:
+  - kind: unmodelled
+    text: "Divine Spears Augment: Status Effects spread to all speared enemies. Spear explosions scale by 1.5x of remaining Slash, Toxin and Heat Status Effects. Base Radius is 14m."
+
+source:
+  url: https://wiki.warframe.com/w/Divine_Retribution

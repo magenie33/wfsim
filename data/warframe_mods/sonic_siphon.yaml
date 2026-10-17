@@ -1,0 +1,16 @@
+id: sonic_siphon
+name: "Sonic Siphon"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: sonic_boom
+internal_name: /Lotus/Powersuits/Banshee/PushAugmentCard
+description: "Sonic Boom Augment: Gain Armor for each enemy hit by Sonic Boom for 20s."
+
+effects:
+  - kind: unmodelled
+    text: "Sonic Boom Augment: Gain Armor for each enemy hit by Sonic Boom for 20s."
+
+source:
+  url: https://wiki.warframe.com/w/Sonic_Siphon

@@ -4,6 +4,7 @@ name: "Rotorswell"
 frame: gyre
 slot: 4
 energy_cost: 100
+augments: [reverse_rotorswell]
 internal_name: /Lotus/Powersuits/Gyre/Abilities/GyreOverchargedAbility
 icon: RotorswellIcon(xWhite).png
 description: "Gyre's mechanisms spin at incredible speeds, generating an Electric Field that shocks nearby enemies. When Gyre gets a critical hit, a large electrical discharge will chain from the enemy that was hit to nearby enemies."

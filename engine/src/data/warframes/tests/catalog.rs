@@ -30,7 +30,8 @@ fn every_file_loads_and_names_what_exists() {
     assert_eq!(ids.len(), mods().len(), "a mod id is filed twice");
     for m in mods() {
         if let Some(a) = &m.augments {
-            assert!(ability(a).is_some(), "{} augments `{a}`, which is not in data/warframe_abilities/", m.id);
+            let ab = ability(a).unwrap_or_else(|| panic!("{} augments `{a}`, which is not in data/warframe_abilities/", m.id));
+            assert!(ab.augments.contains(&m.id), "{a} does not list its augment {}", m.id);
         }
         if let Some(f) = &m.family {
             assert!(mods().iter().filter(|x| x.family.as_ref() == Some(f)).count() > 1, "{}: a family of one", m.id);
@@ -39,7 +40,7 @@ fn every_file_loads_and_names_what_exists() {
     for a in abilities() {
         assert!(!a.icon.is_empty(), "{} has no icon", a.id);
         for g in &a.augments {
-            assert!(mod_by_id(g).is_some() || a.frame != "valkyr", "{} names augment {g}", a.id);
+            assert!(mod_by_id(g).and_then(|m| m.augments.as_deref()) == Some(a.id.as_str()), "{} names augment {g}", a.id);
         }
     }
     for f in warframes() {

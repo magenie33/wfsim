@@ -1,0 +1,16 @@
+id: reactive_storm
+name: "Reactive Storm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: serene_storm
+internal_name: /Lotus/Powersuits/Pacifist/PacifistFistAugmentCard
+description: "Serene Storm Augment: Desert Wind is granted +250% Status Chance and changes its damage type to match enemy weaknesses."
+
+effects:
+  - kind: unmodelled
+    text: "Serene Storm Augment: Desert Wind is granted +250% Status Chance and changes its damage type to match enemy weaknesses."
+
+source:
+  url: https://wiki.warframe.com/w/Reactive_Storm

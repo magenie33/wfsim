@@ -1,0 +1,16 @@
+id: ore_gaze
+name: "Ore Gaze"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: petrify
+internal_name: /Lotus/Powersuits/Brawler/BrawlerGazeAugmentCard
+description: "Petrify Augment: Petrified enemies are scanned into the Codex and have a 25% chance to drop additional loot when killed."
+
+effects:
+  - kind: unmodelled
+    text: "Petrify Augment: Petrified enemies are scanned into the Codex and have a 25% chance to drop additional loot when killed."
+
+source:
+  url: https://wiki.warframe.com/w/Ore_Gaze

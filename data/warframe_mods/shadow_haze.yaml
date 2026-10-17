@@ -1,0 +1,16 @@
+id: shadow_haze
+name: "Shadow Haze"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: reap
+internal_name: /Lotus/Powersuits/Wraith/WraithReapAugmentCard
+description: "Reap Augment: Increase Critical Chance by 50% on enemies inflicted with Death Harvest. A new Shadow emerges from those enemies when they perish. Limit of 3 Shadows."
+
+effects:
+  - kind: unmodelled
+    text: "Reap Augment: Increase Critical Chance by 50% on enemies inflicted with Death Harvest. A new Shadow emerges from those enemies when they perish. Limit of 3 Shadows."
+
+source:
+  url: https://wiki.warframe.com/w/Shadow_Haze

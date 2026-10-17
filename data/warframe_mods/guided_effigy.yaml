@@ -1,0 +1,16 @@
+id: guided_effigy
+name: "Guided Effigy"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: effigy
+internal_name: /Lotus/Powersuits/Dragon/DragonPeltAugmentCard
+description: "Effigy Augment: Cast and hold to make Effigy move to your aim point. Deals 4000 Damage/s and restores 5 Energy for each enemy in its path. Roars on arrival, stunning nearby enemies."
+
+effects:
+  - kind: unmodelled
+    text: "Effigy Augment: Cast and hold to make Effigy move to your aim point. Deals 4000 Damage/s and restores 5 Energy for each enemy in its path. Roars on arrival, stunning nearby enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Guided_Effigy

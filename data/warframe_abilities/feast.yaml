@@ -4,6 +4,7 @@ name: "Feast"
 frame: grendel
 slot: 1
 energy_cost: 25
+augments: [gourmand]
 internal_name: /Lotus/Powersuits/Devourer/Abilities/DevourerDevourAbility
 icon: FeastIcon(xWhite).png
 description: "Swallow enemies whole and store them in Grendel's gut. Hold to vomit out stored enemies, covering them in toxic bile."

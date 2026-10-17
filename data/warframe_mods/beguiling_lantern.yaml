@@ -1,0 +1,16 @@
+id: beguiling_lantern
+name: "Beguiling Lantern"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: lantern
+internal_name: /Lotus/Powersuits/Fairy/FairyLightAugmentCard
+description: "Lantern Augment: Attracted enemies take 100% more Weapon Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Lantern Augment: Attracted enemies take 100% more Weapon Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Beguiling_Lantern

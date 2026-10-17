@@ -4,6 +4,7 @@ name: "Polarize"
 frame: mag
 slot: 3
 energy_cost: 75
+augments: [counter_pulse]
 internal_name: /Lotus/Powersuits/Mag/Abilities/ShieldRegenAbility
 icon: PolarizeIcon(xWhite).png
 description: "Emit an energy pulse that depletes enemy shields and armor as it restores ally shields. Debris left over from the pulse becomes Polarize Shards. Nearby Polarize Shards orbit Mag and cut enemies, inflicting Slash Status Effect."

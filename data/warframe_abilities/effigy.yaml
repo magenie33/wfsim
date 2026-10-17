@@ -4,6 +4,7 @@ name: "Effigy"
 frame: chroma
 slot: 4
 energy_cost: 50
+augments: [guided_effigy]
 internal_name: /Lotus/Powersuits/Dragon/Abilities/DragonPeltAbility
 icon: EffigyIcon(xWhite).png
 description: "Chroma turns his pelt into a massive sentry that strengthens nearby allies and engulfs enemies in elemental attacks."

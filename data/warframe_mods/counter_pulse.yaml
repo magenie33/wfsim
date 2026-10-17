@@ -1,0 +1,16 @@
+id: counter_pulse
+name: "Counter Pulse"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: polarize
+internal_name: /Lotus/Powersuits/Mag/ShieldRegenAugmentCard
+description: "Polarize Augment: Enemy weapons are jammed and robotics are disabled for 4s when hit by Polarize."
+
+effects:
+  - kind: unmodelled
+    text: "Polarize Augment: Enemy weapons are jammed and robotics are disabled for 4s when hit by Polarize."
+
+source:
+  url: https://wiki.warframe.com/w/Counter_Pulse

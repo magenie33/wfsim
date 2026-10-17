@@ -4,6 +4,7 @@ name: "Shadows of the Dead"
 frame: nekros
 slot: 4
 energy_cost: 100
+augments: [shield_of_shadows]
 internal_name: /Lotus/Powersuits/Necro/Abilities/CloneTheDeadAbility
 icon: ShadowsOfTheDeadIcon(xWhite).png
 description: "Summon shadow versions of vanquished enemies to fight alongside you for a short period."

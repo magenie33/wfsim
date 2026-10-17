@@ -4,6 +4,7 @@ name: "Blaze Artillery"
 frame: protea
 slot: 2
 energy_cost: 50
+augments: [temporal_artillery]
 internal_name: /Lotus/Powersuits/Odalisk/Abilities/OdaliskBFGAbility
 icon: BlazeArtilleryIcon(xWhite).png
 description: "Deploys an artillery unit to blast plasma charges at enemies it faces. Each enemy hit increases the power of subsequent plasma attacks."

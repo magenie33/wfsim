@@ -4,6 +4,7 @@ name: "Rhino Charge"
 frame: rhino
 slot: 1
 energy_cost: 25
+augments: [ironclad_charge]
 internal_name: /Lotus/Powersuits/Rhino/Abilities/RhinoChargeAbility
 icon: RhinoChargeIcon(xWhite).png
 description: "Rhino charges towards a target, clobbering any in his path and goring his victim."

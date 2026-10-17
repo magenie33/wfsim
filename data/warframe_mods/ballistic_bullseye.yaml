@@ -1,0 +1,16 @@
+id: ballistic_bullseye
+name: "Ballistic Bullseye"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: ballistic_battery
+internal_name: /Lotus/Powersuits/Cowgirl/BallisticBatteryAugmentCard
+description: "Ballistic Battery Augment: The shot gains a +50% Final Critical Chance bonus, based on the amount charged."
+
+effects:
+  - kind: unmodelled
+    text: "Ballistic Battery Augment: The shot gains a +50% Final Critical Chance bonus, based on the amount charged."
+
+source:
+  url: https://wiki.warframe.com/w/Ballistic_Bullseye

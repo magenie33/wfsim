@@ -4,6 +4,7 @@ name: "Noctua"
 frame: dante
 slot: 1
 energy_cost: 5
+augments: [noctua_swarm]
 internal_name: /Lotus/Powersuits/Pagemaster/Abilities/PagemasterBookAbility
 icon: NoctuaIcon(xWhite).png
 description: "Open Noctua, Dante's Exalted Tome, and unleash a tale of woe upon his enemies."

@@ -4,6 +4,7 @@ name: "Rhino Stomp"
 frame: rhino
 slot: 4
 energy_cost: 100
+augments: [reinforcing_stomp]
 internal_name: /Lotus/Powersuits/Rhino/Abilities/RhinoStompAbility
 icon: RhinoStompIcon(xWhite).png
 description: "Rhino stomps with force sufficient to disrupt time, tumbling enemies around him in stasis."

@@ -4,6 +4,7 @@ name: "Hall of Mirrors"
 frame: mirage
 slot: 1
 energy_cost: 25
+augments: [hall_of_malevolence]
 internal_name: /Lotus/Powersuits/Harlequin/Abilities/IllusionAbility
 icon: HallOfMirrorsIcon(xWhite).png
 description: "Mirage creates an entourage of doppelgangers to confuse and distract the enemy."

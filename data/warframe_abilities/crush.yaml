@@ -4,6 +4,7 @@ name: "Crush"
 frame: mag
 slot: 4
 energy_cost: 100
+augments: [fracturing_crush]
 internal_name: /Lotus/Powersuits/Mag/Abilities/CrushAbility
 icon: CrushIcon(xWhite).png
 description: "Magnetize the bones of nearby enemies, causing them to collapse upon themselves."

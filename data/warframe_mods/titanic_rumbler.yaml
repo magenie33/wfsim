@@ -1,0 +1,19 @@
+id: titanic_rumbler
+name: "Titanic Rumbler"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: rumbled
+augments: rumblers
+internal_name: /Lotus/Powersuits/Brawler/BrawlerSummonAugmentCard
+description: "Rumblers Augment: Create a single rumbler with 300% Health and 400% Damage.\nReactivating will cause him to slam the floor and knockdown enemies in 15m."
+
+effects:
+  - kind: unmodelled
+    text: "Rumblers Augment: Create a single rumbler with 300% Health and 400% Damage."
+  - kind: unmodelled
+    text: "Reactivating will cause him to slam the floor and knockdown enemies in 15m."
+
+source:
+  url: https://wiki.warframe.com/w/Titanic_Rumbler

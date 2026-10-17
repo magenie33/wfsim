@@ -1,0 +1,16 @@
+id: irradiating_disarm
+name: "Irradiating Disarm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: radial_disarm
+internal_name: /Lotus/Powersuits/Loki/DisarmAugmentCard
+description: "Radial Disarm Augment: Enemies will be affected by Radiation Status for 9s"
+
+effects:
+  - kind: unmodelled
+    text: "Radial Disarm Augment: Enemies will be affected by Radiation Status for 9s"
+
+source:
+  url: https://wiki.warframe.com/w/Irradiating_Disarm

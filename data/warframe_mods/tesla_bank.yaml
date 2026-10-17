@@ -1,0 +1,16 @@
+id: tesla_bank
+name: "Tesla Bank"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tesla_nervos
+internal_name: /Lotus/Powersuits/Trapper/ZapTrapAugmentCard
+description: "Tesla Nervos Augment: Enemy health when a Nervos is first attached is converted into 8m burst of Electricity when killed."
+
+effects:
+  - kind: unmodelled
+    text: "Tesla Nervos Augment: Enemy health when a Nervos is first attached is converted into 8m burst of Electricity when killed."
+
+source:
+  url: https://wiki.warframe.com/w/Tesla_Bank

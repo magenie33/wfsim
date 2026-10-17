@@ -4,6 +4,7 @@ name: "Inferno"
 frame: ember
 slot: 4
 energy_cost: 0
+augments: [exothermic]
 unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
 internal_name: /Lotus/Powersuits/Ember/Abilities/EmberInfernoAbility
 icon: InfernoIcon(xWhite).png

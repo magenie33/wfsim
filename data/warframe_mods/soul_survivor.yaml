@@ -1,0 +1,16 @@
+id: soul_survivor
+name: "Soul Survivor"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: soul_punch
+internal_name: /Lotus/Powersuits/Necro/SoulPunchAugmentCard
+description: "Soul Punch Augment: Use on a downed ally to revive them with 30% Health."
+
+effects:
+  - kind: unmodelled
+    text: "Soul Punch Augment: Use on a downed ally to revive them with 30% Health."
+
+source:
+  url: https://wiki.warframe.com/w/Soul_Survivor

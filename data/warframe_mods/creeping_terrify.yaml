@@ -1,0 +1,16 @@
+id: creeping_terrify
+name: "Creeping Terrify"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: terrify
+internal_name: /Lotus/Powersuits/Necro/TerrorTotemAugmentCard
+description: "Terrify Augment: Affected enemies have 60% reduced Movement Speed."
+
+effects:
+  - kind: unmodelled
+    text: "Terrify Augment: Affected enemies have 60% reduced Movement Speed."
+
+source:
+  url: https://wiki.warframe.com/w/Creeping_Terrify

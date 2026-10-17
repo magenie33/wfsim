@@ -4,6 +4,7 @@ name: "Blessing"
 frame: trinity
 slot: 4
 energy_cost: 100
+augments: [champions_blessing]
 internal_name: /Lotus/Powersuits/Trinity/Abilities/BlessingAbility
 icon: BlessingIcon(xWhite).png
 description: "Restore the health and shields of allies within Affinity Range while reducing the damage they take from enemies."

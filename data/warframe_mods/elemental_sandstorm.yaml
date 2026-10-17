@@ -1,0 +1,16 @@
+id: elemental_sandstorm
+name: "Elemental Sandstorm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: sandstorm
+internal_name: /Lotus/Powersuits/Sandman/SandmanStormAugmentCard
+description: "Sandstorm Augment: Sandstorm gains 50% Ability Range and has a 100% chance of inflicting Status Effects based on the Damage Types on the equipped Melee Weapon."
+
+effects:
+  - kind: unmodelled
+    text: "Sandstorm Augment: Sandstorm gains 50% Ability Range and has a 100% chance of inflicting Status Effects based on the Damage Types on the equipped Melee Weapon."
+
+source:
+  url: https://wiki.warframe.com/w/Elemental_Sandstorm

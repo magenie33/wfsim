@@ -1,0 +1,16 @@
+id: primal_rage
+name: "Primal Rage"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: primal_fury
+internal_name: /Lotus/Powersuits/MonkeyKing/MonkeyStaffAugmentCard
+description: "Primal Fury Augment: Killing an enemy increases Critical Chance by 15%. The increase decays by 1%/s"
+
+effects:
+  - kind: unmodelled
+    text: "Primal Fury Augment: Killing an enemy increases Critical Chance by 15%. The increase decays by 1%/s"
+
+source:
+  url: https://wiki.warframe.com/w/Primal_Rage

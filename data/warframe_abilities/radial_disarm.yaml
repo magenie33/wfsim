@@ -4,6 +4,7 @@ name: "Radial Disarm"
 frame: loki
 slot: 4
 energy_cost: 100
+augments: [irradiating_disarm]
 internal_name: /Lotus/Powersuits/Loki/Abilities/RadialDisarmAbility
 icon: RadialDisarmIcon(xWhite).png
 description: "Lets forth a wave of energy, disrupting the projectile weapons of enemies in range and forcing them to revert to melee combat."

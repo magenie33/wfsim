@@ -1,0 +1,16 @@
+id: blinding_reave
+name: "Blinding Reave"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: reave
+internal_name: /Lotus/Powersuits/Revenant/RevenantAfflictionAugmentCard
+description: "Reave Augment: Reave gains +40% range and enemies are blinded by its fog for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Reave Augment: Reave gains +40% range and enemies are blinded by its fog for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Blinding_Reave

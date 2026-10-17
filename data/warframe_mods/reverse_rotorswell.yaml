@@ -1,0 +1,16 @@
+id: reverse_rotorswell
+name: "Reverse Rotorswell"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: rotorswell
+internal_name: /Lotus/Powersuits/Gyre/GyreOverchargedAugmentCard
+description: "Rotorswell Augment: 35% of damage received is redirected toward the instigator as  Electricity Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Rotorswell Augment: 35% of damage received is redirected toward the instigator as  Electricity Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Reverse_Rotorswell

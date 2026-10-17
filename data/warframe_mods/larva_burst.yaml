@@ -1,0 +1,16 @@
+id: larva_burst
+name: "Larva Burst"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: larva
+internal_name: /Lotus/Powersuits/Infestation/InfestTendrilsAugmentCard
+description: "Larva Augment: Reactivate Larva to detonate and deal 600 Toxin Damage in a 8m radius. This damage and Status Effect stacks for every enemy grabbed by the Larva."
+
+effects:
+  - kind: unmodelled
+    text: "Larva Augment: Reactivate Larva to detonate and deal 600 Toxin Damage in a 8m radius. This damage and Status Effect stacks for every enemy grabbed by the Larva."
+
+source:
+  url: https://wiki.warframe.com/w/Larva_Burst

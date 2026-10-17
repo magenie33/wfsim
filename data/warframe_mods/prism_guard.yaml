@@ -1,0 +1,16 @@
+id: prism_guard
+name: "Prism Guard"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: prism
+internal_name: /Lotus/Powersuits/Harlequin/PrismPvPAugmentCard
+description: "Prism Augment: Prism follows above Mirage. Duration changed to 4s."
+
+effects:
+  - kind: unmodelled
+    text: "Prism Augment: Prism follows above Mirage. Duration changed to 4s."
+
+source:
+  url: https://wiki.warframe.com/w/Prism_Guard

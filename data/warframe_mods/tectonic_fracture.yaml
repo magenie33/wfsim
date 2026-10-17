@@ -1,0 +1,16 @@
+id: tectonic_fracture
+name: "Tectonic Fracture"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tectonics
+internal_name: /Lotus/Powersuits/Brawler/BrawlerBarrierAugmentCard
+description: "Tectonics Augment: Create up to 3 walls with 100% Health. Walls can no longer be turned into boulders."
+
+effects:
+  - kind: unmodelled
+    text: "Tectonics Augment: Create up to 3 walls with 100% Health. Walls can no longer be turned into boulders."
+
+source:
+  url: https://wiki.warframe.com/w/Tectonic_Fracture

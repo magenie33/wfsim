@@ -1,0 +1,16 @@
+id: photon_repeater
+name: "Photon Repeater"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: photon_strike
+internal_name: /Lotus/Powersuits/Trapper/MagHoleAugmentCard
+description: "Photon Strike Augment: If Photon Strike hits at least 5 enemies, the next cast will cost no Energy and fire two additional strikes."
+
+effects:
+  - kind: unmodelled
+    text: "Photon Strike Augment: If Photon Strike hits at least 5 enemies, the next cast will cost no Energy and fire two additional strikes."
+
+source:
+  url: https://wiki.warframe.com/w/Photon_Repeater

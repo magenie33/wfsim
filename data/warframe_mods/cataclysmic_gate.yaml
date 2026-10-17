@@ -1,0 +1,16 @@
+id: cataclysmic_gate
+name: "Cataclysmic Gate"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: sol_gate
+internal_name: /Lotus/Powersuits/Wisp/WispSunAugmentCard
+description: "Sol Gate Augment : Wisp and 2 spectral images cast a single blast of Sol Gate, leaving an area with 500 Heat Damage / Second with guaranteed Heat and Radiation Status Effects for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Sol Gate Augment : Wisp and 2 spectral images cast a single blast of Sol Gate, leaving an area with 500 Heat Damage / Second with guaranteed Heat and Radiation Status Effects for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Cataclysmic_Gate

@@ -1,0 +1,16 @@
+id: mesmer_shield
+name: "Mesmer Shield"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: mesmer_skin
+internal_name: /Lotus/Powersuits/Revenant/RevenantSentientAugmentCard
+description: "Mesmer Skin Augment: Revenant receives +50% Mesmer Skin Strength and allies within Affinity Range are granted a maximum of 5 charges."
+
+effects:
+  - kind: unmodelled
+    text: "Mesmer Skin Augment: Revenant receives +50% Mesmer Skin Strength and allies within Affinity Range are granted a maximum of 5 charges."
+
+source:
+  url: https://wiki.warframe.com/w/Mesmer_Shield

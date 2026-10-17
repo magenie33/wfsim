@@ -1,0 +1,16 @@
+id: tharros_lethality
+name: "Tharros Lethality"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tharros_strike
+internal_name: /Lotus/Powersuits/Hoplite/HopliteBashAugmentCard
+description: "Tharros Strike Augment: Increases Critical Damage by 100% on enemies you hit. Critical Damage bonus is doubled for Spearguns."
+
+effects:
+  - kind: unmodelled
+    text: "Tharros Strike Augment: Increases Critical Damage by 100% on enemies you hit. Critical Damage bonus is doubled for Spearguns."
+
+source:
+  url: https://wiki.warframe.com/w/Tharros_Lethality

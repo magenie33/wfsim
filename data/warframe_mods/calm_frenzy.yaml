@@ -1,0 +1,16 @@
+id: calm_frenzy
+name: "Calm & Frenzy"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: rest_rage
+internal_name: /Lotus/Powersuits/YinYang/YinYangTargetAugmentCard
+description: "Rest & Rage Augment: Killing an affected enemy causes the effect to spread to enemies within 5m for 100% of the remaining duration."
+
+effects:
+  - kind: unmodelled
+    text: "Rest & Rage Augment: Killing an affected enemy causes the effect to spread to enemies within 5m for 100% of the remaining duration."
+
+source:
+  url: https://wiki.warframe.com/w/Calm_&_Frenzy

@@ -1,0 +1,18 @@
+id: rising_storm
+name: "Rising Storm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: blade_storm
+internal_name: /Lotus/Powersuits/Ninja/NinjaStormAugmentCard
+description: "Blade Storm Augment: Blade Storm attacks increase your Ability Combo Counter by 4.\nPassive: +10s Combo Duration"
+
+effects:
+  - kind: unmodelled
+    text: "Blade Storm Augment: Blade Storm attacks increase your Ability Combo Counter by 4."
+  - kind: unmodelled
+    text: "Passive: +10s Combo Duration"
+
+source:
+  url: https://wiki.warframe.com/w/Rising_Storm

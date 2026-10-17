@@ -1,0 +1,16 @@
+id: insatiable
+name: "Insatiable"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: ravenous
+internal_name: /Lotus/Powersuits/Infestation/InfestPodsAugmentCard
+description: "Ravenous Augment: Nidus has a chance for additional Mutation stacks while in the infestation. The base 60% chance increases with power strength, and multiple stacks are possible above 100%."
+
+effects:
+  - kind: unmodelled
+    text: "Ravenous Augment: Nidus has a chance for additional Mutation stacks while in the infestation. The base 60% chance increases with power strength, and multiple stacks are possible above 100%."
+
+source:
+  url: https://wiki.warframe.com/w/Insatiable

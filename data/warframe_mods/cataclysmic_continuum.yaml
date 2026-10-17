@@ -1,0 +1,16 @@
+id: cataclysmic_continuum
+name: "Cataclysmic Continuum"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: cataclysm
+internal_name: /Lotus/Powersuits/Magician/TearInSpaceAugmentCard
+description: "Cataclysm Augment: Duration increased by 1s for each enemy killed."
+
+effects:
+  - kind: unmodelled
+    text: "Cataclysm Augment: Duration increased by 1s for each enemy killed."
+
+source:
+  url: https://wiki.warframe.com/w/Cataclysmic_Continuum

@@ -1,0 +1,18 @@
+id: cold_front
+name: "Cold Front"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+family: chilling_globe
+augments: snow_globe
+internal_name: /Lotus/Powersuits/Frost/IceShieldAugmentTwoCard
+description: "Snow Globe Augment: Snow Globe is now attached to Frost with a smaller radius while increasing your mobility. Kills on frozen enemies increase the Globe health by 4% per kill."
+
+effects:
+  - kind: unmodelled
+    text: "Snow Globe Augment: Snow Globe is now attached to Frost with a smaller radius while increasing your mobility. Kills on frozen enemies increase the Globe health by 4% per kill."
+
+source:
+  url: https://wiki.warframe.com/w/Cold_Front

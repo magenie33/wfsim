@@ -4,6 +4,7 @@ name: "Covenant"
 frame: harrow
 slot: 4
 energy_cost: 100
+augments: [lasting_covenant]
 internal_name: /Lotus/Powersuits/Priest/Abilities/PriestPactAbility
 icon: CovenantIcon(xWhite).png
 description: "Protect nearby allies with an energy force that absorbs all damage and converts it to a Critical Chance bonus for all those under the Covenant. Weak Points are amplified even further."

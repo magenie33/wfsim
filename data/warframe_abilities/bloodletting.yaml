@@ -4,6 +4,7 @@ name: "Bloodletting"
 frame: garuda
 slot: 3
 energy_cost: 0
+augments: [blood_forge]
 unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
 internal_name: /Lotus/Powersuits/Garuda/Abilities/GarudaBloodAbility
 icon: BloodlettingIcon(xWhite).png

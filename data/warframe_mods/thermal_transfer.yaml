@@ -1,0 +1,16 @@
+id: thermal_transfer
+name: "Thermal Transfer"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: thermal_sunder
+internal_name: /Lotus/Powersuits/Runner/RunnerTransferAugmentCard
+description: "Thermal Sunder Augment: Allies in range gain 75% bonus Elemental Damage for 30s."
+
+effects:
+  - kind: unmodelled
+    text: "Thermal Sunder Augment: Allies in range gain 75% bonus Elemental Damage for 30s."
+
+source:
+  url: https://wiki.warframe.com/w/Thermal_Transfer

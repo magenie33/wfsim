@@ -5,6 +5,7 @@ frame: nidus
 slot: 4
 energy_cost: 3
 cost_type: "mutation"
+augments: [insatiable]
 internal_name: /Lotus/Powersuits/Infestation/Abilities/InfestPodsAbility
 icon: RavenousIcon(xWhite).png
 description: "Gluttonous maggots swarm nearby enemies, feasting until they are hit with Virulence and burst with Infestation. The maggots benefit from Mutation and each enemy hit adds to the Mutation stack."

@@ -1,0 +1,17 @@
+id: surging_dash
+name: "Surging Dash"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: purging_slash
+augments: slash_dash
+internal_name: /Lotus/Powersuits/Excalibur/SlashDashAugmentCard
+description: "Slash Dash Augment: Each enemy hit during Slash Dash further increases your Melee Counter by 8."
+
+effects:
+  - kind: unmodelled
+    text: "Slash Dash Augment: Each enemy hit during Slash Dash further increases your Melee Counter by 8."
+
+source:
+  url: https://wiki.warframe.com/w/Surging_Dash

@@ -4,6 +4,7 @@ name: "Shatter Shield"
 frame: mesa
 slot: 3
 energy_cost: 75
+augments: [staggering_shield]
 internal_name: /Lotus/Powersuits/Cowgirl/Abilities/RicochetArmorAbility
 icon: ShatterShieldIcon(xWhite).png
 description: "Envelops Mesa in a barrier of energy, reflecting back incoming bullet damage."

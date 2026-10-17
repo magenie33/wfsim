@@ -1,0 +1,17 @@
+id: mesas_waltz
+name: "Mesa's Waltz"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: peacemaker
+internal_name: /Lotus/Powersuits/Cowgirl/GunFuPvPAugmentCard
+description: "Peacemaker Augment: Mesa can move at 50% Speed while using Peacemaker."
+
+effects:
+  - kind: unmodelled
+    text: "Peacemaker Augment: Mesa can move at 50% Speed while using Peacemaker."
+
+source:
+  url: https://wiki.warframe.com/w/Mesa's_Waltz

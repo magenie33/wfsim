@@ -1,0 +1,16 @@
+id: gaseous_quake
+name: "Gaseous Quake"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: sound_quake
+internal_name: /Lotus/Powersuits/Banshee/EarthQuakeAugmentCard
+description: "Sound Quake Augment: Channel Gas Damage and Status Effect leaks with a 2.75x Damage Multiplier that increases every second on enemies in your sight."
+
+effects:
+  - kind: unmodelled
+    text: "Sound Quake Augment: Channel Gas Damage and Status Effect leaks with a 2.75x Damage Multiplier that increases every second on enemies in your sight."
+
+source:
+  url: https://wiki.warframe.com/w/Gaseous_Quake

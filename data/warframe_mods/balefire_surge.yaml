@@ -1,0 +1,16 @@
+id: balefire_surge
+name: "Balefire Surge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: balefire
+internal_name: /Lotus/Powersuits/IronFrame/IronFrameBlastAugmentCard
+description: "Balefire Augment: Fully charged direct hits restore 250 Shield to Hildryn. Impact with Nullifier Shields will destroy them and restore 750 Shield."
+
+effects:
+  - kind: unmodelled
+    text: "Balefire Augment: Fully charged direct hits restore 250 Shield to Hildryn. Impact with Nullifier Shields will destroy them and restore 750 Shield."
+
+source:
+  url: https://wiki.warframe.com/w/Balefire_Surge

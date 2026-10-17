@@ -1,0 +1,16 @@
+id: iron_shrapnel
+name: "Iron Shrapnel"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: iron_skin
+internal_name: /Lotus/Powersuits/Rhino/IronSkinAugmentCard
+description: "Iron Skin Augment: Recasting Iron Skin will cause it to detonate, dealing 100% of its remaining Health as Puncture Damage, and knocking down enemies."
+
+effects:
+  - kind: unmodelled
+    text: "Iron Skin Augment: Recasting Iron Skin will cause it to detonate, dealing 100% of its remaining Health as Puncture Damage, and knocking down enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Iron_Shrapnel

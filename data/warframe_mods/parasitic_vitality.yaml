@@ -1,0 +1,17 @@
+id: parasitic_vitality
+name: "Parasitic Vitality"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: vitality
+augments: parasitic_link
+internal_name: /Lotus/Powersuits/Infestation/InfestLinkAugmentCard
+description: "Parasitic Link Augment: Nidus and any ally he's bound to gain 4% Max Health per Mutation during Parasitic Link."
+
+effects:
+  - kind: unmodelled
+    text: "Parasitic Link Augment: Nidus and any ally he's bound to gain 4% Max Health per Mutation during Parasitic Link."
+
+source:
+  url: https://wiki.warframe.com/w/Parasitic_Vitality

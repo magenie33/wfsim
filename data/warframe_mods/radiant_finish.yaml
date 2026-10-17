@@ -1,0 +1,17 @@
+id: radiant_finish
+name: "Radiant Finish"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: radiant_finish
+augments: radial_blind
+internal_name: /Lotus/Powersuits/Excalibur/RadialBlindAugmentCard
+description: "Radial Blind Augment: Blinded enemies take 300% more Finisher Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Radial Blind Augment: Blinded enemies take 300% more Finisher Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Radiant_Finish

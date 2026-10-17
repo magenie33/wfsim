@@ -1,0 +1,16 @@
+id: temporal_artillery
+name: "Temporal Artillery"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: blaze_artillery
+internal_name: /Lotus/Powersuits/Odalisk/OdaliskBFGAugmentCard
+description: "Blaze Artillery Augment : When Temporal Anchor is activated, one existing Artillery unit will attach to Protea, halting its duration countdown. Max combo count is 20x."
+
+effects:
+  - kind: unmodelled
+    text: "Blaze Artillery Augment : When Temporal Anchor is activated, one existing Artillery unit will attach to Protea, halting its duration countdown. Max combo count is 20x."
+
+source:
+  url: https://wiki.warframe.com/w/Temporal_Artillery

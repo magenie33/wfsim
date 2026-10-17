@@ -4,6 +4,7 @@ name: "Smoke Screen"
 frame: ash
 slot: 2
 energy_cost: 35
+augments: [smoke_shadow]
 internal_name: /Lotus/Powersuits/Ninja/Abilities/SmokeScreenAbility
 icon: SmokeScreenIcon(xWhite).png
 description: "Drops a smoke bomb that stuns enemies and obscures their vision, rendering Ash invisible for a short time."

@@ -4,6 +4,7 @@ name: "Virulence"
 frame: nidus
 slot: 1
 energy_cost: 40
+augments: [teeming_virulence]
 internal_name: /Lotus/Powersuits/Infestation/Abilities/InfestRuptureAbility
 icon: VirulenceIcon(xWhite).png
 description: "Rupture the ground with a damaging fungal growth that steals energy from each enemy it strikes. For every five enemies hit, the Infestation mutates, multiplying its destructive force."

@@ -1,0 +1,16 @@
+id: lasting_covenant
+name: "Lasting Covenant"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: covenant
+internal_name: /Lotus/Powersuits/Priest/PriestPactAugmentCard
+description: "Covenant Augment: Weak Point kills increase Critical Chance bonus duration by 3s."
+
+effects:
+  - kind: unmodelled
+    text: "Covenant Augment: Weak Point kills increase Critical Chance bonus duration by 3s."
+
+source:
+  url: https://wiki.warframe.com/w/Lasting_Covenant

@@ -1,0 +1,18 @@
+id: endless_lullaby
+name: "Endless Lullaby"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: lull
+internal_name: /Lotus/Powersuits/Pacifist/PacifistWaveAugmentCard
+description: "Lull Augment: Performing a finisher on or killing a sleeping enemy will retrigger Lull for 100% of the remaining duration.\nPassive: +50% Lull Duration."
+
+effects:
+  - kind: unmodelled
+    text: "Lull Augment: Performing a finisher on or killing a sleeping enemy will retrigger Lull for 100% of the remaining duration."
+  - kind: unmodelled
+    text: "Passive: +50% Lull Duration."
+
+source:
+  url: https://wiki.warframe.com/w/Endless_Lullaby

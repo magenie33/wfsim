@@ -1,0 +1,16 @@
+id: fireball_frenzy
+name: "Fireball Frenzy"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: fireball
+internal_name: /Lotus/Powersuits/Ember/FireBallAugmentCard
+description: "Fireball Augment: Hold to cast will grant all allies within 15m an additional 100% Heat Damage to their attacks for 40s."
+
+effects:
+  - kind: unmodelled
+    text: "Fireball Augment: Hold to cast will grant all allies within 15m an additional 100% Heat Damage to their attacks for 40s."
+
+source:
+  url: https://wiki.warframe.com/w/Fireball_Frenzy

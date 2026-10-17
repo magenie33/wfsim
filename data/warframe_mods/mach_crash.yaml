@@ -1,0 +1,16 @@
+id: mach_crash
+name: "Mach Crash"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: mach_rush
+internal_name: /Lotus/Powersuits/Runner/RunnerRushAugmentCard
+description: "Mach Rush Augment: Impact shockwave leaves behind a vacuum that sucks in enemies within 8m."
+
+effects:
+  - kind: unmodelled
+    text: "Mach Rush Augment: Impact shockwave leaves behind a vacuum that sucks in enemies within 8m."
+
+source:
+  url: https://wiki.warframe.com/w/Mach_Crash

@@ -1,0 +1,17 @@
+id: savior_decoy
+name: "Savior Decoy"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: damage_decoy
+augments: decoy
+internal_name: /Lotus/Powersuits/Loki/DecoyAugmentCard
+description: "Decoy Augment: If Loki takes fatal damage, Decoy absorbs the damage and swaps locations. Also increases Casting Speed of Decoy by 50%"
+
+effects:
+  - kind: unmodelled
+    text: "Decoy Augment: If Loki takes fatal damage, Decoy absorbs the damage and swaps locations. Also increases Casting Speed of Decoy by 50%"
+
+source:
+  url: https://wiki.warframe.com/w/Savior_Decoy

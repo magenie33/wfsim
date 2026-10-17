@@ -1,0 +1,16 @@
+id: explosive_legerdemain
+name: "Explosive Legerdemain"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: sleight_of_hand
+internal_name: /Lotus/Powersuits/Harlequin/ObjectChangeAugmentCard
+description: "Sleight of Hand Augment: Ammo and Orbs pickups are turned into proximity mines that deal 1000 Damage with a 100% Status Chance."
+
+effects:
+  - kind: unmodelled
+    text: "Sleight of Hand Augment: Ammo and Orbs pickups are turned into proximity mines that deal 1000 Damage with a 100% Status Chance."
+
+source:
+  url: https://wiki.warframe.com/w/Explosive_Legerdemain

@@ -1,0 +1,16 @@
+id: pyroclastic_flow
+name: "Pyroclastic Flow"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: fire_walker
+internal_name: /Lotus/Powersuits/Nezha/NezhaTrailAugmentCard
+description: "Fire Walker Augment: Accumulate 250% of the damage Fire Walker deals, unleashing it in a trail of fire that lasts 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Fire Walker Augment: Accumulate 250% of the damage Fire Walker deals, unleashing it in a trail of fire that lasts 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Pyroclastic_Flow

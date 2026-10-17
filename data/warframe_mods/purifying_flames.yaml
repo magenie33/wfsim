@@ -1,0 +1,17 @@
+id: purifying_flames
+name: "Purifying Flames"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: healing_flame
+augments: fire_blast
+internal_name: /Lotus/Powersuits/Ember/FireBlastPvPAugmentCard
+description: "Fire Blast Augment: Allies hit by the expanding ring of fire are cured of Status Effects and granted 4s of Status Immunity."
+
+effects:
+  - kind: unmodelled
+    text: "Fire Blast Augment: Allies hit by the expanding ring of fire are cured of Status Effects and granted 4s of Status Immunity."
+
+source:
+  url: https://wiki.warframe.com/w/Purifying_Flames

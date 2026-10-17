@@ -1,0 +1,18 @@
+id: magnetized_discharge
+name: "Magnetized Discharge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: magnetize
+internal_name: /Lotus/Powersuits/Mag/BulletAttractorAugmentCard
+description: "Magnetize Augment: Recast on the target to detonate. Enemies hit have a 50% chance to be disarmed.\nPassive: +45% Magnetize Range."
+
+effects:
+  - kind: unmodelled
+    text: "Magnetize Augment: Recast on the target to detonate. Enemies hit have a 50% chance to be disarmed."
+  - kind: unmodelled
+    text: "Passive: +45% Magnetize Range."
+
+source:
+  url: https://wiki.warframe.com/w/Magnetized_Discharge

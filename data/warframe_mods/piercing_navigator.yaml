@@ -1,0 +1,18 @@
+id: piercing_navigator
+name: "Piercing Navigator"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: navigator
+internal_name: /Lotus/Powersuits/Ranger/RangerControlAugmentCard
+description: "Navigator Augment: Each hit increases the projectile's Critical Chance by 50% up to a max of 250%.\n+3 Projectile Punch Through."
+
+effects:
+  - kind: unmodelled
+    text: "Navigator Augment: Each hit increases the projectile's Critical Chance by 50% up to a max of 250%."
+  - kind: unmodelled
+    text: "+3 Projectile Punch Through."
+
+source:
+  url: https://wiki.warframe.com/w/Piercing_Navigator

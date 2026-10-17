@@ -1,0 +1,16 @@
+id: the_relentless_lost
+name: "The Relentless Lost"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: the_lost
+internal_name: /Lotus/Powersuits/BrokenFrame/EmbraceAugmentCard
+description: "The Lost Augment: The Lost gains 35% Ability Strength and 15% Ability Efficiency when cast. The effect stacks up to 3x. Casting the same ability back-to-back resets the effect."
+
+effects:
+  - kind: unmodelled
+    text: "The Lost Augment: The Lost gains 35% Ability Strength and 15% Ability Efficiency when cast. The effect stacks up to 3x. Casting the same ability back-to-back resets the effect."
+
+source:
+  url: https://wiki.warframe.com/w/The_Relentless_Lost

@@ -1,0 +1,16 @@
+id: pool_of_life
+name: "Pool of Life"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: well_of_life
+internal_name: /Lotus/Powersuits/Trinity/WellOfLifeAugmentCard
+description: "Well of Life Augment: On death, marked enemies will drop 4 Health Orbs with a 100% chance of dropping an Energy Orb."
+
+effects:
+  - kind: unmodelled
+    text: "Well of Life Augment: On death, marked enemies will drop 4 Health Orbs with a 100% chance of dropping an Energy Orb."
+
+source:
+  url: https://wiki.warframe.com/w/Pool_of_Life

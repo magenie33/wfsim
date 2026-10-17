@@ -1,0 +1,16 @@
+id: phoenix_renewal
+name: "Phoenix Renewal"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: renewal
+internal_name: /Lotus/Powersuits/Paladin/RegenerationAugmentCard
+description: "Renewal Augment: Taking fatal damage while under the effects of Renewal will instead Heal you or allies to 50% Health. This effect triggers only once for each ally every 60s."
+
+effects:
+  - kind: unmodelled
+    text: "Renewal Augment: Taking fatal damage while under the effects of Renewal will instead Heal you or allies to 50% Health. This effect triggers only once for each ally every 60s."
+
+source:
+  url: https://wiki.warframe.com/w/Phoenix_Renewal

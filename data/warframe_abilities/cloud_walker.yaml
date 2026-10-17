@@ -4,6 +4,7 @@ name: "Cloud Walker"
 frame: wukong
 slot: 2
 energy_cost: 25
+augments: [enveloping_cloud]
 internal_name: /Lotus/Powersuits/MonkeyKing/Abilities/MonkeyCloudAbility
 icon: CloudWalkerIcon(xWhite).png
 description: "Evaporate into a cloud of mist and float through the battlefield, dazing any enemies encountered, while healing Wukong and his twin."

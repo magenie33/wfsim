@@ -4,6 +4,7 @@ name: "Seeking Talons"
 frame: garuda
 slot: 4
 energy_cost: 100
+augments: [blending_talons]
 internal_name: /Lotus/Powersuits/Garuda/Abilities/GarudaUnstoppableAbility
 icon: SeekingTalonsIcon(xWhite).png
 description: "Charge to expand the targeting area, release to send Garuda's talons careening toward each target in area. Surviving enemies are prone to Slash Status."

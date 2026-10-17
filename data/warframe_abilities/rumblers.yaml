@@ -4,6 +4,7 @@ name: "Rumblers"
 frame: atlas
 slot: 4
 energy_cost: 100
+augments: [rumbled, titanic_rumbler]
 internal_name: /Lotus/Powersuits/Brawler/Abilities/BrawlerSummonAbility
 icon: RumblersIcon(xWhite).png
 description: "Summon two elemental stone brawlers to the melee. Summoning petrifies enemies in close proximity to Atlas. When finished, Rumblers collapse into a pile of healing Rubble."

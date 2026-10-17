@@ -1,0 +1,16 @@
+id: ironclad_charge
+name: "Ironclad Charge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: rhino_charge
+internal_name: /Lotus/Powersuits/Rhino/RhinoChargeAugmentCard
+description: "Rhino Charge Augment: Each enemy hit increases Rhino's Armor Rating by 50% for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Rhino Charge Augment: Each enemy hit increases Rhino's Armor Rating by 50% for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Ironclad_Charge

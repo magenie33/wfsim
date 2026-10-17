@@ -1,0 +1,16 @@
+id: critical_surge
+name: "Critical Surge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: breach_surge
+internal_name: /Lotus/Powersuits/Wisp/WispHarnessAugmentCard
+description: "Breach Surge Augment: Teleporting to a Reservoir costs 50% Energy and grants 10% Critical Chance to Primary Weapons per meter traveled for 9s. Maximum 250% Critical Chance."
+
+effects:
+  - kind: unmodelled
+    text: "Breach Surge Augment: Teleporting to a Reservoir costs 50% Energy and grants 10% Critical Chance to Primary Weapons per meter traveled for 9s. Maximum 250% Critical Chance."
+
+source:
+  url: https://wiki.warframe.com/w/Critical_Surge

@@ -4,6 +4,7 @@ name: "Avalanche"
 frame: frost
 slot: 4
 energy_cost: 100
+augments: [icy_avalanche]
 internal_name: /Lotus/Powersuits/Frost/Abilities/AvalancheAbility
 icon: AvalancheIcon(xWhite).png
 description: "Summons a treacherous landslide of ice that instantly freezes and shatters all enemies in its radius."

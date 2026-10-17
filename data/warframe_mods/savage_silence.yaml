@@ -1,0 +1,16 @@
+id: savage_silence
+name: "Savage Silence"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: silence
+internal_name: /Lotus/Powersuits/Banshee/SilenceAugmentCard
+description: "Silence Augment: Silence staggers enemies and Finisher damage is increased by 300%"
+
+effects:
+  - kind: unmodelled
+    text: "Silence Augment: Silence staggers enemies and Finisher damage is increased by 300%"
+
+source:
+  url: https://wiki.warframe.com/w/Savage_Silence

@@ -1,0 +1,16 @@
+id: spellbound_harvest
+name: "Spellbound Harvest"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: spellbind
+internal_name: /Lotus/Powersuits/Fairy/FairyDustAugmentCard
+description: "Spellbind Augment: Hitting at least 4 enemies with Spellbind grants Titania 50. The next cast has +40% Ability Range."
+
+effects:
+  - kind: unmodelled
+    text: "Spellbind Augment: Hitting at least 4 enemies with Spellbind grants Titania 50. The next cast has +40% Ability Range."
+
+source:
+  url: https://wiki.warframe.com/w/Spellbound_Harvest

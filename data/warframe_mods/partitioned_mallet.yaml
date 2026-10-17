@@ -1,0 +1,16 @@
+id: partitioned_mallet
+name: "Partitioned Mallet"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: mallet
+internal_name: /Lotus/Powersuits/Bard/BardMusicAugmentCard
+description: "Mallet Augment: Create an additional Mallet with 20% reduced range."
+
+effects:
+  - kind: unmodelled
+    text: "Mallet Augment: Create an additional Mallet with 20% reduced range."
+
+source:
+  url: https://wiki.warframe.com/w/Partitioned_Mallet

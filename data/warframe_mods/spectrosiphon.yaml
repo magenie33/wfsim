@@ -1,0 +1,16 @@
+id: spectrosiphon
+name: "Spectrosiphon"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: spectrorage
+internal_name: /Lotus/Powersuits/Glass/GlassFragmentAugmentCard
+description: "Spectrorage Augment: Enemies that die within Spectrorage have a 50% chance to drop an Energy Orb."
+
+effects:
+  - kind: unmodelled
+    text: "Spectrorage Augment: Enemies that die within Spectrorage have a 50% chance to drop an Energy Orb."
+
+source:
+  url: https://wiki.warframe.com/w/Spectrosiphon

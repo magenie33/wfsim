@@ -4,6 +4,7 @@ name: "Containment Wall"
 frame: qorvex
 slot: 2
 energy_cost: 50
+augments: [wrecking_wall]
 internal_name: /Lotus/Powersuits/ConcreteFrame/Abilities/ConcreteWallAbility
 icon: ContainmentWallIcon(xWhite).png
 description: "Contain the threat. Qorvex summons walls that slam together, damaging all enemies caught between them and inflicting Radiation Status."

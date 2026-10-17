@@ -1,0 +1,17 @@
+id: singularity
+name: "Singularity"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: assimilate
+augments: absorb
+internal_name: /Lotus/Powersuits/Jade/SelfBulletAttractorPvPAugmentCard
+description: "Absorb Augment: Create a ring every 3s that drags in enemies at 15m/s."
+
+effects:
+  - kind: unmodelled
+    text: "Absorb Augment: Create a ring every 3s that drags in enemies at 15m/s."
+
+source:
+  url: https://wiki.warframe.com/w/Singularity

@@ -4,6 +4,7 @@ name: "Thurible"
 frame: harrow
 slot: 3
 energy_cost: 25
+augments: [warding_thurible]
 internal_name: /Lotus/Powersuits/Priest/Abilities/PriestRavageAbility
 icon: ThuribleIcon(xWhite).png
 description: "Channel Harrow's energy into the Thurible to generate a buff. Once finished, kill enemies to bestow nearby allies with bursts of energy. The more energy channeled the greater the reward for each kill. Weak Points produce extra energy."

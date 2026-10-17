@@ -1,0 +1,16 @@
+id: antimatter_absorb
+name: "Antimatter Absorb"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: antimatter_drop
+internal_name: /Lotus/Powersuits/AntiMatter/AntiMatterDropAugmentCard
+description: "Antimatter Drop Augment: Absorbs enemy bullets within 5m, increasing the power of the explosion from Nova’s particle of antimatter."
+
+effects:
+  - kind: unmodelled
+    text: "Antimatter Drop Augment: Absorbs enemy bullets within 5m, increasing the power of the explosion from Nova’s particle of antimatter."
+
+source:
+  url: https://wiki.warframe.com/w/Antimatter_Absorb

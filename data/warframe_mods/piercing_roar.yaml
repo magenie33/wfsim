@@ -1,0 +1,16 @@
+id: piercing_roar
+name: "Piercing Roar"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: roar
+internal_name: /Lotus/Powersuits/Rhino/RadialBlastAugmentCard
+description: "Roar Augment: Roar gains +40% range. Enemies within 25m are knocked down and suffer 5 stacks of Puncture Status."
+
+effects:
+  - kind: unmodelled
+    text: "Roar Augment: Roar gains +40% range. Enemies within 25m are knocked down and suffer 5 stacks of Puncture Status."
+
+source:
+  url: https://wiki.warframe.com/w/Piercing_Roar

@@ -1,0 +1,16 @@
+id: hall_of_malevolence
+name: "Hall of Malevolence"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: hall_of_mirrors
+internal_name: /Lotus/Powersuits/Harlequin/IllusionAugmentCard
+description: "Hall of Mirrors Augment: The damage of your doppelgangers is increased by 5% every time you kill an enemy."
+
+effects:
+  - kind: unmodelled
+    text: "Hall of Mirrors Augment: The damage of your doppelgangers is increased by 5% every time you kill an enemy."
+
+source:
+  url: https://wiki.warframe.com/w/Hall_of_Malevolence

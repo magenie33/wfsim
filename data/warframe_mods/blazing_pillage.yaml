@@ -1,0 +1,16 @@
+id: blazing_pillage
+name: "Blazing Pillage"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: pillage
+internal_name: /Lotus/Powersuits/IronFrame/IronFrameStripAugmentCard
+description: "Pillage Augment: Enemies affected by Haven will be set ablaze for 200 Heat Damage and restore 50 additional Shields to Hildryn."
+
+effects:
+  - kind: unmodelled
+    text: "Pillage Augment: Enemies affected by Haven will be set ablaze for 200 Heat Damage and restore 50 additional Shields to Hildryn."
+
+source:
+  url: https://wiki.warframe.com/w/Blazing_Pillage

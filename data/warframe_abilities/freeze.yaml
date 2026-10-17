@@ -4,6 +4,7 @@ name: "Freeze"
 frame: frost
 slot: 1
 energy_cost: 25
+augments: [freeze_force]
 internal_name: /Lotus/Powersuits/Frost/Abilities/IcicleAbility
 icon: FreezeIcon(xWhite).png
 description: "A frigid energy blast that freezes targets in their tracks."

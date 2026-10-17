@@ -4,6 +4,7 @@ name: "Dread Mirror"
 frame: garuda
 slot: 1
 energy_cost: 25
+augments: [dread_ward]
 internal_name: /Lotus/Powersuits/Garuda/Abilities/GarudaShieldAbility
 icon: DreadMirrorIcon(xWhite).png
 description: "Rip the life force from an enemy and use it as a shield that captures damage, this kills significantly weakened enemies instantly. Charge to channel the captured damage into an explosive projectile."

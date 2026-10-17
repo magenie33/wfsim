@@ -1,0 +1,16 @@
+id: energy_transfer
+name: "Energy Transfer"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: mend_maim
+internal_name: /Lotus/Powersuits/YinYang/YinYangBurstAugmentCard
+description: "Mend & Maim Augment: 100% of charge is conserved when switching between forms."
+
+effects:
+  - kind: unmodelled
+    text: "Mend & Maim Augment: 100% of charge is conserved when switching between forms."
+
+source:
+  url: https://wiki.warframe.com/w/Energy_Transfer

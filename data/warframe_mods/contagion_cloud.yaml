@@ -1,0 +1,16 @@
+id: contagion_cloud
+name: "Contagion Cloud"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: toxic_lash
+internal_name: /Lotus/Powersuits/Saryn/WeaponPoisonAugmentCard
+description: "Toxic Lash Augment: Create 5m toxic clouds, dealing 300 Toxin Damage/s for 12s with every kill. Damage is twice as strong for Melee kills."
+
+effects:
+  - kind: unmodelled
+    text: "Toxic Lash Augment: Create 5m toxic clouds, dealing 300 Toxin Damage/s for 12s with every kill. Damage is twice as strong for Melee kills."
+
+source:
+  url: https://wiki.warframe.com/w/Contagion_Cloud

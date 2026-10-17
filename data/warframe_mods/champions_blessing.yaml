@@ -1,0 +1,16 @@
+id: champions_blessing
+name: "Champion's Blessing"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: blessing
+internal_name: /Lotus/Powersuits/Trinity/BlessingAugmentCard
+description: "Blessing Augment: Gain Primary and Secondary Critical Chance for 30s for each percent you heal on allies up to 350%."
+
+effects:
+  - kind: unmodelled
+    text: "Blessing Augment: Gain Primary and Secondary Critical Chance for 30s for each percent you heal on allies up to 350%."
+
+source:
+  url: https://wiki.warframe.com/w/Champion's_Blessing

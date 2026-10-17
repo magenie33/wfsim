@@ -4,6 +4,7 @@ name: "Lantern"
 frame: titania
 slot: 3
 energy_cost: 75
+augments: [beguiling_lantern]
 internal_name: /Lotus/Powersuits/Fairy/Abilities/FairyLightAbility
 icon: LanternIcon(xWhite).png
 description: "Create a swarm of razorflies that transform an enemy into an irresistible floating beacon, attracting witless comrades before exploding on command."

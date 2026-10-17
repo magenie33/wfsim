@@ -4,6 +4,7 @@ name: "Prowl"
 frame: ivara
 slot: 3
 energy_cost: 25
+augments: [infiltrate]
 internal_name: /Lotus/Powersuits/Ranger/Abilities/RangerStealAbility
 icon: ProwlIcon(xWhite).png
 description: "Become invisible and steal loot from unsuspecting enemies or take out prey with deadly headshots."

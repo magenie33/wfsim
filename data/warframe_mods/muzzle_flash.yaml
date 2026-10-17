@@ -1,0 +1,16 @@
+id: muzzle_flash
+name: "Muzzle Flash"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: shooting_gallery
+internal_name: /Lotus/Powersuits/Cowgirl/RussianRouletteAugmentCard
+description: "Shooting Gallery Augment: After 6 kill assists by a player with Shooting Gallery, Mesa's next shot will blind enemies within 12m for 6s."
+
+effects:
+  - kind: unmodelled
+    text: "Shooting Gallery Augment: After 6 kill assists by a player with Shooting Gallery, Mesa's next shot will blind enemies within 12m for 6s."
+
+source:
+  url: https://wiki.warframe.com/w/Muzzle_Flash

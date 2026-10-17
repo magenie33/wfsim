@@ -4,6 +4,7 @@ name: "Chaos"
 frame: nyx
 slot: 3
 energy_cost: 75
+augments: [chaos_sphere]
 internal_name: /Lotus/Powersuits/Jade/Abilities/ChaosAbility
 icon: ChaosIcon(xWhite).png
 description: "Nyx releases a devastating psychic pulse, disorienting enemies in a wide radius and forcing them to turn on each other. Confused foes lash out at random factions."

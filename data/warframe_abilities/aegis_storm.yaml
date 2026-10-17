@@ -5,6 +5,7 @@ frame: hildryn
 slot: 4
 energy_cost: 100
 cost_type: "shield"
+augments: [aegis_gale]
 internal_name: /Lotus/Powersuits/IronFrame/Abilities/IronFrameEruptionAbility
 icon: AegisStormIcon(xWhite).png
 description: "Take the skies and rain Balefire rockets down on the enemy. Nearby enemies are blasted into the air where they will create an Energy Orb every few seconds. When shields run out the enemies are smashed into the ground."

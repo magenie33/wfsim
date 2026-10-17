@@ -4,6 +4,7 @@ name: "Temporal Anchor"
 frame: protea
 slot: 4
 energy_cost: 100
+augments: [temporal_erosion]
 internal_name: /Lotus/Powersuits/Odalisk/Abilities/OdaliskAnchorAbility
 icon: TemporalAnchorIcon(xWhite).png
 description: "Drops a Temporal Anchor which, after a short duration, Protea rewinds to trigger a temporal implosion. Implosion damage increases based on damage dealt between anchor drop and rewind. Everything lost or expended in that time is returned.\nDying while Anchor is active rewinds Protea to the anchor, saving her. Protea is knocked down and the anchor vanishes."

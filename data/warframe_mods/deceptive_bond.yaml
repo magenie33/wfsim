@@ -1,0 +1,17 @@
+id: deceptive_bond
+name: "Deceptive Bond"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: damage_decoy
+augments: decoy
+internal_name: /Lotus/Powersuits/Loki/DecoyPvPAugmentCard
+description: "Decoy Augment: 50% of damage Loki takes is transferred to Decoy, and vice versa."
+
+effects:
+  - kind: unmodelled
+    text: "Decoy Augment: 50% of damage Loki takes is transferred to Decoy, and vice versa."
+
+source:
+  url: https://wiki.warframe.com/w/Deceptive_Bond

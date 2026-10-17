@@ -5,6 +5,7 @@ frame: hildryn
 slot: 1
 energy_cost: 50
 cost_type: "shield"
+augments: [balefire_surge]
 internal_name: /Lotus/Powersuits/IronFrame/Abilities/IronFrameBlastAbility
 icon: BalefireIcon(xWhite).png
 description: "Charge and launch devastating bolts of electricity."

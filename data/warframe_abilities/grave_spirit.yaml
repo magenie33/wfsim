@@ -4,6 +4,7 @@ name: "Grave Spirit"
 frame: dagath
 slot: 3
 energy_cost: 75
+augments: [spectral_spirit]
 internal_name: /Lotus/Powersuits/Dagath/Abilities/DagathApparitionAbility
 icon: GraveSpiritIcon(xWhite).png
 description: "Supercharge Dagath's weapons with extra Critical Damage. The effects are doubled on Doomed enemies. Escape fatal blows by briefly assuming a spectral form."

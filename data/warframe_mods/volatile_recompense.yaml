@@ -1,0 +1,16 @@
+id: volatile_recompense
+name: "Volatile Recompense"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: recompense
+internal_name: /Lotus/Powersuits/PaxDuviricus/PaxBladesAugmentCard
+description: "Recompense Augment: Daggers whirl in a ring around Kullervo for 25s, slashing nearby foes and dealing Blast Damage and Status Effect before returning to the ring."
+
+effects:
+  - kind: unmodelled
+    text: "Recompense Augment: Daggers whirl in a ring around Kullervo for 25s, slashing nearby foes and dealing Blast Damage and Status Effect before returning to the ring."
+
+source:
+  url: https://wiki.warframe.com/w/Volatile_Recompense

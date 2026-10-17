@@ -1,0 +1,16 @@
+id: ice_wave_impedance
+name: "Ice Wave Impedance"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: ice_wave
+internal_name: /Lotus/Powersuits/Frost/IceSpikeAugmentCard
+description: "Ice Wave Augment: Create a frozen trail for 12 seconds. Enemies that touch it are inflicted with Cold Status every second."
+
+effects:
+  - kind: unmodelled
+    text: "Ice Wave Augment: Create a frozen trail for 12 seconds. Enemies that touch it are inflicted with Cold Status every second."
+
+source:
+  url: https://wiki.warframe.com/w/Ice_Wave_Impedance

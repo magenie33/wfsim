@@ -1,0 +1,16 @@
+id: teeming_virulence
+name: "Teeming Virulence"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: virulence
+internal_name: /Lotus/Powersuits/Infestation/InfestRuptureAugmentCard
+description: "Virulence Augment: Hitting 4 enemies with Virulence grants 200% Primary Weapon Critical Chance for 15s."
+
+effects:
+  - kind: unmodelled
+    text: "Virulence Augment: Hitting 4 enemies with Virulence grants 200% Primary Weapon Critical Chance for 15s."
+
+source:
+  url: https://wiki.warframe.com/w/Teeming_Virulence

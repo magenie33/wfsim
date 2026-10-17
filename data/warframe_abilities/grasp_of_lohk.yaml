@@ -4,6 +4,7 @@ name: "Grasp of Lohk"
 frame: xaku
 slot: 2
 energy_cost: 50
+augments: [vampiric_grasp]
 internal_name: /Lotus/Powersuits/BrokenFrame/Abilities/BrokenGraspAbility
 icon: GraspOfLohkIcon(xWhite).png
 description: "Void Tendrils steal weapons from nearby enemies to use as your own floating, auto-targeting armament. Damage output increases based on enemy level. The number of weapons grabbed also determines the damage multiplier for The Lost: Deny's Void beam."

@@ -1,0 +1,16 @@
+id: mending_splinters
+name: "Mending Splinters"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: splinter_storm
+internal_name: /Lotus/Powersuits/Glass/GlassShatterAugmentCard
+description: "Splinter Storm Augment: For each target affected, Splinter Storm heals 15 Health/s."
+
+effects:
+  - kind: unmodelled
+    text: "Splinter Storm Augment: For each target affected, Splinter Storm heals 15 Health/s."
+
+source:
+  url: https://wiki.warframe.com/w/Mending_Splinters

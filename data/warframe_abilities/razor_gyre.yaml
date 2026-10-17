@@ -4,6 +4,7 @@ name: "Razor Gyre"
 frame: caliban
 slot: 1
 energy_cost: 25
+augments: [razor_mortar]
 internal_name: /Lotus/Powersuits/Sentient/Abilities/SentientWhirlwindAbility
 icon: RazorGyreIcon(xWhite).png
 description: "Dash forward in a spinning vortex of death. Struck enemies are inflicted with Tau Status Effect, making them more vulnerable to all other status effects. For each enemy hit, recover a portion of the energy cost, as well as health and shields. Enemies lifted by Sentient Wrath take increased damage."

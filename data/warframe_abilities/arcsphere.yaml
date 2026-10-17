@@ -4,6 +4,7 @@ name: "Arcsphere"
 frame: gyre
 slot: 1
 energy_cost: 25
+augments: [conductive_sphere]
 internal_name: /Lotus/Powersuits/Gyre/Abilities/GyrePulseAbility
 icon: ArcsphereIcon(xWhite).png
 description: "Launch a Gyratory Sphere that will deal high damage on impact and periodically deal electrical shocks to nearby enemies. Hit multiple enemies at once with the initial launch to enhance damage."

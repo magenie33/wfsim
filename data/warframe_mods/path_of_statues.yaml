@@ -1,0 +1,16 @@
+id: path_of_statues
+name: "Path of Statues"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: landslide
+internal_name: /Lotus/Powersuits/Brawler/BrawlerPunchAugmentCard
+description: "Landslide Augment: Leave a trail for 12s that petrifies enemies for 6s."
+
+effects:
+  - kind: unmodelled
+    text: "Landslide Augment: Leave a trail for 12s that petrifies enemies for 6s."
+
+source:
+  url: https://wiki.warframe.com/w/Path_of_Statues

@@ -4,6 +4,7 @@ name: "Invisibility"
 frame: loki
 slot: 2
 energy_cost: 50
+augments: [hushed_invisibility]
 internal_name: /Lotus/Powersuits/Loki/Abilities/InvisibilityAbility
 icon: InvisibilityIcon(xWhite).png
 description: "Loki camouflages himself, becoming invisible to enemies."

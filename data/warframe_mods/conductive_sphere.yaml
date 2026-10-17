@@ -1,0 +1,16 @@
+id: conductive_sphere
+name: "Conductive Sphere"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: arcsphere
+internal_name: /Lotus/Powersuits/Gyre/GyrePulseAugmentCard
+description: "Arcsphere Augment: Projectiles that pass through Arcsphere have guaranteed Electricity Status Effect and +75% Electricity Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Arcsphere Augment: Projectiles that pass through Arcsphere have guaranteed Electricity Status Effect and +75% Electricity Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Conductive_Sphere

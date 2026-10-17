@@ -1,0 +1,16 @@
+id: omikujis_fortune
+name: "Omikuji's Fortune"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: omikuji
+internal_name: /Lotus/Powersuits/Koumei/KoumeiFortuneAugmentCard
+description: "Omikuji Augment: Reduce Omikuji's Cooldown by 4s when you kill an enemy with the weapon affected by Koumei's Passive."
+
+effects:
+  - kind: unmodelled
+    text: "Omikuji Augment: Reduce Omikuji's Cooldown by 4s when you kill an enemy with the weapon affected by Koumei's Passive."
+
+source:
+  url: https://wiki.warframe.com/w/Omikuji's_Fortune

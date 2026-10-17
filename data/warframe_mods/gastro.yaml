@@ -1,0 +1,16 @@
+id: gastro
+name: "Gastro"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: regurgitate
+internal_name: /Lotus/Powersuits/Devourer/DevourerRegurgitateAugmentCard
+description: "Regurgitate Augment: Regurgitated enemies bounce up to 3 times, creating gas clouds that last 8s and inflict nearby enemies with  Gas Status Effect."
+
+effects:
+  - kind: unmodelled
+    text: "Regurgitate Augment: Regurgitated enemies bounce up to 3 times, creating gas clouds that last 8s and inflict nearby enemies with  Gas Status Effect."
+
+source:
+  url: https://wiki.warframe.com/w/Gastro

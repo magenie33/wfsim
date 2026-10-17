@@ -1,0 +1,16 @@
+id: resonance
+name: "Resonance"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: sonar
+internal_name: /Lotus/Powersuits/Banshee/SonarAugmentCard
+description: "Sonar Augment: Killing an enemy by shooting their Sonar's weak point will trigger another Sonar for 100% of its duration."
+
+effects:
+  - kind: unmodelled
+    text: "Sonar Augment: Killing an enemy by shooting their Sonar's weak point will trigger another Sonar for 100% of its duration."
+
+source:
+  url: https://wiki.warframe.com/w/Resonance

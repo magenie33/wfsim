@@ -1,0 +1,16 @@
+id: lingering_transmutation
+name: "Lingering Transmutation"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: transmutation_probe
+internal_name: /Lotus/Powersuits/Alchemist/AlchemistTransmuteAugmentCard
+description: "Transmutation Probe Augment: Probe returns to cast position after reaching max range, and remains nearby for 15s. Recall Probe by recasting. Recast again to end."
+
+effects:
+  - kind: unmodelled
+    text: "Transmutation Probe Augment: Probe returns to cast position after reaching max range, and remains nearby for 15s. Recall Probe by recasting. Recast again to end."
+
+source:
+  url: https://wiki.warframe.com/w/Lingering_Transmutation

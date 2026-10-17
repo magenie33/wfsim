@@ -4,6 +4,7 @@ name: "Shroud of Dynar"
 frame: voruna
 slot: 1
 energy_cost: 25
+augments: [prey_of_dynar]
 internal_name: /Lotus/Powersuits/Werewolf/Abilities/WerewolfShroudAbility
 icon: ShroudofDynarIcon(xWhite).png
 description: "(TAP) Dynar shrouds Voruna with invisibility and accelerates her speed. Invisibility ends when Voruna attacks. For a short time after invisibility ends, melee attacks have increased Critical Damage, Status Chance, Critical Chance and inflict Slash Status Effects. Melee kill an enemy during this time to extend the melee buff once per cast.\n\n(HOLD) Dynar guards Voruna, increasing her Parkour Velocity."

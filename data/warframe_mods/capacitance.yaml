@@ -1,0 +1,16 @@
+id: capacitance
+name: "Capacitance"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: discharge
+internal_name: /Lotus/Powersuits/Volt/OverloadAugmentCard
+description: "Discharge Augment: Converts 3% of Damage dealt into Shields split between Volt and Squadmates."
+
+effects:
+  - kind: unmodelled
+    text: "Discharge Augment: Converts 3% of Damage dealt into Shields split between Volt and Squadmates."
+
+source:
+  url: https://wiki.warframe.com/w/Capacitance

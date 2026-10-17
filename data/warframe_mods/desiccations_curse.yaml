@@ -1,0 +1,16 @@
+id: desiccations_curse
+name: "Desiccation's Curse"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: desiccation
+internal_name: /Lotus/Powersuits/Sandman/SandmanBlastAugmentCard
+description: "Desiccation Augment: Killing a blinded enemy with a Finisher has a 100% chance to summon a Swarm Kavat that will spread Scarab Swarm. Maximum Swarm Kavats +2."
+
+effects:
+  - kind: unmodelled
+    text: "Desiccation Augment: Killing a blinded enemy with a Finisher has a 100% chance to summon a Swarm Kavat that will spread Scarab Swarm. Maximum Swarm Kavats +2."
+
+source:
+  url: https://wiki.warframe.com/w/Desiccation's_Curse

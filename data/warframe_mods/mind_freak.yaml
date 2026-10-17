@@ -1,0 +1,16 @@
+id: mind_freak
+name: "Mind Freak"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: mind_control
+internal_name: /Lotus/Powersuits/Jade/MindControlAugmentCard
+description: "Mind Control Augment: Controlled target inflicts +1000% Damage and gains +25% Movement and Attack Speed."
+
+effects:
+  - kind: unmodelled
+    text: "Mind Control Augment: Controlled target inflicts +1000% Damage and gains +25% Movement and Attack Speed."
+
+source:
+  url: https://wiki.warframe.com/w/Mind_Freak

@@ -4,6 +4,7 @@ name: "Spores"
 frame: saryn
 slot: 1
 energy_cost: 25
+augments: [revealing_spores, venom_dose]
 internal_name: /Lotus/Powersuits/Saryn/Abilities/PoisonAbility
 icon: SporesIcon(xWhite).png
 description: "Inflict a target with a pox of Corrosive spores. Spread spores to nearby enemies by destroying them or killing their host. The longer the Spore spreads, its damage will increase."

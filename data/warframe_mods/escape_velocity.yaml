@@ -1,0 +1,17 @@
+id: escape_velocity
+name: "Escape Velocity"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: wormhole
+internal_name: /Lotus/Powersuits/AntiMatter/WormHoleAugmentCard
+description: "Worm Hole Augment: Allies that travel through wormhole gain a 50% Speed bonus for 7s."
+
+effects:
+  - kind: unmodelled
+    text: "Worm Hole Augment: Allies that travel through wormhole gain a 50% Speed bonus for 7s."
+
+source:
+  url: https://wiki.warframe.com/w/Escape_Velocity

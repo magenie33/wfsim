@@ -1,0 +1,16 @@
+id: peaceful_provocation
+name: "Peaceful Provocation"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: pacify_provoke
+internal_name: /Lotus/Powersuits/YinYang/YinYangAuraAugmentCard
+description: "Pacify & Provoke Augment: Pacify converts damage done to allies into an aura that slows enemies by 40%. Provoke converts damage done to enemies into 15% extra Ability Strength."
+
+effects:
+  - kind: unmodelled
+    text: "Pacify & Provoke Augment: Pacify converts damage done to allies into an aura that slows enemies by 40%. Provoke converts damage done to enemies into 15% extra Ability Strength."
+
+source:
+  url: https://wiki.warframe.com/w/Peaceful_Provocation

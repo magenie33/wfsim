@@ -4,6 +4,7 @@ name: "Switch Teleport"
 frame: loki
 slot: 3
 energy_cost: 25
+augments: [safeguard_switch]
 internal_name: /Lotus/Powersuits/Loki/Abilities/SwitchTeleportAbility
 icon: SwitchTeleportIcon(xWhite).png
 description: "Loki instantaneously swaps positions with a target, confusing the enemy."

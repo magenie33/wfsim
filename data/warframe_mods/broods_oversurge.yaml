@@ -1,0 +1,16 @@
+id: broods_oversurge
+name: "Brood's Oversurge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: widows_brood
+internal_name: /Lotus/Powersuits/Oraxia/BroodAugmentCard
+description: "Widow's Brood Augment: Scuttlers are galvanized with Electricity. Hold to direct all active Scuttlers at the aimed target, inflicting 2000  Electricity Damage and Status Effect in a radius."
+
+effects:
+  - kind: unmodelled
+    text: "Widow's Brood Augment: Scuttlers are galvanized with Electricity. Hold to direct all active Scuttlers at the aimed target, inflicting 2000  Electricity Damage and Status Effect in a radius."
+
+source:
+  url: https://wiki.warframe.com/w/Brood's_Oversurge

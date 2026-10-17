@@ -1,0 +1,16 @@
+id: noctua_swarm
+name: "Noctua Swarm"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: noctua
+internal_name: /Lotus/Powersuits/Pagemaster/PagemasterBookAugment1Card
+description: "Noctua Augment: Alternate Fire releases Paragrimms that swarm 8m around the point of aim for 15s, silencing enemies and stealing their Energy for allies."
+
+effects:
+  - kind: unmodelled
+    text: "Noctua Augment: Alternate Fire releases Paragrimms that swarm 8m around the point of aim for 15s, silencing enemies and stealing their Energy for allies."
+
+source:
+  url: https://wiki.warframe.com/w/Noctua_Swarm

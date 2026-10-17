@@ -1,0 +1,16 @@
+id: swift_bite
+name: "Swift Bite"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: ophidian_bite
+internal_name: /Lotus/Powersuits/Alchemist/SerpentAugmentCard
+description: "Ophidian Bite Augment: Reduce Ability Cooldowns by 4s when at least 4 enemies are hit. Ophidian Bite is granted 30% additional Ability Range."
+
+effects:
+  - kind: unmodelled
+    text: "Ophidian Bite Augment: Reduce Ability Cooldowns by 4s when at least 4 enemies are hit. Ophidian Bite is granted 30% additional Ability Range."
+
+source:
+  url: https://wiki.warframe.com/w/Swift_Bite

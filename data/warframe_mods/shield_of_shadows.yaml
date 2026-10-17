@@ -1,0 +1,16 @@
+id: shield_of_shadows
+name: "Shield of Shadows"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: shadows_of_the_dead
+internal_name: /Lotus/Powersuits/Necro/CloneTheDeadAugmentCard
+description: "Shadows of the Dead Augment: Each Shadow within 50m take 6% of the Damage done to Nekros in his stead."
+
+effects:
+  - kind: unmodelled
+    text: "Shadows of the Dead Augment: Each Shadow within 50m take 6% of the Damage done to Nekros in his stead."
+
+source:
+  url: https://wiki.warframe.com/w/Shield_of_Shadows

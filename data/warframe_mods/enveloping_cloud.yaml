@@ -1,0 +1,16 @@
+id: enveloping_cloud
+name: "Enveloping Cloud"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: cloud_walker
+internal_name: /Lotus/Powersuits/MonkeyKing/MonkeyCloudAugmentCard
+description: "Cloud Walker Augment: Allies within 4m of the cloud become invisible to enemies for 14s."
+
+effects:
+  - kind: unmodelled
+    text: "Cloud Walker Augment: Allies within 4m of the cloud become invisible to enemies for 14s."
+
+source:
+  url: https://wiki.warframe.com/w/Enveloping_Cloud

@@ -1,0 +1,17 @@
+id: assimilate
+name: "Assimilate"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: assimilate
+augments: absorb
+internal_name: /Lotus/Powersuits/Jade/SelfBulletAttractorAugmentCard
+description: "Absorb Augment: Nyx can use weapons during Absorb and its duration is infinite, but it consumes 6.5  Energy/s and its area of effect is halved."
+
+effects:
+  - kind: unmodelled
+    text: "Absorb Augment: Nyx can use weapons during Absorb and its duration is infinite, but it consumes 6.5  Energy/s and its area of effect is halved."
+
+source:
+  url: https://wiki.warframe.com/w/Assimilate

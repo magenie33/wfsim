@@ -4,6 +4,7 @@ name: "Widow's Brood"
 frame: oraxia
 slot: 3
 energy_cost: 50
+augments: [broods_oversurge]
 internal_name: /Lotus/Powersuits/Oraxia/Abilities/OraxiaSpidersAbility
 icon: Widow'sBroodIcon(xWhite).png
 description: "Oraxia launches a barrage of stinging darts in front of her that applies  Toxin Status Effect. Poisoned enemies spawn Scuttlers when killed."

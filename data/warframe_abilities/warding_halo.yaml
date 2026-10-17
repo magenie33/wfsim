@@ -4,6 +4,7 @@ name: "Warding Halo"
 frame: nezha
 slot: 3
 energy_cost: 75
+augments: [safeguard]
 internal_name: /Lotus/Powersuits/Nezha/Abilities/NezhaSashAbility
 icon: WardingHaloIcon(xWhite).png
 description: "Create a protective ring of fire, that also stuns and damages enemies who get too close."

@@ -1,0 +1,16 @@
+id: coil_recharge
+name: "Coil Recharge"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: coil_horizon
+internal_name: /Lotus/Powersuits/Gyre/GyreSphereAugmentCard
+description: "Coil Horizon Augment: Gyratory Sphere can be recalled. Enemies in its radius suffer 500  Electricity Damage and chain other enemies. Enemies pulled into detonation suffer additional discharges."
+
+effects:
+  - kind: unmodelled
+    text: "Coil Horizon Augment: Gyratory Sphere can be recalled. Enemies in its radius suffer 500  Electricity Damage and chain other enemies. Enemies pulled into detonation suffer additional discharges."
+
+source:
+  url: https://wiki.warframe.com/w/Coil_Recharge

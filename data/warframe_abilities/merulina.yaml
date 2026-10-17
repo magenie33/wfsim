@@ -4,6 +4,7 @@ name: "Merulina"
 frame: yareli
 slot: 2
 energy_cost: 25
+augments: [loyal_merulina, merulina_guardian]
 internal_name: /Lotus/Powersuits/Yareli/Abilities/YareliBoardAbility
 icon: MerulinaIcon(xWhite).png
 description: "Summon Merulina, a rideable creature of the waves, and the inspiration for K-Driving. Merulina protects Yareli by absorbing a large portion of incoming damage."

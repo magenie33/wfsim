@@ -1,0 +1,16 @@
+id: axios_javelineers
+name: "Axios Javelineers"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: axios_javelin
+internal_name: /Lotus/Powersuits/Hoplite/HopliteImpaleAugmentCard
+description: "Axios Javelin Augment: A pair of Styanax Specters spawn to throw javelins, creating vortexes on impact. Impale an enemy to increase vortex duration by 5s."
+
+effects:
+  - kind: unmodelled
+    text: "Axios Javelin Augment: A pair of Styanax Specters spawn to throw javelins, creating vortexes on impact. Impale an enemy to increase vortex duration by 5s."
+
+source:
+  url: https://wiki.warframe.com/w/Axios_Javelineers

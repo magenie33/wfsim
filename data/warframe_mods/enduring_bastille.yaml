@@ -1,0 +1,16 @@
+id: enduring_bastille
+name: "Enduring Bastille"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: bastille
+internal_name: /Lotus/Powersuits/Trapper/LevTrapAugmentCard
+description: "Bastille Augment: Killing an enemy in Bastille extends the duration by 2s. Vortex's duration is increased by 70% of its Maximum Duration for each additional Vortex thrown into it."
+
+effects:
+  - kind: unmodelled
+    text: "Bastille Augment: Killing an enemy in Bastille extends the duration by 2s. Vortex's duration is increased by 70% of its Maximum Duration for each additional Vortex thrown into it."
+
+source:
+  url: https://wiki.warframe.com/w/Enduring_Bastille

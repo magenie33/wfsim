@@ -4,6 +4,7 @@ name: "Wormhole"
 frame: nova
 slot: 3
 energy_cost: 75
+augments: [escape_velocity]
 internal_name: /Lotus/Powersuits/AntiMatter/Abilities/WormHoleAbility
 icon: WormholeIcon(xWhite).png
 description: "Creates a wormhole allowing instantaneous travel. Hold the ability to visualize placement."

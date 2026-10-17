@@ -1,0 +1,17 @@
+id: vexing_retaliation
+name: "Vexing Retaliation"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: guardian_armor
+augments: vex_armor
+internal_name: /Lotus/Powersuits/Dragon/DragonScalesAugmentCard
+description: "Vex Armor Augment: Taking 150 Damage will trigger a 9m burst. Shield damage will cause a Puncture Status effect while Health damage will cause a Blast Status effect."
+
+effects:
+  - kind: unmodelled
+    text: "Vex Armor Augment: Taking 150 Damage will trigger a 9m burst. Shield damage will cause a Puncture Status effect while Health damage will cause a Blast Status effect."
+
+source:
+  url: https://wiki.warframe.com/w/Vexing_Retaliation

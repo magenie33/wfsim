@@ -1,0 +1,16 @@
+id: rift_haven
+name: "Rift Haven"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: banish
+internal_name: /Lotus/Powersuits/Magician/BanishAugmentCard
+description: "Banish Augment: Allies banished to the rift will have 25% of their Maximum Health restored every second."
+
+effects:
+  - kind: unmodelled
+    text: "Banish Augment: Allies banished to the rift will have 25% of their Maximum Health restored every second."
+
+source:
+  url: https://wiki.warframe.com/w/Rift_Haven

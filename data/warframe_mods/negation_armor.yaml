@@ -1,0 +1,16 @@
+id: negation_armor
+name: "Negation Armor"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: scarab_shell
+internal_name: /Lotus/Powersuits/Sandman/SandmanSwarmAugmentCard
+description: "Scarab Shell Augment: When Inaros takes fatal damage, he consumes Scarab Shell to heal with a brief invulnerability that ends with a deadly Slash Status Effect. Cooldown 30s."
+
+effects:
+  - kind: unmodelled
+    text: "Scarab Shell Augment: When Inaros takes fatal damage, he consumes Scarab Shell to heal with a brief invulnerability that ends with a deadly Slash Status Effect. Cooldown 30s."
+
+source:
+  url: https://wiki.warframe.com/w/Negation_Armor

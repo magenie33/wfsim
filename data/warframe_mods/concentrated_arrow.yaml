@@ -1,0 +1,16 @@
+id: concentrated_arrow
+name: "Concentrated Arrow"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: artemis_bow
+internal_name: /Lotus/Powersuits/Ranger/RangerBowAugmentCard
+description: "Artemis Bow Augment: Fires a single arrow with +25% Base Critical Chance on full charge, additional +50% Chance and explodes in a 7m radius on Weak Points. Removes Punch Through."
+
+effects:
+  - kind: unmodelled
+    text: "Artemis Bow Augment: Fires a single arrow with +25% Base Critical Chance on full charge, additional +50% Chance and explodes in a 7m radius on Weak Points. Removes Punch Through."
+
+source:
+  url: https://wiki.warframe.com/w/Concentrated_Arrow

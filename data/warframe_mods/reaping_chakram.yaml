@@ -1,0 +1,16 @@
+id: reaping_chakram
+name: "Reaping Chakram"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: blazing_chakram
+internal_name: /Lotus/Powersuits/Nezha/NezhaRingAugmentCard
+description: "Blazing Chakram Augment: Each enemy hit increases the ring's Damage by 2x and the chance for enemies to drop Health Orbs on death by +0.25x."
+
+effects:
+  - kind: unmodelled
+    text: "Blazing Chakram Augment: Each enemy hit increases the ring's Damage by 2x and the chance for enemies to drop Health Orbs on death by +0.25x."
+
+source:
+  url: https://wiki.warframe.com/w/Reaping_Chakram

@@ -4,6 +4,7 @@ name: "Desecrate"
 frame: nekros
 slot: 3
 energy_cost: 10
+augments: [despoil]
 internal_name: /Lotus/Powersuits/Necro/Abilities/SearchTheDeadAbility
 icon: DesecrateIcon(xWhite).png
 description: "Forces fallen enemies around you to drop additional loot."

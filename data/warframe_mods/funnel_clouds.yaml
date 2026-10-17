@@ -1,0 +1,16 @@
+id: funnel_clouds
+name: "Funnel Clouds"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tornado
+internal_name: /Lotus/Powersuits/Tengu/TornadoAugmentCard
+description: "Tornado Augment: Creates 8 additional tornadoes. All tornadoes are 50% their original size and won't pick up enemies."
+
+effects:
+  - kind: unmodelled
+    text: "Tornado Augment: Creates 8 additional tornadoes. All tornadoes are 50% their original size and won't pick up enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Funnel_Clouds

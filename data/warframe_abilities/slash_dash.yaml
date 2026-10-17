@@ -4,6 +4,7 @@ name: "Slash Dash"
 frame: excalibur
 slot: 1
 energy_cost: 25
+augments: [purging_slash, surging_dash]
 internal_name: /Lotus/Powersuits/Excalibur/Abilities/SlashDashNewAbility
 icon: SlashDashIcon(xWhite).png
 description: "Slash and dash through enemies alongside a radial specter. The powerful Exalted Blade's slashes inflict Slash Status."

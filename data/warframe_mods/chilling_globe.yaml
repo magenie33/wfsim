@@ -1,0 +1,17 @@
+id: chilling_globe
+name: "Chilling Globe"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: chilling_globe
+augments: snow_globe
+internal_name: /Lotus/Powersuits/Frost/IceShieldAugmentCard
+description: "Snow Globe Augment: Enemies that enter have a 50% chance to become frozen solid for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Snow Globe Augment: Enemies that enter have a 50% chance to become frozen solid for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Chilling_Globe

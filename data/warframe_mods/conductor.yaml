@@ -1,0 +1,17 @@
+id: conductor
+name: "Conductor"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: resonator
+internal_name: /Lotus/Powersuits/Bard/BardCharmAugmentCard
+description: "Resonator Augment: Reactivate the ability to command Resonator to move to your aim point at 150% Speed."
+
+effects:
+  - kind: unmodelled
+    text: "Resonator Augment: Reactivate the ability to command Resonator to move to your aim point at 150% Speed."
+
+source:
+  url: https://wiki.warframe.com/w/Conductor

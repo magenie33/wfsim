@@ -1,0 +1,16 @@
+id: freeze_force
+name: "Freeze Force"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: freeze
+internal_name: /Lotus/Powersuits/Frost/IcicleAugmentCard
+description: "Freeze Augment: Hold to cast will grant all allies within 15m an additional 100% Cold Damage to their attacks for 40s."
+
+effects:
+  - kind: unmodelled
+    text: "Freeze Augment: Hold to cast will grant all allies within 15m an additional 100% Cold Damage to their attacks for 40s."
+
+source:
+  url: https://wiki.warframe.com/w/Freeze_Force

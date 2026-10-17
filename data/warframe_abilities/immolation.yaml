@@ -4,6 +4,7 @@ name: "Immolation"
 frame: ember
 slot: 2
 energy_cost: 50
+augments: [immolated_radiance]
 internal_name: /Lotus/Powersuits/Ember/Abilities/EmberImmolationAbility
 icon: ImmolationIcon(xWhite).png
 description: "Protect Ember with flame armor that burns stronger over time, consuming energy once its meter is at full strength. Cast again to extinguish the flame."

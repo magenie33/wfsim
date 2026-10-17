@@ -4,6 +4,7 @@ name: "Antimatter Drop"
 frame: nova
 slot: 2
 energy_cost: 50
+augments: [antimatter_absorb]
 internal_name: /Lotus/Powersuits/AntiMatter/Abilities/AntiMatterDrop
 icon: AntimatterDropIcon(xWhite).png
 description: "Launch a large particle of charged antimatter that will detonate on contact. Direct the particle by aiming, shoot it to charge it further. Deals Blast Damage with a guaranteed Status Effect."

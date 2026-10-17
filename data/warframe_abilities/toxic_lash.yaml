@@ -4,6 +4,7 @@ name: "Toxic Lash"
 frame: saryn
 slot: 3
 energy_cost: 50
+augments: [contagion_cloud]
 internal_name: /Lotus/Powersuits/Saryn/Abilities/WeaponPoisonAbility
 icon: ToxicLashIcon(xWhite).png
 description: "While active, attacks deal additional Toxin Damage; this effect is doubled for Melee Strikes. Instantly burst spores when attacking afflicted enemies."

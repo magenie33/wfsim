@@ -4,6 +4,7 @@ name: "Teleport"
 frame: ash
 slot: 3
 energy_cost: 25
+augments: [teleport_rush]
 internal_name: /Lotus/Powersuits/Ninja/Abilities/TeleportToAbility
 icon: TeleportIcon(xWhite).png
 description: "Teleport to a target and perform a Finisher. If the finisher kills the target, Ash regains a portion of the energy spent."

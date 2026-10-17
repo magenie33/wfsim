@@ -1,0 +1,16 @@
+id: chaos_sphere
+name: "Chaos Sphere"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: chaos
+internal_name: /Lotus/Powersuits/Jade/ChaosAugmentCard
+description: "Chaos Augment: Enemies entering the Effect Range will be inflicted with Chaos. Effect Range lasts for 50% of the ability duration and shrinks over time."
+
+effects:
+  - kind: unmodelled
+    text: "Chaos Augment: Enemies entering the Effect Range will be inflicted with Chaos. Effect Range lasts for 50% of the ability duration and shrinks over time."
+
+source:
+  url: https://wiki.warframe.com/w/Chaos_Sphere

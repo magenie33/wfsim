@@ -1,0 +1,16 @@
+id: viral_tempest
+name: "Viral Tempest"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tempest_barrage
+internal_name: /Lotus/Powersuits/Pirate/CannonBarrageAugmentCard
+description: "Tempest Barrage Augment: Each projectile has a 100% chance of inflicting a Viral Status Effect."
+
+effects:
+  - kind: unmodelled
+    text: "Tempest Barrage Augment: Each projectile has a 100% chance of inflicting a Viral Status Effect."
+
+source:
+  url: https://wiki.warframe.com/w/Viral_Tempest

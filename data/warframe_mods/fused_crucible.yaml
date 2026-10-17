@@ -1,0 +1,16 @@
+id: fused_crucible
+name: "Fused Crucible"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: crucible_blast
+internal_name: /Lotus/Powersuits/ConcreteFrame/ConcreteLaserAugmentCard
+description: "Crucible Blast Augment: Becomes a channeled ability consuming 20  Energy/s that ramps up. While active Chyrinka Pillars trigger chain reactions and their duration is frozen. Mobility is greatly reduced."
+
+effects:
+  - kind: unmodelled
+    text: "Crucible Blast Augment: Becomes a channeled ability consuming 20  Energy/s that ramps up. While active Chyrinka Pillars trigger chain reactions and their duration is frozen. Mobility is greatly reduced."
+
+source:
+  url: https://wiki.warframe.com/w/Fused_Crucible

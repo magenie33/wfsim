@@ -4,6 +4,7 @@ name: "Photon Strike"
 frame: vauban
 slot: 3
 energy_cost: 50
+augments: [photon_repeater]
 internal_name: /Lotus/Powersuits/Trapper/Abilities/TrapperStrikeAbility
 icon: PhotonStrikeIcon(xWhite).png
 description: "Drop a targeting beacon that calls in a devastating laser artillery strike. Deals doubled damage to enemies with Overguard."

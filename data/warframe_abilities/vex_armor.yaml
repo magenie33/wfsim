@@ -4,6 +4,7 @@ name: "Vex Armor"
 frame: chroma
 slot: 3
 energy_cost: 75
+augments: [guardian_armor, vexing_retaliation]
 internal_name: /Lotus/Powersuits/Dragon/Abilities/DragonScalesAbility
 icon: VexArmorIcon(xWhite).png
 description: "Chroma fortifies squad Armor when his Shields are damaged or he kills an enemy with a melee weapon. He increases squad Weapon Damage when he loses Health or he kills an enemy with a ranged weapon, double the effect on weak point kills."

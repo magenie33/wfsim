@@ -4,6 +4,7 @@ name: "Recompense"
 frame: kullervo
 slot: 2
 energy_cost: 50
+augments: [volatile_recompense]
 internal_name: /Lotus/Powersuits/PaxDuviricus/Abilities/PaxBladesAbility
 icon: RecompenseIcon(xWhite).png
 description: "Kullervo surrounds himself with daggers. Each dagger that strikes an enemy restores his health, but each dagger that misses an enemy strikes Kullervo, dealing a bit of damage. When Kullervo has max Health, he receives Overguard from struck enemies."

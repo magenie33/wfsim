@@ -4,6 +4,7 @@ name: "Sow"
 frame: sevagoth
 slot: 2
 energy_cost: 50
+augments: [dark_propagation]
 internal_name: /Lotus/Powersuits/Wraith/Abilities/WraithSowAbility
 icon: SowIcon(xWhite).png
 description: "Plant a death seed in nearby targets to drain their lifeforce. Reap what has been sown to detonate afflicted enemies, dealing a percentage of their health as radial damage. The souls of the dead fill the Death Well."

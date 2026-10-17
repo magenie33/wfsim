@@ -1,0 +1,16 @@
+id: celestial_stomp
+name: "Celestial Stomp"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: celestial_twin
+internal_name: /Lotus/Powersuits/MonkeyKing/MonkeyPokeAugmentCard
+description: "Celestial Twin Augment: Hold to command the twin to perform a slam attack suspending enemies in the air within 20m for 25 Energy."
+
+effects:
+  - kind: unmodelled
+    text: "Celestial Twin Augment: Hold to command the twin to perform a slam attack suspending enemies in the air within 20m for 25 Energy."
+
+source:
+  url: https://wiki.warframe.com/w/Celestial_Stomp

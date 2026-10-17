@@ -4,6 +4,7 @@ name: "Blazing Chakram"
 frame: nezha
 slot: 2
 energy_cost: 25
+augments: [reaping_chakram]
 internal_name: /Lotus/Powersuits/Nezha/Abilities/NezhaRingAbility
 icon: BlazingChakramIcon(xWhite).png
 description: "Hurl a flaming ring that sets enemies ablaze making them vulnerable to any damage. Flaming enemies drop Restorative Orbs on death. Charge to amplify the power of the ring, and reactivate to instantly travel to the ring's location."

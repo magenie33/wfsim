@@ -4,6 +4,7 @@ name: "Tentacle Swarm"
 frame: hydroid
 slot: 4
 energy_cost: 50
+augments: [pilfering_swarm]
 internal_name: /Lotus/Powersuits/Pirate/Abilities/KrakenAbility
 icon: TentacleSwarmIcon(xWhite).png
 description: "Summon a creature from the depths. Its watery tentacles emerge from nearby surfaces to wreak havoc."

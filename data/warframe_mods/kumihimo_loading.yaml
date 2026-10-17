@@ -1,0 +1,16 @@
+id: kumihimo_loading
+name: "Kumihimo Loading"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: kumihimo
+internal_name: /Lotus/Powersuits/Koumei/KoumeiStringsAugmentCard
+description: "Kumihimo Augment: 6 kills with weapons affected by Koumei's Passive give a loaded die that always rolls 6. Hold to cast empowered Kumihimo and consume all dice."
+
+effects:
+  - kind: unmodelled
+    text: "Kumihimo Augment: 6 kills with weapons affected by Koumei's Passive give a loaded die that always rolls 6. Hold to cast empowered Kumihimo and consume all dice."
+
+source:
+  url: https://wiki.warframe.com/w/Kumihimo_Loading

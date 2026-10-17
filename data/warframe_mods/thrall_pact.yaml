@@ -1,0 +1,16 @@
+id: thrall_pact
+name: "Thrall Pact"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: enthrall
+internal_name: /Lotus/Powersuits/Revenant/RevenantMarkAugmentCard
+description: "Enthrall Augment: Gain +25% Primary Weapon Damage for each active Thrall."
+
+effects:
+  - kind: unmodelled
+    text: "Enthrall Augment: Gain +25% Primary Weapon Damage for each active Thrall."
+
+source:
+  url: https://wiki.warframe.com/w/Thrall_Pact

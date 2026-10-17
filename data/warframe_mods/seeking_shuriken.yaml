@@ -1,0 +1,16 @@
+id: seeking_shuriken
+name: "Seeking Shuriken"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: shuriken
+internal_name: /Lotus/Powersuits/Ninja/GlaiveAugmentCard
+description: "Shuriken Augment: Hits expose weaknesses on enemies, reducing their Armor by 70% for 8s."
+
+effects:
+  - kind: unmodelled
+    text: "Shuriken Augment: Hits expose weaknesses on enemies, reducing their Armor by 70% for 8s."
+
+source:
+  url: https://wiki.warframe.com/w/Seeking_Shuriken

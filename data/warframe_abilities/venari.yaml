@@ -4,6 +4,7 @@ name: "Venari"
 frame: khora
 slot: 3
 energy_cost: 0
+augments: [venari_bodyguard]
 unmodelled: ["Its cost is not paid per cast and is not entered; see its page."]
 internal_name: /Lotus/Powersuits/Khora/Abilities/KhoraKavatAbility
 icon: VenariIcon(xWhite).png

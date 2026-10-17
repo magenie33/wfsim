@@ -4,6 +4,7 @@ name: "Primal Fury"
 frame: wukong
 slot: 4
 energy_cost: 10
+augments: [primal_rage]
 internal_name: /Lotus/Powersuits/MonkeyKing/Abilities/MonkeyStaffAbility
 icon: PrimalFuryIcon(xWhite).png
 description: "Summon the iron staff and unleash fury."

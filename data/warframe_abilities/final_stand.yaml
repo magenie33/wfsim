@@ -4,6 +4,7 @@ name: "Final Stand"
 frame: styanax
 slot: 4
 energy_cost: 100
+augments: [intrepid_stand]
 internal_name: /Lotus/Powersuits/Hoplite/Abilities/HopliteArmyAbility
 icon: FinalStandIcon(xWhite).png
 description: "Exude might and valor. Rise into the air and throw a barrage of Axios Javelins. The javelins deal damage to nearby enemies wherever they land. Direct hits to enemies deal greater damage."

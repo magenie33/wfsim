@@ -1,0 +1,16 @@
+id: safeguard_switch
+name: "Safeguard Switch"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: switch_teleport
+internal_name: /Lotus/Powersuits/Loki/SwitchAugmentCard
+description: "Switch Teleport Augment: Switch with an enemy for 3s invulnerability. Switch with an ally to give ally 6s invulnerability. Switch also removes negative status effects on Loki and allies."
+
+effects:
+  - kind: unmodelled
+    text: "Switch Teleport Augment: Switch with an enemy for 3s invulnerability. Switch with an ally to give ally 6s invulnerability. Switch also removes negative status effects on Loki and allies."
+
+source:
+  url: https://wiki.warframe.com/w/Safeguard_Switch

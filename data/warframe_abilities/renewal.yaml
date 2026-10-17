@@ -4,6 +4,7 @@ name: "Renewal"
 frame: oberon
 slot: 3
 energy_cost: 25
+augments: [phoenix_renewal]
 internal_name: /Lotus/Powersuits/Paladin/Abilities/RegenerationAbility
 icon: RenewalIcon(xWhite).png
 description: "Generates a protective aura that grants bonus Armor to Oberon and his allies and restores allies' Health over time. Healing is doubled while within the radius of Hallowed Ground."

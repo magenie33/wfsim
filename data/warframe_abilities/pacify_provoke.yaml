@@ -4,6 +4,7 @@ name: "Pacify & Provoke"
 frame: equinox
 slot: 3
 energy_cost: 10
+augments: [peaceful_provocation]
 internal_name: /Lotus/Powersuits/YinYang/Abilities/YinYangAuraAbility
 icon: PacifyProvokeIcon(xWhite).png
 description: "In Night-Form, reduces damage inflicted by nearby enemies. In Day-Form, increases Ability Strength of nearby allies."

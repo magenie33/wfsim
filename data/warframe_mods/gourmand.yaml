@@ -1,0 +1,16 @@
+id: gourmand
+name: "Gourmand"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: feast
+internal_name: /Lotus/Powersuits/Devourer/DevourerDevourAugmentCard
+description: "Feast Augment: Instead of Energy, consumes 200 Health on cast. Glutton grants an additional 150 Armor per enemy."
+
+effects:
+  - kind: unmodelled
+    text: "Feast Augment: Instead of Energy, consumes 200 Health on cast. Glutton grants an additional 150 Armor per enemy."
+
+source:
+  url: https://wiki.warframe.com/w/Gourmand

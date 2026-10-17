@@ -4,6 +4,7 @@ name: "Fireball"
 frame: ember
 slot: 1
 energy_cost: 25
+augments: [fireball_frenzy]
 internal_name: /Lotus/Powersuits/Ember/Abilities/FireBallAbility
 icon: FireballIcon(xWhite).png
 description: "Release a fiery projectile that ignites enemies on contact."

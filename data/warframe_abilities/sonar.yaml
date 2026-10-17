@@ -4,6 +4,7 @@ name: "Sonar"
 frame: banshee
 slot: 2
 energy_cost: 50
+augments: [resonance]
 internal_name: /Lotus/Powersuits/Banshee/Abilities/SonarAbility
 icon: SonarIcon(xWhite).png
 description: "Using acoustic location, Banshee's Sonar power finds and tracks enemies, and exposes critical weak points to everyone in your squad."

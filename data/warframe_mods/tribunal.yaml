@@ -1,0 +1,16 @@
+id: tribunal
+name: "Tribunal"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: condemn
+internal_name: /Lotus/Powersuits/Priest/PriestCondemnAugmentCard
+description: "Condemn Augment: Other players will trigger 100% of the effects of Penance and Thurible when attacking chained enemies."
+
+effects:
+  - kind: unmodelled
+    text: "Condemn Augment: Other players will trigger 100% of the effects of Penance and Thurible when attacking chained enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Tribunal

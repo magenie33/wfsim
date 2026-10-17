@@ -1,0 +1,16 @@
+id: hearty_nourishment
+name: "Hearty Nourishment"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: nourish
+internal_name: /Lotus/Powersuits/Devourer/DevourerConsumeAugmentCard
+description: "Nourish Augment: Clear Status Effects and gain 5s of Status Immunity for each victim in Grendel's stomach."
+
+effects:
+  - kind: unmodelled
+    text: "Nourish Augment: Clear Status Effects and gain 5s of Status Immunity for each victim in Grendel's stomach."
+
+source:
+  url: https://wiki.warframe.com/w/Hearty_Nourishment

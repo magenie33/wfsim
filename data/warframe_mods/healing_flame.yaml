@@ -1,0 +1,17 @@
+id: healing_flame
+name: "Healing Flame"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: healing_flame
+augments: fire_blast
+internal_name: /Lotus/Powersuits/Ember/FireBlastAugmentCard
+description: "Fire Blast Augment: Each enemy hit heals by 25 to 50 depending on current Immolation level. With Ember, over healing grants you Overguard."
+
+effects:
+  - kind: unmodelled
+    text: "Fire Blast Augment: Each enemy hit heals by 25 to 50 depending on current Immolation level. With Ember, over healing grants you Overguard."
+
+source:
+  url: https://wiki.warframe.com/w/Healing_Flame

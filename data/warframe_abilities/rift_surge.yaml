@@ -4,6 +4,7 @@ name: "Rift Surge"
 frame: limbo
 slot: 3
 energy_cost: 50
+augments: [rift_torrent]
 internal_name: /Lotus/Powersuits/Magician/Abilities/VolatileAbility
 icon: RiftSurgeIcon(xWhite).png
 description: "Surges nearby Rift-bound enemies with Rift energy. When killed the Rift Surge is transferred to a nearby enemy outside the rift. Surged enemies that leave the Rift perform a radial Banish."

@@ -1,0 +1,16 @@
+id: rousing_plunder
+name: "Rousing Plunder"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: plunder
+internal_name: /Lotus/Powersuits/Pirate/LiquifyAugmentCard
+description: "Plunder Augment: Plunder gains 50% max Corrosive Damage and Armor, and heals allies within Affinity range for 50 Health."
+
+effects:
+  - kind: unmodelled
+    text: "Plunder Augment: Plunder gains 50% max Corrosive Damage and Armor, and heals allies within Affinity range for 50 Health."
+
+source:
+  url: https://wiki.warframe.com/w/Rousing_Plunder

@@ -4,6 +4,7 @@ name: "Psychic Bolts"
 frame: nyx
 slot: 2
 energy_cost: 50
+augments: [pacifying_bolts]
 internal_name: /Lotus/Powersuits/Jade/Abilities/DaggerAbility
 icon: PsychicBoltsIcon(xWhite).png
 description: "Nyx unleashes a volley of psychic bolts that track and strike nearby enemies with telekinetic precision. When enemies are slain, additional bolts scatter to new targets. Striking foes weakens their defenses and transfers a portion to Nyx."

@@ -1,0 +1,16 @@
+id: total_eclipse
+name: "Total Eclipse"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: eclipse
+internal_name: /Lotus/Powersuits/Harlequin/LightAugmentCard
+description: "Eclipse Augment: While active, allies within 15m benefit from Eclipse."
+
+effects:
+  - kind: unmodelled
+    text: "Eclipse Augment: While active, allies within 15m benefit from Eclipse."
+
+source:
+  url: https://wiki.warframe.com/w/Total_Eclipse

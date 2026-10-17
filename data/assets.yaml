@@ -2911,11 +2911,17 @@ warframes:
   zephyr_prime: ZephyrPrime.png
 
 warframe_mods:
+  abating_link: TrinityLinkAugment.jpg
+  accumulating_whipclaw: KhoraWhipclawAugment.jpg
   adaptation: AvatarResistanceOnDamageMod.jpg
+  aegis_gale: HildrynEruptionAugmentCard.jpg
   aero_vantage: HawksVantage.jpg
+  afterburn: ChromaSpectralFlameAugment.jpg
   agility_drift: OrokinChallengeModAgility.jpg
+  airburst_rounds: ZephyrAirburstAugmentCard.jpg
   amars_anguish: AmarExilusMod.jpg
   amars_hatred: AmarWarframeMod.jpg
+  antimatter_absorb: NovaAntimatterAugment.jpg
   antitoxin: AvatarDamageResistancePoison.jpg
   archon_continuity: KahlAvatarAbilityDurationMod.jpg
   archon_flow: KahlAvatarPowerMaxMod.jpg
@@ -2923,92 +2929,252 @@ warframe_mods:
   archon_stretch: KahlAvatarAbilityRangeMod.jpg
   archon_vitality: KahlAvatarHealthMaxMod.jpg
   armored_agility: ArmoredAgility.jpg
+  assimilate: NyxSelfBulletAttractorAugment.jpg
   augur_accord: AugurAccord.jpg
   augur_message: AugurMessage.jpg
   augur_reach: AugurReach.jpg
   augur_secrets: AugurSecrets.jpg
   aviator: AvatarDamageReductionInAir.jpg
+  axios_javelineers: StyanaxImpaleAugment.jpg
+  balefire_surge: HildrynBalefireAugment.jpg
+  ballistic_bullseye: MesaBallisticBatteryAugment.jpg
   battering_maneuver: ImpactParkourTwoMod.jpg
+  beguiling_lantern: TitaniaLanternAugment.jpg
+  blazing_pillage: HildrynPillageAugment.jpg
+  blending_talons: GarudaSeekingTalonsAugment.jpg
   blind_rage: CorruptedPowerForEfficiencyMod.jpg
+  blinding_reave: RevenantReaveAugment.jpg
+  blood_forge: GarudaBloodlettingAugment.jpg
   boreals_anguish: BorealExilusMod.jpg
   boreals_hatred: BorealWarframeMod.jpg
+  broods_oversurge: OraxiaBroodAugment.jpg
+  calm_frenzy: YinYangTargetAugmentCard.jpg
+  capacitance: VoltOverloadAugment.jpg
   carnis_carapace: AshenCarapace.jpg
+  cataclysmic_continuum: LimboCataclysmAugment.jpg
+  cataclysmic_gate: WispSunAugmentCard.jpg
   catalyzing_shields: FixedShieldAndShieldGatingDuration.jpg
+  catapult: GrendelPulverizeAugment.jpg
+  cathode_current: GyreEnergizedAugment.jpg
+  celestial_stomp: WukongTwinAugment.jpg
+  champions_blessing: TrinityBlessingAugment.jpg
+  chaos_sphere: NyxChaosAugment.jpg
+  chilling_globe: FrostSnowglobeAugment.jpg
+  chromatic_blade: ExcaliburExaltedBladeAugment.jpg
+  coil_recharge: GyreSphereAugment.jpg
+  cold_front: FrostIceShieldAugmentTwoCard.jpg
+  concentrated_arrow: IvaraArtemisBowAugment.jpg
+  conductive_sphere: GyrePulseAugmentCard.jpg
+  conductor: OctaviaResonatorAugment.jpg
   constitution: WarframeConstitutionMod.jpg
+  contagion_cloud: SarynContagionAugment.jpg
   continuity: AbilityDurationMod.jpg
+  counter_pulse: MagShieldPolarizeAugment.jpg
+  creeping_terrify: TerrorTotemAugment.jpg
+  critical_surge: WispBreachSurgeAugment.jpg
   cunning_drift: OrokinChallengeModCunning.jpg
+  damage_decoy: LokiDecoyTwoAugment.jpg
+  dark_propagation: SevagothSowAugment.jpg
+  deceptive_bond: DecoyAugment.jpg
+  defiled_reckoning: OberonReckoningPvPAugment.jpg
+  desiccations_curse: InarosDesiccationAugment.jpg
+  despoil: NekrosDesecrateAugment.jpg
   diamond_skin: AvatarDamageResistanceLaser.jpg
+  divine_retribution: NezhaSpearAugmentTwo.jpg
+  dread_ward: GarudaDreadMirrorAugment.jpg
+  duality: YinYangSwitchAugmentCard.jpg
+  elemental_sandstorm: InarosSandstormAugment.jpg
+  elusive_retribution: BaruukDodgeAugment.jpg
+  empowered_quiver: IvaraQuiverAugment.jpg
+  endless_lullaby: BaruukLullAugment.jpg
   endurance_drift: OrokinChallengeModEndurance.jpg
+  enduring_bastille: VaubanBastilleAugment.jpg
   enemy_sense: EnemyRadarMod.jpg
   energy_conversion: EnergyPickupGivesStrengthMod.jpg
   energy_nexus: AvatarEnergyRegenMod.jpg
+  energy_transfer: EquinoxMendMaimAugment.jpg
   enraged: ValkyrHysteriaTwoAugment.jpg
+  enveloping_cloud: MonkeyCloudWalkerAugment.jpg
   equilibrium: AvatarPickupBonusMod.jpg
   equilibrium_pinnacle_pack: wiki:PinnaclePackEquilibriumMod.png
+  escape_velocity: NovaWormholeAugments.jpg
   eternal_war: ValkyrWarcryAugment.jpg
+  everlasting_ward: ChromaLuckAugment1.jpg
+  exothermic: EmberInfernoAugment.jpg
+  explosive_legerdemain: MirageObjectChangeAugment.jpg
   fast_deflection: ShieldRechargeRate.jpg
+  fireball_frenzy: EmberFireballAugment2.jpg
   firewalker: FireParkourTwoMod.jpg
   flame_repellent: AvatarDamageResistanceFire.jpg
   fleeting_expertise: CorruptedDurationForRangeMod.jpg
   flow: PowerMaxMod.jpg
   fortitude: WarframeFortitudeMod.jpg
+  fracturing_crush: MagCrushAugment.jpg
+  freeze_force: FrostFreezeAugment2.jpg
+  funnel_clouds: ZephyrTornadoAugment.jpg
+  furious_javelin: ExcaliburJavelinAugment2.jpg
+  fused_crucible: ConcreteLaserAugmentCard.jpg
+  fused_reservoir: WispReservoirAugmentCard.jpg
   gale_kick: GaleKick.jpg
+  gaseous_quake: BansheeEarthquakeAugment1.jpg
+  gastro: GrendelRegurgitateAugment.jpg
   gladiator_aegis: GladiatorAegis.jpg
   gladiator_finesse: GladiatorFinesse.jpg
   gladiator_resolve: GladiatorResolve.jpg
+  gourmand: GrendelDevourAugment.jpg
+  greedy_pull: MagPullAugment3.jpg
+  guardian_armor: ChromaScalesAugmentTwo.jpg
+  guided_effigy: ChromaEffigyAugment.jpg
+  hall_of_malevolence: MirageIllusionAugment1.jpg
+  hallowed_eruption: OberonHallowedGroundAugment.jpg
+  hallowed_reckoning: OberonReckoningAugment.jpg
   handspring: NinjaRecoveryMod.jpg
+  healing_flame: EmberFireBlastAugment2.jpg
   health_conversion: HealthPickupGivesArmourMod.jpg
+  hearty_nourishment: GrendelNourishAugmentCard.jpg
   heavy_impact: AvatarHeavyImpactMod.jpg
   hunter_adrenaline: HunterAdrenaline.jpg
+  hushed_invisibility: LokiInvisibilityAugment.jpg
   hysterical_assault: ValkyrHysteriaAugment.jpg
   ice_spring: IceParkourTwoMod.jpg
+  ice_wave_impedance: FrostIceWaveAugment.jpg
+  icy_avalanche: FrostAvalancheAugment.jpg
+  immolated_radiance: EmberImmolationAugment.jpg
+  infernum: UrielFireballAugmentCard.jpg
+  infiltrate: RangerStealAugment.jpg
+  insatiable: NidusRavenousAugment.jpg
   insulation: AvatarDamageResistanceIce.jpg
   intensify: AbilityStrengthMod.jpg
+  intrepid_stand: StyanaxArmyAugment.jpg
+  iron_shrapnel: RhinoIronSkinAugment.jpg
+  ironclad_charge: RhinoChargeAugment2.jpg
+  ironclad_flight: TitaniaDisablePassiveMod.jpg
+  irradiating_disarm: LokiDisarmAugment.jpg
+  jades_judgment: ChoirPoolAugmentCard.jpg
+  jet_stream: ZephyrTurbulenceAugment.jpg
   jugulus_carapace: BonebladeCarapace.jpg
   kavats_grace: KavatsGrace.jpg
+  kumihimo_loading: KoumeiStringsAugmentCard.jpg
+  larva_burst: NidusLarvaAugment.jpg
+  lasting_covenant: HarrowCovenantAugment.jpg
   lightning_dash: ElectricityParkourTwoMod.jpg
   lightning_rod: AvatarDamageResistanceElectricity.jpg
+  lingering_transmutation: AlchemistTransmuteAugmentCard.jpg
+  loyal_merulina: YareliBoardAugmentTwo.jpg
+  mach_crash: GaussMachRushAugment.jpg
   maglev: wiki:MaglevMod.png
+  magnetized_discharge: MagMagnetizeAugmentt.jpg
   master_thief: AvatarChanceToLootMod.jpg
   mecha_pulse: WarframeMechaPulseMod.jpg
+  mending_splinters: GaraShatterStormAugment.jpg
+  merulina_guardian: YareliBoardAugment.jpg
+  mesas_waltz: MesaPeacemakerAugment.jpg
+  mesmer_shield: RevenantSentientAugment.jpg
+  mind_freak: NyxMindControlAugment.jpg
   mobilize: StaggerParkourTwoMod.jpg
+  molecular_fission: NovaMolecularPrimeAugment.jpg
   motus_signal: RaptorsFrenzy.jpg
+  muzzle_flash: MesaShootingGalleryAugment.jpg
   narrow_minded: CorruptedEfficiencyForDurationMod.jpg
   natural_talent: AvatarCastSpeedMod.jpg
+  negation_armor: InarosSwarmAugment.jpg
+  neutron_star: NovaNullStarAugment1.jpg
   niras_anguish: NiraExilusMod.jpg
   niras_hatred: NiraWarframeMod.jpg
+  noctua_swarm: PagemasterBookAugment1Card.jpg
+  omikujis_fortune: KoumeiFortuneAugmentCard.jpg
+  ore_gaze: BrawlerGazeAugmentCard.jpg
   overextended: CorruptedRangeForPowerMod.jpg
+  pacifying_bolts: NyxPsychicBoltsAugment1.jpg
   pain_threshold: AvatarStaggerRecoveryMod.jpg
+  parasitic_vitality: NidusLinkAugment.jpg
+  partitioned_mallet: OctaviaMalletAugment.jpg
   patagium: SuperGlideParkourTwoMod.jpg
+  path_of_statues: BrawlerLandslideAugmentCard.jpg
+  peaceful_provocation: YinYangAuraAugmentCard.jpg
   peculiar_audience: EvilSpiritMod.jpg
   peculiar_bloom: FlowerPowerMod.jpg
   peculiar_end: DissolveEnemyMod.jpg
   peculiar_growth: InflationMod.jpg
+  phoenix_renewal: OberonRenewalAugment1.jpg
+  photon_repeater: VaubanOrbitalStrikeAugment.jpg
+  piercing_navigator: IvaraNavigatorAugment.jpg
+  piercing_roar: RhinoRoarAugment.jpg
   piercing_step: PunctureParkourTwoMod.jpg
+  pilfering_strangledome: KhoraStrangledomeAugment.jpg
+  pilfering_swarm: HydroidTentacleSwarmAugment.jpg
+  pool_of_life: TrinityWellOfLifeAugment1.jpg
   power_drift: OrokinChallengeModPower.jpg
+  power_of_three: QuiverAugment.jpg
   precision_intensify: AvatarAbilityFourStrengthMod.jpg
   preparation: AvatarSpawnEnergyMod.jpg
+  prey_of_dynar: VorunaShroudAugment.jpg
+  primal_rage: MonkeyStaffAugment.jpg
   primed_continuity: wiki:PrimedContinuityMod.png
   primed_flow: wiki:PrimedFlowMod.png
   primed_redirection: wiki:PrimedRedirectionMod.png
   primed_sure_footed: AvatarSureFootedMod.jpg
   primed_vigor: Vigor.jpg
+  prism_guard: MiragePrismAugment.jpg
+  prismatic_companion: GeodeCrystalAugmentCard.jpg
   prolonged_paralysis: ValkyrParalysisAugment1.jpg
   proton_pulse: SpiderLeap.jpg
   provoked: AvatarProvokedMod.jpg
+  purging_slash: ExcaliburSlashDashPvPAugment.jpg
+  purifying_flames: EmberFireBlastPvPAugment.jpg
+  pyroclastic_flow: NezhaFirewalkerAugment.jpg
   quick_thinking: wiki:QuickThinkingMod.png
+  radiant_finish: ExcaliburRadialBlindAugment.jpg
   rage: AvatarDamageToEnergyMod.jpg
   rapid_resilience: AvatarProcTimeMod.jpg
+  razor_mortar: SentientWhirlwindAugmentCard.jpg
+  razorwing_blitz: TitaniaFlightAugment.jpg
+  reactive_storm: BaruukSereneStormAugment.jpg
+  reaping_chakram: NezhaBlazingChakramAugment.jpg
+  recharge_barrier: VoltShieldPvPAugment.jpg
+  recrystalize: CitrineGeodeGrowthsAugment.jpg
   redirection: ShieldMaxMod.jpg
   reflection: AvatarParryReflectMod.jpg
   reflex_guard: AvatarBlockReflectionMod.jpg
+  regenerative_molt: SarynMoultAugment.jpg
+  reinforcing_stomp: RhinoStompAugment.jpg
   rending_turn: SlashParkourTwoMod.jpg
+  repair_dispensary: ProteaDispensaryAugmentCard.jpg
+  reroot_rampage: NokkoRerootAugmentCard.jpg
+  resonance: BansheeSonarAugmentCard.jpg
   retribution: ShockingBarrierMod.jpg
+  revealing_spores: SarynSporeAugment.jpg
+  reverse_rotorswell: GyreOverchargedAugmentCard.jpg
+  rift_haven: LimboBanishAugment.jpg
+  rift_torrent: LimboRiftWalkAugment.jpg
+  rising_storm: AshBladestormAugment.jpg
   rolling_guard: AvatarInvulnOnRollMod.jpg
+  rousing_plunder: HydroidLiquifyAugment.jpg
+  rumbled: AtlasRumberAugment.jpg
   rush: SprintSpeedMod.jpg
+  safeguard: NezhaWardingHaloAugment.jpg
+  safeguard_switch: LokiSwitchAugment1.jpg
+  savage_silence: BansheeSilenceAugment1.jpg
+  savior_decoy: LokiDecoyAugment.jpg
   saxum_carapace: FemurCarapace.jpg
+  seeking_shuriken: AshShurikenAugment.jpg
+  shadow_haze: SevagothReapAugment.jpg
+  shattered_storm: GlassShankAugment.jpg
+  shield_of_shadows: NekrosCloneTheDeadAugment.jpg
   shock_absorbers: ShockAbsorbersMod.jpg
+  shock_trooper: VoltShockAugment3.jpg
+  shocking_speed: VoltSpeedAugment.jpg
+  signal_flare: ExcaliburRadialBlindPvPAugment.jpg
+  singularity: NyxSelfBulletAttractorPvPAugment.jpg
+  smite_infusion: OberonSmiteAugment1.jpg
+  smoke_shadow: AshSmokeScreenAugment2.jpg
+  sonic_siphon: BansheePushAugment.jpg
+  soul_survivor: NekrosSoulPunchAugment1.jpg
+  spectral_spirit: DagathApparitionAugment.jpg
+  spectrosiphon: GaraSpectrorageAugment.jpg
   speed_drift: OrokinChallengeModSpeed.jpg
+  spellbound_harvest: TitaniaSpellbindAugment.jpg
+  staggering_shield: MesaRicochetArmourAugment.jpg
   stealth_drift: OrokinChallengeModStealth.jpg
   steel_fiber: ArmourMod.jpg
   strain_consume: WarframeStrainConsumeMod.jpg
@@ -3016,22 +3182,53 @@ warframe_mods:
   streamlined_form: HolsterSpeedSlideBoostMod.jpg
   stretch: AbilityRangeMod.jpg
   sure_footed: wiki:SureFootedMod.png
+  surging_blades: YareliDisksAugment.jpg
+  surging_dash: ExcaliburSlashDashAugment.jpg
+  swift_bite: LavosSerpentAugment.jpg
   swing_line: ValkyrRipLineAugment.jpg
   synth_reflex: WarframeSynthReflexMod.jpg
+  target_fixation: ZephyDivebombAugment1.jpg
+  tectonic_fracture: BrawlerBarrierAugmentCard.jpg
+  teeming_virulence: NidusVirulenceAugment.jpg
   tek_collateral: WarframeTekCollateralMod.jpg
+  teleport_rush: AshTeleportAugment1.jpg
+  temporal_artillery: ProteaBFGAugment.jpg
+  temporal_erosion: ProteaAnchorAugment.jpg
+  tesla_bank: VaubanTeslaAugment2.jpg
+  tharros_lethality: HopliteBashAugmentCard.jpg
+  the_relentless_lost: XakuEmbraceAugment.jpg
+  thermal_transfer: RunnerTransferAugment.jpg
   thiefs_wit: LootRadarMod.jpg
+  thrall_pact: RevenantEnthrallAugment.jpg
+  tidal_impunity: HydroidTidalSurgeAugment.jpg
+  titanic_rumbler: BrawlerSummonAugmentCard.jpg
+  total_eclipse: MirageEclipseAugment.jpg
   toxic_flight: ToxicParkourTwoMod.jpg
   transient_fortitude: CorruptedPowerStrengthPowerDurationWarframeMod.jpg
+  transistor_shield: VoltElectricShieldAugment.jpg
+  tribunal: HarrowCondemnAugment.jpg
+  ulfruns_endurance: VorunaHowlAugment.jpg
   umbral_fiber: WarframeUmbraModB.jpg
   umbral_intensify: WarframeUmbraModC.jpg
   umbral_vitality: WarframeUmbraModA.jpg
   undying_will: AvatarUndyingWillMod.jpg
+  untime_rift: BrokenDestructAugmentCard.jpg
+  vampire_leech: TrinityEnergyVampireAugmnet.jpg
+  vampiric_grasp: XakuGraspAugment.jpg
+  venari_bodyguard: KhoraVenariAugment.jpg
+  venom_dose: SarynVenomAugment2.jpg
+  vexing_retaliation: ChromaVexArmorAugment.jpg
   vigilante_pursuit: VigilantePursuit.jpg
   vigilante_vigor: VigilanteVigor.jpg
   vigor: wiki:VigorMod.png
   vigorous_swap: AvatarHolsterDamageMod.jpg
+  viral_tempest: HydroidTempestBarrageAugment.jpg
   vitality: HealthMaxMod.jpg
+  volatile_recompense: PaxBladesAugmentCard.jpg
+  warding_thurible: HarrowThuribleAugment.jpg
   warm_coat: AvatarMissionSpecificResistanceIce.jpg
+  wrath_of_ukko: KullervoFieldAugment.jpg
+  wrecking_wall: QorvexConcreteWallAugment.jpg
 
 warframe_arcanes:
   arcane_acceleration: ArcaneProjectionAM.png

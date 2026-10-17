@@ -1,0 +1,16 @@
+id: blending_talons
+name: "Blending Talons"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: seeking_talons
+internal_name: /Lotus/Powersuits/Garuda/GarudaUnstoppableAugmentCard
+description: "Seeking Talons Augment: Tap to perform a 9m AoE around Garuda. Garuda's Talons gain 100% additional Combo Count Chance when hitting targets affected by Slash Status."
+
+effects:
+  - kind: unmodelled
+    text: "Seeking Talons Augment: Tap to perform a 9m AoE around Garuda. Garuda's Talons gain 100% additional Combo Count Chance when hitting targets affected by Slash Status."
+
+source:
+  url: https://wiki.warframe.com/w/Blending_Talons

@@ -1,0 +1,16 @@
+id: smoke_shadow
+name: "Smoke Shadow"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: smoke_screen
+internal_name: /Lotus/Powersuits/Ninja/SmokeScreenAugmentCard
+description: "Smoke Screen Augment: Conceals allies within 15m and grants 150% Critical Chance while invisible."
+
+effects:
+  - kind: unmodelled
+    text: "Smoke Screen Augment: Conceals allies within 15m and grants 150% Critical Chance while invisible."
+
+source:
+  url: https://wiki.warframe.com/w/Smoke_Shadow

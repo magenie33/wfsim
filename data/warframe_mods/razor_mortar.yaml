@@ -1,0 +1,16 @@
+id: razor_mortar
+name: "Razor Mortar"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: razor_gyre
+internal_name: /Lotus/Powersuits/Sentient/SentientWhirlwindAugmentCard
+description: "Razor Gyre Augment: Groups enemies together, while Lethal Progeny's Ortholysts focus fire on those enemies with +70% Electricity Damage and Fire Rate for 6s."
+
+effects:
+  - kind: unmodelled
+    text: "Razor Gyre Augment: Groups enemies together, while Lethal Progeny's Ortholysts focus fire on those enemies with +70% Electricity Damage and Fire Rate for 6s."
+
+source:
+  url: https://wiki.warframe.com/w/Razor_Mortar

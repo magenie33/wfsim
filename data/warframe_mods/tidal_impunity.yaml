@@ -1,0 +1,16 @@
+id: tidal_impunity
+name: "Tidal Impunity"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: tidal_surge
+internal_name: /Lotus/Powersuits/Pirate/TidalWaveAugmentCard
+description: "Tidal Surge Augment: Clears Status Effects and grants 12s of Status Immunity for yourself and allies that come in contact with it. Reduces Tidal Surge's Energy cost to 15."
+
+effects:
+  - kind: unmodelled
+    text: "Tidal Surge Augment: Clears Status Effects and grants 12s of Status Immunity for yourself and allies that come in contact with it. Reduces Tidal Surge's Energy cost to 15."
+
+source:
+  url: https://wiki.warframe.com/w/Tidal_Impunity

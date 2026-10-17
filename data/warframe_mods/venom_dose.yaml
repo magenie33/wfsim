@@ -1,0 +1,17 @@
+id: venom_dose
+name: "Venom Dose"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: revealing_spores
+augments: spores
+internal_name: /Lotus/Powersuits/Saryn/PoisonAugmentCard
+description: "Spores Augment: Hold to cast will grant all allies within 15m an additional 100% Corrosive Damage to their attacks for 40s."
+
+effects:
+  - kind: unmodelled
+    text: "Spores Augment: Hold to cast will grant all allies within 15m an additional 100% Corrosive Damage to their attacks for 40s."
+
+source:
+  url: https://wiki.warframe.com/w/Venom_Dose

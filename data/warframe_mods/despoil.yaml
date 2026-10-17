@@ -1,0 +1,16 @@
+id: despoil
+name: "Despoil"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: desecrate
+internal_name: /Lotus/Powersuits/Necro/SearchTheDeadAugmentCard
+description: "Desecrate Augment: No longer consumes Energy, but consumes 10 Health per corpse instead."
+
+effects:
+  - kind: unmodelled
+    text: "Desecrate Augment: No longer consumes Energy, but consumes 10 Health per corpse instead."
+
+source:
+  url: https://wiki.warframe.com/w/Despoil

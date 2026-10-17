@@ -1,0 +1,17 @@
+id: loyal_merulina
+name: "Loyal Merulina"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: loyal_merulina
+augments: merulina
+internal_name: /Lotus/Powersuits/Yareli/YareliBoardAugmentTwoCard
+description: "Merulina Augment: Yareli no longer rides Merulina. Instead, Merulina follows her and casts Sea Snare on nearby enemies. 2s cooldown."
+
+effects:
+  - kind: unmodelled
+    text: "Merulina Augment: Yareli no longer rides Merulina. Instead, Merulina follows her and casts Sea Snare on nearby enemies. 2s cooldown."
+
+source:
+  url: https://wiki.warframe.com/w/Loyal_Merulina

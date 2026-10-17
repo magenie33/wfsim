@@ -4,6 +4,7 @@ name: "Radial Javelin"
 frame: excalibur
 slot: 3
 energy_cost: 75
+augments: [furious_javelin]
 internal_name: /Lotus/Powersuits/Excalibur/Abilities/RadialJavelinAbility
 icon: RadialJavelinIcon(xWhite).png
 description: "Radial javelins impale nearby enemies, inflicting Slash Status."

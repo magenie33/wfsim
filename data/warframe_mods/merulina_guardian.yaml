@@ -1,0 +1,17 @@
+id: merulina_guardian
+name: "Merulina Guardian"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: loyal_merulina
+augments: merulina
+internal_name: /Lotus/Powersuits/Yareli/YareliBoardAugmentCard
+description: "Merulina Augment: Enemies eliminated during Sea Snares heal 20% of Merulina's health. Upon healing, gain +200% Reload Speed and Fire Rate on Secondary weapons for 20s."
+
+effects:
+  - kind: unmodelled
+    text: "Merulina Augment: Enemies eliminated during Sea Snares heal 20% of Merulina's health. Upon healing, gain +200% Reload Speed and Fire Rate on Secondary weapons for 20s."
+
+source:
+  url: https://wiki.warframe.com/w/Merulina_Guardian

@@ -1,0 +1,17 @@
+id: repair_dispensary
+name: "Repair Dispensary"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: dispensary
+internal_name: /Lotus/Powersuits/Odalisk/OdaliskDispensaryAugmentCard
+description: "Dispensary Augment: Dispensary also creates pick ups that heal companions for 20% of their maximum health and reduce their incapacitation timer by 12 sec."
+
+effects:
+  - kind: unmodelled
+    text: "Dispensary Augment: Dispensary also creates pick ups that heal companions for 20% of their maximum health and reduce their incapacitation timer by 12 sec."
+
+source:
+  url: https://wiki.warframe.com/w/Repair_Dispensary

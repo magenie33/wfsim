@@ -1,0 +1,18 @@
+id: revealing_spores
+name: "Revealing Spores"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+family: revealing_spores
+augments: spores
+internal_name: /Lotus/Powersuits/Saryn/PoisonAugmentTwoCard
+description: "Spores Augment: Infected enemies within 40m appear on the minimap. +40 Enemy Radar."
+
+effects:
+  - kind: unmodelled
+    text: "Spores Augment: Infected enemies within 40m appear on the minimap. +40 Enemy Radar."
+
+source:
+  url: https://wiki.warframe.com/w/Revealing_Spores

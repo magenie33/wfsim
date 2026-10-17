@@ -1,0 +1,18 @@
+id: hallowed_eruption
+name: "Hallowed Eruption"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: hallowed_ground
+internal_name: /Lotus/Powersuits/Paladin/StairwayToHeavenAugmentCard
+description: "Hallowed Ground Augment: Reactivate to deal all Remaining Damage and Radiation Status.\nPassive: +200% Hallowed Ground Duration."
+
+effects:
+  - kind: unmodelled
+    text: "Hallowed Ground Augment: Reactivate to deal all Remaining Damage and Radiation Status."
+  - kind: unmodelled
+    text: "Passive: +200% Hallowed Ground Duration."
+
+source:
+  url: https://wiki.warframe.com/w/Hallowed_Eruption

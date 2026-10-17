@@ -1,0 +1,16 @@
+id: furious_javelin
+name: "Furious Javelin"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: radial_javelin
+internal_name: /Lotus/Powersuits/Excalibur/RadialJavelinAugmentCard
+description: "Radial Javelin Augment: Each enemy hit will increase Excalibur's Melee Damage by 15% for 16s."
+
+effects:
+  - kind: unmodelled
+    text: "Radial Javelin Augment: Each enemy hit will increase Excalibur's Melee Damage by 15% for 16s."
+
+source:
+  url: https://wiki.warframe.com/w/Furious_Javelin

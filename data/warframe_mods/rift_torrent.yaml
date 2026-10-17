@@ -1,0 +1,16 @@
+id: rift_torrent
+name: "Rift Torrent"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: rift_surge
+internal_name: /Lotus/Powersuits/Magician/VolatileAugmentCard
+description: "Rift Surge Augment: Limbo deals 30% Extra Damage for each enemy affected by Rift Surge while in the rift."
+
+effects:
+  - kind: unmodelled
+    text: "Rift Surge Augment: Limbo deals 30% Extra Damage for each enemy affected by Rift Surge while in the rift."
+
+source:
+  url: https://wiki.warframe.com/w/Rift_Torrent

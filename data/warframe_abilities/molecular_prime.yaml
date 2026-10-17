@@ -4,6 +4,7 @@ name: "Molecular Prime"
 frame: nova
 slot: 4
 energy_cost: 100
+augments: [molecular_fission]
 internal_name: /Lotus/Powersuits/AntiMatter/Abilities/MolecularPrimeAbility
 icon: MolecularPrimeIcon(xWhite).png
 description: "Primes all enemies in an expanding radius with volatile antimatter. Press the ability to slow down enemy movement, hold the ability to speed them up."

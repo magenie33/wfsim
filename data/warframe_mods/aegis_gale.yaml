@@ -1,0 +1,16 @@
+id: aegis_gale
+name: "Aegis Gale"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: aegis_storm
+internal_name: /Lotus/Powersuits/IronFrame/IronFrameEruptionAugmentCard
+description: "Aegis Storm Augment: Balefire has an Alternate Fire during Aegis Storm. The blast deals 15% of Hildryn's Max Shield as additional damage."
+
+effects:
+  - kind: unmodelled
+    text: "Aegis Storm Augment: Balefire has an Alternate Fire during Aegis Storm. The blast deals 15% of Hildryn's Max Shield as additional damage."
+
+source:
+  url: https://wiki.warframe.com/w/Aegis_Gale

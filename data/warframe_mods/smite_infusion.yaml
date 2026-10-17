@@ -1,0 +1,16 @@
+id: smite_infusion
+name: "Smite Infusion"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: smite
+internal_name: /Lotus/Powersuits/Paladin/SmiteAugmentCard
+description: "Smite Augment: Hold to cast will grant all allies within 15m an additional 100% Radiation Damage to their attacks for 40s."
+
+effects:
+  - kind: unmodelled
+    text: "Smite Augment: Hold to cast will grant all allies within 15m an additional 100% Radiation Damage to their attacks for 40s."
+
+source:
+  url: https://wiki.warframe.com/w/Smite_Infusion

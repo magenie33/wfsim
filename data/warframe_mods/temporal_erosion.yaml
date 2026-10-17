@@ -1,0 +1,16 @@
+id: temporal_erosion
+name: "Temporal Erosion"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: temporal_anchor
+internal_name: /Lotus/Powersuits/Odalisk/OdaliskAnchorAugmentCard
+description: "Temporal Anchor Augment: While Temporal Anchor is active, each strike of Grenade Fan and Blaze Artillery strips 10% Armor from enemies."
+
+effects:
+  - kind: unmodelled
+    text: "Temporal Anchor Augment: While Temporal Anchor is active, each strike of Grenade Fan and Blaze Artillery strips 10% Armor from enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Temporal_Erosion

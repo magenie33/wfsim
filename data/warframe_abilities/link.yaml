@@ -4,6 +4,7 @@ name: "Link"
 frame: trinity
 slot: 3
 energy_cost: 75
+augments: [abating_link]
 internal_name: /Lotus/Powersuits/Trinity/Abilities/LinkAbility
 icon: LinkIcon(xWhite).png
 description: "Any damage taken while Link is active will be channeled to a nearby enemy."

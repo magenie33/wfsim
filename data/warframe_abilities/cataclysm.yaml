@@ -4,6 +4,7 @@ name: "Cataclysm"
 frame: limbo
 slot: 4
 energy_cost: 100
+augments: [cataclysmic_continuum]
 internal_name: /Lotus/Powersuits/Magician/Abilities/TearInSpaceAbility
 icon: CataclysmIcon(xWhite).png
 description: "A violent blast of Void energy tears open a pocket of rift plane which can sustain itself for a short period before collapsing in another lethal blast."

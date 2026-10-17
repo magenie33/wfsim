@@ -1,0 +1,16 @@
+id: immolated_radiance
+name: "Immolated Radiance"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: immolation
+internal_name: /Lotus/Powersuits/Ember/FireSkinAugmentCard
+description: "Immolation Augment: Allies within Affinity range will receive 50% of Immolation's Damage Reduction."
+
+effects:
+  - kind: unmodelled
+    text: "Immolation Augment: Allies within Affinity range will receive 50% of Immolation's Damage Reduction."
+
+source:
+  url: https://wiki.warframe.com/w/Immolated_Radiance

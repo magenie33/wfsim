@@ -4,6 +4,7 @@ name: "Soul Punch"
 frame: nekros
 slot: 1
 energy_cost: 25
+augments: [soul_survivor]
 internal_name: /Lotus/Powersuits/Necro/Abilities/SoulPunchAbility
 icon: SoulPunchIcon(xWhite).png
 description: "A blow so powerful, it turns the enemy's very soul into a deadly projectile, damaging all in its path. Enemies that survive the blow are Marked for Harvest and become one of Nekros' Shadows of the Dead if killed while marked."

@@ -1,0 +1,16 @@
+id: staggering_shield
+name: "Staggering Shield"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: shatter_shield
+internal_name: /Lotus/Powersuits/Cowgirl/RicochetArmourAugmentCard
+description: "Shatter Shield Augment: Reflected bullets have a chance to stagger enemies. The base 50% chance increases with power strength."
+
+effects:
+  - kind: unmodelled
+    text: "Shatter Shield Augment: Reflected bullets have a chance to stagger enemies. The base 50% chance increases with power strength."
+
+source:
+  url: https://wiki.warframe.com/w/Staggering_Shield

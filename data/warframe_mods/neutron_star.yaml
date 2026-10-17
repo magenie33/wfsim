@@ -1,0 +1,16 @@
+id: neutron_star
+name: "Neutron Star"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: null_star
+internal_name: /Lotus/Powersuits/AntiMatter/NullStarAugmentCard
+description: "Null Star Augment: Particles deal 240 Heat Damage with guaranteed Status effect in 8m. On recast, remaining particles seek out enemies with doubled search radius."
+
+effects:
+  - kind: unmodelled
+    text: "Null Star Augment: Particles deal 240 Heat Damage with guaranteed Status effect in 8m. On recast, remaining particles seek out enemies with doubled search radius."
+
+source:
+  url: https://wiki.warframe.com/w/Neutron_Star

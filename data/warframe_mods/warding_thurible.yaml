@@ -1,0 +1,16 @@
+id: warding_thurible
+name: "Warding Thurible"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: thurible
+internal_name: /Lotus/Powersuits/Priest/PriestRavageAugmentCard
+description: "Thurible Augment: Allies in range take 50% less Damage while channeling Thurible and grant 1.0 additional Energy charge whenever damaged."
+
+effects:
+  - kind: unmodelled
+    text: "Thurible Augment: Allies in range take 50% less Damage while channeling Thurible and grant 1.0 additional Energy charge whenever damaged."
+
+source:
+  url: https://wiki.warframe.com/w/Warding_Thurible

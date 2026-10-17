@@ -1,0 +1,17 @@
+id: signal_flare
+name: "Signal Flare"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: radiant_finish
+augments: radial_blind
+internal_name: /Lotus/Powersuits/Excalibur/RadialBlindPvPAugmentCard
+description: "Radial Blind Augment: Blinded enemies are marked on the Minimap for 12s."
+
+effects:
+  - kind: unmodelled
+    text: "Radial Blind Augment: Blinded enemies are marked on the Minimap for 12s."
+
+source:
+  url: https://wiki.warframe.com/w/Signal_Flare

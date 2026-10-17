@@ -1,0 +1,16 @@
+id: afterburn
+name: "Afterburn"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: spectral_scream
+internal_name: /Lotus/Powersuits/Dragon/DragonBreathAugmentCard
+description: "Spectral Scream Augment: Upon deactivation, Chroma will launch an elemental projectile dealing 100 Damage for each second the ability was active, to a maximum of 500 Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Spectral Scream Augment: Upon deactivation, Chroma will launch an elemental projectile dealing 100 Damage for each second the ability was active, to a maximum of 500 Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Afterburn

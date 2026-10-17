@@ -1,0 +1,16 @@
+id: accumulating_whipclaw
+name: "Accumulating Whipclaw"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: whipclaw
+internal_name: /Lotus/Powersuits/Khora/KhoraCrackAugmentCard
+description: "Whipclaw Augment: Hitting 3 enemies will grant a 35% stacking Damage Bonus to subsequent Whipclaws. Bonus will decay after 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Whipclaw Augment: Hitting 3 enemies will grant a 35% stacking Damage Bonus to subsequent Whipclaws. Bonus will decay after 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Accumulating_Whipclaw

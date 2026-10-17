@@ -1,0 +1,17 @@
+id: defiled_reckoning
+name: "Defiled Reckoning"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: defiled_reckoning
+augments: reckoning
+internal_name: /Lotus/Powersuits/Paladin/ReckoningPvPAugmentCard
+description: "Reckoning Augment: Health Orbs become unusable by enemies for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Reckoning Augment: Health Orbs become unusable by enemies for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Defiled_Reckoning

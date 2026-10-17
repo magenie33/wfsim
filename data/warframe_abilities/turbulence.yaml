@@ -4,6 +4,7 @@ name: "Turbulence"
 frame: zephyr
 slot: 3
 energy_cost: 75
+augments: [jet_stream]
 internal_name: /Lotus/Powersuits/Tengu/Abilities/TurbulenceAbility
 icon: TurbulenceIcon(xWhite).png
 description: "Creates a wind shield around Zephyr, redirecting all incoming projectiles."

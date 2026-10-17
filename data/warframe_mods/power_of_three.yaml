@@ -1,0 +1,17 @@
+id: power_of_three
+name: "Power of Three"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: empowered_quiver
+augments: quiver
+internal_name: /Lotus/Powersuits/Ranger/RangerQuiverPvPAugmentCard
+description: "Quiver Augment: Quiver fires three arrows and consumes 20 more Energy."
+
+effects:
+  - kind: unmodelled
+    text: "Quiver Augment: Quiver fires three arrows and consumes 20 more Energy."
+
+source:
+  url: https://wiki.warframe.com/w/Power_of_Three

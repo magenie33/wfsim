@@ -1,0 +1,17 @@
+id: purging_slash
+name: "Purging Slash"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: purging_slash
+augments: slash_dash
+internal_name: /Lotus/Powersuits/Excalibur/SlashDashPvPAugmentCard
+description: "Slash Dash Augment: Allies in the path of Slash Dash have 4 debuffs removed and 70% Shields restored."
+
+effects:
+  - kind: unmodelled
+    text: "Slash Dash Augment: Allies in the path of Slash Dash have 4 debuffs removed and 70% Shields restored."
+
+source:
+  url: https://wiki.warframe.com/w/Purging_Slash

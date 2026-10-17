@@ -4,6 +4,7 @@ name: "Storm of Ukko"
 frame: kullervo
 slot: 4
 energy_cost: 100
+augments: [wrath_of_ukko]
 internal_name: /Lotus/Powersuits/PaxDuviricus/Abilities/PaxFieldAbility
 icon: StormOfUkkoIcon(xWhite).png
 description: "The Void answers Kullervo's invocation with a storm of daggers that rain down upon his enemies."

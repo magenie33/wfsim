@@ -1,0 +1,16 @@
+id: intrepid_stand
+name: "Intrepid Stand"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: final_stand
+internal_name: /Lotus/Powersuits/Hoplite/HopliteArmyAugmentCard
+description: "Final Stand Augment: Each javelin that damages an enemy grants 60 Overguard to Styanax and 30 Overguard to his allies within Affinity Range."
+
+effects:
+  - kind: unmodelled
+    text: "Final Stand Augment: Each javelin that damages an enemy grants 60 Overguard to Styanax and 30 Overguard to his allies within Affinity Range."
+
+source:
+  url: https://wiki.warframe.com/w/Intrepid_Stand

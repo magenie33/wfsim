@@ -1,0 +1,16 @@
+id: greedy_pull
+name: "Greedy Pull"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: pull
+internal_name: /Lotus/Powersuits/Mag/PullAugmentCard
+description: "Pull Augment: Adds 100% chance to pull pickups towards Mag."
+
+effects:
+  - kind: unmodelled
+    text: "Pull Augment: Adds 100% chance to pull pickups towards Mag."
+
+source:
+  url: https://wiki.warframe.com/w/Greedy_Pull

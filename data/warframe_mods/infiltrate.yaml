@@ -1,0 +1,16 @@
+id: infiltrate
+name: "Infiltrate"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: prowl
+internal_name: /Lotus/Powersuits/Ranger/RangerStealAugmentCard
+description: "Prowl Augment: Ivara is able to bypass laser barriers and gains 25% Movement Speed."
+
+effects:
+  - kind: unmodelled
+    text: "Prowl Augment: Ivara is able to bypass laser barriers and gains 25% Movement Speed."
+
+source:
+  url: https://wiki.warframe.com/w/Infiltrate

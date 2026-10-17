@@ -1,0 +1,16 @@
+id: pilfering_strangledome
+name: "Pilfering Strangledome"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: strangledome
+internal_name: /Lotus/Powersuits/Khora/KhoraCageAugmentCard
+description: "Strangledome Augment: Enemies held in Strangledome have a 65% chance of dropping additional loot."
+
+effects:
+  - kind: unmodelled
+    text: "Strangledome Augment: Enemies held in Strangledome have a 65% chance of dropping additional loot."
+
+source:
+  url: https://wiki.warframe.com/w/Pilfering_Strangledome

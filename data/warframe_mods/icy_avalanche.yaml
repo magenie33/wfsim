@@ -1,0 +1,16 @@
+id: icy_avalanche
+name: "Icy Avalanche"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: avalanche
+internal_name: /Lotus/Powersuits/Frost/AvalancheAugmentCard
+description: "Avalanche Augment: Allies within Affinity Range are coated in ice that grants 60 Overguard per enemy hit. Overguard increases by 20% of your Armor once per enemy."
+
+effects:
+  - kind: unmodelled
+    text: "Avalanche Augment: Allies within Affinity Range are coated in ice that grants 60 Overguard per enemy hit. Overguard increases by 20% of your Armor once per enemy."
+
+source:
+  url: https://wiki.warframe.com/w/Icy_Avalanche

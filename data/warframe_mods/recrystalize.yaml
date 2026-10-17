@@ -1,0 +1,16 @@
+id: recrystalize
+name: "Recrystalize"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: crystallize
+internal_name: /Lotus/Powersuits/Geode/GeodeGrowthsAugmentCard
+description: "Crystallize Augment: Enemies killed by crystalline growths stagger and spread the crystals to enemies within 16m."
+
+effects:
+  - kind: unmodelled
+    text: "Crystallize Augment: Enemies killed by crystalline growths stagger and spread the crystals to enemies within 16m."
+
+source:
+  url: https://wiki.warframe.com/w/Recrystalize

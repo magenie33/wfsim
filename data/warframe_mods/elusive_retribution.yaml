@@ -1,0 +1,16 @@
+id: elusive_retribution
+name: "Elusive Retribution"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: elude
+internal_name: /Lotus/Powersuits/Pacifist/PacifistDodgeAugmentCard
+description: "Elude Augment: Every attack Baruuk Eludes increases his Melee Attack Speed and Melee Critical Damage by 5% up to 6 stacks. Stacks last 6s."
+
+effects:
+  - kind: unmodelled
+    text: "Elude Augment: Every attack Baruuk Eludes increases his Melee Attack Speed and Melee Critical Damage by 5% up to 6 stacks. Stacks last 6s."
+
+source:
+  url: https://wiki.warframe.com/w/Elusive_Retribution

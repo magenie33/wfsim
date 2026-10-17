@@ -1,0 +1,16 @@
+id: pacifying_bolts
+name: "Pacifying Bolts"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: psychic_bolts
+internal_name: /Lotus/Powersuits/Jade/DaggerAugmentCard
+description: "Psychic Bolts Augment: Throw an additional 3 force bolts with guaranteed Radiation Status Effect. Enemies struck are confused for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "Psychic Bolts Augment: Throw an additional 3 force bolts with guaranteed Radiation Status Effect. Enemies struck are confused for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Pacifying_Bolts

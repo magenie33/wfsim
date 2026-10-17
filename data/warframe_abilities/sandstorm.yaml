@@ -4,6 +4,7 @@ name: "Sandstorm"
 frame: inaros
 slot: 2
 energy_cost: 25
+augments: [elemental_sandstorm]
 internal_name: /Lotus/Powersuits/Sandman/Abilities/SandmanStormAbility
 icon: SandstormIcon(xWhite).png
 description: "Become a sandstorm. Inaros devours enemies pulled into his whirlwind, healing himself."

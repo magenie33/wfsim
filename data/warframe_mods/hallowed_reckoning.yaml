@@ -1,0 +1,17 @@
+id: hallowed_reckoning
+name: "Hallowed Reckoning"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: defiled_reckoning
+augments: reckoning
+internal_name: /Lotus/Powersuits/Paladin/ReckoningAugmentCard
+description: "Reckoning Augment: Reckoning gains +40% range. A 3m radius around each affected enemy grants bonus armor to allies and deals 300 damage per second to enemies."
+
+effects:
+  - kind: unmodelled
+    text: "Reckoning Augment: Reckoning gains +40% range. A 3m radius around each affected enemy grants bonus armor to allies and deals 300 damage per second to enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Hallowed_Reckoning

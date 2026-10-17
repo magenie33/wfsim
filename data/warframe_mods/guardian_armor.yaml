@@ -1,0 +1,17 @@
+id: guardian_armor
+name: "Guardian Armor"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: guardian_armor
+augments: vex_armor
+internal_name: /Lotus/Powersuits/Dragon/DragonScalesAugmentTwoCard
+description: "Vex Armor Augment: Chroma reduces the damage his squadmates within Affinity Range take by 75%. Squad kills restore 5% of his Health over 3s and increases Vex Armor duration by 1s."
+
+effects:
+  - kind: unmodelled
+    text: "Vex Armor Augment: Chroma reduces the damage his squadmates within Affinity Range take by 75%. Squad kills restore 5% of his Health over 3s and increases Vex Armor duration by 1s."
+
+source:
+  url: https://wiki.warframe.com/w/Guardian_Armor

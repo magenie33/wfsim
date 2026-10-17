@@ -4,6 +4,7 @@ name: "Ulfrun's Descent"
 frame: voruna
 slot: 4
 energy_cost: 100
+augments: [ulfruns_endurance]
 internal_name: /Lotus/Powersuits/Werewolf/Abilities/WerewolfHowlAbility
 icon: Ulfrun'sDescentIcon(xWhite).png
 description: "(TAP) Voruna drops to all fours and prepares 5 brutal charges that lock onto enemies. Ulfrun, the most powerful wolf, leads the attack as Voruna dashes toward her target. The pack deals increased damage to targets and nearby enemies that are inflicted by Status Effects. Lethal attacks double the damage of Voruna's remaining charges.\n\n(HOLD) Ulfrun guards Voruna. If Voruna falls during this time, Ulfrun dies in her place."

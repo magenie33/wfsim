@@ -1,0 +1,16 @@
+id: shocking_speed
+name: "Shocking Speed"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: speed
+internal_name: /Lotus/Powersuits/Volt/SpeedAugmentCard
+description: "Speed Augment: While moving under the effects of Speed, enemies within 3m will take 300 Electricity Damage with guaranteed Status effect."
+
+effects:
+  - kind: unmodelled
+    text: "Speed Augment: While moving under the effects of Speed, enemies within 3m will take 300 Electricity Damage with guaranteed Status effect."
+
+source:
+  url: https://wiki.warframe.com/w/Shocking_Speed

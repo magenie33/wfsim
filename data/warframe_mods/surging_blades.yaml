@@ -1,0 +1,16 @@
+id: surging_blades
+name: "Surging Blades"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: aquablades
+internal_name: /Lotus/Powersuits/Yareli/YareliDisksAugmentCard
+description: "Aquablades Augment: Activate Aquablades when the ability is in use or cooldown to throw one blade. Blades gain 10% damage when any Aquablade hits an enemy. No cost to throw with Merulina."
+
+effects:
+  - kind: unmodelled
+    text: "Aquablades Augment: Activate Aquablades when the ability is in use or cooldown to throw one blade. Blades gain 10% damage when any Aquablade hits an enemy. No cost to throw with Merulina."
+
+source:
+  url: https://wiki.warframe.com/w/Surging_Blades

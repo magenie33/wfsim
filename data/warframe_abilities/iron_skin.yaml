@@ -4,6 +4,7 @@ name: "Iron Skin"
 frame: rhino
 slot: 2
 energy_cost: 50
+augments: [iron_shrapnel]
 internal_name: /Lotus/Powersuits/Rhino/Abilities/IronSkinAbility
 icon: IronSkinIcon(xWhite).png
 description: "Rhino hardens his skin, insulating himself from all damage and gaining Overguard."

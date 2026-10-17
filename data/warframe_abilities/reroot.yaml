@@ -4,6 +4,7 @@ name: "Reroot"
 frame: nokko
 slot: 3
 energy_cost: 50
+augments: [reroot_rampage]
 internal_name: /Lotus/Powersuits/Nokko/Abilities/NokkoShrinkAbility
 icon: RerootIcon(xWhite).png
 description: "Revert to Sprodling form, spawning orbs that heal Nokko and grant a speed boost. While in this state, Nokko is untargetable and heals gradually."

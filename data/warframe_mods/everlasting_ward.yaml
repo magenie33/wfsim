@@ -1,0 +1,16 @@
+id: everlasting_ward
+name: "Everlasting Ward"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: elemental_ward
+internal_name: /Lotus/Powersuits/Dragon/DragonLuckAugmentCard
+description: "Elemental Ward Augment: Allies that leave the radius will retain the effect for 100% of the remaining duration."
+
+effects:
+  - kind: unmodelled
+    text: "Elemental Ward Augment: Allies that leave the radius will retain the effect for 100% of the remaining duration."
+
+source:
+  url: https://wiki.warframe.com/w/Everlasting_Ward

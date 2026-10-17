@@ -1,0 +1,16 @@
+id: venari_bodyguard
+name: "Venari Bodyguard"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: venari
+internal_name: /Lotus/Powersuits/Khora/KhoraKavatAugmentCard
+description: "Venari Augment: Venari dies in Khora's place. Recovery timer increased to 150s. Killing enemies decreases the timer by 4s."
+
+effects:
+  - kind: unmodelled
+    text: "Venari Augment: Venari dies in Khora's place. Recovery timer increased to 150s. Killing enemies decreases the timer by 4s."
+
+source:
+  url: https://wiki.warframe.com/w/Venari_Bodyguard

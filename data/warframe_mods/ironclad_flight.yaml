@@ -1,0 +1,18 @@
+id: ironclad_flight
+name: "Ironclad Flight"
+rarity: rare
+polarity: zenurik
+base_drain: 4
+max_rank: 3
+exilus: true
+family: ironclad_flight
+augments: razorwing
+internal_name: /Lotus/Powersuits/Fairy/FairyDisablePassiveMod
+description: "Disable vacuum in Razorwing. Reduced Damage by 40% while Airborne."
+
+effects:
+  - kind: unmodelled
+    text: "Disable vacuum in Razorwing. Reduced Damage by 40% while Airborne."
+
+source:
+  url: https://wiki.warframe.com/w/Ironclad_Flight

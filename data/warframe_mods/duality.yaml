@@ -1,0 +1,16 @@
+id: duality
+name: "Duality"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: metamorphosis
+internal_name: /Lotus/Powersuits/YinYang/YinYangSwitchAugmentCard
+description: "Metamorphosis Augment: Equinox's other half breaks free for 10s, dealing 300% Damage."
+
+effects:
+  - kind: unmodelled
+    text: "Metamorphosis Augment: Equinox's other half breaks free for 10s, dealing 300% Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Duality
