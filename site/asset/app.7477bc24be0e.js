@@ -68,22 +68,22 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "80c8fca5";
+const BUILD_ID = "684b4c54";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "e8c20f5f+";
+const BUILD_SHA = "7b418ac5+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "d2b910c40a36";
+const RELEASE_ID = "21cc5b585409";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
-const ENGINE_ID = "358f3bf9aeb2";
+const ENGINE_ID = "317bd5842358";
 
 /// WHAT THIS REPOSITORY HOLDS, COUNTED BY THE BUILD.
 ///
@@ -853,8 +853,8 @@ const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "unc
 /// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
 /// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
 /// writes in the hashed name and the size; the dev server serves no workers.
-const ENGINE_WASM = "/pkg/wfsim_wasm_bg.c418db1cf850.wasm";
-const ENGINE_WASM_BYTES = 9779886;
+const ENGINE_WASM = "/pkg/wfsim_wasm_bg.522aea1d5364.wasm";
+const ENGINE_WASM_BYTES = 10027263;
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -916,7 +916,7 @@ async function engineCompile() {
 /// message and loads nothing itself. A module the browser will not post across
 /// is sent as its address instead, and that worker fetches its own.
 function spawnEngine() {
-  const w = new Worker("/asset/worker.6736ff1ddbe3.js");
+  const w = new Worker("/asset/worker.a0d63138c83d.js");
   engineLoad().then((module) => {
     try {
       w.postMessage({ kind: "engine", module });
@@ -32214,6 +32214,10 @@ function wfBlank(id) {
 /// A stored build, repaired against today's catalogue: an id that is gone
 /// becomes an empty slot rather than a card nothing can draw.
 function wfNormalize(st, id) {
+  return wfShedAugments(wfRepair(st, id));
+}
+
+function wfRepair(st, id) {
   const b = wfBlank(id);
   const s = st || {};
   return {
@@ -32246,8 +32250,20 @@ function wfNormalize(st, id) {
 }
 
 /// The four abilities as the loadout carries them, the infused one in its slot.
-const wfLoadout = () => wfFrame(wf.frame).abilities.map((id, i) =>
-  wfAbility(wf.helminth.slot === i + 1 && wf.helminth.ability ? wf.helminth.ability : id));
+const wfLoadoutOf = (s) => wfFrame(s.frame).abilities.map((id, i) =>
+  wfAbility(s.helminth.slot === i + 1 && s.helminth.ability ? s.helminth.ability : id));
+const wfLoadout = () => wfLoadoutOf(wf);
+
+/// AN AUGMENT IS EXCLUSIVE to a loadout carrying its ability, so a slot whose
+/// ability left with an infusion is emptied: the engine refuses the card.
+function wfShedAugments(s) {
+  const carries = wfLoadoutOf(s).map((a) => a && a.id);
+  s.slots.forEach((x) => {
+    const m = wfMod(x.mod);
+    if (m && m.augments && !carries.includes(m.augments)) { x.mod = null; x.rank = null; }
+  });
+  return s;
+}
 
 const wfPayload = () => wfPayloadOf(wf);
 
@@ -32509,21 +32525,19 @@ function renderWfMenu(kind, idx, query) {
   const fits = (m, i) => (i === WF_AURA ? m.aura : i === WF_EXILUS ? m.exilus : !m.aura);
   const at = (id) => wf.slots.findIndex((s, i) => i !== idx && s.mod === id);
   const own = wfMod(wf.slots[idx].mod);
-  const hits = WFCAT.mods.filter((m) => fits(m, idx) && searchHit(m, q))
+  const hits = WFCAT.mods.filter((m) => fits(m, idx) && !(m.augments && !carries.includes(m.augments)) && searchHit(m, q))
     .sort((a, b) => (b.id === (own && own.id)) - (a.id === (own && own.id)) || a.name.localeCompare(b.name));
   menu.innerHTML = hits.length ? hits.map((m) => {
     const placed = at(m.id);
     const family = placed < 0 && m.family && wf.slots.some((s, i) => i !== idx && (wfMod(s.mod) || {}).family === m.family);
-    const orphan = m.augments && !carries.includes(m.augments);
     const noSwap = placed >= 0 && own && !fits(own, placed);
     const title = family ? tr("incompatible with a card already seated")
-      : noSwap ? tr("cannot swap: the card in this slot does not fit that one")
-      : orphan ? tr("augments an ability this loadout does not carry — it would pay nothing") : "";
+      : noSwap ? tr("cannot swap: the card in this slot does not fit that one") : "";
     const chip = placed >= 0 ? ` <span class="slotchip">${escHtml(placed === WF_AURA ? tr("aura") : placed === WF_EXILUS ? tr("exilus") : tr("slot") + " " + (placed + 1))}</span>` : "";
     return modRow(m, {
       cls: `${family || noSwap ? "dis" : ""} ${own && own.id === m.id ? "cur" : placed >= 0 ? "placed" : ""}`,
       attrs: `data-id="${m.id}"`, title: escHtml(title), exilusChip: idx !== WF_EXILUS,
-      chips: chip + (orphan ? ` <span class="exchip unmod">${escHtml(tr("inert here"))}</span>` : ""),
+      chips: chip,
       trailing: `<span class="dr">${m.drain}</span>`,
     });
   }).join("") : none;
@@ -32844,6 +32858,7 @@ function wfMarkDirty() {
 }
 
 function wfChanged() {
+  wfShedAugments(wf);
   renderWfMods();
   renderWfArcanes();
   renderWfShards();
