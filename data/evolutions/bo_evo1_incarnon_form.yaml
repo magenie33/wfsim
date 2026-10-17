@@ -1,0 +1,34 @@
+id: bo_evo1_incarnon_form
+name: Incarnon Form
+weapon: bo
+tier: 1
+position_in_tier: 1
+icon: IncreaseRangeAndHeavyAttackEfficiency(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form.\nIncarnon form increases Range and Heavy Attack Efficiency.\n+100% Melee Damage\n+4 Range\n+50% Heavy Attack Efficiency\n+20% Sprint Speed\n+20% to Bullet Jump"
+# A MELEE INCARNON IS NOT A FORM: it changes numbers on the ways the weapon
+# is already swung and unlocks no second entry (docs/MELEE.md §7).
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form";
+  # the seconds are the page's Overview, "Once activated, the Incarnon form
+  # lasts for 180 seconds", and the module's `IncarnonDuration = 180`.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage" — a bracket term beside Pressure Point.
+  - kind: base_damage_bonus
+    value: 1.0
+  # from: "+4 Range" — metres, the quantity Reach buys.
+  - kind: melee_range_bonus_m
+    value: 4.0
+  # from: "+50% Heavy Attack Efficiency" — a mod bucket the
+  # evolution loader has no kind for.
+  - kind: unmodelled_heavy_attack_efficiency
+    value: 0.5
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% to Bullet Jump"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Bo_Incarnon_Genesis

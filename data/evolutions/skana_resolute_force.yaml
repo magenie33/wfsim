@@ -1,0 +1,17 @@
+id: skana_resolute_force
+name: Resolute Force
+weapon: skana
+tier: 3
+position_in_tier: 2
+icon: IncarnonComboTimer(xWhite).png
+description: "+6s Combo Duration"
+selection: choose_one
+
+effects:
+  # from: "+6s Combo Duration" — the evolution loader has no kind for
+  # the counter's timer.
+  - kind: unmodelled_combo_duration_seconds
+    value: 6.0
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

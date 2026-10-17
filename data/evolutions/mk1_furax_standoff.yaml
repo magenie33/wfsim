@@ -1,0 +1,16 @@
+id: mk1_furax_standoff
+name: Standoff
+weapon: mk1_furax
+tier: 3
+position_in_tier: 3
+icon: ComboCounterPausedWhenHolstered(xWhite).png
+description: "Combo Timer pauses when weapon is holstered."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Combo Timer pauses when weapon is holstered"
+    reason: no_holster
+
+source:
+  url: https://wiki.warframe.com/w/Furax_Incarnon_Genesis

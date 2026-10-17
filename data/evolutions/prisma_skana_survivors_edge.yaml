@@ -1,0 +1,17 @@
+id: prisma_skana_survivors_edge
+name: Survivor's Edge
+weapon: prisma_skana
+tier: 4
+position_in_tier: 1
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +12%.\nIncrease Base Status Chance by +10%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.12
+  - kind: flat_base_status_chance
+    value: 0.1
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

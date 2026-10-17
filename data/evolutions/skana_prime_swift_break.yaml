@@ -1,0 +1,17 @@
+id: skana_prime_swift_break
+name: Swift Break
+weapon: skana_prime
+tier: 3
+position_in_tier: 3
+icon: IncarnonWindUpSpeed(xWhite).png
+description: "+50% Heavy Attack Wind Up Speed."
+selection: choose_one
+
+effects:
+  # from: "+50% Heavy Attack Wind Up Speed" — its own clock, which
+  # attack speed does not touch.
+  - kind: heavy_windup_speed_bonus
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

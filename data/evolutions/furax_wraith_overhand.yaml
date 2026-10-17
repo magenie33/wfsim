@@ -1,0 +1,17 @@
+id: furax_wraith_overhand
+name: Overhand
+weapon: furax_wraith
+tier: 3
+position_in_tier: 2
+icon: IncarnonHeavyEfficiency(xWhite).png
+description: "Heavy Attack Efficiency set at 20%"
+selection: choose_one
+
+effects:
+  # Heavy attack efficiency is a mod bucket the evolution loader has no
+  # kind for.
+  - kind: unmodelled_heavy_attack_efficiency_set_at
+    value: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Furax_Incarnon_Genesis

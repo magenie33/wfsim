@@ -5,8 +5,6 @@ inherits: skana
 form: slide
 transform_group: skana
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: melee_incarnon_unmodelled
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee

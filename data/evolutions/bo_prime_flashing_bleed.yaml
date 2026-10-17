@@ -1,0 +1,19 @@
+id: bo_prime_flashing_bleed
+name: Flashing Bleed
+weapon: bo_prime
+tier: 4
+position_in_tier: 1
+icon: ChanceForSlashOnImpact(xWhite).png
+description: "+40% chance of Slash Status on Impact Status Effect."
+selection: choose_one
+
+effects:
+  # from: "+40% chance of Slash Status on Impact Status Effect" — the
+  # conversion Hemorrhage carries on the mod side.
+  - kind: proc_conversion
+    from: impact
+    to: slash
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Bo_Incarnon_Genesis

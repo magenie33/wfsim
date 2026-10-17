@@ -1,0 +1,19 @@
+id: skana_wartime_nerve
+name: Wartime Nerve
+weapon: skana
+tier: 2
+position_in_tier: 2
+icon: DamageAndComboGain(xWhite).png
+description: "Increase Base Damage by +90.\n+9 Combo Count on undamaged enemies."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 90.0
+  # from: "+9 Combo Count on undamaged enemies" — "as long as their
+  # health and shield have not been damaged" (the page's notes).
+  - kind: unmodelled_combo_count_on_undamaged_enemies
+    value: 9.0
+
+source:
+  url: https://wiki.warframe.com/w/Skana_Incarnon_Genesis

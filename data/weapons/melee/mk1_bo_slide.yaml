@@ -5,8 +5,6 @@ inherits: mk1_bo
 form: slide
 transform_group: mk1_bo
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: melee_incarnon_unmodelled
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee

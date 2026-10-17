@@ -1,0 +1,37 @@
+id: furax_evo1_incarnon_form
+name: Incarnon Form
+weapon: furax
+tier: 1
+position_in_tier: 1
+icon: IncarnonFormEfficientHeavySlamsWithDamageField(xWhite).png
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form.\nIncarnon Form gains 90% Heavy Slam Efficiency and leaves behind Heat Damage fields after Heavy Slams.\n+100% Melee Damage\n+25% Sprint Speed\n+25% to Bullet Jump"
+# A MELEE INCARNON IS NOT A FORM: it changes numbers on the ways the weapon
+# is already swung and unlocks no second entry (docs/MELEE.md §7).
+selection: fixed
+
+effects:
+  # from: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form";
+  # the seconds are the page's Overview, "Once activated, the Incarnon form
+  # lasts for 180 seconds", and the module's `IncarnonDuration = 180`.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
+  # from: "+100% Melee Damage" — a bracket term beside Pressure Point.
+  - kind: base_damage_bonus
+    value: 1.0
+  # from: "Incarnon Form gains 90% Heavy Slam Efficiency" — a mod
+  # bucket the evolution loader has no kind for.
+  - kind: unmodelled_heavy_slam_efficiency
+    value: 0.9
+  # from: "leaves behind Heat Damage fields after Heavy Slams"; the
+  # notes: "Field does 50 Heat damage every second for 7 seconds", 5 m,
+  # 0% crit, 50% status, untouched by the combo multiplier. A made
+  # entity, and nothing makes it.
+  - kind: unmodelled_heat_damage_fields_after_heavy_slams
+    value: 50.0
+  - kind: out_of_scope
+    clause: "+25% Sprint Speed, +25% to Bullet Jump"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Furax_Incarnon_Genesis
