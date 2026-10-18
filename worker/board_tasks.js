@@ -164,6 +164,8 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
 /// A THOUSAND A CALL: a call is a round trip from the runner and a few from the
 /// worker whatever its size (`demandAll`), and `ship_queue.sh` sends this many.
 const ASK_MAX = 1000;
+/// …AND THE QUEUED ROWS ONE BACKFILL CALL READS, each one index probe of `demands`.
+const BACKFILL_CHUNK = 20_000;
 async function ask(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
@@ -173,21 +175,33 @@ async function ask(request, env) {
   const { engine } = await servedRelease(env);
   // EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
   // scorer measures it: a run stopped between the queue's write and the ask
-  // leaves exactly that. `ASK_MAX` a call, until none is left.
+  // leaves exactly that. `BACKFILL_CHUNK` queued rows a call, from `after` (the
+  // last row the previous call read) until the queue ends: read whole, the
+  // queue's million rows were 45 s of index probes for a thousand owed, and the
+  // statement timeout refused every backfill there was.
   // A LIVE DEMAND ON A SETTLED QUESTION IS UNASKED TOO: an ask that failed after
   // its demands were written never delivered the fact they met, and `redeliver`
   // reads only facts formed since its cursor, so asking again is what tells it.
   if (b.backfill === true) {
-    const { results } = await db.prepare(
-      `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, (array_agg(q.initiator ORDER BY q.batch))[1] AS initiator, bu.record, bu.at,
+    const after = Array.isArray(b.after) && b.after.length === 3 && b.after.every((x) => typeof x === "string") ? b.after : ["", "", ""];
+    const chunk = `WITH k AS (SELECT DISTINCT build_id, ruler, mode FROM queue
+          WHERE (build_id, ruler, mode) > (?1::text, ?2::text, ?3::text) ORDER BY build_id, ruler, mode LIMIT ?4::bigint)`;
+    const [read, { results }] = await db.batch([
+      db.prepare(`${chunk} SELECT count(*) AS n, (SELECT jsonb_build_array(build_id, ruler, mode)::text FROM k
+          ORDER BY build_id DESC, ruler DESC, mode DESC LIMIT 1) AS last FROM k`).bind(...after, BACKFILL_CHUNK),
+      db.prepare(`${chunk}, owed AS (SELECT k.* FROM k WHERE NOT EXISTS (SELECT 1 FROM demands d JOIN questions x ON x.id = d.question
+                           WHERE d.ref = k.build_id || '|' || k.ruler || '|' || k.mode
+                            AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live' AND x.state NOT IN ('fact', 'spot')))
+        SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, (array_agg(q.initiator ORDER BY q.batch))[1] AS initiator, bu.record, bu.at,
               (SELECT s.finished_at FROM scores s WHERE s.identity = q.build_id AND s.ruler = q.ruler AND s.mode = q.mode) AS measured
-         FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
-        WHERE NOT EXISTS (SELECT 1 FROM demands d JOIN questions x ON x.id = d.question
-                           WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                            AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live' AND x.state NOT IN ('fact', 'spot'))
-        GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at LIMIT ?`).bind(ASK_MAX).all();
+         FROM owed o JOIN queue q ON q.build_id = o.build_id AND q.ruler = o.ruler AND q.mode = o.mode
+         JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
+        GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at`).bind(...after, BACKFILL_CHUNK),
+    ]);
+    const r0 = read.results[0] || {};
     await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now)), engine, now);
-    return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });
+    return json({ ok: true, asked: results.length, after: r0.last ? JSON.parse(r0.last) : after,
+      left: Number(r0.n || 0) === BACKFILL_CHUNK ? null : 0 });
   }
   const rows = Array.isArray(b.rows) ? b.rows.filter((r) => r && typeof r.identity === "string" && typeof r.ruler === "string" && typeof r.mode === "string") : [];
   if (typeof b.batch !== "string" || !b.batch || rows.length > ASK_MAX) return json({ ok: false, error: `needs batch and at most ${ASK_MAX} rows` }, 400);

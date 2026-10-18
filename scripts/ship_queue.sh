@@ -97,14 +97,16 @@ factory_ask() {
 
 # EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
 # scorer measures it: a run stopped between the queue's write and the ask
-# leaves exactly that. The worker asks for `ASK_MAX` a call, until none is.
+# leaves exactly that. The worker reads the queue a chunk a call, from where
+# the last call stopped (`after`), until it reaches the end.
 backfill() {
-  local asked=0 n i
+  local asked=0 n i after='["","",""]'
   for i in $(seq 1 500); do
-    factory_ask '{"backfill":true}' || { echo "::warning::queue: the backfill ask was refused [HTTP $ASK_CODE]"; return 0; }
+    factory_ask "{\"backfill\":true,\"after\":$after}" || { echo "::warning::queue: the backfill ask was refused [HTTP $ASK_CODE]"; return 0; }
     n=$(jq -r '.asked // 0' < "$ASK_OUT")
     asked=$((asked + n))
     [ "$(jq -r '.left' < "$ASK_OUT")" = "0" ] && break
+    after=$(jq -c '.after' < "$ASK_OUT")
   done
   echo "queue: $asked owed row(s) nobody had asked for, now asked"
 }
