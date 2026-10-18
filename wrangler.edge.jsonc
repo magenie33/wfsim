@@ -11,7 +11,10 @@
   "name": "wfsim-edge",
   "compatibility_date": "2026-07-28",
   "main": "worker/edge.js",
-  "observability": { "enabled": true },
+  // ONE INVOCATION IN A HUNDRED LOGGED: every reader's request passes through
+  // here, and Workers Logs bills past 20 million a month. It answers no
+  // database, so what it could get wrong is rare and shows in a sample.
+  "observability": { "enabled": true, "head_sampling_rate": 0.01 },
   "services": [{ "binding": "BACKEND", "service": "wfsim" }],
   "assets": {
     "directory": "./site",
