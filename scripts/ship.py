@@ -222,6 +222,9 @@ def main() -> None:
     run(*release)
     # …AND `latest.json` NAMES IT once the site serves it.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])
+    # THE EDGE WORKER HERE, never in the Workers Build: that build is bound to
+    # `wfsim` and deploys any config under its name (docs/WASM.md §"Two workers").
+    run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.edge.jsonc"))
     # THE MCP SERVER AFTER THE PUSH, from the same tree: its engine is the one
     # just published, and a server deployed ahead of the site answers with it.
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "mcp" / "wrangler.jsonc"))

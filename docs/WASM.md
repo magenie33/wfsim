@@ -39,7 +39,11 @@ wfsim.app is two workers, and the custom domain points at the first.
 placed front door carried every reader's download to the database's city and
 back (`Cf-Placement: remote-LHR` on `/` and on the module). The two configs
 share one assets block, which `scripts/check_edge_worker.mjs` holds equal.
-`scripts/deploy.sh` deploys `wfsim` first, then the edge in front of it.
+**EACH WORKER HAS ITS OWN DEPLOY.** The Workers Build (`scripts/deploy.sh`)
+deploys `wfsim` alone: it is bound to that worker and deploys any config under
+its name, so the edge config there replaced `wfsim` with a script whose backend
+was itself. `scripts/ship.py` deploys the edge after the push, as it does the
+MCP server.
 
 A request the edge passes on keeps its headers, so the placed worker reads the
 reader's address from `cf-connecting-ip` and the country from `cf-ipcountry`
