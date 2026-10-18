@@ -901,7 +901,7 @@ function reloadForRelease(how = "asked") {
     sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState()));
     sessionStorage.setItem(USAGE_ARRIVAL, `release_${how}`);
   } catch (_) { /* nothing to keep */ }
-  location.reload();
+  forgetKeptPages().finally(() => location.reload());
 }
 function maybeReloadForRelease() {
   if (!boardStale && !releaseNewer) return;

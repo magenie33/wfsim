@@ -900,7 +900,7 @@ def release_id() -> str:
     h = hashlib.sha256()
     h.update((STATIC / "index.html").read_bytes())
     h.update(app_source().encode("utf-8"))
-    for name in ("style.css", "worker.js"):
+    for name in ("style.css", "worker.js", "page_cache.js"):
         h.update((STATIC / name).read_bytes())
     for f in nona_files():
         h.update(f.read_bytes())
@@ -2649,7 +2649,7 @@ def main() -> None:
     release = release_id()
 
     (APP / "app.js").write_bytes(app_source().encode("utf-8"))
-    for name in ("style.css", "worker.js", "logo.svg", "nona.svg"):
+    for name in ("style.css", "worker.js", "page_cache.js", "logo.svg", "nona.svg"):
         shutil.copy2(STATIC / name, APP / name)
     shutil.copytree(STATIC / "pol", APP / "pol", dirs_exist_ok=True)
 

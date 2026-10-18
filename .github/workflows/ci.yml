@@ -334,6 +334,10 @@ jobs:
         run: node scripts/check_compute_queue.mjs
       - name: The home tally and the ranking are CDN files first, the worker their fallback
         run: node scripts/check_stats_files.mjs
+      # A WORKER THAT LIVES IN EVERY READER'S BROWSER is wrong for weeks: it falls
+      # back on a slow road only, never on a sound one, and its way back works.
+      - name: The page cache answers a slow road and never a sound one
+        run: node scripts/check_page_cache.mjs
 
   # The builder against every weapon: the slowest sweep, so it is SHARDED, every
   # fourth weapon to a job (WFSIM_PARITY_SHARD).

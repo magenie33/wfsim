@@ -64,6 +64,17 @@ over a fake asset layer answers the page, its twin and the hashed files itself
 route added to the edge's list the first assertion fails; with `edgeServe`
 claiming no hashed file, three do.
 
+## `check_page_cache`
+
+The page cache (docs/DISTRIBUTION.md §"The page cache"), against the real
+`page_cache.js` on a server of the check's own whose page can be held back. A
+sound road is answered by the network and a held one by the kept copy within
+two seconds; a new release replaces the copy; a copy whose `app.js` is not kept,
+or pages forgotten before a release reload, wait for the network; and the file
+shipped with `RETIRED` true unregisters itself and leaves no store. With
+`PAGE_WAIT_MS` at a minute two checks fail; with the `app.js` guard removed, or
+the unregister, one does.
+
 ## `check_card_page`
 
 The long image the bots send (`45-card-page.js`, docs/AGENT.md §"The QQ bot"):

@@ -298,6 +298,32 @@ stores nothing and decides nothing.
   Anything signed in — accounts, the ledger, sync — stays on the direct road,
   so no cookie crosses it.
 
+## The page cache
+
+`/page_cache.js` is a service worker on wfsim.app alone, for readers whose road
+to the edge drops packets: most of mainland China reaches Cloudflare in
+Amsterdam or Seattle, and a returning reader with every file cached still
+waited seconds for the page itself.
+
+- **A page goes to the network first.** Its kept copy answers only when the
+  network has taken `PAGE_WAIT_MS` and the copy is under a week old, and the
+  network's answer replaces the copy whenever it comes. A sound road never
+  sees the copy.
+- **Content-addressed files** (`/asset/`, `/pkg/`, `/lib/`) are answered from
+  the cache first, since their names never change meaning. The api, the board
+  and the art pass through untouched.
+- **Pages are kept for one release**, the one whose `app.js` they name, and a
+  copy is answered only while that `app.js` is kept beside it: a copy naming a
+  file the site has since dropped would never start.
+- **A reload that follows a newer release drops the kept pages first**
+  (`forgetKeptPages`), or a slow road would answer it with the release being
+  left and the page would reload into itself.
+- **The way back is `RETIRED = true`**, shipped like any release: each browser
+  that checks for an update drops both stores and unregisters the worker.
+  Never delete the file instead, since a worker whose script is gone stays
+  installed.
+- `scripts/check_page_cache.mjs` holds all of this against the real file.
+
 ## The shell contract
 
 A new platform implements this and nothing else. It is what keeps "we should
