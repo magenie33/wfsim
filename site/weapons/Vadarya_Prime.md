@@ -4,7 +4,7 @@ Chinese name: 瓦德雅 Prime
 
 Sniper · Primary · Mastery Rank 15. 400 base damage (electricity 400), 40% crit chance, 2.8x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

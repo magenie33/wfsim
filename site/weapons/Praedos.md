@@ -4,7 +4,7 @@ Chinese name: 双雄
 
 Tonfa · Melee · Mastery Rank 14. 200 base damage (impact 20, puncture 20, slash 160), 20% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 辐光弩炮
 
 Archgun · Archgun · Mastery Rank 10. 1800 base damage (heat 600, puncture 400, radiation 800), 30% crit chance, 2.5x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 雷克斯
 
 Pistol · Secondary · Mastery Rank 3. 130 base damage (impact 13, puncture 104, slash 13), 20% crit chance, 2x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

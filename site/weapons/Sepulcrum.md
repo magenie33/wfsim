@@ -4,7 +4,7 @@ Chinese name: 追击者
 
 Pistol · Secondary · Mastery Rank 14. 48 base damage (impact 9.6, puncture 26.88, slash 11.52), 30% crit chance, 2.2x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

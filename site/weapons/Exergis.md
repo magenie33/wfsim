@@ -4,7 +4,7 @@ Chinese name: 晶能放射器
 
 Shotgun · Primary · Mastery Rank 8. 540 base damage x3 multishot (impact 20, puncture 120, radiation 140, slash 260), 8% crit chance, 1.4x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

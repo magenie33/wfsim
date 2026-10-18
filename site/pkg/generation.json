@@ -1,6 +1,13 @@
 {
  "names": [
-  "wfsim_wasm.522aea1d5364.js",
-  "wfsim_wasm_bg.522aea1d5364.wasm"
+  "catalogue.ff7684a050b5.json",
+  "i18n.449904ce686a.json",
+  "meta.cb81f9349daf.json",
+  "pack.data.c82fb20f56a8.json",
+  "pack.site.58face301d57.json",
+  "pack.text.6d9a48eee965.json",
+  "warframes.5d5c8b782cb7.json",
+  "wfsim_wasm.bfbc76556f82.js",
+  "wfsim_wasm_bg.bfbc76556f82.wasm"
  ]
 }

@@ -4,7 +4,7 @@ Chinese name: 什长双枪
 
 Archgun · Archgun · Mastery Rank 1. 190 base damage (impact 85.5, puncture 52.25, slash 52.25), 28% crit chance, 2.2x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

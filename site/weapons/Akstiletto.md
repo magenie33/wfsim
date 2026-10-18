@@ -4,7 +4,7 @@ Chinese name: 史提托双枪
 
 Dual Pistols · Secondary · Mastery Rank 8. 28 base damage (impact 16.8, puncture 2.8, slash 8.4), 18% crit chance, 1.8x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

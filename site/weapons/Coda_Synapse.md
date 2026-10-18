@@ -4,7 +4,7 @@ Chinese name: 终幕·突触生化枪
 
 Rifle · Primary · Mastery Rank 17. 26 base damage (corrosive 26), 40% crit chance, 2.7x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

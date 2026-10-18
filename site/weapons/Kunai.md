@@ -4,7 +4,7 @@ Chinese name: 苦无
 
 Pistol · Secondary · Mastery Rank 0. 46 base damage (impact 4.6, puncture 34.5, slash 6.9), 8% crit chance, 1.6x crit multiplier, 8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-17
+## Best riven-free build on the WFSim board, as of 2026-10-18
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
