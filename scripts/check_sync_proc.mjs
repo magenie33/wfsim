@@ -11,6 +11,7 @@ import { syncRoute } from "../worker/sync.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { facts } from "../worker/factory.js";
 import { forgetDials } from "../worker/dials.js";
+import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
@@ -235,6 +236,19 @@ check(`through the procedure a sync with results, renewals, states and points is
   viaProc.calls <= 2 && viaProc.r.taken.length === 3 && !!viaProc.r.points && !!viaProc.r.pack,
   JSON.stringify({ ...viaProc.r, held: undefined, dials: undefined }).slice(0, 600));
 check(`…where the statements one by one are many (${viaStatements.calls}): the count counts`, viaStatements.calls > 2);
+
+// PRODUCER_USE IS WRITTEN LAST (`board_sync`): nothing the steps reach, followed
+// through every function of sync.sql they name, locks or writes it.
+const SQL = readFileSync(new URL("../worker/pg/sync.sql", import.meta.url), "utf8");
+const bodies = Object.fromEntries([...SQL.matchAll(/CREATE OR REPLACE (?:FUNCTION|PROCEDURE) (\w+)\([^$]*?\$\$([\s\S]*?)\$\$/g)]
+  .map(([, name, body]) => [name, body]));
+const reached = new Set(["board_sync_steps"]);
+for (const name of reached) {
+  for (const other of Object.keys(bodies)) if (other !== name && new RegExp(`\\b${other}\\(`).test(bodies[name])) reached.add(other);
+}
+const writers = [...reached].filter((n) => /UPDATE producer_use|producer_use[^;]*FOR UPDATE/.test(bodies[n]));
+check(`a sync's steps (${reached.size} functions) neither lock nor write producer_use, which board_sync does last`,
+  reached.size > 10 && writers.length === 0, writers.join(", "));
 
 console.log(failures ? `\n${failures} failed` : "\nthe procedure answers and writes what the statements do, in one call");
 process.exit(failures ? 1 : 0);

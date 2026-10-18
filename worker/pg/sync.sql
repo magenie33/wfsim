@@ -129,21 +129,33 @@ BEGIN
 END $$;
 
 -- …LEASED TOGETHER as $15 until $16 to device $17 — unless it holds $18 packs
--- already — and each producer charged its rows at its mean fight over its weight.
+-- already.
+CREATE OR REPLACE FUNCTION factory_take_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
+  text, text, text, bigint)
+RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
+  UPDATE questions q SET (lease_prev, leased_to_prev, lease_prev_until) = (SELECT * FROM factory_supersede(q.lease_prev,
+      q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
+    lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
+  WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
+    AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
+  RETURNING q.id, q.verb, q.request, q.due_at, q.producer
+$$;
+
+-- …EACH PRODUCER CHARGED ITS ROWS at its mean fight over its weight ($1: [{ p, n }]).
+CREATE OR REPLACE FUNCTION factory_charge(text) RETURNS void LANGUAGE sql AS $$
+  SELECT 1 FROM producer_use WHERE producer IN (SELECT p FROM jsonb_to_recordset($1::jsonb) AS x(p text)) ORDER BY producer FOR UPDATE;
+  UPDATE producer_use u SET used = u.used + u.answer_ms * x.n / u.weight
+  FROM jsonb_to_recordset($1::jsonb) AS x(p text, n bigint) WHERE u.producer = x.p
+$$;
+
+-- …BOTH IN ONE STATEMENT, the pick before the charge's lock.
 CREATE OR REPLACE FUNCTION factory_lease_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
   text, text, text, bigint)
 RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
-  WITH taken AS (UPDATE questions q SET (lease_prev, leased_to_prev, lease_prev_until) = (SELECT * FROM factory_supersede(q.lease_prev,
-        q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
-      lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
-    WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
-      AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
-    RETURNING q.id, q.verb, q.request, q.due_at, q.producer),
-  locked AS (SELECT u.producer FROM producer_use u WHERE u.producer IN (SELECT t.producer FROM taken t) ORDER BY u.producer FOR UPDATE),
-  charged AS (UPDATE producer_use u SET used = u.used + u.answer_ms * c.n / u.weight
-    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c WHERE u.producer = c.producer
-      AND u.producer IN (SELECT producer FROM locked))
-  SELECT t.id, t.verb, t.request, t.due_at, t.producer FROM taken t
+  WITH taken AS MATERIALIZED (SELECT * FROM factory_take_pack($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)),
+  charged AS MATERIALIZED (SELECT factory_charge((SELECT jsonb_agg(jsonb_build_object('p', c.producer, 'n', c.n) ORDER BY c.producer)
+    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c)::text))
+  SELECT t.id, t.verb, t.request, t.due_at, t.producer FROM taken t CROSS JOIN charged
 $$;
 
 -- WHO IS ASKING: an id that asked since $1, OR one holding a live lease at $2 —
@@ -375,8 +387,8 @@ $$;
 -- nothing is written: an answer the settler may not take, or a pack demand of
 -- a producer whose wanting is not `board_owed`. `outcome` says which reply:
 -- idle, busy, banned, early, full, alone (a waited-on head: worker/sync.js
--- leases it), or pack.
-CREATE OR REPLACE PROCEDURE board_sync(p jsonb, INOUT r jsonb) LANGUAGE plpgsql AS $$
+-- leases it), or pack. `use` is what it owes producer_use (`board_sync`).
+CREATE OR REPLACE PROCEDURE board_sync_steps(p jsonb, INOUT r jsonb) LANGUAGE plpgsql AS $$
 DECLARE
   v_dev text := p ->> 'id';
   v_at text := p ->> 'at';
@@ -416,7 +428,7 @@ DECLARE
   v_wanted jsonb;
   v_gone jsonb;
   v_x record;
-  v_use_locked boolean := false;
+  v_learn jsonb := '[]'::jsonb;
 BEGIN
   -- ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME (worker/tasks.js `recordMany`).
   PERFORM pg_advisory_xact_lock(hashtextextended(v_dev, 0));
@@ -444,16 +456,11 @@ BEGIN
           v_x.i #>> '{a,result}', (v_x.i #>> '{a,work}')::bigint, (v_x.i #>> '{a,compute_ms}')::bigint, v_x.i #>> '{a,counts}',
           (v_x.i #>> '{a,lanes}')::bigint, v_at);
       END LOOP;
-      -- PRODUCER_USE IS LOCKED WHOLE, in producer order, before its first write
-      -- here or at the pack's charge: two syncs taking its rows in opposite
-      -- orders deadlocked.
-      PERFORM 1 FROM producer_use ORDER BY producer FOR UPDATE;
-      v_use_locked := true;
-      PERFORM factory_learn(y.x::text, (p ->> 'share')::double precision)
+      v_learn := v_learn || COALESCE((SELECT jsonb_build_array(y.x)
         FROM (SELECT jsonb_agg(jsonb_build_object('p', l.producer, 'ms', l.ms, 'n', l.n) ORDER BY l.producer) AS x
           FROM (SELECT i ->> 'producer' AS producer, sum((i #>> '{a,compute_ms}')::bigint) AS ms, count(*) AS n
             FROM jsonb_array_elements(v_rows) i WHERE (i #>> '{a,compute_ms}')::bigint > 0 GROUP BY 1) l) y
-        WHERE y.x IS NOT NULL;
+        WHERE y.x IS NOT NULL), '[]'::jsonb);
       PERFORM factory_queue((SELECT jsonb_agg(i ->> 'id' ORDER BY k) FROM jsonb_array_elements(v_rows) WITH ORDINALITY x(i, k))::text,
         p #>> '{record,engine}', p #>> '{record,peer}', (p #>> '{record,joined}')::bigint, v_at);
       v_queued := true;
@@ -493,7 +500,7 @@ BEGIN
     v_points := device_points(v_dev, p #>> '{points,from}', p #>> '{points,recent_from}', p #>> '{points,week_from}', p #>> '{points,since_hour}');
   END IF;
   r := jsonb_build_object('taken', v_taken, 'dropped', v_dropped, 'withdrawn', v_withdrawn, 'held', v_held, 'states', v_states,
-    'points', v_points, 'queued', v_queued);
+    'points', v_points, 'queued', v_queued, 'use', jsonb_build_object('learn', v_learn, 'charge', '[]'::jsonb));
 
   -- THE GATES, in worker/sync.js's order.
   SELECT banned, refused_until, last_at, next_at INTO v_me FROM verifiers WHERE id = v_dev;
@@ -550,11 +557,12 @@ BEGIN
     RETURN;
   END IF;
   v_size := GREATEST(1, LEAST((p #>> '{pack,max}')::bigint, (p #>> '{pack,by_pace}')::bigint, v_fair.open / GREATEST(1, v_fair.asking)));
-  IF NOT v_use_locked THEN PERFORM 1 FROM producer_use ORDER BY producer FOR UPDATE; END IF;
-  v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_lease_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
+  v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
     v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', CASE WHEN v_packable THEN v_head.producer END, v_size,
     v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev, (p ->> 'packs_held')::bigint) t),
     '[]'::jsonb);
+  r := jsonb_set(r, '{use,charge}', COALESCE((SELECT jsonb_agg(jsonb_build_object('p', c.p, 'n', c.n) ORDER BY c.p)
+    FROM (SELECT t ->> 'producer' AS p, count(*) AS n FROM jsonb_array_elements(v_got) t GROUP BY 1) c), '[]'::jsonb));
 
   -- THE PACK'S DEMANDS, in worker/tasks.js `nextPack`'s order: a row no longer
   -- owed is withdrawn where it is found, producer by producer, and left out.
@@ -593,4 +601,24 @@ BEGIN
   END IF;
   UPDATE verifiers SET next_at = p ->> 'floor_at' WHERE id = v_dev;
   r := r || jsonb_build_object('outcome', 'pack', 'short', v_short, 'lease', v_lease, 'questions', v_got);
+END $$;
+
+-- …AND WHAT IT OWES PRODUCER_USE, WRITTEN LAST. Every sync writes those rows, so
+-- a sync holding them from its answers through the pick of its pack made one
+-- slow pick every other sync's lock timeout. They are locked whole, in producer
+-- order, as two syncs taking them in opposite orders deadlocked.
+CREATE OR REPLACE PROCEDURE board_sync(p jsonb, INOUT r jsonb) LANGUAGE plpgsql AS $$
+DECLARE
+  v_use jsonb;
+  v_x record;
+BEGIN
+  CALL board_sync_steps(p, r);
+  v_use := r -> 'use';
+  r := r - 'use';
+  IF jsonb_array_length(v_use -> 'learn') + jsonb_array_length(v_use -> 'charge') = 0 THEN RETURN; END IF;
+  PERFORM 1 FROM producer_use ORDER BY producer FOR UPDATE;
+  FOR v_x IN SELECT l FROM jsonb_array_elements(v_use -> 'learn') WITH ORDINALITY x(l, k) ORDER BY k LOOP
+    PERFORM factory_learn(v_x.l::text, (p ->> 'share')::double precision);
+  END LOOP;
+  IF jsonb_array_length(v_use -> 'charge') > 0 THEN PERFORM factory_charge((v_use -> 'charge')::text); END IF;
 END $$;

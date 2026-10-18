@@ -721,7 +721,8 @@ trigger.
 **WHAT A WITNESS MAY TAKE, AND IN WHAT ORDER, IS STATED ONCE, IN SQL**
 (`worker/pg/sync.sql`): `factory_eligible` (what a witness may answer),
 `factory_head` (the head of its order, fair between producers),
-`factory_take` and `factory_lease_pack` (a pack picked, leased and charged),
+`factory_take`, `factory_take_pack`, `factory_charge` and `factory_lease_pack`
+(a pack picked, leased and charged),
 `factory_asking`, `factory_open`, `factory_restate`, `factory_takeable`,
 `factory_supersede` and the board's `board_owed`. Every caller in
 `worker/tasks.js`, `worker/verify.js` and `worker/sync.js` calls them, so no

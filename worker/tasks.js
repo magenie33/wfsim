@@ -541,7 +541,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const queued = !official && items.every(({ q }) => queueable(q)) && (await dialsOf(env, now)).settle_async === 1;
     const queue = queued ? db.prepare("SELECT factory_queue(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)")
       .bind(JSON.stringify(items.map(({ q }) => q.id)), engine, peer || "", join ? 1 : 0, at) : null;
-    await db.batch([lock, ...writes, ...(learnt ? [learnt] : []), ...(queue ? [queue] : [])]);
+    // PRODUCER_USE LAST, as `board_sync` takes it: a batch holding it while it
+    // waits on a queue row the procedure holds deadlocks against it.
+    await db.batch([lock, ...writes, ...(queue ? [queue] : []), ...(learnt ? [learnt] : [])]);
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
       // §"Contribution") — a statistic, so outside the answers' transaction:

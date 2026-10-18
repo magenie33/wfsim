@@ -342,6 +342,8 @@ docs/BOARD.md §"The sync in the database").
 - The runs went through the call, and some came back to the worker (WS001).
 - Through the procedure a sync with results, renewals, states and points is at
   most two waits on a database; through the statements it is more.
+- Nothing a sync's steps reach, through every function of `sync.sql` they
+  name, locks or writes `producer_use`: `board_sync` writes it last.
 
 ## `check_initiator`
 
