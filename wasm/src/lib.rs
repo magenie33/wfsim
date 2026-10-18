@@ -23,6 +23,15 @@ pub fn install_data(pack: &str) -> String {
     wfsim_webapi::install_pack(pack)
 }
 
+/// …THE SAME PACK AS ITS UTF-8 BYTES, the door this repo's own callers use.
+/// A string is copied into the module at three bytes a character from its
+/// first non-ASCII one, and linear memory never shrinks: a 4.6 MB pack held
+/// a lane at 14 MB for the length of the copy (docs/WASM.md §"Memory").
+#[wasm_bindgen]
+pub fn install_data_bytes(pack: &[u8]) -> String {
+    wfsim_webapi::install_pack_bytes(pack)
+}
+
 /// Dispatch a quick endpoint call: `endpoint` is the API path as the
 /// frontend knows it (any path in `wfsim_webapi::ROUTES`), `body` the request
 /// JSON ("" or "{}" for /api/meta). Returns the response JSON as a string.

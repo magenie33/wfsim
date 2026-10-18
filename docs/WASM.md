@@ -279,6 +279,13 @@ input's size anyway.
   the parents are read off the text first, and every other file is parsed,
   merged and converted one at a time. Holding all of them, plus a copy of each
   for the id lookup, made every lane 50 MB where it is now 20.
+- **A data pack goes in as bytes** (`install_data_bytes`). wasm-bindgen copies
+  a JS string into the module at three bytes a character from its first
+  non-ASCII one, so the 4.6 MB pack, whose first em dash is 8 KB in, held a
+  lane at 19 MB before its first fight; as bytes it holds 10.6.
+- **An evolution ladder is read per weapon** (`evolutions::for_weapon`): a lane
+  parses the files of the weapons it fights, and `pool()`, every one of them,
+  is for the checks that walk the whole catalog.
 - **Rare blocks of `AttackSpec` are boxed.** A handful of weapons fill them,
   and inline they put kilobytes on every one of two thousand entries.
 - **A lane is warmed with a `rest`, never an endpoint.** The worker answers it

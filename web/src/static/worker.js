@@ -37,7 +37,7 @@ const ready = new Promise((res) => { handed = res; }).then(({ module, url, cause
   }).then(() => {
     // THE MODULE IS CODE: its data packs go in before the first call.
     for (const p of packs) {
-      const err = wasm_bindgen.install_data(p);
+      const err = wasm_bindgen.install_data_bytes(p);
       if (err) throw Object.assign(new Error(err), { loadCause: "data" });
     }
   });

@@ -30,7 +30,7 @@ export async function enginePackage(pkg = "", site = SITE) {
   if (pkg) {
     const wasm = fs.readFileSync(path.join(pkg, "wfsim_wasm_bg.wasm"));
     const packs = fs.readdirSync(pkg).filter((f) => /^pack[.].+[.]json$/.test(f)).sort()
-      .map((f) => fs.readFileSync(path.join(pkg, f), "utf8"));
+      .map((f) => fs.readFileSync(path.join(pkg, f)));
     return { js: fs.readFileSync(path.join(pkg, "wfsim_wasm.js"), "utf8"), wasm, packs,
       id: createHash("sha256").update(wasm).digest("hex").slice(0, 12), engine: null };
   }
@@ -56,7 +56,7 @@ export async function enginePackage(pkg = "", site = SITE) {
   for (const name of rel.packs || []) {
     const body = await get(name);
     if (!name.includes(`.${createHash("sha256").update(body).digest("hex").slice(0, 12)}.`)) throw new Error(`${name}: hash differs`);
-    packs.push(body.toString("utf8"));
+    packs.push(body);
   }
   return { js: (await get(`wfsim_wasm.${rel.wasm}.js`)).toString("utf8"), wasm, packs, id: rel.wasm, engine: rel.engine, commit: rel.commit || null };
 }
@@ -68,7 +68,7 @@ function instance({ js, wasm, packs = [] }) {
   ctx.bytes = wasm;
   vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
   for (const p of packs) {
-    const err = ctx.wasm_bindgen.install_data(p);
+    const err = ctx.wasm_bindgen.install_data_bytes(p);
     if (err) throw new Error(err);
   }
   return (p, body) => {

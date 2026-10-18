@@ -439,3 +439,21 @@ fn every_tier_is_filled_with_the_games_first_option() {
     );
     assert!(complete::<&str>("lanka", &[]).is_empty(), "no Genesis, no tiers");
 }
+
+/// ONE WEAPON'S LADDER IS THE CATALOG'S, in the catalog's order: read from the
+/// files its id prefixes, with `weapon:` settling a prefix two weapons share
+/// (`bo_` and `bo_prime_`), for every weapon that has a Genesis.
+#[test]
+fn a_weapons_ladder_read_alone_is_the_catalogs() {
+    let mut weapons: Vec<&str> = pool().iter().map(|e| e.weapon.as_str()).collect();
+    weapons.dedup();
+    assert!(weapons.contains(&"bo") && weapons.contains(&"bo_prime"), "the shared prefix is in the roster");
+    for w in weapons {
+        let whole: Vec<&str> = pool().iter().filter(|e| e.weapon == w).map(|e| e.id.as_str()).collect();
+        let alone: Vec<&str> = for_weapon(w).iter().map(|e| e.id.as_str()).collect();
+        assert_eq!(alone, whole, "{w}");
+        for id in &whole {
+            assert_eq!(get(id).map(|e| e.id.as_str()), Some(*id), "{id} is found by its own file");
+        }
+    }
+}

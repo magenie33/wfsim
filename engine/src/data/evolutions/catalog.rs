@@ -147,81 +147,111 @@ impl EvolutionDef {
 pub fn pool() -> &'static Vec<EvolutionDef> {
     static POOL: OnceLock<Vec<EvolutionDef>> = OnceLock::new();
     POOL.get_or_init(|| {
-        let mut out = Vec::new();
-        for (path, text) in crate::data::files_under("evolutions/") {
-            // The directory IS the table (data/README.md conventions):
-            // everything under evolutions/ must parse as an evolution.
-            let ef = serde_norway::from_str::<EvoFile>(text)
-                .unwrap_or_else(|e| panic!("parse {path}: {e}"));
-            // NAMING CONTRACT, enforced at load (full
-            // weapon names, no abbreviations — long but unambiguous):
-            //   id = "<weapon>_<evolution>"  and  filename = "<id>.yaml".
-            // Scoping is NOT redundant with the `weapon:` field: evolution
-            // NAMES repeat across weapons with different values (Marksman's
-            // Hand is −50% recoil on Dual Toxocyst, −40% on Laetum), so the
-            // id must carry the weapon. Deriving both the file name and the
-            // prefix from it means the three can never drift apart.
-            let stem = path.rsplit('/').next().unwrap_or(path).trim_end_matches(".yaml");
-            assert!(
-                ef.id == stem,
-                "{path}: id '{}' must match the filename",
-                ef.id
-            );
-            assert!(
-                ef.id.strip_prefix(&ef.weapon).is_some_and(|r| r.starts_with('_')),
-                "{path}: id '{}' must start with the weapon id '{}_'",
-                ef.id,
-                ef.weapon
-            );
-            let effects = ef.effects.iter().filter_map(effect).collect();
-            // …AND THE CLAUSES WHOSE CARD IS WRONG. Read off the same effect
-            // maps and kept beside them: `misprint:` names the disagreement and
-            // changes nothing about how the effect is loaded.
-            let misprints: Vec<String> = ef
-                .effects
-                .iter()
-                .filter_map(|v| {
-                    let note = v.get("misprint").and_then(Value::as_str)?;
-                    let kind = v.get("kind").and_then(Value::as_str).unwrap_or("");
-                    Some(format!("{} — {note}", kind.replace('_', " ")))
-                })
-                .collect();
-            out.push(EvolutionDef {
-                id: ef.id,
-                name: ef.name,
-                weapon: ef.weapon,
-                tier: ef.tier,
-                position_in_tier: ef.position_in_tier,
-                icon: ef.icon,
-                description: ef.description.unwrap_or_default(),
-                currently_broken: ef.currently_broken,
-                co_base_excludes_this_evolution: ef.co_base_excludes_this_evolution,
-                co_base_excludes_only_form: ef.co_base_excludes_only_form.as_deref().map(|s| {
-                    match s {
-                        "base" => crate::model::FormKind::Base,
-                        "incarnon" => crate::model::FormKind::Incarnon,
-                        other => panic!("co_base_excludes_only_form: unknown form {other:?}"),
-                    }
-                }),
-                base_form_only: ef.base_form_only,
-                misprints,
-                effects,
-            });
-        }
-        // The pool is in the game's order, so `options(..)[0]` is the default.
-        out.sort_by(|a, b| (&a.weapon, a.tier, a.position_in_tier).cmp(&(&b.weapon, b.tier, b.position_in_tier)));
-        for w in out.chunk_by(|a, b| a.weapon == b.weapon && a.tier == b.tier) {
-            let positions: Vec<u32> = w.iter().map(|e| e.position_in_tier).collect();
-            assert!(
-                positions.iter().copied().eq(1..=w.len() as u32),
-                "{} tier {}: position_in_tier must run 1..={}, got {positions:?}",
-                w[0].weapon,
-                w[0].tier,
-                w.len()
-            );
-        }
+        let mut out: Vec<EvolutionDef> =
+            crate::data::files_under("evolutions/").map(|(path, text)| parse(path, text)).collect();
+        in_game_order(&mut out);
         out
     })
+}
+
+/// ONE WEAPON'S LADDER, parsed from its own files only. A compute lane fights a
+/// few weapons, and the whole catalog parsed for each is memory it holds for
+/// life (docs/WASM.md §"Memory"); the files are named `<weapon>_<evolution>`,
+/// and `weapon:` settles a prefix two weapons share (`bo_` and `bo_prime_`).
+pub fn for_weapon(weapon: &str) -> &'static [EvolutionDef] {
+    static BY_WEAPON: OnceLock<std::sync::Mutex<std::collections::HashMap<String, &'static [EvolutionDef]>>> = OnceLock::new();
+    let mut by = BY_WEAPON.get_or_init(Default::default).lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(l) = by.get(weapon) {
+        return l;
+    }
+    let prefix = format!("evolutions/{weapon}_");
+    let mut out: Vec<EvolutionDef> = crate::data::files_under("evolutions/")
+        .filter(|(path, _)| path.starts_with(&prefix))
+        .map(|(path, text)| parse(path, text))
+        .filter(|e| e.weapon == weapon)
+        .collect();
+    in_game_order(&mut out);
+    let l: &'static [EvolutionDef] = Box::leak(out.into_boxed_slice());
+    by.insert(weapon.to_string(), l);
+    l
+}
+
+/// One evolution file, its naming contract checked.
+fn parse(path: &str, text: &str) -> EvolutionDef {
+    // The directory IS the table (data/README.md conventions):
+    // everything under evolutions/ must parse as an evolution.
+    let ef = serde_norway::from_str::<EvoFile>(text)
+        .unwrap_or_else(|e| panic!("parse {path}: {e}"));
+    // NAMING CONTRACT, enforced at load (full
+    // weapon names, no abbreviations — long but unambiguous):
+    //   id = "<weapon>_<evolution>"  and  filename = "<id>.yaml".
+    // Scoping is NOT redundant with the `weapon:` field: evolution
+    // NAMES repeat across weapons with different values (Marksman's
+    // Hand is −50% recoil on Dual Toxocyst, −40% on Laetum), so the
+    // id must carry the weapon. Deriving both the file name and the
+    // prefix from it means the three can never drift apart.
+    let stem = path.rsplit('/').next().unwrap_or(path).trim_end_matches(".yaml");
+    assert!(
+        ef.id == stem,
+        "{path}: id '{}' must match the filename",
+        ef.id
+    );
+    assert!(
+        ef.id.strip_prefix(&ef.weapon).is_some_and(|r| r.starts_with('_')),
+        "{path}: id '{}' must start with the weapon id '{}_'",
+        ef.id,
+        ef.weapon
+    );
+    let effects = ef.effects.iter().filter_map(effect).collect();
+    // …AND THE CLAUSES WHOSE CARD IS WRONG. Read off the same effect
+    // maps and kept beside them: `misprint:` names the disagreement and
+    // changes nothing about how the effect is loaded.
+    let misprints: Vec<String> = ef
+        .effects
+        .iter()
+        .filter_map(|v| {
+            let note = v.get("misprint").and_then(Value::as_str)?;
+            let kind = v.get("kind").and_then(Value::as_str).unwrap_or("");
+            Some(format!("{} — {note}", kind.replace('_', " ")))
+        })
+        .collect();
+    EvolutionDef {
+        id: ef.id,
+        name: ef.name,
+        weapon: ef.weapon,
+        tier: ef.tier,
+        position_in_tier: ef.position_in_tier,
+        icon: ef.icon,
+        description: ef.description.unwrap_or_default(),
+        currently_broken: ef.currently_broken,
+        co_base_excludes_this_evolution: ef.co_base_excludes_this_evolution,
+        co_base_excludes_only_form: ef.co_base_excludes_only_form.as_deref().map(|s| {
+            match s {
+                "base" => crate::model::FormKind::Base,
+                "incarnon" => crate::model::FormKind::Incarnon,
+                other => panic!("co_base_excludes_only_form: unknown form {other:?}"),
+            }
+        }),
+        base_form_only: ef.base_form_only,
+        misprints,
+        effects,
+    }
+}
+
+/// The game's order, so `options(..)[0]` is the default; each tier's positions
+/// run 1..=n.
+fn in_game_order(out: &mut [EvolutionDef]) {
+    out.sort_by(|a, b| (&a.weapon, a.tier, a.position_in_tier).cmp(&(&b.weapon, b.tier, b.position_in_tier)));
+    for w in out.chunk_by(|a, b| a.weapon == b.weapon && a.tier == b.tier) {
+        let positions: Vec<u32> = w.iter().map(|e| e.position_in_tier).collect();
+        assert!(
+            positions.iter().copied().eq(1..=w.len() as u32),
+            "{} tier {}: position_in_tier must run 1..={}, got {positions:?}",
+            w[0].weapon,
+            w[0].tier,
+            w.len()
+        );
+    }
 }
 
 /// Look up an evolution by id.
@@ -252,28 +282,23 @@ pub fn states_incarnon_window(id: &str) -> bool {
 }
 
 pub fn get(id: &str) -> Option<&'static EvolutionDef> {
-    pool().iter().find(|e| e.id == id)
+    // THE FILE IS THE ID, and it names its weapon.
+    let text = crate::data::file(&format!("evolutions/{id}.yaml"))?;
+    let weapon = serde_norway::from_str::<EvoFile>(text).ok()?.weapon;
+    for_weapon(&weapon).iter().find(|e| e.id == id)
 }
 
 /// A weapon's choosable options at a tier (the web picker's rows), in the
 /// game's order: the first is the tier's default.
 pub fn options(weapon: &str, tier: u32) -> Vec<&'static EvolutionDef> {
-    pool()
-        .iter()
-        .filter(|e| e.weapon == weapon && e.tier == tier)
-        .collect()
+    for_weapon(weapon).iter().filter(|e| e.tier == tier).collect()
 }
 
 /// How many evolution tiers this weapon's data declares — the tier count
 /// is per weapon (Dual Toxocyst has 4, Laetum has 5), so callers must
 /// never assume a fixed range.
 pub fn tier_count(weapon: &str) -> u32 {
-    pool()
-        .iter()
-        .filter(|e| e.weapon == weapon)
-        .map(|e| e.tier)
-        .max()
-        .unwrap_or(0)
+    for_weapon(weapon).iter().map(|e| e.tier).max().unwrap_or(0)
 }
 
 /// EVERY TIER INSTALLED: `ids`' pick where it names one, the tier's first

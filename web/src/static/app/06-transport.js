@@ -341,16 +341,16 @@ async function engineCompile() {
   }
   return WebAssembly.compile(await engineBytes(f));
 }
-/// One data pack, as the text the engine's `install_data` reads.
+/// One data pack, as the bytes the engine's `install_data_bytes` reads.
 async function enginePack(url) {
   const f = await engineFetch(url);
-  return f.reader ? new TextDecoder().decode(await engineBytes(f)) : f.r.text();
+  return f.reader ? engineBytes(f) : new Uint8Array(await f.r.arrayBuffer());
 }
 
 /// EVERY ENGINE WORKER IS MADE HERE — `worker.js` waits for its `engine`
 /// message and loads nothing itself. A module the browser will not post across
 /// is sent as its address instead, and that worker fetches its own; the packs
-/// always travel as text.
+/// always travel as bytes.
 function spawnEngine() {
   const w = new Worker("/worker.js");
   engineLoad().then(({ module, packs }) => {

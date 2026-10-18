@@ -328,7 +328,7 @@ pub(crate) fn evo_forbids(info: &WeaponInfo) -> serde_json::Map<String, Value> {
     let bare = wfsim_engine::data::mods::pool_for_weapon(&info.id);
     let group = evo_group(info);
     let mut out = serde_json::Map::new();
-    for e in wfsim_engine::data::evolutions::pool().iter().filter(|e| e.weapon == group) {
+    for e in wfsim_engine::data::evolutions::for_weapon(group) {
         let with = wfsim_engine::data::mods::pool_for_build(&info.id, &[e.id.as_str()]);
         let lost: Vec<&str> = bare
             .iter()
@@ -347,9 +347,9 @@ pub(crate) fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
     // that happens to hold for the Incarnon weapons in the roster and says
     // nothing about the next one.
     let group = evo_group(info);
-    wfsim_engine::data::evolutions::pool()
+    wfsim_engine::data::evolutions::for_weapon(group)
         .iter()
-        .find(|e| e.weapon == group && e.unlocks_form().is_some())
+        .find(|e| e.unlocks_form().is_some())
         .map(|e| e.id.as_str())
 }
 

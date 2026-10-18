@@ -217,7 +217,9 @@ installed: data" }`.
   a pack of a format it does not read.
 - **Verify it** before installing: its SHA-256 begins with `data` (and equals
   the signed `sha256` for the library). Refuse a mismatch, as for the engine.
-- **Install it**: wasm `install_data(text)`, native `wfsim_install_data(body,
+- **Install it**: wasm `install_data(text)`, or `install_data_bytes(bytes)` with
+  the file's bytes, which a lane holds at the pack's own size where a string is
+  copied in at up to three bytes a character; native `wfsim_install_data(body,
   body_len, &len) -> ptr`. The answer is `""` on success and the reason
   otherwise. Once per engine instance, before the first call: an instance that
   has answered a call refuses it. A wasm host makes one instance per thread, so

@@ -113,13 +113,19 @@ pub fn set_heartbeat(beat: Option<fn()>) {
 /// {path: text}}` (docs/CLIENTS.md §"The official data pack"). Returns "" or
 /// what was wrong.
 pub fn install_pack(text: &str) -> String {
+    install_pack_bytes(text.as_bytes())
+}
+
+/// …THE SAME PACK AS ITS UTF-8 BYTES, which a wasm caller hands over at their
+/// own length: a JS string is copied in at up to three bytes a character.
+pub fn install_pack_bytes(bytes: &[u8]) -> String {
     #[derive(serde::Deserialize)]
     struct Pack {
         pack: String,
         format: u32,
         files: std::collections::BTreeMap<String, String>,
     }
-    match serde_json::from_str::<Pack>(text) {
+    match serde_json::from_slice::<Pack>(bytes) {
         Ok(p) if p.format != wfsim_engine::data::PACK_FORMAT => {
             format!("pack {}: format {} is not the {} this engine reads", p.pack, p.format, wfsim_engine::data::PACK_FORMAT)
         }

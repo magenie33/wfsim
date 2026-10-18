@@ -42,7 +42,7 @@ export function loadEngine({ pkg = "", files = null } = {}) {
   const exports = vm.runInContext("wasm_bindgen.initSync({ module: bytes })", ctx);
   // THE MODULE IS CODE: its data packs go in before the first call.
   for (const p of packs) {
-    const err = ctx.wasm_bindgen.install_data(fs.readFileSync(p, "utf8"));
+    const err = ctx.wasm_bindgen.install_data_bytes(fs.readFileSync(p));
     if (err) throw new Error(`${p}: ${err}`);
   }
   return {
