@@ -141,5 +141,12 @@ if (sent) {
     v && v.score > 0 && typeof v.gain === "number" && v.top != null, JSON.stringify(v));
   check("…and where the card stands among the board's rivens", v && v.of > 0 && v.rank >= 1 && v.rank <= v.of + 1, JSON.stringify(v));
   check("…thanking who searched it", (await evaluate(`document.querySelector("#card-page").textContent`)).includes("Kai"));
+  check("…replayed at the ruler's own runs, not the reader's setting", v && v.runs === await evaluate(`(scenarioNamed("standard_single_target").state || {}).runs`), JSON.stringify(v));
+  check("…graded 0 to 100", v && Number.isInteger(v.grade) && v.grade >= 0 && v.grade <= 100, JSON.stringify(v));
+  // (score, riven-free leader, best riven) -> grade: linear between the two, 100 at or past #1 and where no riven beats the leader.
+  const grades = JSON.parse(await evaluate(`JSON.stringify([[10, 5, 15], [15, 5, 15], [20, 5, 15], [4, 5, 15], [5, 5, 15], [7, 5, 5], [7, 5, 0], [1, 0, 0], [9.99, 5, 10]].map((a) => rivenGrade(...a).grade))`));
+  check("…linear in the gain, rounded down, 100 at or past the board's #1 and for the first riven", JSON.stringify(grades) === "[50,100,100,0,0,100,100,100,99]", JSON.stringify(grades));
+  const said = await evaluate(`document.querySelector("#card-page").textContent`);
+  check("…stating the rivens it was read against, when, and the replay's runs", said.includes(`/ 100`) && said.includes(String(v.of)) && said.includes(String(v.runs)), said.slice(0, 400));
 }
 await finish("an appraisal link searches at once and hands back a build");

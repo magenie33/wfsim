@@ -55,7 +55,10 @@ async function appraisalReplay(w, job) {
   // name this page made up.
   storePresetList(RIVENS, loadPresetList(RIVENS).map((p) => (p.id === id ? { ...p, name: "" } : p)));
   const state = boardRowState(w, { ...build, mods: (build.mods || []).map((m) => (m === BOARD_RIVEN_SLOT ? RIVEN_PREFIX + id : m)) });
-  const r = await simulateFleet({ ...tennoPayload(), ...seatPayload(state), rivens: rivenPayload(), ...theFight() });
+  // THE RULER'S OWN RUNS, not the reader's setting: the grade divides this
+  // number by the board's, and a board row is fought at the ruler's runs.
+  const runs = (((scenarioNamed(activeScenario) || {}).state) || {}).runs || simRuns();
+  const r = await simulateFleet({ ...tennoPayload(), ...seatPayload(state), rivens: rivenPayload(), ...theFight({ runs }) });
   if (!r || r.ok === false) return { ok: false, reason: (r && r.error) || tr("the replay did not run") };
   const met = metricOf((scenarioNamed(activeScenario) || {}).metric);
   const score = metricValue(met, r);
@@ -63,9 +66,41 @@ async function appraisalReplay(w, job) {
   const free = pooledRanking(rankBoard(rows.filter((x) => !x.riven), [job.ruler], w.modes))[0];
   const rivens = pooledRivens(META, w, rows, job.ruler).rivens;
   const above = rivens.filter((x) => x.row.score > score).length;
+  const preset = ((META.search_presets || {}).presets || []).find((p) => p.riven) || {};
   return { ok: true, score, shown: fmtScore(score), state, metric: met.id,
     top: free ? cardShown(free.row) : null, gain: free ? score / free.row.score - 1 : null,
-    of: rivens.length, rank: above + 1 };
+    of: rivens.length, rank: above + 1, runs,
+    starts: builtinSearchStarts(w.id, RIVEN_PREFIX + id).length, candidate_runs: preset.candidate_runs || null,
+    board_at: boardMeasuredAt(rows) || null, at: new Date().toISOString(),
+    ...rivenGrade(score, free ? free.row.score : 0, rivens.length ? rivens[0].row.score : 0) };
+}
+
+/// THE GRADE, 0 to 100 and linear in the gain: 100 × (card − the riven-free
+/// leader) ÷ (the board's #1 − that leader), rounded down. At or past #1 is
+/// 100, so the first riven measured where the board has none is 100 too; no
+/// better than going without one is 0. `best` is the #1 the grade was read against.
+function rivenGrade(score, free, riven) {
+  const best = Math.max(free, riven);
+  const grade = score >= best ? 100 : score <= free ? 0 : Math.floor(100 * (score - free) / (best - free));
+  return { grade, best: fmtScore(best), best_riven: riven > free };
+}
+
+/// WHAT THE GRADE STOOD ON, every term of it: the formula, the two numbers it
+/// divides, how many rivens the board had, when, and what is approximate.
+function rivenGradeNotes(v) {
+  const when = (t) => {
+    const zone = new Intl.DateTimeFormat(accountLocale(), { timeZoneName: "short" }).formatToParts(new Date(t)).find((x) => x.type === "timeZoneName");
+    return `${measuredText(t)}${zone ? ` (${zone.value})` : ""}`;
+  };
+  return [
+    tr("Grade = 100 × (this card − the best build without a riven) ÷ (the board's #1 − the best build without a riven), linear and rounded down; at or past the #1 is 100, no better than going without a riven is 0."),
+    !v.of ? tr("The board has measured no riven of this weapon under this ruler: this card is the first, so it is 100.")
+      : trF("Read against: the board's #1 {best} ({which}), the best build without a riven {free}, and the {n} rivens the board has measured under this ruler, each at its god roll (every positive stat at its ceiling, the negative at its floor).",
+        { best: v.best, which: v.best_riven ? tr("with a riven") : tr("without a riven"), free: v.top == null ? "—" : v.top, n: v.of }),
+    v.board_at ? trF("The board as last measured {t}; graded {g}.", { t: when(v.board_at), g: when(v.at) }) : trF("Graded {g}.", { g: when(v.at) }),
+    trF("Approximate: this card's build is a quick search ({k} starts, {c} fights a candidate, one build kept), not proven its best, so the grade is a floor. Its number is the official fight, {runs} fights, at the card's own rolls, the same fight the board's rows are measured in.",
+      { k: v.starts, c: v.candidate_runs, runs: v.runs }),
+  ];
 }
 
 const cardShown = (r) => String(r.shown != null ? r.shown : (r.score || 0).toFixed(4));
@@ -99,8 +134,9 @@ async function renderCardPage(w, ask) {
   // number a chat is told is this page's, never the searcher's.
   const verdict = kind === "appraise" && job && job.result ? await appraisalReplay(w, job) : null;
   if (verdict) {
-    const { ok, score, shown, gain, top, of, rank, reason } = verdict;
-    document.body.dataset.verdict = JSON.stringify({ ok, score, shown, gain, top, of, rank, reason });
+    const { ok, score, shown, gain, top, of, rank, reason, grade, best, best_riven, runs, starts, candidate_runs, board_at, at } = verdict;
+    document.body.dataset.verdict = JSON.stringify({ ok, score, shown, gain, top, of, rank, reason,
+      grade, best, best_riven, runs, starts, candidate_runs, board_at, at });
   }
   if (verdict) {
     title = trF("{w} · Riven gain", { w: w.name });
@@ -109,6 +145,8 @@ async function renderCardPage(w, ask) {
     body = () => !verdict.ok ? `<p class="sim-empty">${escHtml(verdict.reason || "")}</p>`
       : cardBox(`<b class="lc-score">${escHtml(verdict.shown)}</b><span class="sb-empty">${escHtml(metric)}</span>${
         verdict.gain == null ? "" : `<b class="lc-gain">${pct(verdict.gain)}</b>`}`, cardOfState(verdict.state, w))
+      + cardBox(`<span class="sb-h">${escHtml(tr("Riven grade"))}</span><b class="lc-score">${verdict.grade}</b><span class="sb-empty">/ 100</span>`,
+        rivenGradeNotes(verdict).map((x) => `<p class="lc-note">${escHtml(x)}</p>`).join(""))
       + cardBox(`<span class="sb-h">${escHtml(tr("Against the board"))}</span>`,
         `<p class="lc-note">${escHtml(verdict.top == null ? tr("The board has no riven-free build of this weapon yet.")
           : trF("The board's best riven-free build: {s}", { s: verdict.top }))}</p>`

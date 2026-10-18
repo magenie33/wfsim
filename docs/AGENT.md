@@ -418,7 +418,12 @@ question (docs/BOARD.md §"The Riven Analyst").
    row, so cores on one computer, not more computers, are what make it quick.
    Once one has taken it the chat is told so.
 4. The channel's bot claims what came back (`/api/appraise/claim`), replays the
-   build itself with the card's real rolls, and the first build it accepts
+   build itself with the card's real rolls at the ruler's own runs — the board's
+   fight, so its number divides the board's — and GRADES it 0 to 100, linear in
+   the gain: 100 × (card − riven-free #1) ÷ (board #1 − riven-free #1), rounded
+   down, 100 at or past #1 and for the first riven where the board has none, 0
+   for no gain (`rivenGrade`). The picture states every term it stood on: both
+   numbers, how many rivens, when, and that the search is a floor. The first build it accepts
    wins once; later ones are kept on the board and not announced. It answers
    as a passive reply while QQ's window is open (`bot/qq.mjs`), past it as an
    active message, and only if that fails on the room's next message.

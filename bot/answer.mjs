@@ -289,9 +289,14 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const w = (meta.weapons || []).find((x) => x.id === item.weapon) || { id: item.weapon, name: item.weapon };
     const v = item.verdict || {};
     const gain = typeof v.gain === "number" ? `${v.gain >= 0 ? "+" : "−"}${Math.abs(v.gain * 100).toFixed(1)}%` : "—";
-    const said = t("{w} with this riven: {shown}, {gain} against the best build without one. Thanks to {who} for searching it! (⁄ ⁄•⁄ω⁄•⁄ ⁄)",
-      { w: weaponName(w), shown: v.shown || "—", gain,
-        who: item.thanks || (item.volunteer ? t("the volunteers' devices") : t("a kind someone in the chat")) });
+    const who = item.thanks || (item.volunteer ? t("the volunteers' devices") : t("a kind someone in the chat"));
+    // GRADED BY THE REPLAY (45-card-page.js `rivenGrade`); an answer judged
+    // before the grade existed carries none and is told without one.
+    const said = typeof v.grade === "number"
+      ? t("{w} with this riven: {shown}, {gain} against the best build without one, grade {grade}/100 against the {n} rivens on the board — how it was read is in the picture. Thanks to {who} for searching it! (⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+        { w: weaponName(w), shown: v.shown || "—", gain, grade: v.grade, n: v.of || 0, who })
+      : t("{w} with this riven: {shown}, {gain} against the best build without one. Thanks to {who} for searching it! (⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+        { w: weaponName(w), shown: v.shown || "—", gain, who });
     return late ? `${t("The riven gain from earlier is in.")} ${said}` : said;
   };
   /// The long image of an appraisal's answer — the page that replays it.
