@@ -107,17 +107,14 @@
   // private may ever be written to it — and the screenshots above never served.
   "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "wfsim" },
                  { "binding": "PUBLIC", "bucket_name": "wfsim-public" }],
-  // WHAT READERS DID — `POST /api/e`, docs/ANALYTICS.md. A dataset is created by
-  // its first write; nothing to provision. Read back by `scripts/usage.py`.
+  // WHAT EACH FACTORY CALL COST — round trips, database and wall time
+  // (docs/ANALYTICS.md §"Factory calls"). A dataset is created by its first
+  // write; nothing to provision.
   "analytics_engine_datasets": [
-    { "binding": "USAGE", "dataset": "wfsim" },
-    // …AND WHAT EACH FACTORY CALL COST — round trips, database and wall time,
-    // apart from what readers did (docs/ANALYTICS.md §"Factory calls").
     { "binding": "FACTORY_CALLS", "dataset": "wfsim_factory_calls" }
   ],
   // KEEPING THE USAGE DAYS (worker/usage_days.js): after midnight UTC, so the
-  // day before is finished. Reads the dataset with the secrets USAGE_ACCOUNT and
-  // USAGE_READ_TOKEN (Account Analytics: Read); without them it does nothing.
+  // day before is finished; read from the usage log alone.
   // AND THE FACT FACTORY'S WATCHDOG every ten minutes (worker/factory.js
   // `watchdog`): a stall written down within the hour, not found by a player.
   "triggers": { "crons": ["30 0 * * *", "*/10 * * * *"] }

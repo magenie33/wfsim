@@ -3,14 +3,14 @@
 // docs/ANALYTICS.md §Retention. The usage log keeps 90 days, so once a day the
 // worker's cron reads each finished UTC day it has not yet kept and writes that
 // day's TOTALS into `usage_days` (worker/pg/library.sql). Totals only: a visitor
-// never leaves the log. A day before `USAGE_LOG_FROM` is read from the Analytics
-// Engine instead, sampled, and kept with `sampled` set.
+// never leaves the log. THE LOG IS THE ONLY SOURCE: a day it does not hold whole
+// is never written, since a day kept short is a dip that never happened.
 //
-// IT FILLS EVERY MISSING DAY STILL IN THE DATASET, not just yesterday, so the
-// first runs keep the history there is and a missed run is made up by the next.
-// A day is written once and never revised: its numbers are final when it ends.
+// IT FILLS EVERY MISSING DAY STILL IN THE LOG, not just yesterday, so a missed
+// run is made up by the next. A day is written once and never revised: its
+// numbers are final when it ends.
 
-import { usageVisitor, purgeUsageLog } from "./usage_log.js";
+import { purgeUsageLog } from "./usage_log.js";
 
 /// A RESULT, as opposed to a page opened. `scripts/usage.py` holds the same list
 /// and `check_usage_events` holds the two equal: a day kept under another
@@ -21,18 +21,14 @@ export const USAGE_RESULTS = ["builder.weapon", "builder.warframe", "builder.ope
 /// weapon as one visitor count, so a reader who did both on one day is ONE —
 /// the popularity ranking reads it (`worker/popularity.js`).
 export const USAGE_TESTED = ["simulator.run", "optimizer.run"];
-const DATASET = "wfsim";
-/// THE FIRST DAY READ FROM THE LOG: the log began on 2026-10-16, and a day's
-/// `returning` reads the seven days before it, so the first day whose seven are
-/// all in the log is the first it can count whole.
-export const USAGE_LOG_FROM = "2026-10-23";
+/// THE LOG'S FIRST WHOLE DAY: its first point is 2026-10-15T06:05Z, so that day
+/// holds only its last eighteen hours.
+export const USAGE_LOG_FROM = "2026-10-16";
 const CHECK_RELEASE = "deploy-check";
-/// The dataset keeps ~92 days; a day older than this may be cut short.
-const KEEP_BACK_DAYS = 85;
 /// "Returning" is a visitor seen on any of the seven days before.
 const RETURN_DAYS = 7;
-/// A RUN'S SHARE OF THE BACKLOG: two queries a day keeps a run far inside the
-/// worker's subrequest limit, and the next run takes the rest.
+/// A RUN'S SHARE OF THE BACKLOG: a run after a long outage stays short, and the
+/// next run takes the rest.
 const DAYS_PER_RUN = 10;
 /// ONE STATEMENT A BATCH: each statement is its own round trip, and a day sent
 /// a row at a time outlived the cron.
@@ -42,40 +38,13 @@ const DAY_MS = 86400000;
 const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
 const market = (country) => (country === "CN" ? "china" : "overseas");
 
-/// A DAY'S ROWS FROM THE LOG — every point, so `n` is a count and nothing is sampled.
+/// A DAY'S ROWS FROM THE LOG — every point, so `n` is a count.
 async function logRows(env, from, next) {
   const { results } = await env.LIBRARY.prepare(`
-    SELECT day, visitor AS cid, event AS e, subject, country, 1 AS si, COUNT(*) AS n
+    SELECT day, visitor AS cid, event AS e, subject, country, COUNT(*) AS n
     FROM usage_points WHERE day >= ? AND day < ? AND release != ?
     GROUP BY day, visitor, event, subject, country`).bind(from, next, CHECK_RELEASE).all();
   return results;
-}
-
-/// A DAY'S ROWS FROM THE ANALYTICS ENGINE. A schema 1 point carried the
-/// browser's id itself; it is hashed here, so a visitor is one visitor across
-/// the change and across the two sources.
-async function datasetRows(env, from, next) {
-  const rows = await usageSql(env, `
-      SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob2 AS cid, blob1 AS e,
-             blob3 AS subject, blob8 AS country, double1 AS schema, max(_sample_interval) AS si, SUM(_sample_interval) AS n
-      FROM ${DATASET} WHERE timestamp >= toDateTime('${from} 00:00:00')
-        AND timestamp < toDateTime('${next} 00:00:00') AND blob7 != '${CHECK_RELEASE}'
-      GROUP BY day, cid, e, subject, country, schema LIMIT 1000000`);
-  const hashed = new Map();
-  for (const r of rows) {
-    if (Number(r.schema) !== 1) continue;
-    if (!hashed.has(r.cid)) hashed.set(r.cid, await usageVisitor(r.cid));
-    r.cid = hashed.get(r.cid);
-  }
-  return rows;
-}
-
-async function usageSql(env, query) {
-  const r = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${env.USAGE_ACCOUNT}/analytics_engine/sql`,
-    { method: "POST", body: `${query} FORMAT JSON`, headers: { authorization: `Bearer ${env.USAGE_READ_TOKEN}` } });
-  if (!r.ok) throw new Error(`analytics sql ${r.status}: ${(await r.text()).slice(0, 300)}`);
-  return (await r.json()).data;
 }
 
 /// ONE DAY'S ROWS, as `usage_days` holds them: per (event, subject, market) the
@@ -83,7 +52,7 @@ async function usageSql(env, query) {
 /// `visitors` — `all`, `result`, `returning` — `visitors.country`, and per
 /// weapon `tested`.
 export function usageDayRows(day, rows) {
-  const before = new Set(), today = new Map(), sampled = { any: false };
+  const before = new Set(), today = new Map();
   const out = new Map();
   const add = (event, subject, mkt, cid, points) => {
     const k = `${event}\n${subject}\n${mkt}`;
@@ -93,7 +62,6 @@ export function usageDayRows(day, rows) {
     out.set(k, o);
   };
   for (const r of rows) {
-    if (Number(r.si) > 1) sampled.any = true;
     if (r.day.slice(0, 10) !== day) { before.add(r.cid); continue; }
     const mkt = market(r.country);
     add(r.e, r.subject || "", mkt, r.cid, Number(r.n));
@@ -110,7 +78,7 @@ export function usageDayRows(day, rows) {
   }
   const last = (o) => (o.event === "visitors" && o.subject === "all" ? 1 : 0);
   return [...out.values()].sort((a, b) => last(a) - last(b)).map((o) => ({ day, event: o.event, subject: o.subject, market: o.market,
-    visitors: o.cids.size, points: Math.round(o.points), sampled: sampled.any ? 1 : 0 }));
+    visitors: o.cids.size, points: Math.round(o.points), sampled: 0 }));
 }
 
 /// KEEP EVERY FINISHED DAY THE TABLE LACKS, then drop the log past its time.
@@ -124,26 +92,18 @@ export async function rollupUsage(env, now = Date.now()) {
 
 async function keepDays(env, now) {
   const today = dayOf(now);
-  const dataset = !!(env.USAGE_ACCOUNT && env.USAGE_READ_TOKEN);
   // A DAY IS KEPT ONCE ITS `visitors`/`all` ROW IS: written last, so a run that
   // stopped part way leaves the day to be written again whole.
   const kept = new Set((await env.LIBRARY.prepare(
     "SELECT day FROM usage_days WHERE event = 'visitors' AND subject = 'all'").all()).results.map((r) => r.day));
-  // ONLY DAYS A SOURCE HAS: one before it began is not a zero, and asking for
-  // each of them would spend the run's subrequests on nothing.
   const logged = (await env.LIBRARY.prepare("SELECT DISTINCT day FROM usage_points WHERE day >= ?")
     .bind(USAGE_LOG_FROM).all()).results.map((r) => r.day);
-  const held = !dataset ? [] : (await usageSql(env, `
-    SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day FROM ${DATASET}
-    WHERE timestamp > NOW() - INTERVAL '${KEEP_BACK_DAYS}' DAY GROUP BY day`))
-    .map((r) => r.day.slice(0, 10)).filter((d) => d < USAGE_LOG_FROM);
-  const days = [...new Set([...held, ...logged])].filter((d) => d < today && !kept.has(d)).sort().slice(0, DAYS_PER_RUN);
+  const days = logged.filter((d) => d < today && !kept.has(d)).sort().slice(0, DAYS_PER_RUN);
   const written = [];
   for (const day of days) {
     const from = dayOf(Date.parse(day) - RETURN_DAYS * DAY_MS);
     const next = dayOf(Date.parse(day) + DAY_MS);
-    const rows = await (day >= USAGE_LOG_FROM ? logRows : datasetRows)(env, from, next);
-    const out = usageDayRows(day, rows);
+    const out = usageDayRows(day, await logRows(env, from, next));
     if (!out.length) continue;
     const put = (part) => env.LIBRARY.prepare(`INSERT INTO usage_days
       (day, event, subject, market, visitors, points, sampled) VALUES ${part.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ")}

@@ -2,20 +2,15 @@
 
     python scripts/usage.py              # the last 14 days, from the log
     python scripts/usage.py --days 28
-    python scripts/usage.py --source dataset   # the Analytics Engine's copy
-    python scripts/usage.py --compare    # per day, the log against the dataset
 
-THE LOG IS THE SOURCE (`usage_points`, docs/ANALYTICS.md §"The log"): every
-point, unsampled, read through `scripts/pgq.mjs` from whatever `PG_URL` names —
-a role that owns the table, since no pipeline role is granted it. The dataset
-is the Analytics Engine's sampled copy, read through its SQL API with
-`CF_ACCOUNT` and `CF_TOKEN` (Account Analytics: Read) from the environment or
-`private/cloudflare.env`; its visitor counts are a floor.
+THE LOG IS THE ONLY SOURCE (`usage_points`, docs/ANALYTICS.md §"The log"):
+every point, unsampled, read through `scripts/pgq.mjs` from whatever `PG_URL`
+names — a role that owns the table, since no pipeline role is granted it.
 
 VISITORS ARE COUNTED HERE, NOT IN SQL: every query returns (day, visitor, event)
 rows and Python does the sets, so a number never depends on which aggregates
-the SQL dialect has. Both sources keep about three months; a window past that
-is silently shorter, so the script says what it actually covered.
+the SQL dialect has. The log keeps 90 days; a window past that is silently
+shorter, so the script says what it actually covered.
 """
 
 import argparse
@@ -24,13 +19,11 @@ import json
 import os
 import subprocess
 import sys
-import urllib.request
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATASET = "wfsim"
 BOOT = "app.boot"
 # THE RELEASE a deploy check writes its one point under, never a reader.
 CHECK_RELEASE = "deploy-check"
@@ -51,7 +44,6 @@ def visitor_of(cid):
 
 class Log:
     """`usage_points` in the library's Postgres: every point, so `n` is a count."""
-    sampled = False
 
     def __init__(self, start):
         if not os.environ.get("PG_URL"):
@@ -97,94 +89,6 @@ class Log:
                           AND visitor = ?3 ORDER BY at LIMIT 5000""", visitor_of(cid))
 
 
-class Dataset:
-    """The `wfsim` Analytics Engine dataset: sampled, so `n` is SUM(_sample_interval)
-    and a visitor whose every point was dropped is missing. A schema 1 point
-    carried the browser's id itself; it is hashed here, so a visitor is one
-    visitor across the change and across the two sources."""
-
-    def __init__(self, start):
-        self.account, self.token = credentials()
-        self.since = f"timestamp >= toDateTime('{start} 00:00:00') AND blob7 != '{CHECK_RELEASE}'"
-        self.sampled = False
-
-    def q(self, query):
-        req = urllib.request.Request(
-            f"https://api.cloudflare.com/client/v4/accounts/{self.account}/analytics_engine/sql",
-            data=(query + " FORMAT JSON").encode(), headers={"Authorization": f"Bearer {self.token}"})
-        try:
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return json.load(r)["data"]
-        except urllib.error.HTTPError as e:
-            sys.exit(f"usage.py: {e.code} {e.read().decode(errors='replace')[:400]}")
-
-    @staticmethod
-    def hashed(rows):
-        for r in rows:
-            if float(r.pop("schema")) == 1:
-                r["cid"] = visitor_of(r["cid"])
-        return rows
-
-    def rows(self):
-        rows = self.q(f"""
-            SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob2 AS cid, blob1 AS e,
-                   double1 AS schema, max(_sample_interval) AS si, SUM(_sample_interval) AS n
-            FROM {DATASET} WHERE {self.since} GROUP BY day, cid, e, schema LIMIT 1000000""")
-        self.sampled = any(float(r["si"]) > 1 for r in rows)
-        return self.hashed(rows)
-
-    def boots(self):
-        return self.hashed(self.q(f"""
-            SELECT blob2 AS cid, blob3 AS arrival, blob4 AS route, blob5 AS lang, blob6 AS shell,
-                   blob8 AS country, double1 AS schema, min(double2) AS ms, SUM(_sample_interval) AS n
-            FROM {DATASET} WHERE {self.since} AND blob1 = '{BOOT}'
-            GROUP BY cid, arrival, route, lang, shell, country, schema LIMIT 1000000"""))
-
-    def placed(self):
-        return self.hashed(self.q(f"""
-            SELECT blob2 AS cid, blob8 AS country, double1 AS schema FROM {DATASET} WHERE {self.since}
-            GROUP BY cid, country, schema LIMIT 1000000"""))
-
-    def probes(self):
-        return self.q(f"""
-            SELECT blob8 AS country, blob3 AS subject, double2 AS ms
-            FROM {DATASET} WHERE {self.since} AND blob1 = 'road.probe' LIMIT 1000000""")
-
-    def subjects(self):
-        return self.q(f"""
-            SELECT blob1 AS e, blob3 AS subject, SUM(_sample_interval) AS n
-            FROM {DATASET} WHERE {self.since} AND blob1 != '{BOOT}' AND blob3 != ''
-            GROUP BY e, subject ORDER BY n DESC LIMIT 5000""")
-
-    def held(self):
-        return self.hashed(self.q(f"""
-            SELECT blob2 AS cid, blob3 AS subject, double1 AS schema, MAX(double2) AS n
-            FROM {DATASET} WHERE {self.since} AND blob1 = 'presets.saved'
-            GROUP BY cid, subject, schema LIMIT 100000"""))
-
-    def visitor(self, cid):
-        return self.q(f"""
-            SELECT timestamp, blob1 AS e, blob3 AS subject, blob4 AS route, blob8 AS country, double2 AS n
-            FROM {DATASET} WHERE {self.since} AND (blob2 = '{visitor_of(cid)}' OR blob2 = '{cid}')
-            ORDER BY timestamp LIMIT 5000""")
-
-
-def credentials():
-    env = {}
-    f = ROOT / "private" / "cloudflare.env"
-    if f.exists():
-        for line in f.read_text(encoding="utf-8").splitlines():
-            k, sep, v = line.partition("=")
-            if sep and not k.strip().startswith("#"):
-                env[k.strip()] = v.strip()
-    account = os.environ.get("CF_ACCOUNT") or env.get("CF_ACCOUNT")
-    token = os.environ.get("CF_TOKEN") or env.get("CF_TOKEN")
-    if not account or not token:
-        sys.exit("usage.py: set CF_ACCOUNT and CF_TOKEN (Account Analytics: Read), "
-                 "in the environment or private/cloudflare.env")
-    return account, token
-
-
 def pct(a, b):
     return f"{100 * a / b:5.1f}%" if b else "    -"
 
@@ -202,35 +106,14 @@ def label(e):
     return e.split(".")[-1] if e.startswith("builder.") else e.split(".")[0]
 
 
-def per_day(rows):
-    days = defaultdict(set)
-    for r in rows:
-        days[r["day"][:10]].add(r["cid"])
-    return days
-
-
-def compare(start):
-    """THE LOG AGAINST THE DATASET, per day. The dataset samples and the log does
-    not, so on every day the log holds every visitor the dataset saw: a visitor
-    only the dataset has is a point the log lost."""
-    log, dataset = per_day(Log(start).rows()), per_day(Dataset(start).rows())
-    print(f"{'day':10}  {'log':>6}  {'dataset':>7}  {'only in dataset':>15}")
-    for d in sorted(set(log) | set(dataset)):
-        print(f"{d:10}  {len(log.get(d, ())):6}  {len(dataset.get(d, ())):7}  {len(dataset.get(d, set()) - log.get(d, set())):15}")
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=14)
     ap.add_argument("--top", type=int, default=15)
-    ap.add_argument("--source", choices=("log", "dataset"), default="log")
-    ap.add_argument("--compare", action="store_true", help="per day, the log's visitors against the dataset's")
     ap.add_argument("--visitor", help="one visitor's history, by the id /support shows")
     args = ap.parse_args()
     start = (date.today() - timedelta(days=args.days)).isoformat()
-    if args.compare:
-        return compare(start)
-    src = (Log if args.source == "log" else Dataset)(start)
+    src = Log(start)
 
     if args.visitor:
         return visitor(src, args.visitor)
@@ -238,8 +121,6 @@ def main():
     if not rows:
         print(f"no usage points in the last {args.days} days")
         return
-    if src.sampled:
-        print("NOTE: the dataset is SAMPLED in this window; visitor counts below are a floor\n")
 
     by_day = defaultdict(lambda: defaultdict(set))
     by_event = defaultdict(set)
@@ -247,7 +128,7 @@ def main():
         by_day[r["day"][:10]][r["e"]].add(r["cid"])
         by_event[r["e"]].add(r["cid"])
     days = sorted(by_day)
-    print(f"covered {days[0]} .. {days[-1]} ({len(days)} days, from the {args.source})\n")
+    print(f"covered {days[0]} .. {days[-1]} ({len(days)} days)\n")
 
     print(f"{'day':10}  {'visitors':>8}  {'result':>7}  {'activ.':>6}  " + "  ".join(f"{label(e):>9}" for e in RESULTS))
     for d in days:

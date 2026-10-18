@@ -601,8 +601,8 @@ async function shareFetch(id, env) {
 
 // ---- USAGE -----------------------------------------------------------------
 //
-// ONE DATA POINT PER THING A READER DID, into the usage log (worker/usage_log.js)
-// and Workers Analytics Engine (`env.USAGE`). The page computes everything on
+// ONE DATA POINT PER THING A READER DID, into the usage log (worker/usage_log.js),
+// the only place it is kept. The page computes everything on
 // the device, so without this the edge cannot tell a bounce from an hour-long
 // search. docs/ANALYTICS.md.
 
@@ -620,9 +620,6 @@ export const USAGE_EVENTS = [
 ];
 /// The wire's schema: what the page posts.
 export const USAGE_SCHEMA = 1;
-/// THE DATASET'S SCHEMA, written into every point. 2: `index1` and `blob2` hold
-/// the visitor's hash (`usageVisitor`); 1 held the browser's id itself.
-export const USAGE_POINT_SCHEMA = 2;
 const USAGE_CID = /^[0-9a-f]{32}$/;
 const USAGE_ROUTE = /^[a-z0-9_-]{1,32}$/;
 const USAGE_LANG = /^[a-z]{2}(-[a-z0-9]{2,8})?$/;
@@ -647,27 +644,17 @@ export function usagePoint(b, country) {
     country: /^[A-Z]{2}$/.test(s(country)) ? country : "", n };
 }
 
-/// THE POINT AS THE ANALYTICS ENGINE KEEPS IT, under the visitor's hash.
-export const usageDataPoint = (p, visitor) => ({
-  indexes: [visitor],
-  blobs: [p.e, visitor, p.subject, p.route, p.lang, p.shell, p.release, p.country],
-  doubles: [USAGE_POINT_SCHEMA, p.n],
-});
-
 async function usage(request, env) {
   const { b, err } = await body(request);
   if (err) return new Response(null, { status: 400, headers: CORS });
   // …OR THE EDGE'S HEADER, for a request the edge worker passed on (worker/edge.js).
   const point = usagePoint(b, (request.cf && request.cf.country) || request.headers.get("cf-ipcountry"));
   if (!point) return new Response(null, { status: 400, headers: CORS });
-  if (!env.USAGE) return new Response(null, { status: 503, headers: CORS });
+  if (!env.LIBRARY) return new Response(null, { status: 503, headers: CORS });
   // A CRAWLER THAT RUNS THE PAGE (Applebot, Googlebot) boots the app like a
   // reader and would be counted as one. Answered, never written.
   if (USAGE_CRAWLER.test(request.headers.get("user-agent") || "")) return new Response(null, { status: 204, headers: CORS });
-  const visitor = await usageVisitor(point.cid);
-  // Fire and forget on this side too: `writeDataPoint` queues, it does not wait.
-  env.USAGE.writeDataPoint(usageDataPoint(point, visitor));
-  await logPoint(env, new Date().toISOString(), visitor, point);
+  await logPoint(env, new Date().toISOString(), await usageVisitor(point.cid), point);
   return new Response(null, { status: 204, headers: CORS });
 }
 
@@ -696,11 +683,12 @@ export default {
     ctx.waitUntil((async () => {
       const f = withDatabases(env);
       try {
-        // THE RANKING'S FILE rides the watchdog's cron, apart: one failing never stops the other.
-        await (event.cron === WATCHDOG_CRON
-          ? Promise.allSettled([watchdog(f.env), publishContributors(f.env), mintMerit(f.env), settleMerit(f.env)])
-            .then((rs) => rs.forEach((r) => r.status === "rejected" && console.error("cron", r.reason)))
-          : Promise.all([rollupUsage(f.env), purgeDeleted(f.env), purgeNotices(f.env)]));
+        // EACH JOB APART: one that throws never stops the others, and the
+        // databases close only once every one has finished.
+        const jobs = event.cron === WATCHDOG_CRON
+          ? [watchdog(f.env), publishContributors(f.env), mintMerit(f.env), settleMerit(f.env)]
+          : [rollupUsage(f.env), purgeDeleted(f.env), purgeNotices(f.env)];
+        (await Promise.allSettled(jobs)).forEach((r) => r.status === "rejected" && console.error("cron", event.cron, r.reason));
       } finally {
         await f.close();
       }

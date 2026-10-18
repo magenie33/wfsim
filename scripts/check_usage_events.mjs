@@ -1,17 +1,18 @@
 // USAGE POINTS — the page's half against the worker's, and the endpoint against
-// a stub dataset. What must hold (docs/ANALYTICS.md):
+// a test log. What must hold (docs/ANALYTICS.md):
 //   - every event the page sends is one the worker accepts, and every one the
 //     worker accepts is sent from somewhere: a name on one side only is a time
 //     series that silently never starts;
 //   - the page writes the schema the worker reads;
-//   - a point carries the visitor's hash as its index and nothing that identifies them;
-//   - every point lands in the usage log, a browser's own request deletes its
-//     rows, and the log keeps nothing past its days;
+//   - every point lands in the usage log under the visitor's hash and nothing
+//     that identifies them, a browser's own request deletes its rows, and the
+//     log keeps nothing past its days;
 //   - anything that is not a point is refused and never written;
-//   - no dev server or check host is live, so no test writes the live dataset.
+//   - a day is kept from the log alone, and only a day the log holds whole;
+//   - no dev server or check host is live, so no test writes the live log.
 //
 //   node scripts/check_usage_events.mjs
-import worker, { USAGE_EVENTS, USAGE_SCHEMA, USAGE_POINT_SCHEMA, usagePoint } from "../worker/index.js";
+import worker, { USAGE_EVENTS, USAGE_SCHEMA, usagePoint } from "../worker/index.js";
 import { usageVisitor, USAGE_LOG_DAYS } from "../worker/usage_log.js";
 import { appSource } from "./app_source.mjs";
 import { USAGE_RESULTS, USAGE_LOG_FROM, usageDayRows, rollupUsage } from "../worker/usage_days.js";
@@ -65,9 +66,9 @@ const live = hosts ? JSON.parse(hosts[1]) : [];
 check("no dev or check host is live", live.length > 0
   && !live.some((h) => /^(127\.|localhost$|0\.0\.0\.0$)/.test(h)), hosts ? hosts[1] : "no LIVE_HOSTS");
 
-const written = [];
 const CTX = { waitUntil: () => {} };
-const env = { USAGE: { writeDataPoint: (p) => written.push(p) } };
+const env = { LIBRARY: await testDb("library") };
+const points = () => env.LIBRARY.all("SELECT * FROM usage_points ORDER BY at");
 const cid = "0123456789abcdef0123456789abcdef";
 const good = { v: USAGE_SCHEMA, e: "simulator.run", cid, subject: "torid", route: "weapons",
   lang: "zh", shell: "web", release: "r20260927.1", n: 1000 };
@@ -77,14 +78,15 @@ const post = (b, e = env, method = "POST") => worker.fetch(Object.assign(new Req
 
 let r = await post(good);
 check("a point is accepted", r.status === 204, `status ${r.status}`);
+let written = await points();
 const p = written[0];
 const hashed = await usageVisitor(cid);
-check("…and written once, indexed by the visitor's hash", written.length === 1 && p.indexes[0] === hashed
+check("…and written once, under the visitor's hash", written.length === 1 && p.visitor === hashed
   && /^[0-9a-f]{32}$/.test(hashed) && hashed !== cid);
-check("…carrying the event, the hash, subject, route, language, shell, release and country",
-  p && JSON.stringify(p.blobs) === JSON.stringify(["simulator.run", hashed, "torid", "weapons", "zh", "web", "r20260927.1", "CN"]),
-  p && JSON.stringify(p.blobs));
-check("…and the dataset's schema and the count", p && p.doubles[0] === USAGE_POINT_SCHEMA && p.doubles[1] === 1000);
+check("…carrying the event, subject, route, language, shell, release, country and count",
+  p && p.event === "simulator.run" && p.subject === "torid" && p.route === "weapons" && p.lang === "zh"
+    && p.shell === "web" && p.release === "r20260927.1" && p.country === "CN" && p.n === 1000
+    && p.day === p.at.slice(0, 10), JSON.stringify(p));
 check("…and never the browser's id", !JSON.stringify(p).includes(cid));
 check("…answering any origin, so the desktop shell can post",
   r.headers.get("access-control-allow-origin") === "*");
@@ -99,9 +101,9 @@ const refused = [
   ["not json", "{"],
 ];
 for (const [what, b] of refused) {
-  const before = written.length;
+  const before = (await points()).length;
   r = await post(b);
-  check(`refused and not written: ${what}`, r.status === 400 && written.length === before, `status ${r.status}`);
+  check(`refused and not written: ${what}`, r.status === 400 && (await points()).length === before, `status ${r.status}`);
 }
 check("the page's own route fallback is a route the worker accepts",
   ["home", "other"].every((route) => usagePoint({ ...good, route }, "")));
@@ -110,20 +112,20 @@ for (const ua of [
   "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/145.0.0.0 Safari/537.36",
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.0.0 Safari/537.36",
 ]) {
-  const before = written.length;
+  const before = (await points()).length;
   r = await worker.fetch(new Request("https://wfsim.app/api/e", { method: "POST", body: JSON.stringify(good),
     headers: { "user-agent": ua } }), env, CTX);
   check(`a crawler that runs the page is answered and not counted: ${ua.match(/\w+(bot|Chrome)\b/i)[0]}`,
-    r.status === 204 && written.length === before);
+    r.status === 204 && (await points()).length === before);
 }
 {
-  const before = written.length;
+  const before = (await points()).length;
   r = await worker.fetch(new Request("https://wfsim.app/api/e", { method: "POST", body: JSON.stringify(good),
     headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0" } }), env, CTX);
-  check("…and a reader's browser is", r.status === 204 && written.length === before + 1);
+  check("…and a reader's browser is", r.status === 204 && (await points()).length === before + 1);
 }
 r = await post(good, {});
-check("no dataset bound is a 503, not a silent 204", r.status === 503, `status ${r.status}`);
+check("no database bound is a 503, not a silent 204", r.status === 503, `status ${r.status}`);
 r = await post(null, env, "OPTIONS");
 check("a preflight is answered", r.status === 204 && r.headers.get("access-control-allow-methods"));
 
@@ -134,16 +136,19 @@ const pyResults = py ? [...py[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
 check("the kept days and usage.py count a result the same way",
   JSON.stringify(pyResults) === JSON.stringify(USAGE_RESULTS), `${pyResults} vs ${USAGE_RESULTS}`);
 const A = "a".repeat(32), B = "b".repeat(32), C = "c".repeat(32);
-const pt = (day, cid, e, subject = "", country = "CN") =>
-  ({ day: `${day} 00:00:00`, cid, e, subject, country, si: 1, n: 1 });
+// THE LOG'S DAYS: the one before its first whole day, that day, and the next.
+const dayAfter = (d) => new Date(Date.parse(d) + 86400000).toISOString().slice(0, 10);
+const D0 = new Date(Date.parse(USAGE_LOG_FROM) - 86400000).toISOString().slice(0, 10);
+const D1 = USAGE_LOG_FROM, D2 = dayAfter(D1), D3 = dayAfter(D2);
+const pt = (day, cid, e, subject = "", country = "CN") => ({ day, cid, e, subject, country, n: 1 });
 const fixture = [
-  pt("2026-10-01", A, "app.boot"),
-  pt("2026-10-02", A, "app.boot"), pt("2026-10-02", A, "simulator.run", "torid"),
-  pt("2026-10-02", A, "optimizer.run", "torid"),
-  pt("2026-10-02", B, "app.boot", "", "US"), pt("2026-10-02", B, "simulator.run", "furis", "US"),
-  pt("2026-10-02", C, "app.view", "home"),
+  pt(D0, A, "app.boot"),
+  pt(D1, A, "app.boot"),
+  pt(D2, A, "app.boot"), pt(D2, A, "simulator.run", "torid"), pt(D2, A, "optimizer.run", "torid"),
+  pt(D2, B, "app.boot", "", "US"), pt(D2, B, "simulator.run", "furis", "US"),
+  pt(D2, C, "app.view", "home"),
 ];
-const keptDay = usageDayRows("2026-10-02", fixture);
+const keptDay = usageDayRows(D2, fixture);
 const cell = (event, subject, market) => (keptDay.find((o) => o.event === event && o.subject === subject
   && (!market || o.market === market)) || {}).visitors || 0;
 check("a day counts its visitors, those with a result and those returning",
@@ -155,46 +160,16 @@ check("a weapon is tested once a day by a reader who simulated AND searched on i
 check("…and no row carries a visitor id", !JSON.stringify(keptDay).includes(A));
 const tail = keptDay[keptDay.length - 1];
 check("…and its kept marker is the last row written", tail.event === "visitors" && tail.subject === "all");
-{
-  const LIBRARY = await testDb("library");
-  // THE DATASET, STUBBED: it holds three days, and a day's query returns every
-  // point before the end of the day it asks for.
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = async (_url, init) => {
-    const end = (init.body.match(/timestamp < toDateTime\('(\d{4}-\d\d-\d\d)/) || [])[1];
-    const data = end ? fixture.filter((r) => r.day.slice(0, 10) < end)
-      : ["2026-10-01", "2026-10-02", "2026-10-03"].map((d) => ({ day: `${d} 00:00:00` }));
-    return new Response(JSON.stringify({ data }));
-  };
-  const env = { LIBRARY, USAGE_ACCOUNT: "x", USAGE_READ_TOKEN: "y" };
-  const now = Date.parse("2026-10-03T00:30:00Z");
-  const first = await rollupUsage(env, now);
-  check("a run keeps every finished day it lacks, and not today",
-    JSON.stringify(first) === '["2026-10-01","2026-10-02"]', JSON.stringify(first));
-  check("…and a second run keeps nothing again", (await rollupUsage(env, now)).length === 0);
-  await LIBRARY.exec("DELETE FROM usage_days WHERE day = '2026-10-02' AND event = 'visitors' AND subject = 'all'");
-  const redo = await rollupUsage(env, now);
-  check("…but a day without its marker is written again", JSON.stringify(redo) === '["2026-10-02"]',
-    JSON.stringify(redo));
-  check("no secrets is no run", (await rollupUsage({ LIBRARY }, now)).length === 0);
-  globalThis.fetch = realFetch;
-}
 
 // THE LOG (worker/usage_log.js): every point, under the hash; the browser's own
-// erasure; the days past keeping dropped; and a day after USAGE_LOG_FROM kept
-// from the log, unsampled.
+// erasure; each day it holds whole kept from it; the days past keeping dropped.
 {
   const LIBRARY = await testDb("library");
-  const logged = { ...env, LIBRARY };
+  const logged = { LIBRARY };
   r = await post(good, logged);
   r = await post({ ...good, e: "app.boot", subject: "direct" }, logged);
   const rows = await LIBRARY.all("SELECT * FROM usage_points");
   check("every point lands in the log", r.status === 204 && rows.length === 2, JSON.stringify(rows));
-  check("…under the visitor's hash, never the browser's id",
-    rows.every((x) => x.visitor === hashed) && !JSON.stringify(rows).includes(cid));
-  check("…with its day, event, subject, country and count",
-    rows.some((x) => x.event === "simulator.run" && x.subject === "torid" && x.country === "CN" && x.n === 1000
-      && x.day === x.at.slice(0, 10)));
   const other = "f".repeat(32);
   await post({ ...good, cid: other }, logged);
   const forget = (b, e = logged) => worker.fetch(new Request("https://wfsim.app/api/e/forget",
@@ -207,34 +182,61 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   check("a browser's forget deletes its rows and says how many", r.status === 200 && j.deleted === 2, JSON.stringify(j));
   check("…and nobody else's", left.length === 1 && left[0].visitor === await usageVisitor(other));
   check("…answering any origin, so the desktop shell can ask", r.headers.get("access-control-allow-origin") === "*");
-  r = await forget({ cid }, env);
+  r = await forget({ cid }, {});
   check("no database bound is a 503", r.status === 503);
 
-  // A DAY FROM THE LOG: the fixture's shape, two weeks on, written as points.
-  const shift = (d) => new Date(Date.parse(d) + 22 * 86400000).toISOString().slice(0, 10);
-  check("the fixture's days move to the log's", shift("2026-10-01") === USAGE_LOG_FROM);
+  // THE FIXTURE, WRITTEN AS POINTS, and kept from the log.
   await LIBRARY.exec("DELETE FROM usage_points");
   for (const x of fixture) {
-    const day = shift(x.day.slice(0, 10));
     await LIBRARY.run(`INSERT INTO usage_points (at, day, visitor, event, subject, route, lang, shell, release, country, n)
-      VALUES (?, ?, ?, ?, ?, 'home', 'zh', 'web', 'r1', ?, 0)`, `${day}T12:00:00.000Z`, day, x.cid, x.e, x.subject, x.country);
+      VALUES (?, ?, ?, ?, ?, 'home', 'zh', 'web', 'r1', ?, 0)`, `${x.day}T12:00:00.000Z`, x.day, x.cid, x.e, x.subject, x.country);
   }
-  const kept = await rollupUsage({ LIBRARY }, Date.parse(`${shift("2026-10-03")}T00:30:00Z`));
-  const day2 = shift("2026-10-02");
+  const now = Date.parse(`${D3}T00:30:00Z`);
+  const kept = await rollupUsage(logged, now);
+  check("a run keeps every finished day it lacks, and not today",
+    JSON.stringify(kept) === JSON.stringify([D1, D2]), JSON.stringify(kept));
+  check("…and never a day before the log's first whole one, though the log holds part of it",
+    !(await LIBRARY.get("SELECT 1 AS x FROM usage_days WHERE day = ?", D0)));
   const cellOf = async (event, subject, market) => (await LIBRARY.get(
     "SELECT visitors, sampled FROM usage_days WHERE day = ? AND event = ? AND subject = ? AND market = ?",
-    day2, event, subject, market)) || {};
-  check("a day after the log began is kept from the log",
-    JSON.stringify(kept) === JSON.stringify([shift("2026-10-01"), day2]), JSON.stringify(kept));
-  check("…counting what the dataset's day counted",
+    D2, event, subject, market)) || {};
+  check("…counting what the day's points count",
     (await cellOf("visitors", "all", "china")).visitors === 2 && (await cellOf("visitors", "returning", "china")).visitors === 1
     && (await cellOf("tested", "torid", "china")).visitors === 1);
   check("…and marked unsampled", (await cellOf("visitors", "all", "china")).sampled === 0);
+  check("…and a second run keeps nothing again", (await rollupUsage(logged, now)).length === 0);
+  await LIBRARY.exec(`DELETE FROM usage_days WHERE day = '${D2}' AND event = 'visitors' AND subject = 'all'`);
+  const redo = await rollupUsage(logged, now);
+  check("…but a day without its marker is written again", JSON.stringify(redo) === JSON.stringify([D2]),
+    JSON.stringify(redo));
 
   // THE LOG KEEPS ITS DAYS AND NO MORE.
-  const now = Date.parse(`${shift("2026-10-03")}T00:30:00Z`) + (USAGE_LOG_DAYS + 1) * 86400000;
-  await rollupUsage({ LIBRARY }, now);
+  await rollupUsage(logged, now + (USAGE_LOG_DAYS + 1) * 86400000);
   check("a point past the log's days is dropped", (await LIBRARY.all("SELECT 1 FROM usage_points")).length === 0);
+}
+
+// THE DAILY CRON: a job that throws stops none of the others. The databases
+// close once the cron's promise settles, so it must outlast every job: the
+// rollup fails at once, and the slow accounts' purges must be done by then.
+{
+  const real = await testDb("accounts");
+  await real.run("INSERT INTO notices (kind, created_at, expires_at) VALUES ('everyone', ?, ?)",
+    "2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z");
+  let pending = 0;
+  const slow = (f) => async (...a) => { pending++; await new Promise((ok) => setTimeout(ok, 50)); try { return await f(...a); } finally { pending--; } };
+  const stmt = (s) => ({ bind: (...a) => stmt(s.bind(...a)), all: slow(() => s.all()), first: slow(() => s.first()), run: slow(() => s.run()) });
+  const ACCOUNTS = { ...real, prepare: (sql) => stmt(real.prepare(sql)) };
+  const broken = { prepare: () => { throw new Error("library down"); } };
+  const waits = [];
+  const quiet = console.error;
+  console.error = () => {};
+  await worker.scheduled({ cron: "30 0 * * *" }, { LIBRARY: broken, ACCOUNTS }, { waitUntil: (p) => waits.push(p) });
+  await Promise.allSettled(waits);
+  const left = pending;
+  await new Promise((ok) => setTimeout(ok, 200));
+  console.error = quiet;
+  check("a daily cron job that throws stops none of the others, and the cron outlasts them all",
+    left === 0 && (await real.all("SELECT 1 FROM notices")).length === 0, `${left} statement(s) still running`);
 }
 
 if (failures) {

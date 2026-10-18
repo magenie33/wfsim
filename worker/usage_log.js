@@ -2,9 +2,8 @@
 // ---- THE USAGE LOG -------------------------------------------------------------
 //
 // docs/ANALYTICS.md §"The log". Every usage point, unsampled, into
-// `usage_points` (worker/pg/library.sql): the source every visitor count is read
-// from. The Analytics Engine samples, so a visitor whose one point it dropped is
-// a visitor missing; this table drops nothing.
+// `usage_points` (worker/pg/library.sql): the only place a point is kept, and
+// the source every visitor count is read from.
 
 /// HOW LONG A POINT IS KEPT. After it only `usage_days`' totals remain; the
 /// rollup reads the seven days before a day, so this stays well past that.

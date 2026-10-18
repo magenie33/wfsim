@@ -72,7 +72,7 @@ log, which samples nothing.
   (`USAGE_CRAWLER`) and writes nothing.
 - **Only the live site and the desktop shell send** (`LIVE_HOSTS`,
   `07-usage.js`). A dev server or a check on 127.0.0.1 never writes the live
-  dataset.
+  log.
 - **English ids only**, the same rule as wiki URLs.
 - **Fire and forget.** A point is never awaited and a failure never reaches the
   page.
@@ -81,8 +81,7 @@ log, which samples nothing.
 
 `track(event, subject, n)` in `web/src/static/app/07-usage.js` posts to
 `POST /api/e`; the worker validates the shape and writes the point to the log
-(`usage_points`, §"The log") and to the Analytics Engine dataset `wfsim`
-(binding `USAGE`, `wrangler.jsonc`).
+(`usage_points`, §"The log"), the only place a point is kept.
 
 **Once per (event, subject) per page load.** A point says a reader got this far
 with this thing, not how many times: forty edits to one build are one build.
@@ -125,33 +124,14 @@ with this thing, not how many times: forty edits to one build are one build.
 An `engine.fail` from a visitor with no `app.boot` is a reader the site lost
 before it could do anything — the one failure the edge cannot see.
 
-The dataset's point — **frozen once written**: a change adds a schema number,
-it never reinterprets a column. Schema 2 (`USAGE_POINT_SCHEMA`) holds the
-visitor's hash where schema 1 held the browser's id; a reader hashes a schema 1
-id, so a visitor is one visitor across the change.
-
-| column | holds |
-| --- | --- |
-| `index1` | the visitor's hash — the dataset samples a visitor's points one by one, not the visitor whole |
-| `blob1` | event |
-| `blob2` | the visitor's hash |
-| `blob3` | subject |
-| `blob4` | first path segment the page was on (`home`, `weapons`, `operator`, …; `other` for anything unexpected) |
-| `blob5` | page language |
-| `blob6` | `web` or `desktop` |
-| `blob7` | release id |
-| `blob8` | country, from the edge |
-| `double1` | schema |
-| `double2` | `n` |
-
 ## The log
 
-**EVERY POINT, UNSAMPLED**, one row each in `usage_points` (`wfsim` database,
-`worker/usage_log.js`): the point's columns, its instant and day, and the
-visitor as the first 128 bits of the SHA-256 of the browser's id. The Analytics
-Engine samples a visitor's points one by one, so a visitor whose one point of an
-event it dropped is missing from that event's count; the log is where every
-visitor count comes from.
+**EVERY POINT, UNSAMPLED, AND THE ONLY SOURCE OF EVERY COUNT**: one row each in
+`usage_points` (`wfsim` database, `worker/usage_log.js`) — its instant and day;
+the visitor as the first 128 bits of the SHA-256 of the browser's id; the event,
+subject and `n`; the first path segment the page was on (`home`, `weapons`,
+`operator`, …; `other` for anything unexpected); the page language; `web` or
+`desktop`; the release id; and the country, from the edge.
 
 - **Kept 90 days** (`USAGE_LOG_DAYS`), deleted by the daily cron; after that
   only `usage_days` remains.
@@ -163,17 +143,11 @@ visitor count comes from.
 ## Reading it
 
 ```
-python scripts/usage.py                    # last 14 days, from the log
+python scripts/usage.py                    # last 14 days
 python scripts/usage.py --days 28
-python scripts/usage.py --source dataset   # the sampled copy
-python scripts/usage.py --compare          # per day, the log against the dataset
 ```
 
-The log needs `PG_URL` naming a role that owns `usage_points`; the dataset needs
-`CF_ACCOUNT` and `CF_TOKEN` (an API token with **Account Analytics: Read**) in
-the environment or in `private/cloudflare.env`. `--compare` holds the two
-against each other: the log holds every visitor the dataset saw, so a visitor
-only the dataset has is a point the log lost. It prints, per day,
+It needs `PG_URL` naming a role that owns `usage_points`. It prints, per day,
 visitors and visitors with a result; each module's visitors; the top subjects
 per event; and visitors by landing route, language, shell and country.
 
@@ -228,9 +202,7 @@ The database's own side is `scripts/factory_pulse.mjs` (read-only).
 
 **The log keeps 90 days; `usage_days` keeps the totals for good.** The site
 worker's cron (`worker/usage_days.js`, 00:30 UTC) writes each finished UTC day
-the table lacks into the `wfsim` database — from the log for a day on or after
-`USAGE_LOG_FROM`, the first whose seven days before are all in it, and from
-the Analytics Engine, with `sampled` set, for one before: per event, subject
+the table lacks into the `wfsim` database, FROM THE LOG ALONE: per event, subject
 and market the visitors and points, and the day's visitors — `all`, `result`
 (by the same `RESULTS` as `usage.py`, which `check_usage_events` holds equal),
 `returning` (seen in the seven days before) and by country. Totals only; no
@@ -240,9 +212,12 @@ visitor id is kept. A trend longer than a quarter is read from there:
 psql "$PG_URL" -c "SELECT day, market, visitors FROM usage_days WHERE event = 'visitors' AND subject = 'all' ORDER BY day"
 ```
 
-A day before `USAGE_LOG_FROM` needs the worker secrets `USAGE_ACCOUNT` and
-`USAGE_READ_TOKEN` (Account Analytics: Read); without them it is not written. A day is written whole and
-never revised. Its `visitors`/`all` row goes last and marks it kept, so a run
+**A DAY THE LOG DOES NOT HOLD WHOLE IS NEVER WRITTEN**: the first is
+`USAGE_LOG_FROM`, so the table has no rows between the last day the retired
+sampled copy gave it and that one, rather than a short day that reads as a dip.
+`returning` on the log's first seven days sees only the days before it the log
+holds, so it reads low there. `sampled` is set only on the rows from that copy.
+A day is written whole and never revised. Its `visitors`/`all` row goes last and marks it kept, so a run
 that stops part way is redone, and a missed run is made up by the next.
 
 ## Shown publicly

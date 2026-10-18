@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS shares (
   claim  TEXT COLLATE "C"
 );
 
--- A FINISHED DAY'S USAGE TOTALS, kept past the Analytics Engine's three months
+-- A FINISHED DAY'S USAGE TOTALS, kept past the usage log's ninety days
 -- by the worker's daily cron (worker/usage_days.js, docs/ANALYTICS.md
 -- §Retention). Totals only, never a visitor id. `event` is a usage event, or
 -- `visitors` (subject `all`, `result`, `returning`) or `visitors.country`;
