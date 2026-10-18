@@ -22,6 +22,9 @@
   "main": "worker/index.js",
   // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
   // Postgres in Germany, and every round trip an ocean away held locks longer.
+  // THE READER NEVER REACHES THIS WORKER FIRST: wfsim.app is `wfsim-edge`
+  // (wrangler.edge.jsonc), which serves the page and the engine where the reader
+  // is and passes the rest here — docs/WASM.md §"Two workers".
   "placement": { "mode": "smart" },
   // WORKERS LOGS: without them a cron that throws leaves only its status, never
   // the exception, and its cause can only be guessed.

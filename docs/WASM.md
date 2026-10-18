@@ -22,6 +22,29 @@ that fails leaves the site on the previous commit with nothing in the repo to
 show for it, which is the whole reason this is worth a script: a push that
 looks green in git can be a site that never moved.
 
+## Two workers
+
+wfsim.app is two workers, and the custom domain points at the first.
+
+- **`wfsim-edge`** (`wrangler.edge.jsonc`, `worker/edge.js`) runs where the
+  reader is and answers the site's own files itself (`worker/pages.js`
+  `edgeServe`): the page, its markdown twin, and every hashed file under
+  `/asset/`, `/pkg/` and `/ocr/`. Everything else goes to the second worker
+  through the `BACKEND` service binding.
+- **`wfsim`** (`wrangler.jsonc`, `worker/index.js`) holds the databases, the
+  secrets and the crons, and Smart Placement runs it near its Postgres.
+
+**ONE WORKER CANNOT BE BOTH.** Placement moves the whole script, and
+`run_worker_first` sends the page and the engine through the script, so a
+placed front door carried every reader's download to the database's city and
+back (`Cf-Placement: remote-LHR` on `/` and on the module). The two configs
+share one assets block, which `scripts/check_edge_worker.mjs` holds equal.
+`scripts/deploy.sh` deploys `wfsim` first, then the edge in front of it.
+
+A request the edge passes on keeps its headers, so the placed worker reads the
+reader's address from `cf-connecting-ip` and the country from `cf-ipcountry`
+where `request.cf` did not travel.
+
 wfsim.app serves static files only; every simulation and optimizer run executes
 on the visitor's own CPU, inside the browser, via WebAssembly. The native local
 server stays fully working — it is the dev harness and shares all code with the

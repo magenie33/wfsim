@@ -42,6 +42,7 @@ import { clanRoute } from "./clan.js";
 import { noticesRoute, purgeNotices } from "./notices.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
+import { edgeServe } from "./pages.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 // AN OUTER BOUND, NOT THE RULE — see below. It is `MAIN_SLOTS + 1`: eight main
@@ -656,7 +657,8 @@ export const usageDataPoint = (p, visitor) => ({
 async function usage(request, env) {
   const { b, err } = await body(request);
   if (err) return new Response(null, { status: 400, headers: CORS });
-  const point = usagePoint(b, request.cf && request.cf.country);
+  // …OR THE EDGE'S HEADER, for a request the edge worker passed on (worker/edge.js).
+  const point = usagePoint(b, (request.cf && request.cf.country) || request.headers.get("cf-ipcountry"));
   if (!point) return new Response(null, { status: 400, headers: CORS });
   if (!env.USAGE) return new Response(null, { status: 503, headers: CORS });
   // A CRAWLER THAT RUNS THE PAGE (Applebot, Googlebot) boots the app like a
@@ -683,84 +685,11 @@ async function usageForget(request, env) {
     { status: 200, headers: { ...CORS, "content-type": "application/json; charset=utf-8" } });
 }
 
-// ---- THE SITE AS AN AGENT READS IT -----------------------------------------
-//
-// A page with a markdown twin (`build_site_app.py` `ship_agent_files`) serves
-// the twin to `Accept: text/markdown`, and names it and the discovery documents
-// in a `Link` header either way — docs/AGENT.md §Machine-readable.
-
-/// The twin of a page that has one, or null.
-function markdownTwin(path) {
-  if (path === "/") return "/index.md";
-  if (path === "/weapons") return "/weapons.md";
-  const m = path.match(/^\/weapons\/([^/.]+)$/);
-  return m ? `/weapons/${m[1]}.md` : null;
-}
-
-/// The page a twin is the twin of, or null — the inverse of `markdownTwin`.
-function twinOf(path) {
-  if (path === "/index.md") return "/";
-  if (path === "/weapons.md") return "/weapons";
-  const m = path.match(/^\/weapons\/([^/.]+)\.md$/);
-  return m ? `/weapons/${m[1]}` : null;
-}
-
-/// A twin fetched by its own address names its page as canonical: without it
-/// a search engine finds two copies of every weapon and picks neither.
-async function twinFile(request, env, page) {
-  const md = await env.ASSETS.fetch(request);
-  if (!md.ok || (md.headers.get("content-type") || "").includes("text/html")) return md;
-  const headers = new Headers(md.headers);
-  headers.set("link", `<https://wfsim.app${page}>; rel="canonical"`);
-  return new Response(md.body, { status: md.status, headers });
-}
-
-/// Whether the client ranks markdown at least as high as html (RFC 9110 q).
-function prefersMarkdown(request) {
-  const q = {};
-  for (const part of (request.headers.get("accept") || "").split(",")) {
-    const [type, ...params] = part.trim().toLowerCase().split(";");
-    const w = params.map((p) => p.trim()).find((p) => p.startsWith("q="));
-    q[type] = w ? Number(w.slice(2)) || 0 : 1;
-  }
-  const md = q["text/markdown"] ?? 0;
-  return md > 0 && md >= (q["text/html"] ?? 0);
-}
-
-const DISCOVERY_LINKS = [
-  '</llms.txt>; rel="describedby"; type="text/plain"',
-  '</.well-known/api-catalog>; rel="api-catalog"',
-  '</.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
-  '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
-];
-
 // A `.well-known` document with no extension gets no media type from the asset
 // layer, and a scanner that reads the header takes it for something else.
 const WELL_KNOWN_TYPES = { "/.well-known/api-catalog": "application/linkset+json" };
 // …and the two a registry reads from another origin, which ARD requires to allow.
 const WELL_KNOWN_OPEN = new Set(["/.well-known/ai-catalog.json", "/.well-known/agent-card.json"]);
-
-async function agentPage(request, env, twin) {
-  const link = [`<${twin}>; rel="alternate"; type="text/markdown"`, ...DISCOVERY_LINKS].join(", ");
-  if ((request.method === "GET" || request.method === "HEAD") && prefersMarkdown(request)) {
-    const url = new URL(request.url);
-    url.pathname = twin;
-    const md = await env.ASSETS.fetch(new Request(url.toString(), request));
-    // The SPA fallback answers a missing twin with html: serve the page instead.
-    if (md.ok && !(md.headers.get("content-type") || "").includes("text/html")) {
-      const headers = new Headers(md.headers);
-      headers.set("content-type", "text/markdown; charset=utf-8");
-      headers.set("vary", "Accept");
-      headers.set("link", link);
-      return new Response(md.body, { status: 200, headers });
-    }
-  }
-  const page = await env.ASSETS.fetch(request);
-  const headers = new Headers(page.headers);
-  headers.append("vary", "Accept");
-  headers.set("link", link);
-  return new Response(page.body, { status: page.status, headers });
-}
 
 export default {
   async scheduled(event, env, ctx) {
@@ -801,10 +730,9 @@ function accountWrite(request, path) {
 
 async function serve(request, env, ctx) {
     const path = new URL(request.url).pathname;
-    const twin = markdownTwin(path);
-    if (twin) return agentPage(request, env, twin);
-    const page = twinOf(path);
-    if (page) return twinFile(request, env, page);
+    // THE SITE'S OWN FILES first, exactly as the edge worker answers them.
+    const own = await edgeServe(request, env);
+    if (own) return own;
     // THE AGENT DOCUMENTS AND ENDPOINTS, drawn by the worker from one set of
     // constants (worker/agents.js) rather than served as files.
     const agent = await agentRoute(request, env, path);
@@ -911,25 +839,8 @@ async function serve(request, env, ctx) {
         ? submit(request, env)
         : bad("the board is a static file — see /weapons/<name>, or data/benchmarks/boards/ in the repo", 405);
     }
-    // A HASHED FILE THAT IS GONE IS A 404, AND NOT THE APP.
-    //
-    // `not_found_handling: single-page-application` answers every unmatched
-    // path with index.html and a 200, which is right for a route and wrong for
-    // a content-addressed file: an edge holding a page from the previous build
-    // asks for `/asset/app.<old>.js`, gets HTML, runs it as JavaScript, and the
-    // app never boots — every surface on the site simply gone, with nothing in
-    // the console but a syntax error in a file that looks like it loaded.
-    //
-    // `build_site_app.py` keeps the previous generation so this is rare; this
-    // is what makes it LOUD when it happens anyway. Nothing under these two
-    // prefixes is ever html, so html here is the fallback and never the file.
-    const asset = await env.ASSETS.fetch(request);
-    if ((path.startsWith("/asset/") || path.startsWith("/pkg/") || path.startsWith("/ocr/"))
-        && (asset.headers.get("content-type") || "").includes("text/html")) {
-      return new Response("not found", { status: 404, headers: { "content-type": "text/plain" } });
-    }
     // EVERYTHING ELSE IS THE SITE, unchanged. Handing the request to the assets
     // binding is what keeps this script from becoming a thing the site depends
     // on: it adds one path and forwards the rest.
-    return asset;
+    return env.ASSETS.fetch(request);
 }

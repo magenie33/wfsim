@@ -206,6 +206,10 @@ jobs:
       # copy of a rule behaves identically until one of them is edited.
       - name: The agent door is one door
         run: node scripts/check_agent_door.mjs
+      # THE TWO WORKERS SERVE ONE SITE: the edge's assets are the placed one's,
+      # and the page and the engine never cross to the placed worker.
+      - name: The edge worker serves the site
+        run: node scripts/check_edge_worker.mjs
       # A SIGNATURE THAT DOES NOT VERIFY is sent anyway and read as a stranger.
       - name: What the tooling signs verifies, and the directory holds no private key
         run: node scripts/check_bot_auth.mjs

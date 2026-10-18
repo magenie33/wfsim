@@ -1,0 +1,26 @@
+// THE EDGE WORKER (worker/edge.js) — what wfsim.app's custom domain points at.
+//
+// It serves site/ where the reader is and passes every request that needs a
+// database to `wfsim` (wrangler.jsonc), which Smart Placement runs near its
+// Postgres. NO PLACEMENT HERE: a placed front door carries the page and the
+// engine across an ocean for every reader — docs/WASM.md §"Two workers".
+//
+// THE ASSETS BLOCK IS wrangler.jsonc's, word for word: the two workers serve
+// one site, and scripts/check_edge_worker.mjs fails the build when they differ.
+{
+  "name": "wfsim-edge",
+  "compatibility_date": "2026-07-28",
+  "main": "worker/edge.js",
+  "observability": { "enabled": true },
+  "services": [{ "binding": "BACKEND", "service": "wfsim" }],
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "html_handling": "drop-trailing-slash",
+    "run_worker_first": ["/api/*", "/asset/*", "/pkg/*", "/", "/weapons", "/weapons/*",
+                         "/index.md", "/weapons.md",
+                         "/.well-known/*", "/og/s/*", "/auth.md", "/privacy", "/terms", "/refunds",
+                         "/board/*", "/board.meta.json"]
+  }
+}

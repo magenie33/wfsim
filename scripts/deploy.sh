@@ -25,24 +25,32 @@ BACKOFF=(10 30 60)
 # at what an error might look like.
 TRANSIENT='Received a malformed response from the API|upstream connect error|connection termination|5[0-9][0-9] Service Unavailable|Internal Server Error|ECONNRESET|socket hang up|fetch failed'
 
-for i in $(seq 1 "$ATTEMPTS"); do
-  echo "deploy: attempt $i of $ATTEMPTS"
-  out=$(npx wrangler deploy 2>&1)
-  code=$?
-  echo "$out"
-  if [ $code -eq 0 ]; then
-    exit 0
-  fi
-  if ! echo "$out" | grep -qE "$TRANSIENT"; then
-    echo "deploy: this is not Cloudflare having a bad day — not retrying."
-    exit $code
-  fi
-  if [ "$i" -lt "$ATTEMPTS" ]; then
-    wait=${BACKOFF[$((i - 1))]:-60}
-    echo "deploy: transient API failure, waiting ${wait}s"
-    sleep "$wait"
-  fi
-done
+# ONE WORKER'S DEPLOY, retried as above; its arguments go to `wrangler deploy`.
+deploy_one() {
+  for i in $(seq 1 "$ATTEMPTS"); do
+    echo "deploy $*: attempt $i of $ATTEMPTS"
+    out=$(npx wrangler deploy "$@" 2>&1)
+    code=$?
+    echo "$out"
+    if [ $code -eq 0 ]; then
+      return 0
+    fi
+    if ! echo "$out" | grep -qE "$TRANSIENT"; then
+      echo "deploy: this is not Cloudflare having a bad day — not retrying."
+      return $code
+    fi
+    if [ "$i" -lt "$ATTEMPTS" ]; then
+      wait=${BACKOFF[$((i - 1))]:-60}
+      echo "deploy: transient API failure, waiting ${wait}s"
+      sleep "$wait"
+    fi
+  done
+  echo "deploy: still failing after $ATTEMPTS attempts"
+  return 1
+}
 
-echo "deploy: still failing after $ATTEMPTS attempts"
-exit 1
+# THE PLACED WORKER FIRST, then the edge in front of it (docs/WASM.md §"Two
+# workers"): the edge binds the placed one, so the new page never reaches a
+# reader before the endpoints it calls.
+deploy_one || exit $?
+deploy_one -c wrangler.edge.jsonc || exit $?

@@ -54,6 +54,16 @@ second and third are the ones that matter most: an unhashed module path is a bro
 that can hold the PREVIOUS engine under this build's `app.js`, which is
 different answers from the same seed with no error anywhere.
 
+## `check_edge_worker`
+
+The two workers serve one site (docs/WASM.md §"Two workers"). No network:
+`wrangler.edge.jsonc`'s assets block equals `wrangler.jsonc`'s, the edge has no
+placement and binds the worker the other config names, and `worker/edge.js`
+over a fake asset layer answers the page, its twin and the hashed files itself
+(a gone hashed file a 404) while every endpoint reaches `BACKEND`. With one
+route added to the edge's list the first assertion fails; with `edgeServe`
+claiming no hashed file, three do.
+
 ## `check_card_page`
 
 The long image the bots send (`45-card-page.js`, docs/AGENT.md §"The QQ bot"):
