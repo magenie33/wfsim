@@ -156,6 +156,24 @@ the first eight characters of their hash. A visitor is a browser and nothing
 more; it becomes a person only if they tell us the id `/support` shows them,
 and then `python scripts/usage.py --visitor <id>` lists everything it sent.
 
+## The edge
+
+The two sources split by what they answer. **The log answers who uses the site
+and how**: visitors, results, modules, popularity, and every number said in
+public. **Cloudflare answers whether the site runs**: requests, cache, status
+classes, countries by IP, each worker's exceptions, and whether a cron ran.
+
+```
+python scripts/cf_traffic.py               # last 7 UTC days, with wrangler's login
+python scripts/cf_traffic.py --days 3
+```
+
+Nothing from the edge is stored or fed into a count, and Cloudflare keeps it
+only for its own retention. With `PG_URL` set the script prints the log's
+visitors beside the edge's unique IPs. Compare the two and never sum them: they
+differ by design (§"Why the edge cannot answer it"), so a gap that suddenly
+widens is the signal, meaning crawlers rose or the page stopped posting.
+
 ## Community compute
 
 The machines that compute the board are read from the server's own tables, never
