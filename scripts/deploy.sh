@@ -49,8 +49,8 @@ deploy_one() {
   return 1
 }
 
-# THE PLACED WORKER FIRST, then the edge in front of it (docs/WASM.md §"Two
-# workers"): the edge binds the placed one, so the new page never reaches a
-# reader before the endpoints it calls.
+# THIS BUILD DEPLOYS `wfsim` ONLY. The Workers Build is bound to that worker
+# and deploys any config under its name, so `-c wrangler.edge.jsonc` here
+# replaced wfsim with the edge script, whose BACKEND is wfsim: every endpoint
+# called itself until the runtime refused it.
 deploy_one || exit $?
-deploy_one -c wrangler.edge.jsonc || exit $?
