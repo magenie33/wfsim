@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "1b958370";
+const BUILD_ID = "aff5c72b";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "222e6a17+";
+const BUILD_SHA = "fe33ac20+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "e07589f2e2f1";
+const RELEASE_ID = "01b0f99ed528";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -854,17 +854,17 @@ const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "dat
 /// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
 /// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
 /// writes in the hashed names and the size; the dev server serves no workers.
-const ENGINE_WASM = "/pkg/wfsim_wasm_bg.9644f80a179a.wasm";
+const ENGINE_WASM = "/pkg/wfsim_wasm_bg.2336a12a2dc2.wasm";
 /// …AND ITS DATA: the module is code, and these packs are installed into every
 /// instance before its first call (docs/WASM.md §"Code and data"), so a data
 /// edit is a new pack and the module stays cached.
 const ENGINE_PACKS = [];
 /// The module's and the packs' bytes together, for the boot screen.
-const ENGINE_WASM_BYTES = 10211300;
+const ENGINE_WASM_BYTES = 10213636;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.14068891f4b0.json", "/api/i18n": "/pkg/i18n.596b53258f8f.json", "/api/warframe/catalog": "/pkg/warframes.5d5c8b782cb7.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.14068891f4b0.json", "/api/i18n": "/pkg/i18n.faf49d9d71a9.json", "/api/warframe/catalog": "/pkg/warframes.5d5c8b782cb7.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -975,7 +975,7 @@ async function enginePack(url) {
 /// is sent as its address instead, and that worker fetches its own; the packs
 /// always travel as bytes.
 function spawnEngine() {
-  const w = new Worker("/asset/worker.4f842cf014f1.js");
+  const w = new Worker("/asset/worker.94496d2b22dd.js");
   engineLoad().then(({ module, packs }) => {
     try {
       w.postMessage({ kind: "engine", module, packs });
@@ -17072,7 +17072,10 @@ async function appraisalReplay(w, job) {
   // name this page made up.
   storePresetList(RIVENS, loadPresetList(RIVENS).map((p) => (p.id === id ? { ...p, name: "" } : p)));
   const state = boardRowState(w, { ...build, mods: (build.mods || []).map((m) => (m === BOARD_RIVEN_SLOT ? RIVEN_PREFIX + id : m)) });
-  const r = await simulateFleet({ ...tennoPayload(), ...seatPayload(state), rivens: rivenPayload(), ...theFight() });
+  // THE RULER'S OWN RUNS, not the reader's setting: the grade divides this
+  // number by the board's, and a board row is fought at the ruler's runs.
+  const runs = (((scenarioNamed(activeScenario) || {}).state) || {}).runs || simRuns();
+  const r = await simulateFleet({ ...tennoPayload(), ...seatPayload(state), rivens: rivenPayload(), ...theFight({ runs }) });
   if (!r || r.ok === false) return { ok: false, reason: (r && r.error) || tr("the replay did not run") };
   const met = metricOf((scenarioNamed(activeScenario) || {}).metric);
   const score = metricValue(met, r);
@@ -17080,9 +17083,41 @@ async function appraisalReplay(w, job) {
   const free = pooledRanking(rankBoard(rows.filter((x) => !x.riven), [job.ruler], w.modes))[0];
   const rivens = pooledRivens(META, w, rows, job.ruler).rivens;
   const above = rivens.filter((x) => x.row.score > score).length;
+  const preset = ((META.search_presets || {}).presets || []).find((p) => p.riven) || {};
   return { ok: true, score, shown: fmtScore(score), state, metric: met.id,
     top: free ? cardShown(free.row) : null, gain: free ? score / free.row.score - 1 : null,
-    of: rivens.length, rank: above + 1 };
+    of: rivens.length, rank: above + 1, runs,
+    starts: builtinSearchStarts(w.id, RIVEN_PREFIX + id).length, candidate_runs: preset.candidate_runs || null,
+    board_at: boardMeasuredAt(rows) || null, at: new Date().toISOString(),
+    ...rivenGrade(score, free ? free.row.score : 0, rivens.length ? rivens[0].row.score : 0) };
+}
+
+/// THE GRADE, 0 to 100 and linear in the gain: 100 × (card − the riven-free
+/// leader) ÷ (the board's #1 − that leader), rounded down. At or past #1 is
+/// 100, so the first riven measured where the board has none is 100 too; no
+/// better than going without one is 0. `best` is the #1 the grade was read against.
+function rivenGrade(score, free, riven) {
+  const best = Math.max(free, riven);
+  const grade = score >= best ? 100 : score <= free ? 0 : Math.floor(100 * (score - free) / (best - free));
+  return { grade, best: fmtScore(best), best_riven: riven > free };
+}
+
+/// WHAT THE GRADE STOOD ON, every term of it: the formula, the two numbers it
+/// divides, how many rivens the board had, when, and what is approximate.
+function rivenGradeNotes(v) {
+  const when = (t) => {
+    const zone = new Intl.DateTimeFormat(accountLocale(), { timeZoneName: "short" }).formatToParts(new Date(t)).find((x) => x.type === "timeZoneName");
+    return `${measuredText(t)}${zone ? ` (${zone.value})` : ""}`;
+  };
+  return [
+    tr("Grade = 100 × (this card − the best build without a riven) ÷ (the board's #1 − the best build without a riven), linear and rounded down; at or past the #1 is 100, no better than going without a riven is 0."),
+    !v.of ? tr("The board has measured no riven of this weapon under this ruler: this card is the first, so it is 100.")
+      : trF("Read against: the board's #1 {best} ({which}), the best build without a riven {free}, and the {n} rivens the board has measured under this ruler, each at its god roll (every positive stat at its ceiling, the negative at its floor).",
+        { best: v.best, which: v.best_riven ? tr("with a riven") : tr("without a riven"), free: v.top == null ? "—" : v.top, n: v.of }),
+    v.board_at ? trF("The board as last measured {t}; graded {g}.", { t: when(v.board_at), g: when(v.at) }) : trF("Graded {g}.", { g: when(v.at) }),
+    trF("Approximate: this card's build is a quick search ({k} starts, {c} fights a candidate, one build kept), not proven its best, so the grade is a floor. Its number is the official fight, {runs} fights, at the card's own rolls, the same fight the board's rows are measured in.",
+      { k: v.starts, c: v.candidate_runs, runs: v.runs }),
+  ];
 }
 
 const cardShown = (r) => String(r.shown != null ? r.shown : (r.score || 0).toFixed(4));
@@ -17116,8 +17151,9 @@ async function renderCardPage(w, ask) {
   // number a chat is told is this page's, never the searcher's.
   const verdict = kind === "appraise" && job && job.result ? await appraisalReplay(w, job) : null;
   if (verdict) {
-    const { ok, score, shown, gain, top, of, rank, reason } = verdict;
-    document.body.dataset.verdict = JSON.stringify({ ok, score, shown, gain, top, of, rank, reason });
+    const { ok, score, shown, gain, top, of, rank, reason, grade, best, best_riven, runs, starts, candidate_runs, board_at, at } = verdict;
+    document.body.dataset.verdict = JSON.stringify({ ok, score, shown, gain, top, of, rank, reason,
+      grade, best, best_riven, runs, starts, candidate_runs, board_at, at });
   }
   if (verdict) {
     title = trF("{w} · Riven gain", { w: w.name });
@@ -17126,6 +17162,8 @@ async function renderCardPage(w, ask) {
     body = () => !verdict.ok ? `<p class="sim-empty">${escHtml(verdict.reason || "")}</p>`
       : cardBox(`<b class="lc-score">${escHtml(verdict.shown)}</b><span class="sb-empty">${escHtml(metric)}</span>${
         verdict.gain == null ? "" : `<b class="lc-gain">${pct(verdict.gain)}</b>`}`, cardOfState(verdict.state, w))
+      + cardBox(`<span class="sb-h">${escHtml(tr("Riven grade"))}</span><b class="lc-score">${verdict.grade}</b><span class="sb-empty">/ 100</span>`,
+        rivenGradeNotes(verdict).map((x) => `<p class="lc-note">${escHtml(x)}</p>`).join(""))
       + cardBox(`<span class="sb-h">${escHtml(tr("Against the board"))}</span>`,
         `<p class="lc-note">${escHtml(verdict.top == null ? tr("The board has no riven-free build of this weapon yet.")
           : trF("The board's best riven-free build: {s}", { s: verdict.top }))}</p>`
