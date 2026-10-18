@@ -118,10 +118,20 @@ check("a name nobody retired is not answered as retired", headlessUnknown("build
 // evolution, a valence, a Kitgun's parts and a second arcane seat all pass
 // through it.
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// THE EVOLUTIONS AS INSTALLED: a tier a build leaves out holds its first option
+// (`evolutions::complete`), so a row stated before its Genesis and the same row
+// read back with the defaults are one build.
+const installed = (p) => {
+  const tiers = (meta.weapons.find((x) => x.id === p.weapon) || {}).evolutions || [];
+  const ids = (p.evolutions || []).filter(Boolean);
+  if (!tiers.length) return ids.slice().sort();
+  return tiers.map((t) => ids.find((id) => t.options.some((o) => o.id === id)) || (t.options[0] || {}).id)
+    .filter(Boolean).sort();
+};
 const norm = (p) => ({
   weapon: p.weapon, mods: (p.mods || []).filter(Boolean).slice().sort(),
   arcane: (Array.isArray(p.arcane) ? p.arcane : [p.arcane]).filter((x) => x && x !== "none"),
-  evolutions: (p.evolutions || []).filter(Boolean).slice().sort(), mode: p.mode || null,
+  evolutions: installed(p), mode: p.mode || null,
   valence: p.valence_element ? [p.valence_element, p.valence_bonus] : null, assembly: p.assembly || null,
 });
 let trips = 0;

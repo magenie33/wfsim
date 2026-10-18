@@ -1723,13 +1723,19 @@ the whole rule:
 | --- | --- |
 | the 8 main slots | **FULL** |
 | every arcane seat | **FULL** |
-| every evolution tier | **FULL** |
+| every evolution tier | **FULL**, a tier the row leaves out holding its first option |
 | the stance, the exilus | **OPTIONAL**, each on its own |
 
 Full where the game gives no reason to leave a slot empty, optional where it
 does. `validate_for_board_with` is the rule and
 `the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots` is
 the table above, asserted.
+
+**AN UNSTATED EVOLUTION TIER IS ITS DEFAULT, NOT A HOLE.** The fight installs a
+tier the row does not name at its first option (`evolutions::complete`), and the
+door counts the tiers the same way, so a row is admitted as the weapon it is
+scored as. A row stated before its weapon's Genesis was entered is that Genesis
+at its defaults, never the base form.
 
 **A STANCE IS NOT A NINTH MOD AND NEITHER IS AN EXILUS.** Both have slots of
 their own, so a full melee build is TEN mods against nine planned slots — and
@@ -2219,7 +2225,7 @@ exactly like one that exercised everything.
 
 **And the rules come with it.** `standard_multi_target` refuses an incomplete build with
 the same words `standard_single_target` does — "0 mods, and this benchmark wants all 8
-main slots", "0 of 4 evolution tiers" — because `validate_for_board` reads the
+main slots", "0 of 2 arcane seats filled" — because `validate_for_board` reads the
 `build:` block out of the yaml. A new ruler's admission standard is written, not
 coded.
 

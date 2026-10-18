@@ -114,19 +114,21 @@ pub fn validate_for_board_with(
         return Err("this benchmark does not count the exilus slot".to_string());
     }
 
-    // EVOLUTIONS. The same argument, and stronger: an Incarnon weapon with no
-    // evolutions is not a weaker build of that weapon, it is the BASE FORM — a
-    // different gun. `tier_count` is keyed on the TRANSFORM GROUP, since the two
-    // entries of a two-weapon pair share one ladder.
+    // EVOLUTIONS. A ruler that wants every tier gets every tier, and a tier the
+    // row leaves out holds its first option — exactly what the fight installs
+    // (`evolutions::complete`), so a row is admitted as the weapon it is scored
+    // as. A row stated before its weapon's Genesis was entered is that Genesis
+    // at its defaults, never the base form. `tier_count` is keyed on the
+    // TRANSFORM GROUP, since the two entries of a two-weapon pair share one ladder.
     if R::requires_full(&req.evolutions) {
         let group = crate::data::weapons::spec(weapon)
             .and_then(|s| s.transform_group.clone())
             .unwrap_or_else(|| weapon.to_string());
         let want = crate::data::evolutions::tier_count(&group) as usize;
-        if b.evolutions.len() != want {
+        let installed = crate::data::evolutions::complete(&group, &b.evolutions).len();
+        if installed != want {
             return Err(format!(
-                "{} of {want} evolution tiers, and this benchmark wants every one",
-                b.evolutions.len()
+                "{installed} of {want} evolution tiers installed, and this benchmark wants every one"
             ));
         }
     }

@@ -868,18 +868,20 @@ fn complete_means_something_different_on_every_weapon() {
         .unwrap_err();
     assert!(err.contains("main slots"), "{err}");
 
-    // An INCARNON weapon with no evolutions is the base form, not a weak
-    // build of the same gun — refused on the evolution axis.
+    // An INCARNON row that names no evolutions holds every tier's first
+    // option, as the fight installs it — admitted, never the base form.
     let bp: Vec<String> = crate::data::mods::pool_for_weapon("boar_prime")
         .iter()
         .filter(|m| !m.exilus)
         .take(MAIN_SLOTS)
         .map(|m| m.id.to_string())
         .collect();
-    let err = validate_for_board("standard_single_target", "boar_prime", &bp, &[],
-                                 &["primary_crux".to_string()], "")
-        .unwrap_err();
-    assert!(err.contains("evolution"), "{err}");
+    let ok = validate_for_board("standard_single_target", "boar_prime", &bp, &[],
+                                &["primary_crux".to_string()], "");
+    assert!(ok.is_ok(), "an incarnon row with its tiers left out is its defaults: {ok:?}");
+    assert_eq!(crate::data::evolutions::complete::<&str>("boar_prime", &[]).len(),
+               crate::data::evolutions::tier_count("boar_prime") as usize,
+               "every tier of the ladder has a first option to hold");
 }
 
 /// AN ADVERSARY WEAPON'S VALENCE IS MANDATORY, and it is a LEGALITY rule
@@ -1023,8 +1025,10 @@ fn the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots() {
     }
     let no_arc = go(stance(), s(&EVOS), vec![], None).unwrap_err();
     assert!(no_arc.contains("arcane"), "no arcane: {no_arc}");
-    let no_evo = go(stance(), s(&EVOS[..3]), arc(), None).unwrap_err();
-    assert!(no_evo.contains("evolution"), "three tiers: {no_evo}");
+    // THREE TIERS NAMED IS FIVE INSTALLED: the two left out hold their first
+    // options, as the fight installs them (`evolutions::complete`).
+    let three = go(stance(), s(&EVOS[..3]), arc(), None);
+    assert!(three.is_ok(), "three tiers named, the rest at their defaults: {three:?}");
 }
 
 /// An unknown benchmark admits nothing: a number published against a ruler
