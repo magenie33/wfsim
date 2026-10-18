@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3059 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-11 08:05 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3059 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-11 08:03 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.01238 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-11 08:01 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3059 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-17 06:59 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3059 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-17 07:02 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.01238 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-17 06:57 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1406 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-12 10:34 UTC |
 
 ## Not modelled here

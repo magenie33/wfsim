@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 0.4270 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-11 06:43 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 134.6992 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-11 06:58 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | forward | 0.02202 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-11 06:41 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 0.4270 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-17 04:39 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 134.6992 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-17 05:00 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | forward | 0.02202 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-17 04:36 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | forward | 0.1635 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Quickening, Weeping Wounds, Rending Crane, Discipline's Merit, Melee Influence | 2026-10-12 09:50 UTC |
 
 ## Not modelled here

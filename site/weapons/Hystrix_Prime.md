@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.7989 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-11 05:38 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.7989 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-11 06:51 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.06321 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-11 05:38 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.7989 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-17 01:57 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.7989 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-17 04:49 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.06321 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-17 02:08 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.5599 | Jolt, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-12 09:39 UTC |
 
 ## Not modelled here

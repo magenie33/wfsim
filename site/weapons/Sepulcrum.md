@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.1843 | Frostbite, Pistol Pestilence, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-11 05:38 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 13.1566 | Frostbite, Pistol Pestilence, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-11 07:42 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.9559 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-11 05:33 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.1843 | Frostbite, Pistol Pestilence, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-17 02:10 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 12.4322 | Frostbite, Pistol Pestilence, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-17 06:59 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.9559 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-17 01:05 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 6.3200 | Frostbite, Pistol Pestilence, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-14 09:02 UTC |
 
 ## Not modelled here

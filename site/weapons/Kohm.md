@@ -13,9 +13,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.8124 | Primed Chilling Grasp, Contagious Spread, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Shotgun Barrage, Shotgun Vendetta | 2026-10-16 22:49 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.9757 | Primed Chilling Grasp, Contagious Spread, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Shotgun Barrage, Shotgun Vendetta | 2026-10-11 08:15 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.9757 | Primed Chilling Grasp, Contagious Spread, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Shotgun Barrage, Shotgun Vendetta | 2026-10-17 07:56 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5159 | Frigid Blast, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Shotgun Barrage, Primary Deadhead | 2026-10-16 19:06 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 5.4837 | Primed Chilling Grasp, Contagious Spread, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Shotgun Barrage, Shotgun Vendetta | 2026-10-11 08:17 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 5.4837 | Primed Chilling Grasp, Contagious Spread, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Shotgun Barrage, Shotgun Vendetta | 2026-10-17 07:56 UTC |
 
 ## Not modelled here
 

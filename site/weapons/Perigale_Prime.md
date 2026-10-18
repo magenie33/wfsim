@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 21.3755 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 06:27 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 63.5213 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 07:13 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 5.2523 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 06:32 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 21.3755 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 04:34 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 63.5213 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 05:55 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 5.2523 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 03:55 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 15.3144 | Cryo Rounds, Infected Clip, Wildfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-12 10:33 UTC |
 
 ## Not modelled here

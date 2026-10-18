@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.2463 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-11 05:38 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.2463 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-11 07:46 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5260 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-11 05:39 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.2463 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-17 01:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.2463 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-17 06:59 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5260 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-17 02:07 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 6.4769 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Magnetic Capacity, Terminal Velocity, Primary Compression | 2026-10-14 09:25 UTC |
 
 ## Not modelled here

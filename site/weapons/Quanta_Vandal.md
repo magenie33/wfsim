@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.2791 | Stormbringer, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 06:27 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 26.7446 | Stormbringer, High Voltage, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 18:34 UTC · 2910a8eff8 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.7772 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 05:36 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.0741 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 21:29 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.2791 | Stormbringer, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 03:55 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 26.7446 | Stormbringer, High Voltage, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 13:01 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.7772 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 01:59 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.0741 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 13:55 UTC |
 
 ## In WFSim
 

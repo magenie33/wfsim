@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.2962 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-11 06:44 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.2962 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-17 04:42 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | slide | 276.0560 | Shocking Touch, Voltaic Strike, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Sovereign Outcast, Discipline's Merit, Melee Influence | 2026-10-14 09:40 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.8494 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Organ Shatter, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Dreamer's Wrath, Melee Exposure | 2026-10-11 14:20 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.8494 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Organ Shatter, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Dreamer's Wrath, Melee Exposure | 2026-10-17 10:55 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 7.2876 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-12 10:44 UTC |
 
 ## Not modelled here

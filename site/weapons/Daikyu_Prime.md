@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.3081 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Split Flights, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-11 06:59 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 72.4857 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Split Flights, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-11 18:32 UTC · 2910a8eff8 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0793 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Serration, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 06:59 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.3081 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Split Flights, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-17 05:41 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 72.4857 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Split Flights, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-17 13:01 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0793 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Serration, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 05:38 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 7.5853 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Split Flights, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-14 09:28 UTC |
 
 ## Not modelled here

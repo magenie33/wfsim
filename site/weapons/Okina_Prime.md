@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.5838 | Shocking Touch, Voltaic Strike, Sacrificial Pressure, Blood Rush, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-11 20:20 UTC · 2910a8eff8 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | slide | 321.0611 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-12 05:10 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2662 | Vicious Frost, Virulent Scourge, Shocking Touch, Condition Overload, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-11 17:47 UTC · 9f97040e88 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.3910 | Shocking Touch, Voltaic Strike, Sacrificial Pressure, Blood Rush, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-11 23:45 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.5838 | Shocking Touch, Voltaic Strike, Sacrificial Pressure, Blood Rush, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-17 13:48 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | slide | 321.0611 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-17 15:54 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2662 | Vicious Frost, Virulent Scourge, Shocking Touch, Condition Overload, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-17 12:08 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.3910 | Shocking Touch, Voltaic Strike, Sacrificial Pressure, Blood Rush, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-17 14:44 UTC |
 
 ## Not modelled here
 

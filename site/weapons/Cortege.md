@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.6628 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-11 05:35 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 128.5203 | Hypothermic Shell, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Sabot Rounds, Critical Focus, Marked Target, Modified Munitions, Hollowed Bullets, Primary Crux, Secondary Enervate | 2026-10-11 06:46 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 4.3586 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-11 05:35 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.6628 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 00:56 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 128.5203 | Hypothermic Shell, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Sabot Rounds, Critical Focus, Marked Target, Modified Munitions, Hollowed Bullets, Primary Crux, Secondary Enervate | 2026-10-17 04:44 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 4.3586 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 01:07 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 12.1262 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-14 09:53 UTC |
 
 ## Not modelled here

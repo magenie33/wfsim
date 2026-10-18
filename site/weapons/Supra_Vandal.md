@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.2407 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-11 05:28 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 17.3991 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Deadhead | 2026-10-11 07:14 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4008 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-11 15:25 UTC · a5018fcb4e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.2407 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-17 00:55 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 17.3991 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Deadhead | 2026-10-17 05:47 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4008 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-17 11:03 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.2521 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-12 10:34 UTC |
 
 ## Not modelled here

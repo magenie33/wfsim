@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.5637 | Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Aptitude, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-11 05:38 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.3177 | Hellfire, Heavy Caliber, Primary Acuity, Primed Shred, Rifle Elementalist, Vigilante Offense, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-11 07:04 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6883 | Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-11 05:37 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.5637 | Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Aptitude, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 02:09 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.3177 | Hellfire, Heavy Caliber, Primary Acuity, Primed Shred, Rifle Elementalist, Vigilante Offense, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 05:46 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6883 | Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 02:08 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.0600 | Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-14 09:09 UTC |
 
 ## Not modelled here

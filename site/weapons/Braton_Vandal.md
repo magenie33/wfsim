@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 28.3032 | Malignant Force, Rime Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-11 08:15 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 26.0035 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-16 20:03 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 103.7091 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 21:50 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 4.9796 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-11 08:16 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 19.5434 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 08:17 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 4.6402 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Serration, Speed Trigger, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-12 10:09 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 17.4065 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Serration, Speed Trigger, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-12 10:09 UTC |
 
 ## In WFSim
 

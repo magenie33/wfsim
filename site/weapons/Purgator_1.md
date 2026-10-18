@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.4020 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 05:26 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 26.5917 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 06:39 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.7981 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-11 05:26 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.4020 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 00:55 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 26.5917 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 04:39 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.7981 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 00:52 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.3412 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Internal Bleeding, Serration, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-12 10:46 UTC |
 
 ## Not modelled here

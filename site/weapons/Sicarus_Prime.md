@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 42.7337 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-11 08:38 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 108.3056 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Seeker, Galvanized Shot, Anemic Agility, Magnetic Might, Cascadia Flare | 2026-10-11 08:24 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 5.9388 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Galvanized Shot, Anemic Agility, Magnetic Might, Cascadia Flare | 2026-10-11 08:13 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 42.7337 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-17 08:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 108.3056 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Seeker, Galvanized Shot, Anemic Agility, Magnetic Might, Cascadia Flare | 2026-10-17 08:07 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 5.9388 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Merciless Gunfight, Galvanized Shot, Anemic Agility, Magnetic Might, Cascadia Flare | 2026-10-17 08:03 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 23.3706 | Deep Freeze, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Anemic Agility, Secondary Deadhead | 2026-10-12 10:32 UTC |
 
 ## In WFSim

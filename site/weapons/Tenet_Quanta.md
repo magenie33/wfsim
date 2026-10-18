@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.9728 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 08:11 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.9745 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 08:07 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2418 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 08:08 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.9728 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 07:49 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.9745 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 06:57 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2418 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 06:57 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.8212 | Malignant Force, Rime Rounds, Stormbringer, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-14 10:04 UTC |
 
 ## In WFSim

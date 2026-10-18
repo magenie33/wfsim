@@ -13,8 +13,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 37.6644 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Speed Trigger, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-16 14:32 UTC · 36709d7016 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 182.2817 | Primed Cryo Rounds, Infected Clip, Hellfire, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Vile Acceleration, Magnetic Capacity, Primary Deadhead | 2026-10-11 07:17 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 3.3347 | Infected Clip, Stormbringer, High Voltage, Galvanized Chamber, Serration, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Primary Debilitate | 2026-10-11 06:34 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 182.2817 | Primed Cryo Rounds, Infected Clip, Hellfire, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Vile Acceleration, Magnetic Capacity, Primary Deadhead | 2026-10-17 05:48 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 3.3347 | Infected Clip, Stormbringer, High Voltage, Galvanized Chamber, Serration, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Primary Debilitate | 2026-10-17 04:02 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 21.3604 | Primed Cryo Rounds, Infected Clip, Hellfire, Galvanized Chamber, Serration, Galvanized Aptitude, Vile Acceleration, Magnetic Capacity, Primary Deadhead | 2026-10-14 10:51 UTC |
 
 ## In WFSim

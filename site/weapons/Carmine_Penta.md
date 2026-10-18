@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6635 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-11 05:33 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6635 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-11 07:13 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.07221 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-11 05:33 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6635 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 01:06 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6635 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 05:47 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.07221 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 01:05 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.3656 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-12 10:33 UTC |
 
 ## Not modelled here

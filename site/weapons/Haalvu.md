@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.6477 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-11 05:38 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.5663 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-17 07:36 UTC · af056b9656 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 14.7834 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Rifle Elementalist, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-15 18:36 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.1185 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 06:05 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.1185 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 02:58 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.4542 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-12 10:12 UTC |
 
 ## Not modelled here

@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.5809 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 06:18 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 40.8357 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 07:26 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5926 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-11 06:15 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.5809 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 03:52 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 40.8357 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 05:44 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5926 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 04:02 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 7.0941 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-14 09:28 UTC |
 
 ## Not modelled here

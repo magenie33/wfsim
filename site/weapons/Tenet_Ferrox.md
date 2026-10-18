@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.0406 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 05:36 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.2644 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Galvanized Scope, Hammer Shot, Vital Sense, Primary Deadhead | 2026-10-11 07:33 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0205 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-11 05:35 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.0406 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-17 02:01 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 31.2644 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Primed Shred, Galvanized Aptitude, Galvanized Scope, Hammer Shot, Vital Sense, Primary Deadhead | 2026-10-17 05:43 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0205 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-17 01:01 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.1533 | Malignant Force, Rime Rounds, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-14 08:59 UTC |
 
 ## Not modelled here

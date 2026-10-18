@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.5199 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-11 08:34 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.5199 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-11 08:27 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 2.2073 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Pressurized Magazine, Cascadia Flare | 2026-10-11 08:32 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.5199 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-17 07:56 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.5199 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-17 07:59 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 2.2073 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Pressurized Magazine, Cascadia Flare | 2026-10-17 07:58 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 6.8110 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Pressurized Magazine, Cascadia Flare | 2026-10-12 10:15 UTC |
 
 ## In WFSim

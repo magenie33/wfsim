@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-11 08:14 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-11 08:25 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.8318 | Convulsion, Pathogen Rounds, Frostbite, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Eject Magazine, Secondary Deadhead | 2026-10-11 08:30 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-17 07:56 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 41.5761 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-17 07:59 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.8318 | Convulsion, Pathogen Rounds, Frostbite, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Eject Magazine, Secondary Deadhead | 2026-10-17 08:06 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 24.9902 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-12 09:26 UTC |
 
 ## In WFSim

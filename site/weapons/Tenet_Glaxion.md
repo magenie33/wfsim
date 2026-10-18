@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.7913 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-11 15:29 UTC · a5018fcb4e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 10.7913 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-17 10:57 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 81.7102 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Shred, Rifle Elementalist, Sinister Reach, Primary Crux | 2026-10-16 01:30 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.0856 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Shred, Rifle Elementalist, Sinister Reach, Primary Crux | 2026-10-16 01:27 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 6.1336 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Shred, Rifle Elementalist, Sinister Reach, Primary Crux | 2026-10-16 01:27 UTC |

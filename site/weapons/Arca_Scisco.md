@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2467 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-11 06:27 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2467 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-11 07:03 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.004296 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-11 06:28 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2467 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-17 03:55 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2467 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-17 05:44 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.004296 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-17 03:56 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1084 | Primed Convulsion, Jolt, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Deadhead | 2026-10-12 09:59 UTC |
 
 ## Not modelled here

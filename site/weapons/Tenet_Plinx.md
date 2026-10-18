@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 17.9338 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-11 08:27 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 51.7510 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-11 08:27 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.5596 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Creeping Bullseye, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Deadhead | 2026-10-11 19:37 UTC · 2910a8eff8 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 9.3940 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Primed Quickdraw, Pressurized Magazine, Synth Charge, Eject Magazine, Secondary Deadhead | 2026-10-12 00:46 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 17.9338 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Primed Quickdraw, Lethal Torrent, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-17 07:56 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 38.8651 | Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Synth Charge, Eject Magazine, Cascadia Flare | 2026-10-17 08:43 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.5596 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Creeping Bullseye, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Deadhead | 2026-10-17 13:40 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 9.3940 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Primed Quickdraw, Pressurized Magazine, Synth Charge, Eject Magazine, Secondary Deadhead | 2026-10-17 14:43 UTC |
 
 ## In WFSim
 

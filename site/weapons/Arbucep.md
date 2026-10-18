@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.9913 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-11 23:37 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 32.3433 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-11 23:36 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.0159 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-11 23:33 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 8.1345 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-11 23:33 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.9913 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 14:39 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 32.3433 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 14:30 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 3.0159 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 14:39 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 8.1345 | Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Primed Deadly Efficiency, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 14:39 UTC |
 
 ## Not modelled here
 

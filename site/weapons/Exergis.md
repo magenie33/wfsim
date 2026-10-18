@@ -14,7 +14,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 19.3625 | Toxic Barrage, Chilling Reload, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Ammo Stock, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-16 09:46 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 87.8938 | Contagious Spread, Chilling Reload, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Ammo Stock, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-16 09:43 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.9012 | Primed Chilling Grasp, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Tactical Pump, Semi-Shotgun Cannonade, Galvanized Acceleration, Primary Crux | 2026-10-11 05:35 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.9012 | Primed Chilling Grasp, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Tactical Pump, Semi-Shotgun Cannonade, Galvanized Acceleration, Primary Crux | 2026-10-17 01:04 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 10.1133 | Contagious Spread, Chilling Reload, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Ammo Stock, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-16 09:43 UTC |
 
 ## In WFSim

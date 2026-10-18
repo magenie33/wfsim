@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 50.1848 | Primed Charged Shell, Toxic Barrage, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Tactical Pump, Shotgun Barrage, Magnetic Strafe, Primary Deadhead | 2026-10-11 05:25 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 177.0595 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Tactical Pump, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-11 18:27 UTC · 2910a8eff8 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 8.4356 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Galvanized Savvy, Primed Tactical Pump, Shotgun Barrage, Magnetic Strafe, Primed Counterbalance, Primary Deadhead | 2026-10-11 05:25 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 30.1368 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Galvanized Savvy, Primed Tactical Pump, Shotgun Barrage, Magnetic Strafe, Primed Counterbalance, Primary Deadhead | 2026-10-11 21:26 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 50.1848 | Primed Charged Shell, Toxic Barrage, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Tactical Pump, Shotgun Barrage, Magnetic Strafe, Primary Deadhead | 2026-10-17 00:55 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 177.0595 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Point Blank, Galvanized Savvy, Primed Tactical Pump, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-17 13:05 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 8.4356 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Galvanized Savvy, Primed Tactical Pump, Shotgun Barrage, Magnetic Strafe, Primed Counterbalance, Primary Deadhead | 2026-10-17 00:57 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 30.1368 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Galvanized Savvy, Primed Tactical Pump, Shotgun Barrage, Magnetic Strafe, Primed Counterbalance, Primary Deadhead | 2026-10-17 13:55 UTC |
 
 ## Not modelled here
 

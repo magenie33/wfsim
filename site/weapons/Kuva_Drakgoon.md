@@ -14,7 +14,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.6169 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-16 22:58 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 20.8138 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-16 21:56 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5659 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-11 08:15 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5659 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-17 07:56 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.8676 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-12 10:10 UTC |
 
 ## Not modelled here

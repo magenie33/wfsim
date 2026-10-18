@@ -31,6 +31,28 @@ let wasm_bindgen = (function(exports) {
     exports.api = api;
 
     /**
+     * HAND THE ENGINE ONE DATA PACK (docs/CLIENTS.md §"The official data pack"):
+     * every pack goes in before the first call; returns "" or what was wrong.
+     * @param {string} pack
+     * @returns {string}
+     */
+    function install_data(pack) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ptr0 = passStringToWasm0(pack, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.install_data(ptr0, len0);
+            deferred2_0 = ret[0];
+            deferred2_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    exports.install_data = install_data;
+
+    /**
      * Run an optimize request to completion (blocking — call inside a Worker).
      * `on_progress` receives a status-JSON string continuously: a throttled
      * heartbeat DURING enumeration/screening/rounds (the optimizer lib's tick

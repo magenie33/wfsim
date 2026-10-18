@@ -16,7 +16,7 @@
 // optimizer's fleets settle on `onerror` alone and know no such message.
 const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
 try {
-  importScripts("/pkg/wfsim_wasm.522aea1d5364.js");
+  importScripts("/pkg/wfsim_wasm.9585971e35df.js");
 } catch (err) {
   loadFailed("glue");
   throw err;
@@ -29,11 +29,17 @@ try {
 // A FAILED LOAD IS SAID, then thrown from a task, which reaches the page's
 // `onerror` and settles the lane as dead.
 let handed;
-const ready = new Promise((res) => { handed = res; }).then(({ module, url, cause }) => {
+const ready = new Promise((res) => { handed = res; }).then(({ module, url, cause, packs = [] }) => {
   if (cause) throw Object.assign(new Error(`engine ${cause}`), { loadCause: cause });
   return wasm_bindgen({ module_or_path: module || url }).catch((err) => {
     throw Object.assign(err, { loadCause: err instanceof WebAssembly.CompileError ? "compile"
       : err instanceof RangeError ? "memory" : url ? "network" : "unclassified" });
+  }).then(() => {
+    // THE MODULE IS CODE: its data packs go in before the first call.
+    for (const p of packs) {
+      const err = wasm_bindgen.install_data(p);
+      if (err) throw Object.assign(new Error(err), { loadCause: "data" });
+    }
   });
 });
 ready.catch((err) => {

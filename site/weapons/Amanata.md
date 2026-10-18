@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1794 | Shocking Touch, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Organ Shatter, Weeping Wounds, Bleeding Willow, Dreamer's Wrath, Melee Influence | 2026-10-11 06:49 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.3023 | Shocking Touch, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Organ Shatter, Weeping Wounds, Bleeding Willow, Dreamer's Wrath, Melee Influence | 2026-10-11 18:13 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block forward | 0.004057 | Healing Return, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Spring-Loaded Blade, Weeping Wounds, Bleeding Willow, Discipline's Merit, Melee Influence | 2026-10-11 06:41 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1794 | Shocking Touch, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Organ Shatter, Weeping Wounds, Bleeding Willow, Dreamer's Wrath, Melee Influence | 2026-10-17 04:45 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.3023 | Shocking Touch, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Organ Shatter, Weeping Wounds, Bleeding Willow, Dreamer's Wrath, Melee Influence | 2026-10-17 12:10 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block forward | 0.004057 | Healing Return, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Spring-Loaded Blade, Weeping Wounds, Bleeding Willow, Discipline's Merit, Melee Influence | 2026-10-17 04:36 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.08819 | Shocking Touch, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Organ Shatter, Weeping Wounds, Bleeding Willow, Dreamer's Wrath, Melee Influence | 2026-10-14 09:10 UTC |
 
 ## Not modelled here

@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1936 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-11 06:59 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1936 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-11 07:10 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.007653 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-11 06:55 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1936 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-17 05:42 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1936 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-17 05:48 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.007653 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-17 04:48 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1325 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Vile Acceleration, Magnetic Capacity | 2026-10-12 10:15 UTC |
 
 ## Not modelled here

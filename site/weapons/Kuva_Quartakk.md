@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.5137 | High Voltage, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-11 08:03 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.0527 | Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-11 08:11 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1266 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-11 08:10 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.5137 | High Voltage, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-17 06:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.0527 | Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-17 07:50 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1266 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-17 07:50 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.6458 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-14 10:56 UTC |
 
 ## Not modelled here
