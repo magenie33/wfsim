@@ -638,7 +638,10 @@ export const DEMAND_COST_MS = 86_400_000;
 /// one index the table keeps in time order.
 export const DEMAND_COST_SCAN = 1_500_000;
 /// …AND PRICED AGAIN THIS OFTEN, kept per `env` between: a day's price moves
-/// slowly, and reading the day back is seconds of the database every time.
+/// slowly, and reading the day back is seconds of the database every time. The
+/// owed rows and the open questions are counted on the same clock: each reads
+/// a table that does not fit in memory, and once a minute it pushed the
+/// volunteers' own rows out of the cache until their syncs timed out on locks.
 export const DEMAND_COST_EVERY_MS = 10 * 60_000;
 const demandCosts = new WeakMap();
 
@@ -654,15 +657,7 @@ export async function demandOf(env, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now);
   const kept = demandCosts.get(env);
   const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
-  const [owed, done, gains, surveys, open, answered, spent, facts] = await db.batch([
-    // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
-    // demands are read once and joined whole: looked up a queue row at a time,
-    // every row cost an index walk for the few that have one.
-    db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM demands WHERE state = 'live' AND producer = 'new_build')
-                SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
-                FROM queue q JOIN batches b ON b.id = q.batch
-                LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
+  const [done, gains, surveys, answered, owed, open, spent, facts] = await db.batch([
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
                 FROM scores WHERE finished_at >= ?`).bind(iso(now - DEMAND_PACE_HOURS * 3_600_000)),
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
@@ -675,11 +670,19 @@ export async function demandOf(env, now = Date.now()) {
                 FROM appraisals WHERE channel = ?1::text AND request IS NOT NULL AND at > ?2::text GROUP BY weapon, ruler
                 HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
       .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - SURVEY_PACE_MS)),
-    db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
     // THE LAST WHOLE HOURS, the one under way left out.
     db.prepare("SELECT COALESCE(SUM(ms), 0) AS ms FROM verifier_hours WHERE hour >= ?1::text AND hour < ?2::text")
       .bind(iso(now - DEMAND_PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13)),
     ...(costs ? [] : [
+      // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
+      // demands are read once and joined whole: looked up a queue row at a time,
+      // every row cost an index walk for the few that have one.
+      db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM demands WHERE state = 'live' AND producer = 'new_build')
+                  SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
+                  FROM queue q JOIN batches b ON b.id = q.batch
+                  LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
+                  GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
+      db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
       db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
                     WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)
                   SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`)
@@ -687,17 +690,19 @@ export async function demandOf(env, now = Date.now()) {
       db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= ? GROUP BY verb").bind(iso(now - DEMAND_COST_MS)),
     ]),
   ]);
-  const by = Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)]));
+  const counted = costs || { by: Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)])),
+    openOf: open.results.map((r) => ({ verb: r.verb, n: Number(r.n) })) };
+  const by = counted.by;
   const h = done.results[0] || {};
   const perHour = (x) => Math.round(Number(x || 0) / DEMAND_PACE_HOURS);
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
     factsOf: Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)])) };
-  if (!costs) demandCosts.set(env, { at: now, msOf, factsOf });
+  if (!costs) demandCosts.set(env, { at: now, msOf, factsOf, by, openOf: counted.openOf });
   const msPerHour = Number((answered.results[0] || {}).ms || 0) / DEMAND_PACE_HOURS;
   // THE BOARD'S ROWS are the queue's, a refresh's left out; every other verb's
   // open questions are its work.
   const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) };
-  for (const r of open.results) if (r.verb !== "simulate") left[r.verb] = Number(r.n);
+  for (const r of counted.openOf) if (r.verb !== "simulate") left[r.verb] = r.n;
   let ms = 0;
   for (const [verb, n] of Object.entries(left)) {
     if (!n) continue;

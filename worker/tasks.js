@@ -28,6 +28,10 @@ import { dialsOf, DIAL_DEFAULTS } from "./dials.js";
 /// `spot` is a fact the official machines check again. Those three are the
 /// official machines' alone.
 export const OFFICIAL_STATES = ["disputed", "spot", "nondeterministic"];
+/// HOW MANY CANDIDATES A CLAIM READS FOR EACH QUESTION IT MAY TAKE, per state:
+/// rows another claim holds are skipped, and a branch that ran dry would hand
+/// back fewer than `max` while takeable ones sat further along.
+export const CLAIM_SPARE = 3;
 
 /// A PACK'S LEASE IS A HEARTBEAT, not a deadline: a page still computing a row
 /// renews it (`renewRow`) and is never cut off; only a silent one loses it.
@@ -891,16 +895,30 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     const db = env.LIBRARY, at = iso(now);
     const open = states.includes("open") ? 1 : 0;
     const theirs = states.filter((x) => OFFICIAL_STATES.includes(x));
-    const { results } = await db.prepare(`UPDATE questions SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
-        WHERE id IN (SELECT q.id FROM questions q
-          WHERE ((?3::bigint = 1 AND q.state = 'open' AND q.due_at < ?4::text) OR q.state IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)))
-            AND (q.lease_until IS NULL OR q.lease_until < ?4::text)
+    // EACH STATE IS READ ALONG `questions_order` AND ONLY THEN LOCKED. One
+    // predicate that ORs the open questions with the official states can use no
+    // index, so every claim scanned the whole table off the disk: seconds a
+    // claim, and the volunteers' rows pushed out of memory until their syncs
+    // timed out on locks. `CLAIM_SPARE` candidates a branch cover the rows
+    // another claim holds; the lock re-reads the whole condition.
+    const takeable = `(q.lease_until IS NULL OR q.lease_until < ?4::text)
             AND (?6::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
                                        AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?6::text)::jsonb))))
-            AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?7::text)
+            AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?7::text)`;
+    const { results } = await db.prepare(`WITH c AS (
+          (SELECT q.id FROM questions q WHERE ?3::bigint = 1 AND q.state = 'open' AND q.due_at < ?4::text AND ${takeable}
+            ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?9::bigint)
+          UNION ALL
+          (SELECT q.id FROM questions q WHERE q.state = ANY(?10::text[]) AND ${takeable}
+            ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?9::bigint))
+        UPDATE questions SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
+        WHERE id IN (SELECT q.id FROM questions q
+          WHERE q.id IN (SELECT id FROM c)
+            AND ((?3::bigint = 1 AND q.state = 'open' AND q.due_at < ?4::text) OR q.state IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)))
+            AND ${takeable}
           ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8::bigint FOR UPDATE OF q SKIP LOCKED)
         RETURNING id, verb, request, state, lease, waits, due_at`)
-      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max).all();
+      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max, max * CLAIM_SPARE, `{${theirs.join(",")}}`).all();
     if (!results.length) return [];
     // IN THE ORDER IT WAS CHOSEN: an UPDATE returns its rows in none.
     results.sort((a, b) => b.waits - a.waits || (a.due_at < b.due_at ? -1 : a.due_at > b.due_at ? 1 : a.id < b.id ? -1 : 1));
