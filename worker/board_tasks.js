@@ -174,13 +174,17 @@ async function ask(request, env) {
   // EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
   // scorer measures it: a run stopped between the queue's write and the ask
   // leaves exactly that. `ASK_MAX` a call, until none is left.
+  // A LIVE DEMAND ON A SETTLED QUESTION IS UNASKED TOO: an ask that failed after
+  // its demands were written never delivered the fact they met, and `redeliver`
+  // reads only facts formed since its cursor, so asking again is what tells it.
   if (b.backfill === true) {
     const { results } = await db.prepare(
       `SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, (array_agg(q.initiator ORDER BY q.batch))[1] AS initiator, bu.record, bu.at,
               (SELECT s.finished_at FROM scores s WHERE s.identity = q.build_id AND s.ruler = q.ruler AND s.mode = q.mode) AS measured
          FROM queue q JOIN batches t ON t.id = q.batch JOIN builds bu ON bu.id = q.build_id
-        WHERE NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                            AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live')
+        WHERE NOT EXISTS (SELECT 1 FROM demands d JOIN questions x ON x.id = d.question
+                           WHERE d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
+                            AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live' AND x.state NOT IN ('fact', 'spot'))
         GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at LIMIT ?`).bind(ASK_MAX).all();
     await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now)), engine, now);
     return json({ ok: true, asked: results.length, left: results.length === ASK_MAX ? null : 0 });

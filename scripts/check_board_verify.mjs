@@ -130,6 +130,13 @@ await queue(arrivals, "lost");
 const back = await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
 check("an owed row nobody asked for is asked by the backfill", back.asked === 1 && back.left === 0 && await demand("lost"), JSON.stringify(back));
 check("...and asking again asks nothing", (await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN)).asked === 0);
+// AN ASK THAT FAILED AFTER WRITING ITS DEMAND left it live on a fact it never
+// delivered: still owed, so the backfill asks it again, and the ask tells it.
+await L.run("UPDATE questions SET state = 'fact', fact_engine = 'e0', fact_at = ? WHERE id = (SELECT question FROM demands WHERE ref = 'lost|standard_single_target|base')",
+  new Date(Date.now() - 86_400_000).toISOString());
+const stuck = await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
+check("a live demand left on a settled question is asked again by the backfill", stuck.asked === 1, JSON.stringify(stuck));
+check("...which opens an older engine's fact again for the served one", (await question("lost")).state === "open", (await question("lost")).state);
 
 console.log("\nhanded out, answered");
 check("a page that cannot fill a task is handed none", none(await work(A, { protocol: null })));
