@@ -8,7 +8,6 @@ Staff · Melee · Mastery Rank 5. 176 base damage (impact 158.4, puncture 17.6),
 
 - One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
-- Its Incarnon evolutions and Incarnon Form are not modelled.
 
 ## In WFSim
 

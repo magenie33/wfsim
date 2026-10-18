@@ -20,9 +20,9 @@
   
   <link rel="stylesheet" href="/asset/style.0de657a1246a.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.9585971e35df.wasm" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/meta.12098ed19f60.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.d2a46fbb8438.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.9644f80a179a.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/meta.14068891f4b0.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.596b53258f8f.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -252,7 +252,7 @@
       <div class="w-notes"><ul>
         <li>One attack input&#x27;s animation length is unpublished: the wiki gives each combo&#x27;s total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.</li>
         <li>Power Spike&#x27;s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.</li>
-        <li>Its Incarnon evolutions and Incarnon Form are not modelled.</li>
+        <li>A plain slam at the arming combo also activates its Incarnon Form; here only a heavy attack does, so a loop that slams without a heavy arms it later than in a mission, or never.</li>
         </ul>
       </div>
       </div>
@@ -680,13 +680,13 @@
     <a href="/support" title="Support WFSim" data-i18n-title data-i18n>Support</a> ·
     <a href="/support#usage" data-i18n>Usage statistics</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">5e634f01</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">1b958370</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.b64b724616bd.js"></script>
+  <script src="/asset/app.0b66f544948b.js"></script>
   <script type="module" src="/asset/nona.f5b99821fa6d/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>
