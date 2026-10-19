@@ -3,26 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Download WFSim for Windows · 下载 WFSim Windows 桌面版</title>
-  <meta name="description" content="WFSim as a Windows app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0." />
+  <title>Download WFSim for Windows, Mac and Linux · 下载 WFSim 桌面版（Windows / Mac / Linux）</title>
+  <meta name="description" content="WFSim as a Windows, Mac and Linux app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0." />
   
   <meta property="og:type" content="website" />
   
   <link rel="canonical" href="https://wfsim.app/download" />
   <meta property="og:site_name" content="WFSim" />
-  <meta property="og:title" content="Download WFSim for Windows · 下载 WFSim Windows 桌面版" />
-  <meta property="og:description" content="WFSim as a Windows app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0." />
+  <meta property="og:title" content="Download WFSim for Windows, Mac and Linux · 下载 WFSim 桌面版（Windows / Mac / Linux）" />
+  <meta property="og:description" content="WFSim as a Windows, Mac and Linux app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0." />
   <meta property="og:url" content="https://wfsim.app/download" />
   <meta property="og:image" content="https://wfsim.app/logo.svg" />
   
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Download","description":"WFSim as a Windows app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0.","url":"https://wfsim.app/download","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Download","item":"https://wfsim.app/download"}]},"dateModified":"2026-10-19"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Download","description":"WFSim as a Windows, Mac and Linux app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0.","url":"https://wfsim.app/download","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Download","item":"https://wfsim.app/download"}]},"dateModified":"2026-10-19"}</script>
   <meta name="twitter:card" content="summary" />
   
   <link rel="stylesheet" href="/asset/style.0de657a1246a.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.3118ce202517.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.c50837c9586f.wasm" as="fetch" crossorigin />
   <link rel="preload" href="/pkg/meta.09043e382e71.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.faf49d9d71a9.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.26cf45a7e226.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -92,7 +92,7 @@
 </head>
 <body>
   <div id="seo-fallback">
-    <p>WFSim as a Windows app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0.</p>
+    <p>WFSim as a Windows, Mac and Linux app: the same calculator and the same engine as the site, on your own machine. It opens instantly, works offline and updates itself. Free and open source, AGPL-3.0.</p>
     <p><a href="https://wfsim.app/">wfsim.app</a></p>
   </div>
   <script>document.getElementById('seo-fallback').remove()</script>
@@ -196,7 +196,7 @@
   </header>
 
   <main id="download-page" class="dl-page" hidden>
-    <h1 id="h-download" class="hero-h" data-i18n>WFSim for Windows</h1>
+    <h1 id="h-download" class="hero-h" data-i18n>WFSim for Windows, Mac and Linux</h1>
     <p class="hero-sub" data-i18n>The same calculator on your own machine: it opens instantly, works offline and updates itself.</p>
 
     <div class="dl-offer" id="dl-offer"></div>
@@ -206,10 +206,19 @@
     <section class="block" data-dl-web>
       <div class="bh"><h2 data-i18n>The first time you open it</h2></div>
       <div class="bb">
-        <ul class="sup-costs">
+        <ul class="sup-costs" data-dl-os="Windows">
           <li data-i18n>Windows shows a blue notice, "Windows protected your PC". Click "More info", then "Run anyway".</li>
           <li data-i18n>The program is not code-signed, which is also why an antivirus may warn about it.</li>
           <li data-i18n>The SHA-256 and the command to verify it are in the notes beside the download.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="macOS" hidden>
+          <li data-i18n>macOS refuses the first launch. Open WFSim once and close the notice, then choose "Open Anyway" in System Settings → Privacy &amp; Security.</li>
+          <li data-i18n>On macOS 14 and earlier, right-click the app and choose "Open" instead.</li>
+          <li data-i18n>The app is not notarised by Apple, which is why macOS asks.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="Linux" hidden>
+          <li data-i18n>Make it executable first: right-click WFSim.AppImage → Properties → allow running it as a program, or chmod +x WFSim.AppImage.</li>
+          <li data-i18n>If it does not open on Ubuntu 22.04 or later, install libfuse2 (sudo apt install libfuse2).</li>
         </ul>
       </div>
     </section>
@@ -229,9 +238,17 @@
     <section class="block">
       <div class="bh"><h2 data-i18n>Install and uninstall</h2></div>
       <div class="bb">
-        <ul class="sup-costs">
+        <ul class="sup-costs" data-dl-os="Windows">
           <li data-i18n>No installer: it needs no administrator rights, and writes to the registry only if you turn on starting with Windows.</li>
           <li data-i18n>To uninstall, use Uninstall in the program's own settings: it removes the file and everything it kept in %LOCALAPPDATA%\WFSim.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="macOS" hidden>
+          <li data-i18n>Open the disk image and drag WFSim into Applications. The one download runs on Apple Silicon and Intel Macs alike.</li>
+          <li data-i18n>To uninstall, move WFSim from Applications to the Trash. What it kept is in ~/Library/Application Support/WFSim.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="Linux" hidden>
+          <li data-i18n>One file that carries everything it needs, the Steam Deck's desktop mode included; no packages to install.</li>
+          <li data-i18n>To uninstall, delete WFSim.AppImage. What it kept is in ~/.local/share/wfsim.</li>
         </ul>
       </div>
     </section>
@@ -722,13 +739,13 @@
     <a href="/support" title="Support WFSim" data-i18n-title data-i18n>Support</a> ·
     <a href="/support#usage" data-i18n>Usage statistics</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">5d6011dd</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">87a96f08</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.dee04fc790a5.js"></script>
+  <script src="/asset/app.89574af4bf75.js"></script>
   <script type="module" src="/asset/nona.f5b99821fa6d/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

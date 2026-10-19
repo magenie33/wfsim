@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "5d6011dd";
+const BUILD_ID = "87a96f08";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "700bc121+";
+const BUILD_SHA = "73a795bd+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "18a2cee2e04f";
+const RELEASE_ID = "1921064144bf";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -874,17 +874,17 @@ const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "dat
 /// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
 /// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
 /// writes in the hashed names and the size; the dev server serves no workers.
-const ENGINE_WASM = "/pkg/wfsim_wasm_bg.3118ce202517.wasm";
+const ENGINE_WASM = "/pkg/wfsim_wasm_bg.c50837c9586f.wasm";
 /// …AND ITS DATA: the module is code, and these packs are installed into every
 /// instance before its first call (docs/WASM.md §"Code and data"), so a data
 /// edit is a new pack and the module stays cached.
 const ENGINE_PACKS = [];
 /// The module's and the packs' bytes together, for the boot screen.
-const ENGINE_WASM_BYTES = 10213636;
+const ENGINE_WASM_BYTES = 10217388;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.09043e382e71.json", "/api/i18n": "/pkg/i18n.faf49d9d71a9.json", "/api/warframe/catalog": "/pkg/warframes.5d5c8b782cb7.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.09043e382e71.json", "/api/i18n": "/pkg/i18n.26cf45a7e226.json", "/api/warframe/catalog": "/pkg/warframes.5d5c8b782cb7.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -995,7 +995,7 @@ async function enginePack(url) {
 /// is sent as its address instead, and that worker fetches its own; the packs
 /// always travel as bytes.
 function spawnEngine() {
-  const w = new Worker("/asset/worker.3ac653ec3ae9.js");
+  const w = new Worker("/asset/worker.77b463ceb5e8.js");
   engineLoad().then(({ module, packs }) => {
     try {
       w.postMessage({ kind: "engine", module, packs });
@@ -2849,7 +2849,7 @@ async function init() {
 
 /// Replaced by the build with the hashed file's own name; the literal is what
 /// the dev server serves, where there is nothing to fetch.
-const PAGE_BODIES_URL = "/asset/pages.5cb0165088cd.json";
+const PAGE_BODIES_URL = "/asset/pages.e6e53e478fd7.json";
 
 let pageBodiesAsk = null;
 let pageBodiesSettled = false;
@@ -3116,7 +3116,7 @@ async function route() {
     account: "Account settings", sync: "Cloud sync", compute: "Compute together",
     contributors: "Contributors", clan: "Clan", notifications: "Notifications" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
     : support ? `${tr("Support WFSim")}`
-    : dl ? `${tr("Download WFSim for Windows")}`
+    : dl ? `${tr("Download WFSim for Windows, Mac and Linux")}`
     : bench ? `${tr("Benchmark")} | WFSim`
     : util ? `${tr(utilityTitle(util))} | WFSim`
     : wfHit ? `${wfHit.name} — ${what.wf} | WFSim`
@@ -13649,7 +13649,7 @@ function syncDevice() {
   const ua = navigator.userAgent || "";
   const os = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android"
     : /Windows/.test(ua) ? "Windows" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "?";
-  const app = window.__WFSIM_DESKTOP__ ? "WFSim for Windows" : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera"
+  const app = window.__WFSIM_DESKTOP__ ? (os === "Mac" ? "WFSim for Mac" : os === "Linux" ? "WFSim for Linux" : "WFSim for Windows") : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera"
     : /Firefox\/|FxiOS/.test(ua) ? "Firefox" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
   return { id, label: `${os} · ${app}` };
 }
@@ -32261,13 +32261,11 @@ const DESKTOP_POLL_MS = 700;
 const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
-// THE DESKTOP DOWNLOAD — one platform, and the SOURCE it comes from.
+// THE DESKTOP DOWNLOAD — one button for the machine asking, and the SOURCE it
+// comes from.
 //
-// WINDOWS ONLY, FOR NOW. The Linux entry was built and
-// listed before anyone had asked for it, and it cost the offer its shape: the
-// hero drew a Windows button, a GitHub link beside it, and then a second row
-// saying "Linux · GitHub" — four things for what is one decision. Warframe on
-// Linux is Proton, which is a smaller audience than the row it was taking.
+// WINDOWS, MAC AND LINUX, every desktop Warframe runs on (Linux through Proton
+// and the Steam Deck); one universal disk image covers Apple Silicon and Intel.
 //
 // THE SOURCE IS NAMED BESIDE THE BUTTON, which is the whole point of the badge. The file is not hosted by this site: it lives on a Quark
 // network drive, and a reader about to run a downloaded executable is entitled
@@ -32297,6 +32295,19 @@ const DOWNLOADS = [
     },
   },
 ];
+// The same drive holds the Mac and Linux downloads beside the Windows one. A
+// phone saying "Linux" never reaches here (`downloadFor`).
+DOWNLOADS.push({
+  os: "macOS",
+  detect: (ua) => /Macintosh|Mac OS X/.test(ua),
+  file: "WFSim.dmg",
+  source: DOWNLOADS[0].source,
+}, {
+  os: "Linux",
+  detect: (ua) => /Linux|X11/.test(ua),
+  file: "WFSim.AppImage",
+  source: DOWNLOADS[0].source,
+});
 
 /// The button and the source it came from, as one piece of markup.
 ///
@@ -32319,10 +32330,22 @@ function downloadOffer(d) {
 }
 
 /// The machine asking, in one answer for both surfaces to use. `null` means a
-/// phone: it is already running what a download would install.
-function downloadFor(ua) {
+/// phone or a tablet: it is already running what a download would install. An
+/// iPad's Safari says "Macintosh"; its touch points are what tell it apart.
+function downloadFor(ua, touchPoints = navigator.maxTouchPoints || 0) {
   if (/Android|iPhone|iPad|iPod/i.test(ua || "")) return null;
+  if (/Macintosh/.test(ua || "") && touchPoints > 1) return null;
   return DOWNLOADS.find((d) => d.detect(ua || "")) || false;
+}
+/// The download this client was installed from; Windows for a shell that is
+/// neither, since no other is offered.
+function shellDownload() {
+  return downloadFor(navigator.userAgent, 0) || DOWNLOADS[0];
+}
+/// THE PAGE'S SECTIONS FOR ONE SYSTEM: `data-dl-os` marks what is true of one
+/// download only — the first launch and the uninstall differ by system.
+function showDownloadOs(os) {
+  for (const el of document.querySelectorAll("#download-page [data-dl-os]")) el.hidden = el.dataset.dlOs !== os;
 }
 
 /// THE OLDEST SHELL THIS CONTENT DOES NOT ASK TO BE REPLACED, as the build date
@@ -32350,15 +32373,15 @@ function renderDownloadPage() {
   // ALREADY RUNNING IT. The URL is typed by hand and read off a video, so it
   // has to answer inside the client too — as the fact that there is nothing
   // here to install rather than as a blank.
-  if (window.__WFSIM_DESKTOP__ && shellIsOld()) {
-    host.innerHTML = downloadOffer(DOWNLOADS[0]) + `<span class="dl-why">${escHtml(
-      tr("This copy of the program is older than the current one. Download the new WFSim.exe and use it in place of this one — your saved builds stay."))}</span>`;
-    renderDesktopSettings();
-    return;
-  }
   if (window.__WFSIM_DESKTOP__) {
-    host.innerHTML = `<span class="dl-why">${escHtml(
-      tr("You are running the Windows app. It updates itself — there is nothing to download here."))}</span>`;
+    const own = shellDownload();
+    showDownloadOs(own.os);
+    host.innerHTML = shellIsOld()
+      ? downloadOffer(own) + `<span class="dl-why">${escHtml(trF(
+        "This copy of the program is older than the current one. Download the new {file} and use it in place of this one — your saved builds stay.",
+        { file: own.file }))}</span>`
+      : `<span class="dl-why">${escHtml(trF(
+        "You are running the {os} app. It updates itself — there is nothing to download here.", { os: own.os }))}</span>`;
     renderDesktopSettings();
     return;
   }
@@ -32368,9 +32391,10 @@ function renderDownloadPage() {
   // who has navigated HERE asked, and is answered with the button they cannot
   // use today plus the reason.
   const d = mine || DOWNLOADS[0];
+  showDownloadOs(d.os);
   host.innerHTML = downloadOffer(d)
     + (mine ? "" : `<span class="dl-why">${escHtml(
-      tr("This is a Windows program — it will not run on the machine you are reading this on."))}</span>`);
+      tr("WFSim runs on Windows, macOS and Linux — it will not run on the machine you are reading this on."))}</span>`);
 }
 
 /// INSIDE THE CLIENT, /download IS ITS SETTINGS, and the way in says so: the
@@ -32393,12 +32417,27 @@ if (window.__WFSIM_DESKTOP__) {
 /// reader downloads from is, inside the client, where it is configured. The
 /// shell holds them (`desktop/src/settings.rs`), because starting hidden is
 /// decided before any page exists; a shell too old to have them says so.
-const DESKTOP_SWITCHES = [
-  ["autostart", "Start with Windows", "Opens WFSim when you sign in to Windows."],
-  ["start_minimized", "Start in the tray", "When Windows starts it, stay in the tray instead of opening a window."],
-  ["close_to_tray", "Close to the tray",
-    "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
-];
+const DESKTOP_SWITCHES = {
+  Windows: [
+    ["autostart", "Start with Windows", "Opens WFSim when you sign in to Windows."],
+    ["start_minimized", "Start in the tray", "When Windows starts it, stay in the tray instead of opening a window."],
+    ["close_to_tray", "Close to the tray",
+      "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
+  ],
+  // A Mac's tray is the menu bar, and a Mac starts things at login.
+  macOS: [
+    ["autostart", "Open at login", "Opens WFSim when you log in to your Mac."],
+    ["start_minimized", "Start in the menu bar", "When it opens at login, stay in the menu bar instead of opening a window."],
+    ["close_to_tray", "Close to the menu bar",
+      "The close button keeps WFSim running in the menu bar, and computing together goes on. Quit from its menu bar icon."],
+  ],
+  Linux: [
+    ["autostart", "Start at login", "Opens WFSim when you log in."],
+    ["start_minimized", "Start in the tray", "When it starts at login, stay in the tray instead of opening a window."],
+    ["close_to_tray", "Close to the tray",
+      "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
+  ],
+};
 /// What the shell last said: null before asking, false for a shell without them.
 let desktopPrefs = null;
 let desktopError = "";
@@ -32418,16 +32457,23 @@ async function renderDesktopSettings() {
   const section = (title, body) => `<section class="block"><div class="bh"><h2>${escHtml(tr(title))}</h2></div><div class="bb">${body}</div></section>`;
   if (!desktopPrefs) {
     host.innerHTML = section("Settings", `<p class="dl-why">${escHtml(tr("These settings need the new version of the program."))}</p>`
-      + `<div class="dl-offer">${downloadOffer(DOWNLOADS[0])}</div>`);
+      + `<div class="dl-offer">${downloadOffer(shellDownload())}</div>`);
     return;
   }
   const p = desktopPrefs;
-  const switches = DESKTOP_SWITCHES.map(([key, name, says]) => {
+  const os = shellDownload().os;
+  const switches = DESKTOP_SWITCHES[os].map(([key, name, says]) => {
     const off = key === "start_minimized" && !p.autostart;
     return `<label class="dt-sw"><input type="checkbox" data-dt="${key}"${p[key] ? " checked" : ""}${off ? " disabled" : ""}>`
       + `<b>${escHtml(tr(name))}</b><small>${escHtml(tr(says))}</small></label>`;
   }).join("");
-  const uninstall = uninstallAsked
+  // A MAC APP GOES TO THE TRASH AND AN APPIMAGE IS DELETED, which is where
+  // those readers look; the page says what else to remove instead of a button.
+  const uninstall = os === "macOS"
+    ? `<p class="dl-why">${escHtml(tr("Turn off Open at login, quit WFSim and move it from Applications to the Trash. Its data folder, which the button above opens, can go too; builds not exported or synced to an account go with it."))}</p>`
+    : os === "Linux"
+    ? `<p class="dl-why">${escHtml(tr("Turn off Start at login, quit WFSim and delete WFSim.AppImage. Its data folder, which the button above opens, can go too; builds not exported or synced to an account go with it."))}</p>`
+    : uninstallAsked
     ? `<p class="dt-err">${escHtml(tr("This turns off starting with Windows and deletes the program, its data and everything saved in it. Builds, scenarios and rivens not synced to an account are lost: to keep them, export them first from Saved items in the settings menu."))}</p>`
       + `<div class="dt-acts"><button type="button" class="btn-danger" data-dt-a="uninstall-go">${escHtml(tr("Uninstall for good"))}</button>`
       + `<button type="button" class="ghost-btn btn-sm" data-dt-a="uninstall-no">${escHtml(tr("Cancel"))}</button></div>`
@@ -32616,7 +32662,7 @@ function offerNewShell() {
   if (!shellIsOld()) return;
   const key = SHELL_MINIMUM.join(".");
   try { if (localStorage.getItem(SHELL_DISMISSED) === key) return; } catch (_) { /* ask anyway */ }
-  const d = DOWNLOADS[0];
+  const d = shellDownload();
   const bar = document.createElement("div");
   bar.className = "dtup dtup-shell";
   bar.innerHTML = `<span class="dtup-t">${escHtml(tr("A new version of the program is out — you can sign in to your account, and it can start with Windows, sit in the tray and uninstall itself."))}</span>`
