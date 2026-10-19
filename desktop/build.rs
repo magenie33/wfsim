@@ -174,6 +174,11 @@ fn main() {
     let shared = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target");
     std::fs::create_dir_all(&shared).ok();
     std::fs::write(shared.join("payload-manifest.json"), &head).ok();
+    // A MAC BUNDLE CARRIES THE PAYLOAD AS A FILE (`payload.rs`), placed by
+    // `build_desktop.py`, which holds the two slices' copies to one another.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        std::fs::write(shared.join(format!("payload-{}.bin", std::env::var("TARGET").unwrap())), &out).unwrap();
+    }
 
     println!("cargo:warning=payload: {} files, {:.1} MB", files.len(), out.len() as f64 / 1e6);
 }

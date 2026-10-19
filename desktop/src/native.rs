@@ -81,6 +81,11 @@ impl Native {
         if let Some(l) = loaded.get(engine) {
             return Ok(l.clone());
         }
+        // The release carries a Windows library only; elsewhere the page proves
+        // nothing and computes on wasm, without a copy written to disk first.
+        if !cfg!(windows) {
+            return Err("the native engine is built for Windows only".into());
+        }
         let named: serde_json::Value = std::fs::read(self.current.join("native").join("engine.json"))
             .ok()
             .and_then(|b| serde_json::from_slice(&b).ok())

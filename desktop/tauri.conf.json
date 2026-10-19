@@ -21,7 +21,8 @@
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
-      "icons/icon.ico"
+      "icons/icon.ico",
+      "icons/icon.icns"
     ],
     "publisher": "magenie33",
     "copyright": "AGPL-3.0-or-later",
@@ -39,6 +40,9 @@
         "sidebarImage": "icons/sidebar.bmp",
         "installerIcon": "icons/icon.ico"
       }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0"
     }
   },
   "mainBinaryName": "wfsim-desktop"

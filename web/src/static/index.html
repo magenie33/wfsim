@@ -279,7 +279,7 @@
        Hidden inside the desktop app, where the offer is replaced by the fact
        that they are already running it. -->
   <main id="download-page" class="dl-page" hidden>
-    <h1 id="h-download" class="hero-h" data-i18n>WFSim for Windows</h1>
+    <h1 id="h-download" class="hero-h" data-i18n>WFSim for Windows and Mac</h1>
     <p class="hero-sub" data-i18n>The same calculator on your own machine: it opens instantly, works offline and updates itself.</p>
 
     <!-- The button and the source it comes from, drawn by `renderDownloadPage`
@@ -298,10 +298,15 @@
     <section class="block" data-dl-web>
       <div class="bh"><h2 data-i18n>The first time you open it</h2></div>
       <div class="bb">
-        <ul class="sup-costs">
+        <ul class="sup-costs" data-dl-os="Windows">
           <li data-i18n>Windows shows a blue notice, "Windows protected your PC". Click "More info", then "Run anyway".</li>
           <li data-i18n>The program is not code-signed, which is also why an antivirus may warn about it.</li>
           <li data-i18n>The SHA-256 and the command to verify it are in the notes beside the download.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="macOS" hidden>
+          <li data-i18n>macOS refuses the first launch. Open WFSim once and close the notice, then choose "Open Anyway" in System Settings → Privacy &amp; Security.</li>
+          <li data-i18n>On macOS 14 and earlier, right-click the app and choose "Open" instead.</li>
+          <li data-i18n>The app is not notarised by Apple, which is why macOS asks.</li>
         </ul>
       </div>
     </section>
@@ -321,9 +326,13 @@
     <section class="block">
       <div class="bh"><h2 data-i18n>Install and uninstall</h2></div>
       <div class="bb">
-        <ul class="sup-costs">
+        <ul class="sup-costs" data-dl-os="Windows">
           <li data-i18n>No installer: it needs no administrator rights, and writes to the registry only if you turn on starting with Windows.</li>
           <li data-i18n>To uninstall, use Uninstall in the program's own settings: it removes the file and everything it kept in %LOCALAPPDATA%\WFSim.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="macOS" hidden>
+          <li data-i18n>Open the disk image and drag WFSim into Applications. The one download runs on Apple Silicon and Intel Macs alike.</li>
+          <li data-i18n>To uninstall, move WFSim from Applications to the Trash. What it kept is in ~/Library/Application Support/WFSim.</li>
         </ul>
       </div>
     </section>

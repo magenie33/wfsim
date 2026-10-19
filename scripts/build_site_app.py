@@ -1786,9 +1786,9 @@ def prerender(flagged: str) -> None:
             "WFSim is a free, open-source Warframe calculator, AGPL-3.0.",
         ),
         (
-            "download", f"Download WFSim for Windows · {zh_ui('Download WFSim for Windows')}",
+            "download", f"Download WFSim for Windows and Mac · {zh_ui('Download WFSim for Windows and Mac')}",
             "h-download", "Download",
-            "WFSim as a Windows app: the same calculator and the same engine as "
+            "WFSim as a Windows and Mac app: the same calculator and the same engine as "
             "the site, on your own machine. It opens instantly, works offline and "
             "updates itself. Free and open source, AGPL-3.0.",
         ),

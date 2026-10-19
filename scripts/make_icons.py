@@ -124,6 +124,22 @@ def nsis_art(mark: Image.Image) -> None:
     print("sidebar.bmp (164x314) / header.bmp (150x57)")
 
 
+# A MAC ICON IS DRAWN ON A 1024 GRID WITH THE ART INSET TO 824, the margin
+# every icon in the Dock shares; a disc filling the whole canvas sits visibly
+# larger than its neighbours.
+MAC_CANVAS = 1024
+MAC_ART = 824
+
+
+def icns(mark: Image.Image) -> None:
+    """The macOS bundle's icon. Pillow writes every smaller size from this one."""
+    canvas = Image.new("RGBA", (MAC_CANVAS, MAC_CANVAS), (0, 0, 0, 0))
+    at = (MAC_CANVAS - MAC_ART) // 2
+    canvas.paste(mark, (at, at), mark)
+    canvas.save(OUT / "icon.icns", format="ICNS")
+    print(f"icon.icns ({MAC_ART} on {MAC_CANVAS})")
+
+
 def main() -> None:
     if not CHROME.exists():
         sys.exit(f"chrome not found at {CHROME}")
@@ -151,6 +167,7 @@ def main() -> None:
     print("32x32.png / 128x128.png / 128x128@2x.png")
 
     nsis_art(render(FULL_SVG, 256, tmp / "mark.png"))
+    icns(render(FULL_SVG, MAC_ART, tmp / "mac.png"))
 
     for f in tmp.iterdir():
         f.unlink()

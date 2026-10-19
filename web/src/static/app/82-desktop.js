@@ -23,13 +23,12 @@ const DESKTOP_POLL_MS = 700;
 const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
-// THE DESKTOP DOWNLOAD — one platform, and the SOURCE it comes from.
+// THE DESKTOP DOWNLOAD — one button for the machine asking, and the SOURCE it
+// comes from.
 //
-// WINDOWS ONLY, FOR NOW. The Linux entry was built and
-// listed before anyone had asked for it, and it cost the offer its shape: the
-// hero drew a Windows button, a GitHub link beside it, and then a second row
-// saying "Linux · GitHub" — four things for what is one decision. Warframe on
-// Linux is Proton, which is a smaller audience than the row it was taking.
+// WINDOWS AND MAC, the two systems Warframe ships for; one universal disk image
+// covers Apple Silicon and Intel. Linux is not offered: Warframe there is
+// Proton, a smaller audience than the row it would take.
 //
 // THE SOURCE IS NAMED BESIDE THE BUTTON, which is the whole point of the badge. The file is not hosted by this site: it lives on a Quark
 // network drive, and a reader about to run a downloaded executable is entitled
@@ -59,6 +58,13 @@ const DOWNLOADS = [
     },
   },
 ];
+// The same drive holds the Mac download beside the Windows one.
+DOWNLOADS.push({
+  os: "macOS",
+  detect: (ua) => /Macintosh|Mac OS X/.test(ua),
+  file: "WFSim.dmg",
+  source: DOWNLOADS[0].source,
+});
 
 /// The button and the source it came from, as one piece of markup.
 ///
@@ -81,10 +87,22 @@ function downloadOffer(d) {
 }
 
 /// The machine asking, in one answer for both surfaces to use. `null` means a
-/// phone: it is already running what a download would install.
-function downloadFor(ua) {
+/// phone or a tablet: it is already running what a download would install. An
+/// iPad's Safari says "Macintosh"; its touch points are what tell it apart.
+function downloadFor(ua, touchPoints = navigator.maxTouchPoints || 0) {
   if (/Android|iPhone|iPad|iPod/i.test(ua || "")) return null;
+  if (/Macintosh/.test(ua || "") && touchPoints > 1) return null;
   return DOWNLOADS.find((d) => d.detect(ua || "")) || false;
+}
+/// The download this client was installed from; Windows for a shell that is
+/// neither, since no other is offered.
+function shellDownload() {
+  return downloadFor(navigator.userAgent, 0) || DOWNLOADS[0];
+}
+/// THE PAGE'S SECTIONS FOR ONE SYSTEM: `data-dl-os` marks what is true of one
+/// download only — the first launch and the uninstall differ by system.
+function showDownloadOs(os) {
+  for (const el of document.querySelectorAll("#download-page [data-dl-os]")) el.hidden = el.dataset.dlOs !== os;
 }
 
 /// THE OLDEST SHELL THIS CONTENT DOES NOT ASK TO BE REPLACED, as the build date
@@ -112,15 +130,15 @@ function renderDownloadPage() {
   // ALREADY RUNNING IT. The URL is typed by hand and read off a video, so it
   // has to answer inside the client too — as the fact that there is nothing
   // here to install rather than as a blank.
-  if (window.__WFSIM_DESKTOP__ && shellIsOld()) {
-    host.innerHTML = downloadOffer(DOWNLOADS[0]) + `<span class="dl-why">${escHtml(
-      tr("This copy of the program is older than the current one. Download the new WFSim.exe and use it in place of this one — your saved builds stay."))}</span>`;
-    renderDesktopSettings();
-    return;
-  }
   if (window.__WFSIM_DESKTOP__) {
-    host.innerHTML = `<span class="dl-why">${escHtml(
-      tr("You are running the Windows app. It updates itself — there is nothing to download here."))}</span>`;
+    const own = shellDownload();
+    showDownloadOs(own.os);
+    host.innerHTML = shellIsOld()
+      ? downloadOffer(own) + `<span class="dl-why">${escHtml(trF(
+        "This copy of the program is older than the current one. Download the new {file} and use it in place of this one — your saved builds stay.",
+        { file: own.file }))}</span>`
+      : `<span class="dl-why">${escHtml(trF(
+        "You are running the {os} app. It updates itself — there is nothing to download here.", { os: own.os }))}</span>`;
     renderDesktopSettings();
     return;
   }
@@ -130,9 +148,10 @@ function renderDownloadPage() {
   // who has navigated HERE asked, and is answered with the button they cannot
   // use today plus the reason.
   const d = mine || DOWNLOADS[0];
+  showDownloadOs(d.os);
   host.innerHTML = downloadOffer(d)
     + (mine ? "" : `<span class="dl-why">${escHtml(
-      tr("This is a Windows program — it will not run on the machine you are reading this on."))}</span>`);
+      tr("WFSim runs on Windows and macOS — it will not run on the machine you are reading this on."))}</span>`);
 }
 
 /// INSIDE THE CLIENT, /download IS ITS SETTINGS, and the way in says so: the
@@ -155,12 +174,21 @@ if (window.__WFSIM_DESKTOP__) {
 /// reader downloads from is, inside the client, where it is configured. The
 /// shell holds them (`desktop/src/settings.rs`), because starting hidden is
 /// decided before any page exists; a shell too old to have them says so.
-const DESKTOP_SWITCHES = [
-  ["autostart", "Start with Windows", "Opens WFSim when you sign in to Windows."],
-  ["start_minimized", "Start in the tray", "When Windows starts it, stay in the tray instead of opening a window."],
-  ["close_to_tray", "Close to the tray",
-    "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
-];
+const DESKTOP_SWITCHES = {
+  Windows: [
+    ["autostart", "Start with Windows", "Opens WFSim when you sign in to Windows."],
+    ["start_minimized", "Start in the tray", "When Windows starts it, stay in the tray instead of opening a window."],
+    ["close_to_tray", "Close to the tray",
+      "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
+  ],
+  // A Mac's tray is the menu bar, and a Mac starts things at login.
+  macOS: [
+    ["autostart", "Open at login", "Opens WFSim when you log in to your Mac."],
+    ["start_minimized", "Start in the menu bar", "When it opens at login, stay in the menu bar instead of opening a window."],
+    ["close_to_tray", "Close to the menu bar",
+      "The close button keeps WFSim running in the menu bar, and computing together goes on. Quit from its menu bar icon."],
+  ],
+};
 /// What the shell last said: null before asking, false for a shell without them.
 let desktopPrefs = null;
 let desktopError = "";
@@ -180,16 +208,21 @@ async function renderDesktopSettings() {
   const section = (title, body) => `<section class="block"><div class="bh"><h2>${escHtml(tr(title))}</h2></div><div class="bb">${body}</div></section>`;
   if (!desktopPrefs) {
     host.innerHTML = section("Settings", `<p class="dl-why">${escHtml(tr("These settings need the new version of the program."))}</p>`
-      + `<div class="dl-offer">${downloadOffer(DOWNLOADS[0])}</div>`);
+      + `<div class="dl-offer">${downloadOffer(shellDownload())}</div>`);
     return;
   }
   const p = desktopPrefs;
-  const switches = DESKTOP_SWITCHES.map(([key, name, says]) => {
+  const mac = shellDownload().os === "macOS";
+  const switches = DESKTOP_SWITCHES[mac ? "macOS" : "Windows"].map(([key, name, says]) => {
     const off = key === "start_minimized" && !p.autostart;
     return `<label class="dt-sw"><input type="checkbox" data-dt="${key}"${p[key] ? " checked" : ""}${off ? " disabled" : ""}>`
       + `<b>${escHtml(tr(name))}</b><small>${escHtml(tr(says))}</small></label>`;
   }).join("");
-  const uninstall = uninstallAsked
+  // A MAC APP IS UNINSTALLED BY THE TRASH, which is where a Mac reader looks;
+  // the page says what else to remove instead of offering a button.
+  const uninstall = mac
+    ? `<p class="dl-why">${escHtml(tr("Turn off Open at login, quit WFSim and move it from Applications to the Trash. Its data folder, which the button above opens, can go too; builds not exported or synced to an account go with it."))}</p>`
+    : uninstallAsked
     ? `<p class="dt-err">${escHtml(tr("This turns off starting with Windows and deletes the program, its data and everything saved in it. Builds, scenarios and rivens not synced to an account are lost: to keep them, export them first from Saved items in the settings menu."))}</p>`
       + `<div class="dt-acts"><button type="button" class="btn-danger" data-dt-a="uninstall-go">${escHtml(tr("Uninstall for good"))}</button>`
       + `<button type="button" class="ghost-btn btn-sm" data-dt-a="uninstall-no">${escHtml(tr("Cancel"))}</button></div>`
@@ -378,7 +411,7 @@ function offerNewShell() {
   if (!shellIsOld()) return;
   const key = SHELL_MINIMUM.join(".");
   try { if (localStorage.getItem(SHELL_DISMISSED) === key) return; } catch (_) { /* ask anyway */ }
-  const d = DOWNLOADS[0];
+  const d = shellDownload();
   const bar = document.createElement("div");
   bar.className = "dtup dtup-shell";
   bar.innerHTML = `<span class="dtup-t">${escHtml(tr("A new version of the program is out — you can sign in to your account, and it can start with Windows, sit in the tray and uninstall itself."))}</span>`
