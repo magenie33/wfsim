@@ -76,10 +76,79 @@ jobs:
           echo "run=$run" >> "$GITHUB_OUTPUT"
           echo "src=$src" >> "$GITHUB_OUTPUT"
 
-  # ---- 2. lay the build, push, publish, deploy, verify ----------------------
-  ship:
+  # ---- 1b. the engine library for macOS, which only a Mac can build ---------
+  # Both slices, each held bit for bit to the wasm CI built before it is handed
+  # on (`check_gas.mjs`); `release_engine_lib.py` publishes them beside the
+  # Windows and Linux ones. NEVER FATAL: a failure here ships everything else,
+  # and the Mac client computes on wasm until the next engine.
+  engine-mac:
     needs: due
     if: needs.due.outputs.go == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.due.outputs.src }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: ${{ runner.temp }}/built
+          run-id: ${{ needs.due.outputs.run }}
+          github-token: ${{ github.token }}
+      # An engine already published keeps the library it has.
+      - id: due
+        run: |
+          set -euo pipefail
+          built="$RUNNER_TEMP/built/site"
+          engine=$(jq -r '.engine' "$built/release.json")
+          if curl -sfo /dev/null "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json"; then
+            echo "::notice::engine library $engine is published — no Mac build"; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # THE SHIPPED WASM AS THE REFERENCE, under the names check_gas.mjs reads.
+          wasm=$(jq -r '.wasm' "$built/release.json"); ref="$RUNNER_TEMP/ref"; mkdir -p "$ref"
+          cp "$built/pkg/wfsim_wasm.$wasm.js" "$ref/wfsim_wasm.js"
+          cp "$built/pkg/wfsim_wasm_bg.$wasm.wasm" "$ref/wfsim_wasm_bg.wasm"
+          for p in $(jq -r '.packs[]' "$built/release.json"); do cp "$built/pkg/$p" "$ref/"; done
+          echo "go=true" >> "$GITHUB_OUTPUT"
+      - if: steps.due.outputs.go == 'true'
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          # keep in sync with mise.toml and ci.yml
+          toolchain: "1.97.1"
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.20.0"
+      - if: steps.due.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          softwareupdate --install-rosetta --agree-to-license
+          mkdir -p out
+          for t in aarch64-apple-darwin x86_64-apple-darwin; do
+            # The library as release_engine_lib.py builds the Linux one: data apart once apart.
+            env $(python3 -c "import sys; sys.path.insert(0, 'scripts'); import data_packs; print('WFSIM_DATA_APART=1' if data_packs.apart() else '')") \
+              cargo build --release --locked -p wfsim-native --target "$t"
+            cargo build --release --locked -p wfsim-cli --bin wfsim-gas --target "$t"
+            run=""; [ "$t" = x86_64-apple-darwin ] && run="arch -x86_64"
+            printf '#!/bin/sh\nexec %s %s "$@"\n' "$run" "$PWD/target/$t/release/wfsim-gas" > gas.sh; chmod +x gas.sh
+            node scripts/check_gas.mjs native="$PWD/gas.sh" pkg="$RUNNER_TEMP/ref"
+            mkdir -p "out/${t%%-*}"; cp "target/$t/release/libwfsim_native.dylib" "out/${t%%-*}/"
+          done
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: engine-mac
+          path: out
+          if-no-files-found: error
+
+  # ---- 2. lay the build, push, publish, deploy, verify ----------------------
+  ship:
+    needs: [due, engine-mac]
+    # Not held by the Mac library: it is published when it is there.
+    if: ${{ !cancelled() && needs.due.outputs.go == 'true' }}
     runs-on: ubuntu-26.04
     environment: release
     timeout-minutes: 90
@@ -104,6 +173,11 @@ jobs:
           path: ${{ runner.temp }}/built
           run-id: ${{ needs.due.outputs.run }}
           github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: engine-mac
+          path: target/engine-lib/macos
       # THE BUILD, EXACTLY: what it holds replaces what main holds, a file it
       # dropped included — all but site/board/, the bots', which it never carried.
       - name: lay CI's build over main

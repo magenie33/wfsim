@@ -19,7 +19,8 @@ push, so it never names an engine the site does not serve yet.
 
 BUILT ONLY FOR AN ENGINE NOT YET PUBLISHED: the Windows library is the one
 `desktop/payload/native/` holds for this engine; the Linux one is built in
-Docker on Debian bullseye, so it loads on any glibc from 2.31.
+Docker on Debian bullseye, so it loads on any glibc from 2.31; the two macOS
+ones come from ship.yml's `engine-mac` job, under `target/engine-lib/macos/`.
 
 ITS DATA TRAVELS BESIDE IT (abi 2): the official data pack the site serves,
 under `engine/<engine>/`, signed in the same body as `data`, and installed
@@ -91,6 +92,13 @@ def main() -> None:
     linux = linux_library()
     if linux:
         libs["x86_64-linux"] = ("so", linux)
+    # Built on a Mac by ship.yml's `engine-mac`, each slice held to the wasm there.
+    for arch in ("aarch64", "x86_64"):
+        mac = OUT / "macos" / arch / "libwfsim_native.dylib"
+        if mac.is_file():
+            libs[f"{arch}-macos"] = ("dylib", mac.read_bytes())
+        else:
+            print(f"engine library: no {arch}-macos library this time")
     if not libs:
         print(f"engine library {engine}: nothing built — not published")
         return

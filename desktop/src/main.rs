@@ -337,13 +337,12 @@ const SELFTEST_PROBE: &str = r#"
       try {
         const t0 = performance.now();
         const ok = await nativeBoardReady();
-        // THE RELEASE CARRIES A WINDOWS LIBRARY: elsewhere the property is that
-        // the shell refuses it and the page computes on wasm.
-        if (/Windows/.test(navigator.userAgent)) {
-          check('native engine', ok, ok ? 'bit for bit with the wasm in ' + Math.round(performance.now() - t0) + 'ms' : nativeWhy);
-        } else {
-          check('native engine', !ok && /Windows only/.test(nativeWhy), 'refused, on wasm: ' + nativeWhy);
-        }
+        // ELSEWHERE THE LIBRARY COMES FROM THE OFFICIAL ENGINE LIBRARY, which may
+        // honestly hold no build of this engine for this system yet; any other
+        // failure is one.
+        const absent = !/Windows/.test(navigator.userAgent) && /has no \S+ build of/.test(nativeWhy);
+        check('native engine', ok || absent, ok ? 'bit for bit with the wasm in ' + Math.round(performance.now() - t0) + 'ms'
+          : absent ? 'not published for this system, on wasm: ' + nativeWhy : nativeWhy);
       } catch (e) { check('native engine', false, e.message); }
       const nodes = document.querySelectorAll('*').length;
       const txt = document.body.innerText || '';

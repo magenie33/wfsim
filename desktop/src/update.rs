@@ -50,7 +50,7 @@ const PUBLIC_KEYS: &[&str] = &[
 /// channel survive its own hosting: moving to another provider, or adding one,
 /// costs a manifest rather than a new installer. Hard-coding one origin would
 /// make that origin's bad day every reader's reinstall.
-const DEFAULT_SOURCES: &[&str] = &[
+pub(crate) const DEFAULT_SOURCES: &[&str] = &[
     "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com",
     "https://wfsim.app",
 ];
@@ -128,7 +128,7 @@ fn hex_to_bytes(s: &str) -> Option<Vec<u8>> {
         .collect()
 }
 
-fn fetch(url: &str) -> Result<Vec<u8>, String> {
+pub(crate) fn fetch(url: &str) -> Result<Vec<u8>, String> {
     let resp = ureq::get(url)
         .timeout(NET_TIMEOUT)
         .call()
@@ -150,7 +150,7 @@ fn fetch(url: &str) -> Result<Vec<u8>, String> {
 /// ANY ACCEPTED KEY IS ENOUGH — see `PUBLIC_KEYS` for why there is more than
 /// one. A malformed entry is skipped rather than fatal: it would otherwise take
 /// the whole update path down at the moment a rotation is being prepared.
-fn verify(body: &[u8], sig_hex: &str) -> Result<(), String> {
+pub(crate) fn verify(body: &[u8], sig_hex: &str) -> Result<(), String> {
     let sig: [u8; 64] = hex_to_bytes(sig_hex)
         .and_then(|v| v.try_into().ok())
         .ok_or("signature is malformed")?;
