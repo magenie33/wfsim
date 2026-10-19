@@ -1,0 +1,69 @@
+# THROWAWAY: proves ship.yml's engine-mac job on a branch. Never merged.
+name: probe-engine-mac
+on:
+  push:
+    branches: [mac-engine-probe]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  engine-mac:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: 700bc121d0bca9da5f6e0c1ed759bf2a9daf5622
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: ${{ runner.temp }}/built
+          run-id: 39195272521
+          github-token: ${{ github.token }}
+      # An engine already published keeps the library it has.
+      - id: due
+        run: |
+          set -euo pipefail
+          built="$RUNNER_TEMP/built/site"
+          engine=$(jq -r '.engine' "$built/release.json")
+          if false && curl -sfo /dev/null "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json"; then
+            echo "::notice::engine library $engine is published — no Mac build"; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # THE SHIPPED WASM AS THE REFERENCE, under the names check_gas.mjs reads.
+          wasm=$(jq -r '.wasm' "$built/release.json"); ref="$RUNNER_TEMP/ref"; mkdir -p "$ref"
+          cp "$built/pkg/wfsim_wasm.$wasm.js" "$ref/wfsim_wasm.js"
+          cp "$built/pkg/wfsim_wasm_bg.$wasm.wasm" "$ref/wfsim_wasm_bg.wasm"
+          for p in $(jq -r '.packs[]' "$built/release.json"); do cp "$built/pkg/$p" "$ref/"; done
+          echo "go=true" >> "$GITHUB_OUTPUT"
+      - if: steps.due.outputs.go == 'true'
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          # keep in sync with mise.toml and ci.yml
+          toolchain: "1.97.1"
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.20.0"
+      - if: steps.due.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          softwareupdate --install-rosetta --agree-to-license
+          mkdir -p out
+          for t in aarch64-apple-darwin x86_64-apple-darwin; do
+            # The library as release_engine_lib.py builds the Linux one: data apart once apart.
+            env $(python3 -c "import sys; sys.path.insert(0, 'scripts'); import data_packs; print('WFSIM_DATA_APART=1' if data_packs.apart() else '')") \
+              cargo build --release --locked -p wfsim-native --target "$t"
+            cargo build --release --locked -p wfsim-cli --bin wfsim-gas --target "$t"
+            run=""; [ "$t" = x86_64-apple-darwin ] && run="arch -x86_64"
+            printf '#!/bin/sh\nexec %s %s "$@"\n' "$run" "$PWD/target/$t/release/wfsim-gas" > gas.sh; chmod +x gas.sh
+            node scripts/check_gas.mjs native="$PWD/gas.sh" pkg="$RUNNER_TEMP/ref"
+            mkdir -p "out/${t%%-*}"; cp "target/$t/release/libwfsim_native.dylib" "out/${t%%-*}/"
+          done
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: engine-mac
+          path: out
+          if-no-files-found: error
+
