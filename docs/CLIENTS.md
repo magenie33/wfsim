@@ -402,8 +402,9 @@ checks. Protocol 7 stays served while anyone uses it.
 ## Changelog
 
 - **2026-10-19 — macOS in the engine library.** `files` may name
-  `aarch64-macos` and `x86_64-macos`, from the first engine shipped after this;
-  a target is published only once it matched the wasm bit for bit.
+  `aarch64-macos` and `x86_64-macos`; a target is published only once it
+  matched the wasm bit for bit, and a library published without one may gain
+  it later, re-signed with every target it already named unchanged.
 - **2026-10-18 — the official data pack.** `/release.json` names `data` and
   `data_format`; the engine library is `abi: 2`, its signed body names `data`,
   and it gains `wfsim_install_data`, as the wasm module gains `install_data`.

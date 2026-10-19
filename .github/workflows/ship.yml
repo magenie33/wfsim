@@ -80,7 +80,7 @@ jobs:
   # Both slices, each held bit for bit to the wasm CI built before it is handed
   # on (`check_gas.mjs`); `release_engine_lib.py` publishes them beside the
   # Windows and Linux ones. NEVER FATAL: a failure here ships everything else,
-  # and the Mac client computes on wasm until the next engine.
+  # and the Mac client computes on wasm until a later ship adds the slice.
   # Each slice is proven on its own chip: Rosetta is not the machine an Intel
   # Mac runs the library on.
   engine-mac:
@@ -105,14 +105,18 @@ jobs:
           path: ${{ runner.temp }}/built
           run-id: ${{ needs.due.outputs.run }}
           github-token: ${{ github.token }}
-      # An engine already published keeps the library it has.
+      # An engine whose library already names this slice keeps it; one published
+      # without it gains it (`release_engine_lib.py` adds a missing target).
       - id: due
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
           built="$RUNNER_TEMP/built/site"
           engine=$(jq -r '.engine' "$built/release.json")
-          if curl -sfo /dev/null "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json"; then
-            echo "::notice::engine library $engine is published — no Mac build"; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          if curl -sf "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json" -o "$RUNNER_TEMP/lib.json" \
+            && jq -e --arg t "$ARCH-macos" '.signed | fromjson | .files[$t]' "$RUNNER_TEMP/lib.json" > /dev/null; then
+            echo "::notice::engine library $engine names $ARCH-macos — no Mac build"; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           # THE SHIPPED WASM AS THE REFERENCE, under the names check_gas.mjs reads.
           wasm=$(jq -r '.wasm' "$built/release.json"); ref="$RUNNER_TEMP/ref"; mkdir -p "$ref"

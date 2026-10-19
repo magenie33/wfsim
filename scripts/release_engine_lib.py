@@ -21,6 +21,8 @@ BUILT ONLY FOR AN ENGINE NOT YET PUBLISHED: the Windows library is the one
 `desktop/payload/native/` holds for this engine; the Linux one is built in
 Docker on Debian bullseye, so it loads on any glibc from 2.31; the two macOS
 ones come from ship.yml's `engine-mac` job, under `target/engine-lib/macos/`.
+A published library that lacks a macOS slice gains it on a later ship, its
+other targets untouched (`add_missing`).
 
 ITS DATA TRAVELS BESIDE IT (abi 2): the official data pack the site serves,
 under `engine/<engine>/`, signed in the same body as `data`, and installed
@@ -74,12 +76,56 @@ def signed(body: str) -> bytes:
     return json.dumps({"sig": sig, "signed": body}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
+def macos_libraries() -> dict:
+    """The macOS slices ship.yml's `engine-mac` built, each held to the wasm there."""
+    libs = {}
+    for arch in ("aarch64", "x86_64"):
+        mac = OUT / "macos" / arch / "libwfsim_native.dylib"
+        if mac.is_file():
+            libs[f"{arch}-macos"] = ("dylib", mac.read_bytes())
+        else:
+            print(f"engine library: no {arch}-macos library this time")
+    return libs
+
+
+def upload(c, engine: str, libs: dict, dry: bool) -> dict:
+    files = {}
+    for target, (ext, body) in libs.items():
+        sha = hashlib.sha256(body).hexdigest()
+        path = f"engine/{engine}/wfsim_engine-{target}.{sha[:12]}.{ext}"
+        if not dry:
+            cos.put(c, path, body, "application/octet-stream")
+        files[target] = {"path": path, "sha256": sha, "size": len(body)}
+        print(f"engine library {target}: {len(body) / 1e6:.1f} MB")
+    return files
+
+
+def add_missing(c, engine: str, stage: bool) -> bool:
+    """A PUBLISHED LIBRARY GAINS A TARGET it was published without — a Mac slice
+    built after its engine shipped — and keeps every target it names: a client
+    that loaded one finds it unchanged. True when the library was re-signed."""
+    with urllib.request.urlopen(f"https://{cos.host(c)}/engine/{engine}.json", timeout=60) as r:
+        body = json.loads(json.loads(r.read())["signed"])
+    new = {t: lib for t, lib in macos_libraries().items() if t not in body["files"]}
+    if not new:
+        return False
+    body["files"] = {**upload(c, engine, new, False), **body["files"]}
+    pointer = signed(json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True))
+    cos.put(c, f"engine/{engine}.json", pointer, "application/json; charset=utf-8")
+    if not stage:
+        cos.put(c, "engine/latest.json", pointer, "application/json; charset=utf-8")
+    print(f"engine library {engine}: gained {', '.join(new)}, now {', '.join(sorted(body['files']))}")
+    return True
+
+
 def main() -> None:
     dry, stage = "--dry-run" in sys.argv, "--stage" in sys.argv
     release = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))
     engine, commit = release["engine"], release["commit"]
     c = cos.creds()
     if not dry and cos.head(c, f"engine/{engine}.json") is not None:
+        if add_missing(c, engine, stage):
+            return
         if not stage:
             with urllib.request.urlopen(f"https://{cos.host(c)}/engine/{engine}.json", timeout=60) as r:
                 cos.put(c, "engine/latest.json", r.read(), "application/json; charset=utf-8")
@@ -92,24 +138,11 @@ def main() -> None:
     linux = linux_library()
     if linux:
         libs["x86_64-linux"] = ("so", linux)
-    # Built on a Mac by ship.yml's `engine-mac`, each slice held to the wasm there.
-    for arch in ("aarch64", "x86_64"):
-        mac = OUT / "macos" / arch / "libwfsim_native.dylib"
-        if mac.is_file():
-            libs[f"{arch}-macos"] = ("dylib", mac.read_bytes())
-        else:
-            print(f"engine library: no {arch}-macos library this time")
+    libs.update(macos_libraries())
     if not libs:
         print(f"engine library {engine}: nothing built — not published")
         return
-    files = {}
-    for target, (ext, body) in libs.items():
-        sha = hashlib.sha256(body).hexdigest()
-        path = f"engine/{engine}/wfsim_engine-{target}.{sha[:12]}.{ext}"
-        if not dry:
-            cos.put(c, path, body, "application/octet-stream")
-        files[target] = {"path": path, "sha256": sha, "size": len(body)}
-        print(f"engine library {target}: {len(body) / 1e6:.1f} MB")
+    files = upload(c, engine, libs, dry)
     data_name = f"pack.data.{release['data']}.json"
     pack = (ROOT / "site" / "pkg" / data_name).read_bytes()
     data = {"path": f"engine/{engine}/{data_name}", "sha256": hashlib.sha256(pack).hexdigest(), "size": len(pack)}
