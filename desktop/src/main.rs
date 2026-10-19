@@ -849,7 +849,9 @@ fn main() {
         // mode that waits on a network with nothing to stop it. A check that
         // hangs is worse than one that fails: it reports nothing, and the
         // caller learns only that its own timeout expired.
-        let secs = if update_test { 240 } else { 120 };
+        // Off Windows the first proof downloads its engine from the official
+        // library first, a minute from a runner far from the bucket.
+        let secs = if update_test || !cfg!(windows) { 240 } else { 120 };
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_secs(secs));
             println!("
