@@ -4,7 +4,7 @@ Chinese name: 风鸣
 
 Rifle · Primary · Mastery Rank 10. 60 base damage (impact 15, puncture 23, radiation 5, slash 17), 21% crit chance, 2.3x crit multiplier, 33% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-18
+## Best riven-free build on the WFSim board, as of 2026-10-19
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

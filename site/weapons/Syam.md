@@ -4,7 +4,7 @@ Chinese name: 业珀
 
 Nikana · Melee · Mastery Rank 0. 270 base damage (impact 54, puncture 108, slash 108), 22% crit chance, 2x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-18
+## Best riven-free build on the WFSim board, as of 2026-10-19
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

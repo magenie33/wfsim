@@ -4,7 +4,7 @@ Chinese name: 激光步枪
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 45 base damage (impact 4.5, puncture 36, slash 4.5), 17% crit chance, 1.75x crit multiplier, 7.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-18
+## Best riven-free build on the WFSim board, as of 2026-10-19
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

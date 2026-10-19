@@ -4,7 +4,7 @@ Chinese name: 拉托双枪
 
 Dual Pistols · Secondary · Mastery Rank 3. 40 base damage (impact 6, puncture 10, slash 24), 10% crit chance, 1.8x crit multiplier, 6% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-18
+## Best riven-free build on the WFSim board, as of 2026-10-19
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
