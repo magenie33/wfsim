@@ -147,7 +147,7 @@ function syncDevice() {
   const ua = navigator.userAgent || "";
   const os = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android"
     : /Windows/.test(ua) ? "Windows" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "?";
-  const app = window.__WFSIM_DESKTOP__ ? (os === "Mac" ? "WFSim for Mac" : "WFSim for Windows") : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera"
+  const app = window.__WFSIM_DESKTOP__ ? (os === "Mac" ? "WFSim for Mac" : os === "Linux" ? "WFSim for Linux" : "WFSim for Windows") : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera"
     : /Firefox\/|FxiOS/.test(ua) ? "Firefox" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
   return { id, label: `${os} · ${app}` };
 }

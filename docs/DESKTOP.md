@@ -321,8 +321,9 @@ wherever the binary is) and `使用说明.txt`, which says which of the two to
 download — **specifically that the source archive is not something a player
 needs** — plus the SHA-256 and what to do about SmartScreen.
 
-`WFSim.dmg`, from a release run with the Mac box ticked (`gh run download`), goes
-in the same folder: `DOWNLOADS` points the Mac button at the same share.
+`WFSim.dmg` and `WFSim.AppImage`, from a release run with the Mac and Linux boxes
+ticked (`gh run download`), go in the same folder: `DOWNLOADS` points every
+button at the same share.
 
 Upload once. It is a **download link, not an update channel** — a network drive
 has no stable direct URL.
@@ -347,10 +348,12 @@ surface that hands a Mac its own download and tells a Linux, phone or tablet
 reader it will not run there. An iPad's Safari says "Macintosh"; its touch
 points are what tell it apart.
 
-**Windows and Mac**, the systems Warframe ships for. The sections true of one
-download only — the first launch, the uninstall — carry `data-dl-os` and show
-for the system asking. The release workflow can also cut `WFSim.AppImage`, a
-box off by default and not offered here.
+**Windows, Mac and Linux**, every desktop Warframe runs on, the Linux one
+through Proton and the Steam Deck. The sections true of one download only — the
+first launch, the uninstall — carry `data-dl-os` and show for the system asking.
+All three files sit in the one network drive folder. The official clients stop
+at good enough on purpose: throughput tuning is left to third-party clients
+(docs/CLIENTS.md), which the official engine library exists to serve.
 
 **The source is named beside the button.** This site does not host the
 executable — it is on a Quark network drive — and a reader about to run a
@@ -437,7 +440,9 @@ What differs from Windows, each where the reader expects it:
 - **The Dock reopens a hidden window** (`RunEvent::Reopen`); the tray is the
   menu bar.
 - **Open at login is a LaunchAgent**, `~/Library/LaunchAgents/app.wfsim.desktop.plist`,
-  rewritten on every launch while on, as the Run key is.
+  rewritten on every launch while on, as the Run key is. On Linux it is an XDG
+  autostart file naming `$APPIMAGE`, the file the reader keeps, never the
+  mount the AppImage runs from.
 - **No uninstall button**: a Mac app goes to the Trash. The settings page says
   what else to remove.
 - **WKWebView ignores `data_directory`**, so a selftest gets a fresh data store

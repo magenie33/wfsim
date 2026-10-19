@@ -279,7 +279,7 @@
        Hidden inside the desktop app, where the offer is replaced by the fact
        that they are already running it. -->
   <main id="download-page" class="dl-page" hidden>
-    <h1 id="h-download" class="hero-h" data-i18n>WFSim for Windows and Mac</h1>
+    <h1 id="h-download" class="hero-h" data-i18n>WFSim for Windows, Mac and Linux</h1>
     <p class="hero-sub" data-i18n>The same calculator on your own machine: it opens instantly, works offline and updates itself.</p>
 
     <!-- The button and the source it comes from, drawn by `renderDownloadPage`
@@ -308,6 +308,10 @@
           <li data-i18n>On macOS 14 and earlier, right-click the app and choose "Open" instead.</li>
           <li data-i18n>The app is not notarised by Apple, which is why macOS asks.</li>
         </ul>
+        <ul class="sup-costs" data-dl-os="Linux" hidden>
+          <li data-i18n>Make it executable first: right-click WFSim.AppImage → Properties → allow running it as a program, or chmod +x WFSim.AppImage.</li>
+          <li data-i18n>If it does not open on Ubuntu 22.04 or later, install libfuse2 (sudo apt install libfuse2).</li>
+        </ul>
       </div>
     </section>
 
@@ -333,6 +337,10 @@
         <ul class="sup-costs" data-dl-os="macOS" hidden>
           <li data-i18n>Open the disk image and drag WFSim into Applications. The one download runs on Apple Silicon and Intel Macs alike.</li>
           <li data-i18n>To uninstall, move WFSim from Applications to the Trash. What it kept is in ~/Library/Application Support/WFSim.</li>
+        </ul>
+        <ul class="sup-costs" data-dl-os="Linux" hidden>
+          <li data-i18n>One file that carries everything it needs, the Steam Deck's desktop mode included; no packages to install.</li>
+          <li data-i18n>To uninstall, delete WFSim.AppImage. What it kept is in ~/.local/share/wfsim.</li>
         </ul>
       </div>
     </section>

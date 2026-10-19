@@ -227,7 +227,7 @@ async function route() {
     account: "Account settings", sync: "Cloud sync", compute: "Compute together",
     contributors: "Contributors", clan: "Clan", notifications: "Notifications" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
     : support ? `${tr("Support WFSim")}`
-    : dl ? `${tr("Download WFSim for Windows and Mac")}`
+    : dl ? `${tr("Download WFSim for Windows, Mac and Linux")}`
     : bench ? `${tr("Benchmark")} | WFSim`
     : util ? `${tr(utilityTitle(util))} | WFSim`
     : wfHit ? `${wfHit.name} — ${what.wf} | WFSim`

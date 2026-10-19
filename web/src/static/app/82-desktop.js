@@ -26,9 +26,8 @@ const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 // THE DESKTOP DOWNLOAD — one button for the machine asking, and the SOURCE it
 // comes from.
 //
-// WINDOWS AND MAC, the two systems Warframe ships for; one universal disk image
-// covers Apple Silicon and Intel. Linux is not offered: Warframe there is
-// Proton, a smaller audience than the row it would take.
+// WINDOWS, MAC AND LINUX, every desktop Warframe runs on (Linux through Proton
+// and the Steam Deck); one universal disk image covers Apple Silicon and Intel.
 //
 // THE SOURCE IS NAMED BESIDE THE BUTTON, which is the whole point of the badge. The file is not hosted by this site: it lives on a Quark
 // network drive, and a reader about to run a downloaded executable is entitled
@@ -58,11 +57,17 @@ const DOWNLOADS = [
     },
   },
 ];
-// The same drive holds the Mac download beside the Windows one.
+// The same drive holds the Mac and Linux downloads beside the Windows one. A
+// phone saying "Linux" never reaches here (`downloadFor`).
 DOWNLOADS.push({
   os: "macOS",
   detect: (ua) => /Macintosh|Mac OS X/.test(ua),
   file: "WFSim.dmg",
+  source: DOWNLOADS[0].source,
+}, {
+  os: "Linux",
+  detect: (ua) => /Linux|X11/.test(ua),
+  file: "WFSim.AppImage",
   source: DOWNLOADS[0].source,
 });
 
@@ -151,7 +156,7 @@ function renderDownloadPage() {
   showDownloadOs(d.os);
   host.innerHTML = downloadOffer(d)
     + (mine ? "" : `<span class="dl-why">${escHtml(
-      tr("WFSim runs on Windows and macOS — it will not run on the machine you are reading this on."))}</span>`);
+      tr("WFSim runs on Windows, macOS and Linux — it will not run on the machine you are reading this on."))}</span>`);
 }
 
 /// INSIDE THE CLIENT, /download IS ITS SETTINGS, and the way in says so: the
@@ -188,6 +193,12 @@ const DESKTOP_SWITCHES = {
     ["close_to_tray", "Close to the menu bar",
       "The close button keeps WFSim running in the menu bar, and computing together goes on. Quit from its menu bar icon."],
   ],
+  Linux: [
+    ["autostart", "Start at login", "Opens WFSim when you log in."],
+    ["start_minimized", "Start in the tray", "When it starts at login, stay in the tray instead of opening a window."],
+    ["close_to_tray", "Close to the tray",
+      "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu."],
+  ],
 };
 /// What the shell last said: null before asking, false for a shell without them.
 let desktopPrefs = null;
@@ -212,16 +223,18 @@ async function renderDesktopSettings() {
     return;
   }
   const p = desktopPrefs;
-  const mac = shellDownload().os === "macOS";
-  const switches = DESKTOP_SWITCHES[mac ? "macOS" : "Windows"].map(([key, name, says]) => {
+  const os = shellDownload().os;
+  const switches = DESKTOP_SWITCHES[os].map(([key, name, says]) => {
     const off = key === "start_minimized" && !p.autostart;
     return `<label class="dt-sw"><input type="checkbox" data-dt="${key}"${p[key] ? " checked" : ""}${off ? " disabled" : ""}>`
       + `<b>${escHtml(tr(name))}</b><small>${escHtml(tr(says))}</small></label>`;
   }).join("");
-  // A MAC APP IS UNINSTALLED BY THE TRASH, which is where a Mac reader looks;
-  // the page says what else to remove instead of offering a button.
-  const uninstall = mac
+  // A MAC APP GOES TO THE TRASH AND AN APPIMAGE IS DELETED, which is where
+  // those readers look; the page says what else to remove instead of a button.
+  const uninstall = os === "macOS"
     ? `<p class="dl-why">${escHtml(tr("Turn off Open at login, quit WFSim and move it from Applications to the Trash. Its data folder, which the button above opens, can go too; builds not exported or synced to an account go with it."))}</p>`
+    : os === "Linux"
+    ? `<p class="dl-why">${escHtml(tr("Turn off Start at login, quit WFSim and delete WFSim.AppImage. Its data folder, which the button above opens, can go too; builds not exported or synced to an account go with it."))}</p>`
     : uninstallAsked
     ? `<p class="dt-err">${escHtml(tr("This turns off starting with Windows and deletes the program, its data and everything saved in it. Builds, scenarios and rivens not synced to an account are lost: to keep them, export them first from Saved items in the settings menu."))}</p>`
       + `<div class="dt-acts"><button type="button" class="btn-danger" data-dt-a="uninstall-go">${escHtml(tr("Uninstall for good"))}</button>`

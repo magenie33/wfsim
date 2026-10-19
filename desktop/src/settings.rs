@@ -140,6 +140,41 @@ mod launch_agent {
     }
 }
 
+/// A Linux desktop's startup entry: an XDG autostart file, which every desktop
+/// environment reads at login.
+#[cfg(all(unix, not(target_os = "macos")))]
+mod xdg_autostart {
+    use std::path::PathBuf;
+
+    fn path() -> Result<PathBuf, String> {
+        let config = std::env::var("XDG_CONFIG_HOME").map(PathBuf::from).or_else(|_| {
+            std::env::var("HOME").map(|h| PathBuf::from(h).join(".config"))
+        });
+        Ok(config.map_err(|_| "HOME is not set".to_string())?.join("autostart").join("app.wfsim.desktop.desktop"))
+    }
+
+    pub fn set(exe: &str, arg: &str) -> Result<(), String> {
+        let p = path()?;
+        if let Some(dir) = p.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        }
+        // The desktop entry spec's quoting: these four are escaped inside quotes.
+        let quoted: String = exe.chars().flat_map(|c| {
+            let esc = matches!(c, '"' | '`' | '$' | '\\');
+            [esc.then_some('\\'), Some(c)].into_iter().flatten()
+        }).collect();
+        let body = format!("[Desktop Entry]\nType=Application\nName=WFSim\nExec=\"{quoted}\" {arg}\nX-GNOME-Autostart-enabled=true\n");
+        std::fs::write(&p, body).map_err(|e| format!("{}: {e}", p.display()))
+    }
+
+    pub fn clear() -> Result<(), String> {
+        match std::fs::remove_file(path()?) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+            _ => Ok(()),
+        }
+    }
+}
+
 /// Make the startup entry say what `on` says. WRITTEN AGAIN ON EVERY LAUNCH
 /// while on: the program is a file the reader can move, and an entry naming
 /// its old location starts nothing.
@@ -162,10 +197,24 @@ pub fn apply_autostart(on: bool) -> Result<(), String> {
             launch_agent::clear()
         }
     }
-    #[cfg(not(any(windows, target_os = "macos")))]
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        if on {
+            // AN APPIMAGE RUNS FROM A MOUNT THAT GOES WITH IT; `APPIMAGE` is
+            // the file the reader keeps.
+            let exe = match std::env::var("APPIMAGE") {
+                Ok(file) => file,
+                Err(_) => std::env::current_exe().map_err(|e| e.to_string())?.display().to_string(),
+            };
+            xdg_autostart::set(&exe, AUTOSTART_ARG)
+        } else {
+            xdg_autostart::clear()
+        }
+    }
+    #[cfg(not(any(windows, unix)))]
     {
         let _ = on;
-        Err("starting with the system is Windows and macOS only".into())
+        Err("starting with the system is not supported here".into())
     }
 }
 

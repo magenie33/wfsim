@@ -130,42 +130,52 @@ for (const [what, needle] of [
     (page.text || "").slice(0, 100));
 }
 
-// ---- 4. A MAC IS OFFERED ITS OWN DOWNLOAD, AND ITS OWN ANSWERS ----------
-// Gatekeeper is not SmartScreen: a Mac reader handed the Windows steps is
+// ---- 4. A MAC AND A LINUX DESKTOP ARE OFFERED THEIR OWN DOWNLOAD AND ANSWERS
+// Gatekeeper is not SmartScreen: a reader handed another system's steps is
 // handed instructions for a dialog they will never see.
-await app.send("Emulation.setUserAgentOverride", { userAgent: UAS.macOS });
-await app.load("/download");
-const mac = await app.evaluate(READ_PAGE);
-check("a Mac is offered the Mac download",
-  /macOS/.test(mac.button || "") && mac.why === false,
-  `button ${JSON.stringify(mac.button)}, dl-why ${mac.why}`);
-check("...from the same named drive",
-  (mac.buttonHref || "").includes("pan.quark.cn") && (mac.srcName || "").includes("夸克网盘"),
-  `${mac.buttonHref} / ${JSON.stringify(mac.srcName)}`);
-for (const [what, needle, want] of [
-  ["how to get past Gatekeeper", /Open Anyway|仍要打开/, true],
-  ["why macOS asks", /notarised|公证/, true],
-  ["where its data is", /Application Support/, true],
-  ["nothing of SmartScreen", /SmartScreen|已保护你的电脑/, false],
-  ["nothing of %LOCALAPPDATA%", /LOCALAPPDATA/, false],
+for (const [os, button, says] of [
+  ["macOS", /macOS/, [
+    ["how to get past Gatekeeper", /Open Anyway|仍要打开/, true],
+    ["why macOS asks", /notarised|公证/, true],
+    ["where its data is", /Application Support/, true],
+    ["nothing of chmod", /chmod/, false],
+  ]],
+  ["Linux", /Linux/, [
+    ["how to make it executable", /chmod \+x/, true],
+    ["what an AppImage needs", /libfuse2/, true],
+    ["where its data is", /\.local\/share\/wfsim/, true],
+    ["nothing of Gatekeeper", /Open Anyway|仍要打开/, false],
+  ]],
 ]) {
-  check(`the Mac page says ${what}`, needle.test(mac.text || "") === want,
-    (mac.text || "").slice(0, 100));
+  await app.send("Emulation.setUserAgentOverride", { userAgent: UAS[os] });
+  await app.load("/download");
+  const p = await app.evaluate(READ_PAGE);
+  check(`${os} is offered the ${os} download`, button.test(p.button || "") && p.why === false,
+    `button ${JSON.stringify(p.button)}, dl-why ${p.why}`);
+  check("...from the same named drive",
+    (p.buttonHref || "").includes("pan.quark.cn") && (p.srcName || "").includes("夸克网盘"),
+    `${p.buttonHref} / ${JSON.stringify(p.srcName)}`);
+  for (const [what, needle, want] of [...says,
+    ["nothing of SmartScreen", /SmartScreen|已保护你的电脑/, false],
+    ["nothing of %LOCALAPPDATA%", /LOCALAPPDATA/, false]]) {
+    check(`the ${os} page says ${what}`, needle.test(p.text || "") === want, (p.text || "").slice(0, 100));
+  }
 }
 
-// ---- 5. A PLATFORM WE DO NOT BUILD FOR IS TOLD SO, ON THE PAGE ----------
+// ---- 5. A MACHINE NOTHING IS BUILT FOR IS TOLD SO, ON THE PAGE ----------
 // The negative control, and it moved WITH the offer: the home page no longer
 // reads the user agent at all, so /download is the one surface that can say a
-// Linux, phone or tablet reader cannot run this. An iPad's Safari claims to be
-// a Mac; only its touch points tell it apart.
-for (const os of ["Linux", "Android", "iPad"]) {
+// phone or tablet reader cannot run this. An Android phone says "Linux" and an
+// iPad's Safari claims to be a Mac; only the phone's name and the tablet's
+// touch points tell them apart.
+for (const os of ["Android", "iPad"]) {
   const touch = os === "iPad";
   await app.send("Emulation.setTouchEmulationEnabled", { enabled: touch, maxTouchPoints: touch ? 5 : 1 });
   await app.send("Emulation.setUserAgentOverride", { userAgent: UAS[touch ? "macOS" : os] });
   await app.load("/download");
   const p = await app.evaluate(READ_PAGE);
-  check(`${os} is told the desktop build is Windows and macOS`,
-    /Windows/.test(p.text || "") && /macOS/.test(p.text || ""), (p.text || "").slice(0, 120));
+  check(`${os} is told the desktop build is Windows, macOS and Linux`,
+    /Windows/.test(p.text || "") && /macOS/.test(p.text || "") && /Linux/.test(p.text || ""), (p.text || "").slice(0, 120));
   check(`...and ${os} is told it will not run there`,
     p.why === true, `dl-why present: ${p.why}`);
 }
