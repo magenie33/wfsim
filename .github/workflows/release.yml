@@ -17,15 +17,14 @@
 # Cloudflare deploys — so the client's payload comes straight out of the
 # checkout. A release is one `cargo build`, not the whole wasm pipeline.
 #
-# LINUX IS HERE BECAUSE WARFRAME RUNS THERE. Digital Extremes ships no Linux
-# client ("There is no Mac or Linux support currently available"), but Proton
-# runs the game well and a Steam Deck is a Linux desktop — those players can
-# play and could not install the calculator. macOS is deliberately absent: with
-# no native client and no Proton equivalent, a Mac user cannot play Warframe at
-# all, and Gatekeeper plus $99/yr notarisation is a high price for an audience
-# that does not exist.
+# EVERY DESKTOP WARFRAME RUNS ON. The game ships for macOS on Apple Silicon,
+# and Proton runs it on Linux and the Steam Deck. The Mac download is ONE
+# universal disk image, Apple Silicon and Intel in one binary, so nobody picks
+# the wrong one. It is not notarised (that is $99 a year): it is ad-hoc signed,
+# which Apple Silicon requires to run at all, and the release body says how to
+# get past Gatekeeper.
 #
-# IT IS OPT-IN ALL THE SAME. `release` needs `build`, so one failing leg of the
+# MAC AND LINUX ARE OPT-IN ALL THE SAME. `release` needs `build`, so one failing leg of the
 # matrix publishes NOTHING — the Windows binary is built, checked, uploaded as
 # an artifact, and then no release is cut. A platform nobody is waiting for
 # must not be able to sink the one they are.
@@ -38,18 +37,36 @@ on:
         description: "Also build and publish the Linux AppImage"
         type: boolean
         default: false
+      mac:
+        description: "Also build and publish the macOS disk image"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 jobs:
+  # The legs the boxes ask for: Windows always, the others when ticked.
+  legs:
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.legs.outputs.include }}
+    steps:
+      - id: legs
+        run: |
+          legs='{"os":"windows-latest","artifact":"WFSim.exe"}'
+          if [ "${{ inputs.linux }}" = "true" ]; then legs="$legs,"'{"os":"ubuntu-latest","artifact":"WFSim.AppImage"}'; fi
+          if [ "${{ inputs.mac }}" = "true" ]; then legs="$legs,"'{"os":"macos-latest","artifact":"WFSim.dmg"}'; fi
+          echo "include=[$legs]" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: legs
     strategy:
-      # Both platforms are built even if one fails, so a Linux problem does not
-      # hide whether Windows is fine.
+      # Every platform is built even if one fails, so a Linux or Mac problem
+      # does not hide whether Windows is fine.
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.linux && '[{"os":"windows-latest","artifact":"WFSim.exe"},{"os":"ubuntu-latest","artifact":"WFSim.AppImage"}]' || '[{"os":"windows-latest","artifact":"WFSim.exe"}]') }}
+        include: ${{ fromJSON(needs.legs.outputs.include) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -66,16 +83,19 @@ jobs:
         with:
           # keep in sync with mise.toml and ci.yml
           toolchain: "1.97.1"
+          # Both slices of the universal Mac binary; ignored elsewhere.
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - uses: Swatinem/rust-cache@v2
         with:
           # The shell is its own workspace; the main one is not built here.
           workspaces: desktop
 
-      # The bundler, for the AppImage. Windows builds with plain cargo — see
-      # scripts/build_desktop.py for why the bundler is kept away from it.
+      # The bundler, for the AppImage and the disk image. Windows builds with
+      # plain cargo — see scripts/build_desktop.py for why the bundler is kept
+      # away from it.
       - name: Tauri CLI
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os != 'windows-latest'
         run: cargo install tauri-cli --version "^2" --locked
 
       - uses: actions/setup-python@v5
@@ -111,6 +131,15 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: xvfb-run --auto-servernum ./dist/WFSim.AppImage --selftest --reset
 
+      # BOTH SLICES RUN, not only the one the runner is: the Intel slice under
+      # Rosetta, since a slice nobody ran is a download nobody has seen fail.
+      - name: The shipped binary passes its own checks (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          ./dist/WFSim.app/Contents/MacOS/wfsim-desktop --selftest --reset
+          softwareupdate --install-rosetta --agree-to-license
+          arch -x86_64 ./dist/WFSim.app/Contents/MacOS/wfsim-desktop --selftest --reset
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
@@ -129,6 +158,9 @@ jobs:
 
   release:
     needs: build
+    # A RUN ON A BRANCH BUILDS AND CHECKS, AND PUBLISHES NOTHING: that is how a
+    # new leg is tried before anyone can download it.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -170,6 +202,9 @@ jobs:
           |---|---|
           MD
           echo "| Windows | \`WFSim-$TAG.zip\` — unzip, then double-click \`WFSim.exe\` |" >> notes.md
+          if [ -f WFSim.dmg ]; then
+            echo '| macOS | `WFSim.dmg` — open it and drag WFSim into Applications; Apple Silicon and Intel alike |' >> notes.md
+          fi
           if [ -f WFSim.AppImage ]; then
             echo '| Linux | `WFSim.AppImage` — `chmod +x` it, then double-click |' >> notes.md
           fi
@@ -179,6 +214,16 @@ jobs:
           build is not code-signed (a certificate costs more per year than a
           free tool justifies). Choose **More info → Run anyway**.
           MD
+          if [ -f WFSim.dmg ]; then
+            cat >> notes.md <<'MD'
+
+          macOS refuses the first launch, for the same reason: the app is not
+          notarised. Open it once, close the notice, then go to **System
+          Settings → Privacy & Security** and choose **Open Anyway**. On macOS
+          14 and earlier, right-click the app and choose **Open** instead. Or,
+          in Terminal: `xattr -dr com.apple.quarantine /Applications/WFSim.app`
+          MD
+          fi
           if [ -f WFSim.AppImage ]; then
             cat >> notes.md <<'MD'
 
@@ -195,6 +240,9 @@ jobs:
             echo '```'
             echo "$ZIP_SHA  WFSim-$TAG.zip"
             echo "$EXE_SHA  WFSim.exe (inside it)"
+            if [ -f WFSim.dmg ]; then
+              sha256sum WFSim.dmg
+            fi
             if [ -f WFSim.AppImage ]; then
               sha256sum WFSim.AppImage
             fi
@@ -210,8 +258,9 @@ jobs:
           · Web version: https://wfsim.app
           MD
 
-      # `WFSim.AppImage` is listed and may not exist: the action does not fail
-      # on an unmatched pattern, so one list serves both shapes of release. The
+      # `WFSim.dmg` and `WFSim.AppImage` are listed and may not exist: the
+      # action does not fail on an unmatched pattern, so one list serves every
+      # shape of release. The
       # bare `WFSim.exe` is deliberately NOT here — it is what the zip holds.
       - uses: softprops/action-gh-release@v2
         with:
@@ -219,6 +268,7 @@ jobs:
           name: WFSim ${{ steps.notes.outputs.tag }}
           files: |
             artifacts/WFSim-*.zip
+            artifacts/WFSim.dmg
             artifacts/WFSim.AppImage
             artifacts/source.zip
           body_path: artifacts/notes.md

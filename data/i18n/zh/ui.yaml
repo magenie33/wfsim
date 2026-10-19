@@ -755,7 +755,7 @@ ui:
   "Later": "稍后"
   "Download": 下载
   "A new version of the program is out — you can sign in to your account, and it can start with Windows, sit in the tray and uninstall itself.": "新版程序已发布——可以登录账号了，还有开机启动、托盘和卸载设置。"
-  "This copy of the program is older than the current one. Download the new WFSim.exe and use it in place of this one — your saved builds stay.": "你现在用的程序比最新版旧。下载新的 WFSim.exe 替换掉这个即可，存下的配装都会保留。"
+  "This copy of the program is older than the current one. Download the new {file} and use it in place of this one — your saved builds stay.": "你现在用的程序比最新版旧。下载新的 {file} 替换掉这个即可，存下的配装都会保留。"
   "Leaded Gas, the Vesper 77-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Leaded Gas」，Vesper 77 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Level scaling": 等级缩放
   "Lingering field": 持续云雾
@@ -966,7 +966,7 @@ ui:
   "Warframe build & DPS": 星际战甲配卡与 DPS
   "Warframe build": 星际战甲配卡
   "All {n} Warframe weapons": 星际战甲全部 {n} 把武器
-  "Download WFSim for Windows": 下载 WFSim Windows 桌面版
+  "Download WFSim for Windows and Mac": 下载 WFSim 桌面版（Windows / Mac）
   "Sustained DPS": 持续 DPS
   "Tau's status effect is not modelled. Tau's neutral damage is applied correctly, but its proc raises the status chance the target takes from every other source by 10% a stack, up to ten (wiki). With other statuses stacked, the number reads low.": "Tau 的异况效果未建模。Tau 对各类生命都是中性伤害，这一点处理正确；但它的触发效果会让目标受到的其他所有来源的触发几率每层 +10%，最多十层（wiki）。堆其他异况时数字偏低。"
   "Pressing reload again 22-38% into a reload cuts it to 1 s and loads Heat rounds with +25% damage and guaranteed status (wiki). It is a timed input the sim does not press, so every reload is the full 5 s with ordinary rounds, and the number reads well low.": "在换弹进行到 22%–38% 时再按一次换弹，换弹缩短到 1 秒，并装入 +25% 伤害、必定触发的火焰弹（wiki）。这是一个有时机的按键，模拟不会按，所以每次都是完整的 5 秒换弹和普通子弹，数字明显偏低。"
@@ -2516,12 +2516,15 @@ ui:
     "你在这里跑过什么，只留在你自己的浏览器里。网站统计了什么、怎么关掉，写在本页最下面。"
   "Thank you":
     "感谢"
-  "WFSim for Windows": "WFSim Windows 桌面版"
+  "WFSim for Windows and Mac": "WFSim 桌面版（Windows / Mac）"
   "The same calculator on your own machine: it opens instantly, works offline and updates itself.": "同一个计算器，运行在你自己的电脑上：秒开、可离线、自动更新。"
   "The first time you open it": "第一次打开"
   'Windows shows a blue notice, "Windows protected your PC". Click "More info", then "Run anyway".': "Windows 会弹出蓝色提示「Windows 已保护你的电脑」。点「更多信息」→「仍要运行」即可。"
   "The program is not code-signed, which is also why an antivirus may warn about it.": "这是因为程序没有代码签名，杀毒软件报警也是同一原因。"
   "The SHA-256 and the command to verify it are in the notes beside the download.": "下载旁的说明里有 SHA-256 和校验命令。"
+  'macOS refuses the first launch. Open WFSim once and close the notice, then choose "Open Anyway" in System Settings → Privacy & Security.': "macOS 第一次会拒绝打开。先打开一次 WF模拟 并关掉提示，再到「系统设置」→「隐私与安全性」里点「仍要打开」。"
+  'On macOS 14 and earlier, right-click the app and choose "Open" instead.': "macOS 14 及更早的版本：右键点程序，选「打开」即可。"
+  "The app is not notarised by Apple, which is why macOS asks.": "这是因为程序没有经过 Apple 公证。"
   "What it does": "它做什么"
   "The engine is on your disk, so a fight is computed the moment you ask for it.": "引擎就在你的硬盘上，打开即算。"
   "It works with no connection at all.": "完全断网也能用。"
@@ -2530,12 +2533,21 @@ ui:
   "No installer: it needs no administrator rights, and writes to the registry only if you turn on starting with Windows.": "无需安装：不需要管理员权限；只有打开「开机自动启动」时才写注册表。"
   "It runs the same wasm engine as the site, so every number matches.": "它和网页版运行同一个 wasm 引擎，数字完全一致。"
   "To uninstall, use Uninstall in the program's own settings: it removes the file and everything it kept in %LOCALAPPDATA%\\WFSim.": "卸载：在程序自己的设置里点「卸载」，程序文件和它在 %LOCALAPPDATA%\\WFSim 保存的一切都会删除。"
+  "Open the disk image and drag WFSim into Applications. The one download runs on Apple Silicon and Intel Macs alike.": "打开磁盘映像，把 WF模拟 拖进「应用程序」。同一个下载在 Apple 芯片和 Intel 的 Mac 上都能用。"
+  "To uninstall, move WFSim from Applications to the Trash. What it kept is in ~/Library/Application Support/WFSim.": "卸载：把 WF模拟 从「应用程序」拖到废纸篓。它保存的内容在 ~/Library/Application Support/WFSim。"
   "Start with Windows": "开机自动启动"
   "Opens WFSim when you sign in to Windows.": "登录 Windows 后自动打开 WF模拟。"
   "Start in the tray": "开机启动时最小化到托盘"
   "When Windows starts it, stay in the tray instead of opening a window.": "由开机启动打开时，不弹出窗口，留在托盘里。"
   "Close to the tray": "关闭窗口时最小化到托盘"
   "The close button keeps WFSim running in the tray, and computing together goes on. Quit from the tray icon's menu.": "点关闭后 WF模拟 留在托盘里继续运行，一起算也不会停。要退出，在托盘图标的菜单里选「退出」。"
+  "Open at login": "登录时自动打开"
+  "Opens WFSim when you log in to your Mac.": "登录 Mac 后自动打开 WF模拟。"
+  "Start in the menu bar": "登录启动时留在菜单栏"
+  "When it opens at login, stay in the menu bar instead of opening a window.": "由登录启动打开时，不弹出窗口，留在菜单栏里。"
+  "Close to the menu bar": "关闭窗口时留在菜单栏"
+  "The close button keeps WFSim running in the menu bar, and computing together goes on. Quit from its menu bar icon.": "点关闭后 WF模拟 留在菜单栏里继续运行，一起算也不会停。要退出，在菜单栏图标的菜单里选「退出」。"
+  "Turn off Open at login, quit WFSim and move it from Applications to the Trash. Its data folder, which the button above opens, can go too; builds not exported or synced to an account go with it.": "先关掉「登录时自动打开」，退出 WF模拟，再把它从「应用程序」拖到废纸篓。上面的按钮能打开它的数据目录，也可以一起删掉；没有导出或同步到账号的配装会随之丢失。"
   "Open the data folder": "打开数据目录"
   "Uninstall": "卸载"
   "Removes this program and everything it keeps on this computer.": "删除本程序，以及它在这台电脑上保存的全部内容。"
@@ -2550,8 +2562,8 @@ ui:
   "{os} app — opens instantly, works offline, updates itself": "{os} 桌面版 —— 秒开、可离线、自动更新"
   "Windows app": "Windows 桌面版"
   "Download the Windows app": "下载 Windows 桌面版"
-  "You are running the Windows app. It updates itself — there is nothing to download here.": "你正在用的就是 Windows 桌面版。它会自己更新 —— 这里没有需要下载的东西。"
-  "This is a Windows program — it will not run on the machine you are reading this on.": "这是一个 Windows 程序 —— 在你现在看这页的设备上跑不了。"
+  "You are running the {os} app. It updates itself — there is nothing to download here.": "你正在用的就是 {os} 桌面版。它会自己更新 —— 这里没有需要下载的东西。"
+  "WFSim runs on Windows and macOS — it will not run on the machine you are reading this on.": "桌面版支持 Windows 和 macOS —— 在你现在看这页的设备上跑不了。"
   "{n} d": "{n} 天"
   "{n} h": "{n} 小时"
   "{n} min": "{n} 分钟"

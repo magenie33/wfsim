@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build the Windows download: one executable, plus the source AGPL asks for.
+"""Build the desktop download: one file, plus the source AGPL asks for.
 
 WHAT LANDS IN `dist/`:
 
-  WFSim.exe      the whole app. The 29 MB payload is an `include_bytes!` inside
+  WFSim.exe      the whole app on Windows (`WFSim.dmg` on a Mac, `WFSim.AppImage`
+                 on Linux). The 29 MB payload is an `include_bytes!` inside
                  the binary, unpacked to %LOCALAPPDATA% on first run — so there
                  is nothing to unpack, nothing to install, no administrator
                  prompt, and deleting the file is the uninstall.
@@ -71,6 +72,60 @@ def run(*cmd: str, **kw) -> subprocess.CompletedProcess:
     return r
 
 
+MAC_TARGETS = ("aarch64-apple-darwin", "x86_64-apple-darwin")
+
+
+def mac_image() -> pathlib.Path:
+    """Complete the `.app` the bundler made and wrap it in the disk image.
+
+    THE PAYLOAD GOES IN ONCE, as `Contents/Resources/payload.bin` (`payload.rs`),
+    so only the code is universal: embedded, it would be in both slices. The
+    image is made here, with `hdiutil`, rather than by the bundler, whose disk
+    image script drives Finder and would have to be re-run after this anyway.
+    """
+    built = DESKTOP / "target" / "universal-apple-darwin" / "release" / "bundle" / "macos" / "WFSim.app"
+    if not built.exists():
+        sys.exit("no WFSim.app was produced — look for the bundler's output above")
+    exe = built / "Contents" / "MacOS" / "wfsim-desktop"
+    archs = subprocess.run(["lipo", "-archs", str(exe)], capture_output=True, text=True).stdout.split()
+    if sorted(archs) != ["arm64", "x86_64"]:
+        sys.exit(f"the Mac binary holds {archs or 'nothing'}, not arm64 and x86_64")
+    copies = []
+    for target in MAC_TARGETS:
+        p = DESKTOP / "target" / f"payload-{target}.bin"
+        if not p.exists():
+            sys.exit(f"{p.name} is missing — build.rs writes it for every Mac target")
+        copies.append(p.read_bytes())
+    if copies[0] != copies[1]:
+        sys.exit("the two slices were built from different payloads")
+
+    app = DIST / "WFSim.app"
+    if app.exists():
+        shutil.rmtree(app)
+    # `ditto`, not copytree: it keeps a bundle's symlinks and attributes.
+    run("ditto", str(built), str(app))
+    (app / "Contents" / "Resources").mkdir(exist_ok=True)
+    (app / "Contents" / "Resources" / "payload.bin").write_bytes(copies[0])
+    # SIGNED AFTER THE PAYLOAD IS IN, since the signature seals Resources. Ad
+    # hoc, which Apple Silicon requires to run anything at all; notarising is
+    # what would need a paid identity.
+    run("codesign", "--force", "--deep", "--sign", "-", str(app))
+    run("codesign", "--verify", "--deep", "--strict", str(app))
+
+    # The image a Mac reader expects: the app beside a link to Applications.
+    stage = DIST / ".dmg"
+    if stage.exists():
+        shutil.rmtree(stage)
+    stage.mkdir()
+    run("ditto", str(app), str(stage / "WFSim.app"))
+    os.symlink("/Applications", stage / "Applications")
+    image = DIST / "WFSim.dmg"
+    run("hdiutil", "create", "-volname", "WFSim", "-srcfolder", str(stage),
+        "-ov", "-format", "ULFO", str(image))
+    shutil.rmtree(stage)
+    return image
+
+
 def main() -> None:
     # THIS SCRIPT PRINTS A CHINESE FILENAME, and a Windows stdout that is not a
     # console defaults to the ANSI code page — cp1252 on a GitHub runner, where
@@ -93,6 +148,7 @@ def main() -> None:
     conf_path.write_text(json.dumps(conf, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     windows = os.name == "nt"
+    mac = sys.platform == "darwin"
     try:
         print(f"\nbuilding WFSim {version}")
         if windows:
@@ -102,6 +158,13 @@ def main() -> None:
             # already. What cargo writes is the artifact.
             run(cargo(), "build", "--release", "--manifest-path",
                 str(DESKTOP / "Cargo.toml"), "--bin", "wfsim-desktop")
+        elif mac:
+            # ONE DOWNLOAD FOR BOTH KINDS OF MAC: a universal binary, an Apple
+            # Silicon and an Intel slice, so a reader never has to know which
+            # they own. The bundler makes the `.app` only; `mac_image` adds the
+            # payload and makes the disk image.
+            run(cargo(), "tauri", "build", "--target", "universal-apple-darwin",
+                "--bundles", "app", cwd=DESKTOP)
         else:
             # THE BUNDLER EARNS ITS KEEP ON LINUX, where a bare binary links
             # against whatever WebKitGTK the distribution happens to ship and an
@@ -130,14 +193,18 @@ def main() -> None:
     if windows:
         built = DESKTOP / "target" / "release" / "wfsim-desktop.exe"
         dest = DIST / "WFSim.exe"
+    elif mac:
+        built = mac_image()
+        dest = DIST / "WFSim.dmg"
     else:
         found = sorted((DESKTOP / "target" / "release" / "bundle" / "appimage").glob("*.AppImage"))
         if not found:
             sys.exit("no AppImage was produced — look for the bundler's output above")
         built = found[-1]
         dest = DIST / "WFSim.AppImage"
-    shutil.copy2(built, dest)
-    if not windows:
+    if built != dest:
+        shutil.copy2(built, dest)
+    if not windows and not mac:
         # An asset downloaded from a Release arrives without the execute bit;
         # the release body says `chmod +x`, and this makes the local copy run.
         dest.chmod(0o755)
@@ -147,10 +214,13 @@ def main() -> None:
     # A SIZE CHECK, because what it catches builds cleanly and exits zero.
     # `lto = true` once dropped the whole 29 MB payload as unreachable, leaving
     # a 268 KB binary that ran and unpacked nothing. The payload alone is 29 MB,
-    # so anything remotely small is that class of mistake.
-    if len(body) < 20_000_000:
+    # so anything remotely small is that class of mistake. On a Mac the payload
+    # is its own file in the bundle, and a disk image is compressed.
+    weighed = (DIST / "WFSim.app" / "Contents" / "Resources" / "payload.bin") if mac else dest
+    size = weighed.stat().st_size if weighed.exists() else 0
+    if size < 20_000_000:
         sys.exit(
-            f"the artifact is only {len(body) / 1e6:.1f} MB — the payload alone is 29 MB. "
+            f"{weighed.name} is only {size / 1e6:.1f} MB — the payload alone is 29 MB. "
             "The app was almost certainly optimised out (check that lto is off) "
             "or the bundler packaged the wrong thing."
         )
@@ -172,9 +242,9 @@ def main() -> None:
     # SHA-256 is generated. The wording matches the download page's.
     # THE NOTES ARE FOR THE NETWORK DRIVE, which is a Windows audience: they
     # explain SmartScreen and `certutil`, neither of which exists elsewhere. The
-    # Linux download goes out through a GitHub Release, where the release body
-    # is the place to say `chmod +x` — so this file is simply not written there
-    # rather than translated into something half-true.
+    # Mac and Linux downloads are built by the release workflow, whose release
+    # body says what Gatekeeper and `chmod +x` need — so this file is simply not
+    # written there rather than translated into something half-true.
     if not windows:
         print("\n" + "=" * 60)
         print(f"app        {dest}  ({len(body) / 1e6:.1f} MB)")

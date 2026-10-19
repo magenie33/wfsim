@@ -1,5 +1,5 @@
-//! What the reader decides about the program itself: starting with Windows,
-//! where a closed window goes, and taking it all away again.
+//! What the reader decides about the program itself: starting with the
+//! system, where a closed window goes, and taking it all away again.
 //!
 //! THE SHELL KEEPS THESE, NOT THE PAGE. Whether to start hidden is decided
 //! before any page exists, and a setting the window cannot read until it has
@@ -98,6 +98,48 @@ mod run_key {
     }
 }
 
+/// A Mac's startup entry: a LaunchAgent in the reader's own Library, which
+/// launchd reads at sign-in. Its file name is the bundle identifier.
+#[cfg(target_os = "macos")]
+mod launch_agent {
+    use std::path::PathBuf;
+
+    fn path() -> Result<PathBuf, String> {
+        let home = std::env::var("HOME").map_err(|_| "HOME is not set".to_string())?;
+        Ok(PathBuf::from(home).join("Library/LaunchAgents/app.wfsim.desktop.plist"))
+    }
+
+    fn xml(s: &str) -> String {
+        s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    }
+
+    pub fn set(exe: &str, arg: &str) -> Result<(), String> {
+        let p = path()?;
+        if let Some(dir) = p.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        }
+        let body = format!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+             <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n\
+             <plist version=\"1.0\"><dict>\n\
+             <key>Label</key><string>app.wfsim.desktop</string>\n\
+             <key>ProgramArguments</key><array><string>{}</string><string>{}</string></array>\n\
+             <key>RunAtLoad</key><true/>\n\
+             </dict></plist>\n",
+            xml(exe),
+            xml(arg)
+        );
+        std::fs::write(&p, body).map_err(|e| format!("{}: {e}", p.display()))
+    }
+
+    pub fn clear() -> Result<(), String> {
+        match std::fs::remove_file(path()?) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+            _ => Ok(()),
+        }
+    }
+}
+
 /// Make the startup entry say what `on` says. WRITTEN AGAIN ON EVERY LAUNCH
 /// while on: the program is a file the reader can move, and an entry naming
 /// its old location starts nothing.
@@ -111,10 +153,19 @@ pub fn apply_autostart(on: bool) -> Result<(), String> {
             run_key::clear()
         }
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        if on {
+            let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            launch_agent::set(&exe.display().to_string(), AUTOSTART_ARG)
+        } else {
+            launch_agent::clear()
+        }
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         let _ = on;
-        Err("starting with the system is Windows only".into())
+        Err("starting with the system is Windows and macOS only".into())
     }
 }
 

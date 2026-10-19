@@ -1,6 +1,6 @@
 # The desktop client
 
-WFSim as a Windows app — the same `site/` the browser gets, served from a
+WFSim as a Windows and Mac app — the same `site/` the browser gets, served from a
 directory the app can replace, so it updates itself and never sends anyone back
 to a download link.
 
@@ -321,6 +321,9 @@ wherever the binary is) and `使用说明.txt`, which says which of the two to
 download — **specifically that the source archive is not something a player
 needs** — plus the SHA-256 and what to do about SmartScreen.
 
+`WFSim.dmg`, from a release run with the Mac box ticked (`gh run download`), goes
+in the same folder: `DOWNLOADS` points the Mac button at the same share.
+
 Upload once. It is a **download link, not an update channel** — a network drive
 has no stable direct URL.
 
@@ -340,12 +343,14 @@ answers it before.
 
 **The topbar's settings menu is the only entry**; the home page offers no
 download at all. Nothing reads the user agent outside /download, which is the
-surface that tells a Mac, Linux or phone reader it will not run there.
+surface that hands a Mac its own download and tells a Linux, phone or tablet
+reader it will not run there. An iPad's Safari says "Macintosh"; its touch
+points are what tell it apart.
 
-**Windows only.** The release workflow can cut `WFSim.AppImage` too — a
-`workflow_dispatch` box, off by default, because `release` needs `build` and a
-platform nobody is waiting for must not be able to sink the one they are. The
-offer on this page is not about it either way.
+**Windows and Mac**, the systems Warframe ships for. The sections true of one
+download only — the first launch, the uninstall — carry `data-dl-os` and show
+for the system asking. The release workflow can also cut `WFSim.AppImage`, a
+box off by default and not offered here.
 
 **The source is named beside the button.** This site does not host the
 executable — it is on a Quark network drive — and a reader about to run a
@@ -403,3 +408,40 @@ No code-signing certificate. SmartScreen shows its blue warning on first run and
 the notes file says so with the steps. A certificate would not remove the
 warning immediately either — SmartScreen goes on file reputation, so a fresh
 certificate still warns, just with a name attached.
+
+The Mac app is signed **ad hoc**, which Apple Silicon requires to run anything,
+and not notarised, which needs a paid Apple identity. Gatekeeper refuses the
+first launch; `/download` and the release body give the way past it.
+
+## macOS
+
+`WFSim.dmg` holds `WFSim.app`, one **universal** binary, Apple Silicon and Intel,
+so no reader picks the wrong download. Its data lives in
+`~/Library/Application Support/WFSim/`, laid out as on Windows.
+
+**THE PAYLOAD IS A FILE IN THE BUNDLE, NOT A STATIC.** Embedded, it would ship
+once per slice, twice over. `build.rs` writes each slice's payload to
+`desktop/target/payload-<target>.bin`; `build_desktop.py` refuses two that
+differ, puts one in `Contents/Resources/payload.bin`, signs the bundle after
+(the signature seals Resources) and makes the image with `hdiutil`. A release
+binary never falls back to the build's own copy, so a bundle without its
+payload fails its selftest rather than passing on the build machine.
+
+The bundler makes the `.app` only: its disk-image script drives Finder, and
+would have to run again after the payload goes in anyway. The release workflow
+runs the selftest twice, natively and under Rosetta, because a slice nobody ran
+is a download nobody has seen fail.
+
+What differs from Windows, each where the reader expects it:
+
+- **The Dock reopens a hidden window** (`RunEvent::Reopen`); the tray is the
+  menu bar.
+- **Open at login is a LaunchAgent**, `~/Library/LaunchAgents/app.wfsim.desktop.plist`,
+  rewritten on every launch while on, as the Run key is.
+- **No uninstall button**: a Mac app goes to the Trash. The settings page says
+  what else to remove.
+- **WKWebView ignores `data_directory`**, so a selftest gets a fresh data store
+  by identifier (macOS 14 and later) instead of a throwaway profile directory.
+- **No native engine** yet: the release carries a Windows library, the shell
+  refuses to load it elsewhere, and the page computes the board on wasm — the
+  same answer, slower.

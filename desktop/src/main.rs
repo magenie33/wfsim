@@ -994,6 +994,15 @@ TIMEOUT: the page never reported after {secs}s
                 let dir = std::env::temp_dir().join("wfsim-selftest-profile");
                 let _ = std::fs::remove_dir_all(&dir);
                 win = win.data_directory(dir);
+                // WKWebView ignores `data_directory`: there a profile is a data
+                // store named by 16 bytes, so each run names a new one.
+                #[cfg(target_os = "macos")]
+                {
+                    let nanos = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_or(0, |d| d.as_nanos());
+                    win = win.data_store_identifier(nanos.to_le_bytes());
+                }
             }
             // THE SITE, REACHED IN THIS WINDOW, IS THE APP. A provider sends a
             // sign-in back to `wfsim.app/api/auth/…/callback`; opened there it
@@ -1021,6 +1030,14 @@ TIMEOUT: the page never reported after {secs}s
                 .build()?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("wfsim desktop failed to start");
+        .build(tauri::generate_context!())
+        .expect("wfsim desktop failed to start")
+        // A HIDDEN WINDOW COMES BACK THROUGH THE DOCK on a Mac, where clicking
+        // the app's icon is how a reader reopens it; unanswered, the click does nothing.
+        .run(|_app, _event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = _event {
+                show_main(_app);
+            }
+        });
 }
