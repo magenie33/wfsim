@@ -148,6 +148,14 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   const again = await publish("delta", live);
   check("...and the next, with nothing new, moves nothing", again.status === 3 && readFileSync(facts, "utf8") === grown,
     `exit ${again.status} ${again.stderr.slice(0, 300)}`);
+  // A FILE READ WHOLE MOVES THE CURSOR to its newest row: a delta after it asks
+  // for hours, never every row since a cursor that had stopped.
+  writeFileSync(join(live, "facts-cursor.txt"), "2020-01-01T00:00:00.000Z\n");
+  const newest = (await query("SELECT max(finished_at) AS at FROM scores"))[0].at;
+  const moved = await publish("cursor", live);
+  check("a store read whole moves the cursor to its newest row",
+    moved.status === 0 && readFileSync(join(live, "facts-cursor.txt"), "utf8").trim() === newest,
+    `${readFileSync(join(live, "facts-cursor.txt"), "utf8").trim()} for ${newest} ${moved.stderr.slice(0, 300)}`);
   const [known] = await query("SELECT identity, ruler, mode FROM scores LIMIT 1");
   const waiting = { identity: "b1", ruler: "no_fact_yet", mode: "base", score: 2 };
   writeFileSync(join(live, "unverified.ndjson"), `${JSON.stringify({ ...known, score: 3 })}\n${JSON.stringify(waiting)}\n`);

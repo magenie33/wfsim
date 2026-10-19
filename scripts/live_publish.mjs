@@ -3,6 +3,7 @@
 // by `live_board.sh`.
 //
 //   node live_publish.mjs delta <work-dir>                verified facts since the last read
+//   node live_publish.mjs cursor <work-dir>               the facts file just read whole: the delta starts at its newest
 //   node live_publish.mjs subset <work-dir> <ids> <out> <facts>...   the weapons <ids> touch: library, facts
 //   node live_publish.mjs open <work-dir> <results> <out>   the client results no fact answers
 //   node live_publish.mjs push <work-dir> <dir>           the files that moved, to R2
@@ -67,6 +68,21 @@ async function delta() {
   writeFileSync(join(work, "moved-ids.txt"), movedIds.map((id) => id + "\n").join(""));
   if (!moved.length) process.exit(3);
   console.error(`live: ${moved.length} fact(s) moved since ${since}`);
+}
+
+/// THE CURSOR MOVED TO THE NEWEST ROW OF A FILE JUST READ WHOLE, and the last
+/// window forgotten: the store holds everything before it, so a delta asks for
+/// hours rather than every row since a cursor that stopped — a cursor days
+/// old asked for millions of rows, more than the server's heap holds.
+async function cursor() {
+  let seen = "";
+  for await (const l of eachLine(join(work, "facts-known.ndjson"))) {
+    const at = /"finished_at":"([^"]*)"/.exec(l)?.[1] ?? "";
+    if (at > seen) seen = at;
+  }
+  if (!seen) return;
+  writeFileSync(join(work, "facts-cursor.txt"), seen + "\n");
+  writeFileSync(join(work, "facts-recent.json"), "{}");
 }
 
 /// THE BUILDS OF EVERY WEAPON A SET OF BUILD IDS TOUCHES — a weapon is ranked
@@ -148,7 +164,8 @@ async function push() {
 }
 
 if (mode === "delta") await delta();
+else if (mode === "cursor") await cursor();
 else if (mode === "push") await push();
 else if (mode === "subset") await subset(dir, process.argv[5], process.argv.slice(6));
 else if (mode === "open") await open(dir, process.argv[5]);
-else { console.error("usage: live_publish.mjs delta|subset|open|push <work-dir> ..."); process.exit(2); }
+else { console.error("usage: live_publish.mjs delta|cursor|subset|open|push <work-dir> ..."); process.exit(2); }

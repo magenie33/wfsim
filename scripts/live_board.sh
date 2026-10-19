@@ -98,6 +98,7 @@ refresh_store() {
   # …AND WHICH BUILD IS WHICH WEAPON, which a subset pass is cut by.
   mv library.fresh.ndjson library-ids.ndjson
   mv facts.fresh facts-known.ndjson
+  node "$HERE/live_publish.mjs" cursor "$WORK" >&2
   # A BUILD THE LIBRARY NOW HOLDS is in the read itself.
   : > new-builds.ndjson
 }
