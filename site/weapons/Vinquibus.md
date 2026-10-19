@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.3388 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Primed Bane of Grineer, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Aerial Ace, Primary Crux | 2026-10-17 07:06 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 30.9804 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Primed Bane of Grineer, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Aerial Ace, Primary Crux | 2026-10-17 06:54 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 2.1964 | Hellfire, Thermite Rounds, Primary Acuity, Primed Bane of Grineer, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Aerial Ace, Primary Crux | 2026-10-17 06:54 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.7052 | Hellfire, Thermite Rounds, Primary Acuity, Primed Bane of Grineer, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Aerial Ace, Primary Crux | 2026-10-12 09:54 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.7052 | Hellfire, Thermite Rounds, Primary Acuity, Primed Bane of Grineer, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Aerial Ace, Primary Crux | 2026-10-18 05:48 UTC |
 
 ## Not modelled here
 

@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.9460 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-17 00:57 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.9438 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-17 05:48 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3286 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-17 00:57 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.6818 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-12 10:35 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.6818 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-18 08:50 UTC |
 
 ## Not modelled here
 

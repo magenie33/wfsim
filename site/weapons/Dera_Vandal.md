@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 22.3738 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-17 05:45 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 113.6882 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-17 05:59 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 4.5864 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-17 04:48 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 14.0070 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-12 10:35 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 14.0070 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-18 08:52 UTC |
 
 ## In WFSim
 

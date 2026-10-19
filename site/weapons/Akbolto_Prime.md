@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.1527 | Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-16 00:02 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.5190 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Semi-Pistol Cannonade, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-15 22:52 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.8020 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-15 22:51 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.5261 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-16 03:15 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.5261 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-18 12:27 UTC |
 
 ## Not modelled here
 

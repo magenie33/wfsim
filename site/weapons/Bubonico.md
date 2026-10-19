@@ -13,7 +13,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 4.3373 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-16 04:39 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 40.0395 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-16 03:09 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 40.0395 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-18 12:45 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.5435 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-16 04:21 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 2.2693 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-16 04:25 UTC |
 

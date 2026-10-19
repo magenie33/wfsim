@@ -13,9 +13,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 26.0142 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Eject Magazine, Secondary Enervate | 2026-10-17 04:45 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 143.6109 | Frostbite, Pistol Pestilence, Primed Convulsion, Seeker, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-10-12 11:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 143.6109 | Frostbite, Pistol Pestilence, Primed Convulsion, Seeker, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-10-18 09:46 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 5.5369 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Ruinous Extension, Secondary Enervate | 2026-10-17 02:58 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 14.4948 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-12 10:12 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 14.4948 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-18 06:51 UTC |
 
 ## Not modelled here
 

@@ -14,8 +14,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.6193 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-16 04:34 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 60.8726 | Stormbringer, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-16 07:12 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.7248 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-16 03:07 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.5094 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-16 03:08 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.7248 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-18 12:28 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.5094 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-18 12:37 UTC |
 
 ## Not modelled here
 

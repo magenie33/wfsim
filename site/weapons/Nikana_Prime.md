@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 9.2900 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-17 04:42 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 130.2344 | Shocking Touch, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Blind Justice, Dreamer's Wrath, Melee Influence | 2026-10-17 04:43 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6711 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-17 04:36 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.5750 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-12 10:35 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.5750 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Blind Justice, Dreamer's Wrath, Melee Exposure | 2026-10-18 08:49 UTC |
 
 ## Not modelled here
 

@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.2557 | Jolt, Pistol Pestilence, Scorch, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Galvanized Shot, Magnetic Might, Secondary Enervate | 2026-10-17 01:59 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.2557 | Jolt, Pistol Pestilence, Scorch, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Galvanized Shot, Magnetic Might, Secondary Enervate | 2026-10-17 13:01 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2685 | Jolt, Pistol Pestilence, Scorch, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Galvanized Shot, Magnetic Might, Secondary Enervate | 2026-10-17 02:47 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.5208 | Jolt, Pistol Pestilence, Scorch, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Galvanized Shot, Magnetic Might, Secondary Enervate | 2026-10-12 10:38 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.5208 | Jolt, Pistol Pestilence, Scorch, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Galvanized Shot, Magnetic Might, Secondary Enervate | 2026-10-18 08:46 UTC |
 
 ## In WFSim
 

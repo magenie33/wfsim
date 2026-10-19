@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6238 | Primed Cryo Rounds, Primary Acuity, Primed Bane of Grineer, Galvanized Aptitude, Critical Delay, Meticulous Aim, Vital Sense, Lasting Purity, Primary Deadhead | 2026-10-17 02:47 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 2.6647 | Primed Cryo Rounds, Primary Acuity, Primed Bane of Grineer, Galvanized Aptitude, Critical Delay, Meticulous Aim, Vital Sense, Lasting Purity, Primary Deadhead | 2026-10-17 05:55 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.05359 | Primed Cryo Rounds, Primary Acuity, Primed Bane of Grineer, Galvanized Aptitude, Critical Delay, Meticulous Aim, Vital Sense, Lasting Purity, Primary Deadhead | 2026-10-17 02:47 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1978 | Primed Cryo Rounds, Primary Acuity, Primed Bane of Grineer, Galvanized Aptitude, Critical Delay, Meticulous Aim, Vital Sense, Lasting Purity, Primary Deadhead | 2026-10-12 10:13 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1978 | Primed Cryo Rounds, Primary Acuity, Primed Bane of Grineer, Galvanized Aptitude, Critical Delay, Meticulous Aim, Vital Sense, Lasting Purity, Primary Deadhead | 2026-10-18 06:56 UTC |
 
 ## Not modelled here
 

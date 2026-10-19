@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.5695 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-17 08:58 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.5695 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-18 11:37 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.5695 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-17 08:58 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy | 0.04408 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-17 08:58 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy | 0.1952 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-12 10:16 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy | 0.1952 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-18 07:55 UTC |
 
 ## Not modelled here
 

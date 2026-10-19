@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.06703 | Vicious Frost, Virulent Scourge, Shocking Touch, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Crushing Ruin, Melee Influence | 2026-10-17 06:01 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.07050 | Vicious Frost, Virulent Scourge, Shocking Touch, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Crushing Ruin, Melee Influence | 2026-10-18 11:24 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.3290 | Vicious Frost, Virulent Scourge, Shocking Touch, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Crushing Ruin, Melee Influence | 2026-10-17 06:21 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.003419 | Vicious Frost, Virulent Scourge, Shocking Touch, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Crushing Ruin, Melee Influence | 2026-10-17 06:17 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.03533 | Vicious Frost, Virulent Scourge, Shocking Touch, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Crushing Ruin, Melee Influence | 2026-10-17 06:15 UTC |

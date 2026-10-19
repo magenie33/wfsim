@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.0283 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Deadhead, Secondary Enervate | 2026-10-16 03:35 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.0283 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Deadhead, Secondary Enervate | 2026-10-18 12:29 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 183.2883 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Sabot Rounds, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-16 07:13 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 5.3042 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Containment Breach, Hollowed Bullets, Primary Crux, Secondary Enervate | 2026-10-16 03:07 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 5.3042 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Containment Breach, Hollowed Bullets, Primary Crux, Secondary Enervate | 2026-10-18 12:35 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 11.7321 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Deadhead, Secondary Enervate | 2026-10-15 22:52 UTC |
 
 ## Not modelled here

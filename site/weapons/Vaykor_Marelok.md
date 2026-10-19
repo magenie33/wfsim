@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 3.1604 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-17 03:52 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.2384 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-17 05:06 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.8588 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-17 03:50 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.1467 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-12 09:51 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.1467 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-18 05:59 UTC |
 
 ## Not modelled here
 

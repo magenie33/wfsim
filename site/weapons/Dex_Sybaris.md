@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 9.2711 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-16 18:25 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 9.2711 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-18 12:39 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 13.0578 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-16 16:52 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 0.4378 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-17 07:56 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 2.0303 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-12 10:10 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 2.0303 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Critical Delay, Vital Sense, Stabilizer, Primary Deadhead | 2026-10-18 06:55 UTC |
 
 ## In WFSim
 
