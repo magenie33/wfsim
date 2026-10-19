@@ -451,6 +451,7 @@ What differs from Windows, each where the reader expects it:
   (docs/CLIENTS.md), the one every other client reads: the release carries a
   Windows library only. `native::official` verifies the signed manifest, takes
   this machine's `<arch>-<os>` build and its data pack, and caches both by
-  hash. ship.yml's `engine-mac` job builds the two Mac slices and holds each to
-  the shipped wasm (`check_gas.mjs`) first; an engine without one computes on
+  hash. ship.yml's `engine-mac` job builds each Mac slice on its own chip (an
+  Intel runner for x86_64, not Rosetta) and holds it to the shipped wasm
+  (`check_gas.mjs`) first; an engine without one computes on
   wasm. A Linux shell takes the same road.
