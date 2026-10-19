@@ -72,14 +72,14 @@ const BUILD_ID = "5d6011dd";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "0b9460cd+";
+const BUILD_SHA = "700bc121+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "4309bf691dd5";
+const RELEASE_ID = "18a2cee2e04f";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -874,7 +874,7 @@ const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "dat
 /// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
 /// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
 /// writes in the hashed names and the size; the dev server serves no workers.
-const ENGINE_WASM = "/pkg/wfsim_wasm_bg.2336a12a2dc2.wasm";
+const ENGINE_WASM = "/pkg/wfsim_wasm_bg.3118ce202517.wasm";
 /// …AND ITS DATA: the module is code, and these packs are installed into every
 /// instance before its first call (docs/WASM.md §"Code and data"), so a data
 /// edit is a new pack and the module stays cached.
@@ -884,7 +884,7 @@ const ENGINE_WASM_BYTES = 10213636;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.14068891f4b0.json", "/api/i18n": "/pkg/i18n.faf49d9d71a9.json", "/api/warframe/catalog": "/pkg/warframes.5d5c8b782cb7.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.09043e382e71.json", "/api/i18n": "/pkg/i18n.faf49d9d71a9.json", "/api/warframe/catalog": "/pkg/warframes.5d5c8b782cb7.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -995,7 +995,7 @@ async function enginePack(url) {
 /// is sent as its address instead, and that worker fetches its own; the packs
 /// always travel as bytes.
 function spawnEngine() {
-  const w = new Worker("/asset/worker.94496d2b22dd.js");
+  const w = new Worker("/asset/worker.3ac653ec3ae9.js");
   engineLoad().then(({ module, packs }) => {
     try {
       w.postMessage({ kind: "engine", module, packs });
