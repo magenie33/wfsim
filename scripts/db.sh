@@ -5,6 +5,14 @@
 # refusal, whose errors are in the answer.
 DB_HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 DB_OUT=""
+# THE SCRIPT'S TEMP DIRECTORY: every `mktemp` in it and its children lands
+# here, and it goes when the script exits. A trap replaces a trap, so a script
+# that sets its own EXIT trap calls `db_cleanup` in it — a file a run left
+# behind is memory on the bot server, where the live board runs these all day.
+DB_TMP=$(mktemp -d)
+export TMPDIR="$DB_TMP"
+db_cleanup() { rm -rf "$DB_TMP"; }
+trap db_cleanup EXIT
 DB_CODE=""
 
 db_configured() {

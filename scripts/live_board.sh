@@ -191,7 +191,7 @@ start_intake() {
 }
 if [ "${ONCE:-}" != 1 ]; then
   start_intake
-  trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null' EXIT
+  trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; db_cleanup' EXIT
 fi
 
 last_refresh=0

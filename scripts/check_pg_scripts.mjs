@@ -6,7 +6,7 @@
 // purged — and each table must hold what the pass says it wrote.
 //   npm ci --prefix scripts/pg && node scripts/check_pg_scripts.mjs
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -18,11 +18,14 @@ const check = (name, ok, detail = "") => { console.log(`  ${ok ? "ok  " : "FAIL"
 const ROOT = new URL("..", import.meta.url);
 const file = (name, text) => { writeFileSync(join(dir, name), text); return join(dir, name); };
 const read = (name) => readFileSync(join(dir, name), "utf8").split("\n").filter(Boolean);
+/// Where every script's `mktemp` lands, so what one leaves behind is seen.
+const scratch = join(dir, "tmp");
+mkdirSync(scratch);
 /// One script, its database closed here first: PGlite is one process's at a time.
 async function run(script, ...args) {
   await close();
   const r = spawnSync("bash", [new URL(`./${script}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), ...args],
-    { cwd: dir, encoding: "utf8", env: { ...process.env, FACTORY_ORIGIN: "http://127.0.0.1:9", FACTORY_TOKEN: "" } });
+    { cwd: dir, encoding: "utf8", env: { ...process.env, TMPDIR: scratch, FACTORY_ORIGIN: "http://127.0.0.1:9", FACTORY_TOKEN: "" } });
   if (r.status !== 0) console.log(`${r.stdout}${r.stderr}`.split("\n").map((l) => `      ${l}`).join("\n"));
   return r.status;
 }
@@ -120,6 +123,10 @@ process.env.WFSIM_BOARD = file("rulers.sh","#!/bin/sh\necho standard_single_targ
 chmodSync(process.env.WFSIM_BOARD, 0o755);
 check("a ruler the repo no longer has is purged", await run("purge_queue.sh") === 0
   && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
+// NOTHING A SCRIPT MADE OUTLIVES IT (scripts/db.sh `DB_TMP`): the live board
+// runs them all day on a server whose /tmp is memory.
+const left = readdirSync(scratch);
+check("every script's temp files are gone when it exits", left.length === 0, left.join(" "));
 
 await close();
 rmSync(dir, { recursive: true, force: true });

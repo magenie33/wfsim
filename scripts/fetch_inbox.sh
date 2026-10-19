@@ -66,7 +66,7 @@ self_test() {
   ok=0; bad=0
   unset PG_URL
   DIR=$(mktemp -d)
-  trap 'rm -rf "$DIR"' EXIT
+  trap 'rm -rf "$DIR"; db_cleanup' EXIT
   mkdir -p "$DIR/bin" "$DIR/work"
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
   cd "$DIR/work"
